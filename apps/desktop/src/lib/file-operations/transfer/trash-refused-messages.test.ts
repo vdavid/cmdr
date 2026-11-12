@@ -5,7 +5,8 @@
  * failure until people stop reading it; too shy and the one user who needed the hint
  * gets "try again" under a folded disclosure, which is the report that started this.
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { withCapabilities } from '#lib/platform/test-platform.js'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import type { TrashRefusalKind } from '#lib/ipc/bindings.js'
@@ -89,8 +90,26 @@ describe('a refused trash', () => {
   // The reporter of ERR-KKQHK had Full Disk Access and an ordinary file, and Finder
   // trashed it. With nothing more specific to say, pointing at Finder is the next step.
   it('points an unexplained permission refusal at Finder', () => {
+    onTestFinished(withPlatform('macos'))
     expect(refused('notPermitted').suggestion).toContain('Finder')
     expect(refused('ownedByAnotherUser').suggestion).toContain('Finder')
+  })
+
+  it('points it at File Explorer or an administrator on Windows, and at permissions or sudo on Linux', () => {
+    const restore = withPlatform('windows')
+    try {
+      expect(refused('notPermitted').suggestion).toContain('File Explorer')
+      expect(refused('ownedByAnotherUser').suggestion).toContain('An administrator can still move them')
+    } finally {
+      restore()
+    }
+    onTestFinished(withPlatform('linux'))
+    expect(refused('notPermitted').suggestion).toContain('Check the folder’s permissions')
+    expect(refused('ownedByAnotherUser').suggestion).toContain('sudo in a terminal')
+    // `locked` keeps the macOS text: only macOS reads the lock flag, so Linux never sends it.
+    for (const reason of ALL_REASONS.filter((r) => r !== 'locked')) {
+      expect(refused(reason).suggestion).not.toMatch(/Finder|macOS/)
+    }
   })
 
   describe('the Full Disk Access line', () => {

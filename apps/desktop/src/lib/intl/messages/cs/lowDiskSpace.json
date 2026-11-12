@@ -1,5 +1,5 @@
 {
-  "lowDiskSpace.toast.message": "Na startovacím disku vám dochází volné místo: zbývá {freeText} ({percentText} %).",
+  "lowDiskSpace.toast.message": "{platform, select, macos {Na startovacím disku vám dochází volné místo: zbývá {freeText} ({percentText} %).} windows {Your system drive is running low on space: {freeText} free ({percentText}%).} other {Your system disk is running low on space: {freeText} free ({percentText}%).}}",
   "@lowDiskSpace.toast.message": {
     "sourceHash": "44b701f"
   },
@@ -15,7 +15,7 @@
   "@lowDiskSpace.notification.title": {
     "sourceHash": "5b1f5bf"
   },
-  "lowDiskSpace.notification.body": "Volno {freeText} ({percentText} %) na startovacím disku.",
+  "lowDiskSpace.notification.body": "{platform, select, macos {Volno {freeText} ({percentText} %) na startovacím disku.} windows {{freeText} free ({percentText}%) on your system drive.} other {{freeText} free ({percentText}%) on your system disk.}}",
   "@lowDiskSpace.notification.body": {
     "sourceHash": "b17ee43"
   }

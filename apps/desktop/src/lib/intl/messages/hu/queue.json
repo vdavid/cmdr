@@ -15,7 +15,7 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{type, select, copy {Másolás} move {Áthelyezés} delete {Törlés} trash {Áthelyezés a Kukába} rename {Átnevezés} create_folder {Mappa létrehozása} create_file {Fájl létrehozása} archive_edit {Archívum szerkesztése} compress {Tömörítés} tag {Címkék módosítása} other {Folyamatban}}",
+  "queue.row.label": "{platform, select, windows {{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to the Recycle Bin} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}} other {{type, select, copy {Másolás} move {Áthelyezés} delete {Törlés} trash {Áthelyezés a Kukába} rename {Átnevezés} create_folder {Mappa létrehozása} create_file {Fájl létrehozása} archive_edit {Archívum szerkesztése} compress {Tömörítés} tag {Címkék módosítása} other {Folyamatban}}}}",
   "@queue.row.label": {
     "sourceHash": "b051663"
   },
@@ -159,7 +159,7 @@
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
   },
-  "queue.failureToast.title": "{type, select, copy {Nem sikerült befejezni a másolást} move {Nem sikerült befejezni az áthelyezést} delete {Nem sikerült befejezni a törlést} trash {Nem sikerült befejezni az áthelyezést a Kukába} rename {Nem sikerült befejezni az átnevezést} create_folder {Nem sikerült befejezni a mappa létrehozását} create_file {Nem sikerült befejezni a fájl létrehozását} archive_edit {Nem sikerült befejezni az archívum szerkesztését} other {Nem sikerült befejezni}}",
+  "queue.failureToast.title": "{platform, select, windows {{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to the Recycle Bin} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}} other {{type, select, copy {Nem sikerült befejezni a másolást} move {Nem sikerült befejezni az áthelyezést} delete {Nem sikerült befejezni a törlést} trash {Nem sikerült befejezni az áthelyezést a Kukába} rename {Nem sikerült befejezni az átnevezést} create_folder {Nem sikerült befejezni a mappa létrehozását} create_file {Nem sikerült befejezni a fájl létrehozását} archive_edit {Nem sikerült befejezni az archívum szerkesztését} other {Nem sikerült befejezni}}}}",
   "@queue.failureToast.title": {
     "sourceHash": "b5f2b47"
   },

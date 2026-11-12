@@ -15,7 +15,7 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{type, select, copy {Wird kopiert} move {Wird bewegt} delete {Wird gelöscht} trash {Wird in den Papierkorb bewegt} rename {Wird umbenannt} create_folder {Ordner wird erstellt} create_file {Datei wird erstellt} archive_edit {Archiv wird bearbeitet} compress {Wird komprimiert} tag {Tags werden geändert} other {In Arbeit}}",
+  "queue.row.label": "{platform, select, windows {{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to the Recycle Bin} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}} other {{type, select, copy {Wird kopiert} move {Wird bewegt} delete {Wird gelöscht} trash {Wird in den Papierkorb bewegt} rename {Wird umbenannt} create_folder {Ordner wird erstellt} create_file {Datei wird erstellt} archive_edit {Archiv wird bearbeitet} compress {Wird komprimiert} tag {Tags werden geändert} other {In Arbeit}}}}",
   "@queue.row.label": {
     "sourceHash": "b051663"
   },
@@ -160,7 +160,7 @@
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
   },
-  "queue.failureToast.title": "{type, select, copy {Kopieren nicht abgeschlossen} move {Bewegen nicht abgeschlossen} delete {Löschen nicht abgeschlossen} trash {In den Papierkorb bewegen nicht abgeschlossen} rename {Umbenennen nicht abgeschlossen} create_folder {Ordner erstellen nicht abgeschlossen} create_file {Datei erstellen nicht abgeschlossen} archive_edit {Archiv bearbeiten nicht abgeschlossen} other {Nicht abgeschlossen}}",
+  "queue.failureToast.title": "{platform, select, windows {{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to the Recycle Bin} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}} other {{type, select, copy {Kopieren nicht abgeschlossen} move {Bewegen nicht abgeschlossen} delete {Löschen nicht abgeschlossen} trash {In den Papierkorb bewegen nicht abgeschlossen} rename {Umbenennen nicht abgeschlossen} create_folder {Ordner erstellen nicht abgeschlossen} create_file {Datei erstellen nicht abgeschlossen} archive_edit {Archiv bearbeiten nicht abgeschlossen} other {Nicht abgeschlossen}}}}",
   "@queue.failureToast.title": {
     "sourceHash": "b5f2b47"
   },

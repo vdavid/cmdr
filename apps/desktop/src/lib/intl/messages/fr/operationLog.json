@@ -188,7 +188,7 @@
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "De {from} vers la corbeille",
+  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {De {from} vers la corbeille}}",
   "@operationLog.route.fromToTrash": {
     "sourceHash": "9eff97f"
   },
@@ -256,7 +256,7 @@
   "@operationLog.summary.delete": {
     "sourceHash": "97ec6b7"
   },
-  "operationLog.summary.trash": "{count, plural, one {{countText} élément placé dans la corbeille} many {{countText} éléments placés dans la corbeille} other {{countText} éléments placés dans la corbeille}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {{countText} élément placé dans la corbeille} many {{countText} éléments placés dans la corbeille} other {{countText} éléments placés dans la corbeille}}}}",
   "@operationLog.summary.trash": {
     "sourceHash": "34b4457"
   },
@@ -349,7 +349,7 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "Cmdr a quitté avant la fin de cette opération, il n’a donc peut-être pas enregistré tout ce qu’elle a fait. Un retour en arrière ne porte que sur ce que Cmdr a enregistré.",
+  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {Cmdr a quitté avant la fin de cette opération, il n’a donc peut-être pas enregistré tout ce qu’elle a fait. Un retour en arrière ne porte que sur ce que Cmdr a enregistré.}}",
   "@operationLog.rollback.interruptedNotice": {
     "sourceHash": "642e6fc"
   },

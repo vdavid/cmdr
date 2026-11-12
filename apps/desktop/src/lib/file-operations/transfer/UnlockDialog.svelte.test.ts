@@ -10,7 +10,8 @@
  * dialog-tracking IPC is stubbed so it mounts in happy-dom.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import UnlockDialog from './UnlockDialog.svelte'
 
@@ -185,19 +186,27 @@ describe('UnlockDialog, restic repo', () => {
     expect(document.activeElement).toBe(passwordInput(target))
   })
 
-  it('offers "Remember in Keychain", on by default, and submits it', async () => {
-    const onSubmit = vi.fn()
-    mount(UnlockDialog, { target, props: repoProps({ onSubmit }) })
-    await settle()
+  it.each([
+    ['macos', 'Remember in Keychain'],
+    ['windows', 'Remember password'],
+    ['linux', 'Remember in keyring'],
+  ] as const)(
+    'offers to remember the password on %s (“%s”), on by default, and submits it',
+    async (platform, label) => {
+      onTestFinished(withPlatform(platform))
+      const onSubmit = vi.fn()
+      mount(UnlockDialog, { target, props: repoProps({ onSubmit }) })
+      await settle()
 
-    const box = rememberBox(target)
-    expect(box?.checked).toBe(true)
-    expect(box?.closest('label')?.textContent).toContain('Remember in Keychain')
+      const box = rememberBox(target)
+      expect(box?.checked).toBe(true)
+      expect(box?.closest('label')?.textContent).toContain(label)
 
-    await type(target, 'hunter2')
-    findButton(target, 'Unlock').click()
-    expect(onSubmit).toHaveBeenCalledWith({ password: 'hunter2', remember: true })
-  })
+      await type(target, 'hunter2')
+      findButton(target, 'Unlock').click()
+      expect(onSubmit).toHaveBeenCalledWith({ password: 'hunter2', remember: true })
+    },
+  )
 
   it('submits remember: false once the box is unchecked', async () => {
     const onSubmit = vi.fn()

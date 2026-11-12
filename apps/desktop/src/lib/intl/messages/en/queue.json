@@ -19,7 +19,7 @@
     "description": "Supporting line under the empty-state title, explaining what will appear in the operation queue window and why. It names the most common actions first so the user knows what they’ll actually see, then “other file operations” covers the rest (renames, new folders, archive edits).",
     "screenshot": "queue-empty.png"
   },
-  "queue.row.label": "{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to trash} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}",
+  "queue.row.label": "{platform, select, windows {{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to the Recycle Bin} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}} other {{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to trash} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}}}",
   "@queue.row.label": {
     "description": "Names what an operation row is doing, shown next to a direction arrow and the source-to-destination summary. Reads as a present-continuous action. The rename, create_folder, and create_file arms are near-instant metadata ops that usually flash by too fast to read. The archive_edit arm covers changing a zip (adding, removing, or renaming entries inside it), while compress creates a fresh zip from selected files; \"archive\" means a zip file. The tag arm is putting macOS Finder color tags back on files, as an undo.",
     "placeholders": {
@@ -264,7 +264,7 @@
       "count": "how many rows are selected"
     }
   },
-  "queue.failureToast.title": "{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to trash} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}",
+  "queue.failureToast.title": "{platform, select, windows {{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to the Recycle Bin} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}} other {{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to trash} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}}}",
   "@queue.failureToast.title": {
     "description": "Headline of the notice that pops up in the main window when an operation running in the background stops before it’s done. The explanation underneath says why; this line only says what was interrupted. Avoid the words \"error\" and \"failed\": \"couldn’t finish\" is the house wording, and it matches the status word on the operation’s row in the queue window.",
     "placeholders": {

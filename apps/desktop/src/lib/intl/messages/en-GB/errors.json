@@ -31,9 +31,9 @@
   "@errors.listing.storageFull.suggestion": {
     "sourceHash": "c04afed"
   },
-  "errors.write.sourceNotFound.message.trash": "The file or folder you tried to move to the Bin no longer exists.",
+  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {The file or folder you tried to move to the Recycle Bin no longer exists.} other {The file or folder you tried to move to the Bin no longer exists.}}",
   "@errors.write.sourceNotFound.message.trash": {
-    "sourceHash": "dbc0bbe"
+    "sourceHash": "31f9dd7"
   },
   "errors.write.destinationNotFound.message.copy": "The folder you’re copying into isn’t there any more, so there was nowhere to put your files. The originals are untouched.",
   "@errors.write.destinationNotFound.message.copy": {
@@ -63,9 +63,9 @@
   "@errors.write.cancelled.title.delete": {
     "sourceHash": "546aac1"
   },
-  "errors.write.cancelled.title.trash": "Move to Bin cancelled",
+  "errors.write.cancelled.title.trash": "{platform, select, windows {Move to the Recycle Bin cancelled} other {Move to Bin cancelled}}",
   "@errors.write.cancelled.title.trash": {
-    "sourceHash": "52a8954"
+    "sourceHash": "97c84cd"
   },
   "errors.write.cancelled.message.copy": "The copy operation was cancelled.",
   "@errors.write.cancelled.message.copy": {
@@ -79,73 +79,73 @@
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
   },
-  "errors.write.cancelled.message.trash": "The move to the Bin was cancelled.",
+  "errors.write.cancelled.message.trash": "{platform, select, windows {The move to the Recycle Bin was cancelled.} other {The move to the Bin was cancelled.}}",
   "@errors.write.cancelled.message.trash": {
-    "sourceHash": "9585f1b"
+    "sourceHash": "7e76a39"
   },
-  "errors.write.deviceDisconnected.message.trash": "The device was disconnected during the move to the Bin.",
+  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {The device was disconnected during the move to the Recycle Bin.} other {The device was disconnected during the move to the Bin.}}",
   "@errors.write.deviceDisconnected.message.trash": {
-    "sourceHash": "9d5a47a"
+    "sourceHash": "bdadd25"
   },
-  "errors.write.trashNotSupported.title": "Bin not supported",
+  "errors.write.trashNotSupported.title": "{platform, select, windows {Recycle Bin not supported} other {Bin not supported}}",
   "@errors.write.trashNotSupported.title": {
-    "sourceHash": "af90a02"
+    "sourceHash": "fc24baf"
   },
-  "errors.write.trashNotSupported.message": "This volume doesn’t have a Bin.",
+  "errors.write.trashNotSupported.message": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {This volume doesn’t have a Bin.}}",
   "@errors.write.trashNotSupported.message": {
-    "sourceHash": "911688a"
+    "sourceHash": "63875e3"
   },
-  "errors.write.readError.title.trash": "Couldn’t move to the Bin",
+  "errors.write.readError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Couldn’t move to the Bin}}",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
-  "errors.write.writeError.title.trash": "Couldn’t move to the Bin",
+  "errors.write.writeError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Couldn’t move to the Bin}}",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
-  "errors.write.ioError.title.trash": "Couldn’t move to the Bin",
+  "errors.write.ioError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Couldn’t move to the Bin}}",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
-  "errors.write.ioError.message.trash": "Couldn’t move the file to the Bin.",
+  "errors.write.ioError.message.trash": "{platform, select, windows {Couldn’t move the file to the Recycle Bin.} other {Couldn’t move the file to the Bin.}}",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "948e289"
+    "sourceHash": "490dd97"
   },
-  "errors.write.trashRefused.title": "Couldn’t move to the Bin",
+  "errors.write.trashRefused.title": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Couldn’t move to the Bin}}",
   "@errors.write.trashRefused.title": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "The Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
+  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {The Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.}}",
   "@errors.write.trashRefused.message.trashNotWritable": {
-    "sourceHash": "024ef04"
+    "sourceHash": "c3d5e1e"
   },
-  "errors.write.trashRefused.message.noTrashForVolume": "macOS couldn’t find a Bin for {count} of the items you picked.",
+  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS couldn’t find a Bin for {count} of the items you picked.} windows {Windows couldn’t find a Recycle Bin for {count} of the items you picked.} other {Cmdr couldn’t find a Bin for {count} of the items you picked.}}",
   "@errors.write.trashRefused.message.noTrashForVolume": {
-    "sourceHash": "702ae17"
+    "sourceHash": "07e7834"
   },
-  "errors.write.trashRefused.message.other": "macOS wouldn’t move {count} of the items you picked to the Bin.",
+  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS wouldn’t move {count} of the items you picked to the Bin.} windows {Windows wouldn’t move {count} of the items you picked to the Recycle Bin.} other {Cmdr couldn’t move {count} of the items you picked to the Bin.}}",
   "@errors.write.trashRefused.message.other": {
-    "sourceHash": "6f71e12"
+    "sourceHash": "cdd735e"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the Bin folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "{platform, select, macos {This can happen when the Bin folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items permanently with Shift+F8.} other {This can happen when the Bin folder’s permissions change, for example after moving to a new computer. You can still delete the items permanently with Shift+F8.}}",
   "@errors.write.trashRefused.suggestion.trashNotWritable": {
-    "sourceHash": "abaf265"
+    "sourceHash": "a0b7e4d"
   },
-  "errors.write.trashRefused.suggestion.noTrashForVolume": "Some places have no Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.",
+  "errors.write.trashRefused.suggestion.noTrashForVolume": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.} other {Some places have no Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.}}",
   "@errors.write.trashRefused.suggestion.noTrashForVolume": {
-    "sourceHash": "b6d08fa"
+    "sourceHash": "3dcecc0"
   },
-  "errors.write.permissionDenied.message.trash": "You don’t have permission to move files to the Bin here.",
+  "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {You don’t have permission to move files to the Bin here.}}",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "cca028a"
+    "sourceHash": "7d53afa"
   },
-  "errors.write.fallback.title.trash": "Couldn’t move to the Bin",
+  "errors.write.fallback.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Couldn’t move to the Bin}}",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
-  "errors.write.fallback.message.trash": "Something went wrong while moving to the Bin.",
+  "errors.write.fallback.message.trash": "{platform, select, windows {Something went wrong while moving to the Recycle Bin.} other {Something went wrong while moving to the Bin.}}",
   "@errors.write.fallback.message.trash": {
-    "sourceHash": "63f8393"
+    "sourceHash": "ba7128f"
   },
   "errors.mutation.notFound": "There’s nothing at “{path}” any more.",
   "@errors.mutation.notFound": {

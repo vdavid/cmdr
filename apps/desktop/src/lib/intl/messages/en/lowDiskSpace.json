@@ -1,5 +1,5 @@
 {
-  "lowDiskSpace.toast.message": "Your startup disk is running low on space: {freeText} free ({percentText}%).",
+  "lowDiskSpace.toast.message": "{platform, select, macos {Your startup disk is running low on space: {freeText} free ({percentText}%).} windows {Your system drive is running low on space: {freeText} free ({percentText}%).} other {Your system disk is running low on space: {freeText} free ({percentText}%).}}",
   "@lowDiskSpace.toast.message": {
     "description": "Body of the persistent in-app warning toast when the startup (boot) disk is low on free space, e.g. 'Your startup disk is running low on space: 4.2 GB free (3.1%).'. 'startup disk' is the macOS term for the boot volume.",
     "placeholders": {
@@ -23,7 +23,7 @@
     "description": "Title of the macOS system notification warning that the startup disk is low on space. A short headline."
   },
 
-  "lowDiskSpace.notification.body": "{freeText} free ({percentText}%) on your startup disk.",
+  "lowDiskSpace.notification.body": "{platform, select, macos {{freeText} free ({percentText}%) on your startup disk.} windows {{freeText} free ({percentText}%) on your system drive.} other {{freeText} free ({percentText}%) on your system disk.}}",
   "@lowDiskSpace.notification.body": {
     "description": "Body of the macOS system notification warning of low disk space, e.g. '4.2 GB free (3.1%) on your startup disk.'. 'startup disk' is the macOS term for the boot volume.",
     "placeholders": {

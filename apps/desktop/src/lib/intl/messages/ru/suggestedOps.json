@@ -63,11 +63,11 @@
   "@suggestedOps.action.copy": {
     "sourceHash": "e21f935"
   },
-  "suggestedOps.action.trash": "Переместить в Корзину",
+  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Переместить в Корзину}}",
   "@suggestedOps.action.trash": {
     "sourceHash": "9adcdf3"
   },
-  "suggestedOps.action.delete": "Удалить",
+  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {Удалить}}",
   "@suggestedOps.action.delete": {
     "sourceHash": "e2d0a54"
   },
@@ -96,11 +96,11 @@
   "@suggestedOps.approve.copy": {
     "sourceHash": "e10c490"
   },
-  "suggestedOps.approve.trash": "Переместить {countText} {count, plural, one {файл} few {файла} many {файлов} other {файла}} в Корзину",
+  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {Переместить {countText} {count, plural, one {файл} few {файла} many {файлов} other {файла}} в Корзину}}",
   "@suggestedOps.approve.trash": {
     "sourceHash": "3c82946"
   },
-  "suggestedOps.approve.delete": "Удалить {countText} {count, plural, one {файл} few {файла} many {файлов} other {файла}}",
+  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {Удалить {countText} {count, plural, one {файл} few {файла} many {файлов} other {файла}}}}",
   "@suggestedOps.approve.delete": {
     "sourceHash": "218cf04"
   },
@@ -144,7 +144,7 @@
   "@suggestedOps.facts.archive": {
     "sourceHash": "66f4804"
   },
-  "suggestedOps.facts.trash": "Корзина",
+  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Корзина}}",
   "@suggestedOps.facts.trash": {
     "sourceHash": "4e42c6e"
   },
@@ -152,7 +152,7 @@
   "@suggestedOps.facts.severalFolders": {
     "sourceHash": "7c32950"
   },
-  "suggestedOps.reversible.trash": "Это можно отменить: {count, plural, =1 {файл попадет} one {файлы попадут} few {файлы попадут} many {файлы попадут} other {файлы попадут}} в Корзину",
+  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Это можно отменить: {count, plural, =1 {файл попадет} one {файлы попадут} few {файлы попадут} many {файлы попадут} other {файлы попадут}} в Корзину}}",
   "@suggestedOps.reversible.trash": {
     "sourceHash": "55bf957"
   },
@@ -180,11 +180,11 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.noTrash": "На этом диске нет Корзины",
+  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {На этом диске нет Корзины}}",
   "@suggestedOps.noTrash": {
     "sourceHash": "38a6adc"
   },
-  "suggestedOps.noTrashTooltip": "На диске с этими файлами нет Корзины, поэтому после одобрения они будут удалены безвозвратно.",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {На диске с этими файлами нет Корзины, поэтому после одобрения они будут удалены безвозвратно.}}",
   "@suggestedOps.noTrashTooltip": {
     "sourceHash": "4327cb2"
   },
@@ -436,7 +436,7 @@
   "@suggestedOps.server.sharesAffected": {
     "sourceHash": "390f931"
   },
-  "suggestedOps.indicatorTooltip": "Предложения ИИ ожидают ответа. Нажмите, чтобы посмотреть.",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {Предложения ИИ ожидают ответа. Нажмите, чтобы посмотреть.}}",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
   },

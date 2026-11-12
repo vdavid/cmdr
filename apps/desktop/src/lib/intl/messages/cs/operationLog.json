@@ -188,7 +188,7 @@
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "Ze složky {from} do koše",
+  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {Ze složky {from} do koše}}",
   "@operationLog.route.fromToTrash": {
     "sourceHash": "9eff97f"
   },
@@ -256,7 +256,7 @@
   "@operationLog.summary.delete": {
     "sourceHash": "97ec6b7"
   },
-  "operationLog.summary.trash": "{count, plural, one {Do koše přesunuta {countText} položka} few {Do koše přesunuty {countText} položky} many {Do koše přesunuto {countText} položky} other {Do koše přesunuto {countText} položek}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {Do koše přesunuta {countText} položka} few {Do koše přesunuty {countText} položky} many {Do koše přesunuto {countText} položky} other {Do koše přesunuto {countText} položek}}}}",
   "@operationLog.summary.trash": {
     "sourceHash": "34b4457"
   },
@@ -349,7 +349,7 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "Cmdr se ukončil dřív, než tato operace doběhla, takže možná nezaznamenal všechno, co udělala. Vrácení změn zasáhne jen to, co Cmdr zaznamenal.",
+  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {Cmdr se ukončil dřív, než tato operace doběhla, takže možná nezaznamenal všechno, co udělala. Vrácení změn zasáhne jen to, co Cmdr zaznamenal.}}",
   "@operationLog.rollback.interruptedNotice": {
     "sourceHash": "642e6fc"
   },

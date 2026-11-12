@@ -1,26 +1,26 @@
 {
-  "suggestedOps.approve.trash": "Move {countText} {count, plural, one {file} other {files}} to Bin",
+  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {Move {countText} {count, plural, one {file} other {files}} to Bin}}",
   "@suggestedOps.approve.trash": {
-    "sourceHash": "3c82946"
+    "sourceHash": "fa0db8d"
   },
-  "suggestedOps.facts.trash": "The Bin",
+  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {The Bin}}",
   "@suggestedOps.facts.trash": {
-    "sourceHash": "4e42c6e"
+    "sourceHash": "7b1fc0a"
   },
-  "suggestedOps.reversible.trash": "You can undo this: {count, plural, one {it goes} other {they go}} to the Bin",
+  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {You can undo this: {count, plural, one {it goes} other {they go}} to the Bin}}",
   "@suggestedOps.reversible.trash": {
-    "sourceHash": "55bf957"
+    "sourceHash": "e42e327"
   },
-  "suggestedOps.action.trash": "Move to Bin",
+  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Move to Bin}}",
   "@suggestedOps.action.trash": {
-    "sourceHash": "9adcdf3"
+    "sourceHash": "d4f0678"
   },
-  "suggestedOps.noTrash": "This drive has no Bin",
+  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {This drive has no Bin}}",
   "@suggestedOps.noTrash": {
-    "sourceHash": "38a6adc"
+    "sourceHash": "31f0f36"
   },
-  "suggestedOps.noTrashTooltip": "The drive these files are on keeps no Bin, so approving this deletes them for good.",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {The drive these files are on keeps no Bin, so approving this deletes them for good.}}",
   "@suggestedOps.noTrashTooltip": {
-    "sourceHash": "4327cb2"
+    "sourceHash": "e13c954"
   }
 }

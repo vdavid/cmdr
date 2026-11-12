@@ -245,7 +245,7 @@
       "to": {}
     }
   },
-  "operationLog.route.fromToTrash": "From {from} to the Trash",
+  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {From {from} to the Trash}}",
   "@operationLog.route.fromToTrash": {
     "description": "Line under the Operation log’s detail header for a move to the trash: where the items were. from is a folder path, never translated. Use the name macOS gives the Trash in your language.",
     "placeholders": {
@@ -349,7 +349,7 @@
     },
     "screenshot": "operation-log-more-pages.png"
   },
-  "operationLog.summary.trash": "{count, plural, one {Moved {countText} item to the trash} other {Moved {countText} items to the trash}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {Moved {countText} item to the trash} other {Moved {countText} items to the trash}}}}",
   "@operationLog.summary.trash": {
     "description": "One-line summary of a trash operation (moving items to the system trash/recycle bin). count is the number of items; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch.",
     "placeholders": {
@@ -496,7 +496,7 @@
     "description": "Shown under the Operation log’s detail header for an operation that is partly rolled back, when Cmdr can’t count its items yet. Two jobs: tell the person what happened to their files (some came back, the rest are where the operation left them), and say what the \"Roll back the rest\" button does. Deliberately doesn’t promise a complete reversal: the leftovers may be files Cmdr can’t match against what it recorded, and those get skipped again. \"Takes another pass\" means it goes over the operation once more. Reassuring and matter-of-fact; avoid the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019).",
     "screenshot": "operation-log-more-pages.png"
   },
-  "operationLog.rollback.interruptedNotice": "Cmdr quit before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.",
+  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {Cmdr quit before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.}}",
   "@operationLog.rollback.interruptedNotice": {
     "description": "Shown under the Operation log’s detail header for an operation that Cmdr (or the Mac) stopped mid-way, for example in a crash, so it never finished. Two facts: Cmdr’s record of it may be incomplete, and a rollback can only undo what was recorded. Calm and factual; it isn’t the person’s fault. Avoid the words error, failed, and crash."
   },

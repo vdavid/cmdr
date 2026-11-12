@@ -1177,7 +1177,7 @@
   "@errors.write.sourceNotFound.message.delete": {
     "sourceHash": "cb0ab8f"
   },
-  "errors.write.sourceNotFound.message.trash": "Filen eller mappen du försökte flytta till papperskorgen finns inte längre.",
+  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {The file or folder you tried to move to the Recycle Bin no longer exists.} other {Filen eller mappen du försökte flytta till papperskorgen finns inte längre.}}",
   "@errors.write.sourceNotFound.message.trash": {
     "sourceHash": "dbc0bbe"
   },
@@ -1301,7 +1301,7 @@
   "@errors.write.cancelled.title.delete": {
     "sourceHash": "546aac1"
   },
-  "errors.write.cancelled.title.trash": "Flytt till papperskorgen avbruten",
+  "errors.write.cancelled.title.trash": "{platform, select, windows {Move to the Recycle Bin canceled} other {Flytt till papperskorgen avbruten}}",
   "@errors.write.cancelled.title.trash": {
     "sourceHash": "52a8954"
   },
@@ -1317,7 +1317,7 @@
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
   },
-  "errors.write.cancelled.message.trash": "Flytten till papperskorgen avbröts.",
+  "errors.write.cancelled.message.trash": "{platform, select, windows {The move to the Recycle Bin was canceled.} other {Flytten till papperskorgen avbröts.}}",
   "@errors.write.cancelled.message.trash": {
     "sourceHash": "9585f1b"
   },
@@ -1341,7 +1341,7 @@
   "@errors.write.deviceDisconnected.message.delete": {
     "sourceHash": "195562e"
   },
-  "errors.write.deviceDisconnected.message.trash": "Enheten kopplades från under flytten till papperskorgen.",
+  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {The device was disconnected during the move to the Recycle Bin.} other {Enheten kopplades från under flytten till papperskorgen.}}",
   "@errors.write.deviceDisconnected.message.trash": {
     "sourceHash": "9d5a47a"
   },
@@ -1381,11 +1381,11 @@
   "@errors.write.moveNotConfirmed.suggestion": {
     "sourceHash": "4d7fedc"
   },
-  "errors.write.trashNotSupported.title": "Papperskorgen stöds inte",
+  "errors.write.trashNotSupported.title": "{platform, select, windows {Recycle Bin not supported} other {Papperskorgen stöds inte}}",
   "@errors.write.trashNotSupported.title": {
     "sourceHash": "af90a02"
   },
-  "errors.write.trashNotSupported.message": "Den här volymen saknar papperskorg.",
+  "errors.write.trashNotSupported.message": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Den här volymen saknar papperskorg.}}",
   "@errors.write.trashNotSupported.message": {
     "sourceHash": "911688a"
   },
@@ -1505,7 +1505,7 @@
   "@errors.write.readError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.readError.title.trash": "Det gick inte att flytta till papperskorgen",
+  "errors.write.readError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Det gick inte att flytta till papperskorgen}}",
   "@errors.write.readError.title.trash": {
     "sourceHash": "44e3a2e"
   },
@@ -1529,7 +1529,7 @@
   "@errors.write.writeError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.writeError.title.trash": "Det gick inte att flytta till papperskorgen",
+  "errors.write.writeError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Det gick inte att flytta till papperskorgen}}",
   "@errors.write.writeError.title.trash": {
     "sourceHash": "44e3a2e"
   },
@@ -1637,11 +1637,11 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "77cff09"
   },
-  "errors.write.trashRefused.title": "Det gick inte att flytta till papperskorgen",
+  "errors.write.trashRefused.title": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Det gick inte att flytta till papperskorgen}}",
   "@errors.write.trashRefused.title": {
     "sourceHash": "44e3a2e"
   },
-  "errors.write.trashRefused.message.notPermitted": "macOS lät inte Cmdr röra {count} av objekten du valde.",
+  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS lät inte Cmdr röra {count} av objekten du valde.} windows {Windows wouldn’t let Cmdr touch {count} of the items you picked.} other {Cmdr wasn’t allowed to touch {count} of the items you picked.}}",
   "@errors.write.trashRefused.message.notPermitted": {
     "sourceHash": "57a38d7"
   },
@@ -1653,23 +1653,23 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "Ett annat konto på den här Macen äger {count} av objekten du valde, och deras mapp låter bara ett objekts ägare flytta det.",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "{platform, select, macos {Ett annat konto på den här Macen äger {count} av objekten du valde, och deras mapp låter bara ett objekts ägare flytta det.} windows {Another account on this PC owns {count} of the items you picked, and their folder lets only an item’s owner move it.} other {Another account on this computer owns {count} of the items you picked, and their folder lets only an item’s owner move it.}}",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "50f2ce6"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "Papperskorgen på den här enheten låter inte Cmdr lägga något i den, så {count} av objekten du valde stannade där de var.",
+  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {Papperskorgen på den här enheten låter inte Cmdr lägga något i den, så {count} av objekten du valde stannade där de var.}}",
   "@errors.write.trashRefused.message.trashNotWritable": {
     "sourceHash": "024ef04"
   },
-  "errors.write.trashRefused.message.noTrashForVolume": "macOS hittade ingen papperskorg för {count} av objekten du valde.",
+  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS hittade ingen papperskorg för {count} av objekten du valde.} windows {Windows couldn’t find a Recycle Bin for {count} of the items you picked.} other {Cmdr couldn’t find a trash for {count} of the items you picked.}}",
   "@errors.write.trashRefused.message.noTrashForVolume": {
     "sourceHash": "702ae17"
   },
-  "errors.write.trashRefused.message.other": "macOS flyttade inte {count} av objekten du valde till papperskorgen.",
+  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS flyttade inte {count} av objekten du valde till papperskorgen.} windows {Windows wouldn’t move {count} of the items you picked to the Recycle Bin.} other {Cmdr couldn’t move {count} of the items you picked to the trash.}}",
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "6f71e12"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "Objekten kan ligga på ett ställe som macOS håller för sig själv. Finder kan ibland ändå flytta dem, eftersom Finder kan be om ditt lösenord.",
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Objekten kan ligga på ett ställe som macOS håller för sig själv. Finder kan ibland ändå flytta dem, eftersom Finder kan be om ditt lösenord.} windows {The items may sit somewhere Windows keeps to itself. File Explorer can sometimes still move them, since it can ask for administrator permission.} other {The items may sit somewhere only an administrator can change. Check the folder’s permissions, or ask whoever manages this computer.}}",
   "@errors.write.trashRefused.suggestion.notPermitted": {
     "sourceHash": "2ef3e96"
   },
@@ -1677,23 +1677,23 @@
   "@errors.write.trashRefused.suggestion.locked": {
     "sourceHash": "ece70f5"
   },
-  "errors.write.trashRefused.suggestion.folderNotWritable": "För att flytta dem behöver du behörighet att ändra deras mapp. Finder visar vem som får det i mappens Visa info, under Delning och behörigheter.",
+  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {För att flytta dem behöver du behörighet att ändra deras mapp. Finder visar vem som får det i mappens Visa info, under Delning och behörigheter.} windows {To move them, you need permission to change their folder. File Explorer shows who can in the folder’s Properties, under Security.} other {To move them, you need permission to change their folder. Your file manager shows who can in the folder’s properties, under Permissions.}}",
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder kan ändå flytta dem efter att ha bett om ett administratörslösenord.",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder kan ändå flytta dem efter att ha bett om ett administratörslösenord.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "Det här kan hända när behörigheterna för papperskorgsmappen ändras, till exempel efter ett byte till en ny Mac. Du kan ändå radera objekten permanent med Shift+F8.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "{platform, select, macos {Det här kan hända när behörigheterna för papperskorgsmappen ändras, till exempel efter ett byte till en ny Mac. Du kan ändå radera objekten permanent med Shift+F8.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items permanently with Shift+F8.} other {This can happen when the trash folder’s permissions change, for example after moving to a new computer. You can still delete the items permanently with Shift+F8.}}",
   "@errors.write.trashRefused.suggestion.trashNotWritable": {
     "sourceHash": "abaf265"
   },
-  "errors.write.trashRefused.suggestion.noTrashForVolume": "Vissa ställen har ingen egen papperskorg, till exempel molnmappar och de flesta nätverksenheter. Du kan ändå radera objekten permanent med Shift+F8.",
+  "errors.write.trashRefused.suggestion.noTrashForVolume": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.} other {Vissa ställen har ingen egen papperskorg, till exempel molnmappar och de flesta nätverksenheter. Du kan ändå radera objekten permanent med Shift+F8.}}",
   "@errors.write.trashRefused.suggestion.noTrashForVolume": {
     "sourceHash": "b6d08fa"
   },
-  "errors.write.trashRefused.suggestion.other": "Kolla de tekniska detaljerna nedan för vad macOS rapporterade.",
+  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Kolla de tekniska detaljerna nedan för vad macOS rapporterade.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
     "sourceHash": "b61b3c1"
   },
@@ -1713,7 +1713,7 @@
   "@errors.write.ioError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.ioError.title.trash": "Det gick inte att flytta till papperskorgen",
+  "errors.write.ioError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Det gick inte att flytta till papperskorgen}}",
   "@errors.write.ioError.title.trash": {
     "sourceHash": "44e3a2e"
   },
@@ -1729,7 +1729,7 @@
   "@errors.write.ioError.message.delete": {
     "sourceHash": "9e79007"
   },
-  "errors.write.ioError.message.trash": "Det gick inte att flytta filen till papperskorgen.",
+  "errors.write.ioError.message.trash": "{platform, select, windows {Couldn’t move the file to the Recycle Bin.} other {Det gick inte att flytta filen till papperskorgen.}}",
   "@errors.write.ioError.message.trash": {
     "sourceHash": "948e289"
   },
@@ -1753,7 +1753,7 @@
   "@errors.write.permissionDenied.message.delete": {
     "sourceHash": "0c03fc4"
   },
-  "errors.write.permissionDenied.message.trash": "Du har inte behörighet att flytta filer till papperskorgen här.",
+  "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {Du har inte behörighet att flytta filer till papperskorgen här.}}",
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
@@ -1765,7 +1765,7 @@
   "@errors.write.permissionDenied.suggestion.default": {
     "sourceHash": "ec02093"
   },
-  "errors.write.permissionDenied.message.named": "Din macOS-användare kan inte ändra {folder}.",
+  "errors.write.permissionDenied.message.named": "{platform, select, macos {Din macOS-användare kan inte ändra {folder}.} windows {Your Windows account can’t change {folder}.} other {Your user account can’t change {folder}.}}",
   "@errors.write.permissionDenied.message.named": {
     "sourceHash": "0ffd79b"
   },
@@ -1961,15 +1961,15 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
-  "errors.write.homeFolder.title": "Snälla, radera inte din hemmapp",
+  "errors.write.homeFolder.title": "{platform, select, windows {Please don’t delete your user folder} other {Snälla, radera inte din hemmapp}}",
   "@errors.write.homeFolder.title": {
     "sourceHash": "6005e89"
   },
-  "errors.write.homeFolder.message.isHome": "Hallå, du kan inte radera din egen hemmapp.",
+  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hey, you can’t delete your own user folder.} other {Hallå, du kan inte radera din egen hemmapp.}}",
   "@errors.write.homeFolder.message.isHome": {
     "sourceHash": "16ee6cd"
   },
-  "errors.write.homeFolder.message.holdsHome": "Du kan inte radera <code>{path}</code> eftersom din hemmapp ligger där, och din hemmapp kan du inte radera.",
+  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {You can’t delete <code>{path}</code> because it contains your user folder, and you can’t delete your user folder.} other {Du kan inte radera <code>{path}</code> eftersom din hemmapp ligger där, och din hemmapp kan du inte radera.}}",
   "@errors.write.homeFolder.message.holdsHome": {
     "sourceHash": "4ad5896"
   },
@@ -1981,19 +1981,19 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
-  "errors.write.homeFolderMove.title": "Snälla, flytta inte din hemmapp",
+  "errors.write.homeFolderMove.title": "{platform, select, windows {Please don’t move your user folder} other {Snälla, flytta inte din hemmapp}}",
   "@errors.write.homeFolderMove.title": {
     "sourceHash": "f5db2db"
   },
-  "errors.write.homeFolderMove.message.isHome": "Hallå, din hemmapp bor precis där den är. Flyttar du den letar din Mac efter dig på fel ställe nästa gång du loggar in.",
+  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Hallå, din hemmapp bor precis där den är. Flyttar du den letar din Mac efter dig på fel ställe nästa gång du loggar in.} windows {Hey, your user folder lives right where it is. Move it, and Windows will look for you in the wrong place next time you sign in.} other {Hey, your home folder lives right where it is. Move it, and your computer will look for you in the wrong place next time you log in.}}",
   "@errors.write.homeFolderMove.message.isHome": {
     "sourceHash": "17b0b0b"
   },
-  "errors.write.homeFolderMove.message.holdsHome": "Du kan inte flytta <code>{path}</code> eftersom din hemmapp ligger där, och din Mac räknar med att hitta den precis där den är.",
+  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {Du kan inte flytta <code>{path}</code> eftersom din hemmapp ligger där, och din Mac räknar med att hitta den precis där den är.} windows {You can’t move <code>{path}</code> because your user folder is in there, and Windows expects to find it right where it is.} other {You can’t move <code>{path}</code> because your home folder is in there, and your computer expects to find it right where it is.}}",
   "@errors.write.homeFolderMove.message.holdsHome": {
     "sourceHash": "c43a8e6"
   },
-  "errors.write.homeFolderMove.suggestion.isHome": "Om du vill ha dina filer någon annanstans, gå in där, välj det du behöver och flytta det. Din Mac kommer att tacka dig.",
+  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {Om du vill ha dina filer någon annanstans, gå in där, välj det du behöver och flytta det. Din Mac kommer att tacka dig.} windows {If you want your files somewhere else, go in there, pick what you need, and move that. Your PC will thank you.} other {If you want your files somewhere else, go in there, pick what you need, and move that. Your computer will thank you.}}",
   "@errors.write.homeFolderMove.suggestion.isHome": {
     "sourceHash": "580bee6"
   },
@@ -2001,19 +2001,19 @@
   "@errors.write.homeFolderMove.suggestion.holdsHome": {
     "sourceHash": "a766ab5"
   },
-  "errors.write.homeFolderRename.title": "Snälla, byt inte namn på din hemmapp",
+  "errors.write.homeFolderRename.title": "{platform, select, windows {Please don’t rename your user folder} other {Snälla, byt inte namn på din hemmapp}}",
   "@errors.write.homeFolderRename.title": {
     "sourceHash": "ec47bfe"
   },
-  "errors.write.homeFolderRename.message.isHome": "Hallå, din Mac känner igen din hemmapp på det här namnet. Byter du namn på den hittar din Mac dig inte nästa gång du loggar in.",
+  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Hallå, din Mac känner igen din hemmapp på det här namnet. Byter du namn på den hittar din Mac dig inte nästa gång du loggar in.} windows {Hey, Windows knows your user folder by this name. Rename it, and it won’t find you next time you sign in.} other {Hey, your computer knows your home folder by this name. Rename it, and it won’t find you next time you log in.}}",
   "@errors.write.homeFolderRename.message.isHome": {
     "sourceHash": "fd78f2f"
   },
-  "errors.write.homeFolderRename.message.holdsHome": "Du kan inte byta namn på <code>{path}</code> eftersom din hemmapp ligger där, och din Mac räknar med att hitta den på exakt den här sökvägen.",
+  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Du kan inte byta namn på <code>{path}</code> eftersom din hemmapp ligger där, och din Mac räknar med att hitta den på exakt den här sökvägen.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
   },
-  "errors.write.homeFolderRename.suggestion.isHome": "Om du verkligen behöver ett nytt namn har macOS ett försiktigt sätt att göra det i ”Användare och grupper”. Det är dock ingen snabb F2.",
+  "errors.write.homeFolderRename.suggestion.isHome": "{platform, select, macos {Om du verkligen behöver ett nytt namn har macOS ett försiktigt sätt att göra det i ”Användare och grupper”. Det är dock ingen snabb F2.} windows {Windows has no safe built-in way to rename it, so it’s best left as it is.} other {If you really need a new name, an administrator can do it carefully with usermod, signed in as another user. It’s not a quick F2, though.}}",
   "@errors.write.homeFolderRename.suggestion.isHome": {
     "sourceHash": "b1e0d3b"
   },
@@ -2041,7 +2041,7 @@
   "@errors.write.landingNotRecorded.message": {
     "sourceHash": "6ca4881"
   },
-  "errors.write.landingNotRecorded.suggestion": "Försök igen. Om det fortsätter, kontrollera att det finns ledigt utrymme på din Macs disk och starta sedan om Cmdr.",
+  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Försök igen. Om det fortsätter, kontrollera att det finns ledigt utrymme på din Macs disk och starta sedan om Cmdr.} windows {Try again. If it keeps happening, check that your PC has free space, then restart Cmdr.} other {Try again. If it keeps happening, check that your computer’s disk has free space, then restart Cmdr.}}",
   "@errors.write.landingNotRecorded.suggestion": {
     "sourceHash": "e99aa6e"
   },
@@ -2117,7 +2117,7 @@
   "@errors.write.fallback.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.fallback.title.trash": "Det gick inte att flytta till papperskorgen",
+  "errors.write.fallback.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Det gick inte att flytta till papperskorgen}}",
   "@errors.write.fallback.title.trash": {
     "sourceHash": "44e3a2e"
   },
@@ -2133,7 +2133,7 @@
   "@errors.write.fallback.message.delete": {
     "sourceHash": "9a08b89"
   },
-  "errors.write.fallback.message.trash": "Något oväntat gick fel under flytten till papperskorgen.",
+  "errors.write.fallback.message.trash": "{platform, select, windows {Something went wrong while moving to the Recycle Bin.} other {Något oväntat gick fel under flytten till papperskorgen.}}",
   "@errors.write.fallback.message.trash": {
     "sourceHash": "63f8393"
   },

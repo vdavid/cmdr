@@ -3,27 +3,27 @@
   "@fileOperations.button.ok": {
     "sourceHash": "640d676"
   },
-  "fileOperations.delete.noTrashWarningStrong": "Este volumen no admite el basurero.",
+  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Este volumen no admite el basurero.}}",
   "@fileOperations.delete.noTrashWarningStrong": {
     "sourceHash": "227ac08"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Parte de tu selección está solo en línea. Moverlos al basurero los <strong>descargaría primero</strong>. Por eso aquí Cmdr solo ofrece <strong>eliminar</strong> la selección entera. No quedará ninguna copia en el basurero, pero los servicios en la nube suelen conservar los archivos eliminados durante unos 30 días. Haz clic en “Eliminar” si te parece bien eliminarlos; si no, cancela este diálogo y haz que todos los archivos estén disponibles sin conexión, o deselecciona todos los archivos que están solo en línea.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.} other {Parte de tu selección está solo en línea. Moverlos al basurero los <strong>descargaría primero</strong>. Por eso aquí Cmdr solo ofrece <strong>eliminar</strong> la selección entera. No quedará ninguna copia en el basurero, pero los servicios en la nube suelen conservar los archivos eliminados durante unos 30 días. Haz clic en “Eliminar” si te parece bien eliminarlos; si no, cancela este diálogo y haz que todos los archivos estén disponibles sin conexión, o deselecciona todos los archivos que están solo en línea.}}",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "410ca99"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Todo lo que seleccionaste está solo en línea. Moverlo al basurero lo <strong>descargaría primero</strong>. Por eso aquí Cmdr solo ofrece <strong>eliminar</strong> la selección entera. No quedará ninguna copia en el basurero, pero los servicios en la nube suelen conservar los archivos eliminados durante unos 30 días. Haz clic en “Eliminar” si te parece bien eliminarlos; si no, cancela este diálogo y haz que estos archivos estén disponibles sin conexión.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and make these files available offline first.} other {Todo lo que seleccionaste está solo en línea. Moverlo al basurero lo <strong>descargaría primero</strong>. Por eso aquí Cmdr solo ofrece <strong>eliminar</strong> la selección entera. No quedará ninguna copia en el basurero, pero los servicios en la nube suelen conservar los archivos eliminados durante unos 30 días. Haz clic en “Eliminar” si te parece bien eliminarlos; si no, cancela este diálogo y haz que estos archivos estén disponibles sin conexión.}}",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "937e2a3"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Tu selección resultó tener contenido solo en línea, así que el botón de abajo ahora ofrece “Eliminar”. Lee la nota de arriba y vuelve a hacer clic en él si te parece bien.",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Your selection turned out to hold online-only content, so the button below now offers Delete permanently. Read the note above, then press it again if that’s OK.} other {Tu selección resultó tener contenido solo en línea, así que el botón de abajo ahora ofrece “Eliminar”. Lee la nota de arriba y vuelve a hacer clic en él si te parece bien.}}",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
     "sourceHash": "0584f3e"
   },
-  "fileOperations.delete.archiveWarningStrong": "Dentro de un archivo comprimido no hay basurero.",
+  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {There’s no Recycle Bin inside an archive.} other {Dentro de un archivo comprimido no hay basurero.}}",
   "@fileOperations.delete.archiveWarningStrong": {
     "sourceHash": "05dafcb"
   },
-  "fileOperations.trash.goToTrashAction": "Ir al basurero",
+  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Go to Recycle Bin} other {Ir al basurero}}",
   "@fileOperations.trash.goToTrashAction": {
     "sourceHash": "9c15ead"
   },
@@ -35,27 +35,27 @@
   "@fileOperations.trash.undone": {
     "sourceHash": "3edec7c"
   },
-  "fileOperations.trash.undonePartial": "Se {restored, plural, one {devolvió} many {devolvieron} other {devolvieron}} {restoredText} {restored, plural, one {archivo} many {archivos} other {archivos}} a su lugar; {skippedText} {skipped, plural, one {elemento se quedó} many {elementos se quedaron} other {elementos se quedaron}} en el basurero.",
+  "fileOperations.trash.undonePartial": "{platform, select, windows {Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Recycle Bin.} other {Se {restored, plural, one {devolvió} many {devolvieron} other {devolvieron}} {restoredText} {restored, plural, one {archivo} many {archivos} other {archivos}} a su lugar; {skippedText} {skipped, plural, one {elemento se quedó} many {elementos se quedaron} other {elementos se quedaron}} en el basurero.}}",
   "@fileOperations.trash.undonePartial": {
     "sourceHash": "aad792e"
   },
-  "fileOperations.trash.undoGone": "No hay nada que devolver: {count, plural, one {el elemento ya no estaba} many {los elementos ya no estaban} other {los elementos ya no estaban}} en el basurero.",
+  "fileOperations.trash.undoGone": "{platform, select, windows {Nothing to put back: {count, plural, one {the item was} other {the items were}} no longer in the Recycle Bin.} other {No hay nada que devolver: {count, plural, one {el elemento ya no estaba} many {los elementos ya no estaban} other {los elementos ya no estaban}} en el basurero.}}",
   "@fileOperations.trash.undoGone": {
     "sourceHash": "90485cd"
   },
-  "fileOperations.trash.undoPartlyGone": "{countText} {count, plural, one {elemento ya no estaba} many {elementos ya no estaban} other {elementos ya no estaban}} en el basurero.",
+  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {item was} other {items were}} no longer in the Recycle Bin.} other {{countText} {count, plural, one {elemento ya no estaba} many {elementos ya no estaban} other {elementos ya no estaban}} en el basurero.}}",
   "@fileOperations.trash.undoPartlyGone": {
     "sourceHash": "59e86e6"
   },
-  "fileOperations.trash.noTrashHere": "Esta unidad no tiene basurero.",
+  "fileOperations.trash.noTrashHere": "{platform, select, windows {This drive doesn’t have a Recycle Bin.} other {Esta unidad no tiene basurero.}}",
   "@fileOperations.trash.noTrashHere": {
     "sourceHash": "837c16a"
   },
-  "fileOperations.delete.trashSwitch": "Mover al basurero",
+  "fileOperations.delete.trashSwitch": "{platform, select, windows {Move to the Recycle Bin} other {Mover al basurero}}",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b9a042e"
   },
-  "fileOperations.delete.confirmMoveToTrash": "Mover al basurero",
+  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Delete} other {Mover al basurero}}",
   "@fileOperations.delete.confirmMoveToTrash": {
     "sourceHash": "b9a042e"
   },
@@ -83,23 +83,23 @@
   "@fileOperations.transferDialog.conflictsUnknown": {
     "sourceHash": "5be2792"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Copiar} move {Mover} compress {Comprimir} delete {Eliminar} other {Mover al basurero}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to the Recycle Bin}}} other {{verb, select, copy {Copiar} move {Mover} compress {Comprimir} delete {Eliminar} other {Mover al basurero}}}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
     "sourceHash": "7f7d7b0"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Copiar} move {Mover} compress {Comprimir} delete {Eliminar} other {Mover al basurero}} {phrase}",
+  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Copy {phrase}} move {Move {phrase}} compress {Compress {phrase}} delete {Delete {phrase}} other {Move {phrase} to the Recycle Bin}}} other {{verb, select, copy {Copiar} move {Mover} compress {Comprimir} delete {Eliminar} other {Mover al basurero}} {phrase}}}",
   "@fileOperations.transferDialog.titleWithCounts": {
     "sourceHash": "76d5539"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "Contando elementos para el basurero…",
+  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Counting items to move to the Recycle Bin…} other {Contando elementos para el basurero…}}",
   "@fileOperations.transferProgress.scanTitleTrash": {
     "sourceHash": "1b83d46"
   },
-  "fileOperations.transferProgress.canceledAlertTitle": "{type, select, copy {Copia cancelada} move {Movimiento cancelado} compress {Compresión cancelada} delete {Eliminación cancelada} trash {Movimiento al basurero cancelado} other {Operación cancelada}}",
+  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to the Recycle Bin canceled} other {Canceled}}} other {{type, select, copy {Copia cancelada} move {Movimiento cancelado} compress {Compresión cancelada} delete {Eliminación cancelada} trash {Movimiento al basurero cancelado} other {Operación cancelada}}}}",
   "@fileOperations.transferProgress.canceledAlertTitle": {
     "sourceHash": "e5b1b7c"
   },
-  "fileOperations.transferProgress.canceledAlertMessage": "{type, select, copy {Cancelaste esta copia. Los archivos copiados hasta ahora se quedan donde están.} move {Cancelaste este movimiento. Los archivos movidos hasta ahora se quedan donde llegaron.} compress {Cancelaste esta compresión.} delete {Cancelaste esta eliminación. Los archivos eliminados hasta ahora ya no están y el resto sigue ahí.} trash {Cancelaste este movimiento al basurero. Los archivos movidos hasta ahora se quedan en el basurero y el resto sigue donde estaba.} other {Cancelaste esta operación.}}",
+  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to the Recycle Bin. The files it moved so far stay in the Recycle Bin, and the rest are where they were.} other {You’ve canceled this operation.}}} other {{type, select, copy {Cancelaste esta copia. Los archivos copiados hasta ahora se quedan donde están.} move {Cancelaste este movimiento. Los archivos movidos hasta ahora se quedan donde llegaron.} compress {Cancelaste esta compresión.} delete {Cancelaste esta eliminación. Los archivos eliminados hasta ahora ya no están y el resto sigue ahí.} trash {Cancelaste este movimiento al basurero. Los archivos movidos hasta ahora se quedan en el basurero y el resto sigue donde estaba.} other {Cancelaste esta operación.}}}}",
   "@fileOperations.transferProgress.canceledAlertMessage": {
     "sourceHash": "e0fae05"
   },
@@ -107,7 +107,7 @@
   "@fileOperations.transferProgress.stallUnknown": {
     "sourceHash": "af54155"
   },
-  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {No se copió nada} one {Se copió {countText} archivo} many {Se copiaron {countText} archivos} other {Se copiaron {countText} archivos}}} move {{count, plural, =0 {No se movió nada} one {Se movió {countText} archivo} many {Se movieron {countText} archivos} other {Se movieron {countText} archivos}}} delete {{count, plural, =0 {No se eliminó nada} one {Se eliminó {countText} archivo} many {Se eliminaron {countText} archivos} other {Se eliminaron {countText} archivos}}} trash {{count, plural, =0 {No se movió nada al basurero} one {Se movió {countText} archivo al basurero} many {Se movieron {countText} archivos al basurero} other {Se movieron {countText} archivos al basurero}}} compress {{count, plural, =0 {No se comprimió nada} one {Se comprimió {countText} archivo} many {Se comprimieron {countText} archivos} other {Se comprimieron {countText} archivos}}} other {Hecho}}",
+  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Recycle Bin} one {Moved {countText} file to the Recycle Bin} other {Moved {countText} files to the Recycle Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}} other {{type, select, copy {{count, plural, =0 {No se copió nada} one {Se copió {countText} archivo} many {Se copiaron {countText} archivos} other {Se copiaron {countText} archivos}}} move {{count, plural, =0 {No se movió nada} one {Se movió {countText} archivo} many {Se movieron {countText} archivos} other {Se movieron {countText} archivos}}} delete {{count, plural, =0 {No se eliminó nada} one {Se eliminó {countText} archivo} many {Se eliminaron {countText} archivos} other {Se eliminaron {countText} archivos}}} trash {{count, plural, =0 {No se movió nada al basurero} one {Se movió {countText} archivo al basurero} many {Se movieron {countText} archivos al basurero} other {Se movieron {countText} archivos al basurero}}} compress {{count, plural, =0 {No se comprimió nada} one {Se comprimió {countText} archivo} many {Se comprimieron {countText} archivos} other {Se comprimieron {countText} archivos}}} other {Hecho}}}}",
   "@fileOperations.transferProgress.titleDone": {
     "sourceHash": "a790b3e"
   },
@@ -127,7 +127,7 @@
   "@fileOperations.transferProgress.undoWaitingTooltip": {
     "sourceHash": "f706531"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copiando} move {Moviendo} compress {Comprimiendo} delete {Eliminando} other {Moviendo al basurero}}…",
+  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Recycle Bin}}…} other {{gerund, select, copy {Copiando} move {Moviendo} compress {Comprimiendo} delete {Eliminando} other {Moviendo al basurero}}…}}",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "1346def"
   },
@@ -279,19 +279,19 @@
   "@fileOperations.resticPassword.unreachable": {
     "sourceHash": "0803374"
   },
-  "fileOperations.sourcesGone.message": "{type, select, copy {{goneText} de los {totalText} elementos que esta copia tenía pendientes {gone, plural, one {se movió o se eliminó} many {se movieron o se eliminaron} other {se movieron o se eliminaron}} mientras esperaba su turno.} move {{goneText} de los {totalText} elementos que este movimiento tenía pendientes {gone, plural, one {se movió o se eliminó} many {se movieron o se eliminaron} other {se movieron o se eliminaron}} mientras esperaba su turno.} delete {{goneText} de los {totalText} elementos que esta eliminación tenía pendientes {gone, plural, one {se movió o se eliminó} many {se movieron o se eliminaron} other {se movieron o se eliminaron}} mientras esperaba su turno.} trash {{goneText} de los {totalText} elementos que este movimiento al basurero tenía pendientes {gone, plural, one {se movió o se eliminó} many {se movieron o se eliminaron} other {se movieron o se eliminaron}} mientras esperaba su turno.} other {{goneText} de los {totalText} elementos que esta operación tenía pendientes {gone, plural, one {se movió o se eliminó} many {se movieron o se eliminaron} other {se movieron o se eliminaron}} mientras esperaba su turno.}}",
+  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to the Recycle Bin was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {{goneText} de los {totalText} elementos que esta copia tenía pendientes {gone, plural, one {se movió o se eliminó} many {se movieron o se eliminaron} other {se movieron o se eliminaron}} mientras esperaba su turno.} move {{goneText} de los {totalText} elementos que este movimiento tenía pendientes {gone, plural, one {se movió o se eliminó} many {se movieron o se eliminaron} other {se movieron o se eliminaron}} mientras esperaba su turno.} delete {{goneText} de los {totalText} elementos que esta eliminación tenía pendientes {gone, plural, one {se movió o se eliminó} many {se movieron o se eliminaron} other {se movieron o se eliminaron}} mientras esperaba su turno.} trash {{goneText} de los {totalText} elementos que este movimiento al basurero tenía pendientes {gone, plural, one {se movió o se eliminó} many {se movieron o se eliminaron} other {se movieron o se eliminaron}} mientras esperaba su turno.} other {{goneText} de los {totalText} elementos que esta operación tenía pendientes {gone, plural, one {se movió o se eliminó} many {se movieron o se eliminaron} other {se movieron o se eliminaron}} mientras esperaba su turno.}}}}",
   "@fileOperations.sourcesGone.message": {
     "sourceHash": "7d5b149"
   },
-  "fileOperations.sourcesGone.continue": "{type, select, copy {Copiar el resto} move {Mover el resto} delete {Eliminar el resto} trash {Mover el resto al basurero} other {Continuar con el resto}}",
+  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest permanently} trash {Delete the rest} other {Do the rest}}} other {{type, select, copy {Copiar el resto} move {Mover el resto} delete {Eliminar el resto} trash {Mover el resto al basurero} other {Continuar con el resto}}}}",
   "@fileOperations.sourcesGone.continue": {
     "sourceHash": "58129b3"
   },
-  "fileOperations.sourcesGone.heldToast": "{type, select, copy {Una copia en espera tiene una pregunta para ti. La verás en cuanto se cierre el diálogo que está abierto.} move {Un movimiento en espera tiene una pregunta para ti. La verás en cuanto se cierre el diálogo que está abierto.} delete {Una eliminación en espera tiene una pregunta para ti. La verás en cuanto se cierre el diálogo que está abierto.} trash {Un movimiento al basurero en espera tiene una pregunta para ti. La verás en cuanto se cierre el diálogo que está abierto.} other {Una operación en espera tiene una pregunta para ti. La verás en cuanto se cierre el diálogo que está abierto.}}",
+  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {A queued copy has a question for you. You’ll see it as soon as the open dialog closes.} move {A queued move has a question for you. You’ll see it as soon as the open dialog closes.} delete {A queued delete has a question for you. You’ll see it as soon as the open dialog closes.} trash {A queued move to the Recycle Bin has a question for you. You’ll see it as soon as the open dialog closes.} other {A queued operation has a question for you. You’ll see it as soon as the open dialog closes.}}} other {{type, select, copy {Una copia en espera tiene una pregunta para ti. La verás en cuanto se cierre el diálogo que está abierto.} move {Un movimiento en espera tiene una pregunta para ti. La verás en cuanto se cierre el diálogo que está abierto.} delete {Una eliminación en espera tiene una pregunta para ti. La verás en cuanto se cierre el diálogo que está abierto.} trash {Un movimiento al basurero en espera tiene una pregunta para ti. La verás en cuanto se cierre el diálogo que está abierto.} other {Una operación en espera tiene una pregunta para ti. La verás en cuanto se cierre el diálogo que está abierto.}}}}",
   "@fileOperations.sourcesGone.heldToast": {
     "sourceHash": "50ef4ec"
   },
-  "fileOperations.sourcesGone.nothingLeftToast": "{type, select, copy {No queda nada que copiar: {total, plural, one {el elemento que esta copia tenía pendiente se movió o se eliminó} many {todos los {totalText} elementos que esta copia tenía pendientes se movieron o se eliminaron} other {todos los {totalText} elementos que esta copia tenía pendientes se movieron o se eliminaron}} mientras esperaba su turno.} move {No queda nada que mover: {total, plural, one {el elemento que este movimiento tenía pendiente se movió o se eliminó} many {todos los {totalText} elementos que este movimiento tenía pendientes se movieron o se eliminaron} other {todos los {totalText} elementos que este movimiento tenía pendientes se movieron o se eliminaron}} mientras esperaba su turno.} delete {No queda nada que eliminar: {total, plural, one {el elemento que esta eliminación tenía pendiente se movió o se eliminó} many {todos los {totalText} elementos que esta eliminación tenía pendientes se movieron o se eliminaron} other {todos los {totalText} elementos que esta eliminación tenía pendientes se movieron o se eliminaron}} mientras esperaba su turno.} trash {No queda nada que mover al basurero: {total, plural, one {el elemento que este movimiento al basurero tenía pendiente se movió o se eliminó} many {todos los {totalText} elementos que este movimiento al basurero tenía pendientes se movieron o se eliminaron} other {todos los {totalText} elementos que este movimiento al basurero tenía pendientes se movieron o se eliminaron}} mientras esperaba su turno.} other {No queda nada que hacer: {total, plural, one {el elemento que esta operación tenía pendiente se movió o se eliminó} many {todos los {totalText} elementos que esta operación tenía pendientes se movieron o se eliminaron} other {todos los {totalText} elementos que esta operación tenía pendientes se movieron o se eliminaron}} mientras esperaba su turno.}}",
+  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Nothing left to copy: {total, plural, one {the item} other {all {totalText} items}} this copy was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} move {Nothing left to move: {total, plural, one {the item} other {all {totalText} items}} this move was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} delete {Nothing left to delete: {total, plural, one {the item} other {all {totalText} items}} this delete was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} trash {Nothing left to move to the Recycle Bin: {total, plural, one {the item} other {all {totalText} items}} this move to the Recycle Bin was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} other {Nothing left to do: {total, plural, one {the item} other {all {totalText} items}} this operation was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {No queda nada que copiar: {total, plural, one {el elemento que esta copia tenía pendiente se movió o se eliminó} many {todos los {totalText} elementos que esta copia tenía pendientes se movieron o se eliminaron} other {todos los {totalText} elementos que esta copia tenía pendientes se movieron o se eliminaron}} mientras esperaba su turno.} move {No queda nada que mover: {total, plural, one {el elemento que este movimiento tenía pendiente se movió o se eliminó} many {todos los {totalText} elementos que este movimiento tenía pendientes se movieron o se eliminaron} other {todos los {totalText} elementos que este movimiento tenía pendientes se movieron o se eliminaron}} mientras esperaba su turno.} delete {No queda nada que eliminar: {total, plural, one {el elemento que esta eliminación tenía pendiente se movió o se eliminó} many {todos los {totalText} elementos que esta eliminación tenía pendientes se movieron o se eliminaron} other {todos los {totalText} elementos que esta eliminación tenía pendientes se movieron o se eliminaron}} mientras esperaba su turno.} trash {No queda nada que mover al basurero: {total, plural, one {el elemento que este movimiento al basurero tenía pendiente se movió o se eliminó} many {todos los {totalText} elementos que este movimiento al basurero tenía pendientes se movieron o se eliminaron} other {todos los {totalText} elementos que este movimiento al basurero tenía pendientes se movieron o se eliminaron}} mientras esperaba su turno.} other {No queda nada que hacer: {total, plural, one {el elemento que esta operación tenía pendiente se movió o se eliminó} many {todos los {totalText} elementos que esta operación tenía pendientes se movieron o se eliminaron} other {todos los {totalText} elementos que esta operación tenía pendientes se movieron o se eliminaron}} mientras esperaba su turno.}}}}",
   "@fileOperations.sourcesGone.nothingLeftToast": {
     "sourceHash": "1453146"
   },

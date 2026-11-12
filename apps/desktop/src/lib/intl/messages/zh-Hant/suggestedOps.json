@@ -63,11 +63,11 @@
   "@suggestedOps.action.copy": {
     "sourceHash": "e21f935"
   },
-  "suggestedOps.action.trash": "移至垃圾桶",
+  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {移至垃圾桶}}",
   "@suggestedOps.action.trash": {
     "sourceHash": "9adcdf3"
   },
-  "suggestedOps.action.delete": "刪除",
+  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {刪除}}",
   "@suggestedOps.action.delete": {
     "sourceHash": "e2d0a54"
   },
@@ -96,11 +96,11 @@
   "@suggestedOps.approve.copy": {
     "sourceHash": "e10c490"
   },
-  "suggestedOps.approve.trash": "把 {countText} 個{count, plural, other {檔案}}移至垃圾桶",
+  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {把 {countText} 個{count, plural, other {檔案}}移至垃圾桶}}",
   "@suggestedOps.approve.trash": {
     "sourceHash": "3c82946"
   },
-  "suggestedOps.approve.delete": "刪除 {countText} 個{count, plural, other {檔案}}",
+  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {刪除 {countText} 個{count, plural, other {檔案}}}}",
   "@suggestedOps.approve.delete": {
     "sourceHash": "218cf04"
   },
@@ -144,7 +144,7 @@
   "@suggestedOps.facts.archive": {
     "sourceHash": "66f4804"
   },
-  "suggestedOps.facts.trash": "垃圾桶",
+  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {垃圾桶}}",
   "@suggestedOps.facts.trash": {
     "sourceHash": "4e42c6e"
   },
@@ -152,7 +152,7 @@
   "@suggestedOps.facts.severalFolders": {
     "sourceHash": "7c32950"
   },
-  "suggestedOps.reversible.trash": "可以還原：{count, plural, other {檔案會移到垃圾桶}}",
+  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {可以還原：{count, plural, other {檔案會移到垃圾桶}}}}",
   "@suggestedOps.reversible.trash": {
     "sourceHash": "55bf957"
   },
@@ -180,11 +180,11 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.noTrash": "這個磁碟機沒有垃圾桶",
+  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {這個磁碟機沒有垃圾桶}}",
   "@suggestedOps.noTrash": {
     "sourceHash": "38a6adc"
   },
-  "suggestedOps.noTrashTooltip": "這些檔案所在的磁碟機沒有垃圾桶，所以你同意之後，它們會被永久刪除。",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {這些檔案所在的磁碟機沒有垃圾桶，所以你同意之後，它們會被永久刪除。}}",
   "@suggestedOps.noTrashTooltip": {
     "sourceHash": "4327cb2"
   },
@@ -436,7 +436,7 @@
   "@suggestedOps.server.sharesAffected": {
     "sourceHash": "390f931"
   },
-  "suggestedOps.indicatorTooltip": "有 AI 建議在等你。按一下就能檢視。",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {有 AI 建議在等你。按一下就能檢視。}}",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
   },

@@ -63,11 +63,11 @@
   "@suggestedOps.action.copy": {
     "sourceHash": "e21f935"
   },
-  "suggestedOps.action.trash": "Flytta till papperskorgen",
+  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Flytta till papperskorgen}}",
   "@suggestedOps.action.trash": {
     "sourceHash": "9adcdf3"
   },
-  "suggestedOps.action.delete": "Radera",
+  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {Radera}}",
   "@suggestedOps.action.delete": {
     "sourceHash": "e2d0a54"
   },
@@ -96,11 +96,11 @@
   "@suggestedOps.approve.copy": {
     "sourceHash": "e10c490"
   },
-  "suggestedOps.approve.trash": "Flytta {countText} {count, plural, one {fil} other {filer}} till papperskorgen",
+  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {Flytta {countText} {count, plural, one {fil} other {filer}} till papperskorgen}}",
   "@suggestedOps.approve.trash": {
     "sourceHash": "3c82946"
   },
-  "suggestedOps.approve.delete": "Radera {countText} {count, plural, one {fil} other {filer}}",
+  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {Radera {countText} {count, plural, one {fil} other {filer}}}}",
   "@suggestedOps.approve.delete": {
     "sourceHash": "218cf04"
   },
@@ -144,7 +144,7 @@
   "@suggestedOps.facts.archive": {
     "sourceHash": "66f4804"
   },
-  "suggestedOps.facts.trash": "Papperskorgen",
+  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Papperskorgen}}",
   "@suggestedOps.facts.trash": {
     "sourceHash": "4e42c6e"
   },
@@ -152,7 +152,7 @@
   "@suggestedOps.facts.severalFolders": {
     "sourceHash": "7c32950"
   },
-  "suggestedOps.reversible.trash": "Du kan ångra det här: {count, plural, one {objektet hamnar} other {objekten hamnar}} i papperskorgen",
+  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Du kan ångra det här: {count, plural, one {objektet hamnar} other {objekten hamnar}} i papperskorgen}}",
   "@suggestedOps.reversible.trash": {
     "sourceHash": "55bf957"
   },
@@ -180,11 +180,11 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.noTrash": "Den här enheten har ingen papperskorg",
+  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {Den här enheten har ingen papperskorg}}",
   "@suggestedOps.noTrash": {
     "sourceHash": "38a6adc"
   },
-  "suggestedOps.noTrashTooltip": "Enheten som filerna ligger på har ingen papperskorg, så om du godkänner det här raderas de permanent.",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {Enheten som filerna ligger på har ingen papperskorg, så om du godkänner det här raderas de permanent.}}",
   "@suggestedOps.noTrashTooltip": {
     "sourceHash": "4327cb2"
   },
@@ -438,7 +438,7 @@
   "@suggestedOps.server.sharesAffected": {
     "sourceHash": "390f931"
   },
-  "suggestedOps.indicatorTooltip": "AI-förslag väntar. Klicka för att granska dem.",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {AI-förslag väntar. Klicka för att granska dem.}}",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
   },

@@ -15,7 +15,7 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{type, select, copy {正在複製} move {正在移動} delete {正在刪除} trash {正在移到垃圾桶} rename {正在重新命名} create_folder {正在新增資料夾} create_file {正在新增檔案} archive_edit {正在編輯封存檔} compress {正在壓縮} tag {正在更改標籤} other {正在處理}}",
+  "queue.row.label": "{platform, select, windows {{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to the Recycle Bin} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}} other {{type, select, copy {正在複製} move {正在移動} delete {正在刪除} trash {正在移到垃圾桶} rename {正在重新命名} create_folder {正在新增資料夾} create_file {正在新增檔案} archive_edit {正在編輯封存檔} compress {正在壓縮} tag {正在更改標籤} other {正在處理}}}}",
   "@queue.row.label": {
     "sourceHash": "b051663"
   },
@@ -159,7 +159,7 @@
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
   },
-  "queue.failureToast.title": "{type, select, copy {無法完成複製操作} move {無法完成移動操作} delete {無法完成刪除操作} trash {無法完成移到垃圾桶的操作} rename {無法完成重新命名操作} create_folder {無法完成新增資料夾的操作} create_file {無法完成新增檔案的操作} archive_edit {無法完成編輯封存檔的操作} other {無法完成這項操作}}",
+  "queue.failureToast.title": "{platform, select, windows {{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to the Recycle Bin} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}} other {{type, select, copy {無法完成複製操作} move {無法完成移動操作} delete {無法完成刪除操作} trash {無法完成移到垃圾桶的操作} rename {無法完成重新命名操作} create_folder {無法完成新增資料夾的操作} create_file {無法完成新增檔案的操作} archive_edit {無法完成編輯封存檔的操作} other {無法完成這項操作}}}}",
   "@queue.failureToast.title": {
     "sourceHash": "b5f2b47"
   },

@@ -1,6 +1,6 @@
 # Delete and trash (frontend)
 
-Permanent delete or macOS Trash: a confirmation dialog, scan preview, and progress (`TransferProgressDialog`). Backend
+Permanent delete or trash: a confirmation dialog, scan preview, and progress (`TransferProgressDialog`). Backend
 counterpart: `crates/cmdr-operations/src/delete/CLAUDE.md`.
 
 ## Files

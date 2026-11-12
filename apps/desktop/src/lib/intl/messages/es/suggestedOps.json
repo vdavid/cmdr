@@ -63,11 +63,11 @@
   "@suggestedOps.action.copy": {
     "sourceHash": "e21f935"
   },
-  "suggestedOps.action.trash": "Mover a la papelera",
+  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Mover a la papelera}}",
   "@suggestedOps.action.trash": {
     "sourceHash": "9adcdf3"
   },
-  "suggestedOps.action.delete": "Eliminar",
+  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {Eliminar}}",
   "@suggestedOps.action.delete": {
     "sourceHash": "e2d0a54"
   },
@@ -96,11 +96,11 @@
   "@suggestedOps.approve.copy": {
     "sourceHash": "e10c490"
   },
-  "suggestedOps.approve.trash": "Mover {countText} {count, plural, one {archivo} many {archivos} other {archivos}} a la papelera",
+  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {Mover {countText} {count, plural, one {archivo} many {archivos} other {archivos}} a la papelera}}",
   "@suggestedOps.approve.trash": {
     "sourceHash": "3c82946"
   },
-  "suggestedOps.approve.delete": "Eliminar {countText} {count, plural, one {archivo} many {archivos} other {archivos}}",
+  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {Eliminar {countText} {count, plural, one {archivo} many {archivos} other {archivos}}}}",
   "@suggestedOps.approve.delete": {
     "sourceHash": "218cf04"
   },
@@ -144,7 +144,7 @@
   "@suggestedOps.facts.archive": {
     "sourceHash": "66f4804"
   },
-  "suggestedOps.facts.trash": "Papelera",
+  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Papelera}}",
   "@suggestedOps.facts.trash": {
     "sourceHash": "4e42c6e"
   },
@@ -152,7 +152,7 @@
   "@suggestedOps.facts.severalFolders": {
     "sourceHash": "7c32950"
   },
-  "suggestedOps.reversible.trash": "Puedes deshacerlo: {count, plural, one {va} many {van} other {van}} a la papelera",
+  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Puedes deshacerlo: {count, plural, one {va} many {van} other {van}} a la papelera}}",
   "@suggestedOps.reversible.trash": {
     "sourceHash": "55bf957"
   },
@@ -180,11 +180,11 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.noTrash": "Esta unidad no tiene papelera",
+  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {Esta unidad no tiene papelera}}",
   "@suggestedOps.noTrash": {
     "sourceHash": "38a6adc"
   },
-  "suggestedOps.noTrashTooltip": "La unidad donde están estos archivos no tiene papelera, así que, si lo apruebas, se eliminarán para siempre.",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {La unidad donde están estos archivos no tiene papelera, así que, si lo apruebas, se eliminarán para siempre.}}",
   "@suggestedOps.noTrashTooltip": {
     "sourceHash": "4327cb2"
   },
@@ -437,7 +437,7 @@
   "@suggestedOps.server.sharesAffected": {
     "sourceHash": "390f931"
   },
-  "suggestedOps.indicatorTooltip": "Hay sugerencias de la IA esperando. Haz clic para revisarlas.",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {Hay sugerencias de la IA esperando. Haz clic para revisarlas.}}",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
   },

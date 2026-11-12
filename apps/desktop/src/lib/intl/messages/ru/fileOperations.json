@@ -16,7 +16,7 @@
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
-  "fileOperations.delete.noTrashWarningStrong": "Этот том не поддерживает Корзину.",
+  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Этот том не поддерживает Корзину.}}",
   "@fileOperations.delete.noTrashWarningStrong": {
     "sourceHash": "911688a"
   },
@@ -24,19 +24,19 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Некоторые выделенные файлы доступны только онлайн. Для перемещения в Корзину их пришлось бы <strong>сначала скачать</strong>. Поэтому Cmdr предлагает только <strong>удалить</strong> все выделенное. Копий в Корзине не останется, но облачные сервисы обычно хранят удаленные файлы в своей корзине около 30 дней. Нажмите «Удалить», если согласны. Иначе отмените этот диалог и сначала сделайте все файлы доступными офлайн или снимите выделение с файлов, доступных только онлайн.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.} other {Некоторые выделенные файлы доступны только онлайн. Для перемещения в Корзину их пришлось бы <strong>сначала скачать</strong>. Поэтому Cmdr предлагает только <strong>удалить</strong> все выделенное. Копий в Корзине не останется, но облачные сервисы обычно хранят удаленные файлы в своей корзине около 30 дней. Нажмите «Удалить», если согласны. Иначе отмените этот диалог и сначала сделайте все файлы доступными офлайн или снимите выделение с файлов, доступных только онлайн.}}",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "2468db5"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Все выделенные файлы доступны только онлайн. Для перемещения в Корзину их пришлось бы <strong>сначала скачать</strong>. Поэтому Cmdr предлагает только <strong>удалить</strong> все выделенное. Копий в Корзине не останется, но облачные сервисы обычно хранят удаленные файлы в своей корзине около 30 дней. Нажмите «Удалить», если согласны. Иначе отмените этот диалог и сначала сделайте эти файлы доступными офлайн.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and make these files available offline first.} other {Все выделенные файлы доступны только онлайн. Для перемещения в Корзину их пришлось бы <strong>сначала скачать</strong>. Поэтому Cmdr предлагает только <strong>удалить</strong> все выделенное. Копий в Корзине не останется, но облачные сервисы обычно хранят удаленные файлы в своей корзине около 30 дней. Нажмите «Удалить», если согласны. Иначе отмените этот диалог и сначала сделайте эти файлы доступными офлайн.}}",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "dd04d39"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Среди выделенных файлов оказалось содержимое, доступное только онлайн, поэтому кнопка ниже теперь предлагает «Удалить». Прочитайте пояснение выше и нажмите ее еще раз, если согласны.",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Your selection turned out to hold online-only content, so the button below now offers Delete permanently. Read the note above, then press it again if that’s OK.} other {Среди выделенных файлов оказалось содержимое, доступное только онлайн, поэтому кнопка ниже теперь предлагает «Удалить». Прочитайте пояснение выше и нажмите ее еще раз, если согласны.}}",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
     "sourceHash": "d3f4a7a"
   },
-  "fileOperations.delete.archiveWarningStrong": "Внутри архива нет Корзины.",
+  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {There’s no Recycle Bin inside an archive.} other {Внутри архива нет Корзины.}}",
   "@fileOperations.delete.archiveWarningStrong": {
     "sourceHash": "d25cd46"
   },
@@ -48,7 +48,7 @@
   "@fileOperations.trash.undoAction": {
     "sourceHash": "a8283ad"
   },
-  "fileOperations.trash.goToTrashAction": "Перейти в Корзину",
+  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Go to Recycle Bin} other {Перейти в Корзину}}",
   "@fileOperations.trash.goToTrashAction": {
     "sourceHash": "5332858"
   },
@@ -60,7 +60,7 @@
   "@fileOperations.trash.undone": {
     "sourceHash": "a76ffee"
   },
-  "fileOperations.trash.undonePartial": "Восстановлено: {restoredText} {restored, plural, one {файл} few {файла} many {файлов} other {файла}}; в Корзине осталось: {skippedText} {skipped, plural, one {объект} few {объекта} many {объектов} other {объекта}}.",
+  "fileOperations.trash.undonePartial": "{platform, select, windows {Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Recycle Bin.} other {Восстановлено: {restoredText} {restored, plural, one {файл} few {файла} many {файлов} other {файла}}; в Корзине осталось: {skippedText} {skipped, plural, one {объект} few {объекта} many {объектов} other {объекта}}.}}",
   "@fileOperations.trash.undonePartial": {
     "sourceHash": "371413d"
   },
@@ -68,19 +68,19 @@
   "@fileOperations.trash.undoUnavailable": {
     "sourceHash": "ee17b5f"
   },
-  "fileOperations.trash.undoGone": "Нечего восстанавливать: в Корзине уже не было {count, plural, =1 {этого объекта} one {этих объектов} few {этих объектов} many {этих объектов} other {этих объектов}}.",
+  "fileOperations.trash.undoGone": "{platform, select, windows {Nothing to put back: {count, plural, one {the item was} other {the items were}} no longer in the Recycle Bin.} other {Нечего восстанавливать: в Корзине уже не было {count, plural, =1 {этого объекта} one {этих объектов} few {этих объектов} many {этих объектов} other {этих объектов}}.}}",
   "@fileOperations.trash.undoGone": {
     "sourceHash": "69a90c2"
   },
-  "fileOperations.trash.undoPartlyGone": "В Корзине уже не было {countText} {count, plural, one {объекта} few {объектов} many {объектов} other {объекта}}.",
+  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {item was} other {items were}} no longer in the Recycle Bin.} other {В Корзине уже не было {countText} {count, plural, one {объекта} few {объектов} many {объектов} other {объекта}}.}}",
   "@fileOperations.trash.undoPartlyGone": {
     "sourceHash": "2e23577"
   },
-  "fileOperations.trash.noTrashHere": "На этом диске нет Корзины.",
+  "fileOperations.trash.noTrashHere": "{platform, select, windows {This drive doesn’t have a Recycle Bin.} other {На этом диске нет Корзины.}}",
   "@fileOperations.trash.noTrashHere": {
     "sourceHash": "f58bdab"
   },
-  "fileOperations.delete.trashSwitch": "Переместить в Корзину",
+  "fileOperations.delete.trashSwitch": "{platform, select, windows {Move to the Recycle Bin} other {Переместить в Корзину}}",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"
   },
@@ -96,11 +96,11 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "46b23b5"
   },
-  "fileOperations.delete.confirmDelete": "Удалить",
+  "fileOperations.delete.confirmDelete": "{platform, select, windows {Delete permanently} other {Удалить}}",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
   },
-  "fileOperations.delete.confirmMoveToTrash": "Переместить в Корзину",
+  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Delete} other {Переместить в Корзину}}",
   "@fileOperations.delete.confirmMoveToTrash": {
     "sourceHash": "b250a45"
   },
@@ -436,11 +436,11 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Скопировать} move {Переместить} compress {Сжать} delete {Удалить} other {Переместить в Корзину}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to the Recycle Bin}}} other {{verb, select, copy {Скопировать} move {Переместить} compress {Сжать} delete {Удалить} other {Переместить в Корзину}}}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
     "sourceHash": "b18b6e3"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Скопировать} move {Переместить} compress {Сжать} delete {Удалить} other {Переместить в Корзину}} {phrase}",
+  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Copy {phrase}} move {Move {phrase}} compress {Compress {phrase}} delete {Delete {phrase}} other {Move {phrase} to the Recycle Bin}}} other {{verb, select, copy {Скопировать} move {Переместить} compress {Сжать} delete {Удалить} other {Переместить в Корзину}} {phrase}}}",
   "@fileOperations.transferDialog.titleWithCounts": {
     "sourceHash": "d21c910"
   },
@@ -504,7 +504,7 @@
   "@fileOperations.transferProgress.scanTitleDelete": {
     "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "Подсчет объектов для перемещения в Корзину…",
+  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Counting items to move to the Recycle Bin…} other {Подсчет объектов для перемещения в Корзину…}}",
   "@fileOperations.transferProgress.scanTitleTrash": {
     "sourceHash": "6df6c7f"
   },
@@ -552,11 +552,11 @@
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.canceledAlertTitle": "{type, select, copy {Копирование отменено} move {Перемещение отменено} compress {Сжатие отменено} delete {Удаление отменено} trash {Перемещение в Корзину отменено} other {Отменено}}",
+  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to the Recycle Bin canceled} other {Canceled}}} other {{type, select, copy {Копирование отменено} move {Перемещение отменено} compress {Сжатие отменено} delete {Удаление отменено} trash {Перемещение в Корзину отменено} other {Отменено}}}}",
   "@fileOperations.transferProgress.canceledAlertTitle": {
     "sourceHash": "3cba939"
   },
-  "fileOperations.transferProgress.canceledAlertMessage": "{type, select, copy {Вы отменили это копирование. Уже скопированные файлы остаются на своих местах.} move {Вы отменили это перемещение. Уже перемещенные файлы остаются там, куда попали.} compress {Вы отменили это сжатие.} delete {Вы отменили это удаление. Уже удаленные файлы исчезли, а остальные на месте.} trash {Вы отменили это перемещение в Корзину. Уже перемещенные файлы остаются в Корзине, а остальные лежат там же, где были.} other {Вы отменили эту операцию.}}",
+  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to the Recycle Bin. The files it moved so far stay in the Recycle Bin, and the rest are where they were.} other {You’ve canceled this operation.}}} other {{type, select, copy {Вы отменили это копирование. Уже скопированные файлы остаются на своих местах.} move {Вы отменили это перемещение. Уже перемещенные файлы остаются там, куда попали.} compress {Вы отменили это сжатие.} delete {Вы отменили это удаление. Уже удаленные файлы исчезли, а остальные на месте.} trash {Вы отменили это перемещение в Корзину. Уже перемещенные файлы остаются в Корзине, а остальные лежат там же, где были.} other {Вы отменили эту операцию.}}}}",
   "@fileOperations.transferProgress.canceledAlertMessage": {
     "sourceHash": "1d1de76"
   },
@@ -652,7 +652,7 @@
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
-  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Ничего не скопировано} one {Скопирован {countText} файл} few {Скопированы {countText} файла} many {Скопировано {countText} файлов} other {Скопировано {countText} файла}}} move {{count, plural, =0 {Ничего не перемещено} one {Перемещен {countText} файл} few {Перемещены {countText} файла} many {Перемещено {countText} файлов} other {Перемещено {countText} файла}}} delete {{count, plural, =0 {Ничего не удалено} one {Удален {countText} файл} few {Удалены {countText} файла} many {Удалено {countText} файлов} other {Удалено {countText} файла}}} trash {{count, plural, =0 {Ничего не перемещено в Корзину} one {Перемещен в Корзину {countText} файл} few {Перемещены в Корзину {countText} файла} many {Перемещено в Корзину {countText} файлов} other {Перемещено в Корзину {countText} файла}}} compress {{count, plural, =0 {Ничего не сжато} one {Сжат {countText} файл} few {Сжаты {countText} файла} many {Сжато {countText} файлов} other {Сжато {countText} файла}}} other {Готово}}",
+  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Recycle Bin} one {Moved {countText} file to the Recycle Bin} other {Moved {countText} files to the Recycle Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}} other {{type, select, copy {{count, plural, =0 {Ничего не скопировано} one {Скопирован {countText} файл} few {Скопированы {countText} файла} many {Скопировано {countText} файлов} other {Скопировано {countText} файла}}} move {{count, plural, =0 {Ничего не перемещено} one {Перемещен {countText} файл} few {Перемещены {countText} файла} many {Перемещено {countText} файлов} other {Перемещено {countText} файла}}} delete {{count, plural, =0 {Ничего не удалено} one {Удален {countText} файл} few {Удалены {countText} файла} many {Удалено {countText} файлов} other {Удалено {countText} файла}}} trash {{count, plural, =0 {Ничего не перемещено в Корзину} one {Перемещен в Корзину {countText} файл} few {Перемещены в Корзину {countText} файла} many {Перемещено в Корзину {countText} файлов} other {Перемещено в Корзину {countText} файла}}} compress {{count, plural, =0 {Ничего не сжато} one {Сжат {countText} файл} few {Сжаты {countText} файла} many {Сжато {countText} файлов} other {Сжато {countText} файла}}} other {Готово}}}}",
   "@fileOperations.transferProgress.titleDone": {
     "sourceHash": "3db0154"
   },
@@ -692,7 +692,7 @@
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Копирование} move {Перемещение} compress {Сжатие} delete {Удаление} other {Перемещение в Корзину}}…",
+  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Recycle Bin}}…} other {{gerund, select, copy {Копирование} move {Перемещение} compress {Сжатие} delete {Удаление} other {Перемещение в Корзину}}…}}",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "0c636e5"
   },
@@ -844,7 +844,7 @@
   "@fileOperations.sourcesGone.title": {
     "sourceHash": "9f8e2cb"
   },
-  "fileOperations.sourcesGone.message": "{type, select, copy {Пока копирование ожидало своей очереди, {goneText} из {totalText} объектов {gone, plural, one {был перемещен или удален} few {были перемещены или удалены} many {были перемещены или удалены} other {были перемещены или удалены}}.} move {Пока перемещение ожидало своей очереди, {goneText} из {totalText} объектов {gone, plural, one {был перемещен или удален} few {были перемещены или удалены} many {были перемещены или удалены} other {были перемещены или удалены}}.} delete {Пока удаление ожидало своей очереди, {goneText} из {totalText} объектов {gone, plural, one {был перемещен или удален} few {были перемещены или удалены} many {были перемещены или удалены} other {были перемещены или удалены}}.} trash {Пока перемещение в Корзину ожидало своей очереди, {goneText} из {totalText} объектов {gone, plural, one {был перемещен или удален} few {были перемещены или удалены} many {были перемещены или удалены} other {были перемещены или удалены}}.} other {Пока операция ожидала своей очереди, {goneText} из {totalText} объектов {gone, plural, one {был перемещен или удален} few {были перемещены или удалены} many {были перемещены или удалены} other {были перемещены или удалены}}.}}",
+  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to the Recycle Bin was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {Пока копирование ожидало своей очереди, {goneText} из {totalText} объектов {gone, plural, one {был перемещен или удален} few {были перемещены или удалены} many {были перемещены или удалены} other {были перемещены или удалены}}.} move {Пока перемещение ожидало своей очереди, {goneText} из {totalText} объектов {gone, plural, one {был перемещен или удален} few {были перемещены или удалены} many {были перемещены или удалены} other {были перемещены или удалены}}.} delete {Пока удаление ожидало своей очереди, {goneText} из {totalText} объектов {gone, plural, one {был перемещен или удален} few {были перемещены или удалены} many {были перемещены или удалены} other {были перемещены или удалены}}.} trash {Пока перемещение в Корзину ожидало своей очереди, {goneText} из {totalText} объектов {gone, plural, one {был перемещен или удален} few {были перемещены или удалены} many {были перемещены или удалены} other {были перемещены или удалены}}.} other {Пока операция ожидала своей очереди, {goneText} из {totalText} объектов {gone, plural, one {был перемещен или удален} few {были перемещены или удалены} many {были перемещены или удалены} other {были перемещены или удалены}}.}}}}",
   "@fileOperations.sourcesGone.message": {
     "sourceHash": "0512078"
   },
@@ -852,15 +852,15 @@
   "@fileOperations.sourcesGone.moreItems": {
     "sourceHash": "c39507d"
   },
-  "fileOperations.sourcesGone.continue": "{type, select, copy {Скопировать остальные} move {Переместить остальные} delete {Удалить остальные} trash {Переместить остальные в Корзину} other {Продолжить с остальными}}",
+  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest permanently} trash {Delete the rest} other {Do the rest}}} other {{type, select, copy {Скопировать остальные} move {Переместить остальные} delete {Удалить остальные} trash {Переместить остальные в Корзину} other {Продолжить с остальными}}}}",
   "@fileOperations.sourcesGone.continue": {
     "sourceHash": "2790bfb"
   },
-  "fileOperations.sourcesGone.heldToast": "{type, select, copy {У ожидающего копирования есть вопрос к вам. Вы увидите его, как только закроется открытое диалоговое окно.} move {У ожидающего перемещения есть вопрос к вам. Вы увидите его, как только закроется открытое диалоговое окно.} delete {У ожидающего удаления есть вопрос к вам. Вы увидите его, как только закроется открытое диалоговое окно.} trash {У ожидающего перемещения в Корзину есть вопрос к вам. Вы увидите его, как только закроется открытое диалоговое окно.} other {У ожидающей операции есть вопрос к вам. Вы увидите его, как только закроется открытое диалоговое окно.}}",
+  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {A queued copy has a question for you. You’ll see it as soon as the open dialog closes.} move {A queued move has a question for you. You’ll see it as soon as the open dialog closes.} delete {A queued delete has a question for you. You’ll see it as soon as the open dialog closes.} trash {A queued move to the Recycle Bin has a question for you. You’ll see it as soon as the open dialog closes.} other {A queued operation has a question for you. You’ll see it as soon as the open dialog closes.}}} other {{type, select, copy {У ожидающего копирования есть вопрос к вам. Вы увидите его, как только закроется открытое диалоговое окно.} move {У ожидающего перемещения есть вопрос к вам. Вы увидите его, как только закроется открытое диалоговое окно.} delete {У ожидающего удаления есть вопрос к вам. Вы увидите его, как только закроется открытое диалоговое окно.} trash {У ожидающего перемещения в Корзину есть вопрос к вам. Вы увидите его, как только закроется открытое диалоговое окно.} other {У ожидающей операции есть вопрос к вам. Вы увидите его, как только закроется открытое диалоговое окно.}}}}",
   "@fileOperations.sourcesGone.heldToast": {
     "sourceHash": "75f645d"
   },
-  "fileOperations.sourcesGone.nothingLeftToast": "{type, select, copy {Копировать больше нечего: пока копирование ожидало своей очереди, {total, plural, =1 {единственный объект был перемещен или удален} one {все {totalText} объект были перемещены или удалены} few {все {totalText} объекта были перемещены или удалены} many {все {totalText} объектов были перемещены или удалены} other {все {totalText} объекта были перемещены или удалены}}.} move {Перемещать больше нечего: пока перемещение ожидало своей очереди, {total, plural, =1 {единственный объект был перемещен или удален} one {все {totalText} объект были перемещены или удалены} few {все {totalText} объекта были перемещены или удалены} many {все {totalText} объектов были перемещены или удалены} other {все {totalText} объекта были перемещены или удалены}}.} delete {Удалять больше нечего: пока удаление ожидало своей очереди, {total, plural, =1 {единственный объект был перемещен или удален} one {все {totalText} объект были перемещены или удалены} few {все {totalText} объекта были перемещены или удалены} many {все {totalText} объектов были перемещены или удалены} other {все {totalText} объекта были перемещены или удалены}}.} trash {Перемещать в Корзину больше нечего: пока перемещение в Корзину ожидало своей очереди, {total, plural, =1 {единственный объект был перемещен или удален} one {все {totalText} объект были перемещены или удалены} few {все {totalText} объекта были перемещены или удалены} many {все {totalText} объектов были перемещены или удалены} other {все {totalText} объекта были перемещены или удалены}}.} other {Выполнять больше нечего: пока операция ожидала своей очереди, {total, plural, =1 {единственный объект был перемещен или удален} one {все {totalText} объект были перемещены или удалены} few {все {totalText} объекта были перемещены или удалены} many {все {totalText} объектов были перемещены или удалены} other {все {totalText} объекта были перемещены или удалены}}.}}",
+  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Nothing left to copy: {total, plural, one {the item} other {all {totalText} items}} this copy was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} move {Nothing left to move: {total, plural, one {the item} other {all {totalText} items}} this move was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} delete {Nothing left to delete: {total, plural, one {the item} other {all {totalText} items}} this delete was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} trash {Nothing left to move to the Recycle Bin: {total, plural, one {the item} other {all {totalText} items}} this move to the Recycle Bin was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} other {Nothing left to do: {total, plural, one {the item} other {all {totalText} items}} this operation was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {Копировать больше нечего: пока копирование ожидало своей очереди, {total, plural, =1 {единственный объект был перемещен или удален} one {все {totalText} объект были перемещены или удалены} few {все {totalText} объекта были перемещены или удалены} many {все {totalText} объектов были перемещены или удалены} other {все {totalText} объекта были перемещены или удалены}}.} move {Перемещать больше нечего: пока перемещение ожидало своей очереди, {total, plural, =1 {единственный объект был перемещен или удален} one {все {totalText} объект были перемещены или удалены} few {все {totalText} объекта были перемещены или удалены} many {все {totalText} объектов были перемещены или удалены} other {все {totalText} объекта были перемещены или удалены}}.} delete {Удалять больше нечего: пока удаление ожидало своей очереди, {total, plural, =1 {единственный объект был перемещен или удален} one {все {totalText} объект были перемещены или удалены} few {все {totalText} объекта были перемещены или удалены} many {все {totalText} объектов были перемещены или удалены} other {все {totalText} объекта были перемещены или удалены}}.} trash {Перемещать в Корзину больше нечего: пока перемещение в Корзину ожидало своей очереди, {total, plural, =1 {единственный объект был перемещен или удален} one {все {totalText} объект были перемещены или удалены} few {все {totalText} объекта были перемещены или удалены} many {все {totalText} объектов были перемещены или удалены} other {все {totalText} объекта были перемещены или удалены}}.} other {Выполнять больше нечего: пока операция ожидала своей очереди, {total, plural, =1 {единственный объект был перемещен или удален} one {все {totalText} объект были перемещены или удалены} few {все {totalText} объекта были перемещены или удалены} many {все {totalText} объектов были перемещены или удалены} other {все {totalText} объекта были перемещены или удалены}}.}}}}",
   "@fileOperations.sourcesGone.nothingLeftToast": {
     "sourceHash": "4d62b7d"
   },
@@ -1304,7 +1304,7 @@
   "@fileOperations.resticPassword.inputAria": {
     "sourceHash": "3e39703"
   },
-  "fileOperations.resticPassword.remember": "Запомнить в Связке ключей",
+  "fileOperations.resticPassword.remember": "{platform, select, macos {Запомнить в Связке ключей} windows {Remember password} other {Remember in keyring}}",
   "@fileOperations.resticPassword.remember": {
     "sourceHash": "3fd7384"
   },
@@ -1348,7 +1348,7 @@
   "@fileOperations.validation.pathEmpty": {
     "sourceHash": "c7afbbc"
   },
-  "fileOperations.validation.pathNotAbsolute": "Путь должен быть абсолютным (начинаться с /)",
+  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {Путь должен быть абсолютным (начинаться с /)}}",
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
   },

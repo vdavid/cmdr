@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import {
   composeDurabilityUnconfirmedToast,
   composeTransferCompleteToast,
@@ -512,12 +513,29 @@ describe('the note about metadata the destination couldn’t keep', () => {
     })
 
   it('names the one class that stayed behind after the outcome', () => {
+    onTestFinished(withPlatform('macos'))
     expect(copiedTo([{ class: 'extendedAttributes', itemCount: 3 }])).toBe(
       'Copied 214 files. This destination can’t store some details, so they stayed behind: Finder tags.',
     )
   })
 
+  it('names extended attributes in each OS’s words', () => {
+    // Windows has no metadata bodies yet, so it keeps the macOS name until they land.
+    const expected = { macos: 'Finder tags', windows: 'Finder tags', linux: 'Extended attributes' } as const
+    for (const platform of ['macos', 'windows', 'linux'] as const) {
+      const restore = withPlatform(platform)
+      try {
+        expect(copiedTo([{ class: 'extendedAttributes', itemCount: 3 }]), platform).toBe(
+          `Copied 214 files. This destination can’t store some details, so they stayed behind: ${expected[platform]}.`,
+        )
+      } finally {
+        restore()
+      }
+    }
+  })
+
   it('lists several classes the way the UI language says "and"', () => {
+    onTestFinished(withPlatform('macos'))
     expect(
       copiedTo([
         { class: 'creationDates', itemCount: 214 },
@@ -585,7 +603,34 @@ describe('the note about Locked items a move left where they were', () => {
 describe('composeTrashRefusedToast', () => {
   // The sentence is the error dialog's own, so a partial trash and a fully
   // refused one explain themselves identically.
+  it('names how many items stayed behind on Windows, naming the Recycle Bin', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(composeTrashRefusedToast({ itemCount: 1, reason: 'notPermitted' })).toBe(
+      'Windows wouldn’t let Cmdr touch 1 of the items you picked.',
+    )
+    expect(composeTrashRefusedToast({ itemCount: 3, reason: 'noTrashForVolume' })).toBe(
+      'Windows couldn’t find a Recycle Bin for 3 of the items you picked.',
+    )
+    expect(composeTrashRefusedToast({ itemCount: 2, reason: 'other' })).toBe(
+      'Windows wouldn’t move 2 of the items you picked to the Recycle Bin.',
+    )
+  })
+
+  it('names how many items stayed behind on Linux, with Cmdr as the subject', () => {
+    onTestFinished(withPlatform('linux'))
+    expect(composeTrashRefusedToast({ itemCount: 1, reason: 'notPermitted' })).toBe(
+      'Cmdr wasn’t allowed to touch 1 of the items you picked.',
+    )
+    expect(composeTrashRefusedToast({ itemCount: 3, reason: 'noTrashForVolume' })).toBe(
+      'Cmdr couldn’t find a trash for 3 of the items you picked.',
+    )
+    expect(composeTrashRefusedToast({ itemCount: 2, reason: 'other' })).toBe(
+      'Cmdr couldn’t move 2 of the items you picked to the trash.',
+    )
+  })
+
   it('names how many items stayed behind, worded by the reason', () => {
+    onTestFinished(withPlatform('macos'))
     expect(composeTrashRefusedToast({ itemCount: 1, reason: 'notPermitted' })).toBe(
       'macOS wouldn’t let Cmdr touch 1 of the items you picked.',
     )

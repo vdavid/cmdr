@@ -31,15 +31,15 @@
   "@suggestedOps.refusal.couldNotStart.message": {
     "sourceHash": "2630cd3"
   },
-  "suggestedOps.approve.trash": "Mover {countText} {count, plural, one {archivo} many {archivos} other {archivos}} al basurero",
+  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {Mover {countText} {count, plural, one {archivo} many {archivos} other {archivos}} al basurero}}",
   "@suggestedOps.approve.trash": {
     "sourceHash": "9e59a65"
   },
-  "suggestedOps.facts.trash": "Basurero",
+  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Basurero}}",
   "@suggestedOps.facts.trash": {
     "sourceHash": "c5181f9"
   },
-  "suggestedOps.reversible.trash": "Puedes deshacerlo: {count, plural, one {va} many {van} other {van}} al basurero",
+  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Puedes deshacerlo: {count, plural, one {va} many {van} other {van}} al basurero}}",
   "@suggestedOps.reversible.trash": {
     "sourceHash": "1b00836"
   },
@@ -79,15 +79,15 @@
   "@suggestedOps.refusal.nameTaken.message": {
     "sourceHash": "82e8501"
   },
-  "suggestedOps.action.trash": "Mover al basurero",
+  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Mover al basurero}}",
   "@suggestedOps.action.trash": {
     "sourceHash": "b9a042e"
   },
-  "suggestedOps.noTrash": "Esta unidad no tiene basurero",
+  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {Esta unidad no tiene basurero}}",
   "@suggestedOps.noTrash": {
     "sourceHash": "d7ca3fa"
   },
-  "suggestedOps.noTrashTooltip": "La unidad donde están estos archivos no tiene basurero, así que, si lo apruebas, se eliminarán para siempre.",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {La unidad donde están estos archivos no tiene basurero, así que, si lo apruebas, se eliminarán para siempre.}}",
   "@suggestedOps.noTrashTooltip": {
     "sourceHash": "91d3e36"
   }

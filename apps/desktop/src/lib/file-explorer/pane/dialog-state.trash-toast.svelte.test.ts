@@ -12,7 +12,8 @@
  * offer, and a delete never will.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { createDialogState } from './dialog-state.svelte'
 import { setForegroundOperationId } from '#lib/file-operations/foreground-operation.svelte.js'
 import TrashCompleteToastContent from '#lib/file-operations/delete/TrashCompleteToastContent.svelte'
@@ -211,6 +212,7 @@ describe('a trash the OS refused part of', () => {
   // "Moved 1 file to trash" in success green with nothing at all about the one
   // still sitting in the pane (David's 2026-09-17 log).
   it('says how many items stayed behind, and why', () => {
+    onTestFinished(withPlatform('macos'))
     const dialogs = makeState()
     dialogs.startTransferProgress(props('trash'))
     setForegroundOperationId('op-1')

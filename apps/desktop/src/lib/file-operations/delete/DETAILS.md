@@ -130,6 +130,20 @@ read as "already deleting" while the scan was still counting.
   what takes the stale row away. ❌ Never an error tone, and ❌ never a log above info: warn reaches error-report
   bundles, and an ERROR auto-sends one.
 
+## The two actions' words per OS
+
+Each OS reads its own words for the trash (vocabulary: `docs/style-guide.md` § "Platform vocabulary"). On Windows the F8
+action's LABEL is "Delete" (File Explorer's word) while every sentence names "the Recycle Bin"; so wherever a surface
+offers both actions, side by side or in turn, the permanent one says "permanently" ("Delete permanently", "Delete the
+rest permanently", "Delete 3 files permanently"), or the two read the same. The dialog's switch names the place ("Move
+to the Recycle Bin"): "Delete" on an on/off switch would read as deleting on or off.
+
+- Gotcha: a sentence that names a button names its WINDOWS label on Windows. The online-only notes say “Delete
+  permanently” there, because the dialog offers only the permanent delete and the trash button already reads "Delete".
+- `trash-labels-per-platform.test.ts` holds every surface pair (dialog button, function-key bar, palette, File menu,
+  sources-gone button, suggested-ops chip and button, rename-conflict buttons, progress title) to two distinct labels on
+  each OS. A new surface offering both actions joins its `PAIRS`.
+
 ## Undo and go-to-trash (the trash completion toast)
 
 `TrashCompleteToastContent.svelte` replaces the plain string toast when a TRASH completes and a journaled operation id

@@ -1177,7 +1177,7 @@
   "@errors.write.sourceNotFound.message.delete": {
     "sourceHash": "cb0ab8f"
   },
-  "errors.write.sourceNotFound.message.trash": "Файл или папка для перемещения в Корзину больше не существует.",
+  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {The file or folder you tried to move to the Recycle Bin no longer exists.} other {Файл или папка для перемещения в Корзину больше не существует.}}",
   "@errors.write.sourceNotFound.message.trash": {
     "sourceHash": "dbc0bbe"
   },
@@ -1301,7 +1301,7 @@
   "@errors.write.cancelled.title.delete": {
     "sourceHash": "546aac1"
   },
-  "errors.write.cancelled.title.trash": "Перемещение в Корзину отменено",
+  "errors.write.cancelled.title.trash": "{platform, select, windows {Move to the Recycle Bin canceled} other {Перемещение в Корзину отменено}}",
   "@errors.write.cancelled.title.trash": {
     "sourceHash": "52a8954"
   },
@@ -1317,7 +1317,7 @@
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
   },
-  "errors.write.cancelled.message.trash": "Операция перемещения в Корзину отменена.",
+  "errors.write.cancelled.message.trash": "{platform, select, windows {The move to the Recycle Bin was canceled.} other {Операция перемещения в Корзину отменена.}}",
   "@errors.write.cancelled.message.trash": {
     "sourceHash": "9585f1b"
   },
@@ -1341,7 +1341,7 @@
   "@errors.write.deviceDisconnected.message.delete": {
     "sourceHash": "195562e"
   },
-  "errors.write.deviceDisconnected.message.trash": "Устройство отключилось во время перемещения в Корзину.",
+  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {The device was disconnected during the move to the Recycle Bin.} other {Устройство отключилось во время перемещения в Корзину.}}",
   "@errors.write.deviceDisconnected.message.trash": {
     "sourceHash": "9d5a47a"
   },
@@ -1381,11 +1381,11 @@
   "@errors.write.moveNotConfirmed.suggestion": {
     "sourceHash": "4d7fedc"
   },
-  "errors.write.trashNotSupported.title": "Корзина не поддерживается",
+  "errors.write.trashNotSupported.title": "{platform, select, windows {Recycle Bin not supported} other {Корзина не поддерживается}}",
   "@errors.write.trashNotSupported.title": {
     "sourceHash": "af90a02"
   },
-  "errors.write.trashNotSupported.message": "Этот том не поддерживает Корзину.",
+  "errors.write.trashNotSupported.message": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Этот том не поддерживает Корзину.}}",
   "@errors.write.trashNotSupported.message": {
     "sourceHash": "911688a"
   },
@@ -1505,7 +1505,7 @@
   "@errors.write.readError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.readError.title.trash": "Не удалось переместить в Корзину",
+  "errors.write.readError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Не удалось переместить в Корзину}}",
   "@errors.write.readError.title.trash": {
     "sourceHash": "44e3a2e"
   },
@@ -1529,7 +1529,7 @@
   "@errors.write.writeError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.writeError.title.trash": "Не удалось переместить в Корзину",
+  "errors.write.writeError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Не удалось переместить в Корзину}}",
   "@errors.write.writeError.title.trash": {
     "sourceHash": "44e3a2e"
   },
@@ -1637,11 +1637,11 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "77cff09"
   },
-  "errors.write.trashRefused.title": "Не удалось переместить в Корзину",
+  "errors.write.trashRefused.title": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Не удалось переместить в Корзину}}",
   "@errors.write.trashRefused.title": {
     "sourceHash": "44e3a2e"
   },
-  "errors.write.trashRefused.message.notPermitted": "macOS не позволила Cmdr изменить выделенные объекты (объектов: {count}).",
+  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS не позволила Cmdr изменить выделенные объекты (объектов: {count}).} windows {Windows wouldn’t let Cmdr touch {count} of the items you picked.} other {Cmdr wasn’t allowed to touch {count} of the items you picked.}}",
   "@errors.write.trashRefused.message.notPermitted": {
     "sourceHash": "57a38d7"
   },
@@ -1653,23 +1653,23 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "Выделенные объекты принадлежат другой учетной записи на этом Mac, а в их папке перемещать объект может только его владелец (объектов: {count}).",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "{platform, select, macos {Выделенные объекты принадлежат другой учетной записи на этом Mac, а в их папке перемещать объект может только его владелец (объектов: {count}).} windows {Another account on this PC owns {count} of the items you picked, and their folder lets only an item’s owner move it.} other {Another account on this computer owns {count} of the items you picked, and their folder lets only an item’s owner move it.}}",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "50f2ce6"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "Cmdr не может ничего положить в Корзину на этом диске, поэтому выделенные объекты остались на месте (объектов: {count}).",
+  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {Cmdr не может ничего положить в Корзину на этом диске, поэтому выделенные объекты остались на месте (объектов: {count}).}}",
   "@errors.write.trashRefused.message.trashNotWritable": {
     "sourceHash": "024ef04"
   },
-  "errors.write.trashRefused.message.noTrashForVolume": "macOS не нашла Корзину для выделенных объектов (объектов: {count}).",
+  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS не нашла Корзину для выделенных объектов (объектов: {count}).} windows {Windows couldn’t find a Recycle Bin for {count} of the items you picked.} other {Cmdr couldn’t find a trash for {count} of the items you picked.}}",
   "@errors.write.trashRefused.message.noTrashForVolume": {
     "sourceHash": "702ae17"
   },
-  "errors.write.trashRefused.message.other": "macOS не переместила выделенные объекты в Корзину (объектов: {count}).",
+  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS не переместила выделенные объекты в Корзину (объектов: {count}).} windows {Windows wouldn’t move {count} of the items you picked to the Recycle Bin.} other {Cmdr couldn’t move {count} of the items you picked to the trash.}}",
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "6f71e12"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "Возможно, объекты находятся там, куда macOS никого не пускает. Finder иногда все же может их переместить, потому что умеет запрашивать ваш пароль.",
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Возможно, объекты находятся там, куда macOS никого не пускает. Finder иногда все же может их переместить, потому что умеет запрашивать ваш пароль.} windows {The items may sit somewhere Windows keeps to itself. File Explorer can sometimes still move them, since it can ask for administrator permission.} other {The items may sit somewhere only an administrator can change. Check the folder’s permissions, or ask whoever manages this computer.}}",
   "@errors.write.trashRefused.suggestion.notPermitted": {
     "sourceHash": "2ef3e96"
   },
@@ -1677,23 +1677,23 @@
   "@errors.write.trashRefused.suggestion.locked": {
     "sourceHash": "ece70f5"
   },
-  "errors.write.trashRefused.suggestion.folderNotWritable": "Чтобы переместить объекты, нужно право изменять их папку. Кому это разрешено, Finder показывает в окне «Свойства» этой папки, в разделе «Общий доступ и права доступа».",
+  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {Чтобы переместить объекты, нужно право изменять их папку. Кому это разрешено, Finder показывает в окне «Свойства» этой папки, в разделе «Общий доступ и права доступа».} windows {To move them, you need permission to change their folder. File Explorer shows who can in the folder’s Properties, under Security.} other {To move them, you need permission to change their folder. Your file manager shows who can in the folder’s properties, under Permissions.}}",
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder все же может их переместить, запросив пароль администратора.",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder все же может их переместить, запросив пароль администратора.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "Так бывает, когда меняются права доступа к папке Корзины, например после переезда на новый Mac. Объекты можно удалить безвозвратно сочетанием Shift+F8.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "{platform, select, macos {Так бывает, когда меняются права доступа к папке Корзины, например после переезда на новый Mac. Объекты можно удалить безвозвратно сочетанием Shift+F8.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items permanently with Shift+F8.} other {This can happen when the trash folder’s permissions change, for example after moving to a new computer. You can still delete the items permanently with Shift+F8.}}",
   "@errors.write.trashRefused.suggestion.trashNotWritable": {
     "sourceHash": "abaf265"
   },
-  "errors.write.trashRefused.suggestion.noTrashForVolume": "В некоторых местах нет собственной Корзины, в том числе в облачных папках и на большинстве сетевых дисков. Объекты можно удалить безвозвратно сочетанием Shift+F8.",
+  "errors.write.trashRefused.suggestion.noTrashForVolume": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.} other {В некоторых местах нет собственной Корзины, в том числе в облачных папках и на большинстве сетевых дисков. Объекты можно удалить безвозвратно сочетанием Shift+F8.}}",
   "@errors.write.trashRefused.suggestion.noTrashForVolume": {
     "sourceHash": "b6d08fa"
   },
-  "errors.write.trashRefused.suggestion.other": "Посмотрите, что сообщила macOS, в разделе «Технические подробности» ниже.",
+  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Посмотрите, что сообщила macOS, в разделе «Технические подробности» ниже.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
     "sourceHash": "b61b3c1"
   },
@@ -1713,7 +1713,7 @@
   "@errors.write.ioError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.ioError.title.trash": "Не удалось переместить в Корзину",
+  "errors.write.ioError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Не удалось переместить в Корзину}}",
   "@errors.write.ioError.title.trash": {
     "sourceHash": "44e3a2e"
   },
@@ -1729,7 +1729,7 @@
   "@errors.write.ioError.message.delete": {
     "sourceHash": "9e79007"
   },
-  "errors.write.ioError.message.trash": "Не удалось переместить файл в Корзину.",
+  "errors.write.ioError.message.trash": "{platform, select, windows {Couldn’t move the file to the Recycle Bin.} other {Не удалось переместить файл в Корзину.}}",
   "@errors.write.ioError.message.trash": {
     "sourceHash": "948e289"
   },
@@ -1753,7 +1753,7 @@
   "@errors.write.permissionDenied.message.delete": {
     "sourceHash": "0c03fc4"
   },
-  "errors.write.permissionDenied.message.trash": "У вас нет разрешения перемещать здесь файлы в Корзину.",
+  "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {У вас нет разрешения перемещать здесь файлы в Корзину.}}",
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
@@ -1765,7 +1765,7 @@
   "@errors.write.permissionDenied.suggestion.default": {
     "sourceHash": "ec02093"
   },
-  "errors.write.permissionDenied.message.named": "Ваша учетная запись macOS не может изменять папку {folder}.",
+  "errors.write.permissionDenied.message.named": "{platform, select, macos {Ваша учетная запись macOS не может изменять папку {folder}.} windows {Your Windows account can’t change {folder}.} other {Your user account can’t change {folder}.}}",
   "@errors.write.permissionDenied.message.named": {
     "sourceHash": "0ffd79b"
   },
@@ -1961,15 +1961,15 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
-  "errors.write.homeFolder.title": "Пожалуйста, не удаляйте папку пользователя",
+  "errors.write.homeFolder.title": "{platform, select, windows {Please don’t delete your user folder} other {Пожалуйста, не удаляйте папку пользователя}}",
   "@errors.write.homeFolder.title": {
     "sourceHash": "6005e89"
   },
-  "errors.write.homeFolder.message.isHome": "Эй, свою же папку пользователя удалить нельзя.",
+  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hey, you can’t delete your own user folder.} other {Эй, свою же папку пользователя удалить нельзя.}}",
   "@errors.write.homeFolder.message.isHome": {
     "sourceHash": "16ee6cd"
   },
-  "errors.write.homeFolder.message.holdsHome": "Папку <code>{path}</code> удалить нельзя: в ней находится ваша папка пользователя, а ее удалять нельзя.",
+  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {You can’t delete <code>{path}</code> because it contains your user folder, and you can’t delete your user folder.} other {Папку <code>{path}</code> удалить нельзя: в ней находится ваша папка пользователя, а ее удалять нельзя.}}",
   "@errors.write.homeFolder.message.holdsHome": {
     "sourceHash": "4ad5896"
   },
@@ -1981,19 +1981,19 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
-  "errors.write.homeFolderMove.title": "Пожалуйста, не перемещайте папку пользователя",
+  "errors.write.homeFolderMove.title": "{platform, select, windows {Please don’t move your user folder} other {Пожалуйста, не перемещайте папку пользователя}}",
   "@errors.write.homeFolderMove.title": {
     "sourceHash": "f5db2db"
   },
-  "errors.write.homeFolderMove.message.isHome": "Эй, вашей папке пользователя самое место там, где она сейчас. Если ее переместить, при следующем входе ваш Mac будет искать вас не там.",
+  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Эй, вашей папке пользователя самое место там, где она сейчас. Если ее переместить, при следующем входе ваш Mac будет искать вас не там.} windows {Hey, your user folder lives right where it is. Move it, and Windows will look for you in the wrong place next time you sign in.} other {Hey, your home folder lives right where it is. Move it, and your computer will look for you in the wrong place next time you log in.}}",
   "@errors.write.homeFolderMove.message.isHome": {
     "sourceHash": "17b0b0b"
   },
-  "errors.write.homeFolderMove.message.holdsHome": "Папку <code>{path}</code> переместить нельзя: в ней находится ваша папка пользователя, а ваш Mac ожидает найти ее ровно там, где она сейчас.",
+  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {Папку <code>{path}</code> переместить нельзя: в ней находится ваша папка пользователя, а ваш Mac ожидает найти ее ровно там, где она сейчас.} windows {You can’t move <code>{path}</code> because your user folder is in there, and Windows expects to find it right where it is.} other {You can’t move <code>{path}</code> because your home folder is in there, and your computer expects to find it right where it is.}}",
   "@errors.write.homeFolderMove.message.holdsHome": {
     "sourceHash": "c43a8e6"
   },
-  "errors.write.homeFolderMove.suggestion.isHome": "Если хотите, чтобы файлы лежали в другом месте, зайдите в нее, выберите то, что нужно, и переместите это. Ваш Mac скажет вам спасибо.",
+  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {Если хотите, чтобы файлы лежали в другом месте, зайдите в нее, выберите то, что нужно, и переместите это. Ваш Mac скажет вам спасибо.} windows {If you want your files somewhere else, go in there, pick what you need, and move that. Your PC will thank you.} other {If you want your files somewhere else, go in there, pick what you need, and move that. Your computer will thank you.}}",
   "@errors.write.homeFolderMove.suggestion.isHome": {
     "sourceHash": "580bee6"
   },
@@ -2001,19 +2001,19 @@
   "@errors.write.homeFolderMove.suggestion.holdsHome": {
     "sourceHash": "a766ab5"
   },
-  "errors.write.homeFolderRename.title": "Пожалуйста, не переименовывайте папку пользователя",
+  "errors.write.homeFolderRename.title": "{platform, select, windows {Please don’t rename your user folder} other {Пожалуйста, не переименовывайте папку пользователя}}",
   "@errors.write.homeFolderRename.title": {
     "sourceHash": "ec47bfe"
   },
-  "errors.write.homeFolderRename.message.isHome": "Эй, ваш Mac знает вашу папку пользователя именно под этим именем. Если ее переименовать, при следующем входе он вас не найдет.",
+  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Эй, ваш Mac знает вашу папку пользователя именно под этим именем. Если ее переименовать, при следующем входе он вас не найдет.} windows {Hey, Windows knows your user folder by this name. Rename it, and it won’t find you next time you sign in.} other {Hey, your computer knows your home folder by this name. Rename it, and it won’t find you next time you log in.}}",
   "@errors.write.homeFolderRename.message.isHome": {
     "sourceHash": "fd78f2f"
   },
-  "errors.write.homeFolderRename.message.holdsHome": "Папку <code>{path}</code> переименовать нельзя: в ней находится ваша папка пользователя, а ваш Mac ожидает найти ее именно по этому пути.",
+  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Папку <code>{path}</code> переименовать нельзя: в ней находится ваша папка пользователя, а ваш Mac ожидает найти ее именно по этому пути.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
   },
-  "errors.write.homeFolderRename.suggestion.isHome": "Если новое имя действительно нужно, в macOS есть аккуратный способ сделать это в разделе «Пользователи и группы». Только это не быстрое F2.",
+  "errors.write.homeFolderRename.suggestion.isHome": "{platform, select, macos {Если новое имя действительно нужно, в macOS есть аккуратный способ сделать это в разделе «Пользователи и группы». Только это не быстрое F2.} windows {Windows has no safe built-in way to rename it, so it’s best left as it is.} other {If you really need a new name, an administrator can do it carefully with usermod, signed in as another user. It’s not a quick F2, though.}}",
   "@errors.write.homeFolderRename.suggestion.isHome": {
     "sourceHash": "b1e0d3b"
   },
@@ -2041,7 +2041,7 @@
   "@errors.write.landingNotRecorded.message": {
     "sourceHash": "6ca4881"
   },
-  "errors.write.landingNotRecorded.suggestion": "Попробуйте еще раз. Если это повторяется, проверьте, есть ли свободное место на диске Mac, а затем перезапустите Cmdr.",
+  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Попробуйте еще раз. Если это повторяется, проверьте, есть ли свободное место на диске Mac, а затем перезапустите Cmdr.} windows {Try again. If it keeps happening, check that your PC has free space, then restart Cmdr.} other {Try again. If it keeps happening, check that your computer’s disk has free space, then restart Cmdr.}}",
   "@errors.write.landingNotRecorded.suggestion": {
     "sourceHash": "e99aa6e"
   },
@@ -2117,7 +2117,7 @@
   "@errors.write.fallback.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.fallback.title.trash": "Не удалось переместить в Корзину",
+  "errors.write.fallback.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Не удалось переместить в Корзину}}",
   "@errors.write.fallback.title.trash": {
     "sourceHash": "44e3a2e"
   },
@@ -2133,7 +2133,7 @@
   "@errors.write.fallback.message.delete": {
     "sourceHash": "9a08b89"
   },
-  "errors.write.fallback.message.trash": "При перемещении в Корзину возникла проблема.",
+  "errors.write.fallback.message.trash": "{platform, select, windows {Something went wrong while moving to the Recycle Bin.} other {При перемещении в Корзину возникла проблема.}}",
   "@errors.write.fallback.message.trash": {
     "sourceHash": "63f8393"
   },

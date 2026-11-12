@@ -15,7 +15,7 @@
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
-  "fileOperations.delete.noTrashWarningStrong": "這個卷宗不支援垃圾桶。",
+  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {這個卷宗不支援垃圾桶。}}",
   "@fileOperations.delete.noTrashWarningStrong": {
     "sourceHash": "911688a"
   },
@@ -23,19 +23,19 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "你選取的內容中有一部分只存在雲端。把它們移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」。否則請取消這個對話方塊，先把所有檔案設為離線可用，或是取消選取所有只存在雲端的檔案。",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.} other {你選取的內容中有一部分只存在雲端。把它們移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」。否則請取消這個對話方塊，先把所有檔案設為離線可用，或是取消選取所有只存在雲端的檔案。}}",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "2468db5"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "你選取的內容全都只存在雲端。把它移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」。否則請取消這個對話方塊，先把這些檔案設為離線可用。",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and make these files available offline first.} other {你選取的內容全都只存在雲端。把它移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」。否則請取消這個對話方塊，先把這些檔案設為離線可用。}}",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "dd04d39"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "你選取的內容中含有只存在雲端的檔案，所以下面的按鈕現在提供「刪除」。請看一下上面的說明，沒問題的話再按一次。",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Your selection turned out to hold online-only content, so the button below now offers Delete permanently. Read the note above, then press it again if that’s OK.} other {你選取的內容中含有只存在雲端的檔案，所以下面的按鈕現在提供「刪除」。請看一下上面的說明，沒問題的話再按一次。}}",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
     "sourceHash": "d3f4a7a"
   },
-  "fileOperations.delete.archiveWarningStrong": "壓縮檔裡沒有垃圾桶。",
+  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {There’s no Recycle Bin inside an archive.} other {壓縮檔裡沒有垃圾桶。}}",
   "@fileOperations.delete.archiveWarningStrong": {
     "sourceHash": "d25cd46"
   },
@@ -47,7 +47,7 @@
   "@fileOperations.trash.undoAction": {
     "sourceHash": "a8283ad"
   },
-  "fileOperations.trash.goToTrashAction": "前往垃圾桶",
+  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Go to Recycle Bin} other {前往垃圾桶}}",
   "@fileOperations.trash.goToTrashAction": {
     "sourceHash": "5332858"
   },
@@ -59,7 +59,7 @@
   "@fileOperations.trash.undone": {
     "sourceHash": "a76ffee"
   },
-  "fileOperations.trash.undonePartial": "已把 {restoredText} 個{restored, plural, other {檔案}}放回原處，{skippedText} 個{skipped, plural, other {項目}}留在垃圾桶裡。",
+  "fileOperations.trash.undonePartial": "{platform, select, windows {Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Recycle Bin.} other {已把 {restoredText} 個{restored, plural, other {檔案}}放回原處，{skippedText} 個{skipped, plural, other {項目}}留在垃圾桶裡。}}",
   "@fileOperations.trash.undonePartial": {
     "sourceHash": "371413d"
   },
@@ -67,19 +67,19 @@
   "@fileOperations.trash.undoUnavailable": {
     "sourceHash": "ee17b5f"
   },
-  "fileOperations.trash.undoGone": "沒有可以放回的東西：{count, plural, other {項目}}已經不在垃圾桶裡了。",
+  "fileOperations.trash.undoGone": "{platform, select, windows {Nothing to put back: {count, plural, one {the item was} other {the items were}} no longer in the Recycle Bin.} other {沒有可以放回的東西：{count, plural, other {項目}}已經不在垃圾桶裡了。}}",
   "@fileOperations.trash.undoGone": {
     "sourceHash": "69a90c2"
   },
-  "fileOperations.trash.undoPartlyGone": "有 {countText} 個{count, plural, other {項目}}已經不在垃圾桶裡了。",
+  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {item was} other {items were}} no longer in the Recycle Bin.} other {有 {countText} 個{count, plural, other {項目}}已經不在垃圾桶裡了。}}",
   "@fileOperations.trash.undoPartlyGone": {
     "sourceHash": "2e23577"
   },
-  "fileOperations.trash.noTrashHere": "這個磁碟機沒有垃圾桶。",
+  "fileOperations.trash.noTrashHere": "{platform, select, windows {This drive doesn’t have a Recycle Bin.} other {這個磁碟機沒有垃圾桶。}}",
   "@fileOperations.trash.noTrashHere": {
     "sourceHash": "f58bdab"
   },
-  "fileOperations.delete.trashSwitch": "移至垃圾桶",
+  "fileOperations.delete.trashSwitch": "{platform, select, windows {Move to the Recycle Bin} other {移至垃圾桶}}",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"
   },
@@ -95,11 +95,11 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "46b23b5"
   },
-  "fileOperations.delete.confirmDelete": "刪除",
+  "fileOperations.delete.confirmDelete": "{platform, select, windows {Delete permanently} other {刪除}}",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
   },
-  "fileOperations.delete.confirmMoveToTrash": "移至垃圾桶",
+  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Delete} other {移至垃圾桶}}",
   "@fileOperations.delete.confirmMoveToTrash": {
     "sourceHash": "b250a45"
   },
@@ -435,11 +435,11 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {複製} move {移動} compress {壓縮} delete {刪除} other {移至垃圾桶}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to the Recycle Bin}}} other {{verb, select, copy {複製} move {移動} compress {壓縮} delete {刪除} other {移至垃圾桶}}}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
     "sourceHash": "b18b6e3"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {複製} move {移動} compress {壓縮} delete {刪除} other {移至垃圾桶}} {phrase}",
+  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Copy {phrase}} move {Move {phrase}} compress {Compress {phrase}} delete {Delete {phrase}} other {Move {phrase} to the Recycle Bin}}} other {{verb, select, copy {複製} move {移動} compress {壓縮} delete {刪除} other {移至垃圾桶}} {phrase}}}",
   "@fileOperations.transferDialog.titleWithCounts": {
     "sourceHash": "d21c910"
   },
@@ -503,7 +503,7 @@
   "@fileOperations.transferProgress.scanTitleDelete": {
     "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "正在統計要移至垃圾桶的項目⋯",
+  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Counting items to move to the Recycle Bin…} other {正在統計要移至垃圾桶的項目⋯}}",
   "@fileOperations.transferProgress.scanTitleTrash": {
     "sourceHash": "6df6c7f"
   },
@@ -551,11 +551,11 @@
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.canceledAlertTitle": "{type, select, copy {已取消複製} move {已取消移動} compress {已取消壓縮} delete {已取消刪除} trash {已取消移至垃圾桶} other {已取消}}",
+  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to the Recycle Bin canceled} other {Canceled}}} other {{type, select, copy {已取消複製} move {已取消移動} compress {已取消壓縮} delete {已取消刪除} trash {已取消移至垃圾桶} other {已取消}}}}",
   "@fileOperations.transferProgress.canceledAlertTitle": {
     "sourceHash": "3cba939"
   },
-  "fileOperations.transferProgress.canceledAlertMessage": "{type, select, copy {你已取消這次複製。目前為止複製好的檔案會留在原處。} move {你已取消這次移動。目前為止移動過的檔案會留在新位置。} compress {你已取消這次壓縮。} delete {你已取消這次刪除。目前為止刪除的檔案已經不在了，其餘檔案仍在原處。} trash {你已取消這次移至垃圾桶的操作。目前為止移過去的檔案會留在垃圾桶中，其餘檔案仍在原處。} other {你已取消這項操作。}}",
+  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to the Recycle Bin. The files it moved so far stay in the Recycle Bin, and the rest are where they were.} other {You’ve canceled this operation.}}} other {{type, select, copy {你已取消這次複製。目前為止複製好的檔案會留在原處。} move {你已取消這次移動。目前為止移動過的檔案會留在新位置。} compress {你已取消這次壓縮。} delete {你已取消這次刪除。目前為止刪除的檔案已經不在了，其餘檔案仍在原處。} trash {你已取消這次移至垃圾桶的操作。目前為止移過去的檔案會留在垃圾桶中，其餘檔案仍在原處。} other {你已取消這項操作。}}}}",
   "@fileOperations.transferProgress.canceledAlertMessage": {
     "sourceHash": "1d1de76"
   },
@@ -651,7 +651,7 @@
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
-  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {沒有複製任何檔案} other {已複製 {countText} 個檔案}}} move {{count, plural, =0 {沒有移動任何檔案} other {已移動 {countText} 個檔案}}} delete {{count, plural, =0 {沒有刪除任何檔案} other {已刪除 {countText} 個檔案}}} trash {{count, plural, =0 {沒有檔案移至垃圾桶} other {已將 {countText} 個檔案移至垃圾桶}}} compress {{count, plural, =0 {沒有壓縮任何檔案} other {已壓縮 {countText} 個檔案}}} other {完成}}",
+  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Recycle Bin} one {Moved {countText} file to the Recycle Bin} other {Moved {countText} files to the Recycle Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}} other {{type, select, copy {{count, plural, =0 {沒有複製任何檔案} other {已複製 {countText} 個檔案}}} move {{count, plural, =0 {沒有移動任何檔案} other {已移動 {countText} 個檔案}}} delete {{count, plural, =0 {沒有刪除任何檔案} other {已刪除 {countText} 個檔案}}} trash {{count, plural, =0 {沒有檔案移至垃圾桶} other {已將 {countText} 個檔案移至垃圾桶}}} compress {{count, plural, =0 {沒有壓縮任何檔案} other {已壓縮 {countText} 個檔案}}} other {完成}}}}",
   "@fileOperations.transferProgress.titleDone": {
     "sourceHash": "3db0154"
   },
@@ -691,7 +691,7 @@
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {正在複製} move {正在移動} compress {正在壓縮} delete {正在刪除} other {正在移至垃圾桶}}⋯",
+  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Recycle Bin}}…} other {{gerund, select, copy {正在複製} move {正在移動} compress {正在壓縮} delete {正在刪除} other {正在移至垃圾桶}}⋯}}",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "0c636e5"
   },
@@ -843,7 +843,7 @@
   "@fileOperations.sourcesGone.title": {
     "sourceHash": "9f8e2cb"
   },
-  "fileOperations.sourcesGone.message": "{type, select, copy {{gone, plural, other {排隊等待期間，要複製的 {totalText} 個項目中有 {goneText} 個被移到別處或刪除了。}}} move {{gone, plural, other {排隊等待期間，要移動的 {totalText} 個項目中有 {goneText} 個被移到別處或刪除了。}}} delete {{gone, plural, other {排隊等待期間，要刪除的 {totalText} 個項目中有 {goneText} 個被移到別處或刪除了。}}} trash {{gone, plural, other {排隊等待期間，要移到垃圾桶的 {totalText} 個項目中有 {goneText} 個被移到別處或刪除了。}}} other {{gone, plural, other {排隊等待期間，這項操作要處理的 {totalText} 個項目中有 {goneText} 個被移到別處或刪除了。}}}}",
+  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to the Recycle Bin was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {{gone, plural, other {排隊等待期間，要複製的 {totalText} 個項目中有 {goneText} 個被移到別處或刪除了。}}} move {{gone, plural, other {排隊等待期間，要移動的 {totalText} 個項目中有 {goneText} 個被移到別處或刪除了。}}} delete {{gone, plural, other {排隊等待期間，要刪除的 {totalText} 個項目中有 {goneText} 個被移到別處或刪除了。}}} trash {{gone, plural, other {排隊等待期間，要移到垃圾桶的 {totalText} 個項目中有 {goneText} 個被移到別處或刪除了。}}} other {{gone, plural, other {排隊等待期間，這項操作要處理的 {totalText} 個項目中有 {goneText} 個被移到別處或刪除了。}}}}}}",
   "@fileOperations.sourcesGone.message": {
     "sourceHash": "0512078"
   },
@@ -851,15 +851,15 @@
   "@fileOperations.sourcesGone.moreItems": {
     "sourceHash": "c39507d"
   },
-  "fileOperations.sourcesGone.continue": "{type, select, copy {複製其餘項目} move {移動其餘項目} delete {刪除其餘項目} trash {將其餘項目移到垃圾桶} other {繼續處理其餘項目}}",
+  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest permanently} trash {Delete the rest} other {Do the rest}}} other {{type, select, copy {複製其餘項目} move {移動其餘項目} delete {刪除其餘項目} trash {將其餘項目移到垃圾桶} other {繼續處理其餘項目}}}}",
   "@fileOperations.sourcesGone.continue": {
     "sourceHash": "2790bfb"
   },
-  "fileOperations.sourcesGone.heldToast": "{type, select, copy {排隊中的一項複製操作有個問題要問你。目前開啟的對話方塊一關閉，你就會看到。} move {排隊中的一項移動操作有個問題要問你。目前開啟的對話方塊一關閉，你就會看到。} delete {排隊中的一項刪除操作有個問題要問你。目前開啟的對話方塊一關閉，你就會看到。} trash {排隊中的一項移到垃圾桶操作有個問題要問你。目前開啟的對話方塊一關閉，你就會看到。} other {排隊中的一項操作有個問題要問你。目前開啟的對話方塊一關閉，你就會看到。}}",
+  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {A queued copy has a question for you. You’ll see it as soon as the open dialog closes.} move {A queued move has a question for you. You’ll see it as soon as the open dialog closes.} delete {A queued delete has a question for you. You’ll see it as soon as the open dialog closes.} trash {A queued move to the Recycle Bin has a question for you. You’ll see it as soon as the open dialog closes.} other {A queued operation has a question for you. You’ll see it as soon as the open dialog closes.}}} other {{type, select, copy {排隊中的一項複製操作有個問題要問你。目前開啟的對話方塊一關閉，你就會看到。} move {排隊中的一項移動操作有個問題要問你。目前開啟的對話方塊一關閉，你就會看到。} delete {排隊中的一項刪除操作有個問題要問你。目前開啟的對話方塊一關閉，你就會看到。} trash {排隊中的一項移到垃圾桶操作有個問題要問你。目前開啟的對話方塊一關閉，你就會看到。} other {排隊中的一項操作有個問題要問你。目前開啟的對話方塊一關閉，你就會看到。}}}}",
   "@fileOperations.sourcesGone.heldToast": {
     "sourceHash": "75f645d"
   },
-  "fileOperations.sourcesGone.nothingLeftToast": "{type, select, copy {沒有東西可以複製了：要複製的 {total, plural, other {{totalText} 個項目}}在排隊等待期間被移到別處或刪除了。} move {沒有東西可以移動了：要移動的 {total, plural, other {{totalText} 個項目}}在排隊等待期間被移到別處或刪除了。} delete {沒有東西可以刪除了：要刪除的 {total, plural, other {{totalText} 個項目}}在排隊等待期間被移到別處或刪除了。} trash {沒有東西可以移到垃圾桶了：要移到垃圾桶的 {total, plural, other {{totalText} 個項目}}在排隊等待期間被移到別處或刪除了。} other {沒有剩下要做的了：這項操作要處理的 {total, plural, other {{totalText} 個項目}}在排隊等待期間被移到別處或刪除了。}}",
+  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Nothing left to copy: {total, plural, one {the item} other {all {totalText} items}} this copy was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} move {Nothing left to move: {total, plural, one {the item} other {all {totalText} items}} this move was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} delete {Nothing left to delete: {total, plural, one {the item} other {all {totalText} items}} this delete was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} trash {Nothing left to move to the Recycle Bin: {total, plural, one {the item} other {all {totalText} items}} this move to the Recycle Bin was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} other {Nothing left to do: {total, plural, one {the item} other {all {totalText} items}} this operation was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {沒有東西可以複製了：要複製的 {total, plural, other {{totalText} 個項目}}在排隊等待期間被移到別處或刪除了。} move {沒有東西可以移動了：要移動的 {total, plural, other {{totalText} 個項目}}在排隊等待期間被移到別處或刪除了。} delete {沒有東西可以刪除了：要刪除的 {total, plural, other {{totalText} 個項目}}在排隊等待期間被移到別處或刪除了。} trash {沒有東西可以移到垃圾桶了：要移到垃圾桶的 {total, plural, other {{totalText} 個項目}}在排隊等待期間被移到別處或刪除了。} other {沒有剩下要做的了：這項操作要處理的 {total, plural, other {{totalText} 個項目}}在排隊等待期間被移到別處或刪除了。}}}}",
   "@fileOperations.sourcesGone.nothingLeftToast": {
     "sourceHash": "4d62b7d"
   },
@@ -1303,7 +1303,7 @@
   "@fileOperations.resticPassword.inputAria": {
     "sourceHash": "3e39703"
   },
-  "fileOperations.resticPassword.remember": "記住在鑰匙圈中",
+  "fileOperations.resticPassword.remember": "{platform, select, macos {記住在鑰匙圈中} windows {Remember password} other {Remember in keyring}}",
   "@fileOperations.resticPassword.remember": {
     "sourceHash": "3fd7384"
   },
@@ -1347,7 +1347,7 @@
   "@fileOperations.validation.pathEmpty": {
     "sourceHash": "c7afbbc"
   },
-  "fileOperations.validation.pathNotAbsolute": "路徑必須是絕對路徑（以 / 開頭）",
+  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {路徑必須是絕對路徑（以 / 開頭）}}",
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
   },

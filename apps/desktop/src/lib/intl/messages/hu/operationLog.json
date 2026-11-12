@@ -188,7 +188,7 @@
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "Innen a Kukába: {from}",
+  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {Innen a Kukába: {from}}}",
   "@operationLog.route.fromToTrash": {
     "sourceHash": "9eff97f"
   },
@@ -256,7 +256,7 @@
   "@operationLog.summary.delete": {
     "sourceHash": "97ec6b7"
   },
-  "operationLog.summary.trash": "{count, plural, one {{countText} elem áthelyezése a Kukába} other {{countText} elem áthelyezése a Kukába}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {{countText} elem áthelyezése a Kukába} other {{countText} elem áthelyezése a Kukába}}}}",
   "@operationLog.summary.trash": {
     "sourceHash": "34b4457"
   },
@@ -348,7 +348,7 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "A Cmdr bezárult, mielőtt ez a művelet befejeződött volna, így lehet, hogy nem rögzített mindent, amit a művelet csinált. A visszagörgetés csak arra terjed ki, amit rögzített.",
+  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {A Cmdr bezárult, mielőtt ez a művelet befejeződött volna, így lehet, hogy nem rögzített mindent, amit a művelet csinált. A visszagörgetés csak arra terjed ki, amit rögzített.}}",
   "@operationLog.rollback.interruptedNotice": {
     "sourceHash": "642e6fc"
   },

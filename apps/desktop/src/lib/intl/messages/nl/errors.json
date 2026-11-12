@@ -1177,7 +1177,7 @@
   "@errors.write.sourceNotFound.message.delete": {
     "sourceHash": "cb0ab8f"
   },
-  "errors.write.sourceNotFound.message.trash": "Het bestand of de map die je naar de prullenmand wilde verplaatsen bestaat niet meer.",
+  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {The file or folder you tried to move to the Recycle Bin no longer exists.} other {Het bestand of de map die je naar de prullenmand wilde verplaatsen bestaat niet meer.}}",
   "@errors.write.sourceNotFound.message.trash": {
     "sourceHash": "dbc0bbe"
   },
@@ -1301,7 +1301,7 @@
   "@errors.write.cancelled.title.delete": {
     "sourceHash": "546aac1"
   },
-  "errors.write.cancelled.title.trash": "Verplaatsen naar prullenmand geannuleerd",
+  "errors.write.cancelled.title.trash": "{platform, select, windows {Move to the Recycle Bin canceled} other {Verplaatsen naar prullenmand geannuleerd}}",
   "@errors.write.cancelled.title.trash": {
     "sourceHash": "52a8954"
   },
@@ -1317,7 +1317,7 @@
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
   },
-  "errors.write.cancelled.message.trash": "Het verplaatsen naar de prullenmand is geannuleerd.",
+  "errors.write.cancelled.message.trash": "{platform, select, windows {The move to the Recycle Bin was canceled.} other {Het verplaatsen naar de prullenmand is geannuleerd.}}",
   "@errors.write.cancelled.message.trash": {
     "sourceHash": "9585f1b"
   },
@@ -1341,7 +1341,7 @@
   "@errors.write.deviceDisconnected.message.delete": {
     "sourceHash": "195562e"
   },
-  "errors.write.deviceDisconnected.message.trash": "Het apparaat werd losgekoppeld tijdens het verplaatsen naar de prullenmand.",
+  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {The device was disconnected during the move to the Recycle Bin.} other {Het apparaat werd losgekoppeld tijdens het verplaatsen naar de prullenmand.}}",
   "@errors.write.deviceDisconnected.message.trash": {
     "sourceHash": "9d5a47a"
   },
@@ -1381,11 +1381,11 @@
   "@errors.write.moveNotConfirmed.suggestion": {
     "sourceHash": "4d7fedc"
   },
-  "errors.write.trashNotSupported.title": "Prullenmand niet ondersteund",
+  "errors.write.trashNotSupported.title": "{platform, select, windows {Recycle Bin not supported} other {Prullenmand niet ondersteund}}",
   "@errors.write.trashNotSupported.title": {
     "sourceHash": "af90a02"
   },
-  "errors.write.trashNotSupported.message": "Dit volume ondersteunt de prullenmand niet.",
+  "errors.write.trashNotSupported.message": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Dit volume ondersteunt de prullenmand niet.}}",
   "@errors.write.trashNotSupported.message": {
     "sourceHash": "911688a"
   },
@@ -1505,7 +1505,7 @@
   "@errors.write.readError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.readError.title.trash": "Verplaatsen naar prullenmand lukte niet",
+  "errors.write.readError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Verplaatsen naar prullenmand lukte niet}}",
   "@errors.write.readError.title.trash": {
     "sourceHash": "44e3a2e"
   },
@@ -1529,7 +1529,7 @@
   "@errors.write.writeError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.writeError.title.trash": "Verplaatsen naar prullenmand lukte niet",
+  "errors.write.writeError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Verplaatsen naar prullenmand lukte niet}}",
   "@errors.write.writeError.title.trash": {
     "sourceHash": "44e3a2e"
   },
@@ -1637,11 +1637,11 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "77cff09"
   },
-  "errors.write.trashRefused.title": "Verplaatsen naar prullenmand lukte niet",
+  "errors.write.trashRefused.title": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Verplaatsen naar prullenmand lukte niet}}",
   "@errors.write.trashRefused.title": {
     "sourceHash": "44e3a2e"
   },
-  "errors.write.trashRefused.message.notPermitted": "macOS liet Cmdr {count} van de onderdelen die je koos niet aanraken.",
+  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS liet Cmdr {count} van de onderdelen die je koos niet aanraken.} windows {Windows wouldn’t let Cmdr touch {count} of the items you picked.} other {Cmdr wasn’t allowed to touch {count} of the items you picked.}}",
   "@errors.write.trashRefused.message.notPermitted": {
     "sourceHash": "57a38d7"
   },
@@ -1653,23 +1653,23 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "Een ander account op deze Mac is eigenaar van {count} van de onderdelen die je koos, en hun map laat alleen de eigenaar van een onderdeel het verplaatsen.",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "{platform, select, macos {Een ander account op deze Mac is eigenaar van {count} van de onderdelen die je koos, en hun map laat alleen de eigenaar van een onderdeel het verplaatsen.} windows {Another account on this PC owns {count} of the items you picked, and their folder lets only an item’s owner move it.} other {Another account on this computer owns {count} of the items you picked, and their folder lets only an item’s owner move it.}}",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "50f2ce6"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "Cmdr mag niets in de prullenmand op deze schijf zetten en liet daarom {count} van de onderdelen die je koos gewoon staan.",
+  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {Cmdr mag niets in de prullenmand op deze schijf zetten en liet daarom {count} van de onderdelen die je koos gewoon staan.}}",
   "@errors.write.trashRefused.message.trashNotWritable": {
     "sourceHash": "024ef04"
   },
-  "errors.write.trashRefused.message.noTrashForVolume": "macOS kon voor {count} van de onderdelen die je koos geen prullenmand vinden.",
+  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS kon voor {count} van de onderdelen die je koos geen prullenmand vinden.} windows {Windows couldn’t find a Recycle Bin for {count} of the items you picked.} other {Cmdr couldn’t find a trash for {count} of the items you picked.}}",
   "@errors.write.trashRefused.message.noTrashForVolume": {
     "sourceHash": "702ae17"
   },
-  "errors.write.trashRefused.message.other": "macOS verplaatste {count} van de onderdelen die je koos niet naar de prullenmand.",
+  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS verplaatste {count} van de onderdelen die je koos niet naar de prullenmand.} windows {Windows wouldn’t move {count} of the items you picked to the Recycle Bin.} other {Cmdr couldn’t move {count} of the items you picked to the trash.}}",
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "6f71e12"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "De onderdelen staan misschien op een plek die macOS voor zichzelf houdt. Finder kan ze soms toch verplaatsen, want Finder kan om je wachtwoord vragen.",
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {De onderdelen staan misschien op een plek die macOS voor zichzelf houdt. Finder kan ze soms toch verplaatsen, want Finder kan om je wachtwoord vragen.} windows {The items may sit somewhere Windows keeps to itself. File Explorer can sometimes still move them, since it can ask for administrator permission.} other {The items may sit somewhere only an administrator can change. Check the folder’s permissions, or ask whoever manages this computer.}}",
   "@errors.write.trashRefused.suggestion.notPermitted": {
     "sourceHash": "2ef3e96"
   },
@@ -1677,23 +1677,23 @@
   "@errors.write.trashRefused.suggestion.locked": {
     "sourceHash": "ece70f5"
   },
-  "errors.write.trashRefused.suggestion.folderNotWritable": "Om ze te verplaatsen, heb je de bevoegdheid nodig om hun map te wijzigen. Finder toont wie dat mag in ‘Toon info’ van de map, onder ‘Delen en bevoegdheden’.",
+  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {Om ze te verplaatsen, heb je de bevoegdheid nodig om hun map te wijzigen. Finder toont wie dat mag in ‘Toon info’ van de map, onder ‘Delen en bevoegdheden’.} windows {To move them, you need permission to change their folder. File Explorer shows who can in the folder’s Properties, under Security.} other {To move them, you need permission to change their folder. Your file manager shows who can in the folder’s properties, under Permissions.}}",
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
     "sourceHash": "8614665"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder kan ze toch verplaatsen door eerst om een beheerderswachtwoord te vragen.",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder kan ze toch verplaatsen door eerst om een beheerderswachtwoord te vragen.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
     "sourceHash": "6a8fbff"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "Dit kan gebeuren als de bevoegdheden van de prullenmandmap veranderen, bijvoorbeeld na de overstap naar een nieuwe Mac. Je kunt de onderdelen wel definitief verwijderen met Shift+F8.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "{platform, select, macos {Dit kan gebeuren als de bevoegdheden van de prullenmandmap veranderen, bijvoorbeeld na de overstap naar een nieuwe Mac. Je kunt de onderdelen wel definitief verwijderen met Shift+F8.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items permanently with Shift+F8.} other {This can happen when the trash folder’s permissions change, for example after moving to a new computer. You can still delete the items permanently with Shift+F8.}}",
   "@errors.write.trashRefused.suggestion.trashNotWritable": {
     "sourceHash": "abaf265"
   },
-  "errors.write.trashRefused.suggestion.noTrashForVolume": "Sommige plekken hebben geen eigen prullenmand, waaronder cloudmappen en de meeste netwerkschijven. Je kunt de onderdelen wel definitief verwijderen met Shift+F8.",
+  "errors.write.trashRefused.suggestion.noTrashForVolume": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.} other {Sommige plekken hebben geen eigen prullenmand, waaronder cloudmappen en de meeste netwerkschijven. Je kunt de onderdelen wel definitief verwijderen met Shift+F8.}}",
   "@errors.write.trashRefused.suggestion.noTrashForVolume": {
     "sourceHash": "b6d08fa"
   },
-  "errors.write.trashRefused.suggestion.other": "Bekijk de technische details hieronder voor wat macOS meldde.",
+  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Bekijk de technische details hieronder voor wat macOS meldde.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
     "sourceHash": "b61b3c1"
   },
@@ -1713,7 +1713,7 @@
   "@errors.write.ioError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.ioError.title.trash": "Verplaatsen naar prullenmand lukte niet",
+  "errors.write.ioError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Verplaatsen naar prullenmand lukte niet}}",
   "@errors.write.ioError.title.trash": {
     "sourceHash": "44e3a2e"
   },
@@ -1729,7 +1729,7 @@
   "@errors.write.ioError.message.delete": {
     "sourceHash": "9e79007"
   },
-  "errors.write.ioError.message.trash": "Kon het bestand niet naar de prullenmand verplaatsen.",
+  "errors.write.ioError.message.trash": "{platform, select, windows {Couldn’t move the file to the Recycle Bin.} other {Kon het bestand niet naar de prullenmand verplaatsen.}}",
   "@errors.write.ioError.message.trash": {
     "sourceHash": "948e289"
   },
@@ -1753,7 +1753,7 @@
   "@errors.write.permissionDenied.message.delete": {
     "sourceHash": "0c03fc4"
   },
-  "errors.write.permissionDenied.message.trash": "Je hebt geen bevoegdheid om hier bestanden naar de prullenmand te verplaatsen.",
+  "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {Je hebt geen bevoegdheid om hier bestanden naar de prullenmand te verplaatsen.}}",
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
@@ -1765,7 +1765,7 @@
   "@errors.write.permissionDenied.suggestion.default": {
     "sourceHash": "ec02093"
   },
-  "errors.write.permissionDenied.message.named": "Je macOS-gebruiker kan {folder} niet wijzigen.",
+  "errors.write.permissionDenied.message.named": "{platform, select, macos {Je macOS-gebruiker kan {folder} niet wijzigen.} windows {Your Windows account can’t change {folder}.} other {Your user account can’t change {folder}.}}",
   "@errors.write.permissionDenied.message.named": {
     "sourceHash": "0ffd79b"
   },
@@ -1961,15 +1961,15 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
-  "errors.write.homeFolder.title": "Verwijder je thuismap alsjeblieft niet",
+  "errors.write.homeFolder.title": "{platform, select, windows {Please don’t delete your user folder} other {Verwijder je thuismap alsjeblieft niet}}",
   "@errors.write.homeFolder.title": {
     "sourceHash": "6005e89"
   },
-  "errors.write.homeFolder.message.isHome": "Hé, je kunt je eigen thuismap niet verwijderen.",
+  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hey, you can’t delete your own user folder.} other {Hé, je kunt je eigen thuismap niet verwijderen.}}",
   "@errors.write.homeFolder.message.isHome": {
     "sourceHash": "16ee6cd"
   },
-  "errors.write.homeFolder.message.holdsHome": "Je kunt <code>{path}</code> niet verwijderen, want je thuismap staat erin, en je thuismap kun je niet verwijderen.",
+  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {You can’t delete <code>{path}</code> because it contains your user folder, and you can’t delete your user folder.} other {Je kunt <code>{path}</code> niet verwijderen, want je thuismap staat erin, en je thuismap kun je niet verwijderen.}}",
   "@errors.write.homeFolder.message.holdsHome": {
     "sourceHash": "4ad5896"
   },
@@ -1981,19 +1981,19 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
-  "errors.write.homeFolderMove.title": "Verplaats je thuismap alsjeblieft niet",
+  "errors.write.homeFolderMove.title": "{platform, select, windows {Please don’t move your user folder} other {Verplaats je thuismap alsjeblieft niet}}",
   "@errors.write.homeFolderMove.title": {
     "sourceHash": "f5db2db"
   },
-  "errors.write.homeFolderMove.message.isHome": "Hé, je thuismap staat precies waar hij hoort. Verplaats je hem, dan zoekt je Mac je de volgende keer dat je inlogt op de verkeerde plek.",
+  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Hé, je thuismap staat precies waar hij hoort. Verplaats je hem, dan zoekt je Mac je de volgende keer dat je inlogt op de verkeerde plek.} windows {Hey, your user folder lives right where it is. Move it, and Windows will look for you in the wrong place next time you sign in.} other {Hey, your home folder lives right where it is. Move it, and your computer will look for you in the wrong place next time you log in.}}",
   "@errors.write.homeFolderMove.message.isHome": {
     "sourceHash": "17b0b0b"
   },
-  "errors.write.homeFolderMove.message.holdsHome": "Je kunt <code>{path}</code> niet verplaatsen, want je thuismap staat erin, en je Mac verwacht hem precies daar te vinden.",
+  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {Je kunt <code>{path}</code> niet verplaatsen, want je thuismap staat erin, en je Mac verwacht hem precies daar te vinden.} windows {You can’t move <code>{path}</code> because your user folder is in there, and Windows expects to find it right where it is.} other {You can’t move <code>{path}</code> because your home folder is in there, and your computer expects to find it right where it is.}}",
   "@errors.write.homeFolderMove.message.holdsHome": {
     "sourceHash": "c43a8e6"
   },
-  "errors.write.homeFolderMove.suggestion.isHome": "Als je je bestanden ergens anders wilt hebben, ga erin, kies wat je nodig hebt en verplaats dat. Je Mac zal je dankbaar zijn.",
+  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {Als je je bestanden ergens anders wilt hebben, ga erin, kies wat je nodig hebt en verplaats dat. Je Mac zal je dankbaar zijn.} windows {If you want your files somewhere else, go in there, pick what you need, and move that. Your PC will thank you.} other {If you want your files somewhere else, go in there, pick what you need, and move that. Your computer will thank you.}}",
   "@errors.write.homeFolderMove.suggestion.isHome": {
     "sourceHash": "580bee6"
   },
@@ -2001,19 +2001,19 @@
   "@errors.write.homeFolderMove.suggestion.holdsHome": {
     "sourceHash": "a766ab5"
   },
-  "errors.write.homeFolderRename.title": "Wijzig de naam van je thuismap alsjeblieft niet",
+  "errors.write.homeFolderRename.title": "{platform, select, windows {Please don’t rename your user folder} other {Wijzig de naam van je thuismap alsjeblieft niet}}",
   "@errors.write.homeFolderRename.title": {
     "sourceHash": "ec47bfe"
   },
-  "errors.write.homeFolderRename.message.isHome": "Hé, je Mac kent je thuismap onder deze naam. Wijzig je die naam, dan vindt je Mac je de volgende keer dat je inlogt niet meer.",
+  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Hé, je Mac kent je thuismap onder deze naam. Wijzig je die naam, dan vindt je Mac je de volgende keer dat je inlogt niet meer.} windows {Hey, Windows knows your user folder by this name. Rename it, and it won’t find you next time you sign in.} other {Hey, your computer knows your home folder by this name. Rename it, and it won’t find you next time you log in.}}",
   "@errors.write.homeFolderRename.message.isHome": {
     "sourceHash": "fd78f2f"
   },
-  "errors.write.homeFolderRename.message.holdsHome": "Je kunt de naam van <code>{path}</code> niet wijzigen, want je thuismap staat erin, en je Mac verwacht hem op precies dit pad.",
+  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Je kunt de naam van <code>{path}</code> niet wijzigen, want je thuismap staat erin, en je Mac verwacht hem op precies dit pad.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "sourceHash": "b09f296"
   },
-  "errors.write.homeFolderRename.suggestion.isHome": "Als je echt een nieuwe naam nodig hebt, heeft macOS daar een zorgvuldige manier voor in ‘Gebruikers en groepen’. Alleen is het geen snelle F2.",
+  "errors.write.homeFolderRename.suggestion.isHome": "{platform, select, macos {Als je echt een nieuwe naam nodig hebt, heeft macOS daar een zorgvuldige manier voor in ‘Gebruikers en groepen’. Alleen is het geen snelle F2.} windows {Windows has no safe built-in way to rename it, so it’s best left as it is.} other {If you really need a new name, an administrator can do it carefully with usermod, signed in as another user. It’s not a quick F2, though.}}",
   "@errors.write.homeFolderRename.suggestion.isHome": {
     "sourceHash": "b1e0d3b"
   },
@@ -2041,7 +2041,7 @@
   "@errors.write.landingNotRecorded.message": {
     "sourceHash": "6ca4881"
   },
-  "errors.write.landingNotRecorded.suggestion": "Probeer het opnieuw. Als het blijft gebeuren, controleer dan of de schijf van je Mac nog vrije ruimte heeft en herstart Cmdr daarna.",
+  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Probeer het opnieuw. Als het blijft gebeuren, controleer dan of de schijf van je Mac nog vrije ruimte heeft en herstart Cmdr daarna.} windows {Try again. If it keeps happening, check that your PC has free space, then restart Cmdr.} other {Try again. If it keeps happening, check that your computer’s disk has free space, then restart Cmdr.}}",
   "@errors.write.landingNotRecorded.suggestion": {
     "sourceHash": "e99aa6e"
   },
@@ -2117,7 +2117,7 @@
   "@errors.write.fallback.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.fallback.title.trash": "Verplaatsen naar prullenmand lukte niet",
+  "errors.write.fallback.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Verplaatsen naar prullenmand lukte niet}}",
   "@errors.write.fallback.title.trash": {
     "sourceHash": "44e3a2e"
   },
@@ -2133,7 +2133,7 @@
   "@errors.write.fallback.message.delete": {
     "sourceHash": "9a08b89"
   },
-  "errors.write.fallback.message.trash": "Er is een onverwacht probleem opgetreden tijdens het verplaatsen naar de prullenmand.",
+  "errors.write.fallback.message.trash": "{platform, select, windows {Something went wrong while moving to the Recycle Bin.} other {Er is een onverwacht probleem opgetreden tijdens het verplaatsen naar de prullenmand.}}",
   "@errors.write.fallback.message.trash": {
     "sourceHash": "63f8393"
   },

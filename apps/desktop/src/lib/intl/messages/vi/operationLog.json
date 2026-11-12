@@ -188,7 +188,7 @@
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "Từ {from} vào Thùng rác",
+  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {Từ {from} vào Thùng rác}}",
   "@operationLog.route.fromToTrash": {
     "sourceHash": "9eff97f"
   },
@@ -256,7 +256,7 @@
   "@operationLog.summary.delete": {
     "sourceHash": "97ec6b7"
   },
-  "operationLog.summary.trash": "{count, plural, other {Đã chuyển {countText} mục vào thùng rác}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, other {Đã chuyển {countText} mục vào thùng rác}}}}",
   "@operationLog.summary.trash": {
     "sourceHash": "34b4457"
   },
@@ -348,7 +348,7 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "Cmdr đã thoát trước khi thao tác này xong, nên có thể chưa ghi lại hết mọi việc thao tác đã làm. Việc hoàn tác chỉ chạm tới những gì đã được ghi lại.",
+  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {Cmdr đã thoát trước khi thao tác này xong, nên có thể chưa ghi lại hết mọi việc thao tác đã làm. Việc hoàn tác chỉ chạm tới những gì đã được ghi lại.}}",
   "@operationLog.rollback.interruptedNotice": {
     "sourceHash": "642e6fc"
   },

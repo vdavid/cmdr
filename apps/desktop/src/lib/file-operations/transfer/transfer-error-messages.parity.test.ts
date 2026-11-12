@@ -546,7 +546,7 @@ const cases: Case[] = [
     mac: false,
     expected: {
       title: 'Couldn’t access this location',
-      message: 'Your macOS user can’t change /srv/locked.',
+      message: 'Your user account can’t change /srv/locked.',
       suggestion:
         'Changing it needs administrator rights. To give your own account access, adjust the folder’s permissions (for example with chmod) and try again.',
     },

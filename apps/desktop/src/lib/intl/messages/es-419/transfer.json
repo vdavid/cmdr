@@ -1,5 +1,5 @@
 {
-  "transfer.trash": "{count, plural, one {Se movió {countText} archivo al basurero} many {Se movieron {countText} archivos al basurero} other {Se movieron {countText} archivos al basurero}}",
+  "transfer.trash": "{platform, select, windows {Moved {countText} {count, plural, one {file} other {files}} to the Recycle Bin} other {{count, plural, one {Se movió {countText} archivo al basurero} many {Se movieron {countText} archivos al basurero} other {Se movieron {countText} archivos al basurero}}}}",
   "@transfer.trash": {
     "sourceHash": "feda264"
   },

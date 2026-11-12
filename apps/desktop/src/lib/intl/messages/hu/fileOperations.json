@@ -16,7 +16,7 @@
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
-  "fileOperations.delete.noTrashWarningStrong": "Ez a kötet nem támogatja a Kukát.",
+  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Ez a kötet nem támogatja a Kukát.}}",
   "@fileOperations.delete.noTrashWarningStrong": {
     "sourceHash": "911688a"
   },
@@ -24,19 +24,19 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "A kijelölésed egy része csak online érhető el. Ha ezek a Kukába kerülnének, előbb <strong>le kellene tölteni őket</strong>. Ezért a Cmdr itt csak a teljes kijelölés <strong>törlését</strong> ajánlja fel. A Kukában nem marad másolat, de a felhőszolgáltatások a sajátjukban általában 30 napig őrzik a törölt fájlokat. Kattints a „Törlés” gombra, ha ez így rendben van, különben zárd be ezt az ablakot, és vagy tedd offline is elérhetővé az összes fájlt, vagy töröld a csak online elérhető fájlok kijelölését.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.} other {A kijelölésed egy része csak online érhető el. Ha ezek a Kukába kerülnének, előbb <strong>le kellene tölteni őket</strong>. Ezért a Cmdr itt csak a teljes kijelölés <strong>törlését</strong> ajánlja fel. A Kukában nem marad másolat, de a felhőszolgáltatások a sajátjukban általában 30 napig őrzik a törölt fájlokat. Kattints a „Törlés” gombra, ha ez így rendben van, különben zárd be ezt az ablakot, és vagy tedd offline is elérhetővé az összes fájlt, vagy töröld a csak online elérhető fájlok kijelölését.}}",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "2468db5"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Minden, amit kijelöltél, csak online érhető el. Ha a Kukába kerülne, előbb <strong>le kellene tölteni</strong>. Ezért a Cmdr itt csak a teljes kijelölés <strong>törlését</strong> ajánlja fel. A Kukában nem marad másolat, de a felhőszolgáltatások a sajátjukban általában 30 napig őrzik a törölt fájlokat. Kattints a „Törlés” gombra, ha ez így rendben van, különben zárd be ezt az ablakot, és előbb tedd offline is elérhetővé ezeket a fájlokat.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and make these files available offline first.} other {Minden, amit kijelöltél, csak online érhető el. Ha a Kukába kerülne, előbb <strong>le kellene tölteni</strong>. Ezért a Cmdr itt csak a teljes kijelölés <strong>törlését</strong> ajánlja fel. A Kukában nem marad másolat, de a felhőszolgáltatások a sajátjukban általában 30 napig őrzik a törölt fájlokat. Kattints a „Törlés” gombra, ha ez így rendben van, különben zárd be ezt az ablakot, és előbb tedd offline is elérhetővé ezeket a fájlokat.}}",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "dd04d39"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "A kijelölés mégis tartalmaz csak online elérhető tartalmat, ezért a lenti gomb most a „Törlés” műveletet ajánlja fel. Olvasd el a fenti megjegyzést, majd nyomd meg újra, ha ez így rendben van.",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Your selection turned out to hold online-only content, so the button below now offers Delete permanently. Read the note above, then press it again if that’s OK.} other {A kijelölés mégis tartalmaz csak online elérhető tartalmat, ezért a lenti gomb most a „Törlés” műveletet ajánlja fel. Olvasd el a fenti megjegyzést, majd nyomd meg újra, ha ez így rendben van.}}",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
     "sourceHash": "d3f4a7a"
   },
-  "fileOperations.delete.archiveWarningStrong": "Egy archívumon belül nincs Kuka.",
+  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {There’s no Recycle Bin inside an archive.} other {Egy archívumon belül nincs Kuka.}}",
   "@fileOperations.delete.archiveWarningStrong": {
     "sourceHash": "d25cd46"
   },
@@ -48,7 +48,7 @@
   "@fileOperations.trash.undoAction": {
     "sourceHash": "a8283ad"
   },
-  "fileOperations.trash.goToTrashAction": "Ugrás a Kukába",
+  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Go to Recycle Bin} other {Ugrás a Kukába}}",
   "@fileOperations.trash.goToTrashAction": {
     "sourceHash": "5332858"
   },
@@ -60,7 +60,7 @@
   "@fileOperations.trash.undone": {
     "sourceHash": "a76ffee"
   },
-  "fileOperations.trash.undonePartial": "{restoredText} {restored, plural, one {fájl} other {fájl}} visszahelyezve; {skippedText} {skipped, plural, one {elem} other {elem}} a Kukában maradt.",
+  "fileOperations.trash.undonePartial": "{platform, select, windows {Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Recycle Bin.} other {{restoredText} {restored, plural, one {fájl} other {fájl}} visszahelyezve; {skippedText} {skipped, plural, one {elem} other {elem}} a Kukában maradt.}}",
   "@fileOperations.trash.undonePartial": {
     "sourceHash": "371413d"
   },
@@ -68,19 +68,19 @@
   "@fileOperations.trash.undoUnavailable": {
     "sourceHash": "ee17b5f"
   },
-  "fileOperations.trash.undoGone": "Nincs mit visszahelyezni: {count, plural, one {az elem már nem volt a Kukában} other {az elemek már nem voltak a Kukában}}.",
+  "fileOperations.trash.undoGone": "{platform, select, windows {Nothing to put back: {count, plural, one {the item was} other {the items were}} no longer in the Recycle Bin.} other {Nincs mit visszahelyezni: {count, plural, one {az elem már nem volt a Kukában} other {az elemek már nem voltak a Kukában}}.}}",
   "@fileOperations.trash.undoGone": {
     "sourceHash": "69a90c2"
   },
-  "fileOperations.trash.undoPartlyGone": "{countText} {count, plural, one {elem} other {elem}} már nem volt a Kukában.",
+  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {item was} other {items were}} no longer in the Recycle Bin.} other {{countText} {count, plural, one {elem} other {elem}} már nem volt a Kukában.}}",
   "@fileOperations.trash.undoPartlyGone": {
     "sourceHash": "2e23577"
   },
-  "fileOperations.trash.noTrashHere": "Ezen a meghajtón nincs Kuka.",
+  "fileOperations.trash.noTrashHere": "{platform, select, windows {This drive doesn’t have a Recycle Bin.} other {Ezen a meghajtón nincs Kuka.}}",
   "@fileOperations.trash.noTrashHere": {
     "sourceHash": "f58bdab"
   },
-  "fileOperations.delete.trashSwitch": "Áthelyezés a Kukába",
+  "fileOperations.delete.trashSwitch": "{platform, select, windows {Move to the Recycle Bin} other {Áthelyezés a Kukába}}",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"
   },
@@ -96,11 +96,11 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "46b23b5"
   },
-  "fileOperations.delete.confirmDelete": "Törlés",
+  "fileOperations.delete.confirmDelete": "{platform, select, windows {Delete permanently} other {Törlés}}",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
   },
-  "fileOperations.delete.confirmMoveToTrash": "Áthelyezés a Kukába",
+  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Delete} other {Áthelyezés a Kukába}}",
   "@fileOperations.delete.confirmMoveToTrash": {
     "sourceHash": "b250a45"
   },
@@ -437,11 +437,11 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Másolás} move {Áthelyezés} compress {Tömörítés} delete {Törlés} other {Áthelyezés a Kukába}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to the Recycle Bin}}} other {{verb, select, copy {Másolás} move {Áthelyezés} compress {Tömörítés} delete {Törlés} other {Áthelyezés a Kukába}}}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
     "sourceHash": "b18b6e3"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{phrase} {verb, select, copy {másolása} move {áthelyezése} compress {tömörítése} delete {törlése} other {áthelyezése a Kukába}}",
+  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Copy {phrase}} move {Move {phrase}} compress {Compress {phrase}} delete {Delete {phrase}} other {Move {phrase} to the Recycle Bin}}} other {{phrase} {verb, select, copy {másolása} move {áthelyezése} compress {tömörítése} delete {törlése} other {áthelyezése a Kukába}}}}",
   "@fileOperations.transferDialog.titleWithCounts": {
     "sourceHash": "d21c910"
   },
@@ -505,7 +505,7 @@
   "@fileOperations.transferProgress.scanTitleDelete": {
     "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "Kukába helyezendő elemek számolása…",
+  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Counting items to move to the Recycle Bin…} other {Kukába helyezendő elemek számolása…}}",
   "@fileOperations.transferProgress.scanTitleTrash": {
     "sourceHash": "6df6c7f"
   },
@@ -553,11 +553,11 @@
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.canceledAlertTitle": "{type, select, copy {A másolás megszakítva} move {Az áthelyezés megszakítva} compress {A tömörítés megszakítva} delete {A törlés megszakítva} trash {A Kukába helyezés megszakítva} other {Megszakítva}}",
+  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to the Recycle Bin canceled} other {Canceled}}} other {{type, select, copy {A másolás megszakítva} move {Az áthelyezés megszakítva} compress {A tömörítés megszakítva} delete {A törlés megszakítva} trash {A Kukába helyezés megszakítva} other {Megszakítva}}}}",
   "@fileOperations.transferProgress.canceledAlertTitle": {
     "sourceHash": "3cba939"
   },
-  "fileOperations.transferProgress.canceledAlertMessage": "{type, select, copy {Megszakítottad ezt a másolást. Az eddig átmásolt fájlok ott maradnak, ahol vannak.} move {Megszakítottad ezt az áthelyezést. Az eddig áthelyezett fájlok ott maradnak, ahová kerültek.} compress {Megszakítottad ezt a tömörítést.} delete {Megszakítottad ezt a törlést. Az eddig törölt fájlok eltűntek, a többi még megvan.} trash {Megszakítottad ezt a Kukába helyezést. Az eddig áthelyezett fájlok a Kukában maradnak, a többi ott van, ahol volt.} other {Megszakítottad ezt a műveletet.}}",
+  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to the Recycle Bin. The files it moved so far stay in the Recycle Bin, and the rest are where they were.} other {You’ve canceled this operation.}}} other {{type, select, copy {Megszakítottad ezt a másolást. Az eddig átmásolt fájlok ott maradnak, ahol vannak.} move {Megszakítottad ezt az áthelyezést. Az eddig áthelyezett fájlok ott maradnak, ahová kerültek.} compress {Megszakítottad ezt a tömörítést.} delete {Megszakítottad ezt a törlést. Az eddig törölt fájlok eltűntek, a többi még megvan.} trash {Megszakítottad ezt a Kukába helyezést. Az eddig áthelyezett fájlok a Kukában maradnak, a többi ott van, ahol volt.} other {Megszakítottad ezt a műveletet.}}}}",
   "@fileOperations.transferProgress.canceledAlertMessage": {
     "sourceHash": "1d1de76"
   },
@@ -653,7 +653,7 @@
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
-  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Nem történt másolás} one {{countText} fájl másolva} other {{countText} fájl másolva}}} move {{count, plural, =0 {Nem történt áthelyezés} one {{countText} fájl áthelyezve} other {{countText} fájl áthelyezve}}} delete {{count, plural, =0 {Nem történt törlés} one {{countText} fájl törölve} other {{countText} fájl törölve}}} trash {{count, plural, =0 {Semmi sem került a Kukába} one {{countText} fájl áthelyezve a Kukába} other {{countText} fájl áthelyezve a Kukába}}} compress {{count, plural, =0 {Nem történt tömörítés} one {{countText} fájl tömörítve} other {{countText} fájl tömörítve}}} other {Kész}}",
+  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Recycle Bin} one {Moved {countText} file to the Recycle Bin} other {Moved {countText} files to the Recycle Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}} other {{type, select, copy {{count, plural, =0 {Nem történt másolás} one {{countText} fájl másolva} other {{countText} fájl másolva}}} move {{count, plural, =0 {Nem történt áthelyezés} one {{countText} fájl áthelyezve} other {{countText} fájl áthelyezve}}} delete {{count, plural, =0 {Nem történt törlés} one {{countText} fájl törölve} other {{countText} fájl törölve}}} trash {{count, plural, =0 {Semmi sem került a Kukába} one {{countText} fájl áthelyezve a Kukába} other {{countText} fájl áthelyezve a Kukába}}} compress {{count, plural, =0 {Nem történt tömörítés} one {{countText} fájl tömörítve} other {{countText} fájl tömörítve}}} other {Kész}}}}",
   "@fileOperations.transferProgress.titleDone": {
     "sourceHash": "3db0154"
   },
@@ -693,7 +693,7 @@
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Másolás} move {Áthelyezés} compress {Tömörítés} delete {Törlés} other {Áthelyezés a Kukába}}…",
+  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Recycle Bin}}…} other {{gerund, select, copy {Másolás} move {Áthelyezés} compress {Tömörítés} delete {Törlés} other {Áthelyezés a Kukába}}…}}",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "0c636e5"
   },
@@ -845,7 +845,7 @@
   "@fileOperations.sourcesGone.title": {
     "sourceHash": "9f8e2cb"
   },
-  "fileOperations.sourcesGone.message": "{type, select, copy {A másolásra váró {totalText} elemből {goneText} {gone, plural, one {máshová került vagy törlődött} other {máshová került vagy törlődött}}, amíg a művelet a sorára várt.} move {A áthelyezésre váró {totalText} elemből {goneText} {gone, plural, one {máshová került vagy törlődött} other {máshová került vagy törlődött}}, amíg a művelet a sorára várt.} delete {A törlésre váró {totalText} elemből {goneText} {gone, plural, one {máshová került vagy törlődött} other {máshová került vagy törlődött}}, amíg a művelet a sorára várt.} trash {A Kukába helyezésre váró {totalText} elemből {goneText} {gone, plural, one {máshová került vagy törlődött} other {máshová került vagy törlődött}}, amíg a művelet a sorára várt.} other {A művelethez tartozó {totalText} elemből {goneText} {gone, plural, one {máshová került vagy törlődött} other {máshová került vagy törlődött}}, amíg a művelet a sorára várt.}}",
+  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to the Recycle Bin was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {A másolásra váró {totalText} elemből {goneText} {gone, plural, one {máshová került vagy törlődött} other {máshová került vagy törlődött}}, amíg a művelet a sorára várt.} move {A áthelyezésre váró {totalText} elemből {goneText} {gone, plural, one {máshová került vagy törlődött} other {máshová került vagy törlődött}}, amíg a művelet a sorára várt.} delete {A törlésre váró {totalText} elemből {goneText} {gone, plural, one {máshová került vagy törlődött} other {máshová került vagy törlődött}}, amíg a művelet a sorára várt.} trash {A Kukába helyezésre váró {totalText} elemből {goneText} {gone, plural, one {máshová került vagy törlődött} other {máshová került vagy törlődött}}, amíg a művelet a sorára várt.} other {A művelethez tartozó {totalText} elemből {goneText} {gone, plural, one {máshová került vagy törlődött} other {máshová került vagy törlődött}}, amíg a művelet a sorára várt.}}}}",
   "@fileOperations.sourcesGone.message": {
     "sourceHash": "0512078"
   },
@@ -853,15 +853,15 @@
   "@fileOperations.sourcesGone.moreItems": {
     "sourceHash": "c39507d"
   },
-  "fileOperations.sourcesGone.continue": "{type, select, copy {A többi másolása} move {A többi áthelyezése} delete {A többi törlése} trash {A többi áthelyezése a Kukába} other {Folytatás a többivel}}",
+  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest permanently} trash {Delete the rest} other {Do the rest}}} other {{type, select, copy {A többi másolása} move {A többi áthelyezése} delete {A többi törlése} trash {A többi áthelyezése a Kukába} other {Folytatás a többivel}}}}",
   "@fileOperations.sourcesGone.continue": {
     "sourceHash": "2790bfb"
   },
-  "fileOperations.sourcesGone.heldToast": "{type, select, copy {Egy várakozó másolásnak kérdése van hozzád. Látni fogod, amint bezárul a nyitott párbeszédablak.} move {Egy várakozó áthelyezésnek kérdése van hozzád. Látni fogod, amint bezárul a nyitott párbeszédablak.} delete {Egy várakozó törlésnek kérdése van hozzád. Látni fogod, amint bezárul a nyitott párbeszédablak.} trash {Egy várakozó Kukába helyezésnek kérdése van hozzád. Látni fogod, amint bezárul a nyitott párbeszédablak.} other {Egy várakozó műveletnek kérdése van hozzád. Látni fogod, amint bezárul a nyitott párbeszédablak.}}",
+  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {A queued copy has a question for you. You’ll see it as soon as the open dialog closes.} move {A queued move has a question for you. You’ll see it as soon as the open dialog closes.} delete {A queued delete has a question for you. You’ll see it as soon as the open dialog closes.} trash {A queued move to the Recycle Bin has a question for you. You’ll see it as soon as the open dialog closes.} other {A queued operation has a question for you. You’ll see it as soon as the open dialog closes.}}} other {{type, select, copy {Egy várakozó másolásnak kérdése van hozzád. Látni fogod, amint bezárul a nyitott párbeszédablak.} move {Egy várakozó áthelyezésnek kérdése van hozzád. Látni fogod, amint bezárul a nyitott párbeszédablak.} delete {Egy várakozó törlésnek kérdése van hozzád. Látni fogod, amint bezárul a nyitott párbeszédablak.} trash {Egy várakozó Kukába helyezésnek kérdése van hozzád. Látni fogod, amint bezárul a nyitott párbeszédablak.} other {Egy várakozó műveletnek kérdése van hozzád. Látni fogod, amint bezárul a nyitott párbeszédablak.}}}}",
   "@fileOperations.sourcesGone.heldToast": {
     "sourceHash": "75f645d"
   },
-  "fileOperations.sourcesGone.nothingLeftToast": "{type, select, copy {Nincs mit másolni: {total, plural, one {a másolásra váró elem} other {a másolásra váró összes elem ({totalText})}} máshová került vagy törlődött, amíg a művelet a sorára várt.} move {Nincs mit áthelyezni: {total, plural, one {a áthelyezésre váró elem} other {a áthelyezésre váró összes elem ({totalText})}} máshová került vagy törlődött, amíg a művelet a sorára várt.} delete {Nincs mit törölni: {total, plural, one {a törlésre váró elem} other {a törlésre váró összes elem ({totalText})}} máshová került vagy törlődött, amíg a művelet a sorára várt.} trash {Nincs mit a Kukába helyezni: {total, plural, one {a Kukába helyezésre váró elem} other {a Kukába helyezésre váró összes elem ({totalText})}} máshová került vagy törlődött, amíg a művelet a sorára várt.} other {Nincs több teendő: {total, plural, one {a művelethez tartozó elem} other {a művelethez tartozó összes elem ({totalText})}} máshová került vagy törlődött, amíg a művelet a sorára várt.}}",
+  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Nothing left to copy: {total, plural, one {the item} other {all {totalText} items}} this copy was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} move {Nothing left to move: {total, plural, one {the item} other {all {totalText} items}} this move was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} delete {Nothing left to delete: {total, plural, one {the item} other {all {totalText} items}} this delete was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} trash {Nothing left to move to the Recycle Bin: {total, plural, one {the item} other {all {totalText} items}} this move to the Recycle Bin was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} other {Nothing left to do: {total, plural, one {the item} other {all {totalText} items}} this operation was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {Nincs mit másolni: {total, plural, one {a másolásra váró elem} other {a másolásra váró összes elem ({totalText})}} máshová került vagy törlődött, amíg a művelet a sorára várt.} move {Nincs mit áthelyezni: {total, plural, one {a áthelyezésre váró elem} other {a áthelyezésre váró összes elem ({totalText})}} máshová került vagy törlődött, amíg a művelet a sorára várt.} delete {Nincs mit törölni: {total, plural, one {a törlésre váró elem} other {a törlésre váró összes elem ({totalText})}} máshová került vagy törlődött, amíg a művelet a sorára várt.} trash {Nincs mit a Kukába helyezni: {total, plural, one {a Kukába helyezésre váró elem} other {a Kukába helyezésre váró összes elem ({totalText})}} máshová került vagy törlődött, amíg a művelet a sorára várt.} other {Nincs több teendő: {total, plural, one {a művelethez tartozó elem} other {a művelethez tartozó összes elem ({totalText})}} máshová került vagy törlődött, amíg a művelet a sorára várt.}}}}",
   "@fileOperations.sourcesGone.nothingLeftToast": {
     "sourceHash": "4d62b7d"
   },
@@ -1305,7 +1305,7 @@
   "@fileOperations.resticPassword.inputAria": {
     "sourceHash": "3e39703"
   },
-  "fileOperations.resticPassword.remember": "Megjegyzés a kulcskarikában",
+  "fileOperations.resticPassword.remember": "{platform, select, macos {Megjegyzés a kulcskarikában} windows {Remember password} other {Remember in keyring}}",
   "@fileOperations.resticPassword.remember": {
     "sourceHash": "3fd7384"
   },
@@ -1349,7 +1349,7 @@
   "@fileOperations.validation.pathEmpty": {
     "sourceHash": "c7afbbc"
   },
-  "fileOperations.validation.pathNotAbsolute": "Az útvonalnak abszolútnak kell lennie (/ jellel kell kezdődnie)",
+  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {Az útvonalnak abszolútnak kell lennie (/ jellel kell kezdődnie)}}",
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
   },

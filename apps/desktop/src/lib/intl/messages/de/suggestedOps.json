@@ -63,11 +63,11 @@
   "@suggestedOps.action.copy": {
     "sourceHash": "e21f935"
   },
-  "suggestedOps.action.trash": "In den Papierkorb bewegen",
+  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {In den Papierkorb bewegen}}",
   "@suggestedOps.action.trash": {
     "sourceHash": "9adcdf3"
   },
-  "suggestedOps.action.delete": "Löschen",
+  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {Löschen}}",
   "@suggestedOps.action.delete": {
     "sourceHash": "e2d0a54"
   },
@@ -96,11 +96,11 @@
   "@suggestedOps.approve.copy": {
     "sourceHash": "e10c490"
   },
-  "suggestedOps.approve.trash": "{countText} {count, plural, one {Datei} other {Dateien}} in den Papierkorb bewegen",
+  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {{countText} {count, plural, one {Datei} other {Dateien}} in den Papierkorb bewegen}}",
   "@suggestedOps.approve.trash": {
     "sourceHash": "3c82946"
   },
-  "suggestedOps.approve.delete": "{countText} {count, plural, one {Datei} other {Dateien}} löschen",
+  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {{countText} {count, plural, one {Datei} other {Dateien}} löschen}}",
   "@suggestedOps.approve.delete": {
     "sourceHash": "218cf04"
   },
@@ -144,7 +144,7 @@
   "@suggestedOps.facts.archive": {
     "sourceHash": "66f4804"
   },
-  "suggestedOps.facts.trash": "Papierkorb",
+  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Papierkorb}}",
   "@suggestedOps.facts.trash": {
     "sourceHash": "4e42c6e"
   },
@@ -152,7 +152,7 @@
   "@suggestedOps.facts.severalFolders": {
     "sourceHash": "7c32950"
   },
-  "suggestedOps.reversible.trash": "Du kannst das widerrufen: {count, plural, one {Die Datei kommt} other {Die Dateien kommen}} in den Papierkorb",
+  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Du kannst das widerrufen: {count, plural, one {Die Datei kommt} other {Die Dateien kommen}} in den Papierkorb}}",
   "@suggestedOps.reversible.trash": {
     "sourceHash": "55bf957"
   },
@@ -180,11 +180,11 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.noTrash": "Dieses Laufwerk hat keinen Papierkorb",
+  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {Dieses Laufwerk hat keinen Papierkorb}}",
   "@suggestedOps.noTrash": {
     "sourceHash": "38a6adc"
   },
-  "suggestedOps.noTrashTooltip": "Das Laufwerk, auf dem diese Dateien liegen, hat keinen Papierkorb, deshalb werden sie nach deiner Zustimmung endgültig gelöscht.",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {Das Laufwerk, auf dem diese Dateien liegen, hat keinen Papierkorb, deshalb werden sie nach deiner Zustimmung endgültig gelöscht.}}",
   "@suggestedOps.noTrashTooltip": {
     "sourceHash": "4327cb2"
   },
@@ -439,7 +439,7 @@
   "@suggestedOps.server.sharesAffected": {
     "sourceHash": "390f931"
   },
-  "suggestedOps.indicatorTooltip": "KI-Vorschläge warten auf dich. Zum Ansehen klicken.",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {KI-Vorschläge warten auf dich. Zum Ansehen klicken.}}",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
   },

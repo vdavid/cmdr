@@ -1127,15 +1127,15 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "macOS wouldn’t let Cmdr touch {count} of the items you picked.",
         "windows": "Windows wouldn’t let Cmdr touch {count} of the items you picked.",
-        "other": "The system wouldn’t let Cmdr touch {count} of the items you picked."
+        "other": "Cmdr wasn’t allowed to touch {count} of the items you picked."
       },
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "copy-row-verdicts.md § Verdicts per open row (the Linux actor rule)"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; the message when the OS refused to move some items to the trash (EPERM)."
     },
@@ -1160,7 +1160,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
         "windows": "Another account on this PC owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
@@ -1177,43 +1177,45 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "macOS couldn’t find a trash for {count} of the items you picked.",
         "windows": "Windows couldn’t find a Recycle Bin for {count} of the items you picked.",
-        "other": "The system couldn’t find a trash for {count} of the items you picked."
+        "other": "Cmdr couldn’t find a trash for {count} of the items you picked."
       },
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "written: the Linux actor rule (plan § Branch-writing rules 3), with the trash cased like the macOS text"
       },
-      "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; message when the drive has no trash."
+      "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; message when the drive has no trash.",
+      "written": ["other"]
     },
     {
       "key": "errors.write.trashRefused.message.other",
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "macOS wouldn’t move {count} of the items you picked to the trash.",
         "windows": "Windows wouldn’t move {count} of the items you picked to the Recycle Bin.",
-        "other": "The system wouldn’t move {count} of the items you picked to the trash."
+        "other": "Cmdr couldn’t move {count} of the items you picked to the trash."
       },
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "written: the Linux actor rule (plan § Branch-writing rules 3), with the trash cased like the macOS text"
       },
-      "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; catch-all message when moving to trash was refused for another reason."
+      "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; catch-all message when moving to trash was refused for another reason.",
+      "written": ["other"]
     },
     {
       "key": "errors.write.trashRefused.suggestion.notPermitted",
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "The items may sit somewhere macOS keeps to itself. Finder can sometimes still move them, since it can ask for your password.",
         "windows": "The items may sit somewhere Windows keeps to itself. File Explorer can sometimes still move them, since it can ask for administrator permission.",
@@ -1246,7 +1248,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "To move them, you need permission to change their folder. Finder shows who can in the folder’s Get Info, under Sharing & Permissions.",
         "windows": "To move them, you need permission to change their folder. File Explorer shows who can in the folder’s Properties, under Security.",
@@ -1263,15 +1265,15 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Finder can still move them after asking for an administrator’s password.",
         "windows": "An administrator can still move them. Ask whoever manages this PC.",
-        "other": "An administrator can still move them, for example with `sudo` in a terminal."
+        "other": "An administrator can still move them, for example with sudo in a terminal."
       },
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "proposal, minus the backticks: the transfer dialog shows `errors.write.*` suggestions as plain text"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; advice for the sticky-folder refusal."
     },
@@ -1280,16 +1282,16 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
-        "windows": "This can happen when the Recycle Bin’s permissions change, for example after moving the drive to a new PC. You can still delete the items permanently with Shift+F8.",
-        "other": "This can happen when the trash folder’s permissions change, for example after moving the drive to a new computer. You can still delete the items permanently with Shift+F8."
+        "windows": "This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items permanently with Shift+F8.",
+        "other": "This can happen when the trash folder’s permissions change, for example after moving to a new computer. You can still delete the items permanently with Shift+F8."
       },
       "register": "sentence",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "proposal, keeping the macOS wording outside the OS words (“after moving to a new …”)",
+        "other": "proposal, keeping the macOS wording outside the OS words (“after moving to a new …”)"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; advice when the drive’s trash folder doesn’t accept items."
     },
@@ -1298,7 +1300,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Some places have no trash of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.",
         "windows": "Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.",
@@ -1307,7 +1309,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; advice when the drive has no trash."
     },
@@ -1316,17 +1318,18 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Check the technical details below for what macOS reported.",
         "windows": "Check the technical details below for what Windows reported.",
-        "other": "Check the technical details below for what the system reported."
+        "other": "Check the technical details below for the exact reason."
       },
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "written: the Linux actor rule (plan § Branch-writing rules 3)"
       },
-      "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; catch-all advice pointing at the technical details disclosure."
+      "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; catch-all advice pointing at the technical details disclosure.",
+      "written": ["other"]
     },
     {
       "key": "errors.write.trashRefused.suggestion.noFullDiskAccess",
@@ -1349,7 +1352,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Your macOS user can’t change {folder}.",
         "windows": "Your Windows account can’t change {folder}.",
@@ -1587,7 +1590,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "The file or folder you tried to move to trash no longer exists.",
         "windows": "The file or folder you tried to move to the Recycle Bin no longer exists.",
@@ -1596,7 +1599,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; the dialog’s MESSAGE when the operation was a move to trash, when the item was already gone."
     },
@@ -1605,7 +1608,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Move to trash canceled",
         "windows": "Move to the Recycle Bin canceled",
@@ -1614,7 +1617,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; the dialog’s TITLE when the operation was a move to trash, after the user canceled it."
     },
@@ -1623,7 +1626,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "The move to trash operation was canceled.",
         "windows": "The move to the Recycle Bin was canceled.",
@@ -1632,7 +1635,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; the dialog’s MESSAGE when the operation was a move to trash, after the user canceled it."
     },
@@ -1641,7 +1644,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "The device was disconnected during the move to trash.",
         "windows": "The device was disconnected during the move to the Recycle Bin.",
@@ -1650,7 +1653,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; the dialog’s MESSAGE when the operation was a move to trash, when the device was unplugged midway."
     },
@@ -1659,7 +1662,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Trash not supported",
         "windows": "Recycle Bin not supported",
@@ -1668,7 +1671,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; title when the drive can’t take items in a trash."
     },
@@ -1677,7 +1680,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "This volume doesn’t support trash.",
         "windows": "This volume doesn’t have a Recycle Bin.",
@@ -1686,7 +1689,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; message when the drive has no trash."
     },
@@ -1695,7 +1698,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Couldn’t move to trash",
         "windows": "Couldn’t move to the Recycle Bin",
@@ -1704,7 +1707,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; the dialog’s TITLE when the operation was a move to trash, when reading an item failed."
     },
@@ -1713,7 +1716,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Couldn’t move to trash",
         "windows": "Couldn’t move to the Recycle Bin",
@@ -1722,7 +1725,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; the dialog’s TITLE when the operation was a move to trash, when writing failed."
     },
@@ -1731,7 +1734,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Couldn’t move to trash",
         "windows": "Couldn’t move to the Recycle Bin",
@@ -1740,7 +1743,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; title when the OS refused some items for the trash."
     },
@@ -1749,7 +1752,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
         "windows": "The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
@@ -1758,7 +1761,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; message when the drive’s trash folder won’t accept items."
     },
@@ -1767,7 +1770,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Couldn’t move to trash",
         "windows": "Couldn’t move to the Recycle Bin",
@@ -1776,7 +1779,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; the dialog’s TITLE when the operation was a move to trash, on a generic I/O error."
     },
@@ -1785,7 +1788,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Couldn’t move the file to trash.",
         "windows": "Couldn’t move the file to the Recycle Bin.",
@@ -1794,7 +1797,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; the dialog’s MESSAGE when the operation was a move to trash, on a generic I/O error."
     },
@@ -1803,7 +1806,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "You don’t have permission to move files to the trash here.",
         "windows": "You don’t have permission to move files to the Recycle Bin here.",
@@ -1812,7 +1815,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; the dialog’s MESSAGE when the operation was a move to trash, when permission was denied."
     },
@@ -1821,7 +1824,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Couldn’t move to trash",
         "windows": "Couldn’t move to the Recycle Bin",
@@ -1830,7 +1833,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; the dialog’s TITLE when the operation was a move to trash, fallback for unclassified failures."
     },
@@ -1839,7 +1842,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Something went wrong while moving to trash.",
         "windows": "Something went wrong while moving to the Recycle Bin.",
@@ -1848,7 +1851,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; the dialog’s MESSAGE when the operation was a move to trash, fallback for unclassified failures."
     },
@@ -1948,7 +1951,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Hey, your home folder lives right where it is. Move it, and your Mac will look for you in the wrong place next time you log in.",
         "windows": "Hey, your user folder lives right where it is. Move it, and Windows will look for you in the wrong place next time you sign in.",
@@ -1965,7 +1968,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "You can’t move <code>{path}</code> because your home folder is in there, and your Mac expects to find it right where it is.",
         "windows": "You can’t move <code>{path}</code> because your user folder is in there, and Windows expects to find it right where it is.",
@@ -1982,7 +1985,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "If you want your files somewhere else, go in there, pick what you need, and move that. Your Mac will thank you.",
         "windows": "If you want your files somewhere else, go in there, pick what you need, and move that. Your PC will thank you.",
@@ -1999,7 +2002,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Hey, your Mac knows your home folder by this name. Rename it, and it won’t find you next time you log in.",
         "windows": "Hey, Windows knows your user folder by this name. Rename it, and it won’t find you next time you sign in.",
@@ -2016,7 +2019,7 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "You can’t rename <code>{path}</code> because your home folder is in there, and your Mac expects to find it at this exact path.",
         "windows": "You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.",
@@ -2033,15 +2036,15 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "If you really need a new name, macOS has a careful way to do it in Users & Groups. It’s not a quick F2, though.",
         "windows": "Windows has no safe built-in way to rename it, so it’s best left as it is.",
-        "other": "If you really need a new name, an administrator can do it carefully with `usermod`, signed in as another user. It’s not a quick F2, though."
+        "other": "If you really need a new name, an administrator can do it carefully with usermod, signed in as another user. It’s not a quick F2, though."
       },
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "proposal, minus the backticks: the transfer dialog shows `errors.write.*` suggestions as plain text"
       },
       "whereInUi": "Advice line under the home-folder rename refusal."
     },
@@ -2050,17 +2053,31 @@
       "file": "errors.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Try again. If it keeps happening, check that your Mac’s disk has free space, then restart Cmdr.",
-        "windows": "Try again. If it keeps happening, check that your PC’s disk has free space, then restart Cmdr.",
+        "windows": "Try again. If it keeps happening, check that your PC has free space, then restart Cmdr.",
         "other": "Try again. If it keeps happening, check that your computer’s disk has free space, then restart Cmdr."
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "copy-glossary-evidence.md § Corrections (“drive”, not “disk”, for the PC’s storage)",
         "other": "proposal"
       },
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; advice when Cmdr couldn’t record where an item landed (operation log write failed)."
+    },
+    {
+      "key": "errors.write.namedLeavesRefused.message.sameName",
+      "file": "errors.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Two items would end up as {path}. Many disks treat those as one name, so one would replace the other.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “many disks” is file systems in general, not the PC’s drive."
     },
     {
       "key": "settings.appearance.language.description",
@@ -6461,7 +6478,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "This volume doesn’t support trash.",
         "windows": "This volume doesn’t have a Recycle Bin.",
@@ -6470,7 +6487,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Delete dialog (F8), bold warning when the volume has no trash."
     },
@@ -6479,43 +6496,63 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Some of your selection is online-only. Moving those to the Trash would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.",
-        "windows": "Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep their own recycle bin for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.",
+        "windows": "Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.",
         "other": "Some of your selection is online-only. Moving those to the Trash would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files."
       },
       "register": "sentence",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "proposal, with the evidence’s “Select” and the button’s Windows label (“Delete permanently”: this dialog offers only the permanent delete); “keep deleted files” where macOS says “keep their own trash”, since Windows has no word for a cloud service’s trash that reads apart from the Recycle Bin",
+        "other": "same as macOS"
       },
-      "whereInUi": "Delete dialog, warning when some of the selection is online-only cloud files."
+      "whereInUi": "Delete dialog, warning when some of the selection is online-only cloud files.",
+      "written": ["windows"]
     },
     {
       "key": "fileOperations.delete.cloudOnlineOnlyAllWarning",
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Everything you selected is online-only. Moving it to the Trash would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and make these files available offline first.",
-        "windows": "Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep their own recycle bin for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and make these files available offline first.",
+        "windows": "Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and make these files available offline first.",
         "other": "Everything you selected is online-only. Moving it to the Trash would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and make these files available offline first."
       },
       "register": "sentence",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "proposal, with the evidence’s “Select” and the button’s Windows label (“Delete permanently”: this dialog offers only the permanent delete); “keep deleted files” where macOS says “keep their own trash”, since Windows has no word for a cloud service’s trash that reads apart from the Recycle Bin",
+        "other": "same as macOS"
       },
-      "whereInUi": "Same, all-online-only variant."
+      "whereInUi": "Same, all-online-only variant.",
+      "written": ["windows"]
+    },
+    {
+      "key": "fileOperations.delete.cloudOnlineOnlyHandedBack",
+      "file": "fileOperations.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "Your selection turned out to hold online-only content, so the button below now offers Delete. Read the note above, then press it again if that’s OK.",
+        "windows": "Your selection turned out to hold online-only content, so the button below now offers Delete permanently. Read the note above, then press it again if that’s OK.",
+        "other": "Your selection turned out to hold online-only content, so the button below now offers Delete. Read the note above, then press it again if that’s OK."
+      },
+      "sources": {
+        "windows": "plan § Delete labels vs Recycle Bin sentences: the permanent sibling says “permanently” where the trash label reads “Delete”: the button this sentence names reads “Delete permanently” on Windows",
+        "other": "same as macOS"
+      },
+      "written": ["windows"],
+      "whereInUi": "Delete dialog, the note when a confirm was handed back because the selection turned out to hold online-only content."
     },
     {
       "key": "fileOperations.delete.archiveWarningStrong",
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "There’s no trash inside an archive.",
         "windows": "There’s no Recycle Bin inside an archive.",
@@ -6524,7 +6561,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Delete dialog, bold warning inside an archive."
     },
@@ -6533,7 +6570,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Go to trash",
         "windows": "Go to Recycle Bin",
@@ -6541,8 +6578,8 @@
       },
       "register": "sentence",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "plan § Delete labels vs Recycle Bin sentences (names the place, no article)",
+        "other": "same as macOS"
       },
       "whereInUi": "Toast after a move to trash, its “Go to trash” button."
     },
@@ -6551,7 +6588,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the trash.",
         "windows": "Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Recycle Bin.",
@@ -6560,7 +6597,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Toast after Undo when only part came back."
     },
@@ -6569,7 +6606,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Nothing to put back: {count, plural, one {the item was} other {the items were}} no longer in the trash.",
         "windows": "Nothing to put back: {count, plural, one {the item was} other {the items were}} no longer in the Recycle Bin.",
@@ -6578,7 +6615,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Toast after Undo when nothing was left to restore."
     },
@@ -6587,7 +6624,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{countText} {count, plural, one {item was} other {items were}} no longer in the trash.",
         "windows": "{countText} {count, plural, one {item was} other {items were}} no longer in the Recycle Bin.",
@@ -6596,7 +6633,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Toast after Undo, partial."
     },
@@ -6605,7 +6642,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "This drive doesn’t keep a trash.",
         "windows": "This drive doesn’t have a Recycle Bin.",
@@ -6614,7 +6651,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Toast from Go to trash on a drive without one."
     },
@@ -6623,16 +6660,16 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Move to trash",
-        "windows": "Move to Recycle Bin",
+        "windows": "Move to the Recycle Bin",
         "other": "Move to trash"
       },
       "register": "sentence",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "plan § Delete labels vs Recycle Bin sentences (an on/off switch names the place)",
+        "other": "same as macOS"
       },
       "whereInUi": "Delete dialog, the trash/permanent switch label."
     },
@@ -6641,16 +6678,16 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Move to trash",
-        "windows": "Move to Recycle Bin",
+        "windows": "Delete",
         "other": "Move to trash"
       },
       "register": "label",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "plan § Delete labels vs Recycle Bin sentences: the label reads “Delete”",
+        "other": "same as macOS"
       },
       "whereInUi": "Delete dialog, primary button."
     },
@@ -6675,16 +6712,16 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to trash}}",
-        "windows": "{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to Recycle Bin}}",
+        "windows": "{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to the Recycle Bin}}",
         "other": "{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to trash}}"
       },
       "register": "sentence",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "plan § Delete labels vs Recycle Bin sentences (the confirmation title names the place)",
+        "other": "same as macOS"
       },
       "whereInUi": "Copy/move/delete dialog title (verb only)."
     },
@@ -6693,16 +6730,16 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to trash}} {phrase}",
-        "windows": "{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to Recycle Bin}} {phrase}",
+        "windows": "{verb, select, copy {Copy {phrase}} move {Move {phrase}} compress {Compress {phrase}} delete {Delete {phrase}} other {Move {phrase} to the Recycle Bin}}",
         "other": "{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to trash}} {phrase}"
       },
       "register": "sentence",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "plan § Delete labels vs Recycle Bin sentences (“Move {phrase} to the Recycle Bin”, so {phrase} moves inside each arm)",
+        "other": "same as macOS"
       },
       "whereInUi": "Same dialog title with counts."
     },
@@ -6711,7 +6748,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Counting items to trash…",
         "windows": "Counting items to move to the Recycle Bin…",
@@ -6720,7 +6757,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Progress dialog while counting items to trash."
     },
@@ -6729,16 +6766,16 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to trash canceled} other {Canceled}}",
-        "windows": "{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to Recycle Bin canceled} other {Canceled}}",
+        "windows": "{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to the Recycle Bin canceled} other {Canceled}}",
         "other": "{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to trash canceled} other {Canceled}}"
       },
       "register": "sentence",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "copy-glossary-evidence.md § Corrections (the article)",
+        "other": "same as macOS"
       },
       "whereInUi": "Alert after canceling an operation."
     },
@@ -6747,7 +6784,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to trash. The files it moved so far stay in the trash, and the rest are where they were.} other {You’ve canceled this operation.}}",
         "windows": "{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to the Recycle Bin. The files it moved so far stay in the Recycle Bin, and the rest are where they were.} other {You’ve canceled this operation.}}",
@@ -6756,7 +6793,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Same alert, message."
     },
@@ -6765,7 +6802,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the trash} one {Moved {countText} file to the trash} other {Moved {countText} files to the trash}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}",
         "windows": "{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Recycle Bin} one {Moved {countText} file to the Recycle Bin} other {Moved {countText} files to the Recycle Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}",
@@ -6774,7 +6811,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Progress dialog title when done."
     },
@@ -6783,7 +6820,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to trash}}…",
         "windows": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Recycle Bin}}…",
@@ -6792,7 +6829,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Progress dialog title while running."
     },
@@ -6801,7 +6838,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to trash was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}",
         "windows": "{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to the Recycle Bin was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}",
@@ -6810,7 +6847,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Sources-gone dialog when queued items vanished."
     },
@@ -6819,26 +6856,27 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest} trash {Move the rest to trash} other {Do the rest}}",
-        "windows": "{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest} trash {Move the rest to the Recycle Bin} other {Do the rest}}",
+        "windows": "{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest permanently} trash {Delete the rest} other {Do the rest}}",
         "other": "{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest} trash {Move the rest to trash} other {Do the rest}}"
       },
       "register": "label",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "plan § Delete labels vs Recycle Bin sentences: the label reads “Delete” on the trash arm; plan § Delete labels vs Recycle Bin sentences: the permanent sibling says “permanently” where the trash label reads “Delete” on the delete arm",
+        "other": "same as macOS"
       },
       "whereInUi": "Same dialog, continue button.",
-      "note": "Its `delete` arm is a permanent sibling. plan § Delete labels vs Recycle Bin sentences: the permanent sibling says “permanently” on Windows, where the trash label reads “Delete” on the same surface. Flag on the review page."
+      "note": "Its `delete` arm is a permanent sibling. plan § Delete labels vs Recycle Bin sentences: the permanent sibling says “permanently” on Windows, where the trash label reads “Delete” on the same surface. Flag on the review page.",
+      "written": ["windows"]
     },
     {
       "key": "fileOperations.sourcesGone.heldToast",
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{type, select, copy {A queued copy has a question for you. You’ll see it as soon as the open dialog closes.} move {A queued move has a question for you. You’ll see it as soon as the open dialog closes.} delete {A queued delete has a question for you. You’ll see it as soon as the open dialog closes.} trash {A queued move to trash has a question for you. You’ll see it as soon as the open dialog closes.} other {A queued operation has a question for you. You’ll see it as soon as the open dialog closes.}}",
         "windows": "{type, select, copy {A queued copy has a question for you. You’ll see it as soon as the open dialog closes.} move {A queued move has a question for you. You’ll see it as soon as the open dialog closes.} delete {A queued delete has a question for you. You’ll see it as soon as the open dialog closes.} trash {A queued move to the Recycle Bin has a question for you. You’ll see it as soon as the open dialog closes.} other {A queued operation has a question for you. You’ll see it as soon as the open dialog closes.}}",
@@ -6847,7 +6885,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Toast when a queued op waits behind a dialog."
     },
@@ -6856,7 +6894,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{type, select, copy {Nothing left to copy: {total, plural, one {the item} other {all {totalText} items}} this copy was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} move {Nothing left to move: {total, plural, one {the item} other {all {totalText} items}} this move was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} delete {Nothing left to delete: {total, plural, one {the item} other {all {totalText} items}} this delete was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} trash {Nothing left to move to trash: {total, plural, one {the item} other {all {totalText} items}} this move to trash was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} other {Nothing left to do: {total, plural, one {the item} other {all {totalText} items}} this operation was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.}}",
         "windows": "{type, select, copy {Nothing left to copy: {total, plural, one {the item} other {all {totalText} items}} this copy was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} move {Nothing left to move: {total, plural, one {the item} other {all {totalText} items}} this move was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} delete {Nothing left to delete: {total, plural, one {the item} other {all {totalText} items}} this delete was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} trash {Nothing left to move to the Recycle Bin: {total, plural, one {the item} other {all {totalText} items}} this move to the Recycle Bin was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} other {Nothing left to do: {total, plural, one {the item} other {all {totalText} items}} this operation was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.}}",
@@ -6865,7 +6903,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Toast when nothing is left to do."
     },
@@ -6874,7 +6912,7 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Remember in Keychain",
         "windows": "Remember password",
@@ -6912,7 +6950,7 @@
       "file": "lowDiskSpace.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Your startup disk is running low on space: {freeText} free ({percentText}%).",
         "windows": "Your system drive is running low on space: {freeText} free ({percentText}%).",
@@ -6929,7 +6967,7 @@
       "file": "lowDiskSpace.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{freeText} free ({percentText}%) on your startup disk.",
         "windows": "{freeText} free ({percentText}%) on your system drive.",
@@ -6979,7 +7017,7 @@
       "file": "operationLog.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "From {from} to the Trash",
         "windows": "From {from} to the Recycle Bin",
@@ -6988,7 +7026,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Operation log window, a row’s route line."
     },
@@ -6997,7 +7035,7 @@
       "file": "operationLog.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{count, plural, one {Moved {countText} item to the trash} other {Moved {countText} items to the trash}}",
         "windows": "{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}",
@@ -7006,7 +7044,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Operation log window, summary of a trash operation."
     },
@@ -7015,7 +7053,7 @@
       "file": "operationLog.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr quit before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.",
         "windows": "Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.",
@@ -7023,8 +7061,8 @@
       },
       "register": "narration",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "proposal (decisions § Glossary: narration says “close”)",
+        "other": "same as macOS"
       },
       "whereInUi": "Operation log, notice on an operation interrupted by quitting."
     },
@@ -7079,7 +7117,7 @@
       "file": "queue.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to trash} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}",
         "windows": "{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to the Recycle Bin} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}",
@@ -7088,7 +7126,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Queue window, a row’s label."
     },
@@ -7097,7 +7135,7 @@
       "file": "queue.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to trash} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}",
         "windows": "{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to the Recycle Bin} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}",
@@ -7106,7 +7144,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Toast when a queued operation stops."
     },
@@ -7650,16 +7688,16 @@
       "file": "suggestedOps.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Move to Trash",
-        "windows": "Move to Recycle Bin",
+        "windows": "Delete",
         "other": "Move to Trash"
       },
       "register": "label",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "plan § Delete labels vs Recycle Bin sentences: the label reads “Delete”",
+        "other": "same as macOS"
       },
       "whereInUi": "Suggested operations (AI cleanup suggestions), action chip."
     },
@@ -7668,16 +7706,16 @@
       "file": "suggestedOps.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Move {countText} {count, plural, one {file} other {files}} to Trash",
-        "windows": "Move {countText} {count, plural, one {file} other {files}} to the Recycle Bin",
+        "windows": "Delete {countText} {count, plural, one {file} other {files}}",
         "other": "Move {countText} {count, plural, one {file} other {files}} to Trash"
       },
       "register": "label",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "plan § Delete labels vs Recycle Bin sentences: the label reads “Delete”",
+        "other": "same as macOS"
       },
       "whereInUi": "Suggested ops, approve button."
     },
@@ -7686,7 +7724,7 @@
       "file": "suggestedOps.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "The Trash",
         "windows": "The Recycle Bin",
@@ -7695,7 +7733,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Suggested ops, destination fact."
     },
@@ -7704,7 +7742,7 @@
       "file": "suggestedOps.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "You can undo this: {count, plural, one {it goes} other {they go}} to the Trash",
         "windows": "You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin",
@@ -7713,7 +7751,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Suggested ops, reversibility line."
     },
@@ -7722,7 +7760,7 @@
       "file": "suggestedOps.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "This drive has no Trash",
         "windows": "This drive has no Recycle Bin",
@@ -7731,7 +7769,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Suggested ops, warning chip."
     },
@@ -7740,7 +7778,7 @@
       "file": "suggestedOps.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "The drive these files are on keeps no Trash, so approving this deletes them for good.",
         "windows": "The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.",
@@ -7749,16 +7787,34 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Suggested ops, warning tooltip."
+    },
+    {
+      "key": "suggestedOps.indicatorTooltip",
+      "file": "suggestedOps.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "AI suggestions are waiting. Click to review them.",
+        "windows": "AI suggestions are waiting. Select to review them.",
+        "other": "AI suggestions are waiting. Click to review them."
+      },
+      "sources": {
+        "windows": "written: plan § Branch-writing rules 4 (Windows says “Select”, not “Click”)",
+        "other": "same as macOS"
+      },
+      "written": ["windows"],
+      "whereInUi": "Status-corner indicator for the AI suggestions dialog, its tooltip and screen-reader text."
     },
     {
       "key": "transfer.trash",
       "file": "transfer.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Moved {countText} {count, plural, one {file} other {files}} to trash",
         "windows": "Moved {countText} {count, plural, one {file} other {files}} to the Recycle Bin",
@@ -7767,7 +7823,7 @@
       "register": "sentence",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "same as macOS"
       },
       "whereInUi": "Completion toast after a move to trash."
     },
@@ -7808,17 +7864,24 @@
       "file": "transfer.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Finder tags",
-        "windows": "Alternate data streams",
+        "windows": "Finder tags",
         "other": "Extended attributes"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "verdicts: open (no Windows metadata bodies yet), keep the macOS text",
         "other": "proposal"
       },
-      "whereInUi": "Same toast, “Finder tags” as the name of the extended-attributes class."
+      "whereInUi": "Same toast, “Finder tags” as the name of the extended-attributes class.",
+      "openBranches": ["windows"],
+      "lintExceptions": [
+        {
+          "branch": "windows",
+          "reason": "open on Windows (no Windows metadata bodies yet), so it keeps the macOS text until they land"
+        }
+      ]
     },
     {
       "key": "ui.menuBar.label",
@@ -8153,35 +8216,52 @@
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Path must be absolute (start with /)",
-        "windows": "Path must be absolute (start with a drive letter, like C:\\, or with \\\\server\\share)",
+        "windows": "Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)",
         "other": "Path must be absolute (start with /)"
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "written: the proposal’s drive-letter and UNC forms (plan D1), with the share named like the drive",
+        "other": "same as macOS"
       },
       "whereInUi": "Copy/move dialog’s destination field, inline validation when the typed path isn’t absolute.",
-      "note": "Windows names drive letters and UNC paths (plan D1)."
+      "note": "Windows names drive letters and UNC paths (plan D1).",
+      "written": ["windows"]
     },
     {
       "key": "fileOperations.transferDialog.namedFolderHint",
       "file": "fileOperations.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “/”.",
-        "windows": "“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.",
+        "windows": "“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “/”.",
         "other": "“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “/”."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: open, keep “/” until the Windows destination field is built",
+        "other": "same as macOS"
       },
-      "whereInUi": "Copy/move dialog, hint when the typed destination names an existing folder."
+      "whereInUi": "Copy/move dialog, hint when the typed destination names an existing folder.",
+      "openBranches": ["windows"],
+      "note": "Windows is open (`copy-decisions.md` § Open rows): all three read the same text, so this stays a plain value."
+    },
+    {
+      "key": "fileOperations.transferDialog.hardlinkNote",
+      "file": "fileOperations.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "<written></written> will be written. The source is <ondisk></ondisk> on disk – the extra is hardlinked files, which can’t stay linked across drives.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “on disk” is the stored size, the same words on every OS."
     },
     {
       "key": "settings.listing.showHiddenFiles.description",
@@ -8306,71 +8386,81 @@
       "key": "errors.write.homeFolder.title",
       "file": "errors.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Please don’t delete your home folder",
-        "windows": null,
-        "other": null
+        "windows": "Please don’t delete your user folder",
+        "other": "Please don’t delete your home folder"
       },
-      "sources": {},
-      "note": "plan § Rows beyond the proposal: the decisions overturn “reviewed, no change”. Windows says “user folder”."
+      "sources": {
+        "windows": "decisions § Glossary: “user folder” on Windows",
+        "other": "same as macOS"
+      }
     },
     {
       "key": "errors.write.homeFolder.message.isHome",
       "file": "errors.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Hey, you can’t delete your own home folder.",
-        "windows": null,
-        "other": null
+        "windows": "Hey, you can’t delete your own user folder.",
+        "other": "Hey, you can’t delete your own home folder."
       },
-      "sources": {},
-      "note": "plan § Rows beyond the proposal: the decisions overturn “reviewed, no change”. Windows says “user folder”."
+      "sources": {
+        "windows": "decisions § Glossary: “user folder” on Windows",
+        "other": "same as macOS"
+      }
     },
     {
       "key": "errors.write.homeFolder.message.holdsHome",
       "file": "errors.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "You can’t delete <code>{path}</code> because it contains your home folder, and you can’t delete your home folder.",
-        "windows": null,
-        "other": null
+        "windows": "You can’t delete <code>{path}</code> because it contains your user folder, and you can’t delete your user folder.",
+        "other": "You can’t delete <code>{path}</code> because it contains your home folder, and you can’t delete your home folder."
       },
-      "sources": {},
-      "note": "plan § Rows beyond the proposal: the decisions overturn “reviewed, no change”. Windows says “user folder”."
+      "sources": {
+        "windows": "decisions § Glossary: “user folder” on Windows",
+        "other": "same as macOS"
+      }
     },
     {
       "key": "errors.write.homeFolderMove.title",
       "file": "errors.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Please don’t move your home folder",
-        "windows": null,
-        "other": null
+        "windows": "Please don’t move your user folder",
+        "other": "Please don’t move your home folder"
       },
-      "sources": {},
-      "note": "plan § Rows beyond the proposal: the decisions overturn “reviewed, no change”. Windows says “user folder”."
+      "sources": {
+        "windows": "decisions § Glossary: “user folder” on Windows",
+        "other": "same as macOS"
+      }
     },
     {
       "key": "errors.write.homeFolderRename.title",
       "file": "errors.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Please don’t rename your home folder",
-        "windows": null,
-        "other": null
+        "windows": "Please don’t rename your user folder",
+        "other": "Please don’t rename your home folder"
       },
-      "sources": {},
-      "note": "plan § Rows beyond the proposal: the decisions overturn “reviewed, no change”. Windows says “user folder”."
+      "sources": {
+        "windows": "decisions § Glossary: “user folder” on Windows",
+        "other": "same as macOS"
+      }
     },
     {
       "key": "commands.navGoHome.label",
@@ -8460,46 +8550,55 @@
       "key": "fileOperations.delete.confirmDelete",
       "file": "fileOperations.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Delete",
-        "windows": null,
-        "other": null
+        "windows": "Delete permanently",
+        "other": "Delete"
       },
       "register": "label",
-      "sources": {},
-      "note": "plan § Delete labels vs Recycle Bin sentences: the permanent sibling says “permanently” on Windows, where the trash label reads “Delete” on the same surface. Flag on the review page. Windows: “Delete permanently”."
+      "sources": {
+        "windows": "plan § Delete labels vs Recycle Bin sentences: the permanent sibling says “permanently” where the trash label reads “Delete”",
+        "other": "same as macOS"
+      },
+      "written": ["windows"]
     },
     {
       "key": "suggestedOps.action.delete",
       "file": "suggestedOps.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Delete",
-        "windows": null,
-        "other": null
+        "windows": "Delete permanently",
+        "other": "Delete"
       },
       "register": "label",
-      "sources": {},
-      "note": "plan § Delete labels vs Recycle Bin sentences: the permanent sibling says “permanently” on Windows, where the trash label reads “Delete” on the same surface. Flag on the review page. Windows: “Delete permanently”."
+      "sources": {
+        "windows": "plan § Delete labels vs Recycle Bin sentences: the permanent sibling says “permanently” where the trash label reads “Delete”",
+        "other": "same as macOS"
+      },
+      "written": ["windows"]
     },
     {
       "key": "suggestedOps.approve.delete",
       "file": "suggestedOps.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Delete {countText} {count, plural, one {file} other {files}}",
-        "windows": null,
-        "other": null
+        "windows": "Delete {countText} {count, plural, one {file} other {files}} permanently",
+        "other": "Delete {countText} {count, plural, one {file} other {files}}"
       },
       "register": "label",
-      "sources": {},
-      "note": "plan § Delete labels vs Recycle Bin sentences: the permanent sibling says “permanently” on Windows, where the trash label reads “Delete” on the same surface. Flag on the review page."
+      "sources": {
+        "windows": "plan § Delete labels vs Recycle Bin sentences: the permanent sibling says “permanently” where the trash label reads “Delete”",
+        "other": "same as macOS"
+      },
+      "written": ["windows"]
     },
     {
       "key": "askCmdr.tool.quit.doing",

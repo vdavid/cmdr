@@ -76,12 +76,12 @@
     "description": "The action a suggestion takes, leading its title in the AI suggestions dialog, before the name the AI gave it (for example \"Copy Old installers\"). This one copies files to another folder. A short VERB phrase in the imperative, like a menu command; it must read as what happens when the person approves.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
-  "suggestedOps.action.trash": "Move to Trash",
+  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Move to Trash}}",
   "@suggestedOps.action.trash": {
     "description": "The action a suggestion takes, leading its title in the AI suggestions dialog, before the name the AI gave it (for example \"Move to Trash Old installers\"). This one moves files to the Trash. Use the same name for the Trash as the macOS Finder does. A short VERB phrase in the imperative, like a menu command; it must read as what happens when the person approves.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
-  "suggestedOps.action.delete": "Delete",
+  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {Delete}}",
   "@suggestedOps.action.delete": {
     "description": "The action a suggestion takes, leading its title in the AI suggestions dialog, before the name the AI gave it (for example \"Delete Old installers\"). This one deletes files permanently, skipping the Trash. A short VERB phrase in the imperative, like a menu command; it must read as what happens when the person approves.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
@@ -118,12 +118,12 @@
     "description": "Primary button on a suggestion that copies files to another folder. Pressing it starts the copy. {countText} is how many files would run, already formatted.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
-  "suggestedOps.approve.trash": "Move {countText} {count, plural, one {file} other {files}} to Trash",
+  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {Move {countText} {count, plural, one {file} other {files}} to Trash}}",
   "@suggestedOps.approve.trash": {
     "description": "Primary button on a suggestion that moves files to the Trash. Use the same name for the Trash as the macOS Finder does in your language. {countText} is how many files would run, already formatted.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
-  "suggestedOps.approve.delete": "Delete {countText} {count, plural, one {file} other {files}}",
+  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {Delete {countText} {count, plural, one {file} other {files}}}}",
   "@suggestedOps.approve.delete": {
     "description": "Primary button on a suggestion that deletes files permanently (not to the Trash). {countText} is how many files would run, already formatted.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
@@ -177,7 +177,7 @@
     "description": "Short label before the archive file (for example a .zip) a compress suggestion would create. Followed by a drive name and a file path.",
     "screenshot": "suggested-ops-hard-cases.png"
   },
-  "suggestedOps.facts.trash": "The Trash",
+  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {The Trash}}",
   "@suggestedOps.facts.trash": {
     "description": "Shown after the \"To\" label (suggestedOps.facts.to) when the suggestion moves files to the Trash. Use the same name for the Trash as the macOS Finder does in your language.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
@@ -187,7 +187,7 @@
     "description": "Shown after the \"From\" label (suggestedOps.facts.from) when the suggested files sit in different folders, so there's no one folder to name. Each file's folder then shows in the list.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
-  "suggestedOps.reversible.trash": "You can undo this: {count, plural, one {it goes} other {they go}} to the Trash",
+  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {You can undo this: {count, plural, one {it goes} other {they go}} to the Trash}}",
   "@suggestedOps.reversible.trash": {
     "description": "Note under a suggestion’s file list, beside its buttons on a suggestion that moves files to the Trash, saying the user can take it back and why. {count} is the number of files, only used to pick \"it\" or \"they\". Use the same name for the Trash as the macOS Finder does. \"It\" and \"they\" are the suggested files; a language that needs a noun can say \"the file\" / \"the files\". The items can be files or folders.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
@@ -220,12 +220,12 @@
     "description": "Warning note under a suggestion’s file list, beside its buttons on a suggestion that deletes files permanently, skipping the Trash. Disclosure only: the user can still approve it.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
-  "suggestedOps.noTrash": "This drive has no Trash",
+  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {This drive has no Trash}}",
   "@suggestedOps.noTrash": {
     "description": "Pill beside the title of a suggestion to move files to the Trash when the files are on a drive or server that keeps no Trash. The suggestion then deletes the files permanently instead, and its title and button say \"Delete\". Use the same name for the Trash as the macOS Finder does. The tooltip is suggestedOps.noTrashTooltip.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
   },
-  "suggestedOps.noTrashTooltip": "The drive these files are on keeps no Trash, so approving this deletes them for good.",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {The drive these files are on keeps no Trash, so approving this deletes them for good.}}",
   "@suggestedOps.noTrashTooltip": {
     "description": "Tooltip on the suggestedOps.noTrash pill. Use the same name for the Trash as the macOS Finder does.",
     "screenshot": "suggested-ops-downloads-cleanup.png"
@@ -527,7 +527,7 @@
     },
     "screenshot": "suggested-ops-servers.png"
   },
-  "suggestedOps.indicatorTooltip": "AI suggestions are waiting. Click to review them.",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {AI suggestions are waiting. Click to review them.}}",
   "@suggestedOps.indicatorTooltip": {
     "description": "Tooltip and screen-reader text for the status-corner indicator that opens the AI suggestions dialog. The number itself is in the badge beside it, so the sentence doesn't repeat it. A screen reader reads this sentence, then the number (\"AI suggestions are waiting. Click to review them. 3\").",
     "screenshot": "ask-cmdr-rename-undo.png"

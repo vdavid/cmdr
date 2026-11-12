@@ -311,7 +311,7 @@
   "@errors.write.sourceNotFound.message.delete": {
     "sourceHash": "47495fd"
   },
-  "errors.write.sourceNotFound.message.trash": "El archivo o la carpeta que intentaste mover al basurero ya no existe.",
+  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {The file or folder you tried to move to the Recycle Bin no longer exists.} other {El archivo o la carpeta que intentaste mover al basurero ya no existe.}}",
   "@errors.write.sourceNotFound.message.trash": {
     "sourceHash": "e52396a"
   },
@@ -331,7 +331,7 @@
   "@errors.write.symlinkLoop.title": {
     "sourceHash": "76fafe1"
   },
-  "errors.write.cancelled.title.trash": "Movimiento al basurero cancelado",
+  "errors.write.cancelled.title.trash": "{platform, select, windows {Move to the Recycle Bin canceled} other {Movimiento al basurero cancelado}}",
   "@errors.write.cancelled.title.trash": {
     "sourceHash": "71aa327"
   },
@@ -347,7 +347,7 @@
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "4b07f81"
   },
-  "errors.write.cancelled.message.trash": "Se canceló el movimiento al basurero.",
+  "errors.write.cancelled.message.trash": "{platform, select, windows {The move to the Recycle Bin was canceled.} other {Se canceló el movimiento al basurero.}}",
   "@errors.write.cancelled.message.trash": {
     "sourceHash": "b7bf28f"
   },
@@ -363,7 +363,7 @@
   "@errors.write.deviceDisconnected.message.delete": {
     "sourceHash": "2aebb6b"
   },
-  "errors.write.deviceDisconnected.message.trash": "Se desconectó el dispositivo durante el movimiento al basurero.",
+  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {The device was disconnected during the move to the Recycle Bin.} other {Se desconectó el dispositivo durante el movimiento al basurero.}}",
   "@errors.write.deviceDisconnected.message.trash": {
     "sourceHash": "2763c2b"
   },
@@ -395,11 +395,11 @@
   "@errors.write.moveNotConfirmed.message.unnamed": {
     "sourceHash": "38c7a18"
   },
-  "errors.write.trashNotSupported.title": "El basurero no se admite",
+  "errors.write.trashNotSupported.title": "{platform, select, windows {Recycle Bin not supported} other {El basurero no se admite}}",
   "@errors.write.trashNotSupported.title": {
     "sourceHash": "a38a186"
   },
-  "errors.write.trashNotSupported.message": "Este volumen no admite el basurero.",
+  "errors.write.trashNotSupported.message": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Este volumen no admite el basurero.}}",
   "@errors.write.trashNotSupported.message": {
     "sourceHash": "227ac08"
   },
@@ -419,7 +419,7 @@
   "@errors.write.readError.title.delete": {
     "sourceHash": "bebd330"
   },
-  "errors.write.readError.title.trash": "No se pudo mover al basurero",
+  "errors.write.readError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {No se pudo mover al basurero}}",
   "@errors.write.readError.title.trash": {
     "sourceHash": "638f092"
   },
@@ -439,7 +439,7 @@
   "@errors.write.writeError.title.delete": {
     "sourceHash": "bebd330"
   },
-  "errors.write.writeError.title.trash": "No se pudo mover al basurero",
+  "errors.write.writeError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {No se pudo mover al basurero}}",
   "@errors.write.writeError.title.trash": {
     "sourceHash": "638f092"
   },
@@ -447,11 +447,11 @@
   "@errors.write.writeError.message": {
     "sourceHash": "15a7a1e"
   },
-  "errors.write.trashRefused.title": "No se pudo mover al basurero",
+  "errors.write.trashRefused.title": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {No se pudo mover al basurero}}",
   "@errors.write.trashRefused.title": {
     "sourceHash": "638f092"
   },
-  "errors.write.trashRefused.message.notPermitted": "macOS no dejó que Cmdr tocara {count} de los elementos que elegiste.",
+  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS no dejó que Cmdr tocara {count} de los elementos que elegiste.} windows {Windows wouldn’t let Cmdr touch {count} of the items you picked.} other {Cmdr wasn’t allowed to touch {count} of the items you picked.}}",
   "@errors.write.trashRefused.message.notPermitted": {
     "sourceHash": "3987197"
   },
@@ -463,35 +463,35 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "4034e16"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "Otra cuenta de este Mac posee {count} de los elementos que elegiste, y en su carpeta solo el propietario de un elemento puede moverlo.",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "{platform, select, macos {Otra cuenta de este Mac posee {count} de los elementos que elegiste, y en su carpeta solo el propietario de un elemento puede moverlo.} windows {Another account on this PC owns {count} of the items you picked, and their folder lets only an item’s owner move it.} other {Another account on this computer owns {count} of the items you picked, and their folder lets only an item’s owner move it.}}",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "c03f055"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "Cmdr no puede poner nada en el basurero de esta unidad, así que dejó en su lugar {count} de los elementos que elegiste.",
+  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {Cmdr no puede poner nada en el basurero de esta unidad, así que dejó en su lugar {count} de los elementos que elegiste.}}",
   "@errors.write.trashRefused.message.trashNotWritable": {
     "sourceHash": "efef3e6"
   },
-  "errors.write.trashRefused.message.noTrashForVolume": "macOS no encontró un basurero para {count} de los elementos que elegiste.",
+  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS no encontró un basurero para {count} de los elementos que elegiste.} windows {Windows couldn’t find a Recycle Bin for {count} of the items you picked.} other {Cmdr couldn’t find a trash for {count} of the items you picked.}}",
   "@errors.write.trashRefused.message.noTrashForVolume": {
     "sourceHash": "e7da662"
   },
-  "errors.write.trashRefused.message.other": "macOS no movió al basurero {count} de los elementos que elegiste.",
+  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS no movió al basurero {count} de los elementos que elegiste.} windows {Windows wouldn’t move {count} of the items you picked to the Recycle Bin.} other {Cmdr couldn’t move {count} of the items you picked to the trash.}}",
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "866cfc2"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "Puede que los elementos estén en un lugar que macOS se reserva. A veces el Finder sí puede moverlos, porque puede pedirte la contraseña.",
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Puede que los elementos estén en un lugar que macOS se reserva. A veces el Finder sí puede moverlos, porque puede pedirte la contraseña.} windows {The items may sit somewhere Windows keeps to itself. File Explorer can sometimes still move them, since it can ask for administrator permission.} other {The items may sit somewhere only an administrator can change. Check the folder’s permissions, or ask whoever manages this computer.}}",
   "@errors.write.trashRefused.suggestion.notPermitted": {
     "sourceHash": "be011a2"
   },
-  "errors.write.trashRefused.suggestion.trashNotWritable": "Esto puede pasar cuando cambian los permisos de la carpeta del basurero, por ejemplo, después de pasarte a un Mac nuevo. Aun así puedes eliminar los elementos permanentemente con Shift+F8.",
+  "errors.write.trashRefused.suggestion.trashNotWritable": "{platform, select, macos {Esto puede pasar cuando cambian los permisos de la carpeta del basurero, por ejemplo, después de pasarte a un Mac nuevo. Aun así puedes eliminar los elementos permanentemente con Shift+F8.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items permanently with Shift+F8.} other {This can happen when the trash folder’s permissions change, for example after moving to a new computer. You can still delete the items permanently with Shift+F8.}}",
   "@errors.write.trashRefused.suggestion.trashNotWritable": {
     "sourceHash": "555739b"
   },
-  "errors.write.trashRefused.suggestion.noTrashForVolume": "Algunos lugares no tienen basurero propio, como las carpetas en la nube y la mayoría de las unidades de red. Aun así puedes eliminar los elementos permanentemente con Shift+F8.",
+  "errors.write.trashRefused.suggestion.noTrashForVolume": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.} other {Algunos lugares no tienen basurero propio, como las carpetas en la nube y la mayoría de las unidades de red. Aun así puedes eliminar los elementos permanentemente con Shift+F8.}}",
   "@errors.write.trashRefused.suggestion.noTrashForVolume": {
     "sourceHash": "caa87bf"
   },
-  "errors.write.trashRefused.suggestion.other": "Revisa los detalles técnicos de abajo para ver lo que informó macOS.",
+  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Revisa los detalles técnicos de abajo para ver lo que informó macOS.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
   "@errors.write.trashRefused.suggestion.other": {
     "sourceHash": "50e2862"
   },
@@ -511,7 +511,7 @@
   "@errors.write.ioError.title.delete": {
     "sourceHash": "bebd330"
   },
-  "errors.write.ioError.title.trash": "No se pudo mover al basurero",
+  "errors.write.ioError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {No se pudo mover al basurero}}",
   "@errors.write.ioError.title.trash": {
     "sourceHash": "638f092"
   },
@@ -527,7 +527,7 @@
   "@errors.write.ioError.message.delete": {
     "sourceHash": "9f44ce0"
   },
-  "errors.write.ioError.message.trash": "No se pudo mover el archivo al basurero.",
+  "errors.write.ioError.message.trash": "{platform, select, windows {Couldn’t move the file to the Recycle Bin.} other {No se pudo mover el archivo al basurero.}}",
   "@errors.write.ioError.message.trash": {
     "sourceHash": "73950a9"
   },
@@ -535,7 +535,7 @@
   "@errors.write.permissionDenied.title": {
     "sourceHash": "aa564ce"
   },
-  "errors.write.permissionDenied.message.trash": "No tienes permiso para mover archivos al basurero aquí.",
+  "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {No tienes permiso para mover archivos al basurero aquí.}}",
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "5dc863d"
   },
@@ -699,7 +699,7 @@
   "@errors.write.fallback.title.delete": {
     "sourceHash": "bebd330"
   },
-  "errors.write.fallback.title.trash": "No se pudo mover al basurero",
+  "errors.write.fallback.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {No se pudo mover al basurero}}",
   "@errors.write.fallback.title.trash": {
     "sourceHash": "638f092"
   },
@@ -715,7 +715,7 @@
   "@errors.write.fallback.message.delete": {
     "sourceHash": "2a93095"
   },
-  "errors.write.fallback.message.trash": "Algo salió mal al mover al basurero.",
+  "errors.write.fallback.message.trash": "{platform, select, windows {Something went wrong while moving to the Recycle Bin.} other {Algo salió mal al mover al basurero.}}",
   "@errors.write.fallback.message.trash": {
     "sourceHash": "d9e4203"
   },

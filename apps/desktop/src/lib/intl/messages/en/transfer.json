@@ -1,5 +1,5 @@
 {
-  "transfer.trash": "Moved {countText} {count, plural, one {file} other {files}} to trash",
+  "transfer.trash": "{platform, select, windows {Moved {countText} {count, plural, one {file} other {files}} to the Recycle Bin} other {Moved {countText} {count, plural, one {file} other {files}} to trash}}",
   "@transfer.trash": {
     "description": "Brief status toast shown right after the user sends files to the macOS Trash (the F8 shortcut). Confirms the move succeeded. \"trash\" here means the macOS Trash, so translate it to whatever your platform calls the recoverable wastebasket.",
     "placeholders": {
@@ -211,7 +211,7 @@
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
-  "transfer.metadataClass.extendedAttributes": "Finder tags",
+  "transfer.metadataClass.extendedAttributes": "{platform, select, macos {Finder tags} windows {Finder tags} other {Extended attributes}}",
   "@transfer.metadataClass.extendedAttributes": {
     "description": "One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“…, so they stayed behind: {classes}.”), so write it as a lowercase plural noun phrase that reads in a list after a colon. This one: Finder’s colored tags, and with them comments, custom icons, and similar extra information apps attach to a file. “Finder” is the macOS app’s name: don’t translate it.",
     "screenshot": "toast-transfer-complete.png",

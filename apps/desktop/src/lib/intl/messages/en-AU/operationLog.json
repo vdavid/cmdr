@@ -1,7 +1,7 @@
 {
-  "operationLog.summary.trash": "{count, plural, one {Moved {countText} item to the Bin} other {Moved {countText} items to the Bin}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {Moved {countText} item to the Bin} other {Moved {countText} items to the Bin}}}}",
   "@operationLog.summary.trash": {
-    "sourceHash": "34b4457"
+    "sourceHash": "2dea5c8"
   },
   "operationLog.summary.canceled": "{summary}, then cancelled ({plannedText} planned)",
   "@operationLog.summary.canceled": {
@@ -15,8 +15,8 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.route.fromToTrash": "From {from} to the Bin",
+  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {From {from} to the Bin}}",
   "@operationLog.route.fromToTrash": {
-    "sourceHash": "9eff97f"
+    "sourceHash": "2e133c1"
   }
 }

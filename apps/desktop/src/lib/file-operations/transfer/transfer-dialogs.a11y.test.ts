@@ -18,7 +18,8 @@
  * clear the 800-line `file-length` mark.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import type { VolumeConflictInfo, WriteConflictEvent } from '#lib/tauri-commands/index.js'
 import type { RollbackSupport } from '#lib/ipc/bindings.js'
@@ -159,6 +160,7 @@ describe('UnlockDialog a11y', () => {
   })
 
   it('repo prompt with its Keychain checkbox has no a11y violations, and the box is named', async () => {
+    onTestFinished(withPlatform('macos'))
     const target = container()
     mount(UnlockDialog, {
       target,

@@ -7,7 +7,7 @@
   "@operationLog.dialog.loadError": {
     "sourceHash": "e8f023d"
   },
-  "operationLog.summary.trash": "{count, plural, one {Se movió {countText} elemento al basurero} many {Se movieron {countText} elementos al basurero} other {Se movieron {countText} elementos al basurero}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {Se movió {countText} elemento al basurero} many {Se movieron {countText} elementos al basurero} other {Se movieron {countText} elementos al basurero}}}}",
   "@operationLog.summary.trash": {
     "sourceHash": "dc94479"
   },
@@ -19,7 +19,7 @@
   "@operationLog.rollback.refusalUnexpected": {
     "sourceHash": "80d3906"
   },
-  "operationLog.route.fromToTrash": "Desde {from} hacia el basurero",
+  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {Desde {from} hacia el basurero}}",
   "@operationLog.route.fromToTrash": {
     "sourceHash": "0c8c6df"
   },

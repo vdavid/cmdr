@@ -1708,7 +1708,12 @@
   "errors.write.sourceNotFound.message.copy": "The file or folder you tried to copy no longer exists.",
   "errors.write.sourceNotFound.message.move": "The file or folder you tried to move no longer exists.",
   "errors.write.sourceNotFound.message.delete": "The file or folder you tried to delete no longer exists.",
-  "errors.write.sourceNotFound.message.trash": "The file or folder you tried to move to trash no longer exists.",
+  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {The file or folder you tried to move to the Recycle Bin no longer exists.} other {The file or folder you tried to move to trash no longer exists.}}",
+  "@errors.write.sourceNotFound.message.trash": {
+    "description": "Body of the copy/move/delete error dialog when the source item is gone (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.sourceNotFound.suggestion": "It may have been moved, renamed, or deleted. Try refreshing the file list.",
   "@errors.write.sourceNotFound.title": {
     "description": "Title of the copy/move/delete error dialog when the source item is gone. Plain text. Uses a contraction (\"Couldn't\").",
@@ -1725,11 +1730,6 @@
   },
   "@errors.write.sourceNotFound.message.delete": {
     "description": "Body of the copy/move/delete error dialog when the source item is gone (delete variant). Plain text. This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.sourceNotFound.message.trash": {
-    "description": "Body of the copy/move/delete error dialog when the source item is gone (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -1879,11 +1879,21 @@
   "errors.write.cancelled.title.copy": "Copy canceled",
   "errors.write.cancelled.title.move": "Move canceled",
   "errors.write.cancelled.title.delete": "Delete canceled",
-  "errors.write.cancelled.title.trash": "Move to trash canceled",
+  "errors.write.cancelled.title.trash": "{platform, select, windows {Move to the Recycle Bin canceled} other {Move to trash canceled}}",
+  "@errors.write.cancelled.title.trash": {
+    "description": "Title of the copy/move/delete error dialog when the user canceled the operation (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.cancelled.message.copy": "The copy operation was canceled.",
   "errors.write.cancelled.message.move": "The move operation was canceled.",
   "errors.write.cancelled.message.delete": "The delete operation was canceled.",
-  "errors.write.cancelled.message.trash": "The move to trash operation was canceled.",
+  "errors.write.cancelled.message.trash": "{platform, select, windows {The move to the Recycle Bin was canceled.} other {The move to trash operation was canceled.}}",
+  "@errors.write.cancelled.message.trash": {
+    "description": "Body of the copy/move/delete error dialog when the operation was canceled (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.cancelled.suggestion": "You can try again when ready.",
   "@errors.write.cancelled.title.copy": {
     "description": "Title of the copy/move/delete error dialog when the user canceled the operation (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
@@ -1896,11 +1906,6 @@
   },
   "@errors.write.cancelled.title.delete": {
     "description": "Title of the copy/move/delete error dialog when the user canceled the operation (delete variant). Plain text. This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.cancelled.title.trash": {
-    "description": "Title of the copy/move/delete error dialog when the user canceled the operation (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -1918,11 +1923,6 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.write.cancelled.message.trash": {
-    "description": "Body of the copy/move/delete error dialog when the operation was canceled (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
   "@errors.write.cancelled.suggestion": {
     "description": "Recovery suggestion when the operation was canceled. Plain text.",
     "screenshot": "transfer-error-cancelled.png"
@@ -1931,7 +1931,12 @@
   "errors.write.deviceDisconnected.message.copy": "The device was disconnected during the copy.",
   "errors.write.deviceDisconnected.message.move": "The device was disconnected during the move.",
   "errors.write.deviceDisconnected.message.delete": "The device was disconnected during the delete.",
-  "errors.write.deviceDisconnected.message.trash": "The device was disconnected during the move to trash.",
+  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {The device was disconnected during the move to the Recycle Bin.} other {The device was disconnected during the move to trash.}}",
+  "@errors.write.deviceDisconnected.message.trash": {
+    "description": "Body of the copy/move/delete error dialog when the device disconnected mid-operation (trash variant). Plain text. This is a raw errors.* string (no ICU). The action name reads as a noun here (\"during the move to trash\"), so phrase it naturally for this language.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.deviceDisconnected.suggestion": "Make sure the device is properly connected and try again.",
   "@errors.write.deviceDisconnected.title": {
     "description": "Title of the copy/move/delete error dialog when the device disconnected mid-operation. Plain text.",
@@ -1949,11 +1954,6 @@
   },
   "@errors.write.deviceDisconnected.message.delete": {
     "description": "Body of the copy/move/delete error dialog when the device disconnected mid-operation (delete variant). Plain text. This is a raw errors.* string (no ICU). The action name reads as a noun here (\"during the delete\"), so phrase it naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.deviceDisconnected.message.trash": {
-    "description": "Body of the copy/move/delete error dialog when the device disconnected mid-operation (trash variant). Plain text. This is a raw errors.* string (no ICU). The action name reads as a noun here (\"during the move to trash\"), so phrase it naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -2005,17 +2005,17 @@
     "description": "Recovery suggestion for that dialog. Plain text. Asks the user to check the destination and try again, and repeats that their originals are untouched.",
     "screenshot": "transfer-error-move_not_confirmed.png"
   },
-  "errors.write.trashNotSupported.title": "Trash not supported",
-  "errors.write.trashNotSupported.message": "This volume doesn’t support trash.",
-  "errors.write.trashNotSupported.suggestion": "Use {deletePermanentlyKey} to delete permanently instead.",
+  "errors.write.trashNotSupported.title": "{platform, select, windows {Recycle Bin not supported} other {Trash not supported}}",
   "@errors.write.trashNotSupported.title": {
     "description": "Title of the delete error dialog when a volume doesn't support moving files to the trash. Plain text. \"Trash\" is the macOS feature name.",
     "screenshot": "transfer-error-trash_not_supported.png"
   },
+  "errors.write.trashNotSupported.message": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {This volume doesn’t support trash.}}",
   "@errors.write.trashNotSupported.message": {
     "description": "Body of the delete error dialog when a volume doesn't support the trash. Plain text. Uses a contraction (\"doesn't\").",
     "screenshot": "transfer-error-trash_not_supported.png"
   },
+  "errors.write.trashNotSupported.suggestion": "Use {deletePermanentlyKey} to delete permanently instead.",
   "@errors.write.trashNotSupported.suggestion": {
     "description": "Recovery suggestion when a volume doesn't support the trash, pointing at the delete-permanently shortcut. Plain text.",
     "placeholders": {
@@ -2162,7 +2162,12 @@
   "errors.write.readError.title.copy": "Couldn’t copy",
   "errors.write.readError.title.move": "Couldn’t move",
   "errors.write.readError.title.delete": "Couldn’t delete",
-  "errors.write.readError.title.trash": "Couldn’t move to trash",
+  "errors.write.readError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Couldn’t move to trash}}",
+  "@errors.write.readError.title.trash": {
+    "description": "Title of the copy/move/delete error dialog when reading the source item itself failed (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.readError.message": "Couldn’t read from the source.",
   "errors.write.readError.suggestion": "Try again. If the problem persists, check the technical details below.",
   "@errors.write.readError.title.copy": {
@@ -2179,11 +2184,6 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.write.readError.title.trash": {
-    "description": "Title of the copy/move/delete error dialog when reading the source item itself failed (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
   "@errors.write.readError.message": {
     "description": "Body of the copy/move/delete error dialog when reading the source failed. Plain text. Uses a contraction (\"Couldn't\").",
     "screenshot": "transfer-error-read_error.png"
@@ -2195,7 +2195,12 @@
   "errors.write.writeError.title.copy": "Couldn’t copy",
   "errors.write.writeError.title.move": "Couldn’t move",
   "errors.write.writeError.title.delete": "Couldn’t delete",
-  "errors.write.writeError.title.trash": "Couldn’t move to trash",
+  "errors.write.writeError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Couldn’t move to trash}}",
+  "@errors.write.writeError.title.trash": {
+    "description": "Title of the copy/move/delete error dialog when writing to the destination failed (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.writeError.message": "Couldn’t write to the destination.",
   "errors.write.writeError.suggestion": "Try again. If the problem persists, check the technical details below.",
   "@errors.write.writeError.title.copy": {
@@ -2209,11 +2214,6 @@
   },
   "@errors.write.writeError.title.delete": {
     "description": "Title of the copy/move/delete error dialog when writing to the destination failed (delete variant). Plain text. This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.writeError.title.trash": {
-    "description": "Title of the copy/move/delete error dialog when writing to the destination failed (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -2411,26 +2411,12 @@
     "description": "Recovery suggestion when the destination can't store the file's name. Plain text. \"Some destinations\" covers disks, phones, servers, and cloud storage alike: cloud storage such as Google Cloud Storage or Backblaze B2 refuses tabs and line breaks inside a file name. CON, NUL, and LPT1 are reserved Windows device names; keep them as-is, do NOT translate them.",
     "screenshot": "transfer-error-invalid_name.png"
   },
-  "errors.write.trashRefused.title": "Couldn’t move to trash",
-  "errors.write.trashRefused.message.notPermitted": "macOS wouldn’t let Cmdr touch {count} of the items you picked.",
-  "errors.write.trashRefused.message.locked": "macOS won’t move locked items, and that kept {count} of the items you picked where they were.",
-  "errors.write.trashRefused.message.folderNotWritable": "Cmdr isn’t allowed to change the folder holding {count} of the items you picked, so they stayed where they were.",
-  "errors.write.trashRefused.message.ownedByAnotherUser": "Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.",
-  "errors.write.trashRefused.message.trashNotWritable": "The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.",
-  "errors.write.trashRefused.message.noTrashForVolume": "macOS couldn’t find a trash for {count} of the items you picked.",
-  "errors.write.trashRefused.message.other": "macOS wouldn’t move {count} of the items you picked to the trash.",
-  "errors.write.trashRefused.suggestion.notPermitted": "The items may sit somewhere macOS keeps to itself. Finder can sometimes still move them, since it can ask for your password.",
-  "errors.write.trashRefused.suggestion.locked": "To move them, unlock them first in Finder: Get Info, then uncheck Locked.",
-  "errors.write.trashRefused.suggestion.folderNotWritable": "To move them, you need permission to change their folder. Finder shows who can in the folder’s Get Info, under Sharing & Permissions.",
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "Finder can still move them after asking for an administrator’s password.",
-  "errors.write.trashRefused.suggestion.trashNotWritable": "This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.",
-  "errors.write.trashRefused.suggestion.noTrashForVolume": "Some places have no trash of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.",
-  "errors.write.trashRefused.suggestion.other": "Check the technical details below for what macOS reported.",
-  "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr also doesn’t have full disk access on this Mac, which is a common cause. The “No full disk access” badge in the title bar takes you to that choice.",
+  "errors.write.trashRefused.title": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Couldn’t move to trash}}",
   "@errors.write.trashRefused.title": {
     "description": "Title of the error dialog when macOS refused to move items to the Trash. Plain text, raw errors.* string (no ICU). Uses a contraction (\"Couldn't\"). Word the trash destination the way your locale's macOS names it.",
     "screenshot": "transfer-error-trash_refused.png"
   },
+  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS wouldn’t let Cmdr touch {count} of the items you picked.} windows {Windows wouldn’t let Cmdr touch {count} of the items you picked.} other {Cmdr wasn’t allowed to touch {count} of the items you picked.}}",
   "@errors.write.trashRefused.message.notPermitted": {
     "description": "Explanation when macOS refused with a permission code. Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so there is no plural machinery: phrase it so it reads correctly for any count, including 1. \"macOS\" is Apple's product name and stays as-is.",
     "placeholders": {
@@ -2438,6 +2424,81 @@
     },
     "screenshot": "transfer-error-trash_refused.png"
   },
+  "errors.write.trashRefused.message.locked": "macOS won’t move locked items, and that kept {count} of the items you picked where they were.",
+  "errors.write.trashRefused.message.folderNotWritable": "Cmdr isn’t allowed to change the folder holding {count} of the items you picked, so they stayed where they were.",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "{platform, select, macos {Another account on this Mac owns {count} of the items you picked, and their folder lets only an item’s owner move it.} windows {Another account on this PC owns {count} of the items you picked, and their folder lets only an item’s owner move it.} other {Another account on this computer owns {count} of the items you picked, and their folder lets only an item’s owner move it.}}",
+  "@errors.write.trashRefused.message.ownedByAnotherUser": {
+    "description": "Explanation when macOS refused because another user account on the same Mac owns the items, and the folder holding them is a shared kind (like the system's temporary folder) that lets only each item's owner move it. Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so phrase it to read correctly for any count, including 1. \"Mac\" is Apple's product name and stays as-is.",
+    "placeholders": {
+      "count": "how many top-level items were refused, already formatted for the locale (for example 7)"
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {The trash on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.}}",
+  "@errors.write.trashRefused.message.trashNotWritable": {
+    "description": "Explanation when the items themselves were fine, but the trash folder of the drive they're on doesn't let the app add anything to it (its permissions are wrong). Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so phrase it to read correctly for any count, including 1. \"Cmdr\" is the app name and stays as-is. Word \"trash\" the way your locale's macOS names it.",
+    "placeholders": {
+      "count": "how many top-level items were refused, already formatted for the locale (for example 7)"
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS couldn’t find a trash for {count} of the items you picked.} windows {Windows couldn’t find a Recycle Bin for {count} of the items you picked.} other {Cmdr couldn’t find a trash for {count} of the items you picked.}}",
+  "@errors.write.trashRefused.message.noTrashForVolume": {
+    "description": "Explanation when macOS said it couldn't find a trash for the items' location. Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so phrase it to read correctly for any count, including 1. \"macOS\" stays as-is.",
+    "placeholders": {
+      "count": "how many top-level items were refused, already formatted for the locale (for example 7)"
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS wouldn’t move {count} of the items you picked to the trash.} windows {Windows wouldn’t move {count} of the items you picked to the Recycle Bin.} other {Cmdr couldn’t move {count} of the items you picked to the trash.}}",
+  "@errors.write.trashRefused.message.other": {
+    "description": "Explanation when macOS refused for a reason Cmdr doesn't classify. Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so phrase it to read correctly for any count, including 1. \"macOS\" stays as-is.",
+    "placeholders": {
+      "count": "how many top-level items were refused, already formatted for the locale (for example 7)"
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {The items may sit somewhere macOS keeps to itself. Finder can sometimes still move them, since it can ask for your password.} windows {The items may sit somewhere Windows keeps to itself. File Explorer can sometimes still move them, since it can ask for administrator permission.} other {The items may sit somewhere only an administrator can change. Check the folder’s permissions, or ask whoever manages this computer.}}",
+  "@errors.write.trashRefused.suggestion.notPermitted": {
+    "description": "Recovery suggestion for a permission-shaped trash refusal that Cmdr couldn't pin on anything more specific (a Locked item, an unchangeable folder, and the other known causes have their own suggestions). Plain text. Deliberately does NOT say \"try again\": retrying cannot change a permission refusal. \"somewhere macOS keeps to itself\" means a location behind the operating system's own privacy protection; keep it plain rather than naming a macOS feature. The second sentence points at Finder because Finder can ask for the user's password to move an item, which Cmdr can't. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
+    "screenshot": "transfer-error-trash_refused.png"
+  },
+  "errors.write.trashRefused.suggestion.locked": "To move them, unlock them first in Finder: Get Info, then uncheck Locked.",
+  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {To move them, you need permission to change their folder. Finder shows who can in the folder’s Get Info, under Sharing & Permissions.} windows {To move them, you need permission to change their folder. File Explorer shows who can in the folder’s Properties, under Security.} other {To move them, you need permission to change their folder. Your file manager shows who can in the folder’s properties, under Permissions.}}",
+  "@errors.write.trashRefused.suggestion.folderNotWritable": {
+    "description": "Recovery suggestion when the user may not change the folder holding the items. Plain text. Apple localizes \"Get Info\" (the Finder menu command) and \"Sharing & Permissions\" (a section of its Info window), so use your locale's Finder wording for both. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder can still move them after asking for an administrator’s password.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
+  "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
+    "description": "Recovery suggestion when another user account owns the items and their folder lets only an item's owner move it. Plain text. Finder can do it after the user types in an administrator account's password, which Cmdr can't ask for. \"Finder\" is the app name: use whatever your locale's macOS calls it. Deliberately does NOT say \"try again\".",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.trashRefused.suggestion.trashNotWritable": "{platform, select, macos {This can happen when the trash folder’s permissions change, for example after moving to a new Mac. You can still delete the items permanently with Shift+F8.} windows {This can happen when the Recycle Bin’s permissions change, for example after moving to a new PC. You can still delete the items permanently with Shift+F8.} other {This can happen when the trash folder’s permissions change, for example after moving to a new computer. You can still delete the items permanently with Shift+F8.}}",
+  "@errors.write.trashRefused.suggestion.trashNotWritable": {
+    "description": "Recovery suggestion when the drive's trash folder doesn't let the app add anything to it. Plain text. The first sentence says how that usually happens (moving to a new Mac is one example); the second offers deleting permanently instead, which doesn't need the trash. Shift+F8 is a keyboard shortcut and stays as-is.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.trashRefused.suggestion.noTrashForVolume": "{platform, select, windows {Some places have no Recycle Bin of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.} other {Some places have no trash of their own, including cloud folders and most network drives. You can still delete the items permanently with Shift+F8.}}",
+  "@errors.write.trashRefused.suggestion.noTrashForVolume": {
+    "description": "Recovery suggestion when the items' location has no Trash. Plain text. Names the two common cases so the user recognizes their own. Shift+F8 is a keyboard shortcut and stays as-is.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Check the technical details below for what macOS reported.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
+  "@errors.write.trashRefused.suggestion.other": {
+    "description": "Recovery suggestion for an unclassified trash refusal, where Cmdr has nothing specific to offer and points at what the OS said. Plain text. \"Technical details\" is the label on the collapsed disclosure in this same dialog: match the translation you used for that label.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr also doesn’t have full disk access on this Mac, which is a common cause. The “No full disk access” badge in the title bar takes you to that choice.",
   "@errors.write.trashRefused.message.locked": {
     "description": "Explanation when macOS refused because the items are Locked (the Locked checkbox in Finder's Get Info window). Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so there is no plural machinery: phrase it so it reads correctly for any count, including 1. \"macOS\" stays as-is. \"locked\" should match how your locale's Finder names its Locked checkbox.",
     "placeholders": {
@@ -2454,69 +2515,8 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.write.trashRefused.message.ownedByAnotherUser": {
-    "description": "Explanation when macOS refused because another user account on the same Mac owns the items, and the folder holding them is a shared kind (like the system's temporary folder) that lets only each item's owner move it. Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so phrase it to read correctly for any count, including 1. \"Mac\" is Apple's product name and stays as-is.",
-    "placeholders": {
-      "count": "how many top-level items were refused, already formatted for the locale (for example 7)"
-    },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.trashRefused.message.trashNotWritable": {
-    "description": "Explanation when the items themselves were fine, but the trash folder of the drive they're on doesn't let the app add anything to it (its permissions are wrong). Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so phrase it to read correctly for any count, including 1. \"Cmdr\" is the app name and stays as-is. Word \"trash\" the way your locale's macOS names it.",
-    "placeholders": {
-      "count": "how many top-level items were refused, already formatted for the locale (for example 7)"
-    },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.trashRefused.message.noTrashForVolume": {
-    "description": "Explanation when macOS said it couldn't find a trash for the items' location. Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so phrase it to read correctly for any count, including 1. \"macOS\" stays as-is.",
-    "placeholders": {
-      "count": "how many top-level items were refused, already formatted for the locale (for example 7)"
-    },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.trashRefused.message.other": {
-    "description": "Explanation when macOS refused for a reason Cmdr doesn't classify. Two surfaces share it: the error panel below, when nothing at all could go to the trash, and a brief warning toast when some items went and these ones stayed behind. So it has to stand alone as one sentence. Plain text, raw errors.* string (no ICU), so phrase it to read correctly for any count, including 1. \"macOS\" stays as-is.",
-    "placeholders": {
-      "count": "how many top-level items were refused, already formatted for the locale (for example 7)"
-    },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.trashRefused.suggestion.notPermitted": {
-    "description": "Recovery suggestion for a permission-shaped trash refusal that Cmdr couldn't pin on anything more specific (a Locked item, an unchangeable folder, and the other known causes have their own suggestions). Plain text. Deliberately does NOT say \"try again\": retrying cannot change a permission refusal. \"somewhere macOS keeps to itself\" means a location behind the operating system's own privacy protection; keep it plain rather than naming a macOS feature. The second sentence points at Finder because Finder can ask for the user's password to move an item, which Cmdr can't. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
-    "screenshot": "transfer-error-trash_refused.png"
-  },
   "@errors.write.trashRefused.suggestion.locked": {
     "description": "Recovery suggestion when the items are Locked. Plain text. Apple localizes both \"Get Info\" (the Finder menu command) and \"Locked\" (the checkbox in its Info window), so use your locale's Finder wording for both. \"Finder\" is the app name: use whatever your locale's macOS calls it. Deliberately does NOT say \"try again\".",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.trashRefused.suggestion.folderNotWritable": {
-    "description": "Recovery suggestion when the user may not change the folder holding the items. Plain text. Apple localizes \"Get Info\" (the Finder menu command) and \"Sharing & Permissions\" (a section of its Info window), so use your locale's Finder wording for both. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
-    "description": "Recovery suggestion when another user account owns the items and their folder lets only an item's owner move it. Plain text. Finder can do it after the user types in an administrator account's password, which Cmdr can't ask for. \"Finder\" is the app name: use whatever your locale's macOS calls it. Deliberately does NOT say \"try again\".",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.trashRefused.suggestion.trashNotWritable": {
-    "description": "Recovery suggestion when the drive's trash folder doesn't let the app add anything to it. Plain text. The first sentence says how that usually happens (moving to a new Mac is one example); the second offers deleting permanently instead, which doesn't need the trash. Shift+F8 is a keyboard shortcut and stays as-is.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.trashRefused.suggestion.noTrashForVolume": {
-    "description": "Recovery suggestion when the items' location has no Trash. Plain text. Names the two common cases so the user recognizes their own. Shift+F8 is a keyboard shortcut and stays as-is.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.trashRefused.suggestion.other": {
-    "description": "Recovery suggestion for an unclassified trash refusal, where Cmdr has nothing specific to offer and points at what the OS said. Plain text. \"Technical details\" is the label on the collapsed disclosure in this same dialog: match the translation you used for that label.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -2528,11 +2528,21 @@
   "errors.write.ioError.title.copy": "Couldn’t copy",
   "errors.write.ioError.title.move": "Couldn’t move",
   "errors.write.ioError.title.delete": "Couldn’t delete",
-  "errors.write.ioError.title.trash": "Couldn’t move to trash",
+  "errors.write.ioError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Couldn’t move to trash}}",
+  "@errors.write.ioError.title.trash": {
+    "description": "Title of the copy/move/delete error dialog for a generic I/O failure with a recognized variant (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.ioError.message.copy": "Couldn’t copy the file.",
   "errors.write.ioError.message.move": "Couldn’t move the file.",
   "errors.write.ioError.message.delete": "Couldn’t delete the file.",
-  "errors.write.ioError.message.trash": "Couldn’t move the file to trash.",
+  "errors.write.ioError.message.trash": "{platform, select, windows {Couldn’t move the file to the Recycle Bin.} other {Couldn’t move the file to trash.}}",
+  "@errors.write.ioError.message.trash": {
+    "description": "Body of the copy/move/delete error dialog for a generic I/O failure with a recognized variant (trash variant). Plain text. Uses a contraction (\"Couldn't\"). This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.ioError.suggestion": "Try again. If the problem persists, check the technical details below.",
   "@errors.write.ioError.title.copy": {
     "description": "Title of the copy/move/delete error dialog for a generic I/O failure with a recognized variant (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
@@ -2545,11 +2555,6 @@
   },
   "@errors.write.ioError.title.delete": {
     "description": "Title of the copy/move/delete error dialog for a generic I/O failure with a recognized variant (delete variant). Plain text. This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.ioError.title.trash": {
-    "description": "Title of the copy/move/delete error dialog for a generic I/O failure with a recognized variant (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -2567,11 +2572,6 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.write.ioError.message.trash": {
-    "description": "Body of the copy/move/delete error dialog for a generic I/O failure with a recognized variant (trash variant). Plain text. Uses a contraction (\"Couldn't\"). This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
   "@errors.write.ioError.suggestion": {
     "description": "Recovery suggestion for a generic I/O failure. Plain text. \"technical details below\" refers to an expandable section in the same dialog.",
     "screenshot": "transfer-error-io_error.png"
@@ -2580,14 +2580,24 @@
   "errors.write.permissionDenied.message.copy": "You don’t have permission to copy files here.",
   "errors.write.permissionDenied.message.move": "You don’t have permission to move files here.",
   "errors.write.permissionDenied.message.delete": "You don’t have permission to delete files here.",
-  "errors.write.permissionDenied.message.trash": "You don’t have permission to move files to the trash here.",
+  "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {You don’t have permission to move files to the trash here.}}",
+  "@errors.write.permissionDenied.message.trash": {
+    "description": "Body of the copy/move/delete error dialog when the user lacks permission (trash variant). Plain text. Uses a contraction (\"don't\"). This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Check that you have write access to the parent folder. The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.}}",
   "@errors.write.permissionDenied.suggestion.delete": {
     "description": "Recovery suggestion for a permission failure during delete/trash on macOS. Plain text. Apple localizes both \"Get Info\" (the Finder menu command) and \"Locked\" (the checkbox in its Info window), so write the menu path with your locale's Finder wording. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
     "screenshot": "transfer-error-permission_denied.png"
   },
   "errors.write.permissionDenied.suggestion.default": "Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.",
-  "errors.write.permissionDenied.message.named": "Your macOS user can’t change {folder}.",
+  "errors.write.permissionDenied.message.named": "{platform, select, macos {Your macOS user can’t change {folder}.} windows {Your Windows account can’t change {folder}.} other {Your user account can’t change {folder}.}}",
+  "@errors.write.permissionDenied.message.named": {
+    "description": "Body of the copy/move/delete error dialog when Cmdr could prove WHICH folder refuses writes (it asked the OS, folder by folder). Replaces the message.copy/move/delete/trash variants, so it has to read naturally for any of those. {folder} is an absolute path and is inserted as-is: keep the token, don't translate or reformat it. \"macOS user\" means the account the person is signed in to the Mac with.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.permissionDenied.suggestion.phone": "Android reserves this location for the system and its apps. Your photos, downloads, and other files are in the phone’s shared storage, so try a folder there.",
   "errors.write.permissionDenied.suggestion.server": "The server turned this down for the account you connected with. Check the folder’s permissions on the server, or connect with an account that has access.",
   "errors.write.permissionDenied.suggestion.objectStoreAccount": "The provider refused, and that can mean two things. Check the access key’s permissions, or your provider’s console for a usage cap or a billing notice.",
@@ -2635,18 +2645,8 @@
     "description": "Body of the copy/move/delete error dialog when the user lacks permission (delete variant). Plain text. Uses a contraction (\"don't\"). This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
     "screenshot": "transfer-error-permission_denied.png"
   },
-  "@errors.write.permissionDenied.message.trash": {
-    "description": "Body of the copy/move/delete error dialog when the user lacks permission (trash variant). Plain text. Uses a contraction (\"don't\"). This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
   "@errors.write.permissionDenied.suggestion.default": {
     "description": "Recovery suggestion for a permission failure during copy/move (the non-delete case). Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.permissionDenied.message.named": {
-    "description": "Body of the copy/move/delete error dialog when Cmdr could prove WHICH folder refuses writes (it asked the OS, folder by folder). Replaces the message.copy/move/delete/trash variants, so it has to read naturally for any of those. {folder} is an absolute path and is inserted as-is: keep the token, don't translate or reformat it. \"macOS user\" means the account the person is signed in to the Mac with.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -2915,21 +2915,19 @@
     "description": "Recovery suggestion for a move (onto another drive or into a zip archive) that reached a mounted drive. Plain text. \"Eject\" is the macOS verb for disconnecting a drive or server safely (Finder's Eject). The second sentence is for someone who wanted the drive's files moved: they can open the drive and move them from there.",
     "screenshot": "transfer-error-mounted_volume_inside-move.png"
   },
-  "errors.write.homeFolder.title": "Please don’t delete your home folder",
-  "errors.write.homeFolder.message.isHome": "Hey, you can’t delete your own home folder.",
-  "errors.write.homeFolder.message.holdsHome": "You can’t delete <code>{path}</code> because it contains your home folder, and you can’t delete your home folder.",
-  "errors.write.homeFolder.suggestion.isHome": "If you want to get rid of all your files, go in there, select all, and delete. Although, it still sounds like a very bad idea.",
-  "errors.write.homeFolder.suggestion.holdsHome": "If you want to free up space, be a bit more specific. If you want to get rid of everything on this machine, do an OS reset.",
+  "errors.write.homeFolder.title": "{platform, select, windows {Please don’t delete your user folder} other {Please don’t delete your home folder}}",
   "@errors.write.homeFolder.title": {
     "description": "Title of the error dialog when a delete or a move to the Trash named the user's own home folder (the folder holding their Documents, Desktop, and so on), or a folder that contains it, like /Users or the whole disk. Cmdr refuses both before anything is deleted. Plain text.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hey, you can’t delete your own user folder.} other {Hey, you can’t delete your own home folder.}}",
   "@errors.write.homeFolder.message.isHome": {
     "description": "First sentence of the message shown when the user tries to delete or trash their own home folder. Cmdr refuses, so nothing was deleted. Plain text. \"Hey\" opens the sentence as a greeting, addressing the user directly. \"Home folder\" is the user's personal folder on the Mac (macOS calls it the home folder; Finder shows it under the user's name).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {You can’t delete <code>{path}</code> because it contains your user folder, and you can’t delete your user folder.} other {You can’t delete <code>{path}</code> because it contains your home folder, and you can’t delete your home folder.}}",
   "@errors.write.homeFolder.message.holdsHome": {
     "description": "First sentence of the message shown when the user tries to delete or trash a folder that contains their own home folder (for example /Users, or the whole disk at /). Cmdr refuses, so nothing was deleted. HTML: keep the <code>…</code> tags around the placeholder, which show the path in a code font. \"Home folder\" is the user's personal folder on the Mac.",
     "placeholders": {
@@ -2940,6 +2938,8 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.write.homeFolder.suggestion.isHome": "If you want to get rid of all your files, go in there, select all, and delete. Although, it still sounds like a very bad idea.",
+  "errors.write.homeFolder.suggestion.holdsHome": "If you want to free up space, be a bit more specific. If you want to get rid of everything on this machine, do an OS reset.",
   "@errors.write.homeFolder.suggestion.isHome": {
     "description": "Second part of the message when the user tries to delete their own home folder, right after errors.write.homeFolder.message.isHome. Plain text. Tells them how to delete everything INSIDE the home folder instead (open it, select all, delete), then gently says that's probably still a bad idea.",
     "screenshot": "error-message-example.png",
@@ -2950,26 +2950,19 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.write.homeFolderMove.title": "Please don’t move your home folder",
-  "errors.write.homeFolderMove.message.isHome": "Hey, your home folder lives right where it is. Move it, and your Mac will look for you in the wrong place next time you log in.",
-  "errors.write.homeFolderMove.message.holdsHome": "You can’t move <code>{path}</code> because your home folder is in there, and your Mac expects to find it right where it is.",
-  "errors.write.homeFolderMove.suggestion.isHome": "If you want your files somewhere else, go in there, pick what you need, and move that. Your Mac will thank you.",
-  "errors.write.homeFolderMove.suggestion.holdsHome": "If you want to move some files, be a bit more specific and pick them from inside.",
-  "errors.write.homeFolderRename.title": "Please don’t rename your home folder",
-  "errors.write.homeFolderRename.message.isHome": "Hey, your Mac knows your home folder by this name. Rename it, and it won’t find you next time you log in.",
-  "errors.write.homeFolderRename.message.holdsHome": "You can’t rename <code>{path}</code> because your home folder is in there, and your Mac expects to find it at this exact path.",
-  "errors.write.homeFolderRename.suggestion.isHome": "If you really need a new name, macOS has a careful way to do it in Users & Groups. It’s not a quick F2, though.",
-  "errors.write.homeFolderRename.suggestion.holdsHome": "Rename something inside it instead, or let this one be. It’s holding up more than it looks.",
+  "errors.write.homeFolderMove.title": "{platform, select, windows {Please don’t move your user folder} other {Please don’t move your home folder}}",
   "@errors.write.homeFolderMove.title": {
     "description": "Title of the error dialog when a move named the user's own home folder, or a folder that contains it, like /Users or the whole disk. Covers a move on the same disk and a move onto another drive (which copies, then deletes the original). Cmdr refuses before anything moves. Plain text. A polite, direct request addressed to the user. \"Home folder\" is the user's personal folder on the Mac (macOS calls it the home folder; Finder shows it under the user's name).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Hey, your home folder lives right where it is. Move it, and your Mac will look for you in the wrong place next time you log in.} windows {Hey, your user folder lives right where it is. Move it, and Windows will look for you in the wrong place next time you sign in.} other {Hey, your home folder lives right where it is. Move it, and your computer will look for you in the wrong place next time you log in.}}",
   "@errors.write.homeFolderMove.message.isHome": {
     "description": "First part of the message when the user tries to move their own home folder. Cmdr refuses, so nothing moved. Plain text. \"Hey\" opens the sentence as a greeting, addressing the user directly. \"Look for you\" means macOS looks for the user's account files at the old location, so logging in would break. \"Home folder\" is the user's personal folder on the Mac (macOS calls it the home folder; Finder shows it under the user's name).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {You can’t move <code>{path}</code> because your home folder is in there, and your Mac expects to find it right where it is.} windows {You can’t move <code>{path}</code> because your user folder is in there, and Windows expects to find it right where it is.} other {You can’t move <code>{path}</code> because your home folder is in there, and your computer expects to find it right where it is.}}",
   "@errors.write.homeFolderMove.message.holdsHome": {
     "description": "First part of the message when the user tries to move a folder that contains their home folder (for example /Users, or the whole disk at /). Cmdr refuses, so nothing moved. HTML: keep the <code>…</code> tags around the placeholder, which show the path in a code font. \"Home folder\" is the user's personal folder on the Mac (macOS calls it the home folder; Finder shows it under the user's name).",
     "placeholders": {
@@ -2980,26 +2973,26 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {If you want your files somewhere else, go in there, pick what you need, and move that. Your Mac will thank you.} windows {If you want your files somewhere else, go in there, pick what you need, and move that. Your PC will thank you.} other {If you want your files somewhere else, go in there, pick what you need, and move that. Your computer will thank you.}}",
   "@errors.write.homeFolderMove.suggestion.isHome": {
     "description": "Second part of the message when the user tries to move their own home folder, right after errors.write.homeFolderMove.message.isHome. Plain text. Tells them to open the home folder and move the files they want from inside it instead.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.write.homeFolderMove.suggestion.holdsHome": {
-    "description": "Second part of the message when the user tries to move a folder that contains their home folder, right after errors.write.homeFolderMove.message.holdsHome. Plain text. Tells them to choose the specific files or folders they want to move instead of the whole containing folder.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
+  "errors.write.homeFolderMove.suggestion.holdsHome": "If you want to move some files, be a bit more specific and pick them from inside.",
+  "errors.write.homeFolderRename.title": "{platform, select, windows {Please don’t rename your user folder} other {Please don’t rename your home folder}}",
   "@errors.write.homeFolderRename.title": {
     "description": "Title shown when a rename named the user's own home folder, or a folder that contains it, like /Users. Cmdr refuses before anything changes. Plain text. A polite, direct request addressed to the user. Also shown alone as a short notice when the rename came from somewhere with no room for the full message. \"Home folder\" is the user's personal folder on the Mac (macOS calls it the home folder; Finder shows it under the user's name).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Hey, your Mac knows your home folder by this name. Rename it, and it won’t find you next time you log in.} windows {Hey, Windows knows your user folder by this name. Rename it, and it won’t find you next time you sign in.} other {Hey, your computer knows your home folder by this name. Rename it, and it won’t find you next time you log in.}}",
   "@errors.write.homeFolderRename.message.isHome": {
     "description": "First part of the message when the user tries to rename their own home folder. Cmdr refuses, so nothing changed. Plain text. \"Hey\" opens the sentence as a greeting, addressing the user directly. \"Won't find you\" means macOS looks for the user's account files under the old name, so logging in would break. \"Home folder\" is the user's personal folder on the Mac (macOS calls it the home folder; Finder shows it under the user's name).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {You can’t rename <code>{path}</code> because your home folder is in there, and your Mac expects to find it at this exact path.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
     "description": "First part of the message when the user tries to rename a folder that contains their home folder (for example /Users). Cmdr refuses, so nothing changed. HTML: keep the <code>…</code> tags around the placeholder, which show the path in a code font. \"Home folder\" is the user's personal folder on the Mac (macOS calls it the home folder; Finder shows it under the user's name).",
     "placeholders": {
@@ -3010,8 +3003,15 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.write.homeFolderRename.suggestion.isHome": "{platform, select, macos {If you really need a new name, macOS has a careful way to do it in Users & Groups. It’s not a quick F2, though.} windows {Windows has no safe built-in way to rename it, so it’s best left as it is.} other {If you really need a new name, an administrator can do it carefully with usermod, signed in as another user. It’s not a quick F2, though.}}",
   "@errors.write.homeFolderRename.suggestion.isHome": {
     "description": "Second part of the message when the user tries to rename their own home folder, right after errors.write.homeFolderRename.message.isHome. Plain text. Points to the macOS way of changing the home folder's name: System Settings > Users & Groups (use the name your macOS version shows for that settings pane). \"F2\" is the key that renames a file in Cmdr; keep it as is.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.homeFolderRename.suggestion.holdsHome": "Rename something inside it instead, or let this one be. It’s holding up more than it looks.",
+  "@errors.write.homeFolderMove.suggestion.holdsHome": {
+    "description": "Second part of the message when the user tries to move a folder that contains their home folder, right after errors.write.homeFolderMove.message.holdsHome. Plain text. Tells them to choose the specific files or folders they want to move instead of the whole containing folder.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -3042,7 +3042,11 @@
   },
   "errors.write.landingNotRecorded.title": "Cmdr didn’t replace this file",
   "errors.write.landingNotRecorded.message": "Cmdr couldn’t save its note about replacing {path}, so it left the file where it was. Nothing there changed.",
-  "errors.write.landingNotRecorded.suggestion": "Try again. If it keeps happening, check that your Mac’s disk has free space, then restart Cmdr.",
+  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Try again. If it keeps happening, check that your Mac’s disk has free space, then restart Cmdr.} windows {Try again. If it keeps happening, check that your PC has free space, then restart Cmdr.} other {Try again. If it keeps happening, check that your computer’s disk has free space, then restart Cmdr.}}",
+  "@errors.write.landingNotRecorded.suggestion": {
+    "description": "Recovery suggestion when Cmdr couldn't save its note about a replace: try the same copy or move again, and if it keeps happening, free up space on the Mac's disk (where the note is saved) and restart Cmdr. \"Cmdr\" is the product name. Plain text.",
+    "screenshot": "transfer-error-landing_not_recorded.png"
+  },
   "@errors.write.landingNotRecorded.title": {
     "description": "Title of the copy/move error dialog when Cmdr was about to replace an existing file with the newly copied one and stopped first, because it couldn't save the small safety note it keeps on the Mac (the note that lets it finish the replace after a crash). Nothing was replaced. Plain text.",
     "screenshot": "transfer-error-landing_not_recorded.png"
@@ -3054,10 +3058,6 @@
         "description": "The full path of the existing file Cmdr didn't replace, inserted verbatim. Do not translate or reformat it."
       }
     },
-    "screenshot": "transfer-error-landing_not_recorded.png"
-  },
-  "@errors.write.landingNotRecorded.suggestion": {
-    "description": "Recovery suggestion when Cmdr couldn't save its note about a replace: try the same copy or move again, and if it keeps happening, free up space on the Mac's disk (where the note is saved) and restart Cmdr. \"Cmdr\" is the product name. Plain text.",
     "screenshot": "transfer-error-landing_not_recorded.png"
   },
   "errors.write.newDataKeptAt.title": "Your new file is under a different name",
@@ -3213,11 +3213,21 @@
   "errors.write.fallback.title.copy": "Couldn’t copy",
   "errors.write.fallback.title.move": "Couldn’t move",
   "errors.write.fallback.title.delete": "Couldn’t delete",
-  "errors.write.fallback.title.trash": "Couldn’t move to trash",
+  "errors.write.fallback.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Couldn’t move to trash}}",
+  "@errors.write.fallback.title.trash": {
+    "description": "Title of the copy/move/delete error dialog for an unrecognized failure, the catch-all (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.fallback.message.copy": "Something went wrong while copying.",
   "errors.write.fallback.message.move": "Something went wrong while moving.",
   "errors.write.fallback.message.delete": "Something went wrong while deleting.",
-  "errors.write.fallback.message.trash": "Something went wrong while moving to trash.",
+  "errors.write.fallback.message.trash": "{platform, select, windows {Something went wrong while moving to the Recycle Bin.} other {Something went wrong while moving to trash.}}",
+  "@errors.write.fallback.message.trash": {
+    "description": "Body of the copy/move/delete error dialog for an unrecognized failure (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.fallback.suggestion": "Try again, or check the technical details below for more information.",
   "@errors.write.fallback.title.copy": {
     "description": "Title of the copy/move/delete error dialog for an unrecognized failure, the catch-all (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
@@ -3233,11 +3243,6 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.write.fallback.title.trash": {
-    "description": "Title of the copy/move/delete error dialog for an unrecognized failure, the catch-all (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
   "@errors.write.fallback.message.copy": {
     "description": "Body of the copy/move/delete error dialog for an unrecognized failure (copy variant). Plain text. This is a raw errors.* string (no ICU), so phrase the copy action naturally for this language.",
     "screenshot": "transfer-error-archive_needs_password.png"
@@ -3249,11 +3254,6 @@
   },
   "@errors.write.fallback.message.delete": {
     "description": "Body of the copy/move/delete error dialog for an unrecognized failure (delete variant). Plain text. This is a raw errors.* string (no ICU), so phrase the delete action naturally for this language.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.fallback.message.trash": {
-    "description": "Body of the copy/move/delete error dialog for an unrecognized failure (trash variant). Plain text. This is a raw errors.* string (no ICU), so phrase the move-to-trash action naturally for this language.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },

@@ -407,7 +407,10 @@ describe('the rulings the catalogs are supposed to encode', () => {
       ['en-GB', gb],
       ['en-AU', au],
     ] as const) {
-      expect(cat.messages['fileOperations.delete.trashSwitch'], tag).toBe('Move to Bin')
+      const trashSwitch = cat.messages['fileOperations.delete.trashSwitch']
+      expect(pickPlatformBranch(trashSwitch, 'macos'), tag).toBe('Move to Bin')
+      expect(pickPlatformBranch(trashSwitch, 'linux'), tag).toBe('Move to Bin')
+      expect(pickPlatformBranch(trashSwitch, 'windows'), tag).toBe('Move to the Recycle Bin')
       const trashRefused = cat.messages['errors.mutation.trashRefused']
       expect(pickPlatformBranch(trashRefused, 'macos'), tag).toBe('macOS wouldn’t move this to the Bin.')
       expect(pickPlatformBranch(trashRefused, 'linux'), tag).toBe('Cmdr couldn’t move this to the Bin.')
@@ -446,9 +449,12 @@ describe('the rulings the catalogs are supposed to encode', () => {
       const leftovers = copyOf(cat.messages).filter(([, v]) => /trash/i.test(v))
       expect(leftovers.map(([k]) => k).sort(), tag).toEqual([...icuSelectorOnly].sort())
       for (const [key, value] of leftovers) {
-        // The only occurrence is the selector itself, never prose.
-        expect(value.match(/trash/gi)?.length, `${tag}: ${key}`).toBe(1)
-        expect(value, `${tag}: ${key}`).toContain(' trash {')
+        // The only occurrence is the selector itself, never prose: once per platform branch.
+        for (const platform of ['macos', 'windows', 'linux'] as const) {
+          const branch = pickPlatformBranch(value, platform)
+          expect(branch.match(/trash/gi)?.length, `${tag}: ${key} (${platform})`).toBe(1)
+          expect(branch, `${tag}: ${key} (${platform})`).toContain(' trash {')
+        }
         expect(en.messages[key], `${tag}: ${key}`).toContain(' trash {')
       }
     }

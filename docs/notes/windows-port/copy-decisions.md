@@ -57,3 +57,14 @@ Windows, Linux, and macOS are each first-class, and a few extra lines of per-OS 
   Windows), read the code; if the code doesn't settle it, keep the macOS text for that platform and list the row as open
   here.
 - **Key glyphs in prose** (the eight values with literal ⌘/⌥/⌃/⇧) wait for the keymap work (#1102).
+
+## Open rows
+
+Rows where the code doesn't settle a platform yet, so that platform keeps the macOS text (`openBranches` in
+`copy-final.json`). Each reopens when the named Windows code lands.
+
+- `goToPath.dialog.inputPlaceholder`, Windows: `~/Documents` stays until Windows path parsing in Go to path exists.
+- `fileOperations.transferDialog.namedFolderHint`, Windows: "end the path with “/”" stays until the Windows destination
+  field is built (plan D1 makes `/` valid everywhere, but what the field shows and accepts isn't decided).
+- `transfer.metadataClass.extendedAttributes`, Windows: "Finder tags" stays until the Windows metadata bodies (`cmdr-fs`
+  `metadata/platform/windows.rs`, a stub) say which class a Windows copy reports there.

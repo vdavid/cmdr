@@ -128,6 +128,24 @@ describe('validateDirectoryPath', () => {
     expect(result.message).toBe('Path must be absolute (start with /)')
   })
 
+  // The message names the forms the validator accepts on that OS: a drive letter or a share on
+  // Windows, a leading slash elsewhere.
+  it.each([
+    ['macos', 'Path must be absolute (start with /)'],
+    ['windows', 'Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)'],
+    ['linux', 'Path must be absolute (start with /)'],
+  ] as const)('rejects a relative path on %s with that OS’s absolute forms', (platform, message) => {
+    onTestFinished(withPlatform(platform))
+    expect(validateDirectoryPath('Documents/folder')).toEqual({ severity: 'error', message })
+    if (platform === 'windows') {
+      expect(validateDirectoryPath('C:\\Users\\ada').severity).toBe('ok')
+      expect(validateDirectoryPath('\\\\server\\share').severity).toBe('ok')
+    } else {
+      expect(validateDirectoryPath('/home/ada').severity).toBe('ok')
+      expect(validateDirectoryPath('C:\\Users\\ada')).toEqual({ severity: 'error', message })
+    }
+  })
+
   it('accepts a drive or UNC path, either slash, on Windows', () => {
     onTestFinished(withPlatform('windows'))
     expect(validateDirectoryPath('C:/Users/ada').severity).toBe('ok')

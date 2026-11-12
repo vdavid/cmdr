@@ -16,7 +16,7 @@
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
-  "fileOperations.delete.noTrashWarningStrong": "Ổ đĩa này không hỗ trợ thùng rác.",
+  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Ổ đĩa này không hỗ trợ thùng rác.}}",
   "@fileOperations.delete.noTrashWarningStrong": {
     "sourceHash": "911688a"
   },
@@ -24,19 +24,19 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Một phần lựa chọn của bạn chỉ có trực tuyến. Chuyển chúng vào thùng rác sẽ <strong>tải chúng về trước</strong>. Vì vậy ở đây Cmdr chỉ đề nghị <strong>xóa</strong> toàn bộ lựa chọn. Sẽ không có bản sao nào trong thùng rác, nhưng các dịch vụ đám mây thường giữ thùng rác riêng của họ khoảng 30 ngày. Hãy bấm “Xóa” nếu bạn đồng ý xóa, nếu không hãy hủy hộp thoại này rồi tải về tất cả tệp để dùng ngoại tuyến trước, hoặc bỏ chọn tất cả tệp chỉ có trực tuyến.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.} other {Một phần lựa chọn của bạn chỉ có trực tuyến. Chuyển chúng vào thùng rác sẽ <strong>tải chúng về trước</strong>. Vì vậy ở đây Cmdr chỉ đề nghị <strong>xóa</strong> toàn bộ lựa chọn. Sẽ không có bản sao nào trong thùng rác, nhưng các dịch vụ đám mây thường giữ thùng rác riêng của họ khoảng 30 ngày. Hãy bấm “Xóa” nếu bạn đồng ý xóa, nếu không hãy hủy hộp thoại này rồi tải về tất cả tệp để dùng ngoại tuyến trước, hoặc bỏ chọn tất cả tệp chỉ có trực tuyến.}}",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "2468db5"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Mọi thứ bạn đã chọn đều chỉ có trực tuyến. Chuyển nó vào thùng rác sẽ <strong>tải nó về trước</strong>. Vì vậy ở đây Cmdr chỉ đề nghị <strong>xóa</strong> toàn bộ lựa chọn. Sẽ không có bản sao nào trong thùng rác, nhưng các dịch vụ đám mây thường giữ thùng rác riêng của họ khoảng 30 ngày. Hãy bấm “Xóa” nếu bạn đồng ý xóa, nếu không hãy hủy hộp thoại này rồi tải về các tệp này để dùng ngoại tuyến trước.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and make these files available offline first.} other {Mọi thứ bạn đã chọn đều chỉ có trực tuyến. Chuyển nó vào thùng rác sẽ <strong>tải nó về trước</strong>. Vì vậy ở đây Cmdr chỉ đề nghị <strong>xóa</strong> toàn bộ lựa chọn. Sẽ không có bản sao nào trong thùng rác, nhưng các dịch vụ đám mây thường giữ thùng rác riêng của họ khoảng 30 ngày. Hãy bấm “Xóa” nếu bạn đồng ý xóa, nếu không hãy hủy hộp thoại này rồi tải về các tệp này để dùng ngoại tuyến trước.}}",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "dd04d39"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Lựa chọn của bạn hóa ra có nội dung chỉ có trực tuyến, nên nút bên dưới giờ đề nghị “Xóa”. Hãy đọc ghi chú ở trên rồi nhấn lại nếu bạn đồng ý.",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Your selection turned out to hold online-only content, so the button below now offers Delete permanently. Read the note above, then press it again if that’s OK.} other {Lựa chọn của bạn hóa ra có nội dung chỉ có trực tuyến, nên nút bên dưới giờ đề nghị “Xóa”. Hãy đọc ghi chú ở trên rồi nhấn lại nếu bạn đồng ý.}}",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
     "sourceHash": "d3f4a7a"
   },
-  "fileOperations.delete.archiveWarningStrong": "Không có thùng rác bên trong tệp nén.",
+  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {There’s no Recycle Bin inside an archive.} other {Không có thùng rác bên trong tệp nén.}}",
   "@fileOperations.delete.archiveWarningStrong": {
     "sourceHash": "d25cd46"
   },
@@ -48,7 +48,7 @@
   "@fileOperations.trash.undoAction": {
     "sourceHash": "a8283ad"
   },
-  "fileOperations.trash.goToTrashAction": "Đi tới thùng rác",
+  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Go to Recycle Bin} other {Đi tới thùng rác}}",
   "@fileOperations.trash.goToTrashAction": {
     "sourceHash": "5332858"
   },
@@ -60,7 +60,7 @@
   "@fileOperations.trash.undone": {
     "sourceHash": "a76ffee"
   },
-  "fileOperations.trash.undonePartial": "Đã đưa trở lại {restoredText} {restored, plural, other {tệp}}; {skippedText} {skipped, plural, other {mục}} vẫn ở trong thùng rác.",
+  "fileOperations.trash.undonePartial": "{platform, select, windows {Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Recycle Bin.} other {Đã đưa trở lại {restoredText} {restored, plural, other {tệp}}; {skippedText} {skipped, plural, other {mục}} vẫn ở trong thùng rác.}}",
   "@fileOperations.trash.undonePartial": {
     "sourceHash": "371413d"
   },
@@ -68,19 +68,19 @@
   "@fileOperations.trash.undoUnavailable": {
     "sourceHash": "ee17b5f"
   },
-  "fileOperations.trash.undoGone": "Không có gì để đưa trở lại: {count, plural, =1 {mục đó không còn ở trong thùng rác nữa} other {các mục đó không còn ở trong thùng rác nữa}}.",
+  "fileOperations.trash.undoGone": "{platform, select, windows {Nothing to put back: {count, plural, one {the item was} other {the items were}} no longer in the Recycle Bin.} other {Không có gì để đưa trở lại: {count, plural, =1 {mục đó không còn ở trong thùng rác nữa} other {các mục đó không còn ở trong thùng rác nữa}}.}}",
   "@fileOperations.trash.undoGone": {
     "sourceHash": "69a90c2"
   },
-  "fileOperations.trash.undoPartlyGone": "{countText} {count, plural, other {mục}} không còn ở trong thùng rác nữa.",
+  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {item was} other {items were}} no longer in the Recycle Bin.} other {{countText} {count, plural, other {mục}} không còn ở trong thùng rác nữa.}}",
   "@fileOperations.trash.undoPartlyGone": {
     "sourceHash": "2e23577"
   },
-  "fileOperations.trash.noTrashHere": "Ổ đĩa này không có thùng rác.",
+  "fileOperations.trash.noTrashHere": "{platform, select, windows {This drive doesn’t have a Recycle Bin.} other {Ổ đĩa này không có thùng rác.}}",
   "@fileOperations.trash.noTrashHere": {
     "sourceHash": "f58bdab"
   },
-  "fileOperations.delete.trashSwitch": "Chuyển vào thùng rác",
+  "fileOperations.delete.trashSwitch": "{platform, select, windows {Move to the Recycle Bin} other {Chuyển vào thùng rác}}",
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"
   },
@@ -96,11 +96,11 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "46b23b5"
   },
-  "fileOperations.delete.confirmDelete": "Xóa",
+  "fileOperations.delete.confirmDelete": "{platform, select, windows {Delete permanently} other {Xóa}}",
   "@fileOperations.delete.confirmDelete": {
     "sourceHash": "e2d0a54"
   },
-  "fileOperations.delete.confirmMoveToTrash": "Chuyển vào thùng rác",
+  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Delete} other {Chuyển vào thùng rác}}",
   "@fileOperations.delete.confirmMoveToTrash": {
     "sourceHash": "b250a45"
   },
@@ -436,11 +436,11 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Sao chép} move {Di chuyển} compress {Nén} delete {Xóa} other {Chuyển vào thùng rác}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to the Recycle Bin}}} other {{verb, select, copy {Sao chép} move {Di chuyển} compress {Nén} delete {Xóa} other {Chuyển vào thùng rác}}}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
     "sourceHash": "b18b6e3"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Sao chép} move {Di chuyển} compress {Nén} delete {Xóa} other {Chuyển vào thùng rác}} {phrase}",
+  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Copy {phrase}} move {Move {phrase}} compress {Compress {phrase}} delete {Delete {phrase}} other {Move {phrase} to the Recycle Bin}}} other {{verb, select, copy {Sao chép} move {Di chuyển} compress {Nén} delete {Xóa} other {Chuyển vào thùng rác}} {phrase}}}",
   "@fileOperations.transferDialog.titleWithCounts": {
     "sourceHash": "d21c910"
   },
@@ -504,7 +504,7 @@
   "@fileOperations.transferProgress.scanTitleDelete": {
     "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "Đang đếm các mục cần chuyển vào thùng rác…",
+  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Counting items to move to the Recycle Bin…} other {Đang đếm các mục cần chuyển vào thùng rác…}}",
   "@fileOperations.transferProgress.scanTitleTrash": {
     "sourceHash": "6df6c7f"
   },
@@ -552,11 +552,11 @@
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.canceledAlertTitle": "{type, select, copy {Đã hủy sao chép} move {Đã hủy di chuyển} compress {Đã hủy nén} delete {Đã hủy xóa} trash {Đã hủy chuyển vào thùng rác} other {Đã hủy}}",
+  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to the Recycle Bin canceled} other {Canceled}}} other {{type, select, copy {Đã hủy sao chép} move {Đã hủy di chuyển} compress {Đã hủy nén} delete {Đã hủy xóa} trash {Đã hủy chuyển vào thùng rác} other {Đã hủy}}}}",
   "@fileOperations.transferProgress.canceledAlertTitle": {
     "sourceHash": "3cba939"
   },
-  "fileOperations.transferProgress.canceledAlertMessage": "{type, select, copy {Bạn đã hủy thao tác sao chép này. Các tệp đã sao chép đến giờ vẫn nằm nguyên tại chỗ.} move {Bạn đã hủy thao tác di chuyển này. Các tệp đã di chuyển đến giờ vẫn nằm ở nơi đã chuyển tới.} compress {Bạn đã hủy thao tác nén này.} delete {Bạn đã hủy thao tác xóa này. Các tệp đã xóa đến giờ không còn nữa và các tệp còn lại vẫn còn nguyên.} trash {Bạn đã hủy thao tác chuyển vào thùng rác này. Các tệp đã chuyển đến giờ vẫn nằm trong thùng rác và các tệp còn lại vẫn ở chỗ cũ.} other {Bạn đã hủy thao tác này.}}",
+  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to the Recycle Bin. The files it moved so far stay in the Recycle Bin, and the rest are where they were.} other {You’ve canceled this operation.}}} other {{type, select, copy {Bạn đã hủy thao tác sao chép này. Các tệp đã sao chép đến giờ vẫn nằm nguyên tại chỗ.} move {Bạn đã hủy thao tác di chuyển này. Các tệp đã di chuyển đến giờ vẫn nằm ở nơi đã chuyển tới.} compress {Bạn đã hủy thao tác nén này.} delete {Bạn đã hủy thao tác xóa này. Các tệp đã xóa đến giờ không còn nữa và các tệp còn lại vẫn còn nguyên.} trash {Bạn đã hủy thao tác chuyển vào thùng rác này. Các tệp đã chuyển đến giờ vẫn nằm trong thùng rác và các tệp còn lại vẫn ở chỗ cũ.} other {Bạn đã hủy thao tác này.}}}}",
   "@fileOperations.transferProgress.canceledAlertMessage": {
     "sourceHash": "1d1de76"
   },
@@ -652,7 +652,7 @@
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
-  "fileOperations.transferProgress.titleDone": "{type, select, copy {{count, plural, =0 {Không sao chép tệp nào} other {Đã sao chép {countText} tệp}}} move {{count, plural, =0 {Không di chuyển tệp nào} other {Đã di chuyển {countText} tệp}}} delete {{count, plural, =0 {Không xóa tệp nào} other {Đã xóa {countText} tệp}}} trash {{count, plural, =0 {Không chuyển tệp nào vào thùng rác} other {Đã chuyển {countText} tệp vào thùng rác}}} compress {{count, plural, =0 {Không nén tệp nào} other {Đã nén {countText} tệp}}} other {Xong}}",
+  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Recycle Bin} one {Moved {countText} file to the Recycle Bin} other {Moved {countText} files to the Recycle Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}} other {{type, select, copy {{count, plural, =0 {Không sao chép tệp nào} other {Đã sao chép {countText} tệp}}} move {{count, plural, =0 {Không di chuyển tệp nào} other {Đã di chuyển {countText} tệp}}} delete {{count, plural, =0 {Không xóa tệp nào} other {Đã xóa {countText} tệp}}} trash {{count, plural, =0 {Không chuyển tệp nào vào thùng rác} other {Đã chuyển {countText} tệp vào thùng rác}}} compress {{count, plural, =0 {Không nén tệp nào} other {Đã nén {countText} tệp}}} other {Xong}}}}",
   "@fileOperations.transferProgress.titleDone": {
     "sourceHash": "3db0154"
   },
@@ -692,7 +692,7 @@
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Đang sao chép} move {Đang di chuyển} compress {Đang nén} delete {Đang xóa} other {Đang chuyển vào thùng rác}}…",
+  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Recycle Bin}}…} other {{gerund, select, copy {Đang sao chép} move {Đang di chuyển} compress {Đang nén} delete {Đang xóa} other {Đang chuyển vào thùng rác}}…}}",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "0c636e5"
   },
@@ -844,7 +844,7 @@
   "@fileOperations.sourcesGone.title": {
     "sourceHash": "9f8e2cb"
   },
-  "fileOperations.sourcesGone.message": "{type, select, copy {{gone, plural, other {Trong lúc chờ đến lượt, {goneText} trên {totalText} mục cần sao chép đã bị chuyển đi hoặc xóa.}}} move {{gone, plural, other {Trong lúc chờ đến lượt, {goneText} trên {totalText} mục cần di chuyển đã bị chuyển đi hoặc xóa.}}} delete {{gone, plural, other {Trong lúc chờ đến lượt, {goneText} trên {totalText} mục cần xóa đã bị chuyển đi hoặc xóa.}}} trash {{gone, plural, other {Trong lúc chờ đến lượt, {goneText} trên {totalText} mục cần chuyển vào thùng rác đã bị chuyển đi hoặc xóa.}}} other {{gone, plural, other {Trong lúc chờ đến lượt, {goneText} trên {totalText} mục của thao tác này đã bị chuyển đi hoặc xóa.}}}}",
+  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to the Recycle Bin was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {{gone, plural, other {Trong lúc chờ đến lượt, {goneText} trên {totalText} mục cần sao chép đã bị chuyển đi hoặc xóa.}}} move {{gone, plural, other {Trong lúc chờ đến lượt, {goneText} trên {totalText} mục cần di chuyển đã bị chuyển đi hoặc xóa.}}} delete {{gone, plural, other {Trong lúc chờ đến lượt, {goneText} trên {totalText} mục cần xóa đã bị chuyển đi hoặc xóa.}}} trash {{gone, plural, other {Trong lúc chờ đến lượt, {goneText} trên {totalText} mục cần chuyển vào thùng rác đã bị chuyển đi hoặc xóa.}}} other {{gone, plural, other {Trong lúc chờ đến lượt, {goneText} trên {totalText} mục của thao tác này đã bị chuyển đi hoặc xóa.}}}}}}",
   "@fileOperations.sourcesGone.message": {
     "sourceHash": "0512078"
   },
@@ -852,15 +852,15 @@
   "@fileOperations.sourcesGone.moreItems": {
     "sourceHash": "c39507d"
   },
-  "fileOperations.sourcesGone.continue": "{type, select, copy {Sao chép các mục còn lại} move {Di chuyển các mục còn lại} delete {Xóa các mục còn lại} trash {Chuyển các mục còn lại vào thùng rác} other {Tiếp tục với các mục còn lại}}",
+  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest permanently} trash {Delete the rest} other {Do the rest}}} other {{type, select, copy {Sao chép các mục còn lại} move {Di chuyển các mục còn lại} delete {Xóa các mục còn lại} trash {Chuyển các mục còn lại vào thùng rác} other {Tiếp tục với các mục còn lại}}}}",
   "@fileOperations.sourcesGone.continue": {
     "sourceHash": "2790bfb"
   },
-  "fileOperations.sourcesGone.heldToast": "{type, select, copy {Một lần sao chép đang chờ có câu hỏi cho bạn. Bạn sẽ thấy câu hỏi ngay khi hộp thoại đang mở đóng lại.} move {Một lần di chuyển đang chờ có câu hỏi cho bạn. Bạn sẽ thấy câu hỏi ngay khi hộp thoại đang mở đóng lại.} delete {Một lần xóa đang chờ có câu hỏi cho bạn. Bạn sẽ thấy câu hỏi ngay khi hộp thoại đang mở đóng lại.} trash {Một lần chuyển vào thùng rác đang chờ có câu hỏi cho bạn. Bạn sẽ thấy câu hỏi ngay khi hộp thoại đang mở đóng lại.} other {Một thao tác đang chờ có câu hỏi cho bạn. Bạn sẽ thấy câu hỏi ngay khi hộp thoại đang mở đóng lại.}}",
+  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {A queued copy has a question for you. You’ll see it as soon as the open dialog closes.} move {A queued move has a question for you. You’ll see it as soon as the open dialog closes.} delete {A queued delete has a question for you. You’ll see it as soon as the open dialog closes.} trash {A queued move to the Recycle Bin has a question for you. You’ll see it as soon as the open dialog closes.} other {A queued operation has a question for you. You’ll see it as soon as the open dialog closes.}}} other {{type, select, copy {Một lần sao chép đang chờ có câu hỏi cho bạn. Bạn sẽ thấy câu hỏi ngay khi hộp thoại đang mở đóng lại.} move {Một lần di chuyển đang chờ có câu hỏi cho bạn. Bạn sẽ thấy câu hỏi ngay khi hộp thoại đang mở đóng lại.} delete {Một lần xóa đang chờ có câu hỏi cho bạn. Bạn sẽ thấy câu hỏi ngay khi hộp thoại đang mở đóng lại.} trash {Một lần chuyển vào thùng rác đang chờ có câu hỏi cho bạn. Bạn sẽ thấy câu hỏi ngay khi hộp thoại đang mở đóng lại.} other {Một thao tác đang chờ có câu hỏi cho bạn. Bạn sẽ thấy câu hỏi ngay khi hộp thoại đang mở đóng lại.}}}}",
   "@fileOperations.sourcesGone.heldToast": {
     "sourceHash": "75f645d"
   },
-  "fileOperations.sourcesGone.nothingLeftToast": "{type, select, copy {Không còn gì để sao chép: {total, plural, other {{totalText} mục cần sao chép}} đã bị chuyển đi hoặc xóa trong lúc chờ đến lượt.} move {Không còn gì để di chuyển: {total, plural, other {{totalText} mục cần di chuyển}} đã bị chuyển đi hoặc xóa trong lúc chờ đến lượt.} delete {Không còn gì để xóa: {total, plural, other {{totalText} mục cần xóa}} đã bị chuyển đi hoặc xóa trong lúc chờ đến lượt.} trash {Không còn gì để chuyển vào thùng rác: {total, plural, other {{totalText} mục cần chuyển vào thùng rác}} đã bị chuyển đi hoặc xóa trong lúc chờ đến lượt.} other {Không còn gì để làm: {total, plural, other {{totalText} mục của thao tác này}} đã bị chuyển đi hoặc xóa trong lúc chờ đến lượt.}}",
+  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Nothing left to copy: {total, plural, one {the item} other {all {totalText} items}} this copy was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} move {Nothing left to move: {total, plural, one {the item} other {all {totalText} items}} this move was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} delete {Nothing left to delete: {total, plural, one {the item} other {all {totalText} items}} this delete was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} trash {Nothing left to move to the Recycle Bin: {total, plural, one {the item} other {all {totalText} items}} this move to the Recycle Bin was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} other {Nothing left to do: {total, plural, one {the item} other {all {totalText} items}} this operation was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {Không còn gì để sao chép: {total, plural, other {{totalText} mục cần sao chép}} đã bị chuyển đi hoặc xóa trong lúc chờ đến lượt.} move {Không còn gì để di chuyển: {total, plural, other {{totalText} mục cần di chuyển}} đã bị chuyển đi hoặc xóa trong lúc chờ đến lượt.} delete {Không còn gì để xóa: {total, plural, other {{totalText} mục cần xóa}} đã bị chuyển đi hoặc xóa trong lúc chờ đến lượt.} trash {Không còn gì để chuyển vào thùng rác: {total, plural, other {{totalText} mục cần chuyển vào thùng rác}} đã bị chuyển đi hoặc xóa trong lúc chờ đến lượt.} other {Không còn gì để làm: {total, plural, other {{totalText} mục của thao tác này}} đã bị chuyển đi hoặc xóa trong lúc chờ đến lượt.}}}}",
   "@fileOperations.sourcesGone.nothingLeftToast": {
     "sourceHash": "4d62b7d"
   },
@@ -1304,7 +1304,7 @@
   "@fileOperations.resticPassword.inputAria": {
     "sourceHash": "3e39703"
   },
-  "fileOperations.resticPassword.remember": "Ghi nhớ trong chuỗi khóa",
+  "fileOperations.resticPassword.remember": "{platform, select, macos {Ghi nhớ trong chuỗi khóa} windows {Remember password} other {Remember in keyring}}",
   "@fileOperations.resticPassword.remember": {
     "sourceHash": "3fd7384"
   },
@@ -1348,7 +1348,7 @@
   "@fileOperations.validation.pathEmpty": {
     "sourceHash": "c7afbbc"
   },
-  "fileOperations.validation.pathNotAbsolute": "Đường dẫn phải là tuyệt đối (bắt đầu bằng /)",
+  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {Đường dẫn phải là tuyệt đối (bắt đầu bằng /)}}",
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
   },
