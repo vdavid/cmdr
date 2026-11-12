@@ -288,6 +288,12 @@ its prerequisites; tasks without any can start any time. Order within a phase is
 28. [L] Win. Translate task 27's changed strings into the 13 languages (translator agents, per
     `docs/guides/i18n-translation.md`). Needs 27, and starts only after David has reviewed task 27's English: a
     translation of English he then changes is a wasted round.
+    - **His review edits go through the apply script**: change the row in `docs/notes/windows-port/copy-final.json`,
+      then `apps/desktop/scripts/apply-platform-copy.ts`, so every locale's branches follow
+      (`apps/desktop/src/lib/intl/DETAILS.md` § "Migrating copy to platform blocks"). Once they're applied, task 28
+      starts by deleting the script with its lib, lint, rows, and tests, and updates that section and the docs naming
+      them (`error-messages/DETAILS.md` § Platform branches, `apps/desktop/scripts/CLAUDE.md`, `copy-final.json`'s
+      `readme`).
     - **The worklist** is `desktop-i18n-stale`: every migrated key is stale in each full locale and in the `es-419`
       forks (`en-GB` / `en-AU` are restamped English already). Its `macos` branch holds the existing translation; each
       branch whose English changed holds that English. Restamp a key only once every branch is translated.
