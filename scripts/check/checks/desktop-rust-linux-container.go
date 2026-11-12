@@ -421,17 +421,12 @@ func dockerExec(container, script string) (string, error) {
 // not the wall clock's.
 const dockerControlTimeout = 30 * time.Second
 
-// containerCargoScript is the ONE place a cargo command line is built for the container,
-// so the lanes and the contention re-run can't drift apart in quoting or output capture.
-// Every argument is single-quoted: the re-run passes a nextest filter expression
-// (`test(=a::b) + test(=c::d)`) whose spaces and parens `sh -c` would otherwise split.
-// Stderr joins stdout so diagnostics interleave with the progress they belong to.
+// containerCargoScript is an unrecorded cargo run in the container (the contention
+// re-run), with stderr joining stdout so diagnostics interleave with the progress they
+// belong to. It and the lanes' recorded runs (`recordedCargoScript`) both build the
+// command line with `cargoCommand`, so they can't drift apart in quoting.
 func containerCargoScript(args ...string) string {
-	quoted := make([]string, 0, len(args))
-	for _, a := range args {
-		quoted = append(quoted, shellQuote(a))
-	}
-	return "cargo " + strings.Join(quoted, " ") + " 2>&1"
+	return cargoCommand(args...) + " 2>&1"
 }
 
 // shellQuote wraps an argument for `sh -c`, escaping any embedded single quote.

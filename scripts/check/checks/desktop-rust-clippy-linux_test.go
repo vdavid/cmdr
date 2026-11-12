@@ -10,12 +10,13 @@ import (
 // --workspace --exclude cmdr-fsevent-stream -- -D warnings`.
 func TestLinuxClippyAsksCIsQuestion(t *testing.T) {
 	selection := repoSelection(t)
-	script := containerCargoScript(linuxClippyArgs(selection)...)
+	script := linuxClippyScript(selection)
 
 	for _, want := range []string{
 		"cargo 'clippy' '--locked' '--all-targets' '--workspace'",
 		"'--exclude' 'cmdr-fsevent-stream'",
-		"'--' '-D' 'warnings'",
+		// The record's format flag is cargo's, so it goes before clippy's own arguments.
+		"'--message-format=json-render-diagnostics' '--' '-D' 'warnings'",
 	} {
 		if !strings.Contains(script, want) {
 			t.Errorf("the Linux clippy command must contain %q, got:\n%s", want, script)

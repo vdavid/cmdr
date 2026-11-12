@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"cmdr/scripts/check/targetsweep"
 )
 
 // containerNextestVersion pins the container's cargo-nextest to the same version the host
@@ -53,9 +55,7 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 	}
 	defer removeLinuxContainer(container)
 
-	testArgs := append([]string{"--locked"}, selection...)
-	testArgs = append(testArgs, "--no-fail-fast")
-	output, err := dockerExec(container, containerNextestScript(testArgs...))
+	output, err := dockerExec(container, linuxTestsScript(selection))
 	// Before the verdict branch, so a red run records WHICH tests went red
 	// (`test-log.go`); the contention re-run below is deliberately not recorded.
 	ctx.RecordTests(ParseNextestResults(output)...)
@@ -87,6 +87,16 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 		}, nil
 	}
 	return Success("All tests passed on Linux" + env.buildNote()), nil
+}
+
+// linuxTestsScript is the lane's main run, recorded for the target volume's sweep. Cargo's
+// JSON goes to the record and nextest's own reporter stays on stderr, so the output reads
+// as before (`recordedCargoScript`). A red test run still records: its build finished,
+// which is all the record vouches for.
+func linuxTestsScript(selection []string) string {
+	args := append([]string{"nextest", "run", "--locked"}, selection...)
+	args = append(args, "--no-fail-fast", "--cargo-message-format", "json-render-diagnostics")
+	return recordedCargoScript(targetsweep.LaneTests, stdoutToRecord, cargoCommand(args...))
 }
 
 // dockerContentionRunner re-runs the named tests inside the SAME container the failing run

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"cmdr/scripts/check/targetsweep"
 )
 
 // RunClippyLinux lints the workspace for the Linux target, from a Mac, with the clippy
@@ -38,7 +40,7 @@ func RunClippyLinux(ctx *CheckContext) (CheckResult, error) {
 	}
 	defer removeLinuxContainer(container)
 
-	output, err := dockerExec(container, containerCargoScript(linuxClippyArgs(selection)...))
+	output, err := dockerExec(container, linuxClippyScript(selection))
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("clippy found issues on Linux%s\n%s",
 			env.buildNote(), indentOutput(trimCargoProgress(output)))
@@ -67,11 +69,21 @@ func RunClippyLinux(ctx *CheckContext) (CheckResult, error) {
 	return result, nil
 }
 
+// linuxClippyScript is CI's clippy question, recorded for the target volume's sweep: the
+// JSON goes to the record and the rendered diagnostics stay on stderr, so the output reads
+// exactly as a text-format run's (`recordedCargoScript`).
+func linuxClippyScript(selection []string) string {
+	args := withCargoFlag(linuxClippyArgs(selection), "--message-format=json-render-diagnostics")
+	return recordedCargoScript(targetsweep.LaneClippy, stdoutToRecord, cargoCommand(args...))
+}
+
 // linuxRustdocScript is the host rustdoc lane's command for the container, under the
 // same lint contract. It shares the clippy target volume: `cargo doc` builds the
-// dependencies metadata-only, so the two don't invalidate each other's units.
+// dependencies metadata-only, so the two don't invalidate each other's units. Its JSON
+// output is already what `rustdocOwnOutput` reads, so the record takes all of it.
 func linuxRustdocScript(args []string) string {
-	return "RUSTDOCFLAGS=" + shellQuote(rustdocLintFlags()) + " " + containerCargoScript(args...)
+	command := "RUSTDOCFLAGS=" + shellQuote(rustdocLintFlags()) + " " + cargoCommand(args...)
+	return recordedCargoScript(targetsweep.LaneDoc, bothToRecord, command)
 }
 
 // linuxClippyArgs is CI's clippy invocation (`desktop-rust-clippy` under `--ci`) with the

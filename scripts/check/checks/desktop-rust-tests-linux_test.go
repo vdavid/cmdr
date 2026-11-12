@@ -315,9 +315,7 @@ func repoSelection(t *testing.T) []string {
 // host's OS leaves `cmdr-fsevent-stream` in it, where it dies at `cargo check` with
 // `E0455: link kind 'framework' is only supported on Apple targets`.
 func TestTheContainerRunSelectsForTheContainerNotTheHost(t *testing.T) {
-	selection := repoSelection(t)
-	args := append([]string{"--locked"}, selection...)
-	script := containerNextestScript(append(args, "--no-fail-fast")...)
+	script := linuxTestsScript(repoSelection(t))
 
 	for _, want := range []string{"'--workspace'", "'--exclude' 'cmdr-fsevent-stream'", "'--locked'"} {
 		if !strings.Contains(script, want) {
