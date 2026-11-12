@@ -4,10 +4,16 @@ import { withPlatform } from '#lib/platform/test-platform.js'
 // Shared test state: the mock factory closures capture these references
 const listeners = new Set<(commandId: string) => void>()
 const customOverrides = new Map<string, string[]>()
+// The mock registry's defaults, filled from `commands` below.
+const mockDefaults = new Map<string, string[]>()
 
 // Mock the shortcuts store before importing the module under test
 vi.mock('./shortcuts-store', () => ({
   getEffectiveShortcuts: vi.fn(),
+  getDefaultShortcuts: (commandId: string) => [...(mockDefaults.get(commandId) ?? [])],
+  getCustomizedCommandIds: () => [...customOverrides.keys()],
+  isFixedKeyCommand: (commandId: string) => commandId === 'search.newQuery',
+  isNativeShortcutCommand: () => false,
   onShortcutChange: vi.fn((listener: (commandId: string) => void) => {
     listeners.add(listener)
     return () => listeners.delete(listener)
@@ -69,6 +75,10 @@ vi.mock('#lib/commands/command-registry.js', () => ({
       showInPalette: true,
       shortcuts: ['*'],
     },
+    // A sibling of the file list: overlaps `Main window`, not `Main window/File list`.
+    { id: 'pane.refresh', name: 'Refresh', scope: 'Main window/Servers', showInPalette: true, shortcuts: ['⌘E'] },
+    // A fixed key: hardcoded in its component, so no user binding can shadow it.
+    { id: 'search.newQuery', name: 'Fixed', scope: 'Main window/File list', showInPalette: false, shortcuts: ['⌘Y'] },
   ],
 }))
 
@@ -87,6 +97,9 @@ import {
  * unless a custom override exists.
  */
 function setupEffectiveShortcuts() {
+  mockDefaults.clear()
+  for (const cmd of commands as unknown as { id: string; shortcuts: string[] }[])
+    mockDefaults.set(cmd.id, cmd.shortcuts)
   vi.mocked(getEffectiveShortcuts).mockImplementation((commandId: string) => {
     const override = customOverrides.get(commandId)
     if (override) {
@@ -127,19 +140,22 @@ describe('shortcut-dispatch', () => {
 
     it('a more specific scope wins a shared combo regardless of registry order', () => {
       // app.quit (scope App) sits EARLIER in the registry than file.copy
-      // (Main window/File list). With both claiming F5, the deeper scope must
-      // win — not whichever happens to be declared first.
-      customOverrides.set('app.quit', ['F5'])
+      // (Main window/File list). With both binding F9 (two user bindings, so
+      // neither outranks the other), the deeper scope must win — not whichever
+      // happens to be declared first.
+      customOverrides.set('app.quit', ['F9'])
+      customOverrides.set('file.copy', ['F9'])
       initShortcutDispatch()
-      expect(lookupCommand('F5')).toBe('file.copy')
+      expect(lookupCommand('F9')).toBe('file.copy')
     })
 
     it('equal specificity falls back to registry order (stable, pinned)', () => {
       // file.rename and file.copy share the Main window/File list scope;
       // rename is declared first, so it keeps the combo.
-      customOverrides.set('file.rename', ['F5'])
+      customOverrides.set('file.rename', ['F9'])
+      customOverrides.set('file.copy', ['F9'])
       initShortcutDispatch()
-      expect(lookupCommand('F5')).toBe('file.rename')
+      expect(lookupCommand('F9')).toBe('file.rename')
     })
 
     it('returns undefined for Tier 2 (non-palette) command shortcuts', () => {
@@ -157,6 +173,60 @@ describe('shortcut-dispatch', () => {
     it('returns undefined before init is called', () => {
       // Map is empty before init
       expect(lookupCommand('⌘Q')).toBeUndefined()
+    })
+  })
+
+  describe('a key the user bound beats a default (overlapping scopes)', () => {
+    it("the user's binding wins the map even from a shallower scope", () => {
+      // view.showHidden (Main window) is shallower than file.copy (File list), whose
+      // DEFAULT is F5: depth alone would hand F5 to file.copy.
+      customOverrides.set('view.showHidden', ['⌘⇧.', 'F5'])
+      initShortcutDispatch()
+      expect(lookupCommand('F5')).toBe('view.showHidden')
+    })
+
+    it('the shadowed default stops matching in local handlers too', () => {
+      customOverrides.set('view.showHidden', ['⌘⇧.', 'F5'])
+      expect(comboMatchesCommand('F5', 'file.copy')).toBe(false)
+      expect(comboMatchesCommand('F5', 'view.showHidden')).toBe(true)
+    })
+
+    it('a shadowed default comes back once the user binding goes', () => {
+      initShortcutDispatch()
+      customOverrides.set('view.showHidden', ['⌘⇧.', 'F5'])
+      for (const listener of listeners) listener('view.showHidden')
+      customOverrides.delete('view.showHidden')
+      for (const listener of listeners) listener('view.showHidden')
+      expect(lookupCommand('F5')).toBe('file.copy')
+      expect(comboMatchesCommand('F5', 'file.copy')).toBe(true)
+    })
+
+    it('a default a customized command kept is still a default, not a user binding', () => {
+      // file.copy's custom list keeps F5 and adds F9; view.showHidden's F5 is the
+      // user's own key, so it wins.
+      customOverrides.set('file.copy', ['F5', 'F9'])
+      customOverrides.set('view.showHidden', ['F5'])
+      initShortcutDispatch()
+      expect(lookupCommand('F5')).toBe('view.showHidden')
+      expect(comboMatchesCommand('F5', 'file.copy')).toBe(false)
+      expect(comboMatchesCommand('F9', 'file.copy')).toBe(true)
+    })
+
+    it('sibling scopes shadow nothing', () => {
+      // File list and Servers don't overlap, so the file list binding leaves the
+      // servers default alone in its own handler.
+      customOverrides.set('file.copy', ['⌘E'])
+      expect(comboMatchesCommand('⌘E', 'pane.refresh')).toBe(true)
+    })
+
+    it('never shadows a fixed key', () => {
+      customOverrides.set('view.showHidden', ['⌘Y'])
+      expect(comboMatchesCommand('⌘Y', 'search.newQuery')).toBe(true)
+    })
+
+    it('a Shift-stripped match is shadowed the same way', () => {
+      customOverrides.set('view.showHidden', ['⌘A'])
+      expect(comboMatchesCommand('⌘⇧A', 'selection.selectAll', { allowShift: true })).toBe(false)
     })
   })
 

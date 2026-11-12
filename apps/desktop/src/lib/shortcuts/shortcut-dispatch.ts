@@ -18,9 +18,24 @@
 
 import { commands } from '#lib/commands/command-registry.js'
 import type { CommandId } from '#lib/commands/index.js'
-import { getEffectiveShortcuts, onShortcutChange } from './shortcuts-store'
+import {
+  getCustomizedCommandIds,
+  getDefaultShortcuts,
+  getEffectiveShortcuts,
+  isFixedKeyCommand,
+  isNativeShortcutCommand,
+  onShortcutChange,
+} from './shortcuts-store'
+import { isShadowedDefault, type BindingReader } from './binding-priority'
 import { keyComboCandidates } from './key-capture'
 import { getActiveScopes } from './scope-hierarchy'
+
+const reader: BindingReader = {
+  effective: getEffectiveShortcuts,
+  defaults: getDefaultShortcuts,
+  customizedIds: getCustomizedCommandIds,
+  isRebindable: (commandId) => !isFixedKeyCommand(commandId) && !isNativeShortcutCommand(commandId),
+}
 
 // Command IDs that have showInPalette: false but still need central dispatch
 const ALWAYS_DISPATCH_IDS = new Set<CommandId>(['app.commandPalette'])
@@ -40,11 +55,12 @@ function isTier1(command: { id: CommandId; showInPalette: boolean }): boolean {
  * Build the reverse lookup map from scratch.
  *
  * When two Tier 1 commands claim the same combo (a kept "Keep both" conflict),
- * the MORE SPECIFIC scope wins — its ancestry chain via `getActiveScopes` is
- * longer — with registry order as the stable tiebreaker for equal specificity.
- * Without the scope rule the winner would be whichever command happens to be
- * declared first in the registry, so an unrelated registry reorder could
- * silently flip a user's binding.
+ * a default the user's own binding shadows drops out first (`binding-priority.ts`).
+ * Among the rest, the MORE SPECIFIC scope wins — its ancestry chain via
+ * `getActiveScopes` is longer — with registry order as the stable tiebreaker for
+ * equal specificity. Without the scope rule the winner would be whichever command
+ * happens to be declared first in the registry, so an unrelated registry reorder
+ * could silently flip a user's binding.
  */
 function buildShortcutMap(): Map<string, CommandId> {
   // All claims per combo first, then one deterministic winner per combo.
@@ -55,6 +71,7 @@ function buildShortcutMap(): Map<string, CommandId> {
 
     const depth = getActiveScopes(command.scope).length
     for (const shortcut of getEffectiveShortcuts(command.id)) {
+      if (isShadowedDefault(reader, command.id, shortcut)) continue
       const list = claims.get(shortcut) ?? []
       list.push({ id: command.id, depth, registryIndex })
       claims.set(shortcut, list)
@@ -128,8 +145,9 @@ export function comboMatchesCommand(
   { allowShift = false }: MatchOptions = {},
 ): boolean {
   const shortcuts = getEffectiveShortcuts(commandId)
-  if (shortcuts.includes(combo)) return true
-  return allowShift && shortcuts.includes(withoutShift(combo))
+  const held = (candidate: string) => shortcuts.includes(candidate) && !isShadowedDefault(reader, commandId, candidate)
+  if (held(combo)) return true
+  return allowShift && held(withoutShift(combo))
 }
 
 /**

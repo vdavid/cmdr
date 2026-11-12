@@ -3,7 +3,7 @@
  */
 
 import { COMMAND_IDS } from '#lib/commands/command-ids.js'
-import { getEffectiveShortcuts } from './shortcuts-store'
+import { getMenuShortcut } from './shortcuts-store'
 
 /**
  * Every shortcut bound right now, as `commandId → combo`.
@@ -29,7 +29,9 @@ import { getEffectiveShortcuts } from './shortcuts-store'
 export function boundShortcuts(): Record<string, string> {
   const bound: Record<string, string> = {}
   for (const commandId of COMMAND_IDS) {
-    const combo = getEffectiveShortcuts(commandId)[0]
+    // The first key that really runs it: a default another command's user binding
+    // shadows would label the item with someone else's key (`binding-priority.ts`).
+    const combo = getMenuShortcut(commandId)
     if (combo) bound[commandId] = combo
   }
   return bound

@@ -512,9 +512,8 @@ duplicate data and make defaults harder to change. Only customizations are store
 
 What a changed default means for a saved customization: a customized command stores its WHOLE list, so it keeps that
 list and gains nothing (a macOS user who rebound `nav.back` doesn't get its added `⌥←`; intended, since they chose their
-keys). A combo a user bound to ANOTHER command that a default now also claims is a conflict like any other: Settings
-shows it, and the dispatch map's rule picks the winner (most specific scope, then registry order), not "the user's
-binding first".
+keys). A combo a user bound to ANOTHER command that a default now also claims is a conflict Settings shows, and the
+user's binding keeps the key (§ Conflict warnings are not errors, "A key the user bound beats a default").
 
 ### Why scope hierarchy?
 
@@ -586,8 +585,8 @@ platform stores (`⌘⇧P`, or `Ctrl+Shift+P` off macOS); `menu/accelerators.rs`
 
 A menu-bar REBUILD (the UI language changed) throws every menu item away, so the customized accelerators are back at
 their registry defaults on brand-new objects. `resyncMenuAccelerators()` pushes them all again, driven by the
-`menu-bar-rebuilt` event in `DualPaneExplorer.svelte`. Only the CUSTOMIZED ones need re-pushing: the fresh items already
-carry the defaults.
+`menu-bar-rebuilt` event in `DualPaneExplorer.svelte`. The fresh items already carry the defaults, so it re-pushes the
+customized ones plus any item whose default a user binding shadows (§ Conflict warnings are not errors).
 
 The list can't silently drift from the Rust side anymore: the `menuCommands ↔ command_id_to_menu_id` set-equality test
 in `commands/rust-command-id-drift.test.ts` parses `menu/mod.rs` and fails when a menu item is missing from
@@ -598,10 +597,31 @@ register the item first, then move it from the exception list into `menuCommands
 ### Conflict warnings are not errors
 
 Users can keep conflicting shortcuts. The UI shows a warning and offers to resolve, but "Keep both" is a valid choice.
-At runtime the dispatch map keeps one winner per combo: the most specific scope (longest `getActiveScopes` chain) wins,
-with registry declaration order as the stable tiebreaker for equal specificity. Pinned by the scope-winner tests in
-`shortcut-dispatch.test.ts`; without the scope rule, an unrelated registry reorder could silently flip a kept conflict's
-winner.
+At runtime the dispatch map keeps one winner per combo: first the user-binding rule below, then the most specific scope
+(longest `getActiveScopes` chain), with registry declaration order as the stable tiebreaker for equal specificity.
+Pinned by the scope-winner tests in `shortcut-dispatch.test.ts`; without the scope rule, an unrelated registry reorder
+could silently flip a kept conflict's winner.
+
+**A key the user bound beats a default** (`binding-priority.ts`, `isShadowedDefault`). When two commands in overlapping
+scopes hold one combo, and one holds it through the user's own binding while the other holds it only by default, the
+default is shadowed: it's as if that command didn't hold the combo. Two user bindings, or two defaults, fall through to
+scope depth and registry order. Why: delta-only persistence means a release that adds a default can land on a key a user
+already gave to another command (a macOS user's own `⌥←` against the added `nav.back` default), and depth would hand it
+to whichever scope is deeper, silently.
+
+- **"The user's own binding"** is a combo in the command's custom entry that ISN'T among its defaults. A customized
+  command that kept a default key still holds that key by default, so it can't out-rank a key the user really bound.
+- **Never shadowed**: fixed-key and macOS-native commands. The user can't rebind them, and Settings offers only Cancel
+  for their keys, so nothing should be able to take them.
+- **Every reader agrees**: the dispatch map skips a shadowed claim; `comboMatchesCommand` (so `eventMatchesCommand`)
+  answers false for it, so a deeper scope's local handler lets the key bubble to the document road; the menu bar
+  registers, and a popup labels, the first key no user binding shadows (`getMenuShortcut`, `boundShortcuts`). A change
+  to one command re-pushes every menu item whose key it shadowed or freed (`notifyListeners`), and a rebuild re-pushes
+  them too (`resyncMenuAccelerators`). On macOS a still-registered shadowed accelerator would fire the default's command
+  before the webview saw the key, so the menu half isn't cosmetic.
+- **Settings still lists it as a conflict** (`conflict-detector.ts` is unchanged): both commands hold the combo, and the
+  warning's "Keep both" now means "yours runs; the other keeps it as a dormant default", which comes back when the
+  user's binding goes. Display surfaces (palette hints, chips, the help window) still show the dormant default.
 
 **Sibling scopes don't conflict, but they still share one winner.** `Main window/File list` and `Main window/Servers`
 are siblings, so `scopesOverlap` says no clash and `registry-conflicts.test.ts` stays quiet — yet the dispatch map is

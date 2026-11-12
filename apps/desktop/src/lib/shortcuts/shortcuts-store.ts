@@ -18,6 +18,7 @@ import { resolveStorePath } from '#lib/settings/store-path.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { pluralize } from '#lib/utils/pluralize.js'
 import { toCanonicalShortcut, typingRefusal } from './key-capture'
+import { firstLiveShortcut, type BindingReader } from './binding-priority'
 
 const log = getAppLogger('shortcuts')
 
@@ -687,17 +688,50 @@ export function onShortcutChange(listener: ShortcutChangeListener): () => void {
   return () => listeners.delete(listener)
 }
 
+/** Every command with a custom entry, for the user-binding rule (`binding-priority.ts`). */
+export function getCustomizedCommandIds(): string[] {
+  return [...customShortcuts.keys()]
+}
+
+const bindingReader: BindingReader = {
+  effective: getEffectiveShortcuts,
+  defaults: getDefaultShortcuts,
+  customizedIds: () => customShortcuts.keys(),
+  isRebindable: (commandId) => !isNativeShortcutCommand(commandId) && !isFixedKeyCommand(commandId),
+}
+
 /**
- * Pushes every customized shortcut back onto the native menu, for after the menu
- * bar has been rebuilt in a new language.
+ * The one key a menu shows for a command: its first effective shortcut that no user
+ * binding of another command shadows (`binding-priority.ts`), or `''`. A shadowed
+ * default runs the other command, so a menu registering or showing it would lie (and on
+ * macOS a registered one would fire this command first).
+ */
+export function getMenuShortcut(commandId: string): string {
+  return firstLiveShortcut(bindingReader, commandId) ?? ''
+}
+
+// What each menu item was last told. A never-told item still carries the key the bar
+// was built with, which is its command's first default.
+const pushedMenuShortcut = new Map<string, string>()
+
+function menuShortcutNow(commandId: string): string {
+  return pushedMenuShortcut.get(commandId) ?? getDefaultShortcuts(commandId).at(0) ?? ''
+}
+
+/**
+ * Pushes the menu items that differ from what the bar was built with back onto the
+ * native menu, for after the menu bar has been rebuilt in a new language.
  *
- * A rebuild replaces every menu item, so the accelerators the user customized
- * are back at their registry defaults on brand-new objects. Only the customized
- * ones need re-pushing: the fresh items already carry the defaults.
+ * A rebuild replaces every menu item, so every item is back at its registry default on
+ * a brand-new object. The customized ones need re-pushing, and so does any item whose
+ * default another command's user binding shadows.
  */
 export function resyncMenuAccelerators(): void {
-  for (const commandId of customShortcuts.keys()) {
-    void updateMenuAccelerator(commandId)
+  pushedMenuShortcut.clear()
+  for (const commandId of menuCommands) {
+    if (customShortcuts.has(commandId) || getMenuShortcut(commandId) !== menuShortcutNow(commandId)) {
+      void updateMenuAccelerator(commandId)
+    }
   }
 }
 
@@ -710,8 +744,12 @@ function notifyListeners(commandId: string): void {
     }
   }
 
-  // Update menu accelerator for commands that have menu items
+  // The changed command's own menu item, plus any other item whose key this change
+  // shadowed or freed (a user binding on one command moves another's menu key).
   void updateMenuAccelerator(commandId)
+  for (const other of menuCommands) {
+    if (other !== commandId && getMenuShortcut(other) !== menuShortcutNow(other)) void updateMenuAccelerator(other)
+  }
 }
 
 /**
@@ -723,9 +761,9 @@ async function updateMenuAccelerator(commandId: string): Promise<void> {
   if (!menuCommands.includes(commandId)) return
 
   try {
-    const shortcuts = getEffectiveShortcuts(commandId)
-    // Use the first shortcut for the menu accelerator (menus only show one)
-    const shortcut = shortcuts[0] ?? ''
+    // Menus show one key: the first one that really runs this command.
+    const shortcut = getMenuShortcut(commandId)
+    pushedMenuShortcut.set(commandId, shortcut)
     await updateMenuAcceleratorCommand(commandId, shortcut)
   } catch (error) {
     log.error('Failed to update menu accelerator: {error}', { error })

@@ -90,9 +90,15 @@ vi.mock('#lib/settings/store-path.js', () => ({
   resolveStorePath: (name: string) => Promise.resolve(name),
 }))
 
+// Every menu accelerator push, as `[commandId, shortcut]`.
+const menuPushes = vi.hoisted(() => [] as Array<[string, string]>)
+
 vi.mock('#lib/ipc/bindings.js', () => ({
   commands: {
-    updateMenuAccelerator: () => Promise.resolve({ status: 'ok' as const, data: null }),
+    updateMenuAccelerator: (commandId: string, shortcut: string) => {
+      menuPushes.push([commandId, shortcut])
+      return Promise.resolve({ status: 'ok' as const, data: null })
+    },
   },
 }))
 
@@ -123,6 +129,7 @@ beforeEach(() => {
   disk.clear()
   eventBus.listeners.clear()
   eventBus.emits.length = 0
+  menuPushes.length = 0
   vi.resetModules()
 })
 
@@ -664,5 +671,45 @@ describe('shortcuts-store saves only what this window changed', () => {
 
     expect(disk.has('shortcut:file.copy')).toBe(false)
     expect(disk.get('shortcut:selection.invert')).toEqual(['*', '⌘I'])
+  })
+})
+
+describe('shortcuts-store menu accelerators follow the user-binding rule', () => {
+  // `tab.new` and `view.showHidden` share the `Main window` scope, and `tab.new` has a
+  // menu item. Binding `tab.new`'s default key to `view.showHidden` makes that key run
+  // `view.showHidden` (`binding-priority.ts`), so the menu must stop registering it.
+  async function pushesFor(commandId: string): Promise<string[]> {
+    await flushSave()
+    return menuPushes.filter(([id]) => id === commandId).map(([, shortcut]) => shortcut)
+  }
+
+  it("takes a default away from its menu item while the user's own binding holds it, and gives it back", async () => {
+    const store = await loadStore()
+    await store.initializeShortcuts()
+    const [newTabKey, ...rest] = store.getDefaultShortcuts('tab.new')
+
+    store.setShortcut('view.showHidden', 0, newTabKey)
+    expect(await pushesFor('tab.new')).toEqual([rest[0] ?? ''])
+
+    store.resetShortcut('view.showHidden')
+    expect(await pushesFor('tab.new')).toEqual([rest[0] ?? '', newTabKey])
+  })
+
+  it('pushes a shadowed menu item at load, though its own command was never customized', async () => {
+    disk.set('shortcut:view.showHidden', [getDefaultShortcuts('tab.new')[0]])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+    expect(await pushesFor('tab.new')).toEqual([store.getDefaultShortcuts('tab.new')[1] ?? ''])
+  })
+
+  it('re-pushes a shadowed menu item after a menu-bar rebuild', async () => {
+    disk.set('shortcut:view.showHidden', [getDefaultShortcuts('tab.new')[0]])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+    await flushSave()
+    menuPushes.length = 0
+
+    store.resyncMenuAccelerators()
+    expect(await pushesFor('tab.new')).toEqual([store.getDefaultShortcuts('tab.new')[1] ?? ''])
   })
 })

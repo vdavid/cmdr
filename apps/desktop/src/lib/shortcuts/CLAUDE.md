@@ -9,7 +9,7 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
 
 - `shortcuts-store.ts` (delta-only persistence, cross-window emit, the native/fixed boundary),
   `reactive-shortcuts.svelte.ts` (reactive reads), `scope-hierarchy.ts` + `conflict-detector.ts` (overlap → conflict),
-  `key-capture.ts`, `shortcut-dispatch.ts` (Tier 1 reverse lookup).
+  `key-capture.ts`, `shortcut-dispatch.ts` (Tier 1 reverse lookup), `binding-priority.ts`.
 - Read-only help window (Help > Keyboard shortcuts): `shortcuts-window.ts` (opener), `ShortcutsList.svelte` (grouped
   list), `shortcut-diff.ts` (pure default-vs-effective diff). Route at `routes/shortcuts/`. See DETAILS.md § "Keyboard
   shortcuts help window".
@@ -34,8 +34,9 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
 - **`initializeShortcuts` heals leaked `''` entries on load:** `[]` kept; `['']` dropped entirely (❌ don't collapse it
   to `[]`, that suppresses a default-bound command); `['⌘X','']` → `['⌘X']`.
 - **A captured combo conflicts only when scopes overlap** (one ancestry chain contains the other), via the static
-  `scopeHierarchy` — hand-edit it to add a scope. The dispatch map keeps one winner per combo: most-specific scope wins,
-  registry order breaks ties (pinned by `shortcut-dispatch.test.ts`).
+  `scopeHierarchy` — hand-edit it to add a scope. One winner per combo: a user's own binding beats a default
+  (`binding-priority.ts`, for every reader: map, matchers, menus), then deepest scope, then registry order. DETAILS §
+  Conflict warnings are not errors.
 - **`menuCommands` (in `shortcuts-store.ts`) must stay in sync with the Rust menu items.** The set-equality test in
   `commands/rust-command-id-drift.test.ts` fails on a missing item (stale accelerator after a rebind) or an undocumented
   excuse.

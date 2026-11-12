@@ -843,7 +843,14 @@ Sequential, one agent each, in this worktree. Each ends green and committed.
     empty-state tip names `⌘Y` and drops the `⌘Enter` clause (`⌘Enter` does nothing there; the AI-on tip is gone);
     Settings lists the six new fixed-key rows; the palette gains Full screen; Move here (`edit.pasteAsMove`, `⌥⌘V`)
     moves nothing while a text field has focus, from any road (it moved files from the quick filter or the path bar,
-    since the menu accelerator fires before the field). Anything else that moves on macOS is a regression.
+    since the menu accelerator fires before the field); a key the user bound to one command beats another command's
+    default on it (item 20). Anything else that moves on macOS is a regression.
 19. On Linux, while any main-window dialog, overlay, or the palette is up, the main window's bar mnemonics are off and
     every `Alt+<letter>` default reaches the page; after the last one closes, they're back. A real-X-event spec in the
     Linux lane proves it.
+20. A key the user bound beats a default: when two commands in overlapping scopes hold one combo, one through a key in
+    its custom entry that isn't among its defaults and the other by default, the default is shadowed for every reader
+    (the dispatch map, `comboMatchesCommand`, the menu bar's accelerators, the popup labels), so no default added now or
+    later takes a user's key. Two user bindings or two defaults keep scope depth, then registry order. Fixed-key and
+    macOS-native defaults are never shadowed. One implementation, `lib/shortcuts/binding-priority.ts`, pinned by
+    `shortcut-dispatch.test.ts` and `shortcuts-store.test.ts`.
