@@ -344,3 +344,35 @@ fn invalid_cli_urls_and_other_schemes_are_dropped() {
     ]));
     assert!(requests.is_empty());
 }
+
+/// LaunchServices refuses a reveal from a SANDBOXED app (Archive Utility, any Mac App Store
+/// app) with `kLSAppDoesNotClaimTypeErr` unless the file viewer claims the item's type, and
+/// the sender then only activates Cmdr (#1158). `public.item` covers folders, files, and
+/// files of unknown type; rank `None` keeps Cmdr out of "Open With" and away from being
+/// anything's default opener. `DETAILS.md` § "Sandboxed senders".
+#[test]
+fn info_plist_claims_every_item_so_a_sandboxed_app_can_reveal() {
+    let plist: plist::Value = plist::from_bytes(include_bytes!("../../Info.plist")).expect("Info.plist parses");
+    let claims = plist
+        .as_dictionary()
+        .and_then(|root| root.get("CFBundleDocumentTypes"))
+        .and_then(plist::Value::as_array)
+        .expect("Info.plist declares CFBundleDocumentTypes");
+    let claim_of_every_item = claims
+        .iter()
+        .filter_map(plist::Value::as_dictionary)
+        .find(|claim| {
+            claim
+                .get("LSItemContentTypes")
+                .and_then(plist::Value::as_array)
+                .is_some_and(|types| types.iter().any(|t| t.as_string() == Some("public.item")))
+        })
+        .expect("a document type claims public.item");
+    assert_eq!(
+        claim_of_every_item
+            .get("LSHandlerRank")
+            .and_then(plist::Value::as_string),
+        Some("None"),
+        "any other rank offers Cmdr in every file's Open With menu"
+    );
+}

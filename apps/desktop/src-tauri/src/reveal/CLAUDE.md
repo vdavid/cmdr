@@ -28,6 +28,9 @@ Finder's right-click menu (a macOS service). All share the buffer and the pane m
   no logger, no main window. So `PENDING` is a process-global `LazyLock`, ❌ never managed state, and a log line here
   won't appear. Two reverted fixes are listed in `DETAILS.md` § "How a cold-launch reveal arrives"; ❌ don't re-derive
   them.
+- **❌ Don't drop or re-rank `Info.plist`'s `public.item` claim (`LSHandlerRank = None`).** Without it every sandboxed
+  app's reveal (Archive Utility after a browser download) only activates Cmdr (#1158). `DETAILS.md` § "Sandboxed
+  senders".
 - **Turning off clears the key only when it still names us**, by REMOVING it, ❌ never writing `com.apple.finder`.
 - **Cmdr's own "Show in Finder" must beat the key.** ❌ `open -a Finder -R` is redirected, and `NSFileViewer =
   com.apple.finder` opens the FILE. `DETAILS.md` § "Cmdr's own Show in Finder".

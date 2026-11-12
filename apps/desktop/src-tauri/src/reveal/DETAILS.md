@@ -10,9 +10,9 @@ routes the reveal there instead of to Finder.
 
 Measured on macOS 26.6 (Darwin 25.6) with a throwaway probe app and a bundled Cmdr debug build, 2026-09-09:
 
-- **`NSFileViewer` alone is sufficient.** A probe that declared no `CFBundleDocumentTypes` and claimed no UTI still
-  received the reveal. Cmdr does NOT need to be a declared `public.folder` handler, which settles the open spike
-  question. That's why no `CFBundleDocumentTypes` claim was added to `Info.plist`.
+- **`NSFileViewer` alone is sufficient for a sender outside the App Sandbox.** A probe that declared no
+  `CFBundleDocumentTypes` and claimed no UTI still received the reveal. A sandboxed sender needs the claim in
+  § "Sandboxed senders".
 - **What arrives** is a plain open-documents Apple Event (`aevt`/`odoc`) whose direct object is a list of `bmrk`
   descriptors coercing to file URLs. The URLs are the items to reveal themselves, not their parents; a reveal of a
   folder arrives as that folder's own URL.
@@ -24,6 +24,30 @@ Measured on macOS 26.6 (Darwin 25.6) with a throwaway probe app and a bundled Cm
 ❗ **The key is undocumented and unofficial.** Apple has never published it; ForkLift and Path Finder ship exactly this
 and nothing else. It can stop working in any macOS release, and nothing will tell us but a user report. That's a known,
 accepted cost, not something to design around.
+
+## Sandboxed senders
+
+**`Info.plist` claims `public.item` with `LSHandlerRank = None`, and a reveal from any sandboxed app depends on it.**
+A sandboxed sender's reveal goes through `CoreServicesUIAgent`, where LaunchServices checks that the target app claims
+the item's type. With no claim it answers `kLSAppDoesNotClaimTypeErr` (-10820, "sandboxed callers only") and nothing
+reaches Cmdr. Archive Utility then falls back to a bare activation (`aevt`/`rapp`, its `bringFinderToFront`), so Cmdr
+jumped to the front on whatever it was showing, with no request to explain in a toast
+([#1158](https://github.com/getcmdr/cmdr/issues/1158): unpacking a downloaded archive from Firefox or Chrome).
+
+Evidence (macOS 27.0.1, 2026-11-13):
+
+- `/usr/bin/log show --info --debug` around an `open -a "Archive Utility" <zip>` with the key naming Cmdr 0.60.0:
+  `LSOpenURLsWithRole` with one item, `Failed to open document … because it cannot open documents of that type`,
+  `=> -10820`, then a second `LSOpenURLsWithRole` with zero items and `RECEIVED:(aevt,rapp)` in Cmdr.
+- Probe apps differing only in the claim, opened with `sandbox-exec -p '(version 1)(allow default)' /usr/bin/open -a`:
+  no claim fails with -10820 for a folder, a `.txt`, and a file of unknown type; `public.item` at rank `None` opens all
+  three; `public.folder` alone opens only the folder. The same no-claim probe opens fine from outside a sandbox.
+
+**Decision: `public.item`, rank `None`.** A reveal carries the item itself, which can be a file of any type (a
+single-file archive, a sandboxed app's "Show in Finder"), so `public.folder` isn't enough. `None` means Cmdr is never
+offered in "Open With" and never becomes a type's default opener: with `Alternate`, a file nothing else opens would
+"open" in Cmdr, including from Cmdr's own Enter. Guarded by
+`info_plist_claims_every_item_so_a_sandboxed_app_can_reveal`.
 
 ## How a cold-launch reveal arrives
 
@@ -150,8 +174,8 @@ on the download's final target path (`xpcom/io/CocoaFileUtils.mm` `RevealFileInF
 `DownloadIntegration.sys.mjs` `showContainingDirectory`; read on Firefox `main`, 2026-11-06). If that returns `NO` (a
 missing file), Firefox falls back to `parent.launch()`, a plain folder open, which goes to Finder and never reaches us.
 Opening a finished download is `launchFile` (an open in the default app), not a reveal. So a reveal "when a download
-finishes" comes from whatever opens the file next (unverified: Archive Utility's "reveal expanded items" did NOT reach
-Cmdr in a `open -a "Archive Utility"` test on macOS 27.0.1, 2026-11-06).
+finishes" comes from whatever opens the file next: for an archive that's Archive Utility, a sandboxed sender
+(§ "Sandboxed senders").
 
 ### Buffering
 
@@ -335,4 +359,5 @@ and the only route left is the fragile `defaults write` recipe.
 **The folder handler has no official route on macOS 27.** `NSWorkspace.setDefaultApplication(at:toOpen:)` and
 `LSSetDefaultRoleHandlerForContentType` both answer `-50` for `public.folder`, even when re-setting Finder to itself, while
 re-setting `public.plain-text` to its own handler answers `0` (macOS 27.0.1, signed app and CLI, 2026-11-02). Declaring
-the claim (`LSHandlerRank = Alternate`) leaves Finder as the holder.
+the claim (`LSHandlerRank = Alternate`) leaves Finder as the holder. The rank-`None` `public.item` claim in
+§ "Sandboxed senders" is a different thing: it makes Cmdr a valid target, and handles nothing by default.

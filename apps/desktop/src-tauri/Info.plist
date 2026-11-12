@@ -18,6 +18,27 @@
         <string>0</string>
     </dict>
 
+    <!-- Lets a SANDBOXED app's "Show in Finder" reach Cmdr (Archive Utility after a browser
+         download, any Mac App Store app). Without a claim on the revealed item's type,
+         LaunchServices refuses the request and the sender only brings Cmdr to the front.
+         Rank `None` keeps Cmdr out of every "Open With" menu and away from being a default
+         opener. `src/reveal/DETAILS.md` § "Sandboxed senders". -->
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>File or folder</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>None</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.item</string>
+            </array>
+        </dict>
+    </array>
+
     <!-- "Open in Cmdr" in Finder's right-click menu, for files and folders. `NSMessage` plus
          `:userData:error:` is the method on `reveal/service.rs`'s provider. The empty
          `NSRequiredContext` is what lets macOS show it without the person enabling it first. -->
