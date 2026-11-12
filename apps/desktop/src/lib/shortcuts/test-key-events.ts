@@ -1,6 +1,16 @@
 /**
  * Test-only keydown builders for what a synthetic `KeyboardEvent` can't say on its own.
  */
+import { isMacOS } from '#lib/platform/index.js'
+
+/**
+ * The event flag of the platform's primary modifier, as of the call: `metaKey` (⌘) on macOS,
+ * `ctrlKey` on Windows and Linux. For a test that presses a `cmdOrCtrl` key on whatever
+ * platform it runs on.
+ */
+export function primaryModifierInit(): Pick<KeyboardEventInit, 'metaKey' | 'ctrlKey'> {
+  return isMacOS() ? { metaKey: true } : { ctrlKey: true }
+}
 
 /**
  * A keydown with AltGr held: `getModifierState('AltGraph')` answers true, the way a

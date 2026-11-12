@@ -16,7 +16,7 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 4026 / 5729 keys have a screenshot (70%):** 2196 direct (38%) and 1830 representative (32%). 1511 remain
+**Total: 4027 / 5736 keys have a screenshot (70%):** 2196 direct (38%) and 1831 representative (32%). 1517 remain
 uncoupled, and 192 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
@@ -25,7 +25,7 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | ai              |      1 |            141 |         0 |      0 |   142 |  100% |
 | askCmdr         |    192 |            298 |        47 |      0 |   537 |   91% |
 | commandPalette  |      3 |              2 |         2 |      0 |     7 |   71% |
-| commands        |    239 |              5 |        84 |      0 |   328 |   74% |
+| commands        |    239 |              5 |        90 |      0 |   334 |   73% |
 | common          |      9 |              1 |         9 |      0 |    19 |   53% |
 | crashReporter   |     12 |             11 |         0 |      0 |    23 |  100% |
 | downloads       |     10 |              5 |        21 |      0 |    36 |   42% |
@@ -52,7 +52,7 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | selection       |     14 |              0 |         1 |      0 |    15 |   93% |
 | servers         |     95 |             83 |        57 |      0 |   235 |   76% |
 | settings        |    487 |             47 |       387 |      0 |   921 |   58% |
-| shortcuts       |     37 |             30 |         0 |      0 |    67 |  100% |
+| shortcuts       |     37 |             31 |         0 |      0 |    68 |  100% |
 | stateRecovery   |      0 |              0 |        33 |      0 |    33 |    0% |
 | suggestedOps    |     86 |              0 |        26 |      0 |   112 |   77% |
 | transfer        |      2 |             22 |         0 |      0 |    24 |  100% |

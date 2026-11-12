@@ -70,6 +70,12 @@
     "description": "Group heading in the Keyboard shortcuts list for keys that work while focus is in Ask Cmdr, the chat rail where the user chats with an AI about their files. \"Ask Cmdr\" is the product name; keep it as-is.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "shortcuts.scope.searchDialog": "Search and Select files",
+  "@shortcuts.scope.searchDialog": {
+    "description": "Group heading in the Keyboard shortcuts list for keys that work inside the two query dialogs: Search (finds files on the drive) and Select files (selects files in a pane by a pattern). Use the same words as those dialogs' titles (search.dialog.title, selection.dialog.title.add). A short section title.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
 
   "shortcuts.scope.favoritesMenu": "Favorites menu",
   "@shortcuts.scope.favoritesMenu": {

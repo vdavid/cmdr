@@ -28,6 +28,7 @@ export type CommandScope =
   | 'Main window/Multi-rename' // The ⌃M Multi-rename sheet
   | 'Main window/Operation log' // The ⌥⌘L Operation log dialog
   | 'Main window/Ask Cmdr' // The Ask Cmdr rail, while it has focus
+  | 'Main window/Search dialog' // The Search and Select files dialogs (one shared QueryDialog)
   | 'About window' // About window commands
   | 'Operation queue window' // The operation queue window's own keys
   | 'Viewer window' // The file viewer window's single keys

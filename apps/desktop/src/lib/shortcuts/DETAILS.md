@@ -453,7 +453,9 @@ letters and digits must be remappable or able to be turned off (WCAG 2.1.4). The
 - **Its hints read the user's keys**: the mode picker's `(1)`, the Tail and wrap tooltips, and the status bar hint all
   read the live keys (`shortcutAsText` for the text-only spots, live chips in the status bar), and a key turned off
   drops its hint.
-- The ⌘ chords (⌘F, ⌘C, ⌘A, ⌘⌥R / ⌘⌥C) and Escape / Enter stay local and fixed; they aren't single-character keys.
+- The search bar's chords are fixed registry commands (`viewer.search`, `viewer.toggleSearchRegex`,
+  `viewer.toggleSearchCase`: ⌘F, ⌘⌥R, ⌘⌥C on macOS; Ctrl+F, Alt+R, Alt+C elsewhere), so Settings lists them; ⌘C, ⌘A, and
+  Escape / Enter stay local and fixed. None is a single-character key.
 
 **Decision: central dispatch stays in the bubble phase.** Moving it to capture would invert precedence for every handler
 that deliberately stops propagation (`⌘↑`/`⌘↓`, Space, type-to-jump) with no behavior gained. With local handlers

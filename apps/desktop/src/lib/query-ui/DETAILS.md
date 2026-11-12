@@ -74,8 +74,14 @@ the mount/destroy hooks, the DOM refs, and the template.
   and the announcement throttle. No Tauri, no coverage vocabulary; § Streaming has the whole shape.
 - **`recent-popover.svelte.ts`** — the dropdown's open flag plus its focus-restore rules (`close()` defers a frame and
   yields to whoever claimed focus; `closeAndFocus()` waits a tick past the popover's own focus trap).
-- **`query-shortcuts.ts`** — pure key routing: `matchKey` (modifier-superset rejection + the macOS Option-glyph `code`
-  fallback), `modeForShortcutNumber`, and `routeModifierShortcut(e, handlers)`.
+- **`query-shortcuts.ts`** — pure key routing: `modeForShortcutNumber` and `routeModifierShortcut(e, handlers)`. New
+  query, recent items, and the numbered modes are fixed registry commands (`search.newQuery`, `search.toggleRecent`,
+  `search.modeByNumber` in `Main window/Search dialog`, `../commands/sources/search-dialog.ts`), matched with
+  `eventMatchesCommand`.
+- **`query-keys.ts`** — the dialog's other keys as one per-platform table (the mode chips, the filter popovers' openers,
+  the scope presets, `⌥⏎`, `⏎`): `matchesQueryKey` (whole combo, so supersets miss; an ⌥ / Alt letter also by its key
+  position, since macOS's ⌥ composes a glyph), `queryKeyLabel` (the chip text: `⌥F` / `Alt+F`, and `⏎` / `Enter`), and
+  `queryKeyAria`. A chip and its router read the same entry, so they can't drift.
 - **`result-actions.ts`** — what ⏎ / ⌥⏎ / a row click / the footer buttons do with the current result set, including the
   Selection-style "no secondary action" fallback.
 
@@ -201,10 +207,10 @@ fights Ark's focus routing and would put a focusable input among `role="option"`
 here instead, and `Popover` keeps supplying the `.ui-popover` Escape-deference contract that QueryDialog's capture-phase
 Escape depends on.
 
-**Openers**: the chevron, `⌘H` (toggles), and `ArrowDown` in the field. `ArrowDown` opens ONLY when there are no results
-to walk: with a result list, `↓` keeps moving the cursor, which is the more valuable use of the key. So the gesture
-lands on a key that was otherwise dead (`handleCursorKey` has no list to walk on an empty one), and it never steals
-result navigation. The chevron and `⌘H` work regardless.
+**Openers**: the chevron, `search.toggleRecent` (`⌘Y` / `Ctrl+H`, toggles), and `ArrowDown` in the field. `ArrowDown`
+opens ONLY when there are no results to walk: with a result list, `↓` keeps moving the cursor, which is the more
+valuable use of the key. So the gesture lands on a key that was otherwise dead (`handleCursorKey` has no list to walk on
+an empty one), and it never steals result navigation. The chevron and the key work regardless.
 
 **Keyboard contract inside the dropdown** (`RecentItemsPopover.handleKeydown`):
 
@@ -223,7 +229,7 @@ result navigation. The chevron and `⌘H` work regardless.
 **Focus return.** `Popover`'s Escape path calls `onClose()` then `anchor.focus()`, and the anchor is the pill `<div>`,
 which isn't focusable. `closeRecentPopover` therefore re-focuses the query input on the next frame, but only when
 nothing else has claimed focus by then — otherwise a click-outside would yank focus off whatever the user clicked. The
-keyboard paths (Enter-select, `↑`-at-top, `⌘H`) use `closeRecentPopoverAndFocus`, which focuses after a `tick()` so the
+keyboard paths (Enter-select, `↑`-at-top, `⌘Y`) use `closeRecentPopoverAndFocus`, which focuses after a `tick()` so the
 still-mounted popover's focus trap can't pull it back.
 
 **Row content.** Each row is a mode badge, the label with fuzzy-match highlighting, and a quiet meta line: the age, then
@@ -419,7 +425,7 @@ index loads, so the re-run still lands.
 
 ### Test coverage
 
-`QueryDialog.svelte.test.ts` (orchestrator) pins the title rendering, primary + secondary action callbacks, ⌘N / ⌘H, the
+`QueryDialog.svelte.test.ts` (orchestrator) pins the title rendering, primary + secondary action callbacks, ⌘N / ⌘Y, the
 IME guard, the `lastDialogEvent` ownership, and ↓ holding at a partial list's end. Two siblings mount the dialog over a
 streaming source: `QueryDialog.escape.svelte.test.ts` (Escape stops a live run before it closes) and
 `QueryDialog.run-on-mount.svelte.test.ts` (a run asked for at mount starts once). The `QueryDialog` block of
@@ -579,11 +585,13 @@ Small contracts that apply to every consumer of the query UI:
 - Each row's `title` tooltip leads with the full text so a CSS-ellipsis-truncated row stays readable on hover.
 - Path column font is `--font-size-sm` (matching the filename column) with `--spacing-xxs` row vertical padding so the
   row height stays compact.
-- **Fixed interaction keys render as literal `ShortcutChip`s** (`size="sm"` in dense slots): the run button's `⏎`, the
-  empty-state tip (`⌘N` / `⌘H` / `⌘Enter`, in `EmptyState.svelte`), the scope popover's `⌥C` / `⌥V`, and the
-  recent-items dropdown's `↑↓` / `Enter`. These are dialog-internal keys with no registry command, so the chip only
-  unifies their look — never clickable, never dynamic. The mode-chip `.tg-hint` glyphs (`⌥A` / `⌥F` / `⌥R`) and the
-  footer action-button hints (`Go to file ⏎`, `Show all in main window ⏎`) deliberately stay un-boxed; see
+- **Fixed interaction keys render as `ShortcutChip`s in this platform's spelling** (`size="sm"` in dense slots): the run
+  button's `⏎` / `Enter` and the scope popover's `⌥C` / `⌥V` from `query-keys.ts`, the empty-state tip's new-query and
+  recent-items keys from their registry commands (`EmptyState.svelte`: the chip draws the live key, and the macOS glyphs
+  inside the catalog message's tags are translator context only), and the recent-items dropdown's `↑↓` / `Enter`. Never
+  clickable. A keyed button carries no `aria-label` (its visible label is the name, since off macOS the hint is the word
+  `Enter`) and announces the key through `aria-keyshortcuts`. The mode-chip `.tg-hint` glyphs (`⌥A` / `⌥F` / `⌥R`) and
+  the footer action-button hints (`Go to file ⏎`, `Show all in main window ⏎`) deliberately stay un-boxed; see
   `lib/ui/CLAUDE.md` § ShortcutChip for the rationale.
 
 Chip-side behaviors live in `filter-chips/CLAUDE.md`; search-specific ones in `lib/search/CLAUDE.md`.
@@ -599,18 +607,18 @@ its hover fill stays the text's height. The container width comes from a `Resize
 
 ## Keyboard shortcuts (in-dialog, hard-coded)
 
-Both Search and Selection inherit these. ⏎ has dynamic ownership (see D8 below).
+Both Search and Selection inherit these. ⏎ has dynamic ownership (see D8 below). macOS keys shown; on Windows and Linux
+⌘ is Ctrl and ⌥ is Alt (the registry's per-OS defaults and `query-keys.ts`), except where a line says otherwise.
 
 - **`Enter`**: Dispatched via `enterAction`: "go-to-file" or "run-search" (D8)
 - **`⌥⏎`**: Show all results in the main window (Search) / no-op (Selection); see consumer
-- **`⌘Enter`**: No-op. Bare Enter is the only path that runs a search or opens the cursor row.
-- **`⇧Enter`**: No-op. Same rule as ⌘Enter.
-- **`⌘N`**: Clear all dialog state ("new search" / "new selection")
-- **`⌘H`**: Toggle the query field's recent-items dropdown (fuzzy over the full history)
-- **`⌘1`**: Switch to AI (AI on) or Filename (AI off)
-- **`⌘2`**: Switch to Filename (AI on) or Regex (AI off)
-- **`⌘3`**: Switch to Regex (AI on); no-op when AI is off
-- **`⌘4`**: Reserved for Content when it ships; not wired now
+- **`⌘Enter`**, **`⇧Enter`**, any other ⌥ Enter: No-op. Bare Enter is the only path that runs a search or opens the
+  cursor row.
+- **`⌘N`** (`search.newQuery`): Clear all dialog state ("new search" / "new selection")
+- **`⌘Y`** (`search.toggleRecent`; `Ctrl+H` on Windows and Linux, each OS's browser-history key): Toggle the query
+  field's recent-items dropdown (fuzzy over the full history). `⌘H` stays macOS's Hide: the dialog leaves it alone.
+- **`⌘1`–`⌘3`** (`search.modeByNumber`): `⌘1` switches to AI (AI on) or Filename (AI off), `⌘2` to Filename (AI on) or
+  Regex (AI off), `⌘3` to Regex (AI on; no-op when AI is off). Content gets a digit when it ships.
 - **`⌥A`**: Mode chip: AI (global inside the dialog; only when AI is enabled)
 - **`⌥F`**: Mode chip: Filename (global)
 - **`⌥R`**: Mode chip: Regex (global)
@@ -675,8 +683,8 @@ makes that possible; see § Chrome.
 mouse + keyboard share one accent-colored cursor.
 
 **Live search with debounce**: 1 s debounce on filename/regex modes only, gated by the `search.autoApply` setting
-(default on). AI mode never auto-applies regardless: AI calls cost money and the user must explicitly opt in via Enter /
-`⌘Enter` / the `⏎` run button. Constant `SEARCH_AUTO_APPLY_DEBOUNCE_MS = 1000` lives in `query-filter-state.svelte.ts`.
+(default on). AI mode never auto-applies regardless: AI calls cost money and the user must explicitly opt in via Enter
+or the `⏎` run button. Constant `SEARCH_AUTO_APPLY_DEBOUNCE_MS = 1000` lives in `query-filter-state.svelte.ts`.
 
 **Auto-apply gates**: `scheduleSearch()` returns early in four cases:
 
@@ -768,11 +776,10 @@ row costs a second positioned layer for a shortcut the keyboard already has a ro
 Don't re-add an `⌥`+arrow folder-nav here; if a keyboard shortcut is wanted later, pick a combo with no text-editing
 meaning (for example `⌘↑` / `⌘↓`, Finder's enclosing/open keys).
 
-**Decision**: AI mode never auto-applies; only Enter / `⌘Enter` / the ⏎ button / example-chip clicks fire it (a
-recent-items pick loads without running). **Why**: AI calls cost money (cloud) or RAM + latency (local). Even a fast
-model has a per-call cost the user should opt into. Filename and regex modes auto-apply behind the `search.autoApply`
-setting (default on, 1,000 ms debounce). The split lives in `scheduleSearch()`'s early-return chain (mode, setting, IME
-composition).
+**Decision**: AI mode never auto-applies; only Enter / the ⏎ button / example-chip clicks fire it (a recent-items pick
+loads without running). **Why**: AI calls cost money (cloud) or RAM + latency (local). Even a fast model has a per-call
+cost the user should opt into. Filename and regex modes auto-apply behind the `search.autoApply` setting (default on,
+1,000 ms debounce). The split lives in `scheduleSearch()`'s early-return chain (mode, setting, IME composition).
 
 Filter-chip-specific decisions (popovers vs inline controls, the always-rendered Pattern chip) live in
 `filter-chips/CLAUDE.md`.
@@ -830,9 +837,9 @@ honest reading. ❌ Don't reuse `scanningAria` for the path here: another scan i
 
 How long the wait can actually run, and when it now gives up: `apps/desktop/src-tauri/src/search/DETAILS.md`.
 
-**Gotcha**: ⌘⏎ and ⇧⏎ are explicit no-ops in the dialog. Bare Enter is the only key that runs a search or opens the
-cursor row (dispatched via `enterAction` per D8). The dialog's `handleModifierShortcuts` swallows both modifier
-combinations with `preventDefault` so the bare-Enter handler never sees a modified Enter.
+**Gotcha**: ⌘⏎ (Ctrl+Enter off macOS), ⇧⏎, and a stray ⌥ Enter are explicit no-ops in the dialog. Bare Enter is the only
+key that runs a search or opens the cursor row (dispatched via `enterAction` per D8). The dialog's
+`handleModifierShortcuts` swallows them with `preventDefault` so the bare-Enter handler never sees a modified Enter.
 
 **Gotcha**: The AI's translation overwrites `query` and `mode`. **Why**: We want the bar to show what was searched, not
 the natural-language prompt. The original prompt is preserved separately in `lastAiPrompt` (set by `executeAiSearch`

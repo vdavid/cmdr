@@ -149,4 +149,23 @@ describe('macosCopyDrift: accepted translation changes', () => {
       ]),
     )
   })
+
+  describe('retired keys', () => {
+    const retire = [{ key, reason: 'its surface is gone' }]
+    const gone = { en: null, de: null, es: null, 'es-419': null }
+
+    it('flags a frozen key that vanished without being retired', () => {
+      expect(macosCopyDrift(frozen, catalogs(gone), [], [])).toContain(`en ${key}: gone`)
+    })
+
+    it('lets a retired key go from every catalog', () => {
+      expect(macosCopyDrift(frozen, catalogs(gone), [], retire)).toEqual([])
+    })
+
+    it('flags a retired key a catalog still holds', () => {
+      expect(macosCopyDrift(frozen, catalogs({ ...gone, de: 'Im Dock ablegen' }), [], retire)).toEqual([
+        `de ${key}: retired, but still in a catalog`,
+      ])
+    })
+  })
 })

@@ -10,7 +10,8 @@
  *   - Space and Enter on a focused chip activate it.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import SearchModeChips from './ModeChips.svelte'
 import type { SearchMode } from './query-filter-state.svelte'
@@ -46,6 +47,24 @@ function setup(overrides: Partial<{ mode: SearchMode; aiEnabled: boolean; disabl
     },
   }
 }
+
+// The chips are spoken in macOS's glyphs here (⌥F, ⌘Y, ⏎); the off-macOS spelling has its own cases.
+beforeEach(() => withPlatform('macos'))
+
+describe.each(['windows', 'linux'] as const)('SearchModeChips on %s', (platform) => {
+  beforeEach(() => withPlatform(platform))
+
+  it('shows Alt+A / Alt+F / Alt+R, and announces the same keys', async () => {
+    const { chips, cleanup } = setup({ aiEnabled: true })
+    await tick()
+    const labels = chips.map((c) => c.textContent.trim())
+    expect(labels[0]).toMatch(/Alt\+A$/)
+    expect(labels[1]).toMatch(/^Filename\s*Alt\+F$/)
+    expect(labels[3]).toMatch(/^Regex\s*Alt\+R$/)
+    expect(chips.map((c) => c.getAttribute('aria-keyshortcuts'))).toEqual(['Alt+A', 'Alt+F', null, 'Alt+R'])
+    cleanup()
+  })
+})
 
 describe('SearchModeChips', () => {
   it('renders 4 chips when AI is enabled (AI, Filename, Content, Regex)', async () => {

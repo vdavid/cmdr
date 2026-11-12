@@ -36,6 +36,12 @@ export type { CommandScope }
  * their keys. Under `Main window` that deliberate shadow would read as a permanent conflict
  * in Settings, for keys nobody can rebind (they're fixed).
  *
+ * `Main window/Search dialog` skips `Main window` for the same reason: the Search and Select
+ * files dialogs own the keyboard while they're up (central dispatch is suppressed behind a
+ * dialog), so their fixed ⌘N, ⌘H, and ⌘1–⌘3 SHADOW Ask Cmdr's new chat and the view modes
+ * and sorts there, by design. The Multi-rename sheet's shape (under `Main window`) would read
+ * that shadow as a permanent conflict.
+ *
  * `Operation queue window` is a window of its own, like `About window`: its arrows and
  * Enter never meet the main window's, so they share only `App`. So is `Viewer window`, whose
  * bare `W` / `F` / digits never meet the file list's type-to-jump.
@@ -59,6 +65,7 @@ const scopeHierarchy: Record<CommandScope, CommandScope[]> = {
   'Main window/Multi-rename': ['Main window/Multi-rename', 'Main window', 'App'],
   'Main window/Operation log': ['Main window/Operation log', 'Main window', 'App'],
   'Main window/Ask Cmdr': ['Main window/Ask Cmdr', 'App'],
+  'Main window/Search dialog': ['Main window/Search dialog', 'App'],
   'About window': ['About window', 'App'],
   'Operation queue window': ['Operation queue window', 'App'],
   'Viewer window': ['Viewer window', 'App'],

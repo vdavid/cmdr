@@ -24,6 +24,7 @@ import {
   seedResults,
   unmountAllDialogs,
   useSearchDialog,
+  footerButton,
 } from './test-search-dialog-harness'
 
 vi.mock('#lib/tauri-commands/index.js', async () => (await import('./test-search-dialog-harness')).tauriCommandsMock())
@@ -98,7 +99,7 @@ describe('SearchDialog scope ladder (one volume is the ceiling)', () => {
     await seedResults()
     await tick()
 
-    const btn = document.body.querySelector('button[aria-label="Go to file"]') as HTMLButtonElement
+    const btn = footerButton('Go to file') as HTMLButtonElement
     btn.click()
     await tick()
     await Promise.resolve()
@@ -116,7 +117,7 @@ describe('SearchDialog scope ladder (one volume is the ceiling)', () => {
     await seedResults()
     await tick()
 
-    const btn = document.body.querySelector('button[aria-label="Go to file"]') as HTMLButtonElement
+    const btn = footerButton('Go to file') as HTMLButtonElement
     btn.click()
     await tick()
     await Promise.resolve()

@@ -33,6 +33,9 @@
     import TextInput from '#lib/ui/TextInput.svelte'
     import { createDeferredActiveDescendant } from '#lib/ui/deferred-active-descendant.svelte.js'
     import type { SearchMode } from './query-filter-state.svelte'
+    import { queryKeyAria, queryKeyLabel } from './query-keys'
+    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { toDisplayShortcut } from '#lib/shortcuts/key-capture.js'
 
     interface Props {
         /** Bindable ref to the input element so the parent can manage focus. */
@@ -133,12 +136,15 @@
         return tString('queryUi.bar.aria.filename')
     })
 
-    /** AI mode runs only on explicit Enter / ⌘Enter / Run-button click. Show the hint title to match. */
+    /** AI mode runs only on an explicit Enter or Run-button click. Show the hint title to match. */
     const runTitle = $derived(
         mode === 'ai'
             ? tString('queryUi.bar.runTitle.ai')
             : (runTitleOverride ?? tString('queryUi.bar.runTitle.default')),
     )
+
+    /** The recent-items key, live from the registry (`search.toggleRecent`). */
+    const recentKey = $derived(toDisplayShortcut(getFirstShortcutReactive('search.toggleRecent') ?? ''))
 </script>
 
 <!-- `display: contents`: the bar hands its two halves straight to the dialog's 2×2
@@ -192,7 +198,7 @@
                         aria-haspopup="dialog"
                         aria-expanded={recentOpen}
                         onclick={onToggleRecent}
-                        use:tooltip={{ text: recentTriggerTooltip, shortcut: '⌘H' }}
+                        use:tooltip={{ text: recentTriggerTooltip, shortcut: recentKey }}
                     >
                         <Icon name="chevron-down" size={14} aria-hidden="true" />
                     </button>
@@ -206,15 +212,17 @@
     <!-- Button reads "Search ⏎" when ⏎ owns the run action; just "Search" when the
          footer's Go-to-file owns ⏎. Exactly one of the two surfaces the hint. It's the
          house `Button` in the same secondary family as the footer's actions, so the
-         dialog has exactly one button style. -->
+         dialog has exactly one button style. No `aria-label`: off macOS the hint is the
+         word "Enter", which no label could contain (WCAG 2.5.3), so the visible "Search"
+         is the name and `runTitle` reaches a screen reader as the tooltip's description. -->
     <div class="run-action">
         <Button
             variant="secondary"
             {disabled}
             onclick={onRun}
-            aria-label={runTitle}
-            tooltipContent={{ text: runTitle, shortcut: '⏎' }}
-            keyHint={showEnterHint ? '⏎' : undefined}
+            tooltipContent={{ text: runTitle, shortcut: queryKeyLabel('enter') }}
+            keyHint={showEnterHint ? queryKeyLabel('enter') : undefined}
+            aria-keyshortcuts={showEnterHint ? queryKeyAria('enter') : undefined}
         >
             {tString('queryUi.bar.runLabel')}
         </Button>

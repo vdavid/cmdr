@@ -206,7 +206,13 @@ viewer.zoomOut	-
 viewer.toggleImageZoom	Enter, Space
 viewer.goBack	Alt+←
 viewer.goForward	Alt+→
+viewer.search	Ctrl+F
+viewer.toggleSearchRegex	Alt+R
+viewer.toggleSearchCase	Alt+C
 palette.up	↑
 palette.down	↓
 palette.execute	Enter
 palette.close	Escape
+search.newQuery	Ctrl+N
+search.toggleRecent	Ctrl+H
+search.modeByNumber	Ctrl+1, Ctrl+2, Ctrl+3

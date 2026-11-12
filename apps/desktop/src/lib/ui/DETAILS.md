@@ -2086,12 +2086,12 @@ The `shortcut-<commandId>` anchor-id convention (shared with the Settings sectio
 exported `shortcutAnchorId(commandId)` in `lib/settings/settings-window.ts` so it can't drift.
 
 **Where literal chips render the fixed interaction keys (Class B).** Beyond the live `commandId` sites, literal-mode
-chips give the uniform key look to fixed (non-customizable) interaction keys: the search dialog's empty-state tip (`⌘N`
-/ `⌘H` / `⌘Enter`), the run button's `⏎`, the scope popover's `⌥C` / `⌥V`, the recent-items dropdown's `↑↓` / `Enter`,
-the viewer's binary-warning `⇧Space` / `Enter`, `LoadingIcon`'s `Esc` cancel hint, and the `PtpcameradDialog` `Ctrl+C`.
-These keys are static by nature (no registry command, never clickable); the chip only unifies their appearance. The
-network browser's refresh hint is NOT one of them any more: it names `pane.refresh`, so the hint moves with a rebind
-(non-clickable, because the whole status bar is already a refresh button).
+chips give the uniform key look to fixed (non-customizable) interaction keys: the run button's `⏎`, the scope popover's
+`⌥C` / `⌥V`, the recent-items dropdown's `↑↓` / `Enter`, the viewer's binary-warning `⇧Space` / `Enter`, `LoadingIcon`'s
+`Esc` cancel hint, and the `PtpcameradDialog` `Ctrl+C`. These keys are static by nature (no registry command, never
+clickable); the chip only unifies their appearance. The network browser's refresh hint is NOT one of them any more: it
+names `pane.refresh`, so the hint moves with a rebind (non-clickable, because the whole status bar is already a refresh
+button).
 
 **Class B sites kept un-migrated (deliberate exceptions):**
 

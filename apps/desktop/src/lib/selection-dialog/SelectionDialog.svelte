@@ -598,9 +598,8 @@
 
         primaryAction: {
             label: primaryLabel,
-            shortcutHint: '⏎',
+            shortcut: 'enter',
             tooltip: primaryTooltip,
-            ariaLabel: primaryLabel,
             handler: commitMatches,
         },
         // Selection has no secondary action — ⏎ commits, ⌥⏎ also commits via the

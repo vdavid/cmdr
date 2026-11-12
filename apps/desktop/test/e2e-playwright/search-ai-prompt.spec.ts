@@ -29,7 +29,7 @@ import {
   hasAiChip,
   openSearchDialog,
   pollActiveMode,
-  pressMetaDigit,
+  pressModeNumber,
   setSearchInputValue,
 } from './search-helpers.js'
 
@@ -49,7 +49,7 @@ test.describe('Search dialog: AI mode never auto-applies', () => {
     // Switch to AI mode (⌘1 with AI on per modeForShortcutNumber). If the
     // dialog already opened on AI, the press is a no-op.
     if ((await getActiveMode(tauriPage)) !== 'ai') {
-      await pressMetaDigit(tauriPage, 1)
+      await pressModeNumber(tauriPage, 1)
       const switched = await pollActiveMode(tauriPage, 'ai')
       if (!switched) await closeSearchDialog(tauriPage)
       test.skip(!switched, 'failed to switch to AI mode; cannot validate the contract')

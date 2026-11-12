@@ -80,10 +80,6 @@
   "@queryUi.empty.tip": {
     "sourceHash": "6d00976"
   },
-  "queryUi.empty.tipAi": "Astuce : <newKey>⌘N</newKey> repart à zéro, <historyKey>⌘H</historyKey> affiche les recherches récentes, <aiKey>⌘Enter</aiKey> lance une recherche IA.",
-  "@queryUi.empty.tipAi": {
-    "sourceHash": "e83a0d6"
-  },
   "queryUi.ai.cloudOff.body": "L’IA dans le cloud est désactivée. Autorisez-la dans Réglages > IA pour utiliser cette fonction.",
   "@queryUi.ai.cloudOff.body": {
     "sourceHash": "9b76c6f"

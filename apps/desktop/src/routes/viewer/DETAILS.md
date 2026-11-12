@@ -610,7 +610,7 @@ Gotcha/Why: the two entry points sit in different halves of `handleKeyDown`, and
   `if (searchInputFocused) return` guard and before `handleNavigationKey`**. Before that guard it steals the search
   input's own Shift+Arrow; after `handleNavigationKey` Shift+Up keeps scrolling instead of extending.
 - **⌥⇧ / ⌃⇧ / ⌘⇧ chords** arrive in `handleModifiedKey`, which runs **regardless of focus**. The branch sits after the
-  search chords (so ⌘⌥R / ⌘⌥C still win) and before the `if (!e.altKey && !e.shiftKey)` bail, and **gates on
+  search toggles (so ⌘⌥R / ⌘⌥C still win) and before `handleModifierShortcut`'s ⌥ / ⇧ bail, and **gates on
   `!searchInputFocused` itself** — without that gate it steals ⌥⇧← / ⌥⇧→ from a focused search input.
 
 Gotcha/Why: ❌ never write `e.shiftKey && e.key === 'ArrowLeft'`. `cmdr/no-raw-key-match` is an **error** here and fires
@@ -793,8 +793,11 @@ extend that allowlist instead. See `src-tauri/capabilities/CLAUDE.md` § viewer 
 
 `createViewerSearch` owns two mode flags besides the query text: `useRegex` (default off) and `caseSensitive` (default
 on). Both are exposed as toggle buttons in the search bar (`Aa` and `.*`) with `aria-pressed` reflecting the state, plus
-keyboard shortcuts `⌘⌥C` and `⌘⌥R` handled by `viewer-keyboard.ts::handleSearchToggleKey`. The chord is gated on
-meta+alt (or ctrl+alt) so it can't collide with the input's native `⌘A` / `⌘C`.
+keyboard shortcuts: the fixed registry commands `viewer.toggleSearchCase` and `viewer.toggleSearchRegex` (`⌘⌥C` / `⌘⌥R`
+on macOS, `Alt+C` / `Alt+R` on Windows and Linux, where `Ctrl+Alt+<letter>` is AltGr typing), matched with
+`eventMatchesCommand` in `viewer-keyboard.ts::handleSearchToggleKey` while the bar is up, the search input focused or
+not. Both hold a modifier, so they never collide with the input's native `⌘A` / `⌘C` or type into it. The key that opens
+the bar is `viewer.search` (`⌘F` / `Ctrl+F`, fixed too), which the status bar's hint reads.
 
 Toggling either flag while a query is active cancels the in-flight search and re-runs it with the new mode. The
 backend's `SearchStatus::InvalidQuery { message }` is projected to a flat `searchStatus === 'invalidQuery'` plus a

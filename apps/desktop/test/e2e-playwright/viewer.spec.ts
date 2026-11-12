@@ -16,6 +16,7 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { closeScopedWindow, openViewerWindow, pollUntil, PRIMARY_KEY_FLAG } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
+import { defaultKey } from './helpers/registry-keys.js'
 
 // Use fixture file from the shared E2E fixture tree. Throw instead of using a
 // fallback path: a silent fallback hides setup bugs (the test would try to read
@@ -156,7 +157,7 @@ test.describe('File viewer search', () => {
   })
 
   test('opens search bar with Ctrl+F', async () => {
-    await viewer.keyboard.press('Control+f')
+    await viewer.keyboard.press(defaultKey('viewer.search'))
 
     await viewer.waitForSelector('.search-bar', 5000)
     expect(await viewer.isVisible('.search-bar')).toBe(true)
@@ -164,7 +165,7 @@ test.describe('File viewer search', () => {
 
   test('finds matches in file content', async () => {
     if (!(await viewer.isVisible('.search-bar'))) {
-      await viewer.keyboard.press('Control+f')
+      await viewer.keyboard.press(defaultKey('viewer.search'))
       await viewer.waitForSelector('.search-bar', 5000)
     }
     await viewer.waitForSelector('.search-bar input.text-field-control', 5000)
@@ -189,7 +190,7 @@ test.describe('File viewer search', () => {
 
   test('closes search with Escape', async () => {
     if (!(await viewer.isVisible('.search-bar'))) {
-      await viewer.keyboard.press('Control+f')
+      await viewer.keyboard.press(defaultKey('viewer.search'))
       await viewer.waitForSelector('.search-bar', 5000)
     }
     expect(await viewer.isVisible('.search-bar')).toBe(true)
@@ -202,7 +203,7 @@ test.describe('File viewer search', () => {
 
   test('shows "No matches" status for a query with no hits', async () => {
     if (!(await viewer.isVisible('.search-bar'))) {
-      await viewer.keyboard.press('Control+f')
+      await viewer.keyboard.press(defaultKey('viewer.search'))
       await viewer.waitForSelector('.search-bar', 5000)
     }
 

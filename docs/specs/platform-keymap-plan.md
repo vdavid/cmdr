@@ -838,11 +838,12 @@ Sequential, one agent each, in this worktree. Each ends green and committed.
 18. macOS behavior changes are exactly these, each pinned by a test: the four `⌥←` / `⌥→` defaults (and `⌥←` / `⌥→`
     joining macOS's native text keys); the viewer answers only ⌘ for copy, select all, and search (no `⌃C`, `⌃A`, `⌃F`)
     and only `⌘⌥R` / `⌘⌥C` for its toggles (no `⌃⌥R` / `⌃⌥C`); a saved rebind of `nav.home`, `nav.end`, `nav.pageUp`, or
-    `nav.pageDown` also applies in the places browser and the servers hub; the search dialog's `⌘N` / `⌘H` also match on
-    a non-Latin layout; Settings lists the six new fixed-key rows; the palette gains Full screen; Move here
-    (`edit.pasteAsMove`, `⌥⌘V`) moves nothing while a text field has focus, from any road (it moved files from the quick
-    filter or the path bar, since the menu accelerator fires before the field). Anything else that moves on macOS is a
-    regression.
+    `nav.pageDown` also applies in the places browser and the servers hub; the search dialog's `⌘N` / `⌘Y` also match on
+    a non-Latin layout; the search dialog's recent searches move from `⌘H` to `⌘Y`, leaving `⌘H` to Hide, and its
+    empty-state tip names `⌘Y` and drops the `⌘Enter` clause (`⌘Enter` does nothing there; the AI-on tip is gone);
+    Settings lists the six new fixed-key rows; the palette gains Full screen; Move here (`edit.pasteAsMove`, `⌥⌘V`)
+    moves nothing while a text field has focus, from any road (it moved files from the quick filter or the path bar,
+    since the menu accelerator fires before the field). Anything else that moves on macOS is a regression.
 19. On Linux, while any main-window dialog, overlay, or the palette is up, the main window's bar mnemonics are off and
     every `Alt+<letter>` default reaches the page; after the last one closes, they're back. A real-X-event spec in the
     Linux lane proves it.

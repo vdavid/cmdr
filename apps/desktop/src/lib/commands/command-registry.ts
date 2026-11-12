@@ -31,6 +31,7 @@ import { aboutWindowCommands } from './sources/about-window'
 import { queueWindowCommands } from './sources/queue-window'
 import { viewerWindowCommands } from './sources/viewer-window'
 import { commandPaletteCommands } from './sources/command-palette'
+import { searchDialogCommands } from './sources/search-dialog'
 
 /**
  * The macOS-native commands: AppKit `PredefinedMenuItem`s own BOTH the behavior
@@ -123,6 +124,18 @@ export const FIXED_KEY_COMMAND_IDS = [
   'askCmdr.find',
   'askCmdr.findNext',
   'askCmdr.findPrevious',
+  // The Search and Select files dialogs' own keys, answered by `QueryDialog`'s keydown
+  // (`lib/query-ui/query-shortcuts.ts`). They shadow Ask Cmdr's new chat and the view modes
+  // and sorts while the dialog is up, so they're fixed like Ask Cmdr's find keys.
+  'search.newQuery',
+  'search.toggleRecent',
+  'search.modeByNumber',
+  // The viewer's search bar keys, answered by its own keydown (`routes/viewer/viewer-keyboard.ts`).
+  // Its single keys are remappable (`VIEWER_KEY_COMMAND_IDS`); these are chords that work from
+  // inside the search input, fixed like Ask Cmdr's find keys.
+  'viewer.search',
+  'viewer.toggleSearchRegex',
+  'viewer.toggleSearchCase',
   // Family 4 — deliberate override. ErrorPane claims ⌘D through a CAPTURE-phase
   // document listener that runs ahead of the dispatch spine, so it wins over
   // whatever the user bound ⌘D to. Fixed because releasing the key would falsify
@@ -149,6 +162,7 @@ const commandSources: CommandSource[] = [
   ...queueWindowCommands,
   ...viewerWindowCommands,
   ...commandPaletteCommands,
+  ...searchDialogCommands,
 ]
 
 const whileDialogOpenById = new Map<CommandId, WhileDialogOpen>(

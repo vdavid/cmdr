@@ -116,12 +116,35 @@ export function desktopPath(relative: string): string {
   return join(import.meta.dirname, '..', relative)
 }
 
-/** The two macOS English changes David accepted (`docs/notes/windows-port/copy-decisions.md`), key → new text. */
+/**
+ * The macOS English changes David accepted, key → new text: two from `docs/notes/windows-port/copy-decisions.md`, and
+ * the search dialog's tip naming recent searches' key, which moved from ⌘H (now Hide's alone) to ⌘Y.
+ */
 export const ACCEPTED_ENGLISH_CHANGES: Readonly<Partial<Record<string, string>>> = {
   'ai.secretError.genericBody':
     'Check that your Keychain is available, then try again. If it persists, restart the app.',
   'goToPath.dialog.inputPlaceholder': 'Type or paste a path, for example ~/Documents',
+  'queryUi.empty.tip': 'Tip: <newKey>⌘N</newKey> starts fresh, <historyKey>⌘Y</historyKey> shows recent searches.',
 }
+
+/** One frozen key deleted on purpose, from every catalog: the surface that showed it is gone. */
+export interface RetiredKey {
+  key: string
+  /** One line: why the text went. */
+  reason: string
+}
+
+/**
+ * Frozen keys David retired. A retired key must be gone from every catalog (one still present is drift), and nothing
+ * else may vanish.
+ */
+export const RETIRED_KEYS: readonly RetiredKey[] = [
+  {
+    key: 'queryUi.empty.tipAi',
+    reason:
+      'its only addition to `queryUi.empty.tip` was “⌘Enter runs an AI search”, false since ⌘Enter became a no-op; Enter runs it, and the run button says so',
+  },
+]
 
 /** One reviewed fix to a translation the baseline froze: the macOS text `locale`'s own catalog now holds for `key`. */
 export interface AcceptedTranslationChange {
@@ -356,6 +379,7 @@ export function macosCopyDrift(
   baseline: MacosCopyBaseline,
   messagesRoot?: string,
   accepted: readonly AcceptedTranslationChange[] = ACCEPTED_TRANSLATION_CHANGES,
+  retiredKeys: readonly RetiredKey[] = RETIRED_KEYS,
 ): string[] {
   const survivors = COLLAPSED_PAIRS.map((pair) => pair.survivor)
   const splits = SPLIT_KEYS.map((split) => split.to)
@@ -373,10 +397,14 @@ export function macosCopyDrift(
       continue
     }
     const pairs = collapsedPairDrift(locale, expectedValues, actualValues, expectedText)
+    const retired = new Set([...pairs.retired, ...retiredKeys.map((entry) => entry.key)])
     drift.push(
       ...pairs.drift,
       ...splitKeyDrift(locale, expectedValues, actualValues, expectedText),
-      ...frozenKeyDrift(locale, expectedValues, actualValues, expectedText, pairs.retired),
+      ...frozenKeyDrift(locale, expectedValues, actualValues, expectedText, retired),
+      ...retiredKeys
+        .filter((entry) => actualValues[entry.key] !== undefined)
+        .map((entry) => `${locale} ${entry.key}: retired, but still in a catalog`),
     )
   }
   return drift

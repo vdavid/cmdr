@@ -35,7 +35,7 @@ import {
   closeSearchDialog,
   getActiveMode,
   openSearchDialog,
-  pressMetaDigit,
+  pressModeNumber,
   resetSearchDialog,
 } from './search-helpers.js'
 import { setSetting } from './marketing-stage.js'
@@ -352,7 +352,7 @@ export async function ai(page: TauriPage): Promise<void> {
   try {
     await openSearchDialog(page)
     await resetSearchDialog(page)
-    if ((await getActiveMode(page)) !== 'ai') await pressMetaDigit(page, 1)
+    if ((await getActiveMode(page)) !== 'ai') await pressModeNumber(page, 1)
     await expect.poll(() => getActiveMode(page), { timeout: waitBudget(5000) }).toBe('ai')
     await closeSearchDialog(page)
     await dismissAllToasts(page)

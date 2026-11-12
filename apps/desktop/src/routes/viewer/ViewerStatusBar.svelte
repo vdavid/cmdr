@@ -18,8 +18,6 @@
     import Trans from '#lib/intl/Trans.svelte'
     import ShortcutChip from '#lib/ui/ShortcutChip.svelte'
     import { commandHasShortcut, shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
-    import { formatChord, type ChordModifiers } from '#lib/shortcuts/key-capture.js'
-    import { getPlatform, type Platform } from '#lib/platform/index.js'
 
     interface Props {
         /** File name shown at the start of the bar. */
@@ -58,23 +56,17 @@
 
     const isMedia = $derived(mode === 'media' && isMediaKind(kind))
     const dimensionsText = $derived(formatMediaDimensions(mediaDimensions))
-    // The user's keys, live: both are remappable (`Viewer window` in the shortcuts registry), and a
-    // key turned off drops its part of the hint.
+    // The user's keys, live: wrap and tail are remappable, search is fixed (`Viewer window` in
+    // the shortcuts registry), and a key turned off drops its part of the hint.
     const wrapBound = $derived(commandHasShortcut('viewer.toggleWordWrap'))
     const tailBound = $derived(commandHasShortcut('viewer.toggleTail'))
-    /** Search isn't a registry key: the viewer opens it on its own fixed chord per platform. */
-    const SEARCH_MODIFIER: Record<Platform, ChordModifiers> = {
-        macos: { metaKey: true },
-        windows: { ctrlKey: true },
-        linux: { ctrlKey: true },
-    }
-    const SEARCH_KEY = formatChord(SEARCH_MODIFIER[getPlatform()], 'F')
+    const searchBound = $derived(commandHasShortcut('viewer.search'))
 </script>
 
 <!-- Non-clickable: a chip's deep link opens Settings, which this restricted window can't create. -->
 {#snippet wrapChip(_children: Snippet)}<ShortcutChip commandId="viewer.toggleWordWrap" size="sm" clickable={false} />{/snippet}
 {#snippet tailChip(_children: Snippet)}<ShortcutChip commandId="viewer.toggleTail" size="sm" clickable={false} />{/snippet}
-{#snippet searchChip(_children: Snippet)}<ShortcutChip key={SEARCH_KEY} size="sm" />{/snippet}
+{#snippet searchChip(_children: Snippet)}<ShortcutChip commandId="viewer.search" size="sm" clickable={false} />{/snippet}
 
 <div class="status-bar" aria-label={tString('viewer.statusBar.ariaLabel')}>
     <span>{fileName}</span>
@@ -129,7 +121,7 @@
         <span class="shortcut-hint">
             {#if wrapBound}<span class="hint-part"><Trans key="viewer.statusBar.hint.wrap" snippets={{ key: wrapChip }} /></span>{/if}
             {#if tailBound}<span class="hint-part"><Trans key="viewer.statusBar.hint.tail" snippets={{ key: tailChip }} /></span>{/if}
-            <span class="hint-part"><Trans key="viewer.statusBar.hint.search" snippets={{ key: searchChip }} /></span>
+            {#if searchBound}<span class="hint-part"><Trans key="viewer.statusBar.hint.search" snippets={{ key: searchChip }} /></span>{/if}
         </span>
     {/if}
 </div>

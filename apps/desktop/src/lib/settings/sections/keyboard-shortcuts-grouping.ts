@@ -51,6 +51,7 @@ const scopeOrder: readonly { scope: CommandScope; titleKey: MessageKey }[] = [
   { scope: 'Main window/Multi-rename', titleKey: 'shortcuts.scope.multiRename' },
   { scope: 'Main window/Operation log', titleKey: 'shortcuts.scope.operationLog' },
   { scope: 'Main window/Ask Cmdr', titleKey: 'shortcuts.scope.askCmdr' },
+  { scope: 'Main window/Search dialog', titleKey: 'shortcuts.scope.searchDialog' },
   { scope: 'Command palette', titleKey: 'shortcuts.scope.commandPalette' },
   { scope: 'Operation queue window', titleKey: 'shortcuts.scope.queueWindow' },
   { scope: 'Viewer window', titleKey: 'shortcuts.scope.viewerWindow' },

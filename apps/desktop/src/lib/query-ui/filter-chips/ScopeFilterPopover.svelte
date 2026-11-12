@@ -20,6 +20,7 @@
     import { tString } from '#lib/intl/messages.svelte.js'
     import Trans from '#lib/intl/Trans.svelte'
     import type { ScopePresets } from '../query-dialog-config'
+    import { queryKeyAria, queryKeyLabel } from '../query-keys'
     import './filter-popover.css'
 
     interface Props {
@@ -143,8 +144,8 @@
                 tooltipContent={scopePresets.currentFolder === null
                     ? scopePresets.currentFolderUnavailableReason
                     : undefined}
-                keyHint="⌥C"
-                aria-keyshortcuts="Alt+C"
+                keyHint={queryKeyLabel('scopeCurrentFolder')}
+                aria-keyshortcuts={queryKeyAria('scopeCurrentFolder')}
                 onclick={() => {
                     if (!scopePresets.currentFolder) return
                     onSetScope(scopePresets.currentFolder)
@@ -156,8 +157,8 @@
             <Button
                 size="mini"
                 tooltipContent={scopePresets.volumeRoot}
-                keyHint="⌥V"
-                aria-keyshortcuts="Alt+V"
+                keyHint={queryKeyLabel('scopeVolume')}
+                aria-keyshortcuts={queryKeyAria('scopeVolume')}
                 onclick={() => {
                     onSetScope(scopePresets.volumeRoot)
                     scheduleSearch()

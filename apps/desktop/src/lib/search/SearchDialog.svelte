@@ -368,16 +368,14 @@
 
         primaryAction: {
             label: tString('search.action.showAll.label'),
-            shortcutHint: '⌥⏎',
+            shortcut: 'primaryAction',
             tooltip: tString('search.action.showAll.tooltip'),
-            ariaLabel: tString('search.action.showAll.label'),
             handler: showAllInMainWindow,
         },
         secondaryAction: {
             label: tString('search.action.goToFile.label'),
-            shortcutHint: '⏎',
+            shortcut: 'enter',
             tooltip: tString('search.action.goToFile.tooltip'),
-            ariaLabel: tString('search.action.goToFile.label'),
             handler: goToCursorFile,
         },
 

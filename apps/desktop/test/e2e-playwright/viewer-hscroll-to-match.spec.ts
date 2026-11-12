@@ -18,6 +18,7 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { closeScopedWindow, openViewerWindow } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
+import { defaultKey } from './helpers/registry-keys.js'
 
 const FIXTURE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'cmdr-viewer-hscroll-'))
 const FIXTURE_PATH = path.join(FIXTURE_DIR, 'long-line.txt')
@@ -91,7 +92,7 @@ test.describe('File viewer horizontal scroll-to-match', () => {
   test('scrolls an off-screen match into the horizontal viewport', async () => {
     await ensureWrap(viewer, false)
 
-    await viewer.keyboard.press('Control+f')
+    await viewer.keyboard.press(defaultKey('viewer.search'))
     await viewer.waitForSelector('.search-bar', 5000)
 
     await viewer.fill('.search-bar input.text-field-control', TOKEN_LONG)
@@ -139,7 +140,7 @@ test.describe('File viewer horizontal scroll-to-match', () => {
     // match's wrapped row, not the top of the line.
     await ensureWrap(viewer, true)
 
-    await viewer.keyboard.press('Control+f')
+    await viewer.keyboard.press(defaultKey('viewer.search'))
     await viewer.waitForSelector('.search-bar', 5000)
 
     await viewer.fill('.search-bar input.text-field-control', TOKEN_LONG)
@@ -181,7 +182,7 @@ test.describe('File viewer horizontal scroll-to-match', () => {
     // to the top of the (wrapped) line, flinging the view to the line start.
     await ensureWrap(viewer, true)
 
-    await viewer.keyboard.press('Control+f')
+    await viewer.keyboard.press(defaultKey('viewer.search'))
     await viewer.waitForSelector('.search-bar', 5000)
     await viewer.fill('.search-bar input.text-field-control', TOKEN_LONG)
     await expect
@@ -238,7 +239,7 @@ test.describe('File viewer horizontal scroll-to-match', () => {
     // the long line was no longer rendered when we jumped to it.
     await ensureWrap(viewer, true)
 
-    await viewer.keyboard.press('Control+f')
+    await viewer.keyboard.press(defaultKey('viewer.search'))
     await viewer.waitForSelector('.search-bar', 5000)
     await viewer.fill('.search-bar input.text-field-control', PREFIX)
     await expect

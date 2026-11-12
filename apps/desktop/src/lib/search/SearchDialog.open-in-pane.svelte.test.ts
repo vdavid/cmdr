@@ -24,6 +24,7 @@ import {
   testSettings,
   unmountAllDialogs,
   useSearchDialog,
+  footerButton,
 } from './test-search-dialog-harness'
 import { SNAPSHOT_ENTRIES_CAP } from './snapshot-store.svelte'
 
@@ -63,7 +64,7 @@ describe('SearchDialog "Open in pane"', () => {
     await tick()
 
     // Find and click the "Open in pane" footer button.
-    const btn = document.body.querySelector('button[aria-label="Show all in main window"]') as HTMLButtonElement
+    const btn = footerButton('Show all in main window') as HTMLButtonElement
     expect(btn).not.toBeNull()
     btn.click()
     // Let the (sync) handler run and any micro-tasks resolve.
@@ -112,7 +113,7 @@ describe('SearchDialog "Open in pane"', () => {
     }))
     searchFilesMock.mockResolvedValueOnce({ entries: everyHit, totalCount: 112 })
 
-    const btn = document.body.querySelector('button[aria-label="Show all in main window"]') as HTMLButtonElement
+    const btn = footerButton('Show all in main window') as HTMLButtonElement
     btn.click()
     await tick()
     await Promise.resolve()
@@ -144,7 +145,7 @@ describe('SearchDialog "Open in pane"', () => {
 
     // "Go to file" (the secondary footer action) opens the cursor result in the active pane.
     // The host's `onNavigate` is what closes the dialog, so we don't assert close here.
-    const btn = document.body.querySelector('button[aria-label="Go to file"]') as HTMLButtonElement
+    const btn = footerButton('Go to file') as HTMLButtonElement
     expect(btn).not.toBeNull()
     btn.click()
     await tick()
@@ -176,7 +177,7 @@ describe('SearchDialog "Open in pane"', () => {
     await seedResults('adb-r58m')
     await tick()
 
-    const btn = document.body.querySelector('button[aria-label="Show all in main window"]') as HTMLButtonElement
+    const btn = footerButton('Show all in main window') as HTMLButtonElement
     btn.click()
     await tick()
 
@@ -210,7 +211,7 @@ describe('SearchDialog "Open in pane"', () => {
     await seedResults()
     await tick()
 
-    const btn = document.body.querySelector('button[aria-label="Show all in main window"]') as HTMLButtonElement
+    const btn = footerButton('Show all in main window') as HTMLButtonElement
     btn.click()
     await tick()
 
@@ -233,7 +234,7 @@ describe('SearchDialog "Open in pane"', () => {
     await tick()
     // The button stays VISIBLE when resultCount === 0, just rendered disabled. Yanking
     // it would jump the layout while the user is mid-thought.
-    const btn = document.body.querySelector<HTMLButtonElement>('button[aria-label="Show all in main window"]')
+    const btn = footerButton('Show all in main window')
     expect(btn).not.toBeNull()
     expect(btn?.disabled).toBe(true)
     btn?.click()

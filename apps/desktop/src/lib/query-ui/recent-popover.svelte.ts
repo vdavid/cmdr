@@ -2,7 +2,7 @@
  * Controller for the query field's recent-items dropdown.
  *
  * Recent items are the field's own dropdown (`RecentItemsPopover` anchored to the pill),
- * not a footer strip. Openers: the field's chevron, `⌘H`, and ArrowDown in the field when
+ * not a footer strip. Openers: the field's chevron, `search.toggleRecent` (⌘Y / Ctrl+H), and ArrowDown in the field when
  * there's no result list to walk. Picking a row LOADS the entry and closes; it doesn't run
  * it (the user presses Enter when they're ready).
  *

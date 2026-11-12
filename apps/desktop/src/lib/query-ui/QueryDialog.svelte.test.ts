@@ -8,8 +8,9 @@
  * regressions there don't cascade through every consumer.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { computeAccessibleName } from 'dom-accessibility-api'
 import { writable } from 'svelte/store'
 import QueryDialog from './QueryDialog.svelte'
@@ -39,6 +40,10 @@ vi.mock('#lib/icon-cache.js', () => ({
   getCachedIcon: vi.fn(() => undefined),
   getCachedCustomFolderIcon: () => undefined,
 }))
+
+// The dialog's keys are spoken in macOS's chords here (⌘N, ⌥⏎); `query-shortcuts.test.ts` covers
+// Windows and Linux.
+beforeEach(() => withPlatform('macos'))
 
 interface MountedDialog {
   overlay: Element
@@ -153,14 +158,14 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
       : undefined,
     primaryAction: {
       label: 'Primary',
-      shortcutHint: '⌥⏎',
+      shortcut: 'primaryAction',
       handler: (entries) => {
         calls.primary.push(entries)
       },
     },
     secondaryAction: {
       label: 'Secondary',
-      shortcutHint: '⏎',
+      shortcut: 'enter',
       handler: (entry) => {
         calls.secondary.push(entry)
       },
@@ -319,7 +324,7 @@ describe('QueryDialog primary / secondary actions', () => {
   })
 })
 
-describe('QueryDialog ⌘N and ⌘H', () => {
+describe('QueryDialog ⌘N and ⌘Y', () => {
   it('⌘N invokes the consumer onClearState hook', async () => {
     const { overlay, calls, cleanup } = mountQueryDialog()
     await tick()
@@ -333,17 +338,17 @@ describe('QueryDialog ⌘N and ⌘H', () => {
     cleanup()
   })
 
-  it('⌘H opens the recent-items dropdown, and toggles it shut again', async () => {
+  it('⌘Y opens the recent-items dropdown, and toggles it shut again', async () => {
     const { overlay, cleanup } = mountQueryDialog({ recentEntries: [RECENT_ENTRY] })
     await settle()
 
     expect(document.body.querySelector('.recent-popover')).toBeNull()
 
-    dispatchKey(overlay, 'h', { meta: true })
+    dispatchKey(overlay, 'y', { meta: true })
     await tick()
     expect(document.body.querySelector('.recent-popover')).not.toBeNull()
 
-    dispatchKey(overlay, 'h', { meta: true })
+    dispatchKey(overlay, 'y', { meta: true })
     await tick()
     expect(document.body.querySelector('.recent-popover')).toBeNull()
 
@@ -352,7 +357,7 @@ describe('QueryDialog ⌘N and ⌘H', () => {
 })
 
 /**
- * The query field is a combobox over the recent-items history: the chevron, `⌘H`, and
+ * The query field is a combobox over the recent-items history: the chevron, `⌘Y`, and
  * `ArrowDown` (when there's no result list to walk) all open the same dropdown, and picking
  * a row LOADS the entry without running it.
  */
@@ -458,7 +463,7 @@ describe('QueryDialog recent-items dropdown', () => {
     await settle()
     const runsBefore = calls.runQuery
 
-    dispatchKey(overlay, 'h', { meta: true })
+    dispatchKey(overlay, 'y', { meta: true })
     await tick()
     const popover = document.body.querySelector('.recent-popover')
     expect(popover).not.toBeNull()
@@ -481,7 +486,7 @@ describe('QueryDialog recent-items dropdown', () => {
     await settle()
     const runsBefore = calls.runQuery
 
-    dispatchKey(overlay, 'h', { meta: true })
+    dispatchKey(overlay, 'y', { meta: true })
     await tick()
     const row = document.body.querySelector('.recent-popover .result-row') as HTMLButtonElement
     expect(row).not.toBeNull()

@@ -27,7 +27,8 @@ import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
 // The footer action button is labelled "Show all in main window" and is always in the DOM,
 // disabled until results land. `:not([disabled])` matters — without it, the selector
 // matches the disabled state and the test clicks a no-op.
-const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main window"]:not([disabled])'
+// The footer's primary button: it carries no `aria-label` (its visible label is the name).
+const OPEN_IN_PANE_BUTTON = '.search-overlay .query-dialog__actions .btn-primary:not([disabled])'
 
 test.describe('Search dialog: recent searches', () => {
   test('Open-in-pane persists the query to the backend recent-search store', async ({ tauriPage }) => {

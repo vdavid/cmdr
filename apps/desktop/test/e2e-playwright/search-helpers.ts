@@ -11,6 +11,7 @@
 import { waitBudget } from './wait-budget.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 import { dismissOverlay, dispatchMenuCommand, escapeOverlayUntilGone, pollUntil, pressKey } from './helpers.js'
+import { defaultKey, defaultKeyInit } from './helpers/registry-keys.js'
 
 export type PageLike = TauriPage | BrowserPageAdapter
 
@@ -41,7 +42,8 @@ export async function openSearchDialog(tauriPage: PageLike): Promise<void> {
 }
 
 /**
- * Presses ⌘N (the dialog's "new search") and waits until nothing is running.
+ * Presses the dialog's "new search" key (`search.newQuery`: ⌘N, Ctrl+N off macOS) and waits until
+ * nothing is running.
  *
  * The dialog's state survives close + reopen by design, so it reopens holding an
  * earlier spec's query, scope, and mode — and re-running that query is something it
@@ -53,7 +55,7 @@ export async function openSearchDialog(tauriPage: PageLike): Promise<void> {
 export async function resetSearchDialog(tauriPage: PageLike): Promise<void> {
   await tauriPage.evaluate(`(function(){
         var overlay = document.querySelector(${JSON.stringify(SEARCH_OVERLAY)});
-        if (overlay) overlay.dispatchEvent(new KeyboardEvent('keydown', { key: 'n', metaKey: true, bubbles: true, cancelable: true }));
+        if (overlay) overlay.dispatchEvent(new KeyboardEvent('keydown', Object.assign(${JSON.stringify(defaultKeyInit('search.newQuery'))}, { bubbles: true, cancelable: true })));
     })()`)
   const quiet = await pollUntil(
     tauriPage,
@@ -62,7 +64,7 @@ export async function resetSearchDialog(tauriPage: PageLike): Promise<void> {
       (await tauriPage.count(`${SEARCH_OVERLAY} .result-row`)) === 0,
     waitBudget(10000),
   )
-  if (!quiet) throw new Error('search dialog still had a run going 10s after ⌘N')
+  if (!quiet) throw new Error('search dialog still had a run going 10s after the new-search key')
 }
 
 /**
@@ -188,13 +190,11 @@ export async function hasAiChip(tauriPage: PageLike): Promise<boolean> {
 }
 
 /**
- * Dispatches a ⌘<digit> key combo at the focused element (the search input,
- * after `openSearchDialog`). `pressKey` already handles modifier flags; we
- * call it with the explicit `Meta+<digit>` form so the dialog's
- * `handleModeShortcut` reads `e.metaKey && e.key === '<digit>'`.
+ * Presses the dialog's numbered mode key (`search.modeByNumber`: ⌘1–⌘3, Ctrl+1–Ctrl+3 off macOS)
+ * at the focused element (the search input, after `openSearchDialog`).
  */
-export async function pressMetaDigit(tauriPage: PageLike, digit: 1 | 2 | 3): Promise<void> {
-  await pressKey(tauriPage, `Meta+${String(digit)}`)
+export async function pressModeNumber(tauriPage: PageLike, digit: 1 | 2 | 3): Promise<void> {
+  await pressKey(tauriPage, defaultKey('search.modeByNumber', digit - 1))
 }
 
 /**

@@ -83,14 +83,14 @@
 </script>
 
 <!--
-  One ShortcutChip per `<tag>` in the keyboard-tip message. The chip renders the
-  fixed key glyph (`key=`), not the tag''s inner content, so the rendered chip is a
-  literal-mode key chip regardless of the message text; the glyph also lives in the
-  message so translators see it in context. `children` is intentionally ignored.
+  One ShortcutChip per `<tag>` in the keyboard-tip message. The chip draws the key, never the
+  tag's inner content: the new-query and history chips show their command's live key in this
+  platform's spelling (`search.newQuery`, `search.toggleRecent`, so Ctrl+N off macOS), and the
+  macOS glyphs inside the message's tags are only context for translators. `children` is
+  intentionally ignored.
 -->
-{#snippet newChip()}<ShortcutChip key="⌘N" />{/snippet}
-{#snippet historyChip()}<ShortcutChip key="⌘H" />{/snippet}
-{#snippet aiChip()}<ShortcutChip key="⌘Enter" />{/snippet}
+{#snippet newChip()}<ShortcutChip commandId="search.newQuery" clickable={false} />{/snippet}
+{#snippet historyChip()}<ShortcutChip commandId="search.toggleRecent" clickable={false} />{/snippet}
 
 <div class="empty-state">
     {#if aiBlocked}
@@ -124,14 +124,7 @@
         </p>
     {/if}
     <p class="tip">
-        {#if aiEnabled && !aiBlocked}
-            <Trans
-                key="queryUi.empty.tipAi"
-                snippets={{ newKey: newChip, historyKey: historyChip, aiKey: aiChip }}
-            />
-        {:else}
-            <Trans key="queryUi.empty.tip" snippets={{ newKey: newChip, historyKey: historyChip }} />
-        {/if}
+        <Trans key="queryUi.empty.tip" snippets={{ newKey: newChip, historyKey: historyChip }} />
     </p>
 </div>
 

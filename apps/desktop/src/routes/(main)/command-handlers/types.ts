@@ -107,6 +107,14 @@ export type DispatchExemptId =
   | 'askCmdr.find'
   | 'askCmdr.findNext'
   | 'askCmdr.findPrevious'
+  // The Search and Select files dialogs' own keys, answered by `QueryDialog`'s keydown.
+  | 'search.newQuery'
+  | 'search.toggleRecent'
+  | 'search.modeByNumber'
+  // The viewer search bar's fixed chords, answered by the viewer's own keydown.
+  | 'viewer.search'
+  | 'viewer.toggleSearchRegex'
+  | 'viewer.toggleSearchCase'
   // ErrorPane owns ⌘D through its own CAPTURE-phase document listener, which runs
   // ahead of the dispatch spine on purpose (it must beat any user binding on ⌘D).
   | 'errorPane.toggleTechnicalDetails'

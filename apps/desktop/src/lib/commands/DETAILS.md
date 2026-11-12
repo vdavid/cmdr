@@ -80,8 +80,10 @@ command id of its own.
 `CommandScope` is a union of string literals: `'App'`, `'Main window'`, `'Main window/File list'`,
 `'Main window/Brief mode'`, `'Main window/Full mode'`, `'Main window/Servers'`, `'Main window/Places'`,
 `'Main window/Volume chooser'`, `'Main window/Favorites menu'`, `'Main window/Error screen'`,
-`'Main window/Multi-rename'`, `'Main window/Operation log'`, `'About window'`, `'Operation queue window'`,
-`'Viewer window'`, `'Onboarding'`, `'Command palette'`. Scope is documentation-only.
+`'Main window/Multi-rename'`, `'Main window/Operation log'`, `'Main window/Ask Cmdr'`, `'Main window/Search dialog'`
+(the Search and Select files dialogs' fixed keys, `sources/search-dialog.ts`; its chain skips `Main window`, like Ask
+Cmdr's), `'About window'`, `'Operation queue window'`, `'Viewer window'`, `'Onboarding'`, `'Command palette'`. Scope is
+documentation-only.
 
 ❗ **A NEW scope is three places**: the `CommandScope` union here, its ancestry chain in `shortcuts/scope-hierarchy.ts`
 (without one, `getActiveScopes` returns `[]` and its commands can never conflict with anything), and a row in
@@ -91,8 +93,8 @@ silently vanishes from the rebinding UI, which its exhaustiveness test catches.
 ## Command registry
 
 The registry data is split by top-level scope into `sources/*.ts` (`app`, `main-window`, `file-list`, `multi-rename`,
-`browsers`, `mcp`, `about-window`, `queue-window`, `viewer-window`, `command-palette`), each exporting a
-`CommandSource[]`. `command-registry.ts` concatenates them in authoring order into `commandSources` (order is
+`browsers`, `mcp`, `about-window`, `queue-window`, `viewer-window`, `command-palette`, `search-dialog`), each exporting
+a `CommandSource[]`. `command-registry.ts` concatenates them in authoring order into `commandSources` (order is
 load-bearing: it drives palette listing and shortcut conflict resolution) and holds all the logic. Most commands are
 palette-visible; the rest are `showInPalette: false`: low-level navigation and MCP-only per-pane commands.
 `app.commandPalette` is `showInPalette: false` (opening the palette from inside itself makes no sense).

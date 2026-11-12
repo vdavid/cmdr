@@ -14,8 +14,10 @@
  * `scripts/i18n-macos-copy-baseline-lib.ts`.
  *
  * Allowed differences, and only these:
- *  - `ACCEPTED_ENGLISH_CHANGES`: two English values David changed on purpose. Only
- *    where the value resolves from `en`; a translation of either stays put.
+ *  - `ACCEPTED_ENGLISH_CHANGES`: the English values David changed on purpose. Only
+ *    where the value resolves from `en`; a translation of each stays put.
+ *  - `RETIRED_KEYS`: a frozen key David deleted on purpose, which must then be gone
+ *    from every catalog.
  *  - `COLLAPSED_PAIRS`: a `.mac`/`.other` key pair folded into one block-valued
  *    survivor key. Once the `.mac` key is gone, the survivor's macOS branch must
  *    equal the old `.mac` baseline value, and the two old keys are no longer read.

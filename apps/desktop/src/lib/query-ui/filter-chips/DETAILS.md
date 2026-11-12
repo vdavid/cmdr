@@ -119,9 +119,9 @@ the keyboard skip and the mouse not-allowed cursor are both correct without extr
 - `⌥I` opens the Search-in popover (Search only; Selection passes `scopeChipVisible: false` and the ⌥I shortcut is
   suppressed).
 
-On macOS the Option key remaps `event.key` to typographic glyphs (Option+S → `ß`, Option+M → `µ`), so `altLetter()`
-matches on `event.code` (`KeyS`, `KeyM`, …) first and falls back to `event.key` for synthesized test events. Same trick
-lives in `query-shortcuts.ts::matchKey`, which the mode-chip ⌥A / ⌥F / ⌥R shortcuts route through.
+These keys (Alt+ off macOS) come from `../query-keys.ts`, which the mode chips' ⌥A / ⌥F / ⌥R use too. On macOS the
+Option key remaps `event.key` to typographic glyphs (Option+S → `ß`, Option+M → `µ`), so `matchesQueryKey` also reads an
+⌥ letter by its key position (`KeyS`, `KeyM`, …); a synthesized test event without a `code` still matches by its `key`.
 
 ## Chip-side behavior
 

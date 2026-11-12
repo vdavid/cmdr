@@ -222,7 +222,13 @@ viewer.zoomOut	-
 viewer.toggleImageZoom	Enter, Space
 viewer.goBack	⌘[, ⌥←
 viewer.goForward	⌘], ⌥→
+viewer.search	⌘F
+viewer.toggleSearchRegex	⌘⌥R
+viewer.toggleSearchCase	⌘⌥C
 palette.up	↑
 palette.down	↓
 palette.execute	Enter
 palette.close	Escape
+search.newQuery	⌘N
+search.toggleRecent	⌘Y
+search.modeByNumber	⌘1, ⌘2, ⌘3

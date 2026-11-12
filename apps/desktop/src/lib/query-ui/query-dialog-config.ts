@@ -39,6 +39,7 @@ import type { BadgeStatus } from '#lib/feature-status.js'
 import type { SearchResultEntry } from '#lib/tauri-commands/index.js'
 import type { SoftDialogId } from '#lib/ui/dialog-registry.js'
 import type { QueryFilterState, SearchMode } from './query-filter-state.svelte'
+import type { QueryKey } from './query-keys'
 import type { QueryStreamSource } from './query-stream'
 import type { QueryAnswer, QueryPage } from './result-paging'
 import type { RecentItemAdapter, RecentItemKey } from './recent-items/recent-items-types'
@@ -149,14 +150,16 @@ export interface QueryDialogFilterChipsExtras {
 export interface QueryDialogAction {
   /** Button label, e.g. "Show all in main window" or "Select these files". */
   label: string
-  /** Inline shortcut hint, e.g. "⌥⏎" or "⏎". */
-  shortcutHint: string
+  /**
+   * The key that presses it (`query-keys.ts`), drawn as the button's key hint in this
+   * platform's spelling (⌥⏎ / Alt+Enter) and announced through `aria-keyshortcuts`. The
+   * visible label is the accessible name: an `aria-label` can't hold the on-screen key word.
+   */
+  shortcut: QueryKey
   /** Variant for the underlying Button component. Defaults to 'primary' for the primary slot. */
   variant?: 'primary' | 'secondary'
   /** Tooltip text shown on hover. */
   tooltip?: string
-  /** ARIA label. Defaults to `label`. */
-  ariaLabel?: string
 }
 
 /** Primary action handler: invoked on ⌥⏎ (Search) or ⏎ (Selection). Receives the current entries. */

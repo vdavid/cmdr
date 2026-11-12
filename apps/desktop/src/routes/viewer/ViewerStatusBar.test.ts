@@ -1,5 +1,6 @@
-import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, onTestFinished, vi } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 import ViewerStatusBar from './ViewerStatusBar.svelte'
 import type { MediaDimensions, ViewerContentKind } from '#lib/ipc/bindings.js'
@@ -216,5 +217,21 @@ describe('ViewerStatusBar', () => {
 
       void unmount(instance)
     })
+  })
+})
+
+describe('ViewerStatusBar search hint', () => {
+  it.each([
+    ['macos', '⌘F search'],
+    ['windows', 'Ctrl+F search'],
+    ['linux', 'Ctrl+F search'],
+  ] as const)('names %s’s own search key (`viewer.search`)', async (platform, hint) => {
+    onTestFinished(withPlatform(platform))
+    const { target, instance } = mountStatusBar()
+    await tick()
+
+    expect(target.querySelector('.shortcut-hint')?.textContent).toContain(hint)
+
+    void unmount(instance)
   })
 })

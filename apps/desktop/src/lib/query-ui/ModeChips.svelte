@@ -22,6 +22,7 @@
     import ToggleGroup, { type ToggleGroupOption } from '#lib/ui/ToggleGroup.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import type { SearchMode } from './query-filter-state.svelte'
+    import { queryKeyAria, queryKeyLabel } from './query-keys'
 
     interface Props {
         mode: SearchMode
@@ -44,15 +45,15 @@
                 value: 'ai',
                 label: tString('queryUi.mode.ai.label'),
                 badge: 'AI',
-                hint: '⌥A',
-                keyShortcuts: 'Alt+A',
+                hint: queryKeyLabel('modeAi'),
+                keyShortcuts: queryKeyAria('modeAi'),
             })
         }
         list.push({
             value: 'filename',
             label: tString('queryUi.mode.filename.label'),
-            hint: '⌥F',
-            keyShortcuts: 'Alt+F',
+            hint: queryKeyLabel('modeFilename'),
+            keyShortcuts: queryKeyAria('modeFilename'),
         })
         list.push({
             value: 'content',
@@ -64,8 +65,8 @@
         list.push({
             value: 'regex',
             label: tString('queryUi.mode.regex.label'),
-            hint: '⌥R',
-            keyShortcuts: 'Alt+R',
+            hint: queryKeyLabel('modeRegex'),
+            keyShortcuts: queryKeyAria('modeRegex'),
         })
         return list
     })

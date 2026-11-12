@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick, unmount, type ComponentProps } from 'svelte'
 import { SvelteSet } from 'svelte/reactivity'
 import SearchFilterChips from './FilterChips.svelte'
@@ -116,6 +117,9 @@ beforeEach(() => {
 // The count-only switch used to live at the trailing end of this strip. It moved up into
 // QueryDialog's zone 1, beside the mode chips: it changes what the search RETURNS, it isn't
 // one more way to narrow the matches. Its tests moved with it to `QueryDialog.svelte.test.ts`.
+// The chips are spoken in macOS's glyphs here (⌥F, ⌘Y, ⏎); the off-macOS spelling has its own cases.
+beforeEach(() => withPlatform('macos'))
+
 describe('SearchFilterChips: strip contents', () => {
   it('renders no switch of any kind (the count-only toggle lives in the dialog now)', async () => {
     const { target, cleanup } = mountChips(baseProps())

@@ -7,7 +7,8 @@
  * "Search ⏎" label, and the chevron's toggle + `aria-expanded` contract.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import QueryBar from './QueryBar.svelte'
 import type { SearchMode } from './query-filter-state.svelte'
@@ -77,6 +78,9 @@ function mountBar(
     },
   }
 }
+
+// The chips are spoken in macOS's glyphs here (⌥F, ⌘Y, ⏎); the off-macOS spelling has its own cases.
+beforeEach(() => withPlatform('macos'))
 
 describe('QueryBar', () => {
   it('shows the filename placeholder when mode is filename', async () => {

@@ -3,7 +3,7 @@
      * RecentItemsPopover: the query field's dropdown over the full recent-items history.
      *
      * Opens from the chevron in the query field, from `ArrowDown` in the query field (when
-     * there are no results to walk), or from `⌘H`. Reuses the generic `Popover` for
+     * there are no results to walk), or from `⌘Y` (Ctrl+H elsewhere). Reuses the generic `Popover` for
      * positioning, focus trap, and Esc-only-closes-the-popover behavior — the same contract
      * as the filter chips, so the dialog's capture-phase Escape never closes the whole dialog
      * while this is open.

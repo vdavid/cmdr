@@ -16,7 +16,7 @@ import { waitBudget } from './wait-budget.js'
 import { test, expect } from './fixtures.js'
 import { ensureAppReady, pollUntil } from './helpers.js'
 import { ensureMcpClient } from '../e2e-shared/mcp-client.js'
-import { SEARCH_OVERLAY, closeSearchDialog, openSearchDialog } from './search-helpers.js'
+import { SEARCH_OVERLAY, closeSearchDialog, openSearchDialog, resetSearchDialog } from './search-helpers.js'
 
 test.describe('Search dialog: open and close', () => {
   test('search.open mounts the overlay, Escape closes it', async ({ tauriPage }) => {
@@ -38,6 +38,24 @@ test.describe('Search dialog: open and close', () => {
       waitBudget(2000),
     )
     expect(reopened).toBe(true)
+    await closeSearchDialog(tauriPage)
+  })
+
+  // Off macOS every key the dialog shows is that OS's own spelling (`query-keys.ts` and the
+  // `search.*` fixed commands), so no Mac glyph may reach the screen.
+  test('names its keys in the OS’s own spelling', async ({ tauriPage }) => {
+    test.skip(process.platform === 'darwin', 'the Mac glyphs are the macOS spelling')
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+
+    await openSearchDialog(tauriPage)
+    await resetSearchDialog(tauriPage)
+    const text = await tauriPage.evaluate<string>(
+      `document.querySelector(${JSON.stringify(SEARCH_OVERLAY)})?.textContent ?? ''`,
+    )
+    expect(text).toContain('Alt+F')
+    expect(text).toContain('Ctrl+N')
+    expect(text).not.toMatch(/[⌘⌥⌃⇧⏎]/)
     await closeSearchDialog(tauriPage)
   })
 })

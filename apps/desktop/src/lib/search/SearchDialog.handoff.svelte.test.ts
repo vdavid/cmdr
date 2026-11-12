@@ -22,6 +22,7 @@ import { clearSearchState, setQuery } from './search-state.svelte'
 import { _resetWalkHandoffForTesting } from './walk-handoff.svelte'
 import { _resetForTesting as resetSnapshots, getSnapshot } from './snapshot-store.svelte'
 import { clearAllToasts, getToasts } from '#lib/ui/toast/toast-store.svelte.js'
+import { footerButton } from './test-search-dialog-harness'
 
 const {
   searchFilesMock,
@@ -223,7 +224,7 @@ describe('handing a running walk to a pane', () => {
     await runWalkingSearch(overlay)
     const runId = startedRunId()
 
-    const openInPane = overlay.querySelector<HTMLButtonElement>('[aria-label="Show all in main window"]')
+    const openInPane = footerButton('Show all in main window')
     expect(openInPane?.disabled).toBe(false)
     openInPane?.click()
     await settle()
@@ -295,7 +296,7 @@ describe('an index answer that replaces a live run', () => {
     await settle()
     expect(overlay.querySelectorAll('.result-row').length).toBeGreaterThan(0)
 
-    overlay.querySelector<HTMLButtonElement>('[aria-label="Show all in main window"]')?.click()
+    footerButton('Show all in main window')?.click()
     await settle()
     await closeDialog()
 

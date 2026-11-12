@@ -27,7 +27,7 @@ function makeConfig(opts: { results?: SearchResultEntry[]; withSecondary?: boole
         ? undefined
         : {
             label: 'Primary',
-            shortcutHint: '⌥⏎',
+            shortcut: 'primaryAction',
             handler: (entries) => {
               primary.push(entries)
             },
@@ -35,7 +35,7 @@ function makeConfig(opts: { results?: SearchResultEntry[]; withSecondary?: boole
     secondaryAction: opts.withSecondary
       ? {
           label: 'Secondary',
-          shortcutHint: '⏎',
+          shortcut: 'enter',
           handler: (entry) => {
             secondary.push(entry)
           },

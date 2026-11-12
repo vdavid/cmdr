@@ -164,23 +164,18 @@ interface SearchToggleActions {
   toggleCaseSensitive: () => void
 }
 
-/** Handles the search-mode chords:
- *  - Cmd+Alt+R (or Ctrl+Alt+R on non-mac): toggle regex
- *  - Cmd+Alt+C (or Ctrl+Alt+C on non-mac): toggle case-sensitivity
- *
- *  Returns true if handled. Caller is responsible for `preventDefault`.
- *
- *  The chord is gated on both meta/ctrl AND alt so it can't collide with the
- *  in-input shortcuts (Cmd+A = select all, Cmd+C = copy). */
+/**
+ * The search bar's regex and case toggles (`viewer.toggleSearchRegex`, `viewer.toggleSearchCase`:
+ * ⌘⌥R / ⌘⌥C on macOS, Alt+R / Alt+C on Windows and Linux). Returns true if handled; the caller
+ * is responsible for `preventDefault`. Both keys hold a modifier, so they work while the search
+ * input has focus without typing into it.
+ */
 export function handleSearchToggleKey(e: KeyboardEvent, actions: SearchToggleActions): boolean {
-  const modKey = e.metaKey || e.ctrlKey
-  if (!modKey || !e.altKey) return false
-  const key = e.key.toLowerCase()
-  if (key === 'r') {
+  if (eventMatchesCommand(e, 'viewer.toggleSearchRegex')) {
     actions.toggleUseRegex()
     return true
   }
-  if (key === 'c') {
+  if (eventMatchesCommand(e, 'viewer.toggleSearchCase')) {
     actions.toggleCaseSensitive()
     return true
   }
@@ -416,21 +411,23 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
   }
 
   /**
-   * Handles the primary-modifier shortcuts inside the viewer (⌘ on macOS, Ctrl elsewhere; never
-   * the other one, so ⌃C doesn't copy on macOS nor Super+C on Linux). Returns `true` if the key
-   * was consumed; the caller falls through to other handlers when it returns `false`.
-   * Defers to the browser's native ⌘A / ⌘C when the search input is focused.
+   * Handles the primary-modifier shortcuts inside the viewer: search (`viewer.search`, from the
+   * registry), then copy and select all (⌘ on macOS, Ctrl elsewhere; never the other one, so ⌃C
+   * doesn't copy on macOS nor Super+C on Linux). Returns `true` if the key was consumed; the
+   * caller falls through to other handlers when it returns `false`. Defers to the browser's
+   * native ⌘A / ⌘C when the search input is focused.
    */
   function handleModifierShortcut(e: KeyboardEvent, searchInputFocused: boolean): boolean {
-    if (!holdsPrimaryModifier(e)) return false
+    if (eventMatchesCommand(e, 'viewer.search')) {
+      e.preventDefault()
+      deps.search.openSearch()
+      return true
+    }
+    // Exactly ⌘/⌃ + letter: ⌘⌥C is the search toggle and ⌘⇧A means nothing here.
+    if (e.altKey || e.shiftKey || !holdsPrimaryModifier(e)) return false
     if (searchInputFocused) {
-      // ⌘F, plus ⌘C when the input holds a bare caret; ⌘A and a ⌘C over selected query
-      // text go to the input's native handler.
-      if (e.key === 'f') {
-        e.preventDefault()
-        deps.search.openSearch()
-        return true
-      }
+      // ⌘C when the input holds a bare caret; ⌘A and a ⌘C over selected query text go to the
+      // input's native handler.
       if (e.key === 'c' && !inputHasSelection(deps.search.searchInputRef)) {
         e.preventDefault()
         deps.runCopy()
@@ -446,11 +443,6 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
     if (e.key === 'c') {
       e.preventDefault()
       deps.runCopy()
-      return true
-    }
-    if (e.key === 'f') {
-      e.preventDefault()
-      deps.search.openSearch()
       return true
     }
     return false
@@ -471,9 +463,9 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
    * "copy" instead of the search chord it actually is.
    */
   function handleModifiedKey(e: KeyboardEvent, searchInputFocused: boolean): void {
-    // Search-mode chords (⌘⌥R for regex, ⌘⌥C for case) work whenever the search
-    // bar is visible, even if the input has focus. Checked before the generic
-    // modifier-shortcut handler so the alt-bearing chord wins.
+    // The search toggles (regex, case) work whenever the search bar is visible, even if the
+    // input has focus. Checked before the generic modifier-shortcut handler so the
+    // alt-bearing chord wins.
     if (
       deps.search.searchVisible &&
       handleSearchToggleKey(e, {
@@ -500,8 +492,7 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
       return
     }
 
-    // Exactly ⌘/⌃ + letter: ⌘⌥C is the chord above and ⌘⇧A means nothing here.
-    if (!e.altKey && !e.shiftKey) handleModifierShortcut(e, searchInputFocused)
+    handleModifierShortcut(e, searchInputFocused)
   }
 
   function handleKeyDown(e: KeyboardEvent): void {

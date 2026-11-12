@@ -20,6 +20,7 @@ import path from 'path'
 import { test, expect } from './fixtures.js'
 import { closeScopedWindow, openViewerWindow } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
+import { defaultKey } from './helpers/registry-keys.js'
 
 const REGEX_FIXTURE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'cmdr-viewer-regex-'))
 const REGEX_FIXTURE_PATH = path.join(REGEX_FIXTURE_DIR, 'with-digits.txt')
@@ -61,7 +62,7 @@ test.describe('File viewer regex search', () => {
 
   test('regex toggle finds digit groups via \\d+', async () => {
     // Open the search bar.
-    await viewer.keyboard.press('Control+f')
+    await viewer.keyboard.press(defaultKey('viewer.search'))
     await viewer.waitForSelector('.search-bar', 5000)
 
     // Toggle regex mode via the `.*` button.

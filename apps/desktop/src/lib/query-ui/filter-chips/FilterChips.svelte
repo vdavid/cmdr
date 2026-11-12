@@ -34,6 +34,7 @@
     import { deriveSizeChip, deriveDateChip, deriveScopeChip, derivePatternChip } from './filter-chip-state'
     import type { QueryFilterState, SizeFilter, SizeUnit, DateFilter, TypeFilter } from '../query-filter-state.svelte'
     import type { ScopePresets } from '../query-dialog-config'
+    import { matchesQueryKey } from '../query-keys'
     import { getFileSizeFormat } from '#lib/settings/reactive-settings.svelte.js'
 
     type FilterKey = 'size' | 'date' | 'scope'
@@ -175,38 +176,21 @@
     let openChip = $state<FilterKey | null>(null)
 
     /**
-     * Match a plain `Alt+<letter>` key (lowercased), with no other modifiers. Centralized to
-     * keep the `svelte:window` keydown handler under the cyclomatic-complexity cap.
-     *
-     * On macOS, Option+<letter> remaps `event.key` to a typographic glyph (Option+S → "ß",
-     * Option+M → "µ"), so we'd miss the shortcut if we only checked `e.key`. `event.code` is
-     * the layout-stable physical-key identifier (always `KeyS`, `KeyM`, etc.) and is the
-     * right thing to match against for these chords. We still check `e.key` as a fallback so
-     * synthesized events from tests (which carry `e.key` but no `e.code`) still work.
-     */
-    function altLetter(e: KeyboardEvent, letter: string): boolean {
-        if (!e.altKey || e.metaKey || e.shiftKey || e.ctrlKey) return false
-        const upper = letter.toUpperCase()
-        if (e.code === `Key${upper}`) return true
-        return e.key === letter || e.key === upper
-    }
-
-    /**
-     * Dialog-wide ⌥S / ⌥M / ⌥I openers. Returns `true` if the key matched. Bail-out is done
+     * Dialog-wide ⌥S / ⌥M / ⌥I openers (Alt+ off macOS, `query-keys.ts`). Returns `true` if the key matched. Bail-out is done
      * by the caller; we just translate keys into popover openings.
      */
     function handleDialogPopoverOpener(e: KeyboardEvent): boolean {
-        if (altLetter(e, 's')) {
+        if (matchesQueryKey(e, 'sizeFilter')) {
             e.preventDefault()
             openPopover('size')
             return true
         }
-        if (altLetter(e, 'm')) {
+        if (matchesQueryKey(e, 'dateFilter')) {
             e.preventDefault()
             openPopover('date')
             return true
         }
-        if (scopeChipVisible && altLetter(e, 'i')) {
+        if (scopeChipVisible && matchesQueryKey(e, 'scopeFilter')) {
             e.preventDefault()
             openPopover('scope')
             return true
@@ -220,7 +204,7 @@
      * actions. Returns `true` if matched.
      */
     function handleScopePopoverShortcut(e: KeyboardEvent): boolean {
-        if (altLetter(e, 'c')) {
+        if (matchesQueryKey(e, 'scopeCurrentFolder')) {
             e.preventDefault()
             // Respect the host's smart current-folder fallback so ⌥C does NOT seed an
             // unsearchable `search-results://...` URL into the scope.
@@ -230,7 +214,7 @@
             }
             return true
         }
-        if (altLetter(e, 'v')) {
+        if (matchesQueryKey(e, 'scopeVolume')) {
             e.preventDefault()
             // The widest a search can go: one volume.
             onSetScope(scopePresets.volumeRoot)

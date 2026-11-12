@@ -164,6 +164,68 @@ describe('handleSearchToggleKey', () => {
     })
     expect(handled).toBe(false)
   })
+
+  function toggles() {
+    return { toggleUseRegex: vi.fn(), toggleCaseSensitive: vi.fn() }
+  }
+
+  it('reads ⌘⌥R and ⌘⌥C by key position, as macOS sends them composed (`®`, `ç`)', () => {
+    const actions = toggles()
+    expect(handleSearchToggleKey(makeKey({ key: '®', code: 'KeyR', metaKey: true, altKey: true }), actions)).toBe(true)
+    expect(handleSearchToggleKey(makeKey({ key: 'ç', code: 'KeyC', metaKey: true, altKey: true }), actions)).toBe(true)
+    expect(actions.toggleUseRegex).toHaveBeenCalledOnce()
+    expect(actions.toggleCaseSensitive).toHaveBeenCalledOnce()
+  })
+
+  it('leaves ⌃⌥R, ⌃⌥C, and the ⌘⌥⇧R superset alone: macOS takes exactly ⌘⌥', () => {
+    const actions = toggles()
+    expect(handleSearchToggleKey(makeKey({ key: '®', code: 'KeyR', ctrlKey: true, altKey: true }), actions)).toBe(false)
+    expect(handleSearchToggleKey(makeKey({ key: 'ç', code: 'KeyC', ctrlKey: true, altKey: true }), actions)).toBe(false)
+    expect(
+      handleSearchToggleKey(makeKey({ key: '‰', code: 'KeyR', metaKey: true, altKey: true, shiftKey: true }), actions),
+    ).toBe(false)
+    expect(actions.toggleUseRegex).not.toHaveBeenCalled()
+    expect(actions.toggleCaseSensitive).not.toHaveBeenCalled()
+  })
+
+  describe.each(['windows', 'linux'] as const)('on %s', (platform) => {
+    beforeEach(() => withPlatform(platform))
+
+    it('toggles regex on Alt+R and case-sensitive on Alt+C', () => {
+      const actions = toggles()
+      expect(handleSearchToggleKey(makeKey({ key: 'r', code: 'KeyR', altKey: true }), actions)).toBe(true)
+      expect(handleSearchToggleKey(makeKey({ key: 'c', code: 'KeyC', altKey: true }), actions)).toBe(true)
+      expect(actions.toggleUseRegex).toHaveBeenCalledOnce()
+      expect(actions.toggleCaseSensitive).toHaveBeenCalledOnce()
+    })
+
+    it('leaves Ctrl+Alt+R (AltGr typing), Super+Alt+R, and Alt+Shift+R alone', () => {
+      const actions = toggles()
+      for (const init of [
+        { ctrlKey: true, altKey: true },
+        { metaKey: true, altKey: true },
+        { altKey: true, shiftKey: true },
+      ]) {
+        expect(handleSearchToggleKey(makeKey({ key: 'r', code: 'KeyR', ...init }), actions)).toBe(false)
+      }
+      expect(actions.toggleUseRegex).not.toHaveBeenCalled()
+    })
+
+    it('toggles while the search input has focus', () => {
+      const input = document.createElement('input')
+      document.body.append(input)
+      input.focus()
+      const toggleUseRegex = vi.fn()
+      const base = makeKeyboardDeps()
+      const keyboard = createViewerKeyboard({
+        ...base,
+        search: { ...base.search, searchVisible: true, searchInputRef: input, toggleUseRegex },
+      })
+      expect(press(keyboard, { key: 'r', code: 'KeyR', altKey: true }).defaultPrevented).toBe(true)
+      expect(toggleUseRegex).toHaveBeenCalledOnce()
+      input.remove()
+    })
+  })
 })
 
 describe('createViewerKeyboard: ⌘C with the search bar open', () => {

@@ -113,7 +113,7 @@ The user keeps their words and can refine or delete them. QueryDialog's own fall
 
 ## Keyboard contract
 
-The Selection dialog inherits the shared QueryDialog keyboard contract (⌘N reset, ⌘H popover, ⌘1/⌘2/⌘3 mode switch,
+The Selection dialog inherits the shared QueryDialog keyboard contract (⌘N reset, ⌘Y popover, ⌘1/⌘2/⌘3 mode switch,
 ⌥A/F/R mode chip shortcuts, ⌥⏎ primary action, bare Enter ownership swap, IME guard, etc.).
 
 The bare `+` / `-` keys that open the dialog from a file pane are NOT a QueryDialog concern, they live on the focused

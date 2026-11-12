@@ -142,8 +142,10 @@ New commands (not in the registry yet):
   only in windows opened when `NewWindowRequested` isn't handled). The command exists on all three OSes behind the
   `full_screen` capability, flipped on for Windows and Linux; on macOS it's a palette row with no key and no Cmdr menu
   row, since AppKit's own View menu item keeps its key and its place.
-- `search.newQuery`, `search.toggleRecent`, `search.modeByNumber` (decision 12, fixed): macOS `⌘N`, `⌘H`, `⌘1`–`⌘3`; W
-  and L `Ctrl+N`, `Ctrl+H`, `Ctrl+1`–`Ctrl+3`. Scope caveat in § Needs David.
+- `search.newQuery`, `search.toggleRecent`, `search.modeByNumber` (decision 12, fixed): macOS `⌘N`, `⌘Y`, `⌘1`–`⌘3`; W
+  and L `Ctrl+N`, `Ctrl+H`, `Ctrl+1`–`Ctrl+3`. Scope caveat in § Needs David. Recent searches take each OS's browser
+  history key (Chrome's `⌘Y` on macOS, `Ctrl+H` elsewhere): on macOS `⌘H` is AppKit's Hide, which shares the dialog's
+  `App` ancestor, so the dialog's old `⌘H` clashed with it (David's call, 2026-11-12).
 
 ## macOS additions
 

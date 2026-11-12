@@ -44,6 +44,7 @@ import { vi } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import { writable } from 'svelte/store'
 import type { SearchResultEntry, TranslateResult } from '#lib/ipc/bindings.js'
+import { primaryModifierInit } from '#lib/shortcuts/test-key-events.js'
 // The real bucket ladder: a pure function, and the image grid's analytics reads it.
 import { itemCountBucket } from '#lib/tauri-commands/analytics.js'
 
@@ -281,10 +282,19 @@ export async function resetSearchDialogTest(
   autoApplyListeners.clear()
 }
 
-export function dispatchKey(target: Element, key: string, meta = false, shift = false): KeyboardEvent {
+/** The dialog's footer button whose visible label is `label` (it carries no `aria-label`), or `null`. */
+export function footerButton(label: string): HTMLButtonElement | null {
+  const buttons = Array.from(document.body.querySelectorAll<HTMLButtonElement>('.query-dialog__actions button'))
+  // A keyed button wraps its label in `.btn-label` beside the hint; an unkeyed one holds the label alone.
+  const labelOf = (button: HTMLButtonElement) => (button.querySelector('.btn-label') ?? button).textContent.trim()
+  return buttons.find((button) => labelOf(button) === label) ?? null
+}
+
+/** Dispatches a keydown; `primary` holds the platform's primary modifier (⌘ on macOS, Ctrl elsewhere). */
+export function dispatchKey(target: Element, key: string, primary = false, shift = false): KeyboardEvent {
   const event = new KeyboardEvent('keydown', {
     key,
-    metaKey: meta,
+    ...(primary ? primaryModifierInit() : {}),
     shiftKey: shift,
     bubbles: true,
     cancelable: true,

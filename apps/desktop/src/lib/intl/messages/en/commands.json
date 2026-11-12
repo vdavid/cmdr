@@ -768,6 +768,30 @@
     "description": "Row in the Keyboard shortcuts list: what the key does in the file viewer window. After going back from a document reached by a link (commands.viewerGoBack.label), this returns to it again, like a web browser's Forward button. The user can rebind or remove this key.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "commands.viewerSearch.label": "Search in the file",
+  "@commands.viewerSearch.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does in the file viewer window. It opens the viewer's find bar, which searches the text of the open file. Read-only (the key can’t be rebound)."
+  },
+  "commands.viewerToggleSearchRegex.label": "Turn regex search on or off",
+  "@commands.viewerToggleSearchRegex.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the file viewer's find bar is open. It switches the search between plain text and a regular expression (a text pattern). Read-only (the key can’t be rebound). \"Regex\" is the usual short word for regular expression."
+  },
+  "commands.viewerToggleSearchCase.label": "Turn case-sensitive search on or off",
+  "@commands.viewerToggleSearchCase.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the file viewer's find bar is open. It switches whether the search tells capital and small letters apart. Read-only (the key can’t be rebound)."
+  },
+  "commands.searchNewQuery.label": "Start a new search",
+  "@commands.searchNewQuery.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Search or Select files dialog is open. It clears the query, the filters, and the results, so the user can start over. Read-only (the key can’t be rebound)."
+  },
+  "commands.searchToggleRecent.label": "Show or hide recent searches",
+  "@commands.searchToggleRecent.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Search or Select files dialog is open. It opens or closes the dropdown of recently run queries. Read-only (the key can’t be rebound)."
+  },
+  "commands.searchModeByNumber.label": "Switch to the search mode with that number",
+  "@commands.searchModeByNumber.label": {
+    "description": "Row in the Keyboard shortcuts list, describing what the number keys do while the Search or Select files dialog is open: each one switches to the search mode in that position (AI, Filename, Regex) and puts the cursor back in the query field. Read-only (the keys can't be rebound), so this is a description of the behavior rather than a command name."
+  },
   "commands.multiRenameOpenPresets.label": "Open the presets menu",
   "@commands.multiRenameOpenPresets.label": {
     "description": "Row in the Keyboard shortcuts list: what F2 does while the Multi-rename tool is open. It opens the menu of saved rename settings (presets), as in Total Commander. Read-only (the key can't be rebound).",

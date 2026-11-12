@@ -1,10 +1,14 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 
 vi.mock('#lib/ai/cloud-consent.svelte.js', () => ({ openCloudConsentSettings: vi.fn() }))
 
 import EmptyState from './EmptyState.svelte'
 import { openCloudConsentSettings } from '#lib/ai/cloud-consent.svelte.js'
+
+// The chips are spoken in macOS's glyphs here (⌥F, ⌘Y, ⏎); the off-macOS spelling has its own cases.
+beforeEach(() => withPlatform('macos'))
 
 describe('EmptyState', () => {
   it('shows three AI prompts when AI is enabled', async () => {
@@ -52,40 +56,30 @@ describe('EmptyState', () => {
     target.remove()
   })
 
-  it('shows the in-dialog keyboard tip line (AI off: ⌘N and ⌘H, no ⌘Enter)', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(EmptyState, {
-      target,
-      props: { aiEnabled: false, indexEntryCount: 1, onPick: () => {} },
-    })
-    await tick()
-    const tip = target.querySelector('.tip')?.textContent ?? ''
-    expect(tip).toContain('⌘N')
-    expect(tip).toContain('⌘H')
-    // ⌘Enter is AI-gated and AI is off here.
-    expect(tip).not.toContain('⌘Enter')
-    // ⌘F opens the dialog from the explorer; once the dialog is open the
-    // shortcut is moot, so we explicitly do NOT advertise it inside the
-    // empty state.
-    expect(tip).not.toContain('⌘F')
-    target.remove()
-  })
-
-  it('adds the ⌘Enter AI hint when AI is enabled', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(EmptyState, {
-      target,
-      props: { aiEnabled: true, indexEntryCount: 1, onPick: () => {} },
-    })
-    await tick()
-    const tip = target.querySelector('.tip')?.textContent ?? ''
-    expect(tip).toContain('⌘N')
-    expect(tip).toContain('⌘H')
-    expect(tip).toContain('⌘Enter')
-    target.remove()
-  })
+  it.each([false, true])(
+    'shows the in-dialog keyboard tip line, AI on or off (%s): ⌘N and ⌘Y, no ⌘Enter',
+    async (aiEnabled) => {
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      mount(EmptyState, {
+        target,
+        props: { aiEnabled, indexEntryCount: 1, onPick: () => {} },
+      })
+      await tick()
+      const tip = target.querySelector('.tip')?.textContent ?? ''
+      expect(tip).toContain('⌘N')
+      expect(tip).toContain('⌘Y')
+      // ⌘H is Hide on macOS, and ⌘Enter does nothing in the dialog (Enter runs the search).
+      expect(tip).not.toContain('⌘H')
+      expect(tip).not.toContain('⌘↩')
+      expect(tip).not.toContain('⌘Enter')
+      // ⌘F opens the dialog from the explorer; once the dialog is open the
+      // shortcut is moot, so we explicitly do NOT advertise it inside the
+      // empty state.
+      expect(tip).not.toContain('⌘F')
+      target.remove()
+    },
+  )
 
   it('renders consumer-provided examples when passed', async () => {
     const target = document.createElement('div')
@@ -140,6 +134,22 @@ describe('EmptyState', () => {
     const picked = onPick.mock.calls[0]?.[0] as { mode: string; query: string }
     expect(picked.mode).toBe('ai')
     expect(picked.query).toBe('large files modified this week')
+    target.remove()
+  })
+})
+
+describe.each(['windows', 'linux'] as const)('EmptyState tip on %s', (platform) => {
+  beforeEach(() => withPlatform(platform))
+
+  it('names the dialog’s own keys, with no Mac glyph', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(EmptyState, { target, props: { aiEnabled: false, indexEntryCount: 1, onPick: () => {} } })
+    await tick()
+    const tip = target.querySelector('.tip')?.textContent ?? ''
+    expect(tip).toContain('Ctrl+N')
+    expect(tip).toContain('Ctrl+H')
+    expect(tip).not.toMatch(/[⌘⌥⌃⇧]/)
     target.remove()
   })
 })

@@ -126,14 +126,12 @@ describe('QueryDialog a11y', () => {
       loadMore: () => Promise.resolve(null),
       primaryAction: {
         label: 'Show all in main window',
-        shortcutHint: '⌥⏎',
-        ariaLabel: 'Show all in main window',
+        shortcut: 'primaryAction',
         handler: () => {},
       },
       secondaryAction: {
         label: 'Go to file',
-        shortcutHint: '⏎',
-        ariaLabel: 'Go to file',
+        shortcut: 'enter',
         handler: () => {},
       },
       onPickPath: () => {},

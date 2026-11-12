@@ -11,7 +11,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushSync } from 'svelte'
 
 import { createViewerSearch } from './viewer-search.svelte'
-import { handleSearchToggleKey } from './viewer-keyboard'
 
 const { startMock, pollMock, cancelMock } = vi.hoisted(() => ({
   startMock: vi.fn(() => Promise.resolve()),
@@ -203,48 +202,5 @@ describe('createViewerSearch ESC behavior', () => {
     expect(queryAfterClose).toBe('')
     expect(statusAfterClose).toBe('idle')
     expect(cancelMock).toHaveBeenCalled()
-  })
-})
-
-describe('handleSearchToggleKey', () => {
-  function makeEvent(key: string, metaKey = false, altKey = false, ctrlKey = false): KeyboardEvent {
-    return new KeyboardEvent('keydown', { key, metaKey, altKey, ctrlKey })
-  }
-
-  it('Cmd+Alt+R toggles regex', () => {
-    const actions = { toggleUseRegex: vi.fn(), toggleCaseSensitive: vi.fn() }
-    expect(handleSearchToggleKey(makeEvent('r', true, true), actions)).toBe(true)
-    expect(actions.toggleUseRegex).toHaveBeenCalledTimes(1)
-    expect(actions.toggleCaseSensitive).not.toHaveBeenCalled()
-  })
-
-  it('Cmd+Alt+C toggles case sensitivity', () => {
-    const actions = { toggleUseRegex: vi.fn(), toggleCaseSensitive: vi.fn() }
-    expect(handleSearchToggleKey(makeEvent('c', true, true), actions)).toBe(true)
-    expect(actions.toggleCaseSensitive).toHaveBeenCalledTimes(1)
-    expect(actions.toggleUseRegex).not.toHaveBeenCalled()
-  })
-
-  it('Ctrl+Alt+R toggles regex (non-mac chord)', () => {
-    const actions = { toggleUseRegex: vi.fn(), toggleCaseSensitive: vi.fn() }
-    expect(handleSearchToggleKey(makeEvent('r', false, true, true), actions)).toBe(true)
-    expect(actions.toggleUseRegex).toHaveBeenCalled()
-  })
-
-  it('Cmd+R alone (no Alt) is NOT consumed (would collide with refresh)', () => {
-    const actions = { toggleUseRegex: vi.fn(), toggleCaseSensitive: vi.fn() }
-    expect(handleSearchToggleKey(makeEvent('r', true, false), actions)).toBe(false)
-    expect(actions.toggleUseRegex).not.toHaveBeenCalled()
-  })
-
-  it('Plain R is NOT consumed', () => {
-    const actions = { toggleUseRegex: vi.fn(), toggleCaseSensitive: vi.fn() }
-    expect(handleSearchToggleKey(makeEvent('r', false, false), actions)).toBe(false)
-  })
-
-  it('Cmd+Alt+R with uppercase R still works (Shift can be held)', () => {
-    const actions = { toggleUseRegex: vi.fn(), toggleCaseSensitive: vi.fn() }
-    expect(handleSearchToggleKey(makeEvent('R', true, true), actions)).toBe(true)
-    expect(actions.toggleUseRegex).toHaveBeenCalled()
   })
 })

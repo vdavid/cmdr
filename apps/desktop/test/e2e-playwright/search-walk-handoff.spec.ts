@@ -35,7 +35,8 @@ import {
 } from './search-walk-ground.js'
 
 /** The footer button that promotes the result set into a pane, once it has rows. */
-const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main window"]:not([disabled])'
+// The footer's primary button: it carries no `aria-label` (its visible label is the name).
+const OPEN_IN_PANE_BUTTON = '.search-overlay .query-dialog__actions .btn-primary:not([disabled])'
 /** The status bar's Stop button: present exactly while a live run is going. */
 const STOP_BUTTON = `${SEARCH_OVERLAY} .status-stop`
 /**

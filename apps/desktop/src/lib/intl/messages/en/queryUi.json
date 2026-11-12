@@ -102,16 +102,10 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.empty.tip": "Tip: <newKey>⌘N</newKey> starts fresh, <historyKey>⌘H</historyKey> shows recent searches.",
+  "queryUi.empty.tip": "Tip: <newKey>⌘N</newKey> starts fresh, <historyKey>⌘Y</historyKey> shows recent searches.",
   "@queryUi.empty.tip": {
-    "description": "Keyboard tip at the bottom of the search dialog's empty state, when AI search is off. The <newKey> and <historyKey> tags wrap keyboard-shortcut glyphs (rendered as small key badges); keep them around the shortcut text and keep the surrounding sentence reading naturally. The glyphs ⌘N and ⌘H are macOS shortcuts and must stay as-is.",
+    "description": "Keyboard tip at the bottom of the search dialog's empty state. The <newKey> and <historyKey> tags wrap the keys, rendered as small key badges that always show the user's own keys (Ctrl+N and Ctrl+H on Windows and Linux); keep the tags around the glyphs ⌘N and ⌘Y, keep those glyphs as-is, and keep the surrounding sentence reading naturally.",
     "screenshot": "search-dialog.png"
-  },
-  "queryUi.empty.tipAi": "Tip: <newKey>⌘N</newKey> starts fresh, <historyKey>⌘H</historyKey> shows recent searches, <aiKey>⌘Enter</aiKey> runs an AI search.",
-  "@queryUi.empty.tipAi": {
-    "description": "Keyboard tip at the bottom of the search dialog's empty state, when AI search is on (adds the AI-run shortcut). The tags wrap keyboard-shortcut glyphs (rendered as small key badges). The glyphs ⌘N, ⌘H, and ⌘Enter are macOS shortcuts and must stay as-is.",
-    "screenshot": "search-dialog.png",
-    "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
   "queryUi.ai.cloudOff.body": "Cloud AI is off. Allow it in Settings > AI to use this.",
   "@queryUi.ai.cloudOff.body": {

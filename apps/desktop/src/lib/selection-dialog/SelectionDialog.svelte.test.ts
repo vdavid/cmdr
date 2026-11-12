@@ -16,6 +16,7 @@ import { clearSelectionState, selectionQueryState } from './selection-state.svel
 import type { FileEntry } from '#lib/file-explorer/types.js'
 import type { SelectionHistoryEntry, SelectionTranslateResult } from '#lib/ipc/bindings.js'
 import { setLocale, _setCatalogForTests } from '#lib/intl/messages.svelte.js'
+import { primaryModifierInit } from '#lib/shortcuts/test-key-events.js'
 
 let aiProvider: 'off' | 'local' | 'cloud' = 'off'
 let autoApplySetting = true
@@ -84,10 +85,11 @@ function setAiProviderForTest(value: 'off' | 'local' | 'cloud'): void {
   for (const listener of aiProviderListeners) listener(value)
 }
 
-function dispatchKey(target: Element, key: string, meta = false, shift = false): KeyboardEvent {
+/** Dispatches a keydown; `primary` holds the platform's primary modifier (⌘ on macOS, Ctrl elsewhere). */
+function dispatchKey(target: Element, key: string, primary = false, shift = false): KeyboardEvent {
   const event = new KeyboardEvent('keydown', {
     key,
-    metaKey: meta,
+    ...(primary ? primaryModifierInit() : {}),
     shiftKey: shift,
     bubbles: true,
     cancelable: true,

@@ -36,7 +36,7 @@
      *   Then the footer: the primary / secondary action buttons, right-aligned.
      *
      * Recent items are the query field's own dropdown (`RecentItemsPopover` anchored to the
-     * pill), not a footer strip. Openers: the field's chevron, `⌘H`, and ArrowDown in the
+     * pill), not a footer strip. Openers: the field's chevron, `⌘Y` (Ctrl+H elsewhere), and ArrowDown in the
      * field when there's no result list to walk. Picking a row LOADS the entry and closes;
      * it doesn't run it (the user presses Enter when they're ready).
      *
@@ -61,6 +61,7 @@
     import { createQueryRunner, hasRunnableQuery, shouldShowRunHint } from './query-runner.svelte'
     import { createRecentPopover } from './recent-popover.svelte'
     import { routeModifierShortcut } from './query-shortcuts'
+    import { queryKeyAria, queryKeyLabel } from './query-keys'
     import { effectiveScopePath, scopeSummaryFor } from './scope-summary'
     import {
         activatePrimary,
@@ -460,7 +461,7 @@
         if (newMode !== 'ai') runner.scheduleSearch()
     }
 
-    /** ⌘N, ⌥A/F/R, ⌥⏎, ⌘⏎/⇧⏎, ⌘H, ⌘1-9. The matching rules live in `query-shortcuts.ts`. */
+    /** New query, the mode chips, the Enter combinations, recent items, the numbered modes: `query-shortcuts.ts`. */
     function handleModifierShortcuts(e: KeyboardEvent): boolean {
         return routeModifierShortcut(e, {
             aiEnabled: config.aiEnabled,
@@ -497,7 +498,7 @@
      *
      * With no result list to walk, ArrowDown opens the recent-items dropdown instead — the
      * combobox gesture, landing on a key that was otherwise dead. Results win when they
-     * exist: walking them is the more valuable use of ↓, and the chevron + `⌘H` open the
+     * exist: walking them is the more valuable use of ↓, and the chevron + `⌘Y` open the
      * dropdown unconditionally.
      */
     function handleCursorKey(e: KeyboardEvent): boolean {
@@ -577,9 +578,9 @@
                 onclick={() => {
                     activateSecondaryAtCursor(config)
                 }}
-                aria-label={config.secondaryAction.ariaLabel ?? config.secondaryAction.label}
                 tooltipContent={config.secondaryAction.tooltip}
-                keyHint={enterAction === 'go-to-file' ? config.secondaryAction.shortcutHint : undefined}
+                keyHint={enterAction === 'go-to-file' ? queryKeyLabel(config.secondaryAction.shortcut) : undefined}
+                aria-keyshortcuts={enterAction === 'go-to-file' ? queryKeyAria(config.secondaryAction.shortcut) : undefined}
             >
                 {config.secondaryAction.label}
             </Button>
@@ -591,9 +592,9 @@
                 onclick={() => {
                     activatePrimary(config)
                 }}
-                aria-label={config.primaryAction.ariaLabel ?? config.primaryAction.label}
                 tooltipContent={config.primaryAction.tooltip}
-                keyHint={config.primaryAction.shortcutHint}
+                keyHint={queryKeyLabel(config.primaryAction.shortcut)}
+                aria-keyshortcuts={queryKeyAria(config.primaryAction.shortcut)}
             >
                 {config.primaryAction.label}
             </Button>

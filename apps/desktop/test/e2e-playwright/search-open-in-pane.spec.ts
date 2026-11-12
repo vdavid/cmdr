@@ -36,7 +36,8 @@ const RUN_BUTTON = '.search-overlay .query-bar button.btn'
 // pane. The "footer buttons always visible" rule keeps the button in the DOM even when
 // there are no results (disabled); `:not([disabled])` is the "actually clickable"
 // signal — without it the test races on a disabled click.
-const OPEN_IN_PANE_BUTTON = '.search-overlay [aria-label="Show all in main window"]:not([disabled])'
+// The footer's primary button: it carries no `aria-label` (its visible label is the name).
+const OPEN_IN_PANE_BUTTON = '.search-overlay .query-dialog__actions .btn-primary:not([disabled])'
 /**
  * The right pane's content area when it's showing a search-results snapshot.
  * `FilePane.svelte` renders `SearchResultsView` inside `.content` when

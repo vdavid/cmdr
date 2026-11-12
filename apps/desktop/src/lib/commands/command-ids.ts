@@ -81,6 +81,10 @@ export const COMMAND_IDS = [
   'viewer.toggleImageZoom',
   'viewer.goBack',
   'viewer.goForward',
+  // …and its search bar's fixed keys.
+  'viewer.search',
+  'viewer.toggleSearchRegex',
+  'viewer.toggleSearchCase',
 
   // Operation log (alpha)
   'log.operationLog',
@@ -97,6 +101,10 @@ export const COMMAND_IDS = [
 
   // Search
   'search.open',
+  // The search and selection dialog's own fixed keys (`sources/search-dialog.ts`)
+  'search.newQuery',
+  'search.toggleRecent',
+  'search.modeByNumber',
 
   // Navigation (Go to path)
   'nav.goToPath',

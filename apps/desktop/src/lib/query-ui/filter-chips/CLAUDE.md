@@ -39,10 +39,9 @@ Search and Selection. See `../CLAUDE.md` for the orchestrator and cross-consumer
   as real filters.
 - **Size unit is `'B' | 'KB' | 'MB' | 'GB'`**: IDs, labelled IEC or SI by the user's base. The "byte(s)" cell is
   selectable from the unit column manually; the AI translator's `bytesToDisplaySize` still produces `KB | MB | GB`.
-- **macOS Option-key shortcuts match on `event.code`, not `event.key`.** The Option key remaps `event.key` to
-  typographic glyphs (Option+S → `ß`, Option+M → `µ`), so the `⌥S` / `⌥M` / `⌥I` popover openers match on `KeyS` /
-  `KeyM` / `KeyI` first and fall back to `event.key` for synthesized test events. `⌥I` (Search in) is Search-only;
-  Selection passes `scopeChipVisible: false` and suppresses it.
+- **The `⌥S` / `⌥M` / `⌥I` openers and `⌥C` / `⌥V` match through `../query-keys.ts`** (Alt+ off macOS), which reads an ⌥
+  letter by key position, since macOS's Option remaps `event.key` to a glyph (Option+S → `ß`). ❌ No hand-rolled
+  `altKey` test here. `⌥I` (Search in) is Search-only; Selection passes `scopeChipVisible: false` and suppresses it.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.
