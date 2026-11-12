@@ -1448,7 +1448,7 @@
   "@settings.fileOperations.adbBinaryPath.label": {
     "sourceHash": "a67fbbd"
   },
-  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {留空则 Cmdr 会按常规方式查找 adb，包括 Android SDK 和 Homebrew 的安装位置。如果你把平台工具放在别处，就在这里指向它。} windows {留空则 Cmdr 会按常规方式查找 adb，包括 Android SDK 和 Homebrew 的安装位置。如果你把平台工具放在别处，就在这里指向它。} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
+  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {留空则 Cmdr 会按常规方式查找 adb，包括 Android SDK 和 Homebrew 的安装位置。如果你把平台工具放在别处，就在这里指向它。} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
   "@settings.fileOperations.adbBinaryPath.description": {
     "sourceHash": "940ff29"
   },

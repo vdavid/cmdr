@@ -23,6 +23,11 @@ use cmdr_fs::log_private::LogPrivate;
 use crate::errors::AdbConnectError;
 use crate::transport::AdbConnection;
 
+mod binary_search;
+mod platform;
+
+use platform::is_executable;
+
 /// The port the ADB server listens on unless `ANDROID_ADB_SERVER_PORT` says
 /// otherwise.
 pub const DEFAULT_PORT: u16 = 5037;
@@ -217,10 +222,13 @@ async fn start_server(binary: PathBuf, port: u16) -> bool {
 }
 
 /// Finds the `adb` binary, in this order: the configured override
-/// ([`set_adb_binary_override`]), `$ADB`, `$PATH`,
-/// `$ANDROID_HOME/platform-tools`, `$ANDROID_SDK_ROOT/platform-tools`,
-/// `~/Library/Android/sdk/platform-tools`, `/opt/homebrew/bin`,
-/// `/usr/local/bin`. `None` when nothing executable turns up.
+/// ([`set_adb_binary_override`]), `$ADB`, then this OS's search
+/// (`binary_search::candidates`): `$PATH`, `$ANDROID_HOME/platform-tools`,
+/// `$ANDROID_SDK_ROOT/platform-tools`, Android Studio's default SDK
+/// (`~/Library/Android/sdk` on macOS, `~/Android/Sdk` on Linux,
+/// `%LOCALAPPDATA%\Android\Sdk` on Windows), and the package-manager folders
+/// (Homebrew's on macOS, `/usr/local/bin` on Linux). `adb.exe` on Windows.
+/// `None` when nothing runnable turns up.
 pub fn locate_adb_binary() -> Option<PathBuf> {
     let configured = BINARY_OVERRIDE
         .read_ignore_poison()
@@ -232,32 +240,9 @@ pub fn locate_adb_binary() -> Option<PathBuf> {
     if let Some(explicit) = std::env::var_os("ADB").map(PathBuf::from).filter(|p| is_executable(p)) {
         return Some(explicit);
     }
-    let mut candidates: Vec<PathBuf> = Vec::new();
-    if let Some(path) = std::env::var_os("PATH") {
-        candidates.extend(std::env::split_paths(&path).map(|dir| dir.join("adb")));
-    }
-    for var in ["ANDROID_HOME", "ANDROID_SDK_ROOT"] {
-        if let Some(root) = std::env::var_os(var) {
-            candidates.push(PathBuf::from(root).join("platform-tools").join("adb"));
-        }
-    }
-    if let Some(home) = std::env::var_os("HOME") {
-        candidates.push(PathBuf::from(home).join("Library/Android/sdk/platform-tools/adb"));
-    }
-    candidates.push(PathBuf::from("/opt/homebrew/bin/adb"));
-    candidates.push(PathBuf::from("/usr/local/bin/adb"));
-    candidates.into_iter().find(|p| is_executable(p))
-}
-
-#[cfg(unix)]
-fn is_executable(path: &std::path::Path) -> bool {
-    use std::os::unix::fs::PermissionsExt;
-    std::fs::metadata(path).is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
-}
-
-#[cfg(windows)]
-fn is_executable(path: &std::path::Path) -> bool {
-    std::fs::metadata(path).is_ok_and(|m| m.is_file())
+    binary_search::candidates(&platform::HOST_SEARCH, &binary_search::SearchEnv::of_process())
+        .into_iter()
+        .find(|p| is_executable(p))
 }
 
 #[cfg(test)]

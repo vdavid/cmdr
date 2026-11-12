@@ -83,8 +83,6 @@ Rows where the code doesn't settle a platform yet, so that platform keeps the ma
   field is built (plan D1 makes `/` valid everywhere, but what the field shows and accepts isn't decided).
 - `transfer.metadataClass.extendedAttributes`, Windows: "Finder tags" stays until the Windows metadata bodies (`cmdr-fs`
   `metadata/platform/windows.rs`, a stub) say which class a Windows copy reports there.
-- `settings.fileOperations.adbBinaryPath.description`, Windows: "including the Android SDK and Homebrew" stays until
-  `cmdr-adb`'s `locate_adb_binary` searches what Windows has (`adb.exe`, the SDK under `%LOCALAPPDATA%`).
 - `settings.listing.showHiddenFiles.description`, Windows: "dotfiles (like .zshrc)" stays until the Windows listing
   backend decides its hidden-file rule (the hidden attribute, dotfiles, or both).
 - `ai.cloudConsent.askCmdr.protectedContents`, Windows: the macOS list ("your keychains", "Mail, Messages, Notes") stays

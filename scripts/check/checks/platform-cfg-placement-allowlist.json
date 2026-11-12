@@ -408,9 +408,6 @@
     "apps/desktop/src-tauri/src/volume_listing.rs": {
       "outsideSeam": 3
     },
-    "crates/cmdr-adb/src/server.rs": {
-      "outsideSeam": 2
-    },
     "crates/cmdr-archive/src/mutation/mutator.rs": {
       "outsideSeam": 4
     },

@@ -1446,7 +1446,7 @@
   "@settings.fileOperations.adbBinaryPath.label": {
     "sourceHash": "a67fbbd"
   },
-  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Để trống thì Cmdr tìm adb theo cách thông thường, gồm cả Android SDK và Homebrew. Hãy trỏ sang nơi khác nếu bạn để bộ công cụ nền tảng ở chỗ riêng.} windows {Để trống thì Cmdr tìm adb theo cách thông thường, gồm cả Android SDK và Homebrew. Hãy trỏ sang nơi khác nếu bạn để bộ công cụ nền tảng ở chỗ riêng.} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
+  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Để trống thì Cmdr tìm adb theo cách thông thường, gồm cả Android SDK và Homebrew. Hãy trỏ sang nơi khác nếu bạn để bộ công cụ nền tảng ở chỗ riêng.} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
   "@settings.fileOperations.adbBinaryPath.description": {
     "sourceHash": "940ff29"
   },

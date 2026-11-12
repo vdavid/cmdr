@@ -2622,15 +2622,14 @@
       "status": "apply",
       "branches": {
         "macos": "Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and Homebrew. Point it somewhere else if you keep the platform tools in their own place.",
-        "windows": "Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and Homebrew. Point it somewhere else if you keep the platform tools in their own place.",
+        "windows": "Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.",
         "other": "Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place."
       },
       "sources": {
-        "windows": "verdicts: open, keep the macOS text (the locator searches nothing Windows has)",
+        "windows": "#1108: the locator searches `adb.exe` on PATH, $ANDROID_HOME, $ANDROID_SDK_ROOT, and the SDK under %LOCALAPPDATA%, no Homebrew, so Windows reads the Linux text",
         "other": "verdicts: proposal"
       },
-      "whereInUi": "Settings window > File systems > Android (ADB), help under the custom adb path field.",
-      "openBranches": ["windows"]
+      "whereInUi": "Settings window > File systems > Android (ADB), help under the custom adb path field."
     },
     {
       "key": "settings.fileOperations.mtpEnabled.description",

@@ -1450,7 +1450,7 @@
   "@settings.fileOperations.adbBinaryPath.label": {
     "sourceHash": "a67fbbd"
   },
-  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Deixe em branco e o Cmdr procura o adb nos lugares de sempre, incluindo o Android SDK e o Homebrew. Aponte para outro lugar se você guarda as ferramentas de plataforma em um lugar separado.} windows {Deixe em branco e o Cmdr procura o adb nos lugares de sempre, incluindo o Android SDK e o Homebrew. Aponte para outro lugar se você guarda as ferramentas de plataforma em um lugar separado.} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
+  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Deixe em branco e o Cmdr procura o adb nos lugares de sempre, incluindo o Android SDK e o Homebrew. Aponte para outro lugar se você guarda as ferramentas de plataforma em um lugar separado.} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
   "@settings.fileOperations.adbBinaryPath.description": {
     "sourceHash": "940ff29"
   },
