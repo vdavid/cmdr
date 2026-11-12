@@ -23,9 +23,10 @@ Linux follow Total Commander first and their native file managers second; macOS 
    "else Linux". A value is written for `macos`, `windows`, and `linux`, or by a helper that names its rule.
 4. **❌ No mechanical conversion at read time.** After milestone 2, no reader turns a Mac combo into another platform's.
    Each platform's defaults are stored in that platform's own canonical form (`formatKeyCombo`'s output).
-5. **❌ Never translate.** New strings are English plus a good `@key` description. A change to an EXISTING string goes
-   through `apps/desktop/scripts/apply-platform-copy.ts` and a row in `docs/notes/windows-port/copy-final.json`
-   (`apps/desktop/src/lib/intl/DETAILS.md` § "Platform variants").
+5. **❌ Never translate.** New strings are English plus a good `@key` description. A change to an EXISTING string is an
+   edit of its `en` value (a per-OS string is one `{platform, select, …}` block), with its `@key` description updated
+   (`apps/desktop/src/lib/intl/DETAILS.md` § "Platform variants"). The one-shot `apply-platform-copy.ts` script is gone;
+   `copy-final.json` and `copy-decisions.md` are history, not a gate.
 6. **❌ Nothing hand-loosened.** No allowlist, snapshot, or baseline is edited to get green. A snapshot changes only
    when the milestone says which lines move, and you review the diff line by line.
 7. **Ask the registry, never the event flags.** Every key fix here goes through `eventMatchesCommand` /
@@ -607,8 +608,7 @@ Sequential, one agent each, in this worktree. Each ends green and committed.
     still take ⌘ or Ctrl plus Alt on every OS. After this, only each platform's own combo; pin both the new keys and the
     dropped ones (`⌃⌥R` on macOS, `Ctrl+Alt+R` and `Super+Alt+R` off macOS) in `viewer-keyboard` tests.
   - `fixedKey` ids join `FIXED_KEY_COMMAND_IDS`, so `DISPATCH_EXEMPT_IDS` follows.
-  - The tips are existing strings: rule 5 (the apply script, a `copy-final.json` row). The translator note that says the
-    glyphs "must stay as-is" changes with them.
+  - The tips are existing strings: rule 5. The translator note that says the glyphs "must stay as-is" changes with them.
   - `lib/search/test-search-dialog-harness.ts` and the E2E helpers build events with `metaKey`; they need the platform's
     modifier.
   - **macOS changes here, both on § "Invariants" item 18's list**: the viewer drops `⌃⌥R` / `⌃⌥C`, and Settings >
@@ -717,7 +717,7 @@ Sequential, one agent each, in this worktree. Each ends green and committed.
 ### Milestone 9: system-reserved keys per OS, and the copy rows that waited
 
 - **Scope**: `settings/sections/keyboard-shortcuts-banner.ts` and its test, the invariants test, the catalog rows listed
-  in § "The code today", `copy-final.json`, `copy-decisions.md`, call sites of those strings.
+  in § "The code today", call sites of those strings.
 - **Intentions**:
   - **One reserved table for three platforms.** The macOS table becomes `Record<Platform, …>`. Each entry names who
     takes the combo: macOS features as today; on Windows, Windows itself; on Linux, the desktops that take it (GNOME,
