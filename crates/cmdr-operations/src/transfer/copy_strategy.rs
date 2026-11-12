@@ -584,12 +584,18 @@ mod tests {
 
         let synced = state.barriers.synced_paths();
         let before_landing: Vec<&std::path::PathBuf> = synced.iter().filter(|path| **path != dst).collect();
-        assert_eq!(before_landing.len(), 1, "one sync under the temp's name: {synced:?}");
+        // macOS defers the write's own sync, so the landing's is the only one.
+        // Where the write syncs inline (Linux: its `fdatasync` is the
+        // barrier), the landing's sync follows it on an already clean file.
+        let expected = if cfg!(target_os = "macos") { 1 } else { 2 };
         assert_eq!(
-            before_landing[0].parent(),
-            dst.parent(),
-            "the temp is the landing's sibling"
+            before_landing.len(),
+            expected,
+            "synced under the temp's name: {synced:?}"
         );
+        for path in &before_landing {
+            assert_eq!(path.parent(), dst.parent(), "the temp is the landing's sibling");
+        }
         assert!(!synced.contains(&dst), "nothing left for the pass to sync: {synced:?}");
         assert_eq!(fs::read(&dst).unwrap(), b"new bytes");
     }
