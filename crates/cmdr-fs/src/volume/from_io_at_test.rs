@@ -147,3 +147,32 @@ fn the_errno_field_renders_bare_and_only_when_present() {
     );
     assert_eq!(format!("x{}", VolumeError::NotFound(AT.to_string()).errno_field()), "x");
 }
+
+/// Windows' sharing and lock violations on a LOCAL file are the fact an SMB share's
+/// `STATUS_SHARING_VIOLATION` is (cmdr-reports#110): another app holds it open, and
+/// closing it there is the way out. No Unix code means this, so the cell runs only there.
+#[cfg(windows)]
+#[test]
+fn a_windows_sharing_or_lock_violation_is_a_file_in_use_carrying_the_path() {
+    // ERROR_SHARING_VIOLATION, ERROR_LOCK_VIOLATION
+    for code in [32, 33] {
+        let err = VolumeError::from_io_at(&io::Error::from_raw_os_error(code), AT);
+        assert!(
+            matches!(&err, VolumeError::FileInUse(path) if path == AT),
+            "{code}: got {err:?}"
+        );
+    }
+}
+
+/// ❗ `EBUSY` is a busy RESOURCE (a mount point, a device), ❌ never "a file open somewhere
+/// else": it stays the `IoError` the listing reads as `ResourceBusy`, and nothing here tells
+/// a person to close an app.
+#[cfg(unix)]
+#[test]
+fn ebusy_stays_a_busy_resource_rather_than_a_file_in_use() {
+    let err = VolumeError::from_io_at(&io::Error::from_raw_os_error(libc::EBUSY), AT);
+    assert!(
+        matches!(err, VolumeError::IoError { raw_os_error: Some(code), .. } if code == libc::EBUSY),
+        "got {err:?}"
+    );
+}

@@ -1194,6 +1194,26 @@ Pinned by `manager/root_move_tests.rs` and, on real APFS and HFS+ images,
 **Decision**: `on_unmount()` trait method instead of `Any` downcasting
 **Why**: Avoids runtime type checking, extensible for future volume types (S3, FTP might also need cleanup), consistent with the trait's design of optional methods with default no-ops.
 
+### File in use
+
+`VolumeError::FileInUse(path)` means one thing: someone else has this file open (another app, another computer, the server itself), and closing it there, then retrying, is the way out. The transfer dialog, the rename line, and the viewer all word it that way (cmdr-reports#110). A backend maps its own spelling of that fact to it, carrying the path, and ❌ nothing else: a busy mount or device is `OsErrorClass::Busy` (`EBUSY`), read as `ResourceBusy`, which no app closing fixes.
+
+Mapped (verified by reading each mapper and its protocol's status set, 2026-11-12):
+
+- **SMB**: smb2's `ErrorKind::SharingViolation` (`STATUS_SHARING_VIOLATION`, `STATUS_FILE_LOCK_CONFLICT`), `crates/cmdr-smb/src/volume/mapping.rs`.
+- **WebDAV**: `423 Locked` (RFC 4918 § 11.3: another client holds a WebDAV lock, the way an office app editing over WebDAV does), `crates/cmdr-webdav/src/errors.rs::map_status`. It used to be an `IoError` of class `Busy`; the listing reads both as `ResourceBusy`, so only the transfer dialog and the rename line changed.
+- **Local, Windows**: `ERROR_SHARING_VIOLATION` (32) and `ERROR_LOCK_VIOLATION` (33), class `OsErrorClass::InUseByAnotherApp`, in `VolumeError::from_io_at` and, for the local copy engine, `cmdr-operations`' `classify_io_error` (`WriteOperationError::FileInUse`). The viewer's `From<io::Error>` maps it too.
+
+Deliberately left alone:
+
+- **Local macOS and Linux `EBUSY`**: a mount point or device in use, not a file someone has open. Stays `Busy`.
+- **Local `ETXTBSY`** (writing an executable that's running): close in meaning, but rare in a file manager (overwriting a program while it runs, mostly on Linux; not characterized on macOS), and `InUseByAnotherApp` has no Unix code by design (`os_error/mod.rs`), which `io_of_class` relies on. Stays `Other`.
+- **SFTP**: the v3 protocol every server speaks has no lock status (`SSH_FX_LOCK_CONFLICT` is v6), and OpenSSH's `sftp-server` folds `EBUSY` and friends into `SSH_FX_FAILURE`, which is also every other failure. Nothing to tell apart.
+- **NFS**: v3's status set has no lock or share-deny status (locks live in the separate NLM protocol; `NFS4ERR_LOCKED` / `NFS4ERR_SHARE_DENIED` are v4, which Cmdr doesn't speak). `JUKEBOX` is "try later", not "someone has it open", and stays `WouldBlock`.
+- **S3**: objects have no open handles; Object Lock is retention, which a close can't fix.
+- **MTP**: `DeviceBusy` is the whole PHONE refusing a transaction, not one file, and stays its own variant.
+- **ADB**: the device's `EBUSY` stays `Busy` (same reason as local). Its `ETXTBSY` (26) isn't in the device table, so it stays `Other`, for the same reason as local.
+
 ## Gotchas
 
 **Gotcha**: `LocalPosixVolume::resolve` has a three-way branch for absolute paths

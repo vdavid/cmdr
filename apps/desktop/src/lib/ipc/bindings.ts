@@ -1258,9 +1258,10 @@ export const commands = {
       | { type: 'delete_pending'; path: string }
       /**
        *  Something else has the file open in a way that keeps this operation out
-       *  (`VolumeError::FileInUse`: an SMB sharing violation or lock conflict). The
+       *  (`VolumeError::FileInUse`: an SMB sharing violation, a WebDAV lock). The
        *  person closes it where it's open, then retries. An expected refusal, so it
-       *  logs at warn (`is_expected_refusal`). SMB-only today.
+       *  logs at warn (`is_expected_refusal`). From SMB, WebDAV's `423 Locked`, and a
+       *  local Windows sharing violation (`file_system/volume/DETAILS.md` § "File in use").
        */
       | { type: 'file_in_use'; path: string }
       /**
@@ -22437,7 +22438,13 @@ export type VolumeError =
    *  [`IoError`](Self::IoError): the fix is closing the file where it's open, which
    *  the person can do and Cmdr can't, and the expected refusal must log at warn
    *  so it never files an error report. ❌ Never a transport fault: asking again
-   *  meets the same handle until it closes. SMB-only today.
+   *  meets the same handle until it closes.
+   *
+   *  Also WebDAV's `423 Locked` (another client's lock) and a local file's Windows
+   *  sharing or lock violation (`OsErrorClass::InUseByAnotherApp`, via
+   *  [`from_io_at`](Self::from_io_at)). ❌ Never `EBUSY`: a busy mount or device is
+   *  `OsErrorClass::Busy`, which no closing of an app fixes. Which backends map it and
+   *  which deliberately don't: `file_system/volume/DETAILS.md` § "File in use".
    */
   | { type: 'fileInUse'; data: string }
   /**
@@ -23680,9 +23687,10 @@ export type WriteOperationError =
   | { type: 'delete_pending'; path: string }
   /**
    *  Something else has the file open in a way that keeps this operation out
-   *  (`VolumeError::FileInUse`: an SMB sharing violation or lock conflict). The
+   *  (`VolumeError::FileInUse`: an SMB sharing violation, a WebDAV lock). The
    *  person closes it where it's open, then retries. An expected refusal, so it
-   *  logs at warn (`is_expected_refusal`). SMB-only today.
+   *  logs at warn (`is_expected_refusal`). From SMB, WebDAV's `423 Locked`, and a
+   *  local Windows sharing violation (`file_system/volume/DETAILS.md` § "File in use").
    */
   | { type: 'file_in_use'; path: string }
   /**

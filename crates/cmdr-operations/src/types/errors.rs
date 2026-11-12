@@ -397,9 +397,10 @@ pub enum WriteOperationError {
         path: String,
     },
     /// Something else has the file open in a way that keeps this operation out
-    /// (`VolumeError::FileInUse`: an SMB sharing violation or lock conflict). The
+    /// (`VolumeError::FileInUse`: an SMB sharing violation, a WebDAV lock). The
     /// person closes it where it's open, then retries. An expected refusal, so it
-    /// logs at warn (`is_expected_refusal`). SMB-only today.
+    /// logs at warn (`is_expected_refusal`). From SMB, WebDAV's `423 Locked`, and a
+    /// local Windows sharing violation (`file_system/volume/DETAILS.md` § "File in use").
     FileInUse {
         path: String,
     },

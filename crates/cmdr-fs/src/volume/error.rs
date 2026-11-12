@@ -173,7 +173,13 @@ pub enum VolumeError {
     /// [`IoError`](Self::IoError): the fix is closing the file where it's open, which
     /// the person can do and Cmdr can't, and the expected refusal must log at warn
     /// so it never files an error report. ❌ Never a transport fault: asking again
-    /// meets the same handle until it closes. SMB-only today.
+    /// meets the same handle until it closes.
+    ///
+    /// Also WebDAV's `423 Locked` (another client's lock) and a local file's Windows
+    /// sharing or lock violation (`OsErrorClass::InUseByAnotherApp`, via
+    /// [`from_io_at`](Self::from_io_at)). ❌ Never `EBUSY`: a busy mount or device is
+    /// `OsErrorClass::Busy`, which no closing of an app fixes. Which backends map it and
+    /// which deliberately don't: `file_system/volume/DETAILS.md` § "File in use".
     FileInUse(String),
     /// A path names more than one stored entry, so the backend refused to pick
     /// one. Carries the path as it was given.
@@ -449,6 +455,10 @@ impl VolumeError {
                 message: err.to_string().into(),
             },
             ErrorKind::InvalidFilename => Self::InvalidName(err.to_string().into()),
+            // Windows' sharing and lock violations: another app holds the file open, the
+            // fact an SMB share's sharing violation states. ❌ Never `EBUSY` (`Busy`): that's
+            // a busy mount or device, which no app closing fixes.
+            _ if OsErrorClass::of_io(err) == Some(OsErrorClass::InUseByAnotherApp) => Self::FileInUse(located()),
             _ => Self::from_io_without_path(err),
         }
     }

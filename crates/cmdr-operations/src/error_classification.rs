@@ -54,6 +54,9 @@ pub(super) fn classify_io_error(e: &std::io::Error, path: String) -> WriteOperat
             OsErrorClass::NoDevice | OsErrorClass::DeviceNotConfigured => {
                 return WriteOperationError::DeviceDisconnected { path, side: None };
             }
+            // Windows' sharing and lock violations: another app holds the file open, the
+            // fact an SMB share's `FileInUse` states. ❌ Never `Busy` (`EBUSY`).
+            OsErrorClass::InUseByAnotherApp => return WriteOperationError::FileInUse { path },
             _ => {} // Fall through to ErrorKind classification
         }
     }
@@ -298,6 +301,21 @@ mod tests {
             cause: Box::new(in_use()),
         };
         assert!(not_removed.is_expected_refusal());
+    }
+
+    /// A local file another app holds open (Windows' `ERROR_SHARING_VIOLATION` and
+    /// `ERROR_LOCK_VIOLATION`) is the refusal an SMB share's sharing violation is. No
+    /// Unix code means this, so the cell runs only there.
+    #[cfg(windows)]
+    #[test]
+    fn a_windows_sharing_violation_is_a_file_in_use() {
+        for code in [32, 33] {
+            let err = classify_io_error(&std::io::Error::from_raw_os_error(code), "C:\\a.pdf".to_string());
+            assert!(
+                matches!(err, WriteOperationError::FileInUse { .. }),
+                "{code}: got {err:?}"
+            );
+        }
     }
 
     #[test]

@@ -4,7 +4,6 @@ use cmdr_fs::volume::VolumeError;
 use reqwest::StatusCode;
 
 use super::{Attempted, map_status};
-use cmdr_fs::os_error::OsErrorClass;
 
 const PATH: &str = "/Photos/a.jpg";
 
@@ -51,11 +50,18 @@ fn a_412_means_already_exists_only_when_taking_a_name() {
     ));
 }
 
+/// `423 Locked` (RFC 4918 § 11.3): another client holds a WebDAV lock on it, the way an
+/// office app editing a document over WebDAV does. The same fact as an SMB sharing
+/// violation, so the same typed answer and the same "close it there" advice.
 #[test]
-fn a_lock_is_ebusy() {
-    let locked = map_status(StatusCode::LOCKED, PATH, Attempted::Reaching);
-    assert!(matches!(locked, VolumeError::IoError { .. }));
-    assert_eq!(locked.os_class(), Some(OsErrorClass::Busy));
+fn a_lock_is_a_file_in_use_carrying_the_path() {
+    for attempted in [Attempted::Reaching, Attempted::TakingAName] {
+        let locked = map_status(StatusCode::LOCKED, PATH, attempted);
+        assert!(
+            matches!(&locked, VolumeError::FileInUse(path) if path == PATH),
+            "{attempted:?}: got {locked:?}"
+        );
+    }
 }
 
 #[test]

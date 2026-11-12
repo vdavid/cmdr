@@ -7,7 +7,6 @@
 //! `reqwest::Error`'s typed predicates, or the `rustls::Error` under it.
 
 use cmdr_fs::log_private::LogPrivate;
-use cmdr_fs::os_error::OsErrorClass;
 use cmdr_fs::volume::VolumeError;
 use cmdr_fs::volume::tls::{CertificatePrompt, CertificatePromptKind};
 use log::debug;
@@ -110,9 +109,16 @@ pub(crate) fn map_status(status: StatusCode, path: &str, attempted: Attempted) -
                 raw_os_error: None,
             },
         },
-        // Something else holds it: the class the app renders "something else is
-        // using this" from.
-        StatusCode::LOCKED => VolumeError::io_of_class(format!("HTTP {status}"), OsErrorClass::Busy),
+        // Another client holds a WebDAV lock on it (RFC 4918 § 11.3), the way an office
+        // app editing a document over WebDAV does: the fact an SMB sharing violation
+        // states, so the same "close it there and try again".
+        StatusCode::LOCKED => {
+            debug!(
+                "WebDAV path={path:?}: backend=webdav, error_kind=file_in_use, code={status}",
+                path = LogPrivate::path(path)
+            );
+            VolumeError::FileInUse(path.to_string())
+        }
         StatusCode::INSUFFICIENT_STORAGE => VolumeError::StorageFull {
             message: format!("HTTP {status}").into(),
         },
