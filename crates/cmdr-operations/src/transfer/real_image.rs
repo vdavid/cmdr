@@ -699,3 +699,7 @@ async fn a_move_into_a_zip_of_a_folder_that_holds_a_mounted_drive_refuses_and_mo
         );
     }
 }
+
+/// The many-small-file barrier cells (#1145), a child so the disk-image lane runs them.
+#[path = "real_image_small_files_tests.rs"]
+mod small_files;

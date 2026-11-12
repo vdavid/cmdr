@@ -1118,9 +1118,9 @@ replay a lost entry.
 **Per-path specifics:**
 
 - **Local copy** (`copy_files_with_progress_inner`): `copy_single_item` populates `already_synced` from
-  `StrategyCopyOutcome::already_durable`, so the data sync reaches only the strategies that don't flush themselves
-  (Linux `copy_file_range`, the std fallback); the directory fsyncs run for every strategy. A copy deletes nothing, so
-  an `Err` doesn't stop it: it logs a `warn` with the path and errno, and the copy completes with
+  `StrategyCopyOutcome::data_synced`, so the data sync reaches only the strategies that don't flush themselves (Linux
+  `copy_file_range`, the std fallback); the directory fsyncs run for every strategy. A copy deletes nothing, so an `Err`
+  doesn't stop it: it logs a `warn` with the path and errno, and the copy completes with
   `WriteCompleteEvent.durability_unconfirmed` set (the destination's volume name, nothing else), which the FE shows as a
   persistent warning beside the completion (#461). Pinned by
   `copy/copy_tests.rs::local_copy_fsyncs_its_created_directories_and_completes_unconfirmed_on_a_flush_failure` and

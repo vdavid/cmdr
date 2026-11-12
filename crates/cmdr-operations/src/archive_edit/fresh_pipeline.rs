@@ -70,6 +70,12 @@ pub(super) async fn produce_into(
         )
         .await
         .map(|written| written.bytes);
+    // The written archive is the op's output: its device barrier before anyone
+    // reports it done (`Volume::flush_writes`; nothing on a remote backend).
+    let written = match written {
+        Ok(bytes) => dest_volume.flush_writes().await.map(|()| bytes),
+        Err(error) => Err(error),
+    };
     let produced = completion.finish(runtime).await;
     if produced.is_err() {
         // A producer that ended early leaves the feed nothing to feed; stop a

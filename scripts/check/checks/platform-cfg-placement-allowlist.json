@@ -414,9 +414,6 @@
     "crates/cmdr-fs/src/apple_double.rs": {
       "outsideSeam": 3
     },
-    "crates/cmdr-fs/src/durable.rs": {
-      "outsideSeam": 1
-    },
     "crates/cmdr-fs/src/entry.rs": {
       "outsideSeam": 2
     },

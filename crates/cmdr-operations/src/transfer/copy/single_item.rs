@@ -258,8 +258,8 @@ pub(in crate::transfer) fn copy_single_item(
     // asking again. The person answered for the folder, not for the one child
     // that happened to reach the clash first. Empty in the common case.
     skipped_subtrees: &mut HashSet<PathBuf>,
-    // Destinations already made durable by the copy strategy (chunked copy's
-    // inline `sync_data`) or for which a flush is moot (APFS clonefile /
+    // Destinations the copy strategy already handed to their drive (chunked copy's
+    // inline `sync_to_drive`, which `state.barriers` covers) or for which a flush is moot (APFS clonefile /
     // reflink). The end-of-op flush pass skips these so a long chunked batch
     // isn't fsynced twice. See `durability::flush_created_destinations`.
     already_synced: &mut HashSet<PathBuf>,
@@ -753,7 +753,7 @@ pub(in crate::transfer) fn copy_single_item(
         // pass skips it. Strategies that leave bytes in the page cache
         // (Linux `copy_file_range`, the std fallback) are NOT recorded, so the
         // pass `fdatasync`s them before we report complete.
-        if outcome.already_durable {
+        if outcome.data_synced {
             already_synced.insert(actual_dest.clone());
         }
 

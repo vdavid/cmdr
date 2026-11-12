@@ -118,14 +118,15 @@ fn is_apfs(path: &Path) -> bool {
 // Strategy selection
 // ============================================================================
 
-/// Outcome of a single-file copy: bytes written, whether the destination is
-/// already durable on disk, and the rename-blocking metadata a
+/// Outcome of a single-file copy: bytes written, whether the destination's data
+/// is already with its drive, and the rename-blocking metadata a
 /// [`PostLanding::HandBack`] caller still owes the file.
 ///
-/// `already_durable` is `true` when the strategy either flushed the file itself
-/// (chunked copy's inline `sync_data`) or when a flush is moot because the data
+/// `data_synced` is `true` when the strategy either synced the file itself
+/// (chunked copy's inline `sync_to_drive`, which the operation's closing barrier
+/// covers) or when a flush is moot because the data
 /// shares copy-on-write extents with the source (APFS clonefile / btrfs-XFS
-/// reflink). The caller skips those in the end-of-op `fdatasync` pass so a long
+/// reflink). The caller skips those in the end-of-op data sync so a long
 /// chunked batch isn't fsynced twice. `false` means the bytes may still live
 /// only in the page cache (Linux `copy_file_range` without reflink, the
 /// `std::fs::copy` fallback), so the caller must flush the destination before
@@ -133,7 +134,7 @@ fn is_apfs(path: &Path) -> bool {
 #[derive(Debug)]
 pub(super) struct StrategyCopyOutcome {
     pub bytes: u64,
-    pub already_durable: bool,
+    pub data_synced: bool,
     /// Empty unless the caller asked for [`PostLanding::HandBack`] and the file
     /// has an ACL or flags that would refuse its next rename.
     pub handed_back: LandedMetadata,
@@ -250,19 +251,19 @@ pub(super) fn copy_file_using(
             // Clonefile shares CoW extents with the source: flushing is moot.
             Ok(StrategyCopyOutcome {
                 bytes: landed.bytes,
-                already_durable: true,
+                data_synced: true,
                 handed_back: landed.handed_back,
             })
         }
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         LocalCopyStrategy::Chunked => {
-            // Chunked copy `sync_data`s the file itself before returning.
+            // Chunked copy hands the file to its drive itself before returning.
             let landed = stage_and_land_file(state, dest, needs_safe_overwrite, post_landing, |target| {
                 chunked_copy_with_metadata(source, target, state, progress_callback)
             })?;
             Ok(StrategyCopyOutcome {
                 bytes: landed.bytes,
-                already_durable: true,
+                data_synced: true,
                 handed_back: landed.handed_back,
             })
         }
@@ -280,7 +281,7 @@ pub(super) fn copy_file_using(
             })?;
             Ok(StrategyCopyOutcome {
                 bytes: landed.bytes,
-                already_durable: false,
+                data_synced: false,
                 handed_back: landed.handed_back,
             })
         }
@@ -293,7 +294,7 @@ pub(super) fn copy_file_using(
             })?;
             Ok(StrategyCopyOutcome {
                 bytes: landed.bytes,
-                already_durable: false,
+                data_synced: false,
                 handed_back: landed.handed_back,
             })
         }
@@ -460,6 +461,70 @@ mod tests {
         fs::write(&src, "x").unwrap();
         let dst = Path::new("/nonexistent-parent-xyzzy/child.txt");
         assert!(!is_same_apfs_volume(&src, dst));
+    }
+
+    /// #1145: a chunked copy of many small files pays ONE device barrier, the
+    /// closing flush's, never one per file (it was an `F_FULLFSYNC` each, ~62 ms
+    /// a file on a spinning disk). The interval is pushed out of reach so only
+    /// the close counts; on Linux the per-file `fdatasync` already flushed the
+    /// drive's cache, so no barrier runs at all.
+    #[test]
+    fn a_chunked_many_small_file_copy_pays_one_barrier_at_the_close() {
+        use crate::durability::flush_created_destinations;
+        use crate::event_sinks::CollectorEventSink;
+        use crate::types::WriteOperationType;
+
+        const FILES: usize = 100;
+        let engine = TestOperations::new();
+        let temp_dir = create_temp_dir("barrier-count");
+        let (src_dir, dst_dir) = (temp_dir.join("src"), temp_dir.join("dst"));
+        fs::create_dir_all(&src_dir).unwrap();
+        fs::create_dir_all(&dst_dir).unwrap();
+        let mut state = engine.new_operation_state(Duration::from_millis(50));
+        state.barriers = cmdr_fs::durable::DeviceBarriers::with_interval(Duration::MAX);
+        let state = Arc::new(state);
+
+        let mut landed = Vec::new();
+        for i in 0..FILES {
+            let (src, dst) = (src_dir.join(format!("f{i}.txt")), dst_dir.join(format!("f{i}.txt")));
+            fs::write(&src, b"small").unwrap();
+            let outcome = copy_file_using(
+                LocalCopyStrategy::Chunked,
+                &state,
+                &src,
+                Announced::assumed(&dst),
+                false,
+                PostLanding::Apply,
+                None,
+            )
+            .unwrap();
+            assert!(outcome.data_synced, "the chunked arm syncs each file itself");
+            landed.push(dst);
+        }
+        assert_eq!(state.barriers.barriers_issued(), 0, "no barrier while copying");
+
+        let flushed = flush_created_destinations(
+            &CollectorEventSink::new(),
+            "op-barrier-count",
+            WriteOperationType::Copy,
+            &state,
+            FILES,
+            FILES,
+            0,
+            0,
+            &landed,
+            &[],
+            &landed.iter().cloned().collect(),
+        );
+
+        assert_eq!(flushed, Ok(()));
+        let expected = if cfg!(target_os = "macos") { 1 } else { 0 };
+        assert_eq!(
+            state.barriers.barriers_issued(),
+            expected,
+            // allowed-pluralize-noun: FILES is a 100 constant, never 1
+            "{FILES} files on one device cost one closing barrier"
+        );
     }
 
     #[test]

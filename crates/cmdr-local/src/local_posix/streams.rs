@@ -269,9 +269,11 @@ impl LocalPosixVolume {
         })
     }
 
-    /// Streams `stream` into `dest`, then `sync_data`s the file, puts the
-    /// source's metadata on it, and best-effort fsyncs the parent dir before
-    /// reporting success.
+    /// Streams `stream` into `dest`, then hands the file to the drive
+    /// (`durable::sync_to_drive`), puts the source's metadata on it, and notes
+    /// the file and its parent for the next barrier pass before reporting
+    /// success. Durable once [`flush_writes_impl`](Self::flush_writes_impl), or
+    /// an interval pass, has run since.
     ///
     /// The source's user flags aren't put on: Locked would refuse the landing
     /// rename, so the caller applies them after it (`Volume::apply_metadata`).
@@ -299,6 +301,21 @@ impl LocalPosixVolume {
         on_progress: &'a (dyn Fn(StreamWriteProgress) -> std::ops::ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<StreamWritten, VolumeError>> + Send + 'a>> {
         self.stream_into(target, Opening::Continue(at), length, stream, on_progress)
+    }
+
+    /// [`Volume::flush_writes`](cmdr_fs::volume::Volume::flush_writes): the
+    /// closing pass of this volume's barriers, on the blocking pool. Each noted
+    /// directory gets its `fsync`, then every device a write reached since the
+    /// last pass gets one barrier. A barrier the drive refuses is the answer,
+    /// as an I/O error naming the item it went through.
+    pub(super) fn flush_writes_impl(&self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + '_>> {
+        let barriers = std::sync::Arc::clone(&self.barriers);
+        Box::pin(async move {
+            spawn_blocking(move || barriers.flush())
+                .await
+                .expect("spawn_blocking flush closure doesn't panic and the task is uncancelable")
+                .map_err(|failure| VolumeError::from_io_at(&failure.error, &failure.path))
+        })
     }
 
     fn stream_into<'a>(
@@ -408,23 +425,21 @@ impl LocalPosixVolume {
                 }
             }
 
-            // Make the file durable before signalling success. A bare
+            // Hand the file to the drive before signalling success. A bare
             // `file.flush()` is a userspace no-op on a raw `std::fs::File`, so
-            // without `sync_data` the bytes would live only in the OS page
-            // cache. A cross-volume copy/move landing on a local disk (MTP →
-            // Local, SMB → Local, USB import) all flows through this method, so
-            // reporting "complete" here without an fdatasync would let the user
-            // eject / sleep and lose data (on a move, from both sides). This
-            // gives the same "durable as each file completes" property the
-            // local-FS chunked copy path already has (`transfer/chunked_copy.rs`):
-            // a crash mid-batch leaves earlier files safe.
+            // without the sync the bytes would live only in the OS page cache.
+            // A cross-volume copy/move landing on a local disk (MTP → Local,
+            // SMB → Local, USB import) all flows through this method. The sync
+            // is a plain `fsync`, and the device barrier that empties the
+            // drive's cache comes from `self.barriers`: on an interval, and in
+            // `flush_writes`, which the caller runs before reporting complete
+            // or deleting a moved source (`../../DETAILS.md`, the durability
+            // decision). One barrier per file was the whole cost of a
+            // many-small-file copy (#1145).
             //
-            // Best-effort on error, matching `durability::flush_created_destinations`:
-            // a failed sync is logged under `target: "write_durability"`, NOT
-            // propagated. The bytes are written either way, and failing a
-            // completed multi-GB transfer at the final fsync is worse UX than
-            // accepting a small durability-window risk on a filesystem that
-            // can't sync.
+            // Best-effort on error: a failed sync is logged under
+            // `target: "write_durability"`, NOT propagated. The bytes are
+            // written either way, and the closing barrier is what answers.
             //
             // Then the source's metadata, on the open handle, after the last
             // byte AND the flush: xattrs, the mode, then birth and mtime in one
@@ -438,17 +453,24 @@ impl LocalPosixVolume {
             };
             let dest_for_sync = dest_abs.clone();
             let carried_for_apply = carried.clone();
+            let barriers = std::sync::Arc::clone(&self.barriers);
             let (file, report) = spawn_blocking(move || {
                 use std::io::Write;
                 // Userspace flush first (harmless no-op on a raw File, but
                 // correct if the writer is ever wrapped in a BufWriter).
                 let _ = file.flush();
-                if let Err(e) = cmdr_fs::durable::sync_file_data(&file) {
-                    log::warn!(
+                match cmdr_fs::durable::sync_to_drive(&file) {
+                    Ok(()) => barriers.note_synced(&file, &dest_for_sync),
+                    Err(e) => log::warn!(
                         target: "write_durability",
-                        "write_from_stream: fdatasync failed for {}: {e}",
+                        "write_from_stream: fsync failed for {}: {e}",
                         LogPrivate::file_path(&dest_for_sync)
-                    );
+                    ),
+                }
+                // The entry naming it gets its `fsync` at the next pass, each
+                // directory once however many files it gained.
+                if let Some(parent) = dest_for_sync.parent() {
+                    barriers.note_dir(parent);
                 }
                 let report = apply_staged(StagedItem::File(&file), &carried_for_apply, times);
                 if report.any_refused() {
@@ -463,22 +485,6 @@ impl LocalPosixVolume {
             .await
             .expect("spawn_blocking sync_data closure doesn't panic and the task is uncancelable");
             drop(file);
-
-            // Best-effort: fsync the parent directory so the new file's
-            // directory entry (the create) is durable too. Some filesystems
-            // reject directory fsync; log and continue.
-            if let Some(parent) = dest_abs.parent() {
-                let parent = parent.to_path_buf();
-                let _ = spawn_blocking(move || match std::fs::File::open(&parent).and_then(|d| d.sync_all()) {
-                    Ok(()) => {}
-                    Err(e) => log::debug!(
-                        target: "write_durability",
-                        "write_from_stream: parent dir fsync skipped for {}: {e}",
-                        LogPrivate::dir_path(&parent)
-                    ),
-                })
-                .await;
-            }
 
             // No `notify_mutation` call here: `LocalPosixVolume`'s mutation
             // methods (create_file/delete/rename) all rely on FSEvents to

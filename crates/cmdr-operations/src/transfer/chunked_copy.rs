@@ -108,23 +108,23 @@ pub(crate) fn chunked_copy_with_metadata(
         progress_callback,
     )?;
 
-    // Flush the file's data pages durably before signalling success.
-    //
-    // `sync_all` defeating cancellation only applies *during* the chunk loop;
-    // at this point we've left the loop, there's nothing left to cancel, and
-    // the next thing the caller does is emit `write-complete`. Without this,
-    // the user can pull a USB drive after "Copy finished" and lose a file
-    // that lived only in the OS page cache.
+    // Hand the file's bytes to the drive before signalling success: a plain
+    // `fsync`, and the operation's barriers owe its device one `F_FULLFSYNC`,
+    // run on an interval and by the closing flush before `write-complete`
+    // (`durability::flush_created_destinations`). A barrier per file was the
+    // whole cost of a many-small-file copy (#1145).
     //
     // ❗ Before the dates, not after: on a macOS SMB mount, writes still
     // buffered when the dates go on reach the server at the handle's real
     // close (the landing rename), and the server stamps that close's time as
     // the mtime (verified against the Docker Samba share, macOS 27.0,
     // 2026-10-11: a time-set before the flush read back the rename's time).
-    cmdr_fs::durable::sync_file_data(&dst_file).map_err(|e| WriteOperationError::WriteError {
+    // A plain `fsync` there is what the old `F_FULLFSYNC` fell back to.
+    cmdr_fs::durable::sync_to_drive(&dst_file).map_err(|e| WriteOperationError::WriteError {
         path: dest.display().to_string(),
         message: format!("Couldn't flush destination to disk: {}", e).into(),
     })?;
+    state.barriers.note_synced(&dst_file, dest);
 
     // Best effort: a refused class is logged and the copy stands (invariant 1).
     let carried = CarriedMetadata::of_local_file(&src_file, &src_meta);

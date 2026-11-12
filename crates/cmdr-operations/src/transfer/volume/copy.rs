@@ -1171,6 +1171,25 @@ pub async fn copy_volumes_with_progress(
         // Every replacement is in, so what they replaced goes.
         displaced.discard_all(&dest_volume).await;
 
+        // "Complete" means safe to eject: the destination's closing barrier
+        // (one per device on the local disk, nothing on a remote backend). A
+        // copy deletes nothing, so a refusal completes with the typed warning,
+        // as the local engine's does (`durability::unconfirmed_copy`).
+        let durability_unconfirmed = match dest_volume.flush_writes().await {
+            Ok(()) => None,
+            Err(e) => {
+                log::warn!(
+                    target: "write_durability",
+                    "copy_volumes_with_progress: op={} completes without proof its output is durable ({})",
+                    operation_id,
+                    cmdr_fs::log_error::LogError(&e)
+                );
+                Some(super::super::super::types::DurabilityUnconfirmed {
+                    volume_name: state.sides.as_ref().map(|sides| sides.destination.volume_name.clone()),
+                })
+            }
+        };
+
         events.emit_complete(WriteCompleteEvent {
             operation_id: operation_id.to_string(),
             operation_type: WriteOperationType::Copy,
@@ -1181,7 +1200,7 @@ pub async fn copy_volumes_with_progress(
             top_level_skipped: None,
             refused: None,
             metadata_left_behind: state.metadata_losses.left_behind(operation_id),
-            durability_unconfirmed: None,
+            durability_unconfirmed,
             locked_kept: None,
             already_gone: None,
         });

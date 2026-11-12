@@ -1,14 +1,15 @@
 //! Targeted durability, so "complete" means "durable on disk", not "buffered in
-//! the OS page cache". Two passes, one per kind of write: an operation that
-//! produced BYTES `fdatasync`s each created destination and `fsync`s every
-//! directory that gained an entry (`flush_created_destinations`), while one that
-//! only moved directory ENTRIES flushes the directories themselves
-//! (`flush_touched_directories`). Both announce the `Flushing` phase first. Also
-//! holds the drive-index size lookup used to render directory sizes in conflict
-//! UI.
+//! the OS page cache or the drive's cache". Two passes, one per kind of write:
+//! an operation that produced BYTES syncs each created destination the copy
+//! didn't already sync and `fsync`s every directory that gained an entry
+//! (`flush_created_destinations`), while one that only moved directory ENTRIES
+//! flushes the directories themselves (`flush_touched_directories`). Both
+//! announce the `Flushing` phase first, and both end with the operation's
+//! closing device barrier (`state.barriers`, `cmdr_fs::durable::DeviceBarriers`):
+//! every sync before it is a plain `fsync`, so one barrier covers them all.
 
+use cmdr_fs::durable::DeviceBarriers;
 use cmdr_fs::log_error::{ErrorLogText, ErrorText, LogError, write_plain};
-use cmdr_fs::os_error::OsErrorClass;
 use std::collections::HashSet;
 use std::fs;
 use std::io;
@@ -47,19 +48,26 @@ impl ErrorLogText for FlushFailure {
 }
 
 /// Emits a `Flushing`-phase progress event, then makes a transfer's output
-/// durable: `fdatasync`s every created file whose data isn't already on disk,
-/// and `fsync`s every directory that gained an entry. Blocks until it's done.
+/// durable: syncs every created file whose data isn't already with its drive,
+/// `fsync`s every directory that gained an entry, then runs the operation's
+/// closing device barrier. Blocks until it's done.
 ///
 /// - **File data.** `already_synced` holds the files the copy strategy already
-///   made durable (chunked copy's inline `sync_data`) or for which a flush is
-///   moot (APFS clonefile / reflink, which share copy-on-write extents with the
-///   source). Their data sync is skipped, so a long chunked batch doesn't pay a
-///   second `fcntl(F_FULLFSYNC)` per file. A symlink has no data of its own.
+///   handed to the drive (chunked copy's inline `sync_to_drive`, noted in
+///   `state.barriers`) or for which a flush is moot (APFS clonefile / reflink,
+///   which share copy-on-write extents with the source). Their data sync is
+///   skipped. A symlink has no data of its own.
 /// - **Directory entries.** A synced file is still only reachable once the entry
 ///   naming it is on disk, and FAT/exFAT keep no journal to replay a lost one.
 ///   So the parent of every created file AND of every created directory is
 ///   fsynced, each distinct directory once, whatever `already_synced` says. A
 ///   directory that only received a `mkdir` is covered by its parent's fsync.
+/// - **The barrier.** On macOS every sync above is a plain `fsync`, which stops
+///   at the drive's cache, so the pass ends with `state.barriers.flush()`: one
+///   `F_FULLFSYNC` per device the operation wrote to (nothing on Linux, whose
+///   `fdatasync` already flushed). A barrier the drive refuses is a failure,
+///   named after the first directory that gained an entry: the user's own
+///   destination, never a temp name.
 ///
 /// Every path is tried even after a failure, so the output ends as durable as it
 /// can, and the first failure is the answer. A move deletes its sources only on
@@ -101,7 +109,7 @@ pub(super) fn flush_created_destinations(
     };
 
     for file in created_files.iter().filter(|file| !already_synced.contains(*file)) {
-        if let Err(e) = sync_file_data(file) {
+        if let Err(e) = sync_file_data(file, &state.barriers) {
             log::warn!(
                 target: "write_durability",
                 "flush: couldn't sync the data of {}: {e}",
@@ -114,30 +122,50 @@ pub(super) fn flush_created_destinations(
     // A filesystem that doesn't do directory fsync answers that for every
     // directory on it, so it's said once per destination volume per operation.
     let mut warned_volumes: HashSet<Option<DeviceId>> = HashSet::new();
-    for dir in directories_gaining_entries(created_files, created_dirs) {
-        match fsync_dir(&dir) {
+    let dirs = directories_gaining_entries(created_files, created_dirs);
+    for dir in &dirs {
+        match fsync_dir(dir, &state.barriers) {
             Ok(()) => {}
             Err(e) if refuses_directory_fsync(&e) => {
-                if warned_volumes.insert(volume_of(&dir)) {
+                if warned_volumes.insert(volume_of(dir)) {
                     log::warn!(
                         target: "write_durability",
                         "flush: the filesystem holding {} doesn't support directory fsync, so its entries count as done for this operation: {e}",
-                        LogPrivate::dir_path(&dir)
+                        LogPrivate::dir_path(dir)
                     );
                     #[cfg(test)]
-                    test_hook::note_unsupported_warning(&dir);
+                    test_hook::note_unsupported_warning(dir);
                 }
             }
             Err(e) => {
                 log::warn!(
                     target: "write_durability",
                     "flush: couldn't fsync the directory {}: {e}",
-                    LogPrivate::dir_path(&dir)
+                    LogPrivate::dir_path(dir)
                 );
-                note_failure(&dir, &e);
+                note_failure(dir, &e);
             }
         }
     }
+
+    // The closing barrier, after every sync above: one per device, covering
+    // what the copy handed over file by file too.
+    if let Err(failure) = state.barriers.flush() {
+        log::warn!(
+            target: "write_durability",
+            "flush: the drive didn't confirm the closing barrier (issued through {}): {}",
+            LogPrivate::path(&failure.path),
+            // allowed-log-private: an errno from `fcntl` on an open fd, which names no path
+            failure.error
+        );
+        let named = dirs.first().map_or(failure.path.as_path(), PathBuf::as_path);
+        note_failure(named, &failure.error);
+    }
+    log::debug!(
+        target: "write_durability",
+        "flush: op={operation_id} issued {} device barriers",
+        state.barriers.barriers_issued()
+    );
 
     first_failure.map_or(Ok(()), Err)
 }
@@ -162,25 +190,15 @@ pub(super) fn unconfirmed_copy(
     })
 }
 
-/// The classes a filesystem answers for a directory fsync it doesn't support at
-/// all. By class, because the numbers differ by platform: Linux's `ENOTSUP` and
-/// `EOPNOTSUPP` are one number, macOS keeps them apart, and `ENOSYS` is 78 on
-/// macOS and 38 on Linux (`durability_tests.rs` pins each one).
-const DIRECTORY_FSYNC_UNSUPPORTED: [OsErrorClass; 5] = [
-    OsErrorClass::Unsupported,
-    OsErrorClass::OperationNotSupported,
-    OsErrorClass::InvalidArgument,
-    OsErrorClass::NotImplemented,
-    OsErrorClass::InappropriateIoctl,
-];
-
 /// Whether a directory fsync failed because the filesystem doesn't do directory
 /// fsync at all. Network and FUSE mounts are the likely ones, and treating it as
 /// a failure would turn every move onto them into a failed move with duplicated
 /// files. Every other errno (`EIO`, `ENOSPC`, `EROFS`, `ENXIO`, `ENOENT`,
 /// `EACCES`, …), and an error carrying none, stays a failure that keeps sources.
+/// The class list is `cmdr_fs::durable::SYNC_UNSUPPORTED`, shared with the
+/// device barrier; `durability_tests.rs` pins each errno on both platforms.
 fn refuses_directory_fsync(e: &io::Error) -> bool {
-    OsErrorClass::of_io(e).is_some_and(|class| DIRECTORY_FSYNC_UNSUPPORTED.contains(&class))
+    cmdr_fs::durable::is_sync_unsupported(e)
 }
 
 /// The device a directory lives on, to group the "doesn't support directory
@@ -190,13 +208,17 @@ fn volume_of(dir: &Path) -> Option<DeviceId> {
     fs::metadata(dir).ok().as_ref().and_then(device_of)
 }
 
-/// `fdatasync`s one created file. A symlink carries no data of its own, and
-/// opening one would follow it, so it's done without opening anything.
-fn sync_file_data(file: &Path) -> io::Result<()> {
+/// Hands one created file to its drive (`durable::sync_to_drive`) and notes it
+/// for the closing barrier. A symlink carries no data of its own, and opening
+/// one would follow it, so it's done without opening anything.
+fn sync_file_data(file: &Path, barriers: &DeviceBarriers) -> io::Result<()> {
     if fs::symlink_metadata(file)?.file_type().is_symlink() {
         return Ok(());
     }
-    fs::File::open(file)?.sync_data()
+    let handle = fs::File::open(file)?;
+    cmdr_fs::durable::sync_to_drive(&handle)?;
+    barriers.note_synced(&handle, file);
+    Ok(())
 }
 
 /// The distinct directories whose entries a transfer added, in first-seen
@@ -220,10 +242,12 @@ fn directories_gaining_entries(created_files: &[PathBuf], created_dirs: &[PathBu
 /// before it (see `MoveTransaction::touched_directories`, which picks the
 /// directories). Syncing the files here would buy nothing and cost one
 /// `fcntl(F_FULLFSYNC)` per file on macOS, a device-level barrier that dwarfs
-/// this pass — `transfer/DETAILS.md` § Durability carries the measurements.
+/// this pass (`transfer/DETAILS.md` § Durability carries the measurements). The
+/// directories get a plain `fsync` each, then one closing barrier.
 ///
 /// Best-effort: nothing is deleted after a same-FS move's flush, so a directory
-/// that rejects `fsync` is logged, never propagated.
+/// that rejects `fsync`, or a barrier the drive refuses, is logged, never
+/// propagated.
 #[allow(
     clippy::too_many_arguments,
     reason = "The natural operation-wide values a progress emit needs, matching flush_created_destinations."
@@ -251,13 +275,22 @@ pub(super) fn flush_touched_directories(
     );
 
     for dir in directories {
-        if let Err(e) = fsync_dir(dir) {
+        if let Err(e) = fsync_dir(dir, &state.barriers) {
             log::debug!(
                 target: "write_durability",
                 "flush: dir fsync skipped for {}: {e}",
                 LogPrivate::dir_path(dir)
             );
         }
+    }
+    if let Err(failure) = state.barriers.flush() {
+        log::debug!(
+            target: "write_durability",
+            "flush: the closing barrier went unconfirmed (issued through {}): {}",
+            LogPrivate::path(&failure.path),
+            // allowed-log-private: an errno from `fcntl` on an open fd, which names no path
+            failure.error
+        );
     }
 }
 
@@ -294,14 +327,18 @@ fn emit_flushing_phase(
     );
 }
 
-/// Opens a directory and `fsync`s it so the entry changes inside it are durable.
-fn fsync_dir(dir: &Path) -> io::Result<()> {
+/// Opens a directory and hands the entry changes inside it to the drive
+/// (`durable::sync_dir_to_drive`), noting it for the closing barrier, which is
+/// what makes them durable on macOS.
+fn fsync_dir(dir: &Path, barriers: &DeviceBarriers) -> io::Result<()> {
     #[cfg(test)]
     if let Some(answer) = test_hook::intercept(dir) {
         return answer;
     }
-    let f = fs::File::open(dir)?;
-    f.sync_all()
+    let handle = fs::File::open(dir)?;
+    cmdr_fs::durable::sync_dir_to_drive(&handle)?;
+    barriers.note_synced(&handle, dir);
+    Ok(())
 }
 
 /// Test seam: records every directory `fsync_dir` is asked to sync on this

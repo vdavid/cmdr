@@ -328,6 +328,9 @@ pub enum FaultyOp {
     ReadStream,
     /// `write_from_stream`.
     WriteFromStream,
+    /// `flush_writes`, the closing device barrier: a drive that took every
+    /// write and then wouldn't confirm them. Never matched by path.
+    FlushWrites,
 }
 
 /// One armed fault: the Nth call to `op` fails with `error`, every other call
@@ -683,6 +686,13 @@ impl<V: Volume + 'static> Volume for FaultyVolume<V> {
         match self.fault_for(FaultyOp::WriteFromStream, dest) {
             Some(e) => Box::pin(async move { Err(e) }),
             None => self.inner.write_from_stream(dest, mode, length, stream, on_progress),
+        }
+    }
+
+    fn flush_writes(&self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + '_>> {
+        match self.fault_for(FaultyOp::FlushWrites, Path::new("")) {
+            Some(e) => Box::pin(async move { Err(e) }),
+            None => self.inner.flush_writes(),
         }
     }
 }

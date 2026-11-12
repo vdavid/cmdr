@@ -337,7 +337,7 @@ async fn upload_archive(
         }
     };
 
-    match parent
+    let written = match parent
         .write_from_stream(
             staged.target(),
             staged.write_mode(),
@@ -347,6 +347,12 @@ async fn upload_archive(
         )
         .await
     {
+        // The upload's device barrier before the swap trusts it
+        // (`Volume::flush_writes`; nothing on a remote backend).
+        Ok(written) => parent.flush_writes().await.map(|()| written),
+        Err(err) => Err(err),
+    };
+    match written {
         Ok(_) => {
             if let Some(observer) = progress_observer {
                 observer(RemoteCommitProgress::Finishing);

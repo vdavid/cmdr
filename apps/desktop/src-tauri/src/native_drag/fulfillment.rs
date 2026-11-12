@@ -286,7 +286,7 @@ async fn write_to_local_dest(
     let local = cmdr_local::LocalPosixVolume::local_folder("Local", PathBuf::from("/"), crate::volume_host::host());
     // Finder created `dest_path` as a placeholder for us to fill, so it's ours
     // to replace.
-    local
+    let written = local
         .write_from_stream(
             dest_path,
             WriteMode::CreateOrReplace,
@@ -294,8 +294,11 @@ async fn write_to_local_dest(
             stream,
             on_progress,
         )
-        .await
-        .map(|written| written.bytes)
+        .await?;
+    // The file's device barrier before Finder hears it's done: the write only
+    // handed it to the drive (`Volume::flush_writes`).
+    local.flush_writes().await?;
+    Ok(written.bytes)
 }
 
 /// Recursively downloads a source directory into the Finder-created `dest_path`.

@@ -571,6 +571,26 @@ pub async fn move_volumes_with_progress(
                         SourceItemOutcome::Done
                     };
                     emit_source_outcome(&*events, &operation_id, &source_path, verdict, false);
+                    // The destination's closing barrier BEFORE the sweep: until
+                    // it holds, the original is the only copy proven on a disk
+                    // (`../DETAILS.md` § Durability). One per top-level source,
+                    // never one per file. A refusal keeps the original, and the
+                    // move says it landed but stayed.
+                    if let Err(e) = dest_volume.flush_writes().await {
+                        log::warn!(
+                            target: "write_durability",
+                            "move_between_volumes: {} stays, its copy isn't proven durable: {}",
+                            LogPrivate::path(&source_path),
+                            LogError(&e)
+                        );
+                        // The refusal is the DESTINATION's, so it's mapped as one.
+                        let landed_at = landed_dest.display().to_string();
+                        return Err(WriteOperationError::SourceNotRemoved {
+                            path: source_path.display().to_string(),
+                            cause: Box::new(map_volume_error(&landed_at, PathRole::Destination, e)),
+                            landed_at,
+                        });
+                    }
                     let carried = if source_is_dir {
                         super::source_sweep::CarriedSource::Folder(created.take_source_ledger())
                     } else {

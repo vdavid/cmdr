@@ -294,6 +294,10 @@ pub struct WriteOperationState {
     /// What this operation couldn't carry of its sources' metadata, per class,
     /// for the note on its completion: [`super::metadata_losses`].
     pub(crate) metadata_losses: super::metadata_losses::MetadataLosses,
+    /// The device barriers the files this operation's local engine handed to
+    /// their drive still owe: run on an interval while it copies and by the
+    /// closing flush (`durability.rs`), never one per file.
+    pub(crate) barriers: cmdr_fs::durable::DeviceBarriers,
     /// The `com.apple.quarantine` of the local archive this operation extracts
     /// from, keyed by that archive's path and read once per operation. Every file
     /// and folder the extract creates carries it:
@@ -365,6 +369,7 @@ impl WriteOperationState {
             liveness: std::sync::Mutex::new(Some(Arc::new(()))),
             claimed_names: super::unique_name::ClaimedNames::default(),
             metadata_losses: super::metadata_losses::MetadataLosses::default(),
+            barriers: cmdr_fs::durable::DeviceBarriers::new(),
             #[cfg(target_os = "macos")]
             extract_quarantine: std::sync::OnceLock::new(),
             transfer_tree: super::transfer_tree::TransferTreeSlot::new(tree_events),

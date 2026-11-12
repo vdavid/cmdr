@@ -253,6 +253,10 @@
       "lines": 1108,
       "reason": "TODO: the admission state machine is still buried under code that never touches its lock (the wire types already live in `manager/wire.rs`, and reordering in `manager/reorder.rs`). Move the two RAII guards (`ManagedTaskGuard`, `InstantTaskGuard`, about 85 lines), the retained-failure block (`FAILURE_CAPACITY`, `record_failure`, `dismiss_failure`, `dismiss_all_failures`, about 110 lines, whose out-of-band lifetime is the one piece of manager state that outlives a record), and the thin free-function facade at the bottom (`list_operations` through `dismiss_all_failed_operations`, about 95 lines) into children of the existing `manager/` directory. That leaves roughly 750 lines: `ManagerInner`, `OpRecord`, and the `spawn_managed` / `run_admission_pass` / `on_settled` / `free_and_remove` / `cancel_if_queued` machinery that genuinely has to share one `Mutex`."
     },
+    "crates/cmdr-operations/src/state.rs": {
+      "lines": 804,
+      "reason": "Just over: `WriteOperationState` is one struct of per-operation state (each field documented where it's declared) plus the one constructor that lists them all, and the device-barrier tracker (#1145) tipped it past 800. Its behavior already lives in `state/` children (`activity.rs`); what's left is the field list and its initializer, which read worse split."
+    },
     "crates/cmdr-operations/src/transfer/copy/mod.rs": {
       "lines": 802,
       "reason": "TODO: the local copy driver plus the helpers its terminal paths share (committing a transaction with its created dirs journaled, keeping a displaced original on stop or failure). Move `commit_journaling_created_dirs`, `stop_keeping_displaced_aside`, and `fail_keeping_displaced_aside` into `copy/settle.rs`, about 80 lines out."

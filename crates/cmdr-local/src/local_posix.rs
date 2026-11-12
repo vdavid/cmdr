@@ -210,6 +210,10 @@ pub struct LocalPosixVolume {
     /// a detached host silently turns off the scan oracle's fast path and leaves
     /// panes stale after every local copy.
     host: VolumeHost,
+    /// The device barriers this volume's finished writes still owe, run on an
+    /// interval and by [`Volume::flush_writes`] (`local_posix/streams.rs`).
+    /// Shared with the blocking threads each write syncs on.
+    barriers: Arc<cmdr_fs::durable::DeviceBarriers>,
     /// Handed to every `list_directory` tally: see [`Self::with_listing_hook`].
     #[cfg(any(test, feature = "testing"))]
     listing_hook: Option<crate::reading::ListingHook>,
@@ -244,6 +248,7 @@ impl LocalPosixVolume {
             mount,
             sidecar_probe: cmdr_fs::apple_double::volume_keeps_sidecars,
             host,
+            barriers: Arc::new(cmdr_fs::durable::DeviceBarriers::new()),
             #[cfg(any(test, feature = "testing"))]
             listing_hook: None,
             #[cfg(feature = "playwright-e2e")]
@@ -259,6 +264,22 @@ impl LocalPosixVolume {
     #[cfg(any(test, feature = "testing"))]
     pub fn with_listing_hook(mut self, hook: crate::reading::ListingHook) -> Self {
         self.listing_hook = Some(hook);
+        self
+    }
+
+    /// How many device barriers this volume's writes have issued, so a test can
+    /// pin "one per interval and one at the close, never one per file".
+    #[cfg(any(test, feature = "testing"))]
+    pub fn barriers_issued(&self) -> u64 {
+        self.barriers.barriers_issued()
+    }
+
+    /// This volume with its barrier pass every `interval` instead of
+    /// [`cmdr_fs::durable::BARRIER_INTERVAL`], so a test can leave only the
+    /// closing one (`Duration::MAX`).
+    #[cfg(any(test, feature = "testing"))]
+    pub fn with_barrier_interval(mut self, interval: Duration) -> Self {
+        self.barriers = Arc::new(cmdr_fs::durable::DeviceBarriers::with_interval(interval));
         self
     }
 
@@ -840,6 +861,10 @@ impl Volume for LocalPosixVolume {
         on_progress: &'a (dyn Fn(StreamWriteProgress) -> std::ops::ControlFlow<()> + Sync),
     ) -> Pin<Box<dyn Future<Output = Result<StreamWritten, VolumeError>> + Send + 'a>> {
         self.write_from_stream_impl(dest, mode, length, stream, on_progress)
+    }
+
+    fn flush_writes(&self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + '_>> {
+        self.flush_writes_impl()
     }
 
     fn resume_read_stream<'a>(

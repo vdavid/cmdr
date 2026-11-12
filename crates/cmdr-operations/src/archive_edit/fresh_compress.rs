@@ -610,7 +610,7 @@ async fn upload_spool(
         continue_unless(&cancellation)
     };
     let stage_path = stage.target();
-    match dest_volume
+    let written = match dest_volume
         .write_from_stream(
             stage_path,
             WriteMode::CreateNew,
@@ -620,6 +620,12 @@ async fn upload_spool(
         )
         .await
     {
+        // The stage's device barrier before it's reported whole
+        // (`Volume::flush_writes`; nothing on a remote backend).
+        Ok(written) => dest_volume.flush_writes().await.map(|()| written),
+        Err(error) => Err(error),
+    };
+    match written {
         Ok(written) => {
             transfer_observer(super::remote::RemoteCommitProgress::Finishing);
             Ok(written.bytes)

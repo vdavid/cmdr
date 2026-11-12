@@ -218,7 +218,25 @@ impl crate::Operations {
                 // `suppress` collected the top-level sources that extracted in FULL
                 // (every file durably written, zero deep skips) via its
                 // `note_source_landed_clean` override.
-                let landed = suppress.landed_clean.lock_ignore_poison().clone();
+                // "Durably" is the destination's closing barrier, which a copy
+                // that stopped on an error never ran. So it runs here, for the
+                // success and the prefix alike, and a refusal deletes nothing
+                // (`Volume::flush_writes`).
+                let unconfirmed = dest_volume.flush_writes().await.err().map(|e| {
+                    log::warn!(
+                        target: "write_durability",
+                        "archive move-out: every source stays in the archive of op={op_id}, the extract isn't proven durable: {}",
+                        cmdr_fs::log_error::LogError(&e)
+                    );
+                    crate::types::DurabilityUnconfirmed {
+                        volume_name: state.sides.as_ref().map(|sides| sides.destination.volume_name.clone()),
+                    }
+                });
+                let landed = if unconfirmed.is_none() {
+                    suppress.landed_clean.lock_ignore_poison().clone()
+                } else {
+                    Vec::new()
+                };
                 let inner_deletes: Vec<String> = inner_by_source
                     .iter()
                     .filter(|(src, _)| landed.contains(src))
@@ -243,7 +261,7 @@ impl crate::Operations {
                             top_level_skipped: None,
                             refused: None,
                             metadata_left_behind: state.metadata_losses.left_behind(op_id.as_str()),
-                            durability_unconfirmed: None,
+                            durability_unconfirmed: unconfirmed,
                             locked_kept: None,
                             already_gone: None,
                         }),
@@ -257,8 +275,9 @@ impl crate::Operations {
                 }
 
                 // Phase 2 — rewrite the archive to drop the fully-extracted sources.
-                // The MOVE INVARIANT holds: the copy engine fsynced every destination
-                // file, and cancel/rollback was handled above, so no entry is deleted
+                // The MOVE INVARIANT holds: the copy engine synced every destination
+                // file, the closing barrier above confirmed them, and cancel/rollback
+                // was handled above, so no entry is deleted
                 // whose bytes aren't durably on disk and staying there.
                 // Only what the reader showed, so what it hid under a moved
                 // folder, which never extracted, stays in the archive.

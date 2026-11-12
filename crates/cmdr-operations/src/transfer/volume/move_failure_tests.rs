@@ -315,3 +315,89 @@ async fn cross_volume_move_that_cannot_remove_the_original_says_the_copy_landed(
     assert!(dest.exists(Path::new("/photos/locked.jpg")).await);
     assert!(source.exists(Path::new("/locked.jpg")).await);
 }
+
+/// The refusal a drive gives when it won't confirm a flush.
+fn unconfirmed_flush() -> VolumeError {
+    VolumeError::IoError {
+        message: "simulated device barrier refusal".into(),
+        raw_os_error: Some(libc::EIO),
+    }
+}
+
+/// #1145: the per-file write only hands bytes to the drive, so the source goes
+/// only after the destination's closing barrier holds. A drive that took the
+/// write and then won't confirm it keeps the original, and the move says the
+/// copy landed but the original stayed.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_move_whose_destination_wont_confirm_its_flush_keeps_the_source() {
+    use super::super::faulty_volume::{FaultyOp, FaultyVolume};
+
+    let engine = TestOperations::new();
+    let source = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    source.create_file(Path::new("/f.txt"), b"only copy").await.unwrap();
+    let source: Arc<dyn Volume> = source;
+    let dest_inner = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+    let dest = FaultyVolume::wrapping(Arc::clone(&dest_inner))
+        .failing_call(FaultyOp::FlushWrites, 1, unconfirmed_flush())
+        .arc();
+
+    let result = move_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "op-move-unconfirmed-flush",
+        &make_state(&engine),
+        Arc::clone(&source),
+        &[PathBuf::from("/f.txt")],
+        Arc::clone(&dest) as Arc<dyn Volume>,
+        Path::new("/"),
+        &config_default(),
+    )
+    .await;
+
+    assert!(dest.fault_fired(FaultyOp::FlushWrites));
+    let failure = result.expect_err("an unconfirmed flush stops the move");
+    assert!(
+        matches!(failure.error, WriteOperationError::SourceNotRemoved { .. }),
+        "the move says the copy landed and the original stayed: {:?}",
+        failure.error
+    );
+    assert!(source.exists(Path::new("/f.txt")).await, "the original stays");
+    assert!(dest_inner.exists(Path::new("/f.txt")).await, "the copy landed");
+}
+
+/// The copy twin: a copy deletes nothing, so it completes, carrying the typed
+/// warning the local engine's copy carries for the same refusal.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_whose_destination_wont_confirm_its_flush_completes_unconfirmed() {
+    use super::super::faulty_volume::{FaultyOp, FaultyVolume};
+
+    let engine = TestOperations::new();
+    let source = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    source.create_file(Path::new("/f.txt"), b"bytes").await.unwrap();
+    let dest = FaultyVolume::wrapping(Arc::new(
+        InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000),
+    ))
+    .failing_call(FaultyOp::FlushWrites, 1, unconfirmed_flush())
+    .arc();
+    let events = Arc::new(CollectorEventSink::new());
+
+    super::super::copy_volumes_with_progress(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        "op-copy-unconfirmed-flush",
+        &make_state(&engine),
+        source,
+        &[PathBuf::from("/f.txt")],
+        Arc::clone(&dest) as Arc<dyn Volume>,
+        Path::new("/"),
+        &config_default(),
+    )
+    .await
+    .expect("a copy completes through an unconfirmed flush");
+
+    assert!(dest.fault_fired(FaultyOp::FlushWrites));
+    let complete = events.complete.lock().unwrap();
+    assert_eq!(complete.len(), 1);
+    assert!(
+        complete[0].durability_unconfirmed.is_some(),
+        "the completion carries the warning"
+    );
+}

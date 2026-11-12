@@ -2283,6 +2283,20 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
+    /// Makes every [`write_from_stream`](Self::write_from_stream) this volume
+    /// answered `Ok` for durable on its device. A finished write is handed to
+    /// the drive but may still sit in the drive's own cache, so a caller that is
+    /// about to report a write done (or delete a moved source) runs this first
+    /// and treats an `Err` as "not proven durable".
+    ///
+    /// The local disk runs its device barrier here, once for every file written
+    /// since the last one (`cmdr_fs::durable::DeviceBarriers`), so a
+    /// many-file copy never pays one per file. Default `Ok`: a remote backend's
+    /// write is the server's or the device's to keep once it answered.
+    fn flush_writes(&self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + '_>> {
+        Box::pin(async { Ok(()) })
+    }
+
     /// Copies one FILE from `from` to `to` inside THIS volume, without the bytes
     /// travelling through Cmdr.
     ///
