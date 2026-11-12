@@ -172,16 +172,37 @@ test.describe('Homepage', () => {
   test('testimonials name real users', async ({ page }) => {
     await page.goto('/')
     const section = page.getByRole('region', { name: 'Testimonials' })
-    await expect(section.locator('blockquote')).toHaveCount(3)
+    // Every quote is in the HTML (toContainText reads hidden cards too); three show at a time.
+    await expect(section.locator('blockquote')).toHaveCount(5)
+    await expect(section.locator('blockquote:visible')).toHaveCount(3)
     await expect(section).toContainText('Sven Kopetzki')
+    await expect(section).toContainText('André Dammeyer')
     await expect(section).toContainText('Robert Benedict')
+    await expect(section).toContainText('Random redditor')
     // A quote without the person's yes goes up without a name.
     await expect(section).toContainText('An early user')
     await expect(section).not.toContainText('Jojo')
-    // The avatar is a local, pipeline-optimized copy, never a hotlink to Gravatar.
-    const avatar = section.locator('img')
-    await expect(avatar).toHaveCount(1)
-    await expect(avatar).toHaveAttribute('src', /^\/_astro\/.+\.webp$/)
+    // A name links only where the person offered a profile, or the quote is a public comment.
+    await expect(section.locator('figcaption a')).toHaveCount(2)
+    // Avatars are local, pipeline-optimized copies, never hotlinks (Gravatar, LinkedIn, Reddit).
+    const avatars = section.locator('img')
+    await expect(avatars).toHaveCount(3)
+    for (const avatar of await avatars.all()) {
+      await expect(avatar).toHaveAttribute('src', /^\/_astro\/.+\.webp$/)
+    }
+  })
+
+  test('testimonials show a different three across page loads', async ({ page }) => {
+    // The pick is random, so compare loads: 60 possible orderings make 20 identical ones in a row
+    // a practical impossibility, and the loop usually ends on the second load.
+    const seen = new Set<string>()
+    for (let load = 0; load < 20 && seen.size < 2; load++) {
+      await page.goto('/')
+      const visible = page.getByRole('region', { name: 'Testimonials' }).locator('blockquote:visible')
+      await expect(visible).toHaveCount(3)
+      seen.add((await visible.allTextContents()).join('|'))
+    }
+    expect(seen.size).toBeGreaterThan(1)
   })
 
   test('has navigation header', async ({ page }) => {
