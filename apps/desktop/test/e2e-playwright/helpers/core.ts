@@ -31,6 +31,13 @@ export const TRANSFER_DIALOG = '[data-dialog-id="transfer-confirmation"]'
 export const CTRL_OR_META = process.platform === 'darwin' ? 'Meta' : 'Control'
 
 /**
+ * The same primary modifier as a `KeyboardEventInit` flag (`metaKey` on macOS, `ctrlKey` on
+ * Linux), for a spec that builds its own keydown inside the webview: `{ key: 'c', [PRIMARY_KEY_FLAG]: true }`.
+ * The app reads exactly that one (`holdsPrimaryModifier`), so Super+C copies nothing on Linux.
+ */
+export const PRIMARY_KEY_FLAG = CTRL_OR_META === 'Meta' ? 'metaKey' : 'ctrlKey'
+
+/**
  * Name of the local root volume in cmdr's volume picker. Linux Docker images
  * report it as "Root"; macOS uses "Macintosh HD". This must match the literal
  * `cmdr://state` volume entry for `mcp-volume-select` to pick the right one.

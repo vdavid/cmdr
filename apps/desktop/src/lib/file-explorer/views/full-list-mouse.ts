@@ -14,6 +14,7 @@
  */
 
 import type { FileEntry } from '../types'
+import { blocksClickToRename } from './row-click'
 import type { PressedPane } from '../pane/pressed-rows'
 // Type-only: keeping the drag module out of this one's runtime graph is what lets
 // the planner be unit-tested without a Tauri environment.
@@ -83,7 +84,7 @@ export function planRowMouseDown(input: RowMouseDownInput): RowMouseDownPlan {
   // still runs either way, so the cursor row stays draggable; crossing the drag
   // threshold cancels the timer.
   const startClickToRename =
-    index === input.cursorIndex && !event.shiftKey && !event.metaKey && !input.isRenaming && input.canStartRename
+    index === input.cursorIndex && !blocksClickToRename(event) && !input.isRenaming && input.canStartRename
 
   if (selectedIndices.size === 0) {
     const fileInfo: DragFileInfo = { name: entry.name, isDirectory: entry.isDirectory, iconId: entry.iconId }

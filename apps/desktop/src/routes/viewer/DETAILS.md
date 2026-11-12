@@ -580,10 +580,15 @@ Twelve extend chords, all routed by `extendMotionFor` in `viewer-keyboard.ts`:
 - **⌥⇧Left / Right** and **⌃⇧Left / Right** → `word`. Same motion twice: ⌥ is macOS, ⌃ is Linux and Windows (macOS
   usually eats ⌃⇧Arrow at the system level, which costs nothing to support).
 - **Shift+Home / End** → `lineEdge`.
-- **⌘⇧Up / Down** → `docEdge`; down is the two-press case above.
+- **⌘⇧Up / Down** on macOS, **Ctrl+Shift+Home / End** on Windows and Linux → `docEdge`; down is the two-press case
+  above. Off macOS ⌘ is Super, the desktop's key, so ⌘⇧Up / Down extends nothing there.
 
 Beside them, **unmodified Left / Right scroll horizontally by one column** (`scroll.scrollByColumns`), a natural no-op
-under word wrap where nothing overflows. Unmodified Home / End still scroll to the file edges.
+under word wrap where nothing overflows. Unmodified Home / End still scroll to the file edges, and so do Ctrl+Home / End
+off macOS (not while the search input has focus: there they're its caret keys).
+
+Copy, select all, and search (`handleModifierShortcut`) take the platform's primary modifier only
+(`holdsPrimaryModifier`: ⌘ on macOS, Ctrl elsewhere), so ⌃C doesn't copy on macOS and Super+C doesn't on Linux.
 
 Decision/Why: **Shift+Home means the LINE edge while bare Home means the FILE edge**, and that's deliberate. Unmodified
 Home / End are scroll-view navigation, which is what macOS does in a document view and what the viewer already did; a

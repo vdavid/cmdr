@@ -24,6 +24,17 @@ here:
   shell; the component supplies `dialogsOnScreen()` (the only reactive input, § What `dialogsOnScreen()` is made of) and
   then runs `preventDefault` and `dispatchers.keyboard`. Keeping the decision out of the component is also what stops
   the `file-length`-flagged `+page.svelte` from growing per keyboard rule.
+- **A focused text field owns the platform's native text keys** (`native-text-keys.ts`, `nativeTextKeys(platform)`): the
+  sets in `docs/notes/windows-port/keymap-decisions.md` § "Native text keys", keyed on the COMBO, never the command it
+  runs, and checked before dispatch whatever scope is active. So off macOS `Ctrl+←` / `Ctrl+→` is word motion in every
+  main-window field (path bar, quick filter, rename, the Ask Cmdr composer, the search dialog) and copies the path
+  between panes everywhere else, and `Ctrl+Backspace` deletes a word, never the files. The copy combo (⌘C, `Ctrl+C`) is
+  the browser's while the page holds a text selection, in a field or not (the error pane). `Ctrl+I` is kept apart: not
+  native, but Switch pane would blur a rename editor. The Settings window and the viewer need no such table: Settings
+  dispatches no registry key, and the viewer skips its registry keys while its search input has focus.
+- **The suppressed browser defaults and the debug window are per-OS chords** (`isPrimaryChord`): select all (⌘A,
+  `Ctrl+A`) when nothing claimed it, the inspector in production (⌥⌘I; `Ctrl+Shift+I` in WebKitGTK and WebView2), and
+  the dev-only debug window (⌘⇧D, `Ctrl+Shift+D`), each exact, on the platform's primary modifier.
 - **A focused pane-chrome control keeps bare Enter, Space, the arrows, and Home/End** (`paneChromeOwnsKey`, beside the
   text-input bails in `commandForCombo`): a path segment's Enter clicks it rather than opening the cursor row. `Tab` and
   every modifier combo still dispatch. `#lib/file-explorer/pane/pane-chrome.ts`.

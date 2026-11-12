@@ -85,7 +85,8 @@ describe('click-to-rename arming', () => {
   it.each([
     ['a different row', { index: 2, cursorIndex: 1 }],
     ['shift held', { event: mouseDown({ shiftKey: true }) }],
-    ['cmd held', { event: mouseDown({ metaKey: true }) }],
+    // The platform's toggle modifier; vitest runs on Linux, where it's Ctrl (`row-click.test.ts` has every OS).
+    ['the toggle modifier held', { event: mouseDown({ ctrlKey: true }) }],
     ['a rename already open', { isRenaming: true }],
     ['no rename callback wired', { canStartRename: false }],
   ])('does not arm for %s', (_label, overrides) => {

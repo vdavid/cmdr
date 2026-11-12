@@ -459,14 +459,15 @@ export type { ResortResult } from '#lib/ipc/bindings.js'
 /**
  * A row click/context-menu selection, threaded from `BriefList` / `FullList` /
  * `SearchResultsView`'s `onSelect` prop down through `PanePointer.handleSelect`.
- * `shiftKey` extends the range from the cursor; `metaKey` toggles the row (Shift
- * wins when both are held). Both are omitted, not `false`, for a plain click or
- * a context-menu select.
+ * `shiftKey` extends the range from the cursor; `toggle` toggles the row (the
+ * platform's primary modifier was held: ⌘ on macOS, Ctrl elsewhere,
+ * `views/row-click.ts`). Shift wins when both are held. Both are omitted, not
+ * `false`, for a context-menu select.
  */
 export interface SelectPayload {
   index: number
   shiftKey?: boolean
-  metaKey?: boolean
+  toggle?: boolean
 }
 
 /**

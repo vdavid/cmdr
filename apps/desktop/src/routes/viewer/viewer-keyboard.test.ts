@@ -4,7 +4,8 @@
  * through to another handler.
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 import {
   createViewerSelection,
@@ -18,6 +19,10 @@ import { createViewerKeyboard, handleSearchToggleKey, handleTailToggleKey, handl
 import { createViewerScroll } from './viewer-scroll.svelte'
 
 type KeyboardDeps = Parameters<typeof createViewerKeyboard>[0]
+
+// The cases below speak macOS's chords (⌘C, ⌘⇧Down); the per-OS blocks at the end switch platform
+// themselves.
+beforeEach(() => withPlatform('macos'))
 
 function makeKey(props: Partial<KeyboardEventInit & { key: string }>): KeyboardEvent {
   return new KeyboardEvent('keydown', { key: 'a', ...props })
@@ -684,5 +689,88 @@ describe('createViewerKeyboard: unmodified arrows scroll', () => {
     expect(scroll.scrollByRows).toHaveBeenCalledWith(1)
     expect(scroll.scrollToStart).toHaveBeenCalledOnce()
     expect(scroll.scrollToEnd).toHaveBeenCalledOnce()
+  })
+})
+
+/**
+ * The document edges and the primary modifier, per OS: ⌘+arrow on macOS; Ctrl+Home / Ctrl+End off
+ * it (with Shift to extend), where ⌘ is Super, the desktop's key. Copy, select all, and search take
+ * the platform's primary modifier only: ⌃C no longer copies on macOS, nor Super+C on Linux.
+ */
+describe.each(['windows', 'linux'] as const)('createViewerKeyboard on %s', (platform) => {
+  beforeEach(() => withPlatform(platform))
+
+  function wire() {
+    const selection = makeSelectionDeps({ anchor: { row: 2, offset: 0 }, focus: { row: 2, offset: 5 } })
+    const scroll = makeScrollSpies()
+    const runCopy = vi.fn()
+    const openSearch = vi.fn()
+    const base = makeKeyboardDeps({ getRowText: () => 'alpha beta gamma', selection: selection.deps, scroll, runCopy })
+    const keyboard = createViewerKeyboard({ ...base, search: { ...base.search, openSearch } })
+    return { keyboard, selection, scroll, runCopy, openSearch }
+  }
+
+  it('Ctrl+Shift+Home / Ctrl+Shift+End extend to the document edges', () => {
+    const { keyboard, selection } = wire()
+    expect(press(keyboard, { key: 'Home', shiftKey: true, ctrlKey: true }).defaultPrevented).toBe(true)
+    expect(selection.focus).toEqual({ row: 0, offset: 0 })
+    press(keyboard, { key: 'End', shiftKey: true, ctrlKey: true })
+    expect(selection.focus).toEqual({ row: 9, offset: 16 })
+  })
+
+  it('Ctrl+Home / Ctrl+End scroll to the document edges', () => {
+    const { keyboard, scroll } = wire()
+    expect(press(keyboard, { key: 'Home', ctrlKey: true }).defaultPrevented).toBe(true)
+    press(keyboard, { key: 'End', ctrlKey: true })
+    expect(scroll.scrollToStart).toHaveBeenCalledOnce()
+    expect(scroll.scrollToEnd).toHaveBeenCalledOnce()
+  })
+
+  it('Super+Shift+Down is not a document edge (Super is the desktop’s)', () => {
+    const { keyboard, selection } = wire()
+    press(keyboard, { key: 'ArrowDown', shiftKey: true, metaKey: true })
+    expect(selection.focus).toEqual({ row: 2, offset: 5 })
+  })
+
+  it('copies and opens search on Ctrl, never on Super', () => {
+    const { keyboard, runCopy, openSearch } = wire()
+    press(keyboard, { key: 'c', metaKey: true })
+    press(keyboard, { key: 'f', metaKey: true })
+    expect(runCopy).not.toHaveBeenCalled()
+    expect(openSearch).not.toHaveBeenCalled()
+    press(keyboard, { key: 'c', ctrlKey: true })
+    press(keyboard, { key: 'f', ctrlKey: true })
+    expect(runCopy).toHaveBeenCalledOnce()
+    expect(openSearch).toHaveBeenCalledOnce()
+  })
+
+  it('leaves Ctrl+← to the search input’s word motion', () => {
+    const input = document.createElement('input')
+    document.body.append(input)
+    input.focus()
+    const base = makeKeyboardDeps()
+    const keyboard = createViewerKeyboard({
+      ...base,
+      search: { ...base.search, searchVisible: true, searchInputRef: input },
+    })
+    expect(press(keyboard, { key: 'ArrowLeft', ctrlKey: true }).defaultPrevented).toBe(false)
+    input.remove()
+  })
+})
+
+describe('createViewerKeyboard on macos: the primary modifier is ⌘ only', () => {
+  it('⌃C, ⌃A, and ⌃F do nothing; ⌘C, ⌘A, and ⌘F still work', () => {
+    const runCopy = vi.fn()
+    const openSearch = vi.fn()
+    const selectAll = vi.fn()
+    const base = makeKeyboardDeps({
+      runCopy,
+      selection: { selection: null, selectAll, selectToEof: vi.fn(), setFocus: vi.fn() },
+    })
+    const keyboard = createViewerKeyboard({ ...base, search: { ...base.search, openSearch } })
+    for (const key of ['c', 'a', 'f']) press(keyboard, { key, ctrlKey: true })
+    expect([runCopy, openSearch, selectAll].map((spy) => spy.mock.calls.length)).toEqual([0, 0, 0])
+    for (const key of ['c', 'a', 'f']) press(keyboard, { key, metaKey: true })
+    expect([runCopy, openSearch, selectAll].map((spy) => spy.mock.calls.length)).toEqual([1, 1, 1])
   })
 })

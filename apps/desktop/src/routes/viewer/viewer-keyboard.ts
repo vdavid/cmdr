@@ -1,4 +1,6 @@
 import { eventMatchesCommand } from '#lib/shortcuts/index.js'
+import { holdsPrimaryModifier } from '#lib/shortcuts/primary-modifier.js'
+import { isMacOS } from '#lib/platform/index.js'
 import { EOF_ROW, type RowOffset, type SelectAllArgs, type Selection } from './selection.svelte'
 import { moveFocus, type CaretMotion, type MotionDirection } from './viewer-caret-motion'
 
@@ -93,10 +95,11 @@ function horizontalMotion(e: KeyboardEvent, direction: MotionDirection): CaretMo
   return { kind: byWord ? 'word' : 'char', direction }
 }
 
-/** Shift+Up/Down steps a logical line; ⌘ promotes it to the file edge. */
+/** Shift+Up/Down steps a logical line; on macOS ⌘ promotes it to the file edge. */
 function verticalMotion(e: KeyboardEvent, direction: MotionDirection): CaretMotion | null {
   if (!e.shiftKey) return null
-  if (e.metaKey) return { kind: 'docEdge', direction }
+  // Off macOS ⌘ is Super, the desktop's key; the file edge is Ctrl+Shift+Home / End there.
+  if (e.metaKey) return isMacOS() ? { kind: 'docEdge', direction } : null
   if (e.altKey || e.ctrlKey) return null
   return { kind: 'row', direction }
 }
@@ -105,12 +108,34 @@ function verticalMotion(e: KeyboardEvent, direction: MotionDirection): CaretMoti
  * Shift+Home/End extends to the LINE edge, while bare Home/End scroll to the file edge.
  * That difference is on purpose: unmodified Home/End are scroll-view navigation (what
  * macOS does in a document view), and a selection gesture works on the line in every
- * editor; ⌘ then promotes it back to the whole file. Don't harmonize them.
+ * editor; ⌘+Shift+Up/Down (macOS) or Ctrl+Shift+Home/End (Windows, Linux) then promotes it
+ * to the whole file. Don't harmonize them.
  */
 function rowEdgeMotion(e: KeyboardEvent, direction: MotionDirection): CaretMotion | null {
   if (!e.shiftKey) return null
+  if (isDocEdgeChord(e)) return { kind: 'docEdge', direction }
   if (e.metaKey || e.altKey || e.ctrlKey) return null
   return { kind: 'rowEdge', direction }
+}
+
+/** Ctrl (and only Ctrl, Shift aside) on Home / End off macOS: the document's edge, as in every editor there. */
+function isDocEdgeChord(e: KeyboardEvent): boolean {
+  return !isMacOS() && e.ctrlKey && !e.metaKey && !e.altKey
+}
+
+/** Ctrl+Home / Ctrl+End off macOS scroll to the file's edge, as bare Home / End do. Returns true if handled. */
+function handleDocEdgeScroll(e: KeyboardEvent, actions: ScrollActions): boolean {
+  if (e.shiftKey || !isDocEdgeChord(e)) return false
+  switch (e.key) {
+    case 'Home':
+      actions.scrollToStart()
+      return true
+    case 'End':
+      actions.scrollToEnd()
+      return true
+    default:
+      return false
+  }
 }
 
 /**
@@ -391,11 +416,13 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
   }
 
   /**
-   * Handles ⌘/Ctrl-prefixed shortcuts inside the viewer. Returns `true` if the key
+   * Handles the primary-modifier shortcuts inside the viewer (⌘ on macOS, Ctrl elsewhere; never
+   * the other one, so ⌃C doesn't copy on macOS nor Super+C on Linux). Returns `true` if the key
    * was consumed; the caller falls through to other handlers when it returns `false`.
    * Defers to the browser's native ⌘A / ⌘C when the search input is focused.
    */
   function handleModifierShortcut(e: KeyboardEvent, searchInputFocused: boolean): boolean {
+    if (!holdsPrimaryModifier(e)) return false
     if (searchInputFocused) {
       // ⌘F, plus ⌘C when the input holds a bare caret; ⌘A and a ⌘C over selected query
       // text go to the input's native handler.
@@ -462,6 +489,13 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
     // unlike the unmodified path this handler runs even while the search input has it,
     // and without the gate it would steal the input's own ⌥⇧Arrow.
     if (!searchInputFocused && tryExtendSelection(e)) {
+      e.preventDefault()
+      return
+    }
+
+    // Ctrl+Home / Ctrl+End off macOS: the file's edge. Not in the search input, whose own
+    // caret keys they are.
+    if (!searchInputFocused && handleDocEdgeScroll(e, deps.scroll)) {
       e.preventDefault()
       return
     }

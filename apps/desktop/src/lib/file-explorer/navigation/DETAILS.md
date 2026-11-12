@@ -292,16 +292,20 @@ listing-error handler resolves upward if the path is gone.
 - `itemsPerColumn`, `visibleColumns`: Brief mode only; presence enables Brief branch
 - `visibleItems`: Full mode PageUp/PageDown page size
 
-Handled keys:
+Handled commands, matched through the registry (`comboMatchesCommand` with `allowShift`, so Shift extends and any other
+extra modifier is another combo, `⌘Home` included). Default keys in parentheses:
 
-| Key               | Brief mode                                                     | Full mode              |
-| ----------------- | -------------------------------------------------------------- | ---------------------- |
-| Option+Up / Home  | First item                                                     | First item             |
-| Option+Down / End | Last item                                                      | Last item              |
-| PageUp            | Bottom of column (visibleColumns-1) to the left, or first item | Up by visibleItems-1   |
-| PageDown          | Bottom of column (visibleColumns-1) to the right, or last item | Down by visibleItems-1 |
+- `nav.home` (⌥↑ / `Alt+↑`, Home): first item, in both modes.
+- `nav.end` (⌥↓ / `Alt+↓`, End): last item, in both modes.
+- `nav.pageUp` (PageUp): Brief, the bottom of the column `visibleColumns - 1` to the left, or the first item; Full, up
+  by `visibleItems - 1`.
+- `nav.pageDown` (PageDown): Brief, the bottom of the column `visibleColumns - 1` to the right, or the last item; Full,
+  down by `visibleItems - 1`.
 
-Meta+Home/End is intentionally not handled (passes to OS). Returns `null` for unhandled keys.
+Returns `null` for anything else. Decision/Why: **the keys come from the registry, never a key table here**, so one key
+means one thing everywhere: both file views, the places browser, and the servers hub all follow a user's rebind of those
+four commands (on macOS too, on purpose), and a key the registry gives another command (Windows and Linux's `Alt+↑` for
+Go to parent) can't also jump the cursor to the top.
 
 Brief PageUp/PageDown lands on the **bottom row** of the target column (TUI convention).
 

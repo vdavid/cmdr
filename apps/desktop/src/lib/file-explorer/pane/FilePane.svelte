@@ -2288,12 +2288,12 @@
                 onCursorRowLanded={locationAnnouncer.cursorRowLanded}
                 selectedIndices={selection.selectedIndices}
                 onNavigate={(entry: FileEntry) => { void handleNavigate(entry) }}
-                onSelect={({ index, shiftKey, metaKey }: SelectPayload) => {
+                onSelect={({ index, shiftKey, toggle }: SelectPayload) => {
                     // Reuse the regular pane's click semantics so shift-range
                     // and cmd-toggle behave identically. The snapshot pane has
                     // no `..` row, so `hasParent` is always false; `handleSelect`
                     // honours it via the bound `hasParent` state.
-                    handleSelect({ index, shiftKey: shiftKey ?? false, metaKey: metaKey ?? false })
+                    handleSelect({ index, shiftKey: shiftKey ?? false, toggle: toggle ?? false })
                 }}
                 onVisibleRangeChange={handleVisibleRangeChange}
                 {onSortMenu}

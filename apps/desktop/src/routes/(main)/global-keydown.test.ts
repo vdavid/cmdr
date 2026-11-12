@@ -367,6 +367,121 @@ describe('resolveGlobalKeyAction', () => {
     })
   })
 
+  /**
+   * The native text keys (`native-text-keys.ts`) on each OS: in a focused text field the field
+   * owns them, whatever they're bound to; outside one the commands still run.
+   */
+  describe.each(['windows', 'linux'] as const)('the native text keys on %s', (platform) => {
+    const ctrl = (key: string, init: KeyboardEventInit = {}) =>
+      new KeyboardEvent('keydown', { key, ctrlKey: true, ...init })
+
+    let undoPlatform: () => void
+    beforeEach(() => {
+      undoPlatform = withPlatform(platform)
+      destroyShortcutDispatch()
+      initShortcutDispatch()
+    })
+    afterEach(() => {
+      undoPlatform()
+      window.getSelection()?.removeAllRanges()
+    })
+
+    it.each(['input', 'textarea'] as const)('leaves Ctrl+← / Ctrl+→ to word motion in a focused %s', (tag) => {
+      cleanupFocus = focus(tag)
+      expect(resolveGlobalKeyAction(ctrl('ArrowLeft'), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(ctrl('ArrowRight'), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
+      expect(resolveGlobalKeyAction(ctrl('ArrowLeft'), DIALOG_OPEN)).toEqual({ kind: 'ignore' })
+    })
+
+    it('still copies the path between panes with Ctrl+← / Ctrl+→ outside a text field', () => {
+      expect(resolveGlobalKeyAction(ctrl('ArrowLeft'), NOTHING_OPEN)).toEqual({
+        kind: 'dispatch',
+        commandId: 'pane.copyPathRightToLeft',
+      })
+      expect(resolveGlobalKeyAction(ctrl('ArrowRight'), NOTHING_OPEN)).toEqual({
+        kind: 'dispatch',
+        commandId: 'pane.copyPathLeftToRight',
+      })
+    })
+
+    it('lets the browser copy selected text with Ctrl+C, and copies files without a selection', () => {
+      expect(resolveGlobalKeyAction(ctrl('c'), NOTHING_OPEN)).toEqual({ kind: 'dispatch', commandId: 'edit.copy' })
+
+      const text = document.createElement('p')
+      text.textContent = 'some error details'
+      document.body.appendChild(text)
+      window.getSelection()?.selectAllChildren(text)
+      expect(resolveGlobalKeyAction(ctrl('c'), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
+      text.remove()
+    })
+
+    it.each([
+      ['Ctrl+Insert', { key: 'Insert', ctrlKey: true }],
+      ['Ctrl+Shift+V', { key: 'V', ctrlKey: true, shiftKey: true }],
+      ['Shift+F10', { key: 'F10', shiftKey: true }],
+      ['Ctrl+Backspace', { key: 'Backspace', ctrlKey: true }],
+      ['Ctrl+Home', { key: 'Home', ctrlKey: true }],
+      ['Ctrl+I (not native, but it would blur a rename editor)', { key: 'i', ctrlKey: true }],
+    ])('leaves %s to a focused text field', (_name, init) => {
+      cleanupFocus = focus('input')
+      expect(resolveGlobalKeyAction(new KeyboardEvent('keydown', init), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
+    })
+  })
+
+  /** The browser defaults the resolver suppresses, and the dev-only debug window, in each OS's own chord. */
+  describe.each([
+    ['macos', { metaKey: true }, { ctrlKey: true }, { key: 'i', metaKey: true, altKey: true }],
+    ['windows', { ctrlKey: true }, { metaKey: true }, { key: 'I', ctrlKey: true, shiftKey: true }],
+    ['linux', { ctrlKey: true }, { metaKey: true }, { key: 'I', ctrlKey: true, shiftKey: true }],
+  ] as const)('browser defaults on %s', (platform, primary, other, devTools) => {
+    let undoPlatform: () => void
+    beforeEach(() => {
+      undoPlatform = withPlatform(platform)
+      destroyShortcutDispatch()
+      initShortcutDispatch()
+    })
+    afterEach(() => {
+      undoPlatform()
+      vi.unstubAllEnvs()
+    })
+
+    it('suppresses an unclaimed select all with the primary modifier only', () => {
+      cleanupFocus = focus('button')
+      const selectAll = (mods: KeyboardEventInit) => new KeyboardEvent('keydown', { key: 'a', ...mods })
+      expect(resolveGlobalKeyAction(selectAll(primary), DIALOG_OPEN)).toEqual({ kind: 'suppress' })
+      expect(resolveGlobalKeyAction(selectAll(other), DIALOG_OPEN)).toEqual({ kind: 'ignore' })
+    })
+
+    it('suppresses the dev tools chord in production only', () => {
+      const chord = new KeyboardEvent('keydown', devTools)
+      expect(resolveGlobalKeyAction(chord, NOTHING_OPEN)).toEqual({ kind: 'ignore' })
+      vi.stubEnv('DEV', false)
+      expect(resolveGlobalKeyAction(chord, NOTHING_OPEN)).toEqual({ kind: 'suppress' })
+    })
+
+    it('opens the debug window on the primary modifier plus Shift+D, in dev', () => {
+      const debug = new KeyboardEvent('keydown', { key: 'D', shiftKey: true, ...primary })
+      expect(resolveGlobalKeyAction(debug, NOTHING_OPEN)).toEqual({ kind: 'openDebugWindow' })
+      const twin = new KeyboardEvent('keydown', { key: 'D', shiftKey: true, ...other })
+      expect(resolveGlobalKeyAction(twin, NOTHING_OPEN)).not.toEqual({ kind: 'openDebugWindow' })
+    })
+  })
+
+  describe('the native text keys on macos', () => {
+    it.each([
+      ['⌘⇧←', { key: 'ArrowLeft', metaKey: true, shiftKey: true }],
+      ['⌥←', { key: 'ArrowLeft', altKey: true }],
+      ['⌥⇧→', { key: 'ArrowRight', altKey: true, shiftKey: true }],
+    ])('leaves %s to a focused text field', (_name, init) => {
+      cleanupFocus = focus('input')
+      expect(resolveGlobalKeyAction(new KeyboardEvent('keydown', init), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
+    })
+
+    it('still copies files with ⌘C and no text selected', () => {
+      expect(resolveGlobalKeyAction(cmd('c'), NOTHING_OPEN)).toEqual({ kind: 'dispatch', commandId: 'edit.copy' })
+    })
+  })
+
   describe('with a modal open', () => {
     it('blocks pane-scoped commands', () => {
       // ⌘T (new tab) fires with nothing open, and must not fire behind a dialog.

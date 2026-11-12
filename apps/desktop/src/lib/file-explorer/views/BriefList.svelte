@@ -6,6 +6,7 @@
     import type { FileIndexState, FolderCoverage, MenuAnchor } from '#lib/tauri-commands/index.js'
     import { calculateVirtualWindowVariable, getScrollToPositionVariable } from './virtual-scroll'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
+    import { blocksClickToRename, rowSelectPayload } from './row-click'
     import { startSelectionDragTracking, type DragFileInfo } from '../drag/drag-drop'
     import type { PressedPane } from '../pane/pressed-rows'
     import {
@@ -603,7 +604,7 @@
     // `handleMouseDown` so the cursor item remains draggable; crossing the drag
     // threshold cancels the rename timer.
     function maybeStartClickToRename(event: MouseEvent, index: number) {
-        if (index === cursorIndex && !event.shiftKey && !event.metaKey && !renameState?.active && onStartRename) {
+        if (index === cursorIndex && !blocksClickToRename(event) && !renameState?.active && onStartRename) {
             startClickToRename(event, onStartRename)
         } else {
             // Clicking a different entry cancels any pending click-to-rename timer
@@ -630,7 +631,7 @@
 
         // ".." entry: just move cursor, no drag tracking
         if (entry.name === '..') {
-            onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
+            onSelect(rowSelectPayload(event, index))
             return
         }
 
@@ -646,18 +647,18 @@
                 { type: 'single', path: entry.path, iconId: entry.iconId, index, sourceVolumeId: volumeId, fileInfo },
                 {
                     onDragStart: () => {
-                        onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
+                        onSelect(rowSelectPayload(event, index))
                     },
                     onDragCancel: () => {
                         // Just do a normal select on cancel (mouseup without drag)
-                        onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
+                        onSelect(rowSelectPayload(event, index))
                     },
                     onDragInitiate,
                 },
             )
         } else {
             // Has selection: move cursor immediately (Shift+click ranges, Cmd+click toggles)
-            onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
+            onSelect(rowSelectPayload(event, index))
 
             // Always drag the selection (regardless of which file clicked)
             // Find the first selected file's icon for the drag preview

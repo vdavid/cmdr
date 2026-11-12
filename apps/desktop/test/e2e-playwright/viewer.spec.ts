@@ -14,7 +14,7 @@
 import { waitBudget } from './wait-budget.js'
 import path from 'path'
 import { test, expect } from './fixtures.js'
-import { closeScopedWindow, openViewerWindow, pollUntil } from './helpers.js'
+import { closeScopedWindow, openViewerWindow, pollUntil, PRIMARY_KEY_FLAG } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 // Use fixture file from the shared E2E fixture tree. Throw instead of using a
@@ -245,12 +245,12 @@ test.describe('File viewer selection and copy', () => {
     // 1) Trigger ⌘A: simulate keydown directly because the test webview's keyboard
     //    layer is wired to the host OS, not to the JS event loop the viewer listens to.
     await viewer.evaluate(`
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', metaKey: true }))
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ${PRIMARY_KEY_FLAG}: true }))
         `)
     // 2) Trigger ⌘C the same way. The viewer's copy handler runs, reads the range, and
     //    writes to the clipboard.
     await viewer.evaluate(`
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', metaKey: true }))
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ${PRIMARY_KEY_FLAG}: true }))
         `)
 
     // 3) Wait for the success toast (info-band) so we know the read returned.
@@ -338,7 +338,7 @@ test.describe('File viewer selection and copy', () => {
 
     // The selection should now exist; ⌘C reads it.
     await viewer.evaluate(`
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', metaKey: true }))
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ${PRIMARY_KEY_FLAG}: true }))
         `)
 
     // Wait for the copy success toast.
@@ -365,7 +365,7 @@ test.describe('File viewer selection and copy', () => {
     // Open search: `openSearch()` focuses AND selects the input, so without the
     // gesture handing focus back to the viewer, ⌘C would land on the query text.
     await viewer.evaluate(`
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', metaKey: true }))
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', ${PRIMARY_KEY_FLAG}: true }))
         `)
     await viewer.waitForSelector('.search-bar input.text-field-control', 5000)
     await expect
@@ -406,7 +406,7 @@ test.describe('File viewer selection and copy', () => {
     expect(inputStillFocused).toBe(false)
 
     await viewer.evaluate(`
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', metaKey: true }))
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ${PRIMARY_KEY_FLAG}: true }))
         `)
 
     await expect

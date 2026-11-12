@@ -15,8 +15,9 @@
  * - the leftovers reach the Brief or Full cursor handler per the view mode,
  * - key-up on Shift ends the mouse range-anchor gesture.
  */
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished, type Mock } from 'vitest'
 import type { FileEntry } from '../types'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 const { shortcuts, quickLook, renameActivation } = vi.hoisted<{
   shortcuts: { eventMatchesCommand: Mock }
@@ -179,12 +180,23 @@ describe('createPaneKeyRouter', () => {
       expect(e.stopPropagation).toHaveBeenCalled()
     })
 
-    it('swallows ⌘↓ with nothing under the cursor', () => {
+    it('swallows ⌘↓ with nothing under the cursor (macOS)', () => {
+      onTestFinished(withPlatform('macos'))
       state.cursorEntry = undefined
       onlyCommand('nav.open')
       const e = keyEvent({ metaKey: true })
       router().handleKeyDown(e)
       expect(deps.openEntry).not.toHaveBeenCalled()
+      expect(e.preventDefault).toHaveBeenCalled()
+      expect(e.stopPropagation).toHaveBeenCalled()
+      expect(deps.handleFullModeKeys).not.toHaveBeenCalled()
+    })
+
+    it('swallows a modified open key off macOS too (Ctrl+PageDown) with nothing under the cursor', () => {
+      state.cursorEntry = undefined
+      onlyCommand('nav.open')
+      const e = keyEvent({ key: 'PageDown', ctrlKey: true })
+      router().handleKeyDown(e)
       expect(e.preventDefault).toHaveBeenCalled()
       expect(e.stopPropagation).toHaveBeenCalled()
       expect(deps.handleFullModeKeys).not.toHaveBeenCalled()

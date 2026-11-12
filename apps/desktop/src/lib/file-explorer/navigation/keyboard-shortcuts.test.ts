@@ -1,19 +1,57 @@
 /**
  * Tests for keyboard-shortcuts.ts
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { handleNavigationShortcut, type NavigationContext } from './keyboard-shortcuts'
+import { resetShortcut, setShortcut, removeShortcut } from '#lib/shortcuts/shortcuts-store.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
-/** Helper to create a mock keyboard event */
-function createKeyboardEvent(key: string, options: { altKey?: boolean; metaKey?: boolean } = {}): KeyboardEvent {
-  return {
-    key,
-    altKey: options.altKey ?? false,
-    metaKey: options.metaKey ?? false,
-    ctrlKey: false,
-    shiftKey: false,
-  } as KeyboardEvent
+vi.mock('#lib/ipc/bindings.js', () => ({
+  commands: { updateMenuAccelerator: vi.fn(() => Promise.resolve({ status: 'ok' })) },
+}))
+
+/** Helper to create a keyboard event */
+function createKeyboardEvent(
+  key: string,
+  options: { altKey?: boolean; metaKey?: boolean; shiftKey?: boolean } = {},
+): KeyboardEvent {
+  return new KeyboardEvent('keydown', { key, ...options })
 }
+
+/**
+ * The keys come from the registry (`nav.home`, `nav.end`, `nav.pageUp`, `nav.pageDown`), so a
+ * rebind moves them in every list that uses this: both file views, the places browser, and the
+ * servers hub. On macOS too: that's one of the macOS changes the keymap work makes on purpose.
+ */
+describe.each(['macos', 'windows', 'linux'] as const)('a rebind of the navigation commands on %s', (platform) => {
+  const context: NavigationContext = { currentIndex: 50, totalCount: 100 }
+
+  beforeEach(() => withPlatform(platform))
+  afterEach(() => {
+    resetShortcut('nav.home')
+    resetShortcut('nav.pageDown')
+  })
+
+  it('moves Go to first file: a removed key stops working, and the new one jumps', () => {
+    removeShortcut('nav.home', 0) // ⌥↑ / Alt+↑ goes; Home stays.
+    expect(handleNavigationShortcut(createKeyboardEvent('ArrowUp', { altKey: true }), context)).toBeNull()
+    expect(handleNavigationShortcut(createKeyboardEvent('Home'), context)).toEqual({
+      newIndex: 0,
+      handled: true,
+      overflow: true,
+    })
+  })
+
+  it('moves Page down to the new key, Shift still extending', () => {
+    setShortcut('nav.pageDown', 0, 'F19')
+    expect(handleNavigationShortcut(createKeyboardEvent('PageDown'), context)).toBeNull()
+    expect(handleNavigationShortcut(createKeyboardEvent('F19', { shiftKey: true }), context)).toEqual({
+      newIndex: 70,
+      handled: true,
+      overflow: false,
+    })
+  })
+})
 
 describe('handleNavigationShortcut', () => {
   describe('Home shortcut', () => {

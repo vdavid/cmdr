@@ -381,8 +381,14 @@ So local handlers don't test raw key flags; they ask the registry:
 Callers today: `../file-explorer/pane/selection-keys.ts` (`Space` / `Insert` / `⌘A` / `⌘⇧A` / `*` / `⌥⇧=`),
 `../file-explorer/pane/selection-dialog-keys.ts` (`+` / `-`), `FilePane.handleOpenOrParentKey` (`nav.open` /
 `nav.parent` — and `⌘Backspace` falls through to `file.delete` for free, since it isn't `nav.parent`'s combo),
-`../file-explorer/pane/cursor-nav-keys.ts` (the ten cursor commands, as one gate in front of the per-view math), and
-`../file-explorer/network/PlacesBrowser.svelte` (`share.back` / `share.selectShare`).
+`../file-explorer/pane/cursor-nav-keys.ts` (the ten cursor commands, as one gate in front of the per-view math),
+`../file-explorer/navigation/keyboard-shortcuts.ts` (`nav.home` / `nav.end` / `nav.pageUp` / `nav.pageDown` for both
+views, the places browser, and the servers hub), and `../file-explorer/network/PlacesBrowser.svelte` (`share.back` /
+`share.selectShare`).
+
+A handler that needs "the platform's primary modifier" (a row's toggle click, the viewer's copy, select all, and search)
+asks `holdsPrimaryModifier(event)` (`primary-modifier.ts`: ⌘ on macOS, Ctrl elsewhere), ❌ never `metaKey` alone or
+`metaKey || ctrlKey` as "either": Ctrl+click is the context menu on macOS, and Super is the desktop's key off it.
 
 One file-list matcher stays hand-rolled ON PURPOSE, because it matches a CLASS of keys rather than a combo:
 `../file-explorer/pane/type-to-jump-keys.ts` (any printable character). It rejects every command modifier, which is the

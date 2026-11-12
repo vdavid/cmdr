@@ -272,6 +272,8 @@ Every new or moved Linux key against those five plus IBus and GTK:
   (`⌥S`/`⌥M`/`⌥I`, `⌥C`/`⌥V`) likewise. On Linux they need the mnemonic mask (§ Reservations behind the Linux keys,
   "Menu bar"); on Windows `Alt+F` is the File menu access key if task 63 adds them.
 - The viewer's search toggles: § Needs David.
+- The handlers that still read `metaKey` as the primary modifier, outside the keymap work's surfaces:
+  `docs/notes/windows-port/keymap-metakey-leftovers.md`.
 
 ## Still unverified (needs a real Windows or Linux box)
 

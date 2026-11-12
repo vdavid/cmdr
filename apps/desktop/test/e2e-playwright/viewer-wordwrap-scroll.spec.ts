@@ -21,7 +21,7 @@ import { waitBudget } from './wait-budget.js'
 import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
-import { closeScopedWindow, openViewerWindow, sleep } from './helpers.js'
+import { closeScopedWindow, openViewerWindow, PRIMARY_KEY_FLAG, sleep } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 const fixtureRoot = (() => {
@@ -346,7 +346,9 @@ test.describe('Viewer word-wrap scrolling', () => {
         const expected = noSpaceLine.slice(drag.from, drag.to)
         expect(expected.length, `${mode}: the drag spans characters`).toBeGreaterThan(0)
 
-        await viewer.evaluate(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', metaKey: true }))`)
+        await viewer.evaluate(
+          `window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ${PRIMARY_KEY_FLAG}: true }))`,
+        )
         // Poll the clipboard itself: the first copy's toast may still be up for the second.
         await expect
           .poll(() => readClipboard(viewer), {

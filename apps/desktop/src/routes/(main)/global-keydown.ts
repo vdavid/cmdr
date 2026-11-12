@@ -7,8 +7,8 @@
  * Two questions, in order:
  *
  * - **Which command does the combo mean?** The Tier 1 reverse lookup, minus the
- *   bails that hand a combo back to the browser (native text copy, ⌘← / ⌘→ inside
- *   an input, typing keys inside an input).
+ *   bails that hand a combo back to the browser (the platform's native text keys,
+ *   `native-text-keys.ts`, and typing keys inside an input).
  * - **Would the dispatch core run it right now?** The dialog gate
  *   (`dialog-command-gate.ts`) answers from the command's own `whileDialogOpen`
  *   rule. A key the core would refuse stays unclaimed, so nothing
@@ -23,6 +23,8 @@ import { toastStackOwnsKey } from '#lib/ui/toast/toast-focus.js'
 import type { CommandId } from '#lib/commands/index.js'
 import type { DialogsOnScreen } from './command-dispatch-context'
 import { isRefusedOverDialog } from './dialog-command-gate'
+import { nativeTextKeys } from './native-text-keys'
+import { getPlatform, isMacOS } from '#lib/platform/index.js'
 
 /** What `+page.svelte` should do with the keypress. */
 export type GlobalKeyAction =
@@ -56,22 +58,46 @@ function resolveEscape(event: KeyboardEvent, onScreen: DialogsOnScreen): GlobalK
   return { kind: 'unusedEscape' }
 }
 
-/** ⌘⇧D opens the debug window (dev only). Exact combo: ⌃⌘⇧D / ⌥⌘⇧D are other combos. */
-function isDebugWindowShortcut(event: KeyboardEvent): boolean {
+/** One exact chord: the platform's primary modifier plus exactly these others, and a letter. */
+interface PrimaryChord {
+  alt: boolean
+  shift: boolean
+  letter: string
+}
+
+/**
+ * True when the event is `chord` exactly, with the platform's primary modifier (⌘ on macOS,
+ * Ctrl elsewhere) and nothing else: `⌃⌘⇧D` and `Super+Ctrl+A` are other combos.
+ */
+function isPrimaryChord(event: KeyboardEvent, chord: PrimaryChord): boolean {
+  const mac = isMacOS()
   return (
-    import.meta.env.DEV &&
-    event.metaKey &&
-    event.shiftKey &&
-    !event.altKey &&
-    !event.ctrlKey &&
-    event.key.toLowerCase() === 'd'
+    event.metaKey === mac &&
+    event.ctrlKey === !mac &&
+    event.altKey === chord.alt &&
+    event.shiftKey === chord.shift &&
+    event.key.toLowerCase() === chord.letter
   )
 }
 
-/** Browser defaults we suppress outright (⌘A, ⌥⌘I in prod), each an exact combo. */
+/** The debug window's chord (dev only): ⌘⇧D, `Ctrl+Shift+D` off macOS. */
+const DEBUG_WINDOW: PrimaryChord = { alt: false, shift: true, letter: 'd' }
+/** Select all: ⌘A, `Ctrl+A` off macOS. Unclaimed, the browser would select the whole page. */
+const SELECT_ALL: PrimaryChord = { alt: false, shift: false, letter: 'a' }
+
+/** The web inspector's chord, which production suppresses: ⌥⌘I in WebKit, `Ctrl+Shift+I` in WebKitGTK and WebView2. */
+function devToolsChord(): PrimaryChord {
+  return isMacOS() ? { alt: true, shift: false, letter: 'i' } : { alt: false, shift: true, letter: 'i' }
+}
+
+function isDebugWindowShortcut(event: KeyboardEvent): boolean {
+  return import.meta.env.DEV && isPrimaryChord(event, DEBUG_WINDOW)
+}
+
+/** Browser defaults we suppress outright (select all, and the inspector in prod), each an exact combo. */
 function shouldSuppressKey(event: KeyboardEvent): boolean {
-  if (event.metaKey && !event.altKey && !event.ctrlKey && !event.shiftKey && event.key === 'a') return true
-  return !import.meta.env.DEV && event.metaKey && event.altKey && !event.ctrlKey && !event.shiftKey && event.key === 'i'
+  if (isPrimaryChord(event, SELECT_ALL)) return true
+  return !import.meta.env.DEV && isPrimaryChord(event, devToolsChord())
 }
 
 /** True if the user has selected text in the document (non-collapsed range). */
@@ -82,13 +108,14 @@ function hasTextSelection(): boolean {
 
 /** The centralized command lookup, minus the combos that belong to the browser. */
 function commandForCombo(combo: string): CommandId | undefined {
+  const nativeKeys = nativeTextKeys(getPlatform())
   // Let the browser copy selected text natively (for example, from the error pane)
   // instead of triggering our file-copy command.
-  if (combo === '⌘C' && hasTextSelection()) return undefined
-  // Let macOS's native line-start / line-end (⌘← / ⌘→) reach text inputs instead of
-  // triggering "Copy path between panes" from inside a rename editor, the palette
-  // search, the search dialog, settings inputs, etc.
-  if ((combo === '⌘←' || combo === '⌘→') && isTextInputFocused()) return undefined
+  if (nativeKeys.copyWithSelection.has(combo) && hasTextSelection()) return undefined
+  // A focused text field owns its editing keys (line and word motion, word delete, …), so
+  // "Copy path between panes" can't fire from inside a rename editor, the palette search,
+  // or the search dialog, and Delete can't run on a word delete.
+  if (isTextInputFocused() && (nativeKeys.fieldOwned.has(combo) || nativeKeys.bailInField.has(combo))) return undefined
   // Typing wins in text inputs: a bare-key (or shift-only) Tier 1 binding — Tab →
   // switch pane being the built-in case — must not fire mid-typing. Individual
   // inputs used to shield themselves with stopPropagation; this guard protects

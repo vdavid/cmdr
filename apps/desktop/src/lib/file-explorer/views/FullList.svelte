@@ -34,6 +34,7 @@
     import { markRunEdges } from './mark-run'
     import { createGitStatusColumn } from './full-list-git-column.svelte'
     import { planRowMouseDown } from './full-list-mouse'
+    import { rowSelectPayload } from './row-click'
     import { createRowActivation } from './row-activation'
     import type { PressedPane } from '../pane/pressed-rows'
     import { formatSizeForDisplay, formatNumber } from '../selection/selection-info-utils'
@@ -691,7 +692,7 @@
 
         if (plan.kind === 'ignore') return
         if (plan.kind === 'select') {
-            onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
+            onSelect(rowSelectPayload(event, index))
             return
         }
 
@@ -701,7 +702,7 @@
         if (plan.selectNow) {
             // Shift+click ranges, Cmd+click toggles; the drag then carries the
             // whole selection regardless of which row was pressed.
-            onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
+            onSelect(rowSelectPayload(event, index))
             startSelectionDragTracking(event, plan.context, { onDragInitiate })
             return
         }
@@ -710,10 +711,10 @@
         // decides whether this was a drag or a plain click.
         startSelectionDragTracking(event, plan.context, {
             onDragStart: () => {
-                onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
+                onSelect(rowSelectPayload(event, index))
             },
             onDragCancel: () => {
-                onSelect({ index, shiftKey: event.shiftKey, metaKey: event.metaKey })
+                onSelect(rowSelectPayload(event, index))
             },
             onDragInitiate,
         })

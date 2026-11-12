@@ -24,6 +24,7 @@ import { classifySelectionDialogKey } from './selection-dialog-keys'
 import { classifySelectionKey } from './selection-keys'
 import { eventMatchesCommand } from '#lib/shortcuts/index.js'
 import { claimKey } from '#lib/shortcuts/claim-key.js'
+import { holdsPrimaryModifier } from '#lib/shortcuts/primary-modifier.js'
 import { maybeShowQuickLookHint } from '../quick-look/quick-look-hint'
 import { cancelClickToRename } from '../rename/rename-activation'
 
@@ -148,9 +149,10 @@ export function createPaneKeyRouter(deps: PaneKeyRouterDeps): PaneKeyRouter {
         deps.openEntry(entry)
         return true
       }
-      // ⌘↓ with nothing under the cursor: swallow it so it can't fall through
-      // to cursor-move or the document dispatcher.
-      if (e.metaKey) {
+      // The open key on the primary modifier (⌘↓, `Ctrl+PageDown` off macOS) with nothing
+      // under the cursor: swallow it so it can't fall through to cursor-move or the document
+      // dispatcher. Bare Enter falls through.
+      if (holdsPrimaryModifier(e)) {
         claimKey(e)
         return true
       }

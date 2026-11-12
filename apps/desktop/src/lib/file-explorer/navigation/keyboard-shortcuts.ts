@@ -4,6 +4,8 @@
  * Provides centralized logic for handling keyboard navigation shortcuts
  * across different view modes (Brief and Full).
  */
+import type { CommandId } from '#lib/commands/index.js'
+import { comboMatchesCommand, resolveKeyCombo } from '#lib/shortcuts/shortcut-dispatch.js'
 
 export interface NavigationResult {
   /** The new index to select */
@@ -103,52 +105,39 @@ function handleFullPageNavigation(
 }
 
 /**
- * Whether the event carries a command modifier the given shortcut doesn't include.
- * Shift is never checked: the file list uses it to extend the selection while the
- * cursor moves, so `⇧PageDown` is still Page Down. Without this, `⌘Home` (and every
- * other superset) would move the cursor on its way to a different command.
+ * Whether the event is `commandId`'s key, read from the registry so a rebind moves it here too.
+ * Shift is allowed on top: the file list uses it to extend the selection while the cursor moves,
+ * so `⇧PageDown` is still Page Down. Any other extra modifier is another combo (`⌘Home` isn't
+ * Home).
  */
-function hasExtraModifier(event: KeyboardEvent, { alt = false } = {}): boolean {
-  return event.metaKey || event.ctrlKey || event.altKey !== alt
+function isKeyOf(combo: string, commandId: CommandId): boolean {
+  return comboMatchesCommand(combo, commandId, { allowShift: true })
 }
 
 /**
- * Checks if the event is a Home shortcut (Option+Up or Fn+Left/Home).
- */
-function isHomeShortcut(event: KeyboardEvent): boolean {
-  if (event.key === 'ArrowUp') return !hasExtraModifier(event, { alt: true })
-  return event.key === 'Home' && !hasExtraModifier(event)
-}
-
-/**
- * Checks if the event is an End shortcut (Option+Down or Fn+Right/End).
- */
-function isEndShortcut(event: KeyboardEvent): boolean {
-  if (event.key === 'ArrowDown') return !hasExtraModifier(event, { alt: true })
-  return event.key === 'End' && !hasExtraModifier(event)
-}
-
-/**
- * Handles keyboard navigation shortcuts for file lists.
+ * Handles keyboard navigation shortcuts for file lists: `nav.home`, `nav.end`, `nav.pageUp`, and
+ * `nav.pageDown`, whatever keys they hold (both file views, the places browser, and the servers hub
+ * share them, so one key means one thing everywhere).
  * Returns the new index, whether the event was handled, and whether the jump overflowed.
  */
 export function handleNavigationShortcut(event: KeyboardEvent, context: NavigationContext): NavigationResult | null {
   const { currentIndex, totalCount, itemsPerColumn, visibleColumns, visibleItems } = context
+  const combo = resolveKeyCombo(event)
 
-  // Home shortcut (Option+Up or Fn+Left): always overflow (intended distance = infinity).
-  if (isHomeShortcut(event)) {
+  // Go to first file: always overflow (intended distance = infinity).
+  if (isKeyOf(combo, 'nav.home')) {
     return { newIndex: 0, handled: true, overflow: true }
   }
 
-  // End shortcut (Option+Down or Fn+Right): always overflow.
-  if (isEndShortcut(event)) {
+  // Go to last file: always overflow.
+  if (isKeyOf(combo, 'nav.end')) {
     return { newIndex: Math.max(0, totalCount - 1), handled: true, overflow: true }
   }
 
   const isBriefMode = visibleColumns !== undefined && itemsPerColumn !== undefined
 
   // Page Up
-  if (event.key === 'PageUp' && !hasExtraModifier(event)) {
+  if (isKeyOf(combo, 'nav.pageUp')) {
     const clamped = isBriefMode
       ? handleBriefPageUp(currentIndex, totalCount, itemsPerColumn, visibleColumns)
       : handleFullPageNavigation(currentIndex, totalCount, visibleItems, false)
@@ -156,7 +145,7 @@ export function handleNavigationShortcut(event: KeyboardEvent, context: Navigati
   }
 
   // Page Down
-  if (event.key === 'PageDown' && !hasExtraModifier(event)) {
+  if (isKeyOf(combo, 'nav.pageDown')) {
     const clamped = isBriefMode
       ? handleBriefPageDown(currentIndex, totalCount, itemsPerColumn, visibleColumns)
       : handleFullPageNavigation(currentIndex, totalCount, visibleItems, true)

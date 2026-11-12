@@ -116,14 +116,14 @@ export function createPanePointer(deps: PanePointerDeps): PanePointer {
     return !(cmdClickedRow?.index === cursor && cmdClickedRow.listingId === deps.getListingId())
   }
 
-  function handleSelect({ index, shiftKey = false, metaKey = false }: SelectPayload): void {
+  function handleSelect({ index, shiftKey = false, toggle = false }: SelectPayload): void {
     const hasParent = deps.getHasParent()
     if (shiftKey) {
       // Shift wins over Cmd when both are held (matches Finder).
       deps.extendSelectionFromMouse({ index, cursorIndex: deps.getCursorIndex(), hasParent })
       cmdClickedRow = null
-    } else if (metaKey) {
-      // Cmd+click toggles the clicked item. `..` is a no-op inside toggleAt. With nothing
+    } else if (toggle) {
+      // Cmd+click (Ctrl+click off macOS) toggles the clicked item. `..` is a no-op inside toggleAt. With nothing
       // selected yet, toggling the cursor row selects it.
       if (cursorRowJoinsCmdClick(index, hasParent)) deps.toggleSelectionAt(deps.getCursorIndex(), hasParent)
       deps.toggleSelectionAt(index, hasParent)
