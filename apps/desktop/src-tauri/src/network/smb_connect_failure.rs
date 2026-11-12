@@ -166,10 +166,10 @@ pub enum UpgradeFailure {
     EncryptionRequired,
 }
 
-/// The longest one dial attempt may take to fail and still count as this Mac
+/// The longest one dial attempt may take to fail and still count as this machine
 /// refusing the route.
 ///
-/// A refusal inside this Mac never leaves it: ERR-XGS9X's came back in 1–3 ms,
+/// A refusal inside this machine never leaves it: ERR-XGS9X's came back in 1–3 ms,
 /// every attempt. An `EHOSTUNREACH` from the network takes a round trip at least,
 /// and usually seconds (a router answers only once its own ARP gives up). 250 ms
 /// sits two orders of magnitude above the first, for a CPU-starved tokio worker,
@@ -180,7 +180,7 @@ pub(crate) const BLOCKED_DIAL_CEILING: std::time::Duration = std::time::Duration
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum MountEvidence {
     /// Its `statfs` answered as an SMB mount under `MOUNT_READ_LIMIT`: the server
-    /// is reachable from this Mac, over the kernel's own connection.
+    /// is reachable from this machine, over the OS's own connection.
     Answered,
     /// Nothing vouches for the server: no SMB mount answered there.
     NoAnswer,
@@ -300,7 +300,7 @@ impl UpgradeFailure {
     /// attempt failed within [`BLOCKED_DIAL_CEILING`], and the mount answered. The
     /// errno alone can't say it: a server that's off, or a router giving up on it,
     /// answers `EHOSTUNREACH` too. The mount answering is what says the server is
-    /// there, and the speed says the refusal never left this Mac.
+    /// there, and the speed says the refusal never left this machine.
     pub(crate) fn of_dial(dial: &FailedDial, mount: MountEvidence) -> Self {
         if mount == MountEvidence::Answered
             && dial.slowest_attempt <= BLOCKED_DIAL_CEILING
@@ -347,7 +347,7 @@ impl UpgradeError {
 /// Where a failed direct connection leaves the user, which is what decides how
 /// loud the log is about it.
 pub(crate) enum DirectConnectOutcome {
-    /// Nobody will be asked anything: the share stays on the macOS kernel mount
+    /// Nobody will be asked anything: the share stays on the OS mount
     /// for the rest of the session, at kernel-mount speed and without the direct
     /// session's control surface. Always a WARN, because nothing else in the app
     /// will ever mention it.
@@ -424,19 +424,25 @@ pub(crate) fn log_direct_connect_failure(
     username: Option<&str>,
 ) {
     let err = &dial.error;
+    let words = super::os_mount::MOUNT_LOG_WORDS;
+    let mount = words.mount;
     let Some(refusal) = Refusal::of(err, SignInIdentity::from_username(username)) else {
         let io = dial_detail(err);
         let slowest = dial.slowest_attempt;
-        let why = match reason {
-            UpgradeFailure::BlockedByThisMac => {
-                " The share's kernel mount answered, so the server is reachable from this Mac: something on it (the Local Network permission, a firewall app) refused Cmdr's own connection."
-            }
-            _ => "",
-        };
+        let why = std::fmt::from_fn(|f| match reason {
+            UpgradeFailure::BlockedByThisMac => write!(
+                f,
+                " The share's kernel mount answered, so the server is reachable from {machine}: something on it ({blockers}) refused Cmdr's own connection.",
+                machine = words.machine,
+                blockers = words.route_blockers,
+            ),
+            _ => Ok(()),
+        });
         match outcome {
             DirectConnectOutcome::StaysOnKernelMount => log::warn!(
                 target: "smb_fallback",
-                "Couldn't establish an smb2 connection for server={server:?}, share={share:?} ({reason:?}, {io}, slowest_attempt={slowest:?}): {err}. Staying on the macOS kernel mount.{why}",
+                // allowed-log-private: `mount` is this OS's fixed word for its mount, not a user value
+                "Couldn't establish an smb2 connection for server={server:?}, share={share:?} ({reason:?}, {io}, slowest_attempt={slowest:?}): {err}. Staying on {mount}.{why}",
                 server = LogPrivate::host(server),
                 share = LogPrivate::volume(share),
             ),
@@ -461,7 +467,8 @@ pub(crate) fn log_direct_connect_failure(
     match outcome {
         DirectConnectOutcome::StaysOnKernelMount => log::warn!(
             target: "smb_fallback",
-            "server={server:?}, share={share:?} turned {who} away at {step} ({err}), so it stays on the macOS kernel mount: slower, and Cmdr can't manage the connection. {advice}",
+            // allowed-log-private: `mount` is this OS's fixed word for its mount, not a user value
+            "server={server:?}, share={share:?} turned {who} away at {step} ({err}), so it stays on {mount}: slower, and Cmdr can't manage the connection. {advice}",
             server = LogPrivate::host(server),
             share = LogPrivate::volume(share),
         ),

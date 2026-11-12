@@ -30,6 +30,13 @@ pub(crate) fn unmount_smb_shares_from_host(_targets: &[SmbServer]) -> Vec<String
 /// No NetFS sign-in helper.
 pub(crate) const CAN_WEDGE: bool = false;
 
+/// Windows' own SMB client, and no Local Network permission: only a firewall refuses a route.
+pub(crate) const MOUNT_LOG_WORDS: super::MountLogWords = super::MountLogWords {
+    mount: "the OS mount",
+    machine: "this PC",
+    route_blockers: "a firewall rule",
+};
+
 /// No NetFS sign-in helper.
 pub(crate) fn sign_in_helper_pid() -> Option<u32> {
     None

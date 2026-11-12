@@ -12,6 +12,13 @@ pub(crate) use smbutil::{list_shares_cli_as_guest, list_shares_cli_with_keychain
 /// NetFS signs in through `NetAuthSysAgent`, which can wedge.
 pub(crate) const CAN_WEDGE: bool = true;
 
+/// A NetFS mount, on a Mac with a Local Network permission that can refuse Cmdr's own route.
+pub(crate) const MOUNT_LOG_WORDS: super::MountLogWords = super::MountLogWords {
+    mount: "the macOS kernel mount",
+    machine: "this Mac",
+    route_blockers: "the Local Network permission, a firewall app",
+};
+
 /// The helper's process name, for the restart check.
 const SIGN_IN_HELPER: &str = "NetAuthSysAgent";
 

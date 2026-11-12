@@ -577,3 +577,19 @@ fn the_log_detail_names_the_io_kind_and_errno() {
         "a failure that isn't io says so"
     );
 }
+
+/// The fallback log names this OS's own mount, machine, and route blockers, so a Linux report
+/// never reads "the macOS kernel mount" or "this Mac" (#1112). macOS keeps its words.
+#[test]
+fn the_fallback_log_words_are_this_os_s_own() {
+    let words = crate::network::os_mount::MOUNT_LOG_WORDS;
+    if cfg!(target_os = "macos") {
+        assert_eq!(words.mount, "the macOS kernel mount");
+        assert_eq!(words.machine, "this Mac");
+        assert_eq!(words.route_blockers, "the Local Network permission, a firewall app");
+    } else {
+        for word in [words.mount, words.machine, words.route_blockers] {
+            assert!(!word.contains("Mac"), "{word}");
+        }
+    }
+}

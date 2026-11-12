@@ -26,6 +26,7 @@ const _: fn(&str, &str, Option<&str>, Option<&str>, u16) -> MountAnswer = mount_
 const _: fn(&[SmbServer]) -> Vec<String> = unmount_smb_shares_from_host;
 const _: fn() -> Option<u32> = sign_in_helper_pid;
 const _: bool = CAN_WEDGE;
+const _: MountLogWords = MOUNT_LOG_WORDS;
 // An `async fn` doesn't coerce to a fn pointer, so these pins name each one's arguments and the
 // output its future resolves to.
 const _: fn() = || {
@@ -45,6 +46,21 @@ pub(crate) use imp::unmount_smb_shares_from_host;
 
 /// Whether this OS's mount can wedge in a sign-in helper (macOS's `NetAuthSysAgent`).
 pub(crate) use imp::CAN_WEDGE;
+
+/// How a log line names what a share falls back to and where it runs. Logs are English (no
+/// catalog), but they land in error reports, so each OS's line names its own mount and machine.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct MountLogWords {
+    /// What a share stays on when the direct connection doesn't get in.
+    pub(crate) mount: &'static str,
+    /// This machine, as "reachable from …".
+    pub(crate) machine: &'static str,
+    /// What on this machine can refuse Cmdr's own route to a server the mount reaches.
+    pub(crate) route_blockers: &'static str,
+}
+
+/// This OS's words for the SMB fallback log (`smb_connect_failure::log_direct_connect_failure`).
+pub(crate) use imp::MOUNT_LOG_WORDS;
 
 /// The sign-in helper's pid right now, or `None` when it isn't running or this OS has none.
 pub(crate) use imp::sign_in_helper_pid;

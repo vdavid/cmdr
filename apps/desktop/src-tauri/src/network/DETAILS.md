@@ -731,9 +731,12 @@ process. Rationale and the stdio trap it closes: the module doc on `subprocess.r
 
 ## The direct-connect fallback names its cause
 
-When smb2 can't connect, the share stays on the macOS kernel mount for the session: slower, and without the direct
-session's control surface. Both upgrade paths log that through `smb_connect_failure::log_direct_connect_failure`, on the
-`smb_fallback` target, naming who was turned away (the account, or a guest) and at which step.
+When smb2 can't connect, the share stays on the OS mount for the session: slower, and without the direct session's
+control surface. Both upgrade paths log that through `smb_connect_failure::log_direct_connect_failure`, on the
+`smb_fallback` target, naming who was turned away (the account, or a guest) and at which step. The line names this OS's
+own mount, machine, and route blockers from the `os_mount` seam's `MOUNT_LOG_WORDS` ("the macOS kernel mount" and "this
+Mac" on macOS, "the OS mount (GVFS or CIFS)" and "this computer" on Linux, #1112), since these lines land in error
+reports.
 
 It reads the refusal itself (`Refusal::of`) rather than describing the failure with `UpgradeFailure`. **`UpgradeFailure`
 has no refusal variant** and folds a rejected password into `Unexpected`: it crosses IPC to pick the network-error copy,

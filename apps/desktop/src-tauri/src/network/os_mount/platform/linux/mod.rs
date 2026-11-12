@@ -12,6 +12,14 @@ pub(crate) use mount::{mount_share_sync, unmount_smb_shares_from_host};
 /// `gio mount` keeps the plain answers: no sign-in helper sits between it and the server.
 pub(crate) const CAN_WEDGE: bool = false;
 
+/// A GVFS mount (or a CIFS one the user made), and no Local Network permission: only a firewall
+/// refuses a route.
+pub(crate) const MOUNT_LOG_WORDS: super::MountLogWords = super::MountLogWords {
+    mount: "the OS mount (GVFS or CIFS)",
+    machine: "this computer",
+    route_blockers: "a firewall rule",
+};
+
 /// No sign-in helper.
 pub(crate) fn sign_in_helper_pid() -> Option<u32> {
     None
