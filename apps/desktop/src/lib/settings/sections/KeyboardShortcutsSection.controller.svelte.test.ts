@@ -54,6 +54,9 @@ vi.mock('#lib/shortcuts/index.js', async () => ({
   typingRefusal: (
     await vi.importActual<typeof import('#lib/shortcuts/key-capture.js')>('#lib/shortcuts/key-capture.js')
   ).typingRefusal,
+  // The real token writer too: the live modifier value must spell what a stored combo holds.
+  formatChord: (await vi.importActual<typeof import('#lib/shortcuts/key-capture.js')>('#lib/shortcuts/key-capture.js'))
+    .formatChord,
   findConflictsForShortcut: (shortcut: string, scope: string, excludeCommandId: string) =>
     findConflictsForShortcut({ shortcut, scope, excludeCommandId }),
   getConflictingCommandIds: () => new Set<string>(),
@@ -161,11 +164,28 @@ describe('key-filter field (non-macOS)', () => {
     const c = create()
     c.handleKeyFilterKeyDown(keyEvent({ key: 'Control', ctrlKey: true }))
     expect(c.keySearchQuery).toBe('Ctrl')
-    // The non-mac regex recognizes a Ctrl/Alt/Shift/Win-only value, so releasing
+    // The non-mac regex recognizes a Ctrl/Alt/Shift/Super-only value, so releasing
     // the last modifier clears it.
     c.handleKeyFilterKeyUp(keyEvent({ key: 'Control', ctrlKey: false }))
     expect(c.keySearchQuery).toBe('')
   })
+
+  it.each(['windows', 'linux'] as const)(
+    'names the Super key Super on %s, the token a stored combo holds, so held modifiers filter',
+    (platform) => {
+      onTestFinished(withPlatform(platform))
+      effectiveShortcuts.set('file.copy', ['Ctrl+Super+C'])
+      effectiveShortcuts.set('app.about', ['Ctrl+A'])
+      const c = create()
+      c.handleKeyFilterKeyDown(keyEvent({ key: 'Meta', ctrlKey: true, metaKey: true }))
+      expect(c.keySearchQuery).toBe('Ctrl+Super')
+      expect(c.filteredCommands.map((cmd) => cmd.id)).toEqual(['file.copy'])
+      // Releasing the last modifier clears a Super-only value.
+      c.handleKeyFilterKeyDown(keyEvent({ key: 'Meta', metaKey: true }))
+      c.handleKeyFilterKeyUp(keyEvent({ key: 'Meta', metaKey: false }))
+      expect(c.keySearchQuery).toBe('')
+    },
+  )
 })
 
 describe('filtering', () => {

@@ -2,7 +2,9 @@
  * Tests for `routeTypingKey`, the ONE typing intercept both key paths share.
  * They pin which keys each mode consumes and which fall through.
  */
-import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, onTestFinished, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
+import { keydownWithAltGraph } from '#lib/shortcuts/test-key-events.js'
 import { isBoundByAnyCommand } from '#lib/shortcuts/index.js'
 import { routeTypingKey, typingFilters, type TypingKeyTarget } from './type-to-jump-keys'
 
@@ -201,5 +203,44 @@ describe('routeTypingKey in jump mode', () => {
     expect(p.handleJumpKeystroke).toHaveBeenCalledWith('д')
     expect(routeTypingKey(p, key('-'))).toBe(false)
     expect(routeTypingKey(p, key(' '))).toBe(false)
+  })
+})
+
+// AltGr types a character, though Windows reports it as Ctrl+Alt: Polish AltGr+A is `ą`.
+describe('routeTypingKey with AltGr', () => {
+  const windowsAltGr = (k: string, extra: KeyboardEventInit = {}) =>
+    keydownWithAltGraph({ key: k, ctrlKey: true, altKey: true, ...extra })
+
+  it.each(['windows', 'linux'] as const)('starts a jump and a filter on an AltGr letter on %s', (platform) => {
+    onTestFinished(withPlatform(platform))
+    const event = platform === 'windows' ? windowsAltGr('ą') : keydownWithAltGraph({ key: 'ą' })
+    const jump = pane('jump')
+    expect(routeTypingKey(jump, event)).toBe(true)
+    expect(jump.handleJumpKeystroke).toHaveBeenCalledWith('ą')
+    const filter = pane('filter')
+    expect(routeTypingKey(filter, event)).toBe(true)
+    expect(filter.appendQuickFilter).toHaveBeenCalledWith('ą')
+  })
+
+  it('extends a jump with an AltGr symbol', () => {
+    onTestFinished(withPlatform('windows'))
+    const p = pane('jump', true)
+    expect(routeTypingKey(p, windowsAltGr('@'))).toBe(true)
+    expect(p.handleJumpKeystroke).toHaveBeenCalledWith('@')
+  })
+
+  it('leaves AltGr with Super held to its command', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(routeTypingKey(pane('jump', true), windowsAltGr('ą', { metaKey: true }))).toBe(false)
+  })
+
+  it('leaves Ctrl+Alt without AltGr to its command', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(routeTypingKey(pane('jump'), key('a', { ctrlKey: true, altKey: true }))).toBe(false)
+  })
+
+  it('keeps macOS as it is: ⌥ + a letter is a command there, AltGraph reported or not', () => {
+    onTestFinished(withPlatform('macos'))
+    expect(routeTypingKey(pane('jump'), keydownWithAltGraph({ key: 'å', altKey: true }))).toBe(false)
   })
 })

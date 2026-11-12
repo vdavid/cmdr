@@ -9,10 +9,21 @@
  * command registry: type-to-jump matches a CLASS of keys (any printable character),
  * not a combo. They're already exact in the way that matters — every one bails on
  * ⌘/⌃/⌥. Shift stays allowed because it types capitals and symbols, so the one
- * Shift combo that types nothing new, ⇧Space, gets its own check below.
+ * Shift combo that types nothing new, ⇧Space, gets its own check below. AltGr off
+ * macOS types too, though Windows reports it as Ctrl+Alt (`holdsCommandModifier`).
  */
 
-import { isBoundByAnyCommand, resolveKeyCombo } from '#lib/shortcuts/index.js'
+import { isAltGraphHeld, isBoundByAnyCommand, resolveKeyCombo } from '#lib/shortcuts/index.js'
+
+/**
+ * True when a modifier makes this keypress a command: ⌘ / ⌃ / ⌥, or off macOS Ctrl /
+ * Alt / Super. With AltGr held only Super counts, since Windows reports AltGr as
+ * Ctrl+Alt while the key types (Polish AltGr+A is `ą`).
+ */
+function holdsCommandModifier(e: KeyboardEvent): boolean {
+  if (isAltGraphHeld(e)) return e.metaKey
+  return e.metaKey || e.ctrlKey || e.altKey
+}
 
 /**
  * True if a letter or digit in ANY script (Cyrillic, Greek, CJK, …) with no
@@ -21,7 +32,7 @@ import { isBoundByAnyCommand, resolveKeyCombo } from '#lib/shortcuts/index.js'
  * non-Latin layout unable to jump or filter (cmdr-reports#56).
  */
 export function isTypeToJumpChar(e: KeyboardEvent): boolean {
-  if (e.metaKey || e.ctrlKey || e.altKey) return false
+  if (holdsCommandModifier(e)) return false
   return /^[\p{L}\p{N}]$/u.test(e.key)
 }
 
@@ -39,7 +50,7 @@ export function isTypeToJumpChar(e: KeyboardEvent): boolean {
  * has no key off macOS), it stays a space for anyone typing with Shift held.
  */
 export function isPrintableJumpContinuation(e: KeyboardEvent): boolean {
-  if (e.metaKey || e.ctrlKey || e.altKey) return false
+  if (holdsCommandModifier(e)) return false
   // eslint-disable-next-line cmdr/no-raw-key-match -- not a superset: ⌘⌃⌥ bailed above, so this is exactly ⇧Space, and the combo it asks about is any command's.
   if (e.shiftKey && e.key === ' ' && isBoundByAnyCommand(resolveKeyCombo(e))) return false
   return e.key.length === 1

@@ -199,6 +199,19 @@ function hasCommandModifier(event: KeyboardEvent): boolean {
 }
 
 /**
+ * True when AltGr is held off macOS: the keypress is typing a character, though Windows
+ * reports it as Ctrl+Alt. Linux sets neither flag, so there this only marks the event.
+ *
+ * Off on macOS by construction, not by luck: whether WebKit reports `AltGraph` for ⌥ there
+ * is unverified, and if it did, a platform-blind guard would kill ⌘⌥R, ⌥⇧=, and every other
+ * ⌥ physical match. A plain-object event without `getModifierState` (several tests build
+ * those) reads as no AltGr.
+ */
+export function isAltGraphHeld(event: KeyboardEvent): boolean {
+  return !isMacOS() && 'getModifierState' in event && event.getModifierState('AltGraph')
+}
+
+/**
  * Check if a key is a modifier (should not be captured alone).
  */
 export function isModifierKey(key: string): boolean {
@@ -226,8 +239,19 @@ export function formatKeyCombo(event: KeyboardEvent): string {
   const shiftTypedTheKey = event.shiftKey && !hasCommandModifier(event) && !event.altKey && isTypedSymbol(event.key)
   const modifiers = { ...eventModifiers(event), shiftKey: event.shiftKey && !shiftTypedTheKey }
   // Don't include modifier keys themselves as the main key
-  const key = isModifierKey(event.key) ? '' : normalizeKeyName(event.key, event.code)
+  const key = isModifierKey(event.key) ? '' : comboKeyName(event)
   return formatChord(modifiers, key)
+}
+
+/**
+ * The key name `formatKeyCombo` writes. An AltGr dead key stays `Dead`: it's the first half
+ * of a character, and the key-position stand-in macOS's ⌥ needs (`⌘⌥E`) would make it
+ * `Ctrl+Alt+1` on Windows and a bare `1` on Linux, both bindable. No binding names `Dead`,
+ * so the keypress resolves to nothing.
+ */
+function comboKeyName(event: KeyboardEvent): string {
+  if (event.key === 'Dead' && isAltGraphHeld(event)) return 'Dead'
+  return normalizeKeyName(event.key, event.code)
 }
 
 /** Which modifiers a chord holds, by the `KeyboardEvent` flag each one sets. */
@@ -295,13 +319,35 @@ function eventModifiers(event: KeyboardEvent): Pick<KeyboardEvent, 'metaKey' | '
  * never the key position. Letters count only with ⌘ or ⌃ held as well: ⌘⌥R reports
  * `®`, never typing, so the key position names it, as the `Dead` branch of
  * `normalizeKeyName` does for ⌘⌥E. A bare ⌥ + letter is typing (`å`), so it stays.
+ *
+ * Never with AltGr held (`isAltGraphHeld`): that keypress typed its character, and German
+ * AltGr+Q (`@`) must not also mean `Ctrl+Alt+Q`. One widening, off macOS only: the ISO key
+ * left of Z (`isoBackslashCombo`).
  */
 export function physicalKeyCombo(event: KeyboardEvent): string | null {
+  if (isAltGraphHeld(event)) return null
+  const isoBackslash = isoBackslashCombo(event)
+  if (isoBackslash !== undefined) return isoBackslash
   if (!event.altKey && !(event.shiftKey && hasCommandModifier(event))) return null
   const letter = hasCommandModifier(event) ? /^Key([A-Z])$/.exec(event.code)?.[1].toLowerCase() : undefined
   const physical = letter ?? physicalKeyCharacter(event.code)
   if (physical === undefined || physical === event.key) return null
   return formatKeyCombo({ ...eventModifiers(event), key: physical, code: event.code } as KeyboardEvent)
+}
+
+/**
+ * Off macOS, the ISO key left of Z (`IntlBackslash`) with Ctrl or Super alone is named `<`
+ * by position: Go to root's `Ctrl+<`, which types `<` on German and Nordic layouts, `í` on
+ * Hungarian, and `\` on UK. `null` where it already typed `<`; `undefined` when the rule
+ * doesn't apply. A US ANSI keyboard has no such key, so its `Ctrl+Shift+,` stays its own
+ * combo. Off on macOS: no default needs it there, and Mac ISO keyboards are widely reported
+ * to swap this code with `Backquote` (unverified here).
+ */
+function isoBackslashCombo(event: KeyboardEvent): string | null | undefined {
+  if (isMacOS() || event.code !== 'IntlBackslash') return undefined
+  if (event.altKey || event.shiftKey || event.ctrlKey === event.metaKey) return undefined
+  if (event.key === '<') return null
+  return formatKeyCombo({ ...eventModifiers(event), key: '<', code: event.code } as KeyboardEvent)
 }
 
 /**
@@ -314,9 +360,10 @@ export function physicalKeyCombo(event: KeyboardEvent): string | null {
  *
  * Only for non-Latin SCRIPTS: a Latin layout's letter is the identity (Dvorak's J
  * is J, wherever it sits), and so is an ⌥-typed `å`. Bare ⌥ (no ⌘ / ⌃) is typing,
- * as in `physicalKeyCombo`: US ⌥P types `π`.
+ * as in `physicalKeyCombo`: US ⌥P types `π`. So is AltGr (`isAltGraphHeld`).
  */
 export function latinKeyCombo(event: KeyboardEvent): string | null {
+  if (isAltGraphHeld(event)) return null
   if (event.altKey && !hasCommandModifier(event)) return null
   const letter = /^Key([A-Z])$/.exec(event.code)?.[1]
   if (letter === undefined || !isNonLatinLetter(event.key)) return null
@@ -335,12 +382,16 @@ function isNonLatinLetter(key: string): boolean {
  * one. Only without ⌘ / ⌃ (those make a command, whatever ⌥ typed), and only
  * for symbols: ⌥ + a letter is a real ⌥ combo, never typing a different letter.
  *
+ * AltGr off macOS is the same thing (`isAltGraphHeld`), though Windows reports it with Ctrl
+ * held: there only Super still makes a command.
+ *
  * A FALLBACK, tried after the exact combo and the physical key
  * (`keyComboCandidates`): a user who bound the ⌥ combo itself keeps it.
  */
 export function typedCharacterCombo(event: KeyboardEvent): string | null {
-  if (!event.altKey || hasCommandModifier(event) || !isTypedSymbol(event.key)) return null
-  return normalizeKeyName(event.key, event.code)
+  if (!isTypedSymbol(event.key)) return null
+  const typing = isAltGraphHeld(event) ? !event.metaKey : event.altKey && !hasCommandModifier(event)
+  return typing ? normalizeKeyName(event.key, event.code) : null
 }
 
 /**

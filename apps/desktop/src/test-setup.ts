@@ -79,6 +79,16 @@ afterEach(async () => {
 // engine here, so nothing else could ever make it fire.
 vi.stubGlobal('ResizeObserver', TestResizeObserver)
 
+// happy-dom answers `getModifierState('AltGraph')` with `altKey`, so every synthetic Alt
+// keydown would read as AltGr typing, which the shortcut matcher treats as typing off macOS.
+// A browser reports AltGr on its own, and only on a layout that has it. Here it's never held;
+// a test that means AltGr builds its event with `keydownWithAltGraph` (`#lib/shortcuts/test-key-events`).
+// eslint-disable-next-line @typescript-eslint/unbound-method -- called with `.call(this)` below, never unbound.
+const happyDomGetModifierState = KeyboardEvent.prototype.getModifierState
+KeyboardEvent.prototype.getModifierState = function getModifierState(this: KeyboardEvent, key: string): boolean {
+  return key === 'AltGraph' ? false : happyDomGetModifierState.call(this, key)
+}
+
 // Mock Tauri event API to handle both static and dynamic imports
 vi.mock('@tauri-apps/api/event', () => ({
   listen: vi.fn(() => Promise.resolve(() => {})),

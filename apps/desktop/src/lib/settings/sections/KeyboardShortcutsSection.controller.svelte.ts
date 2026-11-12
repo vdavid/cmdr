@@ -32,6 +32,7 @@ import {
   resetShortcut,
   resetAllShortcuts,
   capturedKeyCombo,
+  formatChord,
   isModifierKey,
   typingRefusal,
   findConflictsForShortcut,
@@ -359,21 +360,13 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
     return true
   }
 
-  /** Build the display string for the modifiers currently held (platform-aware). */
+  /**
+   * The modifiers currently held, in the platform's canonical spelling (`formatChord`, the token
+   * writer `formatKeyCombo` uses), so the live value is a prefix of the stored combos it filters:
+   * `Super`, never `Win`, for the Meta key off macOS.
+   */
   function formatModifiers(event: KeyboardEvent): string {
-    const parts: string[] = []
-    if (isMacOS()) {
-      if (event.metaKey) parts.push('⌘')
-      if (event.ctrlKey) parts.push('⌃')
-      if (event.altKey) parts.push('⌥')
-      if (event.shiftKey) parts.push('⇧')
-    } else {
-      if (event.ctrlKey) parts.push('Ctrl')
-      if (event.altKey) parts.push('Alt')
-      if (event.shiftKey) parts.push('Shift')
-      if (event.metaKey) parts.push('Win')
-    }
-    return isMacOS() ? parts.join('') : parts.join('+')
+    return formatChord(event, '')
   }
 
   function handleKeyFilterKeyDown(event: KeyboardEvent) {
@@ -415,7 +408,7 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
         // If the value is only modifiers (no regular key), clear it
         const isOnlyModifiers = isMacOS()
           ? /^[⌘⌃⌥⇧]*$/.test(currentValue)
-          : /^(Ctrl\+?|Alt\+?|Shift\+?|Win\+?)*$/.test(currentValue)
+          : /^(Ctrl\+?|Alt\+?|Shift\+?|Super\+?)*$/.test(currentValue)
         if (isOnlyModifiers) {
           keySearchQuery = ''
         }

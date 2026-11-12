@@ -957,8 +957,9 @@ or doubles a real shortcut. Every handler here therefore resolves through `event
   `⌘←`/`⌘→` bail, so no modifier superset moves the cursor any more.
 
 `type-to-jump-keys.ts` deliberately stays hand-rolled: it matches a key CLASS (any printable character) rather than a
-combo, and rejects ⌘/⌃/⌥, which is the property that matters. Full contract and the why: `#lib/shortcuts/DETAILS.md` §
-"Local handlers resolve through the registry too".
+combo, and rejects ⌘/⌃/⌥, which is the property that matters. One exception: off macOS, AltGr (`isAltGraphHeld`) is
+typing although Windows reports it as Ctrl+Alt, so Polish AltGr+A (`ą`) jumps and filters; only Super still bails. Full
+contract and the why: `#lib/shortcuts/DETAILS.md` § "Local handlers resolve through the registry too".
 
 **Selection-dialog keys dispatch onto the bus.** The `+` / `-` keypresses are classified by `selection-dialog-keys.ts`
 and reach the bus through a typed `onCommand?: (commandId: CommandId) => void` prop chain: `FilePane` (the classifier at

@@ -256,6 +256,26 @@ A keypress can mean more than one combo, and `keyComboCandidates(event)` lists t
 4. `typedCharacterCombo(event)`: the bare character an ⌥ keypress typed, with no ⌘ / ⌃. On a Mac, Option is the PC's
    AltGr, and plenty of layouts type `*` or `-` with it, so a `*` binding reaches those users too.
 
+**AltGr is typing off macOS** (`isAltGraphHeld`: `getModifierState('AltGraph')`, never on macOS). Windows reports AltGr
+as Ctrl+Alt, so before the guard German AltGr+Q (`@`) also meant `Ctrl+Alt+Q` by key position and opened the queue, and
+Hungarian AltGr+V (`@`) ran Move here. With AltGr held, `physicalKeyCombo` and `latinKeyCombo` return `null`, and
+`typedCharacterCombo` treats it as ⌥ on a Mac (it runs although Ctrl is set; only Super still makes a command), so an
+AltGr-typed `*` reaches its binding. The exact combo stays first and honest (`Ctrl+Alt+@`, which the capture field
+records). An AltGr dead key keeps the name `Dead` (`Ctrl+Alt+Dead` on Windows, `Dead` on Linux) and so resolves to no
+binding: it's the first half of a character, and the key-position stand-in ⌥ needs on macOS (`⌘⌥E`) would make it a
+bindable `Ctrl+Alt+1` or bare `1`. Linux AltGr sets neither Ctrl nor Alt, so there the guard only nulls candidates that
+couldn't have fired. Off on macOS by construction, not by luck: whether WebKit reports `AltGraph` for ⌥ is unverified,
+and a platform-blind guard would kill ⌘⌥R, ⌥⇧=, and every ⌥ physical match (`key-capture.test.ts` feeds `AltGraph` to
+the macOS cases and pins that nothing moves). What WebView2 really reports for AltGr is unverified until Cmdr runs on
+Windows. Test events: happy-dom answers `AltGraph` with `altKey`, so `test-setup.ts` makes it never held, and a test
+that means AltGr builds its event with `keydownWithAltGraph` (`test-key-events.ts`).
+
+**The ISO key left of Z is `<` by position off macOS.** `physicalKeyCombo` names `IntlBackslash` with Ctrl or Super
+alone (no Alt, no Shift) as `<`, so Go to root's `Ctrl+<` works wherever the key exists: it types `<` on German and
+Nordic layouts, `í` on Hungarian (`Ctrl+Í`, then `Ctrl+<`), and `\` on UK. A US ANSI keyboard has no such key, and its
+`Ctrl+Shift+,` stays its own combo. Off on macOS: no default needs it there, and Mac ISO keyboards are widely reported
+to swap `IntlBackslash` and `Backquote` in `event.code` (unverified here).
+
 `capturedKeyCombo(event)` (physical, else Latin position, else exact) is what the Settings capture field and its
 key-filter box record, so a Russian-layout rebind persists `⇧D` and keeps working after a layout switch. It's always one
 of the candidates, so whatever a user records also dispatches. In a focused text input the global dispatcher reads the
@@ -281,7 +301,9 @@ The macOS system-shortcut table in `../settings/sections/keyboard-shortcuts-bann
 strings for the same reason — Apple spells force-quit `⌥⌘⎋`, but the user's keypress arrives as `⌘⌥Escape`.
 
 The one place canonical strings surface as-is to a user is the Settings key-search box: it holds what `formatKeyCombo`
-produced so it can filter against stored combos, so it reads `⌘Backspace`, not `⌘⌫`.
+produced so it can filter against stored combos, so it reads `⌘Backspace`, not `⌘⌫`. While only modifiers are held it
+shows them through `formatChord` (the same token writer), so the Meta key off macOS reads `Super`, the token a stored
+combo holds.
 
 ### Centralized dispatch (`shortcut-dispatch.ts`)
 

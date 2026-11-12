@@ -15,6 +15,7 @@ import {
   capturedKeyCombo,
   toAriaKeyShortcut,
 } from './key-capture'
+import { keydownWithAltGraph } from './test-key-events'
 
 /** Runs the rest of the current test on macOS or, with `false`, off it. */
 function setMacOS(isMac: boolean) {
@@ -300,6 +301,128 @@ describe('capturedKeyCombo', () => {
     setMacOS(true)
     expect(capturedKeyCombo(makeKeyEvent({ key: 'В', code: 'KeyD', shiftKey: true }))).toBe('⇧D')
     expect(capturedKeyCombo(makeKeyEvent({ key: 'с', code: 'KeyC', ctrlKey: true }))).toBe('⌃C')
+  })
+})
+
+/**
+ * AltGr types characters. Windows reports it as Ctrl+Alt (plus `AltGraph`), so without
+ * the guard German AltGr+Q (`@`) also meant `Ctrl+Alt+Q` by key position, and ran
+ * whatever holds it. Layouts per Microsoft's KLC tables (kbdlayout.info).
+ */
+describe('AltGr is typing off macOS', () => {
+  const windowsAltGr = (key: string, code: string, extra: KeyboardEventInit = {}) =>
+    keydownWithAltGraph({ key, code, ctrlKey: true, altKey: true, ...extra })
+
+  it.each([
+    ['German AltGr+Q', windowsAltGr('@', 'KeyQ'), ['Ctrl+Alt+@', '@']],
+    ['Hungarian AltGr+F', windowsAltGr('[', 'KeyF'), ['Ctrl+Alt+[', '[']],
+    ['Hungarian AltGr+V', windowsAltGr('@', 'KeyV'), ['Ctrl+Alt+@', '@']],
+    ['Hungarian AltGr+- (types *)', windowsAltGr('*', 'Slash'), ['Ctrl+Alt+*', '*']],
+    ['Polish AltGr+A', windowsAltGr('ą', 'KeyA'), ['Ctrl+Alt+Ą']],
+  ])('Windows %s: the exact combo, then the typed character, never the key position', (_name, event, expected) => {
+    onTestFinished(withPlatform('windows'))
+    expect(physicalKeyCombo(event)).toBeNull()
+    expect(latinKeyCombo(event)).toBeNull()
+    expect(keyComboCandidates(event)).toEqual(expected)
+  })
+
+  it('leaves a US layout, which has no AltGr, as it was', () => {
+    onTestFinished(withPlatform('windows'))
+    const ctrlAltQ = new KeyboardEvent('keydown', { key: 'q', code: 'KeyQ', ctrlKey: true, altKey: true })
+    expect(keyComboCandidates(ctrlAltQ)).toEqual(['Ctrl+Alt+Q'])
+    const ctrlShiftPeriod = new KeyboardEvent('keydown', { key: '>', code: 'Period', ctrlKey: true, shiftKey: true })
+    expect(keyComboCandidates(ctrlShiftPeriod)).toEqual(['Ctrl+Shift+>', 'Ctrl+Shift+.'])
+  })
+
+  it('treats a Linux AltGr, which sets no Ctrl or Alt, as the character it typed', () => {
+    onTestFinished(withPlatform('linux'))
+    expect(keyComboCandidates(keydownWithAltGraph({ key: '@', code: 'KeyQ' }))).toEqual(['@'])
+    expect(keyComboCandidates(keydownWithAltGraph({ key: 'ą', code: 'KeyA' }))).toEqual(['Ą'])
+  })
+
+  it('still lets Super make a command: AltGr only owns Ctrl and Alt', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(typedCharacterCombo(windowsAltGr('*', 'Slash', { metaKey: true }))).toBeNull()
+  })
+
+  it('names an AltGr dead key Dead, so the first half of a character resolves to no binding', () => {
+    // Hungarian AltGr+1 starts `~`. The key-position stand-in macOS needs (`⌘⌥E`) would make
+    // it `Ctrl+Alt+1` on Windows and a bare `1` on Linux, both bindable.
+    for (const [platform, event, expected] of [
+      ['windows', windowsAltGr('Dead', 'Digit1'), ['Ctrl+Alt+Dead']],
+      ['linux', keydownWithAltGraph({ key: 'Dead', code: 'Digit1' }), ['Dead']],
+    ] as const) {
+      const undo = withPlatform(platform)
+      expect(keyComboCandidates(event)).toEqual(expected)
+      undo()
+    }
+  })
+
+  it('records an AltGr keypress by what it typed', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(capturedKeyCombo(windowsAltGr('@', 'KeyQ'))).toBe('Ctrl+Alt+@')
+  })
+
+  // The guard is off on macOS by construction: whether WebKit reports `AltGraph` for ⌥ is
+  // unverified, and if it did, a platform-blind guard would kill ⌘⌥R, ⌥⇧=, and every ⌥ match.
+  it.each([
+    ['⌥⇧= (types ±)', { key: '±', code: 'Equal', altKey: true, shiftKey: true }],
+    ['⌘⌥R (types ®)', { key: '®', code: 'KeyR', metaKey: true, altKey: true }],
+    ['⌃⌥F (types ƒ)', { key: 'ƒ', code: 'KeyF', ctrlKey: true, altKey: true }],
+    ['⌘⌥E (dead)', { key: 'Dead', code: 'KeyE', metaKey: true, altKey: true }],
+    ['⌥ *', { key: '*', code: 'Slash', altKey: true }],
+    ['numpad ⌥+', { key: '+', code: 'NumpadAdd', altKey: true }],
+    ['Russian ⌘C', { key: 'с', code: 'KeyC', metaKey: true }],
+    ['⌘ IntlBackslash (Hungarian í)', { key: 'í', code: 'IntlBackslash', metaKey: true }],
+  ])('macOS %s resolves the same with AltGraph reported', (_name, init) => {
+    onTestFinished(withPlatform('macos'))
+    const plain = new KeyboardEvent('keydown', init)
+    const withAltGraph = keydownWithAltGraph(init)
+    expect(keyComboCandidates(withAltGraph)).toEqual(keyComboCandidates(plain))
+    expect(capturedKeyCombo(withAltGraph)).toBe(capturedKeyCombo(plain))
+  })
+})
+
+/**
+ * Go to root's `Ctrl+<` is the ISO key left of Z (`IntlBackslash`) by position: it types `<`
+ * on German and Nordic layouts, `í` on Hungarian, and `\` on UK. A US ANSI keyboard has no
+ * such key.
+ */
+describe.each(['windows', 'linux'] as const)('the IntlBackslash key on %s', (platform) => {
+  const ctrl = (key: string, extra: KeyboardEventInit = {}) =>
+    new KeyboardEvent('keydown', { key, code: 'IntlBackslash', ctrlKey: true, ...extra })
+
+  it.each([
+    ['German', '<', ['Ctrl+<']],
+    ['Swedish', '<', ['Ctrl+<']],
+    ['Hungarian', 'í', ['Ctrl+Í', 'Ctrl+<']],
+    ['UK', '\\', ['Ctrl+\\', 'Ctrl+<']],
+  ])('%s Ctrl+IntlBackslash also means Ctrl+<', (_layout, key, expected) => {
+    onTestFinished(withPlatform(platform))
+    expect(keyComboCandidates(ctrl(key))).toEqual(expected)
+  })
+
+  it('names it with Super alone too, and not with Shift or Alt added', () => {
+    onTestFinished(withPlatform(platform))
+    const superKey = new KeyboardEvent('keydown', { key: 'í', code: 'IntlBackslash', metaKey: true })
+    expect(keyComboCandidates(superKey)).toEqual(['Super+Í', 'Super+<'])
+    expect(keyComboCandidates(ctrl('>', { shiftKey: true }))).toEqual(['Ctrl+Shift+>'])
+    expect(physicalKeyCombo(ctrl('í', { altKey: true }))).toBeNull()
+  })
+
+  it("leaves a US keyboard's Ctrl+Shift+, its own combo", () => {
+    onTestFinished(withPlatform(platform))
+    const usCtrlShiftComma = new KeyboardEvent('keydown', { key: '<', code: 'Comma', ctrlKey: true, shiftKey: true })
+    expect(keyComboCandidates(usCtrlShiftComma)).toEqual(['Ctrl+Shift+<', 'Ctrl+Shift+,'])
+  })
+})
+
+describe('the IntlBackslash key on macOS', () => {
+  it('keeps the rule off: no macOS default needs it, and Mac ISO keyboards may swap its code', () => {
+    onTestFinished(withPlatform('macos'))
+    expect(
+      keyComboCandidates(new KeyboardEvent('keydown', { key: 'í', code: 'IntlBackslash', metaKey: true })),
+    ).toEqual(['⌘Í'])
   })
 })
 

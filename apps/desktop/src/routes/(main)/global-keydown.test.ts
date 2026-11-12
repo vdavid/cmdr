@@ -13,6 +13,7 @@
  * default would surface here rather than silently passing.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { keydownWithAltGraph } from '#lib/shortcuts/test-key-events.js'
 import { resolveGlobalKeyAction, unclaimedDispatchWarning } from './global-keydown'
 import { claimKey } from '#lib/shortcuts/claim-key.js'
 import { commands } from '#lib/commands/command-registry.js'
@@ -322,6 +323,47 @@ describe('resolveGlobalKeyAction', () => {
       ]) {
         expect(resolveGlobalKeyAction(key(init), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
       }
+    })
+
+    // Windows reports AltGr as Ctrl+Alt, so by key position German AltGr+Q (`@`) also meant
+    // `Ctrl+Alt+Q` and opened the queue. AltGr types; only what it typed may reach a binding.
+    describe('AltGr on Windows', () => {
+      const windowsAltGr = (init: KeyboardEventInit) => keydownWithAltGraph({ ctrlKey: true, altKey: true, ...init })
+
+      let undoPlatform: () => void
+      beforeEach(() => {
+        undoPlatform = withPlatform('windows')
+        // Rebuild the dispatch map on the Windows keymap.
+        destroyShortcutDispatch()
+        initShortcutDispatch()
+      })
+      afterEach(() => {
+        undoPlatform()
+      })
+
+      it.each([
+        ['German AltGr+Q (types @)', { key: '@', code: 'KeyQ' }],
+        ['Hungarian AltGr+V (types @)', { key: '@', code: 'KeyV' }],
+        ['Hungarian AltGr+C (types &)', { key: '&', code: 'KeyC' }],
+        ['Polish AltGr+A (types ą)', { key: 'ą', code: 'KeyA' }],
+      ])('%s runs no Ctrl+Alt command', (_name, init) => {
+        expect(resolveGlobalKeyAction(windowsAltGr(init), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
+      })
+
+      it('lets an AltGr-typed * reach its binding, and leaves it to a focused text input', () => {
+        const hungarianStar = { key: '*', code: 'Slash' }
+        expect(resolveGlobalKeyAction(windowsAltGr(hungarianStar), NOTHING_OPEN)).toEqual({
+          kind: 'dispatch',
+          commandId: 'selection.invert',
+        })
+        cleanupFocus = focus('input')
+        expect(resolveGlobalKeyAction(windowsAltGr(hungarianStar), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
+      })
+
+      it('still runs Ctrl+Alt+Q pressed on a US layout, which has no AltGr', () => {
+        const usCtrlAltQ = key({ key: 'q', code: 'KeyQ', ctrlKey: true, altKey: true })
+        expect(resolveGlobalKeyAction(usCtrlAltQ, NOTHING_OPEN)).toEqual({ kind: 'dispatch', commandId: 'queue.show' })
+      })
     })
   })
 

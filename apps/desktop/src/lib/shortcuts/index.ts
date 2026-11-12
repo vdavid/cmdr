@@ -4,7 +4,15 @@
  */
 
 // Key capture
-export { formatKeyCombo, capturedKeyCombo, isModifierKey, toDisplayShortcut, typingRefusal } from './key-capture'
+export {
+  formatKeyCombo,
+  capturedKeyCombo,
+  formatChord,
+  isAltGraphHeld,
+  isModifierKey,
+  toDisplayShortcut,
+  typingRefusal,
+} from './key-capture'
 
 // Shortcuts store
 export {
