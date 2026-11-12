@@ -122,16 +122,27 @@ function readInsets(page: TauriPage, dialogId: string): Promise<InsetResult> {
             return parseFloat(style.paddingLeft) + parseFloat(style.paddingRight)
         }
 
+        // A block with words of its own is the section, whatever sits inside its
+        // sentence: a paragraph holding one inline key cap is still the paragraph.
+        function hasOwnText(el) {
+            for (var i = 0; i < el.childNodes.length; i++) {
+                var node = el.childNodes[i]
+                if (node.nodeType === 3 && node.textContent.trim() !== '') return true
+            }
+            return false
+        }
+
         // Start at the first ELEMENT child and descend its first-element-child chain
         // while each link is a pass-through: an only child, no surface of its own, no
-        // padding. A bare wrapper \`<div>\` must not hide the section that pays the
-        // inset, and equally must not let the descent run past the section INTO a
-        // control's innards.
+        // padding, no words of its own. A bare wrapper \`<div>\` must not hide the
+        // section that pays the inset, and equally must not let the descent run past
+        // the section INTO a control's innards or an inline element in its sentence.
         var section = body.firstElementChild
         if (!section) return { reason: 'the body is empty' }
         while (
             !isSurface(section) &&
             horizontalPadding(section) === 0 &&
+            !hasOwnText(section) &&
             section.children.length === 1 &&
             section.firstElementChild
         ) {
