@@ -767,16 +767,29 @@ pub(crate) fn copy_files_with_progress_inner(
             // failures are exactly the kind of "this didn't work" we want signal
             // on). A folder that replaced one of the user's FILES keeps its name
             // too, so the file it displaced becomes a ` (recovered)` sibling
-            // rather than going with the aside.
-            state
-                .scope()
-                .host()
-                .events()
-                .error_report(OperationErrorReport::LocalCopyFailed {
-                    operation_id: operation_id.into(),
-                    error: e.clone(),
-                    kept_files: transaction.created_files().len(),
-                });
+            // rather than going with the aside. An expected refusal (a permission,
+            // a full disk, a file gone or in use) is the world's doing and the
+            // dialog says what to do, so it logs at warn and files no report
+            // (`WriteOperationError::is_expected_refusal`, cmdr-reports#99).
+            if e.is_expected_refusal() {
+                log::warn!(
+                    target: "copy",
+                    "copy_files_with_progress: refused op={} detail={:?}, keeping {} completed files",
+                    operation_id,
+                    e.log_detail(),
+                    transaction.created_files().len(),
+                );
+            } else {
+                state
+                    .scope()
+                    .host()
+                    .events()
+                    .error_report(OperationErrorReport::LocalCopyFailed {
+                        operation_id: operation_id.into(),
+                        error: e.clone(),
+                        kept_files: transaction.created_files().len(),
+                    });
+            }
             let e = fail_keeping_displaced_aside(transaction, state.scope(), operation_id, e);
             let event = transfer_stop_event(operation_id, WriteOperationType::Copy, state, e, None);
             let e = event.error.clone();

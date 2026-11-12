@@ -1,0 +1,534 @@
+{
+  "about": "One sample per WriteOperationError variant (plus wrappers over a serious cause) and the log level a failure of that kind earns: 'error' only for what may be our own defect, 'warn' for the world's refusals the error dialog explains with a way forward. An error log counts toward an auto-sent error report. Read by BOTH crates/cmdr-operations/src/error_classification.rs (WriteOperationError::is_expected_refusal) and apps/desktop/src/lib/file-operations/transfer/transfer-error-log-level.test.ts (logLevelFor), so the two can't drift. A new variant: the frontend test fails until its sample is here.",
+  "cases": [
+    {
+      "level": "warn",
+      "error": {
+        "type": "archive_duplicate_entry_name",
+        "path": "/Users/david/Downloads/photos.zip",
+        "name": "Summer/beach.jpg"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "archive_encrypted_entry",
+        "path": "/Users/david/Downloads/tax-2025.zip",
+        "name": "receipts/march.pdf"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "archive_entry_name_refused",
+        "entry": "Reports/..\\notes.txt",
+        "reason": "parentTraversal"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "archive_entry_names_collide",
+        "entry": "Reports/a\\b.txt",
+        "other": "Reports/a/b.txt",
+        "archivePath": "Reports/a/b.txt"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "archive_entry_under_file",
+        "path": "/Users/david/Downloads/project.zip",
+        "entry": "notes/a.txt",
+        "file": "notes"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "archive_needs_password",
+        "path": "/Users/david/Downloads/tax-returns-2019-2025.zip",
+        "container": "archive",
+        "wrongAttempt": false
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "cancelled",
+        "message": "Cancelled after 1,284 of 12,900 files"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "changed_while_disconnected",
+        "path": "/Volumes/naspi/photos/2019/DSC01143.arw",
+        "volumeName": "Naspolya"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "connection_interrupted",
+        "path": "smb://naspolya.local/media/photos/2026"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "delete_pending",
+        "path": "/Users/david/Downloads/ubuntu-26.04-desktop-amd64.iso"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "destination_exists",
+        "path": "/Users/david/Documents/invoices/2026-Q2-summary.numbers"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "destination_full",
+        "path": "/Volumes/USB-STICK/photos/2026/DSC09241.arw"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "destination_inside_source",
+        "source": "/Users/david/Pictures/Photo Library",
+        "destination": "/Users/david/Pictures/Photo Library/2026/backup-of-everything"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "destination_not_a_folder",
+        "path": "/Volumes/Naspolya/media/photos/2026"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "destination_not_connected",
+        "path": "sftp://david@naspolya.local:22/share/photos/2026"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "destination_not_found",
+        "path": "/Volumes/Naspolya/media/photos/2026"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "destination_not_writable",
+        "path": "adb://46061FDAS000A4",
+        "reason": "unexplained"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "device_disconnected",
+        "path": "/Volumes/Fältkamera/DCIM/104MSDCF",
+        "side": {
+          "role": "destination",
+          "volumeId": "vol-faltkamera",
+          "volumeName": "Fältkamera",
+          "counterpartName": "Macintosh HD"
+        }
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "duplicate_source_names",
+        "name": "invoices",
+        "first": "/Users/david/Documents/2025/invoices",
+        "second": "/Users/david/Documents/2026/invoices"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "file_in_use",
+        "path": "/Volumes/naspi/papers/finances/2026-tax-return.pdf"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "file_locked",
+        "path": "/Users/david/Documents/Rymdskottkärra/bokföring-2025.numbers"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "files_too_large_for_filesystem",
+        "filesystem": "fat32",
+        "maxSize": 4294967295,
+        "files": [
+          {
+            "name": "2026-07-14_stockholm-archipelago-sunrise-session.braw",
+            "size": 92341338112
+          },
+          {
+            "name": "family-videos-2011-2026-master.mov",
+            "size": 41231223808
+          },
+          {
+            "name": "ubuntu-26.04-desktop-amd64.iso",
+            "size": 6442450944
+          }
+        ],
+        "totalCount": 3
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "home_folder",
+        "path": "/Users/david",
+        "relation": "isHome",
+        "action": "delete"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "insufficient_space",
+        "required": 214748364800,
+        "available": 3221225472,
+        "volumeName": "Naspolya media (SMB)"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "invalid_name",
+        "path": "/Volumes/USB-STICK (FAT32)/notes: draft?.md",
+        "message": "FAT32 file names can’t contain : or ?"
+      }
+    },
+    {
+      "level": "error",
+      "error": {
+        "type": "io_error",
+        "path": "/Volumes/naspi/media/photos/2026",
+        "message": "os error 60: Operation timed out"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "landing_not_recorded",
+        "path": "/Volumes/naspi/papers/finances/2026-tax-return.pdf"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "link_needs_consent",
+        "path": "smb://naspolya.local/media/archive/2026.zip",
+        "server": "naspolya.local",
+        "target": "fs01.example.com"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "mounted_volume_inside",
+        "mountPoint": "/Users/david/projects/backup/nas",
+        "action": "delete"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "move_not_confirmed",
+        "path": "/Volumes/Fältkamera/DCIM",
+        "errno": 5,
+        "volumeName": "Fältkamera"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "name_too_long",
+        "path": "/Volumes/Naspolya/media/photos/2026/07-summer-archive/raw-originals/Sony-A7RV/2026-07-14_stockholm-archipelago-sunrise-session/DSC09241_edited_final_v3_reallyfinal.arw.duplicate-of-the-duplicate-with-a-very-long-suffix"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "named_leaves_refused",
+        "path": "/Volumes/naspi/papers/invoices paid/2026-09-27 OpenAI invoice Rymd.pdf",
+        "reason": "sameName"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "new_data_kept_at",
+        "path": "/Volumes/naspi/papers/finances/2026-tax-return.pdf",
+        "keptAt": "/Volumes/naspi/papers/finances/2026-tax-return (recovered).pdf",
+        "message": "os error 60: Operation timed out"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "new_files_kept",
+        "cause": {
+          "type": "server_connection_lost",
+          "path": "/Volumes/naspi/photos/2026/DSC09241.arw",
+          "volumeName": "Naspolya",
+          "gaveUpAfterSecs": 900
+        },
+        "kept": [
+          {
+            "fate": "landsWhenBack",
+            "count": 2,
+            "exampleName": "DSC09239.arw",
+            "volumeName": "Naspolya"
+          },
+          {
+            "fate": "rescued",
+            "count": 1,
+            "exampleName": "DSC09240 (recovered).arw",
+            "volumeName": "Naspolya"
+          }
+        ]
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "originals_kept_aside",
+        "cause": {
+          "type": "source_not_found",
+          "path": "/Users/david/projects/notes/2026-07-24.md"
+        },
+        "recovered": [
+          {
+            "path": "/Volumes/naspi/papers/finances/2026-tax-return",
+            "keptAt": "/Volumes/naspi/papers/finances/2026-tax-return (recovered)"
+          }
+        ]
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "permission_denied",
+        "path": "/Library/Application Support/com.apple.TCC/TCC.db",
+        "message": "os error 1: Operation not permitted\nsandbox: deny(1) file-write-unlink /Library/Application Support",
+        "errno": null,
+        "refusal": "unclassified",
+        "refusedFolder": null,
+        "side": null
+      }
+    },
+    {
+      "level": "error",
+      "error": {
+        "type": "read_error",
+        "path": "/Volumes/Fältkamera/DCIM/104MSDCF/DSC09241.ARW",
+        "message": "os error 5: Input/output error (block 2,398,112)"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "read_only_device",
+        "path": "/Volumes/Cmdr 0.9.4/Cmdr.app",
+        "deviceName": "Cmdr 0.9.4 (disk image)",
+        "side": "destination"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "reply_signature_refused",
+        "path": "/Volumes/naspi/photos/2026/DSC09241.arw",
+        "message": "signature verification failed for READ (message id 412): mismatch"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "server_connection_lost",
+        "path": "/Volumes/naspi/photos/2026/DSC09241.arw",
+        "volumeName": "Naspolya",
+        "gaveUpAfterSecs": 900
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "smb_encryption_required",
+        "path": "/Volumes/public/photos/2026/DSC09241.arw"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "smb_encryption_unavailable",
+        "path": "/Volumes/vault/contracts/2026/lease.pdf"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "smb_negotiation_invalid",
+        "path": "/Volumes/naspi/photos/2026/DSC09241.arw",
+        "message": "negotiate validation failed: the server answered a different dialect"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "source_changed",
+        "path": "s3://AKIAIOSFODNN7EXAMPLE@nbg1.your-objectstorage.com:443/team-docs/2026/budget.xlsx"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "source_in_cold_storage",
+        "path": "s3://AKIAIOSFODNN7EXAMPLE@s3.eu-west-1.amazonaws.com:443/family-photos/2019/holiday-raw.tar"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "source_no_longer_connected",
+        "path": "/sdcard/DCIM/Camera/PXL_20260714_052311.jpg"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "source_not_connected",
+        "path": "adb://46061FDAS000A4/sdcard/DCIM/Camera/PXL_20260714_052311.jpg"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "source_not_found",
+        "path": "/Volumes/Naspolya/media/photos/2026/07-summer-archive/raw-originals/Sony-A7RV/2026-07-14_stockholm-archipelago-sunrise-session/DSC09241_edited_final_v3_reallyfinal.arw"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "source_not_removed",
+        "path": "/Users/david/Pictures/gate-measurements.jpg",
+        "landedAt": "/Volumes/naspi/projects-archive/2023/gate-measurements.jpg",
+        "cause": {
+          "type": "permission_denied",
+          "path": "/Users/david/Pictures/gate-measurements.jpg",
+          "message": "Operation not permitted (os error 1)",
+          "errno": 1,
+          "refusal": "systemProtected",
+          "refusedFolder": null,
+          "side": "source"
+        }
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "sources_span_volumes",
+        "path": "/Volumes/naspi/backups/m3-macbook/Browse snapshots"
+      }
+    },
+    {
+      "level": "error",
+      "error": {
+        "type": "symlink_loop",
+        "path": "/Users/david/dev/node_modules/.pnpm/self/node_modules/self"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "trash_not_supported",
+        "path": "/Volumes/naspi/papers/finances/2026/kvitton"
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "trash_refused",
+        "itemCount": 7,
+        "reason": "notPermitted",
+        "message": "$HOME/Library/CloudStorage/Dropbox/Shots/Screenshot.jpeg: “Screenshot.jpeg” couldn’t be moved to the trash because you don’t have permission to access it."
+      }
+    },
+    {
+      "level": "error",
+      "error": {
+        "type": "write_error",
+        "path": "/Volumes/naspi/media/photos/2026/DSC09241.ARW",
+        "message": "os error 28: No space left on device"
+      }
+    },
+    {
+      "level": "error",
+      "error": {
+        "type": "originals_kept_aside",
+        "cause": {
+          "type": "io_error",
+          "path": "/Volumes/share/a.bin",
+          "message": "Input/output error (os error 5)"
+        },
+        "recovered": []
+      }
+    },
+    {
+      "level": "error",
+      "error": {
+        "type": "source_not_removed",
+        "path": "/Volumes/share/a.bin",
+        "landedAt": "/Users/me/a.bin",
+        "cause": {
+          "type": "io_error",
+          "path": "/Volumes/share/a.bin",
+          "message": "Input/output error (os error 5)"
+        }
+      }
+    },
+    {
+      "level": "error",
+      "error": {
+        "type": "new_files_kept",
+        "cause": {
+          "type": "write_error",
+          "path": "/Volumes/share/a.bin",
+          "message": "disk said no"
+        },
+        "kept": []
+      }
+    },
+    {
+      "level": "warn",
+      "error": {
+        "type": "new_files_kept",
+        "cause": {
+          "type": "file_in_use",
+          "path": "/Volumes/share/report.pdf"
+        },
+        "kept": []
+      }
+    }
+  ]
+}

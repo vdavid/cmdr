@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { logLevelFor } from './transfer-error-log-level'
+import { transferErrorFixtures } from '#lib/dialog-gallery/fixtures/transfer-error.js'
 import type { WriteOperationError } from '#lib/file-explorer/types.js'
 
 const permissionDenied: WriteOperationError = {
@@ -42,5 +45,33 @@ describe('logLevelFor', () => {
     expect(logLevelFor({ type: 'source_not_removed', path: '/a', landedAt: '/b', cause: permissionDenied })).toBe(
       'warn',
     )
+  })
+})
+
+/**
+ * The ONE rule, shared with the backend's `WriteOperationError::is_expected_refusal`
+ * (`crates/cmdr-operations/src/error_classification.rs`) through this file: a sample of
+ * every variant and the level it earns. The backend logs a failed copy at error only when
+ * this side would, so an expected refusal never auto-sends a report from either
+ * (cmdr-reports#99, #111).
+ */
+describe('the log levels shared with the backend', () => {
+  const shared = JSON.parse(
+    readFileSync(resolve(process.cwd(), '../../crates/cmdr-operations/src/write_error_log_levels.json'), 'utf8'),
+  ) as { cases: { level: 'warn' | 'error'; error: WriteOperationError }[] }
+
+  it.each(shared.cases.map((c) => [c.error.type, c.level, c] as const))('logs %s at %s', (_type, level, c) => {
+    expect(logLevelFor(c.error)).toBe(level)
+  })
+
+  // The gallery keeps one fixture per variant, keyed by its tag (a `Record` over the
+  // union), so a variant with no shared sample fails here before the two sides can drift.
+  it('holds a sample of every variant', () => {
+    const sampled = new Set(shared.cases.map((c) => c.error.type))
+    const variants = Object.entries(transferErrorFixtures)
+      .filter(([id, fixture]) => fixture?.error.type === id)
+      .map(([id]) => id)
+    expect(variants.length).toBeGreaterThan(50)
+    expect(variants.filter((v) => !sampled.has(v as WriteOperationError['type']))).toEqual([])
   })
 })

@@ -12,6 +12,7 @@ use crate::event_sinks::CollectorEventSink;
 use crate::state::{CachedScanResult, ConflictResolutionResponse, FileInfo};
 use crate::testing::TestOperations;
 use crate::types::{ConflictInfo, DryRunResult, ScanProgressEvent, WriteConflictResolvedEvent, WriteSettledEvent};
+use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::CopyScanResult;
 
 fn make_state(engine: &TestOperations, progress_interval_ms: u64) -> Arc<WriteOperationState> {
@@ -165,6 +166,23 @@ fn a_mid_batch_failure_keeps_the_file_that_replaced_the_users_original() {
         fs::read(&landed).unwrap(),
         b"THE NEW BYTES",
         "and it must still hold the new bytes"
+    );
+}
+
+/// A source that vanished mid-copy is the world's doing, and the dialog says so: raising
+/// `LocalCopyFailed` logs at error, which auto-sends a report about the person's disk
+/// (cmdr-reports#99, #111). The frontend logs it at warn; so does the engine now.
+#[test]
+fn an_expected_refusal_raises_no_error_report() {
+    let engine = TestOperations::new();
+    let _ = copy_batch_whose_second_item_fails(&engine, "op-local-copy-failure-no-report");
+
+    let reports = engine.events().error_reports.lock_ignore_poison();
+    assert!(
+        !reports
+            .iter()
+            .any(|r| matches!(r, OperationErrorReport::LocalCopyFailed { .. })),
+        "a vanished source is an expected refusal, so no error report: {reports:?}"
     );
 }
 

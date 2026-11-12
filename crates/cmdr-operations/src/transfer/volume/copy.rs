@@ -426,10 +426,11 @@ impl crate::Operations {
                         ));
                     }
                     Err(failure) if failure.error.is_expected_refusal() => {
-                        // The world said no (a file open somewhere else) and the
-                        // dialog says what to do, so no error report: `warn` keeps it
-                        // below the auto-report threshold (cmdr-reports#111). See
-                        // `WriteOperationError::is_expected_refusal`.
+                        // The world said no (a permission, a full disk, a file gone
+                        // or open somewhere else) and the dialog says what to do, so no
+                        // error report: `warn` keeps it below the auto-report threshold
+                        // (cmdr-reports#99, #111). The same rule as the frontend's
+                        // `logLevelFor`: `WriteOperationError::is_expected_refusal`.
                         log::warn!(
                             target: "copy",
                             "copy_between_volumes: operation {} refused: detail={:?}",

@@ -18,7 +18,9 @@ use super::super::types::WriteOperationError;
 #[derive(Debug)]
 pub enum OperationErrorReport {
     // An operation failed, and the person already sees it. The report is the
-    // signal opt-in users send on "this didn't work".
+    // signal opt-in users send on "this didn't work". Raised only for a failure
+    // that may be our defect: an expected refusal (`WriteOperationError::is_expected_refusal`)
+    // logs at warn instead, as the frontend's `logLevelFor` does.
     /// A local copy failed and kept the `kept_files` it had landed.
     LocalCopyFailed {
         /// The operation that failed.

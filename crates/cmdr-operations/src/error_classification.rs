@@ -169,23 +169,73 @@ impl WriteOperationError {
     /// dialog explains with a way forward, rather than something that may be our
     /// own defect.
     ///
-    /// Callers log it at `warn`, for the same reason as
+    /// Callers log it at `warn` and raise no error report, for the same reason as
     /// [`is_expected_recoverable`](Self::is_expected_recoverable): an error log
-    /// counts toward an auto-sent report (cmdr-reports#111: a file open elsewhere on
-    /// a share refused three copies and auto-sent one). A wrapper that carries the
-    /// reason it stopped answers for its cause, the way the frontend's
-    /// `logLevelFor` does.
+    /// counts toward an auto-sent report, so a refusal the person's environment
+    /// caused would send one about it (cmdr-reports#99: a permission refusal;
+    /// cmdr-reports#111: a file open elsewhere on a share). A wrapper that carries
+    /// the reason it stopped answers for its cause.
     ///
-    /// Deliberately narrow: only the variants an auto-sent report has shown to be
-    /// noise. The frontend's `transfer-error-log-level.ts` is the broader rule for
-    /// the lines it writes.
+    /// The ONE rule, shared with the frontend's `logLevelFor`
+    /// (`transfer-error-log-level.ts`, which rides the dialog's `serious` category):
+    /// both are pinned to `write_error_log_levels.json`, a sample of every variant
+    /// and its level, so they can't drift. Exhaustive on purpose: a new variant
+    /// doesn't compile here until someone picks its side.
     pub(crate) fn is_expected_refusal(&self) -> bool {
         match self {
-            Self::FileInUse { .. } => true,
+            // What may be ours to fix: an unclassified I/O failure, a read or write the
+            // device couldn't do, a link loop the walker should have caught.
+            Self::ReadError { .. } | Self::WriteError { .. } | Self::IoError { .. } | Self::SymlinkLoop { .. } => false,
             Self::OriginalsKeptAside { cause, .. }
             | Self::SourceNotRemoved { cause, .. }
             | Self::NewFilesKept { cause, .. } => cause.is_expected_refusal(),
-            _ => false,
+            Self::SourceNotFound { .. }
+            | Self::DestinationNotFound { .. }
+            | Self::DestinationNotAFolder { .. }
+            | Self::SourceNotConnected { .. }
+            | Self::DestinationNotConnected { .. }
+            | Self::SourceNoLongerConnected { .. }
+            | Self::DestinationExists { .. }
+            | Self::PermissionDenied { .. }
+            | Self::InsufficientSpace { .. }
+            | Self::DestinationFull { .. }
+            | Self::DestinationInsideSource { .. }
+            | Self::DuplicateSourceNames { .. }
+            | Self::NamedLeavesRefused { .. }
+            | Self::SourcesSpanVolumes { .. }
+            | Self::MountedVolumeInside { .. }
+            | Self::HomeFolder { .. }
+            | Self::ArchiveEntryNameRefused { .. }
+            | Self::ArchiveEntryNamesCollide { .. }
+            | Self::ArchiveDuplicateEntryName { .. }
+            | Self::ArchiveEncryptedEntry { .. }
+            | Self::ArchiveEntryUnderFile { .. }
+            | Self::Cancelled { .. }
+            | Self::DeviceDisconnected { .. }
+            | Self::MoveNotConfirmed { .. }
+            | Self::ReadOnlyDevice { .. }
+            | Self::DestinationNotWritable { .. }
+            | Self::FileLocked { .. }
+            | Self::TrashNotSupported { .. }
+            | Self::ConnectionInterrupted { .. }
+            | Self::LinkNeedsConsent { .. }
+            | Self::ServerConnectionLost { .. }
+            | Self::ChangedWhileDisconnected { .. }
+            | Self::ReplySignatureRefused { .. }
+            | Self::SmbEncryptionRequired { .. }
+            | Self::SmbNegotiationInvalid { .. }
+            | Self::SmbEncryptionUnavailable { .. }
+            | Self::NameTooLong { .. }
+            | Self::InvalidName { .. }
+            | Self::DeletePending { .. }
+            | Self::FileInUse { .. }
+            | Self::SourceInColdStorage { .. }
+            | Self::SourceChanged { .. }
+            | Self::FilesTooLargeForFilesystem { .. }
+            | Self::ArchiveNeedsPassword { .. }
+            | Self::NewDataKeptAt { .. }
+            | Self::LandingNotRecorded { .. }
+            | Self::TrashRefused { .. } => true,
         }
     }
 }
@@ -314,6 +364,40 @@ mod tests {
             assert!(
                 matches!(err, WriteOperationError::FileInUse { .. }),
                 "{code}: got {err:?}"
+            );
+        }
+    }
+
+    /// The ONE rule, shared with the frontend's `logLevelFor` through
+    /// `write_error_log_levels.json`: a sample of every variant and the level it earns. An
+    /// expected refusal logged at error auto-sends a report about the person's environment
+    /// (cmdr-reports#99, #110: a permission refusal and a file open elsewhere on a share).
+    #[test]
+    fn every_variant_logs_at_the_level_the_frontend_gives_it() {
+        #[derive(serde::Deserialize)]
+        struct Case {
+            level: String,
+            error: WriteOperationError,
+        }
+        #[derive(serde::Deserialize)]
+        struct Fixture {
+            cases: Vec<Case>,
+        }
+        let fixture: Fixture =
+            serde_json::from_str(include_str!("write_error_log_levels.json")).expect("the shared cases parse");
+        assert!(fixture.cases.len() > 50, "the shared cases cover every variant");
+        for case in fixture.cases {
+            let warn = match case.level.as_str() {
+                "warn" => true,
+                "error" => false,
+                other => panic!("unknown level {other:?}"),
+            };
+            assert_eq!(
+                case.error.is_expected_refusal(),
+                warn,
+                "{:?} should log at {}",
+                case.error,
+                case.level
             );
         }
     }

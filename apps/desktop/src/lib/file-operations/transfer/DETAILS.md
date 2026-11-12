@@ -335,11 +335,15 @@ destinations".
    - The same category sets the failure's log level (`logLevelFor`, `transfer-error-log-level.ts`): `serious` at error,
      the rest at warn, a cause-carrying wrapper at its cause's. An error line feeds the auto-sent error report, so an
      expected refusal (permission, space, a name) must never log at error (ERR-4K2HT, a refused delete in a system
-     folder; ERR-XFP5T, an SMB file open elsewhere, `file_in_use`). The backend's own line for a failed volume copy
-     follows the same rule for the variants `WriteOperationError::is_expected_refusal` names
-     (`crates/cmdr-operations/src/error_classification.rs`). Each failure logs ONCE, FE side: `reportOutcome` for a
-     failed run, `startTransferOperation` for a refused start; the pane's `handleTransferError` / adopted `handleError`
-     log nothing, since a second error line pushed one failure over the "two errors in 60 s" threshold by itself.
+     folder; ERR-XFP5T, an SMB file open elsewhere, `file_in_use`). The backend's own line for a failed copy (local and
+     volume) follows the same rule: `WriteOperationError::is_expected_refusal`
+     (`crates/cmdr-operations/src/error_classification.rs`) answers false for exactly the `serious` kinds, and only
+     those raise the `LocalCopyFailed` / `VolumeCopyFailed` error report. Both sides are pinned to one shared table,
+     `crates/cmdr-operations/src/write_error_log_levels.json` (a sample of every variant and its level), from
+     `transfer-error-log-level.test.ts` and the Rust classifier's test, so they can't drift; a new variant fails the FE
+     test until its sample is there. Each failure logs ONCE, FE side: `reportOutcome` for a failed run,
+     `startTransferOperation` for a refused start; the pane's `handleTransferError` / adopted `handleError` log nothing,
+     since a second error line pushed one failure over the "two errors in 60 s" threshold by itself.
    - "Retry" button shows when `category === 'transient'` or the variant's `retryHint` is true, AND there's something to
      retry: `DialogManager` passes `onRetry` only when `TransferErrorPropsData.retry` holds the failed operation's birth
      context. Retry settles the failure like Close, then starts that context again through `startBirthOperation` as a
