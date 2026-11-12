@@ -7,8 +7,8 @@ a project can warm or hand back its own caches without the scripts knowing anyth
 
 - `post-create`: seeds the new worktree's Linux target volume from the main clone's.
 - `pre-remove`: promotes a merged worktree's Linux target volume to the main clone's.
-- Both are thin wrappers over `go run ./linux-cache` in `scripts/check/`; the logic is
-  `scripts/check/linux-cache/handoff.go`.
+- Both sweep the copy on the way (`scripts/check/targetsweep/`) and are thin wrappers over `go run ./linux-cache` in
+  `scripts/check/`; the logic is `scripts/check/linux-cache/handoff.go`.
 
 ## The contract
 
@@ -29,5 +29,8 @@ a project can warm or hand back its own caches without the scripts knowing anyth
   edit would pass as fresh next to the main clone's older copy of that file.
 - **Copies are btrfs reflinks** (15 GB in ~1 s, ~0 new disk). ❌ Don't fall back to a plain copy: it'd put minutes of
   I/O in a hook.
+- **The sweep trusts the Linux lanes' records.** A new Linux-container cargo lane records through `recordedCargoScript`
+  and joins `targetsweep.Lanes`, or a seed deletes its units as dead. Rules and guards:
+  `scripts/check/checks/DETAILS.md` § "The target volume sweeps itself".
 
 Why the design, races, and measurements: `DETAILS.md`.

@@ -250,7 +250,13 @@ pnpm check [flags]
   the stack name first) that the bash scripts shell out to
 - **`linux-cache/`**: `package main` CLI (`seed` / `promote`) that `scripts/worktree-hooks/` shells out to, handing the
   Linux lanes' target volume between the main clone and a worktree with the lanes' own names and labels from `checks`.
-  Outside `checks/` because no check reaches it, so the cache has nothing to fingerprint it for
+  Outside `checks/` because no check reaches it, so the cache has nothing to fingerprint it for. Each handoff
+  cross-builds `target-sweep/` and runs it in the copy container
+- **`targetsweep/`**: Library: the Linux target volume's mark-and-sweep (stream parsing, the pure `plan`, the filesystem
+  around it), plus the names the Linux lanes record under. Mechanism: `checks/DETAILS.md` § "The target volume sweeps
+  itself"
+- **`target-sweep/`**: Thin `package main` CLI onto `targetsweep`, built for Linux and run only inside the handoff
+  container
 - **`checks/`**: One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)
 
 ## Runner-level patterns

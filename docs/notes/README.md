@@ -31,6 +31,10 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   its own tile. Read it before changing how Cmdr relaunches.
 - `ci-light-runs-2026-11-05.md`: the live validation of light runs and land runs (throwaway PRs #976 and #978): what
   each run skipped, how GitHub treats a `CI light` gate against the required `CI OK`, and the timings.
+- `linux-target-volume-gc-spike-2026-11.md`: why the Linux lanes' target volume grew to 92 GiB, what cargo and
+  cargo-sweep can't do about it, and the reflink-clone experiments behind the mark-and-sweep's rules (dropping
+  `incremental/` wholesale made a new worktree's first clippy-linux run 2m39s instead of 29 s). The evidence behind
+  `scripts/check/checks/DETAILS.md` § "The target volume sweeps itself".
 
 - `docs/hackathon-submission.md`: what changed for OpenAI Build Week (2026) and how it was built. Kept for the record;
   nothing current depends on it.

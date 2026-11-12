@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"cmdr/scripts/check/checks"
+	"cmdr/scripts/check/targetsweep"
 )
 
 // The Linux lanes' target volume moves between the main clone and its worktrees in two
@@ -40,12 +41,17 @@ const (
 // VM kernel). Busy locks exit `exitBusy` rather than wait, since a hook must never stall
 // worktree creation or teardown.
 //
-// The copy lands in `/to/.incoming` first, then each top-level entry swaps into place
-// with `mv --exchange` (one `renameat2(RENAME_EXCHANGE)`), so an interrupted run leaves
-// either the old tree or the new one at every path, never a half-copied `debug/`: cargo
-// trusts any rlib it finds next to a matching fingerprint. Top-level entries the source
-// doesn't have go too, so the result is exactly the source. A leftover `.incoming` from
-// a killed run is ignored by cargo and cleared by the next handoff.
+// The copy lands in `/to/.incoming` first. The mark-and-sweep (`target-sweep`, mounted at
+// `/sweep` when it built) then deletes what no Linux lane needs from that copy, still
+// under the locks, so neither volume ever holds a half-swept tree a build could see. Each
+// top-level entry then swaps into place with `mv --exchange` (one
+// `renameat2(RENAME_EXCHANGE)`), so an interrupted run leaves either the old tree or the
+// new one at every path, never a half-copied `debug/`: cargo trusts any rlib it finds next
+// to a matching fingerprint. Top-level entries the swept copy doesn't have go too, so the
+// result is exactly the swept copy. A leftover `.incoming` from a killed run is ignored by
+// cargo and cleared by the next handoff.
+//
+// On success the script's only output is the sweep's summary line.
 var copyScript = fmt.Sprintf(`set -uo pipefail
 shopt -s nullglob dotglob
 for lock in /from/*/.cargo*lock /to/*/.cargo*lock; do
@@ -53,15 +59,20 @@ for lock in /from/*/.cargo*lock /to/*/.cargo*lock; do
   flock -n "$fd" || { echo "a build holds $lock"; exit %[1]d; }
 done
 rm -rf /to/.incoming && mkdir /to/.incoming || exit 1
-keep=" .incoming "
 for entry in /from/*; do
   name=${entry##*/}
   [ "$name" = .incoming ] && continue
   cp -a --reflink=always "$entry" /to/.incoming/ || { rm -rf /to/.incoming; exit %[2]d; }
-  keep="$keep$name "
 done
+# A sweep that stops early still leaves a tree cargo can use (every deletion is safe on
+# its own), so the handoff goes ahead whatever it exits.
+if [ -x /sweep/target-sweep ]; then
+  /sweep/target-sweep /to/.incoming "$SWEEP_MODE" || true
+fi
+keep=" .incoming "
 for entry in /to/.incoming/*; do
   name=${entry##*/}
+  keep="$keep$name "
   if [ -e "/to/$name" ]; then
     mv -T --exchange "$entry" "/to/$name" || exit 1
   else
@@ -74,8 +85,9 @@ done
 rm -rf /to/.incoming
 `, exitBusy, exitNoReflink)
 
-// copyTimeout bounds the copy container. A reflink copy takes about a second; anything
-// near this is a wedged daemon, and a hook must not hang its caller.
+// copyTimeout bounds the copy container. A reflink copy plus its sweep takes a few
+// seconds (3.5 s for a 111 GiB source, 2026-11-12); anything near this is a wedged
+// daemon, and a hook must not hang its caller.
 const copyTimeout = 2 * time.Minute
 
 // seed gives a new worktree a copy of the main clone's Linux target volume for the same
@@ -108,7 +120,9 @@ func seed(worktreeRoot, mainRoot string) (string, error) {
 	}
 
 	start := time.Now()
-	code, out, err := copyVolume(image, from, to)
+	sweeper, sweepNote := buildSweeper(mainRoot)
+	defer sweeper.remove()
+	code, out, err := copyVolume(image, from, to, targetsweep.ModeSeed, sweeper)
 	if err != nil || code != 0 {
 		// The volume is ours and brand new: nothing else can have mounted it yet (the
 		// check runner waits for `.warming-worktree`), so drop it rather than hand over
@@ -119,7 +133,8 @@ func seed(worktreeRoot, mainRoot string) (string, error) {
 		}
 		return "", copyFailure(code, out, err)
 	}
-	return fmt.Sprintf("seeded %s from the main clone's Linux cache in %s", to, since(start)), nil
+	msg := fmt.Sprintf("seeded %s from the main clone's Linux cache in %s", to, since(start))
+	return withSweepLine(msg, out, sweepNote), nil
 }
 
 // promote hands a merged worktree's Linux target volume to the main clone, replacing the
@@ -160,7 +175,9 @@ func promote(worktreeRoot, mainRoot string, dryRun bool) (string, error) {
 	}
 
 	start := time.Now()
-	code, out, err := copyVolume(image, from, to)
+	sweeper, sweepNote := buildSweeper(mainRoot)
+	defer sweeper.remove()
+	code, out, err := copyVolume(image, from, to, targetsweep.ModePromote, sweeper)
 	if code == exitBusy {
 		return fmt.Sprintf("not promoting %s: a build is using it or the main clone's cache; kept the older one", from), nil
 	}
@@ -171,7 +188,7 @@ func promote(worktreeRoot, mainRoot string, dryRun bool) (string, error) {
 	if dropped := checks.DropStaleLinuxTargetVolumes(mainRoot, to); len(dropped) > 0 {
 		msg += fmt.Sprintf(" (dropped %s)", strings.Join(dropped, ", "))
 	}
-	return msg, nil
+	return withSweepLine(msg, out, sweepNote), nil
 }
 
 // toolchainChannel reads the checkout's pinned channel. A checkout without a
@@ -201,12 +218,15 @@ func anyLinuxImage() (string, bool) {
 }
 
 // copyVolume runs `copyScript` and returns its exit code (-1 when the container never
-// ran it) with its output.
-func copyVolume(image, from, to string) (int, string, error) {
+// ran it) with its output. The sweep runs in `mode` when `sweeper` built.
+func copyVolume(image, from, to string, mode targetsweep.Mode, sweeper sweeper) (int, string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), copyTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "docker", "run", "--rm",
-		"-v", from+":/from:ro", "-v", to+":/to", image, "bash", "-c", copyScript)
+	args := []string{"run", "--rm", "-v", from + ":/from:ro", "-v", to + ":/to", "-e", "SWEEP_MODE=" + string(mode)}
+	if sweeper.dir != "" {
+		args = append(args, "-v", sweeper.dir+":/sweep:ro")
+	}
+	cmd := exec.CommandContext(ctx, "docker", append(args, image, "bash", "-c", copyScript)...)
 	out, err := checks.RunCommand(cmd, true)
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {

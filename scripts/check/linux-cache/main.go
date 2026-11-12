@@ -7,7 +7,7 @@
 //	seed <worktree> <main-clone>                  copy the main clone's volume into a new worktree's
 //	promote <worktree> <main-clone> [--dry-run]   copy a merged worktree's volume into the main clone's
 //
-// Prints at most one line on stdout. Exit 0 covers every "nothing to do" and "skipped"
+// Prints at most two lines on stdout: the handoff's, then the sweep's (`sweeper.go`). Exit 0 covers every "nothing to do" and "skipped"
 // outcome (no Docker, no volume, not merged, a build holding the cache); exit 1 means a
 // copy went wrong, with the reason on stderr.
 package main

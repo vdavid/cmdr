@@ -66,6 +66,32 @@ func TestLinuxCacheHandoffIsSilentWithoutAToolchainFile(t *testing.T) {
 	}
 }
 
+// The sweep is cross-built for the Docker VM, whose architecture Docker names the kernel's
+// way; one it doesn't know gets no sweep rather than a binary that can't run.
+func TestSweeperBuildsForDockersArchitecture(t *testing.T) {
+	for in, want := range map[string]string{"aarch64": "arm64", "arm64": "arm64", "x86_64": "amd64", "amd64": "amd64", "riscv64": ""} {
+		got, ok := goarchFor(in)
+		if got != want || ok != (want != "") {
+			t.Errorf("goarchFor(%q) = %q, %v; want %q", in, got, ok, want)
+		}
+	}
+}
+
+// The handoff's line carries the sweep's outcome on a second line: its summary when it
+// ran, or why it didn't.
+func TestWithSweepLine(t *testing.T) {
+	cases := []struct{ out, note, want string }{
+		{"swept the Linux cache from 9 to 3\n", "", "seeded x\nswept the Linux cache from 9 to 3"},
+		{"", "didn't sweep the Linux cache: no arch", "seeded x\ndidn't sweep the Linux cache: no arch"},
+		{"", "", "seeded x"},
+	}
+	for _, c := range cases {
+		if got := withSweepLine("seeded x", c.out, c.note); got != c.want {
+			t.Errorf("withSweepLine(%q, %q) = %q, want %q", c.out, c.note, got, c.want)
+		}
+	}
+}
+
 func writeHandoffFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {

@@ -1861,9 +1861,10 @@ changed. Order: `clippy` → `clippy-linux` → `rust-tests-linux`.
   Both directions copy, so the source keeps its volume until its own reaper takes it.
 - **A handoff is a btrfs reflink, swapped in whole**: one container mounts both volumes, takes every cargo lock on both
   sides with `flock -n` (busy means a build is running: skip, keep the old cache), clones into `/to/.incoming` with
-  `cp --reflink=always`, then swaps each top-level entry in with `mv --exchange` (`renameat2`), so no path ever holds a
-  half-copied tree. 15 GB and 24,500 files clone in 0.4 s and cost 12 MB of new disk (OrbStack's `/dev/vdb1` is btrfs
-  with `nodatacow`, and reflinks still work; verified 2026-09-30); a whole seed or promotion is ~1 s. `docker system df`
+  `cp --reflink=always`, sweeps that copy (§ "The target volume sweeps itself"), then swaps each top-level entry in with
+  `mv --exchange` (`renameat2`), so no path ever holds a half-copied tree. 15 GB and 24,500 files clone in 0.4 s and
+  cost 12 MB of new disk (OrbStack's `/dev/vdb1` is btrfs with `nodatacow`, and reflinks still work; verified
+  2026-09-30); a whole seed or promotion, sweep included, is ~3–4 s (2026-11-12, a 111 GiB source). `docker system df`
   counts each volume's apparent size, so it double-counts shared extents: `df` inside a container is the honest number.
 - **The accepted race**: a cargo that starts during the sub-second swap waits on the OLD lock file, then builds into the
   new tree alongside any cargo that took the new one. Two worktrees promoting back to back are fine: the later one wins,
@@ -1876,8 +1877,10 @@ changed. Order: `clippy` → `clippy-linux` → `rust-tests-linux`.
   `Blocking waiting for file lock on package cache`, then `… on build directory`, then found everything fresh. Within a
   run, `DependsOn` keeps the two lanes apart, which is why neither declares an `Exclusive` resource.
 - **Size**: ~18.6 GB after one clippy plus one test build (about 8 GB `incremental/`, 8 GB `deps/`; the workspace dev
-  profile is already `line-tables-only`). Per worktree, reaped at teardown. `CARGO_INCREMENTAL=0` would roughly halve it
-  at the cost of slower one-file rebuilds; unmeasured.
+  profile is already `line-tables-only`). Per worktree, reaped at teardown. Unswept, the main clone's grew to 92 GiB in
+  three weeks, since every dependency bump or release leaves a whole generation behind; the sweep holds it under a 40
+  GiB budget (§ "The target volume sweeps itself"). `CARGO_INCREMENTAL=0` would roughly halve it at the cost of slower
+  one-file rebuilds; unmeasured.
 - **A lint failure reads as clippy's**: its own check, message `clippy found issues on Linux`, with cargo's progress
   lines stripped (`trimCargoProgress`) so the `--> file:line:col` diagnostic is what shows. It never runs `--fix`: host
   `clippy` already fixed what the two targets share.
@@ -1894,6 +1897,86 @@ Timings, 2026-09-30, OrbStack on 16 cores, host load 5–13 (shared machine):
   cache was 335 s per run, p90 650 s.
 - **Warm, no change**: clippy ~1 s, tests ~40 s (the suite itself).
 - **Warm, one `cmdr-fs` file touched**: clippy 32 s (12 crates), tests 1m50s.
+
+### The target volume sweeps itself
+
+Cargo has no garbage collection for a target dir (rust-lang/cargo#5026 is open; `-Z gc` covers only `CARGO_HOME`), and
+cargo-sweep keys on atime, which the `noatime` btrfs volume never updates. So every dependency bump, release, or feature
+change left a whole generation of units and incremental dirs that nothing read again: the main clone's volume reached 92
+GiB (65 GiB of it `incremental/`). The fix is a mark-and-sweep of our own. Evidence for every rule below:
+`docs/notes/linux-target-volume-gc-spike-2026-11.md`.
+
+- **Mark: each Linux cargo run saves its JSON message stream into the volume** (`desktop-rust-linux-live-units.go`,
+  `recordedCargoScript`), under `/cargo-target/.cmdr-live/`. Three lanes record: `clippy` and `tests` run with
+  `json-render-diagnostics`, stdout (the JSON) to the record and stderr handed back, so the output reads exactly as a
+  text run's; `doc` already used JSON, so its record takes both streams and replays them. A run writes its own
+  `<lane>.partial-<ns>-<pid>.jsonl`; only when cargo's last line says `build-finished` with `success: true` does it
+  become `<lane>.jsonl`. A finished build's stream names every unit of its graph, fresh or rebuilt, which is what makes
+  it a mark. A red TEST run still records (its build finished); a compile error or a kill leaves the partial behind.
+- **Decision: record the main run in JSON rather than add a warm follow-up run.** Why: message format never changes a
+  fingerprint. Text, `json`, `json-render-diagnostics`, and text again rebuilt 0 units in a row, for clippy and for the
+  nextest build (cargo 1.99.1, nextest 0.9.136, a warm clone, 2026-11-12), so switching costs nothing, while a follow-up
+  run costs 2–11 s on every lane run and can drift from the run it shadows.
+- **Decision: raw streams, not hash lists.** Why: the stream carries cargo's own completeness verdict
+  (`build-finished`), which a list of hashes would have to reinvent, and the sweep parses it with the same code that
+  tests it.
+- **Sweep: at every handoff, on the copy, before it swaps in** (`copyScript` in `scripts/check/linux-cache/handoff.go`).
+  The logic is `scripts/check/targetsweep/` (`plan` is pure: a listing, the live set, and the clock in, deletions out);
+  `scripts/check/target-sweep/` is its CLI, cross-built per handoff for the VM's architecture
+  (`scripts/check/linux-cache/sweeper.go`, ~0.5 s warm) and run in the copy container under the same locks, so no build
+  ever sees a half-swept tree. Seed AND promotion both sweep: promotion keeps the main clone's volume small, and seeding
+  keeps a new worktree from inheriting a main-clone volume nobody promoted into lately. A sweep that can't build or read
+  the tree says so on the hook's second line, and the copy goes ahead unswept.
+- **A build unit** (an entry of `debug/deps/`, `.fingerprint/`, `build/`, `examples/`) **stays when any of these
+  holds**: its name carries no `-<16 hex>` hash (never guess at a name: cdylibs, staticlibs); a stream names its hash; a
+  hard-linked file carries it (cargo uplifts a bin or example by hard-linking `deps/<name>-<h>` to `<name>`, and the
+  stream names only the unhashed copy: without this rule the spike's hash-only prune rebuilt every bin and example); it
+  was written after the seed stamp (the checkout's own work, recorded or not); or it's a fingerprint dir under 30 days
+  old. Everything else goes.
+- **Decision: one rule set for every unit, no workspace/third-party split.** Why: the spike's two sets differed only in
+  the seed, hard-link, and fingerprint rules, which are safe for any unit, so applying them everywhere keeps a superset
+  and drops the name classification (and its false matches) altogether.
+- **Decision: no special case for doc fingerprints.** Why: a rustdoc unit's output is `doc/<crate>/` and names no hash,
+  so its fingerprint is the one unit the streams can't vouch for; the 30-day fingerprint window keeps it (fingerprints
+  are a few KB each), and `doc/` itself is never swept. A seeded worktree re-documents every workspace crate anyway,
+  since its sources are newer than the seeded fingerprints. `TestCargoLayoutMatchesTheSweepsAssumptions` shows doc
+  fingerprints are the only units of a live graph the streams miss.
+- **An incremental dir stays when any session in it is newer than the seed or than 72 hours.** Its name is rustc's crate
+  disambiguator, not cargo's unit hash, so no stream names it; age decides. The window keeps the state of a lane the
+  worktree didn't run: dropping `incremental/` wholesale made a new worktree's first clippy-linux run 2m39s instead of
+  29 s (the spike, § 4d).
+- **Budget backstop, in order**: over 40 GiB after the sweep, drop the incremental dirs older than the seed too (all of
+  them when there's no stamp); still over, reset the volume (the next build is cold; expected never, and the line says
+  so).
+- **The seed stamp** (`/cargo-target/.cmdr-seeded-at`, a Unix second): a seed writes it after its sweep, and a lane
+  writes it into a volume nothing seeded on its first run. "Written after the seed" therefore means "this checkout's own
+  work", and a cold volume's first run starts the clock.
+- **Guards: the unit rules run only on sound inputs, else no unit goes and the hook's line says why** (the incremental
+  rule needs none of them and still runs): every lane (`targetsweep.Lanes`) has a complete stream that parses, ends in a
+  finished build, and names at least one unit; the layout is the one the rules assume (`debug/.fingerprint/` exists and
+  every entry is a `<name>-<16 hex>` dir); and a seed stamp exists. A volume from before the recording (today's main
+  clone's) has no streams, so its first handoffs sweep `incremental/` only, until a worktree that ran all three Linux
+  lanes promotes.
+- **Decision: partial streams instead of a `Cargo.lock` staleness check.** The spike proposed skipping the sweep when a
+  lane's list is older than the last `Cargo.lock` change. Why not: a stale but complete stream deletes nothing live. A
+  unit it doesn't name was either outside its graph (dead) or built after it, and every run after it left a record: a
+  newer complete stream, a partial one (counted until a later finished run of the same lane supersedes it, then deleted
+  by the sweep), or, for a run that recorded nothing (an older branch's lanes, a hand-run cargo), the seed rule. The
+  staleness check would instead skip the unit sweep whenever the slow tests lane hadn't run since the last Renovate
+  wave, which is most of the time, and let units grow into the reset.
+- **Layout pin**: `TestCargoLayoutMatchesTheSweepsAssumptions` builds a tiny workspace with the pinned toolchain (a lib,
+  a bin, an example, a build script, an integration test, docs), sweeps it with every time rule expired, and requires
+  the rebuild to be fully fresh, then bumps a version and requires the old generation gone and the rebuild fresh again.
+  It skips where the pinned toolchain isn't installed (CI's light lane). `-Z build-dir-new-layout`, once stable, will
+  fail it; once rust-lang/cargo#5026 lands with real last-use tracking, replace all of this with cargo's.
+
+End to end, 2026-11-12, OrbStack, host load 30–47, on reflink clones of the main clone's volume (`sweep-dev-*`), never
+the live ones: the three lanes recorded on a clone (111 GiB after their runs), then a promotion-mode copy swept it to
+37.5 GiB in 3.5 s (8,317 units, 493 incremental dirs; 9.7 GiB `deps/`, 25 GiB `incremental/` left). On that swept copy
+with the same tree, clippy, the nextest build, and the doc build rebuilt 0 units. A seed-mode copy of the same source
+against a tree with every mtime at "now" (a fresh worktree): clippy-linux's command rebuilt 94 workspace units and 0
+third-party in 22 s, against 94 and 0 in 28 s unswept; the nextest build rebuilt 80 workspace units and 0 third-party,
+and the doc build re-documented 72 workspace units and 0 third-party.
 
 ## Rust module cycles
 
