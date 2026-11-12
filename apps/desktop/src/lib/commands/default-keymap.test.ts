@@ -51,8 +51,9 @@ describe('the default keys the menu bar mirrors', () => {
       const undoPlatform = withPlatform(platform)
       const undoCapabilities = withCapabilitiesPossibleOn(platform)
       try {
-        const offered = new Set(commands.filter(commandOffered).map((command) => command.id))
-        for (const id of menuCommands.filter((commandId) => offered.has(commandId))) {
+        // Keyed by the plain string `menuCommands` holds, so the lookup hands back a typed id.
+        const offered = new Map(commands.filter(commandOffered).map((command) => [command.id as string, command.id]))
+        for (const id of menuCommands.flatMap((commandId) => offered.get(commandId) ?? [])) {
           lines.push(`${platform}\t${id}\t${getDefaultShortcuts(id)[0] ?? ''}`)
         }
       } finally {

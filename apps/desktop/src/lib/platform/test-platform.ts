@@ -85,6 +85,7 @@ export const CAPABILITIES_POSSIBLE_ON: Readonly<Record<Platform, readonly Capabi
     'appBundles',
     'fullScreen',
     'homebrewCask',
+    'processDiagnostics',
     'globalShortcuts',
   ],
   windows: ['globalShortcuts'],
