@@ -375,7 +375,7 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmMessage": "Вставлення великого обсягу тексту може сповільнити інші програми. Спробуйте пошук ({combo}), щоб звузити вибране.",
+  "viewer.copyDialog.confirmMessage": "Вставлення великого обсягу тексту може сповільнити інші програми. Спробуйте пошук (<key></key>), щоб звузити вибране.",
   "@viewer.copyDialog.confirmMessage": {
     "sourceHash": "084b649"
   },
@@ -391,7 +391,7 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseMessage": "Це більше за ліміт буфера обміну в 100 МБ. Спробуйте пошук ({combo}), щоб знайти потрібне, або збережіть вибране як файл.",
+  "viewer.copyDialog.refuseMessage": "Це більше за ліміт буфера обміну в 100 МБ. Спробуйте пошук (<key></key>), щоб знайти потрібне, або збережіть вибране як файл.",
   "@viewer.copyDialog.refuseMessage": {
     "sourceHash": "75d10d8"
   },

@@ -375,7 +375,7 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmMessage": "大量粘贴可能会拖慢其他 App。试试用搜索（{combo}）来缩小范围。",
+  "viewer.copyDialog.confirmMessage": "大量粘贴可能会拖慢其他 App。试试用搜索（<key></key>）来缩小范围。",
   "@viewer.copyDialog.confirmMessage": {
     "sourceHash": "084b649"
   },
@@ -391,7 +391,7 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseMessage": "这超过了 100 MB 的剪贴板上限。试试用搜索（{combo}）找到你需要的内容，或者把所选内容保存为文件。",
+  "viewer.copyDialog.refuseMessage": "这超过了 100 MB 的剪贴板上限。试试用搜索（<key></key>）找到你需要的内容，或者把所选内容保存为文件。",
   "@viewer.copyDialog.refuseMessage": {
     "sourceHash": "75d10d8"
   },

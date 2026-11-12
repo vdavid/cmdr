@@ -380,7 +380,7 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmMessage": "Stora inklistringar kan göra andra appar långsammare. Prova att söka ({combo}) för att begränsa det.",
+  "viewer.copyDialog.confirmMessage": "Stora inklistringar kan göra andra appar långsammare. Prova att söka (<key></key>) för att begränsa det.",
   "@viewer.copyDialog.confirmMessage": {
     "sourceHash": "084b649"
   },
@@ -396,7 +396,7 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseMessage": "Det är större än urklippsgränsen på 100 MB. Prova att söka ({combo}) för att hitta det du behöver, eller spara markeringen som en fil.",
+  "viewer.copyDialog.refuseMessage": "Det är större än urklippsgränsen på 100 MB. Prova att söka (<key></key>) för att hitta det du behöver, eller spara markeringen som en fil.",
   "@viewer.copyDialog.refuseMessage": {
     "sourceHash": "75d10d8"
   },

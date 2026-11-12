@@ -13,7 +13,7 @@
  * `query-keys.ts`'s per-platform table, which the chips render from too.
  */
 
-import { eventMatchesCommand, getEffectiveShortcuts, resolveKeyCombo } from '#lib/shortcuts/index.js'
+import { eventMatchesCommand, shortcutIndexOfEvent } from '#lib/shortcuts/index.js'
 import { matchesQueryKey } from './query-keys'
 import type { SearchMode } from './query-filter-state.svelte'
 
@@ -86,9 +86,9 @@ function routeEnterCombination(e: KeyboardEvent, handlers: ModifierShortcutHandl
 
 /** `search.modeByNumber`: jump to the numbered mode chip and put the caret back in the field. */
 function routeModeNumberShortcut(e: KeyboardEvent, handlers: ModifierShortcutHandlers): boolean {
-  if (!eventMatchesCommand(e, 'search.modeByNumber')) return false
   // The command's keys are the digits in order, so the Nth key picks the Nth chip.
-  const n = getEffectiveShortcuts('search.modeByNumber').indexOf(resolveKeyCombo(e)) + 1
+  const n = shortcutIndexOfEvent(e, 'search.modeByNumber') + 1
+  if (n === 0) return false
   const target = modeForShortcutNumber(n, handlers.aiEnabled)
   if (!target) return false
   e.preventDefault()

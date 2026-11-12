@@ -27,7 +27,7 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
-  "ai.toast.readyDescriptionWithKey": "Zkuste vytvořit novou složku ({combo}) a uvidíte návrhy názvů od AI.",
+  "ai.toast.readyDescriptionWithKey": "Zkuste vytvořit novou složku (<key></key>) a uvidíte návrhy názvů od AI.",
   "@ai.toast.readyDescriptionWithKey": {
     "sourceHash": "a9e1361"
   },

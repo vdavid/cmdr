@@ -111,11 +111,19 @@ export function firstShortcutIs(commandId: CommandId, combo: string): boolean {
  * - `toast`: a toast whose content is a string.
  * - `errorMessage`: a message built as a string (the transfer error catalog).
  * - `menuItem`: a menu or select option's label.
+ * - `settingDescription`: a setting's description, a string the row and the settings search share.
  *
  * Visible prose isn't on the list: there the shortcut is a `<ShortcutChip>` placed by a
  * `<Trans>` tag, so the key reads as a key and not as punctuation (`⌘⇧.` ending a sentence).
  */
-export type ShortcutTextSink = 'announcement' | 'ariaLabel' | 'tooltip' | 'toast' | 'errorMessage' | 'menuItem'
+export type ShortcutTextSink =
+  | 'announcement'
+  | 'ariaLabel'
+  | 'tooltip'
+  | 'toast'
+  | 'errorMessage'
+  | 'menuItem'
+  | 'settingDescription'
 
 /**
  * A command's first live key as display text (`⌘⌫`), reactively, for a sink that can only

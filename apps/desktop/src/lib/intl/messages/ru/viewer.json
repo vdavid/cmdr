@@ -377,7 +377,7 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmMessage": "Вставка большого объема текста может замедлить другие приложения. Попробуйте сузить выделение с помощью поиска ({combo}).",
+  "viewer.copyDialog.confirmMessage": "Вставка большого объема текста может замедлить другие приложения. Попробуйте сузить выделение с помощью поиска (<key></key>).",
   "@viewer.copyDialog.confirmMessage": {
     "sourceHash": "084b649"
   },
@@ -393,7 +393,7 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseMessage": "Это больше, чем позволяет ограничение буфера обмена (100 МБ). Попробуйте найти нужное с помощью поиска ({combo}) или сохраните выделение как файл.",
+  "viewer.copyDialog.refuseMessage": "Это больше, чем позволяет ограничение буфера обмена (100 МБ). Попробуйте найти нужное с помощью поиска (<key></key>) или сохраните выделение как файл.",
   "@viewer.copyDialog.refuseMessage": {
     "sourceHash": "75d10d8"
   },

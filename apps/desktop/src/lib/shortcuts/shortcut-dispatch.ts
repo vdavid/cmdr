@@ -93,6 +93,17 @@ export function eventMatchesCommand(event: KeyboardEvent, commandId: CommandId, 
 }
 
 /**
+ * Which of `commandId`'s keys this keypress is: its index in the command's list, or `-1`
+ * when the press isn't one of them. For a command whose keys are an ordered set (the search
+ * dialog's `search.modeByNumber`: the Nth key picks the Nth mode), so the handler never
+ * reads the combos themselves.
+ */
+export function shortcutIndexOfEvent(event: KeyboardEvent, commandId: CommandId): number {
+  if (!eventMatchesCommand(event, commandId)) return -1
+  return getEffectiveShortcuts(commandId).indexOf(resolveKeyCombo(event))
+}
+
+/**
  * The ONE combo a keypress means: the first of `keyComboCandidates` that any
  * command binds, or the exact combo when none does. The document dispatcher and
  * every local handler (`eventMatchesCommand`) resolve through it.

@@ -77,7 +77,7 @@
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "Dutch writes the acronym AI for artificial intelligence, as the catalog does (terms.json ai-feature: AI-functies; queryUi.empty.tipAi AI-zoekopdracht)."
   },
-  "queryUi.empty.keysTip": "Tip: <newChip>{newCombo}</newChip> begint opnieuw, <historyChip>{historyCombo}</historyChip> toont recente zoekopdrachten.",
+  "queryUi.empty.keysTip": "Tip: <newChip></newChip> begint opnieuw, <historyChip></historyChip> toont recente zoekopdrachten.",
   "@queryUi.empty.keysTip": {
     "sourceHash": "4638fd5"
   },

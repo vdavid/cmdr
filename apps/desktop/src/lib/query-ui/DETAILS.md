@@ -587,9 +587,9 @@ Small contracts that apply to every consumer of the query UI:
   row height stays compact.
 - **Fixed interaction keys render as `ShortcutChip`s in this platform's spelling** (`size="sm"` in dense slots): the run
   button's `⏎` / `Enter` and the scope popover's `⌥C` / `⌥V` from `query-keys.ts`, the empty-state tip's new-query and
-  recent-items keys from their registry commands (`EmptyState.svelte`; `queryUi.empty.keysTip` takes the same keys as
-  placeholders), and the recent-items dropdown's `↑↓` / `Enter`. Never clickable. A keyed button carries no `aria-label`
-  (its visible label is the name, since off macOS the hint is the word `Enter`) and announces the key through
+  recent-items keys from their registry commands (`EmptyState.svelte`; `queryUi.empty.keysTip` places them with empty
+  tags), and the recent-items dropdown's `↑↓` / `Enter`. Never clickable. A keyed button carries no `aria-label` (its
+  visible label is the name, since off macOS the hint is the word `Enter`) and announces the key through
   `aria-keyshortcuts`. The mode-chip `.tg-hint` glyphs (`⌥A` / `⌥F` / `⌥R`) and the footer action-button hints
   (`Go to file ⏎`, `Show all in main window ⏎`) deliberately stay un-boxed; see `lib/ui/CLAUDE.md` § ShortcutChip for
   the rationale.

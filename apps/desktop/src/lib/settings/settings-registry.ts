@@ -25,7 +25,7 @@ import type {
 } from './types'
 import { SettingValidationError } from './types'
 import { tString } from '#lib/intl/messages.svelte.js'
-import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 import { getPlatform, hasCapability } from '#lib/platform/index.js'
 import { resolveDefault } from './platform-default'
 import { appearanceSettings } from './definitions/appearance'
@@ -109,8 +109,8 @@ function resolveDefinition(src: SettingDefinitionSource): SettingDefinition {
       return tString(labelKey)
     },
     get description() {
-      // A key a hint names must run the command (`getFirstShortcutReactive` reads live keys).
-      const combo = descriptionWithKey && getFirstShortcutReactive(descriptionWithKey.commandId)
+      // A key a hint names must run the command (`shortcutAsText` reads live keys).
+      const combo = descriptionWithKey && shortcutAsText(descriptionWithKey.commandId, 'settingDescription')
       if (descriptionWithKey && combo !== undefined) return tString(descriptionWithKey.key, { combo })
       return descriptionKey === undefined ? '' : tString(descriptionKey)
     },

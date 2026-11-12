@@ -43,7 +43,13 @@ export { findConflictsForShortcut, getConflictCount, getConflictingCommandIds } 
 
 // Event → command matching for local handlers (the document dispatcher imports
 // `lookupCommand` / `init` / `destroy` from `shortcut-dispatch` directly).
-export { eventMatchesCommand, comboMatchesCommand, resolveKeyCombo, isBoundByAnyCommand } from './shortcut-dispatch'
+export {
+  eventMatchesCommand,
+  comboMatchesCommand,
+  resolveKeyCombo,
+  isBoundByAnyCommand,
+  shortcutIndexOfEvent,
+} from './shortcut-dispatch'
 
 // ❌ `claimKey` is deliberately NOT re-exported here. A local handler imports it from
 // the leaf `#lib/shortcuts/claim-key`, so a test that mocks this barrel can't replace

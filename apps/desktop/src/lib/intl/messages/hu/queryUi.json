@@ -77,7 +77,7 @@
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "Hungarian writes the acronym AI for artificial intelligence, as the catalog does (terms.json ai-feature: AI-funkciók; queryUi.empty.tipAi AI-keresést)."
   },
-  "queryUi.empty.keysTip": "Tipp: új keresést ezzel indíthatsz: <newChip>{newCombo}</newChip>, a legutóbbi kereséseket pedig ezzel jelenítheted meg: <historyChip>{historyCombo}</historyChip>.",
+  "queryUi.empty.keysTip": "Tipp: új keresést ezzel indíthatsz: <newChip></newChip>, a legutóbbi kereséseket pedig ezzel jelenítheted meg: <historyChip></historyChip>.",
   "@queryUi.empty.keysTip": {
     "sourceHash": "4638fd5"
   },

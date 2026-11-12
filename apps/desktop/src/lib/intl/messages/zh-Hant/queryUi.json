@@ -76,7 +76,7 @@
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "Traditional Chinese UI writes AI for artificial intelligence, as the catalog does (terms.json ai-feature: AI; queryUi.empty.tipAi AI 搜尋)."
   },
-  "queryUi.empty.keysTip": "提示：<newChip>{newCombo}</newChip> 重新開始，<historyChip>{historyCombo}</historyChip> 顯示最近的搜尋。",
+  "queryUi.empty.keysTip": "提示：<newChip></newChip> 重新開始，<historyChip></historyChip> 顯示最近的搜尋。",
   "@queryUi.empty.keysTip": {
     "sourceHash": "4638fd5"
   },

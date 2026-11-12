@@ -76,7 +76,7 @@
   "@queryUi.empty.aiBadge": {
     "sourceHash": "11fb682"
   },
-  "queryUi.empty.keysTip": "Tipp: <newChip>{newCombo}</newChip> startet neu, <historyChip>{historyCombo}</historyChip> zeigt letzte Suchen.",
+  "queryUi.empty.keysTip": "Tipp: <newChip></newChip> startet neu, <historyChip></historyChip> zeigt letzte Suchen.",
   "@queryUi.empty.keysTip": {
     "sourceHash": "4638fd5"
   },

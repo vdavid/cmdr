@@ -73,7 +73,7 @@ describe('ai area parity (en)', () => {
     expect(tString('ai.toast.installingTitle')).toBe('Setting up AI…')
     expect(tString('ai.toast.installingDescription')).toBe('Starting server')
     expect(tString('ai.toast.readyTitle')).toBe('AI ready')
-    expect(tString('ai.toast.readyDescriptionWithKey', { combo: 'F7' })).toBe(
+    expect(tString('ai.toast.readyDescriptionWithKey', { key: () => 'F7' })).toBe(
       'Try creating a new folder (F7) to see AI-powered name suggestions.',
     )
     expect(tString('ai.toast.readyDescriptionWithoutKey')).toBe(

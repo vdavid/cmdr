@@ -48,12 +48,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.toast.readyDescriptionWithKey": "Try creating a new folder ({combo}) to see AI-powered name suggestions.",
+  "ai.toast.readyDescriptionWithKey": "Try creating a new folder (<key></key>) to see AI-powered name suggestions.",
   "@ai.toast.readyDescriptionWithKey": {
-    "description": "Sub-line under the AI ready title, suggesting the user try the folder-name suggestion feature, with the key that runs New folder. When no key runs New folder, the line reads \"ai.toast.readyDescriptionWithoutKey\" instead.",
-    "placeholders": {
-      "combo": "the key that runs New folder right now, e.g. \"F7\"; the user can rebind it. A key glyph or key name, never a word."
-    },
+    "description": "Sub-line under the AI ready title, suggesting the user try the folder-name suggestion feature, with the key that runs New folder. The empty <key></key> tag is where that key shows, as a key cap (F7 by default; the user can rebind it); keep the empty tag where the key belongs in your sentence. When no key runs New folder, the line reads \"ai.toast.readyDescriptionWithoutKey\" instead.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },

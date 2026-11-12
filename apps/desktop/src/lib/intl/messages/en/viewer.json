@@ -586,12 +586,9 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.copyDialog.confirmMessage": "Large pastes can slow down other apps. Try search ({combo}) to narrow it down.",
+  "viewer.copyDialog.confirmMessage": "Large pastes can slow down other apps. Try search (<key></key>) to narrow it down.",
   "@viewer.copyDialog.confirmMessage": {
-    "description": "Body of the file viewer's copy-confirm dialog, warning that pasting a large amount can slow other apps and suggesting the viewer's search to narrow the selection.",
-    "placeholders": {
-      "combo": "the viewer's search key, as key glyphs or key names (⌘F on a Mac, Ctrl+F on Windows and Linux); never a word"
-    },
+    "description": "Body of the file viewer's copy-confirm dialog, warning that pasting a large amount can slow other apps and suggesting the viewer's search to narrow the selection. The empty <key></key> tag is where the viewer's search key shows, as a key cap (⌘F on a Mac, Ctrl+F on Windows and Linux); keep the empty tag where the key belongs in your sentence.",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
@@ -613,12 +610,9 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.copyDialog.refuseMessage": "That’s larger than the 100 MB clipboard limit. Try search ({combo}) to find what you need, or save the selection as a file.",
+  "viewer.copyDialog.refuseMessage": "That’s larger than the 100 MB clipboard limit. Try search (<key></key>) to find what you need, or save the selection as a file.",
   "@viewer.copyDialog.refuseMessage": {
-    "description": "Body of the file viewer's dialog shown when a selection is too big to copy (over the 100 MB clipboard limit), offering search or save-to-file instead. Keep the number 100; write the unit and its spacing your language's way (“100 МБ”).",
-    "placeholders": {
-      "combo": "the viewer's search key, as key glyphs or key names (⌘F on a Mac, Ctrl+F on Windows and Linux); never a word"
-    },
+    "description": "Body of the file viewer's dialog shown when a selection is too big to copy (over the 100 MB clipboard limit), offering search or save-to-file instead. Keep the number 100; write the unit and its spacing your language's way (“100 МБ”). The empty <key></key> tag is where the viewer's search key shows, as a key cap (⌘F on a Mac, Ctrl+F on Windows and Linux); keep the empty tag where the key belongs in your sentence.",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },

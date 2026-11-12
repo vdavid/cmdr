@@ -24,8 +24,6 @@
     import Button from '#lib/ui/Button.svelte'
     import { openCloudConsentSettings } from '#lib/ai/cloud-consent.svelte.js'
     import type { SearchMode } from './query-filter-state.svelte'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
-    import { toDisplayShortcut } from '#lib/shortcuts/key-capture.js'
 
     interface ExampleChip {
         label: string
@@ -82,18 +80,12 @@
     const formattedCount = $derived(formatNumber(indexEntryCount))
     // Typographic glyph marking a keyword (non-AI) example: the same in every language.
     const KEYWORD_BADGE = 'Aa'
-    // The tip's keys, live: both commands are fixed, so they're always bound.
-    const tipKeys = $derived({
-        newCombo: toDisplayShortcut(getFirstShortcutReactive('search.newQuery') ?? ''),
-        historyCombo: toDisplayShortcut(getFirstShortcutReactive('search.toggleRecent') ?? ''),
-    })
 </script>
 
 <!--
-  One ShortcutChip per `<tag>` in the keyboard-tip message, drawing its command's live key in this
-  platform's spelling (`search.newQuery`, `search.toggleRecent`: ⌘N / ⌘Y on macOS, Ctrl+N / Ctrl+H
-  elsewhere). The message gets the same keys as placeholders, so a translation places them; the chip
-  draws the key itself, so `children` is ignored.
+  One ShortcutChip per empty `<tag></tag>` in the keyboard-tip message, drawing its command's live
+  key in this platform's spelling (`search.newQuery`, `search.toggleRecent`: ⌘N / ⌘Y on macOS,
+  Ctrl+N / Ctrl+H elsewhere). Both commands are fixed, so they're always bound.
 -->
 {#snippet newChip()}<ShortcutChip commandId="search.newQuery" clickable={false} />{/snippet}
 {#snippet historyChip()}<ShortcutChip commandId="search.toggleRecent" clickable={false} />{/snippet}
@@ -130,7 +122,7 @@
         </p>
     {/if}
     <p class="tip">
-        <Trans key="queryUi.empty.keysTip" snippets={{ newChip, historyChip }} params={tipKeys} />
+        <Trans key="queryUi.empty.keysTip" snippets={{ newChip, historyChip }} />
     </p>
 </div>
 

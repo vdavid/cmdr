@@ -34,8 +34,7 @@
     import { createDeferredActiveDescendant } from '#lib/ui/deferred-active-descendant.svelte.js'
     import type { SearchMode } from './query-filter-state.svelte'
     import { queryKeyAria, queryKeyLabel } from './query-keys'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
-    import { toDisplayShortcut } from '#lib/shortcuts/key-capture.js'
+    import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 
     interface Props {
         /** Bindable ref to the input element so the parent can manage focus. */
@@ -144,7 +143,7 @@
     )
 
     /** The recent-items key, live from the registry (`search.toggleRecent`). */
-    const recentKey = $derived(toDisplayShortcut(getFirstShortcutReactive('search.toggleRecent') ?? ''))
+    const recentKey = $derived(shortcutAsText('search.toggleRecent', 'tooltip'))
 </script>
 
 <!-- `display: contents`: the bar hands its two halves straight to the dialog's 2×2

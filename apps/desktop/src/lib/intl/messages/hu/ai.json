@@ -27,7 +27,7 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
-  "ai.toast.readyDescriptionWithKey": "Hozz létre egy új mappát ({combo}), és nézd meg az AI-alapú névjavaslatokat.",
+  "ai.toast.readyDescriptionWithKey": "Hozz létre egy új mappát (<key></key>), és nézd meg az AI-alapú névjavaslatokat.",
   "@ai.toast.readyDescriptionWithKey": {
     "sourceHash": "a9e1361"
   },

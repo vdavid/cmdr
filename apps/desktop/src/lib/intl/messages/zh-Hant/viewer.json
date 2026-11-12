@@ -375,7 +375,7 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmMessage": "一次貼上大量內容可能會拖慢其他 App。試試用搜尋（{combo}）縮小範圍。",
+  "viewer.copyDialog.confirmMessage": "一次貼上大量內容可能會拖慢其他 App。試試用搜尋（<key></key>）縮小範圍。",
   "@viewer.copyDialog.confirmMessage": {
     "sourceHash": "084b649"
   },
@@ -391,7 +391,7 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseMessage": "這超過了剪貼板 100 MB 的上限。試試用搜尋（{combo}）找到你要的部分，或把選取內容儲存成檔案。",
+  "viewer.copyDialog.refuseMessage": "這超過了剪貼板 100 MB 的上限。試試用搜尋（<key></key>）找到你要的部分，或把選取內容儲存成檔案。",
   "@viewer.copyDialog.refuseMessage": {
     "sourceHash": "75d10d8"
   },

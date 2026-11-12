@@ -2,18 +2,19 @@
     import Button from '#lib/ui/Button.svelte'
     import ToastActions from '#lib/ui/toast/ToastActions.svelte'
     import { getAiState, handleCancel, handleGotIt } from './ai-state.svelte'
+    import type { Snippet } from 'svelte'
+    import Trans from '#lib/intl/Trans.svelte'
+    import ShortcutChip from '#lib/ui/ShortcutChip.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { commandHasShortcut } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 
     const aiState = getAiState()
-    // The live New folder key, so the hint never names a key the user moved or removed.
-    const newFolderKey = $derived(getFirstShortcutReactive('file.newFolder'))
-    const readyDescription = $derived(
-        newFolderKey === undefined
-            ? tString('ai.toast.readyDescriptionWithoutKey')
-            : tString('ai.toast.readyDescriptionWithKey', { combo: newFolderKey }),
-    )
+    // The New folder key is a live chip, so the hint never names a key the user moved; once no
+    // key runs the command, the keyless sentence reads instead.
+    const newFolderBound = $derived(commandHasShortcut('file.newFolder'))
 </script>
+
+{#snippet newFolderChip(_children: Snippet)}<ShortcutChip commandId="file.newFolder" clickable={false} />{/snippet}
 
 <!-- One root around every state: the toast frame lays a body's rows out in block flow, spaced
      for it (`ui/DETAILS.md` § Toast system). -->
@@ -44,7 +45,13 @@
         <span class="ai-description">{tString('ai.toast.installingDescription')}</span>
     {:else if aiState.notificationState === 'ready'}
         <span class="ai-title">{tString('ai.toast.readyTitle')}</span>
-        <span class="ai-description">{readyDescription}</span>
+        <span class="ai-description">
+            {#if newFolderBound}
+                <Trans key="ai.toast.readyDescriptionWithKey" snippets={{ key: newFolderChip }} />
+            {:else}
+                {tString('ai.toast.readyDescriptionWithoutKey')}
+            {/if}
+        </span>
         <ToastActions>
             <Button
                 variant="primary"

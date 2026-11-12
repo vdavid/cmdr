@@ -77,7 +77,7 @@
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "Vietnamese tech UI keeps the acronym AI verbatim, as the catalog does (terms.json ai-feature: AI; queryUi.empty.tipAi tìm kiếm AI)."
   },
-  "queryUi.empty.keysTip": "Mẹo: <newChip>{newCombo}</newChip> để bắt đầu lại từ đầu, <historyChip>{historyCombo}</historyChip> để hiển thị tìm kiếm gần đây.",
+  "queryUi.empty.keysTip": "Mẹo: <newChip></newChip> để bắt đầu lại từ đầu, <historyChip></historyChip> để hiển thị tìm kiếm gần đây.",
   "@queryUi.empty.keysTip": {
     "sourceHash": "4638fd5"
   },

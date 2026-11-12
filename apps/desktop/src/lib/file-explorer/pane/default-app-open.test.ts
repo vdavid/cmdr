@@ -37,10 +37,9 @@ vi.mock(import('#lib/intl/messages.svelte.js'), async (importOriginal) => ({
   ...(await importOriginal()),
   tString: (key: string, params?: Record<string, unknown>) => `${key} ${JSON.stringify(params ?? {})}`,
 }))
-vi.mock(import('#lib/shortcuts/index.js'), async (importOriginal) => ({
+vi.mock(import('#lib/shortcuts/shortcuts-store.js'), async (importOriginal) => ({
   ...(await importOriginal()),
   getLiveShortcuts: m.liveShortcuts,
-  toDisplayShortcut: (combo: string) => combo,
 }))
 vi.mock('#lib/stores/volume-store.svelte.js', () => ({ getVolumes: () => [] }))
 

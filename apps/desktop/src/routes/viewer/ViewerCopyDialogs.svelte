@@ -11,7 +11,9 @@
     import Button from '#lib/ui/Button.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { formatByteSize } from '#lib/units/index.js'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import type { Snippet } from 'svelte'
+    import Trans from '#lib/intl/Trans.svelte'
+    import ShortcutChip from '#lib/ui/ShortcutChip.svelte'
 
     interface Props {
         /**
@@ -34,10 +36,12 @@
 
     const { confirmBytes, refuseBytes, onCancelConfirm, onProceedConfirm, onDismissRefuse, onSaveAs }: Props = $props()
 
-    // The search key both bodies point at, live in this OS's spelling. `viewer.search` is a fixed key,
-    // so it's always bound: the sentence never loses its key.
-    const searchKey = $derived(getFirstShortcutReactive('viewer.search') ?? '')
 </script>
+
+<!-- The search key both bodies point at, live in this OS's spelling. `viewer.search` is a fixed key,
+     so it's always bound: the sentence never loses its key. Non-clickable: a chip's deep link opens
+     Settings, which this restricted window can't create. -->
+{#snippet searchChip(_children: Snippet)}<ShortcutChip commandId="viewer.search" clickable={false} />{/snippet}
 
 {#if confirmBytes !== null}
     {@const bytes = confirmBytes}
@@ -54,7 +58,9 @@
                 {tString('viewer.copyDialog.confirmTitleKnown', { size: formatByteSize(bytes) })}
             {/if}
         {/snippet}
-        <p class="copy-dialog-body">{tString('viewer.copyDialog.confirmMessage', { combo: searchKey })}</p>
+        <p class="copy-dialog-body">
+            <Trans key="viewer.copyDialog.confirmMessage" snippets={{ key: searchChip }} />
+        </p>
         {#snippet footer()}
             <Button variant="secondary" onclick={onCancelConfirm}>{tString('viewer.copyDialog.cancel')}</Button>
             <Button variant="secondary" onclick={onSaveAs}>{tString('viewer.copyDialog.saveAsFile')}</Button>
@@ -75,7 +81,7 @@
             {tString('viewer.copyDialog.confirmTitleKnown', { size: formatByteSize(bytes) })}
         {/snippet}
         <p class="copy-dialog-body">
-            {tString('viewer.copyDialog.refuseMessage', { combo: searchKey })}
+            <Trans key="viewer.copyDialog.refuseMessage" snippets={{ key: searchChip }} />
         </p>
         {#snippet footer()}
             <Button variant="secondary" onclick={onDismissRefuse}>{tString('viewer.copyDialog.cancel')}</Button>

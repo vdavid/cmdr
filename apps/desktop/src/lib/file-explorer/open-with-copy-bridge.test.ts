@@ -18,7 +18,7 @@ type ToastOptions = { level: string; timeoutMs: number; id: string }
 const addToast = vi.hoisted(() => vi.fn<(message: string, options: ToastOptions) => string>())
 vi.mock('#lib/ui/toast/index.js', () => ({ addToast }))
 const liveShortcuts = vi.hoisted(() => vi.fn<(commandId: string) => string[]>())
-vi.mock(import('#lib/shortcuts/index.js'), async (importOriginal) => ({
+vi.mock(import('#lib/shortcuts/shortcuts-store.js'), async (importOriginal) => ({
   ...(await importOriginal()),
   getLiveShortcuts: liveShortcuts,
 }))

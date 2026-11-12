@@ -1,6 +1,6 @@
 # Keyboard shortcuts system
 
-Customizable keyboard shortcuts for all Cmdr commands (edit/add/remove/reset via Settings). Defaults live in the sibling
+Customizable keyboard shortcuts for all Cmdr commands (edited in Settings). Defaults live in the sibling
 `../commands/command-registry.ts`; only customizations persist to `shortcuts.json`.
 
 Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-research.md`.
@@ -29,10 +29,9 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
   are not customizable, enforced at the store boundary.** Load drops persisted entries, the mutators no-op with
   `log.warn`, `resetShortcut` stays permissive.
 - **Every mutation emits `shortcuts:changed` after saving; the per-window `SENDER_ID` is the loop guard.** The listener
-  updates the local map and calls `notifyListeners`, never saving or re-emitting. Without this a rebind stays stale in
-  other windows until restart.
-- **`initializeShortcuts` heals leaked `''` entries on load:** `[]` kept; `['']` dropped entirely (❌ don't collapse it
-  to `[]`, that suppresses a default-bound command); `['⌘X','']` → `['⌘X']`.
+  updates the local map and calls `notifyListeners`, never saving or re-emitting.
+- **`initializeShortcuts` heals leaked `''` entries on load:** `[]` kept; `['']` dropped (❌ never collapsed to `[]`,
+  which suppresses the defaults); `['⌘X','']` → `['⌘X']`.
 - **A captured combo conflicts only when scopes overlap** (one ancestry chain contains the other), via the static
   `scopeHierarchy` — hand-edit it to add a scope. One winner per combo: a user's own binding beats a default
   (`binding-priority.ts`, for every reader: map, matchers, menus, hints), then deepest scope, then registry order.
@@ -40,19 +39,18 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
 - **`menuCommands` (in `shortcuts-store.ts`) must stay in sync with the Rust menu items.** The set-equality test in
   `commands/rust-command-id-drift.test.ts` fails on a missing item (stale accelerator after a rebind) or an undocumented
   excuse.
-- **`downloads.goToLatest` binds `⌘J` deliberately** (not Finder's "View Options"); don't "fix" it.
+- **`downloads.goToLatest` binds `⌘J` deliberately** (not Finder's "View Options").
 - **`handleGlobalKeyDown` bails when focus is in a text input and the combo `isTypingKeyCombo`**, so a bare-key Tier 1
   binding (Tab → switch pane) doesn't fire mid-typing. No chords or modifier-only combos.
 - **❌ A local handler that ACTS on a key calls `claimKey(e)`** (`claim-key.ts`, imported from the leaf so a barrel mock
   can't fake it). `preventDefault` alone is NOT a claim, so the command runs twice. Bare keys are Tier 1 too (`Enter`,
   `Tab`, Space, `PageUp`/`Down`, `Home`/`End`, F5, Insert). DETAILS § Local handlers.
-- **Feature code shows a binding as a `ShortcutChip`, or `shortcutAsText(id, sink)`** (`cmdr/no-raw-shortcut-text`).
-  DETAILS § Shortcuts as text.
-- **❌ Never hand-roll a key predicate (`e.key === 'a' && e.metaKey`) in a keydown handler.** That's a modifier
-  SUPERSET: `⌥⌘A` matched it, so opening Ask Cmdr also selected every file. A local handler calls
-  `eventMatchesCommand(e, 'some.command')`, or `comboMatchesCommand(resolveKeyCombo(e), …)`, ❌ never a bare
-  `formatKeyCombo(e)`: that skips the layout fallbacks the dispatcher uses. Enforced by `cmdr/no-raw-key-match`; DETAILS
-  § Local handlers.
+- **Feature code shows a key as a `ShortcutChip`, or `shortcutAsText(id, sink)`** (`cmdr/no-raw-shortcut-text`): live
+  keys only, with a keyless sibling message, ❌ never a default fallback. DETAILS § Shortcuts as text.
+- **❌ Never hand-roll a key predicate (`e.key === 'a' && e.metaKey`) in a keydown handler**: it's a modifier SUPERSET,
+  so `⌥⌘A` fires it too. A local handler calls `eventMatchesCommand(e, 'some.command')`, or
+  `comboMatchesCommand(resolveKeyCombo(e), …)`, ❌ never a bare `formatKeyCombo(e)`: that skips the layout fallbacks the
+  dispatcher uses. Enforced by `cmdr/no-raw-key-match`; DETAILS § Local handlers.
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

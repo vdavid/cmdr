@@ -177,13 +177,13 @@ describe('viewer copy dialogs (en)', () => {
   it('matches the copy-dialog strings', () => {
     expect(tString('viewer.copyDialog.confirmTitleUnknown')).toBe('Copy this selection to the clipboard?')
     expect(tString('viewer.copyDialog.confirmTitleKnown', { size: '24 MB' })).toBe('Copy 24 MB to the clipboard?')
-    expect(tString('viewer.copyDialog.confirmMessage', { combo: '⌘F' })).toBe(
+    expect(tString('viewer.copyDialog.confirmMessage', { key: () => '⌘F' })).toBe(
       'Large pastes can slow down other apps. Try search (⌘F) to narrow it down.',
     )
     expect(tString('viewer.copyDialog.cancel')).toBe('Cancel')
     expect(tString('viewer.copyDialog.saveAsFile')).toBe('Save as file…')
     expect(tString('viewer.copyDialog.copy')).toBe('Copy')
-    expect(tString('viewer.copyDialog.refuseMessage', { combo: '⌘F' })).toBe(
+    expect(tString('viewer.copyDialog.refuseMessage', { key: () => '⌘F' })).toBe(
       'That’s larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the selection as a file.',
     )
   })

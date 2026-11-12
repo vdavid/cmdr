@@ -27,7 +27,7 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
-  "ai.toast.readyDescriptionWithKey": "Hãy thử tạo thư mục mới ({combo}) để xem AI gợi ý tên.",
+  "ai.toast.readyDescriptionWithKey": "Hãy thử tạo thư mục mới (<key></key>) để xem AI gợi ý tên.",
   "@ai.toast.readyDescriptionWithKey": {
     "sourceHash": "a9e1361"
   },

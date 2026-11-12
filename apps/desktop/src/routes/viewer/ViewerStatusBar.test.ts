@@ -11,18 +11,24 @@ vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({
   getFileSizeFormat: () => 'binary',
 }))
 
-// The viewer's two remappable keys, as the live chips read them; `null` = turned off.
+// The viewer's two remappable keys, as the live chips read them; `null` = turned off. Every other
+// command (the fixed `viewer.search`) keeps its real key for the platform under test.
 const viewerKeys = vi.hoisted((): { wrap: string | null; tail: string | null } => ({ wrap: 'W', tail: 'F' }))
-function bindingsOf(id: string): string[] {
-  const key = id === 'viewer.toggleWordWrap' ? viewerKeys.wrap : id === 'viewer.toggleTail' ? viewerKeys.tail : null
-  return key === null ? [] : [key]
-}
-vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('#lib/shortcuts/reactive-shortcuts.svelte.js')>()),
-  commandHasShortcut: (id: string) => bindingsOf(id).length > 0,
-  getLiveShortcutsReactive: bindingsOf,
-  shortcutAsText: (id: string) => bindingsOf(id)[0],
-}))
+vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('#lib/shortcuts/reactive-shortcuts.svelte.js')>()
+  type Id = Parameters<typeof actual.getLiveShortcutsReactive>[0]
+  const bindingsOf = (id: Id): string[] => {
+    if (id !== 'viewer.toggleWordWrap' && id !== 'viewer.toggleTail') return actual.getLiveShortcutsReactive(id)
+    const key = id === 'viewer.toggleWordWrap' ? viewerKeys.wrap : viewerKeys.tail
+    return key === null ? [] : [key]
+  }
+  return {
+    ...actual,
+    commandHasShortcut: (id: Id) => bindingsOf(id).length > 0,
+    getLiveShortcutsReactive: bindingsOf,
+    shortcutAsText: (id: Id) => bindingsOf(id)[0],
+  }
+})
 
 beforeEach(() => {
   document.body.innerHTML = ''

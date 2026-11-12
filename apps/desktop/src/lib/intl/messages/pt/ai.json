@@ -27,7 +27,7 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
-  "ai.toast.readyDescriptionWithKey": "Experimente criar uma nova pasta ({combo}) para ver sugestões de nomes geradas por IA.",
+  "ai.toast.readyDescriptionWithKey": "Experimente criar uma nova pasta (<key></key>) para ver sugestões de nomes geradas por IA.",
   "@ai.toast.readyDescriptionWithKey": {
     "sourceHash": "a9e1361"
   },

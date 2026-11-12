@@ -43,6 +43,10 @@ const allowedPathFragments = [
   // Editing and listing bindings is these surfaces' job.
   '/lib/settings/sections/KeyboardShortcutsSection',
   '/lib/downloads/GlobalShortcutRow.svelte',
+  // The row's helper text, spelled the way the row spells the binding.
+  '/lib/downloads/global-shortcut-description.ts',
+  // The search dialog's fixed keys, which no command owns: the table, its matcher, and its key hints.
+  '/lib/query-ui/query-keys.ts',
   '/lib/file-explorer/pane/FunctionKeyBar.svelte',
   '/lib/settings/mcp-main-bridge.ts',
 ]

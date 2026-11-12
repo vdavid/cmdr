@@ -376,7 +376,7 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmMessage": "Pegar grandes cantidades puede ralentizar otras apps. Prueba a buscar ({combo}) para acotar la selección.",
+  "viewer.copyDialog.confirmMessage": "Pegar grandes cantidades puede ralentizar otras apps. Prueba a buscar (<key></key>) para acotar la selección.",
   "@viewer.copyDialog.confirmMessage": {
     "sourceHash": "084b649"
   },
@@ -392,7 +392,7 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseMessage": "Eso supera el límite de 100 MB del portapapeles. Prueba a buscar ({combo}) para encontrar lo que necesitas, o guarda la selección como archivo.",
+  "viewer.copyDialog.refuseMessage": "Eso supera el límite de 100 MB del portapapeles. Prueba a buscar (<key></key>) para encontrar lo que necesitas, o guarda la selección como archivo.",
   "@viewer.copyDialog.refuseMessage": {
     "sourceHash": "75d10d8"
   },

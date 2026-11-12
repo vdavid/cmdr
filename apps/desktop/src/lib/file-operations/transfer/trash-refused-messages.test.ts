@@ -23,7 +23,7 @@ vi.mock('#lib/onboarding/fda-status.svelte.js', () => ({
 }))
 // The commands whose every key the user removed; the rest keep their real live keys.
 const unbound = vi.hoisted(() => new Set<string>())
-vi.mock(import('#lib/shortcuts/index.js'), async (importOriginal) => {
+vi.mock(import('#lib/shortcuts/shortcuts-store.js'), async (importOriginal) => {
   const actual = await importOriginal()
   return { ...actual, getLiveShortcuts: (id: string) => (unbound.has(id) ? [] : actual.getLiveShortcuts(id)) }
 })

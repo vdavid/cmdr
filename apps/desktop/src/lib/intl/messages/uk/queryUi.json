@@ -75,7 +75,7 @@
   "@queryUi.empty.aiBadge": {
     "sourceHash": "11fb682"
   },
-  "queryUi.empty.keysTip": "Порада: <newChip>{newCombo}</newChip> починає пошук заново, <historyChip>{historyCombo}</historyChip> показує недавні пошуки.",
+  "queryUi.empty.keysTip": "Порада: <newChip></newChip> починає пошук заново, <historyChip></historyChip> показує недавні пошуки.",
   "@queryUi.empty.keysTip": {
     "sourceHash": "4638fd5"
   },

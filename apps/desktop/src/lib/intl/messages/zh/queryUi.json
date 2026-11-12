@@ -76,7 +76,7 @@
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "Simplified Chinese UI writes AI for artificial intelligence, as the catalog does (terms.json ai-feature: AI 功能; search mode label AI; queryUi.empty.tipAi AI 搜索)."
   },
-  "queryUi.empty.keysTip": "提示：<newChip>{newCombo}</newChip> 重新开始，<historyChip>{historyCombo}</historyChip> 显示最近的搜索。",
+  "queryUi.empty.keysTip": "提示：<newChip></newChip> 重新开始，<historyChip></historyChip> 显示最近的搜索。",
   "@queryUi.empty.keysTip": {
     "sourceHash": "4638fd5"
   },

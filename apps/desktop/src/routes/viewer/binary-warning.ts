@@ -6,11 +6,9 @@
  */
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 
-export function binaryWarningKey(keys: { quickLookKey: string | undefined; openKey: string | undefined }): MessageKey {
-  if (keys.quickLookKey !== undefined) {
-    return keys.openKey !== undefined
-      ? 'viewer.binaryWarning.bodyWithKeys'
-      : 'viewer.binaryWarning.bodyWithQuickLookKey'
+export function binaryWarningKey(keys: { quickLookBound: boolean; openBound: boolean }): MessageKey {
+  if (keys.quickLookBound) {
+    return keys.openBound ? 'viewer.binaryWarning.bodyWithKeys' : 'viewer.binaryWarning.bodyWithQuickLookKey'
   }
-  return keys.openKey !== undefined ? 'viewer.binaryWarning.bodyWithOpenKey' : 'viewer.binaryWarning.bodyWithoutKeys'
+  return keys.openBound ? 'viewer.binaryWarning.bodyWithOpenKey' : 'viewer.binaryWarning.bodyWithoutKeys'
 }

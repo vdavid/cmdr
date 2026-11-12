@@ -379,7 +379,7 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmMessage": "Große Mengen einzusetzen kann andere Apps verlangsamen. Grenze die Auswahl mit der Suche ({combo}) ein.",
+  "viewer.copyDialog.confirmMessage": "Große Mengen einzusetzen kann andere Apps verlangsamen. Grenze die Auswahl mit der Suche (<key></key>) ein.",
   "@viewer.copyDialog.confirmMessage": {
     "sourceHash": "084b649"
   },
@@ -395,7 +395,7 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseMessage": "Das ist größer als das Limit der Zwischenablage von 100 MB. Grenze mit der Suche ({combo}) ein, was du brauchst, oder sichere die Auswahl als Datei.",
+  "viewer.copyDialog.refuseMessage": "Das ist größer als das Limit der Zwischenablage von 100 MB. Grenze mit der Suche (<key></key>) ein, was du brauchst, oder sichere die Auswahl als Datei.",
   "@viewer.copyDialog.refuseMessage": {
     "sourceHash": "75d10d8"
   },

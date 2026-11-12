@@ -27,7 +27,7 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
-  "ai.toast.readyDescriptionWithKey": "Спробуйте створити нову папку ({combo}), щоб побачити пропозиції назв від ШІ.",
+  "ai.toast.readyDescriptionWithKey": "Спробуйте створити нову папку (<key></key>), щоб побачити пропозиції назв від ШІ.",
   "@ai.toast.readyDescriptionWithKey": {
     "sourceHash": "a9e1361"
   },

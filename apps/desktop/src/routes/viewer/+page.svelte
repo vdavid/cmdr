@@ -79,7 +79,7 @@
     import MediaStage from './MediaStage.svelte'
     import MediaMarkdownView from './MediaMarkdownView.svelte'
     import ShortcutChip from '#lib/ui/ShortcutChip.svelte'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { commandHasShortcut } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import { binaryWarningKey } from './binary-warning'
     import type { EncodingChoice, FileEncoding } from '#lib/ipc/bindings.js'
     import { viewerSetEncoding, viewerSetTailMode, viewerGetEncodingOptions } from '#lib/tauri-commands/index.js'
@@ -1230,19 +1230,22 @@
             Local "Close" dismisses this instance; "Never show this warning
             again" flips a persisted setting.
         -->
-        {@const liveQuickLookKey = getFirstShortcutReactive('file.quickLook')}
-        {@const liveOpenKey = getFirstShortcutReactive('nav.open')}
+        {@const quickLookBound = commandHasShortcut('file.quickLook')}
+        {@const openBound = commandHasShortcut('nav.open')}
         <aside class="binary-warning" role="note">
             <p class="binary-warning-text">
                 {#snippet kindSnippet(children: import('svelte').Snippet)}<strong>{@render children()}</strong>{/snippet}
+                <!-- Non-clickable: a chip's deep link opens Settings, which this restricted window can't create. -->
                 {#snippet quickLookKey(children: import('svelte').Snippet)}<ShortcutChip
-                        key={liveQuickLookKey ?? ''}
+                        commandId="file.quickLook"
+                        clickable={false}
                     />{@render children()}{/snippet}
                 {#snippet openKey(children: import('svelte').Snippet)}<ShortcutChip
-                        key={liveOpenKey ?? ''}
+                        commandId="nav.open"
+                        clickable={false}
                     />{@render children()}{/snippet}
                 <Trans
-                    key={binaryWarningKey({ quickLookKey: liveQuickLookKey, openKey: liveOpenKey })}
+                    key={binaryWarningKey({ quickLookBound, openBound })}
                     params={{ category: warning.category ?? 'binary', ext: warning.ext }}
                     snippets={{ kindName: kindSnippet, quickLookKey, openKey }}
                 />

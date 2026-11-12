@@ -77,7 +77,7 @@
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "Swedish writes the acronym AI for artificial intelligence, as the catalog does (terms.json ai-feature: AI-funktioner; queryUi.empty.tipAi AI-sökning)."
   },
-  "queryUi.empty.keysTip": "Tips: <newChip>{newCombo}</newChip> börjar om, <historyChip>{historyCombo}</historyChip> visar senaste sökningarna.",
+  "queryUi.empty.keysTip": "Tips: <newChip></newChip> börjar om, <historyChip></historyChip> visar senaste sökningarna.",
   "@queryUi.empty.keysTip": {
     "sourceHash": "4638fd5"
   },

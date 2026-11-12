@@ -379,7 +379,7 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmMessage": "Veel tegelijk plakken kan andere apps vertragen. Probeer zoeken ({combo}) om de selectie te verkleinen.",
+  "viewer.copyDialog.confirmMessage": "Veel tegelijk plakken kan andere apps vertragen. Probeer zoeken (<key></key>) om de selectie te verkleinen.",
   "@viewer.copyDialog.confirmMessage": {
     "sourceHash": "084b649"
   },
@@ -395,7 +395,7 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseMessage": "Dat is groter dan de klembordlimiet van 100 MB. Probeer zoeken ({combo}) om te vinden wat je nodig hebt, of bewaar de selectie als bestand.",
+  "viewer.copyDialog.refuseMessage": "Dat is groter dan de klembordlimiet van 100 MB. Probeer zoeken (<key></key>) om te vinden wat je nodig hebt, of bewaar de selectie als bestand.",
   "@viewer.copyDialog.refuseMessage": {
     "sourceHash": "75d10d8"
   },

@@ -41,6 +41,15 @@ ruleTester.run('no-raw-shortcut-text', rule, {
       code: `import { getFirstShiftShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'`,
       filename: 'src/lib/file-explorer/pane/FunctionKeyBar.svelte',
     },
+    // Keys no command owns: the global hotkey's helper text, and the search dialog's key table.
+    {
+      code: `import { toDisplayShortcut } from '#lib/shortcuts/key-capture.js'`,
+      filename: 'src/lib/downloads/global-shortcut-description.ts',
+    },
+    {
+      code: `import { toDisplayShortcut } from '#lib/shortcuts/key-capture.js'`,
+      filename: 'src/lib/query-ui/query-keys.ts',
+    },
     // Unrelated shortcut-module imports stay fine anywhere.
     {
       code: `import { eventMatchesCommand } from '#lib/shortcuts/index.js'`,
@@ -59,6 +68,12 @@ ruleTester.run('no-raw-shortcut-text', rule, {
       code: `import { getEffectiveShortcuts, toDisplayShortcut } from '#lib/shortcuts/index.js'`,
       filename: 'src/lib/file-explorer/pane/clipboard-operations.ts',
       errors: [{ messageId: 'rawShortcutText' }, { messageId: 'rawShortcutText' }],
+    },
+    // The live-key reader is still a raw reader: it hands back text.
+    {
+      code: `import { getLiveShortcuts } from '#lib/shortcuts/index.js'`,
+      filename: 'src/lib/file-explorer/pane/default-app-open.ts',
+      errors: [{ messageId: 'rawShortcutText' }],
     },
     // Any import path counts: the leaf module too.
     {

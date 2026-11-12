@@ -376,7 +376,7 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmMessage": "Dán một lượng lớn có thể làm chậm các ứng dụng khác. Hãy thử tìm kiếm ({combo}) để thu hẹp vùng chọn.",
+  "viewer.copyDialog.confirmMessage": "Dán một lượng lớn có thể làm chậm các ứng dụng khác. Hãy thử tìm kiếm (<key></key>) để thu hẹp vùng chọn.",
   "@viewer.copyDialog.confirmMessage": {
     "sourceHash": "084b649"
   },
@@ -392,7 +392,7 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseMessage": "Vùng chọn này lớn hơn giới hạn 100 MB của bảng nhớ tạm. Hãy thử tìm kiếm ({combo}) để tìm thứ bạn cần hoặc lưu vùng chọn thành tệp.",
+  "viewer.copyDialog.refuseMessage": "Vùng chọn này lớn hơn giới hạn 100 MB của bảng nhớ tạm. Hãy thử tìm kiếm (<key></key>) để tìm thứ bạn cần hoặc lưu vùng chọn thành tệp.",
   "@viewer.copyDialog.refuseMessage": {
     "sourceHash": "75d10d8"
   },

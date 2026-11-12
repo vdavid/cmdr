@@ -6,9 +6,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 
 const newFolderKey = vi.hoisted(() => ({ value: undefined as string | undefined }))
-vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', () => ({
-  getFirstShortcutReactive: (commandId: string) => (commandId === 'file.newFolder' ? newFolderKey.value : undefined),
-}))
+// The sentence asks whether a key runs New folder, and its chip reads the key itself.
+vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', () => {
+  const keys = (commandId: string) =>
+    commandId === 'file.newFolder' && newFolderKey.value !== undefined ? [newFolderKey.value] : []
+  return {
+    commandHasShortcut: (commandId: string) => keys(commandId).length > 0,
+    getLiveShortcutsReactive: keys,
+  }
+})
 vi.mock('#lib/tauri-commands/index.js', () => ({
   cancelAiDownload: vi.fn(() => Promise.resolve()),
   getAiModelInfo: vi.fn(() => Promise.resolve({ sizeBytes: 2_000_000_000 })),
@@ -29,7 +35,7 @@ async function readyDescription(): Promise<string | null | undefined> {
   document.body.appendChild(target)
   mount(AiToastContent, { target, props: {} })
   await tick()
-  return target.querySelector('.ai-description')?.textContent
+  return target.querySelector('.ai-description')?.textContent.trim()
 }
 
 describe('the AI ready toast', () => {
@@ -37,11 +43,12 @@ describe('the AI ready toast', () => {
     resetForTesting()
   })
 
-  it('names the live New folder key', async () => {
+  it('shows the live New folder key as a key cap', async () => {
     newFolderKey.value = 'Ctrl+Shift+N'
     expect(await readyDescription()).toBe(
       'Try creating a new folder (Ctrl+Shift+N) to see AI-powered name suggestions.',
     )
+    expect(document.body.querySelector('.ai-description kbd, .ai-description .shortcut-chip')).not.toBeNull()
   })
 
   it('says the same without a key once no key runs New folder', async () => {

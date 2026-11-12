@@ -14,7 +14,7 @@ const m = vi.hoisted(() => ({
 }))
 
 vi.mock('#lib/text-editor/open-file-in-editor.js', () => ({ openFileInEditor: m.openFileInEditor }))
-vi.mock(import('#lib/shortcuts/index.js'), async (importOriginal) => ({
+vi.mock(import('#lib/shortcuts/shortcuts-store.js'), async (importOriginal) => ({
   ...(await importOriginal()),
   getLiveShortcuts: m.liveShortcuts,
 }))

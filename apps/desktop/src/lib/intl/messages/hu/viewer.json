@@ -376,7 +376,7 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmMessage": "A nagy beillesztések lelassíthatnak más alkalmazásokat. Próbáld a keresést ({combo}), hogy leszűkítsd.",
+  "viewer.copyDialog.confirmMessage": "A nagy beillesztések lelassíthatnak más alkalmazásokat. Próbáld a keresést (<key></key>), hogy leszűkítsd.",
   "@viewer.copyDialog.confirmMessage": {
     "sourceHash": "084b649"
   },
@@ -392,7 +392,7 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseMessage": "Ez nagyobb a 100 MB-os vágólapkorlátnál. Próbáld a keresést ({combo}), hogy megtaláld, amire szükséged van, vagy mentsd a kijelölést fájlként.",
+  "viewer.copyDialog.refuseMessage": "Ez nagyobb a 100 MB-os vágólapkorlátnál. Próbáld a keresést (<key></key>), hogy megtaláld, amire szükséged van, vagy mentsd a kijelölést fájlként.",
   "@viewer.copyDialog.refuseMessage": {
     "sourceHash": "75d10d8"
   },

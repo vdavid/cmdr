@@ -9,7 +9,7 @@ import { withEveryCapability } from '#lib/platform/test-platform.js'
 const liveKey = new Map<string, string>()
 
 vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', () => ({
-  getFirstShortcutReactive: (commandId: string) => liveKey.get(commandId),
+  shortcutAsText: (commandId: string) => liveKey.get(commandId),
 }))
 
 import { getSettingDefinition } from './settings-registry'

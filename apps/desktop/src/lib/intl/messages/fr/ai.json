@@ -27,7 +27,7 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
-  "ai.toast.readyDescriptionWithKey": "Essayez de créer un nouveau dossier ({combo}) pour voir les suggestions de noms par l’IA.",
+  "ai.toast.readyDescriptionWithKey": "Essayez de créer un nouveau dossier (<key></key>) pour voir les suggestions de noms par l’IA.",
   "@ai.toast.readyDescriptionWithKey": {
     "sourceHash": "a9e1361"
   },

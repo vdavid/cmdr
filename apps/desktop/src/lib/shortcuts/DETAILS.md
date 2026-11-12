@@ -125,50 +125,70 @@ Three readers over one module-level `$state` version (bumped on every `onShortcu
   chip is a claim about Shift+<key>; why that matters: `../file-explorer/pane/DETAILS.md`.
 
 All three subscribe `$derived`/`$effect` consumers to shortcut changes, so a rebind updates the UI live. They serve the
-binding surfaces (`ShortcutChip`, the F-key bar); feature code reads through the two accessors below.
+binding surfaces (`ShortcutChip`, the F-key bar); feature code reads through the accessors below, which answer for live
+keys too. Anything that COMPARES or DISPATCHES reads `getEffectiveShortcuts` (what a command holds).
 
 ### Shortcuts as text
 
 On screen, a shortcut renders through `<ShortcutChip commandId="…" />`, placed in its sentence by an empty `<Trans>` tag
 (`press <key></key> or choose…`). Feature code never reads a binding's text: `cmdr/no-raw-shortcut-text`
 (`apps/desktop/eslint-plugins/no-raw-shortcut-text.js`) bans importing the raw readers (`getEffectiveShortcuts`,
-`getDefaultShortcuts`, the three reactive readers, `toDisplayShortcut`) outside this module, `ShortcutChip`, and the
-surfaces whose job is editing or listing bindings. Two accessors in `reactive-shortcuts.svelte.ts` replace them:
+`getLiveShortcuts`, `getDefaultShortcuts`, the three reactive readers, `toDisplayShortcut`) outside this module,
+`ShortcutChip`, and the surfaces whose job is editing or listing bindings. Three accessors in
+`reactive-shortcuts.svelte.ts` replace them, all over LIVE keys (a default another command's user binding shadows runs
+that other command, so no hint names it):
 
-- `commandHasShortcut(commandId)`: the yes/no a sentence around a chip needs. A `commandId` chip renders nothing when
-  unbound, so the caller picks the wording (or drops the line) that names no key.
-- `shortcutAsText(commandId, sink)`: the first binding as display text, for a sink that can only hold text. `sink` is a
-  closed union (`announcement`, `ariaLabel`, `tooltip`, `toast`, `errorMessage`, `menuItem`) with no prose member, so
-  every exception names itself and greps as `shortcutAsText(`. Inside a tagged message, a text sink fills the empty tag
-  with a string-returning tag handler (`key: () => text`); `tString` then returns plain text.
+- `commandHasShortcut(commandId)`: the yes/no a sentence around a chip needs. A `commandId` chip renders nothing when no
+  key runs the command, so the caller picks the wording (or drops the line) that names no key.
+- `shortcutAsText(commandId, sink)`: the first live key as display text, for a sink that can only hold text. `sink` is a
+  closed union (`announcement`, `ariaLabel`, `tooltip`, `toast`, `errorMessage`, `menuItem`, `settingDescription`) with
+  no prose member, so every exception names itself and greps as `shortcutAsText(`. Inside a tagged message, a text sink
+  fills the empty tag with a string-returning tag handler (`key: () => text`); `tString` then returns plain text.
+- `firstShortcutIs(commandId, combo)`: whether the chip's key is `combo` (canonical), for a sentence true of one key
+  only (the Quick Look hint's "works in Finder, too" holds for ⇧Space alone).
+
+**A message naming a key has a keyless sibling**, picked when `commandHasShortcut` is false or `shortcutAsText` returns
+`undefined`. ❌ Never fall back to the default key: a default the user removed runs nothing. So no text shows an empty
+chip or names a dead key (`../intl/DETAILS.md` § "The frozen macOS copy" has the new-key route).
 
 Decision: a chip in a toast is LIVE, too. The toasts used to snapshot the binding at creation so a rebind wouldn't
 rewrite a visible one, but a chip is a claim about what pressing it does now, and a snapshot names a dead key after a
-rebind. A literal `key=` chip is only for a key no command owns (`⏎`, the viewer's fixed `⌘F`, the downloads global
-hotkey, the key a person typed).
+rebind. A literal `key=` chip is only for a key no command owns (`⏎`, the downloads global hotkey, the key a person
+typed).
 
 Why: a `{shortcut}` param spliced into prose reads as part of the sentence. The empty-folder hint said "press ⌘⇧. or
 choose…", where the binding's period read as punctuation.
 
+Decision: a setting's description is a text sink (`settingDescription`). It's one string the row and the settings search
+both read, so a chip would mean a second, rich description beside it. Its four keyed descriptions place the key
+mid-sentence or in parentheses, where it can't read as punctuation.
+
 Exempt by path (the rule's `allowedPathFragments`):
 
-- `KeyboardShortcutsSection` (+ controller) and `GlobalShortcutRow`: they edit bindings.
+- `KeyboardShortcutsSection` (+ controller), `GlobalShortcutRow`, and `global-shortcut-description.ts` (the row's helper
+  text, spelled as the row spells the binding): they edit bindings.
 - `FunctionKeyBar.svelte`: a key legend whose flat `<kbd>` look and Shift-row reader (`getFirstShiftShortcutReactive`)
   are its own (`../file-explorer/pane/DETAILS.md`).
 - `../settings/mcp-main-bridge.ts`: the MCP settings dump lists every command's canonical bindings, defaults, and
   modified flag, which no display accessor carries.
+- `../query-ui/query-keys.ts`: the search dialog's fixed keys that no command owns (the table, its matcher, and the key
+  hints its buttons show).
 
 The sites, by what they render:
 
 - Live chips: the empty-folder hint (`view.showHidden`), the search-results footer's "Show in folder" (`nav.parent`),
   the command palette (up to three, `ShortcutChip index`), the downloads toast's in-app hint and summaries
   (`downloads.goToLatest`), the go-to-path ancestor toast (`nav.back`), the Quick Look hint toast (`file.quickLook`),
-  the viewer status bar's wrap and tail hints. The quick filter typing hint shows the typed key as a literal chip.
+  the AI ready toast (`file.newFolder`), the search dialog's empty-state tip (`search.newQuery`, `search.toggleRecent`),
+  and in the viewer: the status bar's wrap, tail, and search hints, the binary-file banner (`file.quickLook`,
+  `nav.open`), and the copy dialogs (`viewer.search`). The quick filter typing hint shows the typed key as a literal
+  chip.
 - `commandHasShortcut` only: onboarding's AI step (picks the sentence without a chip).
 - `shortcutAsText`: the pane status announcer's empty-folder sentence (`announcement`); tooltips on the tab bar's +, a
-  sort header, Ask Cmdr's New chat, Multi-rename's presets / undo / results, and the viewer's Tail button and wrap badge
-  (`tooltip`); the viewer mode picker's `Text (1)` labels (`menuItem`); the default-app, Open with, clipboard refusal,
-  and zoom toasts (`toast`); the trash-not-supported suggestion (`errorMessage`).
+  sort header, Ask Cmdr's New chat, the search dialog's recent-items trigger, Multi-rename's presets / undo / results,
+  and the viewer's Tail button and wrap badge (`tooltip`); the viewer mode picker's `Text (1)` labels (`menuItem`); the
+  default-app, clipboard refusal, "no files on the clipboard", and zoom toasts (`toast`); the trash and home-folder
+  rename suggestions (`errorMessage`); four settings descriptions (`settingDescription`).
 
 ### Deep link to a command's row (`../settings/settings-window.ts`)
 
@@ -395,6 +415,9 @@ So local handlers don't test raw key flags; they ask the registry:
   AltGr fallback therefore yields: a layout that types `+` with ⌥ reports exactly `⌥+`, which is Select same kind.
   Pinned by the `eventMatchesCommand` cases in `shortcut-dispatch.test.ts`, the candidate cases in
   `key-capture.test.ts`, and the "keys from any keyboard and layout" cases in `routes/(main)/global-keydown.test.ts`.
+- `shortcutIndexOfEvent(event, commandId)` — which of the command's keys the press was (its index, or `-1`), for a
+  command whose keys are an ordered set: the search dialog's `search.modeByNumber`, where the Nth key picks the Nth
+  mode.
 - **The Settings capture field and key-filter box record `capturedKeyCombo(event)`**, so a rebind persists `⌥⇧=` rather
   than the `⌥⇧±` macOS reports, a typed symbol by its character, and pressing the combo in the filter box finds the
   binding stored under it. ⌫ and ⌦ capture like any other key (they're real bindings); removing one is the pill's ×.
@@ -647,8 +670,8 @@ to whichever scope is deeper, silently.
   to one command re-pushes every menu item whose key it shadowed or freed (`notifyListeners`), and a rebuild re-pushes
   them too (`resyncMenuAccelerators`). On macOS a still-registered shadowed accelerator would fire the default's command
   before the webview saw the key, so the menu half isn't cosmetic. Every hint shows live keys only (`getLiveShortcuts`,
-  the reactive readers built on it): palette rows, chips, tooltips, toasts, and a message's `{combo}`, so a command with
-  no live key shows none.
+  the reactive readers and feature accessors built on it): palette rows, chips, tooltips, toasts, and a message's key,
+  so a command with no live key shows none.
 - **Settings still lists it as a conflict** (`conflict-detector.ts` is unchanged): both commands hold the combo, and the
   warning's "Keep both" now means "yours runs; the other keeps it as a dormant default", which comes back when the
   user's binding goes. The two surfaces that list what a command HOLDS (the Settings rows and the help window) still
