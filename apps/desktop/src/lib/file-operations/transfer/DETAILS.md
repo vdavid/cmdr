@@ -275,11 +275,12 @@ destinations".
    - Dynamic stage indicator: "Scanning" → "Copying" → "Writing the last piece..." (+ "Removing the originals..." for a
      cross-disk move, § below).
    - **Flushing phase.** When a `write-progress` event arrives with `phase: 'flushing'`, the dialog title shows
-     **"Writing the last piece..."** (exact copy). This is the backend's closing `fdatasync` over the freshly written
-     destinations — on slow media (USB sticks, SD cards) it's a real multi-second pause, so the bar must not sit frozen
-     at 100% pretending the work is done. The phase maps back to the active stage chip (copying/moving) in
-     `getStageStatus`, since it's the tail of the copy, not a separate chip. Shown for both copy and move. Pinned by
-     `TransferProgressDialog.flushing.test.ts`. See the BE doc § "Durability" for what the flush actually does.
+     **"Writing the last piece..."** (exact copy). This is the backend's closing flush (the syncs and the drive's cache
+     barrier) over the freshly written destinations — on slow media (USB sticks, SD cards) it's a real multi-second
+     pause, so the bar must not sit frozen at 100% pretending the work is done. The phase maps back to the active stage
+     chip (copying/moving) in `getStageStatus`, since it's the tail of the copy, not a separate chip. Shown for both
+     copy and move. Pinned by `TransferProgressDialog.flushing.test.ts`. See the BE doc § "Durability" for what the
+     flush actually does.
    - **Removing the originals** (`phase === 'deleting'` on a MOVE): the closing stage of a move BETWEEN disks, which
      copies first and only then removes the sources. The title reads "Removing the originals..."; the readout counts
      ITEMS over the top-level sources (`progressCountKind`), because `remove_dir_all` takes a whole subtree in one call

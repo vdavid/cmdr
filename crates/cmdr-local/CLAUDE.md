@@ -24,8 +24,10 @@ local volume space, and the mount probes. Tauri-free; the app builds every local
   answers `ENOTSUP`). ❌ Never write a second `renamex_np` call: while `overwrite::rename_no_replace` was a separate
   copy, only it degraded, and every rename on a mounted SMB share failed (ERR-8RFN4). DETAILS § "Local renames are
   atomic-exclusive".
-- **`write_from_stream` `sync_data`s each file** (+ best-effort parent-dir fsync) before returning, known length or
-  unknown: every cross-volume copy landing on local disk flows through it, and `flush()` alone loses data on eject.
+- **`write_from_stream` hands each file to its drive; `flush_writes` makes it durable.** The per-file sync is a plain
+  `fsync`, and the device barrier comes from the volume's `DeviceBarriers` (every 2 s, and in `flush_writes`). ❌ A
+  caller that reports a write done, or deletes a moved source, without `flush_writes` first loses data on eject. DETAILS
+  § the durability decision.
 - **Force-rename is an atomic replacement**, so `supports_atomic_replace_rename()` is true. Network backends whose force
   path deletes first must not inherit that answer.
 - **❗ The two listers yield the same entries, field for field** (`reading_parity_test.rs` runs every cell through

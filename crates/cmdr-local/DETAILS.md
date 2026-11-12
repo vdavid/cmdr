@@ -42,19 +42,25 @@ they're the same OS-probe code the backend's own answers need (the `getfsstat` s
 which rows the switcher shows, and whose mount is another account's own
 (`apps/desktop/src-tauri/src/volumes/platform/macos/mounts.rs::mount_is_private_to_another_user`).
 
-**Decision**: `write_from_stream` `sync_data`s each file (+ best-effort parent-dir fsync) before it returns **Why**:
-Every cross-volume copy/move that lands on a local disk (MTP → Local, SMB → Local, USB import) flows through this one
-method. A bare `file.flush()` finish is a userspace no-op on a raw `std::fs::File`, so the bytes would sit only in the
-OS page cache when the op reports "complete", letting the user eject or sleep and lose data (on a move, from both sides,
-since the source delete runs after the copy reports Ok). The `sync_data` (fdatasync) gives the "durable as each file
-completes" property the local-FS chunked copy already has (`transfer/chunked_copy.rs`), so a crash mid-batch leaves
-earlier files safe. The parent-dir fsync makes the file's directory entry durable too. Both are best-effort on error: a
-failure logs under `target: "write_durability"` and continues rather than failing a completed multi-GB transfer at the
-final fsync (matching `durability::flush_created_destinations`). Non-local backends (MTP/SMB/InMemory) need no
-equivalent: durability there is the device's or server's concern. Pinned by
-`local_posix_test::test_write_from_stream_multichunk_is_durable_and_correct` (content-correctness regression guard; the
-fdatasync itself isn't observable from a unit test). Unknown-length writes take the same chunked durable path: progress
-keeps `StreamLength::Unknown`, and success includes `sync_data` plus the parent-dir fsync.
+**Decision**: `write_from_stream` hands each file to its drive (`cmdr_fs::durable::sync_to_drive`, a plain `fsync` on
+macOS) and notes it and its parent directory in the volume's `DeviceBarriers`; `Volume::flush_writes` runs the closing
+pass (each noted directory's `fsync`, then one `F_FULLFSYNC` per device written). **Why**: Every cross-volume copy/move
+that lands on a local disk (MTP → Local, SMB → Local, USB import) flows through this one method. A bare `file.flush()`
+is a userspace no-op on a raw `std::fs::File`, so without a sync the bytes would sit only in the OS page cache when the
+op reports "complete", letting the user eject or sleep and lose data (on a move, from both sides). A plain `fsync` stops
+at the drive's cache on macOS, though, and the barrier past it costs ~4 ms a file on an internal SSD and far more on a
+spinning disk, which made a many-small-file import ~30x slower than Finder (#1145). One barrier covers every file handed
+over before it, so the volume barriers on an interval (2 s) and in `flush_writes`, and each directory gets one `fsync`
+per pass however many files it gained (it used to be one per file). The caller owes `flush_writes` before it reports a
+write done or deletes a source: the volume copy, the cross-volume move (before each sweep), archive move-out, fresh
+compress, the remote archive upload, and the drag-out fulfillment all run it. The tracker lives on the volume, so two
+operations writing through one volume share it, which only adds coverage: a barrier for one op covers the other's
+earlier files, and each still runs its own close. The per-file sync and the directory syncs are best-effort on error (a
+failure logs under `target: "write_durability"`); the closing barrier is what answers, and its refusal is an `IoError`
+naming the item it went through. Non-local backends keep the default `Ok`: durability there is the device's or server's
+concern once it answered. The rule and its measurements: `crates/cmdr-operations/src/transfer/DETAILS.md` § Durability.
+Pinned by `local_posix_durability_test.rs` (content through the finish path, and no barrier until `flush_writes`, then
+one). Unknown-length writes take the same path.
 
 **Decision**: `LocalPosixVolume` overrides `is_directory` and `entry_kind` with a bare `lstat` **Why**: `get_metadata`
 also stats a link's target and looks up owner names, none of which answers "what is at this path". Both answers see a

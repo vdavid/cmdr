@@ -451,7 +451,7 @@ Frontend
           → free-space check (copy: `free_space.rs`, § "The free-space pre-flight")
           → execute phase: per-file copy/delete
               → throttled write-progress events (200ms default)
-          → success (copy/move): flush_created_destinations() → emit write-progress (phase: flushing) → fdatasync dests → CopyTransaction::commit(), emit write-complete
+          → success (copy/move): flush_created_destinations() → emit write-progress (phase: flushing) → sync dests + dirs, closing device barrier → CopyTransaction::commit(), emit write-complete
           → success (delete/trash): emit write-complete (no sync)
           → cancel (Stopped): CopyTransaction::commit(), emit write-cancelled (rollback: notRolledBack)
           → cancel (RollingBack): rollback_with_progress() → emit write-progress (phase: rolling_back) → emit write-cancelled (rollback: what the reversal managed)
@@ -2598,30 +2598,33 @@ seconds is fresh enough" TTL, just "the volume's `listing_watch_coverage(path)` 
 `crates/cmdr-listing/src/caching.rs::try_get_authoritative_listing` for the per-backend debounce windows that contract
 tolerates.
 
-**Decision**: Copy and move are durable before they report complete: per-file `sync_data` (fdatasync) in chunked copy,
-plus an end-of-op pass that syncs the data the strategy didn't and fsyncs every directory that gained an entry. A
+**Decision**: Copy and move are durable before they report complete: each file synced to its drive as it lands (a plain
+`fsync` on macOS), a device barrier (`F_FULLFSYNC`) every 2 s while the operation writes, and an end-of-op pass that
+syncs the data the strategy didn't, fsyncs every directory that gained an entry, and runs the closing barrier. A
 cross-FS move deletes its sources only when that pass answers `Ok`. Delete and trash don't sync at all. **Why**:
-"Complete" must mean "durable on disk," not "buffered in the OS page cache." Without it, a user who copies to a USB
-stick / SD card and ejects (or the machine sleeps) right after "Copy finished" loses the file — and on a move it's gone
-from both source and dest. The flush is targeted, not a whole-machine `libc::sync()`: that global sync also stalled
-unrelated apps (AGENTS.md principle #5). The mechanism: (1) `transfer/chunked_copy.rs` calls `dst_file.sync_data()` per
-file, so each file is durable as it completes — a crash mid-batch on a long transfer leaves earlier files safe. (2)
-Before emitting `write-complete`, `durability::flush_created_destinations` emits a `Flushing`-phase progress event,
-`fdatasync`s every created file the strategy didn't already make durable (it reuses `CopyTransaction.created_files` and
-`created_dirs`, no parallel dest-tracking), and `fsync`s every directory that gained an entry. It answers a `Result`:
-the cross-FS move gates its source delete on it, and the copy completes with `durability_unconfirmed` set so the person
-hears it. Same-FS move (pure rename) writes no data at all, so it takes the sibling pass `flush_touched_directories`:
-one `fsync` per DIRECTORY the renames touched, and none on the moved files, which would cost an `F_FULLFSYNC` device
-barrier each for bytes nothing wrote. The rules (which errnos count as "not supported", the staged-to-landed path
-mapping, what a failure keeps) and the measurements live in `src/transfer/DETAILS.md` § "Durability (flush before
-reporting complete)". Pinned by `transfer/copy/copy_tests.rs::local_copy_emits_flushing_phase_before_complete` and
+"Complete" must mean "durable on disk," not "buffered in the OS page cache" or the drive's cache. Without it, a user who
+copies to a USB stick / SD card and ejects (or the machine sleeps) right after "Copy finished" loses the file — and on a
+move it's gone from both source and dest. The flush is targeted, not a whole-machine `libc::sync()`: that global sync
+also stalled unrelated apps (AGENTS.md principle #5). And the barrier is per DEVICE, not per file: one covers every file
+handed over before it, and one per file made a many-small-file copy ~30x slower than Finder (#1145). The mechanism: (1)
+`transfer/chunked_copy.rs` syncs each file to its drive and notes it in `WriteOperationState::barriers`
+(`cmdr_fs::durable::DeviceBarriers`), whose interval pass bounds what a power cut mid-copy can lose to the last couple
+of seconds of files. (2) Before emitting `write-complete`, `durability::flush_created_destinations` emits a
+`Flushing`-phase progress event, syncs every created file the strategy didn't already sync (it reuses
+`CopyTransaction.created_files` and `created_dirs`, no parallel dest-tracking), `fsync`s every directory that gained an
+entry, then runs the closing barrier. It answers a `Result`: the cross-FS move gates its source delete on it, and the
+copy completes with `durability_unconfirmed` set so the person hears it. Same-FS move (pure rename) writes no data at
+all, so it takes the sibling pass `flush_touched_directories`: one `fsync` per DIRECTORY the renames touched, then the
+one barrier, and nothing on the moved files. The rules (the barrier, which errnos count as "not supported", the
+staged-to-landed path mapping, what a failure keeps) and the measurements live in `src/transfer/DETAILS.md` §
+"Durability (flush before reporting complete)". Pinned by
+`transfer/copy/copy_tests.rs::local_copy_emits_flushing_phase_before_complete` and
 `transfer/move_op/move_progress_tests.rs::cross_fs_local_move_emits_flushing_phase_before_complete`; FE label by
 `TransferProgressDialog.flushing.test.ts`. **Cross-volume copy/move landing on a local disk** (MTP → Local, SMB → Local,
-USB import) doesn't go through this local-FS engine — it flows through `LocalPosixVolume::write_from_stream`, which
-keeps the same promise by `sync_data`-ing each file (plus a best-effort parent-dir fsync for the directory entry) before
-it returns, so each file is durable as it completes. That path doesn't yet emit the `Flushing` UI phase (the volume
-copy/move handlers don't call `flush_created_destinations`); a follow-up could route them through the end-of-op pass for
-UI consistency, but the per-file `sync_data` already makes them durable.
+USB import) doesn't go through this local-FS engine: it flows through `LocalPosixVolume::write_from_stream`, which syncs
+each file to its drive, and the volume copy and move run the destination's `Volume::flush_writes` (the closing barrier)
+before `write-complete` and before each source sweep. That path doesn't emit the `Flushing` UI phase; a follow-up could,
+for UI consistency.
 
 **Decision**: `TauriEventSink::emit_error` logs the whole typed error at **WARN**, and that is the only place a failed
 write operation's technical reason is written down. **Why**: The variant travels to the frontend, which raises the

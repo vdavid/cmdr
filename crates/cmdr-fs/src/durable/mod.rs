@@ -26,7 +26,7 @@ use crate::os_error::OsErrorClass;
 
 /// How long an operation's handed-over files wait for a device barrier while it
 /// runs. A power cut mid-copy loses at most about this much finished work, and
-/// a barrier this often costs a spinning disk's ~50 ms flush under 3% of the
+/// even a 50 ms barrier (a spinning disk's, estimated) this often costs under 3% of the
 /// copy's time.
 pub const BARRIER_INTERVAL: Duration = Duration::from_secs(2);
 

@@ -1617,7 +1617,7 @@ every real store, so a folder dated when it's created lists "now" by the end of 
 
 - **Local** (`crates/cmdr-local/src/local_posix/streams.rs`): reports the open's `stat` (mtime, birth, mode, flags) and
   its xattrs off the fd when asked. Writes through `cmdr_fs::metadata::apply_staged` on the open handle after the last
-  byte AND the flush (`cmdr_fs::durable::sync_file_data`): xattrs, the folded mode, then birth and mtime in one call. ❗
+  byte AND the flush (`cmdr_fs::durable::sync_to_drive`): xattrs, the folded mode, then birth and mtime in one call. ❗
   Flush first: on a macOS SMB mount, writes still buffered when the dates go on reach the server at the handle's real
   close, which stamps its own mtime (verified against the Docker Samba share, macOS 27.0, 2026-10-11). `apply_metadata`
   does a folder (or a landed file's flags) by path, the same helper, flags last. Birth and flags are macOS-only: Linux
