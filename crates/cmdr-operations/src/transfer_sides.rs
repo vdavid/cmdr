@@ -30,15 +30,31 @@ pub(crate) struct TransferSide {
     pub(crate) volume_name: String,
     /// The volume's root, which is what the mount table is asked about.
     pub(crate) root: PathBuf,
+    /// Whether the root is a mount that CAN leave the table. `false` for a
+    /// local volume rooted at a plain folder (a cloud-sync folder like
+    /// `~/Dropbox`), which the table never listed: asking about it would read
+    /// every failure as that folder's drive having left.
+    watched: bool,
 }
 
 impl TransferSide {
+    /// A side that is a mount, as a test states it before pulling it.
+    /// Production captures with [`Self::at_start`].
     pub(crate) fn new(volume_id: String, volume_name: String, root: PathBuf) -> Self {
         Self {
             volume_id,
             volume_name,
             root,
+            watched: true,
         }
+    }
+
+    /// A side as the transfer finds it when it starts: watched only if the
+    /// mount table lists its root then, or can't be read (no guess either way).
+    pub(crate) fn at_start(volume_id: String, volume_name: String, root: PathBuf) -> Self {
+        let mut side = Self::new(volume_id, volume_name, root);
+        side.watched = side.is_listed() != Some(false);
+        side
     }
 
     /// Whether this side's root is still in the mount table: `None` when the
@@ -50,9 +66,9 @@ impl TransferSide {
     /// Whether the mount table SAYS this side is gone. An unreadable table
     /// answers `false`: a move that can't prove the destination left must keep
     /// behaving as though it's there, and an error must not claim a disconnect
-    /// nobody observed.
+    /// nobody observed. A side that was never a mount never leaves.
     pub(crate) fn has_left(&self) -> bool {
-        self.is_listed() == Some(false)
+        self.watched && self.is_listed() == Some(false)
     }
 }
 

@@ -491,11 +491,18 @@ minutes of work deep in a folder of 1 kB files, with 1.5 GB of bigger files ahea
 - **Device barriers stay out of what the costs learn.** A file longer than the 2 s barrier interval
   (`cmdr_fs::durable::BARRIER_INTERVAL`) pays a barrier each, which the counters alone read as a per-file cost: during
   big files, every small file still ahead was priced a barrier high (big-then-small overshot +96% on a disk image, +435%
-  on a spinning disk; #1149). `DeviceBarriers::time_spent` counts the time its passes take (a running one live, so a
+  on a spinning disk; #1149). `DeviceBarriers::time_spent` counts the time its barriers take (a running one live, so a
   barrier spanning two emits isn't taken out of the second whole), each `EtaSample` carries it as `barrier_total`, and
   the cost model learns from the working time minus it. The rates keep it, since barriers are real slowness, and the
   work-per-second side of the ETA prices the barriers still ahead at the pace they've been coming; no separate term was
   needed (both shapes now land within 6.5%).
+- **A pass's FILE syncs stay in what the costs learn.** On a local disk the local engine's syncs wait for the pass
+  (`src/transfer/DETAILS.md` § Durability), so each pass pays the syncs of every file since the last one. That's each
+  file's own cost, so `time_spent` leaves it out: counted as barrier time, the simulation priced a sync-heavy run's
+  files left at half their cost. The trade that stays: the syncs land as one lump every 2 s, so the predicted finish
+  wobbles more (up to ~10% of the time left on the tiny-file shape, against 4%), and a small-file tail after big files
+  estimates up to ~30% short until its passes have been seen. Both rest on a guessed spinning-disk sync cost; nobody has
+  measured one yet.
 - **Only the local engine's barriers show** (`WriteOperationState::barriers`). A volume write onto `LocalPosixVolume`
   (MTP, SMB, or USB into a local disk) barriers on the VOLUME's tracker, shared by every operation writing there, so its
   time can't be charged to one op and still reads as per-file cost. The fix would be `write_from_stream` answering the
@@ -503,7 +510,7 @@ minutes of work deep in a folder of 1 kB files, with 1.5 GB of bigger files ahea
   backends' per-file overhead dwarfs a 12–62 ms barrier.
 - Pinned against a simulated device with known costs and the engine's barrier rule in `eta_workload_tests.rs` (the
   reported tiny-file shape, big files, big-then-small on both barrier costs, interleaved), the old `max` failing all
-  five.
+  five, plus the batched-sync cells (the tiny-file shape and big-then-small with each file's sync paid at the pass).
 
 **EWMA, not blended overall:** `α = 1 - exp(-Δt / τ)` with `τ = 3 s` (see `EWMA_TAU_SECS`). Pure exponential decay, no
 "overall average" anchor. If the network drops mid-operation, the EWMA converges to the new rate within a few τ instead
@@ -2633,27 +2640,27 @@ seconds is fresh enough" TTL, just "the volume's `listing_watch_coverage(path)` 
 `crates/cmdr-listing/src/caching.rs::try_get_authoritative_listing` for the per-backend debounce windows that contract
 tolerates.
 
-**Decision**: Copy and move are durable before they report complete: each file synced to its drive as it lands (a plain
-`fsync` on macOS), a device barrier (`F_FULLFSYNC`) every 2 s while the operation writes, and an end-of-op pass that
-syncs the data the strategy didn't, fsyncs every directory that gained an entry, and runs the closing barrier. A
-cross-FS move deletes its sources only when that pass answers `Ok`. Delete and trash don't sync at all. **Why**:
-"Complete" must mean "durable on disk," not "buffered in the OS page cache" or the drive's cache. Without it, a user who
-copies to a USB stick / SD card and ejects (or the machine sleeps) right after "Copy finished" loses the file — and on a
-move it's gone from both source and dest. The flush is targeted, not a whole-machine `libc::sync()`: that global sync
-also stalled unrelated apps (AGENTS.md principle #5). And the barrier is per DEVICE, not per file: one covers every file
-handed over before it, and one per file made a many-small-file copy ~30x slower than Finder (#1145). The mechanism: (1)
-`transfer/chunked_copy.rs` syncs each file to its drive and notes it in `WriteOperationState::barriers`
-(`cmdr_fs::durable::DeviceBarriers`), whose interval pass bounds what a power cut mid-copy can lose to the last couple
-of seconds of files. (2) Before emitting `write-complete`, `durability::flush_created_destinations` emits a
-`Flushing`-phase progress event, syncs every created file the strategy didn't already sync (it reuses
-`CopyTransaction.created_files` and `created_dirs`, no parallel dest-tracking), `fsync`s every directory that gained an
-entry, then runs the closing barrier. It answers a `Result`: the cross-FS move gates its source delete on it, and the
-copy completes with `durability_unconfirmed` set so the person hears it. Same-FS move (pure rename) writes no data at
-all, so it takes the sibling pass `flush_touched_directories`: one `fsync` per DIRECTORY the renames touched, then the
-one barrier, and nothing on the moved files. The rules (the barrier, which errnos count as "not supported", the
-staged-to-landed path mapping, what a failure keeps) and the measurements live in `src/transfer/DETAILS.md` §
-"Durability (flush before reporting complete)". Pinned by
-`transfer/copy/copy_tests.rs::local_copy_emits_flushing_phase_before_complete` and
+**Decision**: Copy and move are durable before they report complete: a pass every 2 s while the operation writes that
+syncs each file written since the last one (a plain `fsync` on macOS; a replacing landing, a network mount, and Linux
+sync each file at once instead) and then runs a device barrier (`F_FULLFSYNC`), and an end-of-op pass that syncs the
+data the strategy didn't, fsyncs every directory that gained an entry, and runs the closing pass. A cross-FS move
+deletes its sources only when that pass answers `Ok`. Delete and trash don't sync at all. **Why**: "Complete" must mean
+"durable on disk," not "buffered in the OS page cache" or the drive's cache. Without it, a user who copies to a USB
+stick / SD card and ejects (or the machine sleeps) right after "Copy finished" loses the file — and on a move it's gone
+from both source and dest. The flush is targeted, not a whole-machine `libc::sync()`: that global sync also stalled
+unrelated apps (AGENTS.md principle #5). And the barrier is per DEVICE, not per file: one covers every file handed over
+before it, and one per file made a many-small-file copy ~30x slower than Finder (#1145). The mechanism: (1)
+`transfer/chunked_copy.rs` notes each file in `WriteOperationState::barriers` (`cmdr_fs::durable::DeviceBarriers`),
+whose interval pass syncs it and bounds what a power cut mid-copy can lose to the last couple of seconds of files. (2)
+Before emitting `write-complete`, `durability::flush_created_destinations` emits a `Flushing`-phase progress event,
+syncs every created file whose sync nothing carries (it reuses `CopyTransaction.created_files` and `created_dirs`, no
+parallel dest-tracking), `fsync`s every directory that gained an entry, then runs the closing barrier. It answers a
+`Result`: the cross-FS move gates its source delete on it, and the copy completes with `durability_unconfirmed` set so
+the person hears it. Same-FS move (pure rename) writes no data at all, so it takes the sibling pass
+`flush_touched_directories`: one `fsync` per DIRECTORY the renames touched, then the one barrier, and nothing on the
+moved files. The rules (the barrier, which errnos count as "not supported", the staged-to-landed path mapping, what a
+failure keeps) and the measurements live in `src/transfer/DETAILS.md` § "Durability (flush before reporting complete)".
+Pinned by `transfer/copy/copy_tests.rs::local_copy_emits_flushing_phase_before_complete` and
 `transfer/move_op/move_progress_tests.rs::cross_fs_local_move_emits_flushing_phase_before_complete`; FE label by
 `TransferProgressDialog.flushing.test.ts`. **Cross-volume copy/move landing on a local disk** (MTP → Local, SMB → Local,
 USB import) doesn't go through this local-FS engine: it flows through `LocalPosixVolume::write_from_stream`, which syncs

@@ -228,6 +228,59 @@ async fn a_refused_closing_barrier_keeps_the_whole_batch() {
     }
 }
 
+/// The same through a real local destination: a file's sync that refuses
+/// doesn't fail its write (the bytes are there), so its copy counts and lands,
+/// and the batch's closing `flush_writes` is what answers it. The batch's
+/// originals all stay. (That refusal used to be logged and nothing else, so
+/// the move deleted them.)
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_sync_the_drive_refuses_keeps_the_whole_batch() {
+    let engine = TestOperations::new();
+    let source = volume("Source");
+    let sources = loose_files(&source, 4).await;
+    let dest_dir = cmdr_fs::testing::TestDir::new("held-sweep-sync-fails");
+    let dest = Arc::new(
+        cmdr_local::LocalPosixVolume::local_folder(
+            "Dest",
+            dest_dir.to_path_buf(),
+            crate::host::testing::pane_order_host(),
+        )
+        .with_barrier_interval(Duration::MAX),
+    );
+    // Under the staged temp's name, which starts with the final one.
+    dest.barriers().script_syncs(|path| {
+        path.file_name()
+            .is_some_and(|name| name.to_string_lossy().starts_with("f02.txt"))
+            .then(|| std::io::Error::from_raw_os_error(libc::EIO))
+    });
+    let events = Arc::new(CollectorEventSink::new());
+
+    let failure = run_move(
+        &state_with_barrier_interval(&engine, Duration::MAX),
+        &events,
+        Arc::clone(&source) as Arc<dyn Volume>,
+        &sources,
+        Arc::clone(&dest) as Arc<dyn Volume>,
+    )
+    .await
+    .expect_err("an unconfirmed sync stops the move");
+
+    assert!(
+        matches!(&failure.error, WriteOperationError::SourceNotRemoved { path, .. } if path == "/f00.txt"),
+        "{:?}",
+        failure.error
+    );
+    for path in &sources {
+        assert!(source.exists(path).await, "{}: unproven, so kept", path.display());
+        assert!(
+            dest_dir.join(path.strip_prefix("/").unwrap()).is_file(),
+            "{}: landed",
+            path.display()
+        );
+        assert_eq!(last_removed(&events, &path.display().to_string()), Some(false));
+    }
+}
+
 /// A sweep that refuses one original mid-batch stops there: what it already
 /// swept is gone, and the rest of the batch stays in both places.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

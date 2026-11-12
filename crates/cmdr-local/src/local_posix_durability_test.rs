@@ -74,3 +74,48 @@ async fn write_from_stream_owes_one_barrier_per_device_not_per_file() {
     assert_eq!(volume.barriers_issued(), expected);
     assert_eq!(std::fs::read_dir(&*vol_dir).unwrap().count(), FILES);
 }
+
+/// Streams one small file into `name` on `volume`.
+async fn stream_in(volume: &LocalPosixVolume, name: &str, mode: WriteMode) {
+    let source = InMemoryVolume::new("Source");
+    source.create_file(Path::new("/src"), b"new bytes").await.unwrap();
+    let stream = source.open_read_stream(Path::new("/src")).await.unwrap();
+    let size = stream.total_size();
+    volume
+        .write_from_stream(Path::new(name), mode, size, stream, &|_| {
+            std::ops::ControlFlow::Continue(())
+        })
+        .await
+        .unwrap();
+}
+
+/// A sync that refuses doesn't fail the write (its bytes are written either
+/// way), but it fails the next `flush_writes`, so a move keeps the batch's
+/// sources and a copy ends unconfirmed. Where no barrier follows the sync
+/// (Linux, a network mount), that flush is the only place it can surface; it
+/// used to be logged and nothing else.
+#[tokio::test]
+async fn a_written_file_whose_sync_fails_fails_the_flush() {
+    let vol_dir = TestDir::new("write_from_stream_sync_fails");
+    let volume = LocalPosixVolume::local_folder("Test", vol_dir.to_str().unwrap(), VolumeHost::detached())
+        .with_barrier_interval(std::time::Duration::MAX);
+    volume.barriers().script_syncs(|path| {
+        path.ends_with("bad.txt")
+            .then(|| std::io::Error::from_raw_os_error(libc::EIO))
+    });
+    stream_in(&volume, "good.txt", WriteMode::CreateNew).await;
+    stream_in(&volume, "bad.txt", WriteMode::CreateNew).await;
+
+    let err = volume.flush_writes().await.unwrap_err();
+    assert!(
+        matches!(
+            err,
+            cmdr_fs::volume::VolumeError::IoError {
+                raw_os_error: Some(libc::EIO),
+                ..
+            }
+        ),
+        "{err:?}"
+    );
+    assert!(volume.flush_writes().await.is_ok(), "answered once");
+}

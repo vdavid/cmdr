@@ -135,7 +135,7 @@ const UNSUPPORTED_ERRNOS: [i32; 5] = [
     libc::ENOTTY,
 ];
 
-/// The fix's core: a chunked move's files are all in `already_synced`, and that
+/// The fix's core: a chunked move's files are all in `data_covered`, and that
 /// used to skip their parent-directory fsync too, so a Mac → USB move fsynced no
 /// directory before deleting the originals. Now every final directory that
 /// gained an entry, including one holding only a subdirectory, is fsynced once.

@@ -813,3 +813,53 @@ async fn a_volume_move_reports_why_it_cant_roll_back() {
         .await;
     }
 }
+
+/// A local volume rooted at a plain folder (a cloud-sync folder like
+/// `~/Dropbox`) was never in the mount table, so a failure that has nothing to
+/// do with drives must keep its own words: reading the folder as a drive that
+/// left would tell the user to go find a cable.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_local_move_from_a_folder_volume_never_reads_a_failure_as_a_disconnect() {
+    use cmdr_fs::testing::wait_until_async;
+    use std::os::unix::fs::PermissionsExt;
+    use std::time::Duration;
+
+    let engine = TestOperations::new();
+    let dropbox = tempfile::tempdir().expect("tempdir");
+    let stick = tempfile::tempdir().expect("tempdir");
+    std::fs::write(dropbox.path().join("a.txt"), b"alpha").unwrap();
+    std::fs::set_permissions(stick.path(), std::fs::Permissions::from_mode(0o555)).unwrap();
+    let host = crate::host::testing::pane_order_host;
+    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dropbox", dropbox.path(), host()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Tëststick", stick.path(), host()));
+
+    let events = Arc::new(CollectorEventSink::new());
+    engine
+        .move_between_volumes(
+            Arc::clone(&events) as Arc<dyn OperationEventSink>,
+            "vol-dropbox".to_string(),
+            source,
+            vec![PathBuf::from("/a.txt")],
+            "vol-stick".to_string(),
+            dest,
+            PathBuf::from("/"),
+            VolumeCopyConfig::default(),
+            crate::target_names::TargetNames::default(),
+            cmdr_operation_log::types::Initiator::User,
+            None,
+        )
+        .await
+        .expect("move starts");
+    wait_until_async(Duration::from_secs(10), "the move to stop", || {
+        !events.errors.lock_ignore_poison().is_empty()
+    })
+    .await;
+    std::fs::set_permissions(stick.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
+
+    let error = events.errors.lock_ignore_poison()[0].error.clone();
+    assert!(
+        !matches!(error, WriteOperationError::DeviceDisconnected { .. }),
+        "a refusal isn't a drive that left: {error:?}"
+    );
+    assert!(dropbox.path().join("a.txt").exists(), "the original stays");
+}

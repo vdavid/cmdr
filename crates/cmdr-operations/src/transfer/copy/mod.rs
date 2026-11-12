@@ -260,7 +260,7 @@ pub(crate) fn copy_files_with_progress_inner(
     let mut skipped_subtrees: HashSet<PathBuf> = HashSet::new();
     // Destinations the copy strategy already flushed (chunked) or for which a
     // flush is moot (clonefile/reflink); the end-of-op flush pass skips these.
-    let mut already_synced: HashSet<PathBuf> = HashSet::new();
+    let mut data_covered: HashSet<PathBuf> = HashSet::new();
 
     // A source that already lives at the destination is a request to DUPLICATE
     // it, not a conflict: redirect its whole subtree to a free ` (N)` name here
@@ -518,7 +518,7 @@ pub(crate) fn copy_files_with_progress_inner(
                 &mut created_dirs,
                 &mut dir_remap,
                 &mut skipped_subtrees,
-                &mut already_synced,
+                &mut data_covered,
                 // Lands where it stays, so the ACL and flags go on at once.
                 None,
                 &row,
@@ -674,7 +674,7 @@ pub(crate) fn copy_files_with_progress_inner(
                 total_bytes,
                 &transaction.created_file_paths(),
                 &transaction.created_dirs,
-                &already_synced,
+                &data_covered,
             );
             let durability_unconfirmed = unconfirmed_copy(flushed, operation_id, state);
             commit_journaling_created_dirs(transaction, state.scope());

@@ -306,8 +306,17 @@ impl LocalPosixVolume {
     /// [`Volume::flush_writes`](cmdr_fs::volume::Volume::flush_writes): the
     /// closing pass of this volume's barriers, on the blocking pool. Each noted
     /// directory gets its `fsync`, then every device a write reached since the
-    /// last pass gets one barrier. A barrier the drive refuses is the answer,
-    /// as an I/O error naming the item it went through.
+    /// last pass gets one barrier. A file sync that failed since the last
+    /// flush, or a barrier the drive refuses, is the answer, as an I/O error
+    /// naming the item.
+    ///
+    /// ❗ The barriers are the VOLUME's, shared by every operation writing to
+    /// it, so a file sync that failed answers whichever flush comes next. With
+    /// two operations writing to one local volume at once, that can be the
+    /// other one's: it reports a failure that wasn't its own, and the one whose
+    /// file failed then flushes clean. Accepted: it takes a failing `fsync`
+    /// during two overlapping writes to one volume, and a failed sync here used
+    /// to reach no flush at all.
     pub(super) fn flush_writes_impl(&self) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + '_>> {
         let barriers = std::sync::Arc::clone(&self.barriers);
         Box::pin(async move {
@@ -437,9 +446,16 @@ impl LocalPosixVolume {
             // decision). One barrier per file was the whole cost of a
             // many-small-file copy (#1145).
             //
-            // Best-effort on error: a failed sync is logged under
-            // `target: "write_durability"`, NOT propagated. The bytes are
-            // written either way, and the closing barrier is what answers.
+            // ❗ A sync per file HERE, unlike the local engine's, which waits for
+            // the pass: this engine's copies run concurrently and overlap their
+            // syncs, and a pass that took them over measured slower
+            // (`../../../cmdr-operations/src/transfer/DETAILS.md` § Durability).
+            //
+            // A sync that fails doesn't fail the write (the bytes are written
+            // either way). It's left in the barriers, so the closing
+            // `flush_writes` answers it and a move keeps its source. Where no
+            // barrier follows the sync (Linux, a network mount), that's the
+            // only place it can surface.
             //
             // Then the source's metadata, on the open handle, after the last
             // byte AND the flush: xattrs, the mode, then birth and mtime in one
@@ -459,13 +475,8 @@ impl LocalPosixVolume {
                 // Userspace flush first (harmless no-op on a raw File, but
                 // correct if the writer is ever wrapped in a BufWriter).
                 let _ = file.flush();
-                match cmdr_fs::durable::sync_to_drive(&file) {
-                    Ok(()) => barriers.note_synced(&file, &dest_for_sync),
-                    Err(e) => log::warn!(
-                        target: "write_durability",
-                        "write_from_stream: fsync failed for {}: {e}",
-                        LogPrivate::file_path(&dest_for_sync)
-                    ),
+                if let Err(e) = barriers.hand_over_file(&file, &dest_for_sync) {
+                    barriers.note_unconfirmed(&dest_for_sync, e);
                 }
                 // The entry naming it gets its `fsync` at the next pass, each
                 // directory once however many files it gained.

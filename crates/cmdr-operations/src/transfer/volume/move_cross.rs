@@ -848,6 +848,10 @@ mod test_support;
 #[cfg(test)]
 #[path = "move_tests.rs"]
 mod tests;
+/// A local drive on either side that leaves before or during the source sweep.
+#[cfg(test)]
+#[path = "move_vanished_tests.rs"]
+mod vanished_tests;
 
 #[cfg(test)]
 #[path = "named_move_tests.rs"]

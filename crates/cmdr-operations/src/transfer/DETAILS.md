@@ -1092,16 +1092,58 @@ folders finished near the end.
 Copy and move don't report `write-complete` until the freshly written destinations are durable on disk — "complete"
 means "you can eject now," not "buffered in the page cache" or in the drive's own cache.
 
-**The rule: sync each item, barrier each device.** macOS splits durability in two. `fsync(2)` hands a file's bytes to
-the drive, which may still hold them in its write cache; `F_FULLFSYNC` (std's `sync_data` and `sync_all` there) asks the
-drive to empty that cache, and one barrier covers everything handed over before it. So every item gets a plain sync
-(`cmdr_fs::durable::sync_to_drive` / `sync_dir_to_drive`), and the device barrier runs through a
-`cmdr_fs::durable::DeviceBarriers` tracker: every `BARRIER_INTERVAL` (2 s) while the operation writes, and once at the
-end, before it reports complete or deletes a source. The tracker keeps one open handle per device written since the last
-barrier, so an operation that writes to two drives barriers each. On Linux `fdatasync` and `fsync` already flush the
-drive's cache, so the barrier there is nothing and the per-file sync is what it always was; Windows' `FlushFileBuffers`
-is the same. A barrier answered with the unsupported class (an SMB mount's `ENOTSUP`) counts as done: each item already
-had its `fsync`, which on a network mount is the server's flush.
+**The rule: sync each item by the pass, barrier each device.** macOS splits durability in two. `fsync(2)` hands a file's
+bytes to the drive, which may still hold them in its write cache; `F_FULLFSYNC` (std's `sync_data` and `sync_all` there)
+asks the drive to empty that cache, and one barrier covers everything handed over before it. Both run through a
+`cmdr_fs::durable::DeviceBarriers` tracker, whose PASS runs every `BARRIER_INTERVAL` (2 s) while the operation writes
+and once at the end, before it reports complete or deletes a source: it syncs every file written since the last pass
+(`DeviceBarriers::note_written`), `fsync`s each noted directory (`sync_dir_to_drive`), then barriers each device. The
+tracker keeps one open handle per device written since the last barrier, so an operation that writes to two drives
+barriers each, and remembers the waiting files by NAME (❌ never an open handle each: two seconds of tiny files is
+thousands). On Linux `fdatasync` and `fsync` already flush the drive's cache, so the barrier there is nothing and each
+file keeps its own sync: putting a sync off buys nothing when each one IS a cache flush, and batching there would need
+`syncfs`, a whole-filesystem sync with other error semantics (not done). Windows' `FlushFileBuffers` is the same. A
+barrier answered with the unsupported class (an SMB mount's `ENOTSUP`) counts as done: each item already had its
+`fsync`, which on a network mount is the server's flush.
+
+Who waits for the pass and who syncs each file:
+
+- **The local engine's new files on a local volume (macOS) wait for the pass**, so a file between passes costs no sync
+  at all. `note_written` decides per device (`MNT_LOCAL`, `cmdr_fs::durable` `platform::defers_data_sync`). The pass
+  finds a file by name, so the landing reports its rename (`note_renamed`, in `overwrite::stage_and_land_file`) and a
+  discarded temp is forgotten (`forget`). A name the pass can't find (someone renamed or deleted it without saying)
+  falls back to a whole-volume sync (`fsync_volume_np`), so a missed rename costs time, never durability. ❗ That
+  fallback is never the ANSWER: xnu discards the volume sync's write errors (`handle_sync_volume` in
+  `bsd/vfs/vfs_syscalls.c`, `main` as of 2026-11-12, read at the source), so only a per-file `fsync` can report one,
+  which is also why the pass syncs by path rather than per volume.
+- **A landing that REPLACES an existing file syncs first** (`DeviceBarriers::hand_over`, before the original steps
+  aside), every strategy's temp, a clone's too: renaming unsynced bytes over the user's file means an OS crash can leave
+  neither version. A cross-FS move hands over everything still waiting before Phase 3 (`hand_over_written`), whose
+  renames move whole staged subtrees and whose merge Overwrites land staged files over the user's.
+- **A network mount syncs each file** (`smbfs`, `nfs`, `webdav`; no `MNT_LOCAL`). There the `fsync` IS the server's
+  flush (no barrier tier follows it), so deferring buys nothing, and re-opening each file by path at the pass would cost
+  more round trips than the inline flush. The sync before the dates is also what makes the mtime stick: see the finding
+  below.
+- **The volume engine syncs each file** (`LocalPosixVolume::write_from_stream`, `hand_over_file`). Its copies run
+  concurrently and overlap their syncs; a pass that took them over measured SLOWER (numbers below), so it barriers per
+  interval and per batch as before and nothing else changed.
+
+**Late errors.** A write problem only the sync reveals now surfaces at the pass, after the file counted and landed. A
+failed sync is never retried (a second `fsync` after a failed one proves nothing); the tracker keeps the first one, and
+the next `flush` answers it even if an interval pass met it. So a cross-FS move answers `MoveNotConfirmed` and keeps
+every source, a volume move keeps the batch's sources (`held_sweeps.rs`), a copy completes with
+`durability_unconfirmed`, and the log names the file. The volume engine's inline sync failures go the same way
+(`DeviceBarriers::note_unconfirmed`); they used to be logged and nothing else, so on Linux or a network mount, where no
+barrier follows, a move deleted sources over a refused sync. ❗ `LocalPosixVolume`'s tracker is shared by every
+operation writing to that volume, so a failure answers whichever flush comes next: two overlapping writes to one volume
+could each see the other's (accepted; it takes a refused `fsync` during the overlap).
+
+**Finding: dates on an SMB mount without a per-file flush** (verified against the Docker Samba guest share, Samba
+4.23.8, macOS 27.0.1, a 256 KiB file staged to a temp and renamed, read back after a remount, 2026-11-12): `futimes` on
+the open handle with no flush before it LOSES the date (the server stamps the close); `utimes` by path after the close,
+on the temp or on the landed name, KEEPS it; so does `F_FLUSH_DATA` before `futimes`, which isn't a guarantee for a file
+bigger than the probe. So the dates alone could do without the flush. The per-file flush stays anyway, for durability
+(above).
 
 **Why** (#1145): one `F_FULLFSYNC` per file was the whole cost of a many-small-file copy. A user's 16,708-file copy to a
 spinning disk ran at a flat 16 files/s (about 62 ms a file) while Finder took 34 s. Measured with 3,000 × 4 KiB files
@@ -1113,21 +1155,38 @@ move's measurement below). The 2 s interval bounds the trade: a power cut mid-co
 of finished files instead of at most one, while even a 50 ms flush every 2 s costs under 3% (an estimate for a spinning
 disk; a real one hasn't been measured yet). The copy hasn't reported done then, and a copy deletes nothing.
 
-Two layers on the local engine:
+**Why the pass syncs the files too** (the sync per file was what a many-small-file copy still paid after the barriers
+went per interval). Measured with the shapes above plus 10,000 × 4 KiB in 20 folders, debug build, onto disk images the
+internal SSD backs (`real_image_small_files_tests.rs`, macOS 27.0.1, 2026-11-12, interleaved runs of both rules on a
+busy machine, medians):
 
-1. **Per-file, as it completes.** `chunked_copy.rs` syncs each file to its drive (`sync_to_drive`) and notes it in the
-   operation's `WriteOperationState::barriers`, where the interval pass covers it within 2 s.
+- Local engine, a sync per file → syncs at the pass: 3,000 onto APFS 0.84 s → 0.72 s, onto HFS+ 0.90 s → 0.74 s; 10,000
+  onto APFS 2.61 s → 2.44 s, onto HFS+ 3.54 s → 2.53 s. The files' syncs themselves went from 0.25–0.88 s summed per
+  10,000 to 11–18 ms at the pass: by then the directory `fsync`s had written them.
+- Volume engine onto APFS, the same change: 10,000 files 1.4–2.0 s → 2.2–3.3 s, the pass's syncs 0.75–1.1 s of wall time
+  even on eight threads (APFS serializes them), against concurrent copies whose inline syncs overlapped. Hence that
+  engine keeps a sync per file.
+- A spinning disk is still unmeasured. A disk image's plain `fsync` lands in the host's page cache, so these runs can't
+  show what a sync per file costs on a USB drive, where the batching should matter most. Nor can they show Finder:
+  nothing here measures it.
+
+What the local engine does:
+
+1. **Per-file, as it completes.** `chunked_copy.rs` notes each file in the operation's `WriteOperationState::barriers`
+   (`note_written`), before its dates. The next pass syncs it within 2 s; a replacing landing syncs it at once.
 2. **End-of-op pass.** Before `write-complete`, every handler that wrote bytes calls
    `durability::flush_created_destinations` (the same-FS move, which wrote none, takes the directory-only sibling
    below). It emits a `Flushing`-phase `write-progress` event (the FE renders **"Writing the last piece..."** instead of
    a bar frozen at 100%; see the FE doc), then:
-   - syncs every created file not in `already_synced` (chunked-synced files and clonefile/reflink dests, which are
-     CoW-shared and moot to flush). A symlink has no data of its own.
+   - syncs every created file not in `data_covered` (the chunked files, whose sync the barriers carry, and
+     clonefile/reflink dests, which are CoW-shared and moot to flush). A symlink has no data of its own.
    - `fsync`s every directory that gained an entry: the parent of every created file AND of every directory in
-     `created_dirs`, each distinct directory once, whatever `already_synced` says. A directory that only received a
+     `created_dirs`, each distinct directory once, whatever `data_covered` says. A directory that only received a
      `mkdir` is covered by its parent's fsync. On macOS that's a plain `fsync` too; the barrier below makes it durable.
-   - runs the closing barrier (`state.barriers.flush()`): one per device still owed one. A refused barrier is an `Err`
-     named after the first directory that gained an entry (the user's destination, never a `.cmdr-tmp-` name).
+   - runs the closing pass (`state.barriers.flush()`): the written files still waiting, then one barrier per device
+     still owed one. A file sync it (or an interval pass) couldn't confirm, or a refused barrier, is an `Err` named
+     after the first directory that gained an entry (the user's destination, never a `.cmdr-tmp-` name); the log names
+     the file.
    - Answers `Result<(), FlushFailure { path, errno }>`, trying every path before answering the first failure. A
      directory fsync failing with the "this filesystem doesn't do that" class (`ENOTSUP`, `EOPNOTSUPP`, `EINVAL`,
      `ENOSYS`, `ENOTTY`, matched by class, since the numbers differ between macOS and Linux;
@@ -1136,31 +1195,43 @@ Two layers on the local engine:
      failed move with duplicated files. Any other errno (`EIO`, `ENOSPC`, `EROFS`, `ENXIO`, `ENOENT`, `EACCES`, and so
      on), and any file it can't stat, open, or sync, is an `Err`. Pinned by `../durability_tests.rs`, a per-platform
      errno table included, and the barrier count by
-     `copy_strategy.rs::a_chunked_many_small_file_copy_pays_one_barrier_at_the_close`.
+     `copy_strategy.rs::a_chunked_many_small_file_copy_pays_one_barrier_at_the_close`, which also pins that a new file
+     costs no sync until the pass and then one under its final name.
 
 An interval barrier that fails is logged and its device stays owed, so the closing pass tries again; a later barrier
-that holds covers everything before it, so the closing answer is the one that counts.
+that holds covers everything before it, so the closing answer is the one that counts. An interval pass's failed FILE
+sync is kept for the closing answer instead (§ "Late errors" above).
 
-❌ Never let `already_synced` skip a directory fsync: a Mac → USB copy is always chunked, so every file is in the set,
-and a move would then delete its sources with no directory entry on disk. FAT/exFAT (the usual stick) keep no journal to
+❌ Never let `data_covered` skip a directory fsync: a Mac → USB copy is always chunked, so every file is in the set, and
+a move would then delete its sources with no directory entry on disk. FAT/exFAT (the usual stick) keep no journal to
 replay a lost entry.
+
+The must-holds, and their pins: no sync per new file on a local destination
+(`copy_strategy.rs::a_chunked_many_small_file_copy_pays_one_barrier_at_the_close`, `cmdr-fs`
+`durable/tests.rs::written_files_on_a_local_volume_wait_for_the_pass`); a replace syncs before its rename
+(`copy_strategy.rs::a_chunked_copy_that_replaces_a_file_syncs_before_its_landing` and its clone twin); a pass failure
+fails the closing flush (`../durability_tests.rs::a_written_file_the_closing_pass_cant_confirm_fails_the_flush`), keeps
+every source of a cross-FS move and marks a copy unconfirmed (`real_image_small_files_tests.rs`, the two `unconfirmed`
+cells, disk images), and keeps a volume move's batch
+(`volume/move_held_sweep_tests.rs::a_sync_the_drive_refuses_keeps_the_whole_batch`); the pass's syncs stay out of the
+ETA's barrier time (`durable/tests.rs::time_spent_leaves_the_passs_file_syncs_out`).
 
 **Per-path specifics:**
 
-- **Local copy** (`copy_files_with_progress_inner`): `copy_single_item` populates `already_synced` from
-  `StrategyCopyOutcome::data_synced`, so the data sync reaches only the strategies that don't flush themselves (Linux
-  `copy_file_range`, the std fallback); the directory fsyncs run for every strategy. A copy deletes nothing, so an `Err`
-  doesn't stop it: it logs a `warn` with the path and errno, and the copy completes with
+- **Local copy** (`copy_files_with_progress_inner`): `copy_single_item` populates `data_covered` from
+  `StrategyCopyOutcome::data_covered`, so this loop's data sync reaches only the strategies whose sync nothing carries
+  (Linux `copy_file_range`, the std fallback); the directory fsyncs run for every strategy. A copy deletes nothing, so
+  an `Err` doesn't stop it: it logs a `warn` with the path and errno, and the copy completes with
   `WriteCompleteEvent.durability_unconfirmed` set (the destination's volume name, nothing else), which the FE shows as a
   persistent warning beside the completion (#461). Pinned by
   `copy/copy_tests.rs::local_copy_fsyncs_its_created_directories_and_completes_unconfirmed_on_a_flush_failure` and
   `a_local_copy_whose_flush_holds_completes_with_nothing_unconfirmed`.
-- **Volume engine** (`volume/copy.rs`, `volume/move_cross.rs`): each file's `write_from_stream` hands it to the drive,
-  and the destination's `Volume::flush_writes` is the closing barrier (default `Ok`: a remote backend's write is the
-  server's or device's to keep once answered; `LocalPosixVolume` runs its `DeviceBarriers` pass, `cmdr-local`'s
-  `DETAILS.md`). The volume copy runs it before `write-complete`, and a refusal completes with `durability_unconfirmed`
-  like the local copy. Archive move-out runs it before deleting anything from the archive, covering both a clean extract
-  and the durable prefix a failed one leaves. Pinned by
+- **Volume engine** (`volume/copy.rs`, `volume/move_cross.rs`): each file's `write_from_stream` hands it to the drive (a
+  sync per file, above), and the destination's `Volume::flush_writes` is the closing barrier (default `Ok`: a remote
+  backend's write is the server's or device's to keep once answered; `LocalPosixVolume` runs its `DeviceBarriers` pass,
+  `cmdr-local`'s `DETAILS.md`). The volume copy runs it before `write-complete`, and a refusal completes with
+  `durability_unconfirmed` like the local copy. Archive move-out runs it before deleting anything from the archive,
+  covering both a clean extract and the durable prefix a failed one leaves. Pinned by
   `volume/move_failure_tests.rs::a_move_whose_destination_wont_confirm_its_flush_keeps_the_source` and its copy twin,
   through `FaultyOp::FlushWrites`.
 - **Cross-volume move** (`volume/move_cross.rs`, `volume/held_sweeps.rs`): **barrier each batch, sweep after it.** The
@@ -1186,6 +1257,21 @@ replay a lost entry.
     true. What a failure still leaves held carries no count on the error: `WriteFailure` holds only the error, and the
     one count on the wire (`ProgressAtStop::sources_left`) means every original still standing, a different number.
     Their last `write-source-item-done` still says `source_removed: false`.
+  - Between a batch's barrier and its first delete, the sweeps ask the mount table the local move's question ("The
+    destination-listed gate", below) about each side that is a local mount (`volume/local_mounts.rs`, through
+    `TransferSide::has_left`). A destination that left keeps the whole batch, and so does a source that left; either
+    stops the move with `DeviceDisconnected { side: Some(..) }` naming that volume. A source sweep that read something
+    as already gone (`FolderLeftovers::read_gone`: a folder listing's, a husk's, or an empty-only folder delete's
+    `NotFound`, or a top-level delete's after an outage wait) asks again about the source before the source can read as
+    removed. An unreadable table is never evidence. **Which sides are watched**: one with a `local_path` that the table
+    LISTED when the sweeps were set up. A side with no local path (direct SMB, MTP, ADB, S3, SFTP, WebDAV) has no mount
+    to leave: a dropped session fails the barrier or the sweep's next call with a typed `VolumeError`, which
+    `through_outages` waits out or maps, so nothing reads as removed. A local volume rooted at a plain folder (a
+    cloud-sync folder) was never in the table, so asking would read it as gone. **Why its own capture**: the engine
+    can't carry `state.sides`, which also homes its in-flight records (`in_flight_records.rs::home_for`). Pinned by
+    `volume/move_vanished_tests.rs` (a destination that left keeps every source and names it, a mounted one completes,
+    an unreadable table lets the sweep run, a never-mounted folder isn't watched, a source drive that left mid-sweep
+    isn't reported removed).
   - Pause parks the driver with the batch held, and the next due barrier takes it.
   - Per source, the post-sweep steps run in one order (`left_in_source`, `displaced.landed_under`, the closing
     `write-source-item-done`, the journal rows), and sources keep copy order, so the journal's `seq` and the "last event
@@ -1227,7 +1313,11 @@ between the flush and the first delete, `move_with_staging` asks the mount table
 (`transfer_sides::TransferSide::has_left`, the same non-blocking `getfsstat` snapshot discovery and eject read). Gone ⇒
 keep every source, emit `DeviceDisconnected` naming that volume, return. An unreadable mount table is NOT evidence of
 leaving and lets the sweep run; a guess must never gate a delete either way. Pinned by `move_op/move_vanished_tests.rs`
-(the gate, and its twin proving a mounted destination still completes).
+(the gate, and its twin proving a mounted destination still completes). **A side the table didn't list at start never
+leaves** (`TransferSide::at_start`, which `volume/move.rs` and `volume/copy.rs` capture with): a local volume rooted at
+a plain folder (a cloud-sync folder like `~/Dropbox`) isn't a mount point, so asking about it later reads "gone", and
+`name_the_vanished_drive` would turn every failure of the transfer (a refused write, say) into that folder's drive
+having left. Pinned by `volume/move_tests.rs::a_local_move_from_a_folder_volume_never_reads_a_failure_as_a_disconnect`.
 
 **The sweep asks the same question at every "already gone" reading** (`source_sweep.rs`): `remove_landed_file`'s
 `NotFound`, `remove_swept_dir`'s failed stat and its own `NotFound`, the per-source presence check, and the
@@ -1236,11 +1326,11 @@ mount that left, and the second reading would report a user's untouched original
 sweep stops with `SweepStopped { error, counts }`, and the counts (`removed` / `left`, in top-level items) ride out on
 `WriteErrorEvent::progress_at_stop` so the copy can say which files are still theirs to find. This matches the
 cross-volume move (`volume/move.rs`, which finalizes before deleting the source). Happy-path cost: one `fsync` per
-distinct final directory plus one device barrier, since Phase 2 already synced the data. Cancellation handling is
-unchanged: Phase 4 still owns the in-loop cancel check and the `write-cancelled` emit. Pinned by
-`move_op_tests.rs::cross_fs_local_move_flushes_final_dests_before_deleting_sources` (a custom sink snapshots that the
-source still exists at the instant the `Flushing` event fires) and `move_op/move_durability_tests.rs` (which
-directories, an `EIO` keeping every source, the unsupported class completing).
+distinct final directory plus one device barrier, since the data was synced by Phase 2's passes and the hand-over before
+Phase 3 (`hand_over_written`). Cancellation handling is unchanged: Phase 4 still owns the in-loop cancel check and the
+`write-cancelled` emit. Pinned by `move_op_tests.rs::cross_fs_local_move_flushes_final_dests_before_deleting_sources` (a
+custom sink snapshots that the source still exists at the instant the `Flushing` event fires) and
+`move_op/move_durability_tests.rs` (which directories, an `EIO` keeping every source, the unsupported class completing).
 
 - **Same-FS move** (`move_with_rename`): flushes DIRECTORIES, never the moved files, through the sibling pass
   `durability::flush_touched_directories`. A `rename(2)` moves a directory ENTRY: the file's data blocks and inode are

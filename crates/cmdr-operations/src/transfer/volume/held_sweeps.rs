@@ -20,10 +20,11 @@ use super::super::super::journal;
 use super::super::super::ledger::WrittenFile;
 use super::super::super::locked_sources::LockedPlan;
 use super::super::super::state::WriteOperationState;
-use super::super::super::types::{SourceItemOutcome, WriteOperationError};
+use super::super::super::types::{SourceItemOutcome, TransferRole, WriteOperationError};
 use super::super::left_in_source::LeftInSource;
 use super::super::transfer_driver::emit_source_outcome;
 use super::displaced_destination::DisplacedLedger;
+use super::local_mounts::LocalMounts;
 use super::source_sweep::{CarriedSource, sweep_carried_source};
 use super::transfer_error::{PathRole, map_volume_error, source_not_removed};
 use crate::rt::Instant;
@@ -66,6 +67,9 @@ pub(super) struct HeldSweeps {
     pub(super) left_in_source: Arc<Mutex<LeftInSource>>,
     pub(super) displaced: Arc<DisplacedLedger>,
     pub(super) journal_volumes: Option<(String, String)>,
+    /// Asked between a barrier and its first delete, and after a sweep that
+    /// read something as already gone (`local_mounts.rs`).
+    mounts: LocalMounts,
     /// In copy order. A source leaves only once it's swept, so whatever is here
     /// when the move stops is still in both places.
     held: Mutex<Vec<HeldSource>>,
@@ -90,7 +94,9 @@ impl HeldSweeps {
         journal_volumes: Option<(String, String)>,
     ) -> Self {
         let interval = state.barriers.interval();
+        let mounts = LocalMounts::capture(&*source_volume, &*dest_volume, journal_volumes.as_ref());
         Self {
+            mounts,
             state,
             events,
             operation_id,
@@ -157,6 +163,23 @@ impl HeldSweeps {
             self.put_back(batch);
             return Err(error);
         }
+        // An `Ok` barrier isn't proof the drive is still there: the kernel can
+        // take writes moments before a cable leaves. So the mount table is asked
+        // between the barrier and the first delete, destination first (a sweep
+        // then would delete the only copies), as the local move does.
+        let gone = [TransferRole::Destination, TransferRole::Source]
+            .into_iter()
+            .find_map(|role| self.mounts.left(role));
+        if let Some(error) = gone {
+            log::warn!(
+                target: "write_durability",
+                "move_between_volumes: {} sources stay, a drive left the mount table (first {})",
+                batch.len(),
+                LogPrivate::path(&first.source)
+            );
+            self.put_back(batch);
+            return Err(error);
+        }
         let mut rest = batch.into_iter();
         while let Some(held) = rest.next() {
             // A cancel during a long batch keeps what it hasn't reached.
@@ -198,6 +221,13 @@ impl HeldSweeps {
             // ❗ The copy LANDED, so the move didn't fail: say so.
             source_not_removed(&e.path, &held.landed, e.error)
         })?;
+        // "Already gone" reads the same for a file this move carried and for a
+        // drive that left, so it's checked before the source reads as removed.
+        if kept.read_gone
+            && let Some(error) = self.mounts.left(TransferRole::Source)
+        {
+            return Err(error);
+        }
         self.left_in_source
             .lock_ignore_poison()
             .note(&held.source, held.is_dir, kept.appeared, kept.changed);
