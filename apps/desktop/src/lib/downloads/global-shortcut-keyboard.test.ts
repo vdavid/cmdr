@@ -11,7 +11,7 @@ function lit(binding: string, platform: Parameters<typeof keyboardFor>[0]): stri
   const keys = keyboardFor(platform)
   const chord = chordOnKeyboard(binding, keys)
   if (chord === null) return null
-  return keys.flatMap((key, i) => (chord.has(i) ? [key.char ?? key.word ?? ''] : [])).sort()
+  return keys.flatMap((key, i) => (chord.has(i) ? [key.char ?? key.word ?? `${key.logo ?? ''} logo`] : [])).sort()
 }
 
 describe('keyboardFor', () => {
@@ -21,9 +21,14 @@ describe('keyboardFor', () => {
     expect(words).not.toContain('Ctrl')
   })
 
-  it('draws a PC keyboard on Windows, with the Windows key named the way Cmdr names it there', () => {
-    const words = printed(keyboardFor('windows'))
-    expect(words).toEqual(expect.arrayContaining(['Ctrl', 'Fn', 'Win', 'Alt', 'Shift', 'Caps Lock', 'Tab']))
+  it('draws a PC keyboard on Windows, with the Windows logo on the Windows key, as real keyboards print it', () => {
+    const keys = keyboardFor('windows')
+    const words = printed(keys)
+    expect(words).toEqual(expect.arrayContaining(['Ctrl', 'Fn', 'Alt', 'Shift', 'Caps Lock', 'Tab']))
+    expect(words).not.toContain('Win')
+    const windowsKey = keys.find((key) => key.modifier === 'Super')
+    expect(windowsKey).toMatchObject({ logo: 'windows' })
+    expect(windowsKey?.word).toBeUndefined()
     expect(words.join('')).not.toMatch(/[⌃⌥⌘]|command|option/)
   })
 
@@ -44,7 +49,7 @@ describe('keyboardFor', () => {
 describe('chordOnKeyboard', () => {
   it('lights the default chord on each OS: the left-hand modifiers and J', () => {
     expect(lit('⌃⌥⌘J', 'macos')).toEqual(['J', 'command', 'control', 'option'])
-    expect(lit('Ctrl+Alt+Super+J', 'windows')).toEqual(['Alt', 'Ctrl', 'J', 'Win'])
+    expect(lit('Ctrl+Alt+Super+J', 'windows')).toEqual(['Alt', 'Ctrl', 'J', 'windows logo'])
     expect(lit('Ctrl+Alt+Super+J', 'linux')).toEqual(['Alt', 'Ctrl', 'J', 'Super'])
   })
 

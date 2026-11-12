@@ -26,8 +26,8 @@ mechanics, deep-link wiring, and the smoke-test guide.
   keyboard. Tokenized colors, `aria-hidden`, honors `prefers-reduced-motion` (static lit frame). Debug > Graphics shows
   all three.
 - **`global-shortcut-keyboard.ts`**: the drawn keyboard per OS (`keyboardFor`: one geometry; Apple's caps on macOS, a PC
-  laptop's Ctrl, Fn, Win or Super, Alt elsewhere) and `chordOnKeyboard`, the keys a binding presses, or `null` when the
-  keyboard can't draw one (`P`, an F-key, Space).
+  laptop's Ctrl, Fn, the Windows key (its logo on Windows, `Super` on Linux), Alt elsewhere) and `chordOnKeyboard`, the
+  keys a binding presses, or `null` when the keyboard can't draw one (`P`, an F-key, Space).
 - **`notifications-mode.ts`**: reader, writer, and deep-link helper for
   `behavior.fileSystemWatching.downloadsNotifications`. Exports `DOWNLOADS_NOTIFICATIONS_ANCHOR_ID`.
 - **`global-shortcut-bridge.svelte.ts`**: one `global-shortcut-fired` subscription; calls `goToLatestDownload` plus, on

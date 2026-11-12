@@ -5,8 +5,8 @@
  * SVG's viewBox), so the animation's timing and framing are shared; only the printed labels and
  * the bottom row's modifier order differ. macOS prints Apple's key caps (lowercase words low on
  * the cap, the modifier glyph above). Windows and Linux print a PC laptop's (title-case words high
- * on the cap; Ctrl, Fn, the Windows key, Alt), with the Windows key named the way Cmdr names it on
- * each OS (`Win`, `Super`; `docs/style-guide.md` § "Platform vocabulary").
+ * on the cap; Ctrl, Fn, the Windows key, Alt): the Windows key carries the Windows logo on Windows,
+ * as real keyboards print it, and the word `Super` on Linux. Text elsewhere still says `Win`.
  */
 import type { Platform } from '#lib/platform/index.js'
 import { parseBinding, type AcceleratorModifier } from './global-shortcut-binding'
@@ -25,6 +25,8 @@ export interface DrawnKey {
   /** macOS's modifier glyph (`⌘`), printed small above the word. */
   readonly symbol?: string
   readonly symbolX?: number
+  /** A drawn legend in place of a word: the Windows logo on Windows' Windows key. */
+  readonly logo?: 'windows'
   /** The raised bar on F and J. */
   readonly homing?: boolean
   /** What holding this key adds to a chord. */
@@ -78,8 +80,8 @@ const MAC_KEYS: NamedKeys = {
   ],
 }
 
-/** A PC laptop's keys (Ctrl, Fn, the Windows key, Alt), with that key printed as `superWord`. */
-function pcKeys(superWord: string): NamedKeys {
+/** A PC laptop's keys (Ctrl, Fn, the Windows key, Alt), with that key's legend as `superLegend`. */
+function pcKeys(superLegend: Pick<DrawnKey, 'word' | 'logo'>): NamedKeys {
   return {
     tab: 'Tab',
     capsLock: 'Caps Lock',
@@ -87,7 +89,7 @@ function pcKeys(superWord: string): NamedKeys {
     bottom: [
       { x: 0, y: 240, width: KEY, word: 'Ctrl', modifier: 'Control' },
       { x: 60, y: 240, width: KEY, word: 'Fn' },
-      { x: 120, y: 240, width: KEY, word: superWord, modifier: 'Super' },
+      { x: 120, y: 240, width: KEY, ...superLegend, modifier: 'Super' },
       { x: 180, y: 240, width: 68, word: 'Alt', modifier: 'Alt' },
       SPACE,
       { x: 540, y: 240, width: 68, word: 'Alt', modifier: 'Alt' },
@@ -98,8 +100,9 @@ function pcKeys(superWord: string): NamedKeys {
 
 const NAMED_KEYS: Record<Platform, NamedKeys> = {
   macos: MAC_KEYS,
-  windows: pcKeys('Win'),
-  linux: pcKeys('Super'),
+  // Windows keyboards print the Windows logo on that key; Linux names it Super, as its desktops do.
+  windows: pcKeys({ logo: 'windows' }),
+  linux: pcKeys({ word: 'Super' }),
 }
 
 /** The keyboard drawn on `platform`, in drawing order (rows top to bottom, keys left to right). */

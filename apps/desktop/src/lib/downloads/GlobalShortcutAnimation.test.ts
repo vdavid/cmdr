@@ -19,7 +19,13 @@ async function render(binding: string, platform: Platform): Promise<HTMLElement>
 /** The first label of each lit key cap, modifiers first, then the pressed key. */
 function litLabels(target: HTMLElement): { modifiers: string[]; key: string[] } {
   const labelsOf = (selector: string) =>
-    Array.from(target.querySelectorAll(selector), (group) => group.querySelector('text')?.textContent ?? '')
+    Array.from(
+      target.querySelectorAll(selector),
+      (group) =>
+        group.querySelector('text')?.textContent ??
+        group.querySelector('[data-legend]')?.getAttribute('data-legend') ??
+        '',
+    )
   return { modifiers: labelsOf('.mod-group'), key: labelsOf('.target-group') }
 }
 
@@ -31,8 +37,18 @@ describe('GlobalShortcutAnimation', () => {
 
   it('presses Ctrl+Alt+Win+J on a PC keyboard on Windows, with no Mac glyph anywhere', async () => {
     const target = await render('Ctrl+Alt+Super+J', 'windows')
-    expect(litLabels(target)).toEqual({ modifiers: ['Ctrl', 'Win', 'Alt'], key: ['J'] })
-    expect(target.textContent).not.toMatch(/[⌃⌥⌘]|command|option/)
+    expect(litLabels(target)).toEqual({ modifiers: ['Ctrl', 'windows-logo', 'Alt'], key: ['J'] })
+    expect(target.textContent).not.toMatch(/[⌃⌥⌘]|command|option|Win/)
+  })
+
+  // The logo is the flat four-square mark, drawn in the legend color so it follows the theme.
+  it('draws the Windows key’s legend as four equal squares in the label color', async () => {
+    const target = await render('Ctrl+Alt+Super+J', 'windows')
+    const logo = target.querySelector('[data-legend="windows-logo"]')
+    const panes = Array.from(logo?.querySelectorAll('rect') ?? [])
+    expect(panes).toHaveLength(4)
+    expect(new Set(panes.map((pane) => `${pane.getAttribute('width')}x${pane.getAttribute('height')}`)).size).toBe(1)
+    expect(logo?.getAttribute('class')).toContain('key-legend')
   })
 
   it('presses Ctrl+Alt+Super+J on Linux', async () => {

@@ -4,8 +4,8 @@
     actually types it.
 
     Drawn from the live binding on this OS's own keyboard (`global-shortcut-keyboard.ts`): Apple's
-    key caps on macOS (⌃⌥⌘J by default), a PC laptop's on Windows and Linux (Ctrl+Alt+Win+J,
-    Ctrl+Alt+Super+J). The caller renders this ONLY when the keyboard draws every key of the
+    key caps on macOS (⌃⌥⌘J by default), a PC laptop's on Windows and Linux (Ctrl+Alt+Win+J, with
+    the Windows logo on the Windows key; Ctrl+Alt+Super+J). The caller renders this ONLY when the keyboard draws every key of the
     binding (`chordOnKeyboard` isn't `null`); a chord on `P`, an F-key, or Space keeps the text
     chip and drops the animation. See `DownloadToastContent.svelte` and the downloads `CLAUDE.md`.
 
@@ -67,6 +67,16 @@
                     {#if key.word !== undefined}
                         <text class="key-label-sm" x={key.wordX ?? 6} y={wordY}>{key.word}</text>
                     {/if}
+                    {#if key.logo === 'windows'}
+                        <!-- The flat four-pane Windows logo, as Windows keyboards print it: four equal
+                             squares, sized and placed like the other PC legends (top left, cap height). -->
+                        <g class="key-legend" data-legend="windows-logo" transform="translate(6, 8)">
+                            <rect x="0" y="0" width="4.5" height="4.5" />
+                            <rect x="5.5" y="0" width="4.5" height="4.5" />
+                            <rect x="0" y="5.5" width="4.5" height="4.5" />
+                            <rect x="5.5" y="5.5" width="4.5" height="4.5" />
+                        </g>
+                    {/if}
                     {#if key.symbol !== undefined}
                         <text class="key-label-sym" x={key.symbolX ?? 6} y="22">{key.symbol}</text>
                     {/if}
@@ -116,6 +126,11 @@
         font-weight: 600;
         fill: var(--color-text-secondary);
         user-select: none;
+    }
+
+    /* A drawn legend takes the word legends' color, so it follows light and dark. */
+    .key-legend {
+        fill: var(--color-text-tertiary);
     }
 
     .homing-bar {
