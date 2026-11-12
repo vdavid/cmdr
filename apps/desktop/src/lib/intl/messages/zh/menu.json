@@ -147,13 +147,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFinder": "在 Finder 中显示",
-  "@menu.file.showInFinder": {
-    "sourceHash": "c2a9c77"
-  },
-  "menu.file.showInFileManager": "在文件管理器中显示",
+  "menu.file.showInFileManager": "{platform, select, macos {在 Finder 中显示} windows {Show in File Explorer} other {在文件管理器中显示}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "3ca4dad"
+    "sourceHash": "c2a9c77"
   },
   "menu.file.openTerminalHere": "在此处打开终端",
   "@menu.file.openTerminalHere": {

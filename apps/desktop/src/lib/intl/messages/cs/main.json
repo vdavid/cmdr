@@ -7,13 +7,9 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "84f0191"
   },
-  "main.upgradeNudge.mac": "Přidali jsme do úvodního průvodce nové možnosti. Otevřete Cmdr > Úvodní průvodce… a projděte si je.",
-  "@main.upgradeNudge.mac": {
+  "main.upgradeNudge": "{platform, select, macos {Přidali jsme do úvodního průvodce nové možnosti. Otevřete Cmdr > Úvodní průvodce… a projděte si je.} other {Přidali jsme do úvodního průvodce nové možnosti. Otevřete paletu příkazů, spusťte Úvodní průvodce… a projděte si je.}}",
+  "@main.upgradeNudge": {
     "sourceHash": "439adfd"
-  },
-  "main.upgradeNudge.other": "Přidali jsme do úvodního průvodce nové možnosti. Otevřete paletu příkazů, spusťte Úvodní průvodce… a projděte si je.",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "Ponechat Cmdr v Docku?",
   "@main.dockPinNudge.title": {

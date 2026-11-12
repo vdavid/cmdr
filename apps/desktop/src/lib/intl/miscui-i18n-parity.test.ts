@@ -142,7 +142,7 @@ describe('ai area parity (en)', () => {
 describe('mtp area parity (en)', () => {
   it('resolves the connected-toast copy', () => {
     expect(t('mtp.connectedToast.title', { deviceName: 'Pixel 7' })).toBe('Connected to Pixel 7')
-    expect(tString('mtp.connectedToast.bodyMac')).toBe(
+    expect(tString('mtp.connectedToast.body')).toBe(
       'Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable MTP support in settings.',
     )
     expect(tString('mtp.connectedToast.dontShowAgain')).toBe('Don’t show again')

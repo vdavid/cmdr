@@ -1757,13 +1757,9 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Kiểm tra xem bạn có quyền ghi vào thư mục cha không. Tệp có thể đang bị khóa. Mở khóa nó trong Finder (Lấy thông tin > bỏ chọn “Đã khóa”) rồi thử lại.",
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Kiểm tra xem bạn có quyền ghi vào thư mục cha không. Tệp có thể đang bị khóa. Mở khóa nó trong Finder (Lấy thông tin > bỏ chọn “Đã khóa”) rồi thử lại.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Kiểm tra xem bạn có quyền ghi vào thư mục cha không. Tệp có thể đang được bảo vệ. Kiểm tra quyền của nó (ví dụ qua chmod hoặc trình quản lý tệp của bạn) rồi thử lại.}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "1e6e123"
-  },
-  "errors.write.permissionDenied.suggestion.deleteOther": "Kiểm tra xem bạn có quyền ghi vào thư mục cha không. Tệp có thể đang được bảo vệ. Kiểm tra quyền của nó (ví dụ qua chmod hoặc trình quản lý tệp của bạn) rồi thử lại.",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "sourceHash": "650bb53"
   },
   "errors.write.permissionDenied.suggestion.default": "Kiểm tra xem bạn có quyền ghi vào thư mục đích không. Bạn có thể cần mở khóa thiết bị hoặc thay đổi quyền của thư mục.",
   "@errors.write.permissionDenied.suggestion.default": {
@@ -1785,21 +1781,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "Việc này cần quyền quản trị. Để cấp quyền cho chính tài khoản của bạn, hãy chọn thư mục trong Finder, chọn Lấy thông tin, rồi xem phần Chia sẻ & quyền.",
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Việc này cần quyền quản trị. Để cấp quyền cho chính tài khoản của bạn, hãy chọn thư mục trong Finder, chọn Lấy thông tin, rồi xem phần Chia sẻ & quyền.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Việc này cần quyền quản trị. Để cấp quyền cho chính tài khoản của bạn, hãy đổi quyền của thư mục (ví dụ qua chmod) rồi thử lại.}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "Việc này cần quyền quản trị. Để cấp quyền cho chính tài khoản của bạn, hãy đổi quyền của thư mục (ví dụ qua chmod) rồi thử lại.",
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "5ce034b"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "Chính macOS bảo vệ mục này, nên quyền quản trị cũng không thay đổi được. Mục này có thể đang bị khóa: chọn nó trong Finder, chọn Lấy thông tin, rồi bỏ chọn “Đã khóa”.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {Chính macOS bảo vệ mục này, nên quyền quản trị cũng không thay đổi được. Mục này có thể đang bị khóa: chọn nó trong Finder, chọn Lấy thông tin, rồi bỏ chọn “Đã khóa”.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Chính hệ thống bảo vệ mục này, nên quyền quản trị cũng không thay đổi được. Mục này có thể mang một cờ bảo vệ cần được gỡ trước.}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
     "sourceHash": "64a71c8"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "Chính hệ thống bảo vệ mục này, nên quyền quản trị cũng không thay đổi được. Mục này có thể mang một cờ bảo vệ cần được gỡ trước.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "a4856dc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "Bạn không có quyền đọc mục này, nên không thể sao chép nó.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,13 +1905,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion.mac": "Mở khóa nó trong Finder (Lấy thông tin > bỏ chọn “Đã khóa”) rồi thử lại.",
-  "@errors.write.fileLocked.suggestion.mac": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Mở khóa nó trong Finder (Lấy thông tin > bỏ chọn “Đã khóa”) rồi thử lại.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Tệp có thể đang được bảo vệ. Kiểm tra quyền của nó (ví dụ qua chmod hoặc trình quản lý tệp của bạn) rồi thử lại.}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "8f84de5"
-  },
-  "errors.write.fileLocked.suggestion.other": "Tệp có thể đang được bảo vệ. Kiểm tra quyền của nó (ví dụ qua chmod hoặc trình quản lý tệp của bạn) rồi thử lại.",
-  "@errors.write.fileLocked.suggestion.other": {
-    "sourceHash": "6856879"
   },
   "errors.write.deletePending.title": "Tệp đang được gỡ bỏ",
   "@errors.write.deletePending.title": {

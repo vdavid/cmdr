@@ -527,27 +527,19 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.keychainTitle": "{op, select, save {Klíč API se nepodařilo uložit: svazek klíčů v macOS odepřel přístup} other {Uložený klíč API se nepodařilo přečíst: svazek klíčů v macOS odepřel přístup}}",
-  "@ai.secretError.keychainTitle": {
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {Klíč API se nepodařilo uložit: svazek klíčů v macOS odepřel přístup} other {Uložený klíč API se nepodařilo přečíst: svazek klíčů v macOS odepřel přístup}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {Klíč API se nepodařilo uložit: systémová klíčenka odepřela přístup} other {Uložený klíč API se nepodařilo přečíst: systémová klíčenka odepřela přístup}}}}",
+  "@ai.secretError.title": {
     "sourceHash": "2b2ef89"
   },
-  "ai.secretError.keychainBody": "{op, select, save {Otevřete Klíčenku a zkontrolujte záznam „Cmdr“, nebo ho smažte a zkuste klíč uložit znovu.} other {Otevřete Klíčenku, najděte záznam „Cmdr“ a udělte přístup, nebo záznam smažte a zadejte klíč znovu.}}",
-  "@ai.secretError.keychainBody": {
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {Otevřete Klíčenku a zkontrolujte záznam „Cmdr“, nebo ho smažte a zkuste klíč uložit znovu.} other {Otevřete Klíčenku, najděte záznam „Cmdr“ a udělte přístup, nebo záznam smažte a zadejte klíč znovu.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Odemkněte klíčenku (v aplikaci Hesla a klíče nebo podobné) a zkuste to znovu.}}",
+  "@ai.secretError.body": {
     "sourceHash": "8f1380e"
-  },
-  "ai.secretError.keyringTitle": "{op, select, save {Klíč API se nepodařilo uložit: systémová klíčenka odepřela přístup} other {Uložený klíč API se nepodařilo přečíst: systémová klíčenka odepřela přístup}}",
-  "@ai.secretError.keyringTitle": {
-    "sourceHash": "60f5401"
-  },
-  "ai.secretError.keyringBody": "Odemkněte klíčenku (v aplikaci Hesla a klíče nebo podobné) a zkuste to znovu.",
-  "@ai.secretError.keyringBody": {
-    "sourceHash": "023bde3"
   },
   "ai.secretError.genericTitle": "{op, select, save {Klíč API se nepodařilo uložit.} other {Uložený klíč API se nepodařilo přečíst.}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "c343e42"
   },
-  "ai.secretError.genericBody": "Zkontrolujte, že je systémová klíčenka dostupná, a zkuste to znovu. Pokud problém přetrvává, restartujte aplikaci.",
+  "ai.secretError.genericBody": "{platform, select, macos {Zkontrolujte, že je systémová klíčenka dostupná, a zkuste to znovu. Pokud problém přetrvává, restartujte aplikaci.} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {Zkontrolujte, že je systémová klíčenka dostupná, a zkuste to znovu. Pokud problém přetrvává, restartujte aplikaci.}}",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
   },
@@ -555,8 +547,8 @@
   "@ai.secretError.removeTitle": {
     "sourceHash": "5986628"
   },
-  "ai.secretError.removeKeychainBody": "Otevřete Klíčenku, najděte záznam „Cmdr“ a smažte ho tam.",
-  "@ai.secretError.removeKeychainBody": {
+  "ai.secretError.removeBody": "{platform, select, macos {Otevřete Klíčenku, najděte záznam „Cmdr“ a smažte ho tam.} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {Odemkněte klíčenku (v aplikaci Hesla a klíče nebo podobné) a zkuste to znovu.}}",
+  "@ai.secretError.removeBody": {
     "sourceHash": "4e3abe7"
   },
   "ai.managed.aiOff": "Vaše organizace vypnula AI v Cmdru.",

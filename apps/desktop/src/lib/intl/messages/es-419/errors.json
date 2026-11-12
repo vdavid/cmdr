@@ -539,8 +539,8 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "5dc863d"
   },
-  "errors.write.permissionDenied.suggestion.deleteOther": "Comprueba que tengas acceso de escritura a la carpeta superior. Puede que el archivo esté protegido. Revisa sus permisos (por ejemplo, con chmod o tu administrador de archivos) y vuelve a intentarlo.",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Comprueba que tengas acceso de escritura a la carpeta superior. Puede que el archivo esté bloqueado. Desbloquéalo en el Finder (Obtener información > desmarca Bloqueado) y vuelve a intentarlo.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Comprueba que tengas acceso de escritura a la carpeta superior. Puede que el archivo esté protegido. Revisa sus permisos (por ejemplo, con chmod o tu administrador de archivos) y vuelve a intentarlo.}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "68523ac"
   },
   "errors.write.destinationFull.message": "El destino se quedó sin espacio antes de que se escribiera todo.",
@@ -555,8 +555,8 @@
   "@errors.write.destinationNotWritable.noPermission.message": {
     "sourceHash": "d160d62"
   },
-  "errors.write.fileLocked.suggestion.other": "Puede que el archivo esté protegido. Revisa sus permisos (por ejemplo, con chmod o tu administrador de archivos) y vuelve a intentarlo.",
-  "@errors.write.fileLocked.suggestion.other": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Desbloquéalo en el Finder (Obtener información > desmarca Bloqueado) y vuelve a intentarlo.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Puede que el archivo esté protegido. Revisa sus permisos (por ejemplo, con chmod o tu administrador de archivos) y vuelve a intentarlo.}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "c1d975c"
   },
   "errors.write.deletePending.message": "El archivo en {path} está de salida. El servidor lo marcó para eliminarlo, pero otro identificador abierto lo mantiene mientras ese identificador no se cierre.",

@@ -5,6 +5,7 @@ import type { DisconnectedSide, WriteOperationError } from '#lib/file-explorer/t
 import type { ProgressAtStop } from '#lib/tauri-commands/index.js'
 import { formatInteger } from '#lib/intl/number-format.js'
 import { formatDuration, seconds } from '#lib/units/index.js'
+import errorsCatalog from '#lib/intl/messages/en/errors.json'
 
 /** Runs the rest of the current test on macOS or, with `false`, off it. */
 function setMacOS(isMac: boolean) {
@@ -1086,5 +1087,92 @@ describe('new_files_kept', () => {
     })
 
     expect(result.message).toBe(plain.message)
+  })
+})
+
+describe('advice that names an OS feature reads in that OS’s words', () => {
+  const denied = (refusal: 'unclassified' | 'folderPermissions' | 'systemProtected'): WriteOperationError => ({
+    type: 'permission_denied',
+    path: '/protected',
+    message: 'denied',
+    errno: null,
+    refusal,
+    refusedFolder: null,
+    side: null,
+  })
+  const suggestionOf = (error: WriteOperationError): string => getUserFriendlyMessage(error, 'delete').suggestion
+
+  it.each([
+    ['macos', 'Unlock it in Finder (Get Info > uncheck Locked) and try again.'],
+    ['windows', 'The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.'],
+    ['linux', 'The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.'],
+  ] as const)('a locked file on %s', (platform, suggestion) => {
+    onTestFinished(withPlatform(platform))
+    expect(suggestionOf({ type: 'file_locked', path: '/path/to/locked.txt' })).toBe(suggestion)
+  })
+
+  it.each([
+    [
+      'macos',
+      'Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.',
+    ],
+    [
+      'windows',
+      'Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.',
+    ],
+    [
+      'linux',
+      'Check that you have write access to the parent folder. The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.',
+    ],
+  ] as const)('a refused delete on %s', (platform, suggestion) => {
+    onTestFinished(withPlatform(platform))
+    expect(suggestionOf(denied('unclassified'))).toBe(suggestion)
+  })
+
+  it.each([
+    [
+      'macos',
+      'Changing it needs administrator rights. To give your own account access, select the folder in Finder, choose Get Info, and look under Sharing & Permissions.',
+    ],
+    [
+      'windows',
+      'Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.',
+    ],
+    [
+      'linux',
+      'Changing it needs administrator rights. To give your own account access, adjust the folder’s permissions (for example with chmod) and try again.',
+    ],
+  ] as const)('a folder that needs an administrator on %s', (platform, suggestion) => {
+    onTestFinished(withPlatform(platform))
+    expect(suggestionOf(denied('folderPermissions'))).toBe(suggestion)
+  })
+
+  it.each([
+    [
+      'macos',
+      'macOS protects this one itself, so administrator rights won’t change it. The item may be locked: select it in Finder, choose Get Info, and uncheck Locked.',
+    ],
+    [
+      'windows',
+      'Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.',
+    ],
+    [
+      'linux',
+      'The system protects this one itself, so administrator rights won’t change it. The item may carry a protection flag that has to be cleared first.',
+    ],
+  ] as const)('an item the OS protects on %s', (platform, suggestion) => {
+    onTestFinished(withPlatform(platform))
+    expect(suggestionOf(denied('systemProtected'))).toBe(suggestion)
+  })
+
+  // `FallbackErrorContent` shows a suggestion as plain text, so markdown would reach the reader as
+  // asterisks and backticks. Every branch counts: a Windows-only label in bold never shows on a Mac.
+  it('no write-error suggestion carries markdown, on any OS', () => {
+    const offenders = Object.entries(errorsCatalog as Record<string, unknown>)
+      .filter(([key, value]) => /^errors\.write\..*\.suggestion(\.|$)/.test(key) && typeof value === 'string')
+      .filter(([, value]) => /\*\*|`/.test(value as string))
+      .map(([key]) => key)
+
+    expect(offenders).toEqual([])
   })
 })

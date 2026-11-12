@@ -251,9 +251,11 @@ space after each comma). Never a block inside a sentence, never `{platform}` int
 - **No OS test picks copy**: `cmdr/no-platform-copy-branch` (`apps/desktop/eslint-plugins/`) flags a ternary, `if`, or
   `{#if}` testing `isMacOS()` / `getPlatform()` (or a name bound to one) whose arms resolve copy (`t`, `tString`,
   `tStringIn`, `getMessage`, `<Trans>`, or a key-shaped string literal). Whether a surface exists is
-  `hasCapability()`'s, and stays legal. It's registered `off` until the remaining `.mac` / `.other` pairs collapse:
-  their nine call sites are all it flags today. It can't see a helper returning bare key SUFFIXES
-  (`transfer-error-messages.ts`'s `mac ? 'needsAdminMac' : …`); that one goes by hand.
+  `hasCapability()`'s, and stays legal. It can't see a helper returning bare key SUFFIXES (a
+  `mac ? 'needsAdminMac' : 'needsAdminOther'` spliced into a key later), so don't write one.
+- **A branch may be empty** where an OS has nothing to say: `mtp.connectedToast.body`'s `windows {}`, since Windows
+  shares an MTP device and the toast has no "other apps" line there. The component renders the line only for a non-empty
+  text and asks no platform question.
 - **Tests**: `withPlatform('macos' | 'windows' | 'linux')` from `#lib/platform/test-platform` moves both the select and
   the split; Vitest's fallback is Linux, so an assertion on macOS text names macOS.
 
@@ -280,6 +282,8 @@ docblock has the commands; the rules it applies:
   new branches, then `--restamp-english-overlays`, which touches those two only.
 - **A collapsed pair**: the survivor takes the `.mac` key's place and `@key` block, and the script renames the old keys
   in the translator guides and termbases under `docs/i18n/`, the term-consistency allowlist, and the capture report.
+- **After writing** it formats the guides it rewrote and regenerates `keys.gen.ts` and the native strings, all three
+  even when one exits non-zero: `pnpm intl:keys` does after a pair collapse, until no call site names an old key.
 - **Nothing is written unless the result passes** on a scratch copy: `macosCopyDrift` (below), the platform-select,
   parity, ICU, plural, and coverage checks, and a no-op `sync-locale-keys.ts`.
 - `--scan` lists English values with macOS vocabulary that no row or gate covers, and lints every resolved `windows` and

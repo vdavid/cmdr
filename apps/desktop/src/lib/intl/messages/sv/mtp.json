@@ -3,13 +3,9 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr pausade macOS kameradaemon (ptpcamerad) för att komma åt den här enheten. Stäng av MTP-stöd i inställningarna för att använda den i en annan app.",
-  "@mtp.connectedToast.bodyMac": {
+  "mtp.connectedToast.body": "{platform, select, macos {Cmdr pausade macOS kameradaemon (ptpcamerad) för att komma åt den här enheten. Stäng av MTP-stöd i inställningarna för att använda den i en annan app.} windows {} other {Stäng av MTP-stöd i inställningarna för att använda den här enheten i en annan app.}}",
+  "@mtp.connectedToast.body": {
     "sourceHash": "3ace37b"
-  },
-  "mtp.connectedToast.bodyOther": "Stäng av MTP-stöd i inställningarna för att använda den här enheten i en annan app.",
-  "@mtp.connectedToast.bodyOther": {
-    "sourceHash": "6f42620"
   },
   "mtp.connectedToast.dontShowAgain": "Visa inte igen",
   "@mtp.connectedToast.dontShowAgain": {

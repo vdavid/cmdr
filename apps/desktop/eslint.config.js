@@ -360,9 +360,8 @@ export default tseslint.config(
     rules: {
       'cmdr/no-error-string-match': 'error',
       // An OS test (`isMacOS()`, `getPlatform()`) choosing copy is banned: per-OS wording is one
-      // `{platform, select, …}` catalog value. Off until the remaining `.mac` / `.other` key pairs
-      // collapse into blocks; their call sites are what it would flag today.
-      'cmdr/no-platform-copy-branch': 'off',
+      // `{platform, select, …}` catalog value.
+      'cmdr/no-platform-copy-branch': 'error',
       // A callback type with two or more confusable positional parameters (same type, or an
       // unresolved generic) is banned: use a single named object payload instead. Both a
       // dropped-parameter mismatch and a swapped-argument mismatch have shipped as real bugs.

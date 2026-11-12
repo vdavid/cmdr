@@ -211,7 +211,7 @@ pub fn file_menu(facts: &FileMenuFacts<'_>, platform: Platform) -> Vec<ContextRo
             shortcut: Shortcut::OfMenuId(GO_PARENT_ID),
         }));
     }
-    rows.push(command(SHOW_IN_FINDER_ID, SHOW_IN_FILE_MANAGER_KEY.on(platform)));
+    rows.push(command(SHOW_IN_FINDER_ID, SHOW_IN_FILE_MANAGER_KEY));
     if mac {
         // Beside Show in Finder: the same gesture aimed at another app, greyed where the pane's
         // folder isn't one a shell can `cd` into.

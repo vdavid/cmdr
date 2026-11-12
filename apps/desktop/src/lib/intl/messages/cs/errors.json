@@ -1757,13 +1757,9 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Zkontrolujte, že máte do nadřazené složky přístup pro zápis. Soubor může být zamčený. Odemkněte ho ve Finderu (Informace > zrušte zaškrtnutí políčka Zamčeno) a zkuste to znovu.",
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Zkontrolujte, že máte do nadřazené složky přístup pro zápis. Soubor může být zamčený. Odemkněte ho ve Finderu (Informace > zrušte zaškrtnutí políčka Zamčeno) a zkuste to znovu.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Zkontrolujte, že máte do nadřazené složky přístup pro zápis. Soubor může být chráněný. Zkontrolujte jeho oprávnění (např. příkazem chmod nebo ve správci souborů) a zkuste to znovu.}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "1e6e123"
-  },
-  "errors.write.permissionDenied.suggestion.deleteOther": "Zkontrolujte, že máte do nadřazené složky přístup pro zápis. Soubor může být chráněný. Zkontrolujte jeho oprávnění (např. příkazem chmod nebo ve správci souborů) a zkuste to znovu.",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "sourceHash": "650bb53"
   },
   "errors.write.permissionDenied.suggestion.default": "Zkontrolujte, že máte do cílové složky přístup pro zápis. Možná bude potřeba odemknout zařízení nebo změnit oprávnění složky.",
   "@errors.write.permissionDenied.suggestion.default": {
@@ -1785,21 +1781,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "K této změně jsou potřeba oprávnění správce. Pokud chcete svému účtu udělit přístup, vyberte složku ve Finderu, zvolte Informace a podívejte se do sekce Sdílení a oprávnění.",
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {K této změně jsou potřeba oprávnění správce. Pokud chcete svému účtu udělit přístup, vyberte složku ve Finderu, zvolte Informace a podívejte se do sekce Sdílení a oprávnění.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {K této změně jsou potřeba oprávnění správce. Pokud chcete svému účtu udělit přístup, upravte oprávnění složky (například příkazem chmod) a zkuste to znovu.}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "K této změně jsou potřeba oprávnění správce. Pokud chcete svému účtu udělit přístup, upravte oprávnění složky (například příkazem chmod) a zkuste to znovu.",
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "5ce034b"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "Tuto položku chrání sám macOS, takže na ní nic nezmění ani oprávnění správce. Položka může být zamčená: vyberte ji ve Finderu, zvolte Informace a zrušte zaškrtnutí políčka Zamčeno.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {Tuto položku chrání sám macOS, takže na ní nic nezmění ani oprávnění správce. Položka může být zamčená: vyberte ji ve Finderu, zvolte Informace a zrušte zaškrtnutí políčka Zamčeno.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Tuto položku chrání sám systém, takže na ní nic nezmění ani oprávnění správce. Položka může mít příznak ochrany, který je potřeba nejdřív zrušit.}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
     "sourceHash": "64a71c8"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "Tuto položku chrání sám systém, takže na ní nic nezmění ani oprávnění správce. Položka může mít příznak ochrany, který je potřeba nejdřív zrušit.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "a4856dc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "Nemáte oprávnění číst tuto položku, takže ji nelze zkopírovat.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,13 +1905,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion.mac": "Odemkněte ho ve Finderu (Informace > zrušte zaškrtnutí políčka Zamčeno) a zkuste to znovu.",
-  "@errors.write.fileLocked.suggestion.mac": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Odemkněte ho ve Finderu (Informace > zrušte zaškrtnutí políčka Zamčeno) a zkuste to znovu.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Soubor může být chráněný. Zkontrolujte jeho oprávnění (např. příkazem chmod nebo ve správci souborů) a zkuste to znovu.}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "8f84de5"
-  },
-  "errors.write.fileLocked.suggestion.other": "Soubor může být chráněný. Zkontrolujte jeho oprávnění (např. příkazem chmod nebo ve správci souborů) a zkuste to znovu.",
-  "@errors.write.fileLocked.suggestion.other": {
-    "sourceHash": "6856879"
   },
   "errors.write.deletePending.title": "Soubor se právě odstraňuje",
   "@errors.write.deletePending.title": {

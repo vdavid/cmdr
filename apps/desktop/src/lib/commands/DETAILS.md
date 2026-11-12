@@ -150,8 +150,10 @@ Three sources of a non-constant label, all generic — ❌ `resolveCommand` carr
   say the open favorites menu answers `0`, and what it says is the menu's own `0`-row label. Giving it a `commands.*`
   twin meant one string in two places, which five locales had already collapsed into byte-identical values and one
   English edit would have split. A row that QUOTES a surface should read that surface's key.
-- **The three `isMacOS()` commands** (`file.showInFinder` / `file.getInfo` / `file.quickLook`) pick one of two keys at
-  module load (`.mac.label` vs `.other.label`), so each platform's wording is a distinct, separately-translatable key.
+- **Three commands are named after an OS feature** (`file.showInFinder` / `file.getInfo` / `file.quickLook`). Each reads
+  ONE key (`commands.fileShowInFileManager.label`, `commands.fileGetInfo.label`, `commands.fileQuickLook.label`) whose
+  value is a platform block (`../intl/DETAILS.md` § Platform variants), so the name is resolved per read and no source
+  asks `isMacOS()`. The command id `file.showInFinder` stays: ids are persisted in shortcut customizations.
 - **A `nameKey` thunk** (`() => MessageKey`) picks between catalog keys on live state, resolved on every read.
   `app.licenseKey` is the one user: it reads `hasExistingLicense` (in `sources/app.ts`, beside the entry) and resolves
   `commands.appLicenseKey.seeDetails.label` or `…enterKey.label`. `updateLicenseCommandName(hasLicense)` flips the flag

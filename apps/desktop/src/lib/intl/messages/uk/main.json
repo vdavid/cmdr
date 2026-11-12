@@ -7,13 +7,9 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "84f0191"
   },
-  "main.upgradeNudge.mac": "Ми додали нові параметри до початкового налаштування. Відкрийте «Cmdr > Початкове налаштування…», щоб переглянути їх.",
-  "@main.upgradeNudge.mac": {
+  "main.upgradeNudge": "{platform, select, macos {Ми додали нові параметри до початкового налаштування. Відкрийте «Cmdr > Початкове налаштування…», щоб переглянути їх.} other {Ми додали нові параметри до початкового налаштування. Відкрийте палітру команд і виконайте «Початкове налаштування…», щоб переглянути їх.}}",
+  "@main.upgradeNudge": {
     "sourceHash": "439adfd"
-  },
-  "main.upgradeNudge.other": "Ми додали нові параметри до початкового налаштування. Відкрийте палітру команд і виконайте «Початкове налаштування…», щоб переглянути їх.",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "Закріпити Cmdr у Dock?",
   "@main.dockPinNudge.title": {

@@ -1757,13 +1757,9 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Проверьте, есть ли у вас доступ на запись в родительскую папку. Возможно, файл защищен: снимите защиту в Finder (в окне «Свойства» снимите флажок «Защита») и повторите попытку.",
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Проверьте, есть ли у вас доступ на запись в родительскую папку. Возможно, файл защищен: снимите защиту в Finder (в окне «Свойства» снимите флажок «Защита») и повторите попытку.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Проверьте, есть ли у вас доступ на запись в родительскую папку. Возможно, файл защищен. Проверьте его права доступа (например, через chmod или файловый менеджер) и повторите попытку.}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "1e6e123"
-  },
-  "errors.write.permissionDenied.suggestion.deleteOther": "Проверьте, есть ли у вас доступ на запись в родительскую папку. Возможно, файл защищен. Проверьте его права доступа (например, через chmod или файловый менеджер) и повторите попытку.",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "sourceHash": "650bb53"
   },
   "errors.write.permissionDenied.suggestion.default": "Проверьте, есть ли у вас доступ на запись в целевую папку. Возможно, нужно разблокировать устройство или изменить права доступа к папке.",
   "@errors.write.permissionDenied.suggestion.default": {
@@ -1785,21 +1781,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "Для изменения нужны права администратора. Чтобы дать доступ своей учетной записи, выделите папку в Finder, выберите «Свойства» и откройте раздел «Общий доступ и права доступа».",
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Для изменения нужны права администратора. Чтобы дать доступ своей учетной записи, выделите папку в Finder, выберите «Свойства» и откройте раздел «Общий доступ и права доступа».} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Для изменения нужны права администратора. Чтобы предоставить доступ своей учетной записи, измените права папки, например через chmod, и повторите попытку.}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "Для изменения нужны права администратора. Чтобы предоставить доступ своей учетной записи, измените права папки, например через chmod, и повторите попытку.",
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "5ce034b"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "macOS защищает этот объект сама, поэтому права администратора не помогут. Возможно, у объекта стоит флажок «Защита»: выделите его в Finder, выберите «Свойства» и снимите этот флажок.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS защищает этот объект сама, поэтому права администратора не помогут. Возможно, у объекта стоит флажок «Защита»: выделите его в Finder, выберите «Свойства» и снимите этот флажок.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Объект защищен самой системой, поэтому права администратора не помогут. Возможно, сначала нужно снять флаг защиты объекта.}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
     "sourceHash": "64a71c8"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "Объект защищен самой системой, поэтому права администратора не помогут. Возможно, сначала нужно снять флаг защиты объекта.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "a4856dc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "У вас нет разрешения читать этот объект, поэтому его нельзя скопировать.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,13 +1905,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion.mac": "Снимите защиту в Finder (в окне «Свойства» снимите флажок «Защита») и повторите попытку.",
-  "@errors.write.fileLocked.suggestion.mac": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Снимите защиту в Finder (в окне «Свойства» снимите флажок «Защита») и повторите попытку.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Файл может быть защищен. Проверьте права, например через chmod или файловый менеджер, и повторите попытку.}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "8f84de5"
-  },
-  "errors.write.fileLocked.suggestion.other": "Файл может быть защищен. Проверьте права, например через chmod или файловый менеджер, и повторите попытку.",
-  "@errors.write.fileLocked.suggestion.other": {
-    "sourceHash": "6856879"
   },
   "errors.write.deletePending.title": "Файл удаляется",
   "@errors.write.deletePending.title": {

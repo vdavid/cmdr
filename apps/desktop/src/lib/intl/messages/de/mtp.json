@@ -3,13 +3,9 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr hat den macOS-Kameradienst (ptpcamerad) angehalten, um auf dieses Gerät zuzugreifen. Um es in einer anderen App zu nutzen, deaktiviere die MTP-Unterstützung in den Einstellungen.",
-  "@mtp.connectedToast.bodyMac": {
+  "mtp.connectedToast.body": "{platform, select, macos {Cmdr hat den macOS-Kameradienst (ptpcamerad) angehalten, um auf dieses Gerät zuzugreifen. Um es in einer anderen App zu nutzen, deaktiviere die MTP-Unterstützung in den Einstellungen.} windows {} other {Um dieses Gerät in einer anderen App zu nutzen, deaktiviere die MTP-Unterstützung in den Einstellungen.}}",
+  "@mtp.connectedToast.body": {
     "sourceHash": "3ace37b"
-  },
-  "mtp.connectedToast.bodyOther": "Um dieses Gerät in einer anderen App zu nutzen, deaktiviere die MTP-Unterstützung in den Einstellungen.",
-  "@mtp.connectedToast.bodyOther": {
-    "sourceHash": "6f42620"
   },
   "mtp.connectedToast.dontShowAgain": "Nicht mehr anzeigen",
   "@mtp.connectedToast.dontShowAgain": {

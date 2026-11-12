@@ -1757,13 +1757,9 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Перевірте, чи є у вас доступ на запис до батьківської папки. Можливо, файл замкнено. Відімкніть його у Finder: відкрийте «Досьє» і зніміть позначку «Замкнено», а тоді спробуйте ще раз.",
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Перевірте, чи є у вас доступ на запис до батьківської папки. Можливо, файл замкнено. Відімкніть його у Finder: відкрийте «Досьє» і зніміть позначку «Замкнено», а тоді спробуйте ще раз.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Перевірте, чи є у вас доступ на запис до батьківської папки. Можливо, файл захищено. Перевірте його привілеї (наприклад, командою chmod або у файловому менеджері) і спробуйте ще раз.}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "1e6e123"
-  },
-  "errors.write.permissionDenied.suggestion.deleteOther": "Перевірте, чи є у вас доступ на запис до батьківської папки. Можливо, файл захищено. Перевірте його привілеї (наприклад, командою chmod або у файловому менеджері) і спробуйте ще раз.",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "sourceHash": "650bb53"
   },
   "errors.write.permissionDenied.suggestion.default": "Перевірте, чи є у вас доступ на запис до папки призначення. Можливо, потрібно відімкнути пристрій або змінити привілеї папки.",
   "@errors.write.permissionDenied.suggestion.default": {
@@ -1785,21 +1781,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "Змінити це можна лише з правами адміністратора. Щоб надати доступ своєму обліковому запису, виберіть папку у Finder, відкрийте «Досьє» і подивіться в розділі «Спільний доступ і привілеї».",
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Змінити це можна лише з правами адміністратора. Щоб надати доступ своєму обліковому запису, виберіть папку у Finder, відкрийте «Досьє» і подивіться в розділі «Спільний доступ і привілеї».} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Змінити це можна лише з правами адміністратора. Щоб надати доступ своєму обліковому запису, змініть привілеї папки (наприклад, командою chmod) і спробуйте ще раз.}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "Змінити це можна лише з правами адміністратора. Щоб надати доступ своєму обліковому запису, змініть привілеї папки (наприклад, командою chmod) і спробуйте ще раз.",
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "5ce034b"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "macOS захищає цей елемент сама, тож права адміністратора тут нічого не змінять. Можливо, елемент замкнено: виберіть його у Finder, відкрийте «Досьє» і зніміть позначку «Замкнено».",
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS захищає цей елемент сама, тож права адміністратора тут нічого не змінять. Можливо, елемент замкнено: виберіть його у Finder, відкрийте «Досьє» і зніміть позначку «Замкнено».} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Система захищає цей елемент сама, тож права адміністратора тут нічого не змінять. Можливо, на елементі стоїть прапорець захисту, який спершу треба зняти.}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
     "sourceHash": "64a71c8"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "Система захищає цей елемент сама, тож права адміністратора тут нічого не змінять. Можливо, на елементі стоїть прапорець захисту, який спершу треба зняти.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "a4856dc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "У вас немає привілеїв, щоб прочитати цей елемент, тож скопіювати його неможливо.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,13 +1905,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion.mac": "Відімкніть його у Finder: відкрийте «Досьє» і зніміть позначку «Замкнено», а тоді спробуйте ще раз.",
-  "@errors.write.fileLocked.suggestion.mac": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Відімкніть його у Finder: відкрийте «Досьє» і зніміть позначку «Замкнено», а тоді спробуйте ще раз.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Можливо, файл захищено. Перевірте його привілеї (наприклад, командою chmod або у файловому менеджері) і спробуйте ще раз.}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "8f84de5"
-  },
-  "errors.write.fileLocked.suggestion.other": "Можливо, файл захищено. Перевірте його привілеї (наприклад, командою chmod або у файловому менеджері) і спробуйте ще раз.",
-  "@errors.write.fileLocked.suggestion.other": {
-    "sourceHash": "6856879"
   },
   "errors.write.deletePending.title": "Файл видаляється",
   "@errors.write.deletePending.title": {

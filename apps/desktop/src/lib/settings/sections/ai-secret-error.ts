@@ -1,5 +1,4 @@
 import { tString } from '#lib/intl/messages.svelte.js'
-import { isMacOS } from '#lib/platform/index.js'
 import type { AiApiKeyError } from '#lib/ipc/bindings.js'
 import { TypedFailure, failureOf } from '#lib/ipc/typed-failure.js'
 
@@ -53,8 +52,9 @@ export interface SecretErrorMessage {
  * Translate a save/read/remove refusal from the secret store into user-facing copy.
  *
  * The backend's `AiApiKeyError` is typed, so the branch is a VARIANT: `access_denied`
- * is the one the OS-specific guidance exists for (a Keychain ACL on macOS, a locked
- * keyring on Linux), and everything else reads as the generic notice. ❌ Nothing here
+ * is the one the OS-specific guidance exists for (a Keychain ACL on macOS, Credential
+ * Manager on Windows, a locked keyring on Linux), and everything else reads as the
+ * generic notice. Which OS is the catalog's business: each key is one platform block. ❌ Nothing here
  * inspects the store's message: `detail` carries it for a details affordance and
  * nothing else.
  */
@@ -68,28 +68,16 @@ export function describeSecretError(e: unknown, operation: 'save' | 'read' | 're
     const denied = failure?.type === 'access_denied'
     return {
       title: tString('ai.secretError.removeTitle'),
-      body: denied
-        ? isMacOS()
-          ? tString('ai.secretError.removeKeychainBody')
-          : tString('ai.secretError.keyringBody')
-        : tString('ai.secretError.genericBody'),
+      body: denied ? tString('ai.secretError.removeBody') : tString('ai.secretError.genericBody'),
       detail,
       level: 'error',
     }
   }
 
   if (failure?.type === 'access_denied') {
-    if (isMacOS()) {
-      return {
-        title: tString('ai.secretError.keychainTitle', { op: operation }),
-        body: tString('ai.secretError.keychainBody', { op: operation }),
-        detail,
-        level: 'error',
-      }
-    }
     return {
-      title: tString('ai.secretError.keyringTitle', { op: operation }),
-      body: tString('ai.secretError.keyringBody'),
+      title: tString('ai.secretError.title', { op: operation }),
+      body: tString('ai.secretError.body', { op: operation }),
       detail,
       level: 'error',
     }

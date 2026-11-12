@@ -2929,14 +2929,10 @@
   "@settings.appearance.appColorHintPrefix": {
     "sourceHash": "748470a"
   },
-  "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
-  "@settings.appearance.appColorHintLinkMac": {
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {nastavení vzhledu systému}}",
+  "@settings.appearance.appColorHintLink": {
     "sourceHash": "5c94206",
     "sameAsSourceJustification": "Placeholder-only path; both parts are OS-localized at runtime and the > separator is what macOS cs uses in paths (Nastavení systému > Vzhled)."
-  },
-  "settings.appearance.appColorHintLinkOther": "nastavení vzhledu systému",
-  "@settings.appearance.appColorHintLinkOther": {
-    "sourceHash": "0aad057"
   },
   "settings.appearance.datePreviewLabel": "Náhled:",
   "@settings.appearance.datePreviewLabel": {

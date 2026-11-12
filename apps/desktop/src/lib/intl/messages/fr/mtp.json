@@ -3,13 +3,9 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr a mis en pause le daemon d’appareil photo de macOS (ptpcamerad) pour accéder à cet appareil. Pour l’utiliser dans une autre app, désactivez la prise en charge MTP dans les réglages.",
-  "@mtp.connectedToast.bodyMac": {
+  "mtp.connectedToast.body": "{platform, select, macos {Cmdr a mis en pause le daemon d’appareil photo de macOS (ptpcamerad) pour accéder à cet appareil. Pour l’utiliser dans une autre app, désactivez la prise en charge MTP dans les réglages.} windows {} other {Pour utiliser cet appareil dans une autre app, désactivez la prise en charge MTP dans les réglages.}}",
+  "@mtp.connectedToast.body": {
     "sourceHash": "3ace37b"
-  },
-  "mtp.connectedToast.bodyOther": "Pour utiliser cet appareil dans une autre app, désactivez la prise en charge MTP dans les réglages.",
-  "@mtp.connectedToast.bodyOther": {
-    "sourceHash": "6f42620"
   },
   "mtp.connectedToast.dontShowAgain": "Ne plus afficher",
   "@mtp.connectedToast.dontShowAgain": {

@@ -25,7 +25,10 @@ There's no frontend device store. The backend watcher auto-connects on USB hotpl
 storages as volumes (`{device}:{storage}` ids), so the volume list is the one source of which storages exist, and a
 device-only volume id never reaches a pane. The events each have one consumer:
 
-- `onMtpDeviceConnected`: the root layout's sticky connect toast.
+- `onMtpDeviceConnected`: the root layout's sticky connect toast. Its body line is `mtp.connectedToast.body`, one
+  catalog value with a branch per OS: macOS says Cmdr paused `ptpcamerad`, Linux says how to hand the device to another
+  app, and the Windows branch is empty, because Windows' own MTP stack shares the device (File Explorer keeps using it).
+  The toast renders the line only for a non-empty text.
 - `onMtpDeviceDisconnected`: `pane/mtp-disconnect-watch.svelte.ts`, which moves a pane off a storage that left.
 - `onMtpExclusiveAccessError` / `onMtpPermissionError`: the root layout, which opens the matching manual-fix dialog
   (ptpcamerad on macOS, udev rules on Linux) and retries the connect after it.

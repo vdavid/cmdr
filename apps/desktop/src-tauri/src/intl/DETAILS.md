@@ -368,7 +368,8 @@ the OS comes from `platform::NATIVE_TEXT_OS`, one answer per arm of the `intl/pl
 - **Why every OS's text ships in every binary**: a few KB of labels buys a generated file with no OS `cfg`, which
   would otherwise sit outside a seam (`desktop-rust-platform-cfg-placement`). `menu_t`'s signature and callers stay.
 - **❌ Never choose text with `cmdr-menu`'s `Platform`**: it answers Linux on Windows, so Windows would read Linux
-  words. Its `PerPlatform` is for accelerators and ids.
+  words. Its `PerPlatform` is for accelerators and ids, and `Label::catalog_key` takes no platform, so a menu label is
+  one key on every OS (`menu.file.showInFileManager` names Finder, File Explorer, or the file manager from one value).
 - **Entries compare as whole `NativeText`s** in the overlay contract: an `en-GB` fork of only the Windows text is a real
   fork, and comparing one OS's pick would call it dead weight
   (`an_overlay_that_forks_only_its_windows_text_still_forks_something`). The ellipsis rule checks every OS's text.

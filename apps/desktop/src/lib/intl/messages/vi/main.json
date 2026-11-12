@@ -7,13 +7,9 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "84f0191"
   },
-  "main.upgradeNudge.mac": "Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở Cmdr > Thiết lập ban đầu… để xem qua.",
-  "@main.upgradeNudge.mac": {
+  "main.upgradeNudge": "{platform, select, macos {Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở Cmdr > Thiết lập ban đầu… để xem qua.} other {Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở bảng lệnh và chạy Thiết lập ban đầu… để xem qua.}}",
+  "@main.upgradeNudge": {
     "sourceHash": "439adfd"
-  },
-  "main.upgradeNudge.other": "Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở bảng lệnh và chạy Thiết lập ban đầu… để xem qua.",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "Giữ lại Cmdr trong Dock?",
   "@main.dockPinNudge.title": {

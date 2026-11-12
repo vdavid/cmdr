@@ -323,6 +323,31 @@ mod tests {
         assert_eq!(lookup(BASE_LOCALE, "menu.bar.file"), Some("File"));
     }
 
+    /// The one row whose words name another program: each OS's file manager. The menu bar and the
+    /// file context menu write it under one key, and the table carries all three texts, so every
+    /// seam arm's answer is checked here whichever host runs the test.
+    #[test]
+    fn the_show_in_file_manager_row_names_each_os_s_file_manager() {
+        let key = cmdr_menu::bar::SHOW_IN_FILE_MANAGER_KEY;
+        let text = lookup_text(BASE_LOCALE, key).expect("the menu bar's key is in the English table");
+        assert_eq!(pick(text, NativeOs::MacOs), "Show in Finder");
+        assert_eq!(pick(text, NativeOs::Windows), "Show in File Explorer");
+        assert_eq!(pick(text, NativeOs::Linux), "Show in file manager");
+        // This host reads its own arm's text through the same lookup the menu uses.
+        assert_eq!(
+            lookup(BASE_LOCALE, key),
+            Some(pick(text, super::super::platform::NATIVE_TEXT_OS))
+        );
+        // The macOS-only key it replaced is gone, in every language.
+        for locale in NATIVE_STRINGS {
+            assert!(
+                lookup_text(locale.tag, "menu.file.showInFinder").is_none(),
+                "{}",
+                locale.tag
+            );
+        }
+    }
+
     #[test]
     fn every_locale_table_is_sorted_so_the_binary_search_is_valid() {
         for locale in NATIVE_STRINGS {

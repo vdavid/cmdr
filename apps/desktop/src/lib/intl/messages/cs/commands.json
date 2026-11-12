@@ -816,13 +816,9 @@
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
-  "commands.fileShowInFinder.mac.label": "Zobrazit ve Finderu",
-  "@commands.fileShowInFinder.mac.label": {
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Zobrazit ve Finderu} windows {Show in File Explorer} other {Zobrazit ve správci souborů}}",
+  "@commands.fileShowInFileManager.label": {
     "sourceHash": "c2a9c77"
-  },
-  "commands.fileShowInFinder.other.label": "Zobrazit ve správci souborů",
-  "@commands.fileShowInFinder.other.label": {
-    "sourceHash": "3ca4dad"
   },
   "commands.fileOpenTerminalHere.label": "Otevřít terminál zde",
   "@commands.fileOpenTerminalHere.label": {
@@ -844,21 +840,13 @@
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.mac.label": "Informace",
-  "@commands.fileGetInfo.mac.label": {
+  "commands.fileGetInfo.label": "{platform, select, macos {Informace} windows {Properties} other {Vlastnosti souboru}}",
+  "@commands.fileGetInfo.label": {
     "sourceHash": "91c64ca"
   },
-  "commands.fileGetInfo.other.label": "Vlastnosti souboru",
-  "@commands.fileGetInfo.other.label": {
-    "sourceHash": "5d9ebf2"
-  },
-  "commands.fileQuickLook.mac.label": "Rychlý náhled",
-  "@commands.fileQuickLook.mac.label": {
+  "commands.fileQuickLook.label": "{platform, select, macos {Rychlý náhled} other {Náhled}}",
+  "@commands.fileQuickLook.label": {
     "sourceHash": "f5616ce"
-  },
-  "commands.fileQuickLook.other.label": "Náhled",
-  "@commands.fileQuickLook.other.label": {
-    "sourceHash": "324b134"
   },
   "commands.fileContextMenu.label": "Otevřít místní nabídku",
   "@commands.fileContextMenu.label": {

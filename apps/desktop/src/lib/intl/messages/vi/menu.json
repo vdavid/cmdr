@@ -148,13 +148,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFinder": "Hiển thị trong Finder",
-  "@menu.file.showInFinder": {
-    "sourceHash": "c2a9c77"
-  },
-  "menu.file.showInFileManager": "Hiển thị trong trình quản lý tệp",
+  "menu.file.showInFileManager": "{platform, select, macos {Hiển thị trong Finder} windows {Show in File Explorer} other {Hiển thị trong trình quản lý tệp}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "3ca4dad"
+    "sourceHash": "c2a9c77"
   },
   "menu.file.openTerminalHere": "Mở terminal tại đây",
   "@menu.file.openTerminalHere": {

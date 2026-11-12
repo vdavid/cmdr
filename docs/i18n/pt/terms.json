@@ -59,7 +59,7 @@
     "accept": ["administradores"],
     "confidence": "high",
     "forms": "an administrator password → uma senha de administrador; administrator rights → permissões de administrador; the person who manages a Mac → quem gerencia este Mac",
-    "sources": "macOS pt-BR pile (senha de administrador); MS terminology pt-BR administrador; catalog (main.cliCommand.canceled, errors.write.permissionDenied.suggestion.needsAdminMac)"
+    "sources": "macOS pt-BR pile (senha de administrador); MS terminology pt-BR administrador; catalog (main.cliCommand.canceled, errors.write.permissionDenied.suggestion.needsAdmin)"
   },
   "advanced": {
     "chosen": "Avançado",
@@ -2872,7 +2872,7 @@
     "chosen": "Compartilhamento e Permissões",
     "forms": "keeps Apple’s capitals: na seção Compartilhamento e Permissões",
     "confidence": "high",
-    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdminMac` (panel label Compartilhamento e Permissões:)"
+    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdmin` (panel label Compartilhamento e Permissões:)"
   },
   "shortcut": {
     "chosen": "atalho",

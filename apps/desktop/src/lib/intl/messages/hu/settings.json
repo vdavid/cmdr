@@ -2931,14 +2931,10 @@
   "@settings.appearance.appColorHintPrefix": {
     "sourceHash": "748470a"
   },
-  "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
-  "@settings.appearance.appColorHintLinkMac": {
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {a rendszer megjelenési beállításait}}",
+  "@settings.appearance.appColorHintLink": {
     "sourceHash": "5c94206",
     "sameAsSourceJustification": "Placeholder-only path '{systemSettings} > {appearance}': both parts are already-localized inserts (Rendszerbeállítások / Megjelenés), the '> ' arrow is the neutral path separator. No literal text to translate. Listed as kept-verbatim in glossary (settings pass)."
-  },
-  "settings.appearance.appColorHintLinkOther": "a rendszer megjelenési beállításait",
-  "@settings.appearance.appColorHintLinkOther": {
-    "sourceHash": "0aad057"
   },
   "settings.appearance.datePreviewLabel": "Előnézet:",
   "@settings.appearance.datePreviewLabel": {

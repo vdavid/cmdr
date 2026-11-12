@@ -147,13 +147,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFinder": "Megjelenítés a Finderben",
-  "@menu.file.showInFinder": {
-    "sourceHash": "c2a9c77"
-  },
-  "menu.file.showInFileManager": "Megjelenítés a fájlkezelőben",
+  "menu.file.showInFileManager": "{platform, select, macos {Megjelenítés a Finderben} windows {Show in File Explorer} other {Megjelenítés a fájlkezelőben}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "3ca4dad"
+    "sourceHash": "c2a9c77"
   },
   "menu.file.openTerminalHere": "Terminál megnyitása itt",
   "@menu.file.openTerminalHere": {

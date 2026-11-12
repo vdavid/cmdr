@@ -3712,7 +3712,7 @@
   "preview": {
     "chosen": "Просмотр",
     "accept": ["просмотр", "Предпросмотр"],
-    "forms": "noun → «Просмотр»; Preparing preview… → Подготовка просмотра…; Apple's Preview app → «Просмотр» (its localized name); the non-macOS Quick Look command (`commands.fileQuickLook.other.label`) → «Предпросмотр», because the F3 viewer command is already «Просмотр» in the same palette",
+    "forms": "noun → «Просмотр»; Preparing preview… → Подготовка просмотра…; Apple's Preview app → «Просмотр» (its localized name); the non-macOS Quick Look command (`commands.fileQuickLook.label`) → «Предпросмотр», because the F3 viewer command is already «Просмотр» in the same palette",
     "confidence": "high",
     "sources": "macOS Finder LocalizableMerged TL45 Preview → «Просмотр»; AppKit Printing and NSFontOptionsPanel Preview → «Просмотр»",
     "exceptions": {
@@ -6229,7 +6229,7 @@
     "accept": ["администратор"],
     "forms": "administrator password → пароль администратора; administrator rights → права администратора; a server’s administrator → администратор сервера; system administrator → системный администратор",
     "confidence": "high",
-    "sources": "macOS Install Assistant (INSTALL_ASSISTANT_AUTH_WARNING … пароль администратора этого компьютера); MS (administrator → администратор, системный администратор); catalog (needsAdminMac, cliCommand.canceled)"
+    "sources": "macOS Install Assistant (INSTALL_ASSISTANT_AUTH_WARNING … пароль администратора этого компьютера); MS (administrator → администратор, системный администратор); catalog (needsAdmin, cliCommand.canceled)"
   },
   "blocked-by": {
     "chosen": "заблокировать",

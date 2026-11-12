@@ -126,7 +126,7 @@ Errno titles reuse macOS ErrnoErrors (Prostředek je zaneprázdněný); Host is 
 sit behind a noun or in brackets (Soubory, které…: {count}; (počet: {count})); not removable → nejde vysunout; Zatím
 není připojeno / Už není připojeno.
 
-## macOS app and pane names (`errors.listing.diskReadProblem.suggestion`, `errors.write.permissionDenied.suggestion.*`, `errors.write.fileLocked.suggestion.mac`, `settings.behavior.fileSystemWatching.lowDiskSpace*`, `settings.appearance.appColor.*`)
+## macOS app and pane names (`errors.listing.diskReadProblem.suggestion`, `errors.write.permissionDenied.suggestion.*`, `errors.write.fileLocked.suggestion`, `settings.behavior.fileSystemWatching.lowDiskSpace*`, `settings.appearance.appColor.*`)
 
 Quote macOS byte for byte: **Disková utilita**, **Záchrana**, Informace > zrušte zaškrtnutí políčka Zamčeno, Startovací
 disk, Barva zvýraznění. balík for bundles, balíček for packages; Apple silicon → čip Apple.

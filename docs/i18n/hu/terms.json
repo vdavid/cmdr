@@ -90,7 +90,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "catalog (main.cliCommand.canceled, errors.write.permissionDenied.suggestion.needsAdminMac, errors.listing.quotaExceeded.suggestion); ms (administrator → rendszergazda); macOS Finder (adminisztrátori név és jelszó, outvoted by the catalog)"
+    "sources": "catalog (main.cliCommand.canceled, errors.write.permissionDenied.suggestion.needsAdmin, errors.listing.quotaExceeded.suggestion); ms (administrator → rendszergazda); macOS Finder (adminisztrátori név és jelszó, outvoted by the catalog)"
   },
   "advanced": {
     "chosen": "Speciális",
@@ -2202,8 +2202,7 @@
     "confidence": "high",
     "sources": "macOS Finder (Kuka elemei, Másolni kívánt elemek, és ^0 további elem)",
     "exceptions": {
-      "errors.write.permissionDenied.suggestion.systemProtectedMac": "The item may be locked → Lehet, hogy zárolva van: the subject is the item the sentence opened with.",
-      "errors.write.permissionDenied.suggestion.systemProtectedOther": "The item may carry a flag → Lehet, hogy védelmi jelölés van rajta: the subject is the item the sentence opened with."
+      "errors.write.permissionDenied.suggestion.systemProtected": "The item may be locked → Lehet, hogy zárolva van: the subject is the item the sentence opened with. Off macOS: The item may carry a flag → Lehet, hogy védelmi jelölés van rajta: the subject is the item the sentence opened with."
     }
   },
   "just-now": {

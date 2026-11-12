@@ -1757,13 +1757,9 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Verifique se você tem acesso de gravação à pasta superior. O arquivo pode estar bloqueado. Desbloqueie-o no Finder (Obter Informações > desmarque Bloqueado) e tente de novo.",
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Verifique se você tem acesso de gravação à pasta superior. O arquivo pode estar bloqueado. Desbloqueie-o no Finder (Obter Informações > desmarque Bloqueado) e tente de novo.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Verifique se você tem acesso de gravação à pasta superior. O arquivo pode estar protegido. Verifique as permissões dele (por exemplo, via chmod ou seu gerenciador de arquivos) e tente de novo.}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "1e6e123"
-  },
-  "errors.write.permissionDenied.suggestion.deleteOther": "Verifique se você tem acesso de gravação à pasta superior. O arquivo pode estar protegido. Verifique as permissões dele (por exemplo, via chmod ou seu gerenciador de arquivos) e tente de novo.",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "sourceHash": "650bb53"
   },
   "errors.write.permissionDenied.suggestion.default": "Verifique se você tem acesso de gravação à pasta de destino. Talvez você precise desbloquear o dispositivo ou alterar as permissões da pasta.",
   "@errors.write.permissionDenied.suggestion.default": {
@@ -1785,21 +1781,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "Para isso são necessárias permissões de administrador. Para dar acesso à sua própria conta, selecione a pasta no Finder, escolha Obter Informações e veja a seção Compartilhamento e Permissões.",
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Para isso são necessárias permissões de administrador. Para dar acesso à sua própria conta, selecione a pasta no Finder, escolha Obter Informações e veja a seção Compartilhamento e Permissões.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Para isso são necessárias permissões de administrador. Para dar acesso à sua própria conta, altere as permissões da pasta (por exemplo, via chmod) e tente de novo.}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "Para isso são necessárias permissões de administrador. Para dar acesso à sua própria conta, altere as permissões da pasta (por exemplo, via chmod) e tente de novo.",
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "5ce034b"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "O próprio macOS protege este item, então permissões de administrador não mudam nada. Ele pode estar bloqueado: selecione-o no Finder, escolha Obter Informações e desmarque Bloqueado.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {O próprio macOS protege este item, então permissões de administrador não mudam nada. Ele pode estar bloqueado: selecione-o no Finder, escolha Obter Informações e desmarque Bloqueado.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {O próprio sistema protege este item, então permissões de administrador não mudam nada. Ele pode ter uma marca de proteção que precisa ser removida primeiro.}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
     "sourceHash": "64a71c8"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "O próprio sistema protege este item, então permissões de administrador não mudam nada. Ele pode ter uma marca de proteção que precisa ser removida primeiro.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "a4856dc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "Você não tem permissão para ler este item, então ele não pode ser copiado.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,13 +1905,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion.mac": "Desbloqueie-o no Finder (Obter Informações > desmarque Bloqueado) e tente de novo.",
-  "@errors.write.fileLocked.suggestion.mac": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Desbloqueie-o no Finder (Obter Informações > desmarque Bloqueado) e tente de novo.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {O arquivo pode estar protegido. Verifique as permissões dele (por exemplo, via chmod ou seu gerenciador de arquivos) e tente de novo.}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "8f84de5"
-  },
-  "errors.write.fileLocked.suggestion.other": "O arquivo pode estar protegido. Verifique as permissões dele (por exemplo, via chmod ou seu gerenciador de arquivos) e tente de novo.",
-  "@errors.write.fileLocked.suggestion.other": {
-    "sourceHash": "6856879"
   },
   "errors.write.deletePending.title": "O arquivo está sendo removido",
   "@errors.write.deletePending.title": {

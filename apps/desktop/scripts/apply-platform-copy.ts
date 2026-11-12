@@ -31,8 +31,10 @@
  *    `sync-locale-keys.ts --restamp <key>`: it restamps every full locale too and
  *    wipes the translators' worklist.
  *
- * After a real run it regenerates `keys.gen.ts` and the native strings, and
- * formats the non-catalog files it rewrote.
+ * After a real run it formats the non-catalog files it rewrote and regenerates
+ * `keys.gen.ts` and the native strings. It runs all three even when one exits
+ * non-zero: `pnpm intl:keys` does after a pair collapse, until the call sites
+ * stop naming the old keys.
  */
 
 import { spawnSync } from 'node:child_process'
@@ -321,9 +323,29 @@ function printReport(plan: CopyPlan): void {
   )
 }
 
-function run(command: string, args: readonly string[], cwd: string): void {
-  const result = spawnSync(command, args, { cwd, stdio: 'inherit' })
-  if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} exited ${String(result.status)}`)
+/** One command the script runs after writing. */
+export interface AfterWriteStep {
+  label: string
+  command: string
+  args: readonly string[]
+  cwd: string
+}
+
+function spawnStep(step: AfterWriteStep): number {
+  return spawnSync(step.command, step.args, { cwd: step.cwd, stdio: 'inherit' }).status ?? 1
+}
+
+/**
+ * Runs every step and returns the labels of those that exited non-zero. Never stops at the
+ * first: after a pair collapse the key generator exits 1 until the call sites stop naming the
+ * old keys (it has written `keys.gen.ts` by then), and the native strings still have to be
+ * regenerated, or the Rust table keeps the keys the catalogs no longer have.
+ */
+export function regenerate(
+  steps: readonly AfterWriteStep[],
+  runStep: (step: AfterWriteStep) => number = spawnStep,
+): string[] {
+  return steps.filter((step) => runStep(step) !== 0).map((step) => step.label)
 }
 
 /** `pending` rows read as `apply`, for a dry run of the whole migration from the seeded texts. */
@@ -445,13 +467,27 @@ function applyRows(selected: readonly CopyRow[], mode: { dryRun: boolean; includ
   }
 
   writePlan(plan)
-  if (plan.otherFiles.size > 0) run('pnpm', ['exec', 'oxfmt', ...plan.otherFiles.keys()], REPO_ROOT)
-  run('pnpm', ['intl:keys'], DESKTOP_DIR)
-  run('pnpm', ['intl:native-strings'], DESKTOP_DIR)
+  const steps: AfterWriteStep[] = [
+    { label: 'pnpm intl:keys', command: 'pnpm', args: ['intl:keys'], cwd: DESKTOP_DIR },
+    { label: 'pnpm intl:native-strings', command: 'pnpm', args: ['intl:native-strings'], cwd: DESKTOP_DIR },
+  ]
+  if (plan.otherFiles.size > 0) {
+    steps.unshift({
+      label: 'oxfmt on the rewritten guides',
+      command: 'pnpm',
+      args: ['exec', 'oxfmt', ...plan.otherFiles.keys()],
+      cwd: REPO_ROOT,
+    })
+  }
+  const stepsFailed = regenerate(steps)
   console.log(
     '\nWritten. Next: fix the call sites and tests listed above, spell the English overlays’ new branches and run --restamp-english-overlays, then the i18n check lane.',
   )
-  return 0
+  printList(
+    'Exited non-zero (`pnpm intl:keys` does until no call site names a collapsed key; rerun it after fixing them)',
+    stepsFailed,
+  )
+  return stepsFailed.length > 0 ? 1 : 0
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) process.exit(main())

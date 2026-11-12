@@ -177,7 +177,7 @@ export async function completeOnboardingWizard(): Promise<void> {
 
 /**
  * Fires the one-time `info` toast pointing existing users at the new
- * `Cmdr > Onboarding…` menu item (and the matching palette entry on Linux).
+ * `Cmdr > Onboarding…` menu item (the palette entry where the menu has none).
  * Persists `onboarding.upgradeNudgeShown: true` after firing so the toast
  * never appears again on this machine.
  *
@@ -193,8 +193,7 @@ export async function completeOnboardingWizard(): Promise<void> {
 export function maybeFireUpgradeNudge(): void {
   if (isE2eRun()) return
   if (getSetting('onboarding.upgradeNudgeShown')) return
-  const message = isMacOS() ? tString('main.upgradeNudge.mac') : tString('main.upgradeNudge.other')
-  addToast(message, { level: 'info' })
+  addToast(tString('main.upgradeNudge'), { level: 'info' })
   setSetting('onboarding.upgradeNudgeShown', true)
 }
 

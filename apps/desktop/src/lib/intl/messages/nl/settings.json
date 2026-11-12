@@ -2941,14 +2941,10 @@
   "@settings.appearance.appColorHintPrefix": {
     "sourceHash": "748470a"
   },
-  "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
-  "@settings.appearance.appColorHintLinkMac": {
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {je instellingen voor systeemweergave}}",
+  "@settings.appearance.appColorHintLink": {
     "sourceHash": "5c94206",
     "sameAsSourceJustification": "Placeholder-only value '{systemSettings} > {appearance}': two OS-localized labels joined by a '>' path arrow. No translatable text."
-  },
-  "settings.appearance.appColorHintLinkOther": "je instellingen voor systeemweergave",
-  "@settings.appearance.appColorHintLinkOther": {
-    "sourceHash": "0aad057"
   },
   "settings.appearance.datePreviewLabel": "Voorvertoning:",
   "@settings.appearance.datePreviewLabel": {

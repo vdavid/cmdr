@@ -147,13 +147,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFinder": "Zobrazit ve Finderu",
-  "@menu.file.showInFinder": {
-    "sourceHash": "c2a9c77"
-  },
-  "menu.file.showInFileManager": "Zobrazit ve správci souborů",
+  "menu.file.showInFileManager": "{platform, select, macos {Zobrazit ve Finderu} windows {Show in File Explorer} other {Zobrazit ve správci souborů}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "3ca4dad"
+    "sourceHash": "c2a9c77"
   },
   "menu.file.openTerminalHere": "Otevřít terminál zde",
   "@menu.file.openTerminalHere": {

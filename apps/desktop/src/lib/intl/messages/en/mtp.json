@@ -7,16 +7,10 @@
     },
     "screenshot": "mtp-connected-toast.png"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable MTP support in settings.",
-  "@mtp.connectedToast.bodyMac": {
+  "mtp.connectedToast.body": "{platform, select, macos {Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable MTP support in settings.} windows {} other {To use this device in another app, disable MTP support in settings.}}",
+  "@mtp.connectedToast.body": {
     "description": "Body of the device-connected toast on macOS, explaining that Cmdr paused the system camera daemon and how to release the device. ptpcamerad is a macOS system process name; keep it literal. MTP is a device-transfer protocol acronym; keep it.",
     "screenshot": "mtp-connected-toast.png"
-  },
-  "mtp.connectedToast.bodyOther": "To use this device in another app, disable MTP support in settings.",
-  "@mtp.connectedToast.bodyOther": {
-    "description": "Body of the device-connected toast on non-macOS platforms, telling the user how to release the device for other apps. MTP is a device-transfer protocol acronym; keep it.",
-    "screenshot": "mtp-browse.png",
-    "screenshotNote": "MTP (phone/camera) device messaging: a connect/permission dialog or toast tied to an MTP device. This shows the MTP browse surface for context. Keep device/protocol names (MTP, PTP) as-is."
   },
   "mtp.connectedToast.dontShowAgain": "Don’t show again",
   "@mtp.connectedToast.dontShowAgain": {

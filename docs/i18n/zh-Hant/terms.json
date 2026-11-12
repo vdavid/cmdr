@@ -92,8 +92,7 @@
     "chosen": "加入",
     "confidence": "high",
     "exceptions": {
-      "main.upgradeNudge.mac": "We've added new options means introduced, not put into a list: 我們新增了…選項.",
-      "main.upgradeNudge.other": "Same as main.upgradeNudge.mac: 新增了 = introduced.",
+      "main.upgradeNudge": "We've added new options means introduced, not put into a list: 我們新增了…選項, in every branch (新增了 = introduced).",
       "settings.mediaIndex.importanceThreshold.deltaAdd": "A delta readout paired with deltaRemove's 少了約: 多了約 reads as the count going up."
     },
     "forms": "button 加入伺服器⋯; Add anyway → 仍要加入 (Apple's X anyway shape: 仍要儲存, 仍要共享); tags 加入「{color}」 (label) / 加上或移除 (prose); favorites 加入喜好項目; Dock 加入 Dock; attach onto something (a note, a badge, a tag, a modifier) → 加上; add to a report → 補充 / 加到報告裡",
@@ -104,7 +103,7 @@
     "chosen": "管理者",
     "confidence": "high",
     "forms": "administrator password → 管理者密碼; administrator rights → 管理者權限; a server's or network's admin (the person) → 管理者, or 系統管理員 where it reads as a job title",
-    "sources": "AP zh-TW 管理者 ×24 vs AP zh-HK 管理員 ×24 (a clean TW/HK split: Taiwan wins); catalog 管理者 ×7 (main.cliCommand.canceled, errors.write.permissionDenied.suggestion.needsAdminMac); MS 系統管理員 / 管理員"
+    "sources": "AP zh-TW 管理者 ×24 vs AP zh-HK 管理員 ×24 (a clean TW/HK split: Taiwan wins); catalog 管理者 ×7 (main.cliCommand.canceled, errors.write.permissionDenied.suggestion.needsAdmin); MS 系統管理員 / 管理員"
   },
   "advanced": {
     "chosen": "進階",
@@ -1677,7 +1676,7 @@
     "chosen": "取得資訊",
     "confidence": "high",
     "forms": "quoted in running text: 「取得資訊」",
-    "sources": "catalog commands.fileGetInfo.mac.label, menu.file.getInfo"
+    "sources": "catalog commands.fileGetInfo.label, menu.file.getInfo"
   },
   "git-ahead-behind": {
     "accept": ["落後"],
@@ -2109,8 +2108,7 @@
     "chosen": "項目",
     "confidence": "confirmed",
     "exceptions": {
-      "errors.write.permissionDenied.suggestion.systemProtectedMac": "The item refers back to this one: 它.",
-      "errors.write.permissionDenied.suggestion.systemProtectedOther": "The item refers back to this one: 它."
+      "errors.write.permissionDenied.suggestion.systemProtected": "The item refers back to this one: 它."
     },
     "forms": "an index entry is also 項目",
     "sources": "AP-TW/HK (Items), MS"
@@ -3603,7 +3601,7 @@
     "chosen": "共享與權限",
     "forms": "quoted in prose: 在「共享與權限」底下 (zh_TW; zh_HK says 分享與權限, Taiwan wins)",
     "confidence": "high",
-    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdminMac` (panel label 共享與權限：)"
+    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdmin` (panel label 共享與權限：)"
   },
   "shortcut": {
     "avoid": [

@@ -7,13 +7,9 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "84f0191"
   },
-  "main.upgradeNudge.mac": "Добавлены новые варианты начальной настройки. Откройте «Cmdr > Знакомство с приложением…», чтобы посмотреть их.",
-  "@main.upgradeNudge.mac": {
+  "main.upgradeNudge": "{platform, select, macos {Добавлены новые варианты начальной настройки. Откройте «Cmdr > Знакомство с приложением…», чтобы посмотреть их.} other {Добавлены новые варианты начальной настройки. Откройте палитру команд и выполните «Знакомство с приложением…», чтобы посмотреть их.}}",
+  "@main.upgradeNudge": {
     "sourceHash": "439adfd"
-  },
-  "main.upgradeNudge.other": "Добавлены новые варианты начальной настройки. Откройте палитру команд и выполните «Знакомство с приложением…», чтобы посмотреть их.",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "Оставить Cmdr в Dock?",
   "@main.dockPinNudge.title": {

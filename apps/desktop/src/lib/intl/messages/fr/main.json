@@ -7,13 +7,9 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "84f0191"
   },
-  "main.upgradeNudge.mac": "Nous avons ajouté de nouvelles options de configuration. Ouvrez Cmdr > Prise en main… pour les découvrir.",
-  "@main.upgradeNudge.mac": {
+  "main.upgradeNudge": "{platform, select, macos {Nous avons ajouté de nouvelles options de configuration. Ouvrez Cmdr > Prise en main… pour les découvrir.} other {Nous avons ajouté de nouvelles options de configuration. Ouvrez la palette de commandes et lancez Prise en main… pour les découvrir.}}",
+  "@main.upgradeNudge": {
     "sourceHash": "439adfd"
-  },
-  "main.upgradeNudge.other": "Nous avons ajouté de nouvelles options de configuration. Ouvrez la palette de commandes et lancez Prise en main… pour les découvrir.",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "Garder Cmdr dans votre Dock ?",
   "@main.dockPinNudge.title": {

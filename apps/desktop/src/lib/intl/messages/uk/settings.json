@@ -2926,14 +2926,10 @@
   "@settings.appearance.appColorHintPrefix": {
     "sourceHash": "748470a"
   },
-  "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
-  "@settings.appearance.appColorHintLinkMac": {
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {системні параметри вигляду}}",
+  "@settings.appearance.appColorHintLink": {
     "sourceHash": "5c94206",
     "sameAsSourceJustification": "Placeholder-only path: both parts are OS-localized macOS labels injected at runtime, and the > separator is how Ukrainian macOS paths read too."
-  },
-  "settings.appearance.appColorHintLinkOther": "системні параметри вигляду",
-  "@settings.appearance.appColorHintLinkOther": {
-    "sourceHash": "0aad057"
   },
   "settings.appearance.datePreviewLabel": "Попередній перегляд:",
   "@settings.appearance.datePreviewLabel": {

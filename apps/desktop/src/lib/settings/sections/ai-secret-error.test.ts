@@ -12,7 +12,7 @@ afterAll(() => {
   _setLocaleForTests(null)
 })
 
-// macOS by default; a Linux case says so.
+// macOS by default; a Windows or Linux case says so.
 beforeEach(() => withPlatform('macos'))
 
 describe('describeSecretError', () => {
@@ -31,6 +31,37 @@ describe('describeSecretError', () => {
     const out = describeSecretError(err, 'save')
     expect(out.title).toContain('keyring denied access')
     expect(out.body).toContain('Unlock')
+  })
+
+  it('recognises access_denied on Windows', () => {
+    onTestFinished(withPlatform('windows'))
+    const out = describeSecretError({ type: 'access_denied', message: 'ERROR_ACCESS_DENIED' }, 'read')
+    expect(out.title).toBe('Couldn’t read your saved API key: Credential Manager denied access')
+    expect(out.body).toBe(
+      'Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.',
+    )
+  })
+
+  it.each([
+    ['macos', 'Open Keychain Access, find the “Cmdr” entry, and delete it there.'],
+    ['windows', 'Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.'],
+    ['linux', 'Unlock your keyring (Passwords / Keyrings app) and try again.'],
+  ] as const)('tells a %s user where a key that couldn’t be removed lives', (platform, body) => {
+    onTestFinished(withPlatform(platform))
+    const out = describeSecretError({ type: 'access_denied', message: 'x' }, 'remove')
+    expect(out.title).toBe('Couldn’t remove your saved API key.')
+    expect(out.body).toBe(body)
+  })
+
+  it.each([
+    ['macos', 'Check that your Keychain is available, then try again. If it persists, restart the app.'],
+    ['windows', 'Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.'],
+    ['linux', 'Check that your system keyring is available, then try again. If it persists, restart the app.'],
+  ] as const)('names the %s secret store in the generic notice', (platform, body) => {
+    onTestFinished(withPlatform(platform))
+    for (const operation of ['save', 'read', 'remove'] as const) {
+      expect(describeSecretError({ type: 'other', message: 'x' }, operation).body).toBe(body)
+    }
   })
 
   it('falls back to generic copy for `other` variants', () => {

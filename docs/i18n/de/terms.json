@@ -1617,7 +1617,7 @@
     "chosen": "Teilen & Zugriffsrechte",
     "forms": "quoted in prose: unter „Teilen & Zugriffsrechte“ (the panel header adds a colon)",
     "confidence": "high",
-    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdminMac` (panel label Teilen & Zugriffsrechte:)"
+    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdmin` (panel label Teilen & Zugriffsrechte:)"
   },
   "signature": {
     "chosen": "Signatur",
@@ -4239,7 +4239,7 @@
     "chosen": "Administrator",
     "confidence": "high",
     "forms": "administrator password → Administratorpasswort; administrator rights → Administratorrechte; the person, gender-neutral → die Administration / Systemadministration",
-    "sources": "macOS Finder N15/N17 (Administratorname und -passwort); catalog (main.cliCommand.canceled, errors.write.permissionDenied.suggestion.needsAdminMac)"
+    "sources": "macOS Finder N15/N17 (Administratorname und -passwort); catalog (main.cliCommand.canceled, errors.write.permissionDenied.suggestion.needsAdmin)"
   },
   "blocked-by": {
     "accept": ["blockiert", "blockier", "verwehrt"],

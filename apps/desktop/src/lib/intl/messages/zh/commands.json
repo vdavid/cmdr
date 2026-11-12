@@ -816,13 +816,9 @@
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
-  "commands.fileShowInFinder.mac.label": "在 Finder 中显示",
-  "@commands.fileShowInFinder.mac.label": {
+  "commands.fileShowInFileManager.label": "{platform, select, macos {在 Finder 中显示} windows {Show in File Explorer} other {在文件管理器中显示}}",
+  "@commands.fileShowInFileManager.label": {
     "sourceHash": "c2a9c77"
-  },
-  "commands.fileShowInFinder.other.label": "在文件管理器中显示",
-  "@commands.fileShowInFinder.other.label": {
-    "sourceHash": "3ca4dad"
   },
   "commands.fileOpenTerminalHere.label": "在此处打开终端",
   "@commands.fileOpenTerminalHere.label": {
@@ -844,21 +840,13 @@
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.mac.label": "显示简介",
-  "@commands.fileGetInfo.mac.label": {
+  "commands.fileGetInfo.label": "{platform, select, macos {显示简介} windows {Properties} other {文件属性}}",
+  "@commands.fileGetInfo.label": {
     "sourceHash": "91c64ca"
   },
-  "commands.fileGetInfo.other.label": "文件属性",
-  "@commands.fileGetInfo.other.label": {
-    "sourceHash": "5d9ebf2"
-  },
-  "commands.fileQuickLook.mac.label": "快速查看",
-  "@commands.fileQuickLook.mac.label": {
+  "commands.fileQuickLook.label": "{platform, select, macos {快速查看} other {预览}}",
+  "@commands.fileQuickLook.label": {
     "sourceHash": "f5616ce"
-  },
-  "commands.fileQuickLook.other.label": "预览",
-  "@commands.fileQuickLook.other.label": {
-    "sourceHash": "324b134"
   },
   "commands.fileContextMenu.label": "打开右键菜单",
   "@commands.fileContextMenu.label": {

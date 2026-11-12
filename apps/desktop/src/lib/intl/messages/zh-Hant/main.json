@@ -7,13 +7,9 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "84f0191"
   },
-  "main.upgradeNudge.mac": "我們新增了入門引導的選項。開啟 Cmdr > 入門引導⋯ 來查看。",
-  "@main.upgradeNudge.mac": {
+  "main.upgradeNudge": "{platform, select, macos {我們新增了入門引導的選項。開啟 Cmdr > 入門引導⋯ 來查看。} other {我們新增了入門引導的選項。開啟指令面板並執行「入門引導⋯」來查看。}}",
+  "@main.upgradeNudge": {
     "sourceHash": "439adfd"
-  },
-  "main.upgradeNudge.other": "我們新增了入門引導的選項。開啟指令面板並執行「入門引導⋯」來查看。",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "要把 Cmdr 保留在 Dock 上嗎？",
   "@main.dockPinNudge.title": {

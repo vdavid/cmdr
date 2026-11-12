@@ -3,13 +3,9 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "A Cmdr szüneteltette a macOS kameradémonját (ptpcamerad), hogy hozzáférjen ehhez az eszközhöz. Ha másik appban szeretnéd használni, kapcsold ki az MTP-támogatást a beállításokban.",
-  "@mtp.connectedToast.bodyMac": {
+  "mtp.connectedToast.body": "{platform, select, macos {A Cmdr szüneteltette a macOS kameradémonját (ptpcamerad), hogy hozzáférjen ehhez az eszközhöz. Ha másik appban szeretnéd használni, kapcsold ki az MTP-támogatást a beállításokban.} windows {} other {Ha ezt az eszközt másik appban szeretnéd használni, kapcsold ki az MTP-támogatást a beállításokban.}}",
+  "@mtp.connectedToast.body": {
     "sourceHash": "3ace37b"
-  },
-  "mtp.connectedToast.bodyOther": "Ha ezt az eszközt másik appban szeretnéd használni, kapcsold ki az MTP-támogatást a beállításokban.",
-  "@mtp.connectedToast.bodyOther": {
-    "sourceHash": "6f42620"
   },
   "mtp.connectedToast.dontShowAgain": "Ne jelenjen meg többé",
   "@mtp.connectedToast.dontShowAgain": {

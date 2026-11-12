@@ -19,6 +19,7 @@ import {
   filesAssertingCopy,
   lintRows,
   literalRuns,
+  regenerate,
   restampEnglishOverlays,
   selectRows,
   verifyPlan,
@@ -829,6 +830,27 @@ describe('the test-file search', () => {
     expect(literalRuns('errors.x', 'Here’s what to try:\n- Open {system_settings} and check')).toEqual([
       'Here’s what to try:',
     ])
+  })
+})
+
+describe('regenerating after a write', () => {
+  // A pair collapse removes keys the call sites still name, so the key generator exits non-zero
+  // until they are fixed. That must not keep the native strings from being regenerated.
+  it('runs every step even when an earlier one exits non-zero, and names the ones that did', () => {
+    const ran: string[] = []
+    const stepFailed = regenerate(
+      [
+        { label: 'keys', command: 'pnpm', args: ['intl:keys'], cwd: 'desktop' },
+        { label: 'native strings', command: 'pnpm', args: ['intl:native-strings'], cwd: 'desktop' },
+      ],
+      (step) => {
+        ran.push(step.label)
+        return step.label === 'keys' ? 1 : 0
+      },
+    )
+
+    expect(ran).toEqual(['keys', 'native strings'])
+    expect(stepFailed).toEqual(['keys'])
   })
 })
 

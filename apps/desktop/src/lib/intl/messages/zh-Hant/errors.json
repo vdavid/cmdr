@@ -1757,13 +1757,9 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "確認你對上層資料夾有寫入權。這個檔案可能被鎖定了。在 Finder 裡把它解鎖（取得資訊 > 取消勾選「已鎖定」），然後再試一次。",
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {確認你對上層資料夾有寫入權。這個檔案可能被鎖定了。在 Finder 裡把它解鎖（取得資訊 > 取消勾選「已鎖定」），然後再試一次。} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {確認你對上層資料夾有寫入權。這個檔案可能受到保護。看看它的權限（例如用 chmod 或你的檔案管理程式），然後再試一次。}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "1e6e123"
-  },
-  "errors.write.permissionDenied.suggestion.deleteOther": "確認你對上層資料夾有寫入權。這個檔案可能受到保護。看看它的權限（例如用 chmod 或你的檔案管理程式），然後再試一次。",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "sourceHash": "650bb53"
   },
   "errors.write.permissionDenied.suggestion.default": "確認你對目標資料夾有寫入權。你可能得先把裝置解鎖，或更改資料夾權限。",
   "@errors.write.permissionDenied.suggestion.default": {
@@ -1785,21 +1781,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "這需要管理者權限。要讓你自己的帳號有權限，請在 Finder 裡選取這個資料夾，選擇「取得資訊」，然後查看「共享與權限」部分。",
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {這需要管理者權限。要讓你自己的帳號有權限，請在 Finder 裡選取這個資料夾，選擇「取得資訊」，然後查看「共享與權限」部分。} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {這需要管理者權限。要讓你自己的帳號有權限，請更改資料夾的權限（例如用 chmod），然後再試一次。}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "這需要管理者權限。要讓你自己的帳號有權限，請更改資料夾的權限（例如用 chmod），然後再試一次。",
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "5ce034b"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "這是 macOS 自己保護的，管理者權限也改不了。它可能被鎖定了：在 Finder 裡選取它，選擇「取得資訊」，然後取消勾選「已鎖定」。",
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {這是 macOS 自己保護的，管理者權限也改不了。它可能被鎖定了：在 Finder 裡選取它，選擇「取得資訊」，然後取消勾選「已鎖定」。} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {這是系統自己保護的，管理者權限也改不了。它可能帶著一個必須先清除的保護標記。}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
     "sourceHash": "64a71c8"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "這是系統自己保護的，管理者權限也改不了。它可能帶著一個必須先清除的保護標記。",
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "a4856dc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "你沒有權限讀取這個項目，所以無法複製它。",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,13 +1905,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion.mac": "在 Finder 裡把它解鎖（取得資訊 > 取消勾選「已鎖定」），然後再試一次。",
-  "@errors.write.fileLocked.suggestion.mac": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {在 Finder 裡把它解鎖（取得資訊 > 取消勾選「已鎖定」），然後再試一次。} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {這個檔案可能受到保護。看看它的權限（例如用 chmod 或你的檔案管理程式），然後再試一次。}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "8f84de5"
-  },
-  "errors.write.fileLocked.suggestion.other": "這個檔案可能受到保護。看看它的權限（例如用 chmod 或你的檔案管理程式），然後再試一次。",
-  "@errors.write.fileLocked.suggestion.other": {
-    "sourceHash": "6856879"
   },
   "errors.write.deletePending.title": "檔案正在移除中",
   "@errors.write.deletePending.title": {

@@ -220,7 +220,7 @@ GNOME / Thunar / Dolphin / Total Commander; catalog consistency over a pile-idea
 - once it's idle → `khi không còn bận` (`rảnh` is for the user). `eject.timedOut` isn't a failure (like
   `mutation.timedOut`); `eject.unexpected` shares `mutation.unexpected`'s value.
 
-## Apple CÓ dịch "Get Info" và "Locked" sang tiếng Việt (`errors.write.fileLocked.suggestion.mac`, `errors.write.permissionDenied.suggestion.deleteMac`, `errors.listing.noPermissionErrno.suggestion`, `errors.listing.permissionDenied.suggestion`)
+## Apple CÓ dịch "Get Info" và "Locked" sang tiếng Việt (`errors.write.fileLocked.suggestion`, `errors.write.permissionDenied.suggestion.delete`, `errors.listing.noPermissionErrno.suggestion`, `errors.listing.permissionDenied.suggestion`)
 
 - Locked → `“Đã khóa”` (Finder `AXNODE1`, `NE18`); Sharing & Permissions → `phần Chia sẻ & quyền`, `phần` as Apple
   writes it (macOS 26.5.2, `InfoWindowPermissionsView.strings`, 2026-08-24).

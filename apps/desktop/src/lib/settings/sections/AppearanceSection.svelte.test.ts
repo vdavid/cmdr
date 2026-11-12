@@ -11,7 +11,8 @@
  * The settings-store is stubbed so the section mounts without real IPC.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, onTestFinished, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import AppearanceSection from './AppearanceSection.svelte'
 
@@ -52,6 +53,20 @@ async function mountSection(searchQuery = ''): Promise<HTMLDivElement> {
 function cardLabels(target: HTMLElement): string[] {
   return Array.from(target.querySelectorAll('.section-card-label')).map((el) => el.textContent.trim())
 }
+
+describe('the app color hint', () => {
+  it.each([
+    ['macos', 'System Settings > Appearance'],
+    ['windows', 'Settings > Personalization > Colors'],
+    ['linux', 'your system appearance settings'],
+  ] as const)('on %s links to where that OS keeps its accent color', async (platform, linkText) => {
+    onTestFinished(withPlatform(platform))
+    const target = await mountSection()
+    const links = Array.from(target.querySelectorAll('button')).map((el) => el.textContent.trim())
+    expect(links).toContain(linkText)
+    target.remove()
+  })
+})
 
 describe('AppearanceSection card groups', () => {
   it('renders the four cards with no search', async () => {

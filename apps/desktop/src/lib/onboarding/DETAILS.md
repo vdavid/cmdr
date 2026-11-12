@@ -127,7 +127,10 @@ Existing users (anyone with `isOnboarded === true` and `onboarding.upgradeNudgeS
 the first launch after they update past the wizard revamp:
 
 - macOS: "We've added new onboarding options. Open Cmdr > Onboarding… to review them."
-- Linux: "We've added new onboarding options. Open the command palette and run Onboarding… to review them."
+- Windows and Linux (no Onboarding menu entry): "We've added new onboarding options. Open the command palette and run
+  Onboarding… to review them."
+
+One key, `main.upgradeNudge`, whose value carries a branch per OS.
 
 The toast fires from `resolveOnboardingMount()`'s two wizard-skipping branches (so it only runs when the wizard is NOT
 mounting; no need for an extra `onboardingShowing` check). It writes `onboarding.upgradeNudgeShown = true` synchronously

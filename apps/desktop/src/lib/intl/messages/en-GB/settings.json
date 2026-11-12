@@ -139,6 +139,10 @@
   "@settings.appearance.appColorHintPrefix": {
     "sourceHash": "748470a"
   },
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalisation > Colours} other {your system appearance settings}}",
+  "@settings.appearance.appColorHintLink": {
+    "sourceHash": "551a3a4"
+  },
   "settings.appearance.tintSwatchAria": "Choose a tint colour for {label}",
   "@settings.appearance.tintSwatchAria": {
     "sourceHash": "b9030b5"

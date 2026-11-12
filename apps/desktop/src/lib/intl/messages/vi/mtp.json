@@ -3,13 +3,9 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr đã tạm dừng daemon máy ảnh của macOS (ptpcamerad) để truy cập thiết bị này. Để dùng nó trong ứng dụng khác, hãy tắt hỗ trợ MTP trong cài đặt.",
-  "@mtp.connectedToast.bodyMac": {
+  "mtp.connectedToast.body": "{platform, select, macos {Cmdr đã tạm dừng daemon máy ảnh của macOS (ptpcamerad) để truy cập thiết bị này. Để dùng nó trong ứng dụng khác, hãy tắt hỗ trợ MTP trong cài đặt.} windows {} other {Để dùng thiết bị này trong ứng dụng khác, hãy tắt hỗ trợ MTP trong cài đặt.}}",
+  "@mtp.connectedToast.body": {
     "sourceHash": "3ace37b"
-  },
-  "mtp.connectedToast.bodyOther": "Để dùng thiết bị này trong ứng dụng khác, hãy tắt hỗ trợ MTP trong cài đặt.",
-  "@mtp.connectedToast.bodyOther": {
-    "sourceHash": "6f42620"
   },
   "mtp.connectedToast.dontShowAgain": "Không hiển thị lại",
   "@mtp.connectedToast.dontShowAgain": {

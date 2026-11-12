@@ -141,7 +141,7 @@ record the outcome in `terms.json` or `decisions.md`).
 - **Queue rows** (`queue.row.label`, `queue.row.itemsInFolder`, `queryUi.mode.ai.label`, `queryUi.filters.type.both`,
   `queryUi.date.preset.thisMonth`/`lastMonth`): «Переміщення в Смітник 3 елементів у папці «Downloads»», «у папці
   «Macintosh HD»», «Запитайте будь-що», «Усе», «{month}, 1-ше число».
-- **Other quoted names** (`ai.secretError.keyringBody`, `menu.context.openWithOther`,
+- **Other quoted names** (`ai.secretError.body`, `menu.context.openWithOther`,
   `menu.context.shareLinkSevenDays`/`OneDay`/`OneHour`, `menu.volume.editFavoriteShortcut`,
   `transfer.metadataClass.lockedAndHidden`, `fileExplorer.navigation.groupMobile`,
   `fileExplorer.pane.fileExplorerAriaLabel`, `ui.loadingIcon.finalizing`): nested «» in «Паролі та ключі», «Іншою…» vs

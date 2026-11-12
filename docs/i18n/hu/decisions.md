@@ -233,7 +233,7 @@ Each follows `Nem sikerült kiadni: {volumeName}: {message}`, so it's a sentence
 `A Cmdr problémába ütközött, és nem tudta megállapítani, hogy mi.`, apart from `errors.mutation.unexpected`: after the
 wrapper, `Valami nem sikerült` would repeat itself.
 
-## A macOS-panelnevek magyarul (`errors.write.fileLocked.suggestion.mac`, `errors.write.permissionDenied.suggestion.deleteMac`, `errors.listing.*ermission*.suggestion`)
+## A macOS-panelnevek magyarul (`errors.write.fileLocked.suggestion`, `errors.write.permissionDenied.suggestion.delete`, `errors.listing.*ermission*.suggestion`)
 
 Apple translates them: `„Zárolt”` (quoted, as Apple), `Megosztás és jogok`, `Apple-fiók`, `Általános`,
 `Indítóelemek és bővítmények` (macOS 26.6.2 `.loctable`, 2026-08-30). A menu item is a `parancs`, never a `menü`.

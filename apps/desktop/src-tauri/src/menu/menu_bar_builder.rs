@@ -187,7 +187,7 @@ impl<R: Runtime> Builder<'_, R> {
     /// `label` in the active language, with a mnemonic from `mnemonics` where the platform uses them.
     fn label(&self, label: Label, mnemonics: &mut Mnemonics) -> String {
         let text = label
-            .catalog_key(self.platform, self.has_existing_license)
+            .catalog_key(self.has_existing_license)
             .map_or_else(|| APP_MENU_TITLE.to_string(), menu_t);
         mnemonics.assign(&text)
     }

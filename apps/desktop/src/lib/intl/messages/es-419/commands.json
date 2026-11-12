@@ -59,8 +59,8 @@
   "@commands.fileGoToTrash.description": {
     "sourceHash": "42d98bb"
   },
-  "commands.fileShowInFinder.other.label": "Mostrar en el administrador de archivos",
-  "@commands.fileShowInFinder.other.label": {
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Mostrar en el Finder} windows {Show in File Explorer} other {Mostrar en el administrador de archivos}}",
+  "@commands.fileShowInFileManager.label": {
     "sourceHash": "f887b5e"
   },
   "commands.tagsToggleGrey.description": "Agrega o quita la etiqueta Gris del Finder en los archivos seleccionados",

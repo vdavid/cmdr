@@ -57,7 +57,9 @@ export interface ResolvedSeed {
 }
 
 const OLD_OTHER = 'plan § Branch-writing rules 1: the old `.other` English, byte for byte'
-const WINDOWS_READS_OTHER = 'Windows reads what it reads today, the old `.other` English'
+/** The transfer dialog shows an `errors.write.*` suggestion as plain text, so a label is quoted, never bold. */
+const QUOTED_LABEL =
+  'proposal, with the label in curly quotes where it had markdown bold: the transfer dialog shows an `errors.write.*` suggestion as plain text'
 
 const KEYRING_BODY = 'Unlock your keyring (Passwords / Keyrings app) and try again.'
 
@@ -92,10 +94,11 @@ export const RESOLVED_SEEDS: readonly ResolvedSeed[] = [
     collapseFrom: { mac: 'errors.write.fileLocked.suggestion.mac', other: 'errors.write.fileLocked.suggestion.other' },
     branches: {
       macos: 'Unlock it in Finder (Get Info > uncheck Locked) and try again.',
-      windows: 'The file may be read-only. In File Explorer, open its Properties, clear **Read-only**, and try again.',
+      windows: 'The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.',
       other: 'The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.',
     },
-    sources: { windows: 'proposal', other: OLD_OTHER },
+    sources: { windows: QUOTED_LABEL, other: OLD_OTHER },
+    written: ['windows'],
   },
   {
     key: 'errors.write.permissionDenied.suggestion.delete',
@@ -107,11 +110,12 @@ export const RESOLVED_SEEDS: readonly ResolvedSeed[] = [
       macos:
         'Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.',
       windows:
-        'Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear **Read-only**, and try again.',
+        'Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.',
       other:
         'Check that you have write access to the parent folder. The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.',
     },
-    sources: { windows: 'proposal', other: OLD_OTHER },
+    sources: { windows: QUOTED_LABEL, other: OLD_OTHER },
+    written: ['windows'],
   },
   {
     key: 'errors.write.permissionDenied.suggestion.needsAdmin',
@@ -123,11 +127,12 @@ export const RESOLVED_SEEDS: readonly ResolvedSeed[] = [
       macos:
         'Changing it needs administrator rights. To give your own account access, select the folder in Finder, choose Get Info, and look under Sharing & Permissions.',
       windows:
-        'Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under **Security**.',
+        'Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.',
       other:
         'Changing it needs administrator rights. To give your own account access, adjust the folder’s permissions (for example with chmod) and try again.',
     },
-    sources: { windows: 'proposal', other: OLD_OTHER },
+    sources: { windows: QUOTED_LABEL, other: OLD_OTHER },
+    written: ['windows'],
   },
   {
     key: 'errors.write.permissionDenied.suggestion.systemProtected',
@@ -204,11 +209,12 @@ export const RESOLVED_SEEDS: readonly ResolvedSeed[] = [
     branches: {
       macos:
         'Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable MTP support in settings.',
-      windows: 'To use this device in another app, disable MTP support in settings.',
+      windows: '',
       other: 'To use this device in another app, disable MTP support in settings.',
     },
     sources: {
-      windows: `${WINDOWS_READS_OTHER}. Verdicts: Windows should show no body line at all (WPD shares the device), a code change in MtpConnectedToastContent.svelte`,
+      windows:
+        'copy-row-verdicts.md: no body on Windows. WPD shares the device with File Explorer, so nothing is paused and no other app is locked out. The branch is empty, and MtpConnectedToastContent.svelte renders no body line for an empty text',
       other: `${OLD_OTHER} (the proposal’s “turn off … Settings” is polish)`,
     },
   },

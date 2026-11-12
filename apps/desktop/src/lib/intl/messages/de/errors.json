@@ -1757,13 +1757,9 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Prüfe, ob du Schreibzugriff auf den übergeordneten Ordner hast. Die Datei ist vielleicht geschützt. Hebe den Schutz im Finder auf („Informationen“ > Häkchen bei „Geschützt“ entfernen) und versuche es erneut.",
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Prüfe, ob du Schreibzugriff auf den übergeordneten Ordner hast. Die Datei ist vielleicht geschützt. Hebe den Schutz im Finder auf („Informationen“ > Häkchen bei „Geschützt“ entfernen) und versuche es erneut.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Prüfe, ob du Schreibzugriff auf den übergeordneten Ordner hast. Die Datei ist vielleicht geschützt. Prüfe ihre Zugriffsrechte (z. B. per chmod oder über deinen Dateimanager) und versuche es erneut.}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "1e6e123"
-  },
-  "errors.write.permissionDenied.suggestion.deleteOther": "Prüfe, ob du Schreibzugriff auf den übergeordneten Ordner hast. Die Datei ist vielleicht geschützt. Prüfe ihre Zugriffsrechte (z. B. per chmod oder über deinen Dateimanager) und versuche es erneut.",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "sourceHash": "650bb53"
   },
   "errors.write.permissionDenied.suggestion.default": "Prüfe, ob du Schreibzugriff auf den Zielordner hast. Du musst vielleicht das Gerät entsperren oder die Ordner-Zugriffsrechte ändern.",
   "@errors.write.permissionDenied.suggestion.default": {
@@ -1785,21 +1781,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzerkonto Zugriff zu geben, wähle den Ordner im Finder aus, öffne „Informationen“ und sieh unter „Teilen & Zugriffsrechte“ nach.",
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzerkonto Zugriff zu geben, wähle den Ordner im Finder aus, öffne „Informationen“ und sieh unter „Teilen & Zugriffsrechte“ nach.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzerkonto Zugriff zu geben, ändere die Zugriffsrechte des Ordners (z. B. per chmod) und versuche es erneut.}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzerkonto Zugriff zu geben, ändere die Zugriffsrechte des Ordners (z. B. per chmod) und versuche es erneut.",
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "5ce034b"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "macOS selbst schützt dieses Objekt, daran ändern auch Administratorrechte nichts. Vielleicht ist es geschützt: Wähle es im Finder aus, öffne „Informationen“ und entferne das Häkchen bei „Geschützt“.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS selbst schützt dieses Objekt, daran ändern auch Administratorrechte nichts. Vielleicht ist es geschützt: Wähle es im Finder aus, öffne „Informationen“ und entferne das Häkchen bei „Geschützt“.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Das System selbst schützt dieses Objekt, daran ändern auch Administratorrechte nichts. Vielleicht trägt es ein Schutz-Flag, das zuerst entfernt werden muss.}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
     "sourceHash": "64a71c8"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "Das System selbst schützt dieses Objekt, daran ändern auch Administratorrechte nichts. Vielleicht trägt es ein Schutz-Flag, das zuerst entfernt werden muss.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "a4856dc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "Du hast keine Berechtigung, dieses Objekt zu lesen, deshalb lässt es sich nicht kopieren.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,13 +1905,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion.mac": "Hebe den Schutz im Finder auf („Informationen“ > Häkchen bei „Geschützt“ entfernen) und versuche es erneut.",
-  "@errors.write.fileLocked.suggestion.mac": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Hebe den Schutz im Finder auf („Informationen“ > Häkchen bei „Geschützt“ entfernen) und versuche es erneut.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Die Datei ist vielleicht geschützt. Prüfe ihre Zugriffsrechte (z. B. per chmod oder über deinen Dateimanager) und versuche es erneut.}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "8f84de5"
-  },
-  "errors.write.fileLocked.suggestion.other": "Die Datei ist vielleicht geschützt. Prüfe ihre Zugriffsrechte (z. B. per chmod oder über deinen Dateimanager) und versuche es erneut.",
-  "@errors.write.fileLocked.suggestion.other": {
-    "sourceHash": "6856879"
   },
   "errors.write.deletePending.title": "Datei wird entfernt",
   "@errors.write.deletePending.title": {

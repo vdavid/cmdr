@@ -3,13 +3,9 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr kvůli přístupu k tomuto zařízení pozastavil systémový proces macOS pro fotoaparáty (ptpcamerad). Pokud chcete zařízení používat v jiné aplikaci, vypněte v Nastavení podporu MTP.",
-  "@mtp.connectedToast.bodyMac": {
+  "mtp.connectedToast.body": "{platform, select, macos {Cmdr kvůli přístupu k tomuto zařízení pozastavil systémový proces macOS pro fotoaparáty (ptpcamerad). Pokud chcete zařízení používat v jiné aplikaci, vypněte v Nastavení podporu MTP.} windows {} other {Pokud chcete toto zařízení používat v jiné aplikaci, vypněte v Nastavení podporu MTP.}}",
+  "@mtp.connectedToast.body": {
     "sourceHash": "3ace37b"
-  },
-  "mtp.connectedToast.bodyOther": "Pokud chcete toto zařízení používat v jiné aplikaci, vypněte v Nastavení podporu MTP.",
-  "@mtp.connectedToast.bodyOther": {
-    "sourceHash": "6f42620"
   },
   "mtp.connectedToast.dontShowAgain": "Už nezobrazovat",
   "@mtp.connectedToast.dontShowAgain": {

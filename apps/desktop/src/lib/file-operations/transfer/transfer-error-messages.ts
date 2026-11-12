@@ -178,7 +178,7 @@ const simpleMessageFactories: Partial<
   file_locked: () => ({
     title: w('fileLocked.title'),
     message: w('fileLocked.message'),
-    suggestion: isMacOS() ? w('fileLocked.suggestion.mac') : w('fileLocked.suggestion.other'),
+    suggestion: w('fileLocked.suggestion'),
   }),
 }
 
@@ -402,9 +402,9 @@ function readOnlyMessage(error: Extract<WriteOperationError, { type: 'read_only_
  * no, where administrator rights change nothing, and sending someone chasing
  * permissions for that is a wrong answer they'd act on.
  *
- * The `unclassified` arm keeps the older split, which is per-operation and
- * platform: a refused delete sends a macOS user to a locked file, everyone else to
- * permissions, and a refused copy to the destination.
+ * The `unclassified` arm keeps the older split, which is per-operation: a refused
+ * delete points at the file itself (each OS in its own words, inside the one key),
+ * and a refused copy at the destination.
  *
  * `side` is the third fact, also the backend's: a copy or move whose SOURCE refused
  * gets its own sentence, since "you don't have permission to copy files here"
@@ -432,10 +432,9 @@ function permissionSuggestionKey(refusal: PermissionRefusal, op: TransferOperati
   // met it: an object store's key or paused account, Android's reserved folders,
   // or a server's account. None of it can mention this Mac.
   if (refusal === 'objectStoreAccount' || refusal === 'phone' || refusal === 'server') return refusal
-  const mac = isMacOS()
-  if (refusal === 'folderPermissions') return mac ? 'needsAdminMac' : 'needsAdminOther'
-  if (refusal === 'systemProtected') return mac ? 'systemProtectedMac' : 'systemProtectedOther'
-  if (op === 'delete' || op === 'trash' || (sourceSide && op === 'move')) return mac ? 'deleteMac' : 'deleteOther'
+  if (refusal === 'folderPermissions') return 'needsAdmin'
+  if (refusal === 'systemProtected') return 'systemProtected'
+  if (op === 'delete' || op === 'trash' || (sourceSide && op === 'move')) return 'delete'
   return sourceSide ? 'sourceRead' : 'default'
 }
 

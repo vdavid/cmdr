@@ -894,7 +894,7 @@
     "confidence": "high",
     "sources": "macOS NetAuthAgent (Uložit heslo do svazku klíčů), Time Machine (záznam v systémovém svazku klíčů; Zkuste použít Klíčenku), i.e. the store is svazek klíčů and the app Klíčenka",
     "decision": "Keychain: svazek klíčů and Klíčenka",
-    "note": "on non-macOS the generic store (keyring) is systémová klíčenka (ai.secretError.keyringTitle, keyringBody, genericBody); svazek klíčů stays the macOS store"
+    "note": "on non-macOS the generic store (keyring) is systémová klíčenka (ai.secretError.title, body, removeBody, genericBody); svazek klíčů stays the macOS store"
   },
   "kind": {
     "chosen": "druh",
@@ -1621,7 +1621,7 @@
   "show-in-finder": {
     "chosen": "Zobrazit ve Finderu",
     "accept": ["ve Finderu"],
-    "forms": "menu item (menu.file.showInFinder) → Zobrazit ve Finderu; Show in folder → Zobrazit ve složce",
+    "forms": "menu item (menu.file.showInFileManager) → Zobrazit ve Finderu; Show in folder → Zobrazit ve složce",
     "confidence": "high",
     "sources": "macOS Finder (Show in Finder → Zobrazit ve Finderu), AppKit (Zobrazit „%@“ ve Finderu), Services menu"
   },

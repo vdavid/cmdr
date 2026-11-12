@@ -15,7 +15,7 @@
  * `getPlatform()` (directly, or through a name bound to one: `const mac =
  * isMacOS()`) and whose ARMS resolve copy: a call to `t`, `tString`, `tStringIn`,
  * or `getMessage`, a `<Trans>` element, or a string literal shaped like a message
- * key (`commands.fileShowInFinder.mac.label`, `fileLocked.suggestion.mac`: dotted
+ * key (`commands.fileGetInfo.label`, `fileLocked.suggestion`: dotted
  * camelCase segments). An OS test choosing a key glyph (`'⇧F8'` vs `'Shift+F8'`), a
  * modifier name, or behavior passes.
  *

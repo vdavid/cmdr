@@ -1746,7 +1746,7 @@
       "status": "apply",
       "branches": {
         "macos": "Unlock it in Finder (Get Info > uncheck Locked) and try again.",
-        "windows": "The file may be read-only. In File Explorer, open its Properties, clear **Read-only**, and try again.",
+        "windows": "The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.",
         "other": "The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again."
       },
       "collapseFrom": {
@@ -1754,9 +1754,10 @@
         "other": "errors.write.fileLocked.suggestion.other"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with the label in curly quotes where it had markdown bold: the transfer dialog shows an `errors.write.*` suggestion as plain text",
         "other": "plan § Branch-writing rules 1: the old `.other` English, byte for byte"
       },
+      "written": ["windows"],
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; advice under “File is locked” when a delete hits a locked file."
     },
     {
@@ -1768,7 +1769,7 @@
       "status": "apply",
       "branches": {
         "macos": "Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.",
-        "windows": "Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear **Read-only**, and try again.",
+        "windows": "Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.",
         "other": "Check that you have write access to the parent folder. The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again."
       },
       "collapseFrom": {
@@ -1776,9 +1777,10 @@
         "other": "errors.write.permissionDenied.suggestion.deleteOther"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with the label in curly quotes where it had markdown bold: the transfer dialog shows an `errors.write.*` suggestion as plain text",
         "other": "plan § Branch-writing rules 1: the old `.other` English, byte for byte"
       },
+      "written": ["windows"],
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; advice when a delete, trash, or move-out is denied."
     },
     {
@@ -1790,7 +1792,7 @@
       "status": "apply",
       "branches": {
         "macos": "Changing it needs administrator rights. To give your own account access, select the folder in Finder, choose Get Info, and look under Sharing & Permissions.",
-        "windows": "Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under **Security**.",
+        "windows": "Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.",
         "other": "Changing it needs administrator rights. To give your own account access, adjust the folder’s permissions (for example with chmod) and try again."
       },
       "collapseFrom": {
@@ -1798,9 +1800,10 @@
         "other": "errors.write.permissionDenied.suggestion.needsAdminOther"
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with the label in curly quotes where it had markdown bold: the transfer dialog shows an `errors.write.*` suggestion as plain text",
         "other": "plan § Branch-writing rules 1: the old `.other` English, byte for byte"
       },
+      "written": ["windows"],
       "whereInUi": "Transfer error dialog (TransferErrorDialog) that opens when a copy, move, delete, or move to trash stops on an item; advice when the destination folder’s permissions need an administrator."
     },
     {
@@ -7969,7 +7972,7 @@
       "status": "apply",
       "branches": {
         "macos": "Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable MTP support in settings.",
-        "windows": "To use this device in another app, disable MTP support in settings.",
+        "windows": "",
         "other": "To use this device in another app, disable MTP support in settings."
       },
       "collapseFrom": {
@@ -7977,7 +7980,7 @@
         "other": "mtp.connectedToast.bodyOther"
       },
       "sources": {
-        "windows": "Windows reads what it reads today, the old `.other` English. Verdicts: Windows should show no body line at all (WPD shares the device), a code change in MtpConnectedToastContent.svelte",
+        "windows": "copy-row-verdicts.md: no body on Windows. WPD shares the device with File Explorer, so nothing is paused and no other app is locked out. The branch is empty, and MtpConnectedToastContent.svelte renders no body line for an empty text",
         "other": "plan § Branch-writing rules 1: the old `.other` English, byte for byte (the proposal’s “turn off … Settings” is polish)"
       },
       "whereInUi": "Toast when an MTP device connects (“Connected to {device}”), its body."

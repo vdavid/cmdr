@@ -818,13 +818,9 @@
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
-  "commands.fileShowInFinder.mac.label": "Toon in Finder",
-  "@commands.fileShowInFinder.mac.label": {
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Toon in Finder} windows {Show in File Explorer} other {Toon in bestandsbeheer}}",
+  "@commands.fileShowInFileManager.label": {
     "sourceHash": "c2a9c77"
-  },
-  "commands.fileShowInFinder.other.label": "Toon in bestandsbeheer",
-  "@commands.fileShowInFinder.other.label": {
-    "sourceHash": "3ca4dad"
   },
   "commands.fileOpenTerminalHere.label": "Terminal hier openen",
   "@commands.fileOpenTerminalHere.label": {
@@ -846,21 +842,13 @@
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.mac.label": "Toon info",
-  "@commands.fileGetInfo.mac.label": {
+  "commands.fileGetInfo.label": "{platform, select, macos {Toon info} windows {Properties} other {Bestandseigenschappen}}",
+  "@commands.fileGetInfo.label": {
     "sourceHash": "91c64ca"
   },
-  "commands.fileGetInfo.other.label": "Bestandseigenschappen",
-  "@commands.fileGetInfo.other.label": {
-    "sourceHash": "5d9ebf2"
-  },
-  "commands.fileQuickLook.mac.label": "Geef snel weer",
-  "@commands.fileQuickLook.mac.label": {
+  "commands.fileQuickLook.label": "{platform, select, macos {Geef snel weer} other {Voorvertoning}}",
+  "@commands.fileQuickLook.label": {
     "sourceHash": "f5616ce"
-  },
-  "commands.fileQuickLook.other.label": "Voorvertoning",
-  "@commands.fileQuickLook.other.label": {
-    "sourceHash": "324b134"
   },
   "commands.fileContextMenu.label": "Open contextmenu",
   "@commands.fileContextMenu.label": {

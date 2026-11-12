@@ -1757,13 +1757,9 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Vérifiez que vous avez l’accès en écriture au dossier parent. Le fichier est peut-être verrouillé. Déverrouillez-le dans le Finder (Lire les informations > décochez Verrouillé) et réessayez.",
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Vérifiez que vous avez l’accès en écriture au dossier parent. Le fichier est peut-être verrouillé. Déverrouillez-le dans le Finder (Lire les informations > décochez Verrouillé) et réessayez.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Vérifiez que vous avez l’accès en écriture au dossier parent. Le fichier est peut-être protégé. Vérifiez ses autorisations (par exemple via chmod ou votre gestionnaire de fichiers) et réessayez.}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "1e6e123"
-  },
-  "errors.write.permissionDenied.suggestion.deleteOther": "Vérifiez que vous avez l’accès en écriture au dossier parent. Le fichier est peut-être protégé. Vérifiez ses autorisations (par exemple via chmod ou votre gestionnaire de fichiers) et réessayez.",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "sourceHash": "650bb53"
   },
   "errors.write.permissionDenied.suggestion.default": "Vérifiez que vous avez l’accès en écriture au dossier de destination. Vous devrez peut-être déverrouiller l’appareil ou changer les autorisations du dossier.",
   "@errors.write.permissionDenied.suggestion.default": {
@@ -1785,21 +1781,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "Cela demande des droits d’administrateur. Pour donner l’accès à votre propre compte, sélectionnez le dossier dans le Finder, choisissez Lire les informations, puis vérifiez la section Partage et permissions.",
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Cela demande des droits d’administrateur. Pour donner l’accès à votre propre compte, sélectionnez le dossier dans le Finder, choisissez Lire les informations, puis vérifiez la section Partage et permissions.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Cela demande des droits d’administrateur. Pour donner l’accès à votre propre compte, modifiez les permissions du dossier (par exemple via chmod) et réessayez.}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "Cela demande des droits d’administrateur. Pour donner l’accès à votre propre compte, modifiez les permissions du dossier (par exemple via chmod) et réessayez.",
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "5ce034b"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "macOS protège lui-même cet élément, les droits d’administrateur n’y changeront rien. Il est peut-être verrouillé : sélectionnez-le dans le Finder, choisissez Lire les informations et décochez Verrouillé.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS protège lui-même cet élément, les droits d’administrateur n’y changeront rien. Il est peut-être verrouillé : sélectionnez-le dans le Finder, choisissez Lire les informations et décochez Verrouillé.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Le système protège lui-même cet élément, les droits d’administrateur n’y changeront rien. Il porte peut-être un indicateur de protection qu’il faut d’abord retirer.}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
     "sourceHash": "64a71c8"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "Le système protège lui-même cet élément, les droits d’administrateur n’y changeront rien. Il porte peut-être un indicateur de protection qu’il faut d’abord retirer.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "a4856dc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "Vous n’avez pas l’autorisation de lire cet élément, il ne peut donc pas être copié.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,13 +1905,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion.mac": "Déverrouillez-le dans le Finder (Lire les informations > décochez Verrouillé) et réessayez.",
-  "@errors.write.fileLocked.suggestion.mac": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Déverrouillez-le dans le Finder (Lire les informations > décochez Verrouillé) et réessayez.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Le fichier est peut-être protégé. Vérifiez ses autorisations (par exemple via chmod ou votre gestionnaire de fichiers) et réessayez.}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "8f84de5"
-  },
-  "errors.write.fileLocked.suggestion.other": "Le fichier est peut-être protégé. Vérifiez ses autorisations (par exemple via chmod ou votre gestionnaire de fichiers) et réessayez.",
-  "@errors.write.fileLocked.suggestion.other": {
-    "sourceHash": "6856879"
   },
   "errors.write.deletePending.title": "Le fichier est en cours de suppression",
   "@errors.write.deletePending.title": {

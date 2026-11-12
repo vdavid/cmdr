@@ -1757,13 +1757,9 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Kontrollera att du har skrivåtkomst till den överordnade mappen. Filen kan vara låst. Lås upp den i Finder (Visa info > avmarkera Låst) och försök igen.",
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Kontrollera att du har skrivåtkomst till den överordnade mappen. Filen kan vara låst. Lås upp den i Finder (Visa info > avmarkera Låst) och försök igen.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Kontrollera att du har skrivåtkomst till den överordnade mappen. Filen kan vara skyddad. Kontrollera dess behörigheter (t.ex. via chmod eller din filhanterare) och försök igen.}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "1e6e123"
-  },
-  "errors.write.permissionDenied.suggestion.deleteOther": "Kontrollera att du har skrivåtkomst till den överordnade mappen. Filen kan vara skyddad. Kontrollera dess behörigheter (t.ex. via chmod eller din filhanterare) och försök igen.",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "sourceHash": "650bb53"
   },
   "errors.write.permissionDenied.suggestion.default": "Kontrollera att du har skrivåtkomst till målmappen. Du kan behöva låsa upp enheten eller ändra mappens behörigheter.",
   "@errors.write.permissionDenied.suggestion.default": {
@@ -1785,21 +1781,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "Det kräver administratörsbehörighet. Om du vill ge ditt eget konto åtkomst markerar du mappen i Finder, går till Visa info och tittar under Delning och behörigheter.",
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Det kräver administratörsbehörighet. Om du vill ge ditt eget konto åtkomst markerar du mappen i Finder, går till Visa info och tittar under Delning och behörigheter.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Det kräver administratörsbehörighet. Om du vill ge ditt eget konto åtkomst ändrar du mappens behörigheter (t.ex. via chmod) och försöker igen.}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "Det kräver administratörsbehörighet. Om du vill ge ditt eget konto åtkomst ändrar du mappens behörigheter (t.ex. via chmod) och försöker igen.",
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "5ce034b"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "macOS skyddar det här objektet självt, så administratörsbehörighet ändrar ingenting. Det kan vara låst: markera det i Finder, gå till Visa info och avmarkera Låst.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS skyddar det här objektet självt, så administratörsbehörighet ändrar ingenting. Det kan vara låst: markera det i Finder, gå till Visa info och avmarkera Låst.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Systemet skyddar det här objektet självt, så administratörsbehörighet ändrar ingenting. Det kan ha en skyddsflagga som måste tas bort först.}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
     "sourceHash": "64a71c8"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "Systemet skyddar det här objektet självt, så administratörsbehörighet ändrar ingenting. Det kan ha en skyddsflagga som måste tas bort först.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "a4856dc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "Du har inte behörighet att läsa det här objektet, så det går inte att kopiera.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,13 +1905,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion.mac": "Lås upp den i Finder (Visa info > avmarkera Låst) och försök igen.",
-  "@errors.write.fileLocked.suggestion.mac": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Lås upp den i Finder (Visa info > avmarkera Låst) och försök igen.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Filen kan vara skyddad. Kontrollera dess behörigheter (t.ex. via chmod eller din filhanterare) och försök igen.}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "8f84de5"
-  },
-  "errors.write.fileLocked.suggestion.other": "Filen kan vara skyddad. Kontrollera dess behörigheter (t.ex. via chmod eller din filhanterare) och försök igen.",
-  "@errors.write.fileLocked.suggestion.other": {
-    "sourceHash": "6856879"
   },
   "errors.write.deletePending.title": "Filen håller på att tas bort",
   "@errors.write.deletePending.title": {

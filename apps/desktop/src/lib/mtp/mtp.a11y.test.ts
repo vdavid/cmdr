@@ -1,17 +1,17 @@
 /**
- * Tier 3 a11y tests for the MTP surfaces: the connected toast, the Linux
- * permission dialog, and the macOS ptpcamerad dialog.
+ * Tier 3 a11y tests for the MTP surfaces: the connected toast (with its per-OS
+ * body line), the Linux permission dialog, and the macOS ptpcamerad dialog.
  *
  * One file per component would cost about three times as much: `svelte-tests`
  * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
  * costs"). Each block below keeps its component's own doc comment, props, and
  * assertions.
  *
- * The platform needs care: the toast block runs on both, each for one test, so
+ * The platform needs care: the toast block runs on each OS, one test apiece, so
  * the two platform dialogs keep Vitest's default.
  */
 
-import { describe, it, vi, afterEach, onTestFinished } from 'vitest'
+import { describe, expect, it, vi, afterEach, onTestFinished } from 'vitest'
 import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import MtpConnectedToastContent from './MtpConnectedToastContent.svelte'
@@ -51,25 +51,28 @@ afterEach(() => {
  *
  * Sticky toast shown after an MTP device connects. The only state that
  * matters for a11y is the "Don't show again" checkbox and the two
- * action buttons. The body text is platform-dependent (macOS adds a
- * `ptpcamerad` note), which each test picks with `withPlatform()`.
+ * action buttons. The body line is the catalog's per OS: macOS adds a
+ * `ptpcamerad` note, Linux says how to hand the device to another app, and
+ * Windows has none, because Cmdr shares the device there. The component asks
+ * no platform question: an empty text means no body line.
  */
-describe('MtpConnectedToastContent a11y', () => {
-  it('macOS variant has no a11y violations', async () => {
-    onTestFinished(withPlatform('macos'))
+describe('MtpConnectedToastContent', () => {
+  it.each([
+    [
+      'macos',
+      'Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable MTP support in settings.',
+    ],
+    ['windows', null],
+    ['linux', 'To use this device in another app, disable MTP support in settings.'],
+  ] as const)('on %s shows that OS’s body line, or none, with no a11y violations', async (platform, body) => {
+    onTestFinished(withPlatform(platform))
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(MtpConnectedToastContent, { target, props: { toastId: 'mtp-connected', deviceName: 'Pixel 8' } })
     await tick()
-    await expectNoA11yViolations(target)
-  })
 
-  it('non-macOS variant has no a11y violations', async () => {
-    onTestFinished(withPlatform('linux'))
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(MtpConnectedToastContent, { target, props: { toastId: 'mtp-connected', deviceName: 'Pixel 8' } })
-    await tick()
+    expect(target.querySelector('.title')?.textContent).toBe('Connected to Pixel 8')
+    expect(target.querySelector('.body')?.textContent ?? null).toBe(body)
     await expectNoA11yViolations(target)
   })
 })

@@ -1885,7 +1885,7 @@
     "chosen": "Chia sẻ & quyền",
     "forms": "in prose: ở phần Chia sẻ & quyền",
     "confidence": "high",
-    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdminMac` (panel label Chia sẻ & quyền:)"
+    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdmin` (panel label Chia sẻ & quyền:)"
   },
   "signature": {
     "chosen": "chữ ký",

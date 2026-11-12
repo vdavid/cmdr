@@ -2929,14 +2929,10 @@
   "@settings.appearance.appColorHintPrefix": {
     "sourceHash": "748470a"
   },
-  "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
-  "@settings.appearance.appColorHintLinkMac": {
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {你的系統外觀設定}}",
+  "@settings.appearance.appColorHintLink": {
     "sourceHash": "5c94206",
     "sameAsSourceJustification": "“{systemSettings} > {appearance}”: a System Settings navigation path built from two OS-localised macOS-label tokens joined by “ > ”. The tokens are filled in by macOS itself (系統設定, 外觀 in Traditional Chinese), so the string carries no translatable text of its own."
-  },
-  "settings.appearance.appColorHintLinkOther": "你的系統外觀設定",
-  "@settings.appearance.appColorHintLinkOther": {
-    "sourceHash": "0aad057"
   },
   "settings.appearance.datePreviewLabel": "預覽：",
   "@settings.appearance.datePreviewLabel": {

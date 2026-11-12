@@ -501,7 +501,7 @@ fn item_label(id: &str, spec: Label, m: &MenuModel) -> RowLabel {
 
 fn label(spec: Label) -> RowLabel {
     // The demo plays a fresh personal-use install: no license key yet.
-    match spec.catalog_key(PLATFORM, false) {
+    match spec.catalog_key(false) {
         Some(catalog_key) => key(catalog_key),
         None => RowLabel::Text {
             text: APP_MENU_TITLE.to_string(),

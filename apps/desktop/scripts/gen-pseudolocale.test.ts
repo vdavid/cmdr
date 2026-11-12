@@ -285,8 +285,14 @@ describe('ACCEPTANCE BAR: whole real en catalog round-trips with no structural l
     const failures: string[] = []
     for (const [key, value] of Object.entries(en.messages)) {
       if (!isRawKey(key)) continue
-      const pseudo = pseudoValue(key, value)
-      if (!setEq(braceTokens(pseudo), braceTokens(value))) failures.push(key)
+      // Branch by branch: read whole, a platform block's brace-free body is itself a `{…}` run, so
+      // the accented body would count as a changed token.
+      const source = platformBranches(value)
+      const pseudo = platformBranches(pseudoValue(key, value))
+      const sameShape = pseudo.length === source.length && pseudo.every(({ name }, i) => name === source[i].name)
+      if (!sameShape || !pseudo.every(({ text }, i) => setEq(braceTokens(text), braceTokens(source[i].text)))) {
+        failures.push(key)
+      }
     }
     expect(failures).toEqual([])
   })

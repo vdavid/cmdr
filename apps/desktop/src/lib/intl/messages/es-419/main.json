@@ -3,13 +3,9 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "c688d05"
   },
-  "main.upgradeNudge.mac": "Hemos agregado nuevas opciones de introducción. Abre Cmdr > Introducción… para revisarlas.",
-  "@main.upgradeNudge.mac": {
+  "main.upgradeNudge": "{platform, select, macos {Hemos agregado nuevas opciones de introducción. Abre Cmdr > Introducción… para revisarlas.} other {Hemos agregado nuevas opciones de introducción. Abre la paleta de comandos y ejecuta Introducción… para revisarlas.}}",
+  "@main.upgradeNudge": {
     "sourceHash": "d982b5c"
-  },
-  "main.upgradeNudge.other": "Hemos agregado nuevas opciones de introducción. Abre la paleta de comandos y ejecuta Introducción… para revisarlas.",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "bd057b8"
   },
   "main.dockPinNudge.accept": "Sí, agregar a mi Dock",
   "@main.dockPinNudge.accept": {

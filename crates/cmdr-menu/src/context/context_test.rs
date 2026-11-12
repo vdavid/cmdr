@@ -141,7 +141,7 @@ item file_new_file menu.file.newFile [own]
 separator
 item file_delete menu.file.delete [own]
 separator
-item show_in_finder menu.file.showInFinder [own]
+item show_in_finder menu.file.showInFileManager [own]
 item open_terminal_here menu.file.openTerminalHere [own]
 slot Share
 item copy_filename menu.context.copyNamed(name=photo.jpg) [own]

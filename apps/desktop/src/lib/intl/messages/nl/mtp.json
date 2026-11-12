@@ -3,13 +3,9 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr heeft de macOS-cameradaemon (ptpcamerad) gepauzeerd om toegang te krijgen tot dit apparaat. Wil je het in een andere app gebruiken, zet MTP-ondersteuning dan uit in Instellingen.",
-  "@mtp.connectedToast.bodyMac": {
+  "mtp.connectedToast.body": "{platform, select, macos {Cmdr heeft de macOS-cameradaemon (ptpcamerad) gepauzeerd om toegang te krijgen tot dit apparaat. Wil je het in een andere app gebruiken, zet MTP-ondersteuning dan uit in Instellingen.} windows {} other {Wil je dit apparaat in een andere app gebruiken, zet MTP-ondersteuning dan uit in Instellingen.}}",
+  "@mtp.connectedToast.body": {
     "sourceHash": "3ace37b"
-  },
-  "mtp.connectedToast.bodyOther": "Wil je dit apparaat in een andere app gebruiken, zet MTP-ondersteuning dan uit in Instellingen.",
-  "@mtp.connectedToast.bodyOther": {
-    "sourceHash": "6f42620"
   },
   "mtp.connectedToast.dontShowAgain": "Niet meer tonen",
   "@mtp.connectedToast.dontShowAgain": {

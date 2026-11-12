@@ -3,13 +3,9 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr 已暂停 macOS 相机守护进程（ptpcamerad），以便访问这个设备。要在其他应用中使用它，请在设置中关闭 MTP 支持。",
-  "@mtp.connectedToast.bodyMac": {
+  "mtp.connectedToast.body": "{platform, select, macos {Cmdr 已暂停 macOS 相机守护进程（ptpcamerad），以便访问这个设备。要在其他应用中使用它，请在设置中关闭 MTP 支持。} windows {} other {要在其他应用中使用这个设备，请在设置中关闭 MTP 支持。}}",
+  "@mtp.connectedToast.body": {
     "sourceHash": "3ace37b"
-  },
-  "mtp.connectedToast.bodyOther": "要在其他应用中使用这个设备，请在设置中关闭 MTP 支持。",
-  "@mtp.connectedToast.bodyOther": {
-    "sourceHash": "6f42620"
   },
   "mtp.connectedToast.dontShowAgain": "不再显示",
   "@mtp.connectedToast.dontShowAgain": {

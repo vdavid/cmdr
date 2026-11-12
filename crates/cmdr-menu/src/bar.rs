@@ -12,7 +12,8 @@
 //!   `Cmd+Minus` that's because GTK intercepts them before the webview (and `is_focused()` fails
 //!   there), so the frontend's keydown dispatch handles them.
 //! - `cmd_or_ctrl!(…)` accelerators: ⌘ on macOS, the same chord on Ctrl on Linux.
-//! - `split(…)` accelerators and `Label::PerPlatformKey` labels, spelled per platform.
+//! - `split(…)` accelerators, spelled per platform. Labels never are: a label that reads
+//!   differently per OS is one catalog key whose value carries a branch per OS.
 //! - Top-level menu IDs, which reach macOS alone (`spec::menu`).
 //! - GTK `&` mnemonics on Linux, allocated per submenu from the translated labels (the desktop's
 //!   `menu/mnemonics.rs`), so no row names one.
@@ -52,9 +53,9 @@ use crate::ids::{
 use crate::spec::SortCheck::{self, Column, Order};
 use crate::spec::ViewMode;
 use crate::spec::{
-    Accelerator, BarMenu, CheckRole, Entry, EntryKind, Label, NONE, Pane, PerPlatform, Platform, Predefined, SEPARATOR,
-    SubmenuRole, SubmenuSpec, both, check, cmd_or_ctrl, displayed_item, item, labeled_item, linux_only, macos,
-    macos_menu, macos_only, menu, predefined, split, submenu,
+    Accelerator, BarMenu, CheckRole, Entry, EntryKind, Label, NONE, Pane, Platform, Predefined, SEPARATOR, SubmenuRole,
+    SubmenuSpec, both, check, cmd_or_ctrl, displayed_item, item, labeled_item, linux_only, macos, macos_menu,
+    macos_only, menu, predefined, split, submenu,
 };
 use cmdr_sort::{SortColumn, SortOrder};
 
@@ -68,15 +69,10 @@ const fn sort_check(id: &'static str, key: &'static str, accelerator: Accelerato
 /// dispatcher listens for. The file context menu uses it too.
 pub const COPY_PATH_ACCELERATOR: Accelerator = cmd_or_ctrl!("Alt+C");
 
-/// "Show in Finder" / "Show in file manager", here and in the file context menu.
-///
-/// Two catalog keys rather than one with a platform token: "Finder" is Apple's app name and stays
-/// English everywhere, while the Linux wording names a generic kind of program, so the two don't
-/// have the same shape in every language.
-pub const SHOW_IN_FILE_MANAGER_KEY: PerPlatform<&str> = PerPlatform {
-    macos: "menu.file.showInFinder",
-    linux: "menu.file.showInFileManager",
-};
+/// "Show in Finder" / "Show in File Explorer" / "Show in file manager", here and in the file
+/// context menu. One key: its catalog value names each OS's file manager, and the host picks the
+/// words, so this crate's two-way `Platform` never chooses text.
+pub const SHOW_IN_FILE_MANAGER_KEY: &str = "menu.file.showInFileManager";
 pub const SHOW_IN_FILE_MANAGER_ACCELERATOR: Accelerator = split("Alt+Cmd+O", "Alt+Ctrl+O");
 
 /// The display-only shortcut `MENU_BAR` gives `menu_id` on `platform`, if any.
@@ -225,9 +221,9 @@ pub const MENU_BAR: &[BarMenu] = &[
             item(RENAME_ID, "menu.file.rename", macos("F2")),
             item(MULTI_RENAME_ID, "menu.file.multiRename", both("Ctrl+M")),
             SEPARATOR,
-            labeled_item(
+            item(
                 SHOW_IN_FINDER_ID,
-                Label::PerPlatformKey(SHOW_IN_FILE_MANAGER_KEY),
+                SHOW_IN_FILE_MANAGER_KEY,
                 SHOW_IN_FILE_MANAGER_ACCELERATOR,
             ),
             // Next to Show in Finder: the same gesture aimed at another app. macOS only, like the

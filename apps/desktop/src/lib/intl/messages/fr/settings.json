@@ -2942,14 +2942,10 @@
   "@settings.appearance.appColorHintPrefix": {
     "sourceHash": "748470a"
   },
-  "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
-  "@settings.appearance.appColorHintLinkMac": {
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {les réglages d’apparence de votre système}}",
+  "@settings.appearance.appColorHintLink": {
     "sourceHash": "5c94206",
     "sameAsSourceJustification": "Placeholder-only string ('{systemSettings} > {appearance}'); both parts are OS-localized at runtime, no literal text."
-  },
-  "settings.appearance.appColorHintLinkOther": "les réglages d’apparence de votre système",
-  "@settings.appearance.appColorHintLinkOther": {
-    "sourceHash": "0aad057"
   },
   "settings.appearance.datePreviewLabel": "Aperçu :",
   "@settings.appearance.datePreviewLabel": {

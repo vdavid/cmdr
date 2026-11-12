@@ -2931,14 +2931,10 @@
   "@settings.appearance.appColorHintPrefix": {
     "sourceHash": "748470a"
   },
-  "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
-  "@settings.appearance.appColorHintLinkMac": {
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {los ajustes de apariencia de tu sistema}}",
+  "@settings.appearance.appColorHintLink": {
     "sourceHash": "5c94206",
     "sameAsSourceJustification": "Structural value '{systemSettings} > {appearance}': both placeholders are OS-localized macOS labels injected at runtime; the '>' path arrow is identical in Spanish. No translatable text."
-  },
-  "settings.appearance.appColorHintLinkOther": "los ajustes de apariencia de tu sistema",
-  "@settings.appearance.appColorHintLinkOther": {
-    "sourceHash": "0aad057"
   },
   "settings.appearance.datePreviewLabel": "Vista previa:",
   "@settings.appearance.datePreviewLabel": {

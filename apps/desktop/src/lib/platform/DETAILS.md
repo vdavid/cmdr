@@ -61,9 +61,10 @@ backend says what exists, and a surface asks for exactly the thing it needs.
   own), Full Disk Access everywhere it shows, the F9 terminal slot, the Services selection push, and the overlay title
   bar.
 - **What doesn't**: `isMacOS()` stays where the question really is the platform. Key glyphs and the combo grammar
-  (`key-capture.ts`, the shortcut filter, the favorites tooltip), the default keymap's per-platform combos, copy that
-  names macOS things (`*.mac` / `*.other` keys, Keychain vs keyring), the updater's macOS flow, and the old-macOS
-  notice.
+  (`key-capture.ts`, the shortcut filter, the favorites tooltip), the default keymap's per-platform combos, the
+  updater's macOS flow, and the old-macOS notice. ❌ Never copy: wording that differs per OS is one catalog value with a
+  branch per OS (`../intl/DETAILS.md` § Platform variants), and `cmdr/no-platform-copy-branch` refuses an OS test that
+  picks a string.
 
 Decision: booleans, not a list of names or an OS-file-manager name. Why: a flag per surface is exhaustive in both
 languages (a missing answer is a compile error in Rust and a type error in the demo's table), and the per-platform names

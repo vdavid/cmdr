@@ -7,13 +7,9 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "84f0191"
   },
-  "main.upgradeNudge.mac": "Vi har lagt till nya alternativ för att komma igång. Öppna Cmdr > Introduktion… för att gå igenom dem.",
-  "@main.upgradeNudge.mac": {
+  "main.upgradeNudge": "{platform, select, macos {Vi har lagt till nya alternativ för att komma igång. Öppna Cmdr > Introduktion… för att gå igenom dem.} other {Vi har lagt till nya alternativ för att komma igång. Öppna kommandopaletten och kör Introduktion… för att gå igenom dem.}}",
+  "@main.upgradeNudge": {
     "sourceHash": "439adfd"
-  },
-  "main.upgradeNudge.other": "Vi har lagt till nya alternativ för att komma igång. Öppna kommandopaletten och kör Introduktion… för att gå igenom dem.",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "Behåll Cmdr i Dock?",
   "@main.dockPinNudge.title": {

@@ -3,13 +3,9 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr призупинив системний демон камери macOS (ptpcamerad), щоб отримати доступ до цього пристрою. Щоб використовувати пристрій в іншій програмі, вимкніть підтримку MTP у Параметрах.",
-  "@mtp.connectedToast.bodyMac": {
+  "mtp.connectedToast.body": "{platform, select, macos {Cmdr призупинив системний демон камери macOS (ptpcamerad), щоб отримати доступ до цього пристрою. Щоб використовувати пристрій в іншій програмі, вимкніть підтримку MTP у Параметрах.} windows {} other {Щоб використовувати цей пристрій в іншій програмі, вимкніть підтримку MTP у Параметрах.}}",
+  "@mtp.connectedToast.body": {
     "sourceHash": "3ace37b"
-  },
-  "mtp.connectedToast.bodyOther": "Щоб використовувати цей пристрій в іншій програмі, вимкніть підтримку MTP у Параметрах.",
-  "@mtp.connectedToast.bodyOther": {
-    "sourceHash": "6f42620"
   },
   "mtp.connectedToast.dontShowAgain": "Більше не показувати",
   "@mtp.connectedToast.dontShowAgain": {

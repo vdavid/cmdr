@@ -7,13 +7,9 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "84f0191"
   },
-  "main.upgradeNudge.mac": "Adicionamos novas opções de introdução. Abra Cmdr > Introdução… para revisá-las.",
-  "@main.upgradeNudge.mac": {
+  "main.upgradeNudge": "{platform, select, macos {Adicionamos novas opções de introdução. Abra Cmdr > Introdução… para revisá-las.} other {Adicionamos novas opções de introdução. Abra a paleta de comandos e execute Introdução… para revisá-las.}}",
+  "@main.upgradeNudge": {
     "sourceHash": "439adfd"
-  },
-  "main.upgradeNudge.other": "Adicionamos novas opções de introdução. Abra a paleta de comandos e execute Introdução… para revisá-las.",
-  "@main.upgradeNudge.other": {
-    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "Manter o Cmdr no Dock?",
   "@main.dockPinNudge.title": {

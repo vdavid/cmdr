@@ -3161,7 +3161,7 @@
     "chosen": "Delen en bevoegdheden",
     "forms": "quoted in prose: onder ‘Delen en bevoegdheden’",
     "confidence": "high",
-    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdminMac` (panel label Delen en bevoegdheden:)"
+    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdmin` (panel label Delen en bevoegdheden:)"
   },
   "shortcut": {
     "accept": ["sneltoetsen", "toets"],

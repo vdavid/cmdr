@@ -2581,8 +2581,11 @@
   "errors.write.permissionDenied.message.move": "You don’t have permission to move files here.",
   "errors.write.permissionDenied.message.delete": "You don’t have permission to delete files here.",
   "errors.write.permissionDenied.message.trash": "You don’t have permission to move files to the trash here.",
-  "errors.write.permissionDenied.suggestion.deleteMac": "Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.",
-  "errors.write.permissionDenied.suggestion.deleteOther": "Check that you have write access to the parent folder. The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.",
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Check that you have write access to the parent folder. The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
+    "description": "Recovery suggestion for a permission failure during delete/trash on macOS. Plain text. Apple localizes both \"Get Info\" (the Finder menu command) and \"Locked\" (the checkbox in its Info window), so write the menu path with your locale's Finder wording. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
+    "screenshot": "transfer-error-permission_denied.png"
+  },
   "errors.write.permissionDenied.suggestion.default": "Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.",
   "errors.write.permissionDenied.message.named": "Your macOS user can’t change {folder}.",
   "errors.write.permissionDenied.suggestion.phone": "Android reserves this location for the system and its apps. Your photos, downloads, and other files are in the phone’s shared storage, so try a folder there.",
@@ -2603,10 +2606,17 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "Changing it needs administrator rights. To give your own account access, select the folder in Finder, choose Get Info, and look under Sharing & Permissions.",
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "Changing it needs administrator rights. To give your own account access, adjust the folder’s permissions (for example with chmod) and try again.",
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "macOS protects this one itself, so administrator rights won’t change it. The item may be locked: select it in Finder, choose Get Info, and uncheck Locked.",
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "The system protects this one itself, so administrator rights won’t change it. The item may carry a protection flag that has to be cleared first.",
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Changing it needs administrator rights. To give your own account access, select the folder in Finder, choose Get Info, and look under Sharing & Permissions.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Changing it needs administrator rights. To give your own account access, adjust the folder’s permissions (for example with chmod) and try again.}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
+    "description": "Recovery suggestion on macOS when the OS said the folder's own permissions refused (EACCES), so an administrator could do it. Plain text. Apple localizes \"Get Info\" (the Finder menu command) and \"Sharing & Permissions\" (the section in its Info window), so write them with your locale's Finder wording. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS protects this one itself, so administrator rights won’t change it. The item may be locked: select it in Finder, choose Get Info, and uncheck Locked.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {The system protects this one itself, so administrator rights won’t change it. The item may carry a protection flag that has to be cleared first.}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
+    "description": "Recovery suggestion on macOS when the OS itself refused (EPERM: System Integrity Protection, a privacy protection, or a locked item), so administrator rights would change nothing. Plain text. Apple localizes both \"Get Info\" (the Finder menu command) and \"Locked\" (the checkbox in its Info window), so write them with your locale's Finder wording.",
+    "screenshot": "transfer-error-source_not_removed.png"
+  },
   "@errors.write.permissionDenied.title": {
     "description": "Title of the copy/move/delete error dialog when the user lacks permission at the target location. Plain text. Uses a contraction (\"Couldn't\").",
     "screenshot": "transfer-error-permission_denied.png"
@@ -2630,15 +2640,6 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
-    "description": "Recovery suggestion for a permission failure during delete/trash on macOS. Plain text. Apple localizes both \"Get Info\" (the Finder menu command) and \"Locked\" (the checkbox in its Info window), so write the menu path with your locale's Finder wording. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
-    "screenshot": "transfer-error-permission_denied.png"
-  },
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "description": "Recovery suggestion for a permission failure during delete/trash on non-macOS. Plain text. \"chmod\" is a command name; do NOT translate it.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
   "@errors.write.permissionDenied.suggestion.default": {
     "description": "Recovery suggestion for a permission failure during copy/move (the non-delete case). Plain text.",
     "screenshot": "error-message-example.png",
@@ -2646,25 +2647,6 @@
   },
   "@errors.write.permissionDenied.message.named": {
     "description": "Body of the copy/move/delete error dialog when Cmdr could prove WHICH folder refuses writes (it asked the OS, folder by folder). Replaces the message.copy/move/delete/trash variants, so it has to read naturally for any of those. {folder} is an absolute path and is inserted as-is: keep the token, don't translate or reformat it. \"macOS user\" means the account the person is signed in to the Mac with.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
-    "description": "Recovery suggestion on macOS when the OS said the folder's own permissions refused (EACCES), so an administrator could do it. Plain text. Apple localizes \"Get Info\" (the Finder menu command) and \"Sharing & Permissions\" (the section in its Info window), so write them with your locale's Finder wording. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "description": "Recovery suggestion on non-macOS when the OS said the folder's own permissions refused (EACCES). Plain text. \"chmod\" is a command name; do NOT translate it.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
-  },
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
-    "description": "Recovery suggestion on macOS when the OS itself refused (EPERM: System Integrity Protection, a privacy protection, or a locked item), so administrator rights would change nothing. Plain text. Apple localizes both \"Get Info\" (the Finder menu command) and \"Locked\" (the checkbox in its Info window), so write them with your locale's Finder wording.",
-    "screenshot": "transfer-error-source_not_removed.png"
-  },
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "description": "Recovery suggestion on non-macOS when the OS itself refused (EPERM), so administrator rights would change nothing. Plain text.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -2830,8 +2812,11 @@
   },
   "errors.write.fileLocked.title": "File is locked",
   "errors.write.fileLocked.message": "The file is locked and can’t be deleted.",
-  "errors.write.fileLocked.suggestion.mac": "Unlock it in Finder (Get Info > uncheck Locked) and try again.",
-  "errors.write.fileLocked.suggestion.other": "The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.",
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Unlock it in Finder (Get Info > uncheck Locked) and try again.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.}}",
+  "@errors.write.fileLocked.suggestion": {
+    "description": "Recovery suggestion for a locked file on macOS. Plain text. Apple localizes both \"Get Info\" (the Finder menu command) and \"Locked\" (the checkbox in its Info window), so write the menu path with your locale's Finder wording. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
+    "screenshot": "transfer-error-file_locked.png"
+  },
   "@errors.write.fileLocked.title": {
     "description": "Title of the delete error dialog when the file is locked. Plain text.",
     "screenshot": "transfer-error-file_locked.png"
@@ -2839,15 +2824,6 @@
   "@errors.write.fileLocked.message": {
     "description": "Body of the delete error dialog when the file is locked. Plain text. Uses a contraction (\"can't\").",
     "screenshot": "transfer-error-file_locked.png"
-  },
-  "@errors.write.fileLocked.suggestion.mac": {
-    "description": "Recovery suggestion for a locked file on macOS. Plain text. Apple localizes both \"Get Info\" (the Finder menu command) and \"Locked\" (the checkbox in its Info window), so write the menu path with your locale's Finder wording. \"Finder\" is the app name: use whatever your locale's macOS calls it.",
-    "screenshot": "transfer-error-file_locked.png"
-  },
-  "@errors.write.fileLocked.suggestion.other": {
-    "description": "Recovery suggestion for a locked file on non-macOS. Plain text. \"chmod\" is a command name; do NOT translate it.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.write.deletePending.title": "File is being removed",
   "errors.write.deletePending.message": "The file at {path} is on its way out. The server marked it for deletion, but another open handle is keeping it around until that handle closes.",

@@ -357,19 +357,19 @@ describe('resolveOnboardingMount', () => {
 })
 
 describe('maybeFireUpgradeNudge', () => {
-  it('fires the macOS toast once and records it', () => {
+  it('fires the toast once and records it', () => {
     maybeFireUpgradeNudge()
 
-    expect(mocks.addToast).toHaveBeenCalledWith('main.upgradeNudge.mac', { level: 'info' })
+    expect(mocks.addToast).toHaveBeenCalledWith('main.upgradeNudge', { level: 'info' })
     expect(mocks.setSetting).toHaveBeenCalledWith('onboarding.upgradeNudgeShown', true)
   })
 
-  it('uses the palette wording off macOS', () => {
-    withPlatform('linux')
+  it.each(['macos', 'windows', 'linux'] as const)('asks for the same key on %s: the catalog words it per OS', (os) => {
+    withPlatform(os)
 
     maybeFireUpgradeNudge()
 
-    expect(mocks.addToast).toHaveBeenCalledWith('main.upgradeNudge.other', { level: 'info' })
+    expect(mocks.addToast).toHaveBeenCalledWith('main.upgradeNudge', { level: 'info' })
   })
 
   it('stays quiet once it has already fired', () => {

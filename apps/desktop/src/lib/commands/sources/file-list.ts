@@ -5,7 +5,6 @@
  */
 import type { CommandSource } from '../types'
 import { getBadgeStatus } from '#lib/feature-status.js'
-import { isMacOS } from '#lib/platform/index.js'
 import { sameKindCommandLabel } from '#lib/file-explorer/pane/same-kind-target.svelte.js'
 import { trashUndoCommandLabel } from '#lib/file-operations/delete/trash-undo.js'
 import { BLOCKED_BY_DIALOGS, IN_TEXT_INPUTS_ONLY } from '../while-dialog-open'
@@ -374,7 +373,7 @@ export const fileListCommands: CommandSource[] = [
   },
   {
     id: 'file.showInFinder',
-    nameKey: isMacOS() ? 'commands.fileShowInFinder.mac.label' : 'commands.fileShowInFinder.other.label',
+    nameKey: 'commands.fileShowInFileManager.label',
     scope: 'Main window/File list',
     showInPalette: true,
     shortcuts: ['⌘⌥O'],
@@ -455,7 +454,7 @@ export const fileListCommands: CommandSource[] = [
   },
   {
     id: 'file.getInfo',
-    nameKey: isMacOS() ? 'commands.fileGetInfo.mac.label' : 'commands.fileGetInfo.other.label',
+    nameKey: 'commands.fileGetInfo.label',
     scope: 'Main window/File list',
     needsCapability: 'getInfo',
     showInPalette: true,
@@ -464,7 +463,7 @@ export const fileListCommands: CommandSource[] = [
   },
   {
     id: 'file.quickLook',
-    nameKey: isMacOS() ? 'commands.fileQuickLook.mac.label' : 'commands.fileQuickLook.other.label',
+    nameKey: 'commands.fileQuickLook.label',
     scope: 'Main window/File list',
     needsCapability: 'quickLook',
     showInPalette: true,

@@ -97,8 +97,8 @@ item once settled, and record the outcome in `terms.json` or `decisions.md`.
   tail reads `1 000 файлов · пропущено: 3 · не выполнено: 1`, and a failed row's marker is `Не удалось передать`.
   Natural in a tight gray count line?
 - **Data wipe leftovers** (`settings.dataWipe.leftover.secretItems`, `.secretsUnreadable`): Keychain entries are
-  `запись с именем «Cmdr»`, matching the catalog's `ai.secretError.removeKeychainBody` (`запись «Cmdr»`); the pile has
-  no Keychain Access strings, and Apple's help may say `объект связки ключей`. Which does Russian Keychain Access show?
+  `запись с именем «Cmdr»`, matching the catalog's `ai.secretError.removeBody` (`запись «Cmdr»`); the pile has no
+  Keychain Access strings, and Apple's help may say `объект связки ключей`. Which does Russian Keychain Access show?
 - **Data wipe headings** (`settings.dataWipe.goesHeading`, `.staysHeading`): `Что будет удалено` / `Что останется` for
   "What goes" / "What stays". Natural pair, or would `Что удалится` read lighter?
 - **NFS export** (`servers.sheet.nfsExport`): an NFS export is `общая папка`, as Synology DSM ru says, so it shares a

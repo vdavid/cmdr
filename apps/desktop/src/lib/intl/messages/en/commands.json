@@ -989,14 +989,10 @@
     "description": "Internal command name: presses the confirm button of whichever dialog is currently showing (for example the copy or delete dialog). Driven by the automation interface; shown only in the keyboard-shortcuts list (not the palette). \"Dialog\" means a dialog window that is visible right now, NOT a file-open dialog or the Open command.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.fileShowInFinder.mac.label": "Show in Finder",
-  "@commands.fileShowInFinder.mac.label": {
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "@commands.fileShowInFileManager.label": {
     "description": "Command name (macOS) that reveals the selected file in Finder, the macOS file manager. \"Finder\" is the macOS app name; do not translate it. Appears in the command palette. Paired with commands.fileShowInFinder.other.label for other platforms.",
     "screenshot": "settings-keyboard-shortcuts.png"
-  },
-  "commands.fileShowInFinder.other.label": "Show in file manager",
-  "@commands.fileShowInFinder.other.label": {
-    "description": "Command name (non-macOS) that reveals the selected file in the system file manager. Appears in the command palette. Paired with commands.fileShowInFinder.mac.label, used on macOS."
   },
   "commands.fileOpenTerminalHere.label": "Open terminal here",
   "@commands.fileOpenTerminalHere.label": {
@@ -1024,23 +1020,15 @@
     "description": "Command name that copies the selected file's name (without the folder path) to the clipboard. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.fileGetInfo.mac.label": "Get info",
-  "@commands.fileGetInfo.mac.label": {
+  "commands.fileGetInfo.label": "{platform, select, macos {Get info} windows {Properties} other {File properties}}",
+  "@commands.fileGetInfo.label": {
     "description": "Command name (macOS) that opens the file's info panel. \"Get info\" matches the macOS Finder term; reuse the localized macOS wording for that menu item. Appears in the command palette. Paired with commands.fileGetInfo.other.label for other platforms.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.fileGetInfo.other.label": "File properties",
-  "@commands.fileGetInfo.other.label": {
-    "description": "Command name (non-macOS) that opens the file's properties panel. Appears in the command palette. Paired with commands.fileGetInfo.mac.label, used on macOS."
-  },
-  "commands.fileQuickLook.mac.label": "Quick look",
-  "@commands.fileQuickLook.mac.label": {
+  "commands.fileQuickLook.label": "{platform, select, macos {Quick look} other {Preview}}",
+  "@commands.fileQuickLook.label": {
     "description": "Command name (macOS) that previews the selected file with Quick Look. \"Quick Look\" is the macOS feature name; reuse the localized macOS wording. Appears in the command palette. Paired with commands.fileQuickLook.other.label for other platforms.",
     "screenshot": "settings-keyboard-shortcuts.png"
-  },
-  "commands.fileQuickLook.other.label": "Preview",
-  "@commands.fileQuickLook.other.label": {
-    "description": "Command name (non-macOS) that previews the selected file. Appears in the command palette. Paired with commands.fileQuickLook.mac.label, used on macOS."
   },
   "commands.fileContextMenu.label": "Open context menu",
   "@commands.fileContextMenu.label": {

@@ -3494,18 +3494,14 @@
     "description": "First part of the app-color hint sentence, immediately followed by a clickable link (the System Settings path). End it so it flows into the link without a trailing space issue. Shown in Settings > Appearance.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
-  "@settings.appearance.appColorHintLinkMac": {
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {your system appearance settings}}",
+  "@settings.appearance.appColorHintLink": {
     "description": "macOS variant of the app-color hint link text: a System Settings navigation path. The \"> \" arrow joins path steps; keep it. Both placeholders are OS-localized macOS labels injected at runtime, so do not translate the placeholder names.",
     "placeholders": {
       "systemSettings": "the OS-localized name of the macOS \"System Settings\" app",
       "appearance": "the OS-localized name of the macOS \"Appearance\" settings pane"
     },
     "screenshot": "settings-appearance.png"
-  },
-  "settings.appearance.appColorHintLinkOther": "your system appearance settings",
-  "@settings.appearance.appColorHintLinkOther": {
-    "description": "Non-macOS variant of the app-color hint link text (generic phrasing for other platforms). Clickable link text."
   },
   "settings.appearance.datePreviewLabel": "Preview:",
   "@settings.appearance.datePreviewLabel": {

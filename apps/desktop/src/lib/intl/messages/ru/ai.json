@@ -524,27 +524,19 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.keychainTitle": "{op, select, save {Не удалось сохранить API-ключ: Связка ключей macOS отказала в доступе} other {Не удалось прочитать сохраненный API-ключ: Связка ключей macOS отказала в доступе}}",
-  "@ai.secretError.keychainTitle": {
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {Не удалось сохранить API-ключ: Связка ключей macOS отказала в доступе} other {Не удалось прочитать сохраненный API-ключ: Связка ключей macOS отказала в доступе}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {Не удалось сохранить API-ключ: системное хранилище ключей отказало в доступе} other {Не удалось прочитать сохраненный API-ключ: системное хранилище ключей отказало в доступе}}}}",
+  "@ai.secretError.title": {
     "sourceHash": "2b2ef89"
   },
-  "ai.secretError.keychainBody": "{op, select, save {Откройте приложение «Связка ключей», проверьте запись «Cmdr» или удалите ее и попробуйте сохранить ключ снова.} other {Откройте приложение «Связка ключей», найдите запись «Cmdr» и разрешите доступ или удалите запись и введите ключ снова.}}",
-  "@ai.secretError.keychainBody": {
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {Откройте приложение «Связка ключей», проверьте запись «Cmdr» или удалите ее и попробуйте сохранить ключ снова.} other {Откройте приложение «Связка ключей», найдите запись «Cmdr» и разрешите доступ или удалите запись и введите ключ снова.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Разблокируйте хранилище ключей (например, в приложении «Пароли и ключи») и попробуйте еще раз.}}",
+  "@ai.secretError.body": {
     "sourceHash": "8f1380e"
-  },
-  "ai.secretError.keyringTitle": "{op, select, save {Не удалось сохранить API-ключ: системное хранилище ключей отказало в доступе} other {Не удалось прочитать сохраненный API-ключ: системное хранилище ключей отказало в доступе}}",
-  "@ai.secretError.keyringTitle": {
-    "sourceHash": "60f5401"
-  },
-  "ai.secretError.keyringBody": "Разблокируйте хранилище ключей (например, в приложении «Пароли и ключи») и попробуйте еще раз.",
-  "@ai.secretError.keyringBody": {
-    "sourceHash": "023bde3"
   },
   "ai.secretError.genericTitle": "{op, select, save {Не удалось сохранить API-ключ.} other {Не удалось прочитать сохраненный API-ключ.}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "c343e42"
   },
-  "ai.secretError.genericBody": "Убедитесь, что системное хранилище ключей доступно, и повторите попытку. Если проблема останется, перезапустите приложение.",
+  "ai.secretError.genericBody": "{platform, select, macos {Убедитесь, что системное хранилище ключей доступно, и повторите попытку. Если проблема останется, перезапустите приложение.} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {Убедитесь, что системное хранилище ключей доступно, и повторите попытку. Если проблема останется, перезапустите приложение.}}",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
   },
@@ -552,8 +544,8 @@
   "@ai.secretError.removeTitle": {
     "sourceHash": "5986628"
   },
-  "ai.secretError.removeKeychainBody": "Откройте приложение «Связка ключей», найдите запись «Cmdr» и удалите ее там.",
-  "@ai.secretError.removeKeychainBody": {
+  "ai.secretError.removeBody": "{platform, select, macos {Откройте приложение «Связка ключей», найдите запись «Cmdr» и удалите ее там.} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {Разблокируйте хранилище ключей (например, в приложении «Пароли и ключи») и попробуйте еще раз.}}",
+  "@ai.secretError.removeBody": {
     "sourceHash": "4e3abe7"
   },
   "ai.managed.aiOff": "Ваша организация выключила ИИ в Cmdr.",

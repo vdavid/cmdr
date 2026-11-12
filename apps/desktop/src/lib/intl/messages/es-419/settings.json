@@ -315,8 +315,8 @@
   "@settings.appearance.themeColorSwatchAria": {
     "sourceHash": "b98017c"
   },
-  "settings.appearance.appColorHintLinkOther": "la configuración de apariencia de tu sistema",
-  "@settings.appearance.appColorHintLinkOther": {
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {la configuración de apariencia de tu sistema}}",
+  "@settings.appearance.appColorHintLink": {
     "sourceHash": "308af6e"
   },
   "settings.appearance.tintGroupDescription": "Agrega un tinte de fondo tenue a los paneles para que puedas distinguir los tipos de volumen de un vistazo.",

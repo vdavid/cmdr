@@ -70,10 +70,7 @@ fn row_name(entry: &EntryKind) -> String {
     match entry {
         EntryKind::Item(item) => item.id.to_string(),
         EntryKind::Check(check) => check.id.to_string(),
-        EntryKind::Submenu(nested) => format!(
-            "submenu:{}",
-            nested.title.catalog_key(Platform::MacOs, false).unwrap_or("?")
-        ),
+        EntryKind::Submenu(nested) => format!("submenu:{}", nested.title.catalog_key(false).unwrap_or("?")),
         EntryKind::Separator | EntryKind::Predefined(..) => String::new(),
     }
 }

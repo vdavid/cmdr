@@ -57,7 +57,7 @@ menu menu.bar.file id=menu_file
   13 item rename menu.file.rename [F2] tracked
   14 item multi_rename menu.file.multiRename [Ctrl+M] tracked
   15 separator
-  16 item show_in_finder menu.file.showInFinder [Alt+Cmd+O] tracked
+  16 item show_in_finder menu.file.showInFileManager [Alt+Cmd+O] tracked
   17 item open_terminal_here menu.file.openTerminalHere [F9] tracked
   18 item get_info menu.file.getInfo [Cmd+I] tracked
   19 item quick_look menu.file.quickLook [Shift+Space] tracked
@@ -442,7 +442,7 @@ fn render(platform: Platform) -> String {
     let mut out = String::new();
     for bar_menu in MENU_BAR.iter().filter(|bar_menu| bar_menu.is_on(platform)) {
         let spec = &bar_menu.submenu;
-        out.push_str(&format!("menu {}{}\n", label(spec.title, platform), id(spec, platform)));
+        out.push_str(&format!("menu {}{}\n", label(spec.title), id(spec, platform)));
         render_entries(spec, platform, "  ", &mut out);
     }
     out
@@ -468,18 +468,18 @@ fn render_entries(spec: &SubmenuSpec, platform: Platform, indent: &str, out: &mu
             EntryKind::Check(check) => format!(
                 "check {} {}{} {}{}",
                 check.id,
-                label(check.label, platform),
+                label(check.label),
                 accelerator(check.accelerator.on(platform)),
                 check_role(check.role),
                 if check.tracked { " tracked" } else { "" },
             ),
             EntryKind::Separator => "separator".to_string(),
             EntryKind::Predefined(kind, text) => {
-                format!("predefined {} {}", predefined_name(*kind), label(*text, platform))
+                format!("predefined {} {}", predefined_name(*kind), label(*text))
             }
             EntryKind::Submenu(nested) => format!(
                 "submenu {}{} {}",
-                label(nested.title, platform),
+                label(nested.title),
                 id(nested, platform),
                 submenu_role(nested.role),
             ),
@@ -492,12 +492,8 @@ fn render_entries(spec: &SubmenuSpec, platform: Platform, indent: &str, out: &mu
 }
 
 /// The catalog key, or both keys joined by `|` for a label that depends on the license.
-fn label(label: Label, platform: Platform) -> String {
-    let key = |has_existing_license| {
-        label
-            .catalog_key(platform, has_existing_license)
-            .unwrap_or(APP_MENU_TITLE)
-    };
+fn label(label: Label) -> String {
+    let key = |has_existing_license| label.catalog_key(has_existing_license).unwrap_or(APP_MENU_TITLE);
     if key(false) == key(true) {
         key(false).to_string()
     } else {
@@ -516,7 +512,7 @@ fn accelerator(accelerator: Option<&str>) -> String {
 /// An item's label as the platform builds it, so a Linux row shows the display shortcut
 /// spelled into the label (`display_accelerator_label`) and a macOS one doesn't.
 fn item_label(item: &ItemSpec, platform: Platform) -> String {
-    let base = label(item.label, platform);
+    let base = label(item.label);
     match item.display_accelerator {
         Some(shortcut) => display_accelerator_label(&base, shortcut, platform),
         None => base,

@@ -4,13 +4,13 @@ Distilled rulings too long for a `terms.json` line, under headings citing their 
 Terms: `terms.json`; voice: `style.md`; open questions: `review-queue.md`. Tiers: macOS (read live if the pile lacks a
 bundle), Microsoft, file managers, the catalog.
 
-## Apple translates Quick Look and Keychain (`commands.fileQuickLook.mac.label`, `menu.file.quickLook`, `ai.secretError.keychainTitle`/`.keychainBody`, `servers.sheet.remember`)
+## Apple translates Quick Look and Keychain (`commands.fileQuickLook.label`, `menu.file.quickLook`, `ai.secretError.title`/`.body`, `servers.sheet.remember`)
 
 - Quick Look → `Överblick` (Finder `TL14`), `fileExplorer.quickLookHint.*` too. Store `nyckelring`
   (`Kom ihåg i nyckelringen`), app `Nyckelhanterare` (`CFBundleDisplayName`); `servers.sheet.needsStoredSecret` quotes
   the checkbox verbatim.
 
-## Apple names are looked up live, never paraphrased (`commands.handler.zoomResetHintMenu`, `main.upgradeNudge.mac`, `errors.listing.ioSerious.suggestion`, `onboarding.stepOptional.*`)
+## Apple names are looked up live, never paraphrased (`commands.handler.zoomResetHintMenu`, `main.upgradeNudge`, `errors.listing.ioSerious.suggestion`, `onboarding.stepOptional.*`)
 
 - `Full skivtillgång`, `Innehåll > Zoom > 100 %`, `Cmdr > Introduktion…`, `Skivverktyg > Skivkontroll`, `Lokalt nätverk`
   (❌ `Lokal nätverksåtkomst`), `Startobjekt och tillägg` (❌ `Inloggningsobjekt …`). A paraphrase sends users hunting,

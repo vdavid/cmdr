@@ -3004,7 +3004,7 @@
     "chosen": "Compartir y permisos",
     "forms": "quoted in prose: la sección “Compartir y permisos”",
     "confidence": "high",
-    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdminMac` (panel label Compartir y permisos:)"
+    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdmin` (panel label Compartir y permisos:)"
   },
   "shortcut": {
     "chosen": "atajo",
@@ -3836,7 +3836,7 @@
     "accept": ["entradas"],
     "forms": "an indexed file or a scan tally → entrada (12.345 entradas); a Keychain entry → la entrada “Cmdr”",
     "confidence": "high",
-    "sources": "MS terminology (entry → entrada); catalog (queryUi.empty.indexReady, indexing.scan.counters, ai.secretError.keychainBody)",
+    "sources": "MS terminology (entry → entrada); catalog (queryUi.empty.indexReady, indexing.scan.counters, ai.secretError.body)",
     "exceptions": {
       "commands.selectionSelectSameKind.description": "The entry is a row of the file list (a file or folder), which the catalog calls elemento, like every other selection command."
     }

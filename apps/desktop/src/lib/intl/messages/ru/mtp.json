@@ -3,13 +3,9 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr приостановил системную службу камеры macOS (ptpcamerad), чтобы получить доступ к устройству. Чтобы использовать устройство в другом приложении, выключите поддержку MTP в настройках.",
-  "@mtp.connectedToast.bodyMac": {
+  "mtp.connectedToast.body": "{platform, select, macos {Cmdr приостановил системную службу камеры macOS (ptpcamerad), чтобы получить доступ к устройству. Чтобы использовать устройство в другом приложении, выключите поддержку MTP в настройках.} windows {} other {Чтобы использовать устройство в другом приложении, выключите поддержку MTP в настройках.}}",
+  "@mtp.connectedToast.body": {
     "sourceHash": "3ace37b"
-  },
-  "mtp.connectedToast.bodyOther": "Чтобы использовать устройство в другом приложении, выключите поддержку MTP в настройках.",
-  "@mtp.connectedToast.bodyOther": {
-    "sourceHash": "6f42620"
   },
   "mtp.connectedToast.dontShowAgain": "Больше не показывать",
   "@mtp.connectedToast.dontShowAgain": {

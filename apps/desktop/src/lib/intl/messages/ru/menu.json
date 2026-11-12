@@ -147,13 +147,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFinder": "Показать в Finder",
-  "@menu.file.showInFinder": {
-    "sourceHash": "c2a9c77"
-  },
-  "menu.file.showInFileManager": "Показать в файловом менеджере",
+  "menu.file.showInFileManager": "{platform, select, macos {Показать в Finder} windows {Show in File Explorer} other {Показать в файловом менеджере}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "3ca4dad"
+    "sourceHash": "c2a9c77"
   },
   "menu.file.openTerminalHere": "Открыть терминал здесь",
   "@menu.file.openTerminalHere": {

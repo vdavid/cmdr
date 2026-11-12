@@ -587,8 +587,8 @@
     "chosen": "välj",
     "confidence": "high",
     "exceptions": {
-      "errors.write.permissionDenied.suggestion.needsAdminMac": "Finder's own instruction says gå till Visa info (”gå till Arkiv > Visa info och titta sedan under Delning och behörigheter”).",
-      "errors.write.permissionDenied.suggestion.systemProtectedMac": "Finder's own instruction says gå till Visa info."
+      "errors.write.permissionDenied.suggestion.needsAdmin": "Finder's own instruction says gå till Visa info (”gå till Arkiv > Visa info och titta sedan under Delning och behörigheter”).",
+      "errors.write.permissionDenied.suggestion.systemProtected": "Finder's own instruction says gå till Visa info."
     },
     "forms": "välj picks an option; marking files is markera",
     "sources": "macOS"
@@ -3094,7 +3094,7 @@
     "chosen": "Delning och behörigheter",
     "forms": "unquoted in prose: under Delning och behörigheter",
     "confidence": "high",
-    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdminMac` (panel label Delning och behörigheter:)"
+    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdmin` (panel label Delning och behörigheter:)"
   },
   "shortcut": {
     "chosen": "genväg",

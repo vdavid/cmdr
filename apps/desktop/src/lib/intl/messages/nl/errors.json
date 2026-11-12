@@ -1757,13 +1757,9 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien beveiligd. Hef de beveiliging op in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.",
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien beveiligd. Hef de beveiliging op in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien beschermd. Controleer de bevoegdheden ervan (bijvoorbeeld via chmod of je bestandsbeheerder) en probeer het opnieuw.}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "1e6e123"
-  },
-  "errors.write.permissionDenied.suggestion.deleteOther": "Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien beschermd. Controleer de bevoegdheden ervan (bijvoorbeeld via chmod of je bestandsbeheerder) en probeer het opnieuw.",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "sourceHash": "650bb53"
   },
   "errors.write.permissionDenied.suggestion.default": "Controleer of je schrijftoegang hebt tot de bestemmingsmap. Je moet misschien het apparaat ontgrendelen of de mapbevoegdheden wijzigen.",
   "@errors.write.permissionDenied.suggestion.default": {
@@ -1785,21 +1781,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "Daarvoor heb je beheerdersrechten nodig. Om je eigen account toegang te geven, selecteer je de map in Finder, kies je ‘Toon info’ en kijk je bij ‘Delen en bevoegdheden’.",
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Daarvoor heb je beheerdersrechten nodig. Om je eigen account toegang te geven, selecteer je de map in Finder, kies je ‘Toon info’ en kijk je bij ‘Delen en bevoegdheden’.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Daarvoor heb je beheerdersrechten nodig. Om je eigen account toegang te geven, pas je de bevoegdheden van de map aan (bijvoorbeeld via chmod) en probeer je het opnieuw.}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "Daarvoor heb je beheerdersrechten nodig. Om je eigen account toegang te geven, pas je de bevoegdheden van de map aan (bijvoorbeeld via chmod) en probeer je het opnieuw.",
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "5ce034b"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "macOS beschermt dit onderdeel zelf, dus beheerdersrechten veranderen daar niets aan. Het is misschien beveiligd: selecteer het in Finder, kies ‘Toon info’ en deselecteer ‘Beveiligd’.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS beschermt dit onderdeel zelf, dus beheerdersrechten veranderen daar niets aan. Het is misschien beveiligd: selecteer het in Finder, kies ‘Toon info’ en deselecteer ‘Beveiligd’.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Het systeem beschermt dit onderdeel zelf, dus beheerdersrechten veranderen daar niets aan. Er staat misschien een beschermingsvlag op die er eerst af moet.}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
     "sourceHash": "64a71c8"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "Het systeem beschermt dit onderdeel zelf, dus beheerdersrechten veranderen daar niets aan. Er staat misschien een beschermingsvlag op die er eerst af moet.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "a4856dc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "Je hebt geen bevoegdheid om dit onderdeel te lezen, dus het kan niet worden gekopieerd.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,13 +1905,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion.mac": "Ontgrendel het in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.",
-  "@errors.write.fileLocked.suggestion.mac": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Ontgrendel het in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Het bestand is misschien beschermd. Controleer de bevoegdheden ervan (bijvoorbeeld via chmod of je bestandsbeheerder) en probeer het opnieuw.}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "8f84de5"
-  },
-  "errors.write.fileLocked.suggestion.other": "Het bestand is misschien beschermd. Controleer de bevoegdheden ervan (bijvoorbeeld via chmod of je bestandsbeheerder) en probeer het opnieuw.",
-  "@errors.write.fileLocked.suggestion.other": {
-    "sourceHash": "6856879"
   },
   "errors.write.deletePending.title": "Bestand wordt verwijderd",
   "@errors.write.deletePending.title": {

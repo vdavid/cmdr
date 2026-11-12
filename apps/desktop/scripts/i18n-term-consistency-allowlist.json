@@ -327,7 +327,7 @@
       },
       {
         "source": "Preview",
-        "reason": "Noun vs verb, both Finder's: `Pré-visualização` labels a preview panel or sample (`askCmdr.renameReview.preview`, `settings.appearance.datePreviewLabel`), `Pré-visualizar` is the command (`commands.fileQuickLook.other.label`)."
+        "reason": "Noun vs verb, both Finder's: `Pré-visualização` labels a preview panel or sample (`askCmdr.renameReview.preview`, `settings.appearance.datePreviewLabel`), `Pré-visualizar` is the command (`commands.fileQuickLook.label`)."
       },
       {
         "source": "Running",

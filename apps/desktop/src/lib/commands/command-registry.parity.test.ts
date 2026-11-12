@@ -10,15 +10,15 @@
  * The license command (`app.licenseKey`) has two states, reached through the
  * generic `nameKey` thunk; both are pinned via `updateLicenseCommandName`. The
  * carve-out below stays because the label is state-dependent, not because the
- * registry treats that command specially. The three platform-conditional commands
- * (`file.showInFinder` / `file.getInfo` / `file.quickLook`) resolve their name
- * by `isMacOS()` when the module loads. These goldens pin the English a Mac
- * shows, so the platform is switched to macOS before the registry is imported;
- * the other-OS labels are pinned directly from the catalog below.
+ * registry treats that command specially. These goldens pin the English a Mac
+ * shows, so the platform is switched to macOS before the registry is imported.
+ * The three commands named after another OS feature (`file.showInFinder` /
+ * `file.getInfo` / `file.quickLook`) each read one key whose value carries a
+ * branch per OS; their Windows and Linux names are pinned below.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, onTestFinished, vi } from 'vitest'
 import { commands, updateCliCommandName, updateLicenseCommandName } from './command-registry'
-import { tString } from '#lib/intl/messages.svelte.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
@@ -372,11 +372,16 @@ describe('command registry en parity', () => {
     expect(name()).toBe('Install “cmdr” command')
   })
 
-  it('the other-OS platform-conditional labels exist in the catalog with the right English', () => {
-    // The registry resolves the macOS labels above. Pin the other-OS variants
-    // directly so a catalog edit can't drift them.
-    expect(tString('commands.fileShowInFinder.other.label')).toBe('Show in file manager')
-    expect(tString('commands.fileGetInfo.other.label')).toBe('File properties')
-    expect(tString('commands.fileQuickLook.other.label')).toBe('Preview')
+  it.each([
+    ['macos', 'Show in Finder', 'Get info', 'Quick look'],
+    ['windows', 'Show in File Explorer', 'Properties', 'Preview'],
+    ['linux', 'Show in file manager', 'File properties', 'Preview'],
+  ] as const)('on %s the commands named after an OS feature read that OS’s words', (platform, show, info, look) => {
+    // Resolved on every read, so the registry built above follows the platform.
+    onTestFinished(withPlatform(platform))
+    const name = (id: string): string | undefined => commands.find((c) => c.id === id)?.name
+    expect(name('file.showInFinder')).toBe(show)
+    expect(name('file.getInfo')).toBe(info)
+    expect(name('file.quickLook')).toBe(look)
   })
 })

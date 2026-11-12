@@ -1757,13 +1757,9 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Ellenőrizd, hogy van írási hozzáférésed a szülőmappához. Lehet, hogy a fájl zárolva van. Oldd fel a Finderben (Infó megjelenítése > vedd ki a „Zárolt” pipát), majd próbáld újra.",
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Ellenőrizd, hogy van írási hozzáférésed a szülőmappához. Lehet, hogy a fájl zárolva van. Oldd fel a Finderben (Infó megjelenítése > vedd ki a „Zárolt” pipát), majd próbáld újra.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Ellenőrizd, hogy van írási hozzáférésed a szülőmappához. Lehet, hogy a fájl védett. Ellenőrizd az engedélyeit (például chmod paranccsal vagy a fájlkezelőddel), majd próbáld újra.}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "1e6e123"
-  },
-  "errors.write.permissionDenied.suggestion.deleteOther": "Ellenőrizd, hogy van írási hozzáférésed a szülőmappához. Lehet, hogy a fájl védett. Ellenőrizd az engedélyeit (például chmod paranccsal vagy a fájlkezelőddel), majd próbáld újra.",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "sourceHash": "650bb53"
   },
   "errors.write.permissionDenied.suggestion.default": "Ellenőrizd, hogy van írási hozzáférésed a célmappához. Lehet, hogy fel kell oldanod az eszközt, vagy módosítanod kell a mappa engedélyeit.",
   "@errors.write.permissionDenied.suggestion.default": {
@@ -1785,21 +1781,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "Ehhez rendszergazdai jogosultság kell. Ha a saját fiókodnak akarsz hozzáférést adni, jelöld ki a mappát a Finderben, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt.",
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Ehhez rendszergazdai jogosultság kell. Ha a saját fiókodnak akarsz hozzáférést adni, jelöld ki a mappát a Finderben, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Ehhez rendszergazdai jogosultság kell. Ha a saját fiókodnak akarsz hozzáférést adni, módosítsd a mappa engedélyeit (például chmod paranccsal), majd próbáld újra.}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "Ehhez rendszergazdai jogosultság kell. Ha a saját fiókodnak akarsz hozzáférést adni, módosítsd a mappa engedélyeit (például chmod paranccsal), majd próbáld újra.",
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "5ce034b"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "Ezt maga a macOS védi, úgyhogy a rendszergazdai jogosultság sem segít. Lehet, hogy zárolva van: jelöld ki a Finderben, válaszd az Infó megjelenítése parancsot, és vedd ki a „Zárolt” pipát.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {Ezt maga a macOS védi, úgyhogy a rendszergazdai jogosultság sem segít. Lehet, hogy zárolva van: jelöld ki a Finderben, válaszd az Infó megjelenítése parancsot, és vedd ki a „Zárolt” pipát.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Ezt maga a rendszer védi, úgyhogy a rendszergazdai jogosultság sem segít. Lehet, hogy védelmi jelölés van rajta, amit előbb el kell távolítani.}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
     "sourceHash": "64a71c8"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "Ezt maga a rendszer védi, úgyhogy a rendszergazdai jogosultság sem segít. Lehet, hogy védelmi jelölés van rajta, amit előbb el kell távolítani.",
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "a4856dc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "Nincs engedélyed olvasni ezt az elemet, így nem másolható.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,13 +1905,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion.mac": "Oldd fel a Finderben (Infó megjelenítése > vedd ki a „Zárolt” pipát), majd próbáld újra.",
-  "@errors.write.fileLocked.suggestion.mac": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Oldd fel a Finderben (Infó megjelenítése > vedd ki a „Zárolt” pipát), majd próbáld újra.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Lehet, hogy a fájl védett. Ellenőrizd az engedélyeit (például chmod paranccsal vagy a fájlkezelőddel), majd próbáld újra.}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "8f84de5"
-  },
-  "errors.write.fileLocked.suggestion.other": "Lehet, hogy a fájl védett. Ellenőrizd az engedélyeit (például chmod paranccsal vagy a fájlkezelőddel), majd próbáld újra.",
-  "@errors.write.fileLocked.suggestion.other": {
-    "sourceHash": "6856879"
   },
   "errors.write.deletePending.title": "A fájl eltávolítás alatt van",
   "@errors.write.deletePending.title": {

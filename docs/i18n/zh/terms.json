@@ -1859,8 +1859,7 @@
     "chosen": "项目",
     "confidence": "high",
     "exceptions": {
-      "errors.write.permissionDenied.suggestion.systemProtectedMac": "\"The item\" refers back to \"this one\" and reads as the pronoun 它.",
-      "errors.write.permissionDenied.suggestion.systemProtectedOther": "\"The item\" refers back to \"this one\" and reads as the pronoun 它."
+      "errors.write.permissionDenied.suggestion.systemProtected": "\"The item\" refers back to \"this one\" and reads as the pronoun 它."
     },
     "forms": "counted {count} 个项目; a classifier back-reference 这一项 / 那一项",
     "note": "A list-final item placeholder takes no measure word (其他 App).",
@@ -3143,7 +3142,7 @@
     "chosen": "共享与权限",
     "forms": "quoted in prose: 在“共享与权限”下",
     "confidence": "high",
-    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdminMac` (panel label 共享与权限：)"
+    "sources": "macOS 27.0 Finder InfoWindowPermissionsView 6.title (plutil, 2026-10-14); matches the shipped `errors.write.permissionDenied.suggestion.needsAdmin` (panel label 共享与权限：)"
   },
   "shortcut": {
     "chosen": "快捷键",

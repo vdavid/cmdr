@@ -96,7 +96,7 @@ all four facts (trash downloads, whole-selection delete only, the service keeps 
 - `Deze bestandsnaam kan niet worden gebruikt` (Finder `RN31`), no period: it's inserted before
   `‘{name}’ behoudt zijn naam.` Chain toast: `Eén ander bestand` (Finder `MR101_V2`), `net als ‘{name}’: {reason}`.
 
-## Toon info en Beveiligd (`errors.write.fileLocked.*`, `errors.write.permissionDenied.suggestion.deleteMac`)
+## Toon info en Beveiligd (`errors.write.fileLocked.*`, `errors.write.permissionDenied.suggestion.delete`)
 
 `deselecteer ‘Beveiligd’` is Finder's advice (`NE18`); `Vergrendeld` stays for other locks (the git index lock).
 
@@ -253,7 +253,7 @@ the key. `favoritesCantAddHere`: reason after a colon, `netwerkshares` (`gedeeld
 `Geen volledige schijftoegang` (System Settings `ALL_FILES`), shared by `bannerTitle.denied`;
 `bestanden die macOS voor zichzelf houdt`, ❌ never a feature name.
 
-## Namen die er hetzelfde uitzien (`fileOperations.transferProgress.lookAlikeHint`, `errors.listing.ambiguousName.title`, `errors.volume.ambiguousName`, `ai.secretError.keychainBody`)
+## Namen die er hetzelfde uitzien (`fileOperations.transferProgress.lookAlikeHint`, `errors.listing.ambiguousName.title`, `errors.volume.ambiguousName`, `ai.secretError.body`)
 
 `onderdeel` even in Keychain Access (`Alle onderdelen`); `item` only for non-files. `slaat ze anders op` over `spellen`;
 `Met ‘Overschrijf’ vervang je …`.

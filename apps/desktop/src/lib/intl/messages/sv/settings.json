@@ -2938,14 +2938,10 @@
   "@settings.appearance.appColorHintPrefix": {
     "sourceHash": "748470a"
   },
-  "settings.appearance.appColorHintLinkMac": "{systemSettings} > {appearance}",
-  "@settings.appearance.appColorHintLinkMac": {
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {dina inställningar för systemets utseende}}",
+  "@settings.appearance.appColorHintLink": {
     "sourceHash": "5c94206",
     "sameAsSourceJustification": "Placeholder-only value: '{systemSettings} > {appearance}', two OS-localized navigation tokens joined by the '> ' arrow. No translatable text."
-  },
-  "settings.appearance.appColorHintLinkOther": "dina inställningar för systemets utseende",
-  "@settings.appearance.appColorHintLinkOther": {
-    "sourceHash": "0aad057"
   },
   "settings.appearance.datePreviewLabel": "Förhandsvisning:",
   "@settings.appearance.datePreviewLabel": {

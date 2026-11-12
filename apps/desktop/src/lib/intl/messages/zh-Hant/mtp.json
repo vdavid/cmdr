@@ -3,13 +3,9 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr 已暫停 macOS 的相機常駐程式（ptpcamerad），好存取這個裝置。如果想在其他 App 中使用它，請在設定中關閉 MTP 支援。",
-  "@mtp.connectedToast.bodyMac": {
+  "mtp.connectedToast.body": "{platform, select, macos {Cmdr 已暫停 macOS 的相機常駐程式（ptpcamerad），好存取這個裝置。如果想在其他 App 中使用它，請在設定中關閉 MTP 支援。} windows {} other {如果想在其他 App 中使用這個裝置，請在設定中關閉 MTP 支援。}}",
+  "@mtp.connectedToast.body": {
     "sourceHash": "3ace37b"
-  },
-  "mtp.connectedToast.bodyOther": "如果想在其他 App 中使用這個裝置，請在設定中關閉 MTP 支援。",
-  "@mtp.connectedToast.bodyOther": {
-    "sourceHash": "6f42620"
   },
   "mtp.connectedToast.dontShowAgain": "不要再顯示",
   "@mtp.connectedToast.dontShowAgain": {

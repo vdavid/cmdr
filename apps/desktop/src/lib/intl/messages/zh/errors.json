@@ -1756,13 +1756,9 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "cca028a"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "确认你对上一级文件夹有写入权限。文件可能被锁定了。在 Finder 里解锁它（显示简介 > 取消勾选“已锁定”），然后重试。",
-  "@errors.write.permissionDenied.suggestion.deleteMac": {
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {确认你对上一级文件夹有写入权限。文件可能被锁定了。在 Finder 里解锁它（显示简介 > 取消勾选“已锁定”），然后重试。} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {确认你对上一级文件夹有写入权限。文件可能受保护。检查它的权限（比如通过 chmod 或你的文件管理器），然后重试。}}",
+  "@errors.write.permissionDenied.suggestion.delete": {
     "sourceHash": "1e6e123"
-  },
-  "errors.write.permissionDenied.suggestion.deleteOther": "确认你对上一级文件夹有写入权限。文件可能受保护。检查它的权限（比如通过 chmod 或你的文件管理器），然后重试。",
-  "@errors.write.permissionDenied.suggestion.deleteOther": {
-    "sourceHash": "650bb53"
   },
   "errors.write.permissionDenied.suggestion.default": "确认你对目标文件夹有写入权限。你可能需要解锁设备或更改文件夹权限。",
   "@errors.write.permissionDenied.suggestion.default": {
@@ -1784,21 +1780,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "这需要管理员权限。要给你自己的账户授权，请在 Finder 里选中这个文件夹，选取“显示简介”，然后查看“共享与权限”部分。",
-  "@errors.write.permissionDenied.suggestion.needsAdminMac": {
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {这需要管理员权限。要给你自己的账户授权，请在 Finder 里选中这个文件夹，选取“显示简介”，然后查看“共享与权限”部分。} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {这需要管理员权限。要给你自己的账户授权，请更改文件夹的权限（比如通过 chmod），然后重试。}}",
+  "@errors.write.permissionDenied.suggestion.needsAdmin": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "这需要管理员权限。要给你自己的账户授权，请更改文件夹的权限（比如通过 chmod），然后重试。",
-  "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "5ce034b"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "这是 macOS 自己保护的，管理员权限也改不了。它可能被锁定了：在 Finder 里选中它，选取“显示简介”，然后取消勾选“已锁定”。",
-  "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {这是 macOS 自己保护的，管理员权限也改不了。它可能被锁定了：在 Finder 里选中它，选取“显示简介”，然后取消勾选“已锁定”。} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {这是系统自己保护的，管理员权限也改不了。它可能带着一个需要先清除的保护标记。}}",
+  "@errors.write.permissionDenied.suggestion.systemProtected": {
     "sourceHash": "64a71c8"
-  },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "这是系统自己保护的，管理员权限也改不了。它可能带着一个需要先清除的保护标记。",
-  "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "a4856dc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "你没有权限读取这个项目，所以无法拷贝它。",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1916,13 +1904,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion.mac": "在 Finder 里解锁它（显示简介 > 取消勾选“已锁定”），然后重试。",
-  "@errors.write.fileLocked.suggestion.mac": {
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {在 Finder 里解锁它（显示简介 > 取消勾选“已锁定”），然后重试。} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {文件可能受保护。检查它的权限（比如通过 chmod 或你的文件管理器），然后重试。}}",
+  "@errors.write.fileLocked.suggestion": {
     "sourceHash": "8f84de5"
-  },
-  "errors.write.fileLocked.suggestion.other": "文件可能受保护。检查它的权限（比如通过 chmod 或你的文件管理器），然后重试。",
-  "@errors.write.fileLocked.suggestion.other": {
-    "sourceHash": "6856879"
   },
   "errors.write.deletePending.title": "文件正在移除中",
   "@errors.write.deletePending.title": {

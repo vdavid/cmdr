@@ -171,8 +171,6 @@ pub fn display_accelerator_label(label: &str, shortcut: &str, platform: Platform
 pub enum Label {
     /// A `menu.*` catalog key.
     Key(&'static str),
-    /// One catalog key per platform.
-    PerPlatformKey(PerPlatform<&'static str>),
     /// `menu.app.licenseDetails` once the user has a license key, `menu.app.licenseEnter` before.
     /// Only the second takes input, so only it gets the ellipsis.
     License,
@@ -182,10 +180,12 @@ pub enum Label {
 
 impl Label {
     /// The catalog key this label reads, or `None` for [`Label::AppName`], which has none.
-    pub fn catalog_key(self, platform: Platform, has_existing_license: bool) -> Option<&'static str> {
+    ///
+    /// One key on every platform: a label that reads differently per OS is one catalog value with a
+    /// branch per OS, picked where the text is looked up.
+    pub fn catalog_key(self, has_existing_license: bool) -> Option<&'static str> {
         match self {
             Self::Key(key) => Some(key),
-            Self::PerPlatformKey(keys) => Some(keys.on(platform)),
             Self::License if has_existing_license => Some("menu.app.licenseDetails"),
             Self::License => Some("menu.app.licenseEnter"),
             Self::AppName => None,

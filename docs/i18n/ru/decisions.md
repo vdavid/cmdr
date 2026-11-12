@@ -95,10 +95,10 @@ macOS (DirectoryBinding Хост, ssh `подлинность хоста`); MS's
 macOS Sharing `Общие папки`, MS `общая папка`; `общий ресурс` is Windows. Prose may say `сетевая папка`; mounted is
 `том`.
 
-## Locked: Защита (`*ileLocked*`, `*deleteMac`, `*notPermitted`)
+## Locked: Защита (`*ileLocked*`, `*d.suggestion.delete`, `*notPermitted`)
 
-Finder's checkbox `Защита`, command `Снять защиту`; `Разблокируйте` would name a second thing. Phone, keychain, and
-archive unlocks keep `разблокировать`.
+Finder checkbox `Защита`, command `Снять защиту`; `Разблокируйте` names another thing. Phones, keychains, and archives
+keep `разблокировать`.
 
 ## Incoming item: Входящий over Новый (`fileOperations.transferProgress.new*Label`)
 

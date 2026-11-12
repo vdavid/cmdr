@@ -4,7 +4,6 @@
     import ToastActions from '#lib/ui/toast/ToastActions.svelte'
     import Checkbox from '#lib/ui/Checkbox.svelte'
     import { setSetting } from '#lib/settings/index.js'
-    import { isMacOS } from '#lib/platform/index.js'
     import { tString } from '#lib/intl/messages.svelte.js'
 
     interface Props {
@@ -18,6 +17,10 @@
 
     // Resolved here so the fallback follows a live language switch.
     const shownName = $derived(deviceName || tString('mtp.deviceFallbackName'))
+
+    // What Cmdr had to do to reach the device, and how to hand it back. Empty where Cmdr shares
+    // the device with other apps (Windows), and then the toast has no body line.
+    const body = $derived(tString('mtp.connectedToast.body'))
 
     function handleOk() {
         if (dontShowAgain) {
@@ -37,13 +40,9 @@
 
 <div>
     <p class="title">{tString('mtp.connectedToast.title', { deviceName: shownName })}</p>
-    <p class="body">
-        {#if isMacOS()}
-            {tString('mtp.connectedToast.bodyMac')}
-        {:else}
-            {tString('mtp.connectedToast.bodyOther')}
-        {/if}
-    </p>
+    {#if body}
+        <p class="body">{body}</p>
+    {/if}
     <div class="dont-show-again">
         <Checkbox bind:checked={dontShowAgain}>{tString('mtp.connectedToast.dontShowAgain')}</Checkbox>
     </div>

@@ -17,7 +17,7 @@ real device or console to verify:
 - `settings.fileExplorer.typeToJump.mode.description`: check what Czech VoiceOver calls the ⌫ key (written Delete).
 - `servers.sheet.s3GcsKeyHelp`: check the Czech Google Cloud console's name for the Interoperability tab (written „karta
   Interoperabilita“).
-- `ai.secretError.keyringBody`: confirm GNOME's Czech keyring app is „Hesla a klíče“.
+- `ai.secretError.body`: confirm GNOME's Czech keyring app is „Hesla a klíče“.
 - `shortcuts.system.characterViewer`: check whether Czech macOS titles the Character Viewer window „Prohlížeč znaků“;
   switch from „Emotikony a symboly“ if so.
 - `queue.chip.ariaLabel`: check VoiceOver reads „42 %“ as „42 procent“.
