@@ -11,7 +11,7 @@
   "@downloads.toast.learnIntro": {
     "sourceHash": "3a06888"
   },
-  "downloads.toast.inAppHint": "Az appban ide ugrasz ezzel: <chip>{key}</chip>",
+  "downloads.toast.inAppHint": "Az appban ide ugrasz ezzel: <chip></chip>",
   "@downloads.toast.inAppHint": {
     "sourceHash": "5b70d9c"
   },
@@ -19,11 +19,11 @@
   "@downloads.toast.globalHint": {
     "sourceHash": "785e1f3"
   },
-  "downloads.toast.summaryBoth": "Ugrás: <inApp>{inAppKey}</inApp> az appban, <global>{globalKey}</global> globálisan.",
+  "downloads.toast.summaryBoth": "Ugrás: <inApp></inApp> az appban, <global>{globalKey}</global> globálisan.",
   "@downloads.toast.summaryBoth": {
     "sourceHash": "59c4131"
   },
-  "downloads.toast.summaryInApp": "Ugrás: <inApp>{inAppKey}</inApp> az appban.",
+  "downloads.toast.summaryInApp": "Ugrás: <inApp></inApp> az appban.",
   "@downloads.toast.summaryInApp": {
     "sourceHash": "2c0fd22"
   },

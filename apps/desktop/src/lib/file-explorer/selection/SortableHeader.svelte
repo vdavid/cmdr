@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { SortColumn, SortOrder } from '../types'
     import { commands, SORT_BY_COMMANDS } from '#lib/commands/index.js'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import StatusGlyph from '#lib/ui/StatusGlyph.svelte'
@@ -59,7 +59,7 @@
     const commandName = $derived(commands.find((c) => c.id === commandId)?.name ?? '')
     // Reactive: re-reads when the user rebinds the shortcut. The tooltip action
     // live-updates its content, so a focus flip or rebind mid-hover shows too.
-    const shortcut = $derived(isFocused ? getFirstShortcutReactive(commandId) : undefined)
+    const shortcut = $derived(isFocused ? shortcutAsText(commandId, 'tooltip') : undefined)
 
     const isActive = $derived(column === currentSortColumn)
     /**

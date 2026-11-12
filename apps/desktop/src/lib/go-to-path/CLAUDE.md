@@ -35,8 +35,8 @@ on it.
   are ordinary input once anything is typed. Confirmed with David; don't switch it to a modifier.
 - **Keep the `if (show && showGoToPathDialog) return` guard in `routes/(main)/+page.svelte`.** The native
   `Go to folder…` menu item carries ⌘G as an accelerator AND `command-registry` binds ⌘G, so both fire on macOS.
-- **The ancestor toast's back-shortcut is snapshotted at toast creation** and rendered as a literal-mode `ShortcutChip`.
-  A `commandId`-mode chip re-renders live, and a later rebind shouldn't rewrite a visible toast.
+- **The ancestor toast's back hint is a live `nav.back` chip** (`ShortcutChip commandId`), and the line goes away when
+  the command is unbound. Feature code never reads the binding as text (`cmdr/no-raw-shortcut-text`).
 - **Anything that isn't a scheme input is local**, so a relative input on a non-local pane falls back to
   nearest-ancestor (often `/`).
 

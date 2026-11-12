@@ -2,12 +2,11 @@
     /**
      * Toast that shows up when the watcher detects a new file in ~/Downloads.
      *
-     * The shortcut inputs are snapshotted at toast-creation time and never
-     * re-read (not subscribed live), so a remap that happens between the toast
-     * appearing and the user clicking doesn't mutate the displayed hint
-     * mid-flight. The one piece of live state is `collapsed` (the user can
-     * toggle compact/expanded on this very toast); it's seeded from the
-     * persisted setting and written back for the next toast.
+     * The in-app hint is a live `downloads.goToLatest` chip: it follows a rebind,
+     * and its line goes away when the command is unbound. The global hotkey is no
+     * command, so the bridge snapshots its binding into `globalBinding` and a
+     * literal chip shows it. `collapsed` is seeded from the persisted setting and
+     * written back for the next toast.
      *
      * Whole body is mouse-clickable for "Jump to file"; the two explicit
      * buttons own keyboard activation. The clickable body has no `tabindex`
@@ -33,6 +32,7 @@
     import GlobalShortcutAnimation from './GlobalShortcutAnimation.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import Trans from '#lib/intl/Trans.svelte'
+    import { commandHasShortcut } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import type { Snippet } from 'svelte'
     import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
@@ -61,13 +61,6 @@
         /** The `download-detected` Tauri payload that produced this toast. */
         event: DownloadDetectedPayload
         /**
-         * Display string for the in-app go-to-latest shortcut (default `⌘J`),
-         * snapshotted at toast-add time. NOT reactive: a remap mid-toast does
-         * not change what's shown. Pass `''` to omit the in-app hint line (the
-         * command is unbound).
-         */
-        shortcutHint: string
-        /**
          * Display string for the GLOBAL go-to-latest hotkey (default `⌃⌥⌘J`),
          * the one that jumps from any app, snapshotted at toast-add time. Pass
          * `''` to omit the whole global hint line — the bridge does that when
@@ -86,7 +79,10 @@
         initialCollapsed: boolean
     }
 
-    const { toastId, explorer, event, shortcutHint, globalBinding, initialCollapsed }: Props = $props()
+    const { toastId, explorer, event, globalBinding, initialCollapsed }: Props = $props()
+
+    /** The in-app hint is a live `commandId` chip; this says whether there's one to teach. */
+    const inAppBound = $derived(commandHasShortcut('downloads.goToLatest'))
 
     const log = getAppLogger('downloads')
 
@@ -112,7 +108,7 @@
     const showShortcutAnimation = $derived(globalBinding === DEFAULT_GLOBAL_GO_TO_LATEST_BINDING)
 
     /** Nullable in-app / global keys for the collapsed summary line. */
-    const summary = $derived(buildShortcutSummary(shortcutHint, globalBinding))
+    const summary = $derived(buildShortcutSummary(inAppBound, globalBinding))
 
     /**
      * Relative-subdir label rendered when the file is below the Downloads
@@ -165,22 +161,21 @@
 <!--
     `<Trans>` snippets for the inline components in the catalog sentences.
     `fileChip` wraps the filename (the tag's inner text) in monospace. The chip
-    snippets render a literal `ShortcutChip` from the snapshotted binding and
-    discard the tag's inner text (the key glyph, present so the ICU tag has a
-    body and to document the key for translators) by naming the parameter
+    snippets render a `ShortcutChip` (live for in-app, literal for the global
+    hotkey) and discard the tag's inner text by naming the parameter
     `_children`, the house marker for a deliberately unused one.
 -->
 {#snippet fileChip(children: Snippet)}
     <code class="file">{@render children()}</code>
 {/snippet}
 {#snippet inAppChip(_children: Snippet)}
-    <ShortcutChip key={shortcutHint} />
+    <ShortcutChip commandId="downloads.goToLatest" clickable={false} />
 {/snippet}
 {#snippet globalChip(_children: Snippet)}
     <ShortcutChip key={globalBinding} />
 {/snippet}
 {#snippet summaryInAppChip(_children: Snippet)}
-    <ShortcutChip key={summary.inApp ?? ''} />
+    <ShortcutChip commandId="downloads.goToLatest" clickable={false} />
 {/snippet}
 {#snippet summaryGlobalChip(_children: Snippet)}
     <ShortcutChip key={summary.global ?? ''} />
@@ -215,13 +210,12 @@
                 <Trans
                     key="downloads.toast.summaryBoth"
                     snippets={{ inApp: summaryInAppChip, global: summaryGlobalChip }}
-                    params={{ inAppKey: summary.inApp, globalKey: summary.global }}
+                    params={{ globalKey: summary.global }}
                 />
             {:else if summary.inApp}
                 <Trans
                     key="downloads.toast.summaryInApp"
                     snippets={{ inApp: summaryInAppChip }}
-                    params={{ inAppKey: summary.inApp }}
                 />
             {:else if summary.global}
                 <Trans
@@ -244,15 +238,14 @@
         {#if subdirLabel}
             <span class="subdir">{tString('downloads.toast.inSubdir', { subdir: subdirLabel })}</span>
         {/if}
-        {#if shortcutHint || globalBinding}
+        {#if inAppBound || globalBinding}
             <div class="learn">
                 <strong class="learn-intro">{tString('downloads.toast.learnIntro')}</strong>
-                {#if shortcutHint}
+                {#if inAppBound}
                     <span class="hint"
                         ><Trans
                             key="downloads.toast.inAppHint"
                             snippets={{ chip: inAppChip }}
-                            params={{ key: shortcutHint }}
                         /></span
                     >
                 {/if}

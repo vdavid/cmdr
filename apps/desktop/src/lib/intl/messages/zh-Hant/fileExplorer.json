@@ -1100,7 +1100,7 @@
   "@fileExplorer.list.hiddenItems": {
     "sourceHash": "78a4459"
   },
-  "fileExplorer.list.hiddenItemsHowToShortcut": "按 {shortcut} 或選擇「{menu} > {item}」就能看到隱藏項目。",
+  "fileExplorer.list.hiddenItemsHowToShortcut": "按 <key></key> 或選擇「{menu} > {item}」就能看到隱藏項目。",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
     "sourceHash": "b212fcd"
   },

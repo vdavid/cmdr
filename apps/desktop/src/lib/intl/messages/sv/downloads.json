@@ -11,7 +11,7 @@
   "@downloads.toast.learnIntro": {
     "sourceHash": "3a06888"
   },
-  "downloads.toast.inAppHint": "I appen: tryck på <chip>{key}</chip> för att hoppa hit",
+  "downloads.toast.inAppHint": "I appen: tryck på <chip></chip> för att hoppa hit",
   "@downloads.toast.inAppHint": {
     "sourceHash": "5b70d9c"
   },
@@ -19,11 +19,11 @@
   "@downloads.toast.globalHint": {
     "sourceHash": "785e1f3"
   },
-  "downloads.toast.summaryBoth": "Hoppa med <inApp>{inAppKey}</inApp> i appen, <global>{globalKey}</global> globalt.",
+  "downloads.toast.summaryBoth": "Hoppa med <inApp></inApp> i appen, <global>{globalKey}</global> globalt.",
   "@downloads.toast.summaryBoth": {
     "sourceHash": "59c4131"
   },
-  "downloads.toast.summaryInApp": "Hoppa med <inApp>{inAppKey}</inApp> i appen.",
+  "downloads.toast.summaryInApp": "Hoppa med <inApp></inApp> i appen.",
   "@downloads.toast.summaryInApp": {
     "sourceHash": "2c0fd22"
   },

@@ -157,8 +157,8 @@ Three props exist for the search-results pane, which shows the same footer over 
   more than the pane holds (the row cap, or a walk still filling it). Equal or absent, the line counts files and dirs as
   usual. The numbers themselves come from `../pane/snapshot-stats.ts`, a fold over the snapshot's rows that stands in
   for the stats IPC.
-- `showInFolderShortcut` adds the compact localized “Show in folder” clue with the live display binding for
-  `nav.parent`. `FilePane` reads it through `getFirstShortcutReactive`, so Settings rebinding updates the chip in place.
+- `showInFolderHint` adds the compact localized “Show in folder” clue with a live `nav.parent` `ShortcutChip`, so a
+  Settings rebind updates it in place; with `nav.parent` unbound the clue goes away (`commandHasShortcut`).
 
 ## Phone-storage hint (MTP)
 

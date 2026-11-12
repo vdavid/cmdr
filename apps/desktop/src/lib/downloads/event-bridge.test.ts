@@ -22,7 +22,7 @@ const {
   getDownloadsNotificationsModeMock,
   sendNotificationMock,
   addToastMock,
-  getEffectiveShortcutsMock,
+  goToLatestBindingsMock,
   getGlobalGoToLatestEnabledMock,
   getGlobalGoToLatestBindingMock,
   getDownloadsToastCollapsedMock,
@@ -32,7 +32,7 @@ const {
   getDownloadsNotificationsModeMock: vi.fn<() => 'in-app' | 'macos' | 'both' | 'neither'>(),
   sendNotificationMock: vi.fn<(notification: { title: string; body: string }) => Promise<void>>(),
   addToastMock: vi.fn(() => 'toast-id'),
-  getEffectiveShortcutsMock: vi.fn<(id: string) => string[]>(),
+  goToLatestBindingsMock: vi.fn<(id: string) => string[]>(),
   getGlobalGoToLatestEnabledMock: vi.fn<() => boolean>(),
   getGlobalGoToLatestBindingMock: vi.fn<() => string>(),
   getDownloadsToastCollapsedMock: vi.fn<() => boolean>(),
@@ -59,11 +59,9 @@ vi.mock('#lib/ui/toast/index.js', () => ({
   addToast: addToastMock,
 }))
 
-vi.mock('#lib/shortcuts/index.js', async () => ({
-  getEffectiveShortcuts: getEffectiveShortcutsMock,
-  // Real display formatter (`key-capture` is a dependency-free leaf), so the
-  // asserted hint text is what a user would actually read.
-  toDisplayShortcut: (await import('#lib/shortcuts/key-capture.js')).toDisplayShortcut,
+// The in-app command's bindings, as the bridge's yes/no reads them.
+vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', () => ({
+  commandHasShortcut: (id: string) => goToLatestBindingsMock(id).length > 0,
 }))
 
 vi.mock('./global-shortcut-setting', () => ({
@@ -148,7 +146,7 @@ describe('startDownloadsEventBridge', () => {
     getDownloadsNotificationsModeMock.mockReset().mockReturnValue('in-app')
     sendNotificationMock.mockReset().mockResolvedValue(undefined)
     addToastMock.mockReset().mockReturnValue('toast-id')
-    getEffectiveShortcutsMock.mockReset().mockReturnValue(['⌘J'])
+    goToLatestBindingsMock.mockReset().mockReturnValue(['⌘J'])
     getGlobalGoToLatestEnabledMock.mockReset().mockReturnValue(true)
     getGlobalGoToLatestBindingMock.mockReset().mockReturnValue('⌃⌥⌘J')
     getDownloadsToastCollapsedMock.mockReset().mockReturnValue(false)
@@ -239,19 +237,16 @@ describe('startDownloadsEventBridge', () => {
     expect(arg.body).toContain('Chrome')
   })
 
-  it('snapshots the shortcut hint at toast creation time (not reactive)', async () => {
+  it('hands the toast no in-app key text: its live chip reads the binding itself', async () => {
     getDownloadsNotificationsModeMock.mockReturnValue('in-app')
-    getEffectiveShortcutsMock.mockReturnValue(['⌘J'])
+    goToLatestBindingsMock.mockReturnValue(['⌘J'])
     const listener = await startBridgeAndCaptureListener()
     listener({ payload: payload() })
     await flushAsync()
 
-    // Simulate the user remapping AFTER the toast was created. The already-
-    // emitted toast must not change its hint.
-    getEffectiveShortcutsMock.mockReturnValue(['⌘K'])
-
-    const firstCall = addToastMock.mock.calls[0] as unknown as [unknown, { props: { shortcutHint: string } }]
-    expect(firstCall[1].props.shortcutHint).toBe('⌘J')
+    const firstCall = addToastMock.mock.calls[0] as unknown as [unknown, { props: Record<string, unknown> }]
+    expect(goToLatestBindingsMock).toHaveBeenCalledWith('downloads.goToLatest')
+    expect(Object.keys(firstCall[1].props)).not.toContain('shortcutHint')
   })
 
   it('passes the global hotkey binding when it is enabled and bound', async () => {
@@ -280,7 +275,7 @@ describe('startDownloadsEventBridge', () => {
     // In-app unbound AND global off: the toast has nothing to teach, so it
     // doesn't appear even though the mode is 'in-app' (not 'neither').
     getDownloadsNotificationsModeMock.mockReturnValue('in-app')
-    getEffectiveShortcutsMock.mockReturnValue([])
+    goToLatestBindingsMock.mockReturnValue([])
     getGlobalGoToLatestEnabledMock.mockReturnValue(false)
     const listener = await startBridgeAndCaptureListener()
     listener({ payload: payload() })
@@ -293,7 +288,7 @@ describe('startDownloadsEventBridge', () => {
     // The skip only drops the in-app toast (the shortcut teacher); the native
     // notification is a separate surface and never carried a hint.
     getDownloadsNotificationsModeMock.mockReturnValue('both')
-    getEffectiveShortcutsMock.mockReturnValue([])
+    goToLatestBindingsMock.mockReturnValue([])
     getGlobalGoToLatestEnabledMock.mockReturnValue(false)
     const listener = await startBridgeAndCaptureListener()
     listener({ payload: payload() })

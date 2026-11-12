@@ -13,7 +13,7 @@
 import { addToast } from '#lib/ui/toast/index.js'
 import { getSetting, setSetting } from '#lib/settings/index.js'
 import { getNumberFormatter } from '#lib/intl/number-format.js'
-import { normalizeKeyName, toDisplayShortcut } from '#lib/shortcuts/key-capture.js'
+import { normalizeKeyName } from '#lib/shortcuts/key-capture.js'
 import QuickFilterTypingHintToastContent from './QuickFilterTypingHintToastContent.svelte'
 
 /** Dedup id, so the two panes can never stack two. */
@@ -32,8 +32,7 @@ export function maybeShowQuickFilterTypingHint(char: string, windowMs: number): 
     timeoutMs: TOAST_TIMEOUT_MS,
     id: QUICK_FILTER_TYPING_HINT_TOAST_ID,
     props: {
-      // A bare space would show as nothing, so keys go by their display name (`Space`).
-      keyLabel: toDisplayShortcut(normalizeKeyName(char)),
+      keyLabel: normalizeKeyName(char),
       seconds,
       secondsText: getNumberFormatter({ maximumFractionDigits: 1 }).format(seconds),
     },

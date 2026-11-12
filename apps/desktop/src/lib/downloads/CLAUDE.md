@@ -23,15 +23,14 @@ when they're off, never throws), `'both'` → both, `'neither'` → no-op. We DO
 
 ## Must-knows
 
-- **Snapshot-at-creation**: both shortcut values are captured when the toast is created and passed as props; a remap
-  while a toast is up does NOT change what it shows (a stale hint would mismatch what the user pressed). Hence literal
-  chips, not `commandId` mode. The one deliberate live `$state` is the collapse toggle.
+- **The in-app hint is a live `commandId` chip** (goes away when unbound); the global hotkey is no command, so the
+  bridge snapshots it into `globalBinding` for a literal chip.
 - **Skip-the-whole-toast edge case**: when NEITHER shortcut is teachable (in-app `⌘J` unbound AND global off/unbound),
   `dispatchToast` skips the toast even when the mode isn't `'neither'` — teaching them is its reason to exist. A
   `'both'`-mode macOS notification still fires (separate surface, never carried a hint).
-- **Two shortcut hints**: in-app `⌘J` (`getEffectiveShortcuts('downloads.goToLatest')[0]`, `''` when unbound) and global
-  `⌃⌥⌘J` (`''` unless the hotkey is BOTH enabled and bound). `GlobalShortcutAnimation` renders ONLY for the default
-  global combo, because the SVG lights up literal keys.
+- **Two shortcut hints**: in-app `⌘J` (shown while `downloads.goToLatest` is bound) and global `⌃⌥⌘J` (`''` unless the
+  hotkey is BOTH enabled and bound). `GlobalShortcutAnimation` renders ONLY for the default global combo, because the
+  SVG lights up literal keys.
 - **FDA defense-in-depth**: the watcher won't emit when the FDA gate is closed (`runtime::refresh_runtime`), but the
   bridge re-checks `commands.downloadsWatcherStatus()` per event anyway, guarding a stale event during a gate flip.
   `goToLatestDownload` mirrors this.

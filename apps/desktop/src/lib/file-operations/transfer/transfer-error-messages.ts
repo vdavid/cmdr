@@ -34,7 +34,7 @@ import { w, type FriendlyErrorMessage } from './transfer-error-catalog'
 import { volumeGoneMessage } from './transfer-error-volume-gone'
 import { formatInteger } from '#lib/intl/number-format.js'
 import { hasCapability, isMacOS } from '#lib/platform/index.js'
-import { getEffectiveShortcuts, toDisplayShortcut } from '#lib/shortcuts/index.js'
+import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 import { colorizeSize } from '#lib/file-explorer/selection/selection-info-utils.js'
 import { escapeHtml } from '#lib/tooltip/tooltip.js'
 import { formatByteSizeTiered } from '#lib/units/index.js'
@@ -109,9 +109,8 @@ const simpleMessageFactories: Partial<
     // Interpolate the live `file.deletePermanently` binding (platform-formatted)
     // at message-build time. Snapshot semantics are right here: a transient error
     // string isn't a live-updating surface. Falls back to the default if unbound.
-    const deletePermanentlyKey = toDisplayShortcut(
-      getEffectiveShortcuts('file.deletePermanently')[0] ?? (isMacOS() ? '⇧F8' : 'Shift+F8'),
-    )
+    const deletePermanentlyKey =
+      shortcutAsText('file.deletePermanently', 'errorMessage') ?? (isMacOS() ? '⇧F8' : 'Shift+F8')
     return {
       title: w('trashNotSupported.title'),
       message: w('trashNotSupported.message'),

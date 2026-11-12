@@ -24,9 +24,10 @@ it; feature must-knows live in each directory's colocated `CLAUDE.md`, and the m
   `routes/(main)/command-handlers/` (a missing one is a compile error). `cmdr/no-raw-command-dispatch`;
   `lib/commands/CLAUDE.md`.
 - ❌ A keydown handler matches the WHOLE combo — `eventMatchesCommand(e, 'some.command')` from `#lib/shortcuts` — never
-  a hand-rolled `e.key === 'a' && e.metaKey`: that's a modifier SUPERSET, so `⌥⌘A` fires it too. `cmdr/no-raw-key-match`
-  flags a required modifier paired with a literal key test leaving another unconstrained; opt out per line, with a
-  reason. See `lib/shortcuts/CLAUDE.md`.
+  a hand-rolled `e.key === 'a' && e.metaKey`: that's a modifier SUPERSET, so `⌥⌘A` fires it too
+  (`cmdr/no-raw-key-match`). See `lib/shortcuts/CLAUDE.md`.
+- ❌ A shortcut in copy is a `<ShortcutChip commandId>` in a `<Trans>` tag, never a `{shortcut}` param
+  (`cmdr/no-raw-shortcut-text`, `lib/shortcuts/DETAILS.md`).
 - ❌ Render inline glyphs via `<Icon name size>` and spinners via `<Spinner size>` (`#lib/ui/`), never a
   `~icons/lucide/*` import in feature code or a hand-rolled spinner ring. New glyphs register in
   `lib/ui/icons/icon-map.ts`, the one place lucide is imported (`cmdr/no-raw-lucide-import`). `Icon` has no `color` prop
@@ -44,7 +45,7 @@ it; feature must-knows live in each directory's colocated `CLAUDE.md`, and the m
   `<button>` / `<div>` wearing `role=switch|checkbox|radio`, nor a `<button>` around a lone `<Icon name="info">`
   (`InfoTip`, or `StatusGlyph` if unfocusable). `cmdr/prefer-ui-primitive`; opt out per element, with reason. New
   primitive: `docs/guides/building-ui.md`.
-- Remote content (`fetch`, `iframe`)? Ask about disabling it in dev: `withGlobalTauri: true` makes it a security risk.
+- Remote content (`fetch`, `iframe`)? Ask first: `withGlobalTauri: true` makes it a dev security risk.
 - ❌ No `import.meta.env.DEV` in a `.svelte` script (it blinds knip): `isDevBuild()` from `#lib/app-mode`. `{#if}`
   markup keeps the literal. `DETAILS.md` § Dev gates.
 - **`app.html`'s boot guard is ES5 on purpose**: one ES6 token kills it silently on old Safari, and `pnpm dev` won't

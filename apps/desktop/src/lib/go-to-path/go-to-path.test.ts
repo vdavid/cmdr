@@ -8,7 +8,6 @@ const {
   resolveLocationOrToastMock,
   addRecentPathStateMock,
   addToastMock,
-  getEffectiveShortcutsMock,
   navigateToDirMock,
   navigateToFileMock,
   getFocusedPaneMock,
@@ -25,7 +24,6 @@ const {
   resolveLocationOrToastMock: vi.fn(),
   addRecentPathStateMock: vi.fn(() => Promise.resolve()),
   addToastMock: vi.fn(() => 'toast-id'),
-  getEffectiveShortcutsMock: vi.fn(() => ['⌘[']),
   navigateToDirMock: vi.fn(() => Promise.resolve(true)),
   navigateToFileMock: vi.fn(() => Promise.resolve(true)),
   getFocusedPaneMock: vi.fn(() => 'left'),
@@ -46,11 +44,6 @@ vi.mock('#lib/ipc/bindings.js', () => ({
 
 vi.mock('#lib/ui/toast/index.js', () => ({
   addToast: addToastMock,
-}))
-
-vi.mock('#lib/shortcuts/index.js', async () => ({
-  getEffectiveShortcuts: getEffectiveShortcutsMock,
-  toDisplayShortcut: (await import('#lib/shortcuts/key-capture.js')).toDisplayShortcut,
 }))
 
 vi.mock('#lib/file-explorer/navigation/navigate-and-select.js', () => ({
@@ -104,7 +97,6 @@ describe('goToPath handler', () => {
     resolveLocationOrToastMock.mockReset().mockImplementation((path: string) => Promise.resolve(okLocation(path)))
     addRecentPathStateMock.mockReset().mockResolvedValue(undefined)
     addToastMock.mockReset().mockReturnValue('toast-id')
-    getEffectiveShortcutsMock.mockReset().mockReturnValue(['⌘['])
     navigateToDirMock.mockReset().mockResolvedValue(true)
     navigateToFileMock.mockReset().mockResolvedValue(true)
     getFocusedPaneMock.mockReset().mockReturnValue('left')
@@ -282,20 +274,16 @@ describe('goToPath handler', () => {
     })
   })
 
-  it('nearestAncestor → builds the toast with the SNAPSHOTTED nav.back shortcut', async () => {
-    // A non-default binding proves the toast reads the live effective shortcut
-    // rather than hardcoding `⌘[`.
-    getEffectiveShortcutsMock.mockReturnValue(['⌘B'])
+  it('nearestAncestor → builds the toast with both paths (the back chip reads its binding itself)', async () => {
     okResolve({ kind: 'nearestAncestor', requested: '/x/y', ancestorDir: '/' })
     await goToPath(makeExplorerStub(), '/x/y')
 
-    expect(getEffectiveShortcutsMock).toHaveBeenCalledWith('nav.back')
     expect(addToastMock).toHaveBeenCalledTimes(1)
     expect(addToastMock).toHaveBeenCalledWith(
       GoToPathAncestorToastContent,
       expect.objectContaining({
         level: 'info',
-        props: { requested: '/x/y', landed: '/', backShortcut: '⌘B' },
+        props: { requested: '/x/y', landed: '/' },
       }),
     )
   })

@@ -5,14 +5,15 @@
 
     <ShortcutChip commandId="downloads.goToLatest" />   Dynamic: live effective first
                                                         shortcut, clickable by default.
-    <ShortcutChip key="⏎" />                            Literal: a fixed key, never
-                                                        clickable. Also used for toast
-                                                        snapshots.
+    <ShortcutChip key="⏎" />                            Literal: a fixed key (one no
+                                                        command owns), never clickable.
 
   Truthfulness rule: a `commandId` chip is a CLAIM about live app behavior ("pressing
   this does X"), so it reads the reactive store and renders NOTHING when the command has
-  no binding (callers in prose must conditionalize the surrounding sentence). A `key`
-  chip is just typography.
+  no binding (callers in prose conditionalize the surrounding sentence on
+  `commandHasShortcut`). A `key` chip is just typography. A key a command owns is ALWAYS
+  a `commandId` chip, toasts too: feature code never reads a binding as text to hand to
+  `key=` (`cmdr/no-raw-shortcut-text`).
 
   Lazy-import constraint: the deep-link helper (`openShortcutCustomization`) pulls in
   `@tauri-apps/api/webviewWindow` and friends. A literal-mode chip ships in the
@@ -22,7 +23,7 @@
 -->
 <script lang="ts">
     import { commands, type CommandId } from '#lib/commands/index.js'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { getEffectiveShortcutsReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import { toDisplayShortcut } from '#lib/shortcuts/key-capture.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { tString } from '#lib/intl/messages.svelte.js'
@@ -34,6 +35,11 @@
          * `commandId` / `key` must be set.
          */
         commandId?: CommandId
+        /**
+         * Which of the command's bindings to show, from 0 (the first, what menus show).
+         * Renders nothing past the last one, so a row can lay out a fixed number of chips.
+         */
+        index?: number
         /** Literal mode: a fixed key string. Never clickable. */
         key?: string
         /**
@@ -51,7 +57,7 @@
         size?: 'sm' | 'md'
     }
 
-    const { commandId, key, clickable = true, size = 'md' }: Props = $props()
+    const { commandId, index = 0, key, clickable = true, size = 'md' }: Props = $props()
 
     if ((commandId === undefined) === (key === undefined)) {
         throw new Error('ShortcutChip: set exactly one of `commandId` or `key`')
@@ -60,7 +66,7 @@
     const commandName = $derived(commandId ? (commands.find((c) => c.id === commandId)?.name ?? '') : '')
     // Reactive: re-reads when the user rebinds. In literal mode this stays the fixed key.
     // `toDisplayShortcut` is idempotent, so a literal `key` may be written either way.
-    const value = $derived(toDisplayShortcut((commandId ? getFirstShortcutReactive(commandId) : key) ?? ''))
+    const value = $derived(toDisplayShortcut((commandId ? getEffectiveShortcutsReactive(commandId).at(index) : key) ?? ''))
 
     // Clickable only in `commandId` mode (a literal key has no command to customize).
     const isClickable = $derived(commandId !== undefined && clickable)

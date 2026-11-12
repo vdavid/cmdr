@@ -12,7 +12,6 @@
 import type { GoToPathResolution, RecentPathEntry } from '#lib/ipc/bindings.js'
 import { resolveGoToPath, trackEvent } from '#lib/tauri-commands/index.js'
 import { addToast } from '#lib/ui/toast/index.js'
-import { getEffectiveShortcuts, toDisplayShortcut } from '#lib/shortcuts/index.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import {
   navigateToDirInPane,
@@ -131,9 +130,6 @@ async function jump(explorer: ExplorerAPI, input: string): Promise<Jumped> {
       const location = await resolveLocationOrToast(resolution.ancestorDir)
       if (!location) return { outcome: resolution, result: 'refused' }
       if (!(await navigateToDirInPane(explorer, pane, location))) return { outcome: resolution, result: 'refused' }
-      // Snapshot the back-shortcut at toast-creation time so a later rebind
-      // doesn't rewrite a visible toast (matches the downloads snapshot rule).
-      const backShortcut = toDisplayShortcut(getEffectiveShortcuts('nav.back')[0] ?? '')
       addToast(GoToPathAncestorToastContent, {
         id: GO_TO_PATH_ANCESTOR_TOAST_ID,
         level: 'info',
@@ -141,7 +137,6 @@ async function jump(explorer: ExplorerAPI, input: string): Promise<Jumped> {
         props: {
           requested: resolution.requested,
           landed: resolution.ancestorDir,
-          backShortcut,
         },
       })
       await recordRecent(resolution.ancestorDir)

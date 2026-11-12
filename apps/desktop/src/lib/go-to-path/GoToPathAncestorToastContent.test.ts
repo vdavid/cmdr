@@ -1,8 +1,26 @@
-import { describe, it, expect } from 'vitest'
-import { mount, tick } from 'svelte'
-import GoToPathAncestorToastContent from './GoToPathAncestorToastContent.svelte'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { mount, tick, flushSync } from 'svelte'
 
-function setup(props: { requested: string; landed: string; backShortcut: string }) {
+vi.mock('@tauri-apps/plugin-store', () => ({
+  load: vi.fn(() =>
+    Promise.resolve({
+      get: vi.fn(() => Promise.resolve(undefined)),
+      set: vi.fn(() => Promise.resolve()),
+      save: vi.fn(() => Promise.resolve()),
+      keys: vi.fn(() => Promise.resolve([])),
+      delete: vi.fn(() => Promise.resolve()),
+    }),
+  ),
+}))
+
+vi.mock('#lib/ipc/bindings.js', () => ({
+  commands: { updateMenuAccelerator: vi.fn(() => Promise.resolve({ status: 'ok' })) },
+}))
+
+import GoToPathAncestorToastContent from './GoToPathAncestorToastContent.svelte'
+import { getEffectiveShortcuts, removeShortcut, resetShortcut, setShortcut } from '#lib/shortcuts/shortcuts-store.js'
+
+function setup(props: { requested: string; landed: string }) {
   const target = document.createElement('div')
   document.body.appendChild(target)
   mount(GoToPathAncestorToastContent, { target, props })
@@ -15,8 +33,12 @@ function setup(props: { requested: string; landed: string; backShortcut: string 
 }
 
 describe('GoToPathAncestorToastContent', () => {
+  afterEach(() => {
+    resetShortcut('nav.back')
+  })
+
   it('renders the requested and landed paths', async () => {
-    const { target, cleanup } = setup({ requested: '/tmp/nope/a.txt', landed: '/tmp', backShortcut: '⌘[' })
+    const { target, cleanup } = setup({ requested: '/tmp/nope/a.txt', landed: '/tmp' })
     await tick()
     const text = target.textContent
     expect(text).toContain('/tmp/nope/a.txt')
@@ -24,17 +46,20 @@ describe('GoToPathAncestorToastContent', () => {
     cleanup()
   })
 
-  it('renders the snapshotted back-shortcut as a literal ShortcutChip', async () => {
-    const { target, cleanup } = setup({ requested: '/x/y', landed: '/', backShortcut: '⌘B' })
+  it('shows the live nav.back binding, and follows a rebind', async () => {
+    setShortcut('nav.back', 0, '⌘B')
+    const { target, cleanup } = setup({ requested: '/x/y', landed: '/' })
     await tick()
-    // The literal-mode ShortcutChip renders a <kbd>, so the snapshot string shows verbatim.
-    const kbd = target.querySelector('kbd')
-    expect(kbd?.textContent).toBe('⌘B')
+    expect(target.querySelector('kbd')?.textContent).toBe('⌘B')
+    setShortcut('nav.back', 0, '⌘K')
+    flushSync()
+    expect(target.querySelector('kbd')?.textContent).toBe('⌘K')
     cleanup()
   })
 
-  it('omits the hint line when no back-shortcut is given', async () => {
-    const { target, cleanup } = setup({ requested: '/x/y', landed: '/', backShortcut: '' })
+  it('omits the hint line when nav.back is unbound', async () => {
+    while (getEffectiveShortcuts('nav.back').length > 0) removeShortcut('nav.back', 0)
+    const { target, cleanup } = setup({ requested: '/x/y', landed: '/' })
     await tick()
     expect(target.querySelector('kbd')).toBeNull()
     expect(target.querySelector('.hint')).toBeNull()

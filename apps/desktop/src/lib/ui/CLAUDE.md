@@ -44,8 +44,8 @@ Reusable components (Ark UI backs the complex ones).
     keyboard focus. Keep any `aria-label`.
   - `ColumnList`: demands read row DATA, ❌ never DOM text (it'd oscillate).
   - `ShortcutChip`: import `openShortcutCustomization` dynamically: a static import drags
-    `@tauri-apps/api/webviewWindow` onto a module-eval surface the capability-restricted viewer can't have. Set exactly
-    one of `commandId` / `key`.
+    `@tauri-apps/api/webviewWindow` into the capability-restricted viewer. Set exactly one of `commandId` / `key` (a
+    command's key is always `commandId`).
   - `Select`: `.select-*` classes and their accent tokens are a contract. `--z-dropdown` on `.select-content`, ❌ never
     the positioner. Trapping modals call `providePortalTarget`.
   - `Combobox`: drive its text off `inputValue`, never `value` / `items` (blanks on an empty list).

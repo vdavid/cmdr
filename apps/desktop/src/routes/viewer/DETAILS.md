@@ -29,8 +29,9 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
 - **`viewer-keyboard.ts`**: pure key helpers + `createViewerKeyboard`, the keydown router (modifiers, Escape ladder, ⌘A,
   bare-key dispatch, and the twelve selection-extension chords). Word wrap, tail, the 0–3 mode keys
   (`viewer-view-mode.ts`), and the image's zoom keys (`MediaImageView.svelte`) are shortcuts-registry commands (scope
-  `Viewer window`), so the user can rebind or turn them off; `viewer-key-hints.ts` builds the status-bar hint from the
-  live keys. How the window reads rebinds without store access: `lib/shortcuts/DETAILS.md` § "The viewer's keys".
+  `Viewer window`), so the user can rebind or turn them off; the status bar (`ViewerStatusBar.svelte`) shows each bound
+  one as a live `ShortcutChip`, and drops a key turned off. How the window reads rebinds without store access:
+  `lib/shortcuts/DETAILS.md` § "The viewer's keys".
 - **`viewer-menu-actions.ts`**: `runViewerEditAction`, the dispatcher behind the viewer menu bar's Edit > Copy and
   Edit > Select all. Branches on search-input focus through the same `isSearchInputFocused` / `inputHasSelection` the
   keydown router uses, so the menu path and the ⌘-chord path end in the same two functions, then on the view's

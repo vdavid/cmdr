@@ -10,6 +10,19 @@ vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({
   getFileSizeFormat: () => 'binary',
 }))
 
+// The viewer's two remappable keys, as the live chips read them; `null` = turned off.
+const viewerKeys = vi.hoisted((): { wrap: string | null; tail: string | null } => ({ wrap: 'W', tail: 'F' }))
+function bindingsOf(id: string): string[] {
+  const key = id === 'viewer.toggleWordWrap' ? viewerKeys.wrap : id === 'viewer.toggleTail' ? viewerKeys.tail : null
+  return key === null ? [] : [key]
+}
+vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('#lib/shortcuts/reactive-shortcuts.svelte.js')>()),
+  commandHasShortcut: (id: string) => bindingsOf(id).length > 0,
+  getEffectiveShortcutsReactive: bindingsOf,
+  shortcutAsText: (id: string) => bindingsOf(id)[0],
+}))
+
 beforeEach(() => {
   document.body.innerHTML = ''
   // Pin the locale so the dimension thousands separator is deterministic.
@@ -120,6 +133,48 @@ describe('ViewerStatusBar', () => {
     expect(target.querySelector('.backend-badge')?.textContent).toBe('streaming')
 
     void unmount(instance)
+  })
+
+  // The text-mode hint names the keys the user has, not the defaults (#441), each as a key cap.
+  describe('text-mode key hint', () => {
+    afterEach(() => {
+      viewerKeys.wrap = 'W'
+      viewerKeys.tail = 'F'
+    })
+
+    function hintParts(target: HTMLElement): { text: string; keys: string[] }[] {
+      return Array.from(target.querySelectorAll('.hint-part'), (part) => ({
+        text: part.textContent,
+        keys: Array.from(part.querySelectorAll('kbd'), (k) => k.textContent),
+      }))
+    }
+
+    it('lists wrap, tail, and search, each key in a chip', async () => {
+      const { target, instance } = mountStatusBar()
+      await tick()
+      expect(hintParts(target)).toEqual([
+        { text: 'W wrap', keys: ['W'] },
+        { text: 'F tail', keys: ['F'] },
+        { text: 'Ctrl+F search', keys: ['Ctrl+F'] },
+      ])
+      void unmount(instance)
+    })
+
+    it('shows a rebinding', async () => {
+      viewerKeys.wrap = '⌃W'
+      const { target, instance } = mountStatusBar()
+      await tick()
+      expect(hintParts(target)[0]).toEqual({ text: '⌃W wrap', keys: ['⌃W'] })
+      void unmount(instance)
+    })
+
+    it('drops the part of a key turned off', async () => {
+      viewerKeys.wrap = null
+      const { target, instance } = mountStatusBar()
+      await tick()
+      expect(hintParts(target).map((p) => p.text)).toEqual(['F tail', 'Ctrl+F search'])
+      void unmount(instance)
+    })
   })
 
   it('adds a wrap badge when wordWrap is on', async () => {

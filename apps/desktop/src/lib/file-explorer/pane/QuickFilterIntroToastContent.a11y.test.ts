@@ -27,8 +27,8 @@ describe('the quick filter surfaces', () => {
     mount(QuickFilterTypingHintToastContent, { target, props: { keyLabel: 'Space', seconds: 1.5, secondsText: '1.5' } })
     await tick()
     await expectNoA11yViolations(target)
-    // The chip carries the key, so the sentence never renders an empty `<code>`.
-    expect(target.querySelector('code')?.textContent).toBe('Space')
+    // The key renders as a key cap, so the sentence never holds an empty one.
+    expect(target.querySelector('kbd')?.textContent).toBe('Space')
   })
 
   it('the filter badge with its clear button has no a11y violations', async () => {

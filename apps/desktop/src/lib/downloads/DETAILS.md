@@ -13,15 +13,15 @@ mechanics, deep-link wiring, and the smoke-test guide.
 - **`go-to-latest-ids.ts`**: dedup ids for the go-to-latest INFO toasts.
 - **`event-bridge.svelte.ts`**: one `download-detected` subscription (`startDownloadsEventBridge`), dispatches per the
   settings enum, re-checks the FDA gate per event, and coalesces the macOS banner (see § One toast at a time).
-- **`DownloadToastContent.svelte`**: in-app toast: title with filename + size, optional subdir line, two snapshotted
-  shortcut hints (in-app `⌘J` and global `⌃⌥⌘J`, each a literal `ShortcutChip`), `GlobalShortcutAnimation` for the
-  default global combo, and a button row (secondary "Stop showing these" + primary "Jump to file"). Collapsible;
-  auto-hides at 10s; `widthPx: 432` (wider than the 360 default so the animation reads). Carries
-  `toastGroup: 'downloads'` with `maxInGroup: 1` (see § One toast at a time).
+- **`DownloadToastContent.svelte`**: in-app toast: title with filename + size, optional subdir line, two shortcut hints
+  (in-app `⌘J` as a live `commandId` chip, global `⌃⌥⌘J` as a literal chip of the snapshotted binding),
+  `GlobalShortcutAnimation` for the default global combo, and a button row (secondary "Stop showing these" + primary
+  "Jump to file"). Collapsible; auto-hides at 10s; `widthPx: 432` (wider than the 360 default so the animation reads).
+  Carries `toastGroup: 'downloads'` with `maxInGroup: 1` (see § One toast at a time).
 - **`downloads-toast-collapsed.ts`**: getter/setter for the hidden `behavior.fileSystemWatching.downloadsToastCollapsed`
   setting. No Settings UI.
-- **`download-toast-shortcuts.ts`**: pure `buildShortcutSummary(shortcutHint, globalBinding)` → `{ inApp, global }`
-  (nullable) for the collapsed summary line. Unit-tested in isolation.
+- **`download-toast-shortcuts.ts`**: pure `buildShortcutSummary(inAppBound, globalBinding)` → `{ inApp, global }` (a
+  boolean and a nullable key) for the collapsed summary line. Unit-tested in isolation.
 - **`GlobalShortcutAnimation.svelte`**: decorative looping keyboard SVG showing ⌃⌥⌘J pressed. Tokenized colors,
   `aria-hidden`, honors `prefers-reduced-motion` (static lit frame). Hard-coded to ⌃⌥⌘J.
 - **`notifications-mode.ts`**: reader, writer, and deep-link helper for
@@ -195,7 +195,8 @@ is independent; stop after the ones that cover your change.
 All user-facing copy in this area lives in `#lib/intl/messages/en/downloads.json` (prefix `downloads.*`), resolved via
 `tString()` / `<Trans>` from `#lib/intl`; `cmdr/no-raw-user-facing-string` is enforced on `lib/downloads/`. Don't
 hardcode copy. The download-toast sentences with inline `ShortcutChip`s / `<code>` / `<em>` use `<Trans>` (snippet per
-tag; the chip snippets discard the tag's inner text and render a literal chip from the snapshotted binding). The
-keyboard-animation SVG's key-cap labels are NOT copy (the lint skips SVG `<text>`). `GlobalShortcutRow`'s status line
-carries a typed `statusIsWarn` flag for the warn styling (not a substring match on the localized status text). Base-en
-output is parity-pinned by `downloads-i18n-parity.test.ts`.
+tag; the chip snippets discard the tag's inner text; the in-app tag is empty and its chip reads the live binding, the
+global one renders a literal chip from the snapshotted binding). The keyboard-animation SVG's key-cap labels are NOT
+copy (the lint skips SVG `<text>`). `GlobalShortcutRow`'s status line carries a typed `statusIsWarn` flag for the warn
+styling (not a substring match on the localized status text). Base-en output is parity-pinned by
+`downloads-i18n-parity.test.ts`.

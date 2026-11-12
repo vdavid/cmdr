@@ -59,6 +59,13 @@ describe('EmptyFolderState', () => {
     ])
   })
 
+  it('shows the shortcut as a key cap, so its period never reads as the sentence’s', () => {
+    setShortcut('view.showHidden', 0, '⌘⇧.')
+    paragraphs(2)
+    const keyCaps = Array.from(document.querySelectorAll('.empty-folder-state kbd'), (k) => k.textContent)
+    expect(keyCaps).toEqual(['⌘⇧.'])
+  })
+
   it('counts several hidden items, with thousands separators', () => {
     setShortcut('view.showHidden', 0, '⌘⇧.')
     expect(paragraphs(1234)()[0]).toBe('There are 1,234 hidden items in this folder.')

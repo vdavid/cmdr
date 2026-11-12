@@ -14,9 +14,11 @@
     import { isMediaKind, mediaKindLabel, formatMediaDimensions } from './media-view'
     import { tString } from '#lib/intl/messages.svelte.js'
     import type { ViewerDisplayMode } from './viewer-view-mode'
-    import { textModeHint } from './viewer-key-hints'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
-    import { toDisplayShortcut, toPlatformShortcut } from '#lib/shortcuts/key-capture.js'
+    import type { Snippet } from 'svelte'
+    import Trans from '#lib/intl/Trans.svelte'
+    import ShortcutChip from '#lib/ui/ShortcutChip.svelte'
+    import { commandHasShortcut, shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { toPlatformShortcut } from '#lib/shortcuts/key-capture.js'
 
     interface Props {
         /** File name shown at the start of the bar. */
@@ -55,12 +57,18 @@
 
     const isMedia = $derived(mode === 'media' && isMediaKind(kind))
     const dimensionsText = $derived(formatMediaDimensions(mediaDimensions))
-    // The user's keys, live: both are remappable (`Viewer window` in the shortcuts registry).
-    const wrapKey = $derived(getFirstShortcutReactive('viewer.toggleWordWrap'))
-    const tailKey = $derived(getFirstShortcutReactive('viewer.toggleTail'))
+    // The user's keys, live: both are remappable (`Viewer window` in the shortcuts registry), and a
+    // key turned off drops its part of the hint.
+    const wrapBound = $derived(commandHasShortcut('viewer.toggleWordWrap'))
+    const tailBound = $derived(commandHasShortcut('viewer.toggleTail'))
     /** Search isn't a registry key: the viewer opens it on ⌘F (Ctrl+F off macOS). */
-    const SEARCH_KEY = toDisplayShortcut(toPlatformShortcut('⌘F'))
+    const SEARCH_KEY = toPlatformShortcut('⌘F')
 </script>
+
+<!-- Non-clickable: a chip's deep link opens Settings, which this restricted window can't create. -->
+{#snippet wrapChip(_children: Snippet)}<ShortcutChip commandId="viewer.toggleWordWrap" size="sm" clickable={false} />{/snippet}
+{#snippet tailChip(_children: Snippet)}<ShortcutChip commandId="viewer.toggleTail" size="sm" clickable={false} />{/snippet}
+{#snippet searchChip(_children: Snippet)}<ShortcutChip key={SEARCH_KEY} size="sm" />{/snippet}
 
 <div class="status-bar" aria-label={tString('viewer.statusBar.ariaLabel')}>
     <span>{fileName}</span>
@@ -104,14 +112,19 @@
             >
         {/if}
         {#if wordWrap}
-            <span class="backend-badge" use:tooltip={{ text: tString('viewer.statusBar.badge.wrapTooltip'), shortcut: wrapKey }}>{tString('viewer.statusBar.badge.wrap')}</span
+            <span class="backend-badge" use:tooltip={{ text: tString('viewer.statusBar.badge.wrapTooltip'), shortcut: shortcutAsText('viewer.toggleWordWrap', 'tooltip') }}>{tString('viewer.statusBar.badge.wrap')}</span
             >
         {/if}
     {/if}
     {#if isMedia && kind === 'image'}
         <span class="shortcut-hint">{tString('viewer.statusBar.hint.image')}</span>
     {:else if mode === 'text'}
-        <span class="shortcut-hint">{textModeHint({ wrap: wrapKey, tail: tailKey, search: SEARCH_KEY })}</span>
+        <!-- Each part is its own message, so a language orders the key and the word its own way. -->
+        <span class="shortcut-hint">
+            {#if wrapBound}<span class="hint-part"><Trans key="viewer.statusBar.hint.wrap" snippets={{ key: wrapChip }} /></span>{/if}
+            {#if tailBound}<span class="hint-part"><Trans key="viewer.statusBar.hint.tail" snippets={{ key: tailChip }} /></span>{/if}
+            <span class="hint-part"><Trans key="viewer.statusBar.hint.search" snippets={{ key: searchChip }} /></span>
+        </span>
     {/if}
 </div>
 
@@ -144,5 +157,13 @@
     .shortcut-hint {
         margin-left: auto;
         color: var(--color-text-tertiary);
+    }
+
+    /* The middle dot between parts is decoration: the second `content` hides it from screen readers
+       where WebKit knows the alt-text form, and the first keeps it on an older one. */
+    .hint-part + .hint-part::before {
+        content: ' · ';
+        content: ' · ' / '';
+        white-space: pre;
     }
 </style>

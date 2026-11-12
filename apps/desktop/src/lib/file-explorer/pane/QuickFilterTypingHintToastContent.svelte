@@ -7,9 +7,10 @@
     import type { Snippet } from 'svelte'
     import Trans from '#lib/intl/Trans.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
+    import ShortcutChip from '#lib/ui/ShortcutChip.svelte'
 
     interface Props {
-        /** The key as the person sees it (`*`, `Space`). */
+        /** The key by its name (`*`, `Space`); the chip spells it the way shortcut lists do. */
         keyLabel: string
         /** The typing window in seconds, for the plural. */
         seconds: number
@@ -20,7 +21,8 @@
     const { keyLabel, seconds, secondsText }: Props = $props()
 </script>
 
-{#snippet keyName(children: Snippet)}<code>{@render children()}</code>{/snippet}
+<!-- The chip draws the key from `keyLabel`; the tag's `{key}` text is there for translators. -->
+{#snippet keyName(_children: Snippet)}<ShortcutChip key={keyLabel} />{/snippet}
 
 <div class="content">
     <strong class="title">{tString('fileExplorer.quickFilter.typingHint.title')}</strong>
@@ -51,12 +53,5 @@
 
     .title {
         font-weight: 600;
-    }
-
-    code {
-        background: var(--color-bg-tertiary);
-        padding: 1px var(--spacing-xs);
-        border-radius: var(--radius-xs);
-        font-family: var(--font-mono);
     }
 </style>

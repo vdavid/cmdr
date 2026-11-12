@@ -327,15 +327,15 @@
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },
-  "viewer.statusBar.hint.wrap": "{key} quebra",
+  "viewer.statusBar.hint.wrap": "<key></key> quebra",
   "@viewer.statusBar.hint.wrap": {
     "sourceHash": "b30ce00"
   },
-  "viewer.statusBar.hint.tail": "{key} acompanhar",
+  "viewer.statusBar.hint.tail": "<key></key> acompanhar",
   "@viewer.statusBar.hint.tail": {
     "sourceHash": "63d25d1"
   },
-  "viewer.statusBar.hint.search": "{key} buscar",
+  "viewer.statusBar.hint.search": "<key></key> buscar",
   "@viewer.statusBar.hint.search": {
     "sourceHash": "1cf8c07"
   },

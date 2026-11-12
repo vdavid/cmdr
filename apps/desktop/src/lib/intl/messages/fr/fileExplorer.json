@@ -1104,7 +1104,7 @@
   "@fileExplorer.list.hiddenItems": {
     "sourceHash": "78a4459"
   },
-  "fileExplorer.list.hiddenItemsHowToShortcut": "Pour afficher les éléments cachés, appuyez sur {shortcut} ou choisissez « {menu} > {item} ».",
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Pour afficher les éléments cachés, appuyez sur <key></key> ou choisissez « {menu} > {item} ».",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
     "sourceHash": "b212fcd"
   },

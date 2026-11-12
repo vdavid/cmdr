@@ -33,7 +33,7 @@ vi.mock('#lib/settings/settings-window.js', () => ({
 }))
 
 import ShortcutChip from './ShortcutChip.svelte'
-import { setShortcut, resetShortcut } from '#lib/shortcuts/shortcuts-store.js'
+import { addShortcut, setShortcut, resetShortcut } from '#lib/shortcuts/shortcuts-store.js'
 
 function setup(props: Record<string, unknown>) {
   const target = document.createElement('div')
@@ -92,6 +92,15 @@ describe('ShortcutChip', () => {
     flushSync()
 
     expect(target.querySelector('kbd')?.textContent).toBe('⌘9')
+  })
+
+  it('shows the binding at `index`, and nothing past the last one', () => {
+    setShortcut('downloads.goToLatest', 0, '⌘9')
+    addShortcut('downloads.goToLatest', '⌘8')
+    const second = setupTracked({ commandId: 'downloads.goToLatest', index: 1, clickable: false })
+    expect(second.target.querySelector('kbd')?.textContent).toBe('⌘8')
+    const third = setupTracked({ commandId: 'downloads.goToLatest', index: 2, clickable: false })
+    expect(third.target.innerHTML.replace(/<!---->/g, '')).toBe('')
   })
 
   it('is clickable by default in commandId mode and opens the customization deep link', async () => {

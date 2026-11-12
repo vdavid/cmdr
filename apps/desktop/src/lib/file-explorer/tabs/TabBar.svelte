@@ -6,7 +6,7 @@
     import { tString } from '#lib/intl/messages.svelte.js'
     import { deriveTabLabel } from './tab-label'
     import { getVolumes } from '#lib/stores/volume-store.svelte.js'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import { useInlineSize } from '#lib/utils/inline-size-action.js'
     import { SvelteSet } from 'svelte/reactivity'
 
@@ -48,7 +48,7 @@
     // The "+" tooltip's shortcut badge tracks the live `tab.new` binding (the
     // tooltip action re-renders when the value changes), so rebinding ⌘T in
     // Settings updates the hint without a reload. Same pattern as the sort headers.
-    const newTabShortcut = $derived(getFirstShortcutReactive('tab.new'))
+    const newTabShortcut = $derived(shortcutAsText('tab.new', 'tooltip'))
 
     const volumeById = $derived(new Map(getVolumes().map((v) => [v.id, v])))
 

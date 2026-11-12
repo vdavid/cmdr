@@ -113,10 +113,51 @@ Three readers over one module-level `$state` version (bumped on every `onShortcu
   spelling), or `undefined` — no fallback to the unshifted binding. Its one caller is the F-key bar's Shift row, where a
   chip is a claim about Shift+<key>; why that matters: `../file-explorer/pane/DETAILS.md`.
 
-All three subscribe `$derived`/`$effect` consumers to shortcut changes, so a rebind updates the UI live. Use them for
-long-lived UI that displays a shortcut (tooltips, hints, the palette, `ShortcutChip`). One-off reads at event time
-(toasts, context menus) keep calling `getEffectiveShortcuts` directly — a toast deliberately snapshots the binding it
-was created with.
+All three subscribe `$derived`/`$effect` consumers to shortcut changes, so a rebind updates the UI live. They serve the
+binding surfaces (`ShortcutChip`, the F-key bar); feature code reads through the two accessors below.
+
+### Shortcuts as text
+
+On screen, a shortcut renders through `<ShortcutChip commandId="…" />`, placed in its sentence by an empty `<Trans>` tag
+(`press <key></key> or choose…`). Feature code never reads a binding's text: `cmdr/no-raw-shortcut-text`
+(`apps/desktop/eslint-plugins/no-raw-shortcut-text.js`) bans importing the raw readers (`getEffectiveShortcuts`,
+`getDefaultShortcuts`, the three reactive readers, `toDisplayShortcut`) outside this module, `ShortcutChip`, and the
+surfaces whose job is editing or listing bindings. Two accessors in `reactive-shortcuts.svelte.ts` replace them:
+
+- `commandHasShortcut(commandId)`: the yes/no a sentence around a chip needs. A `commandId` chip renders nothing when
+  unbound, so the caller picks the wording (or drops the line) that names no key.
+- `shortcutAsText(commandId, sink)`: the first binding as display text, for a sink that can only hold text. `sink` is a
+  closed union (`announcement`, `ariaLabel`, `tooltip`, `toast`, `errorMessage`, `menuItem`) with no prose member, so
+  every exception names itself and greps as `shortcutAsText(`. Inside a tagged message, a text sink fills the empty tag
+  with a string-returning tag handler (`key: () => text`); `tString` then returns plain text.
+
+Decision: a chip in a toast is LIVE, too. The toasts used to snapshot the binding at creation so a rebind wouldn't
+rewrite a visible one, but a chip is a claim about what pressing it does now, and a snapshot names a dead key after a
+rebind. A literal `key=` chip is only for a key no command owns (`⏎`, the viewer's fixed `⌘F`, the downloads global
+hotkey, the key a person typed).
+
+Why: a `{shortcut}` param spliced into prose reads as part of the sentence. The empty-folder hint said "press ⌘⇧. or
+choose…", where the binding's period read as punctuation.
+
+Exempt by path (the rule's `allowedPathFragments`):
+
+- `KeyboardShortcutsSection` (+ controller) and `GlobalShortcutRow`: they edit bindings.
+- `FunctionKeyBar.svelte`: a key legend whose flat `<kbd>` look and Shift-row reader (`getFirstShiftShortcutReactive`)
+  are its own (`../file-explorer/pane/DETAILS.md`).
+- `../settings/mcp-main-bridge.ts`: the MCP settings dump lists every command's canonical bindings, defaults, and
+  modified flag, which no display accessor carries.
+
+The sites, by what they render:
+
+- Live chips: the empty-folder hint (`view.showHidden`), the search-results footer's "Show in folder" (`nav.parent`),
+  the command palette (up to three, `ShortcutChip index`), the downloads toast's in-app hint and summaries
+  (`downloads.goToLatest`), the go-to-path ancestor toast (`nav.back`), the Quick Look hint toast (`file.quickLook`),
+  the viewer status bar's wrap and tail hints. The quick filter typing hint shows the typed key as a literal chip.
+- `commandHasShortcut` only: onboarding's AI step (picks the sentence without a chip).
+- `shortcutAsText`: the pane status announcer's empty-folder sentence (`announcement`); tooltips on the tab bar's +, a
+  sort header, Ask Cmdr's New chat, Multi-rename's presets / undo / results, and the viewer's Tail button and wrap badge
+  (`tooltip`); the viewer mode picker's `Text (1)` labels (`menuItem`); the default-app, Open with, clipboard refusal,
+  and zoom toasts (`toast`); the trash-not-supported suggestion (`errorMessage`).
 
 ### Deep link to a command's row (`../settings/settings-window.ts`)
 
@@ -197,7 +238,7 @@ declares, `shortcuts.json` persists, `shortcut-dispatch` keys its map by, `confl
 `Escape` → `⎋` / `Esc`, `PageUp` → `PgUp`. It's idempotent, so wrapping an already-displayed value is safe. Its
 consumers are the reactive readers (`reactive-shortcuts.svelte.ts` returns display form, since everything reading it
 renders to a user), `ShortcutChip`, `ShortcutsList`, the Settings editor's pills and conflict banner, the F-key bar, and
-the shortcut-carrying toasts. Anything that COMPARES or DISPATCHES a combo reads `getEffectiveShortcuts` instead.
+`shortcutAsText`. Anything that COMPARES or DISPATCHES a combo reads `getEffectiveShortcuts` instead.
 
 A keypress can mean more than one combo, and `keyComboCandidates(event)` lists them, most specific first:
 
@@ -381,8 +422,9 @@ letters and digits must be remappable or able to be turned off (WCAG 2.1.4). The
 - **The router asks the registry keys before its modifier split** (`handleRegistryKey`), because a rebinding may carry a
   modifier. Everything else in `../../routes/viewer/viewer-keyboard.ts` still splits on "carries ⌘/⌃/⌥" up front, so
   `⌥⌘C` lands on the search chord instead of copy.
-- **Its hints read the user's keys**: the mode picker's `(1)`, the Tail and wrap tooltips, and the status bar hint
-  (`viewer-key-hints.ts`) all go through `getFirstShortcutReactive`, and a key turned off drops its hint.
+- **Its hints read the user's keys**: the mode picker's `(1)`, the Tail and wrap tooltips, and the status bar hint all
+  read the live keys (`shortcutAsText` for the text-only spots, live chips in the status bar), and a key turned off
+  drops its hint.
 - The ⌘ chords (⌘F, ⌘C, ⌘A, ⌘⌥R / ⌘⌥C) and Escape / Enter stay local and fixed; they aren't single-character keys.
 
 **Decision: central dispatch stays in the bubble phase.** Moving it to capture would invert precedence for every handler

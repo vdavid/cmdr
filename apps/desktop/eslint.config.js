@@ -35,6 +35,7 @@ import noRawBindingsImport from './eslint-plugins/no-raw-bindings-import.js'
 import noExplorerStateWrites from './eslint-plugins/no-explorer-state-writes.js'
 import noRawCommandDispatch from './eslint-plugins/no-raw-command-dispatch.js'
 import noRawKeyMatch from './eslint-plugins/no-raw-key-match.js'
+import noRawShortcutText from './eslint-plugins/no-raw-shortcut-text.js'
 import noRawPathArithmetic from './eslint-plugins/no-raw-path-arithmetic.js'
 import noRawLucideImport from './eslint-plugins/no-raw-lucide-import.js'
 import noRawArkImport from './eslint-plugins/no-raw-ark-import.js'
@@ -336,6 +337,7 @@ export default tseslint.config(
           'no-explorer-state-writes': noExplorerStateWrites,
           'no-raw-command-dispatch': noRawCommandDispatch,
           'no-raw-key-match': noRawKeyMatch,
+          'no-raw-shortcut-text': noRawShortcutText,
           'no-raw-path-arithmetic': noRawPathArithmetic,
           'no-raw-lucide-import': noRawLucideImport,
           'no-raw-ark-import': noRawArkImport,
@@ -378,6 +380,10 @@ export default tseslint.config(
       // warn — the failure mode is silent (a second command fires) and the fix is
       // mechanical. See `lib/shortcuts/CLAUDE.md`.
       'cmdr/no-raw-key-match': 'error',
+      // On screen a shortcut renders through `ShortcutChip`, placed by a `<Trans>` tag; feature code
+      // reads one as text only via `shortcutAsText(id, sink)`, for a sink that can't hold a chip. A
+      // `{shortcut}` param spliced into prose read as punctuation ("press ⌘⇧. or choose…"). Off for tests.
+      'cmdr/no-raw-shortcut-text': 'error',
       // Local path arithmetic goes through `#lib/path`, which knows Windows' `C:/` and
       // `//server/share/` roots: a raw `lastIndexOf('/')` on `C:/Users` cuts the drive off.
       // Keyed on path-NAMED values; off for tests below. See the rule's header.
@@ -576,6 +582,8 @@ export default tseslint.config(
       'cmdr/no-root-relative-asset': 'off',
       // Fixtures legitimately spell out `1024 * 1024` to build expected values.
       'cmdr/no-private-unit-format': 'off',
+      // Tests compute expected key text with `toDisplayShortcut` and drive the store directly.
+      'cmdr/no-raw-shortcut-text': 'off',
     },
   },
 )

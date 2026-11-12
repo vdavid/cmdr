@@ -11,7 +11,7 @@
     import { onDestroy, onMount, tick } from 'svelte'
     import { searchCommands, getPaletteCommands, type CommandMatch, type CommandId } from '#lib/commands/index.js'
     import { pruneRecentCommands, pushRecentCommand } from '#lib/app-status-store.js'
-    import { getEffectiveShortcutsReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { commandHasShortcut } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import ShortcutChip from '#lib/ui/ShortcutChip.svelte'
     import StatusBadge from '#lib/ui/StatusBadge.svelte'
     import { trapFocus } from '#lib/ui/focus-trap.js'
@@ -43,6 +43,7 @@
 
     /** How many shortcut chips a palette row shows (power users discover alternates). */
     const MAX_SHORTCUTS_SHOWN = 3
+    const SHORTCUT_SLOTS = Array.from({ length: MAX_SHORTCUTS_SHOWN }, (_, i) => i)
     /** How long typing must pause before the match count is said, so a word typed is one message. */
     const COUNT_ANNOUNCE_DELAY_MS = 500
 
@@ -277,7 +278,6 @@
                 tabindex="-1"
             >
                 {#each results as match, index (match.command.id)}
-                    {@const shortcuts = getEffectiveShortcutsReactive(match.command.id).slice(0, MAX_SHORTCUTS_SHOWN)}
                     {#if recentCount > 0 && index === 0}
                         <div class="group-heading">{tString('commandPalette.groupRecent')}</div>
                     {/if}
@@ -318,12 +318,11 @@
                                 <StatusBadge status={match.command.status} />
                             </span>
                         {/if}
-                        {#if shortcuts.length > 0}
+                        {#if commandHasShortcut(match.command.id)}
                             <span class="shortcuts">
-                                <!-- Key by index, not the combo string: a user can bind the same
-                                     combo twice, and a keyed-by-value each would throw on the dupe. -->
-                                {#each shortcuts as shortcut, i (i)}
-                                    <ShortcutChip key={shortcut} size="sm" clickable={false} />
+                                <!-- One chip per binding slot; a slot past the command's last binding renders nothing. -->
+                                {#each SHORTCUT_SLOTS as slot (slot)}
+                                    <ShortcutChip commandId={match.command.id} index={slot} size="sm" clickable={false} />
                                 {/each}
                             </span>
                         {/if}

@@ -13,7 +13,7 @@ import { getAppLogger } from '#lib/logging/logger.js'
 import { isPlainFilesystemPath } from '#lib/path/canonical.js'
 import { formatNumber } from '#lib/file-explorer/selection/selection-info-utils.js'
 import { tString } from '#lib/intl/messages.svelte.js'
-import { getEffectiveShortcuts, toDisplayShortcut } from '#lib/shortcuts/index.js'
+import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
@@ -81,7 +81,7 @@ function schemePathClipboardFamily(volumeId: string): ClipboardRefusalFamily | n
  */
 function transferShortcut(commandId: 'file.copy' | 'file.move'): string {
   const fallback = commandId === 'file.copy' ? 'F5' : 'F6'
-  return toDisplayShortcut(getEffectiveShortcuts(commandId)[0] ?? fallback)
+  return shortcutAsText(commandId, 'toast') ?? fallback
 }
 
 /** The "use the copy key instead" toast for a source-side (⌘C) refusal. */

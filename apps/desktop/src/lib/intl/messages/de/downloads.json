@@ -12,7 +12,7 @@
   "@downloads.toast.learnIntro": {
     "sourceHash": "3a06888"
   },
-  "downloads.toast.inAppHint": "In der App: Drücke <chip>{key}</chip>, um hierher zu springen",
+  "downloads.toast.inAppHint": "In der App: Drücke <chip></chip>, um hierher zu springen",
   "@downloads.toast.inAppHint": {
     "sourceHash": "5b70d9c"
   },
@@ -20,11 +20,11 @@
   "@downloads.toast.globalHint": {
     "sourceHash": "785e1f3"
   },
-  "downloads.toast.summaryBoth": "Spring mit <inApp>{inAppKey}</inApp> in der App, <global>{globalKey}</global> global.",
+  "downloads.toast.summaryBoth": "Spring mit <inApp></inApp> in der App, <global>{globalKey}</global> global.",
   "@downloads.toast.summaryBoth": {
     "sourceHash": "59c4131"
   },
-  "downloads.toast.summaryInApp": "Spring mit <inApp>{inAppKey}</inApp> in der App.",
+  "downloads.toast.summaryInApp": "Spring mit <inApp></inApp> in der App.",
   "@downloads.toast.summaryInApp": {
     "sourceHash": "2c0fd22"
   },

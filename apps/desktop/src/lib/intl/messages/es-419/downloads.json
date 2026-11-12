@@ -3,7 +3,7 @@
   "@downloads.toast.downloaded": {
     "sourceHash": "0c2a678"
   },
-  "downloads.toast.inAppHint": "En la app: presiona <chip>{key}</chip> para saltar aquí",
+  "downloads.toast.inAppHint": "En la app: presiona <chip></chip> para saltar aquí",
   "@downloads.toast.inAppHint": {
     "sourceHash": "2cebdb7"
   },

@@ -471,7 +471,7 @@
   "@fileExplorer.list.rowAdded": {
     "sourceHash": "b16f147"
   },
-  "fileExplorer.list.hiddenItemsHowToShortcut": "Para ver los elementos ocultos, presiona {shortcut} o elige “{menu} > {item}”.",
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Para ver los elementos ocultos, presiona <key></key> o elige “{menu} > {item}”.",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
     "sourceHash": "b4a9ed8"
   },

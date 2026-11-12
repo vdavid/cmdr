@@ -1103,7 +1103,7 @@
   "@fileExplorer.list.hiddenItems": {
     "sourceHash": "78a4459"
   },
-  "fileExplorer.list.hiddenItemsHowToShortcut": "Om du vill se dolda objekt trycker du på {shortcut} eller väljer ”{menu} > {item}”.",
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Om du vill se dolda objekt trycker du på <key></key> eller väljer ”{menu} > {item}”.",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
     "sourceHash": "b212fcd"
   },

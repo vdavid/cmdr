@@ -496,28 +496,22 @@
     "description": "Status-bar hint listing the image interactions: clicking toggles between 100% and fit-to-window, scrolling zooms, dragging pans. Middle-dot separators between the three; keep the number 100, written with your language's percent typography (“100 %”). \"fit\" = fit to window, \"pan\" = move the view around.",
     "screenshot": "viewer-view-mode.png"
   },
-  "viewer.statusBar.hint.wrap": "{key} wrap",
+  "viewer.statusBar.hint.wrap": "<key></key> wrap",
   "@viewer.statusBar.hint.wrap": {
-    "description": "One part of the status-bar hint listing text-mode keys, shown as \"W wrap · F tail · ⌘F search\" (the app joins the parts with middle dots). This part says which key turns word wrap on or off. Translate only the action word; keep it as short as \"wrap\".",
-    "placeholders": {
-      "key": "the key that toggles word wrap, as a key glyph like W (the user can change it)"
-    },
+    "description": "One part of the status-bar hint listing text-mode keys, shown as \"W wrap · F tail · ⌘F search\" (the app joins the parts with middle dots). This part says which key turns word wrap on or off. Translate only the action word; keep it as short as \"wrap\". The empty <key></key> tag is where that key shows, as a small key cap (the user can change the key); keep the empty tag.",
+    "placeholders": {},
     "screenshot": "viewer-search.png"
   },
-  "viewer.statusBar.hint.tail": "{key} tail",
+  "viewer.statusBar.hint.tail": "<key></key> tail",
   "@viewer.statusBar.hint.tail": {
-    "description": "One part of the status-bar hint listing text-mode keys, shown as \"W wrap · F tail · ⌘F search\". This part says which key turns tail mode (following new lines as the file grows) on or off. Use the same word as the toolbar's Tail button (viewer.toolbar.tail.label), as short as possible.",
-    "placeholders": {
-      "key": "the key that toggles tail mode, as a key glyph like F (the user can change it)"
-    },
+    "description": "One part of the status-bar hint listing text-mode keys, shown as \"W wrap · F tail · ⌘F search\". This part says which key turns tail mode (following new lines as the file grows) on or off. Use the same word as the toolbar's Tail button (viewer.toolbar.tail.label), as short as possible. The empty <key></key> tag is where that key shows, as a small key cap (the user can change the key); keep the empty tag.",
+    "placeholders": {},
     "screenshot": "viewer-search.png"
   },
-  "viewer.statusBar.hint.search": "{key} search",
+  "viewer.statusBar.hint.search": "<key></key> search",
   "@viewer.statusBar.hint.search": {
-    "description": "One part of the status-bar hint listing text-mode keys, shown as \"W wrap · F tail · ⌘F search\". This part says which key opens the find bar. Translate only the action word; keep it as short as \"search\".",
-    "placeholders": {
-      "key": "the key that opens search, as a key glyph like ⌘F"
-    },
+    "description": "One part of the status-bar hint listing text-mode keys, shown as \"W wrap · F tail · ⌘F search\". This part says which key opens the find bar. Translate only the action word; keep it as short as \"search\". The empty <key></key> tag is where that key (⌘F) shows, as a small key cap; keep the empty tag.",
+    "placeholders": {},
     "screenshot": "viewer-search.png"
   },
   "viewer.media.dimensions": "{width} × {height}",

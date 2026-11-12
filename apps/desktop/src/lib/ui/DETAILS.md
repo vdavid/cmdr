@@ -2039,8 +2039,9 @@ and new call sites can't hand-roll a divergent style. Two mutually exclusive mod
 
 | Prop        | Type            | Notes                                                                                               |
 | ----------- | --------------- | --------------------------------------------------------------------------------------------------- |
-| `commandId` | `CommandId?`    | Dynamic mode. Renders the command's first shortcut via `getFirstShortcutReactive`, reactively.      |
-| `key`       | `string?`       | Literal mode. A fixed key string (toast snapshots, fixed interaction keys). Never clickable.        |
+| `commandId` | `CommandId?`    | Dynamic mode. Renders the command's shortcut (the first, or `index`), reactively.                   |
+| `index`     | `number?`       | Which binding a `commandId` chip shows, from 0; past the last it renders nothing (the palette's 3). |
+| `key`       | `string?`       | Literal mode. A key no command owns (`⏎`, the typed key, a global hotkey). Never clickable.         |
 | `clickable` | `boolean?`      | Default `true` in `commandId` mode; ignored (forced non-clickable) in literal mode.                 |
 | `size`      | `'sm' \| 'md'?` | Visual density. `md` (default) is the standalone pill; `sm` tightens padding/radius for dense rows. |
 
@@ -2048,9 +2049,10 @@ Exactly one of `commandId` / `key` must be set (a dev-time error otherwise).
 
 **Truthfulness rule.** A `commandId` chip is a _claim about live app behavior_ ("pressing this does X"), so it reads the
 reactive store and updates live when the user rebinds. It renders **nothing** when the command has no binding — callers
-embedding it in prose must conditionalize the surrounding sentence. A `key` chip is just typography. Keeping both modes
-in one component is what guarantees the uniform look, while the prop split keeps the rule mechanical: customizable →
-`commandId`; fixed → `key`.
+embedding it in prose conditionalize the surrounding sentence on `commandHasShortcut`. Toasts use live chips too
+(`../shortcuts/DETAILS.md` § Shortcuts as text). A `key` chip is just typography. Keeping both modes in one component is
+what guarantees the uniform look, while the prop split keeps the rule mechanical: customizable → `commandId`; fixed →
+`key`.
 
 **Clickable variant.** In `commandId` mode (and `clickable` not set to `false`) the chip is a real
 `<button type="button">` wrapping the `<kbd>` and an `sr-only` "Customize the {command name} shortcut", so its name is

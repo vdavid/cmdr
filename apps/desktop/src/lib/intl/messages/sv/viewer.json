@@ -330,16 +330,16 @@
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },
-  "viewer.statusBar.hint.wrap": "{key} radbyte",
+  "viewer.statusBar.hint.wrap": "<key></key> radbyte",
   "@viewer.statusBar.hint.wrap": {
     "sourceHash": "b30ce00"
   },
-  "viewer.statusBar.hint.tail": "{key} tail",
+  "viewer.statusBar.hint.tail": "<key></key> tail",
   "@viewer.statusBar.hint.tail": {
     "sourceHash": "63d25d1",
     "sameAsSourceJustification": "'tail' is the Tail button's loanword (viewer.toolbar.tail.label, terms.json tail → Tail), lowercased like the sibling hints; the key glyph stays as is."
   },
-  "viewer.statusBar.hint.search": "{key} sök",
+  "viewer.statusBar.hint.search": "<key></key> sök",
   "@viewer.statusBar.hint.search": {
     "sourceHash": "1cf8c07"
   },

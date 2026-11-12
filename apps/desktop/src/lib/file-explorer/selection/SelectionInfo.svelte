@@ -40,6 +40,7 @@
     import { formatDiskSpaceStatus, formatSpaceNotes } from '../disk-space-utils'
     import { formatByteSizeTiered } from '#lib/units/index.js'
     import ShortcutChip from '#lib/ui/ShortcutChip.svelte'
+    import { commandHasShortcut } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 
     // Free-space text is intentionally uncolored: red GB would falsely signal "low space".
     function diskSpaceStatusText(space: SpaceInfo): string {
@@ -87,8 +88,8 @@
          * rather than claiming the pane holds every hit. Absent on a normal pane.
          */
         totalMatches?: number
-        /** Live `nav.parent` display binding for a search-results pane. */
-        showInFolderShortcut?: string
+        /** A search-results pane: the footer teaches “Show in folder” with the live `nav.parent` chip, when bound. */
+        showInFolderHint?: boolean
         /**
          * Phone-storage caveat for the disk-space readout, set only on MTP
          * volumes. When present, it tooltips the free/total text to explain why
@@ -107,7 +108,7 @@
         volumeSpace,
         showVolumeSpace = true,
         totalMatches,
-        showInFolderShortcut,
+        showInFolderHint = false,
         mtpSpaceHint,
     }: Props = $props()
 
@@ -419,10 +420,10 @@
             {/if}
         </span>
     {/if}
-    {#if showInFolderShortcut}
+    {#if showInFolderHint && commandHasShortcut('nav.parent')}
         <span class="search-result-hint" data-search-result-hint>
             {tString('menu.context.showInFolder')}
-            <ShortcutChip key={showInFolderShortcut} size="sm" />
+            <ShortcutChip commandId="nav.parent" size="sm" clickable={false} />
         </span>
     {/if}
 </div>

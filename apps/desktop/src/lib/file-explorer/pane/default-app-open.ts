@@ -20,7 +20,7 @@ import { asOpenPathError, openFile } from '#lib/tauri-commands/index.js'
 import { addToast } from '#lib/ui/toast/index.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { getAppLogger } from '#lib/logging/logger.js'
-import { getEffectiveShortcuts, toDisplayShortcut } from '#lib/shortcuts/index.js'
+import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 import type { FileEntry } from '../types'
 import { announceOpening, OPENING_TOAST_ID } from './opening-toast'
 import { rowHasFileOnThisMac } from './volume-capabilities'
@@ -41,7 +41,7 @@ export type DefaultAppOpenOutcome = 'opened' | 'refusedNotOnThisMac' | 'notOpene
  * literal "F3": it's rebindable in Settings > Shortcuts.
  */
 export function viewShortcut(): string {
-  return toDisplayShortcut(getEffectiveShortcuts('file.view')[0] ?? 'F3')
+  return shortcutAsText('file.view', 'toast') ?? 'F3'
 }
 
 /**

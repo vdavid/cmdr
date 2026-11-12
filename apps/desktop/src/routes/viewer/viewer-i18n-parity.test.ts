@@ -146,10 +146,10 @@ describe('viewer toolbar + status bar (en)', () => {
 
   it('matches the status-bar hints (middle-dot separators)', () => {
     expect(tString('viewer.statusBar.hint.image')).toBe('Click 100% / fit · Scroll zoom · Drag pan')
-    // The text-mode hint is built from its parts around the user's keys: `viewer-key-hints.test.ts`.
-    expect(tString('viewer.statusBar.hint.wrap', { key: 'W' })).toBe('W wrap')
-    expect(tString('viewer.statusBar.hint.tail', { key: 'F' })).toBe('F tail')
-    expect(tString('viewer.statusBar.hint.search', { key: '⌘F' })).toBe('⌘F search')
+    // The text-mode hint's parts, each around its key chip (here a stand-in): `ViewerStatusBar.test.ts`.
+    expect(tString('viewer.statusBar.hint.wrap', { key: () => 'W' })).toBe('W wrap')
+    expect(tString('viewer.statusBar.hint.tail', { key: () => 'F' })).toBe('F tail')
+    expect(tString('viewer.statusBar.hint.search', { key: () => '⌘F' })).toBe('⌘F search')
   })
 })
 

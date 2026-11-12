@@ -1104,7 +1104,7 @@
   "@fileExplorer.list.hiddenItems": {
     "sourceHash": "78a4459"
   },
-  "fileExplorer.list.hiddenItemsHowToShortcut": "Để xem các mục ẩn, nhấn {shortcut} hoặc chọn “{menu} > {item}”.",
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Để xem các mục ẩn, nhấn <key></key> hoặc chọn “{menu} > {item}”.",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
     "sourceHash": "b212fcd"
   },

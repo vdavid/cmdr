@@ -16,7 +16,7 @@
 import { saveAppStatus } from '#lib/app-status-store.js'
 import { explorerState } from '#lib/file-explorer/pane/explorer-state.svelte.js'
 import { getAppLogger } from '#lib/logging/logger.js'
-import { getEffectiveShortcuts, toDisplayShortcut } from '#lib/shortcuts/index.js'
+import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 import { focusHome } from '#lib/ui/focus-restore.js'
 import { refreshRailGate } from './ask-cmdr-gate.svelte'
 import { buildRailMessages } from './ask-cmdr-history'
@@ -121,11 +121,9 @@ export function openNewChat(): void {
 }
 
 /** The New chat shortcut as the tooltip shows it (`⌘N` by default, or the user's rebind), or
- * `undefined` when it's unbound. Read at render, so a rebind shows on the next one. */
+ * `undefined` when it's unbound. Reactive, so a rebind shows live. */
 export function newChatShortcutText(): string | undefined {
-  // `.at(0)`, not `[0]`: an unbound command has no shortcuts, and `[0]` would type that away.
-  const shortcut = getEffectiveShortcuts('askCmdr.newChat').at(0)
-  return shortcut === undefined ? undefined : toDisplayShortcut(shortcut)
+  return shortcutAsText('askCmdr.newChat', 'tooltip')
 }
 
 /** Load the most recent thread into an empty rail. A no-op once a thread (or a fresh chat's

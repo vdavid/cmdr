@@ -10,7 +10,10 @@ const {
   openSettingsToDownloadsNotificationsMock,
   dismissToastMock,
   setDownloadsToastCollapsedMock,
+  inAppBinding,
 } = vi.hoisted(() => ({
+  // The in-app `downloads.goToLatest` binding the live chip reads; `null` = unbound.
+  inAppBinding: ((): { value: string | null } => ({ value: '⌘J' }))(),
   goToDownloadMock: vi.fn(() => Promise.resolve()),
   setDownloadsNotificationsModeMock: vi.fn(),
   openSettingsToDownloadsNotificationsMock: vi.fn(() => Promise.resolve()),
@@ -35,6 +38,13 @@ vi.mock('./downloads-toast-collapsed', () => ({
   setDownloadsToastCollapsed: setDownloadsToastCollapsedMock,
 }))
 
+vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('#lib/shortcuts/reactive-shortcuts.svelte.js')>()),
+  commandHasShortcut: (id: string) => id === 'downloads.goToLatest' && inAppBinding.value !== null,
+  getEffectiveShortcutsReactive: (id: string) =>
+    id === 'downloads.goToLatest' && inAppBinding.value !== null ? [inAppBinding.value] : [],
+}))
+
 import DownloadToastContent from './DownloadToastContent.svelte'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
@@ -50,7 +60,6 @@ function makeProps(overrides: Partial<DownloadToastProps> = {}): DownloadToastPr
       inSubdir: false,
       sizeBytes: 1024,
     },
-    shortcutHint: '⌘J',
     globalBinding: '⌃⌥⌘J',
     initialCollapsed: false,
     ...overrides,
@@ -64,9 +73,10 @@ describe('DownloadToastContent', () => {
     openSettingsToDownloadsNotificationsMock.mockReset().mockResolvedValue(undefined)
     dismissToastMock.mockReset()
     setDownloadsToastCollapsedMock.mockReset()
+    inAppBinding.value = '⌘J'
   })
 
-  it('renders the filename in monospace and the shortcut hint snapshotted at creation', async () => {
+  it('renders the filename in monospace and the live in-app shortcut', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(DownloadToastContent, { target, props: makeProps() })
@@ -74,7 +84,7 @@ describe('DownloadToastContent', () => {
 
     // Filename appears verbatim in the title row.
     expect(target.textContent).toContain('report.pdf')
-    // Snapshotted shortcut hint: the prop value, not whatever the live binding is now.
+    // The in-app chip reads the live binding.
     expect(target.textContent).toContain('⌘J')
     expect(target.textContent).toContain('jump')
   })
@@ -119,9 +129,10 @@ describe('DownloadToastContent', () => {
   })
 
   it('omits the in-app hint when its shortcut is unbound, still teaching the global one', async () => {
+    inAppBinding.value = null
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(DownloadToastContent, { target, props: makeProps({ shortcutHint: '' }) })
+    mount(DownloadToastContent, { target, props: makeProps() })
     await tick()
 
     expect(target.textContent.toLowerCase()).not.toContain('to jump here')
@@ -308,9 +319,10 @@ describe('DownloadToastContent', () => {
   })
 
   it('collapsed summary teaches only the global shortcut when the in-app one is unset', async () => {
+    inAppBinding.value = null
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(DownloadToastContent, { target, props: makeProps({ initialCollapsed: true, shortcutHint: '' }) })
+    mount(DownloadToastContent, { target, props: makeProps({ initialCollapsed: true }) })
     await tick()
 
     expect(target.textContent.toLowerCase()).toContain('globally')

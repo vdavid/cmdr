@@ -128,9 +128,9 @@ vi.mock('#lib/settings/index.js', () => ({
 }))
 
 // `showZoomToast` reads the reset shortcut. Default: no shortcut bound (menu hint).
-vi.mock('#lib/shortcuts/index.js', async () => ({
-  getEffectiveShortcuts: (id: string) => m.getEffectiveShortcuts(id),
-  toDisplayShortcut: (await import('#lib/shortcuts/key-capture.js')).toDisplayShortcut,
+vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('#lib/shortcuts/reactive-shortcuts.svelte.js')>()),
+  shortcutAsText: (id: string) => m.getEffectiveShortcuts(id)[0],
 }))
 
 vi.mock('#lib/settings/settings-window.js', () => ({

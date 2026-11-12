@@ -14,11 +14,12 @@
  *   - `getFirstShiftShortcutReactive(commandId)` — the first SHIFTED binding (what the
  *     F-key bar's Shift row shows).
  *
- * One-off reads at event time (toasts, context menus) don't need this; they keep
- * calling `getEffectiveShortcuts` directly — and then apply `toDisplayShortcut`
- * themselves.
+ * Those three serve the binding surfaces (`ShortcutChip`, the F-key bar, the palette via
+ * the chip). Feature code reads through two more, enforced by `cmdr/no-raw-shortcut-text`:
+ *   - `commandHasShortcut(commandId)`, the yes/no a sentence around a chip needs.
+ *   - `shortcutAsText(commandId, sink)`, for a sink that can only hold text.
  *
- * Both readers return the DISPLAY form (`⌘⌫`, not the canonical `⌘Backspace`):
+ * All readers return the DISPLAY form (`⌘⌫`, not the canonical `⌘Backspace`):
  * everything reading them renders the string to a user. Anything comparing or
  * dispatching a combo must call `getEffectiveShortcuts` instead.
  */
@@ -74,4 +75,38 @@ export function getFirstShiftShortcutReactive(commandId: CommandId): string | un
   dependOn(version) // Subscribe $derived/$effect consumers to shortcut changes
   const shifted = getEffectiveShortcuts(commandId).find(comboHasShift)
   return shifted === undefined ? undefined : toDisplayShortcut(shifted)
+}
+
+/**
+ * Whether a command has a binding right now, reactively. The yes/no a sentence around a
+ * `<ShortcutChip commandId>` needs: the chip renders nothing when unbound, so the caller
+ * picks the wording that doesn't name a key.
+ */
+export function commandHasShortcut(commandId: CommandId): boolean {
+  return getEffectiveShortcutsReactive(commandId).length > 0
+}
+
+/**
+ * The places a shortcut may appear as plain text, because they can't hold a component:
+ *
+ * - `announcement`: a live region a screen reader speaks.
+ * - `ariaLabel`: an accessible name or description.
+ * - `tooltip`: the tooltip action's `shortcut` field.
+ * - `toast`: a toast whose content is a string.
+ * - `errorMessage`: a message built as a string (the transfer error catalog).
+ * - `menuItem`: a menu or select option's label.
+ *
+ * Visible prose isn't on the list: there the shortcut is a `<ShortcutChip>` placed by a
+ * `<Trans>` tag, so the key reads as a key and not as punctuation (`⌘⇧.` ending a sentence).
+ */
+export type ShortcutTextSink = 'announcement' | 'ariaLabel' | 'tooltip' | 'toast' | 'errorMessage' | 'menuItem'
+
+/**
+ * A command's first binding as display text (`⌘⌫`), reactively, for a sink that can only
+ * hold text; `undefined` when unbound. The ONE way feature code reads a shortcut as text
+ * (`cmdr/no-raw-shortcut-text`): naming the sink keeps each exception explicit and
+ * searchable, and on screen a shortcut renders through `ShortcutChip`.
+ */
+export function shortcutAsText(commandId: CommandId, _sink: ShortcutTextSink): string | undefined {
+  return getEffectiveShortcutsReactive(commandId)[0]
 }

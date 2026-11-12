@@ -1102,7 +1102,7 @@
   "@fileExplorer.list.hiddenItems": {
     "sourceHash": "78a4459"
   },
-  "fileExplorer.list.hiddenItemsHowToShortcut": "Щоб побачити приховані елементи, натисніть {shortcut} або виберіть «{menu} > {item}».",
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Щоб побачити приховані елементи, натисніть <key></key> або виберіть «{menu} > {item}».",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
     "sourceHash": "b212fcd"
   },

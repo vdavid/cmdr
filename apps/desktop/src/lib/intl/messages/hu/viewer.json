@@ -327,15 +327,15 @@
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },
-  "viewer.statusBar.hint.wrap": "{key} tördelés",
+  "viewer.statusBar.hint.wrap": "<key></key> tördelés",
   "@viewer.statusBar.hint.wrap": {
     "sourceHash": "b30ce00"
   },
-  "viewer.statusBar.hint.tail": "{key} követés",
+  "viewer.statusBar.hint.tail": "<key></key> követés",
   "@viewer.statusBar.hint.tail": {
     "sourceHash": "63d25d1"
   },
-  "viewer.statusBar.hint.search": "{key} keresés",
+  "viewer.statusBar.hint.search": "<key></key> keresés",
   "@viewer.statusBar.hint.search": {
     "sourceHash": "1cf8c07"
   },

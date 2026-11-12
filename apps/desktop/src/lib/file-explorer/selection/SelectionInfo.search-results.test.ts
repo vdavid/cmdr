@@ -11,6 +11,23 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount } from 'svelte'
 import type { ListingStats } from '../types'
 import SelectionInfo from './SelectionInfo.svelte'
+import { getEffectiveShortcuts, removeShortcut, resetShortcut, setShortcut } from '#lib/shortcuts/shortcuts-store.js'
+
+vi.mock('@tauri-apps/plugin-store', () => ({
+  load: vi.fn(() =>
+    Promise.resolve({
+      get: vi.fn(() => Promise.resolve(undefined)),
+      set: vi.fn(() => Promise.resolve()),
+      save: vi.fn(() => Promise.resolve()),
+      keys: vi.fn(() => Promise.resolve([])),
+      delete: vi.fn(() => Promise.resolve()),
+    }),
+  ),
+}))
+
+vi.mock('#lib/ipc/bindings.js', () => ({
+  commands: { updateMenuAccelerator: vi.fn(() => Promise.resolve({ status: 'ok' })) },
+}))
 
 vi.mock('#lib/indexing/index-state.svelte.js', () => ({
   isVolumeScanning: () => false,
@@ -63,9 +80,18 @@ function render(props: Record<string, unknown>): HTMLElement {
 
 describe('SelectionInfo on a search-results pane', () => {
   it('shows the live shortcut as a compact reveal hint', () => {
-    const target = render({ showInFolderShortcut: '⌃K' })
+    setShortcut('nav.parent', 0, '⌃K')
+    const target = render({ showInFolderHint: true })
     expect(target.querySelector('[data-search-result-hint]')?.textContent).toContain('⌃K')
     expect(target.querySelector('[data-search-result-hint]')?.textContent).toContain('Show in folder')
+    resetShortcut('nav.parent')
+  })
+
+  it('drops the reveal hint when nav.parent is unbound', () => {
+    while (getEffectiveShortcuts('nav.parent').length > 0) removeShortcut('nav.parent', 0)
+    const target = render({ showInFolderHint: true })
+    expect(target.querySelector('[data-search-result-hint]')).toBeNull()
+    resetShortcut('nav.parent')
   })
 
   it('says how many of the matches the pane holds when the list is a lower bound', () => {

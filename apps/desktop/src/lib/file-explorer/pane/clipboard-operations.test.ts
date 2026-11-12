@@ -102,11 +102,10 @@ vi.mock('#lib/stores/volume-store.svelte.js', () => ({ getVolumes: () => volumeS
 
 // The refusal toasts NAME the key bound to `file.copy` / `file.move`, which is
 // why this is a spy rather than the real store: a test can rebind one and watch
-// the sentence follow. `toDisplayShortcut` keeps the canonical spelling here
-// (it only swaps in display glyphs like ⌫, which these combos don't carry).
-vi.mock('#lib/shortcuts/index.js', () => ({
-  getEffectiveShortcuts: getEffectiveShortcutsSpy,
-  toDisplayShortcut: (combo: string) => combo,
+// the sentence follow. The display form equals the canonical one for these combos
+// (no ⌫-style glyphs), so the stub hands the binding back as is.
+vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', () => ({
+  shortcutAsText: (commandId: string) => getEffectiveShortcutsSpy(commandId)[0],
 }))
 
 vi.mock('#lib/logging/logger.js', () => ({

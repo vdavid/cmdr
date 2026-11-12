@@ -19,7 +19,7 @@
     import type { EncodingChoice, FileEncoding, ViewerContentKind } from '#lib/ipc/bindings.js'
     import type { ViewerDisplayMode } from './viewer-view-mode'
     import { tString } from '#lib/intl/messages.svelte.js'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 
     interface Props {
         /** File name shown in the flexible middle of the bar. */
@@ -100,7 +100,7 @@
             aria-label={tString('viewer.toolbar.tail.ariaLabel')}
             disabled={!isText}
             onclick={onToggleTail}
-            use:tooltip={{ text: tString('viewer.toolbar.tail.tooltip'), shortcut: getFirstShortcutReactive('viewer.toggleTail') }}
+            use:tooltip={{ text: tString('viewer.toolbar.tail.tooltip'), shortcut: shortcutAsText('viewer.toggleTail', 'tooltip') }}
         >
             {tString('viewer.toolbar.tail.label')}
         </button>

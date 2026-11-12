@@ -327,15 +327,15 @@
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },
-  "viewer.statusBar.hint.wrap": "{key} ngắt dòng",
+  "viewer.statusBar.hint.wrap": "<key></key> ngắt dòng",
   "@viewer.statusBar.hint.wrap": {
     "sourceHash": "b30ce00"
   },
-  "viewer.statusBar.hint.tail": "{key} theo dõi",
+  "viewer.statusBar.hint.tail": "<key></key> theo dõi",
   "@viewer.statusBar.hint.tail": {
     "sourceHash": "63d25d1"
   },
-  "viewer.statusBar.hint.search": "{key} tìm kiếm",
+  "viewer.statusBar.hint.search": "<key></key> tìm kiếm",
   "@viewer.statusBar.hint.search": {
     "sourceHash": "1cf8c07"
   },

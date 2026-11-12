@@ -138,7 +138,6 @@
     import { createSnapshotSelectionSync } from './snapshot-selection-sync.svelte'
     import { createHistoryCursorSync } from './history-cursor-sync.svelte'
     import type { CursorReading } from '../navigation/history-cursor'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import LiveAnnouncer from '#lib/ui/LiveAnnouncer.svelte'
     import { focusPaneChrome } from './pane-chrome'
     import { createPaneLocationAnnouncer, paneLocationLabel } from './pane-location-announcer.svelte'
@@ -2491,7 +2490,7 @@
             volumeSpace={diskSpace.volumeSpace}
             showVolumeSpace={footer.volumeSpace}
             totalMatches={searchSnapshot?.totalCount}
-            showInFolderShortcut={isSearchResultsView ? getFirstShortcutReactive('nav.parent') : undefined}
+            showInFolderHint={isSearchResultsView}
             {mtpSpaceHint}
         />
     {/if}

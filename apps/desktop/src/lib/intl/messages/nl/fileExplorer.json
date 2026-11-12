@@ -1107,7 +1107,7 @@
   "@fileExplorer.list.hiddenItems": {
     "sourceHash": "78a4459"
   },
-  "fileExplorer.list.hiddenItemsHowToShortcut": "Om verborgen onderdelen te zien, druk je op {shortcut} of kies je ‘{menu} > {item}’.",
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Om verborgen onderdelen te zien, druk je op <key></key> of kies je ‘{menu} > {item}’.",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
     "sourceHash": "b212fcd"
   },

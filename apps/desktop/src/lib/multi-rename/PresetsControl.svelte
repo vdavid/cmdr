@@ -16,7 +16,7 @@
     import { createMenu } from '#lib/ui/menu-controller.svelte.js'
     import type { MenuItem, MenuRowContext } from '#lib/ui/menu-types.js'
     import { claimKey } from '#lib/shortcuts/claim-key.js'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import type { MultiRenameState } from './multi-rename-state.svelte'
@@ -44,7 +44,7 @@
     /** Why the last save didn't land (the list is full); the popover stays open and says so. Editing the name forgets it. */
     let saveRefusal = $state<PresetSaveRefusal | null>(null)
 
-    const openShortcut = $derived(getFirstShortcutReactive('multiRename.openPresets'))
+    const openShortcut = $derived(shortcutAsText('multiRename.openPresets', 'tooltip'))
 
     // F2 can arrive twice for one press: the keydown, and File > Rename's accelerator.
     const isEcho = createKeyRoadEcho()

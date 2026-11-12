@@ -11,7 +11,7 @@
   "@downloads.toast.learnIntro": {
     "sourceHash": "3a06888"
   },
-  "downloads.toast.inAppHint": "App 內：按 <chip>{key}</chip> 就能跳至這裡",
+  "downloads.toast.inAppHint": "App 內：按 <chip></chip> 就能跳至這裡",
   "@downloads.toast.inAppHint": {
     "sourceHash": "5b70d9c"
   },
@@ -19,11 +19,11 @@
   "@downloads.toast.globalHint": {
     "sourceHash": "785e1f3"
   },
-  "downloads.toast.summaryBoth": "App 內按 <inApp>{inAppKey}</inApp> 跳至下載項目，全域則按 <global>{globalKey}</global>。",
+  "downloads.toast.summaryBoth": "App 內按 <inApp></inApp> 跳至下載項目，全域則按 <global>{globalKey}</global>。",
   "@downloads.toast.summaryBoth": {
     "sourceHash": "59c4131"
   },
-  "downloads.toast.summaryInApp": "App 內按 <inApp>{inAppKey}</inApp> 跳至下載項目。",
+  "downloads.toast.summaryInApp": "App 內按 <inApp></inApp> 跳至下載項目。",
   "@downloads.toast.summaryInApp": {
     "sourceHash": "2c0fd22"
   },

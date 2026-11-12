@@ -330,15 +330,15 @@
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },
-  "viewer.statusBar.hint.wrap": "{key} Umbruch",
+  "viewer.statusBar.hint.wrap": "<key></key> Umbruch",
   "@viewer.statusBar.hint.wrap": {
     "sourceHash": "b30ce00"
   },
-  "viewer.statusBar.hint.tail": "{key} Folgen",
+  "viewer.statusBar.hint.tail": "<key></key> Folgen",
   "@viewer.statusBar.hint.tail": {
     "sourceHash": "63d25d1"
   },
-  "viewer.statusBar.hint.search": "{key} Suchen",
+  "viewer.statusBar.hint.search": "<key></key> Suchen",
   "@viewer.statusBar.hint.search": {
     "sourceHash": "1cf8c07"
   },

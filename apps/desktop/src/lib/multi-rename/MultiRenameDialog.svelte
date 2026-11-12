@@ -31,7 +31,7 @@
     import type { MessageKey } from '#lib/intl/keys.gen.js'
     import { claimKey } from '#lib/shortcuts/claim-key.js'
     import { eventMatchesCommand } from '#lib/shortcuts/index.js'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import type { CommandId } from '#lib/commands/index.js'
     import { rollbackOperation } from '#lib/tauri-commands/index.js'
     import { asRollbackRefusal } from '#lib/operation-log/rollback-refusal.js'
@@ -137,8 +137,8 @@
     /** Why Undo rename didn't go, worded by the operation log's refusal notices. */
     let undoNotice = $state<MessageKey | null>(null)
 
-    const undoShortcut = $derived(getFirstShortcutReactive('multiRename.undoRename'))
-    const resultsShortcut = $derived(getFirstShortcutReactive('multiRename.results'))
+    const undoShortcut = $derived(shortcutAsText('multiRename.undoRename', 'tooltip'))
+    const resultsShortcut = $derived(shortcutAsText('multiRename.results', 'tooltip'))
 
     /**
      * Rename goes with ready rows, or queues while a mask's media fields are still being read. A

@@ -19,9 +19,7 @@
 import { untrack } from 'svelte'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { formatInteger } from '#lib/intl/number-format.js'
-import { joinSentences } from '#lib/intl/sentence-join.js'
-import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
-import { emptyFolderParagraphs } from '../views/empty-folder-text'
+import { emptyFolderSpokenText } from '../views/empty-folder-text'
 
 /** How long a load runs before "Loading…" is said; a quicker one says nothing about itself. */
 export const LOADING_ANNOUNCE_MS = 1000
@@ -66,7 +64,7 @@ function messageFor(from: PaneStatusInput, to: PaneStatusInput): string | null {
   }
   if (!to.hasError && to.entryCount === 0 && (from.entryCount > 0 || from.hiddenCount !== to.hiddenCount)) {
     // What the empty state shows, read aloud: "Empty folder", or the hidden items and how to see them.
-    return joinSentences(emptyFolderParagraphs(to.hiddenCount, getFirstShortcutReactive('view.showHidden')))
+    return emptyFolderSpokenText(to.hiddenCount)
   }
   if (to.selectedCount !== from.selectedCount) {
     return tString('fileExplorer.pane.selectedCount', {

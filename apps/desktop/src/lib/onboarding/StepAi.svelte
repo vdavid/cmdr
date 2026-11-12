@@ -36,7 +36,7 @@
     import RadioGroup from '#lib/ui/RadioGroup.svelte'
     import LinkButton from '#lib/ui/LinkButton.svelte'
     import ShortcutChip from '#lib/ui/ShortcutChip.svelte'
-    import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { commandHasShortcut } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import Trans from '#lib/intl/Trans.svelte'
@@ -96,7 +96,7 @@
 
     // Drives the "Select" comparison cell: when `selection.selectFiles` is unbound the
     // chip renders nothing, so we swap to a wording that names the action instead.
-    const selectFilesShortcut = $derived(getFirstShortcutReactive('selection.selectFiles'))
+    const selectFilesBound = $derived(commandHasShortcut('selection.selectFiles'))
 
     type WizardChoice = 'cloud' | 'local' | 'off'
 
@@ -548,7 +548,7 @@
                          so a bare `+` doesn't read as a key separator. The chip renders nothing
                          when the command is unbound, so the sentence falls back to naming the
                          action instead of leaving a gap where the key would sit. -->
-                    {#if selectFilesShortcut}
+                    {#if selectFilesBound}
                         <Trans key="onboarding.stepAi.table.selectWithoutBound" snippets={{ chip, code }} />
                     {:else}
                         <Trans key="onboarding.stepAi.table.selectWithoutUnbound" snippets={{ code }} />

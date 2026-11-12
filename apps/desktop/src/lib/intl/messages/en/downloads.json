@@ -24,12 +24,10 @@
     "screenshot": "toast-download.png"
   },
 
-  "downloads.toast.inAppHint": "In-app: Press <chip>{key}</chip> to jump here",
+  "downloads.toast.inAppHint": "In-app: Press <chip></chip> to jump here",
   "@downloads.toast.inAppHint": {
-    "description": "Tip in the download toast teaching the in-app shortcut to jump to the latest download. <chip> wraps the shortcut key, shown as a styled key cap; do not translate the key glyphs themselves. 'In-app' means while Cmdr is the active app.",
-    "placeholders": {
-      "key": "the shortcut keys to show in the chip (e.g. ⌘J) (always key glyphs, never a word, so it reads as a key name in the sentence)"
-    },
+    "description": "Tip in the download toast teaching the in-app shortcut to jump to the latest download. The empty <chip></chip> tag is where the shortcut shows, as a styled key cap (for example ⌘J, or the person's own binding); keep the empty tag where the key belongs in your sentence. 'In-app' means while Cmdr is the active app.",
+    "placeholders": {},
     "screenshot": "toast-download.png"
   },
 
@@ -42,23 +40,20 @@
     "screenshot": "toast-download.png"
   },
 
-  "downloads.toast.summaryBoth": "Jump with <inApp>{inAppKey}</inApp> in-app, <global>{globalKey}</global> globally.",
+  "downloads.toast.summaryBoth": "Jump with <inApp></inApp> in-app, <global>{globalKey}</global> globally.",
   "@downloads.toast.summaryBoth": {
-    "description": "One-line summary in the collapsed download toast when both shortcuts are set: 'Jump with X in-app, Y globally.' <inApp> and <global> wrap the two shortcut key caps (don't translate the key glyphs). 'in-app' = while Cmdr is active; 'globally' = from any app.",
+    "description": "One-line summary in the collapsed download toast when both shortcuts are set: 'Jump with X in-app, Y globally.' The empty <inApp></inApp> tag is where the in-app shortcut's key cap shows (for example ⌘J); keep it empty. <global> wraps the system-wide shortcut's key cap (don't translate the key glyphs). 'in-app' = while Cmdr is active; 'globally' = from any app.",
     "placeholders": {
-      "inAppKey": "the in-app shortcut keys (e.g. ⌘J)",
       "globalKey": "the system-wide shortcut keys (e.g. ⌃⌥⌘J)"
     },
     "screenshot": "toast-download.png",
     "screenshotNote": "The toast Cmdr shows when a download lands, pictured here. Your string is another form of it: the summary when several downloads land at once, the note that one landed in a subfolder, or the tooltip on its expand button."
   },
 
-  "downloads.toast.summaryInApp": "Jump with <inApp>{inAppKey}</inApp> in-app.",
+  "downloads.toast.summaryInApp": "Jump with <inApp></inApp> in-app.",
   "@downloads.toast.summaryInApp": {
-    "description": "One-line summary in the collapsed download toast when only the in-app shortcut is set. <inApp> wraps the shortcut key cap (don't translate the key glyphs). 'in-app' means while Cmdr is the active app.",
-    "placeholders": {
-      "inAppKey": "the in-app shortcut keys (e.g. ⌘J)"
-    },
+    "description": "One-line summary in the collapsed download toast when only the in-app shortcut is set. The empty <inApp></inApp> tag is where the shortcut's key cap shows (for example ⌘J); keep it empty. 'in-app' means while Cmdr is the active app.",
+    "placeholders": {},
     "screenshot": "toast-download.png",
     "screenshotNote": "The toast Cmdr shows when a download lands, pictured here. Your string is another form of it: the summary when several downloads land at once, the note that one landed in a subfolder, or the tooltip on its expand button."
   },

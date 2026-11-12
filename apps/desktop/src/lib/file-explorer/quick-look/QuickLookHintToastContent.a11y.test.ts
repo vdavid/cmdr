@@ -26,6 +26,13 @@ vi.mock('#lib/settings/index.js', () => ({
 vi.mock('#lib/settings/settings-window.js', () => ({
   openShortcutCustomization: vi.fn(() => Promise.resolve()),
 }))
+// `file.quickLook` needs the macOS-only `quickLook` capability, so Vitest (which runs as Linux)
+// sees it unbound. Model the Mac, where this toast shows, with its default binding.
+vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('#lib/shortcuts/reactive-shortcuts.svelte.js')>()),
+  commandHasShortcut: (id: string) => id === 'file.quickLook',
+  getEffectiveShortcutsReactive: (id: string) => (id === 'file.quickLook' ? ['⇧Space'] : []),
+}))
 
 describe('QuickLookHintToastContent', () => {
   beforeEach(() => {

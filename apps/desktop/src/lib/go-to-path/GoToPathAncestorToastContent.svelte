@@ -3,29 +3,24 @@
      * INFO toast shown when a "Go to path" jump landed on the nearest existing
      * ancestor because the requested path doesn't exist.
      *
-     * Pure-prop-driven: every input is captured at toast-creation time and
-     * never re-read. The back-shortcut in particular is snapshotted (not
-     * subscribed live) so a remap that happens between the toast appearing and
-     * the user reading it doesn't mutate the displayed hint mid-flight.
+     * The back hint is a live `nav.back` chip: it follows a rebind, and the line
+     * goes away when the command is unbound.
      */
 
     import type { Snippet } from 'svelte'
     import ShortcutChip from '#lib/ui/ShortcutChip.svelte'
     import Trans from '#lib/intl/Trans.svelte'
+    import { commandHasShortcut } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 
     interface Props {
         /** The path the user typed, which doesn't exist. */
         requested: string
         /** The nearest existing ancestor we navigated to (worst case `/`). */
         landed: string
-        /**
-         * Display string for the effective `nav.back` shortcut, snapshotted at
-         * toast-creation time. NOT reactive. Pass `''` to omit the hint line.
-         */
-        backShortcut: string
     }
 
-    const { requested, landed, backShortcut }: Props = $props()
+    const { requested, landed }: Props = $props()
+    const backBound = $derived(commandHasShortcut('nav.back'))
 </script>
 
 {#snippet pathCode(children: Snippet)}
@@ -34,7 +29,7 @@
 {#snippet backChip(children: Snippet)}
     <!-- The <chip></chip> tag has no inner text, so `children` renders nothing;
          it's rendered anyway to keep the snippet's tag-handler signature. -->
-    {@render children()}<ShortcutChip key={backShortcut} />
+    {@render children()}<ShortcutChip commandId="nav.back" clickable={false} />
 {/snippet}
 
 <div class="content">
@@ -45,7 +40,7 @@
             params={{ requested, landed }}
         />
     </span>
-    {#if backShortcut}
+    {#if backBound}
         <span class="hint"><Trans key="goToPath.toast.pressToGoBack" snippets={{ chip: backChip }} /></span>
     {/if}
 </div>

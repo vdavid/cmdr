@@ -9,8 +9,8 @@ smoke checklist.
   primitives → record the resolved target into recents. Plus the pure helpers (see below).
 - `GoToPathDialog.svelte`: the modal: auto-focused textbox (clipboard-prefilled when the clipboard resolves to a real
   path), up to 10 recent rows (digit chip + middle-truncated path + `[x]`), live inline ancestor warning.
-- `GoToPathAncestorToastContent.svelte`: INFO toast for the nearest-ancestor outcome. Props `requested`, `landed`,
-  `backShortcut` (snapshotted). Code-formats the paths; renders the back-shortcut as a literal `ShortcutChip`.
+- `GoToPathAncestorToastContent.svelte`: INFO toast for the nearest-ancestor outcome. Props `requested` and `landed`.
+  Code-formats the paths; renders the back hint as a live `nav.back` `ShortcutChip`.
 - `recent-paths-state.svelte.ts`: `$state` mirror of the backend recents store. `loadRecentPaths` / `addRecentPath` /
   `removeRecentPath` write the backend via IPC, then re-read the authoritative list so the UI stays in sync.
 - `go-to-path-ids.ts`: stable dedup id for the ancestor INFO toast.
@@ -69,10 +69,10 @@ actual jump (one source of truth, no drift).
   toast copy) is for the user.
 - **The digit→recent jump is guarded by the empty box, not by a modifier.** No valid path starts with a digit (paths
   start with `/`, `~`, or `.`), so once any character is in the box, digits are ordinary input. Confirmed with David.
-- **The ancestor toast's back-shortcut is snapshotted at toast-creation**, never hardcoded and never live-subscribed,
-  rendered as a literal-mode `ShortcutChip` (`key={backShortcut}`). A later rebind shouldn't rewrite a visible toast (it
-  would no longer match what the user could press); the next toast picks up the new binding. Matches the downloads toast
-  snapshot rule.
+- **The ancestor toast's back hint is a live `nav.back` chip** (`ShortcutChip commandId`, non-clickable), never
+  hardcoded: a chip is a claim about what pressing it does NOW, so it follows a rebind even on a visible toast, and the
+  line goes away when the command is unbound (`commandHasShortcut`). Same rule as every shortcut in prose:
+  `../shortcuts/DETAILS.md` § Shortcuts as text.
 
 ## Menu double-dispatch (idempotency)
 
@@ -97,8 +97,8 @@ Run through this after any change to the dialog, the handler, or the recents mir
 7. With the box empty, press `1` → jumps to the most recent path; `0` → jumps to the tenth. With any character typed,
    digits are ordinary input (no jump).
 8. Click a recent row → jumps immediately. Click a row's `[x]` → removes the entry without jumping.
-9. Rebind `nav.back` in Settings > Keyboard shortcuts, trigger the ancestor toast again → the toast shows the new combo
-   (snapshotted per toast). An already-visible toast keeps its old combo.
+9. Rebind `nav.back` in Settings > Keyboard shortcuts, trigger the ancestor toast again → the toast shows the new combo,
+   an already-visible one too. Remove every `nav.back` binding → the toast drops its "Press … to go back." line.
 
 ## The scheme intercept
 

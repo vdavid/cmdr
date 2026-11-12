@@ -11,7 +11,7 @@
   "@downloads.toast.learnIntro": {
     "sourceHash": "3a06888"
   },
-  "downloads.toast.inAppHint": "Trong ứng dụng: Nhấn <chip>{key}</chip> để nhảy đến đây",
+  "downloads.toast.inAppHint": "Trong ứng dụng: Nhấn <chip></chip> để nhảy đến đây",
   "@downloads.toast.inAppHint": {
     "sourceHash": "5b70d9c"
   },
@@ -19,11 +19,11 @@
   "@downloads.toast.globalHint": {
     "sourceHash": "785e1f3"
   },
-  "downloads.toast.summaryBoth": "Nhảy đến bằng <inApp>{inAppKey}</inApp> trong ứng dụng, <global>{globalKey}</global> toàn cục.",
+  "downloads.toast.summaryBoth": "Nhảy đến bằng <inApp></inApp> trong ứng dụng, <global>{globalKey}</global> toàn cục.",
   "@downloads.toast.summaryBoth": {
     "sourceHash": "59c4131"
   },
-  "downloads.toast.summaryInApp": "Nhảy đến bằng <inApp>{inAppKey}</inApp> trong ứng dụng.",
+  "downloads.toast.summaryInApp": "Nhảy đến bằng <inApp></inApp> trong ứng dụng.",
   "@downloads.toast.summaryInApp": {
     "sourceHash": "2c0fd22"
   },

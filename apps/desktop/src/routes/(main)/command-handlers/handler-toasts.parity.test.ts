@@ -29,10 +29,14 @@ vi.mock('#lib/file-explorer/quick-look/quick-look-state.svelte.js', () => ({
   quickLookState: { isOpen: false },
 }))
 vi.mock('#lib/settings/index.js', () => ({ getSetting: vi.fn(() => 100), setSetting: vi.fn() }))
-vi.mock('#lib/shortcuts/index.js', async () => ({
+vi.mock('#lib/shortcuts/index.js', () => ({
   getEffectiveShortcuts: vi.fn(() => []),
-  toDisplayShortcut: (await import('#lib/shortcuts/key-capture.js')).toDisplayShortcut,
 }))
+// The zoom toast reads its reset key through `shortcutAsText`; route it to the stub above.
+vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async () => {
+  const { getEffectiveShortcuts } = await import('#lib/shortcuts/index.js')
+  return { shortcutAsText: (id: string) => getEffectiveShortcuts(id)[0] }
+})
 
 import { addToast } from '#lib/ui/toast/index.js'
 import { addFavorite } from '#lib/tauri-commands/index.js'

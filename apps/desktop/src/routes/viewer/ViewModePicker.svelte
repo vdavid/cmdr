@@ -4,7 +4,7 @@
   import { availableMediaKind, mediaKindLabel, viewAsMediaLabel } from './media-view'
   import type { ViewerDisplayMode } from './viewer-view-mode'
   import { tString } from '#lib/intl/messages.svelte.js'
-  import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+  import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
   import type { CommandId } from '#lib/commands/index.js'
 
   type Props = {
@@ -19,7 +19,7 @@
 
   /** An option's label with its key appended, `Text (1)`; the key is the user's (remappable), and none shows no suffix. */
   function withKey(label: string, command: CommandId): string {
-    const key = getFirstShortcutReactive(command)
+    const key = shortcutAsText(command, 'menuItem')
     return key === undefined ? label : `${label} (${key})`
   }
 

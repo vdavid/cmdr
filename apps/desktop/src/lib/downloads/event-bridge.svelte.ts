@@ -38,7 +38,7 @@ import { type UnlistenFn } from '@tauri-apps/api/event'
 import type { DownloadDetectedEvent } from '#lib/ipc/bindings.js'
 import { downloadsWatcherStatus, onDownloadDetected } from '#lib/tauri-commands/index.js'
 import { addToast } from '#lib/ui/toast/index.js'
-import { getEffectiveShortcuts, toDisplayShortcut } from '#lib/shortcuts/index.js'
+import { commandHasShortcut } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { sendMacosNotification } from '#lib/notifications/send-macos-notification.js'
 import { tString } from '#lib/intl/messages.svelte.js'
@@ -158,12 +158,9 @@ async function handleDownloadDetected(
 }
 
 function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | undefined): void {
-  // Snapshot both go-to-latest bindings at toast creation time. The component
-  // receives these as props and never re-reads, so a remap between events
-  // doesn't mutate an already-visible toast.
-  //
-  // In-app ⌘J: shown whenever the command is bound; `''` when it's unbound.
-  const shortcutHint = toDisplayShortcut(getEffectiveShortcuts(GO_TO_LATEST_COMMAND_ID)[0] ?? '')
+  // In-app ⌘J: taught whenever the command is bound. The toast renders it as a
+  // live `commandId` chip, so it reads the binding itself.
+  const inAppBound = commandHasShortcut(GO_TO_LATEST_COMMAND_ID)
 
   // Global ⌃⌥⌘J (jump from any app): only teachable when the hotkey is turned
   // on AND has a binding. A disabled or unbound hotkey contributes no hint, so
@@ -174,7 +171,7 @@ function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | u
   // teachable, skip it entirely — even though downloads notifications aren't
   // turned off. (A 'both'-mode macOS notification still fires from the caller;
   // it never carried a shortcut hint anyway.)
-  if (shortcutHint === '' && globalBinding === '') {
+  if (!inAppBound && globalBinding === '') {
     log.debug('Skipping downloads toast: neither go-to-latest shortcut is set')
     return
   }
@@ -192,7 +189,6 @@ function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | u
     props: {
       explorer,
       event: payload,
-      shortcutHint,
       globalBinding,
       // New toasts open in the last-used collapsed/expanded state.
       initialCollapsed: getDownloadsToastCollapsed(),

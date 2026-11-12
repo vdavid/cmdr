@@ -22,17 +22,15 @@
     import Trans from '#lib/intl/Trans.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { setSetting } from '#lib/settings/index.js'
-    import { getEffectiveShortcuts, toDisplayShortcut } from '#lib/shortcuts/index.js'
+    import { commandHasShortcut } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import { openShortcutCustomization } from '#lib/settings/settings-window.js'
 
     import { QUICK_LOOK_HINT_TOAST_ID } from './quick-look-hint-id'
 
-    // Snapshot the Quick Look binding at toast creation. Toasts don't rewrite
-    // themselves when the user rebinds mid-display (the next toast picks up the
-    // change); a literal-mode chip with this fixed string is the right shape.
-    // Falls back to ⇧Space (the default) so the hint always shows a key. The
+    // The Quick Look chip is live: it follows a rebind, and its line goes away when
+    // `file.quickLook` is unbound, since naming a key that does nothing would lie. The
     // chip is non-clickable: the toast already offers the Settings link below.
-    const quickLookKey = toDisplayShortcut(getEffectiveShortcuts('file.quickLook')[0] ?? '⇧Space')
+    const quickLookBound = $derived(commandHasShortcut('file.quickLook'))
 
     function handleOpenSettings() {
         dismissToast(QUICK_LOOK_HINT_TOAST_ID)
@@ -50,7 +48,7 @@
 <!-- Inline-chip/link snippets for the <Trans> lines. The tag names (space, key,
      enter, settingsLink) intentionally differ from any interpolation param. -->
 {#snippet spaceChip(_children: Snippet)}<ShortcutChip key="Space" />{/snippet}
-{#snippet quickLookChip(_children: Snippet)}<ShortcutChip key={quickLookKey} />{/snippet}
+{#snippet quickLookChip(_children: Snippet)}<ShortcutChip commandId="file.quickLook" clickable={false} />{/snippet}
 {#snippet enterChip(_children: Snippet)}<ShortcutChip key="Enter" />{/snippet}
 {#snippet settingsLink(children: Snippet)}<LinkButton onclick={handleOpenSettings}>{@render children()}</LinkButton>{/snippet}
 
@@ -61,9 +59,11 @@
     <p>
         <Trans key="fileExplorer.quickLookHint.finderComparison" snippets={{ space: spaceChip }} />
     </p>
-    <p>
-        <Trans key="fileExplorer.quickLookHint.quickView" snippets={{ key: quickLookChip }} />
-    </p>
+    {#if quickLookBound}
+        <p>
+            <Trans key="fileExplorer.quickLookHint.quickView" snippets={{ key: quickLookChip }} />
+        </p>
+    {/if}
     <p>
         <Trans key="fileExplorer.quickLookHint.enterOpens" snippets={{ enter: enterChip }} />
     </p>

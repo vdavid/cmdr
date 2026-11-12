@@ -36,6 +36,8 @@ function flatten(result: ReturnType<typeof t>): string {
 
 /** A tag handler returning its inner chunks joined as text (mirrors a passthrough wrapper). */
 const tag = (chunks: unknown[]): string => (chunks as string[]).join('')
+/** Stands in for the live in-app chip: its empty tag renders the binding, here `⌘J`. */
+const inAppChip = (): string => '⌘J'
 
 describe('downloads catalog parity (en)', () => {
   it('resolves the download toast title and subdir line', () => {
@@ -47,7 +49,7 @@ describe('downloads catalog parity (en)', () => {
 
   it('resolves the toast teaching copy and hints', () => {
     expect(tString('downloads.toast.learnIntro')).toBe('Something cool to learn about jumping to downloads')
-    expect(flatten(t('downloads.toast.inAppHint', { key: '⌘J', chip: tag }))).toBe('In-app: Press ⌘J to jump here')
+    expect(flatten(t('downloads.toast.inAppHint', { chip: inAppChip }))).toBe('In-app: Press ⌘J to jump here')
     expect(flatten(t('downloads.toast.globalHint', { key: '⌃⌥⌘J', chip: tag, em: tag }))).toBe(
       'In any app (global shortcut), press ⌃⌥⌘J',
     )
@@ -57,14 +59,13 @@ describe('downloads catalog parity (en)', () => {
     expect(
       flatten(
         t('downloads.toast.summaryBoth', {
-          inAppKey: '⌘J',
           globalKey: '⌃⌥⌘J',
-          inApp: tag,
+          inApp: inAppChip,
           global: tag,
         }),
       ),
     ).toBe('Jump with ⌘J in-app, ⌃⌥⌘J globally.')
-    expect(flatten(t('downloads.toast.summaryInApp', { inAppKey: '⌘J', inApp: tag }))).toBe('Jump with ⌘J in-app.')
+    expect(flatten(t('downloads.toast.summaryInApp', { inApp: inAppChip }))).toBe('Jump with ⌘J in-app.')
     expect(flatten(t('downloads.toast.summaryGlobal', { globalKey: '⌃⌥⌘J', global: tag }))).toBe(
       'Jump with ⌃⌥⌘J globally.',
     )

@@ -1105,7 +1105,7 @@
   "@fileExplorer.list.hiddenItems": {
     "sourceHash": "78a4459"
   },
-  "fileExplorer.list.hiddenItemsHowToShortcut": "Para ver os itens ocultos, pressione {shortcut} ou escolha “{menu} > {item}”.",
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Para ver os itens ocultos, pressione <key></key> ou escolha “{menu} > {item}”.",
   "@fileExplorer.list.hiddenItemsHowToShortcut": {
     "sourceHash": "b212fcd"
   },

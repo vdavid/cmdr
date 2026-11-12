@@ -4,7 +4,7 @@
  * `showZoomToast` helper is view-only, so it lives here.
  */
 import { addToast } from '#lib/ui/toast/index.js'
-import { getEffectiveShortcuts, toDisplayShortcut } from '#lib/shortcuts/index.js'
+import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 import { getSetting, setSetting } from '#lib/settings/index.js'
 import { TEXT_SIZE_RANGE } from '#lib/settings/definitions/appearance.js'
 import { tString } from '#lib/intl/messages.svelte.js'
@@ -19,10 +19,11 @@ import type { CommandHandlerRecord } from './types'
 function showZoomToast(oldSize: number, newSize: number): void {
   if (oldSize === newSize) return
 
-  const resetShortcut = toDisplayShortcut(getEffectiveShortcuts('view.zoom.set100')[0] ?? '')
-  const resetHint = resetShortcut
-    ? tString('commands.handler.zoomResetHintShortcut', { shortcut: resetShortcut })
-    : tString('commands.handler.zoomResetHintMenu')
+  const resetShortcut = shortcutAsText('view.zoom.set100', 'toast')
+  const resetHint =
+    resetShortcut !== undefined
+      ? tString('commands.handler.zoomResetHintShortcut', { shortcut: resetShortcut })
+      : tString('commands.handler.zoomResetHintMenu')
 
   let message: string
   if (newSize === 100) {

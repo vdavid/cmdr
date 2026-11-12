@@ -329,15 +329,15 @@
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },
-  "viewer.statusBar.hint.wrap": "{key} retour ligne",
+  "viewer.statusBar.hint.wrap": "<key></key> retour ligne",
   "@viewer.statusBar.hint.wrap": {
     "sourceHash": "b30ce00"
   },
-  "viewer.statusBar.hint.tail": "{key} suivre",
+  "viewer.statusBar.hint.tail": "<key></key> suivre",
   "@viewer.statusBar.hint.tail": {
     "sourceHash": "63d25d1"
   },
-  "viewer.statusBar.hint.search": "{key} rechercher",
+  "viewer.statusBar.hint.search": "<key></key> rechercher",
   "@viewer.statusBar.hint.search": {
     "sourceHash": "1cf8c07"
   },

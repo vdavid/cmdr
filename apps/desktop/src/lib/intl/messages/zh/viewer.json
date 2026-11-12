@@ -326,15 +326,15 @@
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },
-  "viewer.statusBar.hint.wrap": "{key} 换行",
+  "viewer.statusBar.hint.wrap": "<key></key> 换行",
   "@viewer.statusBar.hint.wrap": {
     "sourceHash": "b30ce00"
   },
-  "viewer.statusBar.hint.tail": "{key} 跟随",
+  "viewer.statusBar.hint.tail": "<key></key> 跟随",
   "@viewer.statusBar.hint.tail": {
     "sourceHash": "63d25d1"
   },
-  "viewer.statusBar.hint.search": "{key} 搜索",
+  "viewer.statusBar.hint.search": "<key></key> 搜索",
   "@viewer.statusBar.hint.search": {
     "sourceHash": "1cf8c07"
   },
