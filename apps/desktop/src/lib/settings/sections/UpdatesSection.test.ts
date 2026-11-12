@@ -5,7 +5,8 @@
  * and that the error case renders a "Send error report" link wired to `openErrorReportFor`.
  */
 
-import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, onTestFinished, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import type { BetaSignupResult } from '#lib/tauri-commands/index.js'
 import type { ManagedPolicyView } from '#lib/ipc/bindings.js'
@@ -121,16 +122,24 @@ describe('UpdatesSection', () => {
     _resetUpdaterStateForTest()
   })
 
-  it('shows the security events card with its switch and a Show in Finder button that reveals the log', async () => {
-    const target = render()
-    await tick()
-    expect(target.textContent).toContain('Security events')
-    expect(target.textContent).toContain('Record security events')
-    const button = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Show in Finder')
-    expect(button).toBeTruthy()
-    button?.click()
-    expect(revealSecurityLogMock).toHaveBeenCalledTimes(1)
-  })
+  it.each([
+    ['macos', 'Show in Finder'],
+    ['windows', 'Show in File Explorer'],
+    ['linux', 'Show in file manager'],
+  ] as const)(
+    'shows the security events card with its switch and a button that reveals the log (%s: %s)',
+    async (platform, label) => {
+      onTestFinished(withPlatform(platform))
+      const target = render()
+      await tick()
+      expect(target.textContent).toContain('Security events')
+      expect(target.textContent).toContain('Record security events')
+      const button = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === label)
+      expect(button).toBeTruthy()
+      button?.click()
+      expect(revealSecurityLogMock).toHaveBeenCalledTimes(1)
+    },
+  )
 
   it('renders the Check for updates button enabled when status is idle', async () => {
     const target = render()

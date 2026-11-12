@@ -3,8 +3,9 @@
  * language, every script is searchable, accents are optional, English stays a fallback, and the
  * Language setting is findable from any language.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { setLocale, _clearCompiledCacheForTests, _setCatalogForTests } from '#lib/intl/messages.svelte.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import {
   clearSearchIndex,
   getMatchIndicesForLabel,
@@ -63,6 +64,9 @@ describe('other scripts', () => {
   })
 
   it('allows no typo in a CJK query', () => {
+    // The macOS description is the translated one; off macOS it reads English until translated.
+    onTestFinished(withPlatform('macos'))
+    clearSearchIndex()
     void setLocale('zh')
     // The zh description says `选择 Cmdr 使用的语言`; one character off is a different phrase.
     expect(ids('使用的语言')).toContain('appearance.language')
@@ -98,6 +102,9 @@ describe('English as a fallback', () => {
   })
 
   it('leaves the English description out, since long common-word sentences make short queries noisy', () => {
+    // Only the macOS description mentions compounding with the system text size.
+    onTestFinished(withPlatform('macos'))
+    clearSearchIndex()
     expect(ids('compounds')).toContain('appearance.textSize')
     void setLocale('hu')
     expect(ids('compounds')).not.toContain('appearance.textSize')

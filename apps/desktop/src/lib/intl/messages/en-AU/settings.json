@@ -7,9 +7,9 @@
   "@settings.appearance.appColor.label": {
     "sourceHash": "b1107c8"
   },
-  "settings.appearance.appColor.description": "To change your system theme colour, go to System Settings > Appearance.",
+  "settings.appearance.appColor.description": "{platform, select, macos {To change your system theme colour, go to System Settings > Appearance.} windows {To change your system accent colour, go to Settings > Personalisation > Colours.} other {To change your system accent colour, go to your system appearance settings.}}",
   "@settings.appearance.appColor.description": {
-    "sourceHash": "7dc4ab7"
+    "sourceHash": "0045d05"
   },
   "settings.appearance.appColor.opt.system": "System theme colour",
   "@settings.appearance.appColor.opt.system": {
@@ -71,17 +71,17 @@
   "@settings.listing.showTags.keywords": {
     "sourceHash": "70fc801"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "Warn when free space drops below this per cent of your startup disk.",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Warn when free space drops below this per cent of your startup disk.} windows {Warn when free space drops below this per cent of your system drive.} other {Warn when free space drops below this per cent of your system disk.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
-    "sourceHash": "9ed41b8"
+    "sourceHash": "b4d0378"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "disk, space, threshold, percent, per cent, low, free, warning",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
     "sourceHash": "7a0df93"
   },
-  "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr pauses drive indexing when free space on your startup disk drops below this per cent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.",
+  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {Cmdr pauses drive indexing when free space on your startup disk drops below this per cent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} windows {Cmdr pauses drive indexing when free space on your system drive drops below this per cent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} other {Cmdr pauses drive indexing when free space on your system disk drops below this per cent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.}}",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "4ee1cce"
+    "sourceHash": "bb41d41"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "disk, space, full, free, index, indexing, pause, storage, threshold, percent, per cent, low",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
@@ -135,13 +135,13 @@
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
   },
-  "settings.appearance.themeColorSwatchAria": "Open System Settings to change the system theme colour",
+  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {Open System Settings to change the system theme colour} windows {Open Windows Settings to change the system accent colour} other {Open your system settings to change the system accent colour}}",
   "@settings.appearance.themeColorSwatchAria": {
-    "sourceHash": "4cad022"
+    "sourceHash": "b76cab4"
   },
-  "settings.appearance.appColorHintPrefix": "To change your system theme colour, go to",
+  "settings.appearance.appColorHintPrefix": "{platform, select, macos {To change your system theme colour, go to} other {To change your system accent colour, go to}}",
   "@settings.appearance.appColorHintPrefix": {
-    "sourceHash": "748470a"
+    "sourceHash": "f06932f"
   },
   "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalisation > Colours} other {your system appearance settings}}",
   "@settings.appearance.appColorHintLink": {
@@ -175,33 +175,33 @@
   "@settings.managed.summary.title": {
     "sourceHash": "5450801"
   },
-  "settings.fileOperations.skipConfirmation.label": "Skip confirmation for copy, move, and bin",
+  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Skip confirmation for copy, move, and bin}}",
   "@settings.fileOperations.skipConfirmation.label": {
-    "sourceHash": "6af6546"
+    "sourceHash": "f1b1b39"
   },
-  "settings.fileOperations.skipConfirmation.description": "F5 and F6 copy and move into the other pane right away, and F8 moves to the Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.",
+  "settings.fileOperations.skipConfirmation.description": "{platform, select, windows {F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {F5 and F6 copy and move into the other pane right away, and F8 moves to the Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.}}",
   "@settings.fileOperations.skipConfirmation.description": {
-    "sourceHash": "086379d"
+    "sourceHash": "4c931bd"
   },
-  "settings.fileOperations.skipConfirmation.keywords": "confirm, confirmation, dialog, ask, copy, move, trash, bin, delete, skip, clicks",
+  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {confirm, confirmation, dialog, ask, copy, move, trash, bin, delete, skip, clicks}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
-    "sourceHash": "9f61258"
+    "sourceHash": "8179d90"
   },
-  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, trash, bin",
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, recycle bin} other {progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, trash, bin}}",
   "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
-    "sourceHash": "978b2ff"
+    "sourceHash": "1f64fb0"
   },
-  "settings.dataWipe.goes.license": "The licence on this Mac. To activate it again, enter the licence key from your purchase email.",
+  "settings.dataWipe.goes.license": "{platform, select, macos {The licence on this Mac. To activate it again, enter the licence key from your purchase email.} windows {The licence on this PC. To activate it again, enter the licence key from your purchase email.} other {The licence on this computer. To activate it again, enter the licence key from your purchase email.}}",
   "@settings.dataWipe.goes.license": {
-    "sourceHash": "90b5b06"
+    "sourceHash": "12597d5"
   },
-  "settings.dataWipe.goes.licenseIfAny": "The licence on this Mac, if you activated one. To activate it again, enter the licence key from your purchase email.",
+  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {The licence on this Mac, if you activated one. To activate it again, enter the licence key from your purchase email.} windows {The licence on this PC, if you activated one. To activate it again, enter the licence key from your purchase email.} other {The licence on this computer, if you activated one. To activate it again, enter the licence key from your purchase email.}}",
   "@settings.dataWipe.goes.licenseIfAny": {
-    "sourceHash": "db7f6f2"
+    "sourceHash": "93cc028"
   },
-  "settings.dataWipe.doneMessage": "Everything Cmdr kept on this Mac is gone. To remove the app as well, move it to the Bin after Cmdr quits.",
+  "settings.dataWipe.doneMessage": "{platform, select, macos {Everything Cmdr kept on this Mac is gone. To remove the app as well, move it to the Bin after Cmdr quits.} windows {Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps > Installed apps after Cmdr closes.} other {Everything Cmdr kept on this computer is gone. To remove the app as well, uninstall it the way you installed it after Cmdr quits.}}",
   "@settings.dataWipe.doneMessage": {
-    "sourceHash": "a0d09dc"
+    "sourceHash": "2c92261"
   },
   "settings.license.manageKey.keywords": "license, licence, key, manage, activate, activation, change",
   "@settings.license.manageKey.keywords": {

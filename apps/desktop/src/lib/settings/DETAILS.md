@@ -524,6 +524,10 @@ matches exactly, since one typo in a two-to-five-character term is a different w
   A list the language hasn't translated resolves to English (`tStringIn` walks the fallback chain, and
   `sync-locale-keys.ts` seeds English skeletons), so `keywordsIn` treats a value equal to the English one as no
   keywords; the English fallback indexes it once.
+- **Keywords speak the OS's words too.** A label, description, or keywords value can be a platform block
+  (`src/lib/intl/DETAILS.md` § "Platform variants"), and the index reads the branch this window's OS renders. So a list
+  naming an OS concept swaps the word per branch: `skipConfirmation.keywords` says "recycle bin" on Windows where macOS
+  and Linux say "trash", so neither OS finds the row by the other's word. `settings-search.platform.test.ts` pins it.
 
 **The index is keyed by the catalog on screen** (`uiCatalogLocale()`) and rebuilds lazily when that changes, so a
 language switch needs no invalidation call (`clearSearchIndex()` is for tests that flip the platform or swap a catalog's
@@ -539,7 +543,9 @@ search. ❌ No hardcoded keyword list: License and AI once had one, which lit th
 (`settings-search.i18n.test.ts` § "sections a hit lights up" pins that each old keyword reaches a real row).
 
 Tests: `settings-search.test.ts` (index shape, cards, rows) and `settings-search.i18n.test.ts` (the real catalogs:
-language switch, scripts, accents, the fallback, catalog keywords and terms, the Language setting).
+language switch, scripts, accents, the fallback, catalog keywords and terms, the Language setting), and
+`settings-search.platform.test.ts` (each OS finds a row by its own words). A test that pins a translated description
+runs under `withPlatform('macos')`: Vitest runs as Linux, whose branch may read English until it's translated.
 
 ## Card groups (in-page SectionCard grouping)
 

@@ -4,7 +4,8 @@
  * summary gets the right "What goes" lines.
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import { computeAccessibleDescription } from 'dom-accessibility-api'
 import DeleteAllDataDialog from './DeleteAllDataDialog.svelte'
@@ -138,6 +139,26 @@ describe('DeleteAllDataDialog behaviour', () => {
     expect(onQuit).toHaveBeenCalledTimes(1)
     target.remove()
   })
+
+  it.each([
+    ['macos', 'Delete all and quit', 'Quit Cmdr', 'this Mac', 'Keychain Access'],
+    ['windows', 'Delete all and exit', 'Exit Cmdr', 'this PC', 'Credential Manager'],
+    ['linux', 'Delete all and quit', 'Quit Cmdr', 'this computer', 'your keyring'],
+  ] as const)(
+    'speaks %s’s words: the confirm and quit buttons, the machine, and where the secrets live',
+    async (platform, confirmLabel, quitLabel, machine, secretStore) => {
+      onTestFinished(withPlatform(platform))
+      const confirm = await mountDialog(VIEWS.confirm)
+      expect(buttons(confirm.target).map((b) => b.textContent.trim())).toContain(confirmLabel)
+      expect(confirm.target.textContent).toContain(machine)
+      confirm.target.remove()
+
+      const partial = await mountDialog(VIEWS.partial)
+      expect(buttons(partial.target).map((b) => b.textContent.trim())).toEqual([quitLabel])
+      expect(partial.target.querySelector('.leftovers')?.textContent).toContain(secretStore)
+      partial.target.remove()
+    },
+  )
 
   it('names every leftover: the path verbatim, and the keychain items by name', async () => {
     const { target } = await mountDialog(VIEWS.partial)

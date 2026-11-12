@@ -2084,7 +2084,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Choose the language Cmdr uses. “System default” follows your Mac’s language.",
         "windows": "Choose the language Cmdr uses. “System default” follows your Windows display language.",
@@ -2101,17 +2101,18 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "To change your system theme color, go to System Settings > Appearance.",
         "windows": "To change your system accent color, go to Settings > Personalization > Colors.",
-        "other": "To change your system accent color, go to your desktop’s appearance settings."
+        "other": "To change your system accent color, go to your system appearance settings."
       },
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "written: the place the row’s link names (`appColorHintLink` `other`), plan § Branch-writing rules 3"
       },
-      "whereInUi": "Settings window > Appearance > Colors and formats, the “App color” row’s description (used for search; the visible hint is the appColorHint pair below)."
+      "whereInUi": "Settings window > Appearance > Colors and formats, the “App color” row’s description (used for search; the visible hint is the appColorHint pair below).",
+      "written": ["other"]
     },
     {
       "key": "settings.appearance.appColorHintLink",
@@ -2140,15 +2141,15 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Scales text and UI throughout the app. Compounds with the macOS Accessibility text size, where 100% means “exactly the system size”.",
-        "windows": "Scales text and UI throughout the app. Compounds with the Windows text size (Settings > Accessibility > Text size), where 100% means “exactly the system size”.",
-        "other": "Scales text and UI throughout the app. Compounds with your desktop’s text scaling, where 100% means “exactly the system size”."
+        "windows": "Scales text and UI throughout the app.",
+        "other": "Scales text and UI throughout the app."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: drop the compounds clause (the multiplier is 1.0 off macOS)",
+        "other": "verdicts: drop the compounds clause (the multiplier is 1.0 off macOS)"
       },
       "whereInUi": "Settings window > Appearance > Zoom and density, help text under “Text size”."
     },
@@ -2204,7 +2205,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Open System Settings to change the system theme color",
         "windows": "Open Windows Settings to change the system accent color",
@@ -2333,15 +2334,15 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "macOS",
         "windows": "Windows",
         "other": "System"
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: proposal",
+        "other": "verdicts: proposal"
       },
       "whereInUi": "Settings window > Behavior > Notifications, the “macOS” button in the In-app / macOS / Both / Neither toggle for new downloads."
     },
@@ -2350,7 +2351,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "macOS",
         "windows": "Windows",
@@ -2383,24 +2384,24 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "none",
       "branches": {
         "macos": "Press ⌃⌥⌘J from any app to jump to your most recent download. Requires Full Disk Access.",
-        "windows": "Press {combo} from any app to jump to your most recent download.",
-        "other": "Press {combo} from any app to jump to your most recent download."
+        "windows": null,
+        "other": null
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "row": "verdicts: the key glyphs wait for #1102 (keymap work)"
       },
-      "whereInUi": "Settings window > Behavior > Notifications, help under the global “jump to latest download” switch."
+      "whereInUi": "Settings window > Behavior > Notifications, help under the global “jump to latest download” switch.",
+      "note": "Waits for #1102, which passes the combo as a placeholder; then Windows and Linux (where `global_shortcuts` holds) drop “Requires Full Disk Access.”"
     },
     {
       "key": "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description",
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "How to warn you when your startup disk runs low on free space.",
         "windows": "How to warn you when your system drive runs low on free space.",
@@ -2417,7 +2418,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Warn when free space drops below this percent of your startup disk.",
         "windows": "Warn when free space drops below this percent of your system drive.",
@@ -2434,7 +2435,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr pauses drive indexing when free space on your startup disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.",
         "windows": "Cmdr pauses drive indexing when free space on your system drive drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.",
@@ -2451,15 +2452,15 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, but won’t ask macOS for Local Network access.",
         "windows": "Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, and Windows won’t ask to let Cmdr through the firewall.",
         "other": "Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: proposal",
+        "other": "verdicts: proposal"
       },
       "whereInUi": "Settings window > File systems > SMB/Network shares, help under the network discovery switch."
     },
@@ -2564,14 +2565,14 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for Finder and other apps.",
-        "windows": "When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system connection stays for File Explorer and other apps.",
+        "windows": "When this is on, Cmdr establishes a direct connection to SMB shares for faster file operations. The system connection stays for File Explorer and other apps.",
         "other": "When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for your file manager and other apps."
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with evidence § Corrections (“When this is on” for a toggle)",
         "other": "proposal"
       },
       "whereInUi": "Settings window > File systems > SMB/Network shares, help under “Direct SMB connection”."
@@ -2581,7 +2582,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your Mac connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.",
         "windows": "Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your PC connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.",
@@ -2598,7 +2599,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this Mac. Leaving this on costs nothing if you have no Android tooling installed.",
         "windows": "Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this PC. Leaving this on costs nothing if you have no Android tooling installed.",
@@ -2615,17 +2616,18 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and Homebrew. Point it somewhere else if you keep the platform tools in their own place.",
-        "windows": "Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.",
+        "windows": "Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and Homebrew. Point it somewhere else if you keep the platform tools in their own place.",
         "other": "Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: open, keep the macOS text (the locator searches nothing Windows has)",
+        "other": "verdicts: proposal"
       },
-      "whereInUi": "Settings window > File systems > Android (ADB), help under the custom adb path field."
+      "whereInUi": "Settings window > File systems > Android (ADB), help under the custom adb path field.",
+      "openBranches": ["windows"]
     },
     {
       "key": "settings.fileOperations.mtpEnabled.description",
@@ -2648,7 +2650,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, macOS version, and where in the code the problem happened. Never file names or personal data.",
         "windows": "Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Windows version, and where in the code the problem happened. Never file names or personal data.",
@@ -2665,15 +2667,15 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that ⇧Space (Quick Look) or Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.",
-        "windows": "F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Don’t show again” on the banner) to stop showing it.",
-        "other": "F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that ⇧Space (Quick Look) or Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good."
+        "windows": "F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or select “Never show this warning again” in the banner) to suppress the warning for good.",
+        "other": "F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "evidence § Corrections (no Quick Look, “select”, the banner’s real button name); the rest keeps the macOS wording",
+        "other": "evidence § Corrections (drop “⇧Space (Quick Look) or”)"
       },
       "whereInUi": "Settings window > Advanced, help under “Suppress the binary-file warning” in the viewer."
     },
@@ -2745,7 +2747,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your Mac and include the file names and paths Cmdr sends to your provider.",
         "windows": "Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your PC and include the file names and paths Cmdr sends to your provider.",
@@ -2762,7 +2764,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Timeout for resolving network services via Bonjour.",
         "windows": "Timeout for resolving network services found on your local network (mDNS).",
@@ -3195,7 +3197,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Keep a small file on this Mac that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your Mac.",
         "windows": "Keep a small file on this PC that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your PC.",
@@ -3212,15 +3214,15 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Show in Finder",
         "windows": "Show in File Explorer",
         "other": "Show in file manager"
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "proposal (matches `menu.file.showInFileManager`)",
+        "other": "proposal (matches `menu.file.showInFileManager`)"
       },
       "whereInUi": "Settings window > Updates & privacy, the “Show in Finder” button next to the security log switch."
     },
@@ -3229,15 +3231,15 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "When macOS doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.",
         "windows": "When Windows doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.",
         "other": "When your system doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: proposal",
+        "other": "verdicts: proposal"
       },
       "whereInUi": "Settings window > File systems > Servers (SFTP, WebDAV), “Trusted certificates” card text."
     },
@@ -3246,7 +3248,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Nothing trusted yet. When you connect to a WebDAV server macOS doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.",
         "windows": "Nothing trusted yet. When you connect to a WebDAV server Windows doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.",
@@ -3263,7 +3265,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Your data on this Mac",
         "windows": "Your data on this PC",
@@ -3280,15 +3282,15 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Delete everything Cmdr keeps on this Mac: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.",
-        "windows": "Delete everything Cmdr keeps on this PC: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.",
+        "windows": "Delete everything Cmdr keeps on this PC: settings, saved passwords, histories, indexes, and downloaded models. Cmdr closes afterwards.",
         "other": "Delete everything Cmdr keeps on this computer: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards."
       },
       "register": "narration",
       "sources": {
-        "windows": "proposal",
+        "windows": "plan § Copy resolution (narration: “Cmdr closes afterwards.”)",
         "other": "proposal"
       },
       "whereInUi": "Same card, description."
@@ -3298,7 +3300,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Delete all Cmdr data on this Mac?",
         "windows": "Delete all Cmdr data on this PC?",
@@ -3315,7 +3317,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr deletes everything it keeps on this Mac, then quits. This can’t be undone.",
         "windows": "Cmdr deletes everything it keeps on this PC, then closes. This can’t be undone.",
@@ -3333,7 +3335,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr deletes everything it keeps on this Mac ({sizeText}), then quits. This can’t be undone.",
         "windows": "Cmdr deletes everything it keeps on this PC ({sizeText}), then closes. This can’t be undone.",
@@ -3351,7 +3353,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "The license on this Mac. To activate it again, enter the license key from your purchase email.",
         "windows": "The license on this PC. To activate it again, enter the license key from your purchase email.",
@@ -3368,7 +3370,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "The license on this Mac, if you activated one. To activate it again, enter the license key from your purchase email.",
         "windows": "The license on this PC, if you activated one. To activate it again, enter the license key from your purchase email.",
@@ -3385,15 +3387,15 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Delete all and quit",
-        "windows": "Delete all and close",
+        "windows": "Delete all and exit",
         "other": "Delete all and quit"
       },
       "register": "action",
       "sources": {
-        "windows": "proposal",
+        "windows": "decisions (action: “Delete all and exit”)",
         "other": "proposal"
       },
       "whereInUi": "Delete-all-data dialog, the destructive button."
@@ -3403,7 +3405,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Everything Cmdr kept on this Mac is gone. To remove the app as well, move it to the Trash after Cmdr quits.",
         "windows": "Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps > Installed apps after Cmdr closes.",
@@ -3411,8 +3413,8 @@
       },
       "register": "sentence",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: proposal",
+        "other": "verdicts: proposal"
       },
       "whereInUi": "Delete-all-data done screen, message."
     },
@@ -3421,7 +3423,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{count, plural, one {One item in Keychain Access named “{itemName}”} other {{countText} items in Keychain Access named “{itemName}”}}",
         "windows": "{count, plural, one {One item in Credential Manager named “{itemName}”} other {{countText} items in Credential Manager named “{itemName}”}}",
@@ -3438,7 +3440,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Any items in Keychain Access named “{itemName}”",
         "windows": "Any items in Credential Manager named “{itemName}”",
@@ -3455,15 +3457,15 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Quit Cmdr",
-        "windows": "Close Cmdr",
+        "windows": "Exit Cmdr",
         "other": "Quit Cmdr"
       },
       "register": "action",
       "sources": {
-        "windows": "proposal",
+        "windows": "decisions (action: “Exit Cmdr”)",
         "other": "proposal"
       },
       "whereInUi": "Delete-all-data done screen, the final button."
@@ -3505,7 +3507,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Stored only on your Mac. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.",
         "windows": "Stored only on your PC. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.",
@@ -5286,15 +5288,15 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Skip confirmation for copy, move, and trash",
-        "windows": "Skip confirmation for copy, move, and Recycle Bin",
+        "windows": "Skip confirmation for copy, move, and delete",
         "other": "Skip confirmation for copy, move, and trash"
       },
       "register": "label",
       "sources": {
-        "windows": "proposal",
+        "windows": "plan § Copy resolution (label register: “Delete”)",
         "other": "proposal"
       },
       "whereInUi": "Settings window > Behavior > Navigation & file ops, switch “Skip confirmation for copy, move, and trash”."
@@ -5304,7 +5306,7 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "F5 and F6 copy and move into the other pane right away, and F8 moves to the trash without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.",
         "windows": "F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.",
@@ -8268,17 +8270,18 @@
       "file": "settings.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Show dotfiles (like .zshrc) and items the system marks as hidden. Applies to both panes.",
-        "windows": "Show items marked as hidden, like AppData, and system files. Applies to both panes.",
+        "windows": "Show dotfiles (like .zshrc) and items the system marks as hidden. Applies to both panes.",
         "other": "Show dotfiles (like .bashrc) and items the system marks as hidden. Applies to both panes."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: open, keep the macOS text (the Windows hidden-file rule)",
+        "other": "verdicts: proposal"
       },
-      "whereInUi": "Settings > Appearance > Listing, help under “Show hidden files”."
+      "whereInUi": "Settings > Appearance > Listing, help under “Show hidden files”.",
+      "openBranches": ["windows"]
     },
     {
       "key": "servers.refusal.shareMounted",
@@ -8536,15 +8539,25 @@
       "key": "settings.fileOperations.skipConfirmation.keywords",
       "file": "settings.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "confirm, confirmation, dialog, ask, copy, move, trash, delete, skip, clicks",
-        "windows": null,
-        "other": null
+        "windows": "confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks",
+        "other": "confirm, confirmation, dialog, ask, copy, move, trash, delete, skip, clicks"
       },
-      "sources": {},
-      "note": "plan § Rows beyond the proposal: Windows adds “recycle bin”."
+      "sources": {
+        "windows": "plan § Rows beyond the proposal (Windows says “recycle bin” where macOS says “trash”)",
+        "other": "same as macOS"
+      },
+      "note": "plan § Rows beyond the proposal: Windows adds “recycle bin”.",
+      "lintExceptions": [
+        {
+          "branch": "windows",
+          "reason": "a search keyword, not an instruction: people look for the setting that saves clicks"
+        }
+      ],
+      "register": "sentence"
     },
     {
       "key": "fileOperations.delete.confirmDelete",
@@ -9399,15 +9412,18 @@
       "key": "settings.appearance.appColorHintPrefix",
       "file": "settings.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "none",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "To change your system theme color, go to",
-        "windows": null,
-        "other": null
+        "windows": "To change your system accent color, go to",
+        "other": "To change your system accent color, go to"
       },
-      "sources": {},
-      "note": "proposal, reviewed, no change: Neutral prefix of the appColorHint pair."
+      "sources": {
+        "windows": "proposal (the `appColor.description` row’s “accent color”, evidence `system-settings`)",
+        "other": "proposal (the `appColor.description` row’s “accent color”)"
+      },
+      "note": "Reviewed no change before the decisions; the prefix renders with `appColorHintLink`, so it takes the description row’s “accent color” off macOS."
     },
     {
       "key": "commands.helpAccessibility.label",
@@ -10071,15 +10087,395 @@
       "key": "settings.fileOperations.keepProgressOpenWhenDone.keywords",
       "file": "settings.json",
       "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, trash",
+        "windows": "progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, recycle bin",
+        "other": "progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, trash"
+      },
+      "sources": {
+        "windows": "proposal’s reviewed-no-change reason (“add “recycle bin” to the keywords”), as `skipConfirmation.keywords`",
+        "other": "same as macOS"
+      },
+      "note": "proposal, reviewed, no change: Same: add “recycle bin” to the keywords.",
+      "register": "sentence"
+    },
+    {
+      "key": "settings.search.autoApply.description",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or click the run button to search.",
+        "windows": "Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or select the run button to search.",
+        "other": "Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or click the run button to search."
+      },
+      "sources": {
+        "windows": "written: plan § Branch-writing rules 4 (Windows says “select”, not “click”)",
+        "other": "same as macOS"
+      },
+      "written": ["windows"],
+      "whereInUi": "Settings > Search, the description under the automatic search toggle."
+    },
+    {
+      "key": "settings.fileOperations.showAlreadyGoneToast.description",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or click “Never show this again” in the notice) to stop these notices.",
+        "windows": "When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or select “Never show this again” in the notice) to stop these notices.",
+        "other": "When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or click “Never show this again” in the notice) to stop these notices."
+      },
+      "sources": {
+        "windows": "written: plan § Branch-writing rules 4 (Windows says “select”, not “click”)",
+        "other": "same as macOS"
+      },
+      "written": ["windows"],
+      "whereInUi": "Settings > File operations, the description under the “already gone” notice toggle."
+    },
+    {
+      "key": "settings.analytics.enabled.description",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "Please enable this to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats.",
+        "windows": "Please turn this on to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats.",
+        "other": "Please enable this to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats."
+      },
+      "sources": {
+        "windows": "written: plan § Branch-writing rules 4 (Windows says “turn on” for a toggle)",
+        "other": "same as macOS"
+      },
+      "written": ["windows"],
+      "whereInUi": "Settings > Updates & privacy, the description under the usage stats toggle."
+    },
+    {
+      "key": "settings.listing.sizeDisplay.opt.physical",
+      "file": "settings.json",
+      "source": "catalog",
       "mechanism": "none",
       "status": "none",
       "branches": {
-        "macos": "progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, trash",
+        "macos": "On disk",
         "windows": null,
         "other": null
       },
       "sources": {},
-      "note": "proposal, reviewed, no change: Same: add “recycle bin” to the keywords."
+      "note": "scan hit, no change: “on disk” is the stored size, the same words on every OS."
+    },
+    {
+      "key": "settings.listing.sizeDisplay.keywords",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "size, display, logical, physical, smart, disk, content, sparse",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “disk” is the stored size, a search word on every OS."
+    },
+    {
+      "key": "settings.listing.sizeMismatchWarning.description",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Shows a warning icon on folders where content and on-disk sizes differ by more than 50% and 200 MB.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “on-disk” is the stored size, the same words on every OS."
+    },
+    {
+      "key": "settings.listing.sizeMismatchWarning.keywords",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "size, mismatch, warning, alert, disk, content, difference",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “disk” is the stored size, a search word on every OS."
+    },
+    {
+      "key": "settings.listing.directorySortMode.disabledReason",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Currently disabled because folders are mixed with files. Turn on “Show folders first” to enable this setting.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “enable” means the control becomes available, not a toggle; the instruction already says “Turn on”."
+    },
+    {
+      "key": "settings.mediaIndex.cards.enable",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Enable indexing",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: a card heading naming the setting, and image indexing is macOS-only (`imageIndexing`)."
+    },
+    {
+      "key": "settings.indexing.reEnableNotifications.label",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Re-enable notifications for all drives",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: a button label naming an action, the same words on every OS."
+    },
+    {
+      "key": "settings.indexing.reEnableNotifications.button",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Re-enable",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: a button label naming an action, the same words on every OS."
+    },
+    {
+      "key": "settings.indexing.reEnableNotifications.keywords",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "re-enable, notifications, drives, silenced, ask again",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: search keywords echoing the label."
+    },
+    {
+      "key": "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.keywords",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "disk, space, low, free, storage, full, warning, notification, boot, startup",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “disk” stays a search word everywhere; the Windows description says “system drive”, which search reads too."
+    },
+    {
+      "key": "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "disk, space, threshold, percent, low, free, warning",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “disk” stays a search word everywhere; the Windows description says “system drive”, which search reads too."
+    },
+    {
+      "key": "settings.network.enabled.label",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Enable networking",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: the setting’s name; Microsoft’s “turn on” rule is for instructions."
+    },
+    {
+      "key": "settings.network.enabled.keywords",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "network, enable, enabled, discovery, local, permission",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: search keywords echoing the label."
+    },
+    {
+      "key": "settings.developer.mcpEnabled.label",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Enable MCP server",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: the setting’s name; Microsoft’s “turn on” rule is for instructions."
+    },
+    {
+      "key": "settings.whatsNew.lastSeenVersion.description",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Internal: the version we last showed in the “What’s new” popup. Advances silently on every launch so re-enabling the popup never replays a months-deep backlog. Hidden from the UI.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: internal, hidden from the UI."
+    },
+    {
+      "key": "settings.advanced.diskSpaceChangeThreshold.keywords",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "disk, space, threshold, poll, refresh, status, bar",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “disk” stays a search word everywhere."
+    },
+    {
+      "key": "settings.advanced.indexPauseFreeSpacePercent.keywords",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "disk, space, full, free, index, indexing, pause, storage, threshold, percent, low",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “disk” stays a search word everywhere; the Windows description says “system drive”."
+    },
+    {
+      "key": "settings.advanced.maxLogStorageMb.keywords",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "log, storage, disk, cap, rotation, error, report, privacy",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “disk” is storage, a search word on every OS."
+    },
+    {
+      "key": "settings.behavior.doubleClickPaneNavigatesToParent.keywords",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "double-click, doubleclick, double click, pane, background, empty, parent, folder, up, navigate, navigation",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “double-click” is the gesture the setting is about, on every OS."
+    },
+    {
+      "key": "settings.askCmdr.enabled.keywords",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "ai, chat, assistant, enable, disable, turn on, turn off",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: search keywords, “turn on” already among them."
+    },
+    {
+      "key": "settings.operationLog.maxSize.keywords",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "operation, log, history, retention, size, disk, space, limit, megabytes, gigabytes",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: “disk” is storage, a search word on every OS."
+    },
+    {
+      "key": "settings.summary.notifications",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Downloads notifications, the global go-to-latest-download shortcut, and low-disk-space warnings.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: names the “Low disk space warning” setting (evidence: leave that name alone)."
+    },
+    {
+      "key": "settings.summary.smbNetworkShares",
+      "file": "settings.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Enable networking, direct SMB connections, share cache, and timeouts.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {},
+      "note": "scan hit, no change: names the “Enable networking” setting."
     }
   ]
 }

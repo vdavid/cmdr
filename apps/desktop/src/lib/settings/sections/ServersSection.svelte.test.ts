@@ -8,8 +8,9 @@
  * only when the store is genuinely empty.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
 import { mount, tick } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import ServersSection from './ServersSection.svelte'
 
 /** One row of `listTrustedSftpHostKeys`, as the settings page reads it. */
@@ -255,12 +256,17 @@ describe('the trusted certificates', () => {
     target.remove()
   })
 
-  it('says so plainly when no certificate is pinned', async () => {
+  it.each([
+    ['macos', 'When you connect to a WebDAV server macOS doesn’t trust'],
+    ['windows', 'When you connect to a WebDAV server Windows doesn’t trust'],
+    ['linux', 'When you connect to a WebDAV server your system doesn’t trust'],
+  ] as const)('says so plainly when no certificate is pinned, naming who trusts on %s', async (platform, text) => {
+    onTestFinished(withPlatform(platform))
     listTrustedWebdavCertificates.mockResolvedValue([])
     const target = await mountSection()
 
     expect(certificateRows(target)).toHaveLength(0)
-    expect(target.textContent).toContain('When you connect to a WebDAV server macOS doesn’t trust')
+    expect(target.textContent).toContain(text)
     target.remove()
   })
 })

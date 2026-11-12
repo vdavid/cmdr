@@ -1,5 +1,5 @@
 {
-  "settings.appearance.language.description": "Elige el idioma que usa Cmdr. “Predeterminado del sistema” sigue el idioma de tu Mac.",
+  "settings.appearance.language.description": "{platform, select, macos {Elige el idioma que usa Cmdr. “Predeterminado del sistema” sigue el idioma de tu Mac.} windows {Choose the language Cmdr uses. “System default” follows your Windows display language.} other {Choose the language Cmdr uses. “System default” follows your system’s language.}}",
   "@settings.appearance.language.description": {
     "sourceHash": "56460f0"
   },
@@ -11,7 +11,7 @@
   "@settings.appearance.language.opt.systemWithLanguage": {
     "sourceHash": "6542719"
   },
-  "settings.appearance.appColor.description": "Para cambiar el color del tema del sistema, ve a Configuración del Sistema > Apariencia.",
+  "settings.appearance.appColor.description": "{platform, select, macos {Para cambiar el color del tema del sistema, ve a Configuración del Sistema > Apariencia.} windows {To change your system accent color, go to Settings > Personalization > Colors.} other {To change your system accent color, go to your system appearance settings.}}",
   "@settings.appearance.appColor.description": {
     "sourceHash": "a9c6dac"
   },
@@ -127,7 +127,7 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged.description": {
     "sourceHash": "378530d"
   },
-  "settings.search.autoApply.description": "Ejecuta las búsquedas por nombre de archivo y por regex automáticamente mientras escribes (1 segundo después de que dejes de escribir). Las búsquedas con IA siempre esperan a que presiones Intro, ya que cuestan dinero. Cuando está desactivado, presiona Intro o haz clic en el botón de ejecutar para buscar.",
+  "settings.search.autoApply.description": "{platform, select, windows {Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or select the run button to search.} other {Ejecuta las búsquedas por nombre de archivo y por regex automáticamente mientras escribes (1 segundo después de que dejes de escribir). Las búsquedas con IA siempre esperan a que presiones Intro, ya que cuestan dinero. Cuando está desactivado, presiona Intro o haz clic en el botón de ejecutar para buscar.}}",
   "@settings.search.autoApply.description": {
     "sourceHash": "edb367e"
   },
@@ -143,15 +143,15 @@
   "@settings.fileOperations.mtpEnabled.description": {
     "sourceHash": "9aa0651"
   },
-  "settings.fileOperations.adbBinaryPath.description": "Déjalo vacío y Cmdr buscará adb en los lugares habituales, incluidos el Android SDK y Homebrew. Indica otra ruta si guardas las herramientas de plataforma en un lugar aparte.",
+  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Déjalo vacío y Cmdr buscará adb en los lugares habituales, incluidos el Android SDK y Homebrew. Indica otra ruta si guardas las herramientas de plataforma en un lugar aparte.} windows {Déjalo vacío y Cmdr buscará adb en los lugares habituales, incluidos el Android SDK y Homebrew. Indica otra ruta si guardas las herramientas de plataforma en un lugar aparte.} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
   "@settings.fileOperations.adbBinaryPath.description": {
     "sourceHash": "d45ea29"
   },
-  "settings.fileOperations.skipConfirmation.label": "Omitir la confirmación al copiar, mover y mover al basurero",
+  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Omitir la confirmación al copiar, mover y mover al basurero}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "12824c8"
   },
-  "settings.fileOperations.skipConfirmation.description": "F5 y F6 copian y mueven al otro panel directamente, y F8 mueve al basurero sin preguntar. Es un poco arriesgado, porque una sola tecla actúa al instante. Eliminar permanentemente siempre pregunta antes.",
+  "settings.fileOperations.skipConfirmation.description": "{platform, select, windows {F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {F5 y F6 copian y mueven al otro panel directamente, y F8 mueve al basurero sin preguntar. Es un poco arriesgado, porque una sola tecla actúa al instante. Eliminar permanentemente siempre pregunta antes.}}",
   "@settings.fileOperations.skipConfirmation.description": {
     "sourceHash": "6eb9a3d"
   },
@@ -171,7 +171,7 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "af85c28"
   },
-  "settings.updates.crashReports.description": "Envía automáticamente un reporte cuando Cmdr se cierra inesperadamente o tiene un problema en segundo plano. Incluye la versión de la app, la versión de macOS y qué parte del código tuvo el problema. Nunca nombres de archivo ni datos personales.",
+  "settings.updates.crashReports.description": "{platform, select, macos {Envía automáticamente un reporte cuando Cmdr se cierra inesperadamente o tiene un problema en segundo plano. Incluye la versión de la app, la versión de macOS y qué parte del código tuvo el problema. Nunca nombres de archivo ni datos personales.} windows {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Windows version, and where in the code the problem happened. Never file names or personal data.} other {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Linux distribution and version, and where in the code the problem happened. Never file names or personal data.}}",
   "@settings.updates.crashReports.description": {
     "sourceHash": "41305b0"
   },
@@ -311,7 +311,7 @@
   "@settings.sidebar.matchCount": {
     "sourceHash": "b91d23e"
   },
-  "settings.appearance.themeColorSwatchAria": "Abrir Configuración del Sistema para cambiar el color del tema del sistema",
+  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {Abrir Configuración del Sistema para cambiar el color del tema del sistema} windows {Open Windows Settings to change the system accent color} other {Open your system settings to change the system accent color}}",
   "@settings.appearance.themeColorSwatchAria": {
     "sourceHash": "b98017c"
   },
@@ -339,7 +339,7 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "bc7778c"
   },
-  "settings.updates.emailPrivacyNote": "Se guarda solo en tu Mac. Nunca lo enviamos junto con tus estadísticas de uso, así que estas no pueden vincularse contigo. Se usa solo para ponernos en contacto y, opcionalmente, para adjuntarlo a un reporte que envíes. Para dejar de recibir correos, usa el enlace de baja en cualquier mensaje que te enviemos.",
+  "settings.updates.emailPrivacyNote": "{platform, select, macos {Se guarda solo en tu Mac. Nunca lo enviamos junto con tus estadísticas de uso, así que estas no pueden vincularse contigo. Se usa solo para ponernos en contacto y, opcionalmente, para adjuntarlo a un reporte que envíes. Para dejar de recibir correos, usa el enlace de baja en cualquier mensaje que te enviemos.} windows {Stored only on your PC. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.} other {Stored only on your computer. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.}}",
   "@settings.updates.emailPrivacyNote": {
     "sourceHash": "e87941a"
   },
@@ -411,7 +411,7 @@
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "ff0937a"
   },
-  "settings.dataWipe.description": "Elimina todo lo que Cmdr guarda en este Mac: configuración, contraseñas guardadas, historiales, índices y modelos descargados. Después, Cmdr se cierra.",
+  "settings.dataWipe.description": "{platform, select, macos {Elimina todo lo que Cmdr guarda en este Mac: configuración, contraseñas guardadas, historiales, índices y modelos descargados. Después, Cmdr se cierra.} windows {Delete everything Cmdr keeps on this PC: settings, saved passwords, histories, indexes, and downloaded models. Cmdr closes afterwards.} other {Delete everything Cmdr keeps on this computer: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.}}",
   "@settings.dataWipe.description": {
     "sourceHash": "946e084"
   },
@@ -419,11 +419,11 @@
   "@settings.dataWipe.goes.settings": {
     "sourceHash": "8c0b976"
   },
-  "settings.dataWipe.goes.license": "La licencia de este Mac. Para volver a activarla, ingresa la clave de licencia de tu correo de compra.",
+  "settings.dataWipe.goes.license": "{platform, select, macos {La licencia de este Mac. Para volver a activarla, ingresa la clave de licencia de tu correo de compra.} windows {The license on this PC. To activate it again, enter the license key from your purchase email.} other {The license on this computer. To activate it again, enter the license key from your purchase email.}}",
   "@settings.dataWipe.goes.license": {
     "sourceHash": "2798b70"
   },
-  "settings.dataWipe.goes.licenseIfAny": "La licencia de este Mac, si activaste una. Para volver a activarla, ingresa la clave de licencia de tu correo de compra.",
+  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {La licencia de este Mac, si activaste una. Para volver a activarla, ingresa la clave de licencia de tu correo de compra.} windows {The license on this PC, if you activated one. To activate it again, enter the license key from your purchase email.} other {The license on this computer, if you activated one. To activate it again, enter the license key from your purchase email.}}",
   "@settings.dataWipe.goes.licenseIfAny": {
     "sourceHash": "eea1edc"
   },
@@ -431,7 +431,7 @@
   "@settings.dataWipe.goes.logs": {
     "sourceHash": "bb7ccf8"
   },
-  "settings.dataWipe.doneMessage": "Ya no queda nada de lo que Cmdr guardaba en este Mac. Para eliminar también la app, muévela al basurero después de que Cmdr se cierre.",
+  "settings.dataWipe.doneMessage": "{platform, select, macos {Ya no queda nada de lo que Cmdr guardaba en este Mac. Para eliminar también la app, muévela al basurero después de que Cmdr se cierre.} windows {Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps > Installed apps after Cmdr closes.} other {Everything Cmdr kept on this computer is gone. To remove the app as well, uninstall it the way you installed it after Cmdr quits.}}",
   "@settings.dataWipe.doneMessage": {
     "sourceHash": "a51a0ed"
   },
@@ -443,7 +443,7 @@
   "@settings.appearance.useAppIconsForDocuments.keywords": {
     "sourceHash": "d312600"
   },
-  "settings.fileOperations.skipConfirmation.keywords": "confirmar, confirmación, diálogo, preguntar, copiar, mover, papelera, basurero, eliminar, borrar, omitir, saltar, clics",
+  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {confirmar, confirmación, diálogo, preguntar, copiar, mover, papelera, basurero, eliminar, borrar, omitir, saltar, clics}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
     "sourceHash": "9e8c5fc"
   },
@@ -451,7 +451,7 @@
   "@settings.fileOperations.keepProgressOpenWhenDone.description": {
     "sourceHash": "e6291e0"
   },
-  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "progreso, terminado, finalizado, acabado, completado, resumen, resultado, informe, reporte, estadísticas, velocidad, duración, quedarse, mantener, dejar abierta, cerrar, ventana, diálogo, copiar, mover, eliminar, borrar, papelera, basurero",
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, recycle bin} other {progreso, terminado, finalizado, acabado, completado, resumen, resultado, informe, reporte, estadísticas, velocidad, duración, quedarse, mantener, dejar abierta, cerrar, ventana, diálogo, copiar, mover, eliminar, borrar, papelera, basurero}}",
   "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
     "sourceHash": "5290fc2"
   },
@@ -511,7 +511,7 @@
   "@settings.ai.reasoningEfforts.keywords": {
     "sourceHash": "59fad22"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "Cuando eliminas algo que otra app ya movió o eliminó, Cmdr lo da por hecho y muestra un aviso breve que lo indica. Desactiva esta opción (o haz clic en “No volver a mostrar” en el aviso) para dejar de ver estos avisos.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or select “Never show this again” in the notice) to stop these notices.} other {Cuando eliminas algo que otra app ya movió o eliminó, Cmdr lo da por hecho y muestra un aviso breve que lo indica. Desactiva esta opción (o haz clic en “No volver a mostrar” en el aviso) para dejar de ver estos avisos.}}",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
     "sourceHash": "e0f8c29"
   }

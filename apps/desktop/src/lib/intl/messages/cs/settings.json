@@ -3,7 +3,7 @@
   "@settings.appearance.language.label": {
     "sourceHash": "a4fe652"
   },
-  "settings.appearance.language.description": "Vyberte jazyk, který Cmdr používá. „Podle systému“ se řídí jazykem vašeho Macu.",
+  "settings.appearance.language.description": "{platform, select, macos {Vyberte jazyk, který Cmdr používá. „Podle systému“ se řídí jazykem vašeho Macu.} windows {Choose the language Cmdr uses. “System default” follows your Windows display language.} other {Choose the language Cmdr uses. “System default” follows your system’s language.}}",
   "@settings.appearance.language.description": {
     "sourceHash": "2dd7f63"
   },
@@ -47,7 +47,7 @@
   "@settings.appearance.appColor.label": {
     "sourceHash": "b1107c8"
   },
-  "settings.appearance.appColor.description": "Pro změnu barvy zvýraznění systému přejděte do Nastavení systému > Vzhled.",
+  "settings.appearance.appColor.description": "{platform, select, macos {Pro změnu barvy zvýraznění systému přejděte do Nastavení systému > Vzhled.} windows {To change your system accent color, go to Settings > Personalization > Colors.} other {To change your system accent color, go to your system appearance settings.}}",
   "@settings.appearance.appColor.description": {
     "sourceHash": "7dc4ab7"
   },
@@ -212,7 +212,7 @@
   "@settings.appearance.textSize.label": {
     "sourceHash": "d68761c"
   },
-  "settings.appearance.textSize.description": "Mění velikost textu a rozhraní v celé aplikaci. Násobí se s velikostí textu ze Zpřístupnění v macOS, kde 100 % znamená „přesně systémová velikost“.",
+  "settings.appearance.textSize.description": "{platform, select, macos {Mění velikost textu a rozhraní v celé aplikaci. Násobí se s velikostí textu ze Zpřístupnění v macOS, kde 100 % znamená „přesně systémová velikost“.} other {Scales text and UI throughout the app.}}",
   "@settings.appearance.textSize.description": {
     "sourceHash": "49a0a6b"
   },
@@ -348,7 +348,7 @@
   "@settings.listing.showHiddenFiles.label": {
     "sourceHash": "b5ede7f"
   },
-  "settings.listing.showHiddenFiles.description": "Zobrazí soubory začínající tečkou (třeba .zshrc) a položky, které systém označuje jako skryté. Platí pro oba panely.",
+  "settings.listing.showHiddenFiles.description": "{platform, select, macos {Zobrazí soubory začínající tečkou (třeba .zshrc) a položky, které systém označuje jako skryté. Platí pro oba panely.} windows {Zobrazí soubory začínající tečkou (třeba .zshrc) a položky, které systém označuje jako skryté. Platí pro oba panely.} other {Show dotfiles (like .bashrc) and items the system marks as hidden. Applies to both panes.}}",
   "@settings.listing.showHiddenFiles.description": {
     "sourceHash": "8e77c67"
   },
@@ -528,15 +528,15 @@
   "@settings.fileOperations.macOnlyFiles.keywords": {
     "sourceHash": "b668774"
   },
-  "settings.fileOperations.skipConfirmation.label": "Přeskočit potvrzení u kopírování, přesunu a koše",
+  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Přeskočit potvrzení u kopírování, přesunu a koše}}",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
   },
-  "settings.fileOperations.skipConfirmation.description": "F5 a F6 kopírují a přesouvají do druhého panelu hned a F8 přesouvá do koše bez ptaní. Trochu riskantní, protože jedno stisknutí klávesy hned něco provede. Trvalé smazání se vždy nejdřív zeptá.",
+  "settings.fileOperations.skipConfirmation.description": "{platform, select, windows {F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {F5 a F6 kopírují a přesouvají do druhého panelu hned a F8 přesouvá do koše bez ptaní. Trochu riskantní, protože jedno stisknutí klávesy hned něco provede. Trvalé smazání se vždy nejdřív zeptá.}}",
   "@settings.fileOperations.skipConfirmation.description": {
     "sourceHash": "086379d"
   },
-  "settings.fileOperations.skipConfirmation.keywords": "potvrdit, potvrzení, dialog, zeptat se, kopírovat, přesunout, koš, smazat, přeskočit, kliknutí",
+  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {potvrdit, potvrzení, dialog, zeptat se, kopírovat, přesunout, koš, smazat, přeskočit, kliknutí}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
     "sourceHash": "9f61258"
   },
@@ -560,7 +560,7 @@
   "@settings.fileOperations.keepProgressOpenWhenDone.description": {
     "sourceHash": "005448f"
   },
-  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "průběh, hotovo, dokončeno, shrnutí, výsledek, zpráva, nechat, ponechat, zavřít, okno, dialog, kopírovat, přesunout, smazat, koš",
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, recycle bin} other {průběh, hotovo, dokončeno, shrnutí, výsledek, zpráva, nechat, ponechat, zavřít, okno, dialog, kopírovat, přesunout, smazat, koš}}",
   "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
     "sourceHash": "978b2ff"
   },
@@ -1072,7 +1072,7 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "macOS",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
     "sourceHash": "aed6b7a",
     "sameAsSourceJustification": "Brand name macOS, kept verbatim (BRAND_WORDS; style.md Brand)."
@@ -1149,7 +1149,7 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
     "sourceHash": "911b74b"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "Jak vás upozornit, když na startovacím disku dochází volné místo.",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {Jak vás upozornit, když na startovacím disku dochází volné místo.} windows {How to warn you when your system drive runs low on free space.} other {How to warn you when your system disk runs low on free space.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
     "sourceHash": "32b852d"
   },
@@ -1157,7 +1157,7 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "macOS",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
     "sourceHash": "aed6b7a",
     "sameAsSourceJustification": "Brand name macOS, kept verbatim (BRAND_WORDS; style.md Brand)."
@@ -1174,7 +1174,7 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "sourceHash": "fd1382f"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "Varovat, když volné místo klesne pod toto procento kapacity startovacího disku.",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Varovat, když volné místo klesne pod toto procento kapacity startovacího disku.} windows {Warn when free space drops below this percent of your system drive.} other {Warn when free space drops below this percent of your system disk.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
     "sourceHash": "9ed41b8"
   },
@@ -1186,7 +1186,7 @@
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "Hledání podle názvu souboru a podle regulárního výrazu se spustí automaticky během psaní (1 sekundu poté, co přestanete psát). Hledání pomocí AI vždy čeká na klávesu Enter, protože stojí peníze. Když je volba vypnutá, spusťte hledání klávesou Enter nebo kliknutím na tlačítko spuštění.",
+  "settings.search.autoApply.description": "{platform, select, windows {Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or select the run button to search.} other {Hledání podle názvu souboru a podle regulárního výrazu se spustí automaticky během psaní (1 sekundu poté, co přestanete psát). Hledání pomocí AI vždy čeká na klávesu Enter, protože stojí peníze. Když je volba vypnutá, spusťte hledání klávesou Enter nebo kliknutím na tlačítko spuštění.}}",
   "@settings.search.autoApply.description": {
     "sourceHash": "19fcaf7"
   },
@@ -1286,7 +1286,7 @@
   "@settings.network.enabled.label": {
     "sourceHash": "10f5de9"
   },
-  "settings.network.enabled.description": "Vyhledá servery SMB ve vaší místní síti a připojí se k nim. Když je volba vypnutá, Cmdr dál může číst a zapisovat soubory na už připojených sdílených složkách, ale nebude macOS žádat o přístup k místní síti.",
+  "settings.network.enabled.description": "{platform, select, macos {Vyhledá servery SMB ve vaší místní síti a připojí se k nim. Když je volba vypnutá, Cmdr dál může číst a zapisovat soubory na už připojených sdílených složkách, ale nebude macOS žádat o přístup k místní síti.} windows {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, and Windows won’t ask to let Cmdr through the firewall.} other {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares.}}",
   "@settings.network.enabled.description": {
     "sourceHash": "72a0854"
   },
@@ -1310,7 +1310,7 @@
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "Když je volba zapnutá, Cmdr naváže se sdílenými složkami SMB přímé připojení pro rychlejší operace se soubory. Systémové připojení zůstává pro Finder a další aplikace.",
+  "settings.network.directSmbConnection.description": "{platform, select, macos {Když je volba zapnutá, Cmdr naváže se sdílenými složkami SMB přímé připojení pro rychlejší operace se soubory. Systémové připojení zůstává pro Finder a další aplikace.} windows {When this is on, Cmdr establishes a direct connection to SMB shares for faster file operations. The system connection stays for File Explorer and other apps.} other {When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for your file manager and other apps.}}",
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
   },
@@ -1322,7 +1322,7 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "Cmdr šifruje svá připojení ke sdíleným složkám SMB, i když to server nevyžaduje, a neotevře sdílenou složku, jejíž připojení zašifrovat nejde, a to ani takovou, kterou váš Mac připojil bez šifrování. Připojení jako host zašifrovat nejde, takže se budete muset přihlásit. Připojení, která už Cmdr má otevřená, zůstanou beze změny, dokud se znovu nepřipojí.",
+  "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr šifruje svá připojení ke sdíleným složkám SMB, i když to server nevyžaduje, a neotevře sdílenou složku, jejíž připojení zašifrovat nejde, a to ani takovou, kterou váš Mac připojil bez šifrování. Připojení jako host zašifrovat nejde, takže se budete muset přihlásit. Připojení, která už Cmdr má otevřená, zůstanou beze změny, dokud se znovu nepřipojí.} windows {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your PC connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.} other {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your computer connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.}}",
   "@settings.network.requireSmbEncryption.description": {
     "sourceHash": "8c27a6c"
   },
@@ -1434,7 +1434,7 @@
   "@settings.fileOperations.adbEnabled.label": {
     "sourceHash": "3651356"
   },
-  "settings.fileOperations.adbEnabled.description": "Zpřístupní celý souborový systém telefonu s Androidem, který má zapnuté ladění přes USB, což MTP ukázat neumí. Vyžaduje na tomto Macu nástroje platformy Android (příkaz „adb“). Když to necháte zapnuté a nemáte nainstalované žádné nástroje pro Android, nic vás to nestojí.",
+  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {Zpřístupní celý souborový systém telefonu s Androidem, který má zapnuté ladění přes USB, což MTP ukázat neumí. Vyžaduje na tomto Macu nástroje platformy Android (příkaz „adb“). Když to necháte zapnuté a nemáte nainstalované žádné nástroje pro Android, nic vás to nestojí.} windows {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this PC. Leaving this on costs nothing if you have no Android tooling installed.} other {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this computer. Leaving this on costs nothing if you have no Android tooling installed.}}",
   "@settings.fileOperations.adbEnabled.description": {
     "sourceHash": "a89c957"
   },
@@ -1446,7 +1446,7 @@
   "@settings.fileOperations.adbBinaryPath.label": {
     "sourceHash": "a67fbbd"
   },
-  "settings.fileOperations.adbBinaryPath.description": "Když pole necháte prázdné, Cmdr hledá adb obvyklým způsobem, včetně Android SDK a Homebrew. Pokud máte nástroje platformy na vlastním místě, zadejte sem jejich umístění.",
+  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Když pole necháte prázdné, Cmdr hledá adb obvyklým způsobem, včetně Android SDK a Homebrew. Pokud máte nástroje platformy na vlastním místě, zadejte sem jejich umístění.} windows {Když pole necháte prázdné, Cmdr hledá adb obvyklým způsobem, včetně Android SDK a Homebrew. Pokud máte nástroje platformy na vlastním místě, zadejte sem jejich umístění.} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
   "@settings.fileOperations.adbBinaryPath.description": {
     "sourceHash": "940ff29"
   },
@@ -1607,7 +1607,7 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Zapněte prosím tuto volbu, ať během otevřené bety vidíme, na kterých funkcích záleží.\nStatistiky nejsou spojené s vaším jménem ani e‑mailem, jen s náhodným ID.\nCmdr nikdy neodesílá názvy souborů, cesty, hledané výrazy ani dotazy pro AI.\nKdyž je volba vypnutá, Cmdr neodesílá žádné statistiky.",
+  "settings.analytics.enabled.description": "{platform, select, windows {Please turn this on to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats.} other {Zapněte prosím tuto volbu, ať během otevřené bety vidíme, na kterých funkcích záleží.\nStatistiky nejsou spojené s vaším jménem ani e‑mailem, jen s náhodným ID.\nCmdr nikdy neodesílá názvy souborů, cesty, hledané výrazy ani dotazy pro AI.\nKdyž je volba vypnutá, Cmdr neodesílá žádné statistiky.}}",
   "@settings.analytics.enabled.description": {
     "sourceHash": "f5534ee"
   },
@@ -1631,7 +1631,7 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "Automaticky odešle zprávu, když Cmdr neočekávaně skončí nebo na pozadí narazí na problém. Obsahuje verzi aplikace, verzi macOS a místo v kódu, kde k problému došlo. Nikdy neobsahuje názvy souborů ani osobní údaje.",
+  "settings.updates.crashReports.description": "{platform, select, macos {Automaticky odešle zprávu, když Cmdr neočekávaně skončí nebo na pozadí narazí na problém. Obsahuje verzi aplikace, verzi macOS a místo v kódu, kde k problému došlo. Nikdy neobsahuje názvy souborů ani osobní údaje.} windows {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Windows version, and where in the code the problem happened. Never file names or personal data.} other {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Linux distribution and version, and where in the code the problem happened. Never file names or personal data.}}",
   "@settings.updates.crashReports.description": {
     "sourceHash": "e726766"
   },
@@ -1727,7 +1727,7 @@
   "@settings.advanced.indexPauseFreeSpacePercent.label": {
     "sourceHash": "c6fe418"
   },
-  "settings.advanced.indexPauseFreeSpacePercent.description": "Cmdr pozastaví indexování disků, když volné místo na startovacím disku klesne pod toto procento, aby index nezabíral místo, které potřebují vaše vlastní soubory. Indexování pokračuje tam, kde skončilo, jakmile volné místo stoupne o jeden procentní bod nad tuto hranici. Funguje to bez ohledu na to, jestli je „Varování při nedostatku volného místa na disku“ zapnuté, nebo vypnuté.",
+  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {Cmdr pozastaví indexování disků, když volné místo na startovacím disku klesne pod toto procento, aby index nezabíral místo, které potřebují vaše vlastní soubory. Indexování pokračuje tam, kde skončilo, jakmile volné místo stoupne o jeden procentní bod nad tuto hranici. Funguje to bez ohledu na to, jestli je „Varování při nedostatku volného místa na disku“ zapnuté, nebo vypnuté.} windows {Cmdr pauses drive indexing when free space on your system drive drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} other {Cmdr pauses drive indexing when free space on your system disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.}}",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
     "sourceHash": "4ee1cce"
   },
@@ -1739,7 +1739,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 otevře prohlížeč souborů v Cmdru, který zobrazuje surové bajty (obsah, který není text, ztrátově jako UTF-8). Když otevřete obrázek, PDF, archiv nebo jiný binární soubor, prohlížeč zobrazí červený pruh s vysvětlením, že se spíš hodí ⇧mezerník (Rychlý náhled) nebo Enter (otevření v přiřazené aplikaci). Zapněte tuto volbu (nebo v pruhu klikněte na „Toto varování už nikdy nezobrazovat“) a varování se už nikdy nezobrazí.",
+  "settings.fileViewer.suppressBinaryWarning.description": "{platform, select, macos {F3 otevře prohlížeč souborů v Cmdru, který zobrazuje surové bajty (obsah, který není text, ztrátově jako UTF-8). Když otevřete obrázek, PDF, archiv nebo jiný binární soubor, prohlížeč zobrazí červený pruh s vysvětlením, že se spíš hodí ⇧mezerník (Rychlý náhled) nebo Enter (otevření v přiřazené aplikaci). Zapněte tuto volbu (nebo v pruhu klikněte na „Toto varování už nikdy nezobrazovat“) a varování se už nikdy nezobrazí.} windows {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or select “Never show this warning again” in the banner) to suppress the warning for good.} other {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.}}",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },
@@ -1787,7 +1787,7 @@
   "@settings.fileOperations.showAlreadyGoneToast.label": {
     "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "Když smažete něco, co už jiná aplikace přesunula nebo smazala, Cmdr to bere jako hotové a zobrazí o tom krátké oznámení. Vypněte tuto volbu (nebo v oznámení klikněte na „Už nezobrazovat“) a tato oznámení se přestanou zobrazovat.",
+  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or select “Never show this again” in the notice) to stop these notices.} other {Když smažete něco, co už jiná aplikace přesunula nebo smazala, Cmdr to bere jako hotové a zobrazí o tom krátké oznámení. Vypněte tuto volbu (nebo v oznámení klikněte na „Už nezobrazovat“) a tato oznámení se přestanou zobrazovat.}}",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
     "sourceHash": "9655e46"
   },
@@ -1963,7 +1963,7 @@
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"
   },
-  "settings.advanced.logLlmCalls.description": "Uloží každý požadavek na AI a každou odpověď do místní složky (llm-logs) pro účely ladění. Tyto soubory zůstávají na vašem Macu a obsahují názvy souborů a cesty, které Cmdr odesílá vašemu poskytovateli.",
+  "settings.advanced.logLlmCalls.description": "{platform, select, macos {Uloží každý požadavek na AI a každou odpověď do místní složky (llm-logs) pro účely ladění. Tyto soubory zůstávají na vašem Macu a obsahují názvy souborů a cesty, které Cmdr odesílá vašemu poskytovateli.} windows {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your PC and include the file names and paths Cmdr sends to your provider.} other {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your computer and include the file names and paths Cmdr sends to your provider.}}",
   "@settings.advanced.logLlmCalls.description": {
     "sourceHash": "86b3d34"
   },
@@ -1975,7 +1975,7 @@
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
   },
-  "settings.advanced.serviceResolveTimeout.description": "Časový limit pro zjištění adresy síťové služby přes Bonjour.",
+  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {Časový limit pro zjištění adresy síťové služby přes Bonjour.} other {Timeout for resolving network services found on your local network (mDNS).}}",
   "@settings.advanced.serviceResolveTimeout.description": {
     "sourceHash": "5cf231d"
   },
@@ -2921,11 +2921,11 @@
   "@settings.sidebar.matchCount": {
     "sourceHash": "fb95dc1"
   },
-  "settings.appearance.themeColorSwatchAria": "Otevřít Nastavení systému a změnit barvu zvýraznění systému",
+  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {Otevřít Nastavení systému a změnit barvu zvýraznění systému} windows {Open Windows Settings to change the system accent color} other {Open your system settings to change the system accent color}}",
   "@settings.appearance.themeColorSwatchAria": {
     "sourceHash": "4cad022"
   },
-  "settings.appearance.appColorHintPrefix": "Pro změnu barvy zvýraznění systému přejděte do",
+  "settings.appearance.appColorHintPrefix": "{platform, select, macos {Pro změnu barvy zvýraznění systému přejděte do} other {To change your system accent color, go to}}",
   "@settings.appearance.appColorHintPrefix": {
     "sourceHash": "748470a"
   },
@@ -3167,7 +3167,7 @@
   "@settings.securityLog.enabled.label": {
     "sourceHash": "9f5e32e"
   },
-  "settings.securityLog.enabled.description": "Uchovávat na tomto Macu malý soubor, který zaznamenává změny a odmítnutí důležité pro bezpečnost, třeba souhlas s cloudovou AI, nainstalovanou aktualizaci nebo aplikaci odmítnutou serverem MCP. Neobsahuje žádné názvy souborů, obsah ani hesla a nikdy neopustí váš Mac.",
+  "settings.securityLog.enabled.description": "{platform, select, macos {Uchovávat na tomto Macu malý soubor, který zaznamenává změny a odmítnutí důležité pro bezpečnost, třeba souhlas s cloudovou AI, nainstalovanou aktualizaci nebo aplikaci odmítnutou serverem MCP. Neobsahuje žádné názvy souborů, obsah ani hesla a nikdy neopustí váš Mac.} windows {Keep a small file on this PC that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your PC.} other {Keep a small file on this computer that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your computer.}}",
   "@settings.securityLog.enabled.description": {
     "sourceHash": "11361eb"
   },
@@ -3175,7 +3175,7 @@
   "@settings.securityLog.enabled.keywords": {
     "sourceHash": "6f113c0"
   },
-  "settings.securityLog.showInFinder": "Zobrazit ve Finderu",
+  "settings.securityLog.showInFinder": "{platform, select, macos {Zobrazit ve Finderu} windows {Show in File Explorer} other {Show in file manager}}",
   "@settings.securityLog.showInFinder": {
     "sourceHash": "c2a9c77"
   },
@@ -3240,7 +3240,7 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "14adb30"
   },
-  "settings.updates.emailPrivacyNote": "Je uložený jen na vašem Macu. Nikdy ho neodesíláme spolu se statistikami využití, takže je k vám nejde zpětně přiřadit. Slouží jen k tomu, abychom se vám mohli ozvat, a k volitelnému přiložení ke zprávě, kterou odešlete. Pokud už nechcete dostávat e‑maily, použijte odkaz pro odhlášení v kterékoli zprávě, kterou vám pošleme.",
+  "settings.updates.emailPrivacyNote": "{platform, select, macos {Je uložený jen na vašem Macu. Nikdy ho neodesíláme spolu se statistikami využití, takže je k vám nejde zpětně přiřadit. Slouží jen k tomu, abychom se vám mohli ozvat, a k volitelnému přiložení ke zprávě, kterou odešlete. Pokud už nechcete dostávat e‑maily, použijte odkaz pro odhlášení v kterékoli zprávě, kterou vám pošleme.} windows {Stored only on your PC. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.} other {Stored only on your computer. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.}}",
   "@settings.updates.emailPrivacyNote": {
     "sourceHash": "cf92795"
   },
@@ -3408,11 +3408,11 @@
   "@settings.network.trustedCertificates.keywords": {
     "sourceHash": "554a965"
   },
-  "settings.servers.trustedCertificates.description": "Když macOS certifikátu serveru nedůvěřuje, Cmdr se vás zeptá, než mu začne důvěřovat za vás, a vaši odpověď si tady zapamatuje. Domácí servery si často vytvářejí vlastní.",
+  "settings.servers.trustedCertificates.description": "{platform, select, macos {Když macOS certifikátu serveru nedůvěřuje, Cmdr se vás zeptá, než mu začne důvěřovat za vás, a vaši odpověď si tady zapamatuje. Domácí servery si často vytvářejí vlastní.} windows {When Windows doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.} other {When your system doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.}}",
   "@settings.servers.trustedCertificates.description": {
     "sourceHash": "0b00c1e"
   },
-  "settings.servers.trustedCertificates.empty": "Zatím nic důvěryhodného. Když se připojíte k serveru WebDAV, kterému macOS nedůvěřuje, Cmdr vám ukáže otisk jeho certifikátu a zeptá se.",
+  "settings.servers.trustedCertificates.empty": "{platform, select, macos {Zatím nic důvěryhodného. Když se připojíte k serveru WebDAV, kterému macOS nedůvěřuje, Cmdr vám ukáže otisk jeho certifikátu a zeptá se.} windows {Nothing trusted yet. When you connect to a WebDAV server Windows doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.} other {Nothing trusted yet. When you connect to a WebDAV server your system doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.}}",
   "@settings.servers.trustedCertificates.empty": {
     "sourceHash": "a3c2089"
   },
@@ -3504,11 +3504,11 @@
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },
-  "settings.dataWipe.card": "Vaše data na tomto Macu",
+  "settings.dataWipe.card": "{platform, select, macos {Vaše data na tomto Macu} windows {Your data on this PC} other {Your data on this computer}}",
   "@settings.dataWipe.card": {
     "sourceHash": "e4b3cee"
   },
-  "settings.dataWipe.description": "Smaže všechno, co Cmdr na tomto Macu uchovává: nastavení, uložená hesla, historie, indexy a stažené modely. Pak se Cmdr ukončí.",
+  "settings.dataWipe.description": "{platform, select, macos {Smaže všechno, co Cmdr na tomto Macu uchovává: nastavení, uložená hesla, historie, indexy a stažené modely. Pak se Cmdr ukončí.} windows {Delete everything Cmdr keeps on this PC: settings, saved passwords, histories, indexes, and downloaded models. Cmdr closes afterwards.} other {Delete everything Cmdr keeps on this computer: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.}}",
   "@settings.dataWipe.description": {
     "sourceHash": "f1012f4"
   },
@@ -3520,15 +3520,15 @@
   "@settings.updates.deleteAllData.keywords": {
     "sourceHash": "0ffb0f6"
   },
-  "settings.dataWipe.title": "Smazat všechna data Cmdru na tomto Macu?",
+  "settings.dataWipe.title": "{platform, select, macos {Smazat všechna data Cmdru na tomto Macu?} windows {Delete all Cmdr data on this PC?} other {Delete all Cmdr data on this computer?}}",
   "@settings.dataWipe.title": {
     "sourceHash": "35db003"
   },
-  "settings.dataWipe.intro": "Cmdr smaže všechno, co na tomto Macu uchovává, a pak se ukončí. Tuto akci nelze odvolat.",
+  "settings.dataWipe.intro": "{platform, select, macos {Cmdr smaže všechno, co na tomto Macu uchovává, a pak se ukončí. Tuto akci nelze odvolat.} windows {Cmdr deletes everything it keeps on this PC, then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer, then quits. This can’t be undone.}}",
   "@settings.dataWipe.intro": {
     "sourceHash": "61ed875"
   },
-  "settings.dataWipe.introWithSize": "Cmdr smaže všechno, co na tomto Macu uchovává ({sizeText}), a pak se ukončí. Tuto akci nelze odvolat.",
+  "settings.dataWipe.introWithSize": "{platform, select, macos {Cmdr smaže všechno, co na tomto Macu uchovává ({sizeText}), a pak se ukončí. Tuto akci nelze odvolat.} windows {Cmdr deletes everything it keeps on this PC ({sizeText}), then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer ({sizeText}), then quits. This can’t be undone.}}",
   "@settings.dataWipe.introWithSize": {
     "sourceHash": "e5262e8"
   },
@@ -3548,11 +3548,11 @@
   "@settings.dataWipe.goes.apiKeys": {
     "sourceHash": "146397c"
   },
-  "settings.dataWipe.goes.license": "Licence na tomto Macu. Znovu ji aktivujete licenčním klíčem z e‑mailu o nákupu.",
+  "settings.dataWipe.goes.license": "{platform, select, macos {Licence na tomto Macu. Znovu ji aktivujete licenčním klíčem z e‑mailu o nákupu.} windows {The license on this PC. To activate it again, enter the license key from your purchase email.} other {The license on this computer. To activate it again, enter the license key from your purchase email.}}",
   "@settings.dataWipe.goes.license": {
     "sourceHash": "90b5b06"
   },
-  "settings.dataWipe.goes.licenseIfAny": "Licence na tomto Macu, pokud jste nějakou aktivovali. Znovu ji aktivujete licenčním klíčem z e‑mailu o nákupu.",
+  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {Licence na tomto Macu, pokud jste nějakou aktivovali. Znovu ji aktivujete licenčním klíčem z e‑mailu o nákupu.} windows {The license on this PC, if you activated one. To activate it again, enter the license key from your purchase email.} other {The license on this computer, if you activated one. To activate it again, enter the license key from your purchase email.}}",
   "@settings.dataWipe.goes.licenseIfAny": {
     "sourceHash": "db7f6f2"
   },
@@ -3596,7 +3596,7 @@
   "@settings.dataWipe.cancel": {
     "sourceHash": "19766ed"
   },
-  "settings.dataWipe.confirm": "Smazat vše a ukončit",
+  "settings.dataWipe.confirm": "{platform, select, windows {Delete all and exit} other {Smazat vše a ukončit}}",
   "@settings.dataWipe.confirm": {
     "sourceHash": "5efdab7"
   },
@@ -3620,7 +3620,7 @@
   "@settings.dataWipe.doneTitle": {
     "sourceHash": "18aa13d"
   },
-  "settings.dataWipe.doneMessage": "Všechno, co Cmdr na tomto Macu uchovával, je pryč. Pokud chcete odstranit i aplikaci, přesuňte ji po ukončení Cmdru do koše.",
+  "settings.dataWipe.doneMessage": "{platform, select, macos {Všechno, co Cmdr na tomto Macu uchovával, je pryč. Pokud chcete odstranit i aplikaci, přesuňte ji po ukončení Cmdru do koše.} windows {Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps > Installed apps after Cmdr closes.} other {Everything Cmdr kept on this computer is gone. To remove the app as well, uninstall it the way you installed it after Cmdr quits.}}",
   "@settings.dataWipe.doneMessage": {
     "sourceHash": "a0d09dc"
   },
@@ -3632,15 +3632,15 @@
   "@settings.dataWipe.partialMessage": {
     "sourceHash": "24d0b58"
   },
-  "settings.dataWipe.leftover.secretItems": "{count, plural, one {Jedna položka v aplikaci Klíčenka s názvem „{itemName}“} few {{countText} položky v aplikaci Klíčenka s názvem „{itemName}“} many {{countText} položky v aplikaci Klíčenka s názvem „{itemName}“} other {{countText} položek v aplikaci Klíčenka s názvem „{itemName}“}}",
+  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, one {Jedna položka v aplikaci Klíčenka s názvem „{itemName}“} few {{countText} položky v aplikaci Klíčenka s názvem „{itemName}“} many {{countText} položky v aplikaci Klíčenka s názvem „{itemName}“} other {{countText} položek v aplikaci Klíčenka s názvem „{itemName}“}}} windows {{count, plural, one {One item in Credential Manager named “{itemName}”} other {{countText} items in Credential Manager named “{itemName}”}}} other {{count, plural, one {One item in your keyring named “{itemName}”} other {{countText} items in your keyring named “{itemName}”}}}}",
   "@settings.dataWipe.leftover.secretItems": {
     "sourceHash": "91321bb"
   },
-  "settings.dataWipe.leftover.secretsUnreadable": "Všechny položky v aplikaci Klíčenka s názvem „{itemName}“",
+  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {Všechny položky v aplikaci Klíčenka s názvem „{itemName}“} windows {Any items in Credential Manager named “{itemName}”} other {Any items in your keyring named “{itemName}”}}",
   "@settings.dataWipe.leftover.secretsUnreadable": {
     "sourceHash": "e3b3312"
   },
-  "settings.dataWipe.quit": "Ukončit Cmdr",
+  "settings.dataWipe.quit": "{platform, select, windows {Exit Cmdr} other {Ukončit Cmdr}}",
   "@settings.dataWipe.quit": {
     "sourceHash": "b3455b4"
   },

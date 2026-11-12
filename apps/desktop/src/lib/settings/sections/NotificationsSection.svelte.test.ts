@@ -20,9 +20,9 @@
  * shortcut). All mocked so the tests can run without a Tauri runtime.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
 import { mount, tick } from 'svelte'
-import { withCapabilities } from '#lib/platform/test-platform.js'
+import { withCapabilities, withPlatform } from '#lib/platform/test-platform.js'
 
 const { getSettingMock, setSettingMock, downloadsWatcherStatusMock, recheckGateMock, setGlobalGoToLatestShortcutMock } =
   vi.hoisted(() => ({
@@ -162,17 +162,25 @@ describe('NotificationsSection', () => {
     target.remove()
   })
 
-  it('writes through to the settings store when the user picks a different downloads-notifications mode', async () => {
-    const target = await mountSection()
-    // ToggleGroup renders one button per option with the visible label.
-    const macosButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'macOS')
-    if (!macosButton) throw new Error('macOS toggle not found')
-    macosButton.click()
-    await tick()
+  it.each([
+    ['macos', 'macOS'],
+    ['windows', 'Windows'],
+    ['linux', 'System'],
+  ] as const)(
+    'writes through to the settings store when the user picks the %s system-notification mode',
+    async (platform, label) => {
+      onTestFinished(withPlatform(platform))
+      const target = await mountSection()
+      // ToggleGroup renders one button per option with the visible label, named after the OS's notifications.
+      const systemButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === label)
+      if (!systemButton) throw new Error(`${label} toggle not found`)
+      systemButton.click()
+      await tick()
 
-    expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.downloadsNotifications', 'macos')
-    target.remove()
-  })
+      expect(setSettingMock).toHaveBeenCalledWith('behavior.fileSystemWatching.downloadsNotifications', 'macos')
+      target.remove()
+    },
+  )
 
   it('calls the backend IPC when the global-shortcut on/off toggle flips', async () => {
     const target = await mountSection()
