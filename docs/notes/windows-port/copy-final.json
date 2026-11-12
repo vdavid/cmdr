@@ -10460,15 +10460,18 @@
       "key": "settings.network.enabled.label",
       "file": "settings.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "none",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Enable networking",
-        "windows": null,
-        "other": null
+        "windows": "Turn on networking",
+        "other": "Enable networking"
       },
-      "sources": {},
-      "note": "scan hit, no change: the setting’s name; Microsoft’s “turn on” rule is for instructions."
+      "sources": {
+        "windows": "#1121 option (b): a Windows switch says “Turn on” (Microsoft Writing Style Guide, `docs/style-guide.md` § “Platform vocabulary”)",
+        "other": "#1121 option (b): macOS and Linux keep today’s “Enable” (lead brief: Windows only)"
+      },
+      "note": "A settings switch’s label: Windows says “Turn on”, macOS and Linux keep “Enable” (#1121, David’s wording call)."
     },
     {
       "key": "settings.network.enabled.keywords",
@@ -10488,15 +10491,18 @@
       "key": "settings.developer.mcpEnabled.label",
       "file": "settings.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "none",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Enable MCP server",
-        "windows": null,
-        "other": null
+        "windows": "Turn on MCP server",
+        "other": "Enable MCP server"
       },
-      "sources": {},
-      "note": "scan hit, no change: the setting’s name; Microsoft’s “turn on” rule is for instructions."
+      "sources": {
+        "windows": "#1121 option (b): a Windows switch says “Turn on” (Microsoft Writing Style Guide, `docs/style-guide.md` § “Platform vocabulary”)",
+        "other": "#1121 option (b): macOS and Linux keep today’s “Enable” (lead brief: Windows only)"
+      },
+      "note": "A settings switch’s label: Windows says “Turn on”, macOS and Linux keep “Enable” (#1121, David’s wording call)."
     },
     {
       "key": "settings.whatsNew.lastSeenVersion.description",
@@ -10614,15 +10620,18 @@
       "key": "settings.summary.smbNetworkShares",
       "file": "settings.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "none",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Enable networking, direct SMB connections, share cache, and timeouts.",
-        "windows": null,
-        "other": null
+        "windows": "Turn on networking, direct SMB connections, share cache, and timeouts.",
+        "other": "Enable networking, direct SMB connections, share cache, and timeouts."
       },
-      "sources": {},
-      "note": "scan hit, no change: names the “Enable networking” setting."
+      "sources": {
+        "windows": "#1121 option (b): a Windows switch says “Turn on” (Microsoft Writing Style Guide, `docs/style-guide.md` § “Platform vocabulary”)",
+        "other": "#1121 option (b): macOS and Linux keep today’s “Enable” (lead brief: Windows only)"
+      },
+      "note": "Names the networking switch by its label on each OS, so Windows reads “Turn on networking” as the switch itself does."
     },
     {
       "key": "fileExplorer.renameConflict.overwriteDelete",

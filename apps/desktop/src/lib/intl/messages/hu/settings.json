@@ -1284,7 +1284,7 @@
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
   },
-  "settings.network.enabled.label": "Hálózatkezelés bekapcsolása",
+  "settings.network.enabled.label": "{platform, select, windows {Turn on networking} other {Hálózatkezelés bekapcsolása}}",
   "@settings.network.enabled.label": {
     "sourceHash": "10f5de9"
   },
@@ -1528,7 +1528,7 @@
   "@settings.viewer.showTextCursor.keywords": {
     "sourceHash": "1214804"
   },
-  "settings.developer.mcpEnabled.label": "MCP-szerver bekapcsolása",
+  "settings.developer.mcpEnabled.label": "{platform, select, windows {Turn on MCP server} other {MCP-szerver bekapcsolása}}",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"
   },
@@ -2746,7 +2746,7 @@
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "Hálózatkezelés bekapcsolása, közvetlen SMB-kapcsolatok, megosztásgyorsítótár és időtúllépések.",
+  "settings.summary.smbNetworkShares": "{platform, select, windows {Turn on networking, direct SMB connections, share cache, and timeouts.} other {Hálózatkezelés bekapcsolása, közvetlen SMB-kapcsolatok, megosztásgyorsítótár és időtúllépések.}}",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
   },

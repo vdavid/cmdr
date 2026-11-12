@@ -130,6 +130,7 @@ Each line reads macOS / Windows / Linux.
     as a placeholder over writing a key into copy.
   - Windows instructions say "select" for "click", and "turn on" / "turn off" for "enable" / "disable". "Right-click" is
     fine on every OS.
+  - A settings switch's label: **Enable networking** / **Turn on networking** / **Enable networking** (#1121).
 - Words that stay the same on every OS: "disk image", "full screen", "right-click", "Eject" for removable drives.
 - Features only macOS has take no Windows or Linux word. Their surfaces are hidden off macOS
   (`apps/desktop/src/lib/platform/DETAILS.md` § Capabilities): Quick Look, Finder tags, Full Disk Access, the Local

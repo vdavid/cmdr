@@ -1282,7 +1282,7 @@
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
   },
-  "settings.network.enabled.label": "Zapnout síťové funkce",
+  "settings.network.enabled.label": "{platform, select, windows {Turn on networking} other {Zapnout síťové funkce}}",
   "@settings.network.enabled.label": {
     "sourceHash": "10f5de9"
   },
@@ -1526,7 +1526,7 @@
   "@settings.viewer.showTextCursor.keywords": {
     "sourceHash": "1214804"
   },
-  "settings.developer.mcpEnabled.label": "Zapnout server MCP",
+  "settings.developer.mcpEnabled.label": "{platform, select, windows {Turn on MCP server} other {Zapnout server MCP}}",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"
   },
@@ -2744,7 +2744,7 @@
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "Zapnutí síťových funkcí, přímá připojení SMB, mezipaměť sdílených složek a časové limity.",
+  "settings.summary.smbNetworkShares": "{platform, select, windows {Turn on networking, direct SMB connections, share cache, and timeouts.} other {Zapnutí síťových funkcí, přímá připojení SMB, mezipaměť sdílených složek a časové limity.}}",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
   },

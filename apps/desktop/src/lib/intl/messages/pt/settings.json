@@ -1285,7 +1285,7 @@
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
   },
-  "settings.network.enabled.label": "Ativar rede",
+  "settings.network.enabled.label": "{platform, select, windows {Turn on networking} other {Ativar rede}}",
   "@settings.network.enabled.label": {
     "sourceHash": "10f5de9"
   },
@@ -1530,7 +1530,7 @@
   "@settings.viewer.showTextCursor.keywords": {
     "sourceHash": "1214804"
   },
-  "settings.developer.mcpEnabled.label": "Ativar servidor MCP",
+  "settings.developer.mcpEnabled.label": "{platform, select, windows {Turn on MCP server} other {Ativar servidor MCP}}",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"
   },
@@ -2747,7 +2747,7 @@
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "Ativar rede, conexões SMB diretas, cache de compartilhamentos e tempos limite.",
+  "settings.summary.smbNetworkShares": "{platform, select, windows {Turn on networking, direct SMB connections, share cache, and timeouts.} other {Ativar rede, conexões SMB diretas, cache de compartilhamentos e tempos limite.}}",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
   },

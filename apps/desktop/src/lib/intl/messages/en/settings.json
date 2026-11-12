@@ -1518,9 +1518,9 @@
   "@settings.ai.localContextSize.keywords": {
     "description": "Search keywords for the “Context window” setting (settings.ai.localContextSize.label) in Settings > AI > Provider. What it does: sets how much text the local AI model can handle at once (its context window); bigger uses more memory. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
-  "settings.network.enabled.label": "Enable networking",
+  "settings.network.enabled.label": "{platform, select, windows {Turn on networking} other {Enable networking}}",
   "@settings.network.enabled.label": {
-    "description": "Label for the master networking toggle (SMB discovery and connection). In Settings > File systems > SMB/Network shares.",
+    "description": "Label for the master networking toggle (SMB discovery and connection). In Settings > File systems > SMB/Network shares. The Windows branch starts with Windows’ own wording for a switch (\"Turn on\" in English; use the phrase your language’s Windows uses on its Settings switches); the other branch, for macOS and Linux, says \"Enable\".",
     "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.enabled.description": "{platform, select, macos {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, but won’t ask macOS for Local Network access.} windows {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, and Windows won’t ask to let Cmdr through the firewall.} other {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares.}}",
@@ -1803,9 +1803,9 @@
   "@settings.viewer.showTextCursor.keywords": {
     "description": "Search keywords for the “Show text cursor” setting (settings.viewer.showTextCursor.label) in Settings > Viewer. What it does: shows a blinking text cursor (caret) in the file viewer. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
-  "settings.developer.mcpEnabled.label": "Enable MCP server",
+  "settings.developer.mcpEnabled.label": "{platform, select, windows {Turn on MCP server} other {Enable MCP server}}",
   "@settings.developer.mcpEnabled.label": {
-    "description": "Label for the toggle starting the MCP server. \"MCP\" = Model Context Protocol; keep the abbreviation. In Settings > Developer > MCP server.",
+    "description": "Label for the toggle starting the MCP server. \"MCP\" = Model Context Protocol; keep the abbreviation. In Settings > Developer > MCP server. The Windows branch starts with Windows’ own wording for a switch (\"Turn on\" in English; use the phrase your language’s Windows uses on its Settings switches); the other branch, for macOS and Linux, says \"Enable\".",
     "screenshot": "settings-ai-mcp-server.png"
   },
   "settings.developer.mcpEnabled.description": "Start a Model Context Protocol server for AI assistant integration.",
@@ -3242,9 +3242,9 @@
     "description": "One-line summary shown under the \"Search\" subsection heading. \"regex\" = regular-expression search; \"cap\" = maximum count.",
     "screenshot": "settings-summary-behavior.png"
   },
-  "settings.summary.smbNetworkShares": "Enable networking, direct SMB connections, share cache, and timeouts.",
+  "settings.summary.smbNetworkShares": "{platform, select, windows {Turn on networking, direct SMB connections, share cache, and timeouts.} other {Enable networking, direct SMB connections, share cache, and timeouts.}}",
   "@settings.summary.smbNetworkShares": {
-    "description": "One-line summary shown under the \"SMB/Network shares\" subsection heading. \"SMB\" is a protocol name; keep it.",
+    "description": "One-line summary shown under the \"SMB/Network shares\" subsection heading. \"SMB\" is a protocol name; keep it. Its first item names the networking switch by its label (settings.network.enabled.label), so each branch starts with the same words as that key’s same branch.",
     "screenshot": "settings-summary-file-systems.png"
   },
   "settings.summary.servers": "The SSH host keys you’ve trusted.",

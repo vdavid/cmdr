@@ -1286,7 +1286,7 @@
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
   },
-  "settings.network.enabled.label": "Aktivera nätverk",
+  "settings.network.enabled.label": "{platform, select, windows {Turn on networking} other {Aktivera nätverk}}",
   "@settings.network.enabled.label": {
     "sourceHash": "10f5de9"
   },
@@ -1530,7 +1530,7 @@
   "@settings.viewer.showTextCursor.keywords": {
     "sourceHash": "1214804"
   },
-  "settings.developer.mcpEnabled.label": "Aktivera MCP-server",
+  "settings.developer.mcpEnabled.label": "{platform, select, windows {Turn on MCP server} other {Aktivera MCP-server}}",
   "@settings.developer.mcpEnabled.label": {
     "sourceHash": "32b62ff"
   },
@@ -2753,7 +2753,7 @@
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "Aktivera nätverk, direkta SMB-anslutningar, resurscache och tidsgränser.",
+  "settings.summary.smbNetworkShares": "{platform, select, windows {Turn on networking, direct SMB connections, share cache, and timeouts.} other {Aktivera nätverk, direkta SMB-anslutningar, resurscache och tidsgränser.}}",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
   },
