@@ -12,7 +12,7 @@
     import LinkButton from '#lib/ui/LinkButton.svelte'
     import Size from '#lib/ui/Size.svelte'
     import Spinner from '#lib/ui/Spinner.svelte'
-    import { tString } from '#lib/intl/messages.svelte.js'
+    import { pathParam, tString } from '#lib/intl/messages.svelte.js'
     import { formatInteger } from '#lib/intl/number-format.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { copyToClipboard } from '#lib/tauri-commands/index.js'
@@ -84,7 +84,7 @@
                                  than the name anyway. -->
                             <span class="name" use:tooltip={row.path}>
                                 <LinkButton
-                                    aria-label={tString('askCmdr.tool.showInPane', { path: row.path })}
+                                    aria-label={tString('askCmdr.tool.showInPane', { path: pathParam(row.path) })}
                                     onclick={() => void show(target)}>{row.name}</LinkButton
                                 >
                             </span>

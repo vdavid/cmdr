@@ -17,7 +17,7 @@ import type {
   UnexpandableReason,
 } from '#lib/ipc/bindings.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
-import { tString } from '#lib/intl/messages.svelte.js'
+import { pathParam, tString } from '#lib/intl/messages.svelte.js'
 import { formatInteger } from '#lib/intl/number-format.js'
 import { displayPath } from '#lib/utils/display-path.js'
 import { rollbackConfirmVariant } from '#lib/file-operations/reversal-wording.js'
@@ -129,8 +129,8 @@ export function treeRowTips(row: OperationTreeRow, kind: OpKind): string[] {
     const path = displayPath(row.otherEnd)
     tips.push(
       showsLandedSide(kind)
-        ? tString('operationLog.tree.otherEndFrom', { path })
-        : tString('operationLog.tree.otherEndTo', { path }),
+        ? tString('operationLog.tree.otherEndFrom', { path: pathParam(path) })
+        : tString('operationLog.tree.otherEndTo', { path: pathParam(path) }),
     )
   }
   return tips
@@ -209,7 +209,7 @@ export function operationRoute(kind: OpKind, rootPath: string | null, otherRoot:
     case 'createFile':
     case 'createFolder':
     case 'archiveEdit':
-      return tString('operationLog.route.in', { path: root })
+      return tString('operationLog.route.in', { path: pathParam(root) })
   }
 }
 

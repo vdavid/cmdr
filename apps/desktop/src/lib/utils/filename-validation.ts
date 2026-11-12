@@ -1,7 +1,7 @@
 /** Client-side filename validation for instant keystroke feedback. */
 
 import { tString } from '#lib/intl/messages.svelte.js'
-import { fromUserInput, isLocalPath, joinPath } from '#lib/path/grammar.js'
+import { fromUserInput, isLocalPath, joinPath, parsePath } from '#lib/path/grammar.js'
 import { fileExtension, kindOfRenamedName, type NameKind } from './file-extension'
 
 /** Defaults match macOS. Call initPathLimits() at startup to get platform-specific values from the backend. */
@@ -188,6 +188,19 @@ export function validateConflict(newName: string, siblingNames: string[], origin
   return OK_RESULT
 }
 
+/**
+ * Refuses a server with no share (`\\server`, `//server/`): the grammar reads no folder
+ * there on Windows, and without this the field shows nothing until the backend refuses.
+ * On macOS and Linux a `//` path is an ordinary absolute one, so this always passes there.
+ */
+export function validateShareNamed(path: string): ValidationResult {
+  const wire = fromUserInput(path.trim())
+  if (wire.startsWith('//') && parsePath(wire) === null) {
+    return { severity: 'error', message: tString('fileOperations.validation.pathShareMissing') }
+  }
+  return OK_RESULT
+}
+
 /** Validates a full directory path (not a filename). Checks structure only, not existence. */
 export function validateDirectoryPath(path: string): ValidationResult {
   const trimmed = path.trim()
@@ -204,6 +217,8 @@ export function validateDirectoryPath(path: string): ValidationResult {
   // Every structural check reads the wire form, where `/` alone separates: on Windows a
   // typed `\` is a separator too (`~\Documents`, `\Users`), elsewhere it's a name character.
   const wire = fromUserInput(trimmed)
+  const shareNamed = validateShareNamed(trimmed)
+  if (shareNamed.severity === 'error') return shareNamed
   const isAbsolute = wire.startsWith('/') || isLocalPath(wire)
   if (!isAbsolute && wire !== '~' && !wire.startsWith('~/')) {
     return { severity: 'error', message: tString('fileOperations.validation.pathNotAbsolute') }

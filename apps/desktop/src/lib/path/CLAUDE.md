@@ -8,7 +8,8 @@ shortcut, virtual-volume URL).
 - `grammar.ts`: the app-path grammar, **a scheme URL, or a `/`-separated absolute path whose first component is the
   root** (`/`; on Windows `C:/` and `//server/share/`), and its total helpers: `parsePath`, `normalizePath`, `rootOf`,
   `isVolumeRoot`, `parentInVolume` / `parentOrRoot`, `basenameInVolume` / `lastName`, `joinPath`, `pathRelativeTo`,
-  `samePath`, `fromUserInput`, and `shownPath`, the ONE display formatter (`\` for a Windows local path).
+  `samePath`, `fromUserInput` / `typedSeparators`, and `shownPath`, the ONE display formatter (`\` for a Windows local
+  path).
 - `canonical.ts`: the `CanonicalPath` brand plus `toCanonical` / `parentOf` / `basenameOf`, the separate
   `isPlainFilesystemPath` outbound-path guard, and the `isPathOnVolume` membership test.
 

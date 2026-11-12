@@ -403,11 +403,33 @@ export function getMessage(key: MessageKey): string {
   return value.startsWith(PLATFORM_SELECT_PREFIX) ? pickPlatformBranch(value, getPlatform()) : value
 }
 
+const SHOWN_PATH: unique symbol = Symbol('shown path')
+
+/** A param its caller marked as an app path ({@link pathParam}). */
+export interface PathParam {
+  readonly [SHOWN_PATH]: string
+}
+
 /**
- * Params accepted by `t()`: primitives, dates, or `<tag>` handler functions.
- * `platform` is the runtime's to inject (`format`), so passing it is a type error.
+ * Marks `path` (an app path: `/…`, `C:/…`, `//server/share/…`) as a path, so `t()` spells
+ * it the way this OS shows it (`C:\Users\ada` on Windows; as is elsewhere). ❌ Never
+ * guessed: an unmarked string param is prose and passes through untouched on every OS, so
+ * a drive's name (`C:`) or an `a//b` in a message can't turn into a path.
  */
-export type TranslationParams = Record<string, PrimitiveType | Date | FormatXMLElementFn<unknown>> & {
+export function pathParam(path: string): PathParam {
+  return { [SHOWN_PATH]: path }
+}
+
+function isPathParam(value: unknown): value is PathParam {
+  return typeof value === 'object' && value !== null && SHOWN_PATH in value
+}
+
+/**
+ * Params accepted by `t()`: primitives, dates, `<tag>` handler functions, or a path
+ * ({@link pathParam}). `platform` is the runtime's to inject (`format`), so passing it is
+ * a type error.
+ */
+export type TranslationParams = Record<string, PrimitiveType | Date | FormatXMLElementFn<unknown> | PathParam> & {
   platform?: never
 }
 
@@ -468,23 +490,29 @@ const BARE_PLATFORM_PARAMS: Readonly<Record<Platform, Readonly<{ platform: Platf
 function format(compiled: IntlMessageFormat, params: TranslationParams | undefined): TranslationResult {
   const platform = getPlatform()
   if (params === undefined) return asShown(compiled.format(BARE_PLATFORM_PARAMS[platform]))
-  return asShown(compiled.format({ ...withShownPaths(params, platform), platform }))
+  return asShown(compiled.format({ ...withShownPaths(params), platform }))
 }
 
 /**
- * `params` with each param that IS a local path spelled as a person reads it (on
- * Windows, `C:\Users\ada`; `#lib/path/grammar`'s `shownPath`). Per param, because
- * `asShown` sees the whole message, where a `/` may be prose. Off Windows nothing changes,
- * so the params pass through untouched.
+ * `params` with each {@link pathParam} spelled as a person reads it (on Windows,
+ * `C:\Users\ada`; `#lib/path/grammar`'s `shownPath`, which is a no-op elsewhere). Per param,
+ * because `asShown` sees the whole message, where a `/` may be prose. A call with no path
+ * param gets its own object back.
  */
-function withShownPaths(params: TranslationParams, platform: Platform): TranslationParams {
-  if (platform !== 'windows') return params
-  const shown: TranslationParams = {}
+function withShownPaths(params: TranslationParams): FormatValues {
+  // Every value but a `PathParam` is already one the engine formats; each of those is replaced below.
+  const values = params as FormatValues
+  let shown: FormatValues | null = null
   for (const [name, value] of Object.entries(params)) {
-    shown[name] = typeof value === 'string' ? shownPath(value, 'windows') : value
+    if (!isPathParam(value)) continue
+    shown ??= { ...values }
+    shown[name] = shownPath(value[SHOWN_PATH])
   }
-  return shown
+  return shown ?? values
 }
+
+/** What the ICU engine itself formats. */
+type FormatValues = Record<string, PrimitiveType | Date | FormatXMLElementFn<unknown>>
 
 /**
  * A formatted message as a person reads it: a same-named twin's pick taken out of

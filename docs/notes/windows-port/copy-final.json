@@ -8324,16 +8324,14 @@
       "status": "apply",
       "branches": {
         "macos": "“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “/”.",
-        "windows": "“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “/”.",
+        "windows": "“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.",
         "other": "“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “/”."
       },
       "sources": {
-        "windows": "verdicts: open, keep “/” until the Windows destination field is built",
+        "windows": "#1118: the destination field reads `\\` and `/` alike on Windows (`typedSeparators`), and a trailing one means “into this folder”; Windows' own separator is `\\`",
         "other": "same as macOS"
       },
-      "whereInUi": "Copy/move dialog, hint when the typed destination names an existing folder.",
-      "openBranches": ["windows"],
-      "note": "Windows is open (`copy-decisions.md` § Open rows): all three read the same text, so this stays a plain value."
+      "whereInUi": "Copy/move dialog, hint when the typed destination names an existing folder."
     },
     {
       "key": "fileOperations.transferDialog.hardlinkNote",

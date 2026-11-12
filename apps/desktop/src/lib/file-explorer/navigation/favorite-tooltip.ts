@@ -4,7 +4,7 @@
  * platform-forked reorder hint are unit-testable without a DOM.
  */
 
-import { tString } from '#lib/intl/messages.svelte.js'
+import { pathParam, tString } from '#lib/intl/messages.svelte.js'
 
 /**
  * Tooltip for a favorite row. Leads with the PATH so a renamed favorite
@@ -21,6 +21,6 @@ import { tString } from '#lib/intl/messages.svelte.js'
 export function buildFavoriteTooltip(path: string, isMac: boolean, status: string | null = null): string {
   const reorder = isMac ? '⌥↑ / ⌥↓' : 'Alt+↑ / Alt+↓'
   return status
-    ? tString('fileExplorer.navigation.favoriteTooltipWithStatus', { path, status, reorder })
-    : tString('fileExplorer.navigation.favoriteTooltip', { path, reorder })
+    ? tString('fileExplorer.navigation.favoriteTooltipWithStatus', { path: pathParam(path), status, reorder })
+    : tString('fileExplorer.navigation.favoriteTooltip', { path: pathParam(path), reorder })
 }

@@ -19,7 +19,7 @@
     import { dependOn } from '#lib/utils/reactivity.js'
     import Icon from '#lib/ui/Icon.svelte'
     import { formatCompactCount, formatInteger } from '#lib/intl/number-format.js'
-    import { tString } from '#lib/intl/messages.svelte.js'
+    import { pathParam, tString } from '#lib/intl/messages.svelte.js'
     import Trans from '#lib/intl/Trans.svelte'
     import Button from '#lib/ui/Button.svelte'
     import type { SearchResultEntry } from '#lib/tauri-commands/index.js'
@@ -620,8 +620,8 @@
             <span
                 class="status-path"
                 aria-label={isWaiting
-                    ? tString('queryUi.results.live.waitingOnPathAria', { path: live.currentPath })
-                    : tString('queryUi.results.live.scanningAria', { path: live.currentPath })}
+                    ? tString('queryUi.results.live.waitingOnPathAria', { path: pathParam(live.currentPath) })
+                    : tString('queryUi.results.live.scanningAria', { path: pathParam(live.currentPath) })}
                 use:useShortenMiddle={{ text: live.currentPath, preferBreakAt: '/', startRatio: 0.3 }}
             ></span>
         {/if}

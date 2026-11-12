@@ -15,7 +15,7 @@
     import Spinner from '#lib/ui/Spinner.svelte'
     import LinkButton from '#lib/ui/LinkButton.svelte'
     import Trans from '#lib/intl/Trans.svelte'
-    import { tString } from '#lib/intl/messages.svelte.js'
+    import { pathParam, tString } from '#lib/intl/messages.svelte.js'
     import { conjunctionListParts } from '#lib/intl/list-format.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { lineLabelText, toolLineLabel, toolOutcomeText, type LinePlace } from './ask-cmdr-labels'
@@ -66,7 +66,7 @@
     {#if place.linked}
         <span class="place" use:tooltip={place.path}>
             <LinkButton
-                aria-label={tString('askCmdr.tool.showInPane', { path: place.path })}
+                aria-label={tString('askCmdr.tool.showInPane', { path: pathParam(place.path) })}
                 aria-describedby={repeat ? repeatId : undefined}
                 onclick={() => void show(place)}>{place.shown}</LinkButton
             >

@@ -15,7 +15,7 @@
  */
 
 import { formatNumber } from '#lib/file-explorer/selection/selection-info-utils.js'
-import { tString } from '#lib/intl/messages.svelte.js'
+import { pathParam, tString } from '#lib/intl/messages.svelte.js'
 import { addToast } from '#lib/ui/toast/index.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import type { NonErrorToastLevel } from '#lib/ui/toast/index.js'
@@ -181,8 +181,8 @@ function stagedLine(staged: StagedLeftovers): string {
 /** Name both paths when an original could not take its old name back. */
 function recoveredLine(recovered: RecoveredOriginal): string {
   return tString('fileOperations.cancelRollback.recoveredOriginal', {
-    path: recovered.path,
-    keptAt: recovered.keptAt,
+    path: pathParam(recovered.path),
+    keptAt: pathParam(recovered.keptAt),
   })
 }
 

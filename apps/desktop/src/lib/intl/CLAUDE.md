@@ -42,11 +42,13 @@ Two locale sources: the UI LANGUAGE for catalog text and numbers, the OS REGION 
   `pickUiLocale()`; secondary windows call `initWindowLanguageSync()`. `watchSystemLocales()` takes ONE subscriber per
   window: hang new reactions off it. Depth: `apps/desktop/src-tauri/src/intl/DETAILS.md`.
 - **Error copy uses `getMessage()` (raw), NOT `t()`/ICU**: its `{system_settings}` tokens and `esc()` entities collide
-  with ICU. Only plural/select sentences use `t()`.
+  with ICU.
 - **Per-OS copy is one whole-value `{platform, select, …}` block**: `t()` injects `platform`, `getMessage()` splits
   (`platform-select.ts`). Vitest runs as Linux. `DETAILS.md` § Platform variants.
-- **`<Trans>` renders tag content via a zero-arg `{#snippet content()}`** (snippets aren't callable:
-  `invalid_snippet_arguments`). No `{@html}`, so XSS-safe. An unmatched tag renders NOTHING (`i18n-trans-snippets`).
+- **An app-path param goes in as `pathParam(path)`**; ❌ nothing guesses, a plain string stays prose. `DETAILS.md` §
+  Path params.
+- **`<Trans>` renders tag content via a zero-arg `{#snippet content()}`** (`invalid_snippet_arguments`). No `{@html}`,
+  so XSS-safe. An unmatched tag renders NOTHING (`i18n-trans-snippets`).
 - **Only the runtime writes `<html lang>`** (`setLocale()` and the startup catalog), with the RESOLVED catalog tag
   (`ja-JP` → `en`). ❌ No per-window write.
 - **Copy reads `getUiLocale()`, numbers and joins `getCatalogLocale()`, dates `getFormatLocale()`; nothing else resolves
@@ -58,4 +60,4 @@ Two locale sources: the UI LANGUAGE for catalog text and numbers, the OS REGION 
 - **Both readers stay SSR-safe and uncached** (a cache would hide a switch), but **memoize `Intl` formatters by (locale,
   options)**: they run per visible row.
 
-Depth (runtime, catalog loading, ICU split, `'system'`, language vs region, grouping, titles): `DETAILS.md`.
+Depth: `DETAILS.md`.

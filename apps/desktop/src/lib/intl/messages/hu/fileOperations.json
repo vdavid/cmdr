@@ -357,7 +357,7 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "8331da7"
   },
-  "fileOperations.transferDialog.namedFolderHint": "„{target}” egy meglévő mappa, így „{name}” a mappa nevét kapná. Ha a mappába szeretnéd tenni, az útvonal végére írj egy „/” jelet.",
+  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.} other {„{target}” egy meglévő mappa, így „{name}” a mappa nevét kapná. Ha a mappába szeretnéd tenni, az útvonal végére írj egy „/” jelet.}}",
   "@fileOperations.transferDialog.namedFolderHint": {
     "sourceHash": "41dc88c"
   },
@@ -1352,6 +1352,10 @@
   "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {Az útvonalnak abszolútnak kell lennie (/ jellel kell kezdődnie)}}",
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "@fileOperations.validation.pathShareMissing": {
+    "sourceHash": "53f173e"
   },
   "fileOperations.validation.pathNullChar": "Az útvonal null karaktert tartalmaz",
   "@fileOperations.validation.pathNullChar": {

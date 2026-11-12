@@ -9,7 +9,7 @@ import type { WriteConflictEvent } from '#lib/ipc/bindings.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { isPathOnVolume, isPlainFilesystemPath, parentOf, toCanonical } from '#lib/path/canonical.js'
 import { suggestCompressArchiveName } from './transfer-compress-name'
-import { joinPath } from '#lib/path/grammar.js'
+import { isLocalPath, joinPath, parsePath, typedSeparators } from '#lib/path/grammar.js'
 
 /**
  * Generates a dialog title with proper pluralization for files and folders.
@@ -299,30 +299,36 @@ export function resolveTransferFilename(
   homePath = '',
   intoFolderName?: string,
 ): { parent: string; name: string } | null {
-  const trimmed = path.trim()
+  // On Windows a typed `\` separates too (`C:\Users\`); elsewhere it's a name character.
+  const trimmed = typedSeparators(path.trim())
   const entered = trimmed.endsWith('/') && intoFolderName ? `${trimmed}${intoFolderName}` : trimmed
   const leaf = entered.split('/').at(-1)
   if (!leaf || leaf === '.' || leaf === '..' || entered === '~') return null
   return splitNormalizedPath(toAbsoluteTarget(entered, sourceFolder, homePath))
 }
 
-/** `~/` expands from home; anything not absolute resolves from the source folder. */
+/**
+ * `~/` expands from home; a local app path (`/…`, and on Windows `C:/…` or `//server/share/…`)
+ * or a volume-relative `/…` stands; anything else resolves from the source folder.
+ */
 function toAbsoluteTarget(entered: string, sourceFolder: string, homePath: string): string {
   const expanded = entered.startsWith('~/') && homePath ? joinPath(homePath, entered.slice(2)) : entered
-  return expanded.startsWith('/') ? expanded : joinPath(sourceFolder, expanded)
+  return expanded.startsWith('/') || isLocalPath(expanded) ? expanded : joinPath(sourceFolder, expanded)
 }
 
-/** Collapse `.` / `..` and split off the leaf. */
+/**
+ * Collapse `.` / `..` (clamped at the root, so dot segments can't obscure a destination
+ * inside the source subtree) and split off the leaf. The root survives: `C:/`, `//nas/share/`,
+ * or `/`. A volume-relative `/…` on Windows (`/DCIM` on a phone) splits on its own `/`;
+ * `//nas` without a share names no folder at all.
+ */
 function splitNormalizedPath(absolute: string): { parent: string; name: string } | null {
-  // Dot segments cannot obscure a destination inside the source subtree.
-  const parts: string[] = []
-  for (const part of absolute.split('/')) {
-    if (!part || part === '.') continue
-    if (part === '..') parts.pop()
-    else parts.push(part)
-  }
-  const name = parts.pop()
-  return name ? { parent: `/${parts.join('/')}`, name } : null
+  const volumeRelative = absolute.startsWith('/') && !absolute.startsWith('//')
+  const parsed = parsePath(absolute) ?? (volumeRelative ? parsePath(absolute, 'posix') : null)
+  if (parsed?.root == null || parsed.names === null) return null
+  const names = [...parsed.names]
+  const name = names.pop()
+  return name ? { parent: parsed.root + names.join('/'), name } : null
 }
 
 /** Keep the target folder when switching between folder and filename modes. */

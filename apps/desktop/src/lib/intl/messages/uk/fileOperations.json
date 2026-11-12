@@ -356,7 +356,7 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "8331da7"
   },
-  "fileOperations.transferDialog.namedFolderHint": "«{target}» — це наявна папка, тож «{name}» отримає її назву. Щоб покласти «{name}» усередину цієї папки, допишіть у кінці шляху «/».",
+  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.} other {«{target}» — це наявна папка, тож «{name}» отримає її назву. Щоб покласти «{name}» усередину цієї папки, допишіть у кінці шляху «/».}}",
   "@fileOperations.transferDialog.namedFolderHint": {
     "sourceHash": "41dc88c"
   },
@@ -1351,6 +1351,10 @@
   "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {Шлях має бути абсолютним (починатися з /)}}",
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "@fileOperations.validation.pathShareMissing": {
+    "sourceHash": "53f173e"
   },
   "fileOperations.validation.pathNullChar": "Шлях містить нульовий символ",
   "@fileOperations.validation.pathNullChar": {

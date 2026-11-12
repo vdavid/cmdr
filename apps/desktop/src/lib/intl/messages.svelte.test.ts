@@ -16,6 +16,7 @@ import {
   tString,
   tStringIn,
   getMessage,
+  pathParam,
   setLocale,
   availableLocales,
   resolvedCatalogLocale,
@@ -145,14 +146,35 @@ describe('t() resolution', () => {
     )
   })
 
-  it('shows a local path param with backslashes on Windows, and as is elsewhere', () => {
+  it('shows a path param with backslashes on Windows, and as is elsewhere', () => {
     _setLocaleForTests('en-US')
     onTestFinished(withPlatform('windows'))
-    expect(tString('fileOperations.delete.fromPath', { path: 'C:/Users/ada' })).toBe('From: C:\\Users\\ada')
+    expect(tString('fileOperations.delete.fromPath', { path: pathParam('C:/Users/ada') })).toBe('From: C:\\Users\\ada')
     onTestFinished(withPlatform('macos'))
-    expect(tString('fileOperations.delete.fromPath', { path: 'C:/Users/ada' })).toBe('From: C:/Users/ada')
+    expect(tString('fileOperations.delete.fromPath', { path: pathParam('C:/Users/ada') })).toBe('From: C:/Users/ada')
     onTestFinished(withPlatform('linux'))
-    expect(tString('fileOperations.delete.fromPath', { path: '/home/ada' })).toBe('From: /home/ada')
+    expect(tString('fileOperations.delete.fromPath', { path: pathParam('/home/ada') })).toBe('From: /home/ada')
+  })
+
+  /** #1118: only a param its caller marks as a path is spelled as one; prose stays prose. */
+  it('leaves an unmarked string param alone on Windows, even one shaped like a path', () => {
+    _setLocaleForTests('en-US')
+    onTestFinished(withPlatform('windows'))
+    expect(tString('main.revealNotShown.notAnswering', { name: 'C:' })).toBe(
+      'Couldn’t show “C:”: the drive or server it’s on isn’t answering.',
+    )
+    expect(tString('main.revealNotShown.notAnswering', { name: '//a/b' })).toBe(
+      'Couldn’t show “//a/b”: the drive or server it’s on isn’t answering.',
+    )
+  })
+
+  it('spells a marked drive root the way Windows shows it', () => {
+    _setLocaleForTests('en-US')
+    onTestFinished(withPlatform('windows'))
+    expect(tString('fileOperations.delete.fromPath', { path: pathParam('C:/') })).toBe('From: C:\\')
+    expect(tString('fileOperations.delete.fromPath', { path: pathParam('//nas/share/x') })).toBe(
+      'From: \\\\nas\\share\\x',
+    )
   })
 })
 

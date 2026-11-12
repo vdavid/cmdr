@@ -24,7 +24,7 @@
     import { useShortenMiddle } from '#lib/utils/shorten-middle-action.js'
     import { displayPath } from '#lib/utils/display-path.js'
     import Trans from '#lib/intl/Trans.svelte'
-    import { t, tString } from '#lib/intl/messages.svelte.js'
+    import { pathParam, t, tString } from '#lib/intl/messages.svelte.js'
     import type { ConfirmOptions, ConfirmOrigin, DeleteConfirmer } from '#lib/file-explorer/pane/dialog-props.js'
     import StartInBackgroundButton from '../StartInBackgroundButton.svelte'
     import { createDeleteScanState } from './delete-scan-state.svelte'
@@ -431,7 +431,7 @@
             class="source-path"
             use:tooltip={{ text: displayPath(sourceFolderPath), overflowOnly: abbreviatedPath === sourceFolderPath }}
         >
-            {tString('fileOperations.delete.fromPath', { path: abbreviatedPath })}
+            {tString('fileOperations.delete.fromPath', { path: pathParam(abbreviatedPath) })}
         </div>
 
         <!-- Scrollable file list -->

@@ -2800,6 +2800,7 @@ export type MessageKey =
   | 'fileOperations.validation.pathNotAbsolute'
   | 'fileOperations.validation.pathNullChar'
   | 'fileOperations.validation.pathSegmentTooLong'
+  | 'fileOperations.validation.pathShareMissing'
   | 'fileOperations.validation.pathTooLong'
   | 'fileOperations.validation.pathTotalTooLong'
   | 'goToPath.dialog.addsServer'

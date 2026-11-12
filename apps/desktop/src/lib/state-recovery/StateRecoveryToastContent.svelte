@@ -9,7 +9,7 @@
     import Button from '#lib/ui/Button.svelte'
     import ToastActions from '#lib/ui/toast/ToastActions.svelte'
     import { dismissToast } from '#lib/ui/toast/index.js'
-    import { tString } from '#lib/intl/messages.svelte.js'
+    import { pathParam, tString } from '#lib/intl/messages.svelte.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import { openSettingsWindow } from '#lib/settings/settings-window.js'
     import { showInFinder } from '#lib/tauri-commands/index.js'
@@ -110,7 +110,7 @@
         <span class="notice-detail">{body}</span>
     {/if}
     {#if recovery.keptCopy}
-        <span class="notice-detail notice-path">{tString('stateRecovery.keptCopy', { path: recovery.keptCopy })}</span>
+        <span class="notice-detail notice-path">{tString('stateRecovery.keptCopy', { path: pathParam(recovery.keptCopy) })}</span>
     {/if}
     <ToastActions>
         <Button

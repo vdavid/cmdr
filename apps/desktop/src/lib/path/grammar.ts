@@ -238,6 +238,17 @@ export function shownPath(path: string, flavor: PathFlavor = hostPathFlavor()): 
  */
 export function fromUserInput(text: string, flavor: PathFlavor = hostPathFlavor()): string {
   if (flavor === 'posix' || SCHEME.test(text)) return text
-  const slashed = text.replaceAll('\\', '/')
+  const slashed = typedSeparators(text, flavor)
   return normalizePath(slashed, flavor) ?? slashed
+}
+
+/**
+ * Typed or pasted text with every separator spelled `/` and nothing else changed: a
+ * trailing separator, `.`, and `..` stay, for a field where they mean something (the
+ * transfer destination's "into this folder"). On Windows `\` separates too; on macOS and
+ * Linux it's a filename character, so the text comes back untouched.
+ */
+export function typedSeparators(text: string, flavor: PathFlavor = hostPathFlavor()): string {
+  if (flavor === 'posix' || SCHEME.test(text)) return text
+  return text.replaceAll('\\', '/')
 }

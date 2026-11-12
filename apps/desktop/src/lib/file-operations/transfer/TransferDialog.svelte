@@ -13,6 +13,7 @@
         validateDisallowedChars,
         validateNameLength,
         validateNotEmpty,
+        validateShareNamed,
     } from '#lib/utils/filename-validation.js'
     import { createTransferDestExistsCheck } from './transfer-dest-exists.svelte'
     import { conflictPolicyFromMcpName } from './conflict-policy'
@@ -427,7 +428,8 @@
 
     const pathError = $derived.by(() => {
         if (isRenameMode) return renamePathError()
-        if (singleTransfer && !namedTarget) return validateNotEmpty('').message
+        // No target: a server with no share (`\\nas` on Windows) says so; anything else lacks a name.
+        if (singleTransfer && !namedTarget) return validateShareNamed(editedPath).message || validateNotEmpty('').message
         const structural = validateDirectoryPath(namedTarget ? joinPath(namedTarget.parent, namedTarget.name) : editedPath)
         if (structural.severity === 'error') return structural.message
         // `fullPath` is already rooted; `anchorOnVolume` passes a path on the volume through.

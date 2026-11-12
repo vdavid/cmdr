@@ -264,6 +264,23 @@ space after each comma). Never a block inside a sentence, never `{platform}` int
 - **Tests**: `withPlatform('macos' | 'windows' | 'linux')` from `#lib/platform/test-platform` moves both the select and
   the split; Vitest's fallback is Linux, so an assertion on macOS text names macOS.
 
+### Path params
+
+`pathParam(path)` (`messages.svelte.ts`) marks a param as an app path, and `format()` spells only those through
+`#lib/path/grammar`'s `shownPath` (`C:\Users\ada`, `\\server\share\x` on Windows; a no-op elsewhere). Every other param
+passes to the engine untouched, on every OS.
+
+- **Decision/Why: the caller marks it, ❌ nothing guesses** (#1118). Running every string param through `shownPath` read
+  a drive's name (`C:`) as the root `C:\`, and any `a//b`-shaped prose as a share. A smarter guess would still be a
+  guess; the caller is the one place that knows the value is a path. The cost is one wrapper per path-carrying call
+  site, and a missed one reads with `/` on Windows, which is the honest wire spelling, never mangled text.
+- **Which call sites mark**: those that pass an app path the person reads (a favorite's path, a scan's current folder,
+  Go to path's nearest ancestor, the operation log's route). A remote server's own path (`smbLinkConsent`'s target, a
+  restic snapshot's paths), a NAME (`{folder}`, `{name}`), and an already-shown string (the breadcrumb's `displayPath`)
+  don't. Raw `errors.*` copy never meets `t()` and interpolates its own `{path}`.
+- `PathParam` is an object with a private symbol key, so `t()` unwraps it before formatting; IntlMessageFormat never
+  sees one.
+
 ### Migrating copy to platform blocks
 
 `apps/desktop/scripts/apply-platform-copy.ts` turns resolved rows of `docs/notes/windows-port/copy-final.json` (one row

@@ -2,7 +2,7 @@
     import type { Snippet } from 'svelte'
     import LinkButton from '#lib/ui/LinkButton.svelte'
     import Trans from '#lib/intl/Trans.svelte'
-    import { tString } from '#lib/intl/messages.svelte.js'
+    import { pathParam, tString } from '#lib/intl/messages.svelte.js'
     import { openExternalUrl } from '#lib/tauri-commands/index.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import type { PermissionBlocker } from './update-state.svelte'
@@ -44,7 +44,7 @@
     {#if blocker === 'notWritableAdminUser'}
         <span class="unwritable-headline">{tString('updates.unwritable.adminHeadline', { version })}</span>
         <span class="unwritable-detail">
-            <Trans key="updates.unwritable.adminDetail" params={{ path: bundlePath }} snippets={{ website: websiteLink }} />
+            <Trans key="updates.unwritable.adminDetail" params={{ path: pathParam(bundlePath) }} snippets={{ website: websiteLink }} />
         </span>
     {:else}
         <span class="unwritable-headline">{tString('updates.unwritable.standardHeadline', { version })}</span>

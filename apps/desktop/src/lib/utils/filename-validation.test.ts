@@ -167,6 +167,20 @@ describe('validateDirectoryPath', () => {
     expect(longName.message).toMatch(/A folder name in the path is too long/)
   })
 
+  /** #1118: `//server` names no share, so the grammar reads no folder there; say so before the backend does. */
+  it.each(['\\\\server', '//server', '\\\\server\\', '//server/'])('asks for the share in %s on Windows', (path) => {
+    onTestFinished(withPlatform('windows'))
+    expect(validateDirectoryPath(path)).toEqual({
+      severity: 'error',
+      message: 'Add the share’s name after the server, like \\\\server\\share',
+    })
+  })
+
+  it.each(['macos', 'linux'] as const)('keeps `//server` an ordinary absolute path on %s', (platform) => {
+    onTestFinished(withPlatform(platform))
+    expect(validateDirectoryPath('//server').severity).toBe('ok')
+  })
+
   it.each(['macos', 'linux'] as const)('keeps `\\` a name character on %s', (platform) => {
     onTestFinished(withPlatform(platform))
     const oneName = validateDirectoryPath(`/x/${'a'.repeat(200)}\\${'a'.repeat(100)}`)

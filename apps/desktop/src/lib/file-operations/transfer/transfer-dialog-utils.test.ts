@@ -2,8 +2,9 @@
  * Tests for transfer dialog utility functions
  */
 import { resolveTransferFilename, initialEditedPath, editedPathAfterOperationChange } from './transfer-dialog-utils'
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach, onTestFinished } from 'vitest'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import {
   conflictTitle,
   containingFolder,
@@ -394,6 +395,40 @@ describe('complete copy targets', () => {
 
   it('still requires a filename after a trailing slash when no source name is known', () => {
     expect(resolveTransferFilename('/tmp/', '/Users/test')).toBeNull()
+  })
+
+  /** #1118: a typed Windows path is absolute, and its drive or share root survives the split. */
+  describe('on Windows', () => {
+    beforeEach(() => {
+      onTestFinished(withPlatform('windows'))
+    })
+
+    it.each([
+      ['C:\\Users\\ada\\copy.txt', 'C:/Users/ada', 'copy.txt'],
+      ['C:/Users/ada/copy.txt', 'C:/Users/ada', 'copy.txt'],
+      ['c:\\temp\\x.txt', 'C:/temp', 'x.txt'],
+      ['D:\\x.txt', 'D:/', 'x.txt'],
+      ['\\\\nas\\share\\docs\\x.txt', '//nas/share/docs', 'x.txt'],
+      ['folder\\copy.txt', 'C:/Users/ada/folder', 'copy.txt'],
+      ['..\\copy.txt', 'C:/Users', 'copy.txt'],
+      ['..\\..\\..\\..\\copy.txt', 'C:/', 'copy.txt'],
+      ['~\\copy.txt', 'C:/Users/home', 'copy.txt'],
+      ['/DCIM/copy.txt', '/DCIM', 'copy.txt'],
+    ])('resolves %s to its exact parent and filename', (entered, parent, name) => {
+      expect(resolveTransferFilename(entered, 'C:/Users/ada', 'C:/Users/home')).toEqual({ parent, name })
+    })
+
+    it.each([
+      ['D:\\backup\\', 'D:/backup'],
+      ['C:\\', 'C:/'],
+      ['folder\\', 'C:/Users/ada/folder'],
+    ])('reads the trailing separator in %s as "into this folder"', (entered, parent) => {
+      expect(resolveTransferFilename(entered, 'C:/Users/ada', '', 'notes.txt')).toEqual({ parent, name: 'notes.txt' })
+    })
+
+    it.each(['C:', '\\\\nas', '\\\\nas\\'])('finds no target in %s', (entered) => {
+      expect(resolveTransferFilename(entered, 'C:/Users/ada')).toBeNull()
+    })
   })
 })
 

@@ -9,7 +9,7 @@
  */
 
 import type { FavoriteReach, FavoriteTarget } from '#lib/ipc/bindings.js'
-import { tString } from '#lib/intl/messages.svelte.js'
+import { pathParam, tString } from '#lib/intl/messages.svelte.js'
 import type { IconName } from '#lib/ui/icons/icon-map.js'
 import { volumeScheme, type VolumeScheme } from '#lib/volume-scheme.js'
 import type { VolumeInfo } from '../types'
@@ -91,7 +91,7 @@ export function wordFavoriteRefusal(
       return {
         message: tString('fileExplorer.navigation.favoriteUnreachable.notFound', {
           name: favorite.name,
-          path: favorite.path,
+          path: pathParam(favorite.path),
         }),
         action: 'remove-favorite',
       }

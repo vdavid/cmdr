@@ -1,7 +1,7 @@
 <script lang="ts">
     import Button from '#lib/ui/Button.svelte'
     import Icon from '#lib/ui/Icon.svelte'
-    import { tString } from '#lib/intl/messages.svelte.js'
+    import { pathParam, tString } from '#lib/intl/messages.svelte.js'
 
     interface Props {
         originalPath: string
@@ -32,7 +32,7 @@
     <div class="banner-content">
         <div class="banner-header">
             <span class="warning-icon"><Icon name="triangle-alert" size={16} aria-hidden="true" /></span>
-            <span class="banner-message">{tString('fileExplorer.unreachable.title', { path: originalPath })}</span>
+            <span class="banner-message">{tString('fileExplorer.unreachable.title', { path: pathParam(originalPath) })}</span>
         </div>
         <p class="banner-detail">
             {#if gaveUp}

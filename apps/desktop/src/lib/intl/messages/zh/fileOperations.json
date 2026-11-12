@@ -355,7 +355,7 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "8331da7"
   },
-  "fileOperations.transferDialog.namedFolderHint": "“{target}”是现有文件夹，所以“{name}”会改用这个文件夹的名称。要把“{name}”放进这个文件夹，请在路径末尾加上“/”。",
+  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.} other {“{target}”是现有文件夹，所以“{name}”会改用这个文件夹的名称。要把“{name}”放进这个文件夹，请在路径末尾加上“/”。}}",
   "@fileOperations.transferDialog.namedFolderHint": {
     "sourceHash": "41dc88c"
   },
@@ -1350,6 +1350,10 @@
   "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {路径必须是绝对路径（以 / 开头）}}",
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "@fileOperations.validation.pathShareMissing": {
+    "sourceHash": "53f173e"
   },
   "fileOperations.validation.pathNullChar": "路径中包含空字符",
   "@fileOperations.validation.pathNullChar": {

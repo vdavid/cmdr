@@ -355,7 +355,7 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "8331da7"
   },
-  "fileOperations.transferDialog.namedFolderHint": "「{target}」是現有的資料夾，所以「{name}」會改用這個資料夾的名稱。若要把「{name}」放進這個資料夾，請在路徑結尾加上「/」。",
+  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.} other {「{target}」是現有的資料夾，所以「{name}」會改用這個資料夾的名稱。若要把「{name}」放進這個資料夾，請在路徑結尾加上「/」。}}",
   "@fileOperations.transferDialog.namedFolderHint": {
     "sourceHash": "41dc88c"
   },
@@ -1350,6 +1350,10 @@
   "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {路徑必須是絕對路徑（以 / 開頭）}}",
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "@fileOperations.validation.pathShareMissing": {
+    "sourceHash": "53f173e"
   },
   "fileOperations.validation.pathNullChar": "路徑裡有 Null 字元",
   "@fileOperations.validation.pathNullChar": {

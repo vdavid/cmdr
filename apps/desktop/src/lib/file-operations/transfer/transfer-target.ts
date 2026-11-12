@@ -2,6 +2,7 @@
 import type { VolumeInfo } from '#lib/file-explorer/types.js'
 import { capabilitiesForPane } from '#lib/file-explorer/pane/volume-capabilities.js'
 import { isPathOnVolume } from '#lib/path/canonical.js'
+import { parsePath, typedSeparators } from '#lib/path/grammar.js'
 import { DEFAULT_VOLUME_ID } from '#lib/tauri-commands/index.js'
 import { containingFolder, getFolderName, resolveTransferFilename, toVolumeRelativePath } from './transfer-dialog-utils'
 
@@ -11,6 +12,19 @@ function volumeRoot(volumes: VolumeInfo[], id: string): string {
 
 function parentForVolume(parent: string, root: string, localTarget: boolean): string {
   return localTarget || isPathOnVolume(parent, root) ? toVolumeRelativePath(parent, root) : parent
+}
+
+/**
+ * The typed destination with its separators turned, and how it's anchored: relative (from the
+ * source folder), or absolute. A drive or share path (`C:/…`, `//nas/share/…`) can only be this
+ * machine's, whatever volume is picked; a `/…` is the picked volume's own.
+ */
+function readEntered(enteredPath: string): { entered: string; relative: boolean; onThisMachine: boolean } {
+  const entered = typedSeparators(enteredPath.trim())
+  const kind = parsePath(entered)?.kind
+  const onThisMachine = kind === 'drive' || kind === 'unc'
+  const relative = !entered.startsWith('/') && !entered.startsWith('~/') && !onThisMachine
+  return { entered, relative, onThisMachine }
 }
 
 export function resolveTransferTarget(args: {
@@ -23,8 +37,7 @@ export function resolveTransferTarget(args: {
   homePath: string
 }): { parent: string; name: string; volumeId: string; path: string; fullPath: string } | null {
   const { enteredPath, sourceFolderPath, sourcePath, sourceVolumeId, selectedVolumeId, volumes, homePath } = args
-  const entered = enteredPath.trim()
-  const relative = !entered.startsWith('/') && !entered.startsWith('~/')
+  const { entered, relative, onThisMachine } = readEntered(enteredPath)
   const sourceRoot = volumeRoot(volumes, sourceVolumeId)
   const sourceFolder = containingFolder(sourcePath) ?? sourceFolderPath
   const sourceIsLocal = capabilitiesForPane(sourceVolumeId, sourceFolder).kind === 'local'
@@ -38,7 +51,7 @@ export function resolveTransferTarget(args: {
   const selectedRoot = volumeRoot(volumes, selectedVolumeId)
   const localTarget = relative
     ? sourceIsLocal
-    : entered.startsWith('~/') || capabilitiesForPane(selectedVolumeId, selectedRoot).kind === 'local'
+    : entered.startsWith('~/') || onThisMachine || capabilitiesForPane(selectedVolumeId, selectedRoot).kind === 'local'
   let volumeId = relative ? sourceVolumeId : selectedVolumeId
   if (localTarget) {
     volumeId =

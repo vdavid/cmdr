@@ -33,7 +33,7 @@
         removeRecentPath as removeRecentPathFromState,
     } from './recent-paths-state.svelte'
     import Icon from '#lib/ui/Icon.svelte'
-    import { tString } from '#lib/intl/messages.svelte.js'
+    import { pathParam, tString } from '#lib/intl/messages.svelte.js'
 
     interface Props {
         /** The focused pane's current path; relative input resolves against it. */
@@ -101,7 +101,7 @@
         if (value !== inputValue) return
         hint =
             resolution?.kind === 'nearestAncestor'
-                ? { text: tString('goToPath.dialog.ancestorHint', { dir: resolution.ancestorDir }), tone: 'warning' }
+                ? { text: tString('goToPath.dialog.ancestorHint', { dir: pathParam(resolution.ancestorDir) }), tone: 'warning' }
                 : null
     }
 

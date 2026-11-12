@@ -512,7 +512,7 @@
     "description": "Informational line in the transfer dialog when exactly one of the folders being copied or moved already exists at the destination. Its contents merge into the existing folder; the folder itself is never replaced. 'there' is the destination folder. Neutral, not a warning.",
     "screenshot": "transfer-confirmation-copy-single.png"
   },
-  "fileOperations.transferDialog.namedFolderHint": "“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “/”.",
+  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.} other {“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “/”.}}",
   "@fileOperations.transferDialog.namedFolderHint": {
     "description": "Hint in the copy/move dialog when a single item's destination path ends in an existing folder under a different name, which usually means the user pasted a folder path meaning 'into this folder'. Keep the slash character as is.",
     "placeholders": {
@@ -2134,6 +2134,10 @@
   "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {Path must be absolute (start with /)}}",
   "@fileOperations.validation.pathNotAbsolute": {
     "description": "Inline validation message for a directory-path field, shown when the path doesn’t start at the file-system root. \"absolute\" means a full path from the root; the \"/\" is the literal root slash and must stay as-is."
+  },
+  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "@fileOperations.validation.pathShareMissing": {
+    "description": "Inline validation message for a directory-path field (the copy/move destination), shown only on Windows when the typed path names a network server but no shared folder on it (like \\\\server alone). A \"share\" is a shared folder on that server. \"\\\\server\\share\" is the literal Windows network-path form: keep its backslashes and the words \"server\" and \"share\" as placeholders a person recognizes."
   },
   "fileOperations.validation.pathNullChar": "Path contains a null character",
   "@fileOperations.validation.pathNullChar": {

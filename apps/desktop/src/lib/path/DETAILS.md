@@ -83,13 +83,17 @@ root without its trailing `\`), and every other text unchanged. It reaches the s
 
 - `#lib/utils/display-path`'s `displayPath` (every shown path: the breadcrumb readout, tooltips, dialogs, toasts, the
   operation log, `useShortenMiddle`), and `copiedPath`, so Copy path pastes `C:\Users\ada` on Windows.
-- `t()` runs it over each string PARAM (`intl/messages.svelte.ts`), because a formatted message is prose, where a `/`
-  may be "and/or". Off Windows it's a no-op.
+- `t()` runs it over each param its caller marked with `pathParam(…)` (`intl/messages.svelte.ts`), and over nothing
+  else: a formatted message is prose, where a `/` may be "and/or", and a guess read a drive's name (`C:`) as `C:\` and
+  an `a//b` as a share (#1118). An unmarked path param reads with `/` on Windows, which is honest; a guessed one mangled
+  text. Off Windows it's a no-op.
 - The breadcrumb's separator glyph and its segment tooltips (`shownSeparator`).
 
 The other direction is `fromUserInput`: on Windows both `\` and `/` separate and a local path comes out normalized
 (`c:\Users\` → `C:/Users`); on macOS and Linux the text is untouched, since `\` is a legal filename character there. Go
-to path's resolver call and `validateDirectoryPath` use it.
+to path's resolver call and `validateDirectoryPath` use it. `typedSeparators` is its first half alone (separators
+turned, nothing normalized), for the transfer destination, where a trailing separator means "into this folder".
+`validateShareNamed` refuses `\\server` with no share there, which the grammar reads as no path at all.
 
 ## Case sensitivity is the volume's
 
@@ -102,6 +106,9 @@ No call site passes it yet, on purpose. Every frontend path comparison today com
 (a listing, a tab, a favorite, a volume root), and the backend spells one file one way, so the exact compare is right on
 any volume. Where a person's typing meets a listing, the comparison is case-insensitive by design on every volume:
 type-to-jump (a search) and `validateConflict` (a case-only twin is worth a warning even where it's legal). The one
-typed-text-meets-volume site, the transfer dialog picking a destination volume (`transfer-target.ts`), needs its whole
-chain (`toVolumeRelativePath`, `anchorOnVolume`) to fold alike, or it picks a volume and then fails to slice its root
-off; that's Windows work, with the flag already on the record.
+typed-text-meets-volume site is the transfer dialog picking a destination volume (`transfer-target.ts`). It reads a
+typed path through the grammar (`typedSeparators`, `parsePath`): a drive or share path is always this machine's and
+keeps its root through the split, so `D:\backup\x` lands on `D:/` (#1118). A Windows local volume is a drive or share
+ROOT, and the grammar uppercases the drive letter, so membership there needs no fold. A volume mounted at a FOLDER on a
+case-insensitive disk would: its whole chain (`isPathOnVolume`, `toVolumeRelativePath`, `anchorOnVolume`) has to fold
+alike, or it picks a volume and then fails to slice its root off. That waits for such a volume to exist on Windows.

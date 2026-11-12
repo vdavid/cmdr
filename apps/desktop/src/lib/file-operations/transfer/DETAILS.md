@@ -160,9 +160,12 @@ live here:
 A single-item Copy/Move target always includes the destination leaf, prefilled with the original name. Absolute local
 paths name the exact location, including the mount root; an absolute remote path names a location within the selected
 volume. Relative paths resolve from the source folder and volume, including nested paths and `..`; `~/` resolves from
-the local home directory. `resolveTransferFilename` splits and normalizes the path, and `transfer-target.ts` selects the
-effective volume. Empty leaves and final `.` / `..` components cannot confirm. A folder copy names the copied or moved
-folder itself. Multiple selections still target a directory, preserving each selected item's name.
+the local home directory. `resolveTransferFilename` splits and normalizes the path through the grammar
+(`#lib/path/grammar`), and `transfer-target.ts` selects the effective volume. On Windows a typed `\` separates like `/`
+(`typedSeparators`), and a drive or share path (`D:\backup\x`, `\\nas\share\x`) is absolute and always this machine's,
+whatever volume is picked, so its root survives the split; `\\nas` with no share is refused with its own message
+(`validateShareNamed`, #1118). Empty leaves and final `.` / `..` components cannot confirm. A folder copy names the
+copied or moved folder itself. Multiple selections still target a directory, preserving each selected item's name.
 
 **A trailing slash means "into this folder"**: `/Users/me/Documents/` keeps the item's own name inside `Documents`.
 Without it the last segment is always the new name, so a pasted folder path would rename the item after that folder: a

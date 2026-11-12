@@ -21,7 +21,7 @@
     import SectionCard from '#lib/ui/SectionCard.svelte'
     import Button from '#lib/ui/Button.svelte'
     import CopyBox from '#lib/ui/CopyBox.svelte'
-    import { tString } from '#lib/intl/messages.svelte.js'
+    import { pathParam, tString } from '#lib/intl/messages.svelte.js'
     import { getSettingDefinition, setSetting } from '#lib/settings/index.js'
     import { createShouldShow, anyVisible } from '#lib/settings/settings-search.js'
     import { getAdbInstallStatus, recheckAdbInstall } from '#lib/tauri-commands/index.js'
@@ -124,7 +124,7 @@
                     <div class="status-body">
                         <span class="status-value">
                             {#if status?.binaryPath}
-                                {tString('settings.adb.status.foundAt', { path: status.binaryPath })}
+                                {tString('settings.adb.status.foundAt', { path: pathParam(status.binaryPath) })}
                             {:else}
                                 {tString('settings.adb.status.notFound')}
                             {/if}

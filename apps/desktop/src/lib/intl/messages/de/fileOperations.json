@@ -357,7 +357,7 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "8331da7"
   },
-  "fileOperations.transferDialog.namedFolderHint": "„{target}“ ist ein bestehender Ordner, also bekäme „{name}“ den Namen dieses Ordners. Um „{name}“ in den Ordner zu legen, lass den Pfad auf „/“ enden.",
+  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.} other {„{target}“ ist ein bestehender Ordner, also bekäme „{name}“ den Namen dieses Ordners. Um „{name}“ in den Ordner zu legen, lass den Pfad auf „/“ enden.}}",
   "@fileOperations.transferDialog.namedFolderHint": {
     "sourceHash": "41dc88c"
   },
@@ -1355,6 +1355,10 @@
   "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {Der Pfad muss absolut sein (mit / beginnen)}}",
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
+  },
+  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "@fileOperations.validation.pathShareMissing": {
+    "sourceHash": "53f173e"
   },
   "fileOperations.validation.pathNullChar": "Der Pfad enthält ein Nullzeichen",
   "@fileOperations.validation.pathNullChar": {
