@@ -31,7 +31,7 @@ viewer bar. `macos_appkit.rs`: the objc2 boundary. One line per file: DETAILS §
   label moves through `MenuState::set_item_label`, ❌ never a bare `set_text`.
 - **Four families skip `"execute-command"`**: CheckMenuItems auto-toggle (they send `"settings-changed"` /
   `"view-mode-changed"`); sort resets its checks, then sends `"menu-sort"`; the edit items are Custom (❌ not
-  Predefined), forwarding the native selector via `send_native_edit_action()` outside the main window, or ⌘A and the
+  Predefined), running the text edit via `send_native_edit_action()` outside the main window, or ⌘A and the
   clipboard die there; the VIEWER bar's four are Custom on their own `VIEWER_*` ids (Copy / Select all emit
   `ViewerEditAction`; Cut / Paste forward to its search box, ❗ Predefined off macOS or ⌘X / ⌘V die there).
 - **Enabled state has ONE writer, `apply_menu_item_states`**: store a new input in the crate's `MenuItemInputs` /

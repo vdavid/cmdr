@@ -61,6 +61,17 @@ export function focusWindow(windowId: string): void {
   xdotool('click', '1')
 }
 
+/**
+ * Gives one X window the input focus and clicks near its bottom-left corner, so GTK's own focus
+ * lands on the webview without the click hitting a control in the middle of the page.
+ */
+export function focusWindowAtCorner(windowId: string): void {
+  const { height } = size(windowId)
+  xdotool('windowfocus', '--sync', windowId)
+  xdotool('mousemove', '--window', windowId, '8', String(Math.max(0, height - 8)))
+  xdotool('click', '1')
+}
+
 /** Presses one chord as a real keyboard would, in xdotool's spelling (`alt+f`, `Escape`). */
 export function pressRealKey(chord: string): void {
   xdotool('key', '--clearmodifiers', chord)

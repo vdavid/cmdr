@@ -125,13 +125,6 @@ pub(crate) enum NativeEditSelector {
 /// viewer's search box is the only editable field in that window. ❗ The viewer bar's Copy and
 /// Select all are deliberately absent — they act on the viewer's own offset-based selection,
 /// which no native selector can reach (`viewer_edit_action_for`).
-#[cfg_attr(
-    not(target_os = "macos"),
-    allow(
-        dead_code,
-        reason = "the responder chain is macOS-only; the mapping is still pinned by tests everywhere"
-    )
-)]
 pub(crate) fn native_edit_selector_for(menu_id: &str) -> Option<NativeEditSelector> {
     match menu_id {
         EDIT_CUT_ID | VIEWER_EDIT_CUT_ID => Some(NativeEditSelector::Cut),
@@ -142,15 +135,15 @@ pub(crate) fn native_edit_selector_for(menu_id: &str) -> Option<NativeEditSelect
     }
 }
 
-/// Sends a native edit action (copy:/cut:/paste:/selectAll:) through the responder chain.
+/// Runs menu item `menu_id`'s native text edit (cut, copy, paste, select all) in the focused
+/// window's focused field.
 ///
 /// Used when a non-main window is focused: the custom Edit/Select menu items can't use the
-/// native responder chain like PredefinedMenuItems do, so we replicate it manually via
-/// `NSApplication.sendAction:to:from:` with nil target (routes to the first responder).
-#[cfg(target_os = "macos")]
-fn send_native_edit_action(menu_id: &str) {
+/// native machinery like PredefinedMenuItems do, and the bar took the key before the page saw it,
+/// so this is the key's only road (`super::focused_field_edit`).
+fn send_native_edit_action(app: &AppHandle<tauri::Wry>, menu_id: &str) {
     if let Some(selector) = native_edit_selector_for(menu_id) {
-        send_native_edit_selector(selector);
+        super::focused_field_edit::run_in_focused_window(app, selector);
     }
 }
 
@@ -357,8 +350,7 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     // main bar's lane below: that one asks whether the MAIN window is focused, and a viewer
     // click would answer no and land in the same place by accident rather than by rule.
     if id == VIEWER_EDIT_CUT_ID || id == VIEWER_EDIT_PASTE_ID {
-        #[cfg(target_os = "macos")]
-        send_native_edit_action(id);
+        send_native_edit_action(app, id);
         return;
     }
 
@@ -418,9 +410,8 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             }
             .emit_to(app, "main");
         } else {
-            // Send the native action to the first responder chain
-            #[cfg(target_os = "macos")]
-            send_native_edit_action(id);
+            // The focused window's focused field does the text edit.
+            send_native_edit_action(app, id);
         }
         return;
     }

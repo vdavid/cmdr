@@ -342,6 +342,11 @@ freedesktop-icons = "0.4"
 # window Tauri hands us. Tauri and muda already link gtk 0.18 (the last gtk3-rs release), so this
 # adds no crate; the version must stay Tauri's, or `gtk_window()` returns a different type.
 gtk = "0.18"
+# Edit > Cut / Copy / Paste / Select all in a window other than the main one
+# (`menu/focused_field_edit/`): `WebViewExt::execute_editing_command` on the view Tauri hands us.
+# Tauri's wry already links webkit2gtk 2.0, so this adds no crate; the version must stay wry's, or
+# `PlatformWebview::inner()` returns a different type.
+webkit2gtk = "2.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 # The custom updater's trust check: unpacking the release tarball and requiring Cmdr's Developer

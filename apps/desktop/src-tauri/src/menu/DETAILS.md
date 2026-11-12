@@ -52,7 +52,7 @@ window focus context.
 - `menu_handlers.rs`: `handle_menu_event`, the `.on_menu_event` dispatcher (a bar row's view-mode and sort lanes come
   from `cmdr_menu::click::bar_click`), plus the macOS
   post-construction wrappers `cleanup_macos_menus` / `set_macos_menu_icons` and
-  `send_native_edit_action` over the pure `native_edit_selector_for` (the actual objc2 FFI lives in `macos_appkit.rs`)
+  `send_native_edit_action` over the pure `native_edit_selector_for` (the per-OS edit lives in `focused_field_edit/`)
   and `focused_viewer_label` / `viewer_edit_action_for`, which route the viewer bar's own items to the viewer in front.
 - `accelerators.rs`: `frontend_shortcut_to_accelerator` (the crate's bar conversion for
   this platform), `update_menu_item_accelerator` (swapping one on a live item), and the muda-parsing tests.
@@ -1360,10 +1360,13 @@ class of bug.
   Select all. In `handle_menu_event`, these are handled specially: if the main window is focused,
   they route through `execute-command` so the frontend can decide between file and text semantics
   (via `document.activeElement` check). If a non-main window is focused,
-  `send_native_edit_action()` in `menu_handlers.rs` sends the native
-  `copy:`/`cut:`/`paste:`/`selectAll:` selector through the responder chain via
-  `NSApplication.sendAction:to:from:`, replicating what PredefinedMenuItems do internally. This
-  ensures text clipboard and text select-all work natively in all windows. Undo and Redo remain
+  `send_native_edit_action()` in `menu_handlers.rs` runs the text edit in that window's focused field
+  (`focused_field_edit/`): on macOS the native `copy:`/`cut:`/`paste:`/`selectAll:` selector through the
+  responder chain via `NSApplication.sendAction:to:from:`, replicating what PredefinedMenuItems do
+  internally; on Linux WebKitGTK's `execute_editing_command` on the focused window's view, since GTK
+  takes the bar's `Ctrl+X` / `Ctrl+C` / `Ctrl+V` before the page sees them (real X keys in a Settings field
+  reached no keydown and cut nothing without it: `menu-mnemonic-mask.spec.ts`, 2026-11-12). This ensures text
+  clipboard and text select-all work natively in all windows. Undo and Redo remain
   PredefinedMenuItems since they only apply to text fields. ❗ In practice the native branch serves Settings and the
   other main-bar windows: a focused VIEWER has swapped the viewer bar in, and all four of its items carry their own ids
   and their own lanes (§ "Per-window menu activation"). The viewer's Cut / Paste land in the same

@@ -67,6 +67,7 @@ mod display_accelerators;
 mod file_context_menu;
 #[cfg(target_os = "macos")]
 mod file_provider_items;
+mod focused_field_edit;
 pub mod install;
 mod item_states;
 // `pub(crate)` for one helper: `dock::menu` builds its own `NSMenu` by hand (Tauri

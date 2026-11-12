@@ -266,8 +266,7 @@
       "outsideSeam": 4
     },
     "apps/desktop/src-tauri/src/menu/menu_handlers.rs": {
-      "negated": 1,
-      "outsideSeam": 18
+      "outsideSeam": 14
     },
     "apps/desktop/src-tauri/src/menu/menu_structure.rs": {
       "negated": 2,

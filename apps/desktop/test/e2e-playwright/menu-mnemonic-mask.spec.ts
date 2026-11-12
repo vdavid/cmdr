@@ -25,8 +25,14 @@ import {
   type PageLike,
 } from './helpers.js'
 import { ensureMcpClient } from '../e2e-shared/mcp-client.js'
-import { focusMainWindow, focusWindow, pressRealKey, visibleTopLevelWindows } from './helpers/x11-keys.js'
-import { closeScopedWindow, openQueueWindow, QUEUE_WINDOW_LABEL } from './helpers/windows.js'
+import {
+  focusMainWindow,
+  focusWindow,
+  focusWindowAtCorner,
+  pressRealKey,
+  visibleTopLevelWindows,
+} from './helpers/x11-keys.js'
+import { closeScopedWindow, openQueueWindow, openSettingsWindowViaProd, QUEUE_WINDOW_LABEL } from './helpers/windows.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import { defaultKey } from './helpers/registry-keys.js'
 import { closeSearchDialog, getActiveMode, openSearchDialog, pollActiveMode, SEARCH_INPUT } from './search-helpers.js'
@@ -168,6 +174,67 @@ test.describe('Menu bar mnemonics while a dialog is up (Linux)', () => {
     } finally {
       await removeKeyRecorder(queue)
       await closeScopedWindow(main, queue, QUEUE_WINDOW_LABEL)
+    }
+  })
+
+  // Settings wears the main bar on Linux, whose Edit rows register Ctrl+X / C / V / A. Those keys
+  // must still edit the focused field there, whichever road carries them.
+  test('real Ctrl+A, X, V, and C edit a text field in the Settings window, past the bar it wears', async ({
+    tauriPage,
+  }) => {
+    await ensureAppReady(tauriPage)
+    const main = tauriPage as TauriPage
+    const atStart = visibleTopLevelWindows()
+    const settings = await openSettingsWindowViaProd(main)
+    const field = '.search-container input.text-field-control'
+    const value = () =>
+      settings.evaluate<string>(`document.querySelector(${JSON.stringify(field)})?.value ?? 'missing'`)
+    const selection = () =>
+      settings.evaluate<string>(`(function(){
+          var el = document.querySelector(${JSON.stringify(field)});
+          return el ? el.selectionStart + '-' + el.selectionEnd : 'missing';
+      })()`)
+    try {
+      await settings.waitForSelector(field, waitBudget(8000))
+      await expect.poll(() => newWindowsSince(atStart).length, { timeout: waitBudget(5000) }).toBe(1)
+      const [settingsWindow] = newWindowsSince(atStart)
+      // A window that just opened can still be taking focus: type one probe letter until it lands.
+      await expect
+        .poll(
+          async () => {
+            focusWindowAtCorner(settingsWindow)
+            await settings.evaluate(`(function(){
+                var el = document.querySelector(${JSON.stringify(field)});
+                el.value = ''; el.focus();
+            })()`)
+            pressRealKey('x')
+            return value()
+          },
+          { timeout: waitBudget(8000) },
+        )
+        .toBe('x')
+      for (const letter of ['y', 'z']) pressRealKey(letter)
+      await expect.poll(value, { timeout: waitBudget(3000) }).toBe('xyz')
+
+      pressRealKey('ctrl+a')
+      await expect.poll(selection, { timeout: waitBudget(3000) }).toBe('0-3')
+      pressRealKey('ctrl+x')
+      await expect.poll(value, { timeout: waitBudget(3000) }).toBe('')
+      pressRealKey('ctrl+v')
+      await expect.poll(value, { timeout: waitBudget(3000) }).toBe('xyz')
+      pressRealKey('ctrl+a')
+      pressRealKey('ctrl+c')
+      pressRealKey('End')
+      pressRealKey('ctrl+v')
+      await expect.poll(value, { timeout: waitBudget(3000) }).toBe('xyzxyz')
+      expect(newWindowsSince(atStart)).toEqual([settingsWindow])
+    } finally {
+      if (newWindowsSince(atStart).length > 1) pressRealKey('Escape')
+      await settings.evaluate(`(function(){
+          var el = document.querySelector(${JSON.stringify(field)});
+          if (el) { el.value = ''; el.dispatchEvent(new Event('input', { bubbles: true })); }
+      })()`)
+      await closeScopedWindow(main, settings, 'settings')
     }
   })
 })
