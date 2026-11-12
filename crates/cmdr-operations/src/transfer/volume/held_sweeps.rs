@@ -5,8 +5,9 @@
 //!
 //! The must-holds, in short: a source goes only after a barrier that STARTED
 //! after its copy landed confirmed; a refused barrier keeps its whole batch; a
-//! cancel or a failure sweeps nothing more (❌ only a completed loop sweeps the
-//! tail). The rule, its why, and its tests: `../DETAILS.md` § Durability,
+//! cancel sweeps nothing more, while a failed loop still sweeps the tail best
+//! effort, its own error the one reported. The rule, its why, and its tests:
+//! `../DETAILS.md` § Durability,
 //! "Cross-volume move".
 
 use std::collections::HashSet;

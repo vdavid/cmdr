@@ -634,13 +634,30 @@ pub async fn move_volumes_with_progress(
         super::super::transfer_probe::DriverPhase::PostLoop,
         "post-loop bookkeeping",
     );
-    // The closing barrier and the sweeps it proves, ONLY on a completed loop: a
-    // cancel or a failure keeps every source still held, in both places
-    // (`held_sweeps.rs`). First, so `displaced` below sees what moved in full.
-    if matches!(outcome.intent, PostLoopIntent::Completed)
-        && let Err(e) = held_sweeps.sweep_held().await
-    {
-        outcome.intent = PostLoopIntent::stopped_by(e);
+    // The closing barrier and the sweeps it proves, before `displaced` below so
+    // it sees what moved in full (`held_sweeps.rs`). A cancel keeps every source
+    // still held, in both places. A failure elsewhere still finishes the landed
+    // copies it had nothing to do with, best effort: the loop's own error stays
+    // the one reported, and a barrier or sweep that refuses here keeps its
+    // sources. A failure that IS a held source's (`SourceNotRemoved`) isn't
+    // retried, so what it reports stays true.
+    match &outcome.intent {
+        PostLoopIntent::Completed => {
+            if let Err(e) = held_sweeps.sweep_held().await {
+                outcome.intent = PostLoopIntent::stopped_by(e);
+            }
+        }
+        PostLoopIntent::Cancelled | PostLoopIntent::Failed(WriteOperationError::SourceNotRemoved { .. }) => {}
+        PostLoopIntent::Failed(_) => {
+            // The refusal itself is logged where it happened, path and all.
+            if held_sweeps.sweep_held().await.is_err() {
+                log::warn!(
+                    target: "move",
+                    "move_between_volumes: {} landed sources stay in both places after the move failed",
+                    held_sweeps.unswept()
+                );
+            }
+        }
     }
 
     // The ledger's count, ❌ never `outcome.files_done` (top-level sources).

@@ -1175,10 +1175,18 @@ replay a lost entry.
   - A refused barrier keeps the whole batch and answers `SourceNotRemoved` for its first source (the copy landed, the
     original stayed), the cause mapped as the DESTINATION's. Earlier batches stay swept.
   - A sweep that refuses one original stops there with `SourceNotRemoved` for that item; the rest of its batch stays.
-  - A cancel (before or during a batch) and a failure anywhere in the loop sweep nothing more: every held source stays
-    in both places, its last `write-source-item-done` the copy's `source_removed: false`. ❌ Only a COMPLETED loop
-    sweeps the tail; a cancel never runs a barrier or a delete it didn't have to. `write-cancelled` counts what it kept
-    in `originals_still_in_place`. Pause parks the driver with the batch held, and the next due barrier takes it.
+  - A cancel (before or during a batch) sweeps nothing more: every held source stays in both places, its last
+    `write-source-item-done` the copy's `source_removed: false`, and `write-cancelled` counts them in
+    `originals_still_in_place`. ❌ A cancel never runs a barrier or a delete it didn't have to (a stop means stop).
+  - A loop that FAILS on something else (a full destination, one unreadable file) still runs the closing barrier and
+    sweeps the held batch, best effort: those copies had nothing to do with the failure, and leaving them in both places
+    would undo a move that worked. The loop's own error stays the one reported; a barrier or sweep that refuses there is
+    logged and keeps its sources (a destination that died fails the barrier, a source that died fails the sweep, so
+    nothing unproven goes). A failure that IS a held source's (`SourceNotRemoved`) isn't retried, so its report stays
+    true. What a failure still leaves held carries no count on the error: `WriteFailure` holds only the error, and the
+    one count on the wire (`ProgressAtStop::sources_left`) means every original still standing, a different number.
+    Their last `write-source-item-done` still says `source_removed: false`.
+  - Pause parks the driver with the batch held, and the next due barrier takes it.
   - Per source, the post-sweep steps run in one order (`left_in_source`, `displaced.landed_under`, the closing
     `write-source-item-done`, the journal rows), and sources keep copy order, so the journal's `seq` and the "last event
     is the verdict" rule hold. Across sources, a batch's first words all come before its last ones.
@@ -1187,7 +1195,7 @@ replay a lost entry.
     (`move_source_drift_tests.rs::an_original_saved_over_while_its_sweep_is_held_survives`). The move runs only through
     the serial driver (`drive_transfer_serial_async`); the concurrent driver serves copies. Pinned by
     `volume/move_held_sweep_tests.rs` (one barrier for 40 loose files, the interval pacing, a refused barrier mid-move
-    and at the close, a refused sweep, a failed copy) and
+    and at the close, a refused sweep, a failed copy that still sweeps and one whose closing barrier refuses) and
     `volume/move_cancel_tests.rs::cross_volume_move_cancel_mid_batch_keeps_the_held_originals`.
 - **Cross-FS move** (`move_with_staging`): Phase 2 copies to staging (recording staging files and dirs), Phase 3 moves
   the staged items out. Before the flush, `landed_at` maps every recorded staged path to where it lives now. Phase 3

@@ -271,39 +271,77 @@ async fn a_refused_sweep_keeps_the_rest_of_its_batch() {
     }
 }
 
-/// A copy that fails mid-move keeps the originals still held before it, in
-/// both places: only a completed loop sweeps its last batch.
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn a_failed_copy_keeps_the_originals_still_held() {
-    let engine = TestOperations::new();
-    let source_inner = volume("Source");
-    let sources = loose_files(&source_inner, 3).await;
-    let source = FaultyVolume::wrapping(Arc::clone(&source_inner))
+/// Moves three loose files whose third can't be read, with `dest` as the
+/// destination, and returns the copy's failure.
+async fn move_with_an_unreadable_third_file(
+    engine: &TestOperations,
+    source_inner: &Arc<InMemoryVolume>,
+    dest: &Arc<FaultyVolume<InMemoryVolume>>,
+) -> WriteFailure {
+    let sources = loose_files(source_inner, 3).await;
+    let source = FaultyVolume::wrapping(Arc::clone(source_inner))
         .failing_call_at(FaultyOp::OpenReadStream, "/f02.txt", 1, refused("/f02.txt"))
         .arc();
-    let dest = FaultyVolume::wrapping(volume("Dest")).arc();
-
     let failure = run_move(
-        &state_with_barrier_interval(&engine, Duration::MAX),
+        &state_with_barrier_interval(engine, Duration::MAX),
         &Arc::new(CollectorEventSink::new()),
         Arc::clone(&source) as Arc<dyn Volume>,
         &sources,
-        Arc::clone(&dest) as Arc<dyn Volume>,
+        Arc::clone(dest) as Arc<dyn Volume>,
     )
     .await
     .expect_err("the unreadable file fails the move");
-
     assert!(source.fault_fired(FaultyOp::OpenReadStream));
     assert!(
-        !matches!(failure.error, WriteOperationError::SourceNotRemoved { .. }),
-        "the copy's own failure: {:?}",
+        !matches!(
+            failure.error,
+            WriteOperationError::SourceNotRemoved { .. } | WriteOperationError::Cancelled { .. }
+        ),
+        "the copy's own failure is the one reported: {:?}",
         failure.error
     );
-    assert_eq!(
-        dest.calls_to(FaultyOp::FlushWrites),
-        0,
-        "nothing swept, so no barrier owed"
+    failure
+}
+
+/// A copy that fails mid-move still finishes the landed copies before it: they
+/// had nothing to do with the failure, so the closing barrier proves them and
+/// their originals go.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_failed_copy_still_sweeps_the_sources_held_before_it() {
+    let engine = TestOperations::new();
+    let source_inner = volume("Source");
+    let dest = FaultyVolume::wrapping(volume("Dest")).arc();
+
+    move_with_an_unreadable_third_file(&engine, &source_inner, &dest).await;
+
+    assert_eq!(dest.calls_to(FaultyOp::FlushWrites), 1, "one closing barrier");
+    for moved in ["/f00.txt", "/f01.txt"] {
+        assert!(
+            !source_inner.exists(Path::new(moved)).await,
+            "{moved}: proven, so moved"
+        );
+        assert!(dest.exists(Path::new(moved)).await, "{moved} landed");
+    }
+    assert!(
+        source_inner.exists(Path::new("/f02.txt")).await,
+        "the unreadable one stays"
     );
+}
+
+/// The same failure on a destination whose closing barrier also refuses: the
+/// held originals stay in both places, and the copy's failure is still the one
+/// reported.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_failed_copy_whose_closing_barrier_refuses_keeps_the_held_sources() {
+    let engine = TestOperations::new();
+    let source_inner = volume("Source");
+    let dest = FaultyVolume::wrapping(volume("Dest"))
+        .failing_call(FaultyOp::FlushWrites, 1, refused_barrier())
+        .arc();
+
+    move_with_an_unreadable_third_file(&engine, &source_inner, &dest).await;
+
+    assert!(dest.fault_fired(FaultyOp::FlushWrites));
     for kept in ["/f00.txt", "/f01.txt"] {
         assert!(
             source_inner.exists(Path::new(kept)).await,
