@@ -18,9 +18,10 @@ and `announce` / `announce_on`; `testing.rs` holds the fakes (`RecordingEngineEv
   `cmdr_fs::deadline`) document their own.
 - **A seam is called per operation, per directory, or per file landing, ❌ never per chunk or per listing entry.**
   `OwnWrites` and `Pacing` are the per-file ones; the Criterion bench is the referee.
-- **❌ No seam, sink, or observer call while an engine lock is held.** Two exceptions, both so a stale report can never
-  land last: the busy set reports under its dedupe lock (`EngineEvents`), and a transfer's progress emits under its
-  ledger's `sent` lock (`transfer_driver/progress.rs::LeafProgressLedger::emit`).
+- **❌ No seam, sink, or observer call while an engine lock is held.** Three exceptions, all so a stale report can never
+  land last: the busy set reports under its dedupe lock (`EngineEvents`), the queue snapshot under the manager's `sent`
+  lock (`manager.rs::emit_changed`), and a transfer's progress under its ledger's `sent` lock
+  (`transfer_driver/progress.rs::LeafProgressLedger::emit`).
 - **A seam trait and its value types live here or in `types/`**, ❌ never in a module that calls the seam, or the two
   weld into a cycle `module-cycles` reports.
 - **Every seam degrades to a no-op**; all but `OperationIndex` and `NameOrder` have a `testing` fake. Only the volumes

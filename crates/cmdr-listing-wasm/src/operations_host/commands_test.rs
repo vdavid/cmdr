@@ -47,21 +47,6 @@ impl Collector {
         self.find(event, &matches).expect("it arrived")
     }
 
-    /// Waits until a queue snapshot listed `operation_id` and the newest one doesn't.
-    async fn left_the_queue(&self, operation_id: &str) {
-        let description = format!("`{operation_id}` to leave the queue");
-        wait_until_async(Duration::from_secs(5), &description, || {
-            let events = self.0.lock().expect("collector lock");
-            let mut snapshots = events
-                .iter()
-                .filter(|(name, _)| name == "operations-changed")
-                .map(|(_, p)| p.to_string().contains(operation_id));
-            let listed = snapshots.clone().any(|lists| lists);
-            listed && snapshots.next_back() == Some(false)
-        })
-        .await;
-    }
-
     /// Waits for `operation_id`'s `write-settled`, and answers its terminal event.
     async fn settled(&self, operation_id: &str) -> String {
         let of = |p: &Value| p["operationId"] == operation_id;
@@ -72,6 +57,20 @@ impl Collector {
             .expect("a terminal event before write-settled")
             .to_string()
     }
+}
+
+/// Waits until the queue no longer holds `operation_id`, for an operation its
+/// command registered before answering (a rollback's reversal), so that "not
+/// held" can only mean it settled. It asks the queue itself: a reversal this
+/// small can settle before its registration broadcasts, and then no
+/// `operations-changed` ever lists it.
+async fn left_the_queue(demo: &Demo, operation_id: &str) {
+    let description = format!("`{operation_id}` to leave the queue");
+    wait_until_async(Duration::from_secs(5), &description, || {
+        let queue = demo.operations().engine().list_operations();
+        queue.iter().all(|row| row.operation_id != operation_id)
+    })
+    .await;
 }
 
 const BIG: u64 = 64 * 1024 * 1024;
@@ -347,7 +346,7 @@ async fn a_selective_rollback_reverses_only_what_was_selected() {
     let inverse = dispatched["inverseOpId"].as_str().expect("an inverse id").to_string();
     // A reversal ends with no `write-complete` of its own: it has settled once the
     // queue it joined no longer lists it, and it resolves the op before it leaves.
-    events.left_the_queue(&inverse).await;
+    left_the_queue(&demo, &inverse).await;
     assert_eq!(
         names(&demo, "docs").await,
         ["a.txt", "b.txt"],
