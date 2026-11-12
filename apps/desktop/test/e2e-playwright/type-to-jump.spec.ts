@@ -18,7 +18,7 @@
 import { waitBudget } from './wait-budget.js'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureAppReady, getFixtureRoot } from './helpers.js'
+import { CTRL_OR_META, ensureAppReady, getFixtureRoot } from './helpers.js'
 import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
@@ -149,7 +149,7 @@ test.describe('Type-to-jump', () => {
     // TauriKeyboard) to stay in lockstep with `typeChars` and avoid races
     // around native menu accelerators triggering the new-tab handler before
     // the test can read the indicator state.
-    const modKey = process.platform === 'darwin' ? 'metaKey' : 'ctrlKey'
+    const modKey = CTRL_OR_META === 'Meta' ? 'metaKey' : 'ctrlKey'
     await tauriPage.evaluate(`(function(){
       var el = document.activeElement || document.body;
       var o = { key: 't', bubbles: true, cancelable: true, ${modKey}: true };

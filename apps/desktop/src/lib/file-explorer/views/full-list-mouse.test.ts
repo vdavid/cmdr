@@ -5,7 +5,8 @@
  * non-empty one always drags the WHOLE selection with the first row's icon.
  */
 
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import { planRowMouseDown, type RowMouseDownInput } from './full-list-mouse'
 import type { FileEntry } from '../types'
 import type { PressedPane } from '../pane/pressed-rows'
@@ -76,6 +77,9 @@ describe('rows we do not own', () => {
 })
 
 describe('click-to-rename arming', () => {
+  // The toggle-modifier case holds Ctrl, the primary modifier on Linux (`row-click.test.ts` has every OS).
+  beforeEach(() => withPlatform('linux'))
+
   it('arms on the row already under the cursor', () => {
     const result = plan({ index: 1, cursorIndex: 1 })
 
@@ -85,7 +89,6 @@ describe('click-to-rename arming', () => {
   it.each([
     ['a different row', { index: 2, cursorIndex: 1 }],
     ['shift held', { event: mouseDown({ shiftKey: true }) }],
-    // The platform's toggle modifier; vitest runs on Linux, where it's Ctrl (`row-click.test.ts` has every OS).
     ['the toggle modifier held', { event: mouseDown({ ctrlKey: true }) }],
     ['a rename already open', { isRenaming: true }],
     ['no rename callback wired', { canStartRename: false }],

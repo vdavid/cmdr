@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import type { AskCmdrSendOutcome, AskCmdrStreamEvent, MessageView } from '#lib/tauri-commands/index.js'
 import type { CancelOutcomeView, ResolvedCall, ToolOutcome, ToolSubject, TurnStats } from '#lib/ipc/bindings.js'
 
@@ -709,8 +710,12 @@ describe('openRail bootstrap + newChat + hydrate', () => {
   })
 
   it('names the New chat shortcut for its tooltip, in the platform display form', () => {
-    // ⌘N on macOS; this suite runs on the fallback platform (Linux), whose key is Ctrl+N.
+    const undoLinux = withPlatform('linux')
     expect(newChatShortcutText()).toBe(toDisplayShortcut('Ctrl+N'))
+    const undoMac = withPlatform('macos')
+    expect(newChatShortcutText()).toBe(toDisplayShortcut('⌘N'))
+    undoMac()
+    undoLinux()
   })
 
   it('hydrateRail applies a persisted width and opens when the flag is set', () => {
