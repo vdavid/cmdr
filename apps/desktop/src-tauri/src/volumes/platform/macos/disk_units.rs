@@ -221,7 +221,7 @@ mod tests {
     #[test]
     fn only_device_backed_mounts_name_a_bsd_node() {
         assert_eq!(bsd_name_of("/dev/disk5s1"), Some("disk5s1"));
-        assert_eq!(bsd_name_of("//david@nas/share"), None);
+        assert_eq!(bsd_name_of("//test_user_3@nas/share"), None);
         assert_eq!(bsd_name_of("devfs"), None);
         assert_eq!(bsd_name_of("map auto_home"), None);
         assert_eq!(bsd_name_of("/dev/"), None);
@@ -233,7 +233,7 @@ mod tests {
             mount("/Volumes/A", "/dev/disk7s2"),
             mount("/Volumes/B", "/dev/disk7s3"),
             mount("/Volumes/Elsewhere", "/dev/disk9s1"),
-            mount("/Volumes/naspi", "//david@nas/naspi"),
+            mount("/Volumes/testshare", "//test_user_3@nas/testshare"),
         ];
 
         let group = volumes_on(&mounts, &[7], |bsd_name| match bsd_name {

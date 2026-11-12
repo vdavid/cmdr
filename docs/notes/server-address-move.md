@@ -1,7 +1,7 @@
 # Moving a saved server to a new address
 
 Design note for unlocking a saved server's address in the edit sheet (decided 2026-10-10). A server that MOVED (a NAS on
-a new IP, `nas.local` → its Tailscale name, a new port) keeps its favorites, tabs, password, pin, and settings. The
+a new IP, `testnas.local` → its Tailscale name, a new port) keeps its favorites, tabs, password, pin, and settings. The
 protocol and the account stay locked: another account or protocol is another place, since two accounts on one server see
 different files.
 
@@ -43,10 +43,10 @@ Everything that names a place by its id or spells a path with its address prefix
    locked keychain) refuses the whole move (`SecretNotMoved`): moving the server while its password stayed behind would
    turn a saved password into a sign-in prompt, which is the data loss this order exists to prevent.
 4. **Favorites** (`favorites.json`, `FavoriteVolume { id, root, name }` plus a `path` in the place's namespace,
-   `sftp://ada@nas.local:22/…`): re-keyed to the new id and the new label, and `root` and `path` rewritten from the old
-   app prefix to the new one, by whole components. A legacy favorite with no volume yet but a path under the old prefix
-   gets its path rewritten too, so the claim pass finds the new place. Reports nothing to analytics: the person edited a
-   server, not a favorite.
+   `sftp://test_user_1@testnas.local:22/…`): re-keyed to the new id and the new label, and `root` and `path` rewritten
+   from the old app prefix to the new one, by whole components. A legacy favorite with no volume yet but a path under
+   the old prefix gets its path rewritten too, so the claim pass finds the new place. Reports nothing to analytics: the
+   person edited a server, not a favorite.
 5. **Go to path's recents** (`go-to-path-history.json`): paths under the old prefix are rewritten, since the old address
    names nothing saved any more and opening it would land on an Add sheet. Search and selection histories hold queries
    and patterns, not place paths, so they stay.
@@ -140,11 +140,11 @@ the new ids up front: re-keying favorites and tabs to a guessed id would be over
 
 - **The rows.** A row with an address dials the new one. Its `server_name` follows when it spelled the old address (same
   `credential_key`), and a row with no address (the host's sign-in history, a share an Add named) always takes the new
-  discovery name, since its name is all that says which host it is. ❗ A Bonjour name (`Naspolya`) stays: it still names
+  discovery name, since its name is all that says which host it is. ❗ A Bonjour name (`Testnas`) stays: it still names
   the machine, and the password filed under it stays reachable.
-- **The passwords.** Only the entries keyed by the old address move. Two spellings of one key (`nas.local` → `nas`) are
-  one entry, so nothing is copied or deleted. A port-less legacy entry (`note_found_under_portless`) is left alone, for
-  the same reason Forget leaves it: it may be the 445 server's.
+- **The passwords.** Only the entries keyed by the old address move. Two spellings of one key (`testnas.local` → `nas`)
+  are one entry, so nothing is copied or deleted. A port-less legacy entry (`note_found_under_portless`) is left alone,
+  for the same reason Forget leaves it: it may be the 445 server's.
 - **The direct-connection opt-out** is COPIED to the new address, ❌ not moved: an opt-out names a machine without a
   port, and another server on the old machine may share it.
 - **Go to path's recents** stay: an SMB path is an OS path under the mount, which names no server.

@@ -320,10 +320,10 @@ describe('copyToClipboard', () => {
     // but a phone-worded refusal on a server is what ERR-HGGU3 reported: the user
     // read "MTP devices" on an SSH server and took it for a bug.
     const access = buildAccess({
-      volumeId: 'sftp-nas-22-ada',
-      volumes: [{ id: 'sftp-nas-22-ada', name: 'photos' }],
+      volumeId: 'sftp-nas-22-test_user_1',
+      volumes: [{ id: 'sftp-nas-22-test_user_1', name: 'photos' }],
     })
-    volumeStore.list = [{ id: 'sftp-nas-22-ada', fsType: 'sftp', category: 'network' } as unknown as VolumeInfo]
+    volumeStore.list = [{ id: 'sftp-nas-22-test_user_1', fsType: 'sftp', category: 'network' } as unknown as VolumeInfo]
 
     await createClipboardOperations(access, buildDialogs()).copyToClipboard()
 
@@ -498,7 +498,7 @@ describe('cutToClipboard', () => {
   })
 
   it('refuses a snapshot cut with no noun when the snapshot names no refusing volume', async () => {
-    resolveSnapshotPathsSpy.mockReturnValue(['sftp://nas/home/ada/a.txt'])
+    resolveSnapshotPathsSpy.mockReturnValue(['sftp://nas/home/test_user_1/a.txt'])
     const paneRef = buildPaneRef({ currentPath: 'search-results://sr-1' })
     const access = buildAccess({ paneRef, volumeId: 'search-results', volumes: [] })
 
@@ -523,10 +523,10 @@ describe('cutToClipboard', () => {
 
   it('refuses a WebDAV cut as a SERVER, with the move key', async () => {
     const access = buildAccess({
-      volumeId: 'webdav-nc-ada',
-      volumes: [{ id: 'webdav-nc-ada', name: 'Nextcloud' }],
+      volumeId: 'webdav-nc-test_user_1',
+      volumes: [{ id: 'webdav-nc-test_user_1', name: 'Nextcloud' }],
     })
-    volumeStore.list = [{ id: 'webdav-nc-ada', fsType: 'webdav', category: 'network' } as unknown as VolumeInfo]
+    volumeStore.list = [{ id: 'webdav-nc-test_user_1', fsType: 'webdav', category: 'network' } as unknown as VolumeInfo]
 
     await createClipboardOperations(access, buildDialogs()).cutToClipboard()
 
@@ -661,10 +661,10 @@ describe('pasteFromClipboard', () => {
 
   it('refuses pasting onto an SFTP pane as a SERVER, before reading the clipboard', async () => {
     const access = buildAccess({
-      volumeId: 'sftp-nas-22-ada',
-      volumes: [{ id: 'sftp-nas-22-ada', name: 'photos' }],
+      volumeId: 'sftp-nas-22-test_user_1',
+      volumes: [{ id: 'sftp-nas-22-test_user_1', name: 'photos' }],
     })
-    volumeStore.list = [{ id: 'sftp-nas-22-ada', fsType: 'sftp', category: 'network' } as unknown as VolumeInfo]
+    volumeStore.list = [{ id: 'sftp-nas-22-test_user_1', fsType: 'sftp', category: 'network' } as unknown as VolumeInfo]
 
     await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
 

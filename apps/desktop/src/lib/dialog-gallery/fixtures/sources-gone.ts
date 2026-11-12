@@ -47,8 +47,8 @@ const tracks = (count: number) =>
   Array.from({ length: count }, (_, i) => `/Users/me/Music/Album/CD1/${String(i + 1).padStart(2, '0')} - Track.mp3`)
 
 export const sourcesGoneFixtures: Record<string, SourcesGoneFixture | undefined> = {
-  'move-some': fixture('move', tracks(4), 4, 22, 'Naspolya Music'),
-  'move-many': fixture('move', tracks(5), 1_234, 5_678, 'Naspolya Music'),
+  'move-some': fixture('move', tracks(4), 4, 22, 'Testnas Music'),
+  'move-many': fixture('move', tracks(5), 1_234, 5_678, 'Testnas Music'),
   'copy-one': fixture('copy', ['/Users/me/Documents/Invoices 2026'], 1, 3, 'Backup'),
   trash: fixture('trash', tracks(2), 2, 9, null),
 }

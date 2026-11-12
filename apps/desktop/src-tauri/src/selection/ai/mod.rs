@@ -6,7 +6,7 @@
 //!
 //! The prompt receives a sampled folder listing so the model can ground the pattern
 //! in what's actually in the folder (the user's intent often refers to filename
-//! conventions like "all rymdskottkärra files" that the model can't infer without
+//! conventions like "all testföretag files" that the model can't infer without
 //! seeing the names).
 
 pub mod parser;

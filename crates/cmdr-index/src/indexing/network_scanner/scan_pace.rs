@@ -4,7 +4,7 @@
 //! `SmbVolume` clone multiplexes frames over the same connection), so a walk
 //! running 64 listings in flight buries a navigation behind its backlog: a
 //! 40-entry folder took 10.7 s mid-scan on a real QNAP, and was instant the moment
-//! the scan finished (2026-07-19, `/Volumes/naspi`, ~2M entries).
+//! the scan finished (2026-07-19, `/Volumes/testshare`, ~2M entries).
 //!
 //! So the walk asks this module, at every top-up, how many listings it may keep in
 //! flight. Browsing the share OR a running user-initiated transfer on it (both

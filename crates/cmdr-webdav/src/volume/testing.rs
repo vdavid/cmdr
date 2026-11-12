@@ -74,7 +74,7 @@ pub fn assert_same_bytes(read: &[u8], expected: &[u8], what: &str) {
 }
 
 /// The account every fixture server runs as.
-pub const FIXTURE_USER: &str = "ada";
+pub const FIXTURE_USER: &str = "test_user_1";
 /// Its password.
 pub const FIXTURE_PASSWORD: &str = "openthedoor";
 
@@ -82,7 +82,7 @@ pub const FIXTURE_PASSWORD: &str = "openthedoor";
 /// quota. `FIXTURE_USER` there carries [`FIXTURE_NEXTCLOUD_QUOTA_BYTES`]
 /// instead, so the two accounts cover both RFC 4331 answers a real Nextcloud
 /// gives.
-pub const FIXTURE_UNLIMITED_USER: &str = "grace";
+pub const FIXTURE_UNLIMITED_USER: &str = "test_user_2";
 
 /// The quota the Nextcloud fixture gives `FIXTURE_USER`, exactly.
 ///

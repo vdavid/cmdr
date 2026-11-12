@@ -15,15 +15,15 @@ fn select_log_lines_redacts_pii() {
         filter: None,
         limit: LOG_DEFAULT_LIMIT,
     };
-    let raw = "2026-05-31T08:30:02.000+02:00 INFO listing /Users/dorka/SecretProject/budget.pdf\n\
-               2026-05-31T08:30:03.000+02:00 WARN contact jane.doe@example.com about smb://nas.local/share/private/file.txt";
+    let raw = "2026-05-31T08:30:02.000+02:00 INFO listing /Users/test_user_8/SecretProject/budget.pdf\n\
+               2026-05-31T08:30:03.000+02:00 WARN contact test_user_12.doe@example.com about smb://testnas.local/share/private/file.txt";
 
     let out = select_log_lines(raw, false, &opts);
 
     // Raw PII must be gone.
-    assert!(!out.contains("/Users/dorka/"), "home path leaked: {out}");
+    assert!(!out.contains("/Users/test_user_8/"), "home path leaked: {out}");
     assert!(!out.contains("SecretProject"), "custom dir name leaked: {out}");
-    assert!(!out.contains("jane.doe@example.com"), "email leaked: {out}");
+    assert!(!out.contains("test_user_12.doe@example.com"), "email leaked: {out}");
     assert!(!out.contains("/share/private/"), "SMB share tail leaked: {out}");
     // Redaction tokens present (path-shape preserved).
     assert!(out.contains("$HOME/"), "expected redacted home token: {out}");
@@ -40,8 +40,8 @@ fn select_log_lines_redact_remote_references_and_ids_with_bare_tokens() {
         filter: None,
         limit: LOG_DEFAULT_LIMIT,
     };
-    let raw = "2026-05-31T08:30:02.000+02:00 INFO sftp://ada:secret@files.example.test:2222/home/ada/report.pdf?token=secret#customer\n\
-               2026-05-31T08:30:03.000+02:00 WARN webdav://nas.local/dav/ada/report.pdf?owner=ada@example.test#customer\n\
+    let raw = "2026-05-31T08:30:02.000+02:00 INFO sftp://test_user_1:secret@files.example.test:2222/home/test_user_1/report.pdf?token=secret#customer\n\
+               2026-05-31T08:30:03.000+02:00 WARN webdav://testnas.local/dav/test_user_1/report.pdf?owner=test_user_1@example.test#customer\n\
                2026-05-31T08:30:04.000+02:00 INFO volume smb-nas-private-445-client-0123456789abcdef";
 
     assert_eq!(
@@ -56,9 +56,9 @@ fn select_log_lines_redact_remote_references_and_ids_with_bare_tokens() {
 /// whether a path appears in the log by watching the line count.
 #[test]
 fn select_log_lines_filters_the_redacted_text() {
-    let raw = "2026-05-31T08:30:01.000+02:00 INFO listing /Users/dorka/SecretProject/budget.pdf\n\
-               2026-05-31T08:30:02.000+02:00 INFO listing /Users/dorka/Documents/plan.pdf\n\
-               2026-05-31T08:30:03.000+02:00 INFO listing /Users/dorka/Documents/other.pdf\n\
+    let raw = "2026-05-31T08:30:01.000+02:00 INFO listing /Users/test_user_8/SecretProject/budget.pdf\n\
+               2026-05-31T08:30:02.000+02:00 INFO listing /Users/test_user_8/Documents/plan.pdf\n\
+               2026-05-31T08:30:03.000+02:00 INFO listing /Users/test_user_8/Documents/other.pdf\n\
                2026-05-31T08:30:04.000+02:00 INFO listed 3 entries";
     let filtered = |filter: &str, limit: usize| {
         let opts = LogOptions {
@@ -70,7 +70,7 @@ fn select_log_lines_filters_the_redacted_text() {
     };
 
     assert_eq!(filtered("SecretProject", 100), "", "a raw name matches nothing");
-    assert_eq!(filtered("/Users/dorka", 100), "");
+    assert_eq!(filtered("/Users/test_user_8", 100), "");
     // A filter on the redacted text works, and the limit keeps the newest matches.
     assert_eq!(
         filtered("$HOME/Documents", 1),

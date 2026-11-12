@@ -1520,7 +1520,7 @@ only trace of a leftover still sitting on the drive. Homed to the volume, it wai
 its path relative to the root, since a returning drive can mount somewhere else.
 
 **Decision: the record keys on the volume ID, not the mount root.** The ledger's whole point is surviving a restart, and
-a root doesn't: macOS remounts the same share at `/Volumes/naspi-1` after a wedge. A volume ID is identity by
+a root doesn't: macOS remounts the same share at `/Volumes/testshare-1` after a wedge. A volume ID is identity by
 construction (`cmdr_fs::volume::ids`) and is what the index DB and `lastUsedPaths` already key on.
 
 **Decision: an unreachable volume keeps its record; the sweep never goes looking.** The ledger claim runs before

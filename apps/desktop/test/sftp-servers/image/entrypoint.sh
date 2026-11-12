@@ -9,7 +9,7 @@
 #   QUIRK_*     see sftp-quirk.py
 set -e
 
-USER_NAME="${USER_NAME:-ada}"
+USER_NAME="${USER_NAME:-test_user_1}"
 USER_PASSWORD="${USER_PASSWORD:-openthedoor}"
 AUTH="${AUTH:-password+key}"
 HOST_KEYS="${HOST_KEYS:-ed25519}"

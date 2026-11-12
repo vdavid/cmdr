@@ -41,8 +41,8 @@ pub fn enrich_from_volume_registry(volumes: &mut [LocationInfo]) {
 /// Extracts SMB server, share, and username from a mount path via `statfs`.
 ///
 /// On macOS, `statfs.f_mntfromname` for SMB mounts looks like:
-/// - `//user@192.168.1.111/share` (authenticated)
-/// - `//192.168.1.111/share` (guest)
+/// - `//user@192.168.50.10/share` (authenticated)
+/// - `//192.168.50.10/share` (guest)
 ///
 /// Returns `None` if the path is not an SMB mount or parsing fails.
 pub fn get_smb_mount_info(mount_path: &str) -> Option<SmbMountInfo> {
@@ -65,7 +65,7 @@ pub fn get_smb_mount_info(mount_path: &str) -> Option<SmbMountInfo> {
         return None;
     }
 
-    // Extract mount source (for example, "//david@192.168.1.111/naspi")
+    // Extract mount source (for example, "//test_user_3@192.168.50.10/testshare")
     let mount_from = cmdr_local::statfs::statfs_string(&stat.f_mntfromname);
 
     parse_smb_mount_source(&mount_from)
@@ -131,10 +131,10 @@ mod mount_source_tests {
 
     #[test]
     fn parses_an_authenticated_source() {
-        let info = parse_smb_mount_source("//david@192.168.1.111/naspi").expect("a well-formed SMB source");
-        assert_eq!(info.server, "192.168.1.111");
-        assert_eq!(info.share, "naspi");
-        assert_eq!(info.username.as_deref(), Some("david"));
+        let info = parse_smb_mount_source("//test_user_3@192.168.50.10/testshare").expect("a well-formed SMB source");
+        assert_eq!(info.server, "192.168.50.10");
+        assert_eq!(info.share, "testshare");
+        assert_eq!(info.username.as_deref(), Some("test_user_3"));
         assert_eq!(info.port, 445);
     }
 
@@ -239,19 +239,20 @@ mod mount_source_tests {
     /// ERR-48RZX.
     #[test]
     fn a_subdirectory_mount_keeps_only_the_first_segment_as_the_share() {
-        let info = parse_smb_mount_source("//dana@example.com/SYSVOL/example.com").expect("a well-formed source");
+        let info =
+            parse_smb_mount_source("//test_user_13@example.com/SYSVOL/example.com").expect("a well-formed source");
         assert_eq!(info.server, "example.com");
         assert_eq!(info.share, "SYSVOL");
         assert_eq!(info.subpath.as_deref(), Some("example.com"));
-        assert_eq!(info.username.as_deref(), Some("dana"));
+        assert_eq!(info.username.as_deref(), Some("test_user_13"));
     }
 
     /// A plain share mount anchors at the share root, so there's no subpath to
     /// carry: `None`, never `Some("")`, which would make the join prepend a `/`.
     #[test]
     fn a_plain_share_mount_has_no_subpath() {
-        let info = parse_smb_mount_source("//david@192.168.1.111/naspi").expect("a well-formed source");
-        assert_eq!(info.share, "naspi");
+        let info = parse_smb_mount_source("//test_user_3@192.168.50.10/testshare").expect("a well-formed source");
+        assert_eq!(info.share, "testshare");
         assert_eq!(info.subpath, None);
     }
 

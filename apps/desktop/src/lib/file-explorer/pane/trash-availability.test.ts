@@ -12,22 +12,22 @@ import type { VolumeInfo } from '../types'
 const volume = (id: string, supportsTrash: boolean) => ({ id, supportsTrash }) as VolumeInfo
 
 const LOCAL = volume('root', true)
-const SFTP = volume('sftp-nas-local-22-ada-9f3c', false)
+const SFTP = volume('sftp-nas-local-22-test_user_1-9f3c', false)
 
 describe('paneOffersTrash', () => {
   it('offers the trash on a volume that has one', () => {
-    expect(paneOffersTrash('root', '/Users/ada/notes', [LOCAL])).toBe(true)
+    expect(paneOffersTrash('root', '/Users/test_user_1/notes', [LOCAL])).toBe(true)
   })
 
   it('refuses on a volume that says it has none', () => {
-    expect(paneOffersTrash(SFTP.id, 'sftp://ada@nas.local:22/srv/data', [LOCAL, SFTP])).toBe(false)
+    expect(paneOffersTrash(SFTP.id, 'sftp://test_user_1@testnas.local:22/srv/data', [LOCAL, SFTP])).toBe(false)
   })
 
   it('refuses at or inside an archive, whatever the drive underneath says', () => {
     // The backend rejects trashing an archive-inner path, and there is no
     // `.Trash` inside a zip to reject into.
-    expect(paneOffersTrash('root', '/Users/ada/backup.zip', [LOCAL])).toBe(false)
-    expect(paneOffersTrash('root', '/Users/ada/backup.zip/photos', [LOCAL])).toBe(false)
+    expect(paneOffersTrash('root', '/Users/test_user_1/backup.zip', [LOCAL])).toBe(false)
+    expect(paneOffersTrash('root', '/Users/test_user_1/backup.zip/photos', [LOCAL])).toBe(false)
   })
 
   it('guesses YES for a volume that has left the list', () => {

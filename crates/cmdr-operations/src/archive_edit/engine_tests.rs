@@ -101,7 +101,7 @@ fn every_emitted_phase_of_a_compress_reaches_the_status_cache() {
 #[test]
 fn a_cancelled_edit_names_the_landing_its_stop_kept() {
     let engine = TestOperations::new();
-    let nas: Arc<dyn Volume> = Arc::new(cmdr_fs::volume::InMemoryVolume::new("Naspolya"));
+    let nas: Arc<dyn Volume> = Arc::new(cmdr_fs::volume::InMemoryVolume::new("Testnas"));
     engine.volumes().register("archive-terminal-nas", nas);
     let state = Arc::new(engine.new_operation_state(Duration::ZERO));
     state
@@ -130,7 +130,7 @@ fn a_cancelled_edit_names_the_landing_its_stop_kept() {
             fate: StagedLeftoverFate::LandsWhenBack,
             count: 1,
             example_name: "bundle.zip".to_owned(),
-            volume_name: "Naspolya".to_owned(),
+            volume_name: "Testnas".to_owned(),
         }],
     );
     assert!(
@@ -144,7 +144,7 @@ fn a_cancelled_edit_names_the_landing_its_stop_kept() {
 #[test]
 fn a_failed_edit_names_the_new_archive_its_stop_kept_beside_its_cause() {
     let engine = TestOperations::new();
-    let nas: Arc<dyn Volume> = Arc::new(cmdr_fs::volume::InMemoryVolume::new("Naspolya"));
+    let nas: Arc<dyn Volume> = Arc::new(cmdr_fs::volume::InMemoryVolume::new("Testnas"));
     engine.volumes().register("archive-terminal-nas", nas);
     let state = Arc::new(engine.new_operation_state(Duration::ZERO));
     state
@@ -184,7 +184,7 @@ fn a_failed_edit_names_the_new_archive_its_stop_kept_beside_its_cause() {
             fate: StagedLeftoverFate::Rescued,
             count: 1,
             example_name: "bundle (recovered).zip".to_owned(),
-            volume_name: "Naspolya".to_owned(),
+            volume_name: "Testnas".to_owned(),
         }],
     );
 }
@@ -205,7 +205,7 @@ async fn a_temp_a_stopped_edit_left_on_a_share_that_is_out_waits_for_the_drives_
     const CADENCE: &[Duration] = &[Duration::from_millis(10)];
     let engine = TestOperations::new();
     let ledger = Ledger::for_test();
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     let nas = OutageVolume::wrap(Arc::clone(&inner), NAS_ID);
     engine.volumes().register(NAS_ID, Arc::clone(&nas) as Arc<dyn Volume>);
     let temp = PathBuf::from("/share/bundle.zip.cmdr-tmp-77aa");
@@ -263,7 +263,7 @@ async fn a_temp_a_stopped_edit_left_on_a_share_that_is_out_waits_for_the_drives_
             fate: StagedLeftoverFate::RemovedWhenBack,
             count: 1,
             example_name: "bundle.zip.cmdr-tmp-77aa".to_owned(),
-            volume_name: "Naspolya".to_owned(),
+            volume_name: "Testnas".to_owned(),
         }],
     );
 }

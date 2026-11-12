@@ -124,10 +124,10 @@ fn operation_summaries_and_current_file_render_verbatim() {
     // An agent answering "what is Cmdr copying right now?" has to be able to name
     // it: `redact_line` would turn these into `<file>.pdf` and `<dir>`.
     let mut operation = snapshot("op-remote", LifecycleStatus::Running);
-    operation.source = Some("Ada Lovelace taxes 2025.pdf (3 items)".to_string());
-    operation.destination = Some("ada-nas.local".to_string());
+    operation.source = Some("Test Person taxes 2025.pdf (3 items)".to_string());
+    operation.destination = Some("test_user_1-nas.local".to_string());
     let mut live = progress("op-remote", LifecycleStatus::Running, 0, 0, 0, 0);
-    live.current_file = Some("/Users/ada/Documents/Ada Lovelace taxes 2025.pdf".to_string());
+    live.current_file = Some("/Users/test_user_1/Documents/Test Person taxes 2025.pdf".to_string());
     let yaml = build_operations_yaml(
         &[OperationRow {
             snapshot: operation,
@@ -147,10 +147,10 @@ fn operation_summaries_and_current_file_render_verbatim() {
             "  - operationId: op-remote\n",
             "    type: copy\n",
             "    status: running\n",
-            "    source: \"Ada Lovelace taxes 2025.pdf (3 items)\"\n",
-            "    destination: \"ada-nas.local\"\n",
+            "    source: \"Test Person taxes 2025.pdf (3 items)\"\n",
+            "    destination: \"test_user_1-nas.local\"\n",
             "    progress: scanning\n",
-            "    currentFile: \"/Users/ada/Documents/Ada Lovelace taxes 2025.pdf\"\n",
+            "    currentFile: \"/Users/test_user_1/Documents/Test Person taxes 2025.pdf\"\n",
             "    elapsedSeconds: 0\n",
         )
     );

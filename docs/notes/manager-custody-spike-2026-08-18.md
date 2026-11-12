@@ -132,11 +132,11 @@ The started-scan figure is a **floor**, for two reasons.
 `NSURLVolumeAvailableCapacityForImportantUsageKey`. Measured directly (Swift, `swiftc -O`, 20 iterations per path, same
 machine, 2026-08-18):
 
-| Path                        | Cold     | Median       | Max       |
-| --------------------------- | -------- | ------------ | --------- |
-| `/` (boot, APFS)            | 6 260 µs | **6 500 µs** | 26 476 µs |
-| `/Volumes/naspi` (SMB)      | 18 µs    | 19 µs        | 5 146 µs  |
-| `/Volumes/PiHDD` (external) | 19 µs    | 19 µs        | 6 517 µs  |
+| Path                             | Cold     | Median       | Max       |
+| -------------------------------- | -------- | ------------ | --------- |
+| `/` (boot, APFS)                 | 6 260 µs | **6 500 µs** | 26 476 µs |
+| `/Volumes/testshare` (SMB)       | 18 µs    | 19 µs        | 5 146 µs  |
+| `/Volumes/testshare2` (external) | 19 µs    | 19 µs        | 6 517 µs  |
 
 The boot disk is the expensive one because "important usage" accounts for purgeable space (APFS snapshots, iCloud
 caches). So a real boot-disk scan start is roughly **9 ms typical with a 30 ms tail**, before the second reason.

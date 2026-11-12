@@ -47,7 +47,7 @@ describe('findVolumeIdForPath', () => {
   })
 
   it('falls back to root for paths not under any mount', () => {
-    expect(findVolumeIdForPath('/Users/dave/notes.md', volumes)).toBe('boot')
+    expect(findVolumeIdForPath('/Users/test_user_10/notes.md', volumes)).toBe('boot')
   })
 
   it('does not match a sibling whose name is a prefix', () => {
@@ -56,7 +56,7 @@ describe('findVolumeIdForPath', () => {
   })
 
   it('returns null when no volume matches', () => {
-    expect(findVolumeIdForPath('/Users/dave', [usb])).toBeNull()
+    expect(findVolumeIdForPath('/Users/test_user_10', [usb])).toBeNull()
   })
 
   it('matches a path equal to the volume path itself', () => {

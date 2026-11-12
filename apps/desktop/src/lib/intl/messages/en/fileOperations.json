@@ -887,7 +887,7 @@
   "@fileOperations.transferProgress.waitingForVolume": {
     "description": "Shown while a copy or move is on hold because a network drive or server it uses dropped off the network (a router restart, a NAS waking up, Wi-Fi switching). Cmdr reconnects to it on its own and carries on where it stopped as soon as it's back; if it isn't back within a few minutes, the copy stops and says why. The person can cancel at any time. Replaces the time-left text under the progress bars, and also appears under the running counts while the operation is still counting files. Appears on both surfaces that show a running transfer: the copy/move progress dialog and the rows of the operation queue window. Keep it short. \"Come back\" means the drive is reachable again, not that someone returns it. The ellipsis says the wait is ongoing.",
     "placeholders": {
-      "volume": "the name of the network drive or server, as the volume list shows it (for example Naspolya)"
+      "volume": "the name of the network drive or server, as the volume list shows it (for example Testnas)"
     },
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
@@ -1607,7 +1607,7 @@
   "@fileOperations.backgroundStart.needsPasswordToast": {
     "description": "Quiet toast for an operation that was running in the background and stopped because it reads from a password-protected archive (zip) or an encrypted restic backup. It needs a password prompt, but another dialog is on screen, so the prompt waits and appears by itself the moment that dialog closes. Nothing is lost and the user doesn’t need to do anything now; the toast only says why the prompt isn’t up yet.",
     "placeholders": {
-      "archiveName": "file name of the archive, for example \"photos.zip\", or the backup folder’s name, for example \"m3-macbook-restic\""
+      "archiveName": "file name of the archive, for example \"photos.zip\", or the backup folder’s name, for example \"test-restic-repo\""
     }
   },
   "fileOperations.transferProgress.foregroundBusyToast": "Something else is open here. Close it, then bring this one up.",
@@ -1890,7 +1890,7 @@
     "description": "Last line of the toast after a cancelled (or stopped) copy or move to a server whose connection had dropped, when Cmdr’s own half-written working file is still sitting there because the server wasn’t reachable to delete it. Cmdr keeps trying in the background and removes it once the server is back, without the person doing anything. This version is used when there is exactly ONE, so the line names it. What {name} holds is a scratch name Cmdr invented, like holiday.jpg.cmdr-tmp-4d1f9c: what the user would see on the server. Calm and matter-of-fact: nothing of theirs is at risk (the file it was copying is still whole at the source), and the line must not ask them to do anything. Stay conversational and never use the words \"error\" or \"failed\". Sentence case.",
     "placeholders": {
       "name": "the leftover’s own name at the destination, e.g. holiday.jpg.cmdr-tmp-4d1f9c. Uncontrolled text of any length, in any script, so keep the sentence readable whatever lands here, and never translate it.",
-      "volumeName": "the destination drive or server as it names itself, e.g. Naspolya. Uncontrolled text, never translate it."
+      "volumeName": "the destination drive or server as it names itself, e.g. Testnas. Uncontrolled text, never translate it."
     }
   },
   "fileOperations.cancelRollback.stagedLeftover.waiting.counted": "{countText} unfinished {count, plural, one {copy stays} other {copies stay}} on {volumeName} for now. Cmdr removes them as soon as {volumeName} is back.",
@@ -1899,7 +1899,7 @@
     "placeholders": {
       "countText": "how many stayed behind, already formatted for display (e.g. 1,234). Always two or more",
       "count": "the same number (drives the singular/plural form of the noun)",
-      "volumeName": "the destination drive or server as it names itself, e.g. Naspolya. Uncontrolled text, never translate it."
+      "volumeName": "the destination drive or server as it names itself, e.g. Testnas. Uncontrolled text, never translate it."
     }
   },
   "fileOperations.cancelRollback.stagedLeftover.landing.named": "{name} is complete on {volumeName} under a temporary name, and gets its own name the next time Cmdr connects to {volumeName}.",
@@ -1907,7 +1907,7 @@
     "description": "Last line of the toast after a cancelled (or stopped) copy, move, or change to an archive (a .zip edit or a new compressed file), when one file had ALREADY fully arrived at the destination and was taking its final name at the moment things stopped, and the drive or server couldn’t finish that step. The file is the person’s data, possibly the only copy there, so ❗ never word it as junk, a leftover, or something to delete. Cmdr finishes giving it its name on its own the next time it connects to that drive or server. {name} is the file’s real name, like holiday.jpg (not a scratch name). Reassuring and matter-of-fact. Stay conversational and never use the words \"error\" or \"failed\". Sentence case.",
     "placeholders": {
       "name": "the file’s own name, e.g. holiday.jpg. Uncontrolled text of any length, in any script, so keep the sentence readable whatever lands here, and never translate it.",
-      "volumeName": "the destination drive or server as it names itself, e.g. Naspolya. Uncontrolled text, never translate it."
+      "volumeName": "the destination drive or server as it names itself, e.g. Testnas. Uncontrolled text, never translate it."
     }
   },
   "fileOperations.cancelRollback.stagedLeftover.landing.counted": "{countText} complete {count, plural, one {file waits} other {files wait}} on {volumeName} under temporary names. Each gets its own name the next time Cmdr connects to {volumeName}.",
@@ -1916,7 +1916,7 @@
     "placeholders": {
       "countText": "how many complete files are waiting, already formatted for display (e.g. 1,234). Always two or more",
       "count": "the same number (drives the singular/plural form of the noun)",
-      "volumeName": "the destination drive or server as it names itself, e.g. Naspolya. Uncontrolled text, never translate it."
+      "volumeName": "the destination drive or server as it names itself, e.g. Testnas. Uncontrolled text, never translate it."
     }
   },
   "fileOperations.cancelRollback.stagedLeftover.rescued.named": "Cmdr saved a complete new file on {volumeName} as {name}, because it couldn’t take its own name. Check it, then give it the name you want.",
@@ -1924,7 +1924,7 @@
     "description": "Last line of the toast after a cancelled (or stopped) copy, move, or change to an archive (a .zip edit or a new compressed file), when one file had ALREADY fully arrived at the destination but couldn’t take its final name, after the file it was replacing was already gone. Cmdr kept it under a name ending in \"(recovered)\" instead, so it may be the only copy of the person’s new data: ❗ never word it as junk, a leftover, or something to delete. The person checks it and renames it themselves. Stay conversational and never use the words \"error\" or \"failed\". Sentence case.",
     "placeholders": {
       "name": "the name the file has now, ending in \"(recovered)\", e.g. holiday (recovered).jpg. The \"(recovered)\" part is always English, so never translate it or the name around it.",
-      "volumeName": "the destination drive or server as it names itself, e.g. Naspolya. Uncontrolled text, never translate it."
+      "volumeName": "the destination drive or server as it names itself, e.g. Testnas. Uncontrolled text, never translate it."
     }
   },
   "fileOperations.cancelRollback.stagedLeftover.rescued.counted": "Cmdr saved {countText} complete new {count, plural, one {file} other {files}} on {volumeName} under “(recovered)” names, because they couldn’t take their own. Check them, then give them the names you want.",
@@ -1933,7 +1933,7 @@
     "placeholders": {
       "countText": "how many files were kept, already formatted for display (e.g. 1,234). Always two or more",
       "count": "the same number (drives the singular/plural form of the noun)",
-      "volumeName": "the destination drive or server as it names itself, e.g. Naspolya. Uncontrolled text, never translate it."
+      "volumeName": "the destination drive or server as it names itself, e.g. Testnas. Uncontrolled text, never translate it."
     }
   },
   "fileOperations.leftovers.unfinishedLandingKept": "Cmdr found an unfinished copy of {fileName} on {volumeName} that isn’t the size it should be, so it kept it as {keptName} rather than finishing it.",
@@ -1941,7 +1941,7 @@
     "description": "Info toast shown when a drive or server is reconnected (or Cmdr starts up) and Cmdr finds a file a copy or move was in the middle of giving its final name, but the file isn’t the size Cmdr wrote, so Cmdr can’t tell whether it’s complete. Cmdr never deletes it (it may hold the person’s data) and never gives it the real name; it renames it to {keptName} beside where it belongs, so the person can look at it and decide. Nothing is asked of the person and nothing of theirs was lost. Matter-of-fact and reassuring; never use the words \"error\" or \"failed\". Sentence case.",
     "placeholders": {
       "fileName": "the name the file was on its way to, e.g. notes.txt. Uncontrolled text, never translate it.",
-      "volumeName": "the drive or server as it names itself, e.g. Naspolya. Uncontrolled text, never translate it.",
+      "volumeName": "the drive or server as it names itself, e.g. Testnas. Uncontrolled text, never translate it.",
       "keptName": "the name Cmdr kept the file under, e.g. notes (recovered).txt. Uncontrolled text, never translate it."
     }
   },
@@ -2040,7 +2040,7 @@
   "@fileOperations.resticPassword.message": {
     "description": "Body of the backup-password dialog, shown on every attempt (a wrong password adds a note under the field instead of changing this). Names the backup folder being unlocked. <repo> wraps the folder name, which is styled (bold); keep the tag around the name only. Keep \"restic\" as is: it’s the name of the backup tool. \"snapshots\" = the dated backups inside the repository, one per backup run.",
     "placeholders": {
-      "name": "the backup repository’s folder name, e.g. m3-macbook-restic"
+      "name": "the backup repository’s folder name, e.g. test-restic-repo"
     },
     "screenshot": "archive-password-repo-first-attempt.png"
   },
@@ -2048,7 +2048,7 @@
   "@fileOperations.resticPassword.retryMessage": {
     "description": "Short note right under the password field of the backup-password dialog after a password didn’t open the backup, asking the user to try again. Shown in red and read out by screen readers; the field above keeps the password, selected, so typing replaces it. Friendly and encouraging, not scolding. Avoid the words \"error\" and \"failed\". <repo> wraps the backup folder name, which is styled (bold); keep the tag around the name only.",
     "placeholders": {
-      "name": "the backup repository’s folder name, e.g. m3-macbook-restic"
+      "name": "the backup repository’s folder name, e.g. test-restic-repo"
     },
     "screenshot": "archive-password-repo-wrong-attempt.png"
   },

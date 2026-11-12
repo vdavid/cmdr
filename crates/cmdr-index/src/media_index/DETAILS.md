@@ -370,9 +370,9 @@ folder is an O(entries) index walk, so it's cached per volume (`coverage::get_or
 threshold is applied cheaply by intersecting the scores with it — a debounced drag only re-runs the CACHED importance
 read (§ The importance score cache) + `covered_in_scope` (pure, unit-tested; it dispatches on the scope, so the count
 follows the same rule the enrichment gate does — § The indexing scope). `pending` is `true` when any enabled requested
-volume isn't ready (still scanning / not yet scored), so the UI voices "naspi still scanning" rather than a confident
-wrong number. `media_index_volume_state` carries `qualifying_count: Option<u64>` (the honest denominator for "12,000 of
-38,900 images"); ETA math lives UI-side off `(enriched_count, qualifying_count)`.
+volume isn't ready (still scanning / not yet scored), so the UI voices "testshare still scanning" rather than a
+confident wrong number. `media_index_volume_state` carries `qualifying_count: Option<u64>` (the honest denominator for
+"12,000 of 38,900 images"); ETA math lives UI-side off `(enriched_count, qualifying_count)`.
 
 **Counting is a SINK over the walk, never a materialized list.** `enrich::for_each_qualifying_image` is the one walk
 shape (`scheduler/DETAILS.md` § The walk); `coverage::count_qualifying_images` aggregates straight into

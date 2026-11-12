@@ -24,16 +24,16 @@ fn a_place_with_no_port_is_minted_on_the_nfs_port() {
     // Identity can't wait for portmap: a saved place must name one id before
     // anything is dialed, and the same one after.
     let params = NfsConnectionParams::new(
-        NfsServer::new("NAS.local", None),
+        NfsServer::new("TESTNAS.local", None),
         "/Public/",
         NfsIdentity::new(1000, 100),
     );
     assert_eq!(params.export(), "/Public");
     assert_eq!(
         params.volume_id(),
-        cmdr_fs::volume::nfs_volume_id("nas.local", NFS_PORT, "/Public")
+        cmdr_fs::volume::nfs_volume_id("testnas.local", NFS_PORT, "/Public")
     );
-    assert_eq!(params.app_root(), "nfs://nas.local:2049/Public");
+    assert_eq!(params.app_root(), "nfs://testnas.local:2049/Public");
 }
 
 #[test]

@@ -651,8 +651,8 @@ mod add_gate_tests {
             (
                 BackendKind::Sftp,
                 "sftp-nas-1",
-                "sftp://ada@nas:22/srv",
-                "sftp://ada@nas:22/srv/data",
+                "sftp://test_user_1@nas:22/srv",
+                "sftp://test_user_1@nas:22/srv/data",
                 LocationCategory::Network,
             ),
             (
@@ -736,12 +736,12 @@ mod add_gate_tests {
     fn a_saved_place_that_is_not_connected_says_so() {
         let saved = row(
             "sftp-nas-1",
-            "sftp://ada@nas:22/srv",
+            "sftp://test_user_1@nas:22/srv",
             LocationCategory::Network,
             Some(ConnectionState::Saved),
         );
         assert!(matches!(
-            favorite_volume_from("sftp://ada@nas:22/srv/data", resolved(saved), |_| None),
+            favorite_volume_from("sftp://test_user_1@nas:22/srv/data", resolved(saved), |_| None),
             Err(AddFavoriteError::PlaceNotConnected)
         ));
         let phone = row("adb-serial-1", "adb://serial", LocationCategory::MobileDevice, None);

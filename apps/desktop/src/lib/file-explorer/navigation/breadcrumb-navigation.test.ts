@@ -8,7 +8,7 @@ function enrich(displayPath: string, ctx: BreadcrumbNavContext) {
   return enrichBreadcrumbSegments(splitPathSegments(displayPath), ctx)
 }
 
-const rootCtx = (currentPath: string, userHomePath = '/Users/dave'): BreadcrumbNavContext => ({
+const rootCtx = (currentPath: string, userHomePath = '/Users/test_user_10'): BreadcrumbNavContext => ({
   volumeId: 'root',
   volumePath: '/',
   currentPath,
@@ -18,19 +18,19 @@ const rootCtx = (currentPath: string, userHomePath = '/Users/dave'): BreadcrumbN
 
 describe('enrichBreadcrumbSegments', () => {
   it('maps home-collapsed (~) segments back to absolute paths', () => {
-    // Display "~/projects/foo" with home /Users/dave.
-    const segs = enrich('~/projects/foo', rootCtx('/Users/dave/projects/foo'))
+    // Display "~/projects/foo" with home /Users/test_user_10.
+    const segs = enrich('~/projects/foo', rootCtx('/Users/test_user_10/projects/foo'))
     expect(segs.map((s) => s.text)).toEqual(['~', 'projects', 'foo'])
     // "~" navigates home.
-    expect(segs[0].target).toBe('/Users/dave')
-    // "projects" navigates to /Users/dave/projects.
-    expect(segs[1].target).toBe('/Users/dave/projects')
+    expect(segs[0].target).toBe('/Users/test_user_10')
+    // "projects" navigates to /Users/test_user_10/projects.
+    expect(segs[1].target).toBe('/Users/test_user_10/projects')
     // The current folder ("foo", last segment) is NOT clickable.
     expect(segs[2].target).toBeNull()
   })
 
   it('uses the visible display prefix for the tooltip path', () => {
-    const segs = enrich('~/projects/foo', rootCtx('/Users/dave/projects/foo'))
+    const segs = enrich('~/projects/foo', rootCtx('/Users/test_user_10/projects/foo'))
     expect(segs[0].displayPath).toBe('~')
     expect(segs[1].displayPath).toBe('~/projects')
   })
@@ -52,7 +52,7 @@ describe('enrichBreadcrumbSegments', () => {
       volumeId: 'vol-x',
       volumePath: '/Volumes/X',
       currentPath: '/Volumes/X/sub/dir',
-      userHomePath: '/Users/dave',
+      userHomePath: '/Users/test_user_10',
       isSearchResults: false,
     }
     // Display is volume-relative "/sub/dir".
@@ -68,7 +68,7 @@ describe('enrichBreadcrumbSegments', () => {
       volumeId: 'mtp-0-5:65537',
       volumePath: 'mtp://0-5/65537',
       currentPath: 'mtp://0-5/65537/DCIM/Camera',
-      userHomePath: '/Users/dave',
+      userHomePath: '/Users/test_user_10',
       isSearchResults: false,
     }
     // MTP display path is "/DCIM/Camera".
@@ -86,7 +86,7 @@ describe('enrichBreadcrumbSegments', () => {
       volumeId: 'mtp-0-5:65537',
       volumePath: 'mtp://0-5/65537',
       currentPath: `${twin}/Day 1`,
-      userHomePath: '/Users/dave',
+      userHomePath: '/Users/test_user_10',
       isSearchResults: false,
     }
     const segs = enrich('/DCIM/Trip/Day 1', ctx)
@@ -100,7 +100,7 @@ describe('enrichBreadcrumbSegments', () => {
       volumeId: 'adb-pixel-7-a1b2c3d',
       volumePath: 'adb://R58M12345',
       currentPath: 'adb://R58M12345/sdcard/DCIM/Camera',
-      userHomePath: '/Users/dave',
+      userHomePath: '/Users/test_user_10',
       isSearchResults: false,
     }
     // ADB display path is the absolute device path "/sdcard/DCIM/Camera".
@@ -116,7 +116,7 @@ describe('enrichBreadcrumbSegments', () => {
       volumeId: 'search-results',
       volumePath: '/',
       currentPath: 'search-results://abc',
-      userHomePath: '/Users/dave',
+      userHomePath: '/Users/test_user_10',
       isSearchResults: true,
     }
     // A search snapshot renders its label as a single segment; nothing clickable.
@@ -125,16 +125,16 @@ describe('enrichBreadcrumbSegments', () => {
   })
 
   it('returns null targets when the home dir has not resolved yet', () => {
-    const segs = enrich('~/projects/foo', rootCtx('/Users/dave/projects/foo', ''))
+    const segs = enrich('~/projects/foo', rootCtx('/Users/test_user_10/projects/foo', ''))
     expect(segs[0].target).toBeNull()
     expect(segs[1].target).toBeNull()
   })
 
   it('keeps git-portal segments clickable', () => {
-    const segs = enrich('~/repo/.git/refs', rootCtx('/Users/dave/repo/.git/refs'))
+    const segs = enrich('~/repo/.git/refs', rootCtx('/Users/test_user_10/repo/.git/refs'))
     const dotGit = segs.find((s) => s.text === '.git')
     expect(dotGit?.gitPortal).toBe(true)
-    expect(dotGit?.target).toBe('/Users/dave/repo/.git')
+    expect(dotGit?.target).toBe('/Users/test_user_10/repo/.git')
   })
 })
 
@@ -143,20 +143,20 @@ describe('a Windows drive volume', () => {
     volumeId: 'c',
     volumePath: 'C:/',
     currentPath,
-    userHomePath: 'C:/Users/ada',
+    userHomePath: 'C:/Users/test_user_1',
     isSearchResults: false,
   })
 
   it('navigates each segment to its real path under the drive root', () => {
     onTestFinished(withPlatform('windows'))
-    const segs = enrich('/Users/ada/Documents', driveCtx('C:/Users/ada/Documents'))
-    expect(segs.map((s) => s.target)).toEqual([null, 'C:/Users', 'C:/Users/ada', null])
+    const segs = enrich('/Users/test_user_1/Documents', driveCtx('C:/Users/test_user_1/Documents'))
+    expect(segs.map((s) => s.target)).toEqual([null, 'C:/Users', 'C:/Users/test_user_1', null])
   })
 
   it('shows the tooltip path with backslashes', () => {
     onTestFinished(withPlatform('windows'))
-    const segs = enrich('/Users/ada/Documents', driveCtx('C:/Users/ada/Documents'))
-    expect(segs[2].displayPath).toBe('\\Users\\ada')
+    const segs = enrich('/Users/test_user_1/Documents', driveCtx('C:/Users/test_user_1/Documents'))
+    expect(segs[2].displayPath).toBe('\\Users\\test_user_1')
   })
 
   it('keeps slashes in the tooltip off Windows', () => {

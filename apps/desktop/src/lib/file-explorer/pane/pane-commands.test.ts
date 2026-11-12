@@ -364,10 +364,10 @@ describe('getPathToCopyUnderCursor', () => {
       buildAccess({
         focusedPane: 'right',
         paneRefs: { left: buildPaneRef(), right: buildPaneRef({ filenameUnderCursor: '..' }) },
-        paths: { right: '/Volumes/naspi/papers' },
+        paths: { right: '/Volumes/testshare/documents' },
       }),
     )
-    expect(await cmds.getPathToCopyUnderCursor()).toBe('/Volumes/naspi/papers')
+    expect(await cmds.getPathToCopyUnderCursor()).toBe('/Volumes/testshare/documents')
   })
 
   it('returns null when no row is under the cursor', async () => {

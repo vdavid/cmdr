@@ -149,11 +149,11 @@ key its pinnable certificate names) `Unreachable`, ❗ so no prompt ever offers 
 ## Path handling
 
 `paths.rs` is `cmdr-sftp`'s translation with a different root, and both go through
-`cmdr_fs::volume::remote_paths::RemoteRoot`: the app spells a file `webdav://ada@nas.local:443/Photos/a.jpg`, the server
-spells it `/Photos/a.jpg`, and the volume is rooted at `<prefix><remote root>`. The prefix comes from
-`cmdr_fs::volume::webdav_app_root`, a sibling of the `webdav_volume_id` the registry keys on. ❗ `webdav://` whatever
-the transport is: `http` and `https` to one host and port are the same server, which is the call the volume id already
-makes.
+`cmdr_fs::volume::remote_paths::RemoteRoot`: the app spells a file
+`webdav://test_user_1@testnas.local:443/Photos/a.jpg`, the server spells it `/Photos/a.jpg`, and the volume is rooted at
+`<prefix><remote root>`. The prefix comes from `cmdr_fs::volume::webdav_app_root`, a sibling of the `webdav_volume_id`
+the registry keys on. ❗ `webdav://` whatever the transport is: `http` and `https` to one host and port are the same
+server, which is the call the volume id already makes.
 
 `remote_root` is normalized to `/` or `/Photos` under the base URL, `..` is resolved lexically BEFORE the containment
 check, the prefix and the root are both matched by whole components, and anything outside is `NotFound` (never

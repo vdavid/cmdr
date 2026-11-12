@@ -5,7 +5,7 @@ fn nas(ip: Option<&str>) -> NetworkHost {
     NetworkHost {
         id: "nas".to_string(),
         name: "NAS".to_string(),
-        hostname: ip.map(|_| "nas.local".to_string()),
+        hostname: ip.map(|_| "testnas.local".to_string()),
         ip_address: ip.map(str::to_string),
         port: 445,
         source: HostSource::Discovered,
@@ -19,7 +19,7 @@ fn browse_resolving_nas(cache: &mut DiscoveryCache, ip: &str) -> u64 {
     cache.mdns_resolved(
         "nas",
         "NAS",
-        Some("nas.local".to_string()),
+        Some("testnas.local".to_string()),
         Some(ip.to_string()),
         445,
         browse,
@@ -86,7 +86,7 @@ fn a_new_browse_trusts_a_cached_host_only_once_it_resolves_again() {
     cache.mdns_resolved(
         "nas",
         "NAS",
-        Some("nas.local".to_string()),
+        Some("testnas.local".to_string()),
         Some("192.168.1.20".to_string()),
         445,
         browse,
@@ -178,7 +178,7 @@ fn a_fresh_resolution_never_inherits_an_address_from_an_earlier_browse() {
     cache.end_browse();
 
     let browse = cache.begin_browse();
-    cache.mdns_resolved("nas", "NAS", Some("nas.local".to_string()), None, 445, browse);
+    cache.mdns_resolved("nas", "NAS", Some("testnas.local".to_string()), None, 445, browse);
     let fresh = cache.fresh_hosts();
     assert_eq!(
         fresh.first().map(|h| h.ip_address.as_deref()),
@@ -191,7 +191,7 @@ fn a_fresh_resolution_never_inherits_an_address_from_an_earlier_browse() {
 fn a_second_resolution_in_one_browse_keeps_what_the_first_one_gave() {
     let mut cache = DiscoveryCache::default();
     let browse = browse_resolving_nas(&mut cache, "192.168.1.10");
-    cache.mdns_resolved("nas", "NAS", Some("nas.local".to_string()), None, 445, browse);
+    cache.mdns_resolved("nas", "NAS", Some("testnas.local".to_string()), None, 445, browse);
     let fresh = cache.fresh_hosts();
     assert_eq!(
         fresh.first().and_then(|h| h.ip_address.as_deref()),

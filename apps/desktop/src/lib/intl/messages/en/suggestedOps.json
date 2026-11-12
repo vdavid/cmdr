@@ -463,7 +463,7 @@
   "@suggestedOps.refusal.nameTaken.message": {
     "description": "Reason shown under a suggestion to add or rename a server, when another saved server took the same name after the AI suggested this. Two servers with one name could be mistaken for each other, so nothing was saved. Followed by suggestedOps.refusal.nameTaken.suggestion.",
     "placeholders": {
-      "name": "the name the other saved server already has, like Naspolya; never translated"
+      "name": "the name the other saved server already has, like Testnas; never translated"
     },
     "screenshot": "suggested-ops-server-refused.png"
   },

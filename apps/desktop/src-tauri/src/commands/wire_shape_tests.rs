@@ -36,10 +36,10 @@ fn a_scan_refusal_says_whether_the_destination_is_gone_or_not_connected() {
     );
     assert_eq!(
         serde_json::to_value(VolumeScanError::DestinationVolumeNotFound {
-            volume_id: "smb-naspi".to_string()
+            volume_id: "smb-testshare".to_string()
         })
         .unwrap(),
-        json!({ "type": "destinationVolumeNotFound", "volumeId": "smb-naspi" })
+        json!({ "type": "destinationVolumeNotFound", "volumeId": "smb-testshare" })
     );
 }
 

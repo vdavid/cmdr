@@ -16,7 +16,7 @@
 import type { FileEntry } from '#lib/file-explorer/types.js'
 import { daysAgo, hoursAgo } from './relative-time'
 
-const FIXTURE_DIR = '/Volumes/Naspolya/media/photos/2026/07-summer-archive'
+const FIXTURE_DIR = '/Volumes/Testnas/media/photos/2026/07-summer-archive'
 
 /** Builds one entry, filling in the fields the results table doesn't vary. */
 function entry(name: string, options: Partial<FileEntry> = {}): FileEntry {
@@ -29,7 +29,7 @@ function entry(name: string, options: Partial<FileEntry> = {}): FileEntry {
     size: 4_096,
     modifiedAt: daysAgo(30),
     permissions: 0o644,
-    owner: 'david',
+    owner: 'test_user_3',
     group: 'staff',
     iconId: extension ? `ext:${extension}` : 'file',
     ...options,
@@ -52,7 +52,7 @@ const MIXED_FOLDER: FileEntry[] = [
   directory('exported-jpeg-web-resolution-2048px-longest-edge', { modifiedAt: daysAgo(4) }),
   directory('Färdiga bilder till tryck'),
   directory('.thumbnails', { modifiedAt: daysAgo(120) }),
-  entry('2026-07-14_stockholm-archipelago-sunrise-session_DSC09241_edited_final_v3_reallyfinal.arw', {
+  entry('2026-07-14_test-harbor-sunrise-photo-session_DSC09241_edited_final_v3_reallyfinal.arw', {
     size: 118_293_504,
     modifiedAt: hoursAgo(3),
   }),

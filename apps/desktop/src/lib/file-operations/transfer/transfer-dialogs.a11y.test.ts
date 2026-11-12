@@ -164,7 +164,7 @@ describe('UnlockDialog a11y', () => {
     const target = container()
     mount(UnlockDialog, {
       target,
-      props: { container: 'resticRepo', name: 'm3-restic', wrongAttempt: false, ...callbacks },
+      props: { container: 'resticRepo', name: 'test-restic', wrongAttempt: false, ...callbacks },
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -177,7 +177,7 @@ describe('UnlockDialog a11y', () => {
     const target = container()
     mount(UnlockDialog, {
       target,
-      props: { container: 'resticRepo', name: 'm3-restic', wrongAttempt: false, checking: true, ...callbacks },
+      props: { container: 'resticRepo', name: 'test-restic', wrongAttempt: false, checking: true, ...callbacks },
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -189,7 +189,7 @@ describe('UnlockDialog a11y', () => {
     const target = container()
     mount(UnlockDialog, {
       target,
-      props: { container: 'resticRepo', name: 'm3-restic', wrongAttempt: false, unreachable: true, ...callbacks },
+      props: { container: 'resticRepo', name: 'test-restic', wrongAttempt: false, unreachable: true, ...callbacks },
     })
     await tick()
     await expectNoA11yViolations(target)

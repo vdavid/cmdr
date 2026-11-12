@@ -19,7 +19,7 @@ import { announceOpening, OPENING_TOAST_MS } from './opening-toast'
 function entryOf(over: Partial<FileEntry> = {}): FileEntry {
   return {
     name: 'report.pdf',
-    path: '/Volumes/naspi/report.pdf',
+    path: '/Volumes/testshare/report.pdf',
     isDirectory: false,
     isSymlink: false,
     permissions: 0o644,
@@ -38,7 +38,7 @@ describe('announceOpening', () => {
   it('names the file and the app it opens in, for two seconds', async () => {
     ipc.defaultAppName.mockResolvedValue('Preview')
     await announceOpening(entryOf())
-    expect(ipc.defaultAppName).toHaveBeenCalledWith('/Volumes/naspi/report.pdf')
+    expect(ipc.defaultAppName).toHaveBeenCalledWith('/Volumes/testshare/report.pdf')
     expect(toast.addToast).toHaveBeenCalledWith(
       'report.pdf is opening in Preview…',
       expect.objectContaining({ dismissal: 'transient', timeoutMs: OPENING_TOAST_MS, id: 'opening-file' }),

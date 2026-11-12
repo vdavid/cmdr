@@ -262,18 +262,18 @@ fn the_desktop_volume_and_smb_lines_ship_each_value_as_one_token_of_its_kind() {
         )
     };
     let marked = refused(
-        &format_args!("user={:?}", LogPrivate::user("alex")),
-        &LogPrivate::host("Alex's MacBook Pro (2)"),
+        &format_args!("user={:?}", LogPrivate::user("test_user_11")),
+        &LogPrivate::host("Tester's MacBook Pro (2)"),
         &LogPrivate::volume("Family Photos"),
     );
-    assert_ships_none(&marked, &["Alex", "MacBook", "Family", "Photos", "alex"]);
+    assert_ships_none(&marked, &["Tester", "MacBook", "Family", "Photos", "test_user_11"]);
     assert_eq!(
         shape(&marked),
         format!(
             "{HEAD}server=\"<host>\", share=\"<volume>\" turned user=\"<user>\" away at sign-in (bad password); asking for a sign-in."
         )
     );
-    let keyed = refused(&"user=\"alex\"", &"Alex's MacBook Pro (2)", &"Family Photos");
+    let keyed = refused(&"user=\"test_user_11\"", &"Tester's MacBook Pro (2)", &"Family Photos");
     assert_eq!(
         hashes(&context().redact_line(&marked)),
         hashes(&context().redact_line(&keyed)),
@@ -298,11 +298,11 @@ fn the_listing_and_mtp_lines_ship_each_value_as_one_token_of_its_kind() {
     assert_ne!(shape(&done(&dir)), golden, "the unmarked spelling guesses the kind");
 
     // An MTP storage name, marked as a volume.
-    let storage = "Alex's SD card (2)";
+    let storage = "Tester's SD card (2)";
     let probe =
         |name: &dyn std::fmt::Debug| format!("{HEAD}Storage volumeName={name:?}: write probe succeeded, cleaning up");
     let marked = probe(&LogPrivate::volume(storage));
-    assert_ships_none(&marked, &["Alex", "SD", "card"]);
+    assert_ships_none(&marked, &["Tester", "SD", "card"]);
     assert_eq!(
         shape(&marked),
         format!("{HEAD}Storage volumeName=\"<volume>\": write probe succeeded, cleaning up")
@@ -510,10 +510,10 @@ fn the_network_backend_lines_ship_each_value_as_one_token_of_its_kind() {
         format!("{HEAD}SftpVolume::rename: {from} → {to}, force=false")
     };
     let marked = sftp(
-        &LogPrivate::path("/home/alex/Summer (Lake House)/a.jpg"),
-        &LogPrivate::path("/home/alex/Summer (Lake House)/b.jpg"),
+        &LogPrivate::path("/home/test_user_11/Summer (Lake House)/a.jpg"),
+        &LogPrivate::path("/home/test_user_11/Summer (Lake House)/b.jpg"),
     );
-    assert_ships_none(&marked, &["alex", "Summer", "Lake", "House"]);
+    assert_ships_none(&marked, &["test_user_11", "Summer", "Lake", "House"]);
     assert_eq!(
         shape(&marked),
         format!("{HEAD}SftpVolume::rename: $HOME/<dir>/<file>.jpg → $HOME/<dir>/<file>.jpg, force=false")

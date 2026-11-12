@@ -7,7 +7,7 @@ import { resolveSearchScope, resolveDefaultScope, volumeRootFor, volumeRootsFrom
 import type { VolumeInfo } from '#lib/file-explorer/types.js'
 
 const LOCAL_ONLY = ['/']
-const WITH_NAS = ['/', '/Volumes/naspi']
+const WITH_NAS = ['/', '/Volumes/testshare']
 
 describe('resolveSearchScope', () => {
   it('returns the current path when it is a real folder', () => {
@@ -70,18 +70,18 @@ describe('resolveSearchScope', () => {
 
   it("resolves 'this volume' to the mount root the current folder is on", () => {
     const out = resolveSearchScope({
-      currentPath: '/Volumes/naspi/photos/2026',
-      history: ['/Volumes/naspi/photos/2026'],
+      currentPath: '/Volumes/testshare/photos/2026',
+      history: ['/Volumes/testshare/photos/2026'],
       volumeRoots: WITH_NAS,
     })
-    expect(out.volumeRoot).toBe('/Volumes/naspi')
+    expect(out.volumeRoot).toBe('/Volumes/testshare')
   })
 })
 
 describe('volumeRootFor', () => {
   it('picks the longest containing root, not the first match', () => {
     // Every path is under `/`, so a naive scan would call a NAS folder a boot-disk one.
-    expect(volumeRootFor(WITH_NAS, '/Volumes/naspi/photos')).toBe('/Volumes/naspi')
+    expect(volumeRootFor(WITH_NAS, '/Volumes/testshare/photos')).toBe('/Volumes/testshare')
     expect(volumeRootFor(WITH_NAS, '/Users/me')).toBe('/')
   })
 
@@ -125,11 +125,11 @@ describe('volumeRootsFrom', () => {
     const volumes = [
       vol('root', '/', 'main_volume'),
       vol('volumesbackup', '/Volumes/Backup', 'attached_volume'),
-      vol('smb-nas', '/Volumes/naspi', 'network'),
+      vol('smb-nas', '/Volumes/testshare', 'network'),
       vol('phone-1:65537', 'mtp://phone-1/65537', 'mobile_device'),
       vol('network', '', 'network'),
     ]
-    expect(volumeRootsFrom(volumes)).toEqual(['/', '/Volumes/Backup', '/Volumes/naspi', 'mtp://phone-1/65537'])
+    expect(volumeRootsFrom(volumes)).toEqual(['/', '/Volumes/Backup', '/Volumes/testshare', 'mtp://phone-1/65537'])
   })
 })
 
@@ -142,7 +142,7 @@ describe('resolveDefaultScope', () => {
   it('falls back to this volume when the pane has no real folder, so a search still runs', () => {
     // A snapshot pane with nothing but search results behind it: there's no folder to
     // default to, and refusing to search would be worse than searching one rung wider.
-    const presets = { currentFolder: null, currentFolderUnavailableReason: 'nope', volumeRoot: '/Volumes/naspi' }
-    expect(resolveDefaultScope(presets)).toEqual({ path: '/Volumes/naspi', kind: 'thisVolume' })
+    const presets = { currentFolder: null, currentFolderUnavailableReason: 'nope', volumeRoot: '/Volumes/testshare' }
+    expect(resolveDefaultScope(presets)).toEqual({ path: '/Volumes/testshare', kind: 'thisVolume' })
   })
 })

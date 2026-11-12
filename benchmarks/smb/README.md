@@ -7,7 +7,7 @@ and delete across configurable file sizes, counts, and NAS targets.
 
 1. Copy `config.example.toml` to `config.toml` and fill in your NAS details (credentials, share name, IP). `config.toml`
    is gitignored.
-2. Mount each share in Finder (`smb://<ip>/`) so the native path (for example `/Volumes/naspi`) exists.
+2. Mount each share in Finder (`smb://<ip>/`) so the native path (for example `/Volumes/testshare`) exists.
 
 ## Running
 

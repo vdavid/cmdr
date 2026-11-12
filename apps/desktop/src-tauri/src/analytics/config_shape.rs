@@ -145,7 +145,7 @@ mod tests {
         let settings = json!({
             "analytics.email": "person@example.com",
             "network.lastHost": "smb://192.168.1.42/share",
-            "fileExplorer.recentPaths": "/Users/dave/secret",
+            "fileExplorer.recentPaths": "/Users/test_user_10/secret",
             "appearance.customDateTimeFormat": "YYYY-MM-DD",
             "ai.cloudProviderConfigs": "{\"openai\":{\"baseUrl\":\"https://api.openai.com\"}}",
             "behavior.fileSystemWatching.globalGoToLatestShortcut.binding": "\u{2303}\u{2325}\u{2318}J",
@@ -165,7 +165,7 @@ mod tests {
         let serialized = shape.to_string();
         assert!(!serialized.contains("person@example.com"), "email leaked: {serialized}");
         assert!(!serialized.contains("192.168.1.42"), "host leaked: {serialized}");
-        assert!(!serialized.contains("/Users/dave"), "path leaked: {serialized}");
+        assert!(!serialized.contains("/Users/test_user_10"), "path leaked: {serialized}");
     }
 
     #[test]

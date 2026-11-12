@@ -5,8 +5,8 @@ The measured before and after for extracting `indexing/`, `media_index/`, and `i
 matches, so each section carries the exact command.
 
 **Before**, measured 2026-07-30 on an Apple M3 Max (16 cores, 64 GB), macOS 26.5.2, rustc 1.97.1 (`8bab26f4f`,
-2026-07-14), machine otherwise idle. Tree: the `david-index-crate-extraction` worktree with thin LTO landed at commit
-`3f565a88d`, before any code moved.
+2026-07-14), machine otherwise idle. Tree: the `test_user_3-index-crate-extraction` worktree with thin LTO landed at
+commit `3f565a88d`, before any code moved.
 
 **After**, measured 2026-07-31 on the same machine and toolchain, at commit `4092256c0`. The machine was NOT idle this
 time (an IDE indexing pass held load around 8), so every build number was taken twice: once on the extracted tree and

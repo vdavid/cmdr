@@ -147,16 +147,16 @@ export const bulkRenameFixtures: Record<string, Patch<typeof askCmdrState>> = {
   'long-names': {
     renameReview: review([
       {
-        sourceName: '2026-07-14_stockholm-archipelago-sunrise-session_DSC09241_edited_final_v3_reallyfinal.arw',
-        destinationName: '2026-07-14 Stockholm archipelago sunrise session — frame 01 (edited, final).arw',
+        sourceName: '2026-07-14_test-harbor-sunrise-photo-session_DSC09241_edited_final_v3_reallyfinal.arw',
+        destinationName: '2026-07-14 Test harbor sunrise photo session — frame 01 (edited, final).arw',
       },
       {
-        sourceName: '2026-07-14_stockholm-archipelago-sunrise-session_DSC09242_edited_final_v3_reallyfinal.arw',
-        destinationName: '2026-07-14 Stockholm archipelago sunrise session — frame 02 (edited, final).arw',
+        sourceName: '2026-07-14_test-harbor-sunrise-photo-session_DSC09242_edited_final_v3_reallyfinal.arw',
+        destinationName: '2026-07-14 Test harbor sunrise photo session — frame 02 (edited, final).arw',
       },
       {
-        sourceName: 'Számla_Rymdskottkärra_AB_2026_07_végleges_javított_ÁFA-val.pdf',
-        destinationName: 'Rymdskottkärra AB — számla 2026-07 (ÁFA-val, végleges).pdf',
+        sourceName: 'Számla_Testföretag_AB_2026_07_végleges_javított_ÁFA-val.pdf',
+        destinationName: 'Testföretag AB — számla 2026-07 (ÁFA-val, végleges).pdf',
         warnings: ['extensionChanged'],
       },
       {
@@ -302,17 +302,17 @@ export const bulkRenameFixtures: Record<string, Patch<typeof askCmdrState>> = {
             {
               sourceName: 'invoice-2026-06.pdf',
               destinationName: 'Invoice 2026-06.pdf',
-              folder: '/Documents/Rymdskottkärra AB/invoices',
+              folder: '/Documents/Testföretag AB/invoices',
             },
             {
               sourceName: 'invoice-2026-07.pdf',
               destinationName: 'Invoice 2026-07.pdf',
-              folder: '/Documents/Rymdskottkärra AB/invoices',
+              folder: '/Documents/Testföretag AB/invoices',
             },
             {
               sourceName: 'invoice-2026-08.pdf',
               destinationName: 'Invoice 2026-08.pdf',
-              folder: '/Documents/Rymdskottkärra AB/invoices',
+              folder: '/Documents/Testföretag AB/invoices',
               blockedReason: 'targetExists',
             },
           ],
@@ -361,7 +361,7 @@ export const errorReportFixtures: Record<string, Patch<typeof errorReportFlow>> 
   'from-toast': {
     open: true,
     initialNote:
-      'Couldn’t copy “2026-07-14_stockholm-archipelago-sunrise-session_DSC09241_edited_final_v3.arw”.\nThe destination volume disconnected partway through.\nPath: /Volumes/Naspolya/media/photos/2026/07-summer-archive/raw-originals/Sony-A7RV',
+      'Couldn’t copy “2026-07-14_test-harbor-sunrise-photo-session_DSC09241_edited_final_v3.arw”.\nThe destination volume disconnected partway through.\nPath: /Volumes/Testnas/media/photos/2026/07-summer-archive/raw-originals/camera-1',
   },
 }
 

@@ -24,7 +24,7 @@ vi.mock('#lib/logging/logger.js', () => ({
 
 import { cancelPlaceConnect, connectPlace } from './connect-flow'
 
-const VOLUME_ID = 'sftp-nas-local-22-ada'
+const VOLUME_ID = 'sftp-nas-local-22-test_user_1'
 
 let ipc: IpcRecorder
 
@@ -123,7 +123,7 @@ describe('arm 3: a saved place with nothing registered', () => {
       [
         {
           outcome: 'needs_host_key_approval',
-          host: 'nas.local',
+          host: 'testnas.local',
           port: 22,
           algorithm: 'ssh-ed25519',
           fingerprint: 'SHA256:x',
@@ -132,7 +132,13 @@ describe('arm 3: a saved place with nothing registered', () => {
         'host_key_untrusted',
       ],
       [
-        { outcome: 'needs_certificate_approval', host: 'nas.local', port: 5006, fingerprint: 'AB:CD', kind: 'unknown' },
+        {
+          outcome: 'needs_certificate_approval',
+          host: 'testnas.local',
+          port: 5006,
+          fingerprint: 'AB:CD',
+          kind: 'unknown',
+        },
         'certificate_unapproved',
       ],
     ] as const
@@ -151,7 +157,7 @@ describe('arm 3: a saved place with nothing registered', () => {
   it('hands a host-key question to the sheet, on the step the outcome names', async () => {
     const prompt = {
       outcome: 'needs_host_key_approval',
-      host: 'nas.local',
+      host: 'testnas.local',
       port: 22,
       algorithm: 'ssh-ed25519',
       fingerprint: 'SHA256:x',
@@ -168,7 +174,7 @@ describe('arm 3: a saved place with nothing registered', () => {
   it('hands a certificate question to the sheet too, so a self-signed NAS can be trusted', async () => {
     const prompt = {
       outcome: 'needs_certificate_approval',
-      host: 'nas.local',
+      host: 'testnas.local',
       port: 5006,
       fingerprint: 'AB:CD',
       kind: 'unknown',

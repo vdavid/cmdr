@@ -104,9 +104,9 @@ load in the prod log above on a genuinely cold cache. Three things fix it, none 
 
 ## One NAS, two indexes (2026-07-29)
 
-`index-smb-100-127-48-122-445-naspi.db` and `index-smb-192-168-1-111-445-naspi.db` are the same QNAP reached over
+`index-smb-100-64-0-10-445-testshare.db` and `index-smb-192-168-50-10-445-testshare.db` are the same QNAP reached over
 Tailscale and over the LAN: 2,643,852 vs 2,643,898 entries, `total_physical_bytes` 5,553,242,434,008 vs
-5,553,638,575,402 (0.007% apart), and BOTH stamping `volume_path = /Volumes/naspi`. An unscoped search scanned both,
+5,553,638,575,402 (0.007% apart), and BOTH stamping `volume_path = /Volumes/testshare`. An unscoped search scanned both,
 merged duplicate hits, doubled the match count, and held ~260 MB of arena twice.
 
 An SMB volume id is `smb_volume_id(server, port, share)` off `statfs`'s `f_mntfromname`, so the address is the key. The

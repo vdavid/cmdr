@@ -103,7 +103,7 @@
         {
             name: 'PermissionDenied (server)',
             variant: 'PermissionDenied',
-            path: 'sftp://demo@nas.local:22/etc/ssl',
+            path: 'sftp://demo@testnas.local:22/etc/ssl',
             category: 'needs_action',
             title: 'The server won’t open this folder',
         },

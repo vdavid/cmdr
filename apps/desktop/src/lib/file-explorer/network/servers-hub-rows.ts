@@ -343,7 +343,7 @@ function savedRow(server: SavedServer, host: NetworkHost | null, states: Map<str
  * host's label is either the way `statfs` spells the server
  * (`smb-consumer-guest`, written to `known_shares` the first time the host is
  * opened) or the address typed into "Add server". Without the rank, the friendly
- * name a person recognizes (`SMB Test (Guest)`, `Naspolya`) would vanish from
+ * name a person recognizes (`SMB Test (Guest)`, `Testnas`) would vanish from
  * the column the moment they used the host.
  */
 function displayName(server: SavedServer, host: NetworkHost | null): string {

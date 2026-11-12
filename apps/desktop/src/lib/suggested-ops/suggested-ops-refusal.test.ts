@@ -48,7 +48,7 @@ describe('a server card’s refusal', () => {
     protocol: 'sftp',
     fields: [
       { field: 'address', value: 'build.local', changed: false, previous: null },
-      { field: 'account', value: 'ada', changed: false, previous: null },
+      { field: 'account', value: 'test_user_1', changed: false, previous: null },
     ],
     addressIsNew: true,
     sharesAffected: null,
@@ -56,7 +56,7 @@ describe('a server card’s refusal', () => {
   const reason = (answer: ServerRefusal) => refusalReason({ kind: 'server', answer }, 'addServer', card)
 
   it('words a refused save exactly as the servers sheet would', () => {
-    const subject = { host: 'build.local', username: 'ada', protocol: 'sftp' as const }
+    const subject = { host: 'build.local', username: 'test_user_1', protocol: 'sftp' as const }
 
     expect(reason({ kind: 'refused', outcome: { outcome: 'unreachable' } }).message).toBe(
       wordConnectRefusal('save_unconfirmed', subject),
@@ -68,14 +68,14 @@ describe('a server card’s refusal', () => {
 
   it('words an SMB add the address refused as the add sheet does', () => {
     expect(reason({ kind: 'addServer', error: { type: 'invalid_address', message: 'x' } }).message).toBe(
-      wordConnectRefusal('invalid_url', { host: 'build.local', username: 'ada' }),
+      wordConnectRefusal('invalid_url', { host: 'build.local', username: 'test_user_1' }),
     )
   })
 
   it('has its own words for what only a suggested server meets', () => {
     expect(reason({ kind: 'serverChanged' }).message).toContain('changed since the AI suggested')
     expect(reason({ kind: 'alreadySaved', serverId: 'sftp-1' }).message).toContain('already in your servers')
-    expect(reason({ kind: 'nameTaken', name: 'Naspolya' }).message).toContain('Naspolya')
+    expect(reason({ kind: 'nameTaken', name: 'Testnas' }).message).toContain('Testnas')
   })
 
   // The message renders as HTML, the boundary the file refusals share: a name is text.

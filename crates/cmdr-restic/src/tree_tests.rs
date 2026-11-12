@@ -37,7 +37,7 @@ const DIR: &str = "/r/Browse snapshots/latest/Users";
 fn a_file_lists_with_its_size_date_mode_and_owner() {
     let mut n = file("notes.txt", 1_234);
     n.meta.mtime = Some("2026-10-12T19:00:03.5Z".parse::<Timestamp>().expect("time"));
-    n.meta.user = Some("david".to_string());
+    n.meta.user = Some("test_user_3".to_string());
     n.meta.group = Some("staff".to_string());
 
     let entry = entry_of(&n, Path::new(DIR));
@@ -51,7 +51,7 @@ fn a_file_lists_with_its_size_date_mode_and_owner() {
         "whole seconds, like every backend"
     );
     assert_eq!(entry.permissions, 0o644);
-    assert_eq!((entry.owner.as_str(), entry.group.as_str()), ("david", "staff"));
+    assert_eq!((entry.owner.as_str(), entry.group.as_str()), ("test_user_3", "staff"));
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn the_mode_is_the_permission_bits_alone() {
 fn a_symlink_is_a_row_of_its_own_and_never_followed() {
     let n = node(
         OsStr::new("current"),
-        NodeType::from_link(Path::new("/Users/david")),
+        NodeType::from_link(Path::new("/Users/test_user_3")),
         Metadata {
             size: 12,
             ..Metadata::default()

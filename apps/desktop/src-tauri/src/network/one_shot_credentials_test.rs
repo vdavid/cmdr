@@ -10,8 +10,8 @@ use cmdr_fs::volume::host::credentials::{CredentialStore, InMemoryCredentials, S
 
 use super::{OneShotCredentials, SecretOffer};
 
-const SERVICE: &str = "sftp://nas.local:22";
-const ACCOUNT: &str = "ada";
+const SERVICE: &str = "sftp://testnas.local:22";
+const ACCOUNT: &str = "test_user_1";
 
 fn offered() -> StoredCredentials {
     StoredCredentials {

@@ -4,7 +4,7 @@
 //! a TCP connection this crate holds. The volume's root is the export, so the
 //! paths it hands out are export-relative (`/Photos/a.jpg` under `/Public`), and
 //! `cmdr_fs::volume::remote_paths::RemoteRoot` is the one translation to the app's
-//! spelling (`nfs://nas.local:2049/Public/Photos/a.jpg`).
+//! spelling (`nfs://testnas.local:2049/Public/Photos/a.jpg`).
 //!
 //! The lifecycle is `cmdr_fs::volume::http_session`'s, the one WebDAV and S3
 //! share, with the connection as its client and no secret (`reconnect.rs`).
@@ -58,7 +58,7 @@ pub struct NfsVolume {
     /// Display name, as the app chose to label the place.
     name: String,
     /// Both spellings of the export's root: the app's
-    /// (`nfs://nas.local:2049/Public`) and the export-relative one (`/`).
+    /// (`nfs://testnas.local:2049/Public`) and the export-relative one (`/`).
     /// ❗ Every path translation goes through it, ❌ nothing here spells an app
     /// path by hand.
     root: RemoteRoot,

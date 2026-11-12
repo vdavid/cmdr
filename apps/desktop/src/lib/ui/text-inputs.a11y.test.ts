@@ -67,7 +67,7 @@ describe('TextInput a11y', () => {
     label.htmlFor = 'server-address'
     label.textContent = 'Server address'
     target.appendChild(label)
-    mount(TextInput, { target, props: { value: 'smb://nas.local', id: 'server-address' } })
+    mount(TextInput, { target, props: { value: 'smb://testnas.local', id: 'server-address' } })
     await tick()
     await expectNoA11yViolations(target)
   })
@@ -385,8 +385,8 @@ describe('CopyBox a11y', () => {
     mount(CopyBox, {
       target,
       props: {
-        text: '/Volumes/Naspolya/media/photos/2026/07-summer-archive/DSC09241.arw',
-        displayText: '/Volumes/Naspolya/media/…/DSC09241.arw',
+        text: '/Volumes/Testnas/media/photos/2026/07-summer-archive/DSC09241.arw',
+        displayText: '/Volumes/Testnas/media/…/DSC09241.arw',
         copyAriaLabel: 'Copy path to clipboard',
       },
     })

@@ -1,7 +1,7 @@
 /**
  * Behavior tests for NetworkMountView's mount-failure auth loop.
  *
- * Regression (the "Naspolya dead end"): a mount that failed with an auth-class error
+ * Regression (the "Testnas dead end"): a mount that failed with an auth-class error
  * (`auth_failed` / `auth_required`, including the formerly unmapped NetAuth -6600)
  * rendered the dead-end error pane: "Try again" replayed the identical credentials and
  * nothing routed to a credential prompt. Auth-class mount errors must ASK; answering
@@ -97,18 +97,18 @@ vi.mock('#lib/ui/toast/index.js', () => ({ addToast: vi.fn(() => 'id') }))
 vi.mock('../network/lazy-trigger', () => ({ triggerNetworkDiscovery: vi.fn() }))
 
 /** The address the view mounts by, which is NOT the name a person knows the host by. */
-const ADDRESS = '192.168.1.111'
+const ADDRESS = '192.168.50.10'
 
 const host: NetworkHost = {
-  id: 'naspolya-id',
-  name: 'Naspolya',
-  hostname: 'Naspolya.local',
+  id: 'testnas-id',
+  name: 'Testnas',
+  hostname: 'Testnas.local',
   ipAddress: ADDRESS,
   port: 445,
   source: 'discovered',
 }
 
-const naspi: ShareInfo = { name: 'naspi', isDisk: true, comment: null }
+const testshare: ShareInfo = { name: 'testshare', isDisk: true, comment: null }
 
 /** What `mountNetworkShare` throws for a refusal: the typed value, carried across the throw. */
 function refused(error: MountError): MountFailure {
@@ -116,8 +116,13 @@ function refused(error: MountError): MountFailure {
 }
 
 const authFailed: MountError = { type: 'auth_failed', server: ADDRESS }
-const authRequired: MountError = { type: 'auth_required', server: ADDRESS, share: 'naspi' }
-const accountRefused: MountError = { type: 'permission_denied', server: ADDRESS, share: 'naspi', username: 'david' }
+const authRequired: MountError = { type: 'auth_required', server: ADDRESS, share: 'testshare' }
+const accountRefused: MountError = {
+  type: 'permission_denied',
+  server: ADDRESS,
+  share: 'testshare',
+  username: 'test_user_3',
+}
 const unreachable: MountError = { type: 'host_unreachable', server: ADDRESS }
 
 /** The sheet request under test, as much of it as these assert. */
@@ -174,7 +179,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
     // Guest listing succeeded; no creds in play (the incident state).
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     h.getSmbCredentials.mockRejectedValue(new Error('not found'))
     h.resolvePathVolume.mockResolvedValue({ volume: null })
     h.openSignInSheet.mockResolvedValue({ kind: 'cancelled' })
@@ -194,7 +199,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
     // again would be a button that cannot work.
     expect(request.shape).toEqual({ kind: 'username_password', guestAllowed: false })
     // The header names the SHARE, which is what the mount was about.
-    expect(request.endpoint.address).toBe('smb://Naspolya/naspi')
+    expect(request.endpoint.address).toBe('smb://Testnas/testshare')
     // The refusal that opened the sheet, in the app's vocabulary rather than the
     // backend's sentence.
     expect(request.refusal).toBe('authentication_rejected')
@@ -206,7 +211,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
   it('retries the mount with entered credentials and saves them on success', async () => {
     h.mountNetworkShare
       .mockRejectedValueOnce(refused(authFailed))
-      .mockResolvedValueOnce({ mountPath: '/Volumes/naspi', alreadyMounted: false })
+      .mockResolvedValueOnce({ mountPath: '/Volumes/testshare', alreadyMounted: false })
     const { component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -216,7 +221,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
     const outcome = await sheetRequest().attempt({
       mode: 'sign-in',
       secret: { secret: 'hunter2', remember: true },
-      username: 'david',
+      username: 'test_user_3',
     })
 
     expect(outcome).toEqual({ kind: 'handed_off' })
@@ -224,17 +229,17 @@ describe('NetworkMountView mount-failure auth loop', () => {
     // The host's own name rides along, which is what the saved share is filed under.
     expect(h.mountNetworkShare).toHaveBeenLastCalledWith(
       ADDRESS,
-      'naspi',
-      'david',
+      'testshare',
+      'test_user_3',
       'hunter2',
       445,
       15000,
-      'Naspolya',
+      'Testnas',
       'server-connect-test-attempt',
     )
     // Remembered only once the mount actually went through.
     await vi.waitFor(() => {
-      expect(h.saveSmbCredentials).toHaveBeenCalledWith('Naspolya', null, 'david', 'hunter2')
+      expect(h.saveSmbCredentials).toHaveBeenCalledWith('Testnas', null, 'test_user_3', 'hunter2')
     })
 
     await unmount(component)
@@ -251,7 +256,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
     const outcome = await sheetRequest().attempt({
       mode: 'sign-in',
       secret: { secret: 'wrong', remember: true },
-      username: 'david',
+      username: 'test_user_3',
     })
 
     expect(outcome).toEqual({ kind: 'refused', refusal: 'authentication_rejected' })
@@ -267,7 +272,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
   it("makes the account that got in the host's account, so the next visit signs in as it", async () => {
     h.mountNetworkShare
       .mockRejectedValueOnce(refused(authRequired))
-      .mockResolvedValueOnce({ mountPath: '/Volumes/naspi', alreadyMounted: false })
+      .mockResolvedValueOnce({ mountPath: '/Volumes/testshare', alreadyMounted: false })
     const { component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -277,11 +282,11 @@ describe('NetworkMountView mount-failure auth loop', () => {
     await sheetRequest().attempt({
       mode: 'sign-in',
       secret: { secret: 'hunter2', remember: true },
-      username: 'david',
+      username: 'test_user_3',
     })
 
     await vi.waitFor(() => {
-      expect(h.setSmbAccountPreference).toHaveBeenCalledWith('Naspolya', 'david')
+      expect(h.setSmbAccountPreference).toHaveBeenCalledWith('Testnas', 'test_user_3')
     })
 
     await unmount(component)
@@ -313,7 +318,9 @@ describe('NetworkMountView mount-failure auth loop', () => {
 
     const pane = await vi.waitFor(() => must(target.querySelector('.mount-sign-in-state'), 'the sign-in pane'))
     expect(target.querySelector('.mount-error-state')).toBeNull()
-    expect(must(pane.querySelector('.sign-in-title'), 'the title').textContent.trim()).toBe('Sign in to open “naspi”')
+    expect(must(pane.querySelector('.sign-in-title'), 'the title').textContent.trim()).toBe(
+      'Sign in to open “testshare”',
+    )
     const labels = [...pane.querySelectorAll('button')].map((b) => b.textContent.trim())
     expect(labels).toEqual(['Sign in', 'Back'])
 
@@ -346,7 +353,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
     const outcome = await sheetRequest().attempt({
       mode: 'sign-in',
       secret: { secret: 'hunter2', remember: true },
-      username: 'david',
+      username: 'test_user_3',
     })
 
     // ❗ Not `authentication_rejected`: the password worked, so "that password didn't
@@ -363,7 +370,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
     // its own Try again.
     h.mountNetworkShare
       .mockRejectedValueOnce(refused(authFailed))
-      .mockRejectedValueOnce(refused({ type: 'share_not_found', server: ADDRESS, share: 'naspi' }))
+      .mockRejectedValueOnce(refused({ type: 'share_not_found', server: ADDRESS, share: 'testshare' }))
     const { target, component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -373,7 +380,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
     const outcome = await sheetRequest().attempt({
       mode: 'sign-in',
       secret: { secret: 'hunter2', remember: false },
-      username: 'david',
+      username: 'test_user_3',
     })
 
     expect(outcome).toEqual({ kind: 'handed_off' })
@@ -388,14 +395,14 @@ describe('NetworkMountView mount-failure auth loop', () => {
     // ERR-SHUSC: the pane showed the backend's English `Share "data" not found on
     // "observermch"` in an otherwise Hungarian UI. The words are the catalog's now,
     // and the server is the host a person picked, not the address it was mounted by.
-    const notFound: MountError = { type: 'share_not_found', server: ADDRESS, share: 'naspi' }
+    const notFound: MountError = { type: 'share_not_found', server: ADDRESS, share: 'testshare' }
     h.mountNetworkShare.mockRejectedValue(refused(notFound))
     const { target, component } = await mountViewAndActivateShare()
 
     const errorPane = await vi.waitFor(() => must(target.querySelector('.mount-error-state'), 'the error pane'))
     const message = must(errorPane.querySelector('.error-message'), 'the message').textContent
-    expect(message).toBe(renderMountError(notFound, 'Naspolya'))
-    expect(message).toContain('“Naspolya”')
+    expect(message).toBe(renderMountError(notFound, 'Testnas'))
+    expect(message).toContain('“Testnas”')
     expect(message).not.toContain(ADDRESS)
 
     await unmount(component)
@@ -404,7 +411,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
   it('logs a refusal as readable text, not "[object Object]"', async () => {
     // The log bridge renders each property with `String()`, so an object logged as-is
     // reached the log file as `did not go through: [object Object]` (QA round 3).
-    const notFound: MountError = { type: 'share_not_found', server: ADDRESS, share: 'naspi' }
+    const notFound: MountError = { type: 'share_not_found', server: ADDRESS, share: 'testshare' }
     h.mountNetworkShare.mockRejectedValue(refused(notFound))
     const { target, component } = await mountViewAndActivateShare()
 
@@ -425,7 +432,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
     const errorPane = await vi.waitFor(() => must(target.querySelector('.mount-error-state'), 'the error pane'))
     const message = must(errorPane.querySelector('.error-message'), 'the message').textContent
     expect(message).toBe(
-      renderMountError({ type: 'unexpected', server: ADDRESS, share: 'naspi', detail: 'ignored' }, 'Naspolya'),
+      renderMountError({ type: 'unexpected', server: ADDRESS, share: 'testshare', detail: 'ignored' }, 'Testnas'),
     )
     expect(message).not.toContain('IPC transport')
     expect(h.openSignInSheet, 'no credential answers a broken call').not.toHaveBeenCalled()
@@ -438,8 +445,8 @@ describe('NetworkMountView mount-failure auth loop', () => {
     // credential answers that, so the sheet stays out of it, and the pane's
     // Try again is a real second attempt rather than a dead end.
     h.mountNetworkShare
-      .mockRejectedValueOnce(refused({ type: 'mount_missing', server: ADDRESS, share: 'naspi' }))
-      .mockResolvedValueOnce({ mountPath: '/Volumes/naspi', alreadyMounted: false })
+      .mockRejectedValueOnce(refused({ type: 'mount_missing', server: ADDRESS, share: 'testshare' }))
+      .mockResolvedValueOnce({ mountPath: '/Volumes/testshare', alreadyMounted: false })
     const { target, component } = await mountViewAndActivateShare()
 
     const errorPane = await vi.waitFor(() => must(target.querySelector('.mount-error-state'), 'the error pane'))
@@ -490,9 +497,9 @@ describe('NetworkMountView mount-failure auth loop', () => {
       expect(h.updateLeftPaneState).toHaveBeenCalledWith(
         expect.objectContaining({
           mountError: {
-            share: 'naspi',
+            share: 'testshare',
             reason: 'host_unreachable',
-            message: renderMountError(unreachable, 'Naspolya'),
+            message: renderMountError(unreachable, 'Testnas'),
           },
         }),
       )
@@ -513,9 +520,9 @@ describe('NetworkMountView mount-failure auth loop', () => {
       expect(h.updateLeftPaneState).toHaveBeenCalledWith(
         expect.objectContaining({
           mountError: {
-            share: 'naspi',
+            share: 'testshare',
             reason: 'host_unreachable',
-            message: renderMountError(unreachable, 'Naspolya'),
+            message: renderMountError(unreachable, 'Testnas'),
           },
         }),
       )
@@ -614,7 +621,7 @@ describe('NetworkMountView: a mount that waits', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     h.getSmbCredentials.mockRejectedValue(new Error('not found'))
     h.mountNetworkShare.mockImplementation(
       () =>
@@ -641,7 +648,7 @@ describe('NetworkMountView: a mount that waits', () => {
     cancel.click()
     expect(h.cancelServerConnect).toHaveBeenCalledWith('server-connect-test-attempt')
 
-    answerMount({ type: 'cancelled', share: 'naspi' })
+    answerMount({ type: 'cancelled', share: 'testshare' })
     await vi.waitFor(() => {
       expect(target.querySelector('.share-row')).toBeTruthy()
     })
@@ -657,7 +664,7 @@ describe('NetworkMountView: a mount that waits', () => {
     })
 
     expect(must(target.querySelector('.remote-connect .title'), 'the heading').textContent).toContain(
-      'Connecting to naspi',
+      'Connecting to testshare',
     )
     expect(must(target.querySelector('.remote-connect .place-address'), 'the address').textContent).toBe(
       `${ADDRESS}:445`,
@@ -673,7 +680,7 @@ describe('NetworkMountView: a mount that waits', () => {
     })
 
     expect(must(target.querySelector('.remote-connect .place-name'), 'the identity line').textContent).toBe(
-      'naspi on Naspolya',
+      'testshare on Testnas',
     )
 
     await unmount(component)
@@ -696,7 +703,7 @@ describe('NetworkMountView: a mount that waits', () => {
       expect(target.querySelector('.remote-connect')).toBeTruthy()
     })
 
-    expect(must(target.querySelector('.remote-connect .place-name'), 'the identity line').textContent).toBe('naspi')
+    expect(must(target.querySelector('.remote-connect .place-name'), 'the identity line').textContent).toBe('testshare')
     expect(must(target.querySelector('.remote-connect .place-address'), 'the address').textContent).toBe(
       `${ADDRESS}:445`,
     )
@@ -762,7 +769,7 @@ describe('NetworkMountView: a mount that waits', () => {
       expect(target.querySelector('.mount-error-state')).toBeTruthy()
     })
     const message = must(target.querySelector('.mount-error-state .error-message'), 'the message').textContent
-    expect(message).toContain('Naspolya')
+    expect(message).toContain('Testnas')
     expect(message).toContain('killall NetAuthSysAgent')
 
     await unmount(component)
@@ -781,10 +788,10 @@ describe('NetworkMountView auto-mount', () => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
     h.hosts = [host]
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     h.getSmbCredentials.mockRejectedValue(new Error('not found'))
     h.resolvePathVolume.mockResolvedValue({ volume: null })
-    h.mountNetworkShare.mockResolvedValue({ mountPath: '/Volumes/naspi', alreadyMounted: false })
+    h.mountNetworkShare.mockResolvedValue({ mountPath: '/Volumes/testshare', alreadyMounted: false })
   })
 
   it('mounts a queued share once, and opening the host again later only lists its shares', async () => {
@@ -797,7 +804,7 @@ describe('NetworkMountView auto-mount', () => {
         paneId: 'left',
         isFocused: true,
         initialNetworkHost: host,
-        initialAutoMountShare: 'naspi',
+        initialAutoMountShare: 'testshare',
         onAutoMountConsumed: consumed,
       },
     })
@@ -836,7 +843,7 @@ describe('NetworkMountView: back from a share list', () => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
     h.hosts = [attic, host]
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     h.getSmbCredentials.mockRejectedValue(new Error('not found'))
   })
 
@@ -849,7 +856,7 @@ describe('NetworkMountView: back from a share list', () => {
       expect(target.querySelectorAll('.server-row').length).toBeGreaterThan(1)
     })
 
-    // Down to Naspolya (the second row), then in.
+    // Down to Testnas (the second row), then in.
     api.handleKeyDown(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
     await tick()
     api.openCursorItem()
@@ -859,7 +866,7 @@ describe('NetworkMountView: back from a share list', () => {
 
     api.handleKeyDown(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }))
     await vi.waitFor(() => {
-      expect(target.querySelector('.server-row.is-under-cursor')?.textContent).toContain('Naspolya')
+      expect(target.querySelector('.server-row.is-under-cursor')?.textContent).toContain('Testnas')
     })
     await unmount(component)
   })

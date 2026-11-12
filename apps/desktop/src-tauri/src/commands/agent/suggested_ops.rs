@@ -118,7 +118,7 @@ pub struct SuggestedGroupView {
     /// The shared destination folder, the rename parent, or the archive path. `None` for trash
     /// and delete, which bind no target at all.
     pub destination: Option<String>,
-    /// What the destination's volume is called ("naspi on 192.168.1.5", "Macintosh HD"): the
+    /// What the destination's volume is called ("testshare on 192.168.1.5", "Macintosh HD"): the
     /// registered volume's own name, or a saved place's while nobody has connected it. `None`
     /// when there's no destination, or nothing knows that id.
     pub destination_volume_name: Option<String>,

@@ -72,7 +72,7 @@ pub struct SavedPlace {
     /// Whether a session is live right now.
     pub connected: bool,
     /// The app-facing root this place addresses its files by
-    /// (`sftp://ada@nas.local:22/srv`), which is what a tab, a favorite, and an
+    /// (`sftp://test_user_1@testnas.local:22/srv`), which is what a tab, a favorite, and an
     /// MCP row point at.
     ///
     /// ❗ Read from `server_volumes::server_places()`, the one place that mints

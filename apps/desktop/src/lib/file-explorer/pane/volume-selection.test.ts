@@ -117,17 +117,17 @@ describe('createVolumeSelection', () => {
   it('selectVolumeByName for a saved server place opens it on its start folder', async () => {
     const place = vol({
       id: 'sftp-nas',
-      name: 'Naspolya',
-      path: 'sftp://ada@nas.local:22/srv/data',
+      name: 'Testnas',
+      path: 'sftp://test_user_1@testnas.local:22/srv/data',
       category: 'network',
       connectionState: 'saved',
-      landingPath: 'sftp://ada@nas.local:22/srv/data/photos',
+      landingPath: 'sftp://test_user_1@testnas.local:22/srv/data/photos',
     })
     const { ops, navigate } = setup([place])
-    expect(await ops.selectVolumeByName('left', 'Naspolya')).toMatchObject({ kind: 'selected', volumeId: 'sftp-nas' })
+    expect(await ops.selectVolumeByName('left', 'Testnas')).toMatchObject({ kind: 'selected', volumeId: 'sftp-nas' })
     expect(navigate).toHaveBeenCalledWith({
       pane: 'left',
-      to: { selectVolume: { volumeId: 'sftp-nas', path: 'sftp://ada@nas.local:22/srv/data/photos' } },
+      to: { selectVolume: { volumeId: 'sftp-nas', path: 'sftp://test_user_1@testnas.local:22/srv/data/photos' } },
       source: 'user',
     })
   })
@@ -135,17 +135,17 @@ describe('createVolumeSelection', () => {
   it('selectVolumeByName for a connected server place opens it at its root, where the switch picks the path', async () => {
     const place = vol({
       id: 'sftp-nas',
-      name: 'Naspolya',
-      path: 'sftp://ada@nas.local:22/srv/data',
+      name: 'Testnas',
+      path: 'sftp://test_user_1@testnas.local:22/srv/data',
       category: 'network',
       connectionState: 'direct',
-      landingPath: 'sftp://ada@nas.local:22/srv/data/photos',
+      landingPath: 'sftp://test_user_1@testnas.local:22/srv/data/photos',
     })
     const { ops, navigate } = setup([place])
-    expect(await ops.selectVolumeByName('left', 'Naspolya')).toMatchObject({ kind: 'selected', volumeId: 'sftp-nas' })
+    expect(await ops.selectVolumeByName('left', 'Testnas')).toMatchObject({ kind: 'selected', volumeId: 'sftp-nas' })
     expect(navigate).toHaveBeenCalledWith({
       pane: 'left',
-      to: { selectVolume: { volumeId: 'sftp-nas', path: 'sftp://ada@nas.local:22/srv/data' } },
+      to: { selectVolume: { volumeId: 'sftp-nas', path: 'sftp://test_user_1@testnas.local:22/srv/data' } },
       source: 'user',
     })
   })
@@ -188,25 +188,25 @@ describe('createVolumeSelection', () => {
       vol({
         id: 'fav-1',
         name: 'Docs',
-        path: '/Volumes/naspi/docs',
+        path: '/Volumes/testshare/docs',
         category: 'favorite',
         favoriteTarget: {
-          volumeId: 'smb-naspi',
-          volumeName: 'naspi',
-          volumeRoot: '/Volumes/naspi',
+          volumeId: 'smb-testshare',
+          volumeName: 'testshare',
+          volumeRoot: '/Volumes/testshare',
           reach: { kind: 'connects' },
         },
       }),
     ])
     expect(await ops.selectVolumeById('left', 'fav-1')).toEqual({
       kind: 'selected',
-      volumeId: 'smb-naspi',
+      volumeId: 'smb-testshare',
       navigation: started,
     })
     expect(resolvePathVolumeSpy).not.toHaveBeenCalled()
     expect(navigate).toHaveBeenCalledWith({
       pane: 'left',
-      to: { selectVolume: { volumeId: 'smb-naspi', path: '/Volumes/naspi/docs' } },
+      to: { selectVolume: { volumeId: 'smb-testshare', path: '/Volumes/testshare/docs' } },
       source: 'user',
       exact: true,
     })
@@ -232,14 +232,19 @@ describe('createVolumeSelection', () => {
       vol({
         id: 'fav-2',
         name: 'Docs',
-        path: '/Volumes/naspi/docs',
+        path: '/Volumes/testshare/docs',
         category: 'favorite',
-        favoriteTarget: { volumeId: 'smb-naspi', volumeName: 'naspi', volumeRoot: null, reach: { kind: 'forgotten' } },
+        favoriteTarget: {
+          volumeId: 'smb-testshare',
+          volumeName: 'testshare',
+          volumeRoot: null,
+          reach: { kind: 'forgotten' },
+        },
       }),
     ])
     const outcome = await ops.selectVolumeById('left', 'fav-2')
     expect(outcome).toMatchObject({ kind: 'unreachable-favorite', refusal: { kind: 'forgotten' } })
-    expect(outcome.kind === 'unreachable-favorite' && outcome.message).toContain('naspi')
+    expect(outcome.kind === 'unreachable-favorite' && outcome.message).toContain('testshare')
     expect(navigate).not.toHaveBeenCalled()
   })
 

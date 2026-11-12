@@ -193,7 +193,7 @@ export function clearSelfDragFingerprint(): void {
  *
  * ❌ Direct SMB is NOT one of the relative-path cases: `SmbVolume` builds every
  * listing path from `to_display_path()`, which prefixes the OS mount point, so
- * an SMB pane holds `/Volumes/naspi/photos/sunset.jpg`. It rides this path for
+ * an SMB pane holds `/Volumes/testshare/photos/sunset.jpg`. It rides this path for
  * consistency, not out of necessity.
  */
 export interface SelfDragIdentity {

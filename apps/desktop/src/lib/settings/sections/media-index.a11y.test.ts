@@ -408,7 +408,7 @@ describe('MediaIndexNetworkVolumes', () => {
     // `onSpecificSettingChange` alone, so nothing here reads a setting.
     stubs.getSetting = () => undefined
     stubs.volumes = [
-      { id: 'smb-naspi', name: 'naspi', path: '/Volumes/naspi', category: 'network', isEjectable: true },
+      { id: 'smb-testshare', name: 'testshare', path: '/Volumes/testshare', category: 'network', isEjectable: true },
       { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false },
     ]
     stubs.networkOptedIn = false
@@ -420,18 +420,18 @@ describe('MediaIndexNetworkVolumes', () => {
   it('lists only network volumes (not local ones)', async () => {
     const target = await mountAndSettle()
     const names = [...target.querySelectorAll('.net-name')].map((n) => (n.textContent || '').trim())
-    expect(names).toEqual(['naspi'])
+    expect(names).toEqual(['testshare'])
   })
 
   it('toggling the opt-in switch calls the persist+apply helper', async () => {
     const target = await mountAndSettle()
     // The hooks sit on the hidden input (the primitive forwards `data-*` there); the
     // styled track is `aria-hidden` decoration.
-    const input = target.querySelector('input[data-test="media-net-optin"][data-volume-id="smb-naspi"]')
+    const input = target.querySelector('input[data-test="media-net-optin"][data-volume-id="smb-testshare"]')
     expect(input).not.toBeNull()
     ;(input as HTMLElement).click()
     await tick()
-    expect(stubs.setNetworkVolumeOptedIn).toHaveBeenCalledWith('smb-naspi', true)
+    expect(stubs.setNetworkVolumeOptedIn).toHaveBeenCalledWith('smb-testshare', true)
   })
 
   it('the opted-out list has no a11y violations', async () => {

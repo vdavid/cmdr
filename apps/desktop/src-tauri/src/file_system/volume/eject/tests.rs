@@ -40,7 +40,7 @@ fn device_provider_wins_over_every_other_flag() {
 #[test]
 fn smb_volume_routes_to_unmount() {
     let ctx = EjectContext {
-        volume_id: "smb-naspolya-445-public",
+        volume_id: "smb-testnas-445-public",
         is_ejectable: false,
         is_smb: true,
         is_remote_session: false,
@@ -70,7 +70,7 @@ where
 {
     use crate::network::sftp_known_servers::{self, KnownSftpServer};
 
-    let (port, username) = (22, "david");
+    let (port, username) = (22, "test_user_3");
     sftp_known_servers::remember(KnownSftpServer {
         host: host.to_string(),
         port,
@@ -121,7 +121,7 @@ fn remote_session_routes_to_a_disconnect() {
     // Pre-fix this answered `NotEjectable`, which is how an open SFTP place came to
     // be offered an Eject that could only turn it down (`ERR-P7F5Q`).
     let ctx = EjectContext {
-        volume_id: "sftp-naspolya-22-david",
+        volume_id: "sftp-testnas-22-test_user_3",
         is_ejectable: false,
         is_smb: false,
         is_remote_session: true,
@@ -130,7 +130,7 @@ fn remote_session_routes_to_a_disconnect() {
     assert_eq!(
         decide_eject_action(&ctx).unwrap(),
         EjectAction::RemoteDisconnect {
-            volume_id: "sftp-naspolya-22-david".to_string(),
+            volume_id: "sftp-testnas-22-test_user_3".to_string(),
         }
     );
 }
@@ -141,7 +141,7 @@ fn a_remote_session_that_the_os_calls_ejectable_still_disconnects() {
     // answer about a mount, and wording a session drop as an eject is the bug this
     // ordering exists to prevent.
     let ctx = EjectContext {
-        volume_id: "webdav-example-443-david",
+        volume_id: "webdav-example-443-test_user_3",
         is_ejectable: true,
         is_smb: true,
         is_remote_session: true,
@@ -316,7 +316,7 @@ fn a_drive_whose_root_left_the_mount_table_is_already_ejected() {
     let drive = cmdr_fs::volume::local_volume_id(Some("5C1A2D4E-0000-4000-8000-00000000BEEF"), "/Volumes/Backup");
     assert!(is_already_unmounted(&drive, || false));
 
-    let share = cmdr_fs::volume::smb_volume_id("naspolya", 445, "public");
+    let share = cmdr_fs::volume::smb_volume_id("testnas", 445, "public");
     assert!(is_already_unmounted(&share, || false));
 }
 

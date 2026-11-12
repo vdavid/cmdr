@@ -54,7 +54,7 @@ fn lan_and_public_hosts_are_not_local() {
     for url in [
         "http://192.168.1.20/",
         "http://10.0.0.5/",
-        "http://nas.local/",
+        "http://testnas.local/",
         "https://example.com/",
         "http://[fd00::1]/",
     ] {

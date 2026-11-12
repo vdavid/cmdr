@@ -343,7 +343,7 @@ mod tests {
 
     fn with_a_share() -> Vec<MountEntry> {
         linux_mounts::parse_proc_mounts_from_content(
-            "/dev/sda1 / ext4 rw,relatime 0 0\n//nas/naspi /mnt/naspi cifs rw,relatime 0 0\n",
+            "/dev/sda1 / ext4 rw,relatime 0 0\n//nas/testshare /mnt/testshare cifs rw,relatime 0 0\n",
         )
     }
 
@@ -354,7 +354,7 @@ mod tests {
     /// ❗ The hung-mount guard: a favorite on a wedged CIFS share gets no `exists()`.
     #[test]
     fn a_favorite_on_a_network_mount_is_listed_without_touching_it() {
-        let row = favorite_location(favorite("/mnt/naspi/docs"), &with_a_share(), never_asked);
+        let row = favorite_location(favorite("/mnt/testshare/docs"), &with_a_share(), never_asked);
         assert_eq!(row.fs_type.as_deref(), Some("cifs"));
         let target = row.favorite_target.expect("a favorite row carries its target");
         assert_eq!(target.discovered.on_disk, OnDisk::Unchecked);
@@ -376,7 +376,7 @@ mod tests {
     fn every_local_path_lies_on_the_root_volume() {
         for path in [
             "/",
-            "/home/ada/notes.txt",
+            "/home/test_user_1/notes.txt",
             "/mnt/usb/x",
             "~/Documents",
             "~",
@@ -403,7 +403,7 @@ mod tests {
 
     #[test]
     fn a_scheme_path_favorite_has_no_mount() {
-        let row = favorite_location(favorite("sftp://ada@nas:22/srv"), &with_a_share(), never_asked);
+        let row = favorite_location(favorite("sftp://test_user_1@nas:22/srv"), &with_a_share(), never_asked);
         assert_eq!(row.fs_type, None);
         assert!(!row.supports_trash);
     }

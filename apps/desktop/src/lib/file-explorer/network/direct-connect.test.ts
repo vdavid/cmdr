@@ -57,10 +57,10 @@ const archive = { volumeId: 'smb-archive', shareName: 'archive' }
 
 const credentialsNeeded: UpgradeResult & { status: 'credentialsNeeded' } = {
   status: 'credentialsNeeded',
-  server: 'naspolya',
+  server: 'testnas',
   share: 'archive',
   port: 445,
-  displayName: 'Naspolya',
+  displayName: 'Testnas',
   usernameHint: null,
   reason: 'noCredential',
 }
@@ -120,7 +120,7 @@ describe('connectDirectly', () => {
   })
 
   it('names the reason a reachable-but-uncooperative server stayed on the OS mount', async () => {
-    upgradeToSmbVolume.mockResolvedValue({ status: 'networkError', reason: 'unreachable', displayName: 'Naspolya' })
+    upgradeToSmbVolume.mockResolvedValue({ status: 'networkError', reason: 'unreachable', displayName: 'Testnas' })
 
     await expect(connectDirectly(archive)).resolves.toBe('stillOnOsMount')
     expect(errorToasts()).toHaveLength(1)
@@ -199,7 +199,7 @@ describe('connectDirectly', () => {
     // ❗ No guest option: a connection with no credential is exactly what just
     // came back needing one.
     expect(request.shape).toEqual({ kind: 'username_password', guestAllowed: false })
-    expect(request.endpoint.address).toBe('smb://Naspolya/archive')
+    expect(request.endpoint.address).toBe('smb://Testnas/archive')
     expect(request.refusal).toBe('needs_credentials')
     expect(errorToasts()).toHaveLength(0)
   })
@@ -213,23 +213,23 @@ describe('connectDirectly', () => {
     const outcome = await request.attempt({
       mode: 'sign-in',
       secret: { secret: 'hunter2', remember: true },
-      username: 'david',
+      username: 'test_user_3',
     })
 
     expect(outcome).toEqual({ kind: 'handed_off' })
-    expect(upgradeToSmbVolumeWithCredentials).toHaveBeenCalledWith('smb-archive', 'david', 'hunter2', true)
+    expect(upgradeToSmbVolumeWithCredentials).toHaveBeenCalledWith('smb-archive', 'test_user_3', 'hunter2', true)
     expect(requestVolumeRefresh).toHaveBeenCalled()
   })
 
   it('keeps the sheet open on a password the server refused', async () => {
     upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
-    upgradeToSmbVolumeWithCredentials.mockResolvedValue(refusedAs('credentialRejected', 'david'))
+    upgradeToSmbVolumeWithCredentials.mockResolvedValue(refusedAs('credentialRejected', 'test_user_3'))
 
     await connectDirectly(archive)
     const request = await sheetRequest()
 
     await expect(
-      request.attempt({ mode: 'sign-in', secret: { secret: 'wrong', remember: true }, username: 'david' }),
+      request.attempt({ mode: 'sign-in', secret: { secret: 'wrong', remember: true }, username: 'test_user_3' }),
     ).resolves.toEqual({ kind: 'refused', refusal: 'authentication_rejected' })
   })
 
@@ -237,18 +237,18 @@ describe('connectDirectly', () => {
     // ERR-SHUSC: the account signed in and the SHARE refused it. Calling that a
     // wrong password kept the sheet asking for a password that worked.
     upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
-    upgradeToSmbVolumeWithCredentials.mockResolvedValue(refusedAs('accountNotPermitted', 'david'))
+    upgradeToSmbVolumeWithCredentials.mockResolvedValue(refusedAs('accountNotPermitted', 'test_user_3'))
 
     await connectDirectly(archive)
     const request = await sheetRequest()
 
     await expect(
-      request.attempt({ mode: 'sign-in', secret: { secret: 'hunter2', remember: true }, username: 'david' }),
+      request.attempt({ mode: 'sign-in', secret: { secret: 'hunter2', remember: true }, username: 'test_user_3' }),
     ).resolves.toEqual({ kind: 'refused', refusal: 'account_not_permitted' })
   })
 
   it('opens the sheet saying the share turned the saved account away, and names that account', async () => {
-    upgradeToSmbVolume.mockResolvedValue(refusedAs('accountNotPermitted', 'ada'))
+    upgradeToSmbVolume.mockResolvedValue(refusedAs('accountNotPermitted', 'test_user_1'))
 
     await expect(connectDirectly(archive)).resolves.toBe('askingForCredentials')
 
@@ -256,17 +256,17 @@ describe('connectDirectly', () => {
     expect(request.refusal).toBe('account_not_permitted')
     // The sentence says "{username} doesn't have access here", so it has to be the
     // account that was actually turned away.
-    expect(request.endpoint.username).toBe('ada')
+    expect(request.endpoint.username).toBe('test_user_1')
   })
 
   it('opens the sheet saying the saved password was refused, and names its account', async () => {
-    upgradeToSmbVolume.mockResolvedValue(refusedAs('credentialRejected', 'ada'))
+    upgradeToSmbVolume.mockResolvedValue(refusedAs('credentialRejected', 'test_user_1'))
 
     await connectDirectly(archive)
 
     const request = await sheetRequest()
     expect(request.refusal).toBe('authentication_rejected')
-    expect(request.endpoint.username).toBe('ada')
+    expect(request.endpoint.username).toBe('test_user_1')
   })
 
   it('closes the sheet and names the reason when the server itself is the problem', async () => {
@@ -277,14 +277,14 @@ describe('connectDirectly', () => {
     upgradeToSmbVolumeWithCredentials.mockResolvedValue({
       status: 'networkError',
       reason: 'unreachable',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
     })
 
     await connectDirectly(archive)
     const request = await sheetRequest()
 
     await expect(
-      request.attempt({ mode: 'sign-in', secret: { secret: 'hunter2', remember: false }, username: 'david' }),
+      request.attempt({ mode: 'sign-in', secret: { secret: 'hunter2', remember: false }, username: 'test_user_3' }),
     ).resolves.toEqual({ kind: 'handed_off' })
     expect(errorToasts()).toHaveLength(1)
   })
@@ -297,7 +297,7 @@ describe('connectDirectly', () => {
     const request = await sheetRequest()
 
     await expect(
-      request.attempt({ mode: 'sign-in', secret: { secret: 'hunter2', remember: false }, username: 'david' }),
+      request.attempt({ mode: 'sign-in', secret: { secret: 'hunter2', remember: false }, username: 'test_user_3' }),
     ).resolves.toEqual({ kind: 'handed_off' })
     expect(errorToasts()).toHaveLength(0)
     expect(toastsAt('warn')[0]).toContain('archive')

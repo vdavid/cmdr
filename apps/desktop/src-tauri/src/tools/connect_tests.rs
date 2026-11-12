@@ -103,8 +103,8 @@ impl ConnectPorts for Fake {
 
     fn root(&self, volume_id: &str) -> Option<String> {
         match volume_id {
-            "lan" => Some("/Volumes/naspi-2".to_string()),
-            "ts" => Some("/Volumes/naspi".to_string()),
+            "lan" => Some("/Volumes/testshare-2".to_string()),
+            "ts" => Some("/Volumes/testshare".to_string()),
             _ => None,
         }
     }
@@ -122,14 +122,14 @@ fn volume(id: &str, root: &str, live: bool, state: ConnectionState, username: &s
         index: IndexSources::none(id),
         share: Some(ShareIdentity::new(
             Some((BOX, GuidProof::Authenticated)),
-            "naspi",
+            "testshare",
             Some(username),
         )),
     }
 }
 
 fn saved(id: &str, root: &str) -> VolumeFact {
-    volume(id, root, false, ConnectionState::Saved, "david")
+    volume(id, root, false, ConnectionState::Saved, "test_user_3")
 }
 
 async fn connect(ports: &Fake, volume_id: &str) -> Value {
@@ -141,8 +141,14 @@ async fn connect(ports: &Fake, volume_id: &str) -> Value {
 #[tokio::test]
 async fn a_member_whose_sibling_is_live_answers_already_connected_via_it_and_never_dials() {
     let ports = Fake::new(vec![
-        saved("ts", "/Volumes/naspi"),
-        volume("lan", "/Volumes/naspi-1", true, ConnectionState::Direct, "david"),
+        saved("ts", "/Volumes/testshare"),
+        volume(
+            "lan",
+            "/Volumes/testshare-1",
+            true,
+            ConnectionState::Direct,
+            "test_user_3",
+        ),
     ])
     .standing_of("lan", Standing::Registered(Some(ConnectionState::Direct)));
 
@@ -151,7 +157,7 @@ async fn a_member_whose_sibling_is_live_answers_already_connected_via_it_and_nev
     assert_eq!(answer["outcome"], "alreadyConnected");
     assert_eq!(
         answer["location"],
-        json!({ "volumeId": "lan", "path": "/Volumes/naspi-2" })
+        json!({ "volumeId": "lan", "path": "/Volumes/testshare-2" })
     );
     assert_eq!(answer["via"], json!({ "volumeId": "ts" }));
     assert!(ports.dialed().is_empty());
@@ -159,7 +165,10 @@ async fn a_member_whose_sibling_is_live_answers_already_connected_via_it_and_nev
 
 #[tokio::test]
 async fn with_no_member_live_the_more_recently_connected_one_is_dialed() {
-    let mut ports = Fake::new(vec![saved("ts", "/Volumes/naspi"), saved("lan", "/Volumes/naspi-1")]);
+    let mut ports = Fake::new(vec![
+        saved("ts", "/Volumes/testshare"),
+        saved("lan", "/Volumes/testshare-1"),
+    ]);
     ports.recency = vec![("ts", 1_000), ("lan", 9_000)];
     ports.dial_answers = Ok(ServerConnectOutcome::Connected {
         volume_id: "lan".to_string(),
@@ -171,7 +180,7 @@ async fn with_no_member_live_the_more_recently_connected_one_is_dialed() {
     assert_eq!(answer["outcome"], "connected");
     assert_eq!(
         answer["location"],
-        json!({ "volumeId": "lan", "path": "/Volumes/naspi-2" }),
+        json!({ "volumeId": "lan", "path": "/Volumes/testshare-2" }),
         "the root it landed on, which may have moved"
     );
     assert_eq!(answer["via"], json!({ "volumeId": "ts" }));
@@ -180,8 +189,14 @@ async fn with_no_member_live_the_more_recently_connected_one_is_dialed() {
 #[tokio::test]
 async fn another_accounts_member_is_never_picked() {
     let mut ports = Fake::new(vec![
-        saved("ts", "/Volumes/naspi"),
-        volume("lan", "/Volumes/naspi-1", true, ConnectionState::Direct, "dori"),
+        saved("ts", "/Volumes/testshare"),
+        volume(
+            "lan",
+            "/Volumes/testshare-1",
+            true,
+            ConnectionState::Direct,
+            "test_user_7",
+        ),
     ])
     .standing_of("lan", Standing::Registered(Some(ConnectionState::Direct)));
     ports.recency = vec![("ts", 1_000), ("lan", 9_000)];
@@ -198,17 +213,17 @@ async fn another_accounts_member_is_never_picked() {
 async fn a_live_volume_answers_already_connected_without_a_dial() {
     let ports = Fake::new(vec![volume(
         "lan",
-        "/Volumes/naspi-1",
+        "/Volumes/testshare-1",
         true,
         ConnectionState::Direct,
-        "david",
+        "test_user_3",
     )])
     .standing_of("lan", Standing::Registered(Some(ConnectionState::Direct)));
 
     let answer = connect(&ports, "lan").await;
 
     assert_eq!(answer["outcome"], "alreadyConnected");
-    assert_eq!(answer["location"]["path"], "/Volumes/naspi-2");
+    assert_eq!(answer["location"]["path"], "/Volumes/testshare-2");
     assert!(answer.get("via").is_none());
     assert!(ports.dialed().is_empty());
     assert_eq!(ports.reconnects.load(Ordering::SeqCst), 0);
@@ -218,10 +233,10 @@ async fn a_live_volume_answers_already_connected_without_a_dial() {
 async fn a_dropped_volume_is_handed_to_the_reconnect_manager_once_and_never_dialed() {
     let mut ports = Fake::new(vec![volume(
         "lan",
-        "/Volumes/naspi-1",
+        "/Volumes/testshare-1",
         true,
         ConnectionState::Disconnected,
-        "david",
+        "test_user_3",
     )])
     .standing_of("lan", Standing::Registered(Some(ConnectionState::Disconnected)));
     ports.reconnect_settles = Settled::Live;
@@ -231,17 +246,17 @@ async fn a_dropped_volume_is_handed_to_the_reconnect_manager_once_and_never_dial
     assert_eq!(ports.reconnects.load(Ordering::SeqCst), 1);
     assert!(ports.dialed().is_empty());
     assert_eq!(answer["outcome"], "connected");
-    assert_eq!(answer["location"]["path"], "/Volumes/naspi-2");
+    assert_eq!(answer["location"]["path"], "/Volumes/testshare-2");
 }
 
 #[tokio::test]
 async fn a_reconnect_still_going_says_so_and_never_asks_to_be_polled() {
     let ports = Fake::new(vec![volume(
         "lan",
-        "/Volumes/naspi-1",
+        "/Volumes/testshare-1",
         true,
         ConnectionState::Disconnected,
-        "david",
+        "test_user_3",
     )])
     .standing_of("lan", Standing::Registered(Some(ConnectionState::Disconnected)));
 
@@ -255,10 +270,10 @@ async fn a_reconnect_still_going_says_so_and_never_asks_to_be_polled() {
 async fn a_volume_waiting_for_a_sign_in_needs_credentials_without_a_dial() {
     let ports = Fake::new(vec![volume(
         "lan",
-        "/Volumes/naspi-1",
+        "/Volumes/testshare-1",
         true,
         ConnectionState::NeedsSignIn,
-        "david",
+        "test_user_3",
     )])
     .standing_of("lan", Standing::Registered(Some(ConnectionState::NeedsSignIn)));
 
@@ -271,7 +286,7 @@ async fn a_volume_waiting_for_a_sign_in_needs_credentials_without_a_dial() {
 
 #[tokio::test]
 async fn a_saved_place_is_the_only_standing_that_dials() {
-    let mut ports = Fake::new(vec![saved("ts", "/Volumes/naspi")]);
+    let mut ports = Fake::new(vec![saved("ts", "/Volumes/testshare")]);
     ports.dial_answers = Ok(ServerConnectOutcome::Connected {
         volume_id: "ts".to_string(),
     });
@@ -297,7 +312,7 @@ async fn an_id_nothing_saved_answers_not_saved() {
 
 #[tokio::test]
 async fn stop_ends_a_dial_and_answers_cancelled() {
-    let mut ports = Fake::new(vec![saved("ts", "/Volumes/naspi")]);
+    let mut ports = Fake::new(vec![saved("ts", "/Volumes/testshare")]);
     ports.hang = true;
     let cancel = CancellationToken::new();
 
@@ -315,10 +330,10 @@ async fn stop_ends_a_dial_and_answers_cancelled() {
 async fn stop_ends_a_reconnect_wait_and_answers_cancelled() {
     let mut ports = Fake::new(vec![volume(
         "lan",
-        "/Volumes/naspi-1",
+        "/Volumes/testshare-1",
         true,
         ConnectionState::Disconnected,
-        "david",
+        "test_user_3",
     )])
     .standing_of("lan", Standing::Registered(Some(ConnectionState::Disconnected)));
     ports.hang = true;
@@ -396,14 +411,14 @@ async fn a_reconnect_with_no_news_in_the_window_is_still_reconnecting() {
 #[test]
 fn every_dial_outcome_maps_to_the_models_vocabulary() {
     let host_key = cmdr_sftp::transport::HostKeyPrompt {
-        host: "nas.local".to_string(),
+        host: "testnas.local".to_string(),
         port: 22,
         algorithm: "ssh-ed25519".to_string(),
         fingerprint: "SHA256:abc".to_string(),
         kind: cmdr_sftp::transport::HostKeyPromptKind::Unknown,
     };
     let certificate = cmdr_fs::volume::tls::CertificatePrompt {
-        host: "nas.local".to_string(),
+        host: "testnas.local".to_string(),
         port: 5006,
         fingerprint: "AB:CD".to_string(),
         kind: cmdr_fs::volume::tls::CertificatePromptKind::Unknown,
@@ -473,12 +488,12 @@ fn the_saved_place_refusals_map_too() {
         Err(SavedPlaceRefusal::AlreadyConnected {
             volume_id: "ts".to_string(),
         }),
-        |_| Some("/Volumes/naspi".to_string()),
+        |_| Some("/Volumes/testshare".to_string()),
     );
     assert_eq!(already.outcome, ConnectOutcome::AlreadyConnected);
     assert_eq!(
         already.location.map(|location| location.path).as_deref(),
-        Some("/Volumes/naspi")
+        Some("/Volumes/testshare")
     );
     let gone = answer_dial(
         None,

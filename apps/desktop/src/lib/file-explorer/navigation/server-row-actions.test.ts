@@ -15,7 +15,11 @@ const forgetServerSecret = vi.fn(() => Promise.resolve(true))
 const hasServerSecret = vi.fn(() => Promise.resolve(true))
 const listSavedServers = vi.fn(() =>
   Promise.resolve([
-    { id: 'sftp-nas-local-22-ada', autoReconnect: false, places: [{ volumeId: 'sftp-nas-local-22-ada' }] },
+    {
+      id: 'sftp-nas-local-22-test_user_1',
+      autoReconnect: false,
+      places: [{ volumeId: 'sftp-nas-local-22-test_user_1' }],
+    },
   ]),
 )
 const setPlacePinned = vi.fn(() => Promise.resolve(true))
@@ -54,9 +58,9 @@ import { isServerPlaceRow, listSavedPlaces, runServerRowAction, setServerAutoRec
 import type { VolumeInfo } from '../types'
 
 const place: VolumeInfo = {
-  id: 'sftp-nas-local-22-ada',
-  name: 'Naspolya',
-  path: 'sftp://ada@nas.local:22/srv/data',
+  id: 'sftp-nas-local-22-test_user_1',
+  name: 'Testnas',
+  path: 'sftp://test_user_1@testnas.local:22/srv/data',
   category: 'network',
   fsType: 'sftp',
   isEjectable: false,
@@ -79,21 +83,21 @@ beforeEach(() => {
 describe('isServerPlaceRow', () => {
   it('claims SFTP and WebDAV places', () => {
     expect(isServerPlaceRow(place)).toBe(true)
-    expect(isServerPlaceRow({ ...place, id: 'webdav-nas-local-5006-ada' })).toBe(true)
+    expect(isServerPlaceRow({ ...place, id: 'webdav-nas-local-5006-test_user_1' })).toBe(true)
     expect(isServerPlaceRow({ ...place, id: 's3-host-443-akia-photos', fsType: 's3' })).toBe(true)
   })
 
   it('❌ leaves a mounted SMB share alone: its session is an OS mount', () => {
     // The failure this prevents: Disconnect on a share, calling a command that
     // doesn't speak SMB, doing nothing at all.
-    expect(isServerPlaceRow({ ...place, id: 'smb-naspi-media', fsType: 'smbfs' })).toBe(false)
+    expect(isServerPlaceRow({ ...place, id: 'smb-testshare-media', fsType: 'smbfs' })).toBe(false)
     expect(isServerPlaceRow({ ...place, id: 'root', category: 'main_volume' })).toBe(false)
   })
 })
 
 describe('listSavedPlaces', () => {
   it('answers the places the saved servers back, with each one’s "Reconnect automatically" switch', async () => {
-    expect(await listSavedPlaces()).toEqual(new Map([['sftp-nas-local-22-ada', { autoReconnect: false }]]))
+    expect(await listSavedPlaces()).toEqual(new Map([['sftp-nas-local-22-test_user_1', { autoReconnect: false }]]))
   })
 
   /**
@@ -116,13 +120,13 @@ describe('listSavedPlaces', () => {
 
 describe('setServerAutoReconnect', () => {
   it('moves the switch through the one narrow command, which also reaches a connected volume', async () => {
-    await setServerAutoReconnect('sftp-nas-local-22-ada', true)
-    expect(setPlaceAutoReconnect).toHaveBeenCalledWith('sftp-nas-local-22-ada', true)
+    await setServerAutoReconnect('sftp-nas-local-22-test_user_1', true)
+    expect(setPlaceAutoReconnect).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1', true)
   })
 
   it('a refused switch says nothing to the person: the next open shows the real state', async () => {
     setPlaceAutoReconnect.mockRejectedValueOnce(new Error('bridge gone'))
-    await setServerAutoReconnect('sftp-nas-local-22-ada', false)
+    await setServerAutoReconnect('sftp-nas-local-22-test_user_1', false)
     expect(addToast).not.toHaveBeenCalled()
   })
 })
@@ -130,14 +134,14 @@ describe('setServerAutoReconnect', () => {
 describe('runServerRowAction', () => {
   const payload = (action: string) => ({
     action: action as never,
-    volumeId: 'sftp-nas-local-22-ada',
-    volumeName: 'Naspolya',
+    volumeId: 'sftp-nas-local-22-test_user_1',
+    volumeName: 'Testnas',
   })
 
   it('disconnects without asking: the place stays saved, so nothing is lost', async () => {
     await runServerRowAction(payload('disconnect'))
     expect(confirmDialog).not.toHaveBeenCalled()
-    expect(disconnectPlace).toHaveBeenCalledWith('sftp-nas-local-22-ada')
+    expect(disconnectPlace).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1')
   })
 
   it('asks before forgetting a server, and before forgetting its password', async () => {
@@ -145,8 +149,8 @@ describe('runServerRowAction', () => {
     await runServerRowAction(payload('forget-secret'))
     expect(confirmWithCheckbox).toHaveBeenCalledOnce()
     expect(confirmDialog).toHaveBeenCalledOnce()
-    expect(forgetServer).toHaveBeenCalledWith('sftp-nas-local-22-ada')
-    expect(forgetServerSecret).toHaveBeenCalledWith('sftp-nas-local-22-ada')
+    expect(forgetServer).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1')
+    expect(forgetServerSecret).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1')
   })
 
   /**
@@ -222,7 +226,7 @@ describe('runServerRowAction', () => {
     await runServerRowAction(payload('disconnect'))
     expect(addToast).toHaveBeenCalledTimes(1)
     const [message] = addToast.mock.calls[0] as [string]
-    expect(message).toContain('Naspolya')
+    expect(message).toContain('Testnas')
     expect(message).not.toContain('0x8007')
   })
 
@@ -237,13 +241,13 @@ describe('runServerRowAction', () => {
 
   it('moves the pin both ways, and says the server is still saved when it comes out', async () => {
     await runServerRowAction(payload('pin'))
-    expect(setPlacePinned).toHaveBeenCalledWith('sftp-nas-local-22-ada', true)
+    expect(setPlacePinned).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1', true)
 
     await runServerRowAction(payload('unpin'))
-    expect(setPlacePinned).toHaveBeenLastCalledWith('sftp-nas-local-22-ada', false)
+    expect(setPlacePinned).toHaveBeenLastCalledWith('sftp-nas-local-22-test_user_1', false)
     // ❗ The unpin toast has to say the server survives: nothing was deleted, and
     // a person who reads "removed" will re-add a server they still have.
-    expect(addToast).toHaveBeenLastCalledWith('Naspolya is out of your volume switcher. It’s still saved.', {
+    expect(addToast).toHaveBeenLastCalledWith('Testnas is out of your volume switcher. It’s still saved.', {
       level: 'success',
     })
   })
@@ -258,7 +262,7 @@ describe('runServerRowAction', () => {
   it('Open navigates through the hook the pane supplies, and is quiet without one', async () => {
     const onOpen = vi.fn()
     await runServerRowAction({ ...payload('open'), onOpen })
-    expect(onOpen).toHaveBeenCalledWith('sftp-nas-local-22-ada')
+    expect(onOpen).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1')
 
     // The `navigate()` transaction lives in the pane. A menu raised where there
     // is no pane to move says nothing rather than pretending.
@@ -274,11 +278,11 @@ describe('runServerRowAction', () => {
     // The place rides along: an S3 account's buckets are each edited on their own.
     expect(openEditServerSheet).toHaveBeenCalledWith(
       {
-        id: 'sftp-nas-local-22-ada',
+        id: 'sftp-nas-local-22-test_user_1',
         autoReconnect: false,
-        places: [{ volumeId: 'sftp-nas-local-22-ada' }],
+        places: [{ volumeId: 'sftp-nas-local-22-test_user_1' }],
       },
-      'sftp-nas-local-22-ada',
+      'sftp-nas-local-22-test_user_1',
     )
   })
 

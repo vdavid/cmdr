@@ -12,64 +12,76 @@ fn detect(base: &str, user_id: Option<&str>) -> Option<ChunkedUploads> {
 
 #[test]
 fn the_legacy_endpoint_uploads_under_the_user_id_the_server_named() {
-    let uploads = detect("https://cloud.example.com/remote.php/webdav/", Some("ada")).expect("Nextcloud");
+    let uploads = detect("https://cloud.example.com/remote.php/webdav/", Some("test_user_1")).expect("Nextcloud");
     assert_eq!(
         uploads.session("cmdr-1").as_str(),
-        "https://cloud.example.com/remote.php/dav/uploads/ada/cmdr-1/"
+        "https://cloud.example.com/remote.php/dav/uploads/test_user_1/cmdr-1/"
     );
     assert_eq!(
         uploads.chunk("cmdr-1", 7).as_str(),
-        "https://cloud.example.com/remote.php/dav/uploads/ada/cmdr-1/00007"
+        "https://cloud.example.com/remote.php/dav/uploads/test_user_1/cmdr-1/00007"
     );
     assert_eq!(
         uploads.assembled("cmdr-1").as_str(),
-        "https://cloud.example.com/remote.php/dav/uploads/ada/cmdr-1/.file"
+        "https://cloud.example.com/remote.php/dav/uploads/test_user_1/cmdr-1/.file"
     );
     // ❗ The legacy endpoint's paths re-spelled on the `dav/files` one: the
     // uploads collection lives under `remote.php/dav`, and sabre/dav refuses a
     // `Destination` outside its own base.
     assert_eq!(
         uploads.destination("/Movies/a b#1.mkv").as_str(),
-        "https://cloud.example.com/remote.php/dav/files/ada/Movies/a%20b%231.mkv"
+        "https://cloud.example.com/remote.php/dav/files/test_user_1/Movies/a%20b%231.mkv"
     );
 }
 
 #[test]
 fn the_files_endpoint_keeps_its_own_spelling_for_the_destination() {
-    let uploads = detect("http://127.0.0.1:13482/remote.php/dav/files/ada/", Some("ada")).expect("Nextcloud");
+    let uploads = detect(
+        "http://127.0.0.1:13482/remote.php/dav/files/test_user_1/",
+        Some("test_user_1"),
+    )
+    .expect("Nextcloud");
     assert_eq!(
         uploads.destination("/x.bin").as_str(),
-        "http://127.0.0.1:13482/remote.php/dav/files/ada/x.bin"
+        "http://127.0.0.1:13482/remote.php/dav/files/test_user_1/x.bin"
     );
     assert_eq!(
         uploads.session("s").as_str(),
-        "http://127.0.0.1:13482/remote.php/dav/uploads/ada/s/"
+        "http://127.0.0.1:13482/remote.php/dav/uploads/test_user_1/s/"
     );
 }
 
 #[test]
 fn a_subfolder_install_and_a_deeper_base_keep_both_halves() {
-    let uploads = detect("https://example.com/nextcloud/remote.php/webdav/Photos/", Some("ada")).expect("Nextcloud");
+    let uploads = detect(
+        "https://example.com/nextcloud/remote.php/webdav/Photos/",
+        Some("test_user_1"),
+    )
+    .expect("Nextcloud");
     assert_eq!(
         uploads.session("s").as_str(),
-        "https://example.com/nextcloud/remote.php/dav/uploads/ada/s/"
+        "https://example.com/nextcloud/remote.php/dav/uploads/test_user_1/s/"
     );
     assert_eq!(
         uploads.destination("/2026/a.jpg").as_str(),
-        "https://example.com/nextcloud/remote.php/dav/files/ada/Photos/2026/a.jpg"
+        "https://example.com/nextcloud/remote.php/dav/files/test_user_1/Photos/2026/a.jpg"
     );
 }
 
 #[test]
 fn a_user_id_that_is_an_email_is_encoded_as_one_segment() {
-    let uploads = detect("https://c.example.com/remote.php/webdav/", Some("ada@example.com")).expect("Nextcloud");
+    let uploads = detect(
+        "https://c.example.com/remote.php/webdav/",
+        Some("test_user_1@example.com"),
+    )
+    .expect("Nextcloud");
     assert_eq!(
         uploads.session("s").as_str(),
-        "https://c.example.com/remote.php/dav/uploads/ada%40example.com/s/"
+        "https://c.example.com/remote.php/dav/uploads/test_user_1%40example.com/s/"
     );
     assert_eq!(
         uploads.destination("/a").as_str(),
-        "https://c.example.com/remote.php/dav/files/ada%40example.com/a"
+        "https://c.example.com/remote.php/dav/files/test_user_1%40example.com/a"
     );
 }
 
@@ -79,12 +91,12 @@ fn anything_else_uploads_in_one_piece() {
     assert!(detect("https://cloud.example.com/remote.php/webdav/", None).is_none());
     assert!(detect("https://cloud.example.com/remote.php/webdav/", Some("")).is_none());
     // A header on a server whose URL has none of Nextcloud's endpoints.
-    assert!(detect("http://nas.local/dav/", Some("ada")).is_none());
+    assert!(detect("http://testnas.local/dav/", Some("test_user_1")).is_none());
     // A public share has no uploads home.
-    assert!(detect("https://cloud.example.com/public.php/webdav/", Some("ada")).is_none());
+    assert!(detect("https://cloud.example.com/public.php/webdav/", Some("test_user_1")).is_none());
     // The DAV root itself, and a `dav/files` with no user under it.
-    assert!(detect("https://cloud.example.com/remote.php/dav/", Some("ada")).is_none());
-    assert!(detect("https://cloud.example.com/remote.php/dav/files/", Some("ada")).is_none());
+    assert!(detect("https://cloud.example.com/remote.php/dav/", Some("test_user_1")).is_none());
+    assert!(detect("https://cloud.example.com/remote.php/dav/files/", Some("test_user_1")).is_none());
 }
 
 #[test]

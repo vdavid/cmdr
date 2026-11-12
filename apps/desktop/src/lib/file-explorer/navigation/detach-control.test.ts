@@ -20,7 +20,7 @@ const drive: VolumeInfo = {
 
 /** A share on its OS mount: macOS `/Volumes/…` with `os_mount`, or a Linux GVFS row with no state. */
 const osMountedShare: VolumeInfo = {
-  id: 'smb-naspi-media',
+  id: 'smb-testshare-media',
   name: 'media',
   path: '/Volumes/media',
   category: 'attached_volume',
@@ -29,7 +29,7 @@ const osMountedShare: VolumeInfo = {
 }
 const gvfsShare: VolumeInfo = {
   ...osMountedShare,
-  path: '/run/user/1000/gvfs/smb-share:server=naspi,share=media',
+  path: '/run/user/1000/gvfs/smb-share:server=testshare,share=media',
   category: 'network',
   connectionState: null,
 }

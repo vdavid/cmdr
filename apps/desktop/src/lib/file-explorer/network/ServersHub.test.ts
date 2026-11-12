@@ -57,28 +57,28 @@ function savedSmb(host: NetworkHost): SavedServer {
 }
 
 const mockHosts: NetworkHost[] = [
-  { id: 'h1', name: 'Naspolya', hostname: 'Naspolya.local', ipAddress: '192.168.1.111', port: 445 },
+  { id: 'h1', name: 'Testnas', hostname: 'Testnas.local', ipAddress: '192.168.50.10', port: 445 },
   { id: 'h2', name: 'Attic', hostname: 'attic.local', ipAddress: '192.168.1.112', port: 445 },
 ]
 
 const savedSftp: SavedServer = {
-  id: 'sftp-jump.local-22-ada',
+  id: 'sftp-jump.local-22-test_user_1',
   protocol: 'sftp',
   displayName: 'Jump box',
   nameSource: 'user',
   address: 'jump.local:22',
-  username: 'ada',
+  username: 'test_user_1',
   pinned: true,
   lastConnectedAt: '2026-09-01T10:00:00Z',
   autoReconnect: true,
   places: [
     {
-      volumeId: 'sftp-jump.local-22-ada',
+      volumeId: 'sftp-jump.local-22-test_user_1',
       name: 'Jump box',
       pinned: true,
       connected: false,
-      appRoot: 'sftp://ada@jump.local:22',
-      username: 'ada',
+      appRoot: 'sftp://test_user_1@jump.local:22',
+      username: 'test_user_1',
       autoReconnect: true,
     },
   ],
@@ -319,7 +319,7 @@ describe('ServersHub rows', () => {
   it('opens the row once per Enter, not once per handler on the path', async () => {
     const { target, api, onHostSelect, cleanup } = mountBehindBothHandlers()
     await settle()
-    api.setCursorIndex(api.findItemIndex('Naspolya'))
+    api.setCursorIndex(api.findItemIndex('Testnas'))
 
     const listContainer = target.querySelector('.row-list')
     expect(listContainer).not.toBeNull()
@@ -335,7 +335,7 @@ describe('ServersHub rows', () => {
   it('opens an SMB host into its places list', async () => {
     const { api, onHostSelect, onServerSelect, cleanup } = mountBehindBothHandlers()
     await settle()
-    api.setCursorIndex(api.findItemIndex('Naspolya'))
+    api.setCursorIndex(api.findItemIndex('Testnas'))
     api.openCursorItem()
     expect(onHostSelect).toHaveBeenCalledOnce()
     expect(onServerSelect).not.toHaveBeenCalled()
@@ -382,9 +382,9 @@ describe('ServersHub selectServer', () => {
     await settle()
     h.listSavedServers.mockResolvedValue([savedSftp])
 
-    api.selectServer('sftp-jump.local-22-ada')
+    api.selectServer('sftp-jump.local-22-test_user_1')
     await vi.waitFor(() => {
-      expect(api.getRowUnderCursor()?.id).toBe('sftp-jump.local-22-ada')
+      expect(api.getRowUnderCursor()?.id).toBe('sftp-jump.local-22-test_user_1')
     })
     await cleanup()
   })
@@ -434,7 +434,7 @@ describe('ServersHub F8', () => {
     api.setCursorIndex(api.findItemIndex('Jump box'))
     api.handleKeyDown(plainKey('F8'))
     await settle()
-    expect(h.forgetSavedServer).toHaveBeenCalledWith('sftp-jump.local-22-ada', 'Jump box')
+    expect(h.forgetSavedServer).toHaveBeenCalledWith('sftp-jump.local-22-test_user_1', 'Jump box')
     await cleanup()
   })
 
@@ -458,7 +458,7 @@ describe('ServersHub F8', () => {
   it('says a discovered host is not the user’s to remove, rather than doing nothing', async () => {
     const { api, cleanup } = mountBehindBothHandlers()
     await settle()
-    api.setCursorIndex(api.findItemIndex('Naspolya'))
+    api.setCursorIndex(api.findItemIndex('Testnas'))
     api.handleKeyDown(plainKey('F8'))
     await settle()
     expect(h.forgetSavedServer).not.toHaveBeenCalled()
@@ -505,7 +505,7 @@ describe('ServersHub row menu', () => {
     await settle()
     await rightClick('Jump box')
     document
-      .querySelector('[data-menu] [data-menu-row="row:sftp-jump.local-22-ada:open"]')
+      .querySelector('[data-menu] [data-menu-row="row:sftp-jump.local-22-test_user_1:open"]')
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await settle()
     expect(onServerSelect).toHaveBeenCalledOnce()
@@ -730,7 +730,7 @@ describe('ServersHub nearby group', () => {
     await settle()
     expect(header(target)?.textContent.trim()).toBe('2 servers found nearby')
     expect(header(target)?.querySelector('button')?.getAttribute('aria-expanded')).toBe('true')
-    expect(rowNames(target)).toEqual(['Attic', 'Naspolya'])
+    expect(rowNames(target)).toEqual(['Attic', 'Testnas'])
     expect(api.getRowUnderCursor()?.name).toBe('Attic')
     await cleanup()
   })
@@ -749,7 +749,7 @@ describe('ServersHub nearby group', () => {
     h.listSavedServers.mockResolvedValue([savedSmb(mockHosts[0])])
     const { target, cleanup } = mountBehindBothHandlers()
     await settle()
-    expect(rowNames(target)).toEqual(['Naspolya'])
+    expect(rowNames(target)).toEqual(['Testnas'])
     expect(header(target)?.textContent.trim()).toBe('1 server found nearby')
     await cleanup()
   })
@@ -782,7 +782,7 @@ describe('ServersHub nearby group', () => {
     list?.dispatchEvent(plainKey('Enter'))
     await settle()
     expect(h.setSetting).toHaveBeenLastCalledWith('network.nearbyServersGroup', 'expanded')
-    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Naspolya'])
+    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Testnas'])
     expect(cursorRow(target)).toBe(header(target))
 
     list?.dispatchEvent(plainKey(' '))
@@ -800,7 +800,7 @@ describe('ServersHub nearby group', () => {
     await settle()
     header(target)?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await settle()
-    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Naspolya'])
+    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Testnas'])
     expect(cursorRow(target)).toBe(header(target))
     await cleanup()
   })
@@ -810,7 +810,7 @@ describe('ServersHub nearby group', () => {
     h.listSavedServers.mockResolvedValue([savedSftp])
     const saved = mountBehindBothHandlers()
     await settle()
-    expect(rowNames(saved.target)).toEqual(['Jump box', 'Attic', 'Naspolya'])
+    expect(rowNames(saved.target)).toEqual(['Jump box', 'Attic', 'Testnas'])
     await saved.cleanup()
 
     h.settings.set('network.nearbyServersGroup', 'collapsed')
@@ -828,7 +828,7 @@ describe('ServersHub nearby group', () => {
     h.listSavedServers.mockResolvedValue([savedSftp])
     api.refresh()
     await settle()
-    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Naspolya'])
+    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Testnas'])
     await cleanup()
   })
 
@@ -837,8 +837,8 @@ describe('ServersHub nearby group', () => {
     h.listSavedServers.mockResolvedValue([savedSftp])
     const { target, api, cleanup } = mountBehindBothHandlers()
     await settle()
-    api.setCursorIndex(api.findItemIndex('Naspolya'))
-    expect(api.getRowUnderCursor()?.name).toBe('Naspolya')
+    api.setCursorIndex(api.findItemIndex('Testnas'))
+    expect(api.getRowUnderCursor()?.name).toBe('Testnas')
 
     // The other pane's hub collapsed it: the setting is one, the views are two.
     h.settings.set('network.nearbyServersGroup', 'collapsed')
@@ -852,14 +852,14 @@ describe('ServersHub nearby group', () => {
     h.listSavedServers.mockResolvedValue([savedSftp])
     const { target, api, onHostSelect, cleanup } = mountBehindBothHandlers()
     await settle()
-    // The full list: Jump box, the header, Attic, Naspolya, "Add server…".
+    // The full list: Jump box, the header, Attic, Testnas, "Add server…".
     expect(api.getItemCount()).toBe(5)
-    expect(api.findItemIndex('Naspolya')).toBe(3)
+    expect(api.findItemIndex('Testnas')).toBe(3)
 
-    api.setCursorIndex(api.findItemIndex('Naspolya'))
+    api.setCursorIndex(api.findItemIndex('Testnas'))
     await settle()
-    expect(api.getRowUnderCursor()?.name).toBe('Naspolya')
-    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Naspolya'])
+    expect(api.getRowUnderCursor()?.name).toBe('Testnas')
+    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Testnas'])
     expect(h.setSetting).not.toHaveBeenCalled()
 
     api.openCursorItem()
@@ -896,10 +896,10 @@ describe('ServersHub nearby group', () => {
     await settle()
     expect(rowNames(target)).toEqual(['Jump box'])
 
-    expect(api.jumpToPrefix('nas')).toBe('Naspolya')
+    expect(api.jumpToPrefix('test')).toBe('Testnas')
     await settle()
-    expect(api.getRowUnderCursor()?.name).toBe('Naspolya')
-    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Naspolya'])
+    expect(api.getRowUnderCursor()?.name).toBe('Testnas')
+    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Testnas'])
     expect(h.setSetting).not.toHaveBeenCalled()
     await cleanup()
   })

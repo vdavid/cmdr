@@ -195,7 +195,7 @@ const DOWNLOADS_CLEANUP: FixtureGroup[] = [
     displayName: 'Installers you’ve already run',
     rationale: 'These disk images installed apps that are now in Applications, so you don’t need them here.',
     destination: '/backups/Installers',
-    destinationVolumeName: 'Naspolya',
+    destinationVolumeName: 'Testnas',
     files: [
       { name: 'Docker.dmg', size: 612 * MB, modified: daysAgo(12) },
       { name: 'Figma-124.5.dmg', size: 291 * MB, modified: daysAgo(20), live: { kind: 'missing' } },
@@ -212,10 +212,9 @@ const DOWNLOADS_CLEANUP: FixtureGroup[] = [
     groupId: 102,
     verb: 'move',
     displayName: 'Invoices from 2026',
-    rationale:
-      'They all look like invoices, and you keep the others in your finances folder, named by date and sender.',
-    destination: '/papers/finances/2026/invoices',
-    destinationVolumeName: 'Naspolya',
+    rationale: 'They all look like invoices, and you keep the others in your reports folder, named by date and sender.',
+    destination: '/documents/reports/2026/invoices',
+    destinationVolumeName: 'Testnas',
     destinationState: 'willBeCreated',
     // A move that files under new names: the renamed rows draw an arrow, the rest keep theirs.
     files: [
@@ -230,11 +229,11 @@ const DOWNLOADS_CLEANUP: FixtureGroup[] = [
       },
       {
         name: 'invoice-2026-09.pdf',
-        newName: '2026-09-27 OpenAI invoice Rymd.pdf',
+        newName: '2026-09-27 OpenAI invoice Testco.pdf',
         size: 176_004,
         modified: daysAgo(22),
       },
-      { name: 'Számla_Rymdskottkärra_AB_2026_10_végleges.pdf', size: 233_871, modified: daysAgo(3) },
+      { name: 'Számla_Testföretag_AB_2026_10_végleges.pdf', size: 233_871, modified: daysAgo(3) },
       // Nothing recorded when suggested, so a live value has nothing to have changed from.
       {
         name: 'receipt-ica.pdf',
@@ -250,7 +249,7 @@ const DOWNLOADS_CLEANUP: FixtureGroup[] = [
     displayName: 'Screenshot*.png',
     rationale: 'Screenshots pile up here. Your Pictures folder already has a Screenshots folder.',
     destination: '/photos/screenshots',
-    destinationVolumeName: 'Naspolya',
+    destinationVolumeName: 'Testnas',
     destinationState: 'unknown',
     fromSelector: true,
     files: Array.from({ length: 14 }, (_, i) => ({
@@ -352,7 +351,7 @@ const HARD_CASES: FixtureGroup[] = [
     rationale: 'Your camera folder has 60,000 raw files you already imported.',
     sourceFolder: '/Volumes/SD/DCIM',
     destination: '/media/raw',
-    destinationVolumeName: 'Naspolya',
+    destinationVolumeName: 'Testnas',
     total: 60_000,
     // The first page is held, as a real review's would be; the rest page in through `rowSource`.
     files: Array.from({ length: 200 }, (_, i) => rawCameraFile(i)),
@@ -366,7 +365,8 @@ const SERVER_CARDS: FixtureGroup[] = [
     groupId: 301,
     verb: 'addServer',
     displayName: 'Build box',
-    rationale: 'You open sftp://ada@build.example.com in the terminal every day, and it isn’t in your servers yet.',
+    rationale:
+      'You open sftp://test_user_1@build.example.com in the terminal every day, and it isn’t in your servers yet.',
     reversible: 'serverSettings',
     sourceFolder: null,
     files: [],
@@ -376,7 +376,7 @@ const SERVER_CARDS: FixtureGroup[] = [
         { field: 'name', value: 'Build box', changed: false, previous: null },
         { field: 'address', value: 'build.example.com', changed: false, previous: null },
         { field: 'port', value: '22', changed: false, previous: null },
-        { field: 'account', value: 'ada', changed: false, previous: null },
+        { field: 'account', value: 'test_user_1', changed: false, previous: null },
         { field: 'folder', value: '/srv/builds', changed: false, previous: null },
       ],
       addressIsNew: true,
@@ -386,16 +386,16 @@ const SERVER_CARDS: FixtureGroup[] = [
   {
     groupId: 302,
     verb: 'editServer',
-    displayName: 'Naspolya',
-    rationale: 'Your NAS shows as “naspi.local” in Servers. You call it Naspolya everywhere else.',
+    displayName: 'Testnas',
+    rationale: 'Your NAS shows as “testshare.local” in Servers. You call it Testnas everywhere else.',
     reversible: 'serverSettings',
     sourceFolder: null,
     files: [],
     server: {
       protocol: 'smb',
       fields: [
-        { field: 'name', value: 'Naspolya', changed: true, previous: 'naspi.local' },
-        { field: 'address', value: 'naspi.local', changed: false, previous: null },
+        { field: 'name', value: 'Testnas', changed: true, previous: 'testshare.local' },
+        { field: 'address', value: 'testshare.local', changed: false, previous: null },
         { field: 'account', value: 'sam', changed: true, previous: null },
       ],
       addressIsNew: false,

@@ -39,7 +39,7 @@ fn publish(state: &WriteOperationState, id: &str, files_done: usize, bytes_done:
         id.to_owned(),
         WriteOperationType::Copy,
         WriteOperationPhase::Copying,
-        Some("Wedding - Ex libris.png".to_owned()),
+        Some("Test - poster.png".to_owned()),
         files_done,
         1,
         bytes_done,
@@ -67,13 +67,13 @@ fn an_opening_task_is_waiting_on_the_source() {
     let probe = probe_over(guard.id().as_str(), guard.state(), TransferEnds::none());
     probe.still_for_seconds.store(12, Ordering::Relaxed);
 
-    let a = probe.begin_task(TaskRow::source(0), TaskRole::File, "/naspi/a.png", "/tmp/a.png");
+    let a = probe.begin_task(TaskRow::source(0), TaskRole::File, "/testshare/a.png", "/tmp/a.png");
     a.probe().set_phase(TaskPhase::OpeningSource);
     assert_eq!(probe.activity().waiting_on, TransferWaitReason::Source);
 
     // The all-tasks-agree rule still holds: one task streaming means something
     // other than the source is holding the operation up.
-    let b = probe.begin_task(TaskRow::source(1), TaskRole::File, "/naspi/b.png", "/tmp/b.png");
+    let b = probe.begin_task(TaskRow::source(1), TaskRole::File, "/testshare/b.png", "/tmp/b.png");
     b.probe().set_phase(TaskPhase::Streaming);
     assert_eq!(probe.activity().waiting_on, TransferWaitReason::Unknown);
 }
@@ -91,7 +91,7 @@ fn a_first_file_still_opening_says_so_from_the_first_still_second() {
     probe.set_sink(Arc::clone(&sink) as Arc<dyn OperationEventSink>);
     publish(state, guard.id().as_str(), 0, 0);
 
-    let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/naspi/a.png", "/tmp/a.png");
+    let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/testshare/a.png", "/tmp/a.png");
     task.probe().set_phase(TaskPhase::OpeningSource);
 
     let mut watchdog = WatchdogState::new();
@@ -116,12 +116,12 @@ fn a_walker_does_not_hide_the_files_it_is_opening() {
     let probe = probe_over(guard.id().as_str(), state, TransferEnds::none());
     publish(state, guard.id().as_str(), 0, 0);
 
-    let walker = probe.begin_task(TaskRow::source(0), TaskRole::Walker, "/naspi/album", "/tmp/album");
+    let walker = probe.begin_task(TaskRow::source(0), TaskRole::Walker, "/testshare/album", "/tmp/album");
     walker.probe().set_phase(TaskPhase::Walking);
     let leaf = probe.begin_task(
         TaskRow::source(0).leaf(0),
         TaskRole::File,
-        "/naspi/album/a.png",
+        "/testshare/album/a.png",
         "/tmp/album/a.png",
     );
     leaf.probe().set_phase(TaskPhase::OpeningSource);
@@ -142,7 +142,7 @@ fn opening_ends_once_anything_has_landed() {
     let probe = probe_over(guard.id().as_str(), state, TransferEnds::none());
     publish(state, guard.id().as_str(), 1, 377_436);
 
-    let task = probe.begin_task(TaskRow::source(1), TaskRole::File, "/naspi/b.png", "/tmp/b.png");
+    let task = probe.begin_task(TaskRow::source(1), TaskRole::File, "/testshare/b.png", "/tmp/b.png");
     task.probe().set_phase(TaskPhase::OpeningSource);
     assert!(!probe.activity().opening_source);
 }
@@ -165,7 +165,7 @@ fn the_source_s_receive_rate_rides_the_heartbeat_while_nothing_lands() {
     );
     probe.set_sink(Arc::clone(&sink) as Arc<dyn OperationEventSink>);
     publish(state, guard.id().as_str(), 0, 0);
-    let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/naspi/a.png", "/tmp/a.png");
+    let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/testshare/a.png", "/tmp/a.png");
     task.probe().set_phase(TaskPhase::OpeningSource);
 
     let mut watchdog = WatchdogState::new();
@@ -199,7 +199,7 @@ fn a_transfer_landing_bytes_reports_no_receive_rate() {
         state,
         TransferEnds::source_only(Arc::clone(&source) as Arc<dyn Volume>),
     );
-    let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/naspi/a.bin", "/tmp/a.bin");
+    let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/testshare/a.bin", "/tmp/a.bin");
     task.probe().set_phase(TaskPhase::Streaming);
 
     let mut watchdog = WatchdogState::new();
@@ -256,7 +256,7 @@ fn an_event_that_moved_the_counters_goes_out_as_moving() {
         .probes()
         .insert(guard.id().as_str(), Arc::clone(&probe));
     publish(state, guard.id().as_str(), 0, 0);
-    let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/naspi/a.png", "/tmp/a.png");
+    let task = probe.begin_task(TaskRow::source(0), TaskRole::File, "/testshare/a.png", "/tmp/a.png");
     task.probe().set_phase(TaskPhase::OpeningSource);
     probe.still_for_seconds.store(12, Ordering::Relaxed);
     probe.publish_inbound_rate(Some(19_000));

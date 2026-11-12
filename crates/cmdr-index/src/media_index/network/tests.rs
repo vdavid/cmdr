@@ -21,7 +21,7 @@ use super::enrich::{NetworkEnrichCtx, NetworkPassOutcome, PauseReason, enrich_ne
 use super::fetch::FakeByteFetcher;
 use super::policy::ConservativeFetchPolicy;
 
-const MOUNT: &str = "/Volumes/naspi";
+const MOUNT: &str = "/Volumes/testshare";
 
 /// These tests drive the ONE-worker (sequential) network path, so the extra-worker seams
 /// are never exercised: `never_make` panics if reached, `one_worker` pins the count to 1,

@@ -116,7 +116,7 @@ pub(super) fn inspect_with_find() -> Value {
             InspectRow {
                 volume_id: None,
                 row: FileRow::NoVolumeAtPath {
-                    path: "/Volumes/naspi/papers/tax.pdf".into(),
+                    path: "/Volumes/testshare/documents/tax.pdf".into(),
                 },
             },
         ],
@@ -170,10 +170,10 @@ pub(super) fn location_miss() -> Value {
     to_json(&crate::location::miss::LocationMissResult {
         miss: crate::location::miss::MissToken::VolumeNotConnected,
         location: crate::location::resolve::LocationInput {
-            volume_id: Some("smb-naspi".into()),
-            path: "/Volumes/naspi/papers".into(),
+            volume_id: Some("smb-testshare".into()),
+            path: "/Volumes/testshare/documents".into(),
         },
-        detail: "naspi isn't connected. connect_volume can connect it.".into(),
+        detail: "testshare isn't connected. connect_volume can connect it.".into(),
         root: None,
         nearby: Some(Vec::new()),
         same_share_as: Some(Vec::new()),
@@ -186,8 +186,8 @@ pub(super) fn connect(outcome: ConnectOutcome) -> Value {
     to_json(&ConnectAnswer {
         outcome,
         location: connected.then(|| Location {
-            volume_id: "smb-naspi".into(),
-            path: "/Volumes/naspi".into(),
+            volume_id: "smb-testshare".into(),
+            path: "/Volumes/testshare".into(),
         }),
         via: None,
         reason: None,

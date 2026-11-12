@@ -10,9 +10,9 @@ use crate::file_system::volume::manager::test_support::RetiringVolume;
 use crate::file_system::volume::{InMemoryVolume, Volume};
 use crate::ignore_poison::IgnorePoison;
 
-const ID: &str = "sftp-nas.local-22-ada";
-const NARROW: &str = "sftp://ada@nas.local:22/srv/data/tmp";
-const WIDE: &str = "sftp://ada@nas.local:22/srv/data";
+const ID: &str = "sftp-testnas.local-22-test_user_1";
+const NARROW: &str = "sftp://test_user_1@testnas.local:22/srv/data/tmp";
+const WIDE: &str = "sftp://test_user_1@testnas.local:22/srv/data";
 
 /// A registry serving `ID` at `root`, the volume's retirement reader, and the
 /// volume itself so a cell can build its successor the way the wiring does.
@@ -75,12 +75,12 @@ fn the_old_root_stops_resolving_after_a_replace() {
         Some(ID.to_string())
     );
     assert_eq!(
-        manager.mount_id_for_path("sftp://ada@nas.local:22/srv/data/other"),
+        manager.mount_id_for_path("sftp://test_user_1@testnas.local:22/srv/data/other"),
         None,
         "a path the narrowed root no longer covers resolves to nothing"
     );
     assert_eq!(
-        manager.mount_id_for_path("sftp://ada@nas.local:22/srv/data/tmp/a.txt"),
+        manager.mount_id_for_path("sftp://test_user_1@testnas.local:22/srv/data/tmp/a.txt"),
         Some(ID.to_string())
     );
 }

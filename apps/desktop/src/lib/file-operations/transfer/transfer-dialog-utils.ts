@@ -79,7 +79,7 @@ export function containingFolder(path: string): string | null {
 /**
  * Extracts the folder name from a full path.
  * Handles root paths, trailing slashes, and GVFS SMB share directories.
- * @param path - Full path like "/Users/john/Documents"
+ * @param path - Full path like "/Users/test_user_14/Documents"
  * @returns The last path component, like "Documents"
  */
 export function getFolderName(path: string): string {
@@ -183,8 +183,8 @@ export function toBackendSelectionOrCursor(
  *
  * ❗ **Trim the volume root's trailing slash before slicing.** A remote volume is
  * rooted at `<prefix><server-side root>`, so one rooted at `/` (the DEFAULT for
- * SFTP, WebDAV, and ADB) really does spell itself `sftp://ada@nas.local:22/`.
- * Slicing by raw length then eats the separator and yields `home/ada/…`, which
+ * SFTP, WebDAV, and ADB) really does spell itself `sftp://test_user_1@testnas.local:22/`.
+ * Slicing by raw length then eats the separator and yields `home/test_user_1/…`, which
  * `validateDirectoryPath` rejects and `handleConfirm` refuses to act on, so the
  * Copy button does nothing at all. A volume rooted at a subfolder has no trailing
  * slash and never showed the bug, which is how it read as intermittent.

@@ -586,10 +586,10 @@ mod tests {
     fn the_fake_reports_the_mount_facts_it_was_given() {
         let provider = FakeVolumeProvider::shared();
         provider
-            .mark_network("/Volumes/naspi")
+            .mark_network("/Volumes/testshare")
             .mark_inodes_untrusted("/Volumes/stick");
 
-        let share = provider.mount_facts(Path::new("/Volumes/naspi/media"));
+        let share = provider.mount_facts(Path::new("/Volumes/testshare/media"));
         assert!(share.is_network);
         assert!(
             share.inodes_trustworthy,

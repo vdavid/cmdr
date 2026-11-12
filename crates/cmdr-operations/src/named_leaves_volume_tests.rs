@@ -301,7 +301,7 @@ async fn sources_renamed_and_kept_land_named_on_every_volume_route() {
                 .await
                 .expect("an empty subfolder");
             let leaves = names(&[
-                (&invoice, "2026-09-27 OpenAI invoice Rymd.pdf"),
+                (&invoice, "2026-09-27 OpenAI invoice Testco.pdf"),
                 (&folder, "2026-09 scans"),
             ]);
             let mut sources = vec![invoice.clone(), folder.clone()];
@@ -312,13 +312,13 @@ async fn sources_renamed_and_kept_land_named_on_every_volume_route() {
 
             rig.run(sources, leaves).await;
 
-            let mut want = vec!["2026-09 scans", "2026-09-27 OpenAI invoice Rymd.pdf"];
+            let mut want = vec!["2026-09 scans", "2026-09-27 OpenAI invoice Testco.pdf"];
             if with_kept {
                 want.push("receipt.pdf");
             }
             assert_eq!(rig.dest_names().await, want, "{ctx}");
             assert_eq!(
-                rig.read_dest("2026-09-27 OpenAI invoice Rymd.pdf").await,
+                rig.read_dest("2026-09-27 OpenAI invoice Testco.pdf").await,
                 b"invoice",
                 "{ctx}"
             );

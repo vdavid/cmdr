@@ -5,7 +5,7 @@
       "level": "warn",
       "error": {
         "type": "archive_duplicate_entry_name",
-        "path": "/Users/alex/Downloads/photos.zip",
+        "path": "/Users/test_user_11/Downloads/photos.zip",
         "name": "Summer/beach.jpg"
       }
     },
@@ -13,7 +13,7 @@
       "level": "warn",
       "error": {
         "type": "archive_encrypted_entry",
-        "path": "/Users/alex/Downloads/tax-2025.zip",
+        "path": "/Users/test_user_11/Downloads/test-2025.zip",
         "name": "receipts/march.pdf"
       }
     },
@@ -38,7 +38,7 @@
       "level": "warn",
       "error": {
         "type": "archive_entry_under_file",
-        "path": "/Users/alex/Downloads/project.zip",
+        "path": "/Users/test_user_11/Downloads/project.zip",
         "entry": "notes/a.txt",
         "file": "notes"
       }
@@ -47,7 +47,7 @@
       "level": "warn",
       "error": {
         "type": "archive_needs_password",
-        "path": "/Users/alex/Downloads/tax-returns-2019-2025.zip",
+        "path": "/Users/test_user_11/Downloads/test-archive-2019-2025.zip",
         "container": "archive",
         "wrongAttempt": false
       }
@@ -64,28 +64,28 @@
       "error": {
         "type": "changed_while_disconnected",
         "path": "/Volumes/archive/photos/2019/DSC01143.arw",
-        "volumeName": "Naspolya"
+        "volumeName": "Testnas"
       }
     },
     {
       "level": "warn",
       "error": {
         "type": "connection_interrupted",
-        "path": "smb://naspolya.local/media/photos/2026"
+        "path": "smb://testnas.local/media/photos/2026"
       }
     },
     {
       "level": "warn",
       "error": {
         "type": "delete_pending",
-        "path": "/Users/alex/Downloads/ubuntu-26.04-desktop-amd64.iso"
+        "path": "/Users/test_user_11/Downloads/ubuntu-26.04-desktop-amd64.iso"
       }
     },
     {
       "level": "warn",
       "error": {
         "type": "destination_exists",
-        "path": "/Users/alex/Documents/invoices/2026-Q2-summary.numbers"
+        "path": "/Users/test_user_11/Documents/invoices/2026-Q2-summary.numbers"
       }
     },
     {
@@ -99,36 +99,36 @@
       "level": "warn",
       "error": {
         "type": "destination_inside_source",
-        "source": "/Users/alex/Pictures/Photo Library",
-        "destination": "/Users/alex/Pictures/Photo Library/2026/backup-of-everything"
+        "source": "/Users/test_user_11/Pictures/Photo Library",
+        "destination": "/Users/test_user_11/Pictures/Photo Library/2026/backup-of-everything"
       }
     },
     {
       "level": "warn",
       "error": {
         "type": "destination_not_a_folder",
-        "path": "/Volumes/Naspolya/media/photos/2026"
+        "path": "/Volumes/Testnas/media/photos/2026"
       }
     },
     {
       "level": "warn",
       "error": {
         "type": "destination_not_connected",
-        "path": "sftp://alex@nas.local:22/share/photos/2026"
+        "path": "sftp://test_user_11@testnas.local:22/share/photos/2026"
       }
     },
     {
       "level": "warn",
       "error": {
         "type": "destination_not_found",
-        "path": "/Volumes/Naspolya/media/photos/2026"
+        "path": "/Volumes/Testnas/media/photos/2026"
       }
     },
     {
       "level": "warn",
       "error": {
         "type": "destination_not_writable",
-        "path": "adb://46061FDAS000A4",
+        "path": "adb://TESTSERIAL0001",
         "reason": "unexplained"
       }
     },
@@ -136,11 +136,11 @@
       "level": "warn",
       "error": {
         "type": "device_disconnected",
-        "path": "/Volumes/Fältkamera/DCIM/104MSDCF",
+        "path": "/Volumes/Tëstkamera/DCIM/104MSDCF",
         "side": {
           "role": "destination",
-          "volumeId": "vol-faltkamera",
-          "volumeName": "Fältkamera",
+          "volumeId": "vol-testkamera",
+          "volumeName": "Tëstkamera",
           "counterpartName": "Macintosh HD"
         }
       }
@@ -150,8 +150,8 @@
       "error": {
         "type": "duplicate_source_names",
         "name": "invoices",
-        "first": "/Users/alex/Documents/2025/invoices",
-        "second": "/Users/alex/Documents/2026/invoices"
+        "first": "/Users/test_user_11/Documents/2025/invoices",
+        "second": "/Users/test_user_11/Documents/2026/invoices"
       }
     },
     {
@@ -165,7 +165,7 @@
       "level": "warn",
       "error": {
         "type": "file_locked",
-        "path": "/Users/alex/Documents/Acme/bookkeeping-2025.numbers"
+        "path": "/Users/test_user_11/Documents/Acme/bookkeeping-2025.numbers"
       }
     },
     {
@@ -176,11 +176,11 @@
         "maxSize": 4294967295,
         "files": [
           {
-            "name": "2026-07-14_stockholm-archipelago-sunrise-session.braw",
+            "name": "2026-07-14_test-harbor-sunrise-photo-session.braw",
             "size": 92341338112
           },
           {
-            "name": "family-videos-2011-2026-master.mov",
+            "name": "test-videos-2011-2026-master.mov",
             "size": 41231223808
           },
           {
@@ -195,7 +195,7 @@
       "level": "warn",
       "error": {
         "type": "home_folder",
-        "path": "/Users/alex",
+        "path": "/Users/test_user_11",
         "relation": "isHome",
         "action": "delete"
       }
@@ -206,7 +206,7 @@
         "type": "insufficient_space",
         "required": 214748364800,
         "available": 3221225472,
-        "volumeName": "Naspolya media (SMB)"
+        "volumeName": "Testnas media (SMB)"
       }
     },
     {
@@ -236,8 +236,8 @@
       "level": "warn",
       "error": {
         "type": "link_needs_consent",
-        "path": "smb://naspolya.local/media/archive/2026.zip",
-        "server": "naspolya.local",
+        "path": "smb://testnas.local/media/archive/2026.zip",
+        "server": "testnas.local",
         "target": "fs01.example.com"
       }
     },
@@ -245,7 +245,7 @@
       "level": "warn",
       "error": {
         "type": "mounted_volume_inside",
-        "mountPoint": "/Users/alex/projects/backup/nas",
+        "mountPoint": "/Users/test_user_11/projects/backup/nas",
         "action": "delete"
       }
     },
@@ -253,16 +253,16 @@
       "level": "warn",
       "error": {
         "type": "move_not_confirmed",
-        "path": "/Volumes/Fältkamera/DCIM",
+        "path": "/Volumes/Tëstkamera/DCIM",
         "errno": 5,
-        "volumeName": "Fältkamera"
+        "volumeName": "Tëstkamera"
       }
     },
     {
       "level": "warn",
       "error": {
         "type": "name_too_long",
-        "path": "/Volumes/Naspolya/media/photos/2026/07-summer-archive/raw-originals/Sony-A7RV/2026-07-14_stockholm-archipelago-sunrise-session/DSC09241_edited_final_v3_reallyfinal.arw.duplicate-of-the-duplicate-with-a-very-long-suffix"
+        "path": "/Volumes/Testnas/media/photos/2026/07-summer-archive/raw-originals/camera-1/2026-07-14_test-harbor-sunrise-photo-session/DSC09241_edited_final_v3_reallyfinal.arw.duplicate-of-the-duplicate-with-a-very-long-suffix"
       }
     },
     {
@@ -289,7 +289,7 @@
         "cause": {
           "type": "server_connection_lost",
           "path": "/Volumes/archive/photos/2026/DSC09241.arw",
-          "volumeName": "Naspolya",
+          "volumeName": "Testnas",
           "gaveUpAfterSecs": 900
         },
         "kept": [
@@ -297,13 +297,13 @@
             "fate": "landsWhenBack",
             "count": 2,
             "exampleName": "DSC09239.arw",
-            "volumeName": "Naspolya"
+            "volumeName": "Testnas"
           },
           {
             "fate": "rescued",
             "count": 1,
             "exampleName": "DSC09240 (recovered).arw",
-            "volumeName": "Naspolya"
+            "volumeName": "Testnas"
           }
         ]
       }
@@ -314,7 +314,7 @@
         "type": "originals_kept_aside",
         "cause": {
           "type": "source_not_found",
-          "path": "/Users/alex/projects/notes/2026-07-24.md"
+          "path": "/Users/test_user_11/projects/notes/2026-07-24.md"
         },
         "recovered": [
           {
@@ -340,7 +340,7 @@
       "level": "error",
       "error": {
         "type": "read_error",
-        "path": "/Volumes/Fältkamera/DCIM/104MSDCF/DSC09241.ARW",
+        "path": "/Volumes/Tëstkamera/DCIM/104MSDCF/DSC09241.ARW",
         "message": "os error 5: Input/output error (block 2,398,112)"
       }
     },
@@ -366,7 +366,7 @@
       "error": {
         "type": "server_connection_lost",
         "path": "/Volumes/archive/photos/2026/DSC09241.arw",
-        "volumeName": "Naspolya",
+        "volumeName": "Testnas",
         "gaveUpAfterSecs": 900
       }
     },
@@ -417,25 +417,25 @@
       "level": "warn",
       "error": {
         "type": "source_not_connected",
-        "path": "adb://46061FDAS000A4/sdcard/DCIM/Camera/PXL_20260714_052311.jpg"
+        "path": "adb://TESTSERIAL0001/sdcard/DCIM/Camera/PXL_20260714_052311.jpg"
       }
     },
     {
       "level": "warn",
       "error": {
         "type": "source_not_found",
-        "path": "/Volumes/Naspolya/media/photos/2026/07-summer-archive/raw-originals/Sony-A7RV/2026-07-14_stockholm-archipelago-sunrise-session/DSC09241_edited_final_v3_reallyfinal.arw"
+        "path": "/Volumes/Testnas/media/photos/2026/07-summer-archive/raw-originals/camera-1/2026-07-14_test-harbor-sunrise-photo-session/DSC09241_edited_final_v3_reallyfinal.arw"
       }
     },
     {
       "level": "warn",
       "error": {
         "type": "source_not_removed",
-        "path": "/Users/alex/Pictures/gate-measurements.jpg",
+        "path": "/Users/test_user_11/Pictures/gate-measurements.jpg",
         "landedAt": "/Volumes/archive/projects-archive/2023/gate-measurements.jpg",
         "cause": {
           "type": "permission_denied",
-          "path": "/Users/alex/Pictures/gate-measurements.jpg",
+          "path": "/Users/test_user_11/Pictures/gate-measurements.jpg",
           "message": "Operation not permitted (os error 1)",
           "errno": 1,
           "refusal": "systemProtected",
@@ -455,7 +455,7 @@
       "level": "error",
       "error": {
         "type": "symlink_loop",
-        "path": "/Users/alex/dev/node_modules/.pnpm/self/node_modules/self"
+        "path": "/Users/test_user_11/dev/node_modules/.pnpm/self/node_modules/self"
       }
     },
     {

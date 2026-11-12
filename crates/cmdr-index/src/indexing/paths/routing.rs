@@ -463,36 +463,45 @@ mod tests {
         use cmdr_fs::volume::{sftp_app_root, sftp_volume_id, webdav_app_root, webdav_volume_id};
 
         let _serialized = crate::indexing::handle::test_lock();
-        let sftp = sftp_volume_id("nas.local", 22, "ada");
-        assert_eq!(volume_id_for_local_path(&sftp_app_root("nas.local", 22, "ada")), sftp);
+        let sftp = sftp_volume_id("testnas.local", 22, "test_user_1");
         assert_eq!(
-            volume_id_for_local_path(&format!("{}/srv/data/photos", sftp_app_root("nas.local", 22, "ada"))),
+            volume_id_for_local_path(&sftp_app_root("testnas.local", 22, "test_user_1")),
             sftp
         );
         assert_eq!(
-            volume_id_for_local_path(&format!("{}/srv", sftp_app_root("NAS.local", 22, "ada"))),
+            volume_id_for_local_path(&format!(
+                "{}/srv/data/photos",
+                sftp_app_root("testnas.local", 22, "test_user_1")
+            )),
+            sftp
+        );
+        assert_eq!(
+            volume_id_for_local_path(&format!("{}/srv", sftp_app_root("TESTNAS.local", 22, "test_user_1"))),
             sftp,
             "the host folds the way the id folds it"
         );
         assert_ne!(
-            volume_id_for_local_path(&format!("{}/srv", sftp_app_root("nas.local", 22, "Ada"))),
+            volume_id_for_local_path(&format!("{}/srv", sftp_app_root("testnas.local", 22, "Test_user_1"))),
             sftp,
             "the account is case-sensitive, so another user is another volume"
         );
         assert_ne!(
-            volume_id_for_local_path(&format!("{}/srv", sftp_app_root("nas.local", 2222, "ada"))),
+            volume_id_for_local_path(&format!("{}/srv", sftp_app_root("testnas.local", 2222, "test_user_1"))),
             sftp,
             "another port is another server"
         );
         assert_eq!(
-            volume_id_for_local_path(&format!("{}/dav/x", webdav_app_root("cloud.example", 443, "ada"))),
-            webdav_volume_id("cloud.example", 443, "ada"),
+            volume_id_for_local_path(&format!(
+                "{}/dav/x",
+                webdav_app_root("cloud.example", 443, "test_user_1")
+            )),
+            webdav_volume_id("cloud.example", 443, "test_user_1"),
         );
         for nobodys in [
             "sftp://",
-            "sftp://nas.local:22/srv",
-            "sftp://ada@nas.local/srv",
-            "webdav://ada@:443",
+            "sftp://testnas.local:22/srv",
+            "sftp://test_user_1@testnas.local/srv",
+            "webdav://test_user_1@:443",
         ] {
             assert_eq!(
                 volume_id_for_local_path(nobodys),

@@ -224,14 +224,14 @@ pub(super) async fn local_items_land_named_on_the_server_and_undo_restores_them(
         &*local_dir,
         crate::volume_host::host(),
     ));
-    let dest = dir.join("invoices paid");
+    let dest = dir.join("invoices");
     put(remote.as_ref(), &dest.join("Invoice-X.pdf"), b"bystander").await;
     let ids = (rig.register("local", &local), rig.register("remote", &remote));
 
     let invoice = PathBuf::from("downloads/Invoice-X.pdf");
     let scans = PathBuf::from("downloads/scans");
     let leaves = TransferLeaves::per_source([
-        (invoice.clone(), "2026-09-27 OpenAI invoice Rymd.pdf".to_string()),
+        (invoice.clone(), "2026-09-27 OpenAI invoice Testco.pdf".to_string()),
         (scans.clone(), "2026-09 scans".to_string()),
     ]);
     let sources = vec![invoice, PathBuf::from("downloads/receipt.pdf"), scans];
@@ -241,14 +241,14 @@ pub(super) async fn local_items_land_named_on_the_server_and_undo_restores_them(
         names_on(remote.as_ref(), &dest).await,
         vec![
             "2026-09 scans",
-            "2026-09-27 OpenAI invoice Rymd.pdf",
+            "2026-09-27 OpenAI invoice Testco.pdf",
             "Invoice-X.pdf",
             "receipt.pdf"
         ],
         "{label}: each item under the name it was given, beside the bystander"
     );
     assert_eq!(
-        read_all(remote.as_ref(), &dest.join("2026-09-27 OpenAI invoice Rymd.pdf")).await,
+        read_all(remote.as_ref(), &dest.join("2026-09-27 OpenAI invoice Testco.pdf")).await,
         b"invoice"
     );
     assert_eq!(

@@ -22,7 +22,7 @@ pub use verification::LicenseActivationError;
 
 use serde::{Deserialize, Serialize};
 
-/// Redact an email for logging: "john@example.com" -> "j***@example.com"
+/// Redact an email for logging: "test_user_14@example.com" -> "t***@example.com"
 pub(crate) fn redact_email(email: &str) -> String {
     match email.find('@') {
         Some(0) | None => "***".to_string(),

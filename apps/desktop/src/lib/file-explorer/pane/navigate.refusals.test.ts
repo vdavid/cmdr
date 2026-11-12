@@ -38,7 +38,7 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
     // showed the host list: `resolve_location` maps every `smb://` path to the
     // virtual network volume, whose only navigable path is the `smb://` sentinel.
     const result = navigate(
-      { pane: 'left', to: { goTo: { volumeId: 'network', path: 'smb://naspolya/media' } }, source: 'mcp' },
+      { pane: 'left', to: { goTo: { volumeId: 'network', path: 'smb://testnas/media' } }, source: 'mcp' },
       h.deps,
     )
     expect(result).toEqual({
@@ -55,7 +55,7 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
   it('an smb:// destination is refused the same way from a NETWORK pane', () => {
     h = makeHarness({ left: { path: 'smb://', volumeId: 'network' } })
     const result = navigate(
-      { pane: 'left', to: { goTo: { volumeId: 'network', path: 'smb://naspolya/media' } }, source: 'mcp' },
+      { pane: 'left', to: { goTo: { volumeId: 'network', path: 'smb://testnas/media' } }, source: 'mcp' },
       h.deps,
     )
     expect(result.status).toBe('refused')
@@ -97,7 +97,7 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
     const result = navigate(
       {
         pane: 'left',
-        to: { goTo: { volumeId: 'root', path: 'sftp://ada@nas.local:22/srv/data/photos' } },
+        to: { goTo: { volumeId: 'root', path: 'sftp://test_user_1@testnas.local:22/srv/data/photos' } },
         source: 'mcp',
       },
       h.deps,
@@ -109,11 +109,18 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
   })
 
   it('server path on a pane on a DIFFERENT server is refused: two servers can both have /srv/data', () => {
-    h = makeHarness({ left: { path: 'sftp://ada@nas.local:22/srv/data', volumeId: 'sftp-nas-local-22-ada' } })
+    h = makeHarness({
+      left: { path: 'sftp://test_user_1@testnas.local:22/srv/data', volumeId: 'sftp-nas-local-22-test_user_1' },
+    })
     const result = navigate(
       {
         pane: 'left',
-        to: { goTo: { volumeId: 'sftp-nas-local-22-ada', path: 'sftp://ada@other.local:22/srv/data/photos' } },
+        to: {
+          goTo: {
+            volumeId: 'sftp-nas-local-22-test_user_1',
+            path: 'sftp://test_user_1@other.local:22/srv/data/photos',
+          },
+        },
         source: 'mcp',
       },
       h.deps,
@@ -122,11 +129,18 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
   })
 
   it("a path under the pane's own server root is accepted", () => {
-    h = makeHarness({ left: { path: 'sftp://ada@nas.local:22/srv/data', volumeId: 'sftp-nas-local-22-ada' } })
+    h = makeHarness({
+      left: { path: 'sftp://test_user_1@testnas.local:22/srv/data', volumeId: 'sftp-nas-local-22-test_user_1' },
+    })
     const result = navigate(
       {
         pane: 'left',
-        to: { goTo: { volumeId: 'sftp-nas-local-22-ada', path: 'sftp://ada@nas.local:22/srv/data/photos' } },
+        to: {
+          goTo: {
+            volumeId: 'sftp-nas-local-22-test_user_1',
+            path: 'sftp://test_user_1@testnas.local:22/srv/data/photos',
+          },
+        },
         source: 'mcp',
       },
       h.deps,
@@ -137,11 +151,18 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
   it('a sibling of the server root is refused, not silently anchored onto it', () => {
     // ❗ `/srv/data-1` is a legal name. A string-prefix test would accept it and
     // ask the server for a directory the volume does not contain.
-    h = makeHarness({ left: { path: 'sftp://ada@nas.local:22/srv/data', volumeId: 'sftp-nas-local-22-ada' } })
+    h = makeHarness({
+      left: { path: 'sftp://test_user_1@testnas.local:22/srv/data', volumeId: 'sftp-nas-local-22-test_user_1' },
+    })
     const result = navigate(
       {
         pane: 'left',
-        to: { goTo: { volumeId: 'sftp-nas-local-22-ada', path: 'sftp://ada@nas.local:22/srv/data-1/photos' } },
+        to: {
+          goTo: {
+            volumeId: 'sftp-nas-local-22-test_user_1',
+            path: 'sftp://test_user_1@testnas.local:22/srv/data-1/photos',
+          },
+        },
         source: 'mcp',
       },
       h.deps,
@@ -150,16 +171,22 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
   })
 
   it('on-server-volume pane refuses a local path with the exact "on the … server volume" string', () => {
-    h = makeHarness({ left: { path: 'sftp://ada@nas.local:22/srv/data', volumeId: 'sftp-nas-local-22-ada' } })
+    h = makeHarness({
+      left: { path: 'sftp://test_user_1@testnas.local:22/srv/data', volumeId: 'sftp-nas-local-22-test_user_1' },
+    })
     const result = navigate(
-      { pane: 'left', to: { goTo: { volumeId: 'sftp-nas-local-22-ada', path: '/Users/me/doc' } }, source: 'mcp' },
+      {
+        pane: 'left',
+        to: { goTo: { volumeId: 'sftp-nas-local-22-test_user_1', path: '/Users/me/doc' } },
+        source: 'mcp',
+      },
       h.deps,
     )
     expect(result).toEqual({
       status: 'refused',
       reason: {
         kind: 'server-unconnected',
-        message: 'Pane is on the Naspolya server volume. Use select_volume to switch to a local volume first.',
+        message: 'Pane is on the Testnas server volume. Use select_volume to switch to a local volume first.',
       },
     })
   })

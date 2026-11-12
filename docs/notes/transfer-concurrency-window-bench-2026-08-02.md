@@ -55,7 +55,7 @@ SMB2_TEST_NAS_PASSWORD=... CMDR_BENCH_TARGET=nas CMDR_BENCH_REPS=9 \
 ### Environment
 
 - 2026-08-02. macOS 26.5.2, Apple M3 Max, 16 logical / 16 physical cores, release build.
-- **NAS (the deciding target)**: QNAP TS-464 "Naspolya", `192.168.1.111`, share `naspi`, direct `smb2` (not the OS
+- **NAS (the deciding target)**: QNAP TS-464 "Testnas", `192.168.50.10`, share `testshare`, direct `smb2` (not the OS
   mount), wired gigabit. RTT (`ping -c 3`): min/avg/max = 3.372 / 3.729 / 3.959 ms. 9 reps.
 - **Docker (corroboration only)**: Samba container on `127.0.0.1:10480`, share `public`. Loopback, so the per-file
   latency a wider window exists to hide barely exists; a Docker curve says nothing about a real network on its own. 5

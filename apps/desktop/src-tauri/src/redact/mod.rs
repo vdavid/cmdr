@@ -14,7 +14,7 @@
 //!
 //! # Path-shape preservation
 //!
-//! `/Users/john/Documents/budget.pdf` becomes `$HOME/Documents/<file>.pdf`. We keep the
+//! `/Users/test_user_14/Documents/budget.pdf` becomes `$HOME/Documents/<file>.pdf`. We keep the
 //! extension and the immediate parent dir name, but only if that dir name is in the
 //! allowlist (`Documents`, `Downloads`, `Desktop`, ...). Unknown parent dirs collapse to
 //! `<dir>` so we never leak project-like names (`SecretProjectName`).
@@ -429,8 +429,8 @@ fn redactor_regex() -> &'static Regex {
                 | (?i: \b bearer ) \s+ [^\s"']+
             )
             # Account name in a `key=value` / `key: value` log field. Our SMB paths log the
-            # account someone signs in to a share with (`user=david`, `user=Some("david")`,
-            # `username: "david"` in a debug struct); nothing else redacts it, and an account
+            # account someone signs in to a share with (`user=test_user_3`, `user=Some("test_user_3")`,
+            # `username: "test_user_3"` in a debug struct); nothing else redacts it, and an account
             # name is as identifying as the email pattern above.
             #
             # The key must be exactly `user` / `username`, so `max_users=12` and `user_count=7`
@@ -446,11 +446,11 @@ fn redactor_regex() -> &'static Regex {
                   | [^\s,;"'()}]+
                 )
             )
-            # DNS-SD: a Bonjour service instance (`Naspolya._smb._tcp.local.`, whose first label
+            # DNS-SD: a Bonjour service instance (`Testnas._smb._tcp.local.`, whose first label
             # is the user's own device name) and a bare service type (`_smb._tcp.local.`, public).
             # Both before `mdns`, whose labels can't start with `_` and would split the name off.
             # A quoted instance is claimed from its opening quote, whatever the device name
-            # holds (`"Alex's MacBook Pro (2)._companion-link._tcp.local."`, an `mdns_sd` WARN).
+            # holds (`"Tester's MacBook Pro (2)._companion-link._tcp.local."`, an `mdns_sd` WARN).
             | (?P<quoted_bonjour>
                 " (?P<qb_instance>
                     (?P<qb_name> (?: [^"\\\n] | \\ . )+? )

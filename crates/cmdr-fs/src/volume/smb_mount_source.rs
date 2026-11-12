@@ -63,8 +63,8 @@ mod tests {
     #[test]
     fn a_named_user_and_an_ipv4_host() {
         assert_eq!(
-            split_authority("david@192.168.1.111"),
-            authority(Some("david"), "192.168.1.111", None)
+            split_authority("test_user_3@192.168.50.10"),
+            authority(Some("test_user_3"), "192.168.50.10", None)
         );
     }
 

@@ -4,9 +4,9 @@
 use super::*;
 use crate::file_system::volume::smb_volume_id;
 
-const SERVER: &str = "192.168.1.111";
-const SHARE: &str = "naspi";
-const ROOT: &str = "/Volumes/naspi";
+const SERVER: &str = "192.168.50.10";
+const SHARE: &str = "testshare";
+const ROOT: &str = "/Volumes/testshare";
 
 fn mount_of(server: &str, share: &str) -> SmbMountInfo {
     SmbMountInfo {
@@ -60,7 +60,7 @@ fn a_share_with_a_session_is_left_alone() {
 /// A local navigation stops at the id, before the mount table is read.
 #[test]
 fn a_local_volume_never_reads_the_mount_table() {
-    for id in ["root", "path-volumes-backup-1a2b3c", "sftp-nas-22-ada-1a2b3c"] {
+    for id in ["root", "path-volumes-backup-1a2b3c", "sftp-nas-22-test_user_1-1a2b3c"] {
         let upgrade = plan(
             id,
             Some(BackendKind::Local),
@@ -211,7 +211,7 @@ fn the_next_navigation_inside_the_cooldown_does_not_dial_again() {
 fn the_cooldown_is_per_share() {
     let mut cooldowns = Cooldowns::default();
     let now = Instant::now();
-    assert!(cooldowns.try_claim("smb-naspi-1", now));
+    assert!(cooldowns.try_claim("smb-testshare-1", now));
     assert!(cooldowns.try_claim("smb-multimedia-2", now));
-    assert!(!cooldowns.try_claim("smb-naspi-1", now));
+    assert!(!cooldowns.try_claim("smb-testshare-1", now));
 }

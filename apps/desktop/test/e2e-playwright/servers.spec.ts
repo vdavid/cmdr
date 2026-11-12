@@ -189,12 +189,12 @@ test.describe('Adding a server through the sheet', () => {
     await activateAddRow(tauriPage)
 
     // SMB is the default, and it asks for no credentials at all.
-    await typeIntoAddress(tauriPage, 'naspolya')
+    await typeIntoAddress(tauriPage, 'testnas')
     expect(await tauriPage.isVisible(`${SHEET} #server-secret`)).toBe(false)
 
     // ❗ `user@host` fits SMB too, so typing it moves nothing (cmdr-reports#8).
     // SSH's port is what makes it look off, and the sheet says so and waits.
-    await typeIntoAddress(tauriPage, 'ada@e2e-nothing-here.invalid:22')
+    await typeIntoAddress(tauriPage, 'test_user_1@e2e-nothing-here.invalid:22')
     await expect
       .poll(async () => tauriPage.isVisible(`${SHEET} #server-address-warning`), { timeout: waitBudget(5000) })
       .toBeTruthy()
@@ -205,7 +205,9 @@ test.describe('Adding a server through the sheet', () => {
     await expect
       .poll(async () => tauriPage.isVisible(`${SHEET} #server-secret`), { timeout: waitBudget(5000) })
       .toBeTruthy()
-    expect(await tauriPage.evaluate<string>(`document.querySelector('${SHEET} #server-username').value`)).toBe('ada')
+    expect(await tauriPage.evaluate<string>(`document.querySelector('${SHEET} #server-username').value`)).toBe(
+      'test_user_1',
+    )
     expect(await tauriPage.isVisible(`${SHEET} #server-address-warning`)).toBe(false)
   })
 
@@ -219,7 +221,7 @@ test.describe('Adding a server through the sheet', () => {
     // `.invalid` is reserved by RFC 2606 and never resolves, so the dial is
     // guaranteed to come back with something to say.
     await pickSheetProtocol(tauriPage, 'sftp')
-    await typeIntoAddress(tauriPage, 'ada@e2e-nothing-here.invalid:22')
+    await typeIntoAddress(tauriPage, 'test_user_1@e2e-nothing-here.invalid:22')
     await expect
       .poll(async () => tauriPage.isVisible(`${SHEET} #server-secret`), { timeout: waitBudget(5000) })
       .toBeTruthy()

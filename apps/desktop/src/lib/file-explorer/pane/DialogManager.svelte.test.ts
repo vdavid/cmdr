@@ -262,7 +262,7 @@ describe('DialogManager transfer error Retry', () => {
     sourcePaths: ['/Users/me/a.jpg'],
     sourceFolderPath: '/Users/me',
     sourcePaneSide: 'right',
-    destinationPath: '/Volumes/naspi/photos',
+    destinationPath: '/Volumes/testshare/photos',
     previewId: null,
     sourceVolumeId: 'root',
     duplicateFollowUp: 'nothing',
@@ -286,7 +286,7 @@ describe('DialogManager transfer error Retry', () => {
       showTransferErrorDialog: true,
       transferErrorProps: {
         operationType: 'move',
-        error: { type: 'delete_pending', path: '/Volumes/naspi/photos/a.jpg' },
+        error: { type: 'delete_pending', path: '/Volumes/testshare/photos/a.jpg' },
         progressAtStop: null,
         retry: failedMove,
       },
@@ -304,7 +304,7 @@ describe('DialogManager transfer error Retry', () => {
       showTransferErrorDialog: true,
       transferErrorProps: {
         operationType: 'move',
-        error: { type: 'delete_pending', path: '/Volumes/naspi/photos/a.jpg' },
+        error: { type: 'delete_pending', path: '/Volumes/testshare/photos/a.jpg' },
         progressAtStop: null,
         retry: null,
       },

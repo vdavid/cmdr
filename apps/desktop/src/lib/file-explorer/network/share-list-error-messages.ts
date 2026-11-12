@@ -43,7 +43,7 @@ const SHARE_LIST_MESSAGE: { [K in ShareListError['type']]: (server: string) => s
 
 /**
  * The sentence a share listing that didn't load says. `serverName` is what the
- * pane and the servers list call the host (like `Naspolya`).
+ * pane and the servers list call the host (like `Testnas`).
  */
 export function renderShareListError(error: ShareListError, serverName: string): string {
   return SHARE_LIST_MESSAGE[error.type](serverName)

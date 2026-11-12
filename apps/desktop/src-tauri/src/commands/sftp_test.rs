@@ -10,10 +10,10 @@ use crate::network::saved_server_fields::SavedServerOutcome;
 /// wrong account's secret, and enough of those lock an account.
 #[test]
 fn the_credential_service_carries_the_port_and_the_scope_carries_the_account() {
-    assert_eq!(credential_key("naspolya", 22), "naspolya:22");
+    assert_eq!(credential_key("testnas", 22), "testnas:22");
     assert_ne!(
-        credential_key("naspolya", 22),
-        credential_key("naspolya", 2222),
+        credential_key("testnas", 22),
+        credential_key("testnas", 2222),
         "a jump box and a container on one machine are different servers"
     );
 }
@@ -30,26 +30,26 @@ async fn the_credential_trio_agrees_on_where_a_secret_lives() {
     let host = "credential-trio.sftp.test";
 
     assert!(
-        !has_sftp_credentials(host.to_string(), 22, "ada".to_string()).await,
+        !has_sftp_credentials(host.to_string(), 22, "test_user_1".to_string()).await,
         "nothing is stored before anything is saved"
     );
 
-    save_sftp_credentials(host.to_string(), 22, "ada".to_string(), "pa55".to_string())
+    save_sftp_credentials(host.to_string(), 22, "test_user_1".to_string(), "pa55".to_string())
         .await
         .expect("the test store always accepts");
-    assert!(has_sftp_credentials(host.to_string(), 22, "ada".to_string()).await);
+    assert!(has_sftp_credentials(host.to_string(), 22, "test_user_1".to_string()).await);
 
     // ❗ Another account on the same server is a different entry, not a shared
     // one: a reconnect that retried the wrong account's secret is how an account
     // gets locked.
-    assert!(!has_sftp_credentials(host.to_string(), 22, "grace".to_string()).await);
+    assert!(!has_sftp_credentials(host.to_string(), 22, "test_user_2".to_string()).await);
     // And so is the same account on another port.
-    assert!(!has_sftp_credentials(host.to_string(), 2222, "ada".to_string()).await);
+    assert!(!has_sftp_credentials(host.to_string(), 2222, "test_user_1".to_string()).await);
 
-    delete_sftp_credentials(host.to_string(), 22, "ada".to_string())
+    delete_sftp_credentials(host.to_string(), 22, "test_user_1".to_string())
         .await
         .expect("the test store always accepts");
-    assert!(!has_sftp_credentials(host.to_string(), 22, "ada".to_string()).await);
+    assert!(!has_sftp_credentials(host.to_string(), 22, "test_user_1".to_string()).await);
 }
 
 /// The known-servers commands round-trip through the same store the connect path
@@ -64,7 +64,7 @@ async fn the_known_servers_trio_round_trips() {
     let saved = sftp_volume_wiring::save_without_connecting(KnownSftpServer {
         host: host.to_string(),
         port: 22,
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         display_name: "Trio".to_string(),
         remote_root: "/srv/data".to_string(),
         start_folder: None,
@@ -88,7 +88,7 @@ async fn the_known_servers_trio_round_trips() {
         "❗ the switch is the user's, so editing a server has to be able to turn it off"
     );
 
-    assert!(sftp_known_servers::forget(host, 22, "ada"));
+    assert!(sftp_known_servers::forget(host, 22, "test_user_1"));
     assert!(
         !get_known_sftp_servers().iter().any(|entry| entry.host == host),
         "a forgotten server is gone from the list"

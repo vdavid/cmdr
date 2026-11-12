@@ -58,7 +58,7 @@ pub struct WebdavVolume {
     /// Display name, as the app chose to label the server.
     name: String,
     /// Both spellings of the collection this volume is rooted at: the app's
-    /// (`webdav://ada@nas.local:443/Photos`) and the server's (`/Photos`).
+    /// (`webdav://test_user_1@testnas.local:443/Photos`) and the server's (`/Photos`).
     /// Immutable: a different root is a different instance. ❗ Every path
     /// translation goes through it and ❌ nothing here spells a remote path by
     /// hand (`cmdr_fs::volume::remote_paths`).

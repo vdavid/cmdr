@@ -720,11 +720,11 @@ describe('SearchFilterChips: scope popover behavior', () => {
       baseProps({
         scope: '~/Documents',
         scopePresets: {
-          currentFolder: '/Volumes/naspi/photos',
+          currentFolder: '/Volumes/testshare/photos',
           currentFolderUnavailableReason: '',
-          volumeRoot: '/Volumes/naspi',
+          volumeRoot: '/Volumes/testshare',
         },
-        defaultScope: { path: '/Volumes/naspi/photos', label: 'Current folder' },
+        defaultScope: { path: '/Volumes/testshare/photos', label: 'Current folder' },
         onSetScope,
       }),
     )
@@ -735,7 +735,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     const buttons = document.querySelectorAll<HTMLButtonElement>('.popover-footer button')
     buttons[1].click()
     // NOT '' (which used to mean "all folders"): the widest rung is one volume.
-    expect(onSetScope).toHaveBeenCalledWith('/Volumes/naspi')
+    expect(onSetScope).toHaveBeenCalledWith('/Volumes/testshare')
     cleanup()
     document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()
@@ -747,11 +747,11 @@ describe('SearchFilterChips: scope popover behavior', () => {
     const { target, cleanup } = mountChips(
       baseProps({
         scopePresets: {
-          currentFolder: '/Volumes/naspi/photos',
+          currentFolder: '/Volumes/testshare/photos',
           currentFolderUnavailableReason: '',
-          volumeRoot: '/Volumes/naspi',
+          volumeRoot: '/Volumes/testshare',
         },
-        defaultScope: { path: '/Volumes/naspi/photos', label: 'Current folder' },
+        defaultScope: { path: '/Volumes/testshare/photos', label: 'Current folder' },
         onSetScope,
       }),
     )
@@ -763,7 +763,7 @@ describe('SearchFilterChips: scope popover behavior', () => {
     findChip(target, 'Search in')?.click()
     await tick()
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyV', altKey: true }))
-    expect(onSetScope).toHaveBeenCalledWith('/Volumes/naspi')
+    expect(onSetScope).toHaveBeenCalledWith('/Volumes/testshare')
     cleanup()
     document.querySelectorAll('.ui-popover').forEach((el) => {
       el.remove()

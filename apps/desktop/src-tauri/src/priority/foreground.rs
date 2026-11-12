@@ -331,9 +331,9 @@ mod tests {
     fn activity_on_one_volume_leaves_other_volumes_idle() {
         let tracker = ForegroundActivity::new();
         let window = Duration::from_secs(1);
-        tracker.note_on("smb://naspi/media");
+        tracker.note_on("smb://testshare/media");
         assert!(
-            !tracker.idle_for_volume("smb://naspi/media", window),
+            !tracker.idle_for_volume("smb://testshare/media", window),
             "the browsed volume is busy"
         );
         assert!(
@@ -355,7 +355,7 @@ mod tests {
     #[test]
     fn a_scoped_note_also_marks_the_app_busy() {
         let tracker = ForegroundActivity::new();
-        tracker.note_on("smb://naspi/media");
+        tracker.note_on("smb://testshare/media");
         assert!(!tracker.idle_for(Duration::from_secs(1)));
     }
 }
@@ -370,7 +370,7 @@ mod lease_tests {
     #[test]
     fn a_held_lease_keeps_the_volume_busy_however_long_the_threshold_has_passed() {
         let tracker = ForegroundActivity::new();
-        let volume = "smb://naspi/media";
+        let volume = "smb://testshare/media";
         let _listing = tracker.lease_volume(volume);
         assert_eq!(tracker.volume_lease_count(volume), 1);
         assert!(
@@ -383,7 +383,7 @@ mod lease_tests {
     #[test]
     fn the_lease_comes_back_on_drop() {
         let tracker = ForegroundActivity::new();
-        let volume = "smb://naspi/media";
+        let volume = "smb://testshare/media";
         {
             let _listing = tracker.lease_volume(volume);
         }
@@ -397,7 +397,7 @@ mod lease_tests {
     #[test]
     fn releasing_a_lease_restamps_the_volume_so_the_debounce_starts_then() {
         let tracker = ForegroundActivity::new();
-        let volume = "smb://naspi/restamp";
+        let volume = "smb://testshare/restamp";
         let listing = tracker.lease_volume(volume);
         let (_, taken_at) = tracker
             .volume_activity_millis(volume)
@@ -430,7 +430,7 @@ mod lease_tests {
     #[test]
     fn two_listings_on_one_volume_both_have_to_finish() {
         let tracker = ForegroundActivity::new();
-        let volume = "smb://naspi/media";
+        let volume = "smb://testshare/media";
         let first = tracker.lease_volume(volume);
         let second = tracker.lease_volume(volume);
         assert_eq!(tracker.volume_lease_count(volume), 2);
@@ -445,7 +445,7 @@ mod lease_tests {
     #[test]
     fn a_lease_on_one_volume_leaves_every_other_volume_free() {
         let tracker = ForegroundActivity::new();
-        let _listing = tracker.lease_volume("smb://naspi/media");
+        let _listing = tracker.lease_volume("smb://testshare/media");
         assert_eq!(tracker.volume_lease_count("root"), 0);
         assert!(tracker.idle_for_volume("root", Duration::from_millis(1)));
     }
@@ -455,7 +455,7 @@ mod lease_tests {
     #[test]
     fn a_lease_dropped_by_a_panic_still_comes_back() {
         let tracker = ForegroundActivity::new();
-        let volume = "smb://naspi/panics";
+        let volume = "smb://testshare/panics";
         let unwound = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let _listing = tracker.lease_volume(volume);
             panic!("the listing task blew up");
@@ -477,7 +477,7 @@ mod lease_tests {
     #[test]
     fn watching_a_volume_leaves_it_idle_and_lease_free() {
         let tracker = ForegroundActivity::new();
-        let volume = "smb://naspi/watched";
+        let volume = "smb://testshare/watched";
         let _watch = tracker.watch_volume(volume);
         assert_eq!(tracker.volume_lease_count(volume), 0);
         assert!(tracker.idle_for_volume(volume, Duration::from_millis(1)));
@@ -489,7 +489,7 @@ mod lease_tests {
     #[test]
     fn a_note_a_lease_and_its_release_each_move_the_watch() {
         let tracker = ForegroundActivity::new();
-        let volume = "smb://naspi/watched_changes";
+        let volume = "smb://testshare/watched_changes";
         let watch = tracker.watch_volume(volume);
 
         tracker.note_on(volume);
@@ -510,7 +510,7 @@ mod lease_tests {
     #[test]
     fn taking_a_lease_also_marks_the_app_busy() {
         let tracker = ForegroundActivity::new();
-        let _listing = tracker.lease_volume("smb://naspi/media");
+        let _listing = tracker.lease_volume("smb://testshare/media");
         assert!(!tracker.idle_for(Duration::from_secs(30)));
     }
 }

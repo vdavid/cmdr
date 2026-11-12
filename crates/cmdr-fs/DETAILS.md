@@ -466,10 +466,10 @@ a mount path isn't stable (macOS mounts a second same-named disk at `/Volumes/Ba
 So the funnel here mints `{scheme}-{slug}-{digest}`:
 
 - **`digest`** is 64 bits of BLAKE3 over the scheme followed by each canonical part, LENGTH-PREFIXED. The prefixing is
-  what keeps the map injective across component boundaries: without it `("nas", "polyashare")` and
-  `("naspolya", "share")` feed the hasher identical bytes. The scheme goes in first as domain separation. Cryptographic
-  rather than a fast hash because volume names are user-controlled, so a _chosen_ collision (name a USB stick to steal
-  another volume's index) has to cost ~2^64, not a few seconds.
+  what keeps the map injective across component boundaries: without it `("test", "nasshare")` and `("testnas", "share")`
+  feed the hasher identical bytes. The scheme goes in first as domain separation. Cryptographic rather than a fast hash
+  because volume names are user-controlled, so a _chosen_ collision (name a USB stick to steal another volume's index)
+  has to cost ~2^64, not a few seconds.
 - **`slug`** is lossy, capped, and purely so a data dir and a log line stay readable. ❌ Nothing may parse or key off
   it.
 - **`scheme`** records which identity source the ID came from, best first: `vol-` (filesystem UUID), `smb-` (server,
@@ -493,10 +493,10 @@ and elegant, but unbounded, and it renders a mount path with spaces unreadable a
 Every remote volume's APP-ROOT PREFIX (`sftp_app_root`, `webdav_app_root`, `adb_app_root`, and the splits back,
 `server_of_path` and `adb_serial_of_path`) is minted from the same tuple as its id, in `remote_paths.rs` beside the
 translation it feeds, and re-exported from `volume` like the ids. That is what makes a path and an id agree by
-construction: a `sftp://ada@nas:22/...` path resolves to exactly the id `sftp_volume_id` mints for that account, so a
-saved row and the volume it becomes share one identity across a dial and a restored tab finds its way home. The prefix,
-the translation between an app path and a server path, and why a bare server-absolute path is REFUSED rather than
-anchored: `src/volume/remote_paths.rs`'s module doc, which is canonical for all of it.
+construction: a `sftp://test_user_1@nas:22/...` path resolves to exactly the id `sftp_volume_id` mints for that account,
+so a saved row and the volume it becomes share one identity across a dial and a restored tab finds its way home. The
+prefix, the translation between an app path and a server path, and why a bare server-absolute path is REFUSED rather
+than anchored: `src/volume/remote_paths.rs`'s module doc, which is canonical for all of it.
 
 Nothing enforces the funnel in the type system. An ID crosses IPC as a `String` in ~3,600 Rust and ~1,600 TypeScript
 sites, so a `VolumeId` newtype would be a very large refactor for a property one module already guarantees; the
@@ -984,8 +984,8 @@ gone path answering `Ok`).
 Cmdr's UI speaks two path dialects — a pane sends the absolute path it displays, the transfer dialog's destination box
 sends a volume-relative one — and a leading `/` doesn't tell them apart. `volume::root_anchored(root, path)` is the
 single rule that folds both into the absolute, root-anchored form: root spellings (empty, `.`, `/`) are the root; a path
-already under the root passes through, matched by whole COMPONENTS so a sibling mount (`/Volumes/naspi-1`) can't pass as
-being under `/Volumes/naspi`; anything else hangs off the root, minus its leading `/`.
+already under the root passes through, matched by whole COMPONENTS so a sibling mount (`/Volumes/testshare-1`) can't
+pass as being under `/Volumes/testshare`; anything else hangs off the root, minus its leading `/`.
 
 It lives here rather than in the app because the ambiguity is a property of the TRAIT's path contract, and because four
 app-side sites plus `LocalPosixVolume::resolve` have to agree on the answer byte for byte (an O_EXCL reservation and the
@@ -1000,14 +1000,14 @@ and is exactly why the anchoring has to happen upstream. Consumers:
 `path_exists`, and the transfer engine's local shortcuts.
 
 **A typed path that repeats the root folder is anchored anyway, and the dialog warns (`volume::root_echo`).** On a place
-rooted at a server folder (`sftp://ada@nas:22/srv/data`), a user typing the server path they know (`/srv/data/photos`)
-gets `/srv/data/srv/data/photos`. Decision: keep the anchoring and warn, ❌ never strip the prefix on our own. Why: the
-doubled folder can be real (a place rooted at `/home/bob` holding `/home/bob/home/bob/folder`, which F5 prefills as
-`/home/bob/folder`), so a silent strip would send that copy somewhere else. `root_echo(root, path)` answers both
-readings (`resolved`, server-side, and `stripped`, volume-relative) for the transfer dialog's warning and its "Use
-shorter path" button. It only fires for a scheme-shaped root with a folder below the server's `/`: a mounted root
-(`/Volumes/naspi`) is matched by `root_anchored`'s pass-through arm, and a root at `/` reads the same both ways. Folders
-match by whole components.
+rooted at a server folder (`sftp://test_user_1@nas:22/srv/data`), a user typing the server path they know
+(`/srv/data/photos`) gets `/srv/data/srv/data/photos`. Decision: keep the anchoring and warn, ❌ never strip the prefix
+on our own. Why: the doubled folder can be real (a place rooted at `/home/test_user_5` holding
+`/home/test_user_5/home/test_user_5/folder`, which F5 prefills as `/home/test_user_5/folder`), so a silent strip would
+send that copy somewhere else. `root_echo(root, path)` answers both readings (`resolved`, server-side, and `stripped`,
+volume-relative) for the transfer dialog's warning and its "Use shorter path" button. It only fires for a scheme-shaped
+root with a folder below the server's `/`: a mounted root (`/Volumes/testshare`) is matched by `root_anchored`'s
+pass-through arm, and a root at `/` reads the same both ways. Folders match by whole components.
 
 ## Extended attributes
 

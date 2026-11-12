@@ -45,7 +45,7 @@ export interface SmbLinkConsentFixture {
 }
 
 export const smbLinkConsentFixtures: Record<string, SmbLinkConsentFixture | undefined> = {
-  default: { server: 'naspolya.local', target: 'fs01.example.com' },
+  default: { server: 'testnas.local', target: 'fs01.example.com' },
 }
 
 /**

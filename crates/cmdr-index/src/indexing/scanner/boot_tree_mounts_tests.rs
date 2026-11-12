@@ -37,8 +37,8 @@ fn linux_table() -> BootTreeMounts {
             row("/", "/dev/nvme0n1p3", "btrfs"),
             row("/home", "/dev/nvme0n1p3", "btrfs"),
             row("/srv/data", "/dev/sdb1", "ext4"),
-            row("/home/someone/nas", "naspi:/share", "nfs4"),
-            row("/home/someone/smb", "//naspi/photos", "cifs"),
+            row("/home/someone/nas", "testshare:/share", "nfs4"),
+            row("/home/someone/smb", "//testshare/photos", "cifs"),
             row("/home/someone/remote", "someone@host:", "fuse.sshfs"),
         ],
         excluded_by_boot_prefixes,
@@ -109,7 +109,7 @@ fn the_boot_disks_own_volumes_are_not_inside_its_tree() {
         "/System/Volumes/Data",
         "/System/Volumes/VM",
         "/System/Volumes/Data/home",
-        "/Volumes/naspi",
+        "/Volumes/testshare",
         "/dev",
         "/Users/someone/pCloud Drive",
         "/Users/someone/Library/Developer/CoreDevice/DeviceFS",
@@ -201,7 +201,7 @@ fn linux_should_exclude_stops_at_a_share_but_not_at_a_local_home() {
     let (_installed, provider) = install_mount_table(&["/", "/home", "/home/someone/nas"]);
     provider.set_mount_kind("/", Some("/dev/nvme0n1p3"), Some("btrfs"));
     provider.set_mount_kind("/home", Some("/dev/nvme0n1p4"), Some("ext4"));
-    provider.set_mount_kind("/home/someone/nas", Some("naspi:/share"), Some("nfs4"));
+    provider.set_mount_kind("/home/someone/nas", Some("testshare:/share"), Some("nfs4"));
     let boot = ExclusionScope::boot_disk();
 
     assert!(

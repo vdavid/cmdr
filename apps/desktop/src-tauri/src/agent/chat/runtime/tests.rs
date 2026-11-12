@@ -89,7 +89,7 @@ async fn stop_reaches_a_tool_call_that_is_waiting_on_a_slow_volume() {
     let conn = migrated_conn();
     let id = conversation(&conn);
     let llm = ProgrammableLlm::new(vec![Program::Tools {
-        calls: vec![(ToolId::ListDir, json!({ "path": "/Volumes/naspi-1" }))],
+        calls: vec![(ToolId::ListDir, json!({ "path": "/Volumes/testshare-1" }))],
         usage: AgentUsage::default(),
     }]);
     let cancel = CancellationToken::new();
@@ -115,7 +115,7 @@ async fn stop_reaches_a_tool_call_that_is_waiting_on_a_slow_volume() {
     // names the folder it was reading rather than the generic `cancelled`.
     assert_eq!(
         persisted_tool_results(&conn, id),
-        vec![json!({ "miss": "cancelled", "location": { "path": "/Volumes/naspi-1" } })]
+        vec![json!({ "miss": "cancelled", "location": { "path": "/Volumes/testshare-1" } })]
     );
 }
 

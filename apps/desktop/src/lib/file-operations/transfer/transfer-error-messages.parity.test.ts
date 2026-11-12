@@ -255,24 +255,24 @@ const cases: Case[] = [
     error: {
       type: 'device_disconnected',
       path: '/p',
-      side: { role: 'destination', volumeId: 'v', volumeName: 'Fältkamera', counterpartName: 'Macintosh HD' },
+      side: { role: 'destination', volumeId: 'v', volumeName: 'Tëstkamera', counterpartName: 'Macintosh HD' },
     },
     op: 'move',
     expected: {
       title: 'Device disconnected',
       message:
-        'Fältkamera was disconnected before Cmdr could finish the move, so all your files are still on Macintosh HD.',
+        'Tëstkamera was disconnected before Cmdr could finish the move, so all your files are still on Macintosh HD.',
       suggestion: 'Make sure the device is properly connected and try again.',
     },
   },
   {
     name: 'move_not_confirmed (named destination)',
-    error: { type: 'move_not_confirmed', path: '/p', errno: 5, volumeName: 'Fältkamera' },
+    error: { type: 'move_not_confirmed', path: '/p', errno: 5, volumeName: 'Tëstkamera' },
     op: 'move',
     expected: {
       title: 'Couldn’t confirm the move',
       message:
-        'Cmdr couldn’t confirm the moved files were saved on Fältkamera, so it kept your originals where they were.',
+        'Cmdr couldn’t confirm the moved files were saved on Tëstkamera, so it kept your originals where they were.',
       suggestion: 'Have a look at the destination, then try the move again. Your originals haven’t moved.',
     },
   },
@@ -609,22 +609,22 @@ const cases: Case[] = [
     // The connection to a server ended the copy after the outage wait gave up: the
     // connection heads the title, the file is context by name only.
     name: 'server_connection_lost (copy, gave up)',
-    error: { type: 'server_connection_lost', path: '/nas/photos/a.jpg', volumeName: 'Naspolya', gaveUpAfterSecs: 900 },
+    error: { type: 'server_connection_lost', path: '/nas/photos/a.jpg', volumeName: 'Testnas', gaveUpAfterSecs: 900 },
     op: 'copy',
     expected: {
-      title: 'Lost the connection to Naspolya',
-      message: `Cmdr waited ${fifteenMinutes} for Naspolya to come back, then stopped. It was copying a.jpg.`,
+      title: 'Lost the connection to Testnas',
+      message: `Cmdr waited ${fifteenMinutes} for Testnas to come back, then stopped. It was copying a.jpg.`,
       suggestion:
         'Check that the server is on and your network is up, then try again. Files that finished copying are already there.',
     },
   },
   {
     name: 'server_connection_lost (move, gave up)',
-    error: { type: 'server_connection_lost', path: '/nas/photos/a.jpg', volumeName: 'Naspolya', gaveUpAfterSecs: 900 },
+    error: { type: 'server_connection_lost', path: '/nas/photos/a.jpg', volumeName: 'Testnas', gaveUpAfterSecs: 900 },
     op: 'move',
     expected: {
-      title: 'Lost the connection to Naspolya',
-      message: `Cmdr waited ${fifteenMinutes} for Naspolya to come back, then stopped. It was moving a.jpg.`,
+      title: 'Lost the connection to Testnas',
+      message: `Cmdr waited ${fifteenMinutes} for Testnas to come back, then stopped. It was moving a.jpg.`,
       suggestion:
         'Check that the server is on and your network is up, then try again. Files that finished moving are already there.',
     },
@@ -632,77 +632,77 @@ const cases: Case[] = [
   {
     // No wait this time: the server wants a sign-in, or the link kept dropping.
     name: 'server_connection_lost (copy, dropped)',
-    error: { type: 'server_connection_lost', path: '/nas/photos/a.jpg', volumeName: 'Naspolya', gaveUpAfterSecs: null },
+    error: { type: 'server_connection_lost', path: '/nas/photos/a.jpg', volumeName: 'Testnas', gaveUpAfterSecs: null },
     op: 'copy',
     expected: {
-      title: 'Lost the connection to Naspolya',
-      message: 'The connection to Naspolya dropped while Cmdr was copying a.jpg.',
+      title: 'Lost the connection to Testnas',
+      message: 'The connection to Testnas dropped while Cmdr was copying a.jpg.',
       suggestion:
         'Check that the server is on and your network is up, then try again. Files that finished copying are already there.',
     },
   },
   {
     name: 'server_connection_lost (move, dropped)',
-    error: { type: 'server_connection_lost', path: '/nas/photos/a.jpg', volumeName: 'Naspolya', gaveUpAfterSecs: null },
+    error: { type: 'server_connection_lost', path: '/nas/photos/a.jpg', volumeName: 'Testnas', gaveUpAfterSecs: null },
     op: 'move',
     expected: {
-      title: 'Lost the connection to Naspolya',
-      message: 'The connection to Naspolya dropped while Cmdr was moving a.jpg.',
+      title: 'Lost the connection to Testnas',
+      message: 'The connection to Testnas dropped while Cmdr was moving a.jpg.',
       suggestion:
         'Check that the server is on and your network is up, then try again. Files that finished moving are already there.',
     },
   },
   {
     name: 'server_connection_lost (delete, gave up)',
-    error: { type: 'server_connection_lost', path: '/nas/photos/a.jpg', volumeName: 'Naspolya', gaveUpAfterSecs: 900 },
+    error: { type: 'server_connection_lost', path: '/nas/photos/a.jpg', volumeName: 'Testnas', gaveUpAfterSecs: 900 },
     op: 'delete',
     expected: {
-      title: 'Lost the connection to Naspolya',
-      message: `Cmdr waited ${fifteenMinutes} for Naspolya to come back, then stopped. It was deleting a.jpg.`,
+      title: 'Lost the connection to Testnas',
+      message: `Cmdr waited ${fifteenMinutes} for Testnas to come back, then stopped. It was deleting a.jpg.`,
       suggestion:
         'Check that the server is on and your network is up, then try again. Files Cmdr already deleted are gone.',
     },
   },
   {
     name: 'server_connection_lost (delete, dropped)',
-    error: { type: 'server_connection_lost', path: '/nas/photos/a.jpg', volumeName: 'Naspolya', gaveUpAfterSecs: null },
+    error: { type: 'server_connection_lost', path: '/nas/photos/a.jpg', volumeName: 'Testnas', gaveUpAfterSecs: null },
     op: 'delete',
     expected: {
-      title: 'Lost the connection to Naspolya',
-      message: 'The connection to Naspolya dropped while Cmdr was deleting a.jpg.',
+      title: 'Lost the connection to Testnas',
+      message: 'The connection to Testnas dropped while Cmdr was deleting a.jpg.',
       suggestion:
         'Check that the server is on and your network is up, then try again. Files Cmdr already deleted are gone.',
     },
   },
   {
     name: 'server_connection_lost (compress, gave up)',
-    error: { type: 'server_connection_lost', path: '/nas/photos.zip', volumeName: 'Naspolya', gaveUpAfterSecs: 900 },
+    error: { type: 'server_connection_lost', path: '/nas/photos.zip', volumeName: 'Testnas', gaveUpAfterSecs: 900 },
     op: 'compress',
     expected: {
-      title: 'Lost the connection to Naspolya',
-      message: `Cmdr waited ${fifteenMinutes} for Naspolya to come back, then stopped. It was creating photos.zip.`,
+      title: 'Lost the connection to Testnas',
+      message: `Cmdr waited ${fifteenMinutes} for Testnas to come back, then stopped. It was creating photos.zip.`,
       suggestion: 'Check that the server is on and your network is up, then try again.',
     },
   },
   {
     name: 'server_connection_lost (archive edit, dropped)',
-    error: { type: 'server_connection_lost', path: '/nas/photos.zip', volumeName: 'Naspolya', gaveUpAfterSecs: null },
+    error: { type: 'server_connection_lost', path: '/nas/photos.zip', volumeName: 'Testnas', gaveUpAfterSecs: null },
     op: 'archive_edit',
     expected: {
-      title: 'Lost the connection to Naspolya',
-      message: 'The connection to Naspolya dropped while Cmdr was updating photos.zip.',
+      title: 'Lost the connection to Testnas',
+      message: 'The connection to Testnas dropped while Cmdr was updating photos.zip.',
       suggestion: 'Check that the server is on and your network is up, then try again.',
     },
   },
   {
     // A delete that waited out the drop and found someone else's file at a path it listed.
     name: 'changed_while_disconnected',
-    error: { type: 'changed_while_disconnected', path: '/nas/photos/a.jpg', volumeName: 'Naspolya' },
+    error: { type: 'changed_while_disconnected', path: '/nas/photos/a.jpg', volumeName: 'Testnas' },
     op: 'delete',
     expected: {
       title: 'Cmdr left a changed file alone',
       message:
-        'The connection to Naspolya dropped during the delete. When it came back, a.jpg wasn’t the file Cmdr had listed, so Cmdr left it and stopped.',
+        'The connection to Testnas dropped during the delete. When it came back, a.jpg wasn’t the file Cmdr had listed, so Cmdr left it and stopped.',
       suggestion:
         'Check what’s there now, then delete again if you still want it gone. Files Cmdr deleted before it are gone.',
     },
@@ -877,7 +877,7 @@ const cases: Case[] = [
   {
     // The person's own home folder: refused whoever asked.
     name: 'home_folder (is home)',
-    error: { type: 'home_folder', path: '/Users/alex', relation: 'isHome', action: 'delete' },
+    error: { type: 'home_folder', path: '/Users/test_user_11', relation: 'isHome', action: 'delete' },
     op: 'delete',
     expected: {
       title: 'Please don’t delete your home folder',
@@ -904,7 +904,7 @@ const cases: Case[] = [
   {
     // A move of the home folder: the account would break, so it gets its own words.
     name: 'home_folder (move, is home)',
-    error: { type: 'home_folder', path: '/Users/alex', relation: 'isHome', action: 'move' },
+    error: { type: 'home_folder', path: '/Users/test_user_11', relation: 'isHome', action: 'move' },
     op: 'move',
     expected: {
       title: 'Please don’t move your home folder',
@@ -931,12 +931,12 @@ const cases: Case[] = [
     // A delete that would have walked into a mounted drive: names the mount,
     // which can sit deep inside the selection, and says nothing was deleted.
     name: 'mounted_volume_inside (delete)',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'delete' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/test_user_11/projects/backup/nas', action: 'delete' },
     op: 'delete',
     expected: {
       title: 'A mounted drive is in the way',
       message:
-        'A drive or server is mounted at /Users/alex/projects/backup/nas, and deleting there would erase everything on it. Cmdr stopped before deleting anything.',
+        'A drive or server is mounted at /Users/test_user_11/projects/backup/nas, and deleting there would erase everything on it. Cmdr stopped before deleting anything.',
       suggestion:
         'Eject that drive, then delete again. To clear the drive itself, open it and delete what’s on it there.',
     },
@@ -945,12 +945,12 @@ const cases: Case[] = [
   {
     // An Overwrite that would have replaced a folder holding a mounted drive.
     name: 'mounted_volume_inside (copy)',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'replace' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/test_user_11/projects/backup/nas', action: 'replace' },
     op: 'copy',
     expected: {
       title: 'A mounted drive is in the way',
       message:
-        'A drive or server is mounted at /Users/alex/projects/backup/nas, so replacing the folder that holds it would erase everything on the drive. Cmdr left that folder and the drive as they were.',
+        'A drive or server is mounted at /Users/test_user_11/projects/backup/nas, so replacing the folder that holds it would erase everything on the drive. Cmdr left that folder and the drive as they were.',
       suggestion: 'Eject that drive, then try again. To keep the folder, choose Skip or Rename instead of Overwrite.',
     },
   },
@@ -958,12 +958,12 @@ const cases: Case[] = [
   {
     // A move's own Overwrite still words itself as the replacement it refused.
     name: 'mounted_volume_inside (move, Overwrite)',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'replace' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/test_user_11/projects/backup/nas', action: 'replace' },
     op: 'move',
     expected: {
       title: 'A mounted drive is in the way',
       message:
-        'A drive or server is mounted at /Users/alex/projects/backup/nas, so replacing the folder that holds it would erase everything on the drive. Cmdr left that folder and the drive as they were.',
+        'A drive or server is mounted at /Users/test_user_11/projects/backup/nas, so replacing the folder that holds it would erase everything on the drive. Cmdr left that folder and the drive as they were.',
       suggestion: 'Eject that drive, then try again. To keep the folder, choose Skip or Rename instead of Overwrite.',
     },
   },
@@ -972,12 +972,12 @@ const cases: Case[] = [
     // A move onto another drive of a folder holding a mounted drive: it would
     // have copied the drive's files off, then deleted them there.
     name: 'mounted_volume_inside (move)',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'move' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/test_user_11/projects/backup/nas', action: 'move' },
     op: 'move',
     expected: {
       title: 'A mounted drive is in the way',
       message:
-        'A drive or server is mounted at /Users/alex/projects/backup/nas, so moving the folder that holds it would move everything off the drive. Cmdr stopped before moving anything.',
+        'A drive or server is mounted at /Users/test_user_11/projects/backup/nas, so moving the folder that holds it would move everything off the drive. Cmdr stopped before moving anything.',
       suggestion:
         'Eject that drive, then move again. To move what’s on the drive, open it and move the files from there.',
     },

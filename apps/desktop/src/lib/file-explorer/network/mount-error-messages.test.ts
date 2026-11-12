@@ -20,7 +20,7 @@ afterAll(() => {
   _setLocaleForTests(null)
 })
 
-const ADDRESS = '192.168.1.111'
+const ADDRESS = '192.168.50.10'
 const SHARE = 'data'
 
 /** One value per `MountError` variant. A mapped type, so a new variant stops this compiling until it's here. */
@@ -31,7 +31,7 @@ const CASES: { [K in MountError['type']]: Extract<MountError, { type: K }> } = {
   share_not_found: { type: 'share_not_found', server: ADDRESS, share: SHARE },
   auth_required: { type: 'auth_required', server: ADDRESS, share: SHARE },
   auth_failed: { type: 'auth_failed', server: ADDRESS },
-  permission_denied: { type: 'permission_denied', server: ADDRESS, share: SHARE, username: 'ada' },
+  permission_denied: { type: 'permission_denied', server: ADDRESS, share: SHARE, username: 'test_user_1' },
   cancelled: { type: 'cancelled', share: SHARE },
   unsupported_protocol: { type: 'unsupported_protocol', server: ADDRESS },
   mount_refused: { type: 'mount_refused', server: ADDRESS, share: SHARE },
@@ -78,13 +78,13 @@ describe('renderMountError', () => {
       if ('share' in error) expect(message, `the share, in ${error.type}`).toContain(`“${SHARE}”`)
       if ('server' in error) expect(message, `the server, in ${error.type}`).toContain(`“${ADDRESS}”`)
     }
-    expect(renderMountError(CASES.permission_denied), 'the refused account').toContain('“ada”')
+    expect(renderMountError(CASES.permission_denied), 'the refused account').toContain('“test_user_1”')
   })
 
   it('prefers the name the pane shows for the server over the address the mount used', () => {
     for (const error of ALL.filter((e) => 'server' in e)) {
-      const message = renderMountError(error, 'Naspolya')
-      expect(message, error.type).toContain('“Naspolya”')
+      const message = renderMountError(error, 'Testnas')
+      expect(message, error.type).toContain('“Testnas”')
       expect(message, error.type).not.toContain(ADDRESS)
     }
   })

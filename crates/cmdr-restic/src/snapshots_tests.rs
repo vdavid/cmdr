@@ -13,7 +13,7 @@ fn raw(id_hex: &str, time: &str) -> RawSnapshot {
         tree: TreeId::from(id),
         size: None,
         meta: ResticSnapshotMeta {
-            hostname: "m3".to_string(),
+            hostname: "test-host".to_string(),
             tags: Vec::new(),
             paths: Vec::new(),
         },

@@ -155,10 +155,10 @@ const UNSIZED_FOLDER: &str = "/cmdr-golden/unsized-folder";
 /// The share's tree, mount-relative as a non-root index stores it.
 pub(super) fn share_corpus() -> Vec<Row> {
     vec![
-        dir("/papers", 1_705_000_000),
-        dir("/papers/invoices paid", 1_700_000_000),
-        file("/papers/invoices paid/hetzner.pdf", Some(10), Some(1_700_000_000)),
-        file("/papers/report.txt", Some(20), Some(1_705_000_000)),
+        dir("/documents", 1_705_000_000),
+        dir("/documents/invoices", 1_700_000_000),
+        file("/documents/invoices/hetzner.pdf", Some(10), Some(1_700_000_000)),
+        file("/documents/report.txt", Some(20), Some(1_705_000_000)),
         dir("/photos", 1_715_000_000),
         file("/photos/IMG_0001.JPG", Some(3_000_000), Some(1_715_000_000)),
     ]
@@ -173,7 +173,7 @@ pub(super) fn root_weights() -> ImportanceWeights {
 
 pub(super) fn share_weights() -> ImportanceWeights {
     let mut weights = ImportanceWeights::empty();
-    weights.insert("/Volumes/cmdr-golden-share/papers", 0.6);
+    weights.insert("/Volumes/cmdr-golden-share/documents", 0.6);
     weights
 }
 
@@ -624,13 +624,13 @@ pub(super) fn cases() -> Vec<(&'static str, Volume, SearchQuery)> {
         (
             "share_scope_subfolder",
             Share,
-            scoped(all(), &["/Volumes/cmdr-golden-share/papers"]),
+            scoped(all(), &["/Volumes/cmdr-golden-share/documents"]),
         ),
         ("share_scope_mount_root", Share, scoped(named("report"), &[SHARE_ROOT])),
         (
             "share_scope_outside_the_mount",
             Share,
-            scoped(all(), &["/elsewhere/papers"]),
+            scoped(all(), &["/elsewhere/documents"]),
         ),
         ("share_case_platform_default", Share, named("img_0001.jpg")),
     ]

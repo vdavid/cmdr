@@ -78,8 +78,8 @@ impl From<SecretStoreError> for KeychainError {
 /// The server is collapsed to its stable identity via
 /// [`crate::network::server_identity::credential_key`] so that every name form of one
 /// server (mDNS instance name, `.local` hostname, `statfs` service name) keys the same
-/// entry. Without this, a password saved by the frontend under `Naspolya` is invisible
-/// to the upgrade path looking up `Naspolya._smb._tcp.local`.
+/// entry. Without this, a password saved by the frontend under `Testnas` is invisible
+/// to the upgrade path looking up `Testnas._smb._tcp.local`.
 ///
 /// The share is NFC-folded for the same reason one step down: it reaches the frontend
 /// composed (from the server's share list) and the upgrade path decomposed (from
@@ -356,9 +356,9 @@ mod tests {
     fn forgetting_a_servers_password_takes_its_entries_and_no_other_servers() {
         let _secrets = crate::test_support::isolate_secrets();
         let server = "forget-test.local:11482";
-        save_credentials(server, None, "ada", "a").expect("saved");
-        save_credentials(server, Some("photos"), "ada", "b").expect("saved");
-        save_credentials("forget-test.local", None, "bob", "c").expect("saved");
+        save_credentials(server, None, "test_user_1", "a").expect("saved");
+        save_credentials(server, Some("photos"), "test_user_1", "b").expect("saved");
+        save_credentials("forget-test.local", None, "test_user_5", "c").expect("saved");
         save_credentials("forget-legacy.local", None, "cy", "d").expect("saved");
         note_found_under_portless("forget-legacy.local:11483", "forget-legacy.local");
 
@@ -372,7 +372,7 @@ mod tests {
         assert!(!has_cached_credentials(server), "the cache lets go too");
         assert_eq!(
             get_credentials("forget-test.local", None).expect("445's own").username,
-            "bob",
+            "test_user_5",
             "the server on 445 keeps its password"
         );
 
@@ -392,10 +392,10 @@ mod tests {
     #[test]
     fn a_restic_repo_entry_never_shares_a_key_with_an_smb_server() {
         let _secrets = crate::test_support::isolate_secrets();
-        let repo_scope = "smb-naspi:/Volumes/naspi/backups/m3-restic";
+        let repo_scope = "smb-testshare:/Volumes/testshare/backups/test-restic";
         save_credentials("restic://", Some(repo_scope), repo_scope, "repo-password").expect("saved");
-        save_credentials("restic", None, "ada", "smb-password").expect("saved");
-        save_credentials("restic", Some(repo_scope), "ada", "share-password").expect("saved");
+        save_credentials("restic", None, "test_user_1", "smb-password").expect("saved");
+        save_credentials("restic", Some(repo_scope), "test_user_1", "share-password").expect("saved");
 
         assert_ne!(
             make_account_name("restic://", Some(repo_scope)),
@@ -429,8 +429,8 @@ mod tests {
     /// collapsed to a stable identity. Reported as ERR-ABXW4.
     #[test]
     fn make_account_name_folds_share_normalization() {
-        let composed = make_account_name("naspolya", Some("R\u{e9}gi NAS"));
-        let decomposed = make_account_name("naspolya", Some("Re\u{301}gi NAS"));
+        let composed = make_account_name("testnas", Some("R\u{e9}gi NAS"));
+        let decomposed = make_account_name("testnas", Some("Re\u{301}gi NAS"));
         assert_eq!(composed, decomposed);
     }
 
@@ -446,17 +446,17 @@ mod tests {
     /// `statfs` service name or the resolved hostname.
     #[test]
     fn test_make_account_name_collapses_server_name_forms() {
-        let saved = make_account_name("Naspolya", None);
-        assert_eq!(saved, "smb://naspolya");
-        assert_eq!(make_account_name("Naspolya.local", None), saved);
-        assert_eq!(make_account_name("Naspolya._smb._tcp.local", None), saved);
+        let saved = make_account_name("Testnas", None);
+        assert_eq!(saved, "smb://testnas");
+        assert_eq!(make_account_name("Testnas.local", None), saved);
+        assert_eq!(make_account_name("Testnas._smb._tcp.local", None), saved);
     }
 
     #[test]
     fn test_parse_password_entry() {
-        let entry = make_password_entry("david", "secret123");
+        let entry = make_password_entry("test_user_3", "secret123");
         let creds = parse_password_entry(&entry).unwrap();
-        assert_eq!(creds.username, "david");
+        assert_eq!(creds.username, "test_user_3");
         assert_eq!(creds.password, "secret123");
     }
 

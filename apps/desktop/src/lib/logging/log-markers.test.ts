@@ -44,7 +44,7 @@ describe('markLogValue', () => {
   it('wraps the body between the kind opener and the closer', () => {
     expect(markLogValue('path', 'a/b')).toBe('\ufdd0a/b\ufdd1')
     expect(markLogValue('file_path', '/x.pdf')).toBe('\ufdd2/x.pdf\ufdd1')
-    expect(markLogValue('user', 'ada')).toBe('\ufdd9ada\ufdd1')
+    expect(markLogValue('user', 'test_user_1')).toBe('\ufdd9test_user_1\ufdd1')
     expect(LOG_MARKER_CLOSER).toBe('\ufdd1')
   })
 

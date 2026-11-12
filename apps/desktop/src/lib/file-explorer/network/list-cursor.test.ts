@@ -20,12 +20,12 @@ describe('cursorAfterArrow', () => {
 
 describe('nameStartsWith', () => {
   it('ignores case', () => {
-    expect(nameStartsWith('Naspolya', 'nas')).toBe(true)
-    expect(nameStartsWith('naspolya', 'NAS')).toBe(true)
+    expect(nameStartsWith('Testnas', 'test')).toBe(true)
+    expect(nameStartsWith('testnas', 'TEST')).toBe(true)
   })
 
   it('wants the start of the name, not any part of it', () => {
-    expect(nameStartsWith('Naspolya', 'pol')).toBe(false)
+    expect(nameStartsWith('Testnas', 'nas')).toBe(false)
   })
 
   it('reads a decomposed name the way a keyboard types it', () => {

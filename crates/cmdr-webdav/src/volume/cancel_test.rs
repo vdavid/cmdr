@@ -24,9 +24,17 @@ use crate::params::WebdavConnectionParams;
 /// Params at an address that never answers, and a host that already knows the
 /// secret, so the dial reaches the probe rather than stopping at the store.
 fn nowhere() -> (WebdavConnectionParams, VolumeHost) {
-    let params = WebdavConnectionParams::new(Url::parse("https://192.0.2.1/dav/").expect("a literal"), "ada", "/");
-    let credentials =
-        InMemoryCredentials::new().with_entry(&params.credential_service(), Some("ada"), "ada", "openthedoor");
+    let params = WebdavConnectionParams::new(
+        Url::parse("https://192.0.2.1/dav/").expect("a literal"),
+        "test_user_1",
+        "/",
+    );
+    let credentials = InMemoryCredentials::new().with_entry(
+        &params.credential_service(),
+        Some("test_user_1"),
+        "test_user_1",
+        "openthedoor",
+    );
     let host = VolumeHost::builder().credentials(Arc::new(credentials)).build();
     (params, host)
 }
@@ -86,7 +94,11 @@ async fn a_cancel_that_landed_before_the_secret_was_read_is_still_honored() {
 async fn a_dial_with_nothing_in_the_store_asks_for_credentials_rather_than_dialing() {
     // The counterpart to the two above: with no secret there is nothing to
     // cancel, and the dial never reaches the wire.
-    let params = WebdavConnectionParams::new(Url::parse("https://192.0.2.1/dav/").expect("a literal"), "ada", "/");
+    let params = WebdavConnectionParams::new(
+        Url::parse("https://192.0.2.1/dav/").expect("a literal"),
+        "test_user_1",
+        "/",
+    );
     let host = VolumeHost::builder()
         .credentials(Arc::new(InMemoryCredentials::new()))
         .build();

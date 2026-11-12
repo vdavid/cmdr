@@ -12,8 +12,8 @@ we measured, and why the fix lives on the first launch after an update. The code
   `2DB67854-9561-3810-A08D-F6C813188EEF`.
 - 0.58.0 placed in `/Applications/Cmdr.app` (user-owned, as a drag-install leaves it), the M1's own root-owned 0.55.0
   `.pkg` install moved aside so only one `com.veszelovszki.cmdr` was registered with LaunchServices, then put back.
-- The NAS share (`//david@192.168.1.111/naspi`) kernel-mounted, so Cmdr's launch sweep dials `192.168.1.111:445`
-  directly, which is a Local Network operation.
+- The NAS share (`//test_user_3@192.168.50.10/testshare`) kernel-mounted, so Cmdr's launch sweep dials
+  `192.168.50.10:445` directly, which is a Local Network operation.
 - The update made due (`update-check.json` reset), so 0.58.0's own updater downloaded, verified, and synced 0.59.0 into
   the running bundle about 4 s after launch: the real code path, not a simulation.
 - Observed with `log show` over `nehelper`, `nesessionmanager`, `neagent`, `UserEventAgent`, and `lsd`, plus

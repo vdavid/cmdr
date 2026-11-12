@@ -68,7 +68,7 @@ function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
     operationType: 'copy',
     status: 'running',
     source: '/Users/me/Documents',
-    destination: '/Volumes/Naspolya/Backup',
+    destination: '/Volumes/Testnas/Backup',
     rollbackSupport: 'supported',
     reverses: null,
     error: null,

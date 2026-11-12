@@ -130,10 +130,18 @@ fn a_log_holding_a_private_key_refuses_whatever_the_query_picks() {
 
 #[test]
 fn an_ordinary_log_reads_redacted() {
-    let window = "2026-11-02T08:00:00.000+01:00 INFO sftp://ada:hunter2@files.example.test/home/ada/report.pdf?token=q1w2\n\
-                  2026-11-02T08:00:01.000+01:00 WARN contact jane.doe@example.com at /Users/dorka/SecretProject/a.txt\n";
+    let window = "2026-11-02T08:00:00.000+01:00 INFO sftp://test_user_1:hunter2@files.example.test/home/test_user_1/report.pdf?token=q1w2\n\
+                  2026-11-02T08:00:01.000+01:00 WARN contact test_user_12.doe@example.com at /Users/test_user_8/SecretProject/a.txt\n";
     let lines = log_lines_of_window(window, false, &log_options()).expect("nothing to refuse");
-    for leak in ["ada", "hunter2", "q1w2", "jane.doe", "dorka", "SecretProject", "report"] {
+    for leak in [
+        "test_user_1",
+        "hunter2",
+        "q1w2",
+        "test_user_12.doe",
+        "test_user_8",
+        "SecretProject",
+        "report",
+    ] {
         assert!(!lines.contains(leak), "{leak} leaked: {lines}");
     }
     assert!(lines.contains("INFO"), "{lines}");

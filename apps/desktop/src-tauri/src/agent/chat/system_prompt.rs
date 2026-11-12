@@ -617,7 +617,7 @@ mod tests {
 
     /// The Downloads cleanup that motivated this section (conversation 179, 2026-10-26) filed
     /// an invoice by folder NAME into `accountants/` while every earlier invoice from that
-    /// vendor sat in `invoices paid/`, and suggested a photo destination it had never seen.
+    /// vendor sat in `invoices/`, and suggested a photo destination it had never seen.
     /// Precedent beats a fitting name, and an unseen destination is a guess.
     #[test]
     fn prompt_files_by_precedent_and_names_only_seen_destinations() {

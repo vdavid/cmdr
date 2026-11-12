@@ -110,8 +110,8 @@ the shape; this doc points at them where they apply and only adds what Windows c
 ### Paths
 
 - `lib/path/canonical.ts` is the blessed path arithmetic, and it's POSIX-only by construction: `toCanonical` accepts
-  `/…`, `~`, `~/…`, and `scheme://` and throws on anything else (`canonical.ts:24-35`), so `C:\Users\ada` or
-  `C:/Users/ada` throws today. `isPlainFilesystemPath` is `raw.startsWith('/')` (line 53). `isPathOnVolume` is a
+  `/…`, `~`, `~/…`, and `scheme://` and throws on anything else (`canonical.ts:24-35`), so `C:\Users\test_user_1` or
+  `C:/Users/test_user_1` throws today. `isPlainFilesystemPath` is `raw.startsWith('/')` (line 53). `isPathOnVolume` is a
   case-sensitive component match (line 72).
 - Outside `lib/path`, about 75 raw `split('/')` / `lastIndexOf('/')` sites across 40 files and 37 `startsWith('/')`
   checks. Many sit in virtual-volume utils where `/` is the protocol's separator and stays right (`mtp-path-utils.ts`,
@@ -121,11 +121,11 @@ the shape; this doc points at them where they apply and only adds what Windows c
 - `/Volumes` appears 76 times, but outside fixtures (`lib/dialog-gallery/fixtures/transfer-error.ts` has 25) nearly all
   are comments. No real logic keys on `/Volumes`; volume identity comes from the backend. Good.
 - **The decision (cross-audit)**: what a Windows local path looks like over IPC. Recommendation: (a) the backend speaks
-  forward-slash "Cmdr paths" to the frontend on every OS (`C:/Users/ada`, UNC as `//server/share/…`), converting to and
-  from `\` only at the Rust OS boundary. Every existing frontend slash-arithmetic site stays correct; `canonical.ts`
-  learns drive roots (`parentOf('C:/') === 'C:/'`) and `//server/share` roots; display converts to `\` in one formatter
-  (`lib/utils/display-path.ts` already exists). The alternative, (b) native `\` paths on the wire, touches all ~110
-  sites plus every Rust↔TS fixture. Case-insensitivity belongs on the volume record from the backend
+  forward-slash "Cmdr paths" to the frontend on every OS (`C:/Users/test_user_1`, UNC as `//server/share/…`), converting
+  to and from `\` only at the Rust OS boundary. Every existing frontend slash-arithmetic site stays correct;
+  `canonical.ts` learns drive roots (`parentOf('C:/') === 'C:/'`) and `//server/share` roots; display converts to `\` in
+  one formatter (`lib/utils/display-path.ts` already exists). The alternative, (b) native `\` paths on the wire, touches
+  all ~110 sites plus every Rust↔TS fixture. Case-insensitivity belongs on the volume record from the backend
   (`caseSensitive: bool`), and `isPathOnVolume` consults it. This needs agreement with the crates audit before anyone
   edits `lib/path`.
 

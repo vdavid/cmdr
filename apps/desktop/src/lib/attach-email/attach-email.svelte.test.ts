@@ -93,14 +93,14 @@ describe('createAttachEmail', () => {
   })
 
   it('trims the contact email it exposes', () => {
-    withSettings('  alex@example.com  ', false)
+    withSettings('  test_user_11@example.com  ', false)
     const email = create()
     expect(email.hasContactEmail).toBe(true)
-    expect(email.contactEmail).toBe('alex@example.com')
+    expect(email.contactEmail).toBe('test_user_11@example.com')
   })
 
   it('seeds the checkbox from the sticky setting', () => {
-    withSettings('alex@example.com', true)
+    withSettings('test_user_11@example.com', true)
     expect(create().attach).toBe(true)
   })
 
@@ -112,19 +112,19 @@ describe('createAttachEmail', () => {
   })
 
   it('withholds the email until the box is ticked', () => {
-    withSettings('alex@example.com', false)
+    withSettings('test_user_11@example.com', false)
     const email = create()
     expect(email.emailToAttach).toBeUndefined()
     email.attach = true
-    expect(email.emailToAttach).toBe('alex@example.com')
+    expect(email.emailToAttach).toBe('test_user_11@example.com')
   })
 
   it('attaches a typed address when none is on file', () => {
     withSettings('', false)
     const email = create()
     email.attach = true
-    email.typedEmail = '  alex@example.com  '
-    expect(email.emailToAttach).toBe('alex@example.com')
+    email.typedEmail = '  test_user_11@example.com  '
+    expect(email.emailToAttach).toBe('test_user_11@example.com')
     expect(email.typedEmailInvalid).toBe(false)
     expect(email.blocksSend).toBe(false)
   })
@@ -154,7 +154,7 @@ describe('createAttachEmail', () => {
     withSettings('', false)
     const email = create()
     email.attach = true
-    email.typedEmail = 'alex smith@example.com'
+    email.typedEmail = 'test_user_11 smith@example.com'
     expect(email.typedEmailInvalid).toBe(true)
   })
 
@@ -176,11 +176,11 @@ describe('createAttachEmail', () => {
   })
 
   it('prefers the address on file over anything typed', () => {
-    withSettings('alex@example.com', false)
+    withSettings('test_user_11@example.com', false)
     const email = create()
     email.attach = true
     email.typedEmail = 'foo'
-    expect(email.emailToAttach).toBe('alex@example.com')
+    expect(email.emailToAttach).toBe('test_user_11@example.com')
     expect(email.blocksSend).toBe(false)
   })
 
@@ -189,12 +189,12 @@ describe('createAttachEmail', () => {
     const email = create()
     email.attach = true
     email.typedEmail = 'a'
-    email.typedEmail = 'alex@example.com'
+    email.typedEmail = 'test_user_11@example.com'
     expect(mockSetSetting).not.toHaveBeenCalled()
   })
 
   it('persists the sticky choice', () => {
-    withSettings('alex@example.com', false)
+    withSettings('test_user_11@example.com', false)
     const email = create()
     email.attach = true
     email.persist()
@@ -205,9 +205,9 @@ describe('createAttachEmail', () => {
     withSettings('', false)
     const email = create()
     email.attach = true
-    email.typedEmail = '  alex@example.com '
+    email.typedEmail = '  test_user_11@example.com '
     email.persist()
-    expect(mockSetSetting).toHaveBeenCalledWith('analytics.email', 'alex@example.com')
+    expect(mockSetSetting).toHaveBeenCalledWith('analytics.email', 'test_user_11@example.com')
     expect(mockSetSetting).toHaveBeenCalledWith('updates.attachEmailToReports', true)
   })
 
@@ -223,14 +223,14 @@ describe('createAttachEmail', () => {
   it('persists no address when the box is unticked', () => {
     withSettings('', false)
     const email = create()
-    email.typedEmail = 'alex@example.com'
+    email.typedEmail = 'test_user_11@example.com'
     email.persist()
     expect(mockSetSetting).not.toHaveBeenCalledWith('analytics.email', expect.anything())
     expect(mockSetSetting).toHaveBeenCalledWith('updates.attachEmailToReports', false)
   })
 
   it('leaves the address on file alone', () => {
-    withSettings('alex@example.com', false)
+    withSettings('test_user_11@example.com', false)
     const email = create()
     email.attach = true
     email.persist()
@@ -244,14 +244,14 @@ describe('createAttachEmail following analytics.email live', () => {
     const email = create()
     expect(email.hasContactEmail).toBe(false)
 
-    setContactEmailFromSettings('alex@example.com')
+    setContactEmailFromSettings('test_user_11@example.com')
 
     expect(email.hasContactEmail).toBe(true)
-    expect(email.contactEmail).toBe('alex@example.com')
+    expect(email.contactEmail).toBe('test_user_11@example.com')
   })
 
   it('switches back to collecting when the address on file is cleared mid-dialog', () => {
-    withSettings('alex@example.com', false)
+    withSettings('test_user_11@example.com', false)
     const email = create()
 
     setContactEmailFromSettings('')
@@ -261,7 +261,7 @@ describe('createAttachEmail following analytics.email live', () => {
   })
 
   it('treats an address cleared to whitespace as none on file', () => {
-    withSettings('alex@example.com', false)
+    withSettings('test_user_11@example.com', false)
     const email = create()
     setContactEmailFromSettings('   ')
     expect(email.hasContactEmail).toBe(false)
@@ -282,7 +282,7 @@ describe('createAttachEmail following analytics.email live', () => {
   })
 
   it('attaches nothing when the address is cleared out from under a ticked box', () => {
-    withSettings('alex@example.com', false)
+    withSettings('test_user_11@example.com', false)
     const email = create()
     email.attach = true
 
@@ -315,14 +315,14 @@ describe('createAttachEmail following analytics.email live', () => {
     email.typedEmail = 'foo'
     expect(email.blocksSend).toBe(true)
 
-    setContactEmailFromSettings('alex@example.com')
+    setContactEmailFromSettings('test_user_11@example.com')
 
     expect(email.typedEmailInvalid).toBe(false)
     expect(email.blocksSend).toBe(false)
   })
 
   it('persists a typed address after a live switch back to collecting', () => {
-    withSettings('alex@example.com', false)
+    withSettings('test_user_11@example.com', false)
     const email = create()
     email.attach = true
     setContactEmailFromSettings('')

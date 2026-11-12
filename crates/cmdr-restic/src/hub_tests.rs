@@ -15,8 +15,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
-const REPO: &str = "/Volumes/naspi/backups/m3-restic";
-const PLAIN: &str = "/Volumes/naspi/photos";
+const REPO: &str = "/Volumes/testshare/backups/test-restic";
+const PLAIN: &str = "/Volumes/testshare/photos";
 
 /// A parent that counts its listings (started and finished), over an in-memory
 /// volume holding a repo at [`REPO`] and a plain folder at [`PLAIN`]. Each
@@ -34,7 +34,7 @@ impl CountingParent {
     }
 
     async fn slow(delay: Duration) -> Arc<Self> {
-        let inner = InMemoryVolume::new("naspi");
+        let inner = InMemoryVolume::new("testshare");
         FixtureRepo::init("pw").write_into(&inner, Path::new(REPO)).await;
         inner.create_directory(Path::new(PLAIN)).await.expect("plain folder");
         Arc::new(Self {
@@ -166,12 +166,12 @@ async fn a_missing_folder_is_not_a_repo() {
     let parent = CountingParent::new().await;
     let hub = hub();
     assert_eq!(
-        hub.confirm_repo("nas", &parent.as_volume(), Path::new("/Volumes/naspi/gone"))
+        hub.confirm_repo("nas", &parent.as_volume(), Path::new("/Volumes/testshare/gone"))
             .await,
         Some(false)
     );
     assert_eq!(
-        hub.serves_confirmed("nas", Path::new("/Volumes/naspi/gone")),
+        hub.serves_confirmed("nas", Path::new("/Volumes/testshare/gone")),
         Some(false)
     );
 }
@@ -209,7 +209,7 @@ async fn the_memo_is_per_volume() {
 /// read passes through; it's no "yes" for the sync seams either.
 #[tokio::test]
 async fn a_wedged_parent_times_out_undecided() {
-    let parent: Arc<dyn Volume> = Arc::new(WedgedVolume::new("naspi"));
+    let parent: Arc<dyn Volume> = Arc::new(WedgedVolume::new("testshare"));
     let hub = ResticRepos::with_tuning(
         VolumeHost::detached(),
         Tuning {

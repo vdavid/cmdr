@@ -2,7 +2,7 @@
 //! them.
 //!
 //! A remote backend has no mount, so it needs an app-facing spelling of its
-//! files that is self-describing. `sftp://ada@nas.local:22/srv/data/photos` is
+//! files that is self-describing. `sftp://test_user_1@testnas.local:22/srv/data/photos` is
 //! one; `/srv/data/photos` is not, and that matters because
 //! `commands/volumes.rs::resolve_path_to_volume` falls through to the mount
 //! table, which on both platforms walks up to `/` and answers the LOCAL root for
@@ -49,7 +49,7 @@ pub struct RemoteRoot {
     /// hand-built, so a path and the id it resolves to can't disagree.
     prefix: String,
     /// The same, as a `Path`, so the match is by whole COMPONENTS. A string
-    /// compare would let `…nas.local:2222` borrow `…nas.local:22`'s volume.
+    /// compare would let `…testnas.local:2222` borrow `…testnas.local:22`'s volume.
     prefix_path: PathBuf,
     /// What the app addresses the root by: `<prefix><remote>`.
     app: PathBuf,
@@ -196,7 +196,7 @@ fn normalize(path: &Path) -> PathBuf {
 /// Minted from the same identity tuple as [`sftp_volume_id`], so the crate and
 /// the app spell it from one function and a saved server's row, a restored tab,
 /// and the live volume all agree. The volume's app root is this plus the remote
-/// root (`sftp://ada@nas.local:22/srv/data`).
+/// root (`sftp://test_user_1@testnas.local:22/srv/data`).
 ///
 /// ❗ **The prefix is what makes a remote path self-describing.** The mount table
 /// answers the LOCAL root for any absolute path it doesn't recognize, on both
@@ -292,8 +292,8 @@ pub fn without_s3_key_ids(text: &str) -> Cow<'_, str> {
 /// them either.
 ///
 /// ❗ **The export rides as ONE segment**, its leading `/` dropped and only `%`
-/// and `/` escaped (`%25`, `%2F`): `/Public` is `nfs://nas.local:2049/Public`,
-/// `/volume1/data` is `nfs://nas.local:2049/volume1%2Fdata`, and the root export
+/// and `/` escaped (`%25`, `%2F`): `/Public` is `nfs://testnas.local:2049/Public`,
+/// `/volume1/data` is `nfs://testnas.local:2049/volume1%2Fdata`, and the root export
 /// `/` is the segment `%2F`. Without it, [`server_of_path`] couldn't tell where a
 /// multi-segment export ends and the folder under it begins, and it mints the id
 /// from the path alone. `server-path-utils.ts` mirrors this exactly.
@@ -392,7 +392,7 @@ pub struct ServerPath {
 /// registry.
 ///
 /// The user is everything before the authority's LAST `@` and the port everything
-/// after its last `:`, which is how an IPv6 host (`sftp://ada@::1:22`) still
+/// after its last `:`, which is how an IPv6 host (`sftp://test_user_1@::1:22`) still
 /// splits.
 pub fn server_of_path(path: &str) -> Option<ServerPath> {
     if let Some(rest) = path.strip_prefix(NFS_SCHEME).and_then(|rest| rest.strip_prefix("://")) {

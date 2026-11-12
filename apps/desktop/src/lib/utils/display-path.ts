@@ -15,7 +15,7 @@
  * `s3://<host>:<port>/<bucket>/…`. The rule is
  * `cmdr_fs::volume::without_s3_key_ids` in Rust, which keeps it out of the logs.
  *
- * On Windows a local app path reads as Windows spells it (`C:\Users\ada`,
+ * On Windows a local app path reads as Windows spells it (`C:\Users\test_user_1`,
  * `\\server\share\x`): `#lib/path/grammar`'s `shownPath` is the one formatter.
  * It turns text that IS one path, never a path somewhere inside prose, where a `/`
  * could just as well be "and/or"; a message's path PARAMS get it in `t()`.
@@ -23,7 +23,7 @@
  * Every place that turns a path, or text holding one, into something SHOWN goes
  * through `displayPath`. Something COPIED goes through `withoutPicks` only: a
  * pasted S3 path has to find its account again (Go to path). A copied PATH
- * ("Copy path") goes through `copiedPath`, so Windows pastes `C:\Users\ada`.
+ * ("Copy path") goes through `copiedPath`, so Windows pastes `C:\Users\test_user_1`.
  */
 import { shownPath } from '#lib/path/grammar.js'
 

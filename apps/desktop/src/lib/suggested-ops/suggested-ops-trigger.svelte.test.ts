@@ -477,7 +477,7 @@ describe('approving', () => {
     })
 
     it('stays on the list when the save is refused', async () => {
-      approveServerMock.mockResolvedValueOnce({ kind: 'nameTaken', name: 'Naspolya' })
+      approveServerMock.mockResolvedValueOnce({ kind: 'nameTaken', name: 'Testnas' })
       await openSuggestedOps()
 
       await approveGroup(SERVER)
@@ -498,11 +498,11 @@ describe('approving', () => {
 
     it('keeps every refusal that gave the card back under it, with its reason', async () => {
       const givenBack: ServerApprovalResultView[] = [
-        { kind: 'refused', outcome: { outcome: 'address_taken', name: 'Naspolya' } },
+        { kind: 'refused', outcome: { outcome: 'address_taken', name: 'Testnas' } },
         { kind: 'addServer', error: { type: 'invalid_address', message: 'no host' } },
         { kind: 'serverChanged' },
-        { kind: 'alreadySaved', serverId: 'sftp-build-22-ada' },
-        { kind: 'nameTaken', name: 'Naspolya' },
+        { kind: 'alreadySaved', serverId: 'sftp-build-22-test_user_1' },
+        { kind: 'nameTaken', name: 'Testnas' },
       ]
       for (const answer of givenBack) {
         approveServerMock.mockResolvedValueOnce(answer)
@@ -517,7 +517,7 @@ describe('approving', () => {
 
     it('says nothing under a card that saved, was answered elsewhere, or changed', async () => {
       const quiet: ServerApprovalResultView[] = [
-        { kind: 'saved', volumeId: 'sftp-build-22-ada' },
+        { kind: 'saved', volumeId: 'sftp-build-22-test_user_1' },
         { kind: 'alreadyAnswered' },
         { kind: 'unknown' },
         { kind: 'listChanged' },

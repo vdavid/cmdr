@@ -10,7 +10,7 @@ import { flushSync } from 'svelte'
 import type { NetworkHost } from '../types'
 import { createNetworkHostState, type NetworkHostState } from './network-host-state.svelte'
 
-const host = { id: 'nas', name: 'Naspolya' } as unknown as NetworkHost
+const host = { id: 'nas', name: 'Testnas' } as unknown as NetworkHost
 
 describe('createNetworkHostState', () => {
   let dispose: (() => void) | undefined

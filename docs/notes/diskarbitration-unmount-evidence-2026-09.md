@@ -26,7 +26,7 @@ and § "The approval-hook spike" differ, the spike wins.
   volumes of its synthesized container.
 - **`DADiskCreateFromVolumePath` runs `statfs` then `realpath`** (`DiskArbitration/DADisk.c:413-421`), so it hangs on a
   DMG whose backing file lives on a hung SMB share. It returns NULL for a path that's no longer a mount.
-- **DA doesn't track SMB**: `diskutil info /Volumes/naspi` prints "Could not find disk".
+- **DA doesn't track SMB**: `diskutil info /Volumes/testshare` prints "Could not find disk".
 - **IOKit ancestry of an APFS volume** (`ioreg -p IOService -t`): `AppleAPFSVolume` → `AppleAPFSContainer` (the
   synthesized whole disk) → `AppleAPFSContainerScheme` → `IOMedia` (the physical store partition) → the physical whole.
 

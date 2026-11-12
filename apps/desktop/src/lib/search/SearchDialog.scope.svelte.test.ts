@@ -68,10 +68,14 @@ describe('SearchDialog scope ladder (one volume is the ceiling)', () => {
 
   it('falls back to the volume when the focused pane has no real folder', async () => {
     const { overlay, cleanup } = await mountDialog({
-      scopePresets: { currentFolder: null, currentFolderUnavailableReason: 'snapshot', volumeRoot: '/Volumes/naspi' },
+      scopePresets: {
+        currentFolder: null,
+        currentFolderUnavailableReason: 'snapshot',
+        volumeRoot: '/Volumes/testshare',
+      },
     })
     const query = await runAndCaptureQuery(overlay)
-    expect(query.includePaths).toEqual(['/Volumes/naspi'])
+    expect(query.includePaths).toEqual(['/Volumes/testshare'])
     cleanup()
   })
 

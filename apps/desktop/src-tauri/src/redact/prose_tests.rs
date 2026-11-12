@@ -27,7 +27,7 @@ fn an_absolute_path_under_any_prefix_is_redacted() {
             "SftpVolume::create_directory_all: /<dir>/<dir>",
         ),
         (
-            "skipping too-small image '/mnt/backup/Anna Kovacs/tax.pdf' (12x12)",
+            "skipping too-small image '/mnt/backup/Test Person/tax.pdf' (12x12)",
             "skipping too-small image '/mnt/<dir>/<dir>/<file>.pdf' (12x12)",
         ),
         (
@@ -68,7 +68,7 @@ fn slashes_that_are_not_absolute_paths_stay() {
 #[test]
 fn a_path_leaf_repeated_bare_on_its_line_is_scrubbed() {
     let context = context();
-    let input = "op 01a0 (Trash) failed: /Users/kajotac/Desktop/Screenshot 2026-09-04 at 01.13.03 PM-2.jpeg: \
+    let input = "op 01a0 (Trash) failed: /Users/test_user_9/Desktop/Screenshot 2026-09-04 at 01.13.03 PM-2.jpeg: \
                  the Trash refused it: “Screenshot 2026-09-04 at 01.13.03 PM-2.jpeg”";
     let out = context.redact_line(input).into_owned();
     assert!(!out.contains("Screenshot") && !out.contains("01.13.03"), "{out}");

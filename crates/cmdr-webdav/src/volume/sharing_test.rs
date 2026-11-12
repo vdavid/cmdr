@@ -9,15 +9,15 @@ use cmdr_fs::volume::Volume;
 use super::test_support::make_test_volume;
 
 /// The prefix this crate's test volume mints.
-const PREFIX: &str = "webdav://ada@127.0.0.1:1";
+const PREFIX: &str = "webdav://test_user_1@127.0.0.1:1";
 
 #[test]
 fn an_instance_sharing_the_client_answers_to_its_own_name_and_root() {
     let narrow = make_test_volume("/Photos/2024");
 
-    let wide = narrow.sharing_connection("ada@127.0.0.1", Path::new("/Photos"));
+    let wide = narrow.sharing_connection("test_user_1@127.0.0.1", Path::new("/Photos"));
 
-    assert_eq!(wide.name(), "ada@127.0.0.1");
+    assert_eq!(wide.name(), "test_user_1@127.0.0.1");
     assert_eq!(wide.root(), Path::new(&format!("{PREFIX}/Photos")));
     assert_eq!(
         wide.to_remote_path(Path::new(&format!("{PREFIX}/Photos/trip")))
@@ -57,5 +57,5 @@ fn the_redial_root_moves_on_the_live_client() {
 
     let params = volume.inner.params();
     assert_eq!(params.remote_root, PathBuf::from("/Photos"));
-    assert_eq!(params.username, "ada", "the identity it dials never moves");
+    assert_eq!(params.username, "test_user_1", "the identity it dials never moves");
 }

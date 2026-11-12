@@ -1,7 +1,7 @@
 //! A live search scoped to an accented folder on a real SMB share, through
 //! Cmdr's own smb2 volume, against the `smb-consumer-unicode` fixture's Samba.
 //!
-//! The regression: searching `/Volumes/naspi/papers/Rymdskottkärra AB` answered
+//! The regression: searching `/Volumes/testshare/documents/Testföretag AB` answered
 //! "No files match" over a folder full of matches. `realpath` through the macOS
 //! smbfs mount handed the scope back decomposed (NFD: `a` + U+0308), the NAS
 //! stores it composed (NFC), and the smb2 walk asked for a name the server
@@ -49,9 +49,9 @@ use crate::file_system::volume::manager::get_volume_manager;
 use crate::search::live::{self, WalkEnding};
 
 /// The folder from the report, composed (NFC): how the share stores it.
-const NFC_FOLDER: &str = "Rymdskottk\u{e4}rra AB";
+const NFC_FOLDER: &str = "Testf\u{f6}retag AB";
 /// The same folder decomposed (`a` + U+0308): how macOS smbfs spelled it back.
-const NFD_FOLDER: &str = "Rymdskottka\u{308}rra AB";
+const NFD_FOLDER: &str = "Testfo\u{308}retag AB";
 /// The file inside, which the search has to find.
 const FILE: &str = "faktura-2026.pdf";
 

@@ -14,7 +14,7 @@ use std::time::{Duration, UNIX_EPOCH};
 use zeroize::Zeroizing;
 
 const PASSWORD: &str = "correct horse";
-const ROOT: &str = "/backups/m3-restic";
+const ROOT: &str = "/backups/test-restic";
 /// Backups in the fixture: each changes a file, so each writes an index file.
 /// Several times the files the window holds plus the ones rustic asks for.
 const BACKUPS: u64 = 24;
@@ -34,7 +34,7 @@ async fn fixture() -> IndexedFixture {
         std::fs::write(source.join("a.txt"), format!("version {i}")).expect("source file");
         repo.backup(&source, UNIX_EPOCH + Duration::from_secs(1_791_000_000 + i * 3_600));
     }
-    let parent = Arc::new(InMemoryVolume::new("naspi"));
+    let parent = Arc::new(InMemoryVolume::new("testshare"));
     repo.write_into(parent.as_ref(), Path::new(ROOT)).await;
     let index_sizes = repo
         .files()
@@ -136,7 +136,7 @@ async fn a_read_whose_task_runs_after_the_cancel_opens_nothing() {
     cancel.cancel();
 
     // An empty parent: any open answers `NotFound`.
-    let empty: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("naspi"));
+    let empty: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("testshare"));
     let path = dir.join(&*start.id.to_hex());
     let read = super::read_one(empty, path, start, feed).await;
 

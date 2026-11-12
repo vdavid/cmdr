@@ -117,7 +117,7 @@ async function followRememberedState(
 /**
  * `path` respelled from `oldPrefix` to `newPrefix`, or unchanged when it isn't on
  * the old address. ❗ By whole components, ❌ never a string prefix:
- * `sftp://ada@nas.local:2222` starts with `sftp://ada@nas.local:22` and is another
+ * `sftp://test_user_1@testnas.local:2222` starts with `sftp://test_user_1@testnas.local:22` and is another
  * server.
  */
 export function pathAfterServerMove(path: string, oldPrefix: string, newPrefix: string): string {

@@ -19,7 +19,7 @@ describe('volumeKindFor', () => {
   })
 
   it('classifies a network-category volume as smb', () => {
-    expect(volumeKindFor('volumesnaspi', 'smbfs', 'network')).toBe('smb')
+    expect(volumeKindFor('volumestestshare', 'smbfs', 'network')).toBe('smb')
   })
 
   it('classifies smbfs fsType without category as smb', () => {

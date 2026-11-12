@@ -33,11 +33,11 @@ function mountDialog(onCreated: (name: string) => void): HTMLElement {
     target,
     props: {
       initiator: 'user',
-      currentPath: '/Volumes/naspi/photos',
+      currentPath: '/Volumes/testshare/photos',
       listingId: 'listing-1',
       showHiddenFiles: false,
       initialName: 'summer',
-      volumeId: 'smb-naspi',
+      volumeId: 'smb-testshare',
       onCreated,
       onCancel: () => {},
     },
@@ -150,7 +150,7 @@ describe('NewFolderDialog on a slow volume', () => {
 
     pressEnter(target)
     await settle()
-    create.refuse(new MutationFailure({ type: 'parentNotWritable', path: '/Volumes/naspi/photos' }))
+    create.refuse(new MutationFailure({ type: 'parentNotWritable', path: '/Volumes/testshare/photos' }))
     await settle()
 
     const send = [...target.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Send error report…')
@@ -170,7 +170,7 @@ describe('NewFolderDialog on a slow volume', () => {
 
     pressEnter(target)
     await settle()
-    create.refuse(new MutationFailure({ type: 'parentNotWritable', path: '/Volumes/naspi/photos' }))
+    create.refuse(new MutationFailure({ type: 'parentNotWritable', path: '/Volumes/testshare/photos' }))
     await settle()
     const sendButton = () =>
       [...target.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Send error report…')

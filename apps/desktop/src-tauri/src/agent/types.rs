@@ -402,7 +402,7 @@ mod tests {
     fn decision(outcome: ProposalOutcomeKind) -> ProposalDecision {
         ProposalDecision {
             verb: ProposalVerb::Trash,
-            what: "/Users/dana/Downloads/*.dmg".to_string(),
+            what: "/Users/test_user_13/Downloads/*.dmg".to_string(),
             ops: 12,
             outcome,
             protocol: None,
@@ -444,11 +444,11 @@ mod tests {
             },
         );
         decision.protocol = Some(DraftProtocol::Smb);
-        decision.what = "naspolya".to_string();
+        decision.what = "testnas".to_string();
 
         assert_eq!(
             decision.render(),
-            "approved: saved the SMB server naspolya, not its share"
+            "approved: saved the SMB server testnas, not its share"
         );
     }
 
@@ -470,7 +470,7 @@ mod tests {
         assert!(line.contains("turned down"), "{line}");
         assert!(line.contains("trash"), "{line}");
         assert!(line.contains("12"), "{line}");
-        assert!(line.contains("/Users/dana/Downloads/*.dmg"), "{line}");
+        assert!(line.contains("/Users/test_user_13/Downloads/*.dmg"), "{line}");
     }
 
     /// ⚠️ An approval's line carries what RAN, not what was claimed. Without the tallies the

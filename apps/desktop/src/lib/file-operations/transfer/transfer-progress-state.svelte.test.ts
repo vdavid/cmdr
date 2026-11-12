@@ -466,7 +466,7 @@ describe('createTransferProgressState: cancel + settle close-out', () => {
     if (!listeners.cancelled || !listeners.settled) throw new Error('cancel/settle subscribers never registered')
     listeners.cancelled(
       cancelledEvent(4, {
-        stagedLeftovers: [{ fate: 'landsWhenBack', count: 1, exampleName: 'holiday.jpg', volumeName: 'Naspolya' }],
+        stagedLeftovers: [{ fate: 'landsWhenBack', count: 1, exampleName: 'holiday.jpg', volumeName: 'Testnas' }],
       }),
     )
     listeners.settled({ operationId: 'op-1', operationType: 'copy' })

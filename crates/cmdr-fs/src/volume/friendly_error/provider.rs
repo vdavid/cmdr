@@ -259,7 +259,7 @@ mod tests {
         let cases = [
             ("Library/CloudStorage/Dropbox/docs/file.txt", Provider::Dropbox),
             (
-                "Library/CloudStorage/GoogleDrive-me@gmail.com/My Drive/file.txt",
+                "Library/CloudStorage/GoogleDrive-test_user_1@example.com/My Drive/file.txt",
                 Provider::GoogleDrive,
             ),
             ("Library/CloudStorage/OneDrive-Personal/file.txt", Provider::OneDrive),

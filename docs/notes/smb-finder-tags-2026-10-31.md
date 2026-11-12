@@ -37,7 +37,8 @@ through the mount it outran it. The 102 was the mount's first pass, and the medi
 
 ## The proof, end to end
 
-On the same share, 2026-10-31, with `diskutil unmount /Volumes/naspi` first (no entry in `mount`, no `/Volumes/naspi`):
+On the same share, 2026-10-31, with `diskutil unmount /Volumes/testshare` first (no entry in `mount`, no
+`/Volumes/testshare`):
 
 - `tags_io_integration_test.rs::nas_a_seeded_folder_sweeps_and_toggles_with_no_mount`, through the app's own route (a
   real `SmbVolume` in the registry, a real listing): the 2,000-file sweep put the seed's red tags in the listing, and

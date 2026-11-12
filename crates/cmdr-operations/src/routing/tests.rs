@@ -23,32 +23,35 @@ fn share_at(root: &str) -> Arc<dyn Volume> {
 
 #[test]
 fn a_remote_destination_is_anchored_at_its_mount_root() {
-    // The dialog's box is volume-relative. Unanchored, `/_todo_pics` reaches
+    // The dialog's box is volume-relative. Unanchored, `/test_photos` reaches
     // `SmbVolume` as an absolute path outside the mount and comes back
     // `NotFound` before any I/O, which is what killed a 360 GB move
     // (ERR-XCP5Q) and reported the DESTINATION as a missing source.
-    let volume = share_at("/Volumes/naspi");
+    let volume = share_at("/Volumes/testshare");
     assert_eq!(
-        resolve_dest_path(&volume, "/_todo_pics/Fiumei footage".to_string()),
-        Path::new("/Volumes/naspi/_todo_pics/Fiumei footage")
+        resolve_dest_path(&volume, "/test_photos/test footage".to_string()),
+        Path::new("/Volumes/testshare/test_photos/test footage")
     );
 }
 
 #[test]
 fn a_remote_destination_already_under_its_root_is_untouched() {
-    let volume = share_at("/Volumes/naspi");
+    let volume = share_at("/Volumes/testshare");
     assert_eq!(
-        resolve_dest_path(&volume, "/Volumes/naspi/_todo_pics".to_string()),
-        Path::new("/Volumes/naspi/_todo_pics")
+        resolve_dest_path(&volume, "/Volumes/testshare/test_photos".to_string()),
+        Path::new("/Volumes/testshare/test_photos")
     );
 }
 
 #[test]
 fn a_remote_destination_at_the_share_root_stays_the_root() {
     // The one shape that worked before anchoring existed; it must keep
-    // working, and must not become `/Volumes/naspi/`.
-    let volume = share_at("/Volumes/naspi");
-    assert_eq!(resolve_dest_path(&volume, "/".to_string()), Path::new("/Volumes/naspi"));
+    // working, and must not become `/Volumes/testshare/`.
+    let volume = share_at("/Volumes/testshare");
+    assert_eq!(
+        resolve_dest_path(&volume, "/".to_string()),
+        Path::new("/Volumes/testshare")
+    );
 }
 
 #[test]

@@ -16,7 +16,7 @@
 //! The pane hands over an APP path; the store keys visits by the path the
 //! recompute looks them up by, its volume-relative index path. So the visit is
 //! translated first ([`store_path_of_visit`], through `crate::location::store_path`
-//! and the one root rule): `/Volumes/naspi-1/papers` is stored as `/papers`, and a
+//! and the one root rule): `/Volumes/testshare-1/documents` is stored as `/documents`, and a
 //! cloud drive's folder relative to the drive's own root.
 
 use std::sync::Arc;
@@ -111,10 +111,10 @@ mod tests {
 
     #[test]
     fn a_share_visit_is_stored_relative_to_the_share() {
-        let visit = at("smb-192-168-1-111-445-naspi", "/Volumes/naspi-1/papers/x");
+        let visit = at("smb-192-168-50-10-445-testshare", "/Volumes/testshare-1/documents/x");
         assert_eq!(
-            store_path_of_visit(&visit, Some("/Volumes/naspi-1")).as_deref(),
-            Some("/papers/x")
+            store_path_of_visit(&visit, Some("/Volumes/testshare-1")).as_deref(),
+            Some("/documents/x")
         );
     }
 
@@ -137,10 +137,10 @@ mod tests {
 
     #[test]
     fn a_visit_with_no_volume_root_or_off_its_root_is_not_recorded() {
-        let visit = at("smb-192-168-1-111-445-naspi", "/Volumes/naspi/papers");
+        let visit = at("smb-192-168-50-10-445-testshare", "/Volumes/testshare/documents");
         assert_eq!(store_path_of_visit(&visit, None), None, "not registered");
         assert_eq!(
-            store_path_of_visit(&visit, Some("/Volumes/naspi-1")),
+            store_path_of_visit(&visit, Some("/Volumes/testshare-1")),
             None,
             "a path the volume doesn't hold"
         );

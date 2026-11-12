@@ -348,7 +348,7 @@ fn spellings(home: &str, rest: &str) -> Vec<String> {
         in_parent(&format!("gone/../{name}")),
         format!("{path}/sub/.."),
         // A backup of the home folder on a share, on a phone, and inside an archive.
-        format!("/Volumes/naspi/backup{}", path.trim_start_matches("C:")),
+        format!("/Volumes/testshare/backup{}", path.trim_start_matches("C:")),
         format!("smb://nas/share/{rest}"),
         format!("//server/share/profiles/someone/{rest}"),
         format!("mtp://device/Internal/{rest}"),

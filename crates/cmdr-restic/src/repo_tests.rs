@@ -9,7 +9,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const PASSWORD: &str = "correct horse";
-const ROOT: &str = "/Volumes/naspi/backups/m3-restic";
+const ROOT: &str = "/Volumes/testshare/backups/test-restic";
 
 fn at(secs: u64) -> SystemTime {
     UNIX_EPOCH + Duration::from_secs(secs)
@@ -30,8 +30,8 @@ async fn open(parent: &Arc<InMemoryVolume>, password: &str) -> Result<ResticRepo
 #[tokio::test(flavor = "multi_thread")]
 async fn opens_with_the_password_and_lists_snapshots_oldest_first() {
     let fixture = FixtureRepo::init(PASSWORD);
-    fixture.add_snapshot(at(1_791_000_000), "m3");
-    fixture.add_snapshot(at(1_790_000_000), "m3");
+    fixture.add_snapshot(at(1_791_000_000), "test-host");
+    fixture.add_snapshot(at(1_790_000_000), "test-host");
     fixture.add_snapshot(at(1_792_000_000), "mini");
     let parent = parent_with(&fixture, InMemoryVolume::new("nas")).await;
 
@@ -50,7 +50,7 @@ async fn opens_with_the_password_and_lists_snapshots_oldest_first() {
 #[tokio::test(flavor = "multi_thread")]
 async fn a_wrong_password_is_typed_and_the_right_one_then_opens() {
     let fixture = FixtureRepo::init(PASSWORD);
-    fixture.add_snapshot(at(1_791_000_000), "m3");
+    fixture.add_snapshot(at(1_791_000_000), "test-host");
     let parent = parent_with(&fixture, InMemoryVolume::new("nas")).await;
 
     let wrong = open(&parent, "incorrect horse").await;
@@ -76,7 +76,7 @@ async fn a_v1_repo_opens_too() {
 #[tokio::test(flavor = "multi_thread")]
 async fn opening_and_listing_never_write_to_the_repo() {
     let fixture = FixtureRepo::init(PASSWORD);
-    fixture.add_snapshot(at(1_791_000_000), "m3");
+    fixture.add_snapshot(at(1_791_000_000), "test-host");
     let parent = parent_with(&fixture, InMemoryVolume::new("nas")).await;
 
     let _ = open(&parent, "incorrect horse").await;
@@ -177,7 +177,7 @@ async fn reading_a_tree_uses_ranged_reads_of_the_pack_never_the_whole_pack() {
 async fn a_snapshot_refresh_reads_on_its_own_pool() {
     let fixture = FixtureRepo::init(PASSWORD);
     for hour in 0..6 {
-        fixture.add_snapshot(at(1_791_000_000 + hour * 3_600), "m3");
+        fixture.add_snapshot(at(1_791_000_000 + hour * 3_600), "test-host");
     }
     let parent = parent_with(&fixture, InMemoryVolume::new("nas")).await;
     let repo = open(&parent, PASSWORD).await.expect("opens");

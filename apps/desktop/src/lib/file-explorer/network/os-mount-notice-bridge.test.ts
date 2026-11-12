@@ -81,7 +81,7 @@ describe('the OS-mount fallback notice', () => {
       volumeId: 'smb-archive',
       share: 'archive',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
 
@@ -100,7 +100,7 @@ describe('the OS-mount fallback notice', () => {
       volumeId: 'smb-gone',
       share: 'gone',
       reason: 'shareNotOnServer',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
 
@@ -118,7 +118,7 @@ describe('the OS-mount fallback notice', () => {
       'otherServerNotAllowed',
     ] as const) {
       addToast.mockClear()
-      emitFallback({ volumeId: `smb-${reason}`, share: 'archive', reason, displayName: 'Naspolya', afterUpdate: false })
+      emitFallback({ volumeId: `smb-${reason}`, share: 'archive', reason, displayName: 'Testnas', afterUpdate: false })
 
       const [, options] = addToast.mock.calls[0]
       expect(options.props, reason).toEqual({
@@ -135,7 +135,7 @@ describe('the OS-mount fallback notice', () => {
   it('keeps the retry for every reason that can change on its own', () => {
     for (const reason of ['unreachable', 'tooSlow', 'unexpected'] as const) {
       addToast.mockClear()
-      emitFallback({ volumeId: `smb-${reason}`, share: 'archive', reason, displayName: 'Naspolya', afterUpdate: false })
+      emitFallback({ volumeId: `smb-${reason}`, share: 'archive', reason, displayName: 'Testnas', afterUpdate: false })
 
       const [, options] = addToast.mock.calls[0]
       expect(options.props, reason).toMatchObject({ retryable: true })
@@ -147,23 +147,28 @@ describe('the OS-mount fallback notice', () => {
   // after the switch.
   it('names the server it couldn’t connect to when this Mac is what blocked it', () => {
     emitFallback({
-      volumeId: 'smb-sven',
-      share: 'Sven',
+      volumeId: 'smb-test_user_6',
+      share: 'Test_user_6',
       reason: 'blockedByThisMac',
       displayName: 'Mars',
       afterUpdate: false,
     })
 
     const [, options] = addToast.mock.calls[0]
-    expect(options.props).toEqual({ volumeId: 'smb-sven', share: 'Sven', retryable: true, blockedServer: 'Mars' })
+    expect(options.props).toEqual({
+      volumeId: 'smb-test_user_6',
+      share: 'Test_user_6',
+      retryable: true,
+      blockedServer: 'Mars',
+    })
   })
 
   // #1019: on the first launch after an update the block is the Local Network
   // permission stuck on the old binary, so the notice names the update.
   it('names the update as the cause when this Mac blocked the first dial after one', () => {
     emitFallback({
-      volumeId: 'smb-sven',
-      share: 'Sven',
+      volumeId: 'smb-test_user_6',
+      share: 'Test_user_6',
       reason: 'blockedByThisMac',
       displayName: 'Mars',
       afterUpdate: true,
@@ -171,8 +176,8 @@ describe('the OS-mount fallback notice', () => {
 
     const [, options] = addToast.mock.calls[0]
     expect(options.props).toEqual({
-      volumeId: 'smb-sven',
-      share: 'Sven',
+      volumeId: 'smb-test_user_6',
+      share: 'Test_user_6',
       retryable: true,
       blockedServer: 'Mars',
       blockedAfterUpdate: true,
@@ -184,7 +189,7 @@ describe('the OS-mount fallback notice', () => {
       volumeId: 'smb-archive',
       share: 'archive',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
 
@@ -198,7 +203,7 @@ describe('the OS-mount fallback notice', () => {
       volumeId: 'smb-archive',
       share: 'archive',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
 
@@ -211,7 +216,7 @@ describe('the OS-mount fallback notice', () => {
       volumeId: 'smb-archive',
       share: 'archive',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
 
@@ -225,7 +230,7 @@ describe('the OS-mount fallback notice', () => {
       volumeId: 'smb-archive',
       share: 'archive',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
 
@@ -239,14 +244,14 @@ describe('the OS-mount fallback notice', () => {
       volumeId: 'smb-archive',
       share: 'archive',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
     emitFallback({
       volumeId: 'smb-photos',
       share: 'photos',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
 
@@ -265,14 +270,14 @@ describe('the OS-mount fallback notice', () => {
       volumeId: 'smb-archive',
       share: 'archive',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
     emitFallback({
       volumeId: 'smb-photos',
       share: 'photos',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
 
@@ -286,7 +291,7 @@ describe('the OS-mount fallback notice', () => {
       volumeId: 'smb-archive',
       share: 'archive',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
 
@@ -302,7 +307,7 @@ describe('the OS-mount fallback notice', () => {
       volumeId: 'smb-archive',
       share: 'archive',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
 
@@ -327,14 +332,14 @@ describe('the OS-mount fallback notice', () => {
       volumeId: 'smb-archive',
       share: 'archive',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
     emitFallback({
       volumeId: 'smb-photos',
       share: 'photos',
       reason: 'unexpected',
-      displayName: 'Naspolya',
+      displayName: 'Testnas',
       afterUpdate: false,
     })
 

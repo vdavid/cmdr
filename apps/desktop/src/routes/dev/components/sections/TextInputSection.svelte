@@ -7,7 +7,7 @@
     let search = $state('')
     let password = $state('hunter2')
     let revealed = $state(false)
-    let invalid = $state('smb//nas.local')
+    let invalid = $state('smb//testnas.local')
     let notes = $state('Copy failed on 3 of 812 files.')
 
     const errorDetail = 'copy /a/b -> /c/d\n  ENOSPC: no space left on device'
@@ -83,7 +83,7 @@
         <div class="cell">
             <p class="caption">Read-only / disabled</p>
             <div class="row">
-                <TextInput value="/Volumes/naspi/papers" readonly ariaLabel="Read-only path" />
+                <TextInput value="/Volumes/testshare/documents" readonly ariaLabel="Read-only path" />
                 <TextInput value="Not available" disabled ariaLabel="Disabled field" />
             </div>
         </div>

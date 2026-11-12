@@ -510,7 +510,7 @@ registry lives below `commands/` rather than inside the chat command.
   `scrollable-region-focusable`, as the palette) and answers the same keys when Tab lands on it. A `LiveAnnouncer` says
   the match count once a search settles.
 - **A wake thread's display title** (`threadDisplayTitle`, `ask-cmdr-thread-title.ts`): a wake stores its thread under
-  the busiest folder's basename (`veszelovszki`, `tmp`), which said nothing. While that stored title is still the wake's
+  the busiest folder's basename (`test_user_3`, `tmp`), which said nothing. While that stored title is still the wake's
   own, the row (list and search) gets `wakePlace` from the backend
   (`apps/desktop/src-tauri/src/agent/store/wake_place.rs`) and reads "Activity in ~/tmp and 2 other folders". Renaming
   starts from the display title and an unchanged commit renames nothing, so Enter can't freeze the English sentence into

@@ -113,13 +113,13 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
 
   it('navigateToFallback switches to the volume that owns the target when the walk-up crossed a boundary', async () => {
     // The share unmounted under the pane, so the walk-up climbed out of
-    // `/Volumes/naspi` into `/Volumes` — which belongs to the ROOT volume.
+    // `/Volumes/testshare` into `/Volumes` — which belongs to the ROOT volume.
     // Listing it under the pane's now-dangling volume id fails with
     // "Volume not found", which is what left a pane stuck for hours.
     const { loader, state, spies } = makeHarness({
-      volumeId: 'smb-192-168-1-111-445-naspi',
+      volumeId: 'smb-192-168-50-10-445-testshare',
       volumePath: '/',
-      currentPath: '/Volumes/naspi/_todo_pics',
+      currentPath: '/Volumes/testshare/test_photos',
     })
     h.resolvePathVolume.mockResolvedValueOnce({ volume: { id: 'root', path: '/' }, timedOut: false })
     loader.navigateToFallback('/Volumes')
@@ -129,7 +129,7 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
     // The switch owns the landing, so the loader must not also list `/Volumes`
     // on the dead volume.
     expect(h.listDirectoryStart).not.toHaveBeenCalled()
-    expect(state.currentPath).toBe('/Volumes/naspi/_todo_pics')
+    expect(state.currentPath).toBe('/Volumes/testshare/test_photos')
   })
 
   it('navigateToFallback stays put when the target owner cannot be resolved', async () => {
@@ -146,14 +146,14 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
 
   it('the deleted-path walk-up switches volumes end to end', async () => {
     const { loader, state, spies } = makeHarness({
-      volumeId: 'smb-192-168-1-111-445-naspi',
+      volumeId: 'smb-192-168-50-10-445-testshare',
       volumePath: '/',
-      currentPath: '/Volumes/naspi/gone',
+      currentPath: '/Volumes/testshare/gone',
     })
     h.pathExistsChecked.mockResolvedValueOnce({ data: false, timedOut: false })
     h.resolveValidPath.mockResolvedValueOnce('/Volumes')
     h.resolvePathVolume.mockResolvedValueOnce({ volume: { id: 'root', path: '/' }, timedOut: false })
-    await loader.loadDirectory({ path: '/Volumes/naspi/gone' })
+    await loader.loadDirectory({ path: '/Volumes/testshare/gone' })
     h.listeners.error[0]({ listingId: state.listingId, message: 'no such dir' })
     await vi.waitFor(() => {
       expect(spies.onVolumeChange).toHaveBeenCalledWith({ volumeId: 'root', volumePath: '/', targetPath: '/Volumes' })

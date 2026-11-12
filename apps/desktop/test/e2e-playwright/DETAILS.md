@@ -511,9 +511,9 @@ the switcher row's → submenu "Reconnect automatically" checkbox, and Disconnec
   step's `.host-key .trust-row .btn-primary`, a switcher row's `[data-menu-row="<volumeId>"]` and its `.eject-button`,
   and a submenu row's `[data-menu-row="row:<volumeId>:toggle:auto-reconnect"]` with `data-checked` (`row-menu.ts` mints
   those values). The submenu opens from the keyboard: ArrowDown to the row, then →.
-- **A saved server is found by its app root**, `<scheme>://ada@<host>:<port>`, the tuple the volume id is minted from.
-  ❌ Not by the saved address: WebDAV keeps the URL as normalized, which drops a default `:80`, so the Docker lane's
-  address never contains `host:80`.
+- **A saved server is found by its app root**, `<scheme>://test_user_1@<host>:<port>`, the tuple the volume id is minted
+  from. ❌ Not by the saved address: WebDAV keeps the URL as normalized, which drops a default `:80`, so the Docker
+  lane's address never contains `host:80`.
 
 ## Transfer-dialog counters + programmatic drop entry
 

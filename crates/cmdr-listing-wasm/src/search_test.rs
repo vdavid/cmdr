@@ -145,9 +145,13 @@ async fn a_scope_resolves_through_the_fold_and_a_stranger_comes_back_unresolved(
     .await;
     assert_eq!(paths(&scoped), ["/Users/you/Documents/Taxes/report-2025.pdf"]);
 
-    let elsewhere = search(&demo, json!({ "namePattern": "*", "includePaths": ["/Volumes/naspi"] })).await;
+    let elsewhere = search(
+        &demo,
+        json!({ "namePattern": "*", "includePaths": ["/Volumes/testshare"] }),
+    )
+    .await;
     assert_eq!(elsewhere["entries"], json!([]));
-    assert_eq!(elsewhere["unresolvedScopes"], json!(["/Volumes/naspi"]));
+    assert_eq!(elsewhere["unresolvedScopes"], json!(["/Volumes/testshare"]));
 
     // A scope naming a symlinked folder resolves through the link, as the desktop's
     // `realpath` does (`InMemoryVolume::canonicalize`): it searches the folder the link

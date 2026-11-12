@@ -11,12 +11,12 @@ function vol(overrides: Partial<VolumeInfo> & Pick<VolumeInfo, 'id' | 'path' | '
 }
 
 const ROOT = vol({ id: 'root', path: '/', category: 'main_volume' })
-const NAS = vol({ id: 'smb-naspi', path: '/Volumes/naspi', category: 'network' })
+const NAS = vol({ id: 'smb-testshare', path: '/Volumes/testshare', category: 'network' })
 const USB = vol({ id: 'volumesusb', path: '/Volumes/USB', category: 'attached_volume' })
 
 describe('describeVolume', () => {
   it('names a drive and voices it, and stays quiet about one that is gone', () => {
-    expect(describeVolume([ROOT, NAS], 'smb-naspi')).toEqual({ name: 'smb-naspi', isNetwork: true })
+    expect(describeVolume([ROOT, NAS], 'smb-testshare')).toEqual({ name: 'smb-testshare', isNetwork: true })
     expect(describeVolume([ROOT, NAS], 'volumesusb')).toEqual({ name: '', isNetwork: false })
   })
 })
@@ -31,11 +31,11 @@ describe('resolveSearchTargetVolume', () => {
   })
 
   it('targets a network (SMB) volume: its id, its mount root, and the network voice', () => {
-    // The NAS case the whole feature exists for: a user browsing /Volumes/naspi
+    // The NAS case the whole feature exists for: a user browsing /Volumes/testshare
     // must search the NAS's media index, and hits must resolve under its mount root.
-    expect(resolveSearchTargetVolume([ROOT, NAS], 'smb-naspi')).toEqual({
-      volumeId: 'smb-naspi',
-      mountRoot: '/Volumes/naspi',
+    expect(resolveSearchTargetVolume([ROOT, NAS], 'smb-testshare')).toEqual({
+      volumeId: 'smb-testshare',
+      mountRoot: '/Volumes/testshare',
       isNetwork: true,
     })
   })
@@ -45,8 +45,8 @@ describe('resolveSearchTargetVolume', () => {
     // `attached_volume` with `fsType: 'smbfs'`, so a category test alone called the NAS a
     // local drive. The typed `volumeKindOf` classifier sees both shapes.
     const OS_MOUNTED_NAS = vol({
-      id: 'smb-192-168-1-111-445-naspi',
-      path: '/Volumes/naspi',
+      id: 'smb-192-168-50-10-445-testshare',
+      path: '/Volumes/testshare',
       category: 'attached_volume',
       fsType: 'smbfs',
     })
@@ -74,7 +74,7 @@ describe('resolveSearchTargetVolume', () => {
   })
 
   it('falls back to the local root when the volume list is empty', () => {
-    expect(resolveSearchTargetVolume([], 'smb-naspi')).toEqual({
+    expect(resolveSearchTargetVolume([], 'smb-testshare')).toEqual({
       volumeId: 'root',
       mountRoot: '/',
       isNetwork: false,

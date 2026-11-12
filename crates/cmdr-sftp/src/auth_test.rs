@@ -3,17 +3,17 @@
 use super::*;
 
 fn params() -> SftpConnectionParams {
-    SftpConnectionParams::new("naspolya", 22, "ada", "/srv/data")
+    SftpConnectionParams::new("testnas", 22, "test_user_1", "/srv/data")
 }
 
 #[test]
 fn the_ladder_starts_with_what_costs_the_user_nothing() {
-    let rungs = ladder(&params().with_key_file("/home/ada/.ssh/id_ed25519"));
+    let rungs = ladder(&params().with_key_file("/home/test_user_1/.ssh/id_ed25519"));
     assert_eq!(
         rungs,
         vec![
             AuthRung::Agent,
-            AuthRung::KeyFile(PathBuf::from("/home/ada/.ssh/id_ed25519")),
+            AuthRung::KeyFile(PathBuf::from("/home/test_user_1/.ssh/id_ed25519")),
             AuthRung::Password,
             AuthRung::KeyboardInteractive,
         ]

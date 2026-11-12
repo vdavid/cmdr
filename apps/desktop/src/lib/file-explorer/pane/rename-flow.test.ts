@@ -232,12 +232,12 @@ describe('rename pre-flight permission check (archive-inner paths skip it)', () 
     // on every backend that arrived after MTP (ERR-KVERS: SFTP renames died on a
     // `NotFound` naming the `sftp://` URL). The volume rides along instead, and
     // `check_rename_permission_for_volume` asks the volume itself.
-    const { flow } = buildFlow(undefined, true, undefined, 'sftp-nas-local-22-ada-9f3c')
+    const { flow } = buildFlow(undefined, true, undefined, 'sftp-nas-local-22-test_user_1-9f3c')
 
     flow.startRename()
 
     await vi.waitFor(() => {
-      expect(checkPermissionSpy).toHaveBeenCalledWith(PASTED.path, false, 'sftp-nas-local-22-ada-9f3c')
+      expect(checkPermissionSpy).toHaveBeenCalledWith(PASTED.path, false, 'sftp-nas-local-22-test_user_1-9f3c')
     })
   })
 

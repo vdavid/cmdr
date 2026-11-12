@@ -8,10 +8,10 @@ const OTHER_BOX: &str = "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0";
 
 fn lan_row() -> Vec<KnownNetworkShare> {
     vec![mounted(
-        "192.168.1.111",
-        "192.168.1.111",
-        "naspi",
-        Some("david"),
+        "192.168.50.10",
+        "192.168.50.10",
+        "testshare",
+        Some("test_user_3"),
         "smb-lan",
     )]
 }
@@ -43,13 +43,13 @@ fn an_authenticated_guid_overwrites_the_stored_one() {
     rows[0].server_guid = Some(BOX.to_string());
 
     assert_eq!(
-        record_guid_in(&mut rows, "smb-lan", OTHER_BOX, Some("david")),
+        record_guid_in(&mut rows, "smb-lan", OTHER_BOX, Some("test_user_3")),
         Some(true)
     );
     assert_eq!(rows[0].server_guid.as_deref(), Some(OTHER_BOX));
     assert_eq!(rows[0].server_guid_proof, GuidProof::Authenticated);
-    assert_eq!(rows[0].username.as_deref(), Some("david"), "no other field moves");
-    assert_eq!(record_guid_in(&mut rows, "smb-nope", BOX, Some("david")), None);
+    assert_eq!(rows[0].username.as_deref(), Some("test_user_3"), "no other field moves");
+    assert_eq!(record_guid_in(&mut rows, "smb-nope", BOX, Some("test_user_3")), None);
 }
 
 /// A signed-in session answering the GUID a probe filled proves it: the row's
@@ -60,13 +60,16 @@ fn an_authenticated_session_upgrades_a_probed_guids_proof() {
     record_guid_in(&mut rows, "smb-lan", BOX, None);
 
     assert_eq!(
-        record_guid_in(&mut rows, "smb-lan", BOX, Some("david")),
+        record_guid_in(&mut rows, "smb-lan", BOX, Some("test_user_3")),
         Some(true),
         "the proof changed, so the row is written"
     );
     assert_eq!(rows[0].server_guid_proof, GuidProof::Authenticated);
 
-    assert_eq!(record_guid_in(&mut rows, "smb-lan", BOX, Some("david")), Some(false));
+    assert_eq!(
+        record_guid_in(&mut rows, "smb-lan", BOX, Some("test_user_3")),
+        Some(false)
+    );
     assert_eq!(record_guid_in(&mut rows, "smb-lan", BOX, None), Some(false));
     assert_eq!(rows[0].server_guid_proof, GuidProof::Authenticated);
 }
@@ -79,13 +82,13 @@ fn an_authenticated_session_upgrades_a_probed_guids_proof() {
 fn only_a_session_signed_in_as_the_rows_account_proves_its_guid() {
     let mut rows = lan_row();
     assert_eq!(
-        record_guid_in(&mut rows, "smb-lan", BOX, Some("dori")),
+        record_guid_in(&mut rows, "smb-lan", BOX, Some("test_user_7")),
         Some(true),
         "another account still fills a missing GUID"
     );
     assert_eq!(rows[0].server_guid_proof, GuidProof::Unauthenticated);
     assert_eq!(
-        record_guid_in(&mut rows, "smb-lan", OTHER_BOX, Some("dori")),
+        record_guid_in(&mut rows, "smb-lan", OTHER_BOX, Some("test_user_7")),
         Some(false),
         "and never overwrites one"
     );
@@ -99,14 +102,14 @@ fn only_a_session_signed_in_as_the_rows_account_proves_its_guid() {
     assert_eq!(rows[0].server_guid_proof, GuidProof::Unauthenticated);
 
     assert_eq!(
-        record_guid_in(&mut rows, "smb-lan", BOX, Some("DAVID")),
+        record_guid_in(&mut rows, "smb-lan", BOX, Some("TEST_USER_3")),
         Some(true),
         "the row's own account, folded"
     );
     assert_eq!(rows[0].server_guid_proof, GuidProof::Authenticated);
 
-    let mut guest_row = vec![mounted("192.168.1.111", "192.168.1.111", "naspi", None, "smb-lan")];
-    record_guid_in(&mut guest_row, "smb-lan", BOX, Some("david"));
+    let mut guest_row = vec![mounted("192.168.50.10", "192.168.50.10", "testshare", None, "smb-lan")];
+    record_guid_in(&mut guest_row, "smb-lan", BOX, Some("test_user_3"));
     assert_eq!(
         guest_row[0].server_guid_proof,
         GuidProof::Unauthenticated,
@@ -117,7 +120,7 @@ fn only_a_session_signed_in_as_the_rows_account_proves_its_guid() {
 /// A stored all-zero GUID is no GUID, so a probe may fill it.
 #[test]
 fn a_stored_zero_guid_counts_as_missing() {
-    let mut rows = vec![mounted("192.168.1.111", "192.168.1.111", "naspi", None, "smb-lan")];
+    let mut rows = vec![mounted("192.168.50.10", "192.168.50.10", "testshare", None, "smb-lan")];
     rows[0].server_guid = Some("00000000-0000-0000-0000-000000000000".to_string());
 
     assert_eq!(record_guid_in(&mut rows, "smb-lan", BOX, None), Some(true));
@@ -129,18 +132,30 @@ fn a_stored_zero_guid_counts_as_missing() {
 #[test]
 fn a_remount_keeps_the_recorded_guid_and_its_proof() {
     let mut rows = lan_row();
-    record_guid_in(&mut rows, "smb-lan", BOX, Some("david"));
+    record_guid_in(&mut rows, "smb-lan", BOX, Some("test_user_3"));
 
     upsert_share_row(
         &mut rows,
-        mounted("192.168.1.111", "192.168.1.111", "naspi", Some("david"), "smb-lan"),
+        mounted(
+            "192.168.50.10",
+            "192.168.50.10",
+            "testshare",
+            Some("test_user_3"),
+            "smb-lan",
+        ),
         &[],
     );
 
     assert_eq!(rows[0].server_guid.as_deref(), Some(BOX));
     assert_eq!(rows[0].server_guid_proof, GuidProof::Authenticated);
 
-    let mut reconnect = mounted("192.168.1.111", "192.168.1.111", "naspi", Some("david"), "smb-lan");
+    let mut reconnect = mounted(
+        "192.168.50.10",
+        "192.168.50.10",
+        "testshare",
+        Some("test_user_3"),
+        "smb-lan",
+    );
     keep_recorded_guid(&mut reconnect, &mut rows[0]);
     assert_eq!(reconnect.server_guid.as_deref(), Some(BOX));
     assert_eq!(reconnect.server_guid_proof, GuidProof::Authenticated);
@@ -153,21 +168,27 @@ fn a_remount_keeps_the_recorded_guid_and_its_proof() {
 #[test]
 fn a_save_under_another_account_demotes_the_guids_proof() {
     let mut rows = lan_row();
-    record_guid_in(&mut rows, "smb-lan", BOX, Some("david"));
+    record_guid_in(&mut rows, "smb-lan", BOX, Some("test_user_3"));
 
     upsert_share_row(
         &mut rows,
-        mounted("192.168.1.111", "192.168.1.111", "naspi", Some("dori"), "smb-lan"),
+        mounted(
+            "192.168.50.10",
+            "192.168.50.10",
+            "testshare",
+            Some("test_user_7"),
+            "smb-lan",
+        ),
         &[],
     );
     assert_eq!(rows[0].server_guid.as_deref(), Some(BOX), "the GUID stays, as a hint");
     assert_eq!(rows[0].server_guid_proof, GuidProof::Unauthenticated);
 
     let mut rows = lan_row();
-    record_guid_in(&mut rows, "smb-lan", BOX, Some("david"));
+    record_guid_in(&mut rows, "smb-lan", BOX, Some("test_user_3"));
     upsert_share_row(
         &mut rows,
-        mounted("192.168.1.111", "192.168.1.111", "naspi", None, "smb-lan"),
+        mounted("192.168.50.10", "192.168.50.10", "testshare", None, "smb-lan"),
         &[],
     );
     assert_eq!(
@@ -182,17 +203,23 @@ fn a_save_under_another_account_demotes_the_guids_proof() {
 #[test]
 fn a_save_under_the_same_account_keeps_the_proof() {
     let mut rows = lan_row();
-    record_guid_in(&mut rows, "smb-lan", BOX, Some("david"));
+    record_guid_in(&mut rows, "smb-lan", BOX, Some("test_user_3"));
 
     upsert_share_row(
         &mut rows,
-        mounted("192.168.1.111", "192.168.1.111", "naspi", Some("DAVID"), "smb-lan"),
+        mounted(
+            "192.168.50.10",
+            "192.168.50.10",
+            "testshare",
+            Some("TEST_USER_3"),
+            "smb-lan",
+        ),
         &[],
     );
     assert_eq!(rows[0].server_guid_proof, GuidProof::Authenticated);
 
-    upsert_share_row(&mut rows, added("192.168.1.111", "naspi", None), &[]);
-    assert_eq!(rows[0].username.as_deref(), Some("DAVID"));
+    upsert_share_row(&mut rows, added("192.168.50.10", "testshare", None), &[]);
+    assert_eq!(rows[0].username.as_deref(), Some("TEST_USER_3"));
     assert_eq!(rows[0].server_guid_proof, GuidProof::Authenticated);
 }
 
@@ -203,7 +230,13 @@ fn a_share_list_reconnect_under_another_account_demotes_the_proof() {
     existing.server_guid = Some(BOX.to_string());
     existing.server_guid_proof = GuidProof::Authenticated;
 
-    let mut reconnect = mounted("192.168.1.111", "192.168.1.111", "naspi", Some("dori"), "smb-lan");
+    let mut reconnect = mounted(
+        "192.168.50.10",
+        "192.168.50.10",
+        "testshare",
+        Some("test_user_7"),
+        "smb-lan",
+    );
     keep_recorded_guid(&mut reconnect, &mut existing);
     assert_eq!(reconnect.server_guid.as_deref(), Some(BOX));
     assert_eq!(reconnect.server_guid_proof, GuidProof::Unauthenticated);
@@ -214,7 +247,7 @@ fn a_share_list_reconnect_under_another_account_demotes_the_proof() {
 #[test]
 fn a_row_saved_before_the_proof_reads_as_unauthenticated() {
     let json = format!(
-        r#"{{"serverName":"naspolya","shareName":"naspi","protocol":"smb","lastConnectedAt":"2026-01-01T00:00:00Z","lastConnectionMode":"credentials","lastKnownAuthOptions":"credentials_only","username":"david","serverGuid":"{BOX}"}}"#
+        r#"{{"serverName":"testnas","shareName":"testshare","protocol":"smb","lastConnectedAt":"2026-01-01T00:00:00Z","lastConnectionMode":"credentials","lastKnownAuthOptions":"credentials_only","username":"test_user_3","serverGuid":"{BOX}"}}"#
     );
 
     let mut row: KnownNetworkShare = serde_json::from_str(&json).expect("an older row reads");

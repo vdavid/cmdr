@@ -5,7 +5,7 @@
      *
      * ❗ **Protocol first, and only the person moves it.** The toggle sits on
      * top and typing never changes it: an address that read as SFTP once
-     * flipped it under someone typing `sven@192.168.0.153` for their SMB NAS,
+     * flipped it under someone typing `test_user_6@192.168.50.20` for their SMB NAS,
      * and SSH got dialed without them ever clicking SFTP (cmdr-reports#8). What
      * the address looks like shows as a warning under the field
      * (`addressLooksLike`), and the person decides.

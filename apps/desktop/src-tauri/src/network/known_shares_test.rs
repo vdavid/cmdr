@@ -8,12 +8,12 @@ use std::fs;
 /// to prevent cross-test interference (Rust runs tests in parallel).
 static SERIAL: Mutex<()> = Mutex::new(());
 
-fn naspolya() -> NetworkHost {
+fn testnas() -> NetworkHost {
     NetworkHost {
-        id: "naspolya-smb-tcp-local".to_string(),
-        name: "Naspolya".to_string(),
-        hostname: Some("Naspolya.local".to_string()),
-        ip_address: Some("192.168.1.111".to_string()),
+        id: "testnas-smb-tcp-local".to_string(),
+        name: "Testnas".to_string(),
+        hostname: Some("Testnas.local".to_string()),
+        ip_address: Some("192.168.50.10".to_string()),
         port: 445,
         source: crate::network::HostSource::Discovered,
     }
@@ -24,15 +24,15 @@ fn naspolya() -> NetworkHost {
 /// what switches the behavior off.
 #[test]
 fn a_store_saved_before_the_setting_existed_leaves_every_share_on_the_fast_connection() {
-    let old = r#"{"knownNetworkShares":[{"serverName":"Naspolya","shareName":"naspi","protocol":"smb","lastConnectedAt":"2026-01-06T12:00:00Z","lastConnectionMode":"guest","lastKnownAuthOptions":"guest_only","username":null}]}"#;
+    let old = r#"{"knownNetworkShares":[{"serverName":"Testnas","shareName":"testshare","protocol":"smb","lastConnectedAt":"2026-01-06T12:00:00Z","lastConnectionMode":"guest","lastKnownAuthOptions":"guest_only","username":null}]}"#;
 
     let store: KnownSharesStore = serde_json::from_str(old).expect("an old store still loads");
 
     assert_eq!(store.known_network_shares.len(), 1, "the old rows survive");
     assert!(!is_opted_out(
         &store.direct_connection_opt_outs,
-        &["Naspolya"],
-        "naspi",
+        &["Testnas"],
+        "testshare",
         &[]
     ));
 }
@@ -43,41 +43,36 @@ fn a_store_saved_before_the_setting_existed_leaves_every_share_on_the_fast_conne
 /// itself.
 #[test]
 fn an_opt_out_holds_under_every_name_form_of_its_server() {
-    let hosts = [naspolya()];
+    let hosts = [testnas()];
     let mut opt_outs = Vec::new();
 
-    apply_choice(&mut opt_outs, "192.168.1.111", "naspi", false, &hosts);
+    apply_choice(&mut opt_outs, "192.168.50.10", "testshare", false, &hosts);
 
-    for form in [
-        "192.168.1.111",
-        "Naspolya._smb._tcp.local",
-        "naspolya.local",
-        "Naspolya",
-    ] {
+    for form in ["192.168.50.10", "Testnas._smb._tcp.local", "testnas.local", "Testnas"] {
         assert!(
-            is_opted_out(&opt_outs, &[form], "naspi", &hosts),
+            is_opted_out(&opt_outs, &[form], "testshare", &hosts),
             "the opt-out is invisible under {form:?}"
         );
     }
     // The share name folds case and NFC, the way `share_key` does.
-    assert!(is_opted_out(&opt_outs, &["Naspolya"], "NASPI", &hosts));
+    assert!(is_opted_out(&opt_outs, &["Testnas"], "TESTSHARE", &hosts));
     // Another share on the same server keeps its own answer, and so does another server.
-    assert!(!is_opted_out(&opt_outs, &["Naspolya"], "Multimedia", &hosts));
-    assert!(!is_opted_out(&opt_outs, &["raspberrypi.local"], "naspi", &hosts));
+    assert!(!is_opted_out(&opt_outs, &["Testnas"], "Multimedia", &hosts));
+    assert!(!is_opted_out(&opt_outs, &["raspberrypi.local"], "testshare", &hosts));
 }
 
 /// The auto path knows a mount's server twice over (the `statfs` spelling and the
 /// address it's about to dial), and either one matching is enough.
 #[test]
 fn any_of_the_callers_server_names_can_match() {
-    let hosts = [naspolya()];
+    let hosts = [testnas()];
     let mut opt_outs = Vec::new();
-    apply_choice(&mut opt_outs, "Naspolya._smb._tcp.local", "naspi", false, &hosts);
+    apply_choice(&mut opt_outs, "Testnas._smb._tcp.local", "testshare", false, &hosts);
 
     assert!(is_opted_out(
         &opt_outs,
-        &["somewhere-else", "192.168.1.111"],
-        "naspi",
+        &["somewhere-else", "192.168.50.10"],
+        "testshare",
         &hosts
     ));
 }
@@ -86,16 +81,16 @@ fn any_of_the_callers_server_names_can_match() {
 /// second, and turning it back on clears it under any spelling.
 #[test]
 fn one_share_has_one_entry_whatever_it_is_called() {
-    let hosts = [naspolya()];
+    let hosts = [testnas()];
     let mut opt_outs = Vec::new();
 
-    apply_choice(&mut opt_outs, "192.168.1.111", "naspi", false, &hosts);
-    apply_choice(&mut opt_outs, "Naspolya._smb._tcp.local", "naspi", false, &hosts);
+    apply_choice(&mut opt_outs, "192.168.50.10", "testshare", false, &hosts);
+    apply_choice(&mut opt_outs, "Testnas._smb._tcp.local", "testshare", false, &hosts);
     assert_eq!(opt_outs.len(), 1, "one share, one entry: {opt_outs:?}");
 
-    apply_choice(&mut opt_outs, "naspolya.local", "NASPI", true, &hosts);
+    apply_choice(&mut opt_outs, "testnas.local", "TESTSHARE", true, &hosts);
     assert!(opt_outs.is_empty(), "turning it back on clears it: {opt_outs:?}");
-    assert!(!is_opted_out(&opt_outs, &["192.168.1.111"], "naspi", &hosts));
+    assert!(!is_opted_out(&opt_outs, &["192.168.50.10"], "testshare", &hosts));
 }
 
 #[test]
@@ -111,8 +106,8 @@ fn test_share_key() {
 #[test]
 fn share_key_folds_unicode_normalization() {
     assert_eq!(
-        share_key("Szabolcs-DS224", "R\u{e9}gi NAS"),
-        share_key("Szabolcs-DS224", "Re\u{301}gi NAS")
+        share_key("testnas-DS224", "R\u{e9}gi NAS"),
+        share_key("testnas-DS224", "Re\u{301}gi NAS")
     );
 }
 
@@ -148,7 +143,7 @@ fn test_known_share_serialization() {
         last_connected_at: "2026-01-03T21:00:00Z".to_string(),
         last_connection_mode: ConnectionMode::Credentials,
         last_known_auth_options: AuthOptions::GuestOrCredentials,
-        username: Some("david".to_string()),
+        username: Some("test_user_3".to_string()),
         address: None,
         port: None,
         volume_id: None,
@@ -163,7 +158,7 @@ fn test_known_share_serialization() {
     assert!(json.contains(r#""shareName": "Documents""#));
     assert!(json.contains(r#""lastConnectionMode": "credentials""#));
     assert!(json.contains(r#""lastKnownAuthOptions": "guest_or_credentials""#));
-    assert!(json.contains(r#""username": "david""#));
+    assert!(json.contains(r#""username": "test_user_3""#));
 
     // Round-trip
     let parsed: KnownNetworkShare = serde_json::from_str(&json).unwrap();
@@ -183,7 +178,7 @@ fn test_store_serialization() {
                 last_connected_at: "2026-01-03T21:00:00Z".to_string(),
                 last_connection_mode: ConnectionMode::Credentials,
                 last_known_auth_options: AuthOptions::GuestOrCredentials,
-                username: Some("david".to_string()),
+                username: Some("test_user_3".to_string()),
                 address: None,
                 port: None,
                 volume_id: None,
@@ -286,7 +281,7 @@ fn test_username_hints() {
             last_connected_at: "2026-01-06T12:00:00Z".to_string(),
             last_connection_mode: ConnectionMode::Credentials,
             last_known_auth_options: AuthOptions::CredentialsOnly,
-            username: Some("alice".to_string()),
+            username: Some("test_user_4".to_string()),
             address: None,
             port: None,
             volume_id: None,
@@ -313,7 +308,7 @@ fn test_username_hints() {
         });
     }
 
-    assert_eq!(get_username_hint("Server1"), Some("alice".to_string()));
+    assert_eq!(get_username_hint("Server1"), Some("test_user_4".to_string()));
     assert_eq!(get_username_hint("Server2"), None); // No username for guest-only
     assert_eq!(get_username_hint("nobody-here"), None);
 
@@ -335,13 +330,13 @@ fn a_username_hint_is_found_under_every_name_form_of_its_server() {
     if let Ok(mut c) = cache.lock() {
         c.known_network_shares.clear();
         c.known_network_shares.push(KnownNetworkShare {
-            server_name: "Naspolya".to_string(),
-            share_name: "naspi".to_string(),
+            server_name: "Testnas".to_string(),
+            share_name: "testshare".to_string(),
             protocol: "smb".to_string(),
             last_connected_at: "2026-01-06T12:00:00Z".to_string(),
             last_connection_mode: ConnectionMode::Credentials,
             last_known_auth_options: AuthOptions::CredentialsOnly,
-            username: Some("david".to_string()),
+            username: Some("test_user_3".to_string()),
             address: None,
             port: None,
             volume_id: None,
@@ -353,15 +348,15 @@ fn a_username_hint_is_found_under_every_name_form_of_its_server() {
     }
 
     for form in [
-        "Naspolya",
-        "naspolya",
-        "Naspolya.local",
-        "naspolya.local.",
-        "Naspolya._smb._tcp.local",
+        "Testnas",
+        "testnas",
+        "Testnas.local",
+        "testnas.local.",
+        "Testnas._smb._tcp.local",
     ] {
         assert_eq!(
             get_username_hint(form),
-            Some("david".to_string()),
+            Some("test_user_3".to_string()),
             "no hint found for the server spelled {form:?}"
         );
     }
@@ -382,9 +377,13 @@ fn the_newest_username_on_a_server_wins() {
 
     if let Ok(mut c) = cache.lock() {
         c.known_network_shares.clear();
-        for (share, user) in [("old", Some("alice")), ("newer", Some("bob")), ("guest", None)] {
+        for (share, user) in [
+            ("old", Some("test_user_4")),
+            ("newer", Some("test_user_5")),
+            ("guest", None),
+        ] {
             c.known_network_shares.push(KnownNetworkShare {
-                server_name: "Naspolya".to_string(),
+                server_name: "Testnas".to_string(),
                 share_name: share.to_string(),
                 protocol: "smb".to_string(),
                 last_connected_at: "2026-01-06T12:00:00Z".to_string(),
@@ -402,7 +401,7 @@ fn the_newest_username_on_a_server_wins() {
         }
     }
 
-    assert_eq!(get_username_hint("naspolya"), Some("bob".to_string()));
+    assert_eq!(get_username_hint("testnas"), Some("test_user_5".to_string()));
 
     if let Ok(mut c) = cache.lock() {
         c.known_network_shares.clear();
@@ -654,17 +653,17 @@ fn added(server_name: &str, share: &str, username: Option<&str>) -> KnownNetwork
 /// share would be two saved places over one volume id.
 #[test]
 fn a_share_is_one_row_under_every_account_and_every_name_of_its_server() {
-    let hosts = [naspolya()];
+    let hosts = [testnas()];
     let mut rows = Vec::new();
 
     upsert_share_row(
         &mut rows,
-        mounted("Naspolya", "192.168.1.111", "naspi", Some("david"), "smb-a"),
+        mounted("Testnas", "192.168.50.10", "testshare", Some("test_user_3"), "smb-a"),
         &hosts,
     );
     upsert_share_row(
         &mut rows,
-        mounted("192.168.1.111", "192.168.1.111", "NASPI", None, "smb-a"),
+        mounted("192.168.50.10", "192.168.50.10", "TESTSHARE", None, "smb-a"),
         &hosts,
     );
 
@@ -678,12 +677,18 @@ fn a_share_is_one_row_under_every_account_and_every_name_of_its_server() {
 fn the_first_mount_pins_a_share_and_later_ones_keep_the_persons_pin() {
     let mut rows = Vec::new();
 
-    upsert_share_row(&mut rows, added("192.168.0.153", "Container", Some("sven")), &[]);
+    upsert_share_row(&mut rows, added("192.168.50.20", "Container", Some("test_user_6")), &[]);
     assert!(!rows[0].pinned, "an add alone mounted nothing");
 
     upsert_share_row(
         &mut rows,
-        mounted("192.168.0.153", "192.168.0.153", "Container", Some("sven"), "smb-c"),
+        mounted(
+            "192.168.50.20",
+            "192.168.50.20",
+            "Container",
+            Some("test_user_6"),
+            "smb-c",
+        ),
         &[],
     );
     assert!(rows[0].pinned, "the first mount pins it");
@@ -691,7 +696,13 @@ fn the_first_mount_pins_a_share_and_later_ones_keep_the_persons_pin() {
     rows[0].pinned = false; // the person unpinned it
     upsert_share_row(
         &mut rows,
-        mounted("192.168.0.153", "192.168.0.153", "Container", Some("sven"), "smb-c"),
+        mounted(
+            "192.168.50.20",
+            "192.168.50.20",
+            "Container",
+            Some("test_user_6"),
+            "smb-c",
+        ),
         &[],
     );
     assert!(!rows[0].pinned, "an unpin survives the next mount");
@@ -704,13 +715,13 @@ fn re_adding_a_mounted_share_keeps_its_place() {
     let mut rows = Vec::new();
     upsert_share_row(&mut rows, mounted("nas", "10.0.0.2", "photos", None, "smb-p"), &[]);
 
-    upsert_share_row(&mut rows, added("nas", "photos", Some("ada")), &[]);
+    upsert_share_row(&mut rows, added("nas", "photos", Some("test_user_1")), &[]);
 
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].volume_id.as_deref(), Some("smb-p"));
     assert_eq!(rows[0].mount_path.as_deref(), Some("/Volumes/photos"));
     assert_eq!(rows[0].address.as_deref(), Some("10.0.0.2"));
-    assert_eq!(rows[0].username.as_deref(), Some("ada"));
+    assert_eq!(rows[0].username.as_deref(), Some("test_user_1"));
     assert_eq!(
         rows[0].last_connected_at, "2026-09-24T10:00:00Z",
         "an add connects nothing, so the mount's time stays: `connect_volume` dials the most recently connected member of a share"
@@ -734,8 +745,12 @@ fn a_plain_re_add_keeps_the_account_the_share_is_saved_with() {
     assert_eq!(rows[0].username.as_deref(), Some("testuser"));
     assert_eq!(rows[0].last_connection_mode, ConnectionMode::Credentials);
 
-    upsert_share_row(&mut rows, added("nas", "private", Some("ada")), &[]);
-    assert_eq!(rows[0].username.as_deref(), Some("ada"), "a named account replaces it");
+    upsert_share_row(&mut rows, added("nas", "private", Some("test_user_1")), &[]);
+    assert_eq!(
+        rows[0].username.as_deref(),
+        Some("test_user_1"),
+        "a named account replaces it"
+    );
 }
 
 /// A share row never replaces the host's sign-in history, and the history never
@@ -747,7 +762,7 @@ fn a_share_row_and_the_hosts_history_are_separate_rows() {
         address: None,
         volume_id: None,
         mount_path: None,
-        ..mounted("nas", "nas", "x", Some("ada"), "unused")
+        ..mounted("nas", "nas", "x", Some("test_user_1"), "unused")
     }];
 
     upsert_share_row(&mut rows, mounted("nas", "10.0.0.2", "photos", None, "smb-p"), &[]);
@@ -800,18 +815,18 @@ fn a_share_on_another_port_of_the_same_machine_is_another_row() {
 /// it**, so Forget share and Pin work on it before any mount went through.
 #[test]
 fn a_share_no_mount_went_through_is_found_by_its_listed_id() {
-    let row = added("192.168.0.153", "Container", Some("sven"));
+    let row = added("192.168.50.20", "Container", Some("test_user_6"));
 
     assert_eq!(
         place_id(&row),
-        cmdr_fs::volume::smb_volume_id("192.168.0.153", 445, "Container")
+        cmdr_fs::volume::smb_volume_id("192.168.50.20", 445, "Container")
     );
 }
 
 /// An old store row reads with no place fields and unpinned.
 #[test]
 fn a_row_saved_before_share_places_reads_as_the_hosts_history() {
-    let old = r#"{"serverName":"Naspolya","shareName":"","protocol":"smb","lastConnectedAt":"2026-01-06T12:00:00Z","lastConnectionMode":"guest","lastKnownAuthOptions":"guest_only","username":null}"#;
+    let old = r#"{"serverName":"Testnas","shareName":"","protocol":"smb","lastConnectedAt":"2026-01-06T12:00:00Z","lastConnectionMode":"guest","lastKnownAuthOptions":"guest_only","username":null}"#;
     let row: KnownNetworkShare = serde_json::from_str(old).unwrap();
     assert!(!row.is_share());
     assert_eq!(row.volume_id, None);
@@ -828,7 +843,7 @@ fn a_favorited_share_nobody_saved_gets_an_unpinned_row_with_its_place() {
 
     let added = insert_unless_saved(
         &mut rows,
-        mounted("192.0.2.9", "192.0.2.9", "naspi", Some("david"), "smb-n"),
+        mounted("192.0.2.9", "192.0.2.9", "testshare", Some("test_user_3"), "smb-n"),
         &[],
     );
 
@@ -836,33 +851,33 @@ fn a_favorited_share_nobody_saved_gets_an_unpinned_row_with_its_place() {
     assert_eq!(rows.len(), 1);
     assert!(!rows[0].pinned, "a favorite doesn't pin its share");
     assert_eq!(rows[0].volume_id.as_deref(), Some("smb-n"));
-    assert_eq!(rows[0].mount_path.as_deref(), Some("/Volumes/naspi"));
+    assert_eq!(rows[0].mount_path.as_deref(), Some("/Volumes/testshare"));
 }
 
 /// A share that's already saved keeps everything the person chose: its pin and
 /// the account it's saved under.
 #[test]
 fn a_favorited_share_already_saved_is_left_alone() {
-    let hosts = [naspolya()];
+    let hosts = [testnas()];
     let mut rows = Vec::new();
     upsert_share_row(
         &mut rows,
-        mounted("Naspolya", "192.168.1.111", "naspi", Some("david"), "smb-a"),
+        mounted("Testnas", "192.168.50.10", "testshare", Some("test_user_3"), "smb-a"),
         &hosts,
     );
     rows[0].pinned = true;
 
     let added = insert_unless_saved(
         &mut rows,
-        mounted("192.168.1.111", "192.168.1.111", "naspi", None, "smb-a"),
+        mounted("192.168.50.10", "192.168.50.10", "testshare", None, "smb-a"),
         &hosts,
     );
 
     assert!(!added);
     assert_eq!(rows.len(), 1);
     assert!(rows[0].pinned);
-    assert_eq!(rows[0].username.as_deref(), Some("david"));
-    assert_eq!(rows[0].server_name, "Naspolya");
+    assert_eq!(rows[0].username.as_deref(), Some("test_user_3"));
+    assert_eq!(rows[0].server_name, "Testnas");
 }
 
 // -- A host that moved to a new address (`server_move::smb`) --
@@ -891,7 +906,7 @@ fn a_host_move_points_its_rows_at_the_new_address_and_marks_mounted_shares_pendi
         address: None,
         volume_id: None,
         mount_path: None,
-        ..mounted("localhost:11480", "localhost", "x", Some("ada"), "unused")
+        ..mounted("localhost:11480", "localhost", "x", Some("test_user_1"), "unused")
     };
     let public = on_port(
         11480,
@@ -942,19 +957,19 @@ fn a_host_move_points_its_rows_at_the_new_address_and_marks_mounted_shares_pendi
 /// name still names the server, and the password filed under it stays reachable.
 #[test]
 fn a_host_move_keeps_a_rows_bonjour_name() {
-    let row = mounted("Naspolya", "192.168.1.111", "naspi", Some("david"), "smb-n");
+    let row = mounted("Testnas", "192.168.50.10", "testshare", Some("test_user_3"), "smb-n");
     let mut store = store_of(vec![row.clone()]);
 
     move_host_rows_in(
         &mut store,
         &[row],
-        &SmbServer::new("192.168.1.111", 445),
+        &SmbServer::new("192.168.50.10", 445),
         &SmbServer::new("nas.tail1234.ts.net", 445),
-        &[naspolya()],
+        &[testnas()],
     );
 
     let row = &store.known_network_shares[0];
-    assert_eq!(row.server_name, "Naspolya");
+    assert_eq!(row.server_name, "Testnas");
     assert_eq!(row.address.as_deref(), Some("nas.tail1234.ts.net"));
     assert_eq!(row.port, None, "445 stays unsaid");
 }
@@ -1097,13 +1112,13 @@ fn a_host_move_carries_a_shares_direct_connection_opt_out() {
 
 const SAVED: &str = r#"{
   "knownNetworkShares": [
-    {"serverName":"Naspolya","shareName":"naspi","protocol":"smb","lastConnectedAt":"2026-10-01T12:00:00Z",
+    {"serverName":"Testnas","shareName":"testshare","protocol":"smb","lastConnectedAt":"2026-10-01T12:00:00Z",
      "lastConnectionMode":"guest","lastKnownAuthOptions":"guest_only","username":null,"pinned":true},
-    {"serverName":"Naspolya","shareName":"photos","protocol":"smb","lastConnectedAt":"2026-10-01T12:00:00Z",
+    {"serverName":"Testnas","shareName":"photos","protocol":"smb","lastConnectedAt":"2026-10-01T12:00:00Z",
      "lastConnectionMode":"kerberos_from_a_newer_build","lastKnownAuthOptions":"guest_only","username":null}
   ],
-  "directConnectionOptOuts": [{"serverName":"Naspolya","shareName":"naspi"}],
-  "pendingMoves": ["smb-naspolya-naspi"]
+  "directConnectionOptOuts": [{"serverName":"Testnas","shareName":"testshare"}],
+  "pendingMoves": ["smb-testnas-testshare"]
 }"#;
 
 /// The one set-aside copy of `path`, read back whatever its mode.
@@ -1152,7 +1167,7 @@ fn one_row_that_doesnt_read_keeps_the_rest_and_a_copy() {
     assert_eq!(store.known_network_shares.len(), 1);
     assert!(store.known_network_shares[0].pinned);
     assert_eq!(store.direct_connection_opt_outs.len(), 1);
-    assert_eq!(store.pending_moves, vec!["smb-naspolya-naspi".to_string()]);
+    assert_eq!(store.pending_moves, vec!["smb-testnas-testshare".to_string()]);
     assert_eq!(the_copy(&path), SAVED.as_bytes());
 }
 

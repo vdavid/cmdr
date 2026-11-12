@@ -53,10 +53,10 @@ afterEach(() => {
 
 const endpoint = {
   protocol: 'sftp' as const,
-  displayName: 'Naspolya',
-  address: 'ada@nas.local:22',
-  host: 'nas.local',
-  username: 'ada',
+  displayName: 'Testnas',
+  address: 'test_user_1@testnas.local:22',
+  host: 'testnas.local',
+  username: 'test_user_1',
 }
 
 const refusing = (): Promise<SignInAttemptOutcome> =>
@@ -108,7 +108,7 @@ describe('SignInSheet a11y', () => {
     await renderSheet({
       mode: 'sign-in',
       remembered: true,
-      endpoint: { ...endpoint, protocol: 'smb', displayName: 'Naspolya/naspi', address: 'smb://Naspolya/naspi' },
+      endpoint: { ...endpoint, protocol: 'smb', displayName: 'Testnas/testshare', address: 'smb://Testnas/testshare' },
       shape: { kind: 'username_password', guestAllowed: false },
       refusal: 'authentication_rejected',
       attempt: refusing,
@@ -125,7 +125,7 @@ describe('SignInSheet a11y', () => {
       trust: {
         subject: 'host_key',
         prompt: {
-          host: 'nas.local',
+          host: 'testnas.local',
           port: 22,
           algorithm: 'ssh-ed25519',
           fingerprint: 'SHA256:9Xq4mE1cRt7vBn2sKw5jHy8dZpLu3aFgQoI6tNbVxYc',
@@ -143,10 +143,10 @@ describe('SignInSheet a11y', () => {
       server: {
         id: 'sftp-nas',
         protocol: 'sftp',
-        displayName: 'Naspolya',
+        displayName: 'Testnas',
         nameSource: 'user',
-        address: 'nas.local:22',
-        username: 'ada',
+        address: 'testnas.local:22',
+        username: 'test_user_1',
         pinned: true,
         lastConnectedAt: null,
         autoReconnect: true,
@@ -164,14 +164,14 @@ describe('the three renderers on their own', () => {
     mount(ServerFormFields, {
       target,
       props: {
-        form: { ...emptyServerForm(), protocol: 'sftp', address: 'ada@nas.local' },
+        form: { ...emptyServerForm(), protocol: 'sftp', address: 'test_user_1@testnas.local' },
         disabled: false,
         protocolEditable: true,
         identityEditable: true,
         addressEditable: true,
         addressRefusal: 'Nothing at this address answers WebDAV.',
         onTryNextcloudAddress: () => {},
-        secretRefusal: "That password didn't work for ada.",
+        secretRefusal: "That password didn't work for test_user_1.",
         storedSecretWarning: 'Reconnecting on its own needs a remembered password.',
         onChange: () => {},
       },
@@ -189,7 +189,7 @@ describe('the three renderers on their own', () => {
         form: {
           ...emptyServerForm(),
           protocol: 'sftp',
-          address: 'ada@nas.local',
+          address: 'test_user_1@testnas.local',
           displayName: '',
           remoteRoot: '/srv/data',
           startFolder: '/srv/data-1',
@@ -201,8 +201,8 @@ describe('the three renderers on their own', () => {
         addressHelp: 'Did the server move? Type its new address.',
         identityHint: 'The protocol and the account are what name this server.',
         advancedOpen: true,
-        namePlaceholder: 'ada@nas.local',
-        rootRefusal: "Cmdr can't open this folder on nas.local.",
+        namePlaceholder: 'test_user_1@testnas.local',
+        rootRefusal: "Cmdr can't open this folder on testnas.local.",
         startFolderRefusal: 'The start folder has to be the root folder or a folder inside it.',
         onChange: () => {},
       },
@@ -220,7 +220,7 @@ describe('the three renderers on their own', () => {
         form: {
           ...emptyServerForm(),
           protocol: 'nfs',
-          address: 'nfs://nas.local',
+          address: 'nfs://testnas.local',
           startFolder: '/photos',
           nfs: { ...emptyNfsFields(), exportPath: '/Public', uid: '0', gid: '0', identityFromGuess: false },
         },
@@ -228,7 +228,7 @@ describe('the three renderers on their own', () => {
         protocolEditable: true,
         identityEditable: true,
         addressEditable: true,
-        exportRefusal: 'nas.local has no export at that path.',
+        exportRefusal: 'testnas.local has no export at that path.',
         advancedOpen: true,
         onChange: () => {},
       },
@@ -250,7 +250,7 @@ describe('the three renderers on their own', () => {
           gid: '100',
           identitySource: 'most_common_owner',
         },
-        address: 'nfs://nas.local',
+        address: 'nfs://testnas.local',
         disabled: false,
         exportEditable: true,
         onChange: () => {},
@@ -272,10 +272,10 @@ describe('the three renderers on their own', () => {
       target,
       props: {
         fields: { ...emptyNfsFields(), exportPath: '/Public', uid: '0', gid: '0', identityFromGuess: false },
-        address: 'nfs://nas.local',
+        address: 'nfs://testnas.local',
         disabled: false,
         exportEditable: false,
-        exportRefusal: 'nas.local doesn’t let this Mac open that export.',
+        exportRefusal: 'testnas.local doesn’t let this Mac open that export.',
         onChange: () => {},
       },
     })
@@ -397,8 +397,8 @@ describe('the three renderers on their own', () => {
       target,
       props: {
         shape: { kind: 'key_passphrase' },
-        accountLabel: 'ada',
-        username: 'ada',
+        accountLabel: 'test_user_1',
+        username: 'test_user_1',
         secret: '',
         remember: false,
         guest: false,
@@ -420,7 +420,7 @@ describe('the three renderers on their own', () => {
         trust: {
           subject: 'host_key',
           prompt: {
-            host: 'nas.local',
+            host: 'testnas.local',
             port: 22,
             algorithm: 'ssh-ed25519',
             fingerprint: 'SHA256:2Bp0aJ8h5rXKk1vN7qTt3fYw9cLmQzE4sVuG6dRhPxA',

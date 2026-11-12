@@ -392,7 +392,7 @@ describe('archive-password supplied over MCP', () => {
 
 // ── Restic repos: the password is checked before the prompt closes ──────────
 
-const REPO_VIEW = '/Volumes/naspi/backups/m3-restic/Browse snapshots'
+const REPO_VIEW = '/Volumes/testshare/backups/test-restic/Browse snapshots'
 
 /** A promise the test settles by hand, standing in for a check in flight. */
 function pendingUnlock() {
@@ -417,7 +417,7 @@ async function flush(): Promise<void> {
 
 describe('restic repo browse unlock', () => {
   const repoBrowse = (retry = vi.fn()) => ({
-    volumeId: 'naspi',
+    volumeId: 'testshare',
     path: `${REPO_VIEW}/latest`,
     container: 'resticRepo' as const,
     wrongAttempt: false,
@@ -428,11 +428,11 @@ describe('restic repo browse unlock', () => {
     const { dialogs } = makeState()
     dialogs.showUnlockForBrowse(repoBrowse())
 
-    expect(dialogs.unlockProps).toMatchObject({ container: 'resticRepo', name: 'm3-restic', mode: 'browse' })
+    expect(dialogs.unlockProps).toMatchObject({ container: 'resticRepo', name: 'test-restic', mode: 'browse' })
     expect(notifyArchivePasswordPrompt).toHaveBeenCalledWith(
       expect.objectContaining({
         container: 'resticRepo',
-        archiveName: 'm3-restic',
+        archiveName: 'test-restic',
         archivePath: `${REPO_VIEW}/latest`,
       }),
     )
@@ -447,7 +447,7 @@ describe('restic repo browse unlock', () => {
     dialogs.handleUnlockSubmit({ password: 'hunter2', remember: true })
 
     expect(unlockContainer).toHaveBeenCalledWith({
-      parentVolumeId: 'naspi',
+      parentVolumeId: 'testshare',
       path: `${REPO_VIEW}/latest`,
       password: 'hunter2',
       remember: true,
@@ -524,7 +524,7 @@ describe('restic repo browse unlock', () => {
     // Forgotten only after the cancel landed, so a check finishing in between
     // can't keep the password behind the forget.
     await vi.waitFor(() => {
-      expect(forgetContainerPassword).toHaveBeenCalledWith('naspi', `${REPO_VIEW}/latest`)
+      expect(forgetContainerPassword).toHaveBeenCalledWith('testshare', `${REPO_VIEW}/latest`)
     })
 
     check.resolve('unlocked')
@@ -573,7 +573,7 @@ describe('restic repo transfer unlock', () => {
       ...copyProps(),
       sourcePaths: [`${REPO_VIEW}/latest/Users/me/report.pdf`],
       sourceFolderPath: `${REPO_VIEW}/latest/Users/me`,
-      sourceVolumeId: 'naspi',
+      sourceVolumeId: 'testshare',
     }
   }
 
@@ -588,7 +588,7 @@ describe('restic repo transfer unlock', () => {
     const { dialogs } = makeState()
     dialogs.startTransferProgress(repoCopyProps())
     dialogs.handleTransferError(repoNeedsPassword, null)
-    expect(dialogs.unlockProps).toMatchObject({ container: 'resticRepo', name: 'm3-restic', mode: 'transfer' })
+    expect(dialogs.unlockProps).toMatchObject({ container: 'resticRepo', name: 'test-restic', mode: 'transfer' })
 
     const check = pendingUnlock()
     dialogs.handleUnlockSubmit({ password: 'hunter2', remember: true })
@@ -644,7 +644,7 @@ describe('an archive inside a restic snapshot', () => {
     const { dialogs } = makeState()
     const retry = vi.fn()
     dialogs.showUnlockForBrowse({
-      volumeId: 'naspi',
+      volumeId: 'testshare',
       path: LOCKED_7Z,
       container: 'archive',
       wrongAttempt: false,
@@ -658,7 +658,7 @@ describe('an archive inside a restic snapshot', () => {
 
     dialogs.handleUnlockSubmit({ password: 'hunter2', remember: false })
     expect(unlockContainer).not.toHaveBeenCalled()
-    expect(setArchivePassword).toHaveBeenCalledWith('naspi', LOCKED_7Z, 'hunter2')
+    expect(setArchivePassword).toHaveBeenCalledWith('testshare', LOCKED_7Z, 'hunter2')
     await vi.waitFor(() => {
       expect(retry).toHaveBeenCalled()
     })
@@ -670,7 +670,7 @@ describe('an archive inside a restic snapshot', () => {
       ...copyProps(),
       sourcePaths: [`${LOCKED_7Z}/report.pdf`],
       sourceFolderPath: LOCKED_7Z,
-      sourceVolumeId: 'naspi',
+      sourceVolumeId: 'testshare',
     })
     dialogs.handleTransferError(
       { type: 'archive_needs_password', path: `${LOCKED_7Z}/report.pdf`, container: 'archive', wrongAttempt: false },

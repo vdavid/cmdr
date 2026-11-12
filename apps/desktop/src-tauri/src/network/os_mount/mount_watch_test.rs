@@ -28,7 +28,7 @@ fn warnings(logs: &[CapturedLog]) -> Vec<&str> {
 #[test]
 fn a_mount_outliving_the_threshold_warns_while_it_waits_and_when_it_returns() {
     let logs = logs_of(async {
-        let watch = MountWatch::start("nas.local", "media", THRESHOLD);
+        let watch = MountWatch::start("testnas.local", "media", THRESHOLD);
         // allowed-test-sleep: the mount's duration IS the subject, on a paused clock
         tokio::time::sleep(Duration::from_secs(31)).await;
         watch.finish(false);
@@ -36,7 +36,7 @@ fn a_mount_outliving_the_threshold_warns_while_it_waits_and_when_it_returns() {
     });
 
     let share = format!("{:?}", LogPrivate::volume("media"));
-    let server = format!("{:?}", LogPrivate::host("nas.local"));
+    let server = format!("{:?}", LogPrivate::host("testnas.local"));
     assert_eq!(
         warnings(&logs),
         [
@@ -56,7 +56,7 @@ fn a_mount_outliving_the_threshold_warns_while_it_waits_and_when_it_returns() {
 #[test]
 fn a_quick_mount_logs_nothing() {
     let logs = logs_of(async {
-        let watch = MountWatch::start("nas.local", "media", THRESHOLD);
+        let watch = MountWatch::start("testnas.local", "media", THRESHOLD);
         // allowed-test-sleep: the mount's duration IS the subject, on a paused clock
         tokio::time::sleep(Duration::from_secs(2)).await;
         watch.finish(true);

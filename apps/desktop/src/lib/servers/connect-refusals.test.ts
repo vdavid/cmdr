@@ -49,7 +49,7 @@ const KINDS: ConnectRefusalKind[] = [
   'no_nfs_v3',
 ]
 
-const subject = { host: 'nas.local', username: 'ada' }
+const subject = { host: 'testnas.local', username: 'test_user_1' }
 
 beforeAll(() => {
   _setLocaleForTests('en-US')
@@ -83,12 +83,12 @@ describe('wordConnectRefusal', () => {
   })
 
   it('names the account only where the account is what is wrong', () => {
-    // "That password didn't work for ada" is about the account; "Cmdr couldn't
-    // reach nas.local" is about the server, and mixing them misdirects the fix.
-    expect(wordConnectRefusal('authentication_rejected', subject)).toContain('ada')
-    expect(wordConnectRefusal('unreachable', subject)).toContain('nas.local')
-    expect(wordConnectRefusal('timed_out', subject)).toContain('nas.local')
-    expect(wordConnectRefusal('needs_credentials', subject)).not.toContain('ada')
+    // "That password didn't work for test_user_1" is about the account; "Cmdr couldn't
+    // reach testnas.local" is about the server, and mixing them misdirects the fix.
+    expect(wordConnectRefusal('authentication_rejected', subject)).toContain('test_user_1')
+    expect(wordConnectRefusal('unreachable', subject)).toContain('testnas.local')
+    expect(wordConnectRefusal('timed_out', subject)).toContain('testnas.local')
+    expect(wordConnectRefusal('needs_credentials', subject)).not.toContain('test_user_1')
   })
 
   it('❌ never tells someone who offered nothing that their password is wrong', () => {
@@ -99,9 +99,9 @@ describe('wordConnectRefusal', () => {
   })
 
   it('names the server a folder refusal or an unconfirmed save is about', () => {
-    expect(wordConnectRefusal('root_not_found', subject)).toContain('nas.local')
-    expect(wordConnectRefusal('start_folder_not_found', subject)).toContain('nas.local')
-    expect(wordConnectRefusal('save_unconfirmed', subject)).toContain('nas.local')
+    expect(wordConnectRefusal('root_not_found', subject)).toContain('testnas.local')
+    expect(wordConnectRefusal('start_folder_not_found', subject)).toContain('testnas.local')
+    expect(wordConnectRefusal('save_unconfirmed', subject)).toContain('testnas.local')
   })
 
   it.each(['macos', 'windows', 'linux'] as const)(
@@ -122,7 +122,7 @@ describe('wordConnectRefusal', () => {
     // isn't wrong, and the sentence belongs above the buttons rather than marking
     // the password field invalid.
     const sentence = wordConnectRefusal('account_not_permitted', subject)
-    expect(sentence).toContain('ada')
+    expect(sentence).toContain('test_user_1')
     expect(sentence.toLowerCase()).not.toContain('password')
     expect(refusalField('account_not_permitted')).toBe('form')
   })
@@ -130,18 +130,18 @@ describe('wordConnectRefusal', () => {
 
 describe('wordPaneRefusal', () => {
   it('names an unreachable saved server by the name the user gave it', () => {
-    const sentence = wordPaneRefusal('unreachable', { ...subject, name: 'Naspolya' })
-    expect(sentence).toContain('Naspolya')
-    expect(sentence).not.toContain('nas.local')
+    const sentence = wordPaneRefusal('unreachable', { ...subject, name: 'Testnas' })
+    expect(sentence).toContain('Testnas')
+    expect(sentence).not.toContain('testnas.local')
   })
 
   it('falls back to the host when the place has no name', () => {
-    expect(wordPaneRefusal('unreachable', { ...subject, name: '' })).toContain('nas.local')
+    expect(wordPaneRefusal('unreachable', { ...subject, name: '' })).toContain('testnas.local')
   })
 
   it('words every other reason the way the sheet does', () => {
     for (const kind of KINDS.filter((k) => k !== 'unreachable')) {
-      expect(wordPaneRefusal(kind, { ...subject, name: 'Naspolya' })).toBe(wordConnectRefusal(kind, subject))
+      expect(wordPaneRefusal(kind, { ...subject, name: 'Testnas' })).toBe(wordConnectRefusal(kind, subject))
     }
   })
 })
@@ -214,7 +214,7 @@ describe('NFS refusals', () => {
 
   it('names the server each one is about', () => {
     for (const kind of ['export_not_found', 'export_refused', 'reserved_port_required', 'no_nfs_v3'] as const) {
-      expect(wordConnectRefusal(kind, subject), kind).toContain('nas.local')
+      expect(wordConnectRefusal(kind, subject), kind).toContain('testnas.local')
     }
   })
 })
@@ -243,6 +243,6 @@ describe('refusalField', () => {
 
 describe('a move to an address another saved server holds', () => {
   it('names the server that holds it, so the person knows which one to open or forget', () => {
-    expect(wordConnectRefusal('address_taken', { ...subject, takenBy: 'Naspolya' })).toContain('Naspolya')
+    expect(wordConnectRefusal('address_taken', { ...subject, takenBy: 'Testnas' })).toContain('Testnas')
   })
 })

@@ -79,7 +79,7 @@ fn assert_privacy_archive(bundle: &BuiltBundle) -> BundleManifest {
         .join("\n");
     for private in [
         "private-account",
-        "alice-smith",
+        "test_user_4-smith",
         "client secret",
         " secret",
         PRIVATE_LOG_PATH,

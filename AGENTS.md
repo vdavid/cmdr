@@ -101,7 +101,7 @@ Writing them:
 - **A privacy request** (someone asks for their data, or for it to be deleted): `docs/guides/privacy-requests.md`.
 - **A security incident** (leaked key, fake update, exploited flaw): `docs/security-incident-procedure.md`, first hour
   first.
-- **Branding / marketing**: `brand/CLAUDE.md`, `apps/website/`, and `README.md`. You don't need app internals.
+- **Branding / marketing**: `brand/CLAUDE.md`, `apps/website/`, and `README.md`.
 - **Pricing, licensing, anything commercial**: `docs/business/README.md`, and `product-facts.md` beside it FIRST (code
   facts that change business answers). Private strategy is in David's vault, linked from there.
 - **Writing, code, or UI-copy style**: `docs/style-guide.md` (read before writing user-facing strings or non-trivial
@@ -112,7 +112,7 @@ Writing them:
 ## File structure
 
 - `apps/desktop/`: `src/` (Svelte frontend), `src-tauri/` (Rust backend), `test/` (Vitest, Playwright, Linux Docker E2E,
-  SMB fixtures), `scripts/`. The other three apps are above.
+  SMB fixtures), `scripts/`.
 - `crates/`: `cmdr-fs` (filesystem vocabulary + host primitives), `cmdr-index` (file, media, folder-importance indexes),
   `cmdr-archive` (zip/tar/7z; the model a new backend crate copies), `cmdr-smb` (SMB and its protocol layer),
   `cmdr-nfs`, `cmdr-s3`, `cmdr-sftp`, and `cmdr-webdav` (those servers), `cmdr-adb` (Android over ADB), `cmdr-mtp` (USB
@@ -177,7 +177,9 @@ inventory). Desktop-specific test, MCP, and E2E mechanics live in `apps/desktop/
 - ❌ **No callback type with 2+ confusable positional params** (same type, or a bare generic): an implementation may
   declare fewer params than its type, silently binding the wrong slot. Use one object payload; opt out per-line with a
   reason. Enforced by `cmdr/no-confusable-callback-params`.
-- ❌ Never put real customer/user PII in this public (!) repo.
+- ❌ Never put real customer/user PII in this public (!) repo. Test data looks obviously fake (`test_user_1`,
+  `testnas.local`, `12345678`), never real-looking (`alice`, a real folder name); user-visible sample data is copy that
+  David writes.
 - Tool versions are mise-managed (`.mise.toml`).
 - Icons come from `unplugin-icons` + `@iconify-json/lucide` (see `docs/guides/icons.md`).
 
@@ -197,8 +199,7 @@ inventory). Desktop-specific test, MCP, and E2E mechanics live in `apps/desktop/
   title says what the change achieves and why, which feeds our release notes. No title length cap, comprehensive bodies
   fine, no wraps, entities in backticks. Never `Co-Authored-By`.
 - **The delivery pipeline is fully wired; don't re-audit it.** Releases are agent-automated (tag → CI build → David
-  approves → sign/notarize → `latest.json` → deploy → silent update), and the feedback loops are live (every crash,
-  error report, and feedback → a card on the private reports board plus one three-hour digest email; usage stats → D1).
-  `docs/guides/releasing.md`.
+  approves → sign/notarize → deploy → silent update), and the feedback loops are live (reports and feedback → board
+  cards and a digest; usage stats → D1). `docs/guides/releasing.md`.
 
 Happy coding! 🦀✨

@@ -31,8 +31,8 @@ describe('openFileViewerForPath', () => {
   it('opens on the local drive when no volume claims the path', async () => {
     resolvePathVolume.mockResolvedValue({ volume: null, timedOut: true })
 
-    await openFileViewerForPath('/Users/ada/notes.txt')
+    await openFileViewerForPath('/Users/test_user_1/notes.txt')
 
-    expect(openFileViewer).toHaveBeenCalledWith('/Users/ada/notes.txt', 'root')
+    expect(openFileViewer).toHaveBeenCalledWith('/Users/test_user_1/notes.txt', 'root')
   })
 })

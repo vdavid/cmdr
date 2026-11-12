@@ -30,8 +30,8 @@ import type { CommandHandlerContext } from './types'
 import type { HubRow } from '#lib/file-explorer/network/servers-hub-rows.js'
 import type { NetworkHost } from '#lib/file-explorer/types.js'
 
-const hubRow = { id: 'manual-nas', kind: 'server', name: 'Naspolya' } as unknown as HubRow
-const host: NetworkHost = { id: 'h1', name: 'Naspolya', port: 445, source: 'discovered' }
+const hubRow = { id: 'manual-nas', kind: 'server', name: 'Testnas' } as unknown as HubRow
+const host: NetworkHost = { id: 'h1', name: 'Testnas', port: 445, source: 'discovered' }
 
 function hctx(row: HubRow | null, placesHost: NetworkHost | null = null) {
   const explorerRef = {

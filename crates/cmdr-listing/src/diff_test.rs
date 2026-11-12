@@ -153,8 +153,8 @@ fn diff_does_not_mark_modified_when_only_owner_or_group_change() {
     // doesn't watch) would suddenly start producing a modify diff.
     let mut old_entry = make_entry("a.txt", Some(100));
     let mut new_entry = make_entry("a.txt", Some(100));
-    old_entry.owner = "alice".to_string();
-    new_entry.owner = "bob".to_string();
+    old_entry.owner = "test_user_4".to_string();
+    new_entry.owner = "test_user_5".to_string();
     new_entry.group = "wheel".to_string();
     let diff = compute_diff(&[old_entry], &[new_entry], true, None, ScratchVisibility::default());
     assert!(

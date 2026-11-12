@@ -395,7 +395,7 @@ pub(crate) async fn register_smb_volume(
     use cmdr_smb::volume::connect_smb_volume;
     use std::sync::Arc;
 
-    // Resolve mDNS service names (like "Naspolya._smb._tcp.local") to an IP.
+    // Resolve mDNS service names (like "Testnas._smb._tcp.local") to an IP.
     // Nothing to dial means nothing to do THIS pass: dialing the service name
     // anyway can only burn the resolver timeout and report a failure that isn't
     // one. The pass that runs once discovery goes active resolves it and connects.
@@ -566,7 +566,7 @@ pub(crate) async fn register_smb_volume(
 /// Uses `discover_server` (holds the mDNS browse and polls the host cache up to
 /// 1500 ms), not the one-shot resolver: macOS auto-remounts give us the LAN IP
 /// via statfs, but stored creds are keyed by the mDNS hostname (e.g.
-/// `smb://naspolya/share`), and a service-name mount needs an address. A no-wait
+/// `smb://testnas/share`), and a service-name mount needs an address. A no-wait
 /// lookup races mDNS and misses. Fails open: if mDNS never warms, the IP-keyed
 /// lookup still runs, then guest. The browse stays held until the dial is done, so
 /// every identity answer on the way reads fresh evidence.

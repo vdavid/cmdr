@@ -428,7 +428,7 @@ fn a_decision_crosses_with_its_row_and_no_authored_sentence() {
         seq: 4,
         decision: ProposalDecision {
             verb: ProposalVerb::Trash,
-            what: "/Users/dana/Downloads/*.dmg".to_string(),
+            what: "/Users/test_user_13/Downloads/*.dmg".to_string(),
             ops: 3,
             outcome: ProposalOutcomeKind::Ran {
                 done: 2,
@@ -447,7 +447,7 @@ fn a_decision_crosses_with_its_row_and_no_authored_sentence() {
             "seq": 4,
             "decision": {
                 "verb": "trash",
-                "what": "/Users/dana/Downloads/*.dmg",
+                "what": "/Users/test_user_13/Downloads/*.dmg",
                 "ops": 3,
                 "outcome": { "kind": "ran", "done": 2, "skipped": 1, "failed": 0 },
                 "protocol": null,

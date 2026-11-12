@@ -19,7 +19,7 @@ pub(super) fn make_test_volume(root: &str) -> WebdavVolume {
 pub(super) fn make_test_volume_with(root: &str, host: VolumeHost) -> WebdavVolume {
     let params = WebdavConnectionParams::new(
         Url::parse("http://127.0.0.1:1/dav/").expect("a valid test URL"),
-        "ada",
+        "test_user_1",
         root,
     );
     WebdavVolume {

@@ -49,7 +49,7 @@ pub(super) fn is_redacted_segment(seg: &str) -> bool {
     let (kind, hash) = label.split_once(':').unwrap_or((label, ""));
     let kind_ok = !kind.is_empty() && kind.chars().all(|c| c.is_ascii_lowercase() || c == '-');
     // A token carries its hash. Only the unsalted policy's bare placeholders go without one;
-    // a real folder named `<anna-kovacs>` is not a token and must not ship as one.
+    // a real folder named `<test-person>` is not a token and must not ship as one.
     let hash_ok = if hash.is_empty() {
         BARE_PLACEHOLDERS.contains(&kind)
     } else {

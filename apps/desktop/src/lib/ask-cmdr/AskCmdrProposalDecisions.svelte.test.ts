@@ -20,7 +20,7 @@ import { withPlatform } from '#lib/platform/test-platform.js'
 function decision(overrides: Partial<ProposalDecision> = {}): ProposalDecision {
   return {
     verb: 'trash',
-    what: '/Users/dana/Downloads/*.dmg',
+    what: '/Users/test_user_13/Downloads/*.dmg',
     ops: 12,
     outcome: { kind: 'rejected' },
     ...overrides,
@@ -40,7 +40,7 @@ describe('AskCmdrProposalDecisions', () => {
     await tick()
 
     expect(target.textContent).toContain('You turned down trashing 12 items')
-    expect(target.textContent).toContain('/Users/dana/Downloads/*.dmg')
+    expect(target.textContent).toContain('/Users/test_user_13/Downloads/*.dmg')
   })
 
   /** Windows names the place, and English needs it after the count ("moving 3 items to the
@@ -139,7 +139,7 @@ describe('AskCmdrProposalDecisions', () => {
   /** A save that wrote the host but not its share says so, so the user doesn't look for it. */
   it('says when a saved server is missing its share', async () => {
     const target = render([
-      decision({ verb: 'addServer', what: 'naspolya', ops: 0, outcome: { kind: 'saved', note: 'shareNotSaved' } }),
+      decision({ verb: 'addServer', what: 'testnas', ops: 0, outcome: { kind: 'saved', note: 'shareNotSaved' } }),
     ])
     await tick()
 
@@ -147,7 +147,7 @@ describe('AskCmdrProposalDecisions', () => {
   })
 
   it('says what server change the user turned down', async () => {
-    const target = render([decision({ verb: 'editServer', what: 'naspolya', ops: 0 })])
+    const target = render([decision({ verb: 'editServer', what: 'testnas', ops: 0 })])
     await tick()
 
     expect(target.textContent).toContain('You turned down changing a server’s settings')
@@ -165,13 +165,13 @@ describe('AskCmdrProposalDecisions', () => {
    *  coalescing: one turn, every group the user said no to. */
   it('renders every decision of a sweep answered at once', async () => {
     const target = render([
-      decision({ verb: 'trash', what: '/Users/dana/Downloads/*.dmg' }),
-      decision({ verb: 'move', what: '/Users/dana/Desktop/*.png', ops: 4 }),
+      decision({ verb: 'trash', what: '/Users/test_user_13/Downloads/*.dmg' }),
+      decision({ verb: 'move', what: '/Users/test_user_13/Desktop/*.png', ops: 4 }),
     ])
     await tick()
 
     expect(target.querySelectorAll('li')).toHaveLength(2)
-    expect(target.textContent).toContain('/Users/dana/Desktop/*.png')
+    expect(target.textContent).toContain('/Users/test_user_13/Desktop/*.png')
   })
 
   /** A path is attacker-controlled (it comes off the user's disk), so it renders as escaped

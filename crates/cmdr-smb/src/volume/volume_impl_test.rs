@@ -28,8 +28,8 @@ fn root_returns_mount_path() {
     assert_eq!(vol.root(), Path::new("/Volumes/TestShare"));
 }
 
-/// macOS mounts one share at several roots (`/Volumes/naspi` AND
-/// `/Volumes/naspi-1`), which all derive one volume ID, so the registry has to be
+/// macOS mounts one share at several roots (`/Volumes/testshare` AND
+/// `/Volumes/testshare-1`), which all derive one volume ID, so the registry has to be
 /// able to move the ID to whichever mount is still alive. A direct `SmbVolume`
 /// re-roots because its transport doesn't ride the mount at all: the new instance
 /// addresses the new root over the SAME smb2 session, with no re-auth and nothing
@@ -69,7 +69,7 @@ fn rerooting_addresses_the_new_mount_over_the_same_session() {
 
 /// Every path a rerooted instance translates or hands out is anchored to its NEW
 /// mount, and the old mount is no longer one of its paths: the whole point of the
-/// promotion is that Cmdr stops publishing `/Volumes/naspi/…` once that mount is
+/// promotion is that Cmdr stops publishing `/Volumes/testshare/…` once that mount is
 /// gone.
 #[test]
 fn a_rerooted_share_translates_paths_under_its_new_mount() {
@@ -333,7 +333,7 @@ fn a_share_opened_with_credentials_offers_no_guest_option() {
     let vol = make_test_volume();
     {
         let mut params = vol.inner.params.try_write().expect("nothing else holds the params");
-        params.username = "ada".to_string();
+        params.username = "test_user_1".to_string();
         params.password = "hunter2".to_string();
     }
 

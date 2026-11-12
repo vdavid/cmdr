@@ -111,7 +111,7 @@ fn a_balanced_span_gets_the_token_of_its_kind() {
         ),
         (
             LogKind::Path,
-            "/srv/data/Anna Kovacs/tax.pdf",
+            "/srv/data/Test Person/tax.pdf",
             "/<dir>/<dir>/<dir>/<file>.pdf",
         ),
         (LogKind::Path, "Photos/Summer (Lake House)", "<dir>/<dir>"),
@@ -119,8 +119,8 @@ fn a_balanced_span_gets_the_token_of_its_kind() {
         (LogKind::FileName, "README", "<file>"),
         (LogKind::DirName, "photos.2026.pdf", "<dir>"),
         (LogKind::Volume, "Family Photos", "<volume>"),
-        (LogKind::Host, "Alex's MacBook Pro (2)", "<host>"),
-        (LogKind::User, "alex.kovacs", "<user>"),
+        (LogKind::Host, "Tester's MacBook Pro (2)", "<host>"),
+        (LogKind::User, "test_user_11.person", "<user>"),
     ];
     for (kind, value, token) in cases {
         // Prose after the span survives: the producer said exactly where the value ends.
@@ -147,7 +147,10 @@ fn a_span_inside_a_keyed_field_keeps_its_token_and_the_field() {
             format!("share={}", quoted(LogKind::Volume, "Family Photos")),
             "share=\"<volume>\"",
         ),
-        (format!("user={}", quoted(LogKind::User, "alex")), "user=\"<user>\""),
+        (
+            format!("user={}", quoted(LogKind::User, "test_user_11")),
+            "user=\"<user>\"",
+        ),
         (
             format!("share={}, tree_id=7", span(LogKind::Volume, "Family Photos")),
             "share=<volume>, tree_id=7",
@@ -466,7 +469,7 @@ fn a_path_keeps_its_context_across_a_span() {
         format!("{HEAD}copy smb://nas/share/My {open}a{close} rest/x.pdf"),
         format!("{HEAD}tree: connected share=Fam {open}a{close} ily Photos, tree_id=7"),
         format!(
-            "{HEAD}mdns WARN name: \"Alex{}s Mac{close}Book Pro._companion-link._tcp.local.\"",
+            "{HEAD}mdns WARN name: \"Tester{}s Mac{close}Book Pro._companion-link._tcp.local.\"",
             LogKind::FileName.opener()
         ),
     ] {

@@ -36,18 +36,18 @@ describe('host-key trust', () => {
   it('approve forwards the whole key, because the backend re-checks the fingerprint', async () => {
     vi.mocked(commands.approveSftpHostKey).mockResolvedValueOnce({ outcome: 'recorded' })
     await approveSftpHostKey({
-      host: 'naspolya.local',
+      host: 'testnas.local',
       port: 2222,
       algorithm: 'ssh-ed25519',
       fingerprint: 'SHA256:aaa',
     })
-    expect(commands.approveSftpHostKey).toHaveBeenCalledWith('naspolya.local', 2222, 'ssh-ed25519', 'SHA256:aaa')
+    expect(commands.approveSftpHostKey).toHaveBeenCalledWith('testnas.local', 2222, 'ssh-ed25519', 'SHA256:aaa')
   })
 
   it('forget is keyed by algorithm, not by host alone', async () => {
     vi.mocked(commands.forgetSftpHostKey).mockResolvedValueOnce(true)
-    await forgetSftpHostKey('naspolya.local', 2222, 'ssh-ed25519')
-    expect(commands.forgetSftpHostKey).toHaveBeenCalledWith('naspolya.local', 2222, 'ssh-ed25519')
+    await forgetSftpHostKey('testnas.local', 2222, 'ssh-ed25519')
+    expect(commands.forgetSftpHostKey).toHaveBeenCalledWith('testnas.local', 2222, 'ssh-ed25519')
   })
 
   it('listing passes the store through', async () => {
@@ -59,13 +59,13 @@ describe('host-key trust', () => {
 describe('credentials', () => {
   it('saving forwards host, port, account, and secret', async () => {
     vi.mocked(commands.saveSftpCredentials).mockResolvedValueOnce(ok)
-    await saveSftpCredentials('naspolya.local', 2222, 'ada', 'pa55')
-    expect(commands.saveSftpCredentials).toHaveBeenCalledWith('naspolya.local', 2222, 'ada', 'pa55')
+    await saveSftpCredentials('testnas.local', 2222, 'test_user_1', 'pa55')
+    expect(commands.saveSftpCredentials).toHaveBeenCalledWith('testnas.local', 2222, 'test_user_1', 'pa55')
   })
 
   it('a refusing store throws rather than reporting success', async () => {
     vi.mocked(commands.saveSftpCredentials).mockResolvedValueOnce(err)
-    await expect(saveSftpCredentials('naspolya.local', 2222, 'ada', 'pa55')).rejects.toThrow('nope')
+    await expect(saveSftpCredentials('testnas.local', 2222, 'test_user_1', 'pa55')).rejects.toThrow('nope')
   })
 })
 
@@ -80,10 +80,10 @@ describe('the saved-server list', () => {
     // Reading that `undefined` as "off" would switch auto-reconnect off under
     // every server anyone already had, which is a regression dressed as a default.
     const saved = {
-      host: 'naspolya.local',
+      host: 'testnas.local',
       port: 2222,
-      username: 'ada',
-      displayName: 'Naspolya',
+      username: 'test_user_1',
+      displayName: 'Testnas',
       remoteRoot: '/srv/data',
       keyFile: null,
       useAgent: true,
@@ -98,10 +98,10 @@ describe('the saved-server list', () => {
 
   it('leaves a switch the user turned off turned off', async () => {
     const saved = {
-      host: 'naspolya.local',
+      host: 'testnas.local',
       port: 2222,
-      username: 'ada',
-      displayName: 'Naspolya',
+      username: 'test_user_1',
+      displayName: 'Testnas',
       remoteRoot: '/srv/data',
       keyFile: null,
       useAgent: true,
@@ -117,7 +117,7 @@ describe('the saved-server list', () => {
 
   it('reads the unattended-reconnect answer straight through, so nothing derives it', async () => {
     vi.mocked(commands.getSftpUnattendedReconnect).mockResolvedValueOnce('needs_stored_secret')
-    expect(await getSftpUnattendedReconnect('sftp-naspolya-abc')).toBe('needs_stored_secret')
-    expect(commands.getSftpUnattendedReconnect).toHaveBeenCalledWith('sftp-naspolya-abc')
+    expect(await getSftpUnattendedReconnect('sftp-testnas-abc')).toBe('needs_stored_secret')
+    expect(commands.getSftpUnattendedReconnect).toHaveBeenCalledWith('sftp-testnas-abc')
   })
 })

@@ -9,8 +9,8 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-const REPO: &str = "/Volumes/naspi/backups/m3-restic";
-const VIEW: &str = "/Volumes/naspi/backups/m3-restic/Browse snapshots";
+const REPO: &str = "/Volumes/testshare/backups/test-restic";
+const VIEW: &str = "/Volumes/testshare/backups/test-restic/Browse snapshots";
 
 /// A parent that counts its listings, over an in-memory volume.
 struct CountingParent {
@@ -78,7 +78,7 @@ async fn repo_shaped(volume: &InMemoryVolume, root: &Path) {
 /// [`REPO`]. Each cell picks its own id: the hub's memo is the app's one hub,
 /// shared by every cell in the binary.
 async fn manager_over_a_repo(volume_id: &str) -> (VolumeManager, Arc<CountingParent>) {
-    let inner = InMemoryVolume::new("naspi");
+    let inner = InMemoryVolume::new("testshare");
     repo_shaped(&inner, Path::new(REPO)).await;
     let parent = Arc::new(CountingParent::new(inner));
     let manager = VolumeManager::new();
@@ -117,7 +117,7 @@ async fn the_repo_folder_and_its_real_files_stay_on_the_parent() {
     ] {
         let resolved = manager.resolve("restic-real-files", &path).await;
         assert_eq!(resolved.routed, None, "{} stays on the parent", path.display());
-        assert_eq!(resolved.volume.expect("parent").name(), "naspi");
+        assert_eq!(resolved.volume.expect("parent").name(), "testshare");
     }
 }
 
@@ -125,8 +125,8 @@ async fn the_repo_folder_and_its_real_files_stay_on_the_parent() {
 /// folder, and it pays ONE confirmation listing however often it's resolved.
 #[tokio::test]
 async fn a_non_repo_browse_snapshots_folder_passes_through_for_one_listing() {
-    let inner = InMemoryVolume::new("naspi");
-    let real = Path::new("/Volumes/naspi/photos/Browse snapshots");
+    let inner = InMemoryVolume::new("testshare");
+    let real = Path::new("/Volumes/testshare/photos/Browse snapshots");
     inner.create_directory(real).await.expect("a real folder of that name");
     let parent = Arc::new(CountingParent::new(inner));
     let manager = VolumeManager::new();
@@ -135,7 +135,7 @@ async fn a_non_repo_browse_snapshots_folder_passes_through_for_one_listing() {
     for _ in 0..5 {
         let resolved = manager.resolve("restic-non-repo", &real.join("x.jpg")).await;
         assert_eq!(resolved.routed, None);
-        assert_eq!(resolved.volume.expect("parent").name(), "naspi");
+        assert_eq!(resolved.volume.expect("parent").name(), "testshare");
     }
     assert_eq!(parent.listings(), 1, "the no is remembered");
 }
@@ -205,8 +205,8 @@ async fn an_unconfirmed_zip_inside_a_snapshot_stays_with_the_view() {
 /// unconfirmed archive candidate hands over instead of ending routing.
 #[tokio::test]
 async fn a_repo_inside_a_real_folder_named_like_an_archive_still_routes() {
-    let inner = InMemoryVolume::new("naspi");
-    let repo = Path::new("/Volumes/naspi/backups.zip/m3-restic");
+    let inner = InMemoryVolume::new("testshare");
+    let repo = Path::new("/Volumes/testshare/backups.zip/test-restic");
     repo_shaped(&inner, repo).await;
     let manager = VolumeManager::new();
     manager.register("restic-zip-folder", Arc::new(inner));
@@ -221,8 +221,8 @@ async fn a_repo_inside_a_real_folder_named_like_an_archive_still_routes() {
 /// deeper in the path still routes.
 #[tokio::test]
 async fn a_repo_below_a_non_repo_browse_snapshots_folder_still_routes() {
-    let inner = InMemoryVolume::new("naspi");
-    let repo = Path::new("/Volumes/naspi/Browse snapshots/m3-restic");
+    let inner = InMemoryVolume::new("testshare");
+    let repo = Path::new("/Volumes/testshare/Browse snapshots/test-restic");
     repo_shaped(&inner, repo).await;
     let manager = VolumeManager::new();
     manager.register("restic-nested-name", Arc::new(inner));
@@ -336,7 +336,7 @@ async fn a_replaced_parent_gets_a_new_view() {
         .volume
         .expect("before");
 
-    let reconnected = InMemoryVolume::new("naspi");
+    let reconnected = InMemoryVolume::new("testshare");
     repo_shaped(&reconnected, Path::new(REPO)).await;
     manager.force_register("restic-replaced", Arc::new(reconnected));
 
@@ -362,9 +362,9 @@ async fn a_replaced_parent_gets_a_new_view() {
 /// re-visiting an evicted one re-registers it.
 #[tokio::test]
 async fn the_lru_caps_how_many_views_stay_registered() {
-    let inner = InMemoryVolume::new("naspi");
+    let inner = InMemoryVolume::new("testshare");
     let repos: Vec<PathBuf> = (0..=RESTIC_LRU_CAP)
-        .map(|index| PathBuf::from(format!("/Volumes/naspi/repo{index}")))
+        .map(|index| PathBuf::from(format!("/Volumes/testshare/repo{index}")))
         .collect();
     for repo in &repos {
         repo_shaped(&inner, repo).await;
@@ -388,16 +388,19 @@ async fn the_lru_caps_how_many_views_stay_registered() {
 /// repo, which is what `inspect_file` and the index router route by.
 #[tokio::test]
 async fn mount_id_for_path_names_the_parent_not_the_view() {
-    let inner = InMemoryVolume::new("naspi").with_root("/Volumes/naspi");
+    let inner = InMemoryVolume::new("testshare").with_root("/Volumes/testshare");
     repo_shaped(&inner, Path::new(REPO)).await;
     let manager = VolumeManager::new();
-    manager.register("naspi", Arc::new(inner));
+    manager.register("testshare", Arc::new(inner));
 
     let inside = Path::new(VIEW).join("latest/Users/me");
-    assert_eq!(manager.resolve("naspi", &inside).await.routed, Some(RoutedKind::Restic));
+    assert_eq!(
+        manager.resolve("testshare", &inside).await.routed,
+        Some(RoutedKind::Restic)
+    );
     assert_eq!(
         manager.mount_id_for_path(&inside.to_string_lossy()).as_deref(),
-        Some("naspi")
+        Some("testshare")
     );
 }
 
@@ -419,9 +422,9 @@ async fn entering_the_row_lists_the_snapshots() {
     use cmdr_restic::test_fixtures::{FixtureRepo, unlock};
     use std::time::{Duration, SystemTime};
 
-    let inner = InMemoryVolume::new("naspi");
+    let inner = InMemoryVolume::new("testshare");
     let fixture = FixtureRepo::init("pw");
-    fixture.add_snapshot(SystemTime::UNIX_EPOCH + Duration::from_secs(1_791_000_000), "m3");
+    fixture.add_snapshot(SystemTime::UNIX_EPOCH + Duration::from_secs(1_791_000_000), "test-host");
     fixture.write_into(&inner, Path::new(REPO)).await;
     let manager = VolumeManager::new();
     manager.register("restic-end-to-end", Arc::new(inner));
@@ -465,7 +468,7 @@ async fn a_zip_inside_a_snapshot_browses_as_an_archive_over_the_view() {
     std::fs::write(source.join("bundle.zip"), &zip_bytes).expect("source zip");
     let fixture = FixtureRepo::init("pw");
     fixture.backup(&source, SystemTime::UNIX_EPOCH + Duration::from_secs(1_791_000_000));
-    let inner = InMemoryVolume::new("naspi");
+    let inner = InMemoryVolume::new("testshare");
     fixture.write_into(&inner, Path::new(REPO)).await;
     let manager = VolumeManager::new();
     manager.register("restic-zip-browse", Arc::new(inner));

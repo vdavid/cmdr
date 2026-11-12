@@ -44,7 +44,7 @@ fn a_contact_free_save_stays_out_of_discovery_and_the_probe_until_its_first_moun
 
     let saved = save_parsed_at(
         Some(&path),
-        parsed("smb://ada@nas-backup.invalid/Backups"),
+        parsed("smb://test_user_1@nas-backup.invalid/Backups"),
         &details,
         Contact::AwaitingFirstConnect,
     );
@@ -54,7 +54,11 @@ fn a_contact_free_save_stays_out_of_discovery_and_the_probe_until_its_first_moun
     let host = &store.servers[0];
     assert!(host.awaiting_first_connect);
     assert_eq!(host.label(), "Backup NAS");
-    assert_eq!(host.username.as_deref(), Some("ada"), "the account the address named");
+    assert_eq!(
+        host.username.as_deref(),
+        Some("test_user_1"),
+        "the account the address named"
+    );
     assert_eq!(discoverable(&store.servers).count(), 0, "not in the discovery list");
     assert!(
         !crate::network::fresh_discovered_hosts()

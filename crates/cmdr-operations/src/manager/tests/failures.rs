@@ -41,7 +41,7 @@ async fn retained_failure_stays_hidden_until_the_record_settles() {
     let mut desc = descriptor(&op, vec![&lane]);
     desc.summary = OperationSummaryText {
         source: Some("/Users/me/photos".to_string()),
-        destination: Some("Naspolya".to_string()),
+        destination: Some("Testnas".to_string()),
         items: None,
     };
     mgr.spawn_managed(desc, engine.new_state(), gated_deferred(op.clone(), started_tx, rel_rx));
@@ -86,7 +86,7 @@ async fn retained_failure_stays_hidden_until_the_record_settles() {
         Some("/Users/me/photos"),
         "the retained row keeps the live record's summary, so the queue row still reads like the others"
     );
-    assert_eq!(retained[0].destination.as_deref(), Some("Naspolya"));
+    assert_eq!(retained[0].destination.as_deref(), Some("Testnas"));
     assert_eq!(
         retained[0].rollback_support,
         RollbackSupport::Settled,

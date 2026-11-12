@@ -377,35 +377,38 @@ fn a_wake_hit_carries_where_its_activity_happened() {
 
 #[test]
 fn a_renamed_wake_thread_keeps_its_own_title() {
-    let d = digest(&["/Users/ada/tmp"], &[]);
-    assert!(place_of(&d, "tmp", Some("/Users/ada")).is_some());
-    assert_eq!(place_of(&d, "My cleanup", Some("/Users/ada")), None);
+    let d = digest(&["/Users/test_user_1/tmp"], &[]);
+    assert!(place_of(&d, "tmp", Some("/Users/test_user_1")).is_some());
+    assert_eq!(place_of(&d, "My cleanup", Some("/Users/test_user_1")), None);
 }
 
 #[test]
 fn a_digest_of_rollups_only_is_placed_at_the_first_ancestor() {
-    let d = digest(&[], &[("/Users/ada/Library", 7)]);
+    let d = digest(&[], &[("/Users/test_user_1/Library", 7)]);
     assert_eq!(
-        place_of(&d, "Library", Some("/Users/ada")),
+        place_of(&d, "Library", Some("/Users/test_user_1")),
         Some(WakePlace {
             folder: "~/Library".into(),
             other_folders: 6
         })
     );
-    assert_eq!(place_of(&digest(&[], &[]), "", Some("/Users/ada")), None);
+    assert_eq!(place_of(&digest(&[], &[]), "", Some("/Users/test_user_1")), None);
 }
 
 #[test]
 fn home_relative_writes_the_home_folder_as_a_tilde() {
-    let home = Some("/Users/ada");
-    assert_eq!(home_relative("/Users/ada", home), "~");
-    assert_eq!(home_relative("/Users/ada/tmp", home), "~/tmp");
+    let home = Some("/Users/test_user_1");
+    assert_eq!(home_relative("/Users/test_user_1", home), "~");
+    assert_eq!(home_relative("/Users/test_user_1/tmp", home), "~/tmp");
     assert_eq!(
         home_relative("/Users/adam/tmp", home),
         "/Users/adam/tmp",
         "a sibling isn't home"
     );
     assert_eq!(home_relative("/private/tmp", home), "/private/tmp");
-    assert_eq!(home_relative("/Users/ada/tmp", Some("/Users/ada/")), "~/tmp");
-    assert_eq!(home_relative("/Users/ada/tmp", None), "/Users/ada/tmp");
+    assert_eq!(
+        home_relative("/Users/test_user_1/tmp", Some("/Users/test_user_1/")),
+        "~/tmp"
+    );
+    assert_eq!(home_relative("/Users/test_user_1/tmp", None), "/Users/test_user_1/tmp");
 }

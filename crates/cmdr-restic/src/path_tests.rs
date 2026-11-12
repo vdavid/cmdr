@@ -2,7 +2,7 @@ use super::{SnapshotRef, VIRTUAL_ENTRY_NAME, VirtualPath, classify, restic_route
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
-const VIEW: &str = "/Volumes/naspi/backups/m3-restic/Browse snapshots";
+const VIEW: &str = "/Volumes/testshare/backups/test-restic/Browse snapshots";
 
 fn inner(parts: &[&str]) -> Vec<OsString> {
     parts.iter().map(OsString::from).collect()
@@ -12,13 +12,13 @@ fn inner(parts: &[&str]) -> Vec<OsString> {
 fn the_route_is_the_folder_holding_the_first_browse_snapshots_component() {
     assert_eq!(
         restic_route(Path::new(
-            "/Volumes/naspi/backups/m3-restic/Browse snapshots/latest/Users"
+            "/Volumes/testshare/backups/test-restic/Browse snapshots/latest/Users"
         )),
-        Some(PathBuf::from("/Volumes/naspi/backups/m3-restic"))
+        Some(PathBuf::from("/Volumes/testshare/backups/test-restic"))
     );
     assert_eq!(
         restic_route(Path::new(VIEW)),
-        Some(PathBuf::from("/Volumes/naspi/backups/m3-restic"))
+        Some(PathBuf::from("/Volumes/testshare/backups/test-restic"))
     );
     // A backed-up repo inside a snapshot still routes at the FIRST boundary: the
     // outer repo serves everything below it.
@@ -31,7 +31,7 @@ fn the_route_is_the_folder_holding_the_first_browse_snapshots_component() {
 #[test]
 fn a_path_without_the_component_never_routes() {
     assert_eq!(
-        restic_route(Path::new("/Volumes/naspi/backups/m3-restic/snapshots")),
+        restic_route(Path::new("/Volumes/testshare/backups/test-restic/snapshots")),
         None
     );
     // A near miss is a different name, not a route.
@@ -53,8 +53,11 @@ fn latest_and_its_contents_classify_as_latest() {
         Some(VirtualPath::Snapshot(SnapshotRef::Latest, Vec::new()))
     );
     assert_eq!(
-        classify(Path::new(VIEW), &Path::new(VIEW).join("latest/Users/david")),
-        Some(VirtualPath::Snapshot(SnapshotRef::Latest, inner(&["Users", "david"])))
+        classify(Path::new(VIEW), &Path::new(VIEW).join("latest/Users/test_user_3")),
+        Some(VirtualPath::Snapshot(
+            SnapshotRef::Latest,
+            inner(&["Users", "test_user_3"])
+        ))
     );
 }
 

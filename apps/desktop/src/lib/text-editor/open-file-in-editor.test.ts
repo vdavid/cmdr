@@ -62,7 +62,7 @@ const APP_KEY = 'behavior.textEditorApp'
 const HINT_KEY = 'behavior.textEditorHintSeen'
 const TOAST_ID = 'text-editor'
 const SUBLIME = 'com.sublimetext.4'
-const FILE = '/Users/dave/notes.txt'
+const FILE = '/Users/test_user_10/notes.txt'
 
 /** Resolves the launch with this report, filling in the fields a test doesn't care about. */
 function reports(report: {

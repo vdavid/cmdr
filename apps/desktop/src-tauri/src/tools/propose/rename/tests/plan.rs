@@ -47,7 +47,7 @@ fn facts() -> VolumeFacts {
     VolumeFacts {
         volumes: vec![
             volume("root", VolumeKind::Local, "/", true),
-            volume("naspi", VolumeKind::Smb, "/Volumes/naspi", true),
+            volume("testshare", VolumeKind::Smb, "/Volumes/testshare", true),
             volume("attic", VolumeKind::Smb, "/Volumes/attic", false),
         ],
         mount_areas: vec!["/Volumes".to_string()],
@@ -111,57 +111,65 @@ fn ten_seconds() -> Deadline {
 fn a_plan_targets_any_folder_on_a_connected_volume_whatever_the_panes_show() {
     let draft = placed(
         &plan(&[
-            ("/Users/david/Downloads/invoices/a.pdf", "root", "2026-01 Invoice.pdf"),
-            ("/Users/david/Downloads/invoices/b.pdf", "root", "2026-02 Invoice.pdf"),
+            (
+                "/Users/test_user_3/Downloads/invoices/a.pdf",
+                "root",
+                "2026-01 Invoice.pdf",
+            ),
+            (
+                "/Users/test_user_3/Downloads/invoices/b.pdf",
+                "root",
+                "2026-02 Invoice.pdf",
+            ),
         ]),
         &facts(),
     );
     assert_eq!(draft.volume_id, "root");
-    assert_eq!(draft.parent, "/Users/david/Downloads/invoices");
+    assert_eq!(draft.parent, "/Users/test_user_3/Downloads/invoices");
     assert_eq!(draft.rows.len(), 2);
 
     let remote = placed(
-        &plan(&[("/Volumes/naspi/scans/c.pdf", "naspi", "c renamed.pdf")]),
+        &plan(&[("/Volumes/testshare/scans/c.pdf", "testshare", "c renamed.pdf")]),
         &facts(),
     );
-    assert_eq!(remote.volume_id, "naspi");
-    assert_eq!(remote.parent, "/Volumes/naspi/scans");
+    assert_eq!(remote.volume_id, "testshare");
+    assert_eq!(remote.parent, "/Volumes/testshare/scans");
 }
 
-/// A share remounted at a new path (macOS's `naspi-1`) still holds the files the model named
+/// A share remounted at a new path (macOS's `testshare-1`) still holds the files the model named
 /// at the old one: the stored rows say where they are NOW, because preflight and apply read
 /// the stored rows.
 #[test]
 fn a_rebased_folder_rewrites_every_row_onto_the_volumes_current_root() {
     let mut facts = facts();
-    let naspi = facts
+    let testshare = facts
         .volumes
         .iter_mut()
-        .find(|volume| volume.id == "naspi")
-        .expect("naspi");
-    naspi.root = "/Volumes/naspi-1".into();
-    naspi.earlier_roots = vec!["/Volumes/naspi".into()];
+        .find(|volume| volume.id == "testshare")
+        .expect("testshare");
+    testshare.root = "/Volumes/testshare-1".into();
+    testshare.earlier_roots = vec!["/Volumes/testshare".into()];
 
     let draft = placed(
         &plan(&[
-            ("/Volumes/naspi/scans/a.pdf", "naspi", "x.pdf"),
-            ("/Volumes/naspi/scans/b.pdf", "naspi", "y.pdf"),
+            ("/Volumes/testshare/scans/a.pdf", "testshare", "x.pdf"),
+            ("/Volumes/testshare/scans/b.pdf", "testshare", "y.pdf"),
         ]),
         &facts,
     );
 
-    assert_eq!(draft.volume_id, "naspi");
-    assert_eq!(draft.parent, "/Volumes/naspi-1/scans");
+    assert_eq!(draft.volume_id, "testshare");
+    assert_eq!(draft.parent, "/Volumes/testshare-1/scans");
     let sources: Vec<&str> = draft.rows.iter().map(|row| row.source_path.as_str()).collect();
     assert_eq!(
         sources,
-        ["/Volumes/naspi-1/scans/a.pdf", "/Volumes/naspi-1/scans/b.pdf"]
+        ["/Volumes/testshare-1/scans/a.pdf", "/Volumes/testshare-1/scans/b.pdf"]
     );
 }
 
 const BOX: &str = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
 
-/// An SMB share on `/Volumes/<mount>`, its GUID recorded by a signed-in session, opened as david.
+/// An SMB share on `/Volumes/<mount>`, its GUID recorded by a signed-in session, opened as test_user_3.
 fn share(id: &str, mount: &str, live: bool) -> VolumeFact {
     VolumeFact {
         connection_state: Some(if live {
@@ -171,8 +179,8 @@ fn share(id: &str, mount: &str, live: bool) -> VolumeFact {
         }),
         share: Some(ShareIdentity::new(
             Some((BOX, GuidProof::Authenticated)),
-            "naspi",
-            Some("david"),
+            "testshare",
+            Some("test_user_3"),
         )),
         ..volume(id, VolumeKind::Smb, &format!("/Volumes/{mount}"), live)
     }
@@ -183,14 +191,14 @@ fn share(id: &str, mount: &str, live: bool) -> VolumeFact {
 #[test]
 fn a_folder_on_a_dead_address_of_a_live_share_moves_onto_the_live_one() {
     let mut facts = facts();
-    facts.volumes.push(share("ts", "naspi-ts", false));
-    facts.volumes.push(share("lan", "naspi-lan", true));
+    facts.volumes.push(share("ts", "testshare-ts", false));
+    facts.volumes.push(share("lan", "testshare-lan", true));
 
-    let draft = placed(&plan(&[("/Volumes/naspi-ts/scans/a.pdf", "ts", "x.pdf")]), &facts);
+    let draft = placed(&plan(&[("/Volumes/testshare-ts/scans/a.pdf", "ts", "x.pdf")]), &facts);
 
     assert_eq!(draft.volume_id, "lan", "stored on the address that can run it");
-    assert_eq!(draft.parent, "/Volumes/naspi-lan/scans");
-    assert_eq!(draft.rows[0].source_path, "/Volumes/naspi-lan/scans/a.pdf");
+    assert_eq!(draft.parent, "/Volumes/testshare-lan/scans");
+    assert_eq!(draft.rows[0].source_path, "/Volumes/testshare-lan/scans/a.pdf");
 }
 
 /// Every refusal that's about rows names them: the stray row is the one named, ❌ never the
@@ -202,7 +210,7 @@ fn a_refusal_names_every_problem_row_and_only_those() {
         ("/shots/b.png", "root", "two.png"),
         ("/shots/c.png", "root", "three.png"),
         ("/elsewhere/d.png", "root", "four.png"),
-        ("/shots/e.png", "naspi", "five.png"),
+        ("/shots/e.png", "testshare", "five.png"),
         ("/shots/a.png", "root", "six.png"),
         ("/shots/f.png", "root", "ONE.png"),
         ("/shots/../g.png", "root", "seven.png"),
@@ -302,7 +310,7 @@ fn a_folder_off_every_connected_volume_refuses_in_the_miss_shape() {
     };
 
     assert_eq!(refuse("/shots/a.png", "nas-2"), MissToken::UnknownVolume);
-    assert_eq!(refuse("/shots/a.png", "naspi"), MissToken::PathOutsideVolume);
+    assert_eq!(refuse("/shots/a.png", "testshare"), MissToken::PathOutsideVolume);
     assert_eq!(
         refuse("/Volumes/attic/old/a.png", "attic"),
         MissToken::VolumeNotConnected
@@ -328,7 +336,7 @@ fn a_folder_off_every_connected_volume_refuses_in_the_miss_shape() {
 /// "(doesn't exist)". One made-up name no longer costs the plan.
 #[tokio::test(flavor = "multi_thread")]
 async fn a_missing_file_on_a_remote_volume_stays_in_the_plan() {
-    let share = InMemoryVolume::new("naspi");
+    let share = InMemoryVolume::new("testshare");
     share
         .create_file(Path::new("/scans/real.pdf"), b"seven!!")
         .await
@@ -338,7 +346,7 @@ async fn a_missing_file_on_a_remote_volume_stays_in_the_plan() {
         draft_row("/scans/invented.pdf", "b.pdf", EvidenceSource::Filename, "the old name"),
     ];
 
-    let rejections = check_sources("naspi", Arc::new(share), &mut rows, &ten_seconds()).await;
+    let rejections = check_sources("testshare", Arc::new(share), &mut rows, &ten_seconds()).await;
 
     assert!(
         rejections.is_empty(),
@@ -356,7 +364,7 @@ async fn a_missing_file_on_a_remote_volume_stays_in_the_plan() {
 /// model doesn't learn about the missing ones one retry later.
 #[tokio::test(flavor = "multi_thread")]
 async fn every_source_missing_or_a_folder_refuses_by_row_in_one_answer() {
-    let share = InMemoryVolume::new("naspi");
+    let share = InMemoryVolume::new("testshare");
     share
         .create_directory_all(Path::new("/scans/2026"))
         .await
@@ -371,7 +379,7 @@ async fn every_source_missing_or_a_folder_refuses_by_row_in_one_answer() {
         draft_row("/scans/x.pdf", "a.pdf", EvidenceSource::Filename, "the old name"),
         draft_row("/scans/2026", "b", EvidenceSource::Filename, "the old name"),
     ];
-    let rejections = check_sources("naspi", share.clone(), &mut gone, &ten_seconds()).await;
+    let rejections = check_sources("testshare", share.clone(), &mut gone, &ten_seconds()).await;
     assert_eq!(
         named(&rejections),
         [
@@ -385,7 +393,7 @@ async fn every_source_missing_or_a_folder_refuses_by_row_in_one_answer() {
         draft_row("/scans/2026", "b", EvidenceSource::Filename, "the old name"),
         draft_row("/scans/x.pdf", "c.pdf", EvidenceSource::Filename, "the old name"),
     ];
-    let rejections = check_sources("naspi", share, &mut with_a_file, &ten_seconds()).await;
+    let rejections = check_sources("testshare", share, &mut with_a_file, &ten_seconds()).await;
     assert_eq!(
         named(&rejections),
         [("/scans/2026", RowProblem::Folder)],
@@ -469,11 +477,11 @@ async fn a_dead_share_never_starves_a_plan_on_another_volume() {
     let _ = check_sources("attic", dead, &mut stuck, &Deadline::new(Duration::from_millis(200))).await;
 
     let disk = InMemoryVolume::new("Macintosh HD");
-    disk.create_file(Path::new("/Users/david/a.pdf"), b"here")
+    disk.create_file(Path::new("/Users/test_user_3/a.pdf"), b"here")
         .await
         .expect("seed file");
     let mut rows = vec![draft_row(
-        "/Users/david/a.pdf",
+        "/Users/test_user_3/a.pdf",
         "b.pdf",
         EvidenceSource::Filename,
         "the old name",
@@ -494,22 +502,22 @@ async fn a_dead_share_never_starves_a_plan_on_another_volume() {
 /// the stat, with every row any of them rejected in ONE refusal.
 #[tokio::test(flavor = "multi_thread")]
 async fn the_whole_check_stages_a_good_plan_and_refuses_a_bad_one_in_one_answer() {
-    let share = InMemoryVolume::new("naspi");
+    let share = InMemoryVolume::new("testshare");
     share
-        .create_file(Path::new("/Volumes/naspi/scans/real.pdf"), b"x")
+        .create_file(Path::new("/Volumes/testshare/scans/real.pdf"), b"x")
         .await
         .expect("seed file");
     share
-        .create_directory_all(Path::new("/Volumes/naspi/scans/2026"))
+        .create_directory_all(Path::new("/Volumes/testshare/scans/2026"))
         .await
         .expect("seed folder");
     let share: Arc<dyn Volume> = Arc::new(share);
-    let volume_for = |id: &str| (id == "naspi").then(|| share.clone());
+    let volume_for = |id: &str| (id == "testshare").then(|| share.clone());
 
     let draft = check_plan(
         &plan(&[
-            ("/Volumes/naspi/scans/real.pdf", "naspi", "a.pdf"),
-            ("/Volumes/naspi/scans/invented.pdf", "naspi", "b.pdf"),
+            ("/Volumes/testshare/scans/real.pdf", "testshare", "a.pdf"),
+            ("/Volumes/testshare/scans/invented.pdf", "testshare", "b.pdf"),
         ]),
         &facts(),
         &ImageFactsLedger::default(),
@@ -519,14 +527,14 @@ async fn the_whole_check_stages_a_good_plan_and_refuses_a_bad_one_in_one_answer(
     )
     .await
     .unwrap_or_else(|refusal| panic!("staged: {}", refusal_reason(&refusal)));
-    assert_eq!(draft.volume_id, "naspi");
+    assert_eq!(draft.volume_id, "testshare");
     assert_eq!(draft.rows.len(), 2, "the invented row stays, for the review to mark");
 
     let refusal = check_plan(
         &plan(&[
-            ("/Volumes/naspi/scans/real.pdf", "naspi", "a.pdf"),
-            ("/Volumes/naspi/scans/2026", "naspi", "b"),
-            ("/Volumes/naspi/elsewhere/c.pdf", "naspi", "c.pdf"),
+            ("/Volumes/testshare/scans/real.pdf", "testshare", "a.pdf"),
+            ("/Volumes/testshare/scans/2026", "testshare", "b"),
+            ("/Volumes/testshare/elsewhere/c.pdf", "testshare", "c.pdf"),
         ]),
         &facts(),
         &ImageFactsLedger::default(),
@@ -543,8 +551,8 @@ async fn the_whole_check_stages_a_good_plan_and_refuses_a_bad_one_in_one_answer(
     assert_eq!(
         named(&rejected.rows),
         [
-            ("/Volumes/naspi/elsewhere/c.pdf", RowProblem::OtherFolder),
-            ("/Volumes/naspi/scans/2026", RowProblem::Folder),
+            ("/Volumes/testshare/elsewhere/c.pdf", RowProblem::OtherFolder),
+            ("/Volumes/testshare/scans/2026", RowProblem::Folder),
         ],
         "the row's own problem and the stat's, in one answer"
     );

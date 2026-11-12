@@ -579,7 +579,7 @@
     /** Number of result rows in the active snapshot, or 0 when not on a search-results pane. */
     const searchResultsCount = $derived(searchSnapshot?.entries.length ?? 0)
 
-    // User's home directory path (e.g. "/Users/veszelovszki"), fetched once on mount
+    // User's home directory path (e.g. "/Users/test_user_3"), fetched once on mount
     let userHomePath = $state('')
 
     // Canonical form of `currentPath` (`~` expanded). Null until `userHomePath`

@@ -14,8 +14,8 @@
 # fails on a missing account gets explained.
 set -e
 
-QUOTA_USER="${QUOTA_USER:-ada}"
-UNLIMITED_USER="${UNLIMITED_USER:-grace}"
+QUOTA_USER="${QUOTA_USER:-test_user_1}"
+UNLIMITED_USER="${UNLIMITED_USER:-test_user_2}"
 USER_PASSWORD="${USER_PASSWORD:-openthedoor}"
 # ❗ Exactly 5 GiB, and the cell asserts that number: `quota-available-bytes`
 # plus `quota-used-bytes` has to add up to the ACCOUNT's quota rather than to

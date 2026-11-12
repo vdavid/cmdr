@@ -119,9 +119,9 @@ describe('SmbOsMountFallbackToastContent', () => {
     mount(SmbOsMountFallbackToastContent, {
       target,
       props: {
-        toastId: 'smb-os-mount:smb-sven',
-        volumeId: 'smb-sven',
-        share: 'Sven',
+        toastId: 'smb-os-mount:smb-test_user_6',
+        volumeId: 'smb-test_user_6',
+        share: 'Test_user_6',
         retryable: true,
         blockedServer: 'Mars',
       },
@@ -139,7 +139,7 @@ describe('SmbOsMountFallbackToastContent', () => {
     expect(openLocalNetworkSettings).toHaveBeenCalledOnce()
     retry.click()
     await vi.waitFor(() => {
-      expect(connectDirectly).toHaveBeenCalledWith({ volumeId: 'smb-sven', shareName: 'Sven' })
+      expect(connectDirectly).toHaveBeenCalledWith({ volumeId: 'smb-test_user_6', shareName: 'Test_user_6' })
     })
   })
 
@@ -151,9 +151,9 @@ describe('SmbOsMountFallbackToastContent', () => {
     mount(SmbOsMountFallbackToastContent, {
       target,
       props: {
-        toastId: 'smb-os-mount:smb-sven',
-        volumeId: 'smb-sven',
-        share: 'Sven',
+        toastId: 'smb-os-mount:smb-test_user_6',
+        volumeId: 'smb-test_user_6',
+        share: 'Test_user_6',
         retryable: true,
         blockedServer: 'Mars',
       },

@@ -109,9 +109,9 @@ describe("a validity check that can't run at all", () => {
   }
 
   it("speaks the user's language, from the same typed vocabulary the rename itself uses", async () => {
-    const message = await messageForThrow(new MutationFailure({ type: 'volumeGone', volumeId: 'smb-naspi' }))
+    const message = await messageForThrow(new MutationFailure({ type: 'volumeGone', volumeId: 'smb-testshare' }))
 
-    expect(message).toBe(renderMutationError({ type: 'volumeGone', volumeId: 'smb-naspi' }, 'file'))
+    expect(message).toBe(renderMutationError({ type: 'volumeGone', volumeId: 'smb-testshare' }, 'file'))
   })
 
   it('keeps a deadline distinguishable from a refusal, without reading either sentence', async () => {
@@ -261,7 +261,7 @@ describe('a rename on a slow volume', () => {
   it('hands back at the deadline as still renaming, never as a failure, and settles as a success', async () => {
     const volume = slowRename()
 
-    const result = await performRename(FILE, 'renamed.txt', false, 'smb-naspi')
+    const result = await performRename(FILE, 'renamed.txt', false, 'smb-testshare')
 
     expect(result.type).toBe('still-renaming')
     volume.land()
@@ -273,7 +273,7 @@ describe('a rename on a slow volume', () => {
   it("settles with the volume's own reason when the slow rename is refused", async () => {
     const volume = slowRename()
 
-    const result = await performRename(FILE, 'renamed.txt', false, 'smb-naspi')
+    const result = await performRename(FILE, 'renamed.txt', false, 'smb-testshare')
     volume.refuse(new MutationFailure({ type: 'parentNotWritable', path: '/dir' }))
 
     expect(result.type).toBe('still-renaming')

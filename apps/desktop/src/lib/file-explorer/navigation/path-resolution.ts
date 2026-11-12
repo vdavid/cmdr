@@ -30,7 +30,7 @@ export interface ResolveValidPathOptions {
    */
   connectionState?: ConnectionState | null
   /**
-   * Volume root path (like "/Volumes/naspi"). When set, the walk-up stops at this
+   * Volume root path (like "/Volumes/testshare"). When set, the walk-up stops at this
    * boundary instead of continuing to "/" (prevents crossing into a different volume,
    * which would fail for non-local volumes like SmbVolume).
    */
@@ -58,7 +58,7 @@ type ProbeAnswer = 'yes' | 'no' | 'unknown'
 
 /**
  * The scheme root of a path on a volume with no local mount
- * (`sftp://ada@nas:22/srv` → `sftp://ada@nas:22`), or `null` for a plain path.
+ * (`sftp://test_user_1@nas:22/srv` → `sftp://test_user_1@nas:22`), or `null` for a plain path.
  *
  * ❗ This is where the walk-up STOPS on such a path, and what it answers there.
  * A remote path's probes can all say no (asked of the boot disk, or of a server

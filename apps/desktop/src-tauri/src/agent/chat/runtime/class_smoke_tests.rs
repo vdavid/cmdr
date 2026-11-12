@@ -132,7 +132,7 @@ async fn a_scripted_turn_reads_the_logs_redacted_on_any_origin() {
     crate::logging::set_log_dir(dir.to_path_buf());
     std::fs::write(
         dir.join("cmdr.log"),
-        "2026-11-02T08:00:00.000+01:00 WARN listing /Users/dorka/SecretProject/plan.pdf failed\n",
+        "2026-11-02T08:00:00.000+01:00 WARN listing /Users/test_user_8/SecretProject/plan.pdf failed\n",
     )
     .expect("write the log");
 
@@ -142,7 +142,7 @@ async fn a_scripted_turn_reads_the_logs_redacted_on_any_origin() {
             .as_str()
             .unwrap_or_else(|| panic!("{origin:?}: {answer}"));
         assert!(text.contains("WARN listing"), "{origin:?}: {text}");
-        assert!(!text.contains("dorka"), "{origin:?}: {text}");
+        assert!(!text.contains("test_user_8"), "{origin:?}: {text}");
         assert!(!text.contains("SecretProject"), "{origin:?}: {text}");
         assert_eq!(answer["truncated"], false, "{origin:?}");
     }

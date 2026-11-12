@@ -164,7 +164,7 @@ export const transferFixtures: Record<string, DiskFixtureBuilder<TransferFixture
 /** Keyed by the `mkdir-confirmation` entry's state ids in `gallery-registry.ts`. */
 export const mkdirFixtures: Record<string, DiskFixtureBuilder<NewEntryFixture> | undefined> = {
   empty: (disk) => newEntryFixture(disk, ''),
-  prefilled: (disk) => newEntryFixture(disk, 'Stockholm archipelago, July 2026'),
+  prefilled: (disk) => newEntryFixture(disk, 'Testville harbor, July 2026'),
   // The name of a folder that really is in there, so the conflict warning comes
   // from the live listing rather than from a fixture claiming there's a clash.
   conflict: (disk) => newEntryFixture(disk, disk.existingFolderName),

@@ -452,13 +452,13 @@ The same rule applies to write paths: `write_from_stream` must drive the backend
 
 The UI speaks two path dialects, and a leading `/` doesn't tell them apart:
 
-- A **pane** sends the absolute path it displays (`/Volumes/naspi/photos`).
+- A **pane** sends the absolute path it displays (`/Volumes/testshare/photos`).
 - The **transfer dialog's destination box** is VOLUME-RELATIVE (`/photos`), because the volume is a separate dropdown
   beside it. Same for the conflict scan and the exists-probe that feed that box.
 
 `cmdr_fs::volume::root_anchored(root, path)` folds both into the absolute, root-anchored form: every spelling of the
 root (empty, `.`, `/`) is the root itself; a path already under the root (matched by whole COMPONENTS, so
-`/Volumes/naspi-1` is not under `/Volumes/naspi`) passes through; anything else is volume-relative and hangs off the
+`/Volumes/testshare-1` is not under `/Volumes/testshare`) passes through; anything else is volume-relative and hangs off the
 root. It's idempotent, so a call site anchors without knowing which dialect it holds, and a scheme-shaped root
 (`mtp://device/storage`) works the same.
 
@@ -1020,8 +1020,8 @@ type rather than by LRU membership, because an archive is registered a moment be
 
 **Why**: one filesystem can be reached through several mount points and they all derive one volume ID (an SMB share keys
 on `(server, port, share)`, a local disk on its filesystem UUID). Binding the ID to one root chosen purely by path shape
-meant nothing re-resolved when that root went away: ejecting `/Volumes/naspi` while the same share was still mounted at
-`/Volumes/naspi-1` unregistered the volume outright (the unmount path looks a gone mount up by root), so the share was
+meant nothing re-resolved when that root went away: ejecting `/Volumes/testshare` while the same share was still mounted at
+`/Volumes/testshare-1` unregistered the volume outright (the unmount path looks a gone mount up by root), so the share was
 gone from Cmdr until a restart — discovery only runs at launch. The nastier shape is a NAS dropping off the network:
 macOS leaves the original mount wedged and lands the reconnect at the suffixed path, both enumerate, and the
 shortest-path rule picks the corpse on every launch while Finder works fine.
@@ -1029,7 +1029,7 @@ shortest-path rule picks the corpse on every launch while Finder works fine.
 The rules over the set:
 
 - **Ranking** (`MountRoot::rank`): liveness first, then shortest path, then lexicographic. The path half is the original
-  dedupe rule and still decides between equally-live roots, which is what keeps a saved `/Volumes/naspi/…` path
+  dedupe rule and still decides between equally-live roots, which is what keeps a saved `/Volumes/testshare/…` path
   restoring correctly. What changed is its RANK: path shape is a guess about identity, an errno is evidence about
   health, so a proven-stale short root loses to a live long one.
 - **Recording**: a mount event for an already-registered ID at a new root keeps the incumbent ACTIVE (see the next
@@ -1056,7 +1056,7 @@ arm hands it to `Index::follow_volume_move` through the drive-release gate, the 
 renamed drive"). A share's index reads through its `Volume` and needs nothing.
 
 **Decision**: `register` replaces only at the SAME root; an identity conflict keeps the incumbent
-**Why**: replacing the volume at one root is routine (that's the SMB upgrade: an OS-mounted `LocalPosixVolume` becomes a direct `SmbVolume` at `/Volumes/naspi`, and a live transfer holding an `Arc` keeps working through it). Two DIFFERENT roots claiming one ID is not routine, and letting the last writer win made registration ORDER decide where the volume was rooted. A share mounted at both `/Volumes/naspi` and `/Volumes/naspi-1` derives one ID from both mounts, so the registry ended up rooted at `/Volumes/naspi-1` and a pane restoring a saved `/Volumes/naspi/…` path failed its listing. Keeping the incumbent makes the outcome deterministic without pretending the ambiguity is resolved: `report_identity_conflict` still logs it, because the honest answers (a cloned volume, a double mount) both deserve a human's attention. Discovery collapses double mounts before they reach here (`volumes/DETAILS.md` § "One volume ID publishes one mount root"); this is defense in depth, not the only guard. `is_identity_conflict` (root inequality) is what tells the two cases apart. Restoring a remembered registration in a test goes through `force_register`, which skips the guard, since putting back the previous value has to be unconditional.
+**Why**: replacing the volume at one root is routine (that's the SMB upgrade: an OS-mounted `LocalPosixVolume` becomes a direct `SmbVolume` at `/Volumes/testshare`, and a live transfer holding an `Arc` keeps working through it). Two DIFFERENT roots claiming one ID is not routine, and letting the last writer win made registration ORDER decide where the volume was rooted. A share mounted at both `/Volumes/testshare` and `/Volumes/testshare-1` derives one ID from both mounts, so the registry ended up rooted at `/Volumes/testshare-1` and a pane restoring a saved `/Volumes/testshare/…` path failed its listing. Keeping the incumbent makes the outcome deterministic without pretending the ambiguity is resolved: `report_identity_conflict` still logs it, because the honest answers (a cloned volume, a double mount) both deserve a human's attention. Discovery collapses double mounts before they reach here (`volumes/DETAILS.md` § "One volume ID publishes one mount root"); this is defense in depth, not the only guard. `is_identity_conflict` (root inequality) is what tells the two cases apart. Restoring a remembered registration in a test goes through `force_register`, which skips the guard, since putting back the previous value has to be unconditional.
 
 ### Registration covers the whole mount table
 
@@ -1217,7 +1217,7 @@ Deliberately left alone:
 ## Gotchas
 
 **Gotcha**: `LocalPosixVolume::resolve` has a three-way branch for absolute paths
-**Why**: The frontend sometimes sends full absolute paths (like `/Users/alice/Documents`), not paths relative to the volume root. If the volume root is `/Users/alice/Dropbox`, the resolve logic must detect whether the absolute path is already inside the root (pass through), whether the root is `/` (pass through), or neither (strip leading `/` and join). Getting this wrong silently serves the wrong directory.
+**Why**: The frontend sometimes sends full absolute paths (like `/Users/test_user_4/Documents`), not paths relative to the volume root. If the volume root is `/Users/test_user_4/Dropbox`, the resolve logic must detect whether the absolute path is already inside the root (pass through), whether the root is `/` (pass through), or neither (strip leading `/` and join). Getting this wrong silently serves the wrong directory.
 
 **Gotcha**: `write_from_stream` is a mutation; call `notify_mutation` on success on backends with unreliable out-of-band notifications
 **Why**: `write_from_stream` originally relied on the SMB CHANGE_NOTIFY watcher / MTP USB event loop to patch the listing cache after a cross-volume copy. Both are lossy under load: the smb2 watcher keeps one outstanding `CHANGE_NOTIFY` request at a time, and Samba drops events that arrive between consecutive responses (real reproduction: 9 files copied, 4 events delivered, destination pane showed 4 files until the user navigated away and back — files written fine, only the cache was stale). Many MTP devices emit no self-mutation events at all. The other mutation methods (`create_file`, `create_directory`, `delete`, `rename`) already call `self.notify_mutation(...)` after success; `write_from_stream` must too. `LocalPosixVolume` is the exception: FSEvents is reliable, so local mutations don't need the extra patch. The "After each successful mutation, call `self.notify_mutation(...)`" rule in the Tier 2 checklist includes `write_from_stream`.

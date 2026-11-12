@@ -245,7 +245,7 @@ describe('a thread that disappears mid-subscription', () => {
 describe('an answer to a suggestion', () => {
   const turnedDown: ProposalDecision = {
     verb: 'trash',
-    what: '/Users/dana/Downloads/*.dmg',
+    what: '/Users/test_user_13/Downloads/*.dmg',
     ops: 3,
     outcome: { kind: 'rejected' },
   }

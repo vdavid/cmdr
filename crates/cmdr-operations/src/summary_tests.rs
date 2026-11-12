@@ -8,11 +8,17 @@ fn paths(raw: &[&str]) -> Vec<PathBuf> {
 
 #[test]
 fn a_path_under_home_reads_with_a_tilde() {
-    let home = Path::new("/Users/david");
-    assert_eq!(tildify(Path::new("/Users/david/Dropbox"), Some(home)), "~/Dropbox");
-    assert_eq!(tildify(Path::new("/Users/david"), Some(home)), "~");
+    let home = Path::new("/Users/test_user_3");
+    assert_eq!(
+        tildify(Path::new("/Users/test_user_3/Dropbox"), Some(home)),
+        "~/Dropbox"
+    );
+    assert_eq!(tildify(Path::new("/Users/test_user_3"), Some(home)), "~");
     // A sibling whose name only starts with the home folder's isn't inside it.
-    assert_eq!(tildify(Path::new("/Users/davidson/x"), Some(home)), "/Users/davidson/x");
+    assert_eq!(
+        tildify(Path::new("/Users/test_user_3son/x"), Some(home)),
+        "/Users/test_user_3son/x"
+    );
     assert_eq!(tildify(Path::new("/Volumes/USB"), Some(home)), "/Volumes/USB");
     assert_eq!(tildify(Path::new("/tmp"), None), "/tmp");
 }

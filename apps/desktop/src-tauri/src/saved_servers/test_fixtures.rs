@@ -29,7 +29,7 @@ pub(crate) fn sftp_entry(host: &str, pinned: bool) -> KnownSftpServer {
     KnownSftpServer {
         host: host.to_string(),
         port: 2222,
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         display_name: format!("{host} over ssh"),
         remote_root: "/srv/data".to_string(),
         start_folder: None,
@@ -44,7 +44,7 @@ pub(crate) fn sftp_entry(host: &str, pinned: bool) -> KnownSftpServer {
 pub(crate) fn webdav_entry(host: &str, pinned: bool) -> KnownWebdavServer {
     KnownWebdavServer {
         url: format!("http://{host}:8080/dav/"),
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         display_name: format!("{host} over dav"),
         remote_root: "/Photos".to_string(),
         start_folder: None,

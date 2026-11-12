@@ -181,7 +181,7 @@ pub(crate) async fn volume_state<R: tauri::Runtime>(
 /// `volume_ids`, how many folders score at or above `threshold` and how many images
 /// they hold ((importance ≥ `threshold`) AND volume opted-in — never a non-opted-in
 /// SMB/MTP volume). `pending` is `true` when any requested enabled volume isn't ready
-/// (still scanning, or importance hasn't scored it), so the UI voices "naspi still
+/// (still scanning, or importance hasn't scored it), so the UI voices "testshare still
 /// scanning" instead of a confident wrong number. Debounce-friendly: the per-folder
 /// image counts are cached, so a drag only re-runs the cheap importance filter.
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]

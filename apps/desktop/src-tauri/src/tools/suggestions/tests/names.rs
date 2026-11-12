@@ -14,7 +14,7 @@ use crate::tools::suggestions::problem::NameRule;
 use cmdr_fs::validation::PlainLeafRefusal;
 
 const DOWNLOADS: &str = "/Users/someone/Downloads";
-const INVOICES: &str = "/Users/someone/Documents/invoices paid";
+const INVOICES: &str = "/Users/someone/Documents/invoices";
 
 /// A `verb` group moving or copying `renames` (each `(file in Downloads, new name)`) into
 /// the invoices folder.
@@ -58,13 +58,13 @@ fn a_move_or_copy_lists_every_file_and_a_kept_name_draws_no_arrow() {
         let call = named_call(
             verb,
             &[
-                ("Invoice-X.pdf", "2026-09-27 OpenAI invoice Rymd.pdf"),
+                ("Invoice-X.pdf", "2026-09-27 OpenAI invoice Testco.pdf"),
                 ("receipt.pdf", "receipt.pdf"),
             ],
         );
         assert_eq!(
             planned_names(&call),
-            vec![Some("2026-09-27 OpenAI invoice Rymd.pdf".to_string()), None],
+            vec![Some("2026-09-27 OpenAI invoice Testco.pdf".to_string()), None],
             "{verb}: a file given its own name keeps it, stored as no name"
         );
     }
@@ -342,7 +342,7 @@ fn the_names_are_stored_per_op_and_bound_by_the_claim() {
     let mut amended = named_call(
         "move",
         &[
-            ("Invoice-X.pdf", "2026 OpenAI Rymd.pdf"),
+            ("Invoice-X.pdf", "2026 OpenAI Testco.pdf"),
             ("receipt.pdf", "receipt.pdf"),
         ],
     );

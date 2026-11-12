@@ -41,7 +41,7 @@ async function render(
     target: document.body.appendChild(document.createElement('div')),
     props: {
       fields: { ...emptyNfsFields(), ...fields },
-      address: 'nas.local',
+      address: 'testnas.local',
       disabled: false,
       exportEditable: true,
       onChange,
@@ -64,10 +64,10 @@ const text = (selector: string) => document.body.querySelector(selector)?.textCo
 
 describe('NfsPlaceFields', () => {
   it('asks the server for its exports once the address settles, with the port it named', async () => {
-    const { listNfsExports } = await render({}, { address: 'nfs://nas.local:15481' })
+    const { listNfsExports } = await render({}, { address: 'nfs://testnas.local:15481' })
     expect(listNfsExports).not.toHaveBeenCalled()
     await settle()
-    expect(listNfsExports).toHaveBeenCalledWith({ host: 'nas.local', port: 15481 })
+    expect(listNfsExports).toHaveBeenCalledWith({ host: 'testnas.local', port: 15481 })
     expect(text('#server-nfs-export-help')).toBe(
       'Pick one from the list, or type its path. A folder inside an export works too.',
     )
@@ -76,20 +76,20 @@ describe('NfsPlaceFields', () => {
   it('says when the server keeps its exports to itself, and keeps the field typeable', async () => {
     await render({}, {}, { list: { outcome: 'listing_refused' } })
     await settle()
-    expect(text('#server-nfs-export-help')).toBe('nas.local doesn’t list its exports. Type the export’s path.')
+    expect(text('#server-nfs-export-help')).toBe('testnas.local doesn’t list its exports. Type the export’s path.')
     expect(document.body.querySelector<HTMLInputElement>('input[aria-label="Export"]')?.disabled).toBe(false)
   })
 
   it('says when nothing answered', async () => {
     await render({}, {}, { list: { outcome: 'timed_out' } })
     await settle()
-    expect(text('#server-nfs-export-help')).toContain('couldn’t reach nas.local')
+    expect(text('#server-nfs-export-help')).toContain('couldn’t reach testnas.local')
   })
 
   it('fills the guessed identity once an export is picked, and says where it came from', async () => {
     const { onChange, guessNfsIdentity } = await render({ exportPath: '/Public' })
     await settle()
-    expect(guessNfsIdentity).toHaveBeenCalledWith({ host: 'nas.local', port: null, exportPath: '/Public' })
+    expect(guessNfsIdentity).toHaveBeenCalledWith({ host: 'testnas.local', port: null, exportPath: '/Public' })
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ uid: '1000', gid: '100', identitySource: 'most_common_owner' }),
     )
@@ -164,10 +164,10 @@ describe('NfsPlaceFields', () => {
   it('puts a refusal under the export, and asks nothing in edit mode', async () => {
     const { listNfsExports } = await render(
       { exportPath: '/Public', identityFromGuess: false },
-      { exportEditable: false, exportRefusal: 'nas.local has no export at that path.' },
+      { exportEditable: false, exportRefusal: 'testnas.local has no export at that path.' },
     )
     await settle()
-    expect(text('#server-nfs-export-refusal')).toBe('nas.local has no export at that path.')
+    expect(text('#server-nfs-export-refusal')).toBe('testnas.local has no export at that path.')
     expect(listNfsExports).not.toHaveBeenCalled()
   })
 })

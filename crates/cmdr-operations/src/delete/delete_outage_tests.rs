@@ -43,7 +43,7 @@ fn outage_state(engine: &TestOperations, budget: Duration) -> Arc<WriteOperation
 /// A share holding `/dir/a.txt` ("aaaa") and `/dir/b.txt` ("bbbb"), with its
 /// inner volume, so a cell can change the share behind the session's back.
 async fn nas(lane: &str) -> (Arc<InMemoryVolume>, Arc<OutageVolume>) {
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     inner.create_directory(Path::new("/dir")).await.unwrap();
     inner.create_file(Path::new("/dir/a.txt"), b"aaaa").await.unwrap();
     inner.create_file(Path::new("/dir/b.txt"), b"bbbb").await.unwrap();
@@ -186,7 +186,7 @@ async fn a_file_put_there_during_the_outage_is_left_and_reported() {
         panic!("a changed file stops the delete and says so, got {:?}", run.result);
     };
     assert_eq!(path, "/dir/b.txt");
-    assert_eq!(volume_name, "Naspolya");
+    assert_eq!(volume_name, "Testnas");
     assert!(nas.reconnect_attempts() > 0, "the drop happened and was waited out");
     assert!(exists(&inner, "/dir/b.txt").await, "the other client's file stays");
     assert_eq!(
@@ -246,7 +246,7 @@ async fn an_outage_that_outlasts_the_budget_names_the_server() {
         panic!("a give-up reports the lost connection, got {:?}", run.result);
     };
     assert_eq!(path, "/dir/b.txt", "the file is context");
-    assert_eq!(volume_name, "Naspolya");
+    assert_eq!(volume_name, "Testnas");
     assert!(gave_up_after_secs.is_some(), "it says it waited");
     assert!(nas.reconnect_attempts() > 0, "the drop happened and was waited out");
     assert!(exists(&inner, "/dir/b.txt").await, "the file the drop cut off stays");

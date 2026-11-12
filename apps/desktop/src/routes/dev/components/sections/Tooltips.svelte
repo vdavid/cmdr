@@ -4,7 +4,7 @@
     import StatusGlyph from '#lib/ui/StatusGlyph.svelte'
     import { tooltip } from '#lib/tooltip/tooltip.js'
 
-    const longPath = '/Users/david/Library/CloudStorage/Dropbox/obsidian/40-49 things/veszelovszki.com and other domains.md'
+    const longPath = '/Users/test_user_3/Library/CloudStorage/Dropbox/notes/40-49 things/test-domain.example and other sites.md'
 </script>
 
 <SectionCard id="components-tooltips" label="Tooltips">

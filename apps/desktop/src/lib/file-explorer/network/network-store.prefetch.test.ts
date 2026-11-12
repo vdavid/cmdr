@@ -62,11 +62,11 @@ let printer: NetworkHost
 
 /** The person saved the NAS, and nothing else. */
 const savedNas = {
-  id: 'manual-naspolya',
+  id: 'manual-testnas',
   protocol: 'smb',
-  displayName: 'Naspolya',
+  displayName: 'Testnas',
   nameSource: 'fallback',
-  address: 'naspolya.local',
+  address: 'testnas.local',
   places: [],
 } as unknown as SavedServer
 
@@ -85,7 +85,7 @@ describe('share prefetch', () => {
     ipc.listNetworkHosts.mockResolvedValue([])
     ipc.resolveNetworkHost.mockResolvedValue(null)
     testRun += 1
-    nas = { id: `bonjour-nas-${String(testRun)}`, name: 'Naspolya', hostname: 'naspolya.local', port: 445 }
+    nas = { id: `bonjour-nas-${String(testRun)}`, name: 'Testnas', hostname: 'testnas.local', port: 445 }
     printer = { id: `bonjour-printer-${String(testRun)}`, name: 'Printer', hostname: 'printer.local', port: 445 }
   })
 

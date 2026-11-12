@@ -95,7 +95,7 @@
         white-space: nowrap;
     }
 
-    /* Reads as one phrase with the name before it ("Naspolya as guest"), so it sits closer. */
+    /* Reads as one phrase with the name before it ("Testnas as guest"), so it sits closer. */
     .account {
         margin-left: calc(var(--spacing-md) * -1 + var(--spacing-xs));
         color: var(--color-text-tertiary);

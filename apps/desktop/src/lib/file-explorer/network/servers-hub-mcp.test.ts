@@ -33,17 +33,17 @@ function hubMcpEntries(rows: HubRow[], lookups: HubMcpLookups) {
 
 function row(overrides: Partial<HubRow> = {}): HubRow {
   return {
-    id: 'sftp-nas.local-22-ada',
+    id: 'sftp-testnas.local-22-test_user_1',
     kind: 'server',
     parentId: null,
     account: null,
     place: null,
-    name: 'Naspolya',
+    name: 'Testnas',
     protocol: 'sftp',
-    address: 'nas.local:22',
+    address: 'testnas.local:22',
     status: 'connected',
     lastConnectedAt: '2026-09-01T10:00:00Z',
-    volumeId: 'sftp-nas.local-22-ada',
+    volumeId: 'sftp-testnas.local-22-test_user_1',
     pinned: true,
     saved: null,
     host: null,
@@ -53,8 +53,8 @@ function row(overrides: Partial<HubRow> = {}): HubRow {
 
 describe('hubMcpEntries', () => {
   it('encodes the protocol, the status, and the address into the name', () => {
-    const [entry] = hubMcpEntries([row()], { appRootOf: () => 'sftp://ada@nas.local:22' })
-    expect(entry.name).toBe('Naspolya  protocol=sftp  status="connected"  address=nas.local:22')
+    const [entry] = hubMcpEntries([row()], { appRootOf: () => 'sftp://test_user_1@testnas.local:22' })
+    expect(entry.name).toBe('Testnas  protocol=sftp  status="connected"  address=testnas.local:22')
   })
 
   it('keeps the status token in English even though the column is translated', () => {
@@ -63,8 +63,8 @@ describe('hubMcpEntries', () => {
   })
 
   it('points a one-place row at the app root, so an agent can navigate to it', () => {
-    const [entry] = hubMcpEntries([row()], { appRootOf: () => 'sftp://ada@nas.local:22' })
-    expect(entry.path).toBe('sftp://ada@nas.local:22')
+    const [entry] = hubMcpEntries([row()], { appRootOf: () => 'sftp://test_user_1@testnas.local:22' })
+    expect(entry.path).toBe('sftp://test_user_1@testnas.local:22')
   })
 
   it('points an SMB host at its `smb://` sentinel, the way the host list always has', () => {
@@ -89,7 +89,7 @@ describe('hubMcpEntries', () => {
 
   it('falls back to the row address when nothing knows the app root yet', () => {
     const [entry] = hubMcpEntries([row({ volumeId: null })], { appRootOf: () => null })
-    expect(entry.path).toBe('sftp://nas.local:22')
+    expect(entry.path).toBe('sftp://testnas.local:22')
   })
 
   it('ends with the add row, always, so an agent can find where adding lives', () => {
@@ -106,7 +106,7 @@ describe('hubMcpEntries', () => {
 })
 
 describe('the nearby group, as an agent sees it', () => {
-  const saved = row({ id: 'nas', name: 'Naspolya', saved: {} as SavedServer })
+  const saved = row({ id: 'nas', name: 'Testnas', saved: {} as SavedServer })
   const nearby = (name: string) =>
     row({ id: name, name, protocol: 'smb', status: 'found_nearby', volumeId: null, address: `${name}.local` })
   const lookups = { appRootOf: () => null }
@@ -114,7 +114,7 @@ describe('the nearby group, as an agent sees it', () => {
   it('lists the nearby servers while the group is collapsed, with the group saying so', () => {
     const entries = entriesOf(hubItems([saved, nearby('Printer'), nearby('TV')], false), lookups)
     expect(entries.map((entry) => entry.name.split('  ')[0])).toEqual([
-      'Naspolya',
+      'Testnas',
       NEARBY_GROUP_MCP_NAME,
       'Printer',
       'TV',
@@ -131,7 +131,7 @@ describe('the nearby group, as an agent sees it', () => {
   })
 
   it('counts the cursor over the full list, which is the one an agent indexes into', () => {
-    // On screen: Naspolya, the collapsed group, "Add server…". The cursor is on the add row.
+    // On screen: Testnas, the collapsed group, "Add server…". The cursor is on the add row.
     const items = hubItems([saved, nearby('Printer'), nearby('TV')], false)
     const state = hubPaneState(items, 2, 'Servers', lookups)
     expect(state.cursorIndex).toBe(4)

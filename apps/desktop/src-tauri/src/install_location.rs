@@ -51,7 +51,7 @@ mod tests {
     use std::path::PathBuf;
 
     fn home() -> PathBuf {
-        PathBuf::from("/Users/jane")
+        PathBuf::from("/Users/test_user_12")
     }
 
     #[test]
@@ -65,7 +65,7 @@ mod tests {
     #[test]
     fn a_bundle_in_the_users_own_applications_folder_counts() {
         assert!(in_an_applications_folder(
-            Path::new("/Users/jane/Applications/Cmdr.app"),
+            Path::new("/Users/test_user_12/Applications/Cmdr.app"),
             Some(&home())
         ));
     }
@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn a_bundle_in_downloads_does_not_count() {
         assert!(!in_an_applications_folder(
-            Path::new("/Users/jane/Downloads/Cmdr.app"),
+            Path::new("/Users/test_user_12/Downloads/Cmdr.app"),
             Some(&home())
         ));
     }
@@ -115,7 +115,7 @@ mod tests {
     #[test]
     fn a_dev_build_running_out_of_target_does_not_count() {
         assert!(!in_an_applications_folder(
-            Path::new("/Users/jane/code/cmdr/target/release/Cmdr.app"),
+            Path::new("/Users/test_user_12/code/cmdr/target/release/Cmdr.app"),
             Some(&home())
         ));
     }
@@ -129,7 +129,7 @@ mod tests {
     fn a_user_applications_bundle_does_not_count_without_a_home() {
         // No home means we can't tell whose `~/Applications` this is, so we don't guess.
         assert!(!in_an_applications_folder(
-            Path::new("/Users/jane/Applications/Cmdr.app"),
+            Path::new("/Users/test_user_12/Applications/Cmdr.app"),
             None
         ));
     }

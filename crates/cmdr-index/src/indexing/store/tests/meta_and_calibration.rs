@@ -143,12 +143,12 @@ fn set_volume_path_heals_a_db_missing_it() {
     assert_eq!(IndexStore::get_meta(&conn, "volume_path").unwrap(), None);
     drop(conn);
 
-    IndexStore::set_volume_path(&db_path, "/Volumes/naspi").unwrap();
+    IndexStore::set_volume_path(&db_path, "/Volumes/testshare").unwrap();
 
     let conn = IndexStore::open_write_connection(&db_path).unwrap();
     assert_eq!(
         IndexStore::get_meta(&conn, "volume_path").unwrap().as_deref(),
-        Some("/Volumes/naspi")
+        Some("/Volumes/testshare")
     );
 }
 

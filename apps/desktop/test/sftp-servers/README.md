@@ -58,7 +58,7 @@ what caught it and what keeps it caught.
 crate's, one SSH session each, and at half a CPU two concurrent lanes pinned it and pushed old and new cells alike past
 the 8 s nextest cap. The measurement is in the compose file's comment on the service.
 
-Every server runs as `ada` / `openthedoor` and exports `/srv/data`. Every export carries the same landmarks
+Every server runs as `test_user_1` / `openthedoor` and exports `/srv/data`. Every export carries the same landmarks
 (`hello.txt`, `photos/`, `ten-bytes.txt`, `five-bytes.txt`, `empty-dir/`, `full-dir/child.txt`, `large.bin`), so a cell
 can assert on them whichever server it's pointed at.
 

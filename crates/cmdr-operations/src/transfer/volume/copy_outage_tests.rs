@@ -53,7 +53,7 @@ async fn source_with(count: usize) -> Arc<dyn Volume> {
 }
 
 fn nas(lane: &str) -> (Arc<InMemoryVolume>, Arc<OutageVolume>, Arc<dyn Volume>) {
-    let inner = Arc::new(InMemoryVolume::new("Naspolya").with_space_info(10_000_000, 10_000_000));
+    let inner = Arc::new(InMemoryVolume::new("Testnas").with_space_info(10_000_000, 10_000_000));
     let nas = OutageVolume::wrap(Arc::clone(&inner), lane);
     let dest: Arc<dyn Volume> = Arc::clone(&nas) as Arc<dyn Volume>;
     (inner, nas, dest)
@@ -285,7 +285,7 @@ async fn copy_that_the_share_stops(
 
 /// The share never comes back: after the budget, the copy stops with what
 /// landed still there, and the person reads the real cause: "Lost the
-/// connection to Naspolya", with how long Cmdr waited, the file only as context.
+/// connection to Testnas", with how long Cmdr waited, the file only as context.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_copy_that_outlasts_its_outage_says_it_lost_the_connection() {
     let (inner, nas, error) = copy_that_the_share_stops("outage-copy-gone", |_| {}).await;
@@ -294,7 +294,7 @@ async fn a_copy_that_outlasts_its_outage_says_it_lost_the_connection() {
         matches!(
             &error,
             WriteOperationError::ServerConnectionLost { path, volume_name, gave_up_after_secs: Some(_) }
-                if path.starts_with("/batch/f") && volume_name == "Naspolya"
+                if path.starts_with("/batch/f") && volume_name == "Testnas"
         ),
         "the connection is the cause, named with the wait: {error:?}"
     );
@@ -325,7 +325,7 @@ async fn a_share_that_needs_a_sign_in_says_the_connection_dropped() {
         matches!(
             &error,
             WriteOperationError::ServerConnectionLost { volume_name, gave_up_after_secs: None, .. }
-                if volume_name == "Naspolya"
+                if volume_name == "Testnas"
         ),
         "the connection is the cause, with no wait: {error:?}"
     );
@@ -395,7 +395,7 @@ async fn a_deep_clash_that_outlasts_its_outage_says_it_lost_the_connection() {
         matches!(
             &error,
             WriteOperationError::ServerConnectionLost { path, volume_name, gave_up_after_secs: Some(_) }
-                if path == "/batch/f1.txt" && volume_name == "Naspolya"
+                if path == "/batch/f1.txt" && volume_name == "Testnas"
         ),
         "the connection is the cause, named on the clashing file: {error:?}"
     );
@@ -554,7 +554,7 @@ async fn a_copy_that_starts_while_the_share_is_gone_waits_for_it() {
             .activity
             .as_ref()
             .and_then(|a| a.reconnecting_volume.as_deref())
-            == Some("Naspolya")),
+            == Some("Testnas")),
         "the windows were told what the copy was waiting for"
     );
 }

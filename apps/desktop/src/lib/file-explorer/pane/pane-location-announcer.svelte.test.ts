@@ -20,9 +20,9 @@ describe('paneLocationLabel', () => {
 
   it('says the volume’s name at its root', () => {
     expect(paneLocationLabel({ ...base, currentPath: '/', isVolumeRoot: true })).toBe('Left pane, Macintosh HD')
-    expect(paneLocationLabel({ ...base, currentPath: '/Volumes/naspi', isVolumeRoot: true, volumeName: 'naspi' })).toBe(
-      'Left pane, naspi',
-    )
+    expect(
+      paneLocationLabel({ ...base, currentPath: '/Volumes/testshare', isVolumeRoot: true, volumeName: 'testshare' }),
+    ).toBe('Left pane, testshare')
   })
 
   it('says "Search results" when results fill the pane', () => {

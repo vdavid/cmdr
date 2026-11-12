@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <d:multistatus xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:oc="http://owncloud.org/ns">
   <d:response>
-    <d:href>/remote.php/dav/files/ada/</d:href>
+    <d:href>/remote.php/dav/files/test_user_1/</d:href>
     <d:propstat>
       <d:prop>
         <d:resourcetype><d:collection/></d:resourcetype>
@@ -17,7 +17,7 @@
     </d:propstat>
   </d:response>
   <d:response>
-    <d:href>/remote.php/dav/files/ada/Photos%20from%20Zs%C3%B3fi/</d:href>
+    <d:href>/remote.php/dav/files/test_user_1/Photos%20from%20Zs%C3%B3fi/</d:href>
     <d:propstat>
       <d:prop>
         <d:resourcetype><d:collection/></d:resourcetype>
@@ -27,7 +27,7 @@
     </d:propstat>
   </d:response>
   <d:response>
-    <d:href>/remote.php/dav/files/ada/notes.txt</d:href>
+    <d:href>/remote.php/dav/files/test_user_1/notes.txt</d:href>
     <d:propstat>
       <d:prop>
         <d:resourcetype/>

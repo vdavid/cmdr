@@ -51,7 +51,7 @@ async fn nextcloud_with_scratch() -> (WebdavVolume, PathBuf) {
 /// The scratch dir as the SERVER spells it, relative to the DAV root.
 ///
 /// ❗ `dir` is the APP spelling, prefix and all
-/// (`webdav://ada@127.0.0.1:13482/cmdr-test-…`), because that is what a pane
+/// (`webdav://test_user_1@127.0.0.1:13482/cmdr-test-…`), because that is what a pane
 /// holds. The two cells that go straight at the server need the other half.
 fn server_relative(volume: &WebdavVolume, dir: &Path) -> String {
     dir.strip_prefix(volume.root())

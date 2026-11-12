@@ -176,7 +176,7 @@ export function joinPath(base: string, name: string): string {
   return base.endsWith('/') ? base + name : `${base}/${name}`
 }
 
-/** Case and Unicode form folded, for a volume that doesn't tell `Ada` from `ada`. Compare only, ❌ never show. */
+/** Case and Unicode form folded, for a volume that doesn't tell `Test_user_1` from `test_user_1`. Compare only, ❌ never show. */
 export function foldedForCompare(text: string): string {
   return text.normalize('NFC').toLowerCase()
 }
@@ -184,7 +184,7 @@ export function foldedForCompare(text: string): string {
 /**
  * The part of `path` below `ancestor`, without leading or trailing `/` (`''` when they're
  * one), or `null` when `path` isn't `ancestor` or inside it. Whole components, ❌ never a
- * raw prefix: `/Users/ada` doesn't hold `/Users/ada-1`. Case folds only on a volume that
+ * raw prefix: `/Users/test_user_1` doesn't hold `/Users/test_user_1-1`. Case folds only on a volume that
  * says so. The Rust twin is `cmdr_fs::volume::app_paths::path_under`.
  */
 export function pathRelativeTo(
@@ -218,7 +218,7 @@ export function shownSeparator(path: string, flavor: PathFlavor = hostPathFlavor
 
 /**
  * The ONE display formatter for a single path: a Windows local path reads with `\`
- * (`C:\Users\ada`, `\\server\share\x`, a share's root without the trailing `\`); every
+ * (`C:\Users\test_user_1`, `\\server\share\x`, a share's root without the trailing `\`); every
  * other text, POSIX paths and scheme URLs included, comes back as is. Text that merely
  * HOLDS a path goes through `#lib/utils/display-path`'s `displayPath`, which calls this.
  */

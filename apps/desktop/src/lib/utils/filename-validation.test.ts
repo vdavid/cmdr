@@ -138,20 +138,20 @@ describe('validateDirectoryPath', () => {
     onTestFinished(withPlatform(platform))
     expect(validateDirectoryPath('Documents/folder')).toEqual({ severity: 'error', message })
     if (platform === 'windows') {
-      expect(validateDirectoryPath('C:\\Users\\ada').severity).toBe('ok')
+      expect(validateDirectoryPath('C:\\Users\\test_user_1').severity).toBe('ok')
       expect(validateDirectoryPath('\\\\server\\share').severity).toBe('ok')
     } else {
-      expect(validateDirectoryPath('/home/ada').severity).toBe('ok')
-      expect(validateDirectoryPath('C:\\Users\\ada')).toEqual({ severity: 'error', message })
+      expect(validateDirectoryPath('/home/test_user_1').severity).toBe('ok')
+      expect(validateDirectoryPath('C:\\Users\\test_user_1')).toEqual({ severity: 'error', message })
     }
   })
 
   it('accepts a drive or UNC path, either slash, on Windows', () => {
     onTestFinished(withPlatform('windows'))
-    expect(validateDirectoryPath('C:/Users/ada').severity).toBe('ok')
-    expect(validateDirectoryPath('C:\\Users\\ada').severity).toBe('ok')
+    expect(validateDirectoryPath('C:/Users/test_user_1').severity).toBe('ok')
+    expect(validateDirectoryPath('C:\\Users\\test_user_1').severity).toBe('ok')
     expect(validateDirectoryPath('\\\\server\\share\\x').severity).toBe('ok')
-    expect(validateDirectoryPath('/Users/ada').severity).toBe('ok')
+    expect(validateDirectoryPath('/Users/test_user_1').severity).toBe('ok')
     expect(validateDirectoryPath('Documents\\folder').severity).toBe('error')
   })
 
@@ -159,7 +159,7 @@ describe('validateDirectoryPath', () => {
     onTestFinished(withPlatform('windows'))
     // The home shortcut and a drive-relative path, spelled the way Windows shows them.
     expect(validateDirectoryPath('~\\Documents').severity).toBe('ok')
-    expect(validateDirectoryPath('\\Users\\ada').severity).toBe('ok')
+    expect(validateDirectoryPath('\\Users\\test_user_1').severity).toBe('ok')
     // Names are measured one by one: a deep path of short names is fine, one long name isn't.
     const deep = 'C:\\' + Array.from({ length: 30 }, () => 'folder-name').join('\\')
     expect(validateDirectoryPath(deep).severity).toBe('ok')
@@ -190,7 +190,7 @@ describe('validateDirectoryPath', () => {
 
   it.each(['macos', 'linux'] as const)('rejects a drive-shaped path as relative on %s', (platform) => {
     onTestFinished(withPlatform(platform))
-    expect(validateDirectoryPath('C:/Users/ada').severity).toBe('error')
+    expect(validateDirectoryPath('C:/Users/test_user_1').severity).toBe('error')
   })
 
   it('rejects path with null byte', () => {

@@ -698,12 +698,12 @@ fn ending_of_puts_our_own_cancel_ahead_of_every_other_verdict() {
 #[test]
 fn a_failed_root_completes_the_walk_rather_than_interrupting_it() {
     let one_failed = CoverOutcome {
-        failed_roots: vec!["/Volumes/naspi/papers/Rymdskottkärra AB".to_string()],
+        failed_roots: vec!["/Volumes/testshare/documents/Testföretag AB".to_string()],
         ..covered_everything(0)
     };
     assert_eq!(ending_of(Some(&one_failed), 1, false), WalkEnding::Completed);
     let one_failed_one_skipped = CoverOutcome {
-        failed_roots: vec!["/Volumes/naspi/a".to_string()],
+        failed_roots: vec!["/Volumes/testshare/a".to_string()],
         ..covered_everything(0)
     };
     assert_eq!(

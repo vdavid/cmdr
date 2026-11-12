@@ -308,7 +308,7 @@
     "placeholders": {
       "count": "how many folders, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators (for example 1,497)",
-      "drive": "the server's display name (for example nas.local), or the generic phrase from search.coverage.unnamedDrive when it isn't in the volume list"
+      "drive": "the server's display name (for example testnas.local), or the generic phrase from search.coverage.unnamedDrive when it isn't in the volume list"
     },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."

@@ -161,7 +161,7 @@ pub(crate) fn arenas_built_for_test() -> u64 {
 pub(crate) struct LoadedVolume {
     pub(crate) index: Arc<SearchIndex>,
     pub(crate) pool: Arc<ReadPool>,
-    /// The volume's mount root (`/Volumes/naspi`), or `None` for `root` (whose index
+    /// The volume's mount root (`/Volumes/testshare`), or `None` for `root` (whose index
     /// is `/`-rooted, so paths are already absolute). Read from the index DB's
     /// `volume_path` meta, so it's known even when the volume isn't currently
     /// mounted (an unscoped all-volumes search over an offline drive still reports
@@ -380,8 +380,8 @@ pub(crate) fn has_searchable_index(volume_id: &str) -> bool {
 /// The one root function's answer (`location::resolve::volume_root`), so search
 /// strips and prefixes the same root every agent tool checks a location against:
 /// the LIVE registry's root while the volume is mounted, else the persisted
-/// `volume_path` meta. Live first, because a remounted share (`/Volumes/naspi-1`)
-/// still carries its last scan's `/Volumes/naspi` in the meta, and stripping that
+/// `volume_path` meta. Live first, because a remounted share (`/Volumes/testshare-1`)
+/// still carries its last scan's `/Volumes/testshare` in the meta, and stripping that
 /// off a live scope matches nothing. The meta is what an offline volume answers
 /// with; SMB index DBs written before it existed have none, which the next SMB
 /// registration heals. `None` only when neither source has it (an offline volume

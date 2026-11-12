@@ -19,7 +19,7 @@ describe('addFavoriteFolder failures', () => {
 
   it('says the folder is slow to respond when the gate timed out', async () => {
     vi.mocked(addFavorite).mockRejectedValueOnce(new AddFavoriteFailure({ type: 'timedOut' }))
-    await addFavoriteFolder('/Volumes/naspi/Photos')
+    await addFavoriteFolder('/Volumes/testshare/Photos')
     expect(addToast).toHaveBeenCalledWith(
       'That folder is slow to respond right now, so it’s not in your favorites yet. Try again in a moment?',
       { level: 'warn' },

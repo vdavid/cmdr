@@ -219,7 +219,7 @@ async fn copy_through_a_late_error_at_landing(
             .await
             .expect("seeding the source");
     }
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     inner
         .create_directory(Path::new("/dest"))
         .await

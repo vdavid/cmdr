@@ -3,7 +3,7 @@
 //! When you connect to an SMB share in Finder with "Remember this password in my
 //! keychain", macOS stores an *internet-password* item (`kSecClassInternetPassword`,
 //! protocol `smb`) keyed by the server name Finder used — typically the Bonjour service
-//! name (`Naspolya._smb._tcp.local`) — with the username in the item. Cmdr's own secret
+//! name (`Testnas._smb._tcp.local`) — with the username in the item. Cmdr's own secret
 //! store ([`super::keychain_macos`]) holds *generic* passwords under our own service name
 //! and can't see these. This module reads Finder's item so we can connect a share the
 //! user already authenticated, without making them retype the password.
@@ -222,20 +222,20 @@ mod tests {
 
     #[test]
     fn candidates_are_ordered_and_deduped() {
-        let aliases = vec!["Naspolya._smb._tcp.local".to_string(), "192.168.1.111".to_string()];
-        let got = server_query_candidates("192.168.1.111", Some("naspolya.local"), &aliases);
-        assert_eq!(got, vec!["192.168.1.111", "naspolya.local", "Naspolya._smb._tcp.local"]);
+        let aliases = vec!["Testnas._smb._tcp.local".to_string(), "192.168.50.10".to_string()];
+        let got = server_query_candidates("192.168.50.10", Some("testnas.local"), &aliases);
+        assert_eq!(got, vec!["192.168.50.10", "testnas.local", "Testnas._smb._tcp.local"]);
     }
 
     #[test]
     fn candidates_skip_blanks_and_none_hostname() {
-        let got = server_query_candidates("naspolya", None, &[String::new(), "  ".to_string()]);
-        assert_eq!(got, vec!["naspolya"]);
+        let got = server_query_candidates("testnas", None, &[String::new(), "  ".to_string()]);
+        assert_eq!(got, vec!["testnas"]);
     }
 
     #[test]
     fn real_account_rejects_the_guest_sentinel() {
-        assert!(is_real_account("david"));
+        assert!(is_real_account("test_user_3"));
         assert!(!is_real_account("No user account"));
         assert!(!is_real_account(""));
         assert!(!is_real_account("   "));

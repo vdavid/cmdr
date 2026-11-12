@@ -384,7 +384,7 @@ fn stamp_schema_version(conn: &Connection) -> Result<(), MediaStoreError> {
 }
 
 /// The prefix of the `meta` keys naming every mount root the volume's passes have run under,
-/// one row per root (`mount_root:/Volumes/naspi`, or `mount_root:/` for a local volume).
+/// one row per root (`mount_root:/Volumes/testshare`, or `mount_root:/` for a local volume).
 /// Every root stays recorded: a share remounted under a new name keeps an exclusion set under
 /// its old one, and an OFFLINE read can still place a network volume's index-relative rows
 /// against the OS-path folder exclusions (`read/exclusion.rs`).

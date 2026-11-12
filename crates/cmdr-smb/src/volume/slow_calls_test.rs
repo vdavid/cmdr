@@ -2,7 +2,7 @@
 
 use super::*;
 
-const SHARE: &str = "naspi";
+const SHARE: &str = "testshare";
 
 fn ms(n: u64) -> Duration {
     Duration::from_millis(n)

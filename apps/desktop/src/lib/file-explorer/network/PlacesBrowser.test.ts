@@ -1,7 +1,7 @@
 /**
  * Behavior tests for PlacesBrowser's credential gate and its sign-in hand-off.
  *
- * Regression (the "Naspolya dead end"): a share list can load successfully while Cmdr
+ * Regression (the "Testnas dead end"): a share list can load successfully while Cmdr
  * holds no credentials. On macOS, the listing fallback (`smbutil view -N`) reads the
  * SYSTEM Keychain, so the backend returns shares with `authMode: 'creds_required'`
  * but the frontend never collected a username or password. Activating a share in that
@@ -79,15 +79,15 @@ vi.mock('#lib/settings/network-settings.js', () => ({
 }))
 
 const host: NetworkHost = {
-  id: 'naspolya-id',
-  name: 'Naspolya',
-  hostname: 'Naspolya.local',
-  ipAddress: '192.168.1.111',
+  id: 'testnas-id',
+  name: 'Testnas',
+  hostname: 'Testnas.local',
+  ipAddress: '192.168.50.10',
   port: 445,
   source: 'discovered',
 }
 
-const naspi: ShareInfo = { name: 'naspi', isDisk: true, comment: null }
+const testshare: ShareInfo = { name: 'testshare', isDisk: true, comment: null }
 
 /** The sheet request under test, as much of it as these assert. */
 interface SheetRequest {
@@ -163,7 +163,7 @@ describe('PlacesBrowser credential gate', () => {
 
     const errorPane = await vi.waitFor(() => must(target.querySelector('.error-state'), 'the error pane'))
     const message = must(errorPane.querySelector('.error-message'), 'the message').textContent
-    expect(message).toBe(renderShareListError(failure, 'Naspolya'))
+    expect(message).toBe(renderShareListError(failure, 'Testnas'))
     expect(message).not.toContain('smbutil')
 
     await unmount(component)
@@ -178,7 +178,7 @@ describe('PlacesBrowser credential gate', () => {
 
     const errorPane = await vi.waitFor(() => must(target.querySelector('.error-state'), 'the error pane'))
     const message = must(errorPane.querySelector('.error-message'), 'the message').textContent
-    expect(message).toBe(renderShareListError({ type: 'protocol_error', message: '' }, 'Naspolya'))
+    expect(message).toBe(renderShareListError({ type: 'protocol_error', message: '' }, 'Testnas'))
 
     await unmount(component)
   })
@@ -189,14 +189,14 @@ describe('PlacesBrowser credential gate', () => {
     // share just navigates (backend short-circuit) and a genuinely-locked share routes
     // to NetworkMountView's mount-failure login form. Pre-prompting here would re-prompt
     // for already-mounted shares (#6).
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'creds_required', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'creds_required', fromCache: false })
     const onShareSelect = vi.fn()
     const { target, component, api } = mountBrowser(onShareSelect)
     await waitForShareList(target)
 
     api.openCursorItem()
     await vi.waitFor(() => {
-      expect(onShareSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'naspi' }), null)
+      expect(onShareSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'testshare' }), null)
     })
     expect(h.openSignInSheet, 'must not pre-prompt on activation').not.toHaveBeenCalled()
 
@@ -206,16 +206,16 @@ describe('PlacesBrowser credential gate', () => {
   it('uses stored credentials silently when creds are required (no prompt)', async () => {
     // The listing came back creds_required (it succeeded via the system Keychain), but
     // Cmdr has the password saved. Activating the share must reuse it, not re-prompt.
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'creds_required', fromCache: false })
-    h.getSmbCredentials.mockResolvedValue({ username: 'david', password: 'hunter2' })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'creds_required', fromCache: false })
+    h.getSmbCredentials.mockResolvedValue({ username: 'test_user_3', password: 'hunter2' })
     const onShareSelect = vi.fn()
     const { target, component, api } = mountBrowser(onShareSelect)
     await waitForShareList(target)
 
     api.openCursorItem()
     await vi.waitFor(() => {
-      expect(onShareSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'naspi' }), {
-        username: 'david',
+      expect(onShareSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'testshare' }), {
+        username: 'test_user_3',
         password: 'hunter2',
       })
     })
@@ -231,20 +231,20 @@ describe('PlacesBrowser credential gate', () => {
    * the store asks the backend's cache only (`noteCachedCredentials`).
    */
   it('offers Forget saved password after a guest listing, without asking the Keychain', async () => {
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     h.credentialStatus = 'has_creds'
     const { target, component } = mountBrowser(vi.fn())
     await waitForShareList(target)
     expect(
       [...target.querySelectorAll('.header-row button')].find((b) => b.textContent.includes('Forget saved password')),
     ).toBeTruthy()
-    expect(h.noteCachedCredentials).toHaveBeenCalledWith('Naspolya')
+    expect(h.noteCachedCredentials).toHaveBeenCalledWith('Testnas')
     expect(h.getSmbCredentials, 'no Keychain read to decide a button').not.toHaveBeenCalled()
     await unmount(component)
   })
 
   it('offers no Forget button while nothing has read a password', async () => {
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     h.credentialStatus = 'unknown'
     const { target, component } = mountBrowser(vi.fn())
     await waitForShareList(target)
@@ -256,7 +256,7 @@ describe('PlacesBrowser credential gate', () => {
   })
 
   it('selects the share directly when guest is allowed (no gate)', async () => {
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     const onShareSelect = vi.fn()
     const { target, component, api } = mountBrowser(onShareSelect)
     await waitForShareList(target)
@@ -264,7 +264,7 @@ describe('PlacesBrowser credential gate', () => {
     api.openCursorItem()
     await tick()
 
-    expect(onShareSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'naspi' }), null)
+    expect(onShareSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'testshare' }), null)
 
     await unmount(component)
   })
@@ -278,18 +278,18 @@ describe('PlacesBrowser type-to-jump', () => {
   })
 
   it('jumps to the first share whose name starts with the typed text, in any case', async () => {
-    const shares = [naspi, { ...naspi, name: 'Backup' }, { ...naspi, name: 'backups-old' }]
+    const shares = [testshare, { ...testshare, name: 'Backup' }, { ...testshare, name: 'backups-old' }]
     h.fetchShares.mockResolvedValue({ shares, authMode: 'guest_allowed', fromCache: false })
     const { target, component, api } = mountBrowser(vi.fn())
     await waitForShareList(target)
 
     expect(api.jumpToPrefix('BACK')).toBe('Backup')
     expect(api.getShareUnderCursor()?.name).toBe('Backup')
-    expect(api.jumpToPrefix(naspi.name)).toBe(naspi.name)
-    expect(api.getShareUnderCursor()?.name).toBe(naspi.name)
+    expect(api.jumpToPrefix(testshare.name)).toBe(testshare.name)
+    expect(api.getShareUnderCursor()?.name).toBe(testshare.name)
 
     expect(api.jumpToPrefix('zz')).toBeNull()
-    expect(api.getShareUnderCursor()?.name).toBe(naspi.name)
+    expect(api.getShareUnderCursor()?.name).toBe(testshare.name)
     await unmount(component)
   })
 })
@@ -310,7 +310,7 @@ describe('PlacesBrowser Enter', () => {
    * network view every key. Mounting a share twice is the visible half.
    */
   it('activates the share under the cursor once, not once per handler on the path', async () => {
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     const onShareSelect = vi.fn()
     const { target, component, api } = mountBrowser(onShareSelect)
     await waitForShareList(target)
@@ -350,7 +350,7 @@ describe('PlacesBrowser back-navigation', () => {
   })
 
   it('⌘↑ goes back to the host list (like Escape / Backspace), not a cursor move', async () => {
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     const onShareSelect = vi.fn()
     const onBack = vi.fn()
     const { target, component, api } = mountBrowser(onShareSelect, onBack)
@@ -391,8 +391,8 @@ describe('PlacesBrowser listing sign-in', () => {
     expect(request.mode).toBe('sign-in')
     expect(request.shape).toEqual({ kind: 'username_password', guestAllowed: false })
     // The header names the SERVER, not a share: listing auth is server-level.
-    expect(request.endpoint.address).toBe('smb://Naspolya')
-    expect(request.endpoint.host).toBe('Naspolya')
+    expect(request.endpoint.address).toBe('smb://Testnas')
+    expect(request.endpoint.host).toBe('Testnas')
     expect(request.refusal).toBe('needs_credentials')
     expect(target.querySelector('.login-container'), 'no form renders in the pane').toBeNull()
 
@@ -408,7 +408,7 @@ describe('PlacesBrowser listing sign-in', () => {
 
     const pane = await vi.waitFor(() => must(target.querySelector('.sign-in-state'), 'the sign-in pane'))
     expect(target.querySelector('.error-state')).toBeNull()
-    expect(must(pane.querySelector('.sign-in-title'), 'the title').textContent.trim()).toBe('Sign in to Naspolya')
+    expect(must(pane.querySelector('.sign-in-title'), 'the title').textContent.trim()).toBe('Sign in to Testnas')
     const labels = [...pane.querySelectorAll('button')].map((b) => b.textContent.trim())
     expect(labels).toEqual(['Sign in', 'Back'])
 
@@ -435,7 +435,7 @@ describe('PlacesBrowser listing sign-in', () => {
 
   it('lists with what the user typed, and remembers it only once the listing works', async () => {
     h.fetchShares.mockRejectedValue(new ShareListFailure({ type: 'auth_required', message: 'Authentication required' }))
-    h.listSharesWithCredentials.mockResolvedValue({ shares: [naspi], authMode: 'creds_required', fromCache: false })
+    h.listSharesWithCredentials.mockResolvedValue({ shares: [testshare], authMode: 'creds_required', fromCache: false })
     const { component } = mountBrowser(vi.fn())
     await vi.waitFor(() => {
       expect(h.openSignInSheet).toHaveBeenCalled()
@@ -444,22 +444,22 @@ describe('PlacesBrowser listing sign-in', () => {
     const outcome = await sheetRequest().attempt({
       mode: 'sign-in',
       secret: { secret: 'hunter2', remember: true },
-      username: 'david',
+      username: 'test_user_3',
     })
 
     expect(outcome).toEqual({ kind: 'handed_off' })
     expect(h.listSharesWithCredentials).toHaveBeenCalledWith(
-      'naspolya-id',
-      'Naspolya.local',
-      '192.168.1.111',
+      'testnas-id',
+      'Testnas.local',
+      '192.168.50.10',
       445,
-      'david',
+      'test_user_3',
       'hunter2',
       'typed',
       5000,
       30000,
     )
-    expect(h.saveSmbCredentials).toHaveBeenCalledWith('Naspolya', null, 'david', 'hunter2')
+    expect(h.saveSmbCredentials).toHaveBeenCalledWith('Testnas', null, 'test_user_3', 'hunter2')
 
     await unmount(component)
   })
@@ -477,7 +477,7 @@ describe('PlacesBrowser listing sign-in', () => {
     const outcome = await sheetRequest().attempt({
       mode: 'sign-in',
       secret: { secret: 'wrong', remember: true },
-      username: 'david',
+      username: 'test_user_3',
     })
 
     expect(outcome).toEqual({ kind: 'refused', refusal: 'authentication_rejected' })
@@ -489,7 +489,7 @@ describe('PlacesBrowser listing sign-in', () => {
 
   it('sends no account for guest, so the server is asked for exactly what was offered', async () => {
     h.fetchShares.mockRejectedValue(new ShareListFailure({ type: 'auth_required', message: 'Authentication required' }))
-    h.listSharesWithCredentials.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.listSharesWithCredentials.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     const { component } = mountBrowser(vi.fn())
     await vi.waitFor(() => {
       expect(h.openSignInSheet).toHaveBeenCalled()
@@ -498,9 +498,9 @@ describe('PlacesBrowser listing sign-in', () => {
     await sheetRequest().attempt({ mode: 'sign-in', secret: null, username: null })
 
     expect(h.listSharesWithCredentials).toHaveBeenCalledWith(
-      'naspolya-id',
-      'Naspolya.local',
-      '192.168.1.111',
+      'testnas-id',
+      'Testnas.local',
+      '192.168.50.10',
       445,
       null,
       null,
@@ -531,7 +531,7 @@ describe('PlacesBrowser listing sign-in', () => {
  */
 describe('PlacesBrowser header', () => {
   it('names the server by the label it was opened with', async () => {
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     const target = document.createElement('div')
     document.body.appendChild(target)
     const component = mount(PlacesBrowser, {
@@ -547,7 +547,7 @@ describe('PlacesBrowser header', () => {
   /** ❗ The sheet it opens says the same name: "Sign in to localhost:11482" named a server nobody calls that. */
   it('names the server by that label in the sign-in sheet too', async () => {
     vi.clearAllMocks()
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     h.openSignInSheet.mockResolvedValue({ kind: 'cancelled' })
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -566,7 +566,7 @@ describe('PlacesBrowser header', () => {
     })
     const request = h.openSignInSheet.mock.lastCall?.[0] as SheetRequest & { endpoint: { displayName: string } }
     expect(request.endpoint.displayName).toBe('My NAS')
-    expect(request.endpoint.host, 'the key the hints and the store use stays the host').toBe('Naspolya')
+    expect(request.endpoint.host, 'the key the hints and the store use stays the host').toBe('Testnas')
     await unmount(component)
   })
 })
@@ -586,8 +586,8 @@ describe('PlacesBrowser: the account it is signed in as', () => {
 
   it('names the account and signs in as another one from the header, staying on the list', async () => {
     h.listed.set(host.id, { kind: 'guest' })
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
-    h.listSharesWithCredentials.mockResolvedValue({ shares: [naspi], authMode: 'creds_required', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
+    h.listSharesWithCredentials.mockResolvedValue({ shares: [testshare], authMode: 'creds_required', fromCache: false })
     let request: SheetRequest | undefined
     h.openSignInSheet.mockImplementation(async (r: SheetRequest) => {
       request = r
@@ -623,7 +623,7 @@ describe('PlacesBrowser: the account it is signed in as', () => {
     )
     expect(onBack).not.toHaveBeenCalled()
     // ❗ The choice sticks: it becomes the server's account, so later listings sign in as it.
-    expect(h.setSmbAccountPreference).toHaveBeenCalledWith('Naspolya', 'testuser')
+    expect(h.setSmbAccountPreference).toHaveBeenCalledWith('Testnas', 'testuser')
     await unmount(component)
   })
 
@@ -631,8 +631,8 @@ describe('PlacesBrowser: the account it is signed in as', () => {
   it('offers Browse as guest when signed in on a guest-allowing server, and goes back to guest', async () => {
     h.listed.set(host.id, { kind: 'user', username: 'testuser' })
     h.guestWorks = true
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'creds_required', fromCache: false })
-    h.listSharesWithCredentials.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'creds_required', fromCache: false })
+    h.listSharesWithCredentials.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     const { target, component } = mountBrowser(vi.fn())
     await waitForShareList(target)
 
@@ -647,7 +647,7 @@ describe('PlacesBrowser: the account it is signed in as', () => {
       expect(buttons.some((b) => b.textContent.includes('Browse as guest'))).toBe(false)
       expect(target.querySelector('.header-row')?.textContent).toContain('as guest')
     })
-    expect(h.setSmbAccountPreference).toHaveBeenCalledWith('Naspolya', null)
+    expect(h.setSmbAccountPreference).toHaveBeenCalledWith('Testnas', null)
     // ❗ The account goes FIRST: while it's set, the backend never lists this server as guest.
     expect(h.setSmbAccountPreference.mock.invocationCallOrder[0]).toBeLessThan(
       h.listSharesWithCredentials.mock.invocationCallOrder[0],
@@ -668,7 +668,7 @@ describe('PlacesBrowser: the account it is signed in as', () => {
   })
 
   it('stays on the list when the person cancels Sign in as…', async () => {
-    h.fetchShares.mockResolvedValue({ shares: [naspi], authMode: 'guest_allowed', fromCache: false })
+    h.fetchShares.mockResolvedValue({ shares: [testshare], authMode: 'guest_allowed', fromCache: false })
     h.openSignInSheet.mockResolvedValue({ kind: 'cancelled' })
     const onBack = vi.fn()
     const { target, component } = mountBrowser(vi.fn(), onBack)

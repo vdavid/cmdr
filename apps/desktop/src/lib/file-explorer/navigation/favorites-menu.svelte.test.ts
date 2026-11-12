@@ -267,7 +267,12 @@ describe('opening a favorite', () => {
     await pick(menu, 0, 'pointer')
     expect(resolvePathVolume).not.toHaveBeenCalled()
     expect(went).toEqual([
-      { volumeId: 'smb-naspi', volumePath: '/Volumes/naspi', targetPath: '/Volumes/naspi/docs', exact: true },
+      {
+        volumeId: 'smb-testshare',
+        volumePath: '/Volumes/testshare',
+        targetPath: '/Volumes/testshare/docs',
+        exact: true,
+      },
     ])
   })
 
@@ -291,14 +296,14 @@ describe('opening a favorite', () => {
   })
 })
 
-/** A favorite on the `naspi` share, with the reach the listing gave it. */
+/** A favorite on the `testshare` share, with the reach the listing gave it. */
 function onShare(reach: 'ready' | 'connects' | 'forgotten' | 'not_found'): VolumeInfo {
   return {
-    ...favorite(7, '/Volumes/naspi/docs', 'docs'),
+    ...favorite(7, '/Volumes/testshare/docs', 'docs'),
     favoriteTarget: {
-      volumeId: 'smb-naspi',
-      volumeName: 'naspi on nas.local',
-      volumeRoot: reach === 'forgotten' ? null : '/Volumes/naspi',
+      volumeId: 'smb-testshare',
+      volumeName: 'testshare on testnas.local',
+      volumeRoot: reach === 'forgotten' ? null : '/Volumes/testshare',
       reach: { kind: reach },
     },
   }
@@ -315,8 +320,8 @@ describe('a favorite the pane can`t open right away', () => {
     const [row] = favoriteRows(menu)
     expect(row.disabled ?? false).toBe(false)
     const [path, status] = (row.tooltip ?? '').split('\n')
-    expect(path).toBe('/Volumes/naspi/docs')
-    expect(status).toBe('Not connected. Opening this favorite connects to the share “naspi on nas.local”.')
+    expect(path).toBe('/Volumes/testshare/docs')
+    expect(status).toBe('Not connected. Opening this favorite connects to the share “testshare on testnas.local”.')
     expect(menu.isDimmed(row.data?.kind === 'favorite' ? row.data.volume : DISK)).toBe(true)
   })
 
@@ -338,23 +343,23 @@ describe('a favorite the pane can`t open right away', () => {
     // The listing rebases a live share's favorite onto its current root, but a favorite
     // whose target is known compares by (volume, path under its root) all the same.
     const share: VolumeInfo = {
-      id: 'smb-naspi',
-      name: 'naspi',
-      path: '/Volumes/naspi-1',
+      id: 'smb-testshare',
+      name: 'testshare',
+      path: '/Volumes/testshare-1',
       category: 'network',
       isEjectable: true,
     }
     const atOldRoot: VolumeInfo = {
       ...onShare('ready'),
       favoriteTarget: {
-        volumeId: 'smb-naspi',
-        volumeName: 'naspi',
-        volumeRoot: '/Volumes/naspi',
+        volumeId: 'smb-testshare',
+        volumeName: 'testshare',
+        volumeRoot: '/Volumes/testshare',
         reach: { kind: 'ready' },
       },
     }
     stubs.volumes = [atOldRoot, share, DISK]
-    const { menu } = harness('/Volumes/naspi-1/docs', 'smb-naspi')
+    const { menu } = harness('/Volumes/testshare-1/docs', 'smb-testshare')
     expect(addRow(menu).tooltip).toBe('This folder is already a favorite')
   })
 })

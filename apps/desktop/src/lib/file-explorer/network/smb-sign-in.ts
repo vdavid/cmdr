@@ -96,8 +96,8 @@ export async function openSmbSignInSheet(request: SmbSignInRequest): Promise<Sig
  * username, then the server-level hint.
  *
  * ❗ Both lookups take the server BY NAME and match on its stable identity in
- * Rust, so a hint saved under one spelling (`Naspolya`) is found when the sheet
- * opens under another (`Naspolya._smb._tcp.local`). ❌ Don't rebuild the key in
+ * Rust, so a hint saved under one spelling (`Testnas`) is found when the sheet
+ * opens under another (`Testnas._smb._tcp.local`). ❌ Don't rebuild the key in
  * TypeScript: doing that is what made the two sides disagree.
  *
  * ❗ A lookup that breaks down answers `undefined` rather than throwing. This

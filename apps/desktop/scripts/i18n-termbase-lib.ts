@@ -346,7 +346,7 @@ function wholeValueOf(text: string): string {
  * an error suggestion is a command the reader types verbatim, so the locale keeps
  * it English and it says nothing about the concept "hostname". File-system paths
  * and domains go for the same reason (`PATH_OR_DOMAIN`): `local` in
- * `/usr/local/bin` or `nas.local` names a folder or a host, never the concept "local".
+ * `/usr/local/bin` or `testnas.local` names a folder or a host, never the concept "local".
  *
  * A platform block reads every branch, one per line (`englishMatchTexts`), so a
  * raw block's bodies aren't stripped as `{token}`s. A `=form` (whole-value) match
@@ -372,7 +372,7 @@ export function englishMatchTexts(key: string, value: string): string[] {
 /**
  * An absolute or home-relative path (`/usr/local/bin`, `~/Documents`; never `GB/s`
  * or `copy/move`, where a letter sits before the slash), or a lowercase dotted name
- * (`getcmdr.com`, `nas.local`, `photo.jpg`; never `e.g.`, whose labels are one letter).
+ * (`getcmdr.com`, `testnas.local`, `photo.jpg`; never `e.g.`, whose labels are one letter).
  */
 const PATH_OR_DOMAIN =
   /(?<![\p{L}\p{N}])~?\/[^\s"“”‘’'`,;()]*|(?<![\p{L}\p{N}.])[a-z0-9][a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}(?![\p{L}\p{N}])/gu

@@ -255,7 +255,7 @@ describe('createSmbViewState', () => {
     manager.getState.mockReturnValue({ status: 'needs-host-key', attemptIndex: 0, currentDelayMs: 0, waitStartedAt: 0 })
     const presented = {
       outcome: 'needs_host_key_approval' as const,
-      host: 'nas.local',
+      host: 'testnas.local',
       port: 22,
       algorithm: 'ssh-ed25519',
       fingerprint: 'SHA256:changedkey',
@@ -287,7 +287,7 @@ describe('createSmbViewState', () => {
     manager.getState.mockReturnValue({ status: 'needs-host-key', attemptIndex: 0, currentDelayMs: 0, waitStartedAt: 0 })
     ipc.connectSavedPlace.mockResolvedValue({
       outcome: 'needs_host_key_approval',
-      host: 'nas.local',
+      host: 'testnas.local',
       port: 22,
       algorithm: 'ssh-ed25519',
       fingerprint: 'SHA256:changedkey',

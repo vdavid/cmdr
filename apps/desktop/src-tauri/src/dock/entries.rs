@@ -271,7 +271,7 @@ mod tests {
         // a second one would put two Cmdr tiles in the Dock.
         let entries = vec![macos_tile(
             "com.veszelovszki.cmdr",
-            "file:///Users/jane/Applications/Cmdr.app/",
+            "file:///Users/test_user_12/Applications/Cmdr.app/",
         )];
 
         assert!(holds_app(

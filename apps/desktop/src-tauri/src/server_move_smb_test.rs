@@ -22,7 +22,7 @@ fn mounted_row(address: &str, port: u16, share: &str, volume_id: &str) -> KnownN
         last_connected_at: "2026-10-01T00:00:00Z".to_string(),
         last_connection_mode: ConnectionMode::Credentials,
         last_known_auth_options: AuthOptions::GuestOrCredentials,
-        username: Some("ada".to_string()),
+        username: Some("test_user_1".to_string()),
         address: Some(address.to_string()),
         port: (port != 445).then_some(port),
         volume_id: Some(volume_id.to_string()),
@@ -61,8 +61,9 @@ async fn moving_an_smb_host_takes_its_shares_and_passwords_and_keeps_their_ids()
     let id = "smb-198-18-0-10-move-test";
     let host = saved_host(mounted_row(old, 11480, "move-test", id));
     let (from_name, to_name) = (smb_server(old, 11480), smb_server(new, 11480));
-    keychain::save_credentials(&from_name, None, "ada", "pa55").expect("the test store accepts");
-    keychain::save_credentials(&from_name, Some("move-test"), "ada", "share-pa55").expect("the test store accepts");
+    keychain::save_credentials(&from_name, None, "test_user_1", "pa55").expect("the test store accepts");
+    keychain::save_credentials(&from_name, Some("move-test"), "test_user_1", "share-pa55")
+        .expect("the test store accepts");
 
     let outcome = move_host(host, SmbServer::new(new, 11480), &[], no_manual_entry).await;
 
@@ -236,7 +237,7 @@ async fn a_share_list_mount_of_the_old_address_that_lands_after_the_move_is_not_
     assert!(saved_at_old("after-share"));
 }
 
-/// ❗ Two spellings of one Keychain key (`nas.local` → `nas`) are one entry: the move
+/// ❗ Two spellings of one Keychain key (`testnas.local` → `nas`) are one entry: the move
 /// must leave it in place rather than copy it onto itself and delete it.
 #[tokio::test]
 async fn a_move_between_two_spellings_of_one_key_keeps_the_password() {
@@ -247,7 +248,7 @@ async fn a_move_between_two_spellings_of_one_key_keeps_the_password() {
         "respell-test",
         "smb-respell-test",
     ));
-    keychain::save_credentials("respell-test.local", None, "ada", "pa55").expect("the test store accepts");
+    keychain::save_credentials("respell-test.local", None, "test_user_1", "pa55").expect("the test store accepts");
 
     let outcome = move_host(host, SmbServer::new("respell-test", 445), &[], no_manual_entry).await;
 

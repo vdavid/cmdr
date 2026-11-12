@@ -19,8 +19,8 @@ use crate::indexing::read::coverage::CoverageDimension;
 fn a_cover_walk_refuses_a_server_and_builds_no_index_for_it() {
     let _serialized = crate::indexing::handle::test_lock();
     let data = tempfile::tempdir().expect("index data dir");
-    let root = format!("{}/srv/data", sftp_app_root("nas.local", 22, "ada"));
-    let volume_id = sftp_volume_id("nas.local", 22, "ada");
+    let root = format!("{}/srv/data", sftp_app_root("testnas.local", 22, "test_user_1"));
+    let volume_id = sftp_volume_id("testnas.local", 22, "test_user_1");
     let entries = vec![FileEntry::new(
         "report.txt".into(),
         format!("{root}/report.txt"),

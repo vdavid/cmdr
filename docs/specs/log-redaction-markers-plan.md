@@ -56,7 +56,7 @@ macro sees it stays on the regex fallback). The lead made these calls; they're y
 - ❌ **Don't edit the smb2 or mtp-rs repos from here.** A separate agent acting for the crate's interests owns each
   (milestone 2).
 - ❌ **No real user data in this public repo.** Test cells use synthetic names that reproduce the SHAPE of each leak
-  (`Summer (Lake House) 2026`, `Alex's MacBook Pro (2)`, a share called `Family Photos`), never names from a bundle.
+  (`Summer (Lake House) 2026`, `Tester's MacBook Pro (2)`, a share called `Family Photos`), never names from a bundle.
 - **TDD**: every leak shape and hostile-name case gets a red cell first, seen failing for the right reason.
   Characterization pins reality.
 - ❌ No milestone tags in code, comments, test names, `reason` strings, or docs
@@ -189,9 +189,9 @@ scan:
    anchor). The same holds for a half-migrated site that glues a wrapped dir to an unwrapped name, and for every other
    fallback claim milestone 1 adds (the quoted Bonjour instance, bare `share=` / `*_volume=` labels, the greedy prose
    boundary): a span token is never a boundary, so a hostile balanced pair inside an `mdns_sd` WARN instance name
-   (`"Alex\u{FDD5}s Mac\u{FDD1}Book Pro._companion-link._tcp.local."`) still goes whole. Tokens the span pass wrote stay
-   verbatim (idempotent: bundles get re-redacted between preview and send); a segment that only LOOKS like a token plus
-   extra text (`<file:abc>rest`) is a name and gets tokenized whole.
+   (`"Tester\u{FDD5}s Mac\u{FDD1}Book Pro._companion-link._tcp.local."`) still goes whole. Tokens the span pass wrote
+   stay verbatim (idempotent: bundles get re-redacted between preview and send); a segment that only LOOKS like a token
+   plus extra text (`<file:abc>rest`) is a name and gets tokenized whole.
 7. **The span pass and the regex run on the raw line AFTER the bundle's line filters** (time window, third-party level
    filter), which read the header from the raw line. Rule 3 may erase the message but never the header.
 
@@ -277,7 +277,7 @@ stays forever as the safety net for unmarked text.
 - `Copy error: detail="Path: /Volumes/Backup/A/B/Summer (Lake House) Trip/2026-08-24/Sub/.DS_Store; Error type: …"`:
   every segment tokenized, `.DS_Store` verbatim.
 - An `mdns_sd` DEBUG line is absent from the bundle; an `mdns_sd` WARN line with
-  `name: "Alex's MacBook Pro (2)._companion-link._tcp.local."` ships `name: "<host:T>._companion-link._tcp.local."`.
+  `name: "Tester's MacBook Pro (2)._companion-link._tcp.local."` ships `name: "<host:T>._companion-link._tcp.local."`.
 - Provenance: a record with a custom short target from a `cmdr_*` module keeps DEBUG; a third-party DEBUG record whose
   target equals one of our short targets drops; a third-party DEBUG record with a multi-line message drops every line;
   an `smb2` DEBUG `tree: exclusive delete of Photos/2026/Summer (Lake House)/x.jpg refused` line drops; an `FE:*` debug

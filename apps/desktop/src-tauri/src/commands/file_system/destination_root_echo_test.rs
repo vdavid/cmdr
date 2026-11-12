@@ -13,7 +13,7 @@ use super::{DestinationRootEcho, destination_root_echo};
 #[tokio::test]
 async fn a_server_path_typed_on_a_server_place_names_both_readings() {
     let id = format!("root-echo-{}", uuid::Uuid::new_v4());
-    let volume = InMemoryVolume::new("Server").with_root("sftp://ada@nas:22/srv/data");
+    let volume = InMemoryVolume::new("Server").with_root("sftp://test_user_1@nas:22/srv/data");
     get_volume_manager().register(&id, Arc::new(volume) as Arc<dyn Volume>);
 
     let echo = destination_root_echo(id.clone(), "/srv/data/photos".to_string()).await;

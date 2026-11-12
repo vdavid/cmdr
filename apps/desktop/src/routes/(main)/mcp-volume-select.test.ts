@@ -73,7 +73,7 @@ describe('selectVolumeForMcp', () => {
   it('replies only once the correction has landed and the folder it chose has come to rest', async () => {
     const correction = pendingCorrection('mtp-1')
     const { pane, explorer } = fakeExplorer(
-      { volumeId: 'root', path: '/Users/david', listingId: 'L0', loading: false },
+      { volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0', loading: false },
       (p) => {
         p.volumeId = 'mtp-1'
         p.path = 'mtp://1/65537'
@@ -113,7 +113,7 @@ describe('selectVolumeForMcp', () => {
   it('replies `stalled` as soon as the folder the switch opened stops answering', async () => {
     const correction = pendingCorrection('nas')
     const { pane, explorer } = fakeExplorer(
-      { volumeId: 'root', path: '/Users/david', listingId: 'L0', loading: false },
+      { volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0', loading: false },
       (p) => {
         p.volumeId = 'nas'
         p.path = '/Volumes/nas/photos'
@@ -145,7 +145,7 @@ describe('selectVolumeForMcp', () => {
   it('selects by volume id when both id and display name are present', async () => {
     const correction = pendingCorrection('adb-pixel')
     const { explorer } = fakeExplorer(
-      { volumeId: 'root', path: '/Users/david', listingId: 'L0', loading: false },
+      { volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0', loading: false },
       (p) => {
         p.volumeId = 'adb-pixel'
         p.path = 'adb://pixel'
@@ -179,7 +179,7 @@ describe('selectVolumeForMcp', () => {
   it('flushes the pane state to the backend before replying, so `cmdr://state` shows the landing', async () => {
     const correction = pendingCorrection('mtp-1')
     const { pane, explorer, calls } = fakeExplorer(
-      { volumeId: 'root', path: '/Users/david', listingId: 'L0', loading: false },
+      { volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0', loading: false },
       (p) => {
         p.volumeId = 'mtp-1'
         p.path = 'mtp://1/65537'
@@ -202,7 +202,7 @@ describe('selectVolumeForMcp', () => {
     // listing ever starts. Waiting for one would time the tool out on a no-op.
     const correction = pendingCorrection('root')
     const { explorer } = fakeExplorer(
-      { volumeId: 'root', path: '/Users/david', listingId: 'L0', loading: false },
+      { volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0', loading: false },
       () => correction.outcome,
     )
     correction.resolve()
@@ -216,14 +216,14 @@ describe('selectVolumeForMcp', () => {
       ok: true,
       outcome: 'navigated',
       volumeId: 'root',
-      path: '/Users/david',
+      path: '/Users/test_user_3',
     })
   })
 
   it('answers without a listing on the servers hub, which never lists', async () => {
     const correction = pendingCorrection('network')
     const { explorer } = fakeExplorer(
-      { volumeId: 'root', path: '/Users/david', listingId: 'L0', loading: false },
+      { volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0', loading: false },
       (p) => {
         p.volumeId = 'network'
         p.path = 'smb://'
@@ -248,7 +248,7 @@ describe('selectVolumeForMcp', () => {
   it('reports `fell-back` with the resting place when the volume fails to list and an edge flow moves the pane', async () => {
     const correction = pendingCorrection('mtp-1')
     const { pane, explorer } = fakeExplorer(
-      { volumeId: 'root', path: '/Users/david', listingId: 'L0', loading: false },
+      { volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0', loading: false },
       (p) => {
         p.volumeId = 'mtp-1'
         p.path = 'mtp://1/65537'
@@ -263,7 +263,7 @@ describe('selectVolumeForMcp', () => {
     await vi.advanceTimersByTimeAsync(300)
     // The listing dies and the MTP-fatal fallback takes the pane home.
     pane.volumeId = 'root'
-    pane.path = '/Users/david'
+    pane.path = '/Users/test_user_3'
     pane.listingId = 'L2'
     pane.loading = false
     await vi.advanceTimersByTimeAsync(1_000)
@@ -274,14 +274,14 @@ describe('selectVolumeForMcp', () => {
       ok: false,
       outcome: 'fell-back',
       volumeId: 'root',
-      path: '/Users/david',
+      path: '/Users/test_user_3',
     })
   })
 
   it('reports `did-not-settle` when the new volume never finishes listing', async () => {
     const correction = pendingCorrection('mtp-1')
     const { explorer } = fakeExplorer(
-      { volumeId: 'root', path: '/Users/david', listingId: 'L0', loading: false },
+      { volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0', loading: false },
       (p) => {
         p.volumeId = 'mtp-1'
         p.path = 'mtp://1/65537'
@@ -307,7 +307,7 @@ describe('selectVolumeForMcp', () => {
 
   it('declines with a reply when no volume has that name', async () => {
     const { explorer } = fakeExplorer(
-      { volumeId: 'root', path: '/Users/david', listingId: 'L0', loading: false },
+      { volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0', loading: false },
       () => ({ kind: 'not-found' }),
     )
 

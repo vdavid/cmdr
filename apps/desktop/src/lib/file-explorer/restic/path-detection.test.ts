@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { isVirtualResticPath, resticRepoRoot, resticViewComponentIndex } from './path-detection'
 
-const REPO = '/Volumes/naspi/backups/m3-restic'
+const REPO = '/Volumes/testshare/backups/test-restic'
 
 describe('isVirtualResticPath', () => {
   it('detects the view folder and everything below it', () => {

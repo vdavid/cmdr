@@ -78,7 +78,7 @@ async function withEntryUnderCursor(
 const COPIED_PATH_TOAST_WIDTH_PX = 432
 
 /**
- * Puts `path` on the clipboard as the OS spells it (`copiedPath`: `C:\Users\ada` on
+ * Puts `path` on the clipboard as the OS spells it (`copiedPath`: `C:\Users\test_user_1` on
  * Windows) and confirms it with a transient info toast that
  * shows what landed there.
  *

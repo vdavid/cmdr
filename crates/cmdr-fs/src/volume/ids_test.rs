@@ -12,14 +12,14 @@ fn every_constructor_reads_back_as_its_own_scheme() {
             VolumeScheme::Local,
         ),
         (path_volume_id("/Volumes/NO NAME"), VolumeScheme::Path),
-        (smb_volume_id("naspolya", 445, "public"), VolumeScheme::Smb),
-        (sftp_volume_id("naspolya", 22, "ada"), VolumeScheme::Sftp),
-        (webdav_volume_id("naspolya", 443, "ada"), VolumeScheme::Webdav),
+        (smb_volume_id("testnas", 445, "public"), VolumeScheme::Smb),
+        (sftp_volume_id("testnas", 22, "test_user_1"), VolumeScheme::Sftp),
+        (webdav_volume_id("testnas", 443, "test_user_1"), VolumeScheme::Webdav),
         (
             s3_volume_id("s3.amazonaws.com", 443, "AKIA", Some("photos")),
             VolumeScheme::S3,
         ),
-        (nfs_volume_id("naspolya", 2049, "/Public"), VolumeScheme::Nfs),
+        (nfs_volume_id("testnas", 2049, "/Public"), VolumeScheme::Nfs),
         (mtp_device_id("39041FDJH00A0K"), VolumeScheme::Mtp),
         (
             mtp_volume_id(&mtp_device_id("39041FDJH00A0K"), 65537),
@@ -74,14 +74,14 @@ fn only_the_ids_minted_for_a_mount_are_mount_backed() {
         "/Volumes/Backup"
     )));
     assert!(mount_backed(&path_volume_id("/Volumes/NO NAME")));
-    assert!(mount_backed(&smb_volume_id("naspolya", 445, "public")));
+    assert!(mount_backed(&smb_volume_id("testnas", 445, "public")));
 
     assert!(!mount_backed(DEFAULT_VOLUME_ID));
     assert!(!mount_backed("cloud-dropbox"));
     assert!(!mount_backed("fav-1"));
-    assert!(!mount_backed(&sftp_volume_id("naspolya", 22, "ada")));
-    assert!(!mount_backed(&webdav_volume_id("naspolya", 443, "ada")));
-    assert!(!mount_backed(&nfs_volume_id("naspolya", 2049, "/Public")));
+    assert!(!mount_backed(&sftp_volume_id("testnas", 22, "test_user_1")));
+    assert!(!mount_backed(&webdav_volume_id("testnas", 443, "test_user_1")));
+    assert!(!mount_backed(&nfs_volume_id("testnas", 2049, "/Public")));
     assert!(!mount_backed(&adb_volume_id("R58M12345")));
 }
 
@@ -96,18 +96,18 @@ fn os_path_schemes_are_mount_rooted_and_namespaces_are_not() {
         "/Volumes/Backup"
     )));
     assert!(mount_rooted(&path_volume_id("/Volumes/NO NAME")));
-    assert!(mount_rooted(&smb_volume_id("naspolya", 445, "public")));
+    assert!(mount_rooted(&smb_volume_id("testnas", 445, "public")));
     assert!(mount_rooted("cloud-dropbox"));
 
-    assert!(!mount_rooted(&sftp_volume_id("naspolya", 22, "ada")));
-    assert!(!mount_rooted(&webdav_volume_id("naspolya", 443, "ada")));
+    assert!(!mount_rooted(&sftp_volume_id("testnas", 22, "test_user_1")));
+    assert!(!mount_rooted(&webdav_volume_id("testnas", 443, "test_user_1")));
     assert!(!mount_rooted(&s3_volume_id(
         "s3.example.com",
         443,
         "AKIA",
         Some("photos")
     )));
-    assert!(!mount_rooted(&nfs_volume_id("naspolya", 2049, "/Public")));
+    assert!(!mount_rooted(&nfs_volume_id("testnas", 2049, "/Public")));
     assert!(!mount_rooted(&adb_volume_id("R58M12345")));
     assert!(!mount_rooted("mtp-abc-1234:65537"));
     assert!(!mount_rooted("fav-1"));
@@ -130,8 +130,8 @@ fn two_accounts_on_one_sftp_server_never_share_an_id() {
     // files under the same paths, so one ID would hand one account's index,
     // saved paths, and tab state to the other.
     assert_ne!(
-        sftp_volume_id("naspolya", 22, "ada"),
-        sftp_volume_id("naspolya", 22, "grace")
+        sftp_volume_id("testnas", 22, "test_user_1"),
+        sftp_volume_id("testnas", 22, "test_user_2")
     );
 }
 
@@ -140,22 +140,22 @@ fn an_sftp_volume_keeps_its_id_across_remote_roots() {
     // The root is addressing, not identity: browsing in from `/srv` rather
     // than from `/` must not strand the index and the saved paths.
     assert_eq!(
-        sftp_volume_id("naspolya", 22, "ada"),
-        sftp_volume_id("naspolya", 22, "ada")
+        sftp_volume_id("testnas", 22, "test_user_1"),
+        sftp_volume_id("testnas", 22, "test_user_1")
     );
 }
 
 #[test]
 fn sftp_volume_id_folds_the_host_but_not_the_account() {
-    // DNS is case-insensitive; POSIX accounts are not, so `Ada` and `ada`
+    // DNS is case-insensitive; POSIX accounts are not, so `Test_user_1` and `test_user_1`
     // may be two people and must not collapse.
     assert_eq!(
-        sftp_volume_id("Naspolya", 22, "ada"),
-        sftp_volume_id("naspolya", 22, "ada")
+        sftp_volume_id("Testnas", 22, "test_user_1"),
+        sftp_volume_id("testnas", 22, "test_user_1")
     );
     assert_ne!(
-        sftp_volume_id("naspolya", 22, "Ada"),
-        sftp_volume_id("naspolya", 22, "ada")
+        sftp_volume_id("testnas", 22, "Test_user_1"),
+        sftp_volume_id("testnas", 22, "test_user_1")
     );
 }
 
@@ -164,8 +164,8 @@ fn sftp_volume_id_distinguishes_ports() {
     // Same host, different port is a different server in practice: a jump
     // box, a container, a dev fixture on localhost.
     assert_ne!(
-        sftp_volume_id("localhost", 12480, "ada"),
-        sftp_volume_id("localhost", 12481, "ada")
+        sftp_volume_id("localhost", 12480, "test_user_1"),
+        sftp_volume_id("localhost", 12481, "test_user_1")
     );
 }
 
@@ -175,8 +175,8 @@ fn two_accounts_on_one_webdav_server_never_share_an_id() {
     // paths, so one ID would hand one account's index and tab state to the
     // other.
     assert_ne!(
-        webdav_volume_id("dav.example.test", 443, "ada"),
-        webdav_volume_id("dav.example.test", 443, "grace")
+        webdav_volume_id("dav.example.test", 443, "test_user_1"),
+        webdav_volume_id("dav.example.test", 443, "test_user_2")
     );
 }
 
@@ -185,20 +185,20 @@ fn a_webdav_volume_keeps_its_id_across_remote_roots() {
     // The root is addressing, not identity: the id is derived from the
     // triple alone, so it is the same however deep the user browsed in.
     assert_eq!(
-        webdav_volume_id("dav.example.test", 443, "ada"),
-        webdav_volume_id("dav.example.test", 443, "ada")
+        webdav_volume_id("dav.example.test", 443, "test_user_1"),
+        webdav_volume_id("dav.example.test", 443, "test_user_1")
     );
 }
 
 #[test]
 fn webdav_volume_id_folds_the_host_but_not_the_account() {
     assert_eq!(
-        webdav_volume_id("DAV.example.test", 443, "ada"),
-        webdav_volume_id("dav.example.test", 443, "ada")
+        webdav_volume_id("DAV.example.test", 443, "test_user_1"),
+        webdav_volume_id("dav.example.test", 443, "test_user_1")
     );
     assert_ne!(
-        webdav_volume_id("dav.example.test", 443, "Ada"),
-        webdav_volume_id("dav.example.test", 443, "ada")
+        webdav_volume_id("dav.example.test", 443, "Test_user_1"),
+        webdav_volume_id("dav.example.test", 443, "test_user_1")
     );
 }
 
@@ -206,16 +206,16 @@ fn webdav_volume_id_folds_the_host_but_not_the_account() {
 fn webdav_volume_id_distinguishes_ports() {
     // Two Docker fixtures on localhost are two servers.
     assert_ne!(
-        webdav_volume_id("localhost", 18080, "ada"),
-        webdav_volume_id("localhost", 18081, "ada")
+        webdav_volume_id("localhost", 18080, "test_user_1"),
+        webdav_volume_id("localhost", 18081, "test_user_1")
     );
 }
 
 #[test]
 fn distinct_smb_shares_never_share_an_id() {
     assert_ne!(
-        smb_volume_id("naspolya", 445, "My Share"),
-        smb_volume_id("naspolya", 445, "MyShare")
+        smb_volume_id("testnas", 445, "My Share"),
+        smb_volume_id("testnas", 445, "MyShare")
     );
 }
 
@@ -250,15 +250,15 @@ fn a_corpus_of_confusable_identities_maps_one_to_one() {
     }
 
     let mounts = [
-        ("naspolya", 445, "Public"),
-        ("naspolya", 445, "Pub lic"),
-        ("naspolya", 445, "Pu-blic"),
-        ("naspolya", 10494, "Public"),
-        ("nas-polya", 445, "Public"),
-        ("naspolya2", 445, "Public"),
-        ("192.168.1.111", 445, "naspi"),
-        ("192.168.1.112", 445, "naspi"),
-        ("19216811", 1, "naspi"),
+        ("testnas", 445, "Public"),
+        ("testnas", 445, "Pub lic"),
+        ("testnas", 445, "Pu-blic"),
+        ("testnas", 10494, "Public"),
+        ("test-nas", 445, "Public"),
+        ("testnas2", 445, "Public"),
+        ("192.168.50.10", 445, "testshare"),
+        ("192.168.50.11", 445, "testshare"),
+        ("1921685010", 1, "testshare"),
     ];
     let mut seen = std::collections::HashMap::new();
     for (server, port, share) in mounts {
@@ -271,11 +271,11 @@ fn a_corpus_of_confusable_identities_maps_one_to_one() {
 
 #[test]
 fn component_boundaries_cannot_be_shifted() {
-    // Length-prefixed hashing: without it, ("nas", "polya…") and ("naspolya…")
+    // Length-prefixed hashing: without it, ("test", "nas…") and ("testnas…")
     // would feed the hasher identical bytes.
     assert_ne!(
-        smb_volume_id("nas", 445, "polyashare"),
-        smb_volume_id("naspolya", 445, "share")
+        smb_volume_id("test", 445, "nasshare"),
+        smb_volume_id("testnas", 445, "share")
     );
 }
 
@@ -290,10 +290,13 @@ fn schemes_are_domain_separated() {
 #[test]
 fn the_same_identity_always_produces_the_same_id() {
     // Required for `lastUsedPaths`, tabs, and the index DB to round-trip.
-    assert_eq!(path_volume_id("/Volumes/naspi"), path_volume_id("/Volumes/naspi"));
     assert_eq!(
-        smb_volume_id("naspolya", 445, "naspi"),
-        smb_volume_id("naspolya", 445, "naspi")
+        path_volume_id("/Volumes/testshare"),
+        path_volume_id("/Volumes/testshare")
+    );
+    assert_eq!(
+        smb_volume_id("testnas", 445, "testshare"),
+        smb_volume_id("testnas", 445, "testshare")
     );
     assert_eq!(
         local_volume_id(Some("A1B2-C3D4"), "/Volumes/X"),
@@ -352,9 +355,9 @@ fn every_id_is_filename_safe_and_bounded() {
     let ids = [
         path_volume_id("/Volumes/A Disk/With: Punctuation?/And/Slashes"),
         path_volume_id(&format!("/Volumes/{}", "x".repeat(500))),
-        smb_volume_id("nas.local", 445, "Some Share/With Slash"),
-        sftp_volume_id("nas.local", 22, "ada/with:punct"),
-        webdav_volume_id("nas.local", 443, "ada/with:punct"),
+        smb_volume_id("testnas.local", 445, "Some Share/With Slash"),
+        sftp_volume_id("testnas.local", 22, "test_user_1/with:punct"),
+        webdav_volume_id("testnas.local", 443, "test_user_1/with:punct"),
         mtp_device_id("SERIAL/WITH:PUNCT.uation"),
         local_volume_id(Some("A1B2-C3D4"), "/Volumes/X"),
     ];
@@ -376,7 +379,7 @@ fn an_id_stays_readable_enough_to_recognize() {
     // The slug is why a data dir is eyeballable. Cosmetic, but it's the reason
     // we don't just use a bare digest, so it's worth a test.
     assert!(path_volume_id("/Volumes/Photos").contains("volumes-photos"));
-    assert!(smb_volume_id("naspolya", 445, "naspi").contains("naspolya-445-naspi"));
+    assert!(smb_volume_id("testnas", 445, "testshare").contains("testnas-445-testshare"));
 }
 
 #[test]
@@ -396,8 +399,8 @@ fn ids_from_different_schemes_never_collide() {
     // The scheme prefix is the contract every consumer's classification relies
     // on (`is_mtp_volume_id`, the index's root check, the legacy sweep).
     let smb = smb_volume_id("localhost", 10494, "public");
-    let sftp = sftp_volume_id("localhost", 12480, "ada");
-    let webdav = webdav_volume_id("localhost", 12480, "ada");
+    let sftp = sftp_volume_id("localhost", 12480, "test_user_1");
+    let webdav = webdav_volume_id("localhost", 12480, "test_user_1");
     let local = path_volume_id("/Volumes/Smb");
     let mtp = mtp_device_id("SERIAL");
     assert!(sftp.starts_with("sftp-"), "got: {sftp}");
@@ -426,7 +429,7 @@ fn smb_volume_id_distinguishes_servers_with_same_share_name() {
     // under a path-shape ID scheme, cross-contaminating `lastUsedPaths`, tabs,
     // and per-volume state.
     assert_ne!(
-        smb_volume_id("Naspolya", 445, "Public"),
+        smb_volume_id("Testnas", 445, "Public"),
         smb_volume_id("localhost", 10494, "public")
     );
 }
@@ -436,12 +439,12 @@ fn smb_volume_id_folds_case_where_the_protocol_does() {
     // DNS hostnames and SMB share names are both case-insensitive, so these are
     // the same mount and must share an ID.
     assert_eq!(
-        smb_volume_id("Naspolya", 445, "naspi"),
-        smb_volume_id("naspolya", 445, "naspi")
+        smb_volume_id("Testnas", 445, "testshare"),
+        smb_volume_id("testnas", 445, "testshare")
     );
     assert_eq!(
-        smb_volume_id("naspolya", 445, "Public"),
-        smb_volume_id("naspolya", 445, "public")
+        smb_volume_id("testnas", 445, "Public"),
+        smb_volume_id("testnas", 445, "public")
     );
 }
 
@@ -459,13 +462,13 @@ fn smb_volume_id_folds_unicode_normalization() {
         "the two spellings must differ as bytes, or this proves nothing"
     );
     assert_eq!(
-        smb_volume_id("naspolya", 445, composed),
-        smb_volume_id("naspolya", 445, decomposed)
+        smb_volume_id("testnas", 445, composed),
+        smb_volume_id("testnas", 445, decomposed)
     );
     // The server half arrives from the same two pipes, so it folds too.
     assert_eq!(
-        smb_volume_id("caf\u{e9}-nas", 445, "naspi"),
-        smb_volume_id("cafe\u{301}-nas", 445, "naspi")
+        smb_volume_id("caf\u{e9}-nas", 445, "testshare"),
+        smb_volume_id("cafe\u{301}-nas", 445, "testshare")
     );
 }
 
@@ -478,8 +481,8 @@ fn smb_volume_id_distinguishes_ports_and_ip_addresses() {
         smb_volume_id("localhost", 10494, "public")
     );
     assert_ne!(
-        smb_volume_id("192.168.1.111", 445, "naspi"),
-        smb_volume_id("192.168.1.112", 445, "naspi")
+        smb_volume_id("192.168.50.10", 445, "testshare"),
+        smb_volume_id("192.168.50.11", 445, "testshare")
     );
 }
 
@@ -489,7 +492,7 @@ fn smb_volume_id_distinguishes_ports_and_ip_addresses() {
 fn recognizes_ids_from_the_retired_scheme() {
     // What the pre-identity scheme produced: a stripped, lowercased path.
     assert!(is_legacy_volume_id("volumesmydisk"));
-    assert!(is_legacy_volume_id("smb-naspolya-445-naspi"));
+    assert!(is_legacy_volume_id("smb-testnas-445-testshare"));
     assert!(is_legacy_volume_id("mtp-ABC123:65537"));
     assert!(is_legacy_volume_id("volumesexternal"));
 }
@@ -502,9 +505,9 @@ fn accepts_every_id_the_current_scheme_can_mint() {
         "fav-3".to_string(),
         path_volume_id("/Volumes/X"),
         path_volume_id("/…/·"),
-        smb_volume_id("naspolya", 445, "naspi"),
-        sftp_volume_id("naspolya", 22, "ada"),
-        webdav_volume_id("naspolya", 443, "ada"),
+        smb_volume_id("testnas", 445, "testshare"),
+        sftp_volume_id("testnas", 22, "test_user_1"),
+        webdav_volume_id("testnas", 443, "test_user_1"),
         local_volume_id(Some("A1B2-C3D4"), "/Volumes/X"),
         mtp_device_id("SERIAL"),
         mtp_volume_id(&device_id_for(Some("SERIAL"), 0), 65537),
@@ -584,27 +587,27 @@ fn an_s3_id_keeps_the_access_key_out_of_its_readable_half() {
 fn every_export_on_one_nfs_server_has_its_own_id() {
     // An export is the place, so two exports on one server (and one export on
     // two ports) are two volumes.
-    let public = nfs_volume_id("naspolya", 2049, "/Public");
-    assert_ne!(public, nfs_volume_id("naspolya", 2049, "/Multimedia"));
-    assert_ne!(public, nfs_volume_id("naspolya", 15481, "/Public"));
+    let public = nfs_volume_id("testnas", 2049, "/Public");
+    assert_ne!(public, nfs_volume_id("testnas", 2049, "/Multimedia"));
+    assert_ne!(public, nfs_volume_id("testnas", 15481, "/Public"));
     assert!(public.starts_with("nfs-"), "got: {public}");
 }
 
 #[test]
 fn nfs_volume_id_folds_the_host_but_keeps_the_export_by_bytes() {
     assert_eq!(
-        nfs_volume_id("Naspolya.LOCAL", 2049, "/Public"),
-        nfs_volume_id("naspolya.local", 2049, "/Public")
+        nfs_volume_id("Testnas.LOCAL", 2049, "/Public"),
+        nfs_volume_id("testnas.local", 2049, "/Public")
     );
     // A Linux server's export is a path on a case-sensitive filesystem, and it
     // stores bytes, so neither case nor Unicode normalization is folded.
     assert_ne!(
-        nfs_volume_id("naspolya", 2049, "/public"),
-        nfs_volume_id("naspolya", 2049, "/Public")
+        nfs_volume_id("testnas", 2049, "/public"),
+        nfs_volume_id("testnas", 2049, "/Public")
     );
     assert_ne!(
-        nfs_volume_id("naspolya", 2049, "/Caf\u{e9}"),
-        nfs_volume_id("naspolya", 2049, "/Cafe\u{301}")
+        nfs_volume_id("testnas", 2049, "/Caf\u{e9}"),
+        nfs_volume_id("testnas", 2049, "/Cafe\u{301}")
     );
 }
 
@@ -613,16 +616,16 @@ fn an_nfs_export_spelled_with_a_trailing_slash_is_the_same_export() {
     // `/Public/` and `/Public` name one export on every server, and `showmount`
     // and a typed address disagree on which they print.
     assert_eq!(
-        nfs_volume_id("naspolya", 2049, "/Public/"),
-        nfs_volume_id("naspolya", 2049, "/Public")
+        nfs_volume_id("testnas", 2049, "/Public/"),
+        nfs_volume_id("testnas", 2049, "/Public")
     );
     assert_eq!(
-        nfs_volume_id("naspolya", 2049, "/volume1/data//"),
-        nfs_volume_id("naspolya", 2049, "/volume1/data")
+        nfs_volume_id("testnas", 2049, "/volume1/data//"),
+        nfs_volume_id("testnas", 2049, "/volume1/data")
     );
     assert_eq!(
-        nfs_volume_id("naspolya", 2049, "/volume1//./data"),
-        nfs_volume_id("naspolya", 2049, "/volume1/data")
+        nfs_volume_id("testnas", 2049, "/volume1//./data"),
+        nfs_volume_id("testnas", 2049, "/volume1/data")
     );
     // The root export stays itself, and a relative spelling reads from it.
     assert_eq!(canonical_nfs_export("/"), "/");
@@ -633,7 +636,7 @@ fn an_nfs_export_spelled_with_a_trailing_slash_is_the_same_export() {
 #[test]
 fn a_nested_nfs_export_never_shares_an_id_with_its_parent() {
     assert_ne!(
-        nfs_volume_id("naspolya", 2049, "/volume1"),
-        nfs_volume_id("naspolya", 2049, "/volume1/data")
+        nfs_volume_id("testnas", 2049, "/volume1"),
+        nfs_volume_id("testnas", 2049, "/volume1/data")
     );
 }

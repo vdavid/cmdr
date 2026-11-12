@@ -45,7 +45,7 @@ struct Share {
 
 async fn share(lane: &str, meanwhile: Meanwhile) -> Share {
     let engine = TestOperations::new();
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     inner.create_directory(Path::new("/photos")).await.unwrap();
     inner.create_file(Path::new(ORIGINAL), BYTES).await.unwrap();
     let nas = OutageVolume::wrap(Arc::clone(&inner), lane);

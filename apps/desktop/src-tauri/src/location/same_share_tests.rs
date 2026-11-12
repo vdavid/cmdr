@@ -38,24 +38,32 @@ fn facts(volumes: Vec<VolumeFact>) -> VolumeFacts {
 }
 
 /// David's share, its GUID (if any) recorded by a signed-in session.
-fn david(guid: Option<&str>, share_name: &str) -> ShareIdentity {
-    ShareIdentity::new(guid.map(|g| (g, GuidProof::Authenticated)), share_name, Some("david"))
+fn test_user_3(guid: Option<&str>, share_name: &str) -> ShareIdentity {
+    ShareIdentity::new(
+        guid.map(|g| (g, GuidProof::Authenticated)),
+        share_name,
+        Some("test_user_3"),
+    )
 }
 
 /// David's share, its GUID filled by the credential-free probe.
 fn probed(guid: &str, share_name: &str) -> ShareIdentity {
-    ShareIdentity::new(Some((guid, GuidProof::Unauthenticated)), share_name, Some("david"))
+    ShareIdentity::new(
+        Some((guid, GuidProof::Unauthenticated)),
+        share_name,
+        Some("test_user_3"),
+    )
 }
 
 #[test]
 fn one_guid_and_one_share_name_ignoring_case_is_one_share() {
     let facts = facts(vec![
-        share("ts", "/Volumes/naspi", false, david(Some(BOX), "naspi")),
+        share("ts", "/Volumes/testshare", false, test_user_3(Some(BOX), "testshare")),
         share(
             "lan",
-            "/Volumes/naspi-1",
+            "/Volumes/testshare-1",
             true,
-            david(Some(&BOX.to_uppercase()), "NASPI"),
+            test_user_3(Some(&BOX.to_uppercase()), "TESTSHARE"),
         ),
     ]);
 
@@ -67,20 +75,25 @@ fn one_guid_and_one_share_name_ignoring_case_is_one_share() {
 #[test]
 fn one_guid_with_two_share_names_is_two_shares() {
     let facts = facts(vec![
-        share("naspi", "/Volumes/naspi", true, david(Some(BOX), "naspi")),
-        share("media", "/Volumes/media", true, david(Some(BOX), "media")),
+        share(
+            "testshare",
+            "/Volumes/testshare",
+            true,
+            test_user_3(Some(BOX), "testshare"),
+        ),
+        share("media", "/Volumes/media", true, test_user_3(Some(BOX), "media")),
     ]);
 
-    assert!(facts.same_share_as("naspi").is_empty());
+    assert!(facts.same_share_as("testshare").is_empty());
 }
 
 #[test]
 fn a_missing_or_all_zero_guid_proves_nothing() {
     let facts = facts(vec![
-        share("a", "/Volumes/naspi", true, david(None, "naspi")),
-        share("b", "/Volumes/naspi-1", true, david(None, "naspi")),
-        share("c", "/Volumes/naspi-2", true, david(Some(ZERO), "naspi")),
-        share("d", "/Volumes/naspi-3", true, david(Some(ZERO), "naspi")),
+        share("a", "/Volumes/testshare", true, test_user_3(None, "testshare")),
+        share("b", "/Volumes/testshare-1", true, test_user_3(None, "testshare")),
+        share("c", "/Volumes/testshare-2", true, test_user_3(Some(ZERO), "testshare")),
+        share("d", "/Volumes/testshare-3", true, test_user_3(Some(ZERO), "testshare")),
     ]);
 
     for id in ["a", "b", "c", "d"] {
@@ -91,8 +104,13 @@ fn a_missing_or_all_zero_guid_proves_nothing() {
 #[test]
 fn two_servers_with_one_share_name_are_two_shares() {
     let facts = facts(vec![
-        share("home", "/Volumes/public", true, david(Some(BOX), "public")),
-        share("office", "/Volumes/public-1", true, david(Some(OTHER_BOX), "public")),
+        share("home", "/Volumes/public", true, test_user_3(Some(BOX), "public")),
+        share(
+            "office",
+            "/Volumes/public-1",
+            true,
+            test_user_3(Some(OTHER_BOX), "public"),
+        ),
     ]);
 
     assert!(facts.same_share_as("home").is_empty());
@@ -103,19 +121,19 @@ fn two_servers_with_one_share_name_are_two_shares() {
 #[test]
 fn the_same_share_under_two_accounts_is_grouped_but_never_redirected() {
     let facts = facts(vec![
-        share("ts", "/Volumes/naspi", false, david(Some(BOX), "naspi")),
+        share("ts", "/Volumes/testshare", false, test_user_3(Some(BOX), "testshare")),
         share(
             "lan",
-            "/Volumes/naspi-1",
+            "/Volumes/testshare-1",
             true,
-            ShareIdentity::new(Some((BOX, GuidProof::Authenticated)), "naspi", Some("dori")),
+            ShareIdentity::new(Some((BOX, GuidProof::Authenticated)), "testshare", Some("test_user_7")),
         ),
     ]);
     let asked = crate::location::resolve::resolve(
         &facts,
         &crate::location::resolve::LocationInput {
             volume_id: Some("ts".to_string()),
-            path: "/Volumes/naspi/papers".to_string(),
+            path: "/Volumes/testshare/documents".to_string(),
         },
     )
     .expect("resolves");
@@ -130,19 +148,19 @@ fn the_same_share_under_two_accounts_is_grouped_but_never_redirected() {
 #[test]
 fn a_volume_not_connected_miss_names_the_same_share() {
     let facts = facts(vec![
-        share("ts", "/Volumes/naspi", false, david(Some(BOX), "naspi")),
+        share("ts", "/Volumes/testshare", false, test_user_3(Some(BOX), "testshare")),
         share(
             "lan",
-            "/Volumes/naspi-1",
+            "/Volumes/testshare-1",
             false,
-            ShareIdentity::new(Some((BOX, GuidProof::Authenticated)), "naspi", Some("dori")),
+            ShareIdentity::new(Some((BOX, GuidProof::Authenticated)), "testshare", Some("test_user_7")),
         ),
     ]);
     let asked = crate::location::resolve::resolve(
         &facts,
         &crate::location::resolve::LocationInput {
             volume_id: Some("ts".to_string()),
-            path: "/Volumes/naspi/papers".to_string(),
+            path: "/Volumes/testshare/documents".to_string(),
         },
     )
     .expect("resolves");
@@ -162,13 +180,13 @@ fn guest_sessions_are_one_account() {
     );
 }
 
-/// `papers` on the volume `id`, rooted at `root`, resolved.
+/// `documents` on the volume `id`, rooted at `root`, resolved.
 fn papers_on(facts: &VolumeFacts, id: &str, root: &str) -> ResolvedLocation {
     crate::location::resolve::resolve(
         facts,
         &crate::location::resolve::LocationInput {
             volume_id: Some(id.to_string()),
-            path: format!("{root}/papers"),
+            path: format!("{root}/documents"),
         },
     )
     .expect("resolves")
@@ -193,17 +211,17 @@ fn only_a_hint(facts: &VolumeFacts, asked: &str, root: &str, sibling: &str) {
 #[test]
 fn a_probe_filled_guid_on_either_member_only_ever_makes_a_hint() {
     let ts_probed = facts(vec![
-        share("ts", "/Volumes/naspi", false, probed(BOX, "naspi")),
-        share("lan", "/Volumes/naspi-1", true, david(Some(BOX), "naspi")),
+        share("ts", "/Volumes/testshare", false, probed(BOX, "testshare")),
+        share("lan", "/Volumes/testshare-1", true, test_user_3(Some(BOX), "testshare")),
     ]);
-    only_a_hint(&ts_probed, "ts", "/Volumes/naspi", "lan");
-    only_a_hint(&ts_probed, "lan", "/Volumes/naspi-1", "ts");
+    only_a_hint(&ts_probed, "ts", "/Volumes/testshare", "lan");
+    only_a_hint(&ts_probed, "lan", "/Volumes/testshare-1", "ts");
 
     let lan_probed = facts(vec![
-        share("ts", "/Volumes/naspi", false, david(Some(BOX), "naspi")),
-        share("lan", "/Volumes/naspi-1", true, probed(BOX, "naspi")),
+        share("ts", "/Volumes/testshare", false, test_user_3(Some(BOX), "testshare")),
+        share("lan", "/Volumes/testshare-1", true, probed(BOX, "testshare")),
     ]);
-    only_a_hint(&lan_probed, "ts", "/Volumes/naspi", "lan");
+    only_a_hint(&lan_probed, "ts", "/Volumes/testshare", "lan");
 }
 
 /// A guest session proves nothing about the box either: two guest members of one
@@ -223,15 +241,20 @@ fn a_guest_sessions_guid_only_ever_makes_a_hint() {
 /// disk. A probe-only member's index, however fresh, is never that pick.
 #[test]
 fn a_probe_only_member_is_never_the_offline_index_pick() {
-    let mut lan = share("lan", "/Volumes/naspi-1", false, david(Some(BOX), "naspi"));
+    let mut lan = share(
+        "lan",
+        "/Volumes/testshare-1",
+        false,
+        test_user_3(Some(BOX), "testshare"),
+    );
     lan.index.stored = true;
     lan.index.stored_as_of = Some(50);
-    let mut ts = share("ts", "/Volumes/naspi", false, probed(BOX, "naspi"));
+    let mut ts = share("ts", "/Volumes/testshare", false, probed(BOX, "testshare"));
     ts.index.stored = true;
     ts.index.stored_as_of = Some(100);
     let facts = facts(vec![lan, ts]);
 
-    let readers = facts.readers(&papers_on(&facts, "lan", "/Volumes/naspi-1"));
+    let readers = facts.readers(&papers_on(&facts, "lan", "/Volumes/testshare-1"));
 
     assert_eq!(
         readers
@@ -253,13 +276,13 @@ fn a_shares_identity_carries_the_proof_its_guid_was_recorded_with() {
     use crate::network::smb_server_guid::LiveShare;
 
     let row = |guid: Option<&str>, proof| KnownNetworkShare {
-        server_name: "naspolya".to_string(),
-        share_name: "naspi".to_string(),
+        server_name: "testnas".to_string(),
+        share_name: "testshare".to_string(),
         protocol: "smb".to_string(),
         last_connected_at: "2026-10-26T00:00:00Z".to_string(),
         last_connection_mode: ConnectionMode::Credentials,
         last_known_auth_options: AuthOptions::CredentialsOnly,
-        username: Some("david".to_string()),
+        username: Some("test_user_3".to_string()),
         address: None,
         port: None,
         volume_id: None,
@@ -271,43 +294,43 @@ fn a_shares_identity_carries_the_proof_its_guid_was_recorded_with() {
     let live = |proof| LiveShare {
         server_guid: ServerGuid::parse(BOX).expect("a GUID"),
         proof,
-        share_name: "naspi".to_string(),
-        username: Some("david".to_string()),
+        share_name: "testshare".to_string(),
+        username: Some("test_user_3".to_string()),
     };
 
     assert_eq!(
         identity_of(Some(&row(Some(BOX), GuidProof::Unauthenticated)), None),
-        Some(probed(BOX, "naspi"))
+        Some(probed(BOX, "testshare"))
     );
     assert_eq!(
         identity_of(Some(&row(Some(BOX), GuidProof::Authenticated)), None),
-        Some(david(Some(BOX), "naspi"))
+        Some(test_user_3(Some(BOX), "testshare"))
     );
     assert_eq!(
         identity_of(
             Some(&row(None, GuidProof::Unauthenticated)),
             Some(&live(GuidProof::Authenticated))
         ),
-        Some(david(Some(BOX), "naspi")),
+        Some(test_user_3(Some(BOX), "testshare")),
         "a row with no GUID borrows the session's, proof and all"
     );
     assert_eq!(
         identity_of(None, Some(&live(GuidProof::Unauthenticated))),
-        Some(probed(BOX, "naspi"))
+        Some(probed(BOX, "testshare"))
     );
 }
 
 #[test]
 fn a_read_is_re_addressed_onto_each_same_account_member_with_via() {
     let facts = facts(vec![
-        share("ts", "/Volumes/naspi", false, david(Some(BOX), "naspi")),
-        share("lan", "/Volumes/naspi-1", true, david(Some(BOX), "naspi")),
+        share("ts", "/Volumes/testshare", false, test_user_3(Some(BOX), "testshare")),
+        share("lan", "/Volumes/testshare-1", true, test_user_3(Some(BOX), "testshare")),
     ]);
     let asked = crate::location::resolve::resolve(
         &facts,
         &crate::location::resolve::LocationInput {
             volume_id: Some("ts".to_string()),
-            path: "/Volumes/naspi/papers/invoices paid".to_string(),
+            path: "/Volumes/testshare/documents/invoices".to_string(),
         },
     )
     .expect("resolves");
@@ -316,20 +339,25 @@ fn a_read_is_re_addressed_onto_each_same_account_member_with_via() {
 
     assert_eq!(readers[0], asked, "the volume asked comes first");
     assert_eq!(readers[1].location.volume_id, "lan");
-    assert_eq!(readers[1].location.path, "/Volumes/naspi-1/papers/invoices paid");
+    assert_eq!(readers[1].location.path, "/Volumes/testshare-1/documents/invoices");
     assert_eq!(readers[1].via.as_deref(), Some("ts"));
     assert!(readers[1].live);
 }
 
 #[test]
 fn the_preferred_member_is_live_then_indexed_then_freshest_on_disk() {
-    let mut ts = share("ts", "/Volumes/naspi", false, david(Some(BOX), "naspi"));
+    let mut ts = share("ts", "/Volumes/testshare", false, test_user_3(Some(BOX), "testshare"));
     ts.index.stored = true;
     ts.index.stored_as_of = Some(100);
-    let mut old = share("old", "/Volumes/naspi-old", false, david(Some(BOX), "naspi"));
+    let mut old = share(
+        "old",
+        "/Volumes/testshare-old",
+        false,
+        test_user_3(Some(BOX), "testshare"),
+    );
     old.index.stored = true;
     old.index.stored_as_of = Some(50);
-    let lan = share("lan", "/Volumes/naspi-1", true, david(Some(BOX), "naspi"));
+    let lan = share("lan", "/Volumes/testshare-1", true, test_user_3(Some(BOX), "testshare"));
 
     let offline = facts(vec![old.clone(), ts.clone()]);
     assert_eq!(offline.preferred_member("old").map(|v| v.id.as_str()), Some("ts"));
@@ -357,8 +385,8 @@ fn target<'a>(facts: &'a VolumeFacts, id: &str) -> Option<&'a str> {
 #[test]
 fn a_connect_on_a_member_with_a_serving_sibling_lands_on_the_sibling() {
     let facts = facts(vec![
-        share("ts", "/Volumes/naspi", false, david(Some(BOX), "naspi")),
-        share("lan", "/Volumes/naspi-1", true, david(Some(BOX), "naspi")),
+        share("ts", "/Volumes/testshare", false, test_user_3(Some(BOX), "testshare")),
+        share("lan", "/Volumes/testshare-1", true, test_user_3(Some(BOX), "testshare")),
     ]);
 
     assert_eq!(target(&facts, "ts"), Some("lan"));
@@ -370,8 +398,13 @@ fn a_connect_on_a_member_with_a_serving_sibling_lands_on_the_sibling() {
 #[test]
 fn with_no_member_serving_the_most_recently_connected_one_is_dialed() {
     let facts = facts(vec![
-        share("ts", "/Volumes/naspi", false, david(Some(BOX), "naspi")),
-        share("lan", "/Volumes/naspi-1", false, david(Some(BOX), "naspi")),
+        share("ts", "/Volumes/testshare", false, test_user_3(Some(BOX), "testshare")),
+        share(
+            "lan",
+            "/Volumes/testshare-1",
+            false,
+            test_user_3(Some(BOX), "testshare"),
+        ),
     ]);
 
     assert_eq!(target(&facts, "ts"), Some("lan"));
@@ -387,10 +420,10 @@ fn with_no_member_serving_the_most_recently_connected_one_is_dialed() {
 /// recency, and the standing of whichever wins decides the move.
 #[test]
 fn a_registered_member_that_dropped_is_not_serving() {
-    let mut lan = share("lan", "/Volumes/naspi-1", true, david(Some(BOX), "naspi"));
+    let mut lan = share("lan", "/Volumes/testshare-1", true, test_user_3(Some(BOX), "testshare"));
     lan.connection_state = Some(ConnectionState::Disconnected);
     let facts = facts(vec![
-        share("ts", "/Volumes/naspi", false, david(Some(BOX), "naspi")),
+        share("ts", "/Volumes/testshare", false, test_user_3(Some(BOX), "testshare")),
         lan,
     ]);
 
@@ -407,19 +440,19 @@ fn a_registered_member_that_dropped_is_not_serving() {
 #[test]
 fn a_connect_never_lands_on_another_account_or_an_unproven_member() {
     let other_account = facts(vec![
-        share("ts", "/Volumes/naspi", false, david(Some(BOX), "naspi")),
+        share("ts", "/Volumes/testshare", false, test_user_3(Some(BOX), "testshare")),
         share(
             "lan",
-            "/Volumes/naspi-1",
+            "/Volumes/testshare-1",
             true,
-            ShareIdentity::new(Some((BOX, GuidProof::Authenticated)), "naspi", Some("dori")),
+            ShareIdentity::new(Some((BOX, GuidProof::Authenticated)), "testshare", Some("test_user_7")),
         ),
     ]);
     assert_eq!(target(&other_account, "ts"), Some("ts"));
 
     let probe_only = facts(vec![
-        share("ts", "/Volumes/naspi", false, david(Some(BOX), "naspi")),
-        share("lan", "/Volumes/naspi-1", false, probed(BOX, "naspi")),
+        share("ts", "/Volumes/testshare", false, test_user_3(Some(BOX), "testshare")),
+        share("lan", "/Volumes/testshare-1", false, probed(BOX, "testshare")),
     ]);
     assert_eq!(target(&probe_only, "ts"), Some("ts"));
 }

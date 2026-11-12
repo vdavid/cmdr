@@ -261,7 +261,7 @@ fn honest_statuses_serialize_with_a_typed_status_tag() {
 #[test]
 fn protected_hits_are_hidden_before_the_cap() {
     let dir = TestDir::new("photos-protected");
-    seed_ocr_row(&dir, "root", "/Volumes/naspi/home/.ssh/a.png", "invoice one");
+    seed_ocr_row(&dir, "root", "/Volumes/testshare/home/.ssh/a.png", "invoice one");
     seed_ocr_row(&dir, "root", "/Users/someone/Pictures/b.png", "invoice two");
 
     let (hits, hidden) = run_search(&dir, &["root".to_string()], "invoice", EffectiveMode::OcrOnly, 1);

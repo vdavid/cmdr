@@ -40,7 +40,7 @@ fn outage_state(engine: &TestOperations, budget: Duration) -> Arc<WriteOperation
 /// A share holding `/batch` (four files) and `/batch/sub` (two more): six
 /// files, 6 bytes each, two folders.
 async fn nas(lane: &str) -> (Arc<OutageVolume>, Arc<dyn Volume>) {
-    let inner = Arc::new(InMemoryVolume::new("Naspolya").with_space_info(10_000_000, 10_000_000));
+    let inner = Arc::new(InMemoryVolume::new("Testnas").with_space_info(10_000_000, 10_000_000));
     inner.create_directory(Path::new("/batch")).await.unwrap();
     inner.create_directory(Path::new("/batch/sub")).await.unwrap();
     for path in [
@@ -123,7 +123,7 @@ async fn a_scan_the_share_drops_under_waits_and_counts_every_file_once() {
                 .activity
                 .as_ref()
                 .is_some_and(|activity| activity.waiting_on == TransferWaitReason::Reconnecting
-                    && activity.reconnecting_volume.as_deref() == Some("Naspolya"))),
+                    && activity.reconnecting_volume.as_deref() == Some("Testnas"))),
         "the scan's progress said it was waiting for the share: {progress:?}"
     );
     let last = progress.last().expect("the scan's last tally");
@@ -136,7 +136,7 @@ async fn a_scan_the_share_drops_under_waits_and_counts_every_file_once() {
 }
 
 /// The share never comes back: after the budget, the scan stops and the person
-/// reads "Lost the connection to Naspolya", the folder it was listing as
+/// reads "Lost the connection to Testnas", the folder it was listing as
 /// context.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_scan_whose_share_stays_gone_says_it_lost_the_connection() {
@@ -153,7 +153,7 @@ async fn a_scan_whose_share_stays_gone_says_it_lost_the_connection() {
         matches!(
             &failure.error,
             WriteOperationError::ServerConnectionLost { path, volume_name, gave_up_after_secs: Some(_) }
-                if path == "/batch/sub" && volume_name == "Naspolya"
+                if path == "/batch/sub" && volume_name == "Testnas"
         ),
         "the connection is the cause, named with the wait: {:?}",
         failure.error

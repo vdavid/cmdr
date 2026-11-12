@@ -14,8 +14,8 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the decision rationale an
   for the file-vs-dir classification, so a symlinked dir navigates into the symlink path and the listing follows it,
   correct and intended.
 - **Every answer is an app path** (`app_spelling`, through `cmdr_fs::volume::path_grammar`). The disk is read through
-  the OS's own spelling, and the pane gets the grammar's: on Windows a typed `C:\Users\ada`, `~\Documents`, or
-  `\\server\share` comes back as `C:/Users/ada/…` or `//server/share`, and `~` expands per the grammar
+  the OS's own spelling, and the pane gets the grammar's: on Windows a typed `C:\Users\test_user_1`, `~\Documents`, or
+  `\\server\share` comes back as `C:/Users/test_user_1/…` or `//server/share`, and `~` expands per the grammar
   (`cmdr_fs::tilde`, #1109). On macOS and Linux the spelling is the normalized path itself (a `..` right after `/`
   clamps at the root).
 - **`resolve_go_to_path` is async + `blocking_with_timeout` (2s).** It calls `metadata`/`exists`, which can block

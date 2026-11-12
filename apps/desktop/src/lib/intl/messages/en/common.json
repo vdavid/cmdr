@@ -13,7 +13,7 @@
   "@common.attachEmail": {
     "description": "Label for an opt-in checkbox to include the user's email address so the team can follow up on their report. Shared verbatim by the crash-report, error-report, and feedback dialogs. \"You\" is the Cmdr team; the user is the one speaking. This variant appears when the app already has an address on file, shown in the parentheses; when it doesn't, common.attachEmailPrompt takes its place, so keep the two wordings parallel. <change> wraps the inline link that opens Settings on the field holding that address; keep its text short and lowercase, a verb the user acts on. The crash-report and feedback dialogs place the same checkbox above their Send button.",
     "placeholders": {
-      "emailAddress": "the user's email address on file (e.g. alex@example.com)"
+      "emailAddress": "the user's email address on file (e.g. test_user_11@example.com)"
     }
   },
 

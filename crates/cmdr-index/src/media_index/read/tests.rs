@@ -577,8 +577,8 @@ fn an_offline_network_volume_places_its_rows_by_the_mount_root_it_was_indexed_un
     seed_facts(&writer, "/Photos/scan.jpg", "invoice from the tax office", vec![]);
     seed_facts(&writer, "/Docs/scan.jpg", "invoice from the plumber", vec![]);
     writer.flush_blocking().expect("flush");
-    crate::media_index::store::seed_mount_root(&db_path, "/Volumes/naspi");
-    let _exclusions = exclude(&["/Volumes/naspi/Photos"]);
+    crate::media_index::store::seed_mount_root(&db_path, "/Volumes/testshare");
+    let _exclusions = exclude(&["/Volumes/testshare/Photos"]);
 
     let hits: Vec<String> = MediaIndex::open(dir.path(), "excluded-offline-nas")
         .search_ocr("invoice", 10)
@@ -601,7 +601,7 @@ fn a_volume_with_no_known_mount_root_shows_nothing_while_a_folder_is_excluded() 
     let writer = MediaWriter::spawn(&db_path, "excluded-unknown-root").expect("writer");
     seed_facts(&writer, "/Photos/scan.jpg", "invoice from the tax office", vec![]);
     writer.flush_blocking().expect("flush");
-    let _exclusions = exclude(&["/Volumes/naspi/Photos"]);
+    let _exclusions = exclude(&["/Volumes/testshare/Photos"]);
 
     let hits = MediaIndex::open(dir.path(), "excluded-unknown-root")
         .search_ocr("invoice", 10)
@@ -612,8 +612,8 @@ fn a_volume_with_no_known_mount_root_shows_nothing_while_a_folder_is_excluded() 
 
 #[test]
 fn a_share_remounted_elsewhere_stays_placed_by_every_root_it_was_indexed_under() {
-    // Indexed at /Volumes/naspi, where the folder was excluded, then again at
-    // /Volumes/naspi-1 after a remount. Both roots stay known, so the folder stays hidden
+    // Indexed at /Volumes/testshare, where the folder was excluded, then again at
+    // /Volumes/testshare-1 after a remount. Both roots stay known, so the folder stays hidden
     // with the share offline.
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = media_db_path(dir.path(), "excluded-remounted-nas");
@@ -622,9 +622,9 @@ fn a_share_remounted_elsewhere_stays_placed_by_every_root_it_was_indexed_under()
     seed_facts(&writer, "/Photos/scan.jpg", "invoice from the tax office", vec![]);
     seed_facts(&writer, "/Docs/scan.jpg", "invoice from the plumber", vec![]);
     writer.flush_blocking().expect("flush");
-    crate::media_index::store::seed_mount_root(&db_path, "/Volumes/naspi");
-    crate::media_index::store::seed_mount_root(&db_path, "/Volumes/naspi-1");
-    let _exclusions = exclude(&["/Volumes/naspi/Photos"]);
+    crate::media_index::store::seed_mount_root(&db_path, "/Volumes/testshare");
+    crate::media_index::store::seed_mount_root(&db_path, "/Volumes/testshare-1");
+    let _exclusions = exclude(&["/Volumes/testshare/Photos"]);
 
     let hits: Vec<String> = MediaIndex::open(dir.path(), "excluded-remounted-nas")
         .search_ocr("invoice", 10)
@@ -666,8 +666,8 @@ fn an_nfc_exclusion_hides_an_nfd_stored_path() {
 
 #[test]
 fn a_share_mounted_at_a_new_root_stays_excluded_at_the_root_it_was_excluded_under() {
-    // Mounted today at /Volumes/naspi-1, indexed earlier at /Volumes/naspi, where the folder
-    // was excluded. Placing the rows by the live root alone would put them under naspi-1
+    // Mounted today at /Volumes/testshare-1, indexed earlier at /Volumes/testshare, where the folder
+    // was excluded. Placing the rows by the live root alone would put them under testshare-1
     // and show them.
     use cmdr_fs::volume::InMemoryVolume;
     use std::sync::Arc;
@@ -679,14 +679,14 @@ fn a_share_mounted_at_a_new_root_stays_excluded_at_the_root_it_was_excluded_unde
     seed_facts(&writer, "/Photos/scan.jpg", "invoice from the tax office", vec![]);
     seed_facts(&writer, "/Docs/scan.jpg", "invoice from the plumber", vec![]);
     writer.flush_blocking().expect("flush");
-    crate::media_index::store::seed_mount_root(&db_path, "/Volumes/naspi");
+    crate::media_index::store::seed_mount_root(&db_path, "/Volumes/testshare");
     let provider = crate::indexing::host::volumes::FakeVolumeProvider::shared();
     provider.register(
         "excluded-live-remount",
-        Arc::new(InMemoryVolume::new("naspi").with_root("/Volumes/naspi-1")),
+        Arc::new(InMemoryVolume::new("testshare").with_root("/Volumes/testshare-1")),
     );
     let _installed = crate::indexing::host::volumes::install_for_test(provider);
-    let _exclusions = exclude(&["/Volumes/naspi/Photos"]);
+    let _exclusions = exclude(&["/Volumes/testshare/Photos"]);
 
     let hits: Vec<String> = MediaIndex::open(dir.path(), "excluded-live-remount")
         .search_ocr("invoice", 10)

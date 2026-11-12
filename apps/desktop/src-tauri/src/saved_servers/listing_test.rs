@@ -44,7 +44,7 @@ fn the_listing_unions_the_sftp_the_webdav_and_the_smb_stores() {
     let sftp = find(&servers, &format!("{sftp_host} over ssh"));
     assert_eq!(sftp.protocol, ServerProtocol::Sftp);
     assert_eq!(sftp.address, format!("{sftp_host}:2222"));
-    assert_eq!(sftp.username.as_deref(), Some("ada"));
+    assert_eq!(sftp.username.as_deref(), Some("test_user_1"));
     assert!(sftp.pinned, "the store said pinned");
     assert_eq!(sftp.last_connected_at.as_deref(), Some("2026-09-01T00:00:00Z"));
 
@@ -83,9 +83,9 @@ fn an_account_label_is_the_users_name_and_an_smb_hosts_address_is_a_stand_in() {
 fn a_named_smb_host_is_listed_by_its_name_as_the_users_own() {
     let smb_host = "192.0.2.43";
 
-    let servers = saved_servers_of(vec![named_manual_entry(smb_host, "Sven's NAS")]);
+    let servers = saved_servers_of(vec![named_manual_entry(smb_host, "Test NAS")]);
 
-    let smb = find(&servers, "Sven's NAS");
+    let smb = find(&servers, "Test NAS");
     assert_eq!(smb.name_source, ServerNameSource::User);
     assert_eq!(smb.address, smb_host, "the address stays what was typed");
 }
@@ -96,13 +96,13 @@ fn a_named_smb_host_is_listed_by_its_name_as_the_users_own() {
 fn an_smb_host_carries_the_account_typed_for_it() {
     let smb_host = "192.0.2.45";
     let entry = ManualServerEntry {
-        username: Some("sven".to_string()),
+        username: Some("test_user_6".to_string()),
         ..manual_entry(smb_host)
     };
 
     let servers = saved_servers_of(vec![entry]);
 
-    assert_eq!(find(&servers, smb_host).username.as_deref(), Some("sven"));
+    assert_eq!(find(&servers, smb_host).username.as_deref(), Some("test_user_6"));
 }
 
 /// ❗ **A manual entry wins over a share-history row for the same host**, so a
@@ -154,7 +154,10 @@ fn an_sftp_account_has_one_place_carrying_the_volume_id() {
 
     assert_eq!(sftp.places.len(), 1, "one account, one place");
     let place = &sftp.places[0];
-    assert_eq!(place.volume_id, cmdr_fs::volume::sftp_volume_id(host, 2222, "ada"));
+    assert_eq!(
+        place.volume_id,
+        cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1")
+    );
     assert_eq!(
         place.volume_id, sftp.id,
         "the account IS the place for a one-place protocol"
@@ -198,7 +201,7 @@ fn an_unnamed_account_is_listed_by_its_derived_label_as_a_stand_in() {
 
     let servers = saved_servers_of(Vec::new());
 
-    for label in [format!("ada@{sftp_host}"), format!("ada@{webdav_host}")] {
+    for label in [format!("test_user_1@{sftp_host}"), format!("test_user_1@{webdav_host}")] {
         let server = find(&servers, &label);
         assert_eq!(server.name_source, ServerNameSource::Fallback, "{label}");
         assert_eq!(server.places[0].name, label, "the place carries the same label");
@@ -212,17 +215,22 @@ fn an_unnamed_account_is_listed_by_its_derived_label_as_a_stand_in() {
 fn a_saved_share_is_a_place_under_its_host_with_its_account() {
     let smb_host = "192.0.2.46";
     let servers = listing(
-        vec![named_manual_entry(smb_host, "Sven's NAS")],
-        vec![share_row(smb_host, "Container", Some("sven"), Some("smb-container"))],
+        vec![named_manual_entry(smb_host, "Test NAS")],
+        vec![share_row(
+            smb_host,
+            "Container",
+            Some("test_user_6"),
+            Some("smb-container"),
+        )],
         &[],
     );
 
-    let host = find(&servers, "Sven's NAS");
+    let host = find(&servers, "Test NAS");
     assert_eq!(host.places.len(), 1);
     let place = &host.places[0];
     assert_eq!(place.volume_id, "smb-container");
     assert_eq!(place.name, "Container");
-    assert_eq!(place.username.as_deref(), Some("sven"));
+    assert_eq!(place.username.as_deref(), Some("test_user_6"));
     assert_eq!(place.app_root, "/Volumes/Container");
     assert!(place.pinned);
     assert_eq!(host.last_connected_at.as_deref(), Some("2026-09-24T10:00:00Z"));
@@ -249,7 +257,7 @@ fn a_saved_share_on_a_host_nobody_typed_in_brings_its_host() {
 fn a_share_no_mount_went_through_is_listed_by_its_address() {
     let servers = listing(
         vec![named_manual_entry("192.0.2.48", "Office")],
-        vec![share_row("192.0.2.48", "Scans", Some("ada"), None)],
+        vec![share_row("192.0.2.48", "Scans", Some("test_user_1"), None)],
         &[],
     );
 
@@ -414,7 +422,7 @@ fn a_saved_servers_id_is_the_listings_own_whatever_the_url_spelling() {
     let typed = |url: &str| ServerTarget::Webdav {
         display_name: String::new(),
         url: url.to_string(),
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         remote_root: "/".to_string(),
         start_folder: None,
         auto_reconnect: true,

@@ -120,7 +120,7 @@ struct Told {
 ///
 /// A `Vec` rather than a `HashSet` because membership is an identity question,
 /// not a string question: `same_machine` pairs the name forms one server arrives
-/// under (`Naspolya._smb._tcp.local`, `naspolya.local`, `192.168.1.111`) using the
+/// under (`Testnas._smb._tcp.local`, `testnas.local`, `192.168.50.10`) using the
 /// live mDNS state, so there's no single key to hash. The list holds one entry per
 /// server that ever fell back in a session, so the scan is over a handful.
 #[derive(Default)]

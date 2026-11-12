@@ -163,7 +163,7 @@ fn a_link_on_the_boot_disk_onto_a_deeper_volume_is_refused() {
     let ask = LiveTarget {
         others: vec![OtherVolume {
             volume_id: "nas".to_string(),
-            name: "naspi".to_string(),
+            name: "testshare".to_string(),
             root: share_root.clone(),
         }],
         ..target("/", &format!("{}/nas", physical(&disk)))
@@ -177,13 +177,13 @@ fn a_link_on_the_boot_disk_onto_a_deeper_volume_is_refused() {
 #[test]
 fn a_link_inside_the_volume_lists_the_folder_it_points_to_under_the_volumes_own_root() {
     let dir = TestDir::new("live-link-inside");
-    std::fs::create_dir_all(dir.join("papers/invoices")).expect("dirs");
-    symlink("papers/invoices", dir.join("invoices")).expect("link");
+    std::fs::create_dir_all(dir.join("documents/invoices")).expect("dirs");
+    symlink("documents/invoices", dir.join("invoices")).expect("link");
     // The root as the volume spells it, NOT resolved: the answer keeps that spelling.
     let root = dir.to_string_lossy().into_owned();
     assert_eq!(
         gate_local(&target(&root, &format!("{root}/invoices")), &answered()),
-        Ok(format!("{root}/papers/invoices"))
+        Ok(format!("{root}/documents/invoices"))
     );
 }
 

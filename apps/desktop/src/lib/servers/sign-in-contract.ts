@@ -44,7 +44,7 @@ export interface SignInEndpoint {
   protocol: ServerProtocol
   /** The server's own name, for the title. */
   displayName: string
-  /** What the header shows: `ada@nas.local:22`, or a base URL. */
+  /** What the header shows: `test_user_1@testnas.local:22`, or a base URL. */
   address: string
   /** The host on its own, for the refusals that name the server rather than the account. */
   host: string

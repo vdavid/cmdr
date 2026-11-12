@@ -134,7 +134,7 @@ fn facts(destination_state: DestinationState) -> GroupReadFacts {
 fn registered(id: &str) -> Option<std::sync::Arc<dyn Volume>> {
     use cmdr_fs::volume::InMemoryVolume;
     match id {
-        "smb-naspi" => Some(std::sync::Arc::new(InMemoryVolume::new("naspi on 192.168.1.5"))),
+        "smb-testshare" => Some(std::sync::Arc::new(InMemoryVolume::new("testshare on 192.168.1.5"))),
         "root" => Some(std::sync::Arc::new(TrashKeeping(InMemoryVolume::new("Macintosh HD")))),
         _ => None,
     }
@@ -190,7 +190,7 @@ fn a_trash_group_on_a_volume_without_a_trash_says_it_runs_as_a_permanent_delete(
     trash.destination = None;
 
     let on_root = read_facts(&trash, volume_facts(), DestinationState::NotApplicable);
-    trash.source_volume_id = "smb-naspi".into();
+    trash.source_volume_id = "smb-testshare".into();
     let on_share = read_facts(&trash, volume_facts(), DestinationState::NotApplicable);
     trash.source_volume_id = "smb-saved".into();
     let on_unconnected = read_facts(&trash, volume_facts(), DestinationState::NotApplicable);
@@ -209,7 +209,7 @@ fn a_trash_group_on_a_volume_without_a_trash_says_it_runs_as_a_permanent_delete(
 #[test]
 fn the_destination_volume_is_named_even_before_anyone_connects_it() {
     let mut moving = group(1, 1, ProposalVerb::Move).group;
-    moving.destination_volume_id = Some("smb-naspi".into());
+    moving.destination_volume_id = Some("smb-testshare".into());
     let mut onto_saved = group(2, 1, ProposalVerb::Move).group;
     onto_saved.destination_volume_id = Some("smb-saved".into());
     let mut renaming = group(3, 1, ProposalVerb::Rename).group;
@@ -220,11 +220,11 @@ fn the_destination_volume_is_named_even_before_anyone_connects_it() {
     let name = |group: &ProposalGroup| {
         read_facts(group, volume_facts(), DestinationState::NotApplicable).destination_volume_name
     };
-    assert_eq!(name(&moving).as_deref(), Some("naspi on 192.168.1.5"));
+    assert_eq!(name(&moving).as_deref(), Some("testshare on 192.168.1.5"));
     assert_eq!(name(&onto_saved).as_deref(), Some("archive on 192.168.1.5"));
     assert_eq!(name(&renaming).as_deref(), Some("Macintosh HD"));
     assert_eq!(name(&trashing), None);
-    assert_eq!(destination_volume_id_of(&moving), Some("smb-naspi"));
+    assert_eq!(destination_volume_id_of(&moving), Some("smb-testshare"));
     assert_eq!(destination_volume_id_of(&renaming), Some("root"));
     assert_eq!(destination_volume_id_of(&trashing), None);
 }
@@ -250,8 +250,8 @@ fn a_re_addressed_destination_is_named_as_the_volume_written_to() {
         index: IndexSources::none(id),
         share: Some(ShareIdentity::new(
             Some(("6ba7b810-9dad-11d1-80b4-00c04fd430c8", GuidProof::Authenticated)),
-            "naspi",
-            Some("david"),
+            "testshare",
+            Some("test_user_3"),
         )),
     };
     let facts = crate::location::resolve::VolumeFacts {
@@ -261,8 +261,8 @@ fn a_re_addressed_destination_is_named_as_the_volume_written_to() {
                 share: None,
                 ..nas("root", "/", true)
             },
-            nas("smb-saved", "/Volumes/naspi", false),
-            nas("smb-naspi", "/Volumes/naspi-1", true),
+            nas("smb-saved", "/Volumes/testshare", false),
+            nas("smb-testshare", "/Volumes/testshare-1", true),
         ],
         mount_areas: vec!["/Volumes".to_string()],
     };
@@ -274,7 +274,7 @@ fn a_re_addressed_destination_is_named_as_the_volume_written_to() {
             "verb": "move",
             "sourceVolumeId": "root",
             "displayName": "One invoice",
-            "destination": { "volumeId": "smb-saved", "path": "/Volumes/naspi/papers" },
+            "destination": { "volumeId": "smb-saved", "path": "/Volumes/testshare/documents" },
             "paths": ["/Users/someone/Downloads/Invoice-X.pdf"],
         }] }),
         &facts,
@@ -284,9 +284,12 @@ fn a_re_addressed_destination_is_named_as_the_volume_written_to() {
         .expect("exists");
 
     let read = read_facts(&group, volume_facts(), DestinationState::NotApplicable);
-    assert_eq!(read.destination_volume_name.as_deref(), Some("naspi on 192.168.1.5"));
-    assert_eq!(destination_volume_id_of(&group), Some("smb-naspi"));
-    assert_eq!(group.destination.as_deref(), Some("/Volumes/naspi-1/papers"));
+    assert_eq!(
+        read.destination_volume_name.as_deref(),
+        Some("testshare on 192.168.1.5")
+    );
+    assert_eq!(destination_volume_id_of(&group), Some("smb-testshare"));
+    assert_eq!(group.destination.as_deref(), Some("/Volumes/testshare-1/documents"));
 }
 
 fn sweep(id: i64) -> ProposalSweep {
@@ -412,10 +415,10 @@ fn move_to(destination_volume_id: &str, destination: &str) -> ProposalGroup {
 #[tokio::test(flavor = "multi_thread")]
 async fn a_destination_on_a_saved_share_nobody_connected_says_so() {
     use crate::network::known_shares::{self, AuthOptions, ConnectionMode, KnownNetworkShare};
-    let volume_id = "smb-198-51-100-62-445-naspi-suggested-ops-test";
+    let volume_id = "smb-198-51-100-62-445-testshare-suggested-ops-test";
     known_shares::remember_share(KnownNetworkShare {
         server_name: "198.51.100.62".to_string(),
-        share_name: "naspi".to_string(),
+        share_name: "testshare".to_string(),
         protocol: "smb".to_string(),
         last_connected_at: "2026-10-26T00:00:00Z".to_string(),
         last_connection_mode: ConnectionMode::Guest,
@@ -424,13 +427,13 @@ async fn a_destination_on_a_saved_share_nobody_connected_says_so() {
         address: Some("198.51.100.62".to_string()),
         port: Some(445),
         volume_id: Some(volume_id.to_string()),
-        mount_path: Some("/Volumes/naspi-suggested-ops-test".to_string()),
+        mount_path: Some("/Volumes/testshare-suggested-ops-test".to_string()),
         pinned: true,
         server_guid: None,
         server_guid_proof: crate::network::server_guid::GuidProof::Unauthenticated,
     });
 
-    let state = destination_state(&move_to(volume_id, "/Volumes/naspi-suggested-ops-test/Installers")).await;
+    let state = destination_state(&move_to(volume_id, "/Volumes/testshare-suggested-ops-test/Installers")).await;
 
     assert_eq!(state, DestinationState::NotConnected);
 }
@@ -573,8 +576,8 @@ fn the_source_volume_is_named_even_before_anyone_connects_it() {
     let name =
         |group: &ProposalGroup| read_facts(group, volume_facts(), DestinationState::NotApplicable).source_volume_name;
 
-    group.source_volume_id = "smb-naspi".into();
-    assert_eq!(name(&group).as_deref(), Some("naspi on 192.168.1.5"));
+    group.source_volume_id = "smb-testshare".into();
+    assert_eq!(name(&group).as_deref(), Some("testshare on 192.168.1.5"));
     group.source_volume_id = "smb-saved".into();
     assert_eq!(name(&group).as_deref(), Some("archive on 192.168.1.5"));
     group.source_volume_id = "nothing-knows-this".into();

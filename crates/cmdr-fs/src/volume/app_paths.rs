@@ -2,13 +2,13 @@
 //! root moves.
 //!
 //! An app path is what a pane, a tab, or a favorite holds: an OS path for a
-//! mounted volume (`/Volumes/naspi/docs`), a `scheme://` path for one with no
-//! mount (`sftp://ada@nas:22/srv/data`, `mtp://…`). Both spell their tree with
+//! mounted volume (`/Volumes/testshare/docs`), a `scheme://` path for one with no
+//! mount (`sftp://test_user_1@nas:22/srv/data`, `mtp://…`). Both spell their tree with
 //! `/` separators under a root, so one segment-wise test serves both.
 //!
-//! ❗ **Whole segments, ❌ never a raw string prefix.** `sftp://ada@nas:22/srv/data`
-//! would otherwise claim `sftp://ada@nas:22/srv/data-1`, a different tree, and
-//! `/Volumes/naspi` would claim `/Volumes/naspi-1`, a different share.
+//! ❗ **Whole segments, ❌ never a raw string prefix.** `sftp://test_user_1@nas:22/srv/data`
+//! would otherwise claim `sftp://test_user_1@nas:22/srv/data-1`, a different tree, and
+//! `/Volumes/testshare` would claim `/Volumes/testshare-1`, a different share.
 //!
 //! Lexical on purpose: no `stat`, no network. The callers (path resolution for
 //! devices and servers, the favorites add gate and reach pass) run where a
@@ -36,7 +36,7 @@ pub fn path_is_under(path: &str, root: &str) -> bool {
 /// `None` when it isn't under `old_root` at all.
 ///
 /// For a mounted volume whose mount point moved (a share remounted at
-/// `/Volumes/naspi-1`, a drive renamed): the folder inside it is the same one.
+/// `/Volumes/testshare-1`, a drive renamed): the folder inside it is the same one.
 pub fn rebase(path: &str, old_root: &str, new_root: &str) -> Option<String> {
     let relative = path_under(path, old_root)?;
     if relative.is_empty() {

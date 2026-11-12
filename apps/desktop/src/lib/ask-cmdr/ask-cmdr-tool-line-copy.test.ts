@@ -163,7 +163,7 @@ describe('toolLineLabel', () => {
   })
 
   it('never claims a server connected when it didn’t', () => {
-    const volume: ToolSubject = { kind: 'volume', id: 'smb-naspi' }
+    const volume: ToolSubject = { kind: 'volume', id: 'smb-testshare' }
     expect(said('connect_volume', volume, { running: true, outcome: null })).toBe('Connecting to your server')
     expect(said('connect_volume', volume, { outcome: { kind: 'connection', outcome: 'connected' } })).toBe(
       'Connected to your server',
@@ -292,7 +292,7 @@ describe('toolLineLabel', () => {
       photoSearch: ['search_photos', { kind: 'photoSearch', query: 'x' }],
       importantFolders: ['important_folders', { kind: 'importantFolders' }],
       drives: ['list_volumes', { kind: 'drives' }],
-      volume: ['connect_volume', { kind: 'volume', id: 'smb-naspi' }],
+      volume: ['connect_volume', { kind: 'volume', id: 'smb-testshare' }],
       operationLog: ['operations_list', { kind: 'operationLog' }],
       operation: ['operations_get', { kind: 'operation', id: 'op-1' }],
       renamePlan: ['propose_rename_plan', { kind: 'renamePlan', count: 2 }],

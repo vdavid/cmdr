@@ -35,7 +35,9 @@ describe('openInEditorOrExplain: the guard', () => {
   })
 
   it('refuses a file inside an archive, whose path looks like a plain one', async () => {
-    await expect(openInEditorOrExplain('root', '/Users/dave/photos.zip/notes.txt')).resolves.toBe('refusedNotOnThisMac')
+    await expect(openInEditorOrExplain('root', '/Users/test_user_10/photos.zip/notes.txt')).resolves.toBe(
+      'refusedNotOnThisMac',
+    )
 
     expect(openFileInEditor).not.toHaveBeenCalled()
   })
@@ -43,15 +45,15 @@ describe('openInEditorOrExplain: the guard', () => {
 
 describe('openInEditorOrExplain: a real file', () => {
   it('reports opened when an app was asked to open it', async () => {
-    await expect(openInEditorOrExplain('root', '/Users/dave/notes.txt')).resolves.toBe('opened')
+    await expect(openInEditorOrExplain('root', '/Users/test_user_10/notes.txt')).resolves.toBe('opened')
 
-    expect(openFileInEditor).toHaveBeenCalledExactlyOnceWith('/Users/dave/notes.txt')
+    expect(openFileInEditor).toHaveBeenCalledExactlyOnceWith('/Users/test_user_10/notes.txt')
     expect(addToast).not.toHaveBeenCalled()
   })
 
   it('reports launchFailed when the launch never started', async () => {
     openFileInEditor.mockResolvedValue(false)
 
-    await expect(openInEditorOrExplain('root', '/Users/dave/notes.txt')).resolves.toBe('launchFailed')
+    await expect(openInEditorOrExplain('root', '/Users/test_user_10/notes.txt')).resolves.toBe('launchFailed')
   })
 })

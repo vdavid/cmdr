@@ -65,7 +65,7 @@ fn verify(platform: Option<CertificateError>, pin: Option<&str>) -> Result<Serve
     verifier.verify_server_cert(
         &CertificateDer::from(LEAF),
         &[],
-        &ServerName::try_from("nas.local").expect("a valid name"),
+        &ServerName::try_from("testnas.local").expect("a valid name"),
         &[],
         UnixTime::now(),
     )

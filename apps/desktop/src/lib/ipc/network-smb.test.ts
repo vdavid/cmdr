@@ -111,7 +111,7 @@ describe('commands.mountNetworkShare', () => {
 
     const server = 'storage.local'
     const share = 'Public'
-    const username: string | null = 'dave'
+    const username: string | null = 'test_user_10'
     const password: string | null = 'hunter2'
     const port: number | null = 445
     const timeoutMs: number | null = 20000

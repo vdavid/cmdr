@@ -65,7 +65,8 @@ async fn the_switch_back_on_lets_the_probe_through_again() {
 /// the switch is on.
 #[tokio::test]
 async fn the_readiness_answer_follows_the_switch_and_the_store() {
-    let stored = InMemoryCredentials::new().with_entry("http://127.0.0.1:1", Some("ada"), "ada", "hunter2");
+    let stored =
+        InMemoryCredentials::new().with_entry("http://127.0.0.1:1", Some("test_user_1"), "test_user_1", "hunter2");
     let volume = make_test_volume_with("/", VolumeHost::builder().credentials(Arc::new(stored)).build());
     assert_eq!(volume.unattended_reconnect().await, UnattendedReconnect::Possible);
 
@@ -87,7 +88,12 @@ async fn the_readiness_answer_follows_the_switch_and_the_store() {
 /// what a failed sign-in left behind.
 #[tokio::test]
 async fn a_sign_in_that_does_not_connect_leaves_the_remembered_secret_alone() {
-    let stored = Arc::new(InMemoryCredentials::new().with_entry("http://127.0.0.1:1", Some("ada"), "ada", "hunter2"));
+    let stored = Arc::new(InMemoryCredentials::new().with_entry(
+        "http://127.0.0.1:1",
+        Some("test_user_1"),
+        "test_user_1",
+        "hunter2",
+    ));
     let volume = make_test_volume_with(
         "/",
         VolumeHost::builder()
@@ -97,7 +103,7 @@ async fn a_sign_in_that_does_not_connect_leaves_the_remembered_secret_alone() {
 
     let refusal = volume
         .reconnect_with_credentials(cmdr_fs::volume::secret_store::SignIn {
-            username: "ada".to_string(),
+            username: "test_user_1".to_string(),
             secret: "a-typo".to_string(),
             remember: false,
         })
@@ -106,7 +112,7 @@ async fn a_sign_in_that_does_not_connect_leaves_the_remembered_secret_alone() {
     assert!(refusal.is_err(), "nothing listens on port 1");
     assert_eq!(
         stored
-            .credentials("http://127.0.0.1:1", Some("ada"))
+            .credentials("http://127.0.0.1:1", Some("test_user_1"))
             .map(|held| held.secret),
         Some("hunter2".to_string()),
         "❌ the secret that worked before is still the one remembered"
@@ -120,20 +126,23 @@ async fn a_sign_in_that_connects_refreshes_a_remembered_secret() {
     let server = FakeDav::start().await;
     let service = server.credential_service();
 
-    let remembered = Arc::new(InMemoryCredentials::new().with_entry(&service, Some("ada"), "ada", "the-old-one"));
+    let remembered =
+        Arc::new(InMemoryCredentials::new().with_entry(&service, Some("test_user_1"), "test_user_1", "the-old-one"));
     let (volume, _events) = server
         .connected_with(Arc::clone(&remembered) as Arc<dyn CredentialStore>)
         .await;
     volume
         .reconnect_with_credentials(cmdr_fs::volume::secret_store::SignIn {
-            username: "ada".to_string(),
+            username: "test_user_1".to_string(),
             secret: "the-new-one".to_string(),
             remember: false,
         })
         .await
         .expect("the fake takes any password");
     assert_eq!(
-        remembered.credentials(&service, Some("ada")).map(|held| held.secret),
+        remembered
+            .credentials(&service, Some("test_user_1"))
+            .map(|held| held.secret),
         Some("the-new-one".to_string())
     );
 }
@@ -146,16 +155,17 @@ async fn a_sign_in_that_connects_files_the_secret_the_way_remember_asks() {
     let service = server.credential_service();
 
     for remember in [true, false] {
-        let store = Arc::new(InMemoryCredentials::new().with_entry(&service, Some("ada"), "ada", "dial-me-in"));
+        let store =
+            Arc::new(InMemoryCredentials::new().with_entry(&service, Some("test_user_1"), "test_user_1", "dial-me-in"));
         let (volume, _events) = server
             .connected_with(Arc::clone(&store) as Arc<dyn CredentialStore>)
             .await;
         // Remember was off, or turned off: the sheet forgot the entry before this round.
-        store.forget(&service, Some("ada"));
+        store.forget(&service, Some("test_user_1"));
 
         volume
             .reconnect_with_credentials(cmdr_fs::volume::secret_store::SignIn {
-                username: "ada".to_string(),
+                username: "test_user_1".to_string(),
                 secret: "typed".to_string(),
                 remember,
             })
@@ -163,7 +173,7 @@ async fn a_sign_in_that_connects_files_the_secret_the_way_remember_asks() {
             .expect("the fake takes any password");
 
         assert_eq!(
-            store.credentials(&service, Some("ada")).map(|held| held.secret),
+            store.credentials(&service, Some("test_user_1")).map(|held| held.secret),
             remember.then(|| "typed".to_string()),
             "remember={remember}"
         );
@@ -207,11 +217,16 @@ impl CredentialStore for RefusesWrites {
 async fn a_refused_remember_is_reported_while_the_connection_stands() {
     let server = FakeDav::start().await;
     let service = server.credential_service();
-    let store = RefusesWrites(InMemoryCredentials::new().with_entry(&service, Some("ada"), "ada", "dial-me-in"));
+    let store = RefusesWrites(InMemoryCredentials::new().with_entry(
+        &service,
+        Some("test_user_1"),
+        "test_user_1",
+        "dial-me-in",
+    ));
     let (volume, _events) = server.connected_with(Arc::new(store)).await;
 
     let sign_in = |remember| cmdr_fs::volume::secret_store::SignIn {
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         secret: "typed".to_string(),
         remember,
     };
@@ -247,16 +262,16 @@ async fn remembering_a_sign_in_files_it_without_dialing() {
     let service = volume.inner.params().credential_service();
 
     let filed = volume
-        .remember_sign_in(sign_in("ada"))
+        .remember_sign_in(sign_in("test_user_1"))
         .await
         .expect("filing needs no server");
     assert!(!filed.remember_refused);
     assert_eq!(
-        store.credentials(&service, Some("ada")).map(|held| held.secret),
+        store.credentials(&service, Some("test_user_1")).map(|held| held.secret),
         Some("typed".to_string())
     );
 
-    let another = volume.remember_sign_in(sign_in("grace")).await;
+    let another = volume.remember_sign_in(sign_in("test_user_2")).await;
     assert!(matches!(another, Err(VolumeError::NotSupported)), "got {another:?}");
 
     let refusing = make_test_volume_with(
@@ -266,7 +281,7 @@ async fn remembering_a_sign_in_files_it_without_dialing() {
             .build(),
     );
     let refused = refusing
-        .remember_sign_in(sign_in("ada"))
+        .remember_sign_in(sign_in("test_user_1"))
         .await
         .expect("filing needs no server");
     assert!(refused.remember_refused, "a refused store is said out loud again");

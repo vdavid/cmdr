@@ -518,8 +518,8 @@ fn a_refused_signature_maps_to_its_typed_volume_error() {
 #[test]
 fn a_session_that_cant_meet_the_encryption_requirement_maps_to_its_typed_volume_error() {
     assert!(matches!(
-        map_smb_error(smb2::Error::EncryptionRequired, "/Volumes/naspi"),
-        VolumeError::EncryptionRequired(path) if path == "/Volumes/naspi"
+        map_smb_error(smb2::Error::EncryptionRequired, "/Volumes/testshare"),
+        VolumeError::EncryptionRequired(path) if path == "/Volumes/testshare"
     ));
 }
 
@@ -533,19 +533,19 @@ fn an_unconfirmed_negotiation_and_unavailable_encryption_map_to_their_typed_volu
         reason: "the server answered a different dialect".to_string(),
     };
     assert!(matches!(
-        map_smb_error(unconfirmed, "/Volumes/naspi"),
+        map_smb_error(unconfirmed, "/Volumes/testshare"),
         VolumeError::NegotiationInvalid(_)
     ));
     assert!(matches!(
-        map_smb_error(smb2::Error::EncryptionUnavailable { share: None }, "/Volumes/naspi"),
-        VolumeError::EncryptionUnavailable(path) if path == "/Volumes/naspi"
+        map_smb_error(smb2::Error::EncryptionUnavailable { share: None }, "/Volumes/testshare"),
+        VolumeError::EncryptionUnavailable(path) if path == "/Volumes/testshare"
     ));
 }
 
 #[test]
 fn a_refused_guest_session_maps_like_a_wrong_password() {
     let err = smb2::Error::GuestSessionRefused {
-        username: "david".to_string(),
+        username: "test_user_3".to_string(),
         anonymous: true,
     };
     assert!(matches!(

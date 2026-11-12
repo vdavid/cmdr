@@ -84,13 +84,13 @@ mod tests {
         let _secrets = isolate_secrets();
         let server = "credential-store-test.local";
         KeychainCredentials
-            .save_credentials(server, None, &creds("ada", "pa55"))
+            .save_credentials(server, None, &creds("test_user_1", "pa55"))
             .expect("the test store always accepts");
 
         let read = KeychainCredentials
             .credentials(server, None)
             .expect("what we just saved");
-        assert_eq!(read.username, "ada");
+        assert_eq!(read.username, "test_user_1");
         assert_eq!(read.secret, "pa55");
     }
 

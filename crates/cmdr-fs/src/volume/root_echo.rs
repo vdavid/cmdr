@@ -1,7 +1,7 @@
 //! Spotting a typed path that repeats its volume's own root folder.
 //!
 //! [`super::root_anchored`] reads the transfer dialog's box as volume-relative,
-//! always. On a place rooted at a server folder (`sftp://ada@nas:22/srv/data`),
+//! always. On a place rooted at a server folder (`sftp://test_user_1@nas:22/srv/data`),
 //! a user who types the full server path they know (`/srv/data/photos`) gets it
 //! anchored under the root: `/srv/data/srv/data/photos`. Guessing the other
 //! reading would be wrong whenever that doubled folder really exists, so the
@@ -26,7 +26,7 @@ pub struct RootEcho {
 /// when it can't be read two ways.
 ///
 /// Only a scheme-shaped root (`sftp://`, `webdav://`, `adb://`, `mtp://`) has a
-/// folder separate from its app spelling; a mounted root (`/Volumes/naspi`) is
+/// folder separate from its app spelling; a mounted root (`/Volumes/testshare`) is
 /// matched by [`super::root_anchored`] itself and passes through untouched. A
 /// root at the server's `/` reads both ways to the same place, so it never
 /// echoes. Folders match by whole COMPONENTS, so `/srv/data-1` isn't a repeat of

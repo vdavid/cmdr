@@ -4,18 +4,18 @@
 
 [[targets]]
 name = "qnap"
-host = "192.168.1.111"
-share = "naspi"
+host = "192.168.50.10"
+share = "testshare"
 username = "your-username"
 password = "your-password"
 # Where the share is mounted on macOS (for native comparison)
-native_mount = "/Volumes/naspi"
+native_mount = "/Volumes/testshare"
 
 [[targets]]
 name = "pi"
-host = "192.168.1.150"
-share = "PiHDD"
+host = "192.168.50.30"
+share = "testshare2"
 guest = true
-native_mount = "/Volumes/PiHDD"
+native_mount = "/Volumes/testshare2"
 # Override max chunk size in KB (default: 1024). Pi's Samba hangs on 1MB.
 max_chunk_kb = 64

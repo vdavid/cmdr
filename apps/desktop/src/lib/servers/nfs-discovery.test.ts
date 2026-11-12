@@ -31,9 +31,9 @@ describe('createNfsDiscovery: the export list', () => {
       listNfsExports: vi.fn(() => Promise.resolve(answers.shift() ?? UNREACHABLE)),
       guessNfsIdentity: vi.fn(),
     })
-    await discovery.listFor({ host: 'nas.local', port: null })
+    await discovery.listFor({ host: 'testnas.local', port: null })
     expect(discovery.listing).toEqual({ kind: 'listed', exports: ['/Public', '/volume1/data'] })
-    await discovery.listFor({ host: 'nas.local', port: null })
+    await discovery.listFor({ host: 'testnas.local', port: null })
     expect(discovery.listing).toEqual({ kind: 'unreachable' })
   })
 
@@ -59,7 +59,7 @@ describe('createNfsDiscovery: the export list', () => {
     })
     void discovery.listFor({ host: 'nas', port: null })
     expect(discovery.listing).toEqual({ kind: 'loading' })
-    void discovery.listFor({ host: 'nas.local', port: null })
+    void discovery.listFor({ host: 'testnas.local', port: null })
     second.resolve({ outcome: 'listed', exports: ['/right'] })
     await settle()
     first.resolve({ outcome: 'listed', exports: ['/stale'] })

@@ -40,27 +40,32 @@ fn share(id: &str, mount: &str, live: bool, guid: (&str, GuidProof), share: &str
 }
 
 /// The boot disk plus one NAS share reached two ways: `ts` not connected at
-/// `/Volumes/naspi`, and `lan` live at `/Volumes/naspi-1` with the given proof and account.
+/// `/Volumes/testshare`, and `lan` live at `/Volumes/testshare-1` with the given proof and account.
 fn nas(lan_proof: GuidProof, lan_user: &str) -> VolumeFacts {
     let mut facts = local_facts();
     facts.volumes.push(share(
         "ts",
-        "naspi",
+        "testshare",
         false,
         (BOX, GuidProof::Authenticated),
-        "naspi",
-        "david",
+        "testshare",
+        "test_user_3",
     ));
-    facts
-        .volumes
-        .push(share("lan", "naspi-1", true, (BOX, lan_proof), "naspi", lan_user));
+    facts.volumes.push(share(
+        "lan",
+        "testshare-1",
+        true,
+        (BOX, lan_proof),
+        "testshare",
+        lan_user,
+    ));
     facts
 }
 
 /// [`nas`] plus a second share, `media`, reached the same two ways (`ts-media` dead,
 /// `lan-media` live), so a group can ask for two re-addresses at once.
 fn two_shares() -> VolumeFacts {
-    let mut facts = nas(GuidProof::Authenticated, "david");
+    let mut facts = nas(GuidProof::Authenticated, "test_user_3");
     for (id, mount, live) in [("ts-media", "media", false), ("lan-media", "media-1", true)] {
         facts.volumes.push(share(
             id,
@@ -68,7 +73,7 @@ fn two_shares() -> VolumeFacts {
             live,
             (OTHER_BOX, GuidProof::Authenticated),
             "media",
-            "david",
+            "test_user_3",
         ));
     }
     facts
@@ -110,19 +115,19 @@ fn sweep_count(conn: &Connection) -> i64 {
 fn a_destination_on_a_live_volume_stages_where_it_was_named() {
     let conn = migrated_conn();
     let index = FakeIndex::with(Vec::new());
-    let facts = nas(GuidProof::Authenticated, "david");
-    let named = move_into(json!({ "volumeId": "lan", "path": "/Volumes/naspi-1/papers" }));
+    let facts = nas(GuidProof::Authenticated, "test_user_3");
+    let named = move_into(json!({ "volumeId": "lan", "path": "/Volumes/testshare-1/documents" }));
     let report = apply_over(&conn, &index, &named, &facts).expect("staged");
 
     assert_eq!(report.groups[0].via, None, "nothing was re-addressed");
     let group = get_group(&conn, report.groups[0].group_id)
         .expect("read")
         .expect("exists");
-    assert_eq!(group.destination.as_deref(), Some("/Volumes/naspi-1/papers"));
+    assert_eq!(group.destination.as_deref(), Some("/Volumes/testshare-1/documents"));
     assert_eq!(group.destination_volume_id.as_deref(), Some("lan"));
 
     // `volumeId` is optional: a bare path lands on the live volume holding it.
-    let bare = move_into(json!({ "path": "/Volumes/naspi-1/papers" }));
+    let bare = move_into(json!({ "path": "/Volumes/testshare-1/documents" }));
     let report = apply_over(&conn, &index, &bare, &facts).expect("staged");
     let group = get_group(&conn, report.groups[0].group_id)
         .expect("read")
@@ -140,23 +145,23 @@ fn a_place_on_a_volume_that_isnt_connected_refuses_the_whole_call() {
     let mut facts = local_facts();
     facts.volumes.push(share(
         "ts",
-        "naspi",
+        "testshare",
         false,
         (BOX, GuidProof::Authenticated),
-        "naspi",
-        "david",
+        "testshare",
+        "test_user_3",
     ));
     // An unproven volume at the second mount name: a `nearby`, never a re-address.
     facts
         .volumes
-        .push(volume("stranger", VolumeKind::Smb, "/Volumes/naspi-1", true));
+        .push(volume("stranger", VolumeKind::Smb, "/Volumes/testshare-1", true));
     let call = json!({ "groups": [
         { "verb": "trash", "sourceVolumeId": "root", "displayName": "fine", "paths": ["/Users/someone/a.dmg"] },
         {
             "verb": "move",
             "sourceVolumeId": "root",
             "displayName": "onto the sleeping share",
-            "destination": { "volumeId": "ts", "path": "/Volumes/naspi/papers" },
+            "destination": { "volumeId": "ts", "path": "/Volumes/testshare/documents" },
             "paths": ["/Users/someone/b.pdf"],
         },
     ] });
@@ -166,7 +171,7 @@ fn a_place_on_a_volume_that_isnt_connected_refuses_the_whole_call() {
     assert_eq!(miss.miss, MissToken::VolumeNotConnected);
     let nearby = miss.nearby.as_deref().expect("nearby");
     assert_eq!(nearby[0].candidate.volume_id, "stranger");
-    assert_eq!(nearby[0].candidate.path, "/Volumes/naspi-1/papers");
+    assert_eq!(nearby[0].candidate.path, "/Volumes/testshare-1/documents");
     assert_eq!(miss.same_share_as.as_deref(), Some(&[][..]));
 
     // The wire: the read tools' miss shape, plus the refusal envelope, the group, and the field.
@@ -178,9 +183,12 @@ fn a_place_on_a_volume_that_isnt_connected_refuses_the_whole_call() {
     assert_eq!(wire["miss"], json!("volumeNotConnected"));
     assert_eq!(
         wire["location"],
-        json!({ "volumeId": "ts", "path": "/Volumes/naspi/papers" })
+        json!({ "volumeId": "ts", "path": "/Volumes/testshare/documents" })
     );
-    assert_eq!(wire["nearby"][0]["candidate"]["path"], json!("/Volumes/naspi-1/papers"));
+    assert_eq!(
+        wire["nearby"][0]["candidate"]["path"],
+        json!("/Volumes/testshare-1/documents")
+    );
     assert!(wire["detail"].as_str().is_some_and(|d| !d.is_empty()));
 
     assert_eq!(sweep_count(&conn), 0, "the good group didn't land either");
@@ -191,17 +199,17 @@ fn a_hand_listed_source_on_a_volume_that_isnt_connected_refuses_too() {
     let mut facts = local_facts();
     facts.volumes.push(share(
         "ts",
-        "naspi",
+        "testshare",
         false,
         (BOX, GuidProof::Authenticated),
-        "naspi",
-        "david",
+        "testshare",
+        "test_user_3",
     ));
     let call = json!({ "groups": [{
         "verb": "trash",
         "sourceVolumeId": "ts",
         "displayName": "old scans",
-        "paths": ["/Volumes/naspi/scans/a.pdf"],
+        "paths": ["/Volumes/testshare/scans/a.pdf"],
     }] });
     let (_, field, miss) = location_miss(&call, &facts);
     assert_eq!(field, PlaceField::Paths);
@@ -214,9 +222,9 @@ fn a_hand_listed_source_on_a_volume_that_isnt_connected_refuses_too() {
 
 #[test]
 fn an_unknown_volume_or_a_path_off_its_volume_refuses_with_the_resolvers_token() {
-    let facts = nas(GuidProof::Authenticated, "david");
+    let facts = nas(GuidProof::Authenticated, "test_user_3");
 
-    let unknown = move_into(json!({ "volumeId": "nope", "path": "/Volumes/naspi/papers" }));
+    let unknown = move_into(json!({ "volumeId": "nope", "path": "/Volumes/testshare/documents" }));
     let (_, field, miss) = location_miss(&unknown, &facts);
     assert_eq!((field, miss.miss), (PlaceField::Destination, MissToken::UnknownVolume));
 
@@ -229,13 +237,13 @@ fn an_unknown_volume_or_a_path_off_its_volume_refuses_with_the_resolvers_token()
     }] });
     let (_, field, miss) = location_miss(&off, &facts);
     assert_eq!((field, miss.miss), (PlaceField::Paths, MissToken::PathOutsideVolume));
-    assert_eq!(miss.root.as_deref(), Some("/Volumes/naspi-1"));
+    assert_eq!(miss.root.as_deref(), Some("/Volumes/testshare-1"));
 }
 
 #[test]
 fn a_bare_path_on_a_dead_mount_point_refuses_as_no_volume_there() {
-    let facts = nas(GuidProof::Authenticated, "david");
-    let call = move_into(json!({ "path": "/Volumes/naspi/papers" }));
+    let facts = nas(GuidProof::Authenticated, "test_user_3");
+    let call = move_into(json!({ "path": "/Volumes/testshare/documents" }));
     let (_, field, miss) = location_miss(&call, &facts);
     assert_eq!((field, miss.miss), (PlaceField::Destination, MissToken::NoVolumeAtPath));
 }
@@ -248,8 +256,8 @@ fn a_bare_path_on_a_dead_mount_point_refuses_as_no_volume_there() {
 fn a_dead_volume_with_a_signed_in_sibling_is_stored_on_the_sibling() {
     let conn = migrated_conn();
     let index = FakeIndex::with(Vec::new());
-    let facts = nas(GuidProof::Authenticated, "david");
-    let call = move_into(json!({ "volumeId": "ts", "path": "/Volumes/naspi/papers" }));
+    let facts = nas(GuidProof::Authenticated, "test_user_3");
+    let call = move_into(json!({ "volumeId": "ts", "path": "/Volumes/testshare/documents" }));
     let report = apply_over(&conn, &index, &call, &facts).expect("re-addressed");
 
     assert_eq!(
@@ -263,7 +271,7 @@ fn a_dead_volume_with_a_signed_in_sibling_is_stored_on_the_sibling() {
     let group = get_group(&conn, report.groups[0].group_id)
         .expect("read")
         .expect("exists");
-    assert_eq!(group.destination.as_deref(), Some("/Volumes/naspi-1/papers"));
+    assert_eq!(group.destination.as_deref(), Some("/Volumes/testshare-1/documents"));
     assert_eq!(group.destination_volume_id.as_deref(), Some("lan"));
 }
 
@@ -271,13 +279,13 @@ fn a_dead_volume_with_a_signed_in_sibling_is_stored_on_the_sibling() {
 fn hand_listed_sources_re_address_with_their_volume() {
     let conn = migrated_conn();
     let index = FakeIndex::with(Vec::new());
-    let facts = nas(GuidProof::Authenticated, "david");
+    let facts = nas(GuidProof::Authenticated, "test_user_3");
     let call = json!({ "groups": [{
         "verb": "move",
         "sourceVolumeId": "ts",
         "displayName": "scans home",
         "destination": { "path": "/Users/someone/Documents" },
-        "paths": ["/Volumes/naspi/scans/a.pdf", "/Volumes/naspi/scans/b.pdf"],
+        "paths": ["/Volumes/testshare/scans/a.pdf", "/Volumes/testshare/scans/b.pdf"],
     }] });
     let report = apply_over(&conn, &index, &call, &facts).expect("re-addressed");
 
@@ -288,7 +296,10 @@ fn hand_listed_sources_re_address_with_their_volume() {
     assert_eq!(group.source_volume_id, "lan");
     let ops = page_ops(&conn, group.id, 10, 0).expect("ops");
     let paths: Vec<_> = ops.iter().map(|op| op.source_path.as_str()).collect();
-    assert_eq!(paths, ["/Volumes/naspi-1/scans/a.pdf", "/Volumes/naspi-1/scans/b.pdf"]);
+    assert_eq!(
+        paths,
+        ["/Volumes/testshare-1/scans/a.pdf", "/Volumes/testshare-1/scans/b.pdf"]
+    );
 }
 
 /// A GUID the credential-free probe filled only says what answered a saved address, and
@@ -296,11 +307,11 @@ fn hand_listed_sources_re_address_with_their_volume() {
 #[test]
 fn an_unproven_or_other_account_sibling_is_only_a_hint() {
     for (proof, user) in [
-        (GuidProof::Unauthenticated, "david"),
-        (GuidProof::Authenticated, "dori"),
+        (GuidProof::Unauthenticated, "test_user_3"),
+        (GuidProof::Authenticated, "test_user_7"),
     ] {
         let facts = nas(proof, user);
-        let call = move_into(json!({ "volumeId": "ts", "path": "/Volumes/naspi/papers" }));
+        let call = move_into(json!({ "volumeId": "ts", "path": "/Volumes/testshare/documents" }));
         let (_, field, miss) = location_miss(&call, &facts);
         assert_eq!(
             (field, miss.miss),
@@ -313,7 +324,7 @@ fn an_unproven_or_other_account_sibling_is_only_a_hint() {
         );
         let nearby = miss.nearby.as_deref().expect("nearby");
         assert_eq!(nearby[0].candidate.volume_id, "lan");
-        assert_eq!(nearby[0].candidate.path, "/Volumes/naspi-1/papers");
+        assert_eq!(nearby[0].candidate.path, "/Volumes/testshare-1/documents");
     }
 }
 
@@ -326,7 +337,7 @@ fn a_group_never_re_addresses_onto_two_members() {
         "verb": "copy",
         "sourceVolumeId": "ts-media",
         "displayName": "x",
-        "destination": { "volumeId": "ts", "path": "/Volumes/naspi/papers" },
+        "destination": { "volumeId": "ts", "path": "/Volumes/testshare/documents" },
         "paths": ["/Volumes/media/a.mov"],
     }] });
     assert_eq!(refused_at(&onto_two, &facts), (0, GroupProblem::MixedReaddress));
@@ -335,8 +346,8 @@ fn a_group_never_re_addresses_onto_two_members() {
         "verb": "move",
         "sourceVolumeId": "lan",
         "displayName": "x",
-        "destination": { "volumeId": "ts", "path": "/Volumes/naspi/papers" },
-        "paths": ["/Volumes/naspi-1/inbox/a.pdf"],
+        "destination": { "volumeId": "ts", "path": "/Volumes/testshare/documents" },
+        "paths": ["/Volumes/testshare-1/inbox/a.pdf"],
     }] });
     assert_eq!(refused_at(&half_and_half, &facts), (0, GroupProblem::MixedReaddress));
 
@@ -350,13 +361,13 @@ fn a_group_never_re_addresses_onto_two_members() {
 #[test]
 fn a_selector_root_re_addresses_and_reads_the_siblings_index() {
     let conn = migrated_conn();
-    let facts = nas(GuidProof::Authenticated, "david");
+    let facts = nas(GuidProof::Authenticated, "test_user_3");
     let index = FakeIndex::refusing(SelectorRefusal::NotIndexed {
         volume_id: "lan".to_string(),
     });
     let call = json!({ "groups": [{
         "verb": "trash",
-        "selector": { "root": { "volumeId": "ts", "path": "/Volumes/naspi/Downloads" }, "nameGlob": "*.dmg" },
+        "selector": { "root": { "volumeId": "ts", "path": "/Volumes/testshare/Downloads" }, "nameGlob": "*.dmg" },
     }] });
     let planned = plan_sweep(&call, NOW, &facts).expect("placed");
     assert_eq!(planned.groups[0].via.as_ref().map(|v| v.volume_id.as_str()), Some("ts"));
@@ -368,7 +379,7 @@ fn a_selector_root_re_addresses_and_reads_the_siblings_index() {
         panic!("a selector group");
     };
     assert_eq!(selector.root.volume_id, "lan");
-    assert_eq!(selector.root.path, "/Volumes/naspi-1/Downloads");
+    assert_eq!(selector.root.path, "/Volumes/testshare-1/Downloads");
 
     let refusal = super::super::propose::apply_planned_sweep(&conn, &index, planned, None, NOW)
         .expect_err("no index on the sibling");
@@ -383,7 +394,7 @@ fn a_selector_root_re_addresses_and_reads_the_siblings_index() {
 
 /// [`nas`] with the sleeping `ts` share's last walk left on disk, finished at `as_of`.
 fn nas_with_ts_index_on_disk(as_of: u64) -> VolumeFacts {
-    let mut facts = nas(GuidProof::Authenticated, "david");
+    let mut facts = nas(GuidProof::Authenticated, "test_user_3");
     for v in facts.volumes.iter_mut().filter(|v| v.id == "ts") {
         v.index.stored = true;
         v.index.stored_as_of = Some(as_of);
@@ -411,15 +422,15 @@ fn a_selector_resolves_over_a_sleeping_members_index_when_the_sibling_has_none()
     .storing(
         "ts",
         vec![
-            indexed("/Volumes/naspi/Downloads/a.dmg"),
-            indexed("/Volumes/naspi/Downloads/old/b.dmg"),
+            indexed("/Volumes/testshare/Downloads/a.dmg"),
+            indexed("/Volumes/testshare/Downloads/old/b.dmg"),
         ],
     );
 
     let report = apply_over(
         &conn,
         &index,
-        &dmgs_under("ts", "/Volumes/naspi/Downloads"),
+        &dmgs_under("ts", "/Volumes/testshare/Downloads"),
         &nas_with_ts_index_on_disk(1_761_000_000),
     )
     .expect("staged");
@@ -428,7 +439,7 @@ fn a_selector_resolves_over_a_sleeping_members_index_when_the_sibling_has_none()
         *index.stored_asks.borrow(),
         [Location {
             volume_id: "ts".to_string(),
-            path: "/Volumes/naspi/Downloads".to_string(),
+            path: "/Volumes/testshare/Downloads".to_string(),
         }],
         "the sleeping member's index is asked at the member's own path"
     );
@@ -440,8 +451,8 @@ fn a_selector_resolves_over_a_sleeping_members_index_when_the_sibling_has_none()
     assert_eq!(
         ops.iter().map(|op| op.source_path.as_str()).collect::<Vec<_>>(),
         [
-            "/Volumes/naspi-1/Downloads/a.dmg",
-            "/Volumes/naspi-1/Downloads/old/b.dmg"
+            "/Volumes/testshare-1/Downloads/a.dmg",
+            "/Volumes/testshare-1/Downloads/old/b.dmg"
         ]
     );
     let wire = serde_json::to_value(&report).expect("wire");
@@ -460,19 +471,19 @@ fn a_selector_on_an_unindexed_live_share_resolves_over_its_sleeping_twin() {
     let index = FakeIndex::refusing(SelectorRefusal::NotIndexed {
         volume_id: "lan".to_string(),
     })
-    .storing("ts", vec![indexed("/Volumes/naspi/Downloads/a.dmg")]);
+    .storing("ts", vec![indexed("/Volumes/testshare/Downloads/a.dmg")]);
 
     let report = apply_over(
         &conn,
         &index,
-        &dmgs_under("lan", "/Volumes/naspi-1/Downloads"),
+        &dmgs_under("lan", "/Volumes/testshare-1/Downloads"),
         &nas_with_ts_index_on_disk(1_761_000_000),
     )
     .expect("staged");
 
     assert_eq!(report.groups[0].via, None);
     let ops = page_ops(&conn, report.groups[0].group_id, 10, 0).expect("ops");
-    assert_eq!(ops[0].source_path, "/Volumes/naspi-1/Downloads/a.dmg");
+    assert_eq!(ops[0].source_path, "/Volumes/testshare-1/Downloads/a.dmg");
     assert_eq!(
         report.groups[0].offline_index.as_ref().map(|o| o.volume_id.as_str()),
         Some("ts")
@@ -484,13 +495,13 @@ fn a_selector_on_an_unindexed_live_share_resolves_over_its_sleeping_twin() {
 #[test]
 fn a_live_index_is_never_shadowed_by_a_sleeping_one() {
     let conn = migrated_conn();
-    let index = FakeIndex::with(vec![indexed("/Volumes/naspi-1/Downloads/live.dmg")])
-        .storing("ts", vec![indexed("/Volumes/naspi/Downloads/stale.dmg")]);
+    let index = FakeIndex::with(vec![indexed("/Volumes/testshare-1/Downloads/live.dmg")])
+        .storing("ts", vec![indexed("/Volumes/testshare/Downloads/stale.dmg")]);
 
     let report = apply_over(
         &conn,
         &index,
-        &dmgs_under("ts", "/Volumes/naspi/Downloads"),
+        &dmgs_under("ts", "/Volumes/testshare/Downloads"),
         &nas_with_ts_index_on_disk(1_761_000_000),
     )
     .expect("staged");
@@ -498,7 +509,7 @@ fn a_live_index_is_never_shadowed_by_a_sleeping_one() {
     assert!(index.stored_asks.borrow().is_empty());
     assert_eq!(report.groups[0].offline_index, None);
     let ops = page_ops(&conn, report.groups[0].group_id, 10, 0).expect("ops");
-    assert_eq!(ops[0].source_path, "/Volumes/naspi-1/Downloads/live.dmg");
+    assert_eq!(ops[0].source_path, "/Volumes/testshare-1/Downloads/live.dmg");
 }
 
 /// An amendment is a fresh proposal of the group, so it resolves again.
@@ -506,26 +517,26 @@ fn a_live_index_is_never_shadowed_by_a_sleeping_one() {
 fn an_amendment_re_resolves_its_places() {
     let conn = migrated_conn();
     let index = FakeIndex::with(Vec::new());
-    let live = nas(GuidProof::Authenticated, "david");
+    let live = nas(GuidProof::Authenticated, "test_user_3");
     let first = apply_over(
         &conn,
         &index,
-        &move_into(json!({ "volumeId": "lan", "path": "/Volumes/naspi-1/papers" })),
+        &move_into(json!({ "volumeId": "lan", "path": "/Volumes/testshare-1/documents" })),
         &live,
     )
     .expect("staged");
 
-    let mut amendment = move_into(json!({ "volumeId": "ts", "path": "/Volumes/naspi/papers" }));
+    let mut amendment = move_into(json!({ "volumeId": "ts", "path": "/Volumes/testshare/documents" }));
     amendment["sweepId"] = json!(first.sweep_id);
     amendment["groups"][0]["groupId"] = json!(first.groups[0].group_id);
     let mut gone = local_facts();
     gone.volumes.push(share(
         "ts",
-        "naspi",
+        "testshare",
         false,
         (BOX, GuidProof::Authenticated),
-        "naspi",
-        "david",
+        "testshare",
+        "test_user_3",
     ));
     let (_, _, miss) = location_miss(&amendment, &gone);
     assert_eq!(miss.miss, MissToken::VolumeNotConnected);
@@ -536,14 +547,14 @@ fn an_amendment_re_resolves_its_places() {
 
 // ── Conversation 179 ──────────────────────────────────────────────────────────
 
-/// The prod situation: an invoice filed into `invoices paid` naming the Tailscale share,
+/// The prod situation: an invoice filed into `invoices` naming the Tailscale share,
 /// which isn't connected, while its signed-in LAN sibling is. It lands on the LAN share.
 /// With the LAN share gone too, the call refuses whole and names both ways forward.
 #[test]
 fn conversation_179_files_onto_the_live_lan_share_or_refuses_whole() {
     let conn = migrated_conn();
     let index = FakeIndex::with(Vec::new());
-    let call = move_into(json!({ "volumeId": TAILSCALE, "path": format!("/Volumes/naspi/{INVOICES}") }));
+    let call = move_into(json!({ "volumeId": TAILSCALE, "path": format!("/Volumes/testshare/{INVOICES}") }));
 
     let report = apply_over(&conn, &index, &call, &conversation_179()).expect("re-addressed");
     assert_eq!(
@@ -556,10 +567,10 @@ fn conversation_179_files_onto_the_live_lan_share_or_refuses_whole() {
     assert_eq!(group.destination_volume_id.as_deref(), Some(LAN));
     assert_eq!(
         group.destination.as_deref(),
-        Some(format!("/Volumes/naspi-1/{INVOICES}").as_str())
+        Some(format!("/Volumes/testshare-1/{INVOICES}").as_str())
     );
 
-    let both_gone = conversation_179_with("/Volumes/naspi-1", ConnectionState::Saved);
+    let both_gone = conversation_179_with("/Volumes/testshare-1", ConnectionState::Saved);
     let (_, field, miss) = location_miss(&call, &both_gone);
     assert_eq!(
         (field, miss.miss),
@@ -568,11 +579,11 @@ fn conversation_179_files_onto_the_live_lan_share_or_refuses_whole() {
     assert_eq!(miss.same_share_as.as_deref(), Some(&[LAN.to_string()][..]));
     let nearby = miss.nearby.as_deref().expect("nearby");
     assert_eq!(nearby[0].candidate.volume_id, LAN);
-    assert_eq!(nearby[0].candidate.path, format!("/Volumes/naspi-1/{INVOICES}"));
+    assert_eq!(nearby[0].candidate.path, format!("/Volumes/testshare-1/{INVOICES}"));
 }
 
 /// Conversation 179's other half, end to end over the real index: the LAN share is live with
-/// no index, so a selector over `invoices paid` reads the Tailscale share's index on disk,
+/// no index, so a selector over `invoices` reads the Tailscale share's index on disk,
 /// read-only (the database is byte-for-byte what it was), and the PDFs it matched are stored
 /// on the LAN share, where they'll run.
 #[test]
@@ -585,7 +596,7 @@ fn conversation_179_resolves_a_selector_over_the_tailscale_index_on_disk() {
     let before = std::fs::read(&db).expect("the index on disk");
     let call = json!({ "groups": [{
         "verb": "trash",
-        "selector": { "root": { "volumeId": TAILSCALE, "path": format!("/Volumes/naspi/{INVOICES}") }, "nameGlob": "*.pdf" },
+        "selector": { "root": { "volumeId": TAILSCALE, "path": format!("/Volumes/testshare/{INVOICES}") }, "nameGlob": "*.pdf" },
     }] });
 
     let conn = migrated_conn();
@@ -594,7 +605,7 @@ fn conversation_179_resolves_a_selector_over_the_tailscale_index_on_disk() {
     let ops = page_ops(&conn, report.groups[0].group_id, 10, 0).expect("ops");
     assert_eq!(
         ops.iter().map(|op| op.source_path.as_str()).collect::<Vec<_>>(),
-        [format!("/Volumes/naspi-1/{INVOICES}/hetzner-2026-09.pdf")]
+        [format!("/Volumes/testshare-1/{INVOICES}/invoice-2026-09.pdf")]
     );
     assert_eq!(ops[0].snapshot_size, Some(4), "the index's own facts ride along");
     let wire = serde_json::to_value(&report).expect("wire");

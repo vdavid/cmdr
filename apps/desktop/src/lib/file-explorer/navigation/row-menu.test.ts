@@ -67,7 +67,7 @@ const phone: VolumeInfo = {
 }
 
 const share: VolumeInfo = {
-  id: 'smb-naspi-media',
+  id: 'smb-testshare-media',
   name: 'media',
   path: '/Volumes/media',
   category: 'network',
@@ -77,9 +77,9 @@ const share: VolumeInfo = {
 }
 
 const place: VolumeInfo = {
-  id: 'sftp-nas-local-22-ada',
-  name: 'Naspolya',
-  path: 'sftp://ada@nas.local:22/srv/data',
+  id: 'sftp-nas-local-22-test_user_1',
+  name: 'Testnas',
+  path: 'sftp://test_user_1@testnas.local:22/srv/data',
   category: 'network',
   fsType: 'sftp',
   isEjectable: false,
@@ -324,8 +324,8 @@ describe('rowMenuItems', () => {
     const menu = volumeRowMenu(share, { ...idle, directConnection: false })
     const items = rowMenuItems(share.id, menu, (e) => e)
     expect(items?.map((item) => item.value)).toEqual([
-      'row:smb-naspi-media:eject',
-      'row:smb-naspi-media:toggle:direct-connection',
+      'row:smb-testshare-media:eject',
+      'row:smb-testshare-media:toggle:direct-connection',
     ])
     expect(items?.[0]).toMatchObject({ icon: { lucide: 'eject' }, keepsMenuOpen: true, separatorBefore: false })
     expect(items?.[1]).toMatchObject({ check: { kind: 'toggle', checked: false }, separatorBefore: true })
@@ -336,9 +336,9 @@ describe('rowMenuItems', () => {
     const menu = volumeRowMenu(share, { ...idle, directConnection: true })
     const items = rowMenuItems(share.id, menu, (e) => e)
     expect(items?.map((item) => [item.value, item.separatorBefore])).toEqual([
-      ['row:smb-naspi-media:eject', false],
-      ['row:smb-naspi-media:fix:connect-directly', false],
-      ['row:smb-naspi-media:toggle:direct-connection', true],
+      ['row:smb-testshare-media:eject', false],
+      ['row:smb-testshare-media:fix:connect-directly', false],
+      ['row:smb-testshare-media:toggle:direct-connection', true],
     ])
     expect(items?.[1].tooltip).toContain('faster access')
     expect(items?.[1].check).toBeUndefined()
@@ -368,8 +368,8 @@ describe('rowMenuSections', () => {
     const menu = volumeRowMenu(share, { ...idle, directConnection: true })
     const sections = rowMenuSections(share.id, menu, (e) => e)
     expect(sections.map((section) => section.items.map((item) => item.value))).toEqual([
-      ['row:smb-naspi-media:eject', 'row:smb-naspi-media:fix:connect-directly'],
-      ['row:smb-naspi-media:toggle:direct-connection'],
+      ['row:smb-testshare-media:eject', 'row:smb-testshare-media:fix:connect-directly'],
+      ['row:smb-testshare-media:toggle:direct-connection'],
     ])
     // A top-level list splits into sections, never rules inside one.
     expect(sections.flatMap((section) => section.items).some((item) => item.separatorBefore)).toBe(false)
@@ -379,7 +379,7 @@ describe('rowMenuSections', () => {
 describe('runRowFix', () => {
   it('“Connect directly now” runs the one Connect directly flow, named for the share', async () => {
     await runRowFix({ volume: share, fix: 'connect-directly' })
-    expect(connectDirectly).toHaveBeenCalledWith({ volumeId: 'smb-naspi-media', shareName: 'media' })
+    expect(connectDirectly).toHaveBeenCalledWith({ volumeId: 'smb-testshare-media', shareName: 'media' })
   })
 })
 
@@ -407,12 +407,12 @@ describe('runVolumeRowAction', () => {
 
   it('hands every other server action to the servers family', async () => {
     await runVolumeRowAction({ volume: place, action: 'pin' })
-    expect(setPlacePinned).toHaveBeenCalledWith('sftp-nas-local-22-ada', true)
+    expect(setPlacePinned).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1', true)
   })
 
   it('opens through the surface’s own navigation', async () => {
     const onOpen = vi.fn()
     await runVolumeRowAction({ volume: place, action: 'open', onOpen })
-    expect(onOpen).toHaveBeenCalledWith('sftp-nas-local-22-ada')
+    expect(onOpen).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1')
   })
 })

@@ -178,7 +178,7 @@ describe('getUserFriendlyMessage', () => {
       const stickAsDestination: DisconnectedSide = {
         role: 'destination',
         volumeId: 'vol-stick',
-        volumeName: 'Fältkamera',
+        volumeName: 'Tëstkamera',
         counterpartName: 'Macintosh HD',
       }
       const stickAsSource: DisconnectedSide = { ...stickAsDestination, role: 'source' }
@@ -195,7 +195,7 @@ describe('getUserFriendlyMessage', () => {
         const error: WriteOperationError = { type: 'device_disconnected', path: '/p', side: stickAsDestination }
         const result = getUserFriendlyMessage(error, 'copy', progress)
 
-        expect(result.message).toContain('Fältkamera')
+        expect(result.message).toContain('Tëstkamera')
         expect(result.message).toContain(`${formatInteger(1284)} of ${formatInteger(12900)} files`)
         expect(result.message).toContain('Your originals are untouched')
       })
@@ -222,7 +222,7 @@ describe('getUserFriendlyMessage', () => {
         const error: WriteOperationError = { type: 'device_disconnected', path: '/p', side: stickAsSource }
         const result = getUserFriendlyMessage(error, 'copy', progress)
 
-        expect(result.message).toContain('Fältkamera was disconnected')
+        expect(result.message).toContain('Tëstkamera was disconnected')
         expect(result.message).toContain('to Macintosh HD')
         expect(result.message).toContain('The rest are still on the drive')
       })
@@ -249,18 +249,18 @@ describe('getUserFriendlyMessage', () => {
     describe('a server whose connection was lost', () => {
       const gaveUp: WriteOperationError = {
         type: 'server_connection_lost',
-        path: '/Volumes/naspi/photos/DSC09241.arw',
-        volumeName: 'Naspolya',
+        path: '/Volumes/testshare/photos/DSC09241.arw',
+        volumeName: 'Testnas',
         gaveUpAfterSecs: 900,
       }
 
       it('names the server as the cause, how long Cmdr waited, and the file it was on', () => {
         const result = getUserFriendlyMessage(gaveUp, 'copy')
 
-        expect(result.title).toBe('Lost the connection to Naspolya')
-        expect(result.message).toContain(`waited ${formatDuration(seconds(900))} for Naspolya`)
+        expect(result.title).toBe('Lost the connection to Testnas')
+        expect(result.message).toContain(`waited ${formatDuration(seconds(900))} for Testnas`)
         expect(result.message).toContain('copying DSC09241.arw')
-        expect(result.message).not.toContain('/Volumes/naspi')
+        expect(result.message).not.toContain('/Volumes/testshare')
       })
 
       it('follows the operation’s verb', () => {
@@ -273,7 +273,7 @@ describe('getUserFriendlyMessage', () => {
       it('says the connection dropped when Cmdr could not wait for it', () => {
         const result = getUserFriendlyMessage({ ...gaveUp, gaveUpAfterSecs: null }, 'copy')
 
-        expect(result.message).toBe('The connection to Naspolya dropped while Cmdr was copying DSC09241.arw.')
+        expect(result.message).toBe('The connection to Testnas dropped while Cmdr was copying DSC09241.arw.')
       })
 
       it('escapes the names it interpolates', () => {
@@ -290,8 +290,8 @@ describe('getUserFriendlyMessage', () => {
       it('lists the server and the wait in the technical details', () => {
         const details = getTechnicalDetails(gaveUp)
 
-        expect(details).toContain('Path: /Volumes/naspi/photos/DSC09241.arw')
-        expect(details).toContain('Server: Naspolya')
+        expect(details).toContain('Path: /Volumes/testshare/photos/DSC09241.arw')
+        expect(details).toContain('Server: Testnas')
         expect(details).toContain('Waited: 900 s')
         expect(getTechnicalDetails({ ...gaveUp, gaveUpAfterSecs: null })).toContain('Waited: no')
       })
@@ -303,14 +303,14 @@ describe('getUserFriendlyMessage', () => {
       it('names the destination drive and says the originals stayed', () => {
         const error: WriteOperationError = {
           type: 'move_not_confirmed',
-          path: '/Volumes/Fältkamera/DCIM',
+          path: '/Volumes/Tëstkamera/DCIM',
           errno: 5,
-          volumeName: 'Fältkamera',
+          volumeName: 'Tëstkamera',
         }
         const result = getUserFriendlyMessage(error, 'move')
 
         expect(result.title).toBe('Couldn’t confirm the move')
-        expect(result.message).toContain('saved on Fältkamera')
+        expect(result.message).toContain('saved on Tëstkamera')
         expect(result.message).toContain('kept your originals')
       })
 
@@ -330,15 +330,15 @@ describe('getUserFriendlyMessage', () => {
       it('puts the errno and the volume in the technical details', () => {
         const error: WriteOperationError = {
           type: 'move_not_confirmed',
-          path: '/Volumes/Fältkamera/DCIM',
+          path: '/Volumes/Tëstkamera/DCIM',
           errno: 5,
-          volumeName: 'Fältkamera',
+          volumeName: 'Tëstkamera',
         }
         const result = getTechnicalDetails(error)
 
-        expect(result).toContain('Path: /Volumes/Fältkamera/DCIM')
+        expect(result).toContain('Path: /Volumes/Tëstkamera/DCIM')
         expect(result).toContain('Errno: 5')
-        expect(result).toContain('Volume: Fältkamera')
+        expect(result).toContain('Volume: Tëstkamera')
       })
     })
 
@@ -440,7 +440,10 @@ describe('getUserFriendlyMessage', () => {
       expect(destination.message).toContain('destination phone or server')
       expect(destination.suggestion).toContain('volume switcher')
 
-      const source = getUserFriendlyMessage({ type: 'source_not_connected', path: 'sftp://ada@nas/photos' }, 'delete')
+      const source = getUserFriendlyMessage(
+        { type: 'source_not_connected', path: 'sftp://test_user_1@nas/photos' },
+        'delete',
+      )
       expect(source.title).toBe('Not connected yet')
       expect(source.message).toContain('holding these files')
       expect(source.suggestion).toContain('volume switcher')
@@ -674,12 +677,12 @@ describe('getTechnicalDetails', () => {
     // these lines stay purely diagnostic and don't restate it.
     const error: WriteOperationError = {
       type: 'invalid_name',
-      path: '/Volumes/naspi/export/how_are_you_feeling.json',
+      path: '/Volumes/testshare/export/how_are_you_feeling.json',
       message: 'Protocol error: STATUS_OBJECT_NAME_INVALID during Create',
     }
 
     expect(getTechnicalDetails(error)).toBe(
-      'Path: /Volumes/naspi/export/how_are_you_feeling.json\n' +
+      'Path: /Volumes/testshare/export/how_are_you_feeling.json\n' +
         'Error: Protocol error: STATUS_OBJECT_NAME_INVALID during Create\n' +
         'Error type: invalid_name',
     )

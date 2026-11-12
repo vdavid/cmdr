@@ -271,7 +271,7 @@ function nfsTargetFrom(
  * `host:port`, or an `smb://` URL and refuses anything else.
  *
  * ❗ An address with no scheme travels as the SMB URL it means, because the
- * backend's bare-host reader refuses an `@` or a `/`: `sven@192.168.0.153` is
+ * backend's bare-host reader refuses an `@` or a `/`: `test_user_6@192.168.50.20` is
  * SMB's natural spelling for a NAS share that needs a user. One that names
  * ANOTHER protocol keeps only its host, since SMB is what's selected and that
  * scheme's port and path mean nothing here. One this side can't read goes as

@@ -43,10 +43,10 @@ import {
 
 const target: ServerTarget = {
   protocol: 'sftp',
-  displayName: 'Naspolya',
-  host: 'nas.local',
+  displayName: 'Testnas',
+  host: 'testnas.local',
   port: 22,
-  username: 'ada',
+  username: 'test_user_1',
   remoteRoot: '/srv/data',
   startFolder: null,
   keyFile: null,
@@ -62,19 +62,19 @@ describe('dialing', () => {
   it('hands a saved place its id, the caller’s attempt id, and the offer, in that order', async () => {
     vi.mocked(commands.connectSavedPlace).mockResolvedValueOnce({
       status: 'ok',
-      data: { outcome: 'connected', volumeId: 'sftp-nas-local-22-ada' },
+      data: { outcome: 'connected', volumeId: 'sftp-nas-local-22-test_user_1' },
     })
     const offer = { secret: 'hunter2', remember: false }
-    const outcome = await connectSavedPlace('sftp-nas-local-22-ada', 'attempt-1', offer)
+    const outcome = await connectSavedPlace('sftp-nas-local-22-test_user_1', 'attempt-1', offer)
     // No account beside the secret: only an SMB share's sheet has one to send.
-    expect(commands.connectSavedPlace).toHaveBeenCalledWith('sftp-nas-local-22-ada', 'attempt-1', offer, null)
-    expect(outcome).toEqual({ outcome: 'connected', volumeId: 'sftp-nas-local-22-ada' })
+    expect(commands.connectSavedPlace).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1', 'attempt-1', offer, null)
+    expect(outcome).toEqual({ outcome: 'connected', volumeId: 'sftp-nas-local-22-test_user_1' })
   })
 
   it('offers no secret by default: the dial reads the store', async () => {
     vi.mocked(commands.connectSavedPlace).mockResolvedValueOnce({ status: 'ok', data: { outcome: 'timed_out' } })
-    await connectSavedPlace('sftp-nas-local-22-ada', 'attempt-2')
-    expect(commands.connectSavedPlace).toHaveBeenCalledWith('sftp-nas-local-22-ada', 'attempt-2', null, null)
+    await connectSavedPlace('sftp-nas-local-22-test_user_1', 'attempt-2')
+    expect(commands.connectSavedPlace).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1', 'attempt-2', null, null)
   })
 
   it('throws a saved-place refusal instead of handing back a result nobody switches on', async () => {
@@ -83,9 +83,9 @@ describe('dialing', () => {
     // a log, not a message to word for a user.
     vi.mocked(commands.connectSavedPlace).mockResolvedValueOnce({
       status: 'error',
-      error: { reason: 'already_connected', volumeId: 'sftp-nas-local-22-ada' },
+      error: { reason: 'already_connected', volumeId: 'sftp-nas-local-22-test_user_1' },
     })
-    await expect(connectSavedPlace('sftp-nas-local-22-ada', 'attempt-3')).rejects.toThrow()
+    await expect(connectSavedPlace('sftp-nas-local-22-test_user_1', 'attempt-3')).rejects.toThrow()
   })
 
   it('passes an add-mode target through whole', async () => {
@@ -119,28 +119,30 @@ describe('the saved list', () => {
     vi.mocked(commands.hasServerSecret).mockResolvedValueOnce(true)
     vi.mocked(commands.disconnectPlace).mockResolvedValueOnce(false)
 
-    await setPlacePinned('sftp-nas-local-22-ada', false)
-    await forgetServer('sftp-nas-local-22-ada')
-    await forgetServerSecret('sftp-nas-local-22-ada')
-    expect(await hasServerSecret('sftp-nas-local-22-ada')).toBe(true)
+    await setPlacePinned('sftp-nas-local-22-test_user_1', false)
+    await forgetServer('sftp-nas-local-22-test_user_1')
+    await forgetServerSecret('sftp-nas-local-22-test_user_1')
+    expect(await hasServerSecret('sftp-nas-local-22-test_user_1')).toBe(true)
     // `false` is a disconnect racing a dropped session, not a problem.
-    expect(await disconnectPlace('sftp-nas-local-22-ada')).toBe(false)
+    expect(await disconnectPlace('sftp-nas-local-22-test_user_1')).toBe(false)
 
-    expect(commands.setPlacePinned).toHaveBeenCalledWith('sftp-nas-local-22-ada', false)
-    expect(commands.forgetServer).toHaveBeenCalledWith('sftp-nas-local-22-ada')
-    expect(commands.forgetServerSecret).toHaveBeenCalledWith('sftp-nas-local-22-ada')
+    expect(commands.setPlacePinned).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1', false)
+    expect(commands.forgetServer).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1')
+    expect(commands.forgetServerSecret).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1')
   })
 
   it('moves the "Reconnect automatically" switch alone, by place', async () => {
     vi.mocked(commands.setPlaceAutoReconnect).mockResolvedValueOnce(false)
     // `false` is a place nothing saved: a one-shot connection has nothing to persist.
-    expect(await setPlaceAutoReconnect('sftp-nas-local-22-ada', true)).toBe(false)
-    expect(commands.setPlaceAutoReconnect).toHaveBeenCalledWith('sftp-nas-local-22-ada', true)
+    expect(await setPlaceAutoReconnect('sftp-nas-local-22-test_user_1', true)).toBe(false)
+    expect(commands.setPlaceAutoReconnect).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1', true)
   })
 
   it('edits a server through the same shape the add sheet collects', async () => {
     vi.mocked(commands.updateSavedServer).mockResolvedValueOnce({ outcome: 'start_folder_outside_root' })
-    expect(await updateSavedServer(target, 'sftp-nas-local-22-ada')).toEqual({ outcome: 'start_folder_outside_root' })
-    expect(commands.updateSavedServer).toHaveBeenCalledWith(target, 'sftp-nas-local-22-ada')
+    expect(await updateSavedServer(target, 'sftp-nas-local-22-test_user_1')).toEqual({
+      outcome: 'start_folder_outside_root',
+    })
+    expect(commands.updateSavedServer).toHaveBeenCalledWith(target, 'sftp-nas-local-22-test_user_1')
   })
 })

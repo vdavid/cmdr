@@ -708,7 +708,7 @@ async fn the_sweep_refuses_a_volume_path_that_isnt_one_of_our_scratch_files() {
 
     let volume_id = "in-flight-temps-test-nas-tampered";
     let volume = Arc::new(InMemoryVolume::new("nas"));
-    let precious = PathBuf::from("/papers/taxes.pdf");
+    let precious = PathBuf::from("/documents/taxes.pdf");
     volume.create_file(&precious, b"the user's own file").await.unwrap();
     let next_app = TestOperations::new();
     next_app
@@ -787,7 +787,7 @@ fn state_writing_to_drive(ledger: &Ledger, volume_id: &str, root: &Path) -> Arc<
             .new_operation_state(Duration::from_millis(50))
             .with_sides(Some(TransferSides::new(
                 TransferSide::new("root".to_string(), "Macintosh HD".to_string(), PathBuf::from("/")),
-                TransferSide::new(volume_id.to_string(), "Fältkamera".to_string(), root.to_path_buf()),
+                TransferSide::new(volume_id.to_string(), "Tëstkamera".to_string(), root.to_path_buf()),
             )))
             .with_in_flight_ledger(ledger.clone()),
     )
@@ -855,7 +855,7 @@ fn a_leftover_on_a_removable_drive_waits_for_that_drive_rather_than_being_forgot
     let previous_run = Ledger::recording_in(&data_dir);
 
     let volume_id = "in-flight-temps-test-stick-away";
-    let drive_root = dir.join("Volumes").join("Faltkamera");
+    let drive_root = dir.join("Volumes").join("Testkamera");
     let state = state_writing_to_drive(&previous_run, volume_id, &drive_root);
     let temp = drive_root.join("footage.mov.cmdr-tmp-2468");
     track(&state, ItemKind::Temp, &temp);

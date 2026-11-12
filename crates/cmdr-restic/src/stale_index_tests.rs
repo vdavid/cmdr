@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::time::{Duration, UNIX_EPOCH};
 
 const PASSWORD: &str = "correct horse";
-const ROOT: &str = "/Volumes/naspi/backups/m3-restic";
+const ROOT: &str = "/Volumes/testshare/backups/test-restic";
 
 fn big_bytes() -> Vec<u8> {
     (0..300_000u32).map(|i| (i % 251) as u8).collect()
@@ -42,12 +42,12 @@ impl Pruned {
         std::fs::write(source.join("nested/b.bin"), big_bytes()).expect("source file");
         let fixture = FixtureRepo::init(PASSWORD);
         fixture.backup(&source, UNIX_EPOCH + Duration::from_secs(1_791_000_000));
-        let parent = Arc::new(InMemoryVolume::new("naspi"));
+        let parent = Arc::new(InMemoryVolume::new("testshare"));
         fixture.write_into(parent.as_ref(), Path::new(ROOT)).await;
         let hub = Arc::new(ResticRepos::new(VolumeHost::detached()));
         let volume = ResticVolume::new(
             hub,
-            "smb-naspi",
+            "smb-testshare",
             Arc::clone(&parent) as Arc<dyn Volume>,
             PathBuf::from(ROOT),
         );

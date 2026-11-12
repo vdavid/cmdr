@@ -33,9 +33,9 @@ import { createPlaceConnect, type PlaceConnect } from './place-connect.svelte'
 import { notePlacesMoved } from './place-moves.svelte'
 
 const savedPlace: VolumeInfo = {
-  id: 'sftp-nas-local-22-ada',
-  name: 'Naspolya',
-  path: 'sftp://ada@nas.local:22/srv/data',
+  id: 'sftp-nas-local-22-test_user_1',
+  name: 'Testnas',
+  path: 'sftp://test_user_1@testnas.local:22/srv/data',
   category: 'network',
   fsType: 'sftp',
   isEjectable: false,
@@ -49,7 +49,7 @@ const savedPlace: VolumeInfo = {
  */
 describe('createPlaceConnect on a server entered at a deep folder', () => {
   let dispose: (() => void) | undefined
-  const deep = 'sftp://ada@nas.local:22/srv/data/photos/2026'
+  const deep = 'sftp://test_user_1@testnas.local:22/srv/data/photos/2026'
 
   function create(): ReturnType<typeof vi.fn> {
     const enter = vi.fn()
@@ -86,13 +86,13 @@ describe('createPlaceConnect on a server entered at a deep folder', () => {
   })
 
   it('lands on the nearest folder still there, asking the server itself', async () => {
-    resolveValidPath.mockResolvedValue('sftp://ada@nas.local:22/srv/data/photos')
+    resolveValidPath.mockResolvedValue('sftp://test_user_1@testnas.local:22/srv/data/photos')
     const enter = create()
     await vi.waitFor(() => {
       expect(enter).toHaveBeenCalledWith({
         volumeId: savedPlace.id,
         volumePath: savedPlace.path,
-        targetPath: 'sftp://ada@nas.local:22/srv/data/photos',
+        targetPath: 'sftp://test_user_1@testnas.local:22/srv/data/photos',
       })
     })
     expect(resolveValidPath).toHaveBeenCalledWith(
@@ -199,8 +199,8 @@ describe('createPlaceConnect', () => {
       expect(sub.state?.kind).toBe('refused')
     })
     if (sub.state?.kind !== 'refused') throw new Error('not refused')
-    // ❗ The name the user gave it rides along, so "unreachable" can say "Naspolya" over "nas.local".
-    expect(sub.state.refusal).toBe('unreachable for ada at nas.local, named Naspolya')
+    // ❗ The name the user gave it rides along, so "unreachable" can say "Testnas" over "testnas.local".
+    expect(sub.state.refusal).toBe('unreachable for test_user_1 at testnas.local, named Testnas')
     // ❌ No Disconnect on a place with no session to drop.
     expect(sub.state.disconnect).toBeUndefined()
 
@@ -220,10 +220,10 @@ describe('createPlaceConnect', () => {
     // place's display name in for both, on every refused dial.
     info = {
       ...savedPlace,
-      id: 'webdav-cloud-443-ada',
+      id: 'webdav-cloud-443-test_user_1',
       name: 'Cloud',
       fsType: 'webdav',
-      path: 'webdav://ada@example.com@cloud.example.com:443',
+      path: 'webdav://test_user_1@example.com@cloud.example.com:443',
     }
     connectPlace.mockResolvedValue({ kind: 'refused', refusal: 'unreachable' })
     const { sub } = create()
@@ -231,7 +231,7 @@ describe('createPlaceConnect', () => {
       expect(sub.state?.kind).toBe('refused')
     })
     if (sub.state?.kind !== 'refused') throw new Error('not refused')
-    expect(sub.state.refusal).toBe('unreachable for ada@example.com at cloud.example.com, named Cloud')
+    expect(sub.state.refusal).toBe('unreachable for test_user_1@example.com at cloud.example.com, named Cloud')
   })
 
   /**
@@ -304,7 +304,7 @@ describe('createPlaceConnect', () => {
       )
       connectPlace.mockReturnValueOnce(new Promise(() => {}))
       const { sub, enter } = create()
-      info = { ...savedPlace, id: 'sftp-nas-moved-22-ada', path: 'sftp://ada@nas.moved:22/srv/data' }
+      info = { ...savedPlace, id: 'sftp-nas-moved-22-test_user_1', path: 'sftp://test_user_1@nas.moved:22/srv/data' }
       flushSync()
       expect(connectPlace).toHaveBeenCalledTimes(2)
 
@@ -353,15 +353,15 @@ describe('createPlaceConnect', () => {
 })
 
 /**
- * ❗ A saved SMB share comes back wherever its NEXT mount sat (`/Volumes/naspi-1`
- * when another server's `naspi` took the plain name), so the pane reloads there
+ * ❗ A saved SMB share comes back wherever its NEXT mount sat (`/Volumes/testshare-1`
+ * when another server's `testshare` took the plain name), so the pane reloads there
  * rather than at the path the saved row remembered.
  */
 describe('createPlaceConnect: a saved SMB share', () => {
   const savedShare: VolumeInfo = {
-    id: 'smb-naspolya-445-naspi',
-    name: 'naspi on Naspolya',
-    path: '/Volumes/naspi',
+    id: 'smb-testnas-445-testshare',
+    name: 'testshare on Testnas',
+    path: '/Volumes/testshare',
     category: 'network',
     fsType: 'smbfs',
     isEjectable: false,
@@ -369,13 +369,13 @@ describe('createPlaceConnect: a saved SMB share', () => {
   }
   let dispose: (() => void) | undefined
   let shareInfo = $state<VolumeInfo>({ ...savedShare })
-  let volumePath = $state('/Volumes/naspi')
-  let currentPath = $state('/Volumes/naspi/docs')
-  let enteredPath = $state('/Volumes/naspi/docs')
+  let volumePath = $state('/Volumes/testshare')
+  let currentPath = $state('/Volumes/testshare/docs')
+  let enteredPath = $state('/Volumes/testshare/docs')
 
   let sub: PlaceConnect | undefined
 
-  function create(landingOf = vi.fn(() => Promise.resolve<string | null>('/Volumes/naspi'))) {
+  function create(landingOf = vi.fn(() => Promise.resolve<string | null>('/Volumes/testshare'))) {
     const enter = vi.fn()
     dispose = $effect.root(() => {
       sub = createPlaceConnect({
@@ -395,9 +395,9 @@ describe('createPlaceConnect: a saved SMB share', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     shareInfo = { ...savedShare }
-    volumePath = '/Volumes/naspi'
-    currentPath = '/Volumes/naspi/docs'
-    enteredPath = '/Volumes/naspi/docs'
+    volumePath = '/Volumes/testshare'
+    currentPath = '/Volumes/testshare/docs'
+    enteredPath = '/Volumes/testshare/docs'
     connectPlace.mockResolvedValue({ kind: 'connected', volumeId: savedShare.id })
     // Every folder is there unless a cell says otherwise.
     resolveValidPath.mockImplementation((path: string) => Promise.resolve(path))
@@ -409,31 +409,31 @@ describe('createPlaceConnect: a saved SMB share', () => {
    * that's still there, inside the share, ❌ never an error over a missing folder.
    */
   it('enters the nearest folder that still exists once the share is live', async () => {
-    currentPath = '/Volumes/naspi/docs/2026'
-    resolveValidPath.mockResolvedValue('/Volumes/naspi/docs')
+    currentPath = '/Volumes/testshare/docs/2026'
+    resolveValidPath.mockResolvedValue('/Volumes/testshare/docs')
     const enter = create()
     await vi.waitFor(() => {
       expect(enter).toHaveBeenCalledWith({
         volumeId: savedShare.id,
-        volumePath: '/Volumes/naspi',
-        targetPath: '/Volumes/naspi/docs',
+        volumePath: '/Volumes/testshare',
+        targetPath: '/Volumes/testshare/docs',
       })
     })
     expect(resolveValidPath).toHaveBeenCalledWith(
-      '/Volumes/naspi/docs/2026',
-      expect.objectContaining({ volumeRoot: '/Volumes/naspi', volumeId: savedShare.id }),
+      '/Volumes/testshare/docs/2026',
+      expect.objectContaining({ volumeRoot: '/Volumes/testshare', volumeId: savedShare.id }),
     )
   })
 
   it('enters the share root when the walk finds nothing', async () => {
-    currentPath = '/Volumes/naspi/docs/2026'
+    currentPath = '/Volumes/testshare/docs/2026'
     resolveValidPath.mockResolvedValue(null)
     const enter = create()
     await vi.waitFor(() => {
       expect(enter).toHaveBeenCalledWith({
         volumeId: savedShare.id,
-        volumePath: '/Volumes/naspi',
-        targetPath: '/Volumes/naspi',
+        volumePath: '/Volumes/testshare',
+        targetPath: '/Volumes/testshare',
       })
     })
   })
@@ -449,12 +449,12 @@ describe('createPlaceConnect: a saved SMB share', () => {
    * missing-folder poll walked it to Macintosh HD (QA round 4, R3-A case 1).
    */
   it('enters the share where the mount landed when that moved, keeping the folder inside it', async () => {
-    const enter = create(vi.fn(() => Promise.resolve<string | null>('/Volumes/naspi-1')))
+    const enter = create(vi.fn(() => Promise.resolve<string | null>('/Volumes/testshare-1')))
     await vi.waitFor(() => {
       expect(enter).toHaveBeenCalledWith({
         volumeId: savedShare.id,
-        volumePath: '/Volumes/naspi-1',
-        targetPath: '/Volumes/naspi-1/docs',
+        volumePath: '/Volumes/testshare-1',
+        targetPath: '/Volumes/testshare-1/docs',
       })
     })
   })
@@ -465,13 +465,13 @@ describe('createPlaceConnect: a saved SMB share', () => {
    * 4, R3-A case 2). Whatever put it there, the pane follows its LIVE row's path.
    */
   it('follows a live share whose mount path differs from where the pane stands', () => {
-    shareInfo = { ...savedShare, path: '/Volumes/naspi-1', category: 'attached_volume', connectionState: 'direct' }
+    shareInfo = { ...savedShare, path: '/Volumes/testshare-1', category: 'attached_volume', connectionState: 'direct' }
     const enter = create()
     expect(connectPlace, 'a live share is not dialed').not.toHaveBeenCalled()
     expect(enter).toHaveBeenCalledWith({
       volumeId: savedShare.id,
-      volumePath: '/Volumes/naspi-1',
-      targetPath: '/Volumes/naspi-1/docs',
+      volumePath: '/Volumes/testshare-1',
+      targetPath: '/Volumes/testshare-1/docs',
     })
   })
 
@@ -483,13 +483,13 @@ describe('createPlaceConnect: a saved SMB share', () => {
    */
   it('follows a live share when the pane stands outside its mount, even with the right root', () => {
     shareInfo = { ...savedShare, category: 'attached_volume', connectionState: 'direct' }
-    currentPath = '/Volumes/naspi-1'
-    enteredPath = '/Volumes/naspi-1'
+    currentPath = '/Volumes/testshare-1'
+    enteredPath = '/Volumes/testshare-1'
     const enter = create()
     expect(enter).toHaveBeenCalledWith({
       volumeId: savedShare.id,
-      volumePath: '/Volumes/naspi',
-      targetPath: '/Volumes/naspi',
+      volumePath: '/Volumes/testshare',
+      targetPath: '/Volumes/testshare',
     })
   })
 
@@ -500,10 +500,15 @@ describe('createPlaceConnect: a saved SMB share', () => {
    */
   it('lands an already-live share at its live mount, not the stale saved landing', async () => {
     connectPlace.mockImplementationOnce(() => {
-      shareInfo = { ...savedShare, path: '/Volumes/naspi-2', category: 'attached_volume', connectionState: 'direct' }
+      shareInfo = {
+        ...savedShare,
+        path: '/Volumes/testshare-2',
+        category: 'attached_volume',
+        connectionState: 'direct',
+      }
       return Promise.resolve({ kind: 'already_live' })
     })
-    const landingOf = vi.fn(() => Promise.resolve<string | null>('/Volumes/naspi-1'))
+    const landingOf = vi.fn(() => Promise.resolve<string | null>('/Volumes/testshare-1'))
     const enter = create(landingOf)
     await vi.waitFor(() => {
       expect(connectPlace).toHaveBeenCalledOnce()
@@ -511,8 +516,8 @@ describe('createPlaceConnect: a saved SMB share', () => {
     })
     await new Promise((resolve) => setTimeout(resolve, 0))
     const roots = enter.mock.calls.map(([change]) => (change as { volumePath: string }).volumePath)
-    expect(roots).not.toContain('/Volumes/naspi-1')
-    expect(roots.at(-1)).toBe('/Volumes/naspi-2')
+    expect(roots).not.toContain('/Volumes/testshare-1')
+    expect(roots.at(-1)).toBe('/Volumes/testshare-2')
   })
 
   /**
@@ -522,7 +527,12 @@ describe('createPlaceConnect: a saved SMB share', () => {
    */
   it('drops the not-connected view when the cancelled mount finished anyway', async () => {
     connectPlace.mockImplementationOnce(() => {
-      shareInfo = { ...savedShare, path: '/Volumes/naspi-2', category: 'attached_volume', connectionState: 'direct' }
+      shareInfo = {
+        ...savedShare,
+        path: '/Volumes/testshare-2',
+        category: 'attached_volume',
+        connectionState: 'direct',
+      }
       return Promise.resolve({ kind: 'cancelled' })
     })
     const enter = create()
@@ -534,8 +544,8 @@ describe('createPlaceConnect: a saved SMB share', () => {
     expect(sub?.state).toBeNull()
     expect(enter).toHaveBeenLastCalledWith({
       volumeId: savedShare.id,
-      volumePath: '/Volumes/naspi-2',
-      targetPath: '/Volumes/naspi-2/docs',
+      volumePath: '/Volumes/testshare-2',
+      targetPath: '/Volumes/testshare-2/docs',
     })
   })
 
@@ -555,7 +565,7 @@ describe('createPlaceConnect: a saved SMB share', () => {
    */
   it('leaves a live share alone while the pane catches up with a switch onto it', () => {
     shareInfo = { ...savedShare, category: 'attached_volume', connectionState: 'direct' }
-    currentPath = '/Users/ada/Downloads'
+    currentPath = '/Users/test_user_1/Downloads'
     const enter = create()
     expect(enter).not.toHaveBeenCalled()
   })

@@ -1202,7 +1202,7 @@ fn delete_clip_model_reports_a_prune_that_did_not_land() {
     // say so rather than claim every volume's data is gone, and still prune the others.
     let dir = tempfile::tempdir().expect("temp");
     let data_dir = dir.path();
-    for vid in ["root", "naspi"] {
+    for vid in ["root", "testshare"] {
         let writer = media_writer(data_dir, vid);
         writer
             .upsert(
@@ -1224,7 +1224,7 @@ fn delete_clip_model_reports_a_prune_that_did_not_land() {
         writer.flush_blocking().expect("flush");
         writer.shutdown();
     }
-    let refused_db = media_db_path(data_dir, "naspi");
+    let refused_db = media_db_path(data_dir, "testshare");
     crate::media_index::store::open_write_connection(&refused_db)
         .expect("open media.db to install the fault")
         .execute_batch(
@@ -1262,7 +1262,7 @@ fn delete_clip_model_removes_the_model_and_every_volumes_embeddings() {
     // not-installed) AND every volume's CLIP rows, while keeping the Vision side.
     let dir = tempfile::tempdir().expect("temp");
     let data_dir = dir.path();
-    for vid in ["root", "naspi"] {
+    for vid in ["root", "testshare"] {
         let writer = media_writer(data_dir, vid);
         writer
             .upsert(
@@ -1304,7 +1304,7 @@ fn delete_clip_model_removes_the_model_and_every_volumes_embeddings() {
         "the model dir is gone ⇒ status is no longer installed"
     );
     // Every volume's CLIP rows are gone and stamps reset, Vision kept.
-    for vid in ["root", "naspi"] {
+    for vid in ["root", "testshare"] {
         let db_path = media_db_path(data_dir, vid);
         assert_eq!(
             clip_state(&db_path, "/p/beach.jpg"),

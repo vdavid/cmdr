@@ -178,24 +178,24 @@ describe('MediaIndexChosenFolders', () => {
   })
 
   it('shows each chosen folder by name and full path', async () => {
-    stubs.chosenFolders = ['/Users/dave/Photos', '/Volumes/naspi/Archive']
+    stubs.chosenFolders = ['/Users/test_user_10/Photos', '/Volumes/testshare/Archive']
     const target = mountList()
     const rows = target.querySelectorAll('.mi-folders-row')
     expect(rows.length).toBe(2)
     expect(rows[0].querySelector('.mi-folders-name')?.textContent).toBe('Photos')
-    expect(rows[0].querySelector('.mi-folders-full')?.textContent).toBe('/Users/dave/Photos')
+    expect(rows[0].querySelector('.mi-folders-full')?.textContent).toBe('/Users/test_user_10/Photos')
     // The remove button names its folder, so a screen reader hears which row it acts on.
     const remove = rows[1].querySelector('button')
-    expect(remove?.getAttribute('aria-label') ?? '').toContain('/Volumes/naspi/Archive')
+    expect(remove?.getAttribute('aria-label') ?? '').toContain('/Volumes/testshare/Archive')
     await expectNoA11yViolations(target)
   })
 
   it('adds the picked folder', async () => {
-    stubs.openPicker.mockResolvedValue('/Users/dave/Photos')
+    stubs.openPicker.mockResolvedValue('/Users/test_user_10/Photos')
     const target = mountList()
     addButton(target).click()
     await vi.waitFor(() => {
-      expect(stubs.setFolderChosen).toHaveBeenCalledWith('/Users/dave/Photos', true)
+      expect(stubs.setFolderChosen).toHaveBeenCalledWith('/Users/test_user_10/Photos', true)
     })
   })
 
@@ -210,8 +210,8 @@ describe('MediaIndexChosenFolders', () => {
   it('writes nothing when the folder is already on the list', async () => {
     // The backend stores a set, so a re-add is a no-op there — but it would render a
     // duplicate row, so the component drops it first.
-    stubs.chosenFolders = ['/Users/dave/Photos']
-    stubs.openPicker.mockResolvedValue('/Users/dave/Photos')
+    stubs.chosenFolders = ['/Users/test_user_10/Photos']
+    stubs.openPicker.mockResolvedValue('/Users/test_user_10/Photos')
     const target = mountList()
     addButton(target).click()
     await tick()
@@ -219,12 +219,12 @@ describe('MediaIndexChosenFolders', () => {
   })
 
   it('removes the folder on its row', async () => {
-    stubs.chosenFolders = ['/Users/dave/Photos']
+    stubs.chosenFolders = ['/Users/test_user_10/Photos']
     const target = mountList()
     const remove = target.querySelector('.mi-folders-row button') as HTMLElement
     remove.click()
     await vi.waitFor(() => {
-      expect(stubs.setFolderChosen).toHaveBeenCalledWith('/Users/dave/Photos', false)
+      expect(stubs.setFolderChosen).toHaveBeenCalledWith('/Users/test_user_10/Photos', false)
     })
   })
 })

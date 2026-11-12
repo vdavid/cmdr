@@ -282,8 +282,8 @@ pub(super) fn redact_host(host: &str, context: Option<&RedactionContext>) -> Str
         .or_else(|| decoded.strip_suffix(".LOCAL"))
         .map_or((decoded, false), |host| (host, true));
     let folded = identity.to_lowercase();
-    // A Bonjour instance (`naspolya._smb._tcp`): the device's own name is the identity, and the
-    // service type after it is public, so `server="naspolya"` and the instance share a token.
+    // A Bonjour instance (`testnas._smb._tcp`): the device's own name is the identity, and the
+    // service type after it is public, so `server="testnas"` and the instance share a token.
     let (folded, service) = match bonjour_service_split(&folded) {
         Some((instance, service)) => (instance.to_string(), service),
         None => (folded.clone(), String::new()),

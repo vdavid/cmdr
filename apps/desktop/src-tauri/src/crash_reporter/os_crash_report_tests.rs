@@ -194,14 +194,14 @@ fn a_path_inside_a_symbol_is_redacted() {
     let body = serde_json::json!({
         "faultingThread": 0,
         "threads": [{
-            "frames": [{ "imageIndex": 0, "symbol": "opened /Users/jane/Secret/notes.txt", "symbolLocation": 0 }],
+            "frames": [{ "imageIndex": 0, "symbol": "opened /Users/test_user_12/Secret/notes.txt", "symbolLocation": 0 }],
         }],
         "usedImages": [{ "name": "Cmdr" }],
     });
 
     let report = parse_report(&an_ips(body)).expect("the fixture yields a report");
 
-    assert!(!report.frames[0].contains("jane"), "got {}", report.frames[0]);
+    assert!(!report.frames[0].contains("test_user_12"), "got {}", report.frames[0]);
     assert!(!report.frames[0].contains("Secret"), "got {}", report.frames[0]);
 }
 

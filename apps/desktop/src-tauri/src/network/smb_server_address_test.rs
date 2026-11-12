@@ -8,22 +8,22 @@ use std::time::Duration;
 fn system_keychain_aliases_include_the_mdns_service_form_for_an_ip() {
     use crate::network::{HostSource, NetworkHost};
     let hosts = [NetworkHost {
-        id: "naspolya".into(),
-        name: "Naspolya".into(),
-        hostname: Some("Naspolya.local".into()),
-        ip_address: Some("192.168.1.111".into()),
+        id: "testnas".into(),
+        name: "Testnas".into(),
+        hostname: Some("Testnas.local".into()),
+        ip_address: Some("192.168.50.10".into()),
         port: 445,
         source: HostSource::Discovered,
     }];
     // We mount by IP; Finder keyed its password by the mDNS service name. The alias
     // set must include that form so the keychain lookup can find it.
-    let aliases = system_keychain_aliases_from("192.168.1.111", &hosts);
+    let aliases = system_keychain_aliases_from("192.168.50.10", &hosts);
     assert!(
-        aliases.contains(&"Naspolya._smb._tcp.local".to_string()),
+        aliases.contains(&"Testnas._smb._tcp.local".to_string()),
         "got {aliases:?}"
     );
-    assert!(aliases.contains(&"Naspolya.local".to_string()));
-    assert!(aliases.contains(&"Naspolya".to_string()));
+    assert!(aliases.contains(&"Testnas.local".to_string()));
+    assert!(aliases.contains(&"Testnas".to_string()));
 }
 
 /// A server typed as an IP off 445 joins discovery under its discovery name, port and
@@ -33,7 +33,7 @@ fn system_keychain_aliases_include_the_mdns_service_form_for_an_ip() {
 fn a_typed_ip_off_445_is_friendly_named_without_its_port() {
     let hosts = [crate::network::manual_servers::create_network_host("127.0.0.1", 11480)];
     assert_eq!(friendly_name_in("127.0.0.1", &hosts), "127.0.0.1");
-    assert_eq!(friendly_name_in("Naspolya._smb._tcp.local", &hosts), "Naspolya");
+    assert_eq!(friendly_name_in("Testnas._smb._tcp.local", &hosts), "Testnas");
 }
 
 #[test]
@@ -44,7 +44,7 @@ fn system_keychain_aliases_empty_for_an_unknown_server() {
 #[test]
 fn is_private_ipv4_recognizes_rfc1918_and_link_local() {
     assert!(is_private_ipv4("10.0.0.1"));
-    assert!(is_private_ipv4("192.168.1.111"));
+    assert!(is_private_ipv4("192.168.50.10"));
     assert!(is_private_ipv4("172.16.5.7"));
     assert!(is_private_ipv4("169.254.1.2"), "link-local should count");
 }
@@ -54,7 +54,7 @@ fn is_private_ipv4_rejects_public_and_special() {
     assert!(!is_private_ipv4("8.8.8.8"));
     assert!(!is_private_ipv4("100.64.0.1"), "Tailscale/CGNAT not private");
     assert!(!is_private_ipv4("127.0.0.1"), "loopback not private");
-    assert!(!is_private_ipv4("naspolya"), "hostnames return false");
+    assert!(!is_private_ipv4("testnas"), "hostnames return false");
     assert!(!is_private_ipv4(""));
     assert!(!is_private_ipv4("::1"), "IPv6 currently returns false");
 }
@@ -91,7 +91,7 @@ async fn wait_helper_short_circuits_when_network_disabled() {
     crate::network::set_network_enabled_flag(false);
 
     let start = std::time::Instant::now();
-    let result = discover_server("192.168.1.111", Duration::from_millis(500))
+    let result = discover_server("192.168.50.10", Duration::from_millis(500))
         .await
         .hostname;
     let elapsed = start.elapsed();
@@ -183,8 +183,8 @@ async fn wait_helper_returns_immediately_for_a_dns_hostname() {
 #[test]
 fn a_plain_address_is_connectable_as_it_stands() {
     assert_eq!(
-        resolve_server_address("192.168.1.111"),
-        ServerAddress::Connectable("192.168.1.111".to_string())
+        resolve_server_address("192.168.50.10"),
+        ServerAddress::Connectable("192.168.50.10".to_string())
     );
     assert_eq!(
         resolve_server_address("fileserver.corp.example.com"),

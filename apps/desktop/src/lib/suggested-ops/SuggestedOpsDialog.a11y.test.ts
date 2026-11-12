@@ -128,7 +128,7 @@ function group(overrides: Record<string, unknown> = {}) {
     sourceVolumeId: 'root',
     sourceFolder: '/Users/someone/Downloads',
     destination: '/backups/Installers',
-    destinationVolumeName: 'Naspolya',
+    destinationVolumeName: 'Testnas',
     reversible: 'restoreMove',
     runsAs: null,
     destinationState: 'exists',
@@ -247,7 +247,7 @@ describe('the action', () => {
 
     const facts = host.querySelector('.facts')?.textContent ?? ''
     expect(facts).toContain('/Users/someone/Downloads')
-    expect(facts).toContain('Naspolya')
+    expect(facts).toContain('Testnas')
     expect(facts).toContain('/backups/Installers')
   })
 
@@ -394,11 +394,11 @@ describe('a new name', () => {
   // A move that files its sources under new names (the seeded group is a move): only the
   // renamed row draws the arrow, and a screen reader hears "New name" before the name.
   it('draws the arrow on a renamed move row only, and reads it as the new name', async () => {
-    ;(store.ops[0] as unknown as { newName: string }).newName = '2026-09-27 OpenAI invoice Rymd.pdf'
+    ;(store.ops[0] as unknown as { newName: string }).newName = '2026-09-27 OpenAI invoice Testco.pdf'
     const host = mountDialog()
 
     const cells = [...host.querySelectorAll('.name-cell')]
-    const renamed = cells.find((cell) => cell.textContent.includes('2026-09-27 OpenAI invoice Rymd.pdf'))
+    const renamed = cells.find((cell) => cell.textContent.includes('2026-09-27 OpenAI invoice Testco.pdf'))
     expect(renamed?.textContent).toContain('invoice-jan.pdf')
     expect(renamed?.querySelector('.arrow')).not.toBeNull()
     expect(renamed?.querySelector('.sr-only')?.textContent).toBe('New name')
@@ -544,7 +544,7 @@ describe('a server card', () => {
         { field: 'name', value: 'Build box', changed: false, previous: null },
         { field: 'address', value: 'build.local', changed: false, previous: null },
         { field: 'port', value: '22', changed: false, previous: null },
-        { field: 'account', value: 'ada', changed: false, previous: null },
+        { field: 'account', value: 'test_user_1', changed: false, previous: null },
         { field: 'folder', value: '/srv/builds', changed: false, previous: null },
       ],
       addressIsNew: true,
@@ -554,13 +554,13 @@ describe('a server card', () => {
   const editCard = {
     ...addCard,
     verb: 'editServer',
-    displayName: 'Naspolya',
+    displayName: 'Testnas',
     server: {
       protocol: 'smb',
       fields: [
-        { field: 'name', value: 'Naspolya', changed: true, previous: 'naspi' },
-        { field: 'address', value: 'naspi.local', changed: false, previous: null },
-        { field: 'account', value: 'david', changed: true, previous: null },
+        { field: 'name', value: 'Testnas', changed: true, previous: 'testshare' },
+        { field: 'address', value: 'testshare.local', changed: false, previous: null },
+        { field: 'account', value: 'test_user_3', changed: true, previous: null },
       ],
       addressIsNew: false,
       sharesAffected: 3,
@@ -572,7 +572,17 @@ describe('a server card', () => {
     const host = mountDialog()
 
     const facts = host.querySelector('.facts')?.textContent ?? ''
-    for (const text of ['Type', 'SFTP', 'Address', 'build.local', 'Port', '22', 'Account', 'ada', '/srv/builds']) {
+    for (const text of [
+      'Type',
+      'SFTP',
+      'Address',
+      'build.local',
+      'Port',
+      '22',
+      'Account',
+      'test_user_1',
+      '/srv/builds',
+    ]) {
       expect(facts).toContain(text)
     }
     expect(facts).toContain('A new address')
@@ -619,9 +629,9 @@ describe('a server card', () => {
       text: dd.textContent.replace(/\s+/g, ' ').trim(),
       arrow: dd.querySelector('.arrow') !== null,
     }))
-    expect(rows).toContainEqual({ text: 'naspi changes to Naspolya', arrow: true })
-    expect(rows).toContainEqual({ text: 'Not set changes to david', arrow: true })
-    expect(rows).toContainEqual({ text: 'naspi.local', arrow: false })
+    expect(rows).toContainEqual({ text: 'testshare changes to Testnas', arrow: true })
+    expect(rows).toContainEqual({ text: 'Not set changes to test_user_3', arrow: true })
+    expect(rows).toContainEqual({ text: 'testshare.local', arrow: false })
     expect(host.textContent).not.toContain('A new address')
     expect(host.querySelector('.shares')?.textContent).toContain('This changes 3 saved shares on this server.')
     expect(host.querySelector('.group-head')?.textContent).toContain('Change server settings')
@@ -632,13 +642,13 @@ describe('a server card', () => {
 
   it('shows why a save gave the card back, under the card', async () => {
     seed(addCard)
-    store.state.refusals = new Map([[7, { kind: 'server', answer: { kind: 'nameTaken', name: 'Naspolya' } }]])
+    store.state.refusals = new Map([[7, { kind: 'server', answer: { kind: 'nameTaken', name: 'Testnas' } }]])
     const host = mountDialog()
 
     const refusal = host.querySelector('.group .refusal')
     expect(refusal?.getAttribute('role')).toBe('alert')
     expect(refusal?.textContent).toContain('Why this wasn’t saved')
-    expect(refusal?.textContent).toContain('Another saved server is already called Naspolya')
+    expect(refusal?.textContent).toContain('Another saved server is already called Testnas')
     await expectNoA11yViolations(host)
   })
 
@@ -683,10 +693,10 @@ describe('the parts on their own', () => {
   it('VolumePill names a volume the list doesn’t know, by the name it was given', async () => {
     const VolumePill = (await import('./VolumePill.svelte')).default
     const host = freshHost()
-    mount(VolumePill, { target: host, props: { volumeId: 'not-listed', name: 'Naspolya' } })
+    mount(VolumePill, { target: host, props: { volumeId: 'not-listed', name: 'Testnas' } })
     flushSync()
     await expectNoA11yViolations(host)
-    expect(host.textContent).toContain('Naspolya')
+    expect(host.textContent).toContain('Testnas')
   })
 
   it('SuggestedOpFiles renders a file list with no violations', async () => {

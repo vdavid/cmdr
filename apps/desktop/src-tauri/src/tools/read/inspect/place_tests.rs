@@ -8,13 +8,13 @@ use crate::location::resolve::{IndexSources, VolumeFact, VolumeFacts};
 use crate::tools::read::inspect::shape_ok;
 use crate::tools::resources::volumes::VolumeKind;
 
-const TAILSCALE: &str = "smb-100-127-48-122-445-naspi-david";
-const LAN: &str = "smb-192-168-1-111-445-naspi-david";
+const TAILSCALE: &str = "smb-100-64-0-10-445-testshare-test_user_3";
+const LAN: &str = "smb-192-168-50-10-445-testshare-test_user_3";
 
 fn share(id: &str, root: &str, live: bool) -> VolumeFact {
     VolumeFact {
         id: id.to_string(),
-        name: format!("naspi ({id})"),
+        name: format!("testshare ({id})"),
         kind: VolumeKind::Smb,
         root: root.to_string(),
         live,
@@ -29,7 +29,7 @@ fn share(id: &str, root: &str, live: bool) -> VolumeFact {
     }
 }
 
-/// The NAS saved over Tailscale (last root `/Volumes/naspi`) and live over the LAN.
+/// The NAS saved over Tailscale (last root `/Volumes/testshare`) and live over the LAN.
 fn facts() -> VolumeFacts {
     VolumeFacts {
         volumes: vec![
@@ -44,8 +44,8 @@ fn facts() -> VolumeFacts {
                 index: IndexSources::none("root"),
                 share: None,
             },
-            share(TAILSCALE, "/Volumes/naspi", false),
-            share(LAN, "/Volumes/naspi-1", true),
+            share(TAILSCALE, "/Volumes/testshare", false),
+            share(LAN, "/Volumes/testshare-1", true),
         ],
         mount_areas: vec!["/Volumes".to_string()],
     }
@@ -54,7 +54,7 @@ fn facts() -> VolumeFacts {
 /// The volume registry's answer: the LAN share's root, else the boot disk.
 fn owner(path: &str) -> Option<String> {
     Some(
-        if path.starts_with("/Volumes/naspi-1/") {
+        if path.starts_with("/Volumes/testshare-1/") {
             LAN
         } else {
             "root"
@@ -77,8 +77,8 @@ fn wire(paths: &[&str], placed: PlacedRows) -> Value {
 #[test]
 fn a_file_under_a_dead_mount_point_is_no_volume_at_path_with_nearby_once() {
     let paths = [
-        "/Volumes/naspi/papers/a.pdf",
-        "/Volumes/naspi/papers/b.pdf",
+        "/Volumes/testshare/documents/a.pdf",
+        "/Volumes/testshare/documents/b.pdf",
         "/Users/me/gone.txt",
     ];
     let rows = paths.iter().map(|p| missing(p)).collect();
@@ -91,12 +91,12 @@ fn a_file_under_a_dead_mount_point_is_no_volume_at_path_with_nearby_once() {
     assert_eq!(json["files"][2]["volumeId"], "root");
     let nearby = json["nearby"].as_array().expect("nearby, once for the call");
     assert_eq!(nearby[0]["candidate"]["volumeId"], LAN);
-    assert_eq!(nearby[0]["candidate"]["path"], "/Volumes/naspi-1/papers/a.pdf");
+    assert_eq!(nearby[0]["candidate"]["path"], "/Volumes/testshare-1/documents/a.pdf");
 }
 
 #[test]
 fn every_row_echoes_the_volume_it_is_on() {
-    let paths = ["/Volumes/naspi-1/papers/a.pdf", "/Users/me/notes"];
+    let paths = ["/Volumes/testshare-1/documents/a.pdf", "/Users/me/notes"];
     let rows = vec![
         Some(FileRow::Folder {
             path: paths[0].to_string(),
@@ -116,7 +116,7 @@ fn every_row_echoes_the_volume_it_is_on() {
 /// and a `missing` row with none to classify against stays `missing`.
 #[test]
 fn without_facts_a_missing_row_stays_missing() {
-    let paths = ["/Volumes/naspi/papers/a.pdf"];
+    let paths = ["/Volumes/testshare/documents/a.pdf"];
     let json = wire(&paths, place_rows(vec![missing(paths[0])], None, &owner));
     assert_eq!(json["files"][0]["status"], "missing");
 }

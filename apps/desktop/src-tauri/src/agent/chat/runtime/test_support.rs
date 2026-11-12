@@ -476,7 +476,7 @@ impl ToolDispatcher for StopAwareDispatcher {
             ToolDispatchOutcome {
                 result: AgentToolResult {
                     call_id: call.call_id.clone(),
-                    content: json!({ "miss": "cancelled", "location": { "path": "/Volumes/naspi-1" } }),
+                    content: json!({ "miss": "cancelled", "location": { "path": "/Volumes/testshare-1" } }),
                     elided: false,
                 },
                 proposal: None,

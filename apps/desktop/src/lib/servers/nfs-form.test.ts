@@ -113,23 +113,23 @@ function nfsForm(address: string) {
 
 describe('an NFS address in the form', () => {
   it('fills the export from the path the address carried, whole', () => {
-    expect(nfsForm('nfs://nas.local/volume1/data/photos').nfs.exportPath).toBe('/volume1/data/photos')
-    expect(nfsForm('nas.local:/Public').nfs.exportPath).toBe('/Public')
+    expect(nfsForm('nfs://testnas.local/volume1/data/photos').nfs.exportPath).toBe('/volume1/data/photos')
+    expect(nfsForm('testnas.local:/Public').nfs.exportPath).toBe('/Public')
   })
 
   it('keeps a picked export when the address carries no path', () => {
     const form = { ...emptyServerForm(), protocol: 'nfs' as const, nfs: { ...emptyNfsFields(), exportPath: '/Public' } }
-    expect(applyParsedAddress(form, parseServerAddress('nas.local')).nfs.exportPath).toBe('/Public')
+    expect(applyParsedAddress(form, parseServerAddress('testnas.local')).nfs.exportPath).toBe('/Public')
   })
 
   it('takes no path from an address that names another protocol', () => {
-    expect(nfsForm('sftp://nas.local/srv').nfs.exportPath).toBe('')
+    expect(nfsForm('sftp://testnas.local/srv').nfs.exportPath).toBe('')
   })
 })
 
 describe('serverTargetFrom: NFS', () => {
   it('sends the typed other groups, and nothing while they don’t read', () => {
-    const form = nfsForm('nfs://nas.local/Public')
+    const form = nfsForm('nfs://testnas.local/Public')
     const typed = (otherGids: string) => ({ ...form, nfs: withTypedIdentity(form.nfs, { otherGids }) })
     expect(serverTargetFrom(typed('2001, 2002'))).toMatchObject({ otherGids: [2001, 2002] })
     expect(serverTargetFrom(typed('x'))).toBeNull()
@@ -137,10 +137,10 @@ describe('serverTargetFrom: NFS', () => {
   })
 
   it('sends the host, the typed port or none, the whole export path, and the identity', () => {
-    expect(serverTargetFrom(nfsForm('nfs://nas.local/volume1/data/photos'))).toEqual({
+    expect(serverTargetFrom(nfsForm('nfs://testnas.local/volume1/data/photos'))).toEqual({
       protocol: 'nfs',
       displayName: '',
-      host: 'nas.local',
+      host: 'testnas.local',
       port: null,
       export: '/volume1/data/photos',
       uid: 1000,
@@ -149,21 +149,21 @@ describe('serverTargetFrom: NFS', () => {
       startFolder: null,
       autoReconnect: true,
     })
-    expect(serverTargetFrom(nfsForm('nfs://nas.local:15481/insecure'))).toMatchObject({
+    expect(serverTargetFrom(nfsForm('nfs://testnas.local:15481/insecure'))).toMatchObject({
       port: 15481,
       export: '/insecure',
     })
-    expect(serverTargetFrom(nfsForm('nas.local:2049/Public'))).toMatchObject({ port: 2049 })
+    expect(serverTargetFrom(nfsForm('testnas.local:2049/Public'))).toMatchObject({ port: 2049 })
   })
 
   it("drops a port another protocol's scheme named", () => {
-    const form = { ...nfsForm('sftp://nas.local:2222'), nfs: { ...nfsForm('x').nfs, exportPath: '/Public' } }
-    expect(serverTargetFrom(form)).toMatchObject({ host: 'nas.local', port: null })
+    const form = { ...nfsForm('sftp://testnas.local:2222'), nfs: { ...nfsForm('x').nfs, exportPath: '/Public' } }
+    expect(serverTargetFrom(form)).toMatchObject({ host: 'testnas.local', port: null })
   })
 
   it('names no target while the export or an id is missing', () => {
-    expect(serverTargetFrom(nfsForm('nfs://nas.local'))).toBeNull()
-    const noUid = nfsForm('nfs://nas.local/Public')
+    expect(serverTargetFrom(nfsForm('nfs://testnas.local'))).toBeNull()
+    const noUid = nfsForm('nfs://testnas.local/Public')
     expect(serverTargetFrom({ ...noUid, nfs: withTypedIdentity(noUid.nfs, { uid: '' }) })).toBeNull()
   })
 })
@@ -171,27 +171,27 @@ describe('serverTargetFrom: NFS', () => {
 describe('nameFallbackOf: NFS', () => {
   it('names the SERVER by its host, as `nfs_known_places::server_label` does, whatever the export', () => {
     // The Name field names the server; each export reads as its own path under it.
-    expect(nameFallbackOf(nfsForm('nfs://nas.local/Public'))).toBe('nas.local')
-    expect(nameFallbackOf(nfsForm('nfs://nas.local:15481/insecure'))).toBe('nas.local')
-    expect(nameFallbackOf(nfsForm('nfs://nas.local'))).toBe('nas.local')
+    expect(nameFallbackOf(nfsForm('nfs://testnas.local/Public'))).toBe('testnas.local')
+    expect(nameFallbackOf(nfsForm('nfs://testnas.local:15481/insecure'))).toBe('testnas.local')
+    expect(nameFallbackOf(nfsForm('nfs://testnas.local'))).toBe('testnas.local')
   })
 })
 
 describe('an NFS prefill', () => {
   it('opens on NFS with the URL as typed, its path the export to split', () => {
-    const form = formFromPrefill('nfs://nas.local/volume1/data/photos')
-    expect(form).toMatchObject({ protocol: 'nfs', address: 'nfs://nas.local/volume1/data/photos' })
+    const form = formFromPrefill('nfs://testnas.local/volume1/data/photos')
+    expect(form).toMatchObject({ protocol: 'nfs', address: 'nfs://testnas.local/volume1/data/photos' })
     expect(form.nfs.exportPath).toBe('/volume1/data/photos')
   })
 
   it('reads an app path whose export is escaped as its export and the folder under it', () => {
-    expect(nfsFieldsFromAppPath('nfs://nas.local:2049/volume1%2Fdata/photos/2026')).toEqual({
-      address: 'nfs://nas.local:2049',
+    expect(nfsFieldsFromAppPath('nfs://testnas.local:2049/volume1%2Fdata/photos/2026')).toEqual({
+      address: 'nfs://testnas.local:2049',
       exportPath: '/volume1/data',
       startFolder: '/photos/2026',
     })
-    const form = formFromPrefill('nfs://nas.local:2049/%2F/etc')
-    expect(form).toMatchObject({ protocol: 'nfs', address: 'nfs://nas.local:2049', startFolder: '/etc' })
+    const form = formFromPrefill('nfs://testnas.local:2049/%2F/etc')
+    expect(form).toMatchObject({ protocol: 'nfs', address: 'nfs://testnas.local:2049', startFolder: '/etc' })
     expect(form.nfs.exportPath).toBe('/')
   })
 
@@ -199,20 +199,20 @@ describe('an NFS prefill', () => {
     // `nfs://nas:2049/share/Public/x` could be export `/share/Public` typed by hand,
     // so only the server's export list can say where the export ends.
     expect(nfsFieldsFromAppPath('nfs://nas:2049/share/Public/x')).toBeNull()
-    expect(nfsFieldsFromAppPath('sftp://ada@nas:22/srv')).toBeNull()
+    expect(nfsFieldsFromAppPath('sftp://test_user_1@nas:22/srv')).toBeNull()
   })
 })
 
 describe('formFromNfsPlace', () => {
   const place: SavedNfsPlace = {
     volumeId: 'nfs-data-nas-1a2b',
-    host: 'nas.local',
+    host: 'testnas.local',
     port: null,
     export: '/volume1/data',
     uid: 1026,
     gid: 100,
     otherGids: [2001, 2002],
-    displayName: 'Naspolya',
+    displayName: 'Testnas',
     startFolder: '/photos',
     autoReconnect: false,
     pinned: true,
@@ -221,13 +221,13 @@ describe('formFromNfsPlace', () => {
   it('reads the saved export back, the identity included', () => {
     expect(formFromNfsPlace(place)).toMatchObject({
       protocol: 'nfs',
-      address: 'nfs://nas.local',
-      displayName: 'Naspolya',
+      address: 'nfs://testnas.local',
+      displayName: 'Testnas',
       startFolder: '/photos',
       autoReconnect: false,
       nfs: { exportPath: '/volume1/data', uid: '1026', gid: '100', otherGids: '2001, 2002' },
     })
-    expect(formFromNfsPlace({ ...place, port: 15481 }).address).toBe('nfs://nas.local:15481')
+    expect(formFromNfsPlace({ ...place, port: 15481 }).address).toBe('nfs://testnas.local:15481')
   })
 
   it('opens the ids as the person’s, so no guess lands over the saved ones', () => {
@@ -239,8 +239,8 @@ describe('formFromNfsPlace', () => {
   it('saves back the target it opened on', () => {
     expect(serverTargetFrom(formFromNfsPlace(place))).toEqual({
       protocol: 'nfs',
-      displayName: 'Naspolya',
-      host: 'nas.local',
+      displayName: 'Testnas',
+      host: 'testnas.local',
       port: null,
       export: '/volume1/data',
       uid: 1026,

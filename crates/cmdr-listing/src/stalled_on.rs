@@ -154,7 +154,7 @@ mod tests {
     fn network_filesystems_are_servers() {
         let shares = [
             // macOS `f_fstypename`
-            ("smbfs", "//david@192.0.2.9/naspi"),
+            ("smbfs", "//test_user_3@192.0.2.9/testshare"),
             ("nfs", "server:/export"),
             ("afpfs", "afp://server/share"),
             ("webdav", "https://dav.example.com/files"),
@@ -233,9 +233,9 @@ mod tests {
     fn a_folder_on_a_local_disk_reads_as_a_drive() {
         let mounts = crate::testing::FakeMountTable::default()
             .mount("/", "apfs", "/dev/disk3s1s1")
-            .mount("/Volumes/share", "smbfs", "//ada@nas/share");
+            .mount("/Volumes/share", "smbfs", "//test_user_1@nas/share");
         assert_eq!(
-            stalled_on_mount_of(&mounts, Path::new("/Users/ada/Documents")),
+            stalled_on_mount_of(&mounts, Path::new("/Users/test_user_1/Documents")),
             StalledOn::Drive
         );
         assert_eq!(

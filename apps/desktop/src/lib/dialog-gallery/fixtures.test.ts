@@ -80,7 +80,7 @@ describe('the sign-in sheet fixtures answer what their rows advertise', () => {
     if (!request || request.mode === 'edit') throw new Error(`${stateId} has no attempt`)
     const outcome = await request.attempt({
       mode: 'add_smb',
-      address: 'naspolya',
+      address: 'testnas',
       name: '',
       username: null,
       intent: 'open',

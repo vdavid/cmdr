@@ -10,7 +10,7 @@ use crate::saved_servers::test_fixtures::{find, listing_of as saved_servers_of, 
 /// A self-signed NAS's first-contact certificate prompt.
 fn certificate_prompt() -> cmdr_fs::volume::tls::CertificatePrompt {
     cmdr_fs::volume::tls::CertificatePrompt {
-        host: "nas.local".to_string(),
+        host: "testnas.local".to_string(),
         port: 5006,
         fingerprint: "AB:CD".to_string(),
         kind: cmdr_fs::volume::tls::CertificatePromptKind::Unknown,
@@ -25,7 +25,7 @@ fn every_sftp_outcome_maps_to_its_superset_twin() {
     use cmdr_sftp::transport::{HostKeyPrompt, HostKeyPromptKind};
 
     let prompt = HostKeyPrompt {
-        host: "nas.local".to_string(),
+        host: "testnas.local".to_string(),
         port: 22,
         algorithm: "ssh-ed25519".to_string(),
         fingerprint: "SHA256:abc".to_string(),
@@ -125,7 +125,7 @@ fn pinning_a_place_round_trips_and_republishes_the_volume_list() {
     let _recorder = crate::volume_broadcast::recorder_test_lock();
     let host = "192.0.2.36";
     sftp_known_servers::remember(sftp_entry(host, true));
-    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1");
     let pinned_now = || {
         sftp_known_servers::all()
             .into_iter()
@@ -163,7 +163,7 @@ fn switching_reconnect_automatically_on_an_sftp_place_round_trips_through_the_li
     let _recorder = crate::volume_broadcast::recorder_test_lock();
     let host = "192.0.2.71";
     sftp_known_servers::remember(sftp_entry(host, false));
-    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1");
     let listed = || find(&saved_servers_of(Vec::new()), &format!("{host} over ssh")).clone();
     assert_eq!(listed().auto_reconnect, Some(true));
 
@@ -186,7 +186,7 @@ fn switching_reconnect_automatically_on_a_webdav_place_round_trips_through_the_l
     let _recorder = crate::volume_broadcast::recorder_test_lock();
     let host = "192.0.2.72";
     webdav_known_servers::remember(webdav_entry(host, true));
-    let volume_id = cmdr_fs::volume::webdav_volume_id(host, 8080, "ada");
+    let volume_id = cmdr_fs::volume::webdav_volume_id(host, 8080, "test_user_1");
     let listed = || find(&saved_servers_of(Vec::new()), &format!("{host} over dav")).clone();
 
     assert!(set_place_auto_reconnect_inner(&volume_id, false));
@@ -227,7 +227,7 @@ async fn connecting_a_place_nothing_saved_is_a_typed_refusal() {
 async fn connecting_a_place_that_is_already_registered_is_refused() {
     let host = "192.0.2.37";
     sftp_known_servers::remember(sftp_entry(host, true));
-    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1");
 
     let manager = crate::file_system::volume::manager::get_volume_manager();
     manager.register(
@@ -261,7 +261,7 @@ async fn forgetting_a_server_tells_the_panes_before_it_takes_the_row_away() {
     let _recorder = crate::volume_broadcast::recorder_test_lock();
     let host = "192.0.2.74";
     sftp_known_servers::remember(sftp_entry(host, true));
-    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1");
 
     let before = crate::volume_broadcast::volumes_changed_requests();
     assert!(forget_server(volume_id.clone()).await, "the entry was there");
@@ -312,12 +312,12 @@ async fn disconnecting_a_connected_place_tells_the_panes_and_keeps_it_saved() {
     let _recorder = crate::volume_broadcast::recorder_test_lock();
     let host = "192.0.2.73";
     sftp_known_servers::remember(sftp_entry(host, true));
-    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1");
     // A real `SftpVolume` with no session behind it: the wiring downcasts to the
     // concrete type, so an `InMemoryVolume` stand-in would have nothing to drop.
     let volume = cmdr_sftp::volume::testing::offline_volume(
         "stand-in",
-        SftpConnectionParams::new(host, 2222, "ada", "/srv/data"),
+        SftpConnectionParams::new(host, 2222, "test_user_1", "/srv/data"),
         cmdr_sftp::auth::AuthRungUsed::Agent,
         cmdr_fs::volume::host::VolumeHost::detached(),
     );
@@ -347,7 +347,7 @@ async fn disconnecting_a_place_that_has_no_session_announces_nothing() {
     let _recorder = crate::volume_broadcast::recorder_test_lock();
     let host = "192.0.2.75";
     sftp_known_servers::remember(sftp_entry(host, true));
-    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1");
 
     let before = crate::volume_broadcast::last_volume_gone();
     assert!(
@@ -395,10 +395,10 @@ async fn saving_a_start_folder_outside_the_root_is_refused_and_writes_nothing() 
     let host = "192.0.2.61";
     sftp_known_servers::remember(sftp_entry(host, true));
 
-    let outcome = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data-1")), None).await;
+    let outcome = update_saved_server(sftp_target(host, 2222, "test_user_1", Some("/srv/data-1")), None).await;
 
     assert_eq!(outcome, SavedServerOutcome::StartFolderOutsideRoot);
-    let stored = sftp_known_servers::find(host, 2222, "ada").expect("the entry stays saved");
+    let stored = sftp_known_servers::find(host, 2222, "test_user_1").expect("the entry stays saved");
     assert_eq!(
         stored.display_name,
         format!("{host} over ssh"),
@@ -413,14 +413,14 @@ async fn saving_a_start_folder_outside_the_root_is_refused_and_writes_nothing() 
 async fn saving_a_start_folder_under_the_root_stores_it_normalized() {
     let host = "192.0.2.62";
     sftp_known_servers::remember(sftp_entry(host, true));
-    let stored = || sftp_known_servers::find(host, 2222, "ada").expect("the entry stays saved");
+    let stored = || sftp_known_servers::find(host, 2222, "test_user_1").expect("the entry stays saved");
 
-    let deeper = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data/photos/")), None).await;
+    let deeper = update_saved_server(sftp_target(host, 2222, "test_user_1", Some("/srv/data/photos/")), None).await;
     assert_eq!(deeper, SavedServerOutcome::Saved);
     assert_eq!(stored().start_folder.as_deref(), Some("/srv/data/photos"));
     assert_eq!(stored().display_name, "Edited");
 
-    let at_root = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data")), None).await;
+    let at_root = update_saved_server(sftp_target(host, 2222, "test_user_1", Some("/srv/data")), None).await;
     assert_eq!(at_root, SavedServerOutcome::Saved);
     assert_eq!(stored().start_folder, None);
 }
@@ -441,7 +441,7 @@ async fn saving_an_edit_republishes_the_volume_list_and_a_refusal_does_not() {
     sftp_known_servers::remember(sftp_entry(host, true));
 
     let before = crate::volume_broadcast::volumes_changed_requests();
-    let refused = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data-1")), None).await;
+    let refused = update_saved_server(sftp_target(host, 2222, "test_user_1", Some("/srv/data-1")), None).await;
     assert_eq!(refused, SavedServerOutcome::StartFolderOutsideRoot);
     assert_eq!(
         crate::volume_broadcast::volumes_changed_requests(),
@@ -449,7 +449,7 @@ async fn saving_an_edit_republishes_the_volume_list_and_a_refusal_does_not() {
         "a refusal changed nothing, so nothing is republished"
     );
 
-    let saved = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data/photos")), None).await;
+    let saved = update_saved_server(sftp_target(host, 2222, "test_user_1", Some("/srv/data/photos")), None).await;
     assert_eq!(saved, SavedServerOutcome::Saved);
     assert!(
         crate::volume_broadcast::volumes_changed_requests() > before,
@@ -465,10 +465,10 @@ async fn saving_a_webdav_start_folder_outside_the_root_is_refused_and_writes_not
     webdav_known_servers::remember(webdav_entry(host, true));
     let url = format!("http://{host}:8080/dav/");
 
-    let outcome = update_saved_server(webdav_target(&url, "ada", Some("/Documents")), None).await;
+    let outcome = update_saved_server(webdav_target(&url, "test_user_1", Some("/Documents")), None).await;
 
     assert_eq!(outcome, SavedServerOutcome::StartFolderOutsideRoot);
-    let stored = webdav_known_servers::find(&url, "ada").expect("the entry stays saved");
+    let stored = webdav_known_servers::find(&url, "test_user_1").expect("the entry stays saved");
     assert_eq!(
         stored.display_name,
         format!("{host} over dav"),
@@ -547,9 +547,9 @@ async fn an_unsaved_id_has_no_remembered_secret() {
 async fn an_smb_shares_own_entry_is_remembered_and_forgotten_with_the_servers() {
     let _secrets = crate::test_support::isolate_secrets();
     let server = "192.0.2.75";
-    let row = share_row(server, "Ledger", Some("grace"), Some("smb-ledger-530"));
+    let row = share_row(server, "Ledger", Some("test_user_2"), Some("smb-ledger-530"));
     known_shares::remember_share(row.clone());
-    crate::network::keychain::save_credentials(server, Some("Ledger"), "grace", "grace-pw").expect("saved");
+    crate::network::keychain::save_credentials(server, Some("Ledger"), "test_user_2", "test_user_2-pw").expect("saved");
 
     assert!(has_server_secret_among("smb-ledger-530", Vec::new()).await);
     assert!(forget_server_secret_among("smb-ledger-530", Vec::new()).await);
@@ -586,25 +586,27 @@ fn signed_in_manual_server(
         address: address.to_string(),
         port,
         added_at: "2026-11-03T00:00:00Z".to_string(),
-        username: Some("ada".to_string()),
+        username: Some("test_user_1".to_string()),
         awaiting_first_connect: false,
     };
     let discovery_name = manual_servers::discovery_name(address, port);
-    let mut row = share_row(&discovery_name, "private", Some("ada"), Some(volume_id));
+    let mut row = share_row(&discovery_name, "private", Some("test_user_1"), Some(volume_id));
     row.address = Some(ip.to_string());
     row.port = Some(port);
     known_shares::remember_share(row.clone());
 
     // The share list's sign-in (`PlacesBrowser` → `save_smb_credentials`), under the
     // host's discovery name.
-    save_credentials(&discovery_name, None, "ada", "pw").expect("saved");
+    save_credentials(&discovery_name, None, "test_user_1", "pw").expect("saved");
     let resolved = smb_server(address.trim_end_matches('.'), port);
-    save_credentials(&resolved, Some("private"), "ada", "pw").expect("saved");
+    save_credentials(&resolved, Some("private"), "test_user_1", "pw").expect("saved");
     let dialed = smb_server(ip, port);
-    save_credentials(&dialed, Some("private"), "ada", "pw").expect("saved");
+    save_credentials(&dialed, Some("private"), "test_user_1", "pw").expect("saved");
     // What a save under the sheet's spelling made before the key dropped the dot.
     let legacy = format!("smb://{}", discovery_name.to_lowercase());
-    crate::secrets::store().set(&legacy, b"ada\0old").expect("planted");
+    crate::secrets::store()
+        .set(&legacy, b"test_user_1\0old")
+        .expect("planted");
 
     let keys = vec![
         (discovery_name, None),

@@ -386,9 +386,9 @@ mod tests {
     /// sibling whose index had already gone (the sweep only looked for indexes).
     #[test]
     fn the_legacy_sweep_takes_every_file_a_retired_id_keys() {
-        const LEGACY: &str = "smb-naspolya-445-naspi";
+        const LEGACY: &str = "smb-testnas-445-testshare";
         const ORPHANED: &str = "smb-oldnas-445-photos";
-        const CURRENT: &str = "smb-naspolya-445-naspi-cca75cc9c09a6fb5";
+        const CURRENT: &str = "smb-testnas-445-testshare-cca75cc9c09a6fb5";
         assert!(cmdr_fs::volume::is_legacy_volume_id(LEGACY) && cmdr_fs::volume::is_legacy_volume_id(ORPHANED));
         assert!(!cmdr_fs::volume::is_legacy_volume_id(CURRENT));
 

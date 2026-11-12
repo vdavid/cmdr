@@ -242,7 +242,10 @@ mod tests {
 
     #[test]
     fn a_root_with_no_last_component_still_gets_a_name() {
-        assert_eq!(name_for_root(Path::new("/Users/sven/pCloud Drive")), "pCloud Drive");
+        assert_eq!(
+            name_for_root(Path::new("/Users/test_user_6/pCloud Drive")),
+            "pCloud Drive"
+        );
         assert_eq!(name_for_root(Path::new("/")), "Unknown");
     }
 }

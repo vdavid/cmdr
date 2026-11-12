@@ -13,25 +13,25 @@ const OTHER_BLOB: &str = "AAAAC3NzaC1lZDI1NTE5AAAAIA6rWI3G1sz07DnfFlrouTcysQlj2P
 fn an_absent_file_says_nothing_rather_than_failing() {
     let file = KnownHostsFile::read_path(Path::new("/nonexistent/known_hosts"));
     assert_eq!(
-        file.lookup("naspolya", 22, "ssh-ed25519", BLOB),
+        file.lookup("testnas", 22, "ssh-ed25519", BLOB),
         KnownHostsVerdict::Unknown
     );
 }
 
 #[test]
 fn comments_and_blank_lines_are_skipped() {
-    let file = KnownHostsFile::parse(&format!("# header\n\n   \nnaspolya ssh-ed25519 {BLOB}\n"));
+    let file = KnownHostsFile::parse(&format!("# header\n\n   \ntestnas ssh-ed25519 {BLOB}\n"));
     assert_eq!(
-        file.lookup("naspolya", 22, "ssh-ed25519", BLOB),
+        file.lookup("testnas", 22, "ssh-ed25519", BLOB),
         KnownHostsVerdict::Matches
     );
 }
 
 #[test]
 fn a_truncated_line_is_skipped_rather_than_panicking() {
-    let file = KnownHostsFile::parse("naspolya ssh-ed25519\nnaspolya\n@revoked\n");
+    let file = KnownHostsFile::parse("testnas ssh-ed25519\ntestnas\n@revoked\n");
     assert_eq!(
-        file.lookup("naspolya", 22, "ssh-ed25519", BLOB),
+        file.lookup("testnas", 22, "ssh-ed25519", BLOB),
         KnownHostsVerdict::Unknown
     );
 }
@@ -41,9 +41,9 @@ fn an_unrecognized_marker_is_skipped_rather_than_read_as_a_hostname() {
     // A future OpenSSH marker would otherwise land in the hostname field and the
     // key type in the pattern list, which reads as a host key for a host called
     // `@something`. Skipping costs one approval; guessing costs correctness.
-    let file = KnownHostsFile::parse(&format!("@future-marker naspolya ssh-ed25519 {BLOB}\n"));
+    let file = KnownHostsFile::parse(&format!("@future-marker testnas ssh-ed25519 {BLOB}\n"));
     assert_eq!(
-        file.lookup("naspolya", 22, "ssh-ed25519", BLOB),
+        file.lookup("testnas", 22, "ssh-ed25519", BLOB),
         KnownHostsVerdict::Unknown
     );
 }
@@ -54,10 +54,10 @@ fn a_second_entry_for_the_same_host_can_still_match() {
     // reader that stopped at the first non-matching line would cry MITM on a
     // server that had simply rotated in a new key alongside the old one.
     let file = KnownHostsFile::parse(&format!(
-        "naspolya ssh-ed25519 {OTHER_BLOB}\nnaspolya ssh-ed25519 {BLOB}\n"
+        "testnas ssh-ed25519 {OTHER_BLOB}\ntestnas ssh-ed25519 {BLOB}\n"
     ));
     assert_eq!(
-        file.lookup("naspolya", 22, "ssh-ed25519", BLOB),
+        file.lookup("testnas", 22, "ssh-ed25519", BLOB),
         KnownHostsVerdict::Matches
     );
 }
@@ -76,16 +76,16 @@ fn a_glob_pattern_is_never_expanded() {
 
 #[test]
 fn a_non_default_port_is_only_matched_in_the_bracket_form() {
-    let file = KnownHostsFile::parse(&format!("naspolya ssh-ed25519 {BLOB}\n"));
+    let file = KnownHostsFile::parse(&format!("testnas ssh-ed25519 {BLOB}\n"));
     assert_eq!(
-        file.lookup("naspolya", 2222, "ssh-ed25519", BLOB),
+        file.lookup("testnas", 2222, "ssh-ed25519", BLOB),
         KnownHostsVerdict::Unknown,
         "a bare hostname line is a port-22 entry; reading it as any port would trust the wrong server"
     );
 
-    let bracketed = KnownHostsFile::parse(&format!("[naspolya]:2222 ssh-ed25519 {BLOB}\n"));
+    let bracketed = KnownHostsFile::parse(&format!("[testnas]:2222 ssh-ed25519 {BLOB}\n"));
     assert_eq!(
-        bracketed.lookup("naspolya", 2222, "ssh-ed25519", BLOB),
+        bracketed.lookup("testnas", 2222, "ssh-ed25519", BLOB),
         KnownHostsVerdict::Matches
     );
 }
@@ -95,10 +95,10 @@ fn algorithms_for_lists_plain_entries_only() {
     // The pin must not be widened by a CA entry: the blob on a
     // `@cert-authority` line isn't a host key, so its type isn't one we trust.
     let file = KnownHostsFile::parse(&format!(
-        "naspolya ssh-ed25519 {BLOB}\nnaspolya ssh-rsa {OTHER_BLOB}\n@cert-authority naspolya ssh-dss {BLOB}\n"
+        "testnas ssh-ed25519 {BLOB}\ntestnas ssh-rsa {OTHER_BLOB}\n@cert-authority testnas ssh-dss {BLOB}\n"
     ));
     assert_eq!(
-        file.algorithms_for("naspolya", 22),
+        file.algorithms_for("testnas", 22),
         vec!["ssh-ed25519".to_string(), "ssh-rsa".to_string()]
     );
 }
@@ -108,10 +108,10 @@ fn a_revoked_entry_for_a_different_key_leaves_this_one_alone() {
     // Revocation names one key, not a host. Reading it as "this host is
     // revoked" would lock a user out of a server that rotated correctly.
     let file = KnownHostsFile::parse(&format!(
-        "@revoked naspolya ssh-ed25519 {OTHER_BLOB}\nnaspolya ssh-ed25519 {BLOB}\n"
+        "@revoked testnas ssh-ed25519 {OTHER_BLOB}\ntestnas ssh-ed25519 {BLOB}\n"
     ));
     assert_eq!(
-        file.lookup("naspolya", 22, "ssh-ed25519", BLOB),
+        file.lookup("testnas", 22, "ssh-ed25519", BLOB),
         KnownHostsVerdict::Matches
     );
 }
@@ -123,11 +123,11 @@ fn a_wildcard_revocation_names_the_key_on_every_host() {
     // patterns can't hide it, even though plain entries never expand a glob.
     let file = KnownHostsFile::parse(&format!("@revoked * ssh-ed25519 {BLOB}\n"));
     assert_eq!(
-        file.lookup("naspolya", 22, "ssh-ed25519", BLOB),
+        file.lookup("testnas", 22, "ssh-ed25519", BLOB),
         KnownHostsVerdict::Revoked
     );
     assert_eq!(
-        file.lookup("naspolya", 2222, "ssh-ed25519", BLOB),
+        file.lookup("testnas", 2222, "ssh-ed25519", BLOB),
         KnownHostsVerdict::Revoked
     );
 }
@@ -137,10 +137,10 @@ fn a_revocation_written_for_another_host_still_revokes_the_key() {
     // A compromised key is compromised wherever it turns up: failing closed costs
     // one refused connection, failing open hands a man in the middle the session.
     let file = KnownHostsFile::parse(&format!(
-        "@revoked other.example.com ssh-ed25519 {BLOB}\nnaspolya ssh-ed25519 {BLOB}\n"
+        "@revoked other.example.com ssh-ed25519 {BLOB}\ntestnas ssh-ed25519 {BLOB}\n"
     ));
     assert_eq!(
-        file.lookup("naspolya", 22, "ssh-ed25519", BLOB),
+        file.lookup("testnas", 22, "ssh-ed25519", BLOB),
         KnownHostsVerdict::Revoked
     );
 }

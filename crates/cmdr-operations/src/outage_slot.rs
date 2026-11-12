@@ -227,13 +227,13 @@ mod tests {
     #[test]
     fn the_slot_names_the_volume_while_anyone_waits() {
         let (slot, _) = slot();
-        let first = slot.begin("Naspolya");
-        let second = slot.begin("Naspolya");
-        assert_eq!(slot.waiting_for().as_deref(), Some("Naspolya"));
+        let first = slot.begin("Testnas");
+        let second = slot.begin("Testnas");
+        assert_eq!(slot.waiting_for().as_deref(), Some("Testnas"));
         drop(first);
         assert_eq!(
             slot.waiting_for().as_deref(),
-            Some("Naspolya"),
+            Some("Testnas"),
             "one task still waits, so the operation still does"
         );
         drop(second);
@@ -247,8 +247,8 @@ mod tests {
     fn the_outage_is_charged_to_the_clock_once() {
         let (slot, clock) = slot();
         let start = Instant::now();
-        let first = slot.begin("Naspolya");
-        let second = slot.begin("Naspolya");
+        let first = slot.begin("Testnas");
+        let second = slot.begin("Testnas");
         drop(first);
         drop(second);
         let waited = clock.total_at(Instant::now());

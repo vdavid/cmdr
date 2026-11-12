@@ -208,14 +208,14 @@
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "description": "Toast shown when connecting a network share directly for faster access couldn't reach the server at all. {server} is the server's friendly name or IP address. Reassures the user that the share still works, just not at the faster speed.",
     "placeholders": {
-      "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111"
+      "server": "the server's friendly name or IP address, for example Testnas or 192.168.50.10"
     }
   },
   "fileExplorer.pane.directConnectionBlockedByThisMacToast": "{platform, select, macos {Something on this Mac is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Try switching Cmdr off and on under {localNetwork}, or check your firewall app.} windows {Something on this PC is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.} other {Something on this computer is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.}}",
   "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
     "description": "Toast and notification body shown when Cmdr's own faster connection to a network share was refused by something on the user's own machine, while the system's own connection to the same server works. Reassures the user that the share still works, just not at the faster speed. The macos branch: the usual cause is the macOS Local Network privacy permission for Cmdr being stuck (it shows as on, and switching it off and on fixes it), or a firewall app; a button below it opens that permission's page in System Settings (\"openLocalNetworkSettings\"); \"firewall app\" means third-party firewall software such as Little Snitch or LuLu. The windows and other (Linux) branches: those systems have no such permission, so the cause left is a firewall, and there's no button. \"Cmdr\" is the product name.",
     "placeholders": {
-      "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111",
+      "server": "the server's friendly name or IP address, for example Testnas or 192.168.50.10",
       "localNetwork": "macos branch only: the OS-localized macOS \"Local Network\" permission name, as System Settings shows it under Privacy & Security, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
     },
     "screenshot": "toast-transfer-complete.png",
@@ -225,7 +225,7 @@
   "@fileExplorer.pane.directConnectionBlockedAfterUpdateToast": {
     "description": "macOS only. Notice shown on the first launch after Cmdr updated itself, when Cmdr's own faster connection to a network share was refused by the user's Mac while macOS's own connection to the same server works. The known cause: macOS keeps Cmdr's Local Network privacy permission tied to the old version, so it shows as on but doesn't apply; switching it off and on in System Settings fixes it at once. A button below it opens that permission's page (\"openLocalNetworkSettings\"), and another retries the connection. Reassures the user that the share still works, just slower. \"Cmdr\" is the product name.",
     "placeholders": {
-      "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111",
+      "server": "the server's friendly name or IP address, for example Testnas or 192.168.50.10",
       "localNetwork": "the OS-localized macOS \"Local Network\" permission name, as System Settings shows it under Privacy & Security, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
     }
   },
@@ -240,21 +240,21 @@
   "@fileExplorer.pane.directConnectionTooSlowToast": {
     "description": "Toast shown when connecting a network share directly for faster access timed out waiting for the server. {server} is the server's friendly name or IP address.",
     "placeholders": {
-      "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111"
+      "server": "the server's friendly name or IP address, for example Testnas or 192.168.50.10"
     }
   },
   "fileExplorer.pane.directConnectionUnexpectedToast": "Couldn’t set up a direct connection to {server}, so this share stays on the system connection.",
   "@fileExplorer.pane.directConnectionUnexpectedToast": {
     "description": "Toast shown when connecting a network share directly for faster access didn't work for a reason we can't be specific about. {server} is the server's friendly name or IP address.",
     "placeholders": {
-      "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111"
+      "server": "the server's friendly name or IP address, for example Testnas or 192.168.50.10"
     }
   },
   "fileExplorer.pane.directConnectionShareNotOnServerToast": "{server} says it doesn’t have this share, so it stays on the system connection.",
   "@fileExplorer.pane.directConnectionShareNotOnServerToast": {
     "description": "Toast shown when connecting a network share directly for faster access got a clear answer from the server: there is no share by that name on it. Unlike the neighbouring direct-connection toasts, this one is not a temporary condition, so avoid wording like \"right now\" or \"try again\". {server} is the server's friendly name or IP address.",
     "placeholders": {
-      "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111"
+      "server": "the server's friendly name or IP address, for example Testnas or 192.168.50.10"
     }
   },
   "fileExplorer.pane.directConnectionUnavailableToast": "Couldn’t set up a direct connection right now, so this share stays on the system connection.",
@@ -1340,28 +1340,28 @@
     "description": "A line of the hover tooltip on a snapshot folder inside a restic backup, listing the folders (or files) the backup was asked to save, as paths on the computer it ran on. Left out when the snapshot recorded none.",
     "placeholders": {
       "count": "how many paths, only to pick the singular or plural noun",
-      "paths": "the paths, already joined into a list, for example \"/Users/david, /etc\" (never translated)"
+      "paths": "the paths, already joined into a list, for example \"/Users/test_user_3, /etc\" (never translated)"
     }
   },
   "fileExplorer.restic.forgetPassword.forgotten": "Cmdr forgot the password for {name}. You’ll be asked for it next time you open it.",
   "@fileExplorer.restic.forgetPassword.forgotten": {
     "description": "Success toast after the user ran the “Forget backup password” command on a restic backup (a folder of encrypted backups made with the restic tool). Cmdr removed the password it had saved in the system’s password store (the Keychain on macOS, Credential Manager on Windows, the keyring on Linux) and locked the backup again, so opening it asks for the password. Keep \"Cmdr\" as is (the app’s name).",
     "placeholders": {
-      "name": "the backup folder’s name, for example \"m3-macbook-restic\" (never translated)"
+      "name": "the backup folder’s name, for example \"test-restic-repo\" (never translated)"
     }
   },
   "fileExplorer.restic.forgetPassword.keychainKeptIt": "{platform, select, macos {Cmdr locked {name} for now, but Keychain kept its saved password. To remove it for good, delete it in Keychain Access.} windows {Cmdr locked {name} for now, but Credential Manager kept its saved password. To remove it for good, delete it in Credential Manager.} other {Cmdr locked {name} for now, but your keyring kept its saved password. To remove it for good, delete it in your keyring app.}}",
   "@fileExplorer.restic.forgetPassword.keychainKeptIt": {
     "description": "Warning toast after the user ran the “Forget backup password” command on a restic backup, when the system’s password store wouldn’t let Cmdr delete the saved password (a locked keychain, or the user said no to a system prompt). The backup is locked until Cmdr restarts, but the next launch will find the password again. In each branch, use the names that OS shows in your language for its password store and the app that manages it: Keychain and Keychain Access on macOS, Credential Manager on Windows, the keyring on Linux. Avoid the words \"error\" and \"failed\".",
     "placeholders": {
-      "name": "the backup folder’s name, for example \"m3-macbook-restic\" (never translated)"
+      "name": "the backup folder’s name, for example \"test-restic-repo\" (never translated)"
     }
   },
   "fileExplorer.restic.forgetPassword.unreachable": "Cmdr couldn’t reach {name} just now, so its password stays saved. Try again in a moment.",
   "@fileExplorer.restic.forgetPassword.unreachable": {
     "description": "Warning toast after the user ran the “Forget backup password” command on a restic backup, when Cmdr couldn’t get to the backup (for example its network drive dropped). Nothing changed: the password is still saved. Avoid the words \"error\" and \"failed\". Keep \"Cmdr\" as is (the app’s name).",
     "placeholders": {
-      "name": "the backup folder’s name, for example \"m3-macbook-restic\" (never translated)"
+      "name": "the backup folder’s name, for example \"test-restic-repo\" (never translated)"
     }
   },
   "fileExplorer.restic.forgetPassword.noBackup": "To forget a backup’s password, open the backup first, or put the cursor on its “Browse snapshots” folder.",
@@ -2570,7 +2570,7 @@
     "description": "Hover tooltip for a dimmed favorite row in the favorites menu: one whose folder is on a share, server, phone, or drive that isn't connected, or that isn't there anymore. Same as fileExplorer.navigation.favoriteTooltip, with a status line between the path and the hints; translate the hints the same way. The \\n are real line breaks.",
     "placeholders": {
       "path": "the file-system path the favorite points to",
-      "status": "one sentence saying why the row is dimmed, for example \"Not connected. Opening it connects to naspi.\" (already translated)",
+      "status": "one sentence saying why the row is dimmed, for example \"Not connected. Opening it connects to testshare.\" (already translated)",
       "reorder": "the keyboard reorder shortcut glyphs"
     },
     "screenshot": "favorites-menu-unreachable.png"
@@ -2611,7 +2611,7 @@
     "description": "Second line of the hover tooltip on a dimmed favorite in the favorites menu, under the folder's path. The favorite is on a saved network share, server, or phone that isn't connected right now; picking it still works, because Cmdr connects first and then opens the folder. Reassure, don't warn.",
     "placeholders": {
       "kind": "what {place} is: share (a network share), server, phone, or other",
-      "place": "the name of the share, server, or phone the favorite lives on, for example \"naspi on nas.local\" or \"Pixel 7\""
+      "place": "the name of the share, server, or phone the favorite lives on, for example \"testshare on testnas.local\" or \"Pixel 7\""
     },
     "screenshot": "favorites-menu.png",
     "screenshotNote": "The favorites menu, pictured here. Your string is the line under a favorite’s path in its tooltip, for a row that can’t open right away."
@@ -2665,7 +2665,7 @@
     "description": "Info toast after the user picked a favorite folder on a network share or server that was removed (forgotten) from Cmdr's saved servers, so Cmdr has no way to connect to it; the pane stayed where it was. Connecting to the same place again brings the favorite back. \"Servers\" is the name of the place in Cmdr that lists servers (use the same word as fileExplorer.navigation.networkVolume); the toast's button opens it. \"Anymore\" means \"no longer\".",
     "placeholders": {
       "kind": "what {place} is: share (a network share), server, phone, or other",
-      "place": "the share or server's name, for example \"naspi on nas.local\""
+      "place": "the share or server's name, for example \"testshare on testnas.local\""
     },
     "screenshot": "toast-favorite.png",
     "screenshotNote": "This shows a different toast in the same corner of the window; your string is what picking a favorite says there when its place can’t be reached, with the one button that helps."
@@ -2675,7 +2675,7 @@
     "description": "Info toast after the user picked a favorite whose folder was moved or deleted, so the pane stayed where it was. The toast's button removes the favorite. \"Anymore\" means \"no longer\".",
     "placeholders": {
       "name": "the favorite's name as shown in the favorites menu, for example \"Projects\"",
-      "path": "where the folder used to be, for example \"/Users/ada/Projects\""
+      "path": "where the folder used to be, for example \"/Users/test_user_1/Projects\""
     },
     "screenshot": "toast-favorite-unreachable.png"
   },
@@ -2796,7 +2796,7 @@
   "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
     "description": "Accessibility label and tooltip for the disconnect control on a server row in the volume switcher, in the slot where a removable drive shows Eject. A server has nothing to unplug, so it says Disconnect.",
     "placeholders": {
-      "name": "the server's display name, like \"Naspolya\""
+      "name": "the server's display name, like \"Testnas\""
     }
   },
   "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr is still working with files on this server. You can disconnect once that’s done.",
@@ -2807,28 +2807,28 @@
   "@fileExplorer.navigation.serverPinnedToast": {
     "description": "Toast confirming that a server now shows in the volume switcher, the list a person picks a disk from.",
     "placeholders": {
-      "name": "the server’s display name, like \"Naspolya\""
+      "name": "the server’s display name, like \"Testnas\""
     }
   },
   "fileExplorer.navigation.serverUnpinnedToast": "{name} is out of your volume switcher. It’s still saved.",
   "@fileExplorer.navigation.serverUnpinnedToast": {
     "description": "Toast confirming that a server no longer shows in the volume switcher. The second sentence matters: nothing was deleted, and the server is still in the servers hub.",
     "placeholders": {
-      "name": "the server’s display name, like \"Naspolya\""
+      "name": "the server’s display name, like \"Testnas\""
     }
   },
   "fileExplorer.navigation.pinRefusedToast": "Cmdr couldn’t change where {name} appears.",
   "@fileExplorer.navigation.pinRefusedToast": {
     "description": "Toast shown when moving a server in or out of the volume switcher didn’t go through.",
     "placeholders": {
-      "name": "the server’s display name, like \"Naspolya\""
+      "name": "the server’s display name, like \"Testnas\""
     }
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr couldn’t disconnect from {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {
     "description": "Toast shown when dropping a server's connection didn't go through.",
     "placeholders": {
-      "name": "the server's display name, like \"Naspolya\""
+      "name": "the server's display name, like \"Testnas\""
     }
   },
   "fileExplorer.navigation.forgetServerConfirmTitle": "Forget server",
@@ -2847,7 +2847,7 @@
   "@fileExplorer.navigation.forgetServerConfirm": {
     "description": "Body of the confirmation dialog shown before Cmdr removes a saved server. The last sentence is the reassurance that matters: forgetting is a local act, nothing on the server is touched.",
     "placeholders": {
-      "name": "the server's display name, like \"Naspolya\""
+      "name": "the server's display name, like \"Testnas\""
     }
   },
   "fileExplorer.navigation.forgetPasswordToo": "Also forget the saved password",
@@ -2858,7 +2858,7 @@
   "@fileExplorer.navigation.forgetServerRefusedToast": {
     "description": "Toast shown when removing a saved server didn't go through.",
     "placeholders": {
-      "name": "the server's display name, like \"Naspolya\""
+      "name": "the server's display name, like \"Testnas\""
     }
   },
   "fileExplorer.navigation.forgetSecretConfirmTitle": "Forget saved password",
@@ -2869,21 +2869,21 @@
   "@fileExplorer.navigation.forgetSecretConfirm": {
     "description": "Body of the confirmation dialog shown before Cmdr forgets a server's remembered password, which lives in the system’s password store (the Keychain on macOS, Credential Manager on Windows, the keyring on Linux). The server itself stays saved.",
     "placeholders": {
-      "name": "the server's display name, like \"Naspolya\""
+      "name": "the server's display name, like \"Testnas\""
     }
   },
   "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr couldn’t forget the saved password for {name}.",
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
     "description": "Toast shown when removing a server's remembered password didn't go through.",
     "placeholders": {
-      "name": "the server's display name, like \"Naspolya\""
+      "name": "the server's display name, like \"Testnas\""
     }
   },
   "fileExplorer.navigation.forgetSecretNoneToast": "There was no saved password for {name}.",
   "@fileExplorer.navigation.forgetSecretNoneToast": {
     "description": "Toast shown after the user confirmed \"Forget saved password\" on a server that turned out to have none stored. Matter-of-fact, past tense, no apology: nothing went wrong and nothing needed doing.",
     "placeholders": {
-      "name": "the server's display name, like \"Naspolya\""
+      "name": "the server's display name, like \"Testnas\""
     }
   },
   "fileExplorer.navigation.ejectOneVolumeTooltip": "Ejects only this volume. Its drive stays connected until the other volumes are ejected too.",
@@ -3417,7 +3417,7 @@
   "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
     "description": "Toast shown when connecting a network share directly found that the share (a DFS namespace) lives on a different server the person hasn’t allowed Cmdr to sign in to. Not temporary, so avoid wording like \"try again\".",
     "placeholders": {
-      "server": "the server’s friendly name or IP address, for example Naspolya or 192.168.1.111"
+      "server": "the server’s friendly name or IP address, for example Testnas or 192.168.50.10"
     }
   },
   "fileExplorer.network.osMountFallback.otherServerNotAllowed": "{platform, select, macos {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through macOS’s native SMB network connection, which is a lot slower.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through your system’s SMB connection, which is a lot slower.}}",
@@ -3433,21 +3433,21 @@
   "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
     "description": "Toast shown when connecting a network share directly found that the server didn’t confirm the connection’s security settings (the SMB version and options both sides agreed on at the start), so Cmdr closed its own connection and the share stays on the slower system one. The innocent cause is a misbehaving server; the serious one is someone tampering with network traffic. Not temporary, so avoid wording like \"try again\". Plain text, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server’s friendly name or IP address, for example Naspolya or 192.168.1.111"
+      "server": "the server’s friendly name or IP address, for example Testnas or 192.168.50.10"
     }
   },
   "fileExplorer.pane.directConnectionEncryptionUnavailableToast": "{server} only accepts encrypted connections, and it didn’t agree on a way to encrypt one with Cmdr, so this share stays on the system connection.",
   "@fileExplorer.pane.directConnectionEncryptionUnavailableToast": {
     "description": "Toast shown when connecting a network share directly found that the server (or this share) only accepts encrypted connections, but the server and Cmdr didn’t agree on an encryption method, so the share stays on the slower system connection. Not temporary, so avoid wording like \"try again\". Plain text, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server’s friendly name or IP address, for example Naspolya or 192.168.1.111"
+      "server": "the server’s friendly name or IP address, for example Testnas or 192.168.50.10"
     }
   },
   "fileExplorer.pane.directConnectionEncryptionRequiredToast": "{server} can’t encrypt the connection, and Cmdr is set to always require SMB encryption, so Cmdr didn’t connect directly.",
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
     "description": "Toast shown when connecting a network share directly found that the server can't encrypt the connection while Cmdr's own \"Always require SMB encryption\" setting is on (set by the person, or forced on by their organization), so Cmdr didn't connect directly. Whether the share stays usable through the system connection depends on that connection being encrypted, so the sentence doesn't promise it. Not temporary, so avoid wording like \"try again\". Plain text, no markdown. \"SMB\" is a name; keep it. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server’s friendly name or IP address, for example Naspolya or 192.168.1.111"
+      "server": "the server’s friendly name or IP address, for example Testnas or 192.168.50.10"
     }
   },
   "fileExplorer.network.osMountFallback.encryptionRequired": "{platform, select, macos {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through macOS’s native SMB network connection, which is a lot slower.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through your system’s SMB connection, which is a lot slower.}}",
@@ -3486,7 +3486,7 @@
   "@fileExplorer.smbLinkConsent.message": {
     "description": "Body of that dialog: what would happen.",
     "placeholders": {
-      "server": "the server the share is on, like nas.local",
+      "server": "the server the share is on, like testnas.local",
       "target": "the other server the link leads to, like fs01.example.com"
     },
     "screenshot": "smb-link-consent-default.png"

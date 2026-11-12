@@ -315,11 +315,11 @@ mod tests {
             .with_connection_state(ConnectionState::Direct)
             .with_backend_kind(BackendKind::Sftp);
         let provider = crate::indexing::host::volumes::FakeVolumeProvider::shared();
-        provider.register("sftp-nas-22-ada", Arc::new(sftp));
+        provider.register("sftp-nas-22-test_user_1", Arc::new(sftp));
         let _installed = crate::indexing::host::volumes::install_for_test(provider);
 
         assert_eq!(
-            ensure_direct_smb("sftp-nas-22-ada").await,
+            ensure_direct_smb("sftp-nas-22-test_user_1").await,
             Err(DriveIndexRefusal::NotIndexable),
             "a live SFTP session is not a share this transport may walk",
         );

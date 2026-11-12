@@ -338,7 +338,7 @@ mod tests {
             operation_type: WriteOperationType::Copy,
             status,
             source: Some("/Users/me/photos".to_string()),
-            destination: Some("Naspolya".to_string()),
+            destination: Some("Testnas".to_string()),
             rollback_support: cmdr_operations::testing::RollbackSupport::Supported,
             reverses: None,
             error: None,

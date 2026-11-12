@@ -120,11 +120,14 @@ fn a_folder_gone_from_a_live_local_volume_is_not_found() {
 #[test]
 fn a_folder_on_a_live_session_is_ready() {
     for state in [ConnectionState::Direct, ConnectionState::OsMount] {
-        let share = with_state(state, volume_row("smb-n", "/Volumes/naspi", LocationCategory::Network));
+        let share = with_state(
+            state,
+            volume_row("smb-n", "/Volumes/testshare", LocationCategory::Network),
+        );
         let (row, _) = reach_of(
             favorite_row(
-                "/Volumes/naspi/docs",
-                Some(stored("smb-n", "/Volumes/naspi")),
+                "/Volumes/testshare/docs",
+                Some(stored("smb-n", "/Volumes/testshare")),
                 OnDisk::Unchecked,
             ),
             vec![share],
@@ -134,7 +137,7 @@ fn a_folder_on_a_live_session_is_ready() {
     }
 }
 
-/// ❗ Sven's case: the share is saved but unmounted. A pick enters the saved row and the pane's own
+/// ❗ Test_user_6's case: the share is saved but unmounted. A pick enters the saved row and the pane's own
 /// connect view dials.
 #[test]
 fn a_folder_on_a_saved_or_dropped_place_connects() {
@@ -144,11 +147,14 @@ fn a_folder_on_a_saved_or_dropped_place_connects() {
         ConnectionState::NeedsSignIn,
         ConnectionState::NeedsHostKeyApproval,
     ] {
-        let share = with_state(state, volume_row("smb-n", "/Volumes/naspi", LocationCategory::Network));
+        let share = with_state(
+            state,
+            volume_row("smb-n", "/Volumes/testshare", LocationCategory::Network),
+        );
         let (row, _) = reach_of(
             favorite_row(
-                "/Volumes/naspi/docs",
-                Some(stored("smb-n", "/Volumes/naspi")),
+                "/Volumes/testshare/docs",
+                Some(stored("smb-n", "/Volumes/testshare")),
                 OnDisk::No,
             ),
             vec![share],
@@ -156,7 +162,7 @@ fn a_folder_on_a_saved_or_dropped_place_connects() {
         );
         let target = target(&row);
         assert_eq!(target.reach, FavoriteReach::Connects, "{state:?}");
-        assert_eq!(target.volume_root.as_deref(), Some("/Volumes/naspi"));
+        assert_eq!(target.volume_root.as_deref(), Some("/Volumes/testshare"));
     }
 }
 
@@ -311,9 +317,9 @@ fn an_absent_drive_is_unplugged_and_keeps_its_stored_name() {
 #[test]
 fn a_share_or_server_nothing_saved_is_forgotten() {
     for (id, path) in [
-        ("smb-n", "/Volumes/naspi/docs"),
-        ("sftp-n", "sftp://ada@nas:22/srv"),
-        ("webdav-n", "webdav://ada@nas:443/dav"),
+        ("smb-n", "/Volumes/testshare/docs"),
+        ("sftp-n", "sftp://test_user_1@nas:22/srv"),
+        ("webdav-n", "webdav://test_user_1@nas:443/dav"),
         ("s3-n", "s3://key@host:443/photos"),
     ] {
         let (row, _) = reach_of(
@@ -333,18 +339,18 @@ fn a_share_or_server_nothing_saved_is_forgotten() {
 fn a_share_back_at_another_mount_point_is_rebased_onto_it() {
     let saved = with_state(
         ConnectionState::Saved,
-        volume_row("smb-n", "/Volumes/naspi-1", LocationCategory::Network),
+        volume_row("smb-n", "/Volumes/testshare-1", LocationCategory::Network),
     );
     let (row, _) = reach_of(
         favorite_row(
-            "/Volumes/naspi/docs",
-            Some(stored("smb-n", "/Volumes/naspi")),
+            "/Volumes/testshare/docs",
+            Some(stored("smb-n", "/Volumes/testshare")),
             OnDisk::No,
         ),
         vec![saved],
         &ALL_ON,
     );
-    assert_eq!(row.path, "/Volumes/naspi-1/docs");
+    assert_eq!(row.path, "/Volumes/testshare-1/docs");
     assert_eq!(target(&row).reach, FavoriteReach::Connects);
 
     let live_drive = volume_row("vol-t7", "/Volumes/Backup", LocationCategory::AttachedVolume);
@@ -363,30 +369,30 @@ fn a_share_back_at_another_mount_point_is_rebased_onto_it() {
 fn a_server_path_is_never_rebased_and_outside_its_root_is_not_found() {
     let server = with_state(
         ConnectionState::Saved,
-        volume_row("sftp-n", "sftp://ada@nas:22/data", LocationCategory::Network),
+        volume_row("sftp-n", "sftp://test_user_1@nas:22/data", LocationCategory::Network),
     );
     let (inside, _) = reach_of(
         favorite_row(
-            "sftp://ada@nas:22/data/x",
-            Some(stored("sftp-n", "sftp://ada@nas:22/srv")),
+            "sftp://test_user_1@nas:22/data/x",
+            Some(stored("sftp-n", "sftp://test_user_1@nas:22/srv")),
             OnDisk::Unchecked,
         ),
         vec![server.clone()],
         &ALL_ON,
     );
-    assert_eq!(inside.path, "sftp://ada@nas:22/data/x");
+    assert_eq!(inside.path, "sftp://test_user_1@nas:22/data/x");
     assert_eq!(target(&inside).reach, FavoriteReach::Connects);
 
     let (outside, _) = reach_of(
         favorite_row(
-            "sftp://ada@nas:22/srv/x",
-            Some(stored("sftp-n", "sftp://ada@nas:22/srv")),
+            "sftp://test_user_1@nas:22/srv/x",
+            Some(stored("sftp-n", "sftp://test_user_1@nas:22/srv")),
             OnDisk::Unchecked,
         ),
         vec![server],
         &ALL_ON,
     );
-    assert_eq!(outside.path, "sftp://ada@nas:22/srv/x");
+    assert_eq!(outside.path, "sftp://test_user_1@nas:22/srv/x");
     assert_eq!(target(&outside).reach, FavoriteReach::NotFound);
 }
 
@@ -396,10 +402,10 @@ fn a_server_path_is_never_rebased_and_outside_its_root_is_not_found() {
 fn a_legacy_favorite_under_a_saved_share_is_claimed_by_the_share() {
     let saved = with_state(
         ConnectionState::Saved,
-        volume_row("smb-n", "/Volumes/naspi", LocationCategory::Network),
+        volume_row("smb-n", "/Volumes/testshare", LocationCategory::Network),
     );
     let (row, claims) = reach_of(
-        favorite_row("/Volumes/naspi/docs", None, OnDisk::No),
+        favorite_row("/Volumes/testshare/docs", None, OnDisk::No),
         vec![volume_row("root", "/", LocationCategory::MainVolume), saved],
         &ALL_ON,
     );
@@ -411,7 +417,7 @@ fn a_legacy_favorite_under_a_saved_share_is_claimed_by_the_share() {
             "f1".to_string(),
             FavoriteVolume {
                 id: "smb-n".to_string(),
-                root: "/Volumes/naspi".to_string(),
+                root: "/Volumes/testshare".to_string(),
                 name: "smb-n name".to_string(),
             }
         )]
@@ -424,7 +430,7 @@ fn a_legacy_favorite_under_a_saved_share_is_claimed_by_the_share() {
 fn a_legacy_favorite_with_no_evidence_is_not_claimed_by_the_boot_volume() {
     for on_disk in [OnDisk::Unchecked, OnDisk::No] {
         let (row, claims) = reach_of(
-            favorite_row("/Volumes/naspi/docs", None, on_disk),
+            favorite_row("/Volumes/testshare/docs", None, on_disk),
             vec![volume_row("root", "/", LocationCategory::MainVolume)],
             &ALL_ON,
         );

@@ -60,16 +60,16 @@ export function isPlainFilesystemPath(raw: string): boolean {
 /**
  * True when `path` equals `volumePath` or sits under it.
  *
- * Matches whole path COMPONENTS, never a raw string prefix: `/Volumes/naspi`
- * must not claim `/Volumes/naspi-backup`, and a remote volume rooted at
+ * Matches whole path COMPONENTS, never a raw string prefix: `/Volumes/testshare`
+ * must not claim `/Volumes/testshare-backup`, and a remote volume rooted at
  * `/srv/data` must not claim a sibling `/srv/data-1`. The Rust side draws the
  * same line for the same reason (`cmdr-fs`'s `RemoteRoot::to_remote_path`).
  *
  * Tolerates a trailing slash on `volumePath`, which a remote volume rooted at
  * `/` really does carry: its root is `<prefix><server-side root>`, so an SFTP
- * volume at `/` spells itself `sftp://ada@nas.local:22/`.
+ * volume at `/` spells itself `sftp://test_user_1@testnas.local:22/`.
  *
- * Case folds only when the volume says it doesn't tell `Ada` from `ada`
+ * Case folds only when the volume says it doesn't tell `Test_user_1` from `test_user_1`
  * (`VolumeInfo.caseSensitive`); without a rule the match is exact.
  *
  * Takes plain `string`s on purpose: callers hold raw paths off IPC, persisted

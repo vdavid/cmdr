@@ -45,7 +45,7 @@ Writers, all upserts on the share's key:
 
 1. **`mount_network_share`** (Cmdr's own mount, which is user intent) records the share after a mount that went through,
    guest included. It takes the host's name beside the dial address for that.
-2. **Add with a share path** (`smb://sven@host/Container`) records the share with no volume id yet.
+2. **Add with a share path** (`smb://test_user_6@host/Container`) records the share with no volume id yet.
 3. **Opening a saved share place** (below) mounts through the same writer.
 4. **Favoriting a folder on a share nothing has saved** (a Finder or login mount) records the share from the live
    mount's source, with the mount's volume id, under the server name a Cmdr mount of it would use
@@ -66,9 +66,9 @@ its name and account fields in the two steps before this one.
 
 ## The hub
 
-- A share row sits right under its server, indented: its name, "as sven" when it has an account, status Connected while
-  it's mounted (off the volume list by id), else Saved. While it's connected, "as …" names the account the live mount
-  signed in as (the mount table's user, `LocationInfo::mount_account`); the saved account is for the next connect.
+- A share row sits right under its server, indented: its name, "as test_user_6" when it has an account, status Connected
+  while it's mounted (off the volume list by id), else Saved. While it's connected, "as …" names the account the live
+  mount signed in as (the mount table's user, `LocationInfo::mount_account`); the saved account is for the next connect.
 - A server row names the SERVER-level account ("My NAS as testuser", "as guest"), the same one its share list's header
   names: the account its listing signed in as (`network-store.svelte.ts`'s `getListedAccount`), else the one it's set to
   be used with, else nothing. ❌ Never a share's mount (each share row says its own), and ❌ never a Keychain read. "My

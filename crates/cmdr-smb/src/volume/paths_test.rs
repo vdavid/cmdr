@@ -64,15 +64,15 @@ fn to_smb_path_rejects_a_sibling_mount_that_merely_shares_a_name_prefix() {
 
 #[test]
 fn a_root_anchored_dialog_destination_reaches_the_share() {
-    // The transfer dialog's destination box is volume-relative (`/_todo_pics`),
+    // The transfer dialog's destination box is volume-relative (`/test_photos`),
     // and this backend answers `NotFound` for an absolute path outside the
     // mount, on purpose. Anchoring at the IPC boundary is what closes that gap:
     // a move into an SMB subfolder died in 2 ms without it (ERR-XCP5Q).
     let vol = make_test_volume();
-    let anchored = cmdr_fs::volume::root_anchored(vol.root(), Path::new("/_todo_pics/Fiumei footage"));
+    let anchored = cmdr_fs::volume::root_anchored(vol.root(), Path::new("/test_photos/test footage"));
     assert_eq!(
         vol.to_smb_path(&anchored).unwrap(),
-        "_todo_pics/Fiumei footage",
+        "test_photos/test footage",
         "an anchored destination converts to the share-relative wire path"
     );
 }
@@ -83,7 +83,7 @@ fn to_smb_path_rejects_a_path_outside_the_mount() {
     // the share-relative `Volumes/Other/x` and asked the server for it. A path
     // that isn't on this volume has to say so instead of guessing.
     let vol = make_test_volume();
-    for outside in ["/Volumes/Other/x", "/Users/david/notes.txt", "/Volumes"] {
+    for outside in ["/Volumes/Other/x", "/Users/test_user_3/notes.txt", "/Volumes"] {
         assert!(
             matches!(vol.to_smb_path(Path::new(outside)), Err(VolumeError::NotFound(_))),
             "{outside} is not on this share"
@@ -159,7 +159,11 @@ fn an_anchored_mount_still_rejects_a_path_outside_its_mount() {
     // The anchor must not become a way to reach the rest of the share: a path
     // that isn't under this mount is still `NotFound`, not a join.
     let vol = make_test_volume_anchored("example.com", "/Volumes/SYSVOL/example.com");
-    for outside in ["/Volumes/SYSVOL/other", "/Volumes/SYSVOL", "/Users/dana/notes.txt"] {
+    for outside in [
+        "/Volumes/SYSVOL/other",
+        "/Volumes/SYSVOL",
+        "/Users/test_user_13/notes.txt",
+    ] {
         assert!(
             matches!(vol.to_smb_path(Path::new(outside)), Err(VolumeError::NotFound(_))),
             "{outside} is not on this mount"

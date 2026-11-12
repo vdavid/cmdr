@@ -17,7 +17,7 @@ Usage:
 
 Required:
   --email <address>   Who the license is for
-  --note <why>        Why it's being issued, for example "Dana Lee, Acme, evaluation"
+  --note <why>        Why it's being issued, for example "Test Customer, Acme, evaluation"
 
 Options:
   --name <name>       How the email greets them (default: "there")
@@ -29,10 +29,10 @@ Options:
   --help              This text
 
 Examples:
-  node scripts/mint-license.js --email dana@example.com --org Acme \\
-    --note "Dana Lee, Acme, evaluation" --expires 90d --send
+  node scripts/mint-license.js --email test_user_13@example.com --org Acme \\
+    --note "Test Customer, Acme, evaluation" --expires 90d --send
 
-  node scripts/mint-license.js --email ada@example.com --note "found the SMB reconnect bug"
+  node scripts/mint-license.js --email test_user_1@example.com --note "found the SMB reconnect bug"
 `
 
 const args = parseArgs(process.argv.slice(2), {

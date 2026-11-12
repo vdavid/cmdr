@@ -430,7 +430,7 @@ describe('SearchResults a11y: a live run', () => {
     phase: 'walking' as const,
     matchCount: 1234,
     dirsFound: 4312,
-    currentPath: '/Volumes/naspi/photos/2019',
+    currentPath: '/Volumes/testshare/photos/2019',
     capped: false,
     phaseSince: 0,
     running: true,

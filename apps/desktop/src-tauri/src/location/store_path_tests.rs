@@ -2,14 +2,14 @@
 
 use super::*;
 
-const SHARE: &str = "/Volumes/naspi-1";
+const SHARE: &str = "/Volumes/testshare-1";
 const DRIVE: &str = "/Users/test/Library/CloudStorage/GoogleDrive-test@example.com";
 
 #[test]
 fn a_share_path_loses_its_mount_point() {
     assert_eq!(
-        to_store_path("/Volumes/naspi-1/papers/x", SHARE).as_deref(),
-        Some("/papers/x")
+        to_store_path("/Volumes/testshare-1/documents/x", SHARE).as_deref(),
+        Some("/documents/x")
     );
     assert_eq!(to_store_path(SHARE, SHARE).as_deref(), Some("/"), "the root itself");
 }
@@ -30,9 +30,13 @@ fn the_boot_disk_keeps_absolute_paths() {
 
 #[test]
 fn a_path_off_the_volume_has_no_store_path() {
-    assert_eq!(to_store_path("/Volumes/naspi/papers", SHARE), None, "a sibling mount");
     assert_eq!(
-        to_store_path("/Volumes/naspi-10/papers", SHARE),
+        to_store_path("/Volumes/testshare/documents", SHARE),
+        None,
+        "a sibling mount"
+    );
+    assert_eq!(
+        to_store_path("/Volumes/testshare-10/documents", SHARE),
         None,
         "whole segments only"
     );
@@ -41,8 +45,8 @@ fn a_path_off_the_volume_has_no_store_path() {
 #[test]
 fn a_store_row_joins_back_onto_its_root() {
     assert_eq!(
-        from_store_path("/papers/x", SHARE).as_deref(),
-        Some("/Volumes/naspi-1/papers/x")
+        from_store_path("/documents/x", SHARE).as_deref(),
+        Some("/Volumes/testshare-1/documents/x")
     );
     assert_eq!(from_store_path("/", SHARE).as_deref(), Some(SHARE));
     assert_eq!(

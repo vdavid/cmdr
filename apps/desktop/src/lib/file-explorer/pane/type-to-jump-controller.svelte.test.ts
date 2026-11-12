@@ -121,7 +121,7 @@ describe('createTypeToJumpController over a list in memory', () => {
   })
 
   it('asks the view with the whole buffer, never the backend, and shows the indicator', () => {
-    const match = vi.fn((prefix: string) => (prefix === 'n' || prefix === 'na' ? 'Naspolya' : null))
+    const match = vi.fn((prefix: string) => (prefix === 'n' || prefix === 'na' ? 'Testnas' : null))
     const { ctl } = setup(networkView(match))
     ctl.handleJumpKeystroke('N')
     ctl.handleJumpKeystroke('a')
@@ -129,15 +129,15 @@ describe('createTypeToJumpController over a list in memory', () => {
     expect(ipc.findFirstFuzzyMatch).not.toHaveBeenCalled()
     expect(ctl.indicatorVisible).toBe(true)
     expect(ctl.buffer).toBe('na')
-    expect(ctl.lastMatchedName).toBe('Naspolya')
+    expect(ctl.lastMatchedName).toBe('Testnas')
   })
 
   it('keeps the last match when a longer buffer matches nothing', () => {
-    const { ctl } = setup(networkView((prefix) => (prefix === 'n' ? 'Naspolya' : null)))
+    const { ctl } = setup(networkView((prefix) => (prefix === 'n' ? 'Testnas' : null)))
     ctl.handleJumpKeystroke('n')
     ctl.handleJumpKeystroke('z')
     expect(ctl.buffer).toBe('nz')
-    expect(ctl.lastMatchedName).toBe('Naspolya')
+    expect(ctl.lastMatchedName).toBe('Testnas')
   })
 
   it('a view with no rows gets no buffer and no indicator', () => {

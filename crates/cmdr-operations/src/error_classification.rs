@@ -279,10 +279,10 @@ mod tests {
         ] {
             let err = classify_io_error(
                 &std::io::Error::from_raw_os_error(errno),
-                "/Volumes/naspi/a".to_string(),
+                "/Volumes/testshare/a".to_string(),
             );
             assert!(
-                matches!(&err, WriteOperationError::ConnectionInterrupted { path } if path == "/Volumes/naspi/a"),
+                matches!(&err, WriteOperationError::ConnectionInterrupted { path } if path == "/Volumes/testshare/a"),
                 "errno {errno}: got {err:?}"
             );
         }

@@ -504,8 +504,8 @@ fn parse_scope_bare_exclude_wildcard() {
 
 #[test]
 fn parse_scope_absolute_exclude_path() {
-    let scope = parse_scope("!/Users/alice/Downloads", Some(HOME));
-    assert_eq!(scope.exclude_patterns, vec!["/Users/alice/Downloads"]);
+    let scope = parse_scope("!/Users/test_user_4/Downloads", Some(HOME));
+    assert_eq!(scope.exclude_patterns, vec!["/Users/test_user_4/Downloads"]);
 }
 
 #[test]

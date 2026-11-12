@@ -38,8 +38,8 @@ describe('fitBreadcrumbSegments', () => {
   })
 
   it('middle-truncates the one long segment that does not fit, keeping every other segment whole', () => {
-    // "/private/tmp/claude-501/-Users-veszelovszki-projects/scratchpad": the long one gives way.
-    const texts = ['', 'private', 'tmp', 'claude-501', '-Users-veszelovszki-projects', 'scratchpad']
+    // "/private/tmp/claude-501/-Users-test_user_3-projects/scratchpad": the long one gives way.
+    const texts = ['', 'private', 'tmp', 'claude-501', '-Users-test_user_3-projects', 'scratchpad']
     const fitted = fit(texts, 500)
     expect(fitted.slice(0, 4)).toEqual(['', 'private', 'tmp', 'claude-501'])
     expect(fitted[5]).toBe('scratchpad')

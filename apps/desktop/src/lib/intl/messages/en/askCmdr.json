@@ -2266,7 +2266,7 @@
     "placeholders": {
       "foldersText": "How many folders are being summarized rather than named, already formatted with thousands separators, like 1,234.",
       "folders": "The same folder count as a raw integer, used only to pick the singular or plural word.",
-      "ancestor": "The absolute path of the deepest folder all of them sit under, like /Users/dana/Projects. Never translate a path.",
+      "ancestor": "The absolute path of the deepest folder all of them sit under, like /Users/test_user_13/Projects. Never translate a path.",
       "changesText": "How many changes happened across those folders in total, already formatted with thousands separators, like 1,234.",
       "changes": "The same change count as a raw integer, used only to pick the singular or plural word."
     },

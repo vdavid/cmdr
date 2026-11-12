@@ -38,14 +38,17 @@ fn token(output: &str, kind: &str) -> String {
 #[test]
 fn unix_home_paths() {
     let cases = [
-        ("/Users/john/Documents/budget.pdf", "$HOME/Documents/<file>.pdf"),
-        ("/Users/alice/Downloads/installer.dmg", "$HOME/Downloads/<file>.dmg"),
+        ("/Users/test_user_14/Documents/budget.pdf", "$HOME/Documents/<file>.pdf"),
+        (
+            "/Users/test_user_4/Downloads/installer.dmg",
+            "$HOME/Downloads/<file>.dmg",
+        ),
         // `id_rsa` has no extension-like suffix → labeled `<dir>` under the post-fix-7
         // heuristic. Acceptable trade-off: extensionless files (id_rsa, README, Makefile)
         // are rare in our log corpus, while extensionless directories are common, so
         // defaulting to `<dir>` reads more accurately on real triage data.
-        ("/home/bob/.ssh/id_rsa", "$HOME/<dir>/<dir>"),
-        ("/Users/veszelovszki/SecretProject/notes.md", "$HOME/<dir>/<file>.md"),
+        ("/home/test_user_5/.ssh/id_rsa", "$HOME/<dir>/<dir>"),
+        ("/Users/test_user_3/SecretProject/notes.md", "$HOME/<dir>/<file>.md"),
         (
             "Error reading /Users/foo/Desktop/screenshot.png: retrying",
             "Error reading $HOME/Desktop/<file>.png: retrying",
@@ -54,9 +57,9 @@ fn unix_home_paths() {
             "two paths: /Users/a/Documents/x.txt, /Users/b/Downloads/y.zip; done",
             "two paths: $HOME/Documents/<file>.txt, $HOME/Downloads/<file>.zip; done",
         ),
-        ("/Users/john", "$HOME"),
+        ("/Users/test_user_14", "$HOME"),
         (
-            "/Users/veszelovszki/Library/Application Support/com.veszelovszki.cmdr-dev",
+            "/Users/test_user_3/Library/Application Support/com.veszelovszki.cmdr-dev",
             // `Library/Application Support` is a home role, kept whole under `$HOME`. The leaf
             // `com.veszelovszki.cmdr-dev` has dots but the trailing segment `cmdr-dev` contains
             // a `-` (not alnum), so `has_extension_like_suffix` returns false → leaf labeled
@@ -72,18 +75,27 @@ fn unix_home_paths() {
 #[test]
 fn windows_home_paths() {
     let cases = [
-        (r"C:\Users\Bob\Desktop\passwords.txt", r"$HOME\Desktop\<file>.txt"),
-        (r"D:\Users\alice\Documents\report.docx", r"$HOME\Documents\<file>.docx"),
         (
-            r"C:\Users\bob\AppData\Roaming\config.json",
+            r"C:\Users\Test_user_5\Desktop\passwords.txt",
+            r"$HOME\Desktop\<file>.txt",
+        ),
+        (
+            r"D:\Users\test_user_4\Documents\report.docx",
+            r"$HOME\Documents\<file>.docx",
+        ),
+        (
+            r"C:\Users\test_user_5\AppData\Roaming\config.json",
             // "Roaming" not safe → <dir>; "AppData" is safe but it's the GRANDPARENT.
             r"$HOME\<dir>\<dir>\<file>.json",
         ),
         (
-            r"file at C:\Users\carol\Music\song.mp3, found",
+            r"file at C:\Users\test_user_15\Music\song.mp3, found",
             r"file at $HOME\Music\<file>.mp3, found",
         ),
-        (r"C:\Users\dave\SecretFolder\thing.exe", r"$HOME\<dir>\<file>.exe"),
+        (
+            r"C:\Users\test_user_10\SecretFolder\thing.exe",
+            r"$HOME\<dir>\<file>.exe",
+        ),
         (r"C:\Users\eve", r"$HOME"),
     ];
     for (input, expected) in cases {
@@ -122,7 +134,7 @@ fn media_paths() {
     let cases = [
         ("/media/usb0/file.txt", "/media/<volume>/<file>.txt"),
         (
-            "/media/alice/External/Documents/x.pdf",
+            "/media/test_user_4/External/Documents/x.pdf",
             "/media/<volume>/<dir>/<dir>/<file>.pdf",
         ),
         ("/media/cdrom", "/media/<volume>"),
@@ -149,8 +161,8 @@ fn media_paths() {
 fn prose_after_an_unkeyed_path_goes_with_it() {
     let cases = [
         (
-            "Two different mount roots (/Volumes/naspi and /Volumes/naspi-1) claim volume ID \
-             smb-192-168-1-111-445-naspi; the earlier root stays recorded, so the two share \
+            "Two different mount roots (/Volumes/testshare and /Volumes/testshare-1) claim volume ID \
+             smb-192-168-50-10-445-testshare; the earlier root stays recorded, so the two share \
              per-volume state. Expected only for a cloned volume or a doubly-mounted filesystem.",
             "Two different mount roots (/Volumes/<volume> /Volumes/<volume>; the earlier root stays \
              recorded, so the two share per-volume state. Expected only for a cloned volume or a \
@@ -166,30 +178,36 @@ fn prose_after_an_unkeyed_path_goes_with_it() {
         ),
         ("/Volumes/My Backup Drive is full", "/Volumes/<volume>"),
         (
-            "Wrote /Users/ada/Documents/state. Then we moved on",
+            "Wrote /Users/test_user_1/Documents/state. Then we moved on",
             "Wrote $HOME/Documents/<dir>",
         ),
         // The leaf's extension goes with it: `report.pdf. Next up` is one name to the redactor.
         (
-            "Saved to /Volumes/naspi/Photos/report.pdf. Next up",
+            "Saved to /Volumes/testshare/Photos/report.pdf. Next up",
             "Saved to /Volumes/<volume>/<dir>/<dir>",
         ),
         ("/Users/jo/Documents/notes.md failed to open", "$HOME/Documents/<dir>"),
         // A hard delimiter ends it: the seam, `, `, `; `, a ` key=` field, and an arrow.
         (
-            "/Volumes/naspi/report.pdf: next up, then more",
+            "/Volumes/testshare/report.pdf: next up, then more",
             "/Volumes/<volume>/<file>.pdf: next up, then more",
         ),
-        ("/Volumes/naspi/a b, then more", "/Volumes/<volume>/<dir>, then more"),
-        ("/Volumes/naspi/a b; then more", "/Volumes/<volume>/<dir>; then more"),
-        ("/Volumes/naspi/a b entries=3", "/Volumes/<volume>/<dir> entries=3"),
         (
-            "/Volumes/naspi/a b -> /Volumes/x/c d",
+            "/Volumes/testshare/a b, then more",
+            "/Volumes/<volume>/<dir>, then more",
+        ),
+        (
+            "/Volumes/testshare/a b; then more",
+            "/Volumes/<volume>/<dir>; then more",
+        ),
+        ("/Volumes/testshare/a b entries=3", "/Volumes/<volume>/<dir> entries=3"),
+        (
+            "/Volumes/testshare/a b -> /Volumes/x/c d",
             "/Volumes/<volume>/<dir> -> /Volumes/<volume>/<dir>",
         ),
         // Only characters with no name in them go back: sentence punctuation, an unbalanced
         // closing bracket, a source location.
-        ("(see /Volumes/naspi/a b.)", "(see /Volumes/<volume>/<dir>.)"),
+        ("(see /Volumes/testshare/a b.)", "(see /Volumes/<volume>/<dir>.)"),
         ("at /srv/app/src/main.rs:42:5", "at /<dir>/<dir>/src/<file>.rs:42:5"),
     ];
     for (input, expected) in cases {
@@ -199,11 +217,14 @@ fn prose_after_an_unkeyed_path_goes_with_it() {
 
 /// A delimiter before the last separator doesn't end the path: the deeper segment proves the
 /// path goes on, and cutting there would ship everything after it (no `\B/` anchor claims
-/// `John/x.pdf`).
+/// `Test_user_14/x.pdf`).
 #[test]
 fn a_delimiter_inside_a_folder_name_never_ends_the_path() {
     for (input, private) in [
-        ("Reading /Users/ada/Smith, John/x.pdf now", "John"),
+        (
+            "Reading /Users/test_user_1/Smith, Test_user_14/x.pdf now",
+            "Test_user_14",
+        ),
         ("Reading /srv/a/Plans; Q3/x.pdf now", "Q3"),
         ("Reading /srv/a/Plans mode=draft/x.pdf now", "draft"),
     ] {
@@ -223,7 +244,7 @@ fn multi_word_filenames_are_redacted_whole() {
     let cases = [
         // The reported line. The `: ` is the `{path}: {message}` seam, so the message survives.
         (
-            "/Users/kajotac/Pics/Screenshot 2026-09-04 at 01.13.03 PM-2.jpeg: the Trash refused it",
+            "/Users/test_user_9/Pics/Screenshot 2026-09-04 at 01.13.03 PM-2.jpeg: the Trash refused it",
             "$HOME/<dir>/<file>.jpeg: the Trash refused it",
         ),
         // A folder whose last word is lowercase, right up to the seam. The seam says where the
@@ -261,11 +282,11 @@ fn a_numbered_folder_is_redacted_whole() {
     let cases = [
         // Mid-path, in each path flavor, followed by the `: ` seam.
         (
-            "source sweep: couldn't remove /Users/ada/Pictures/12. Summer trip/beach.jpg: NotFound",
+            "source sweep: couldn't remove /Users/test_user_1/Pictures/12. Summer trip/beach.jpg: NotFound",
             "source sweep: couldn't remove $HOME/Pictures/<dir>/<file>.jpg: NotFound",
         ),
         (
-            "Move error: Path: /Volumes/naspi/Photos/3. Invoices 2024/scan.pdf; Error type: io_error",
+            "Move error: Path: /Volumes/testshare/Photos/3. Invoices 2024/scan.pdf; Error type: io_error",
             "Move error: Path: /Volumes/<volume>/<dir>/<dir>/<file>.pdf; Error type: io_error",
         ),
         (
@@ -282,7 +303,7 @@ fn a_numbered_folder_is_redacted_whole() {
         ),
         // Backslash-separated: a Windows home, and an `smb2` share-relative field.
         (
-            r"Wrote C:\Users\Bob\Pictures\12. Summer trip\beach.jpg: failed",
+            r"Wrote C:\Users\Test_user_5\Pictures\12. Summer trip\beach.jpg: failed",
             r"Wrote $HOME\Pictures\<dir>\<file>.jpg: failed",
         ),
         (
@@ -296,50 +317,50 @@ fn a_numbered_folder_is_redacted_whole() {
         // The `move` line's three paths, two of them leaf folders before ` ->` and `)`. The
         // first one's ` (under` goes with it: the regex can't continue into ` /Users`.
         (
-            "move_between_volumes: copy phase failed for /Users/ada/Pictures/12. Summer trip/beach.jpg \
-             (under /Users/ada/Pictures/12. Summer trip -> /Volumes/naspi/Photos/12. Summer Trip): disk full",
+            "move_between_volumes: copy phase failed for /Users/test_user_1/Pictures/12. Summer trip/beach.jpg \
+             (under /Users/test_user_1/Pictures/12. Summer trip -> /Volumes/testshare/Photos/12. Summer Trip): disk full",
             "move_between_volumes: copy phase failed for $HOME/Pictures/<dir>/<dir> \
              $HOME/Pictures/<dir> -> /Volumes/<volume>/<dir>/<dir>): disk full",
         ),
         // As the leaf, followed by a seam, a comma, a quote, `;`, and the end of the line.
         (
-            "/Volumes/naspi/Photos/12. Summer Trip: it timed out",
+            "/Volumes/testshare/Photos/12. Summer Trip: it timed out",
             "/Volumes/<volume>/<dir>/<dir>: it timed out",
         ),
         (
-            "Copied /Volumes/naspi/Photos/12. Summer Trip, retrying",
+            "Copied /Volumes/testshare/Photos/12. Summer Trip, retrying",
             "Copied /Volumes/<volume>/<dir>/<dir>, retrying",
         ),
         (
-            "Copied \"/Users/ada/Pictures/3. Invoices 2024\" ok",
+            "Copied \"/Users/test_user_1/Pictures/3. Invoices 2024\" ok",
             "Copied \"$HOME/Pictures/<dir>\" ok",
         ),
         (
-            "Move error: Path: /Volumes/naspi/Photos/3. Invoices 2024; Error type: io_error",
+            "Move error: Path: /Volumes/testshare/Photos/3. Invoices 2024; Error type: io_error",
             "Move error: Path: /Volumes/<volume>/<dir>/<dir>; Error type: io_error",
         ),
         (
-            "Copied /Users/ada/Pictures/12. Summer Trip",
+            "Copied /Users/test_user_1/Pictures/12. Summer Trip",
             "Copied $HOME/Pictures/<dir>",
         ),
         // The `scan_preview` label: the source, then ` on volume <id>`, which goes with it.
         (
-            "scan preview 3 started: /Users/ada/Pictures/12. Summer Trip on volume root",
+            "scan preview 3 started: /Users/test_user_1/Pictures/12. Summer Trip on volume root",
             "scan preview 3 started: $HOME/Pictures/<dir>",
         ),
         // Neighbors: a number mid-name, a digit-led dot, and several numbered segments.
         (
-            "Reading /Users/ada/Books/Chapter 1. Intro/v1.2 notes/draft.md",
+            "Reading /Users/test_user_1/Books/Chapter 1. Intro/v1.2 notes/draft.md",
             "Reading $HOME/<dir>/<dir>/<dir>/<file>.md",
         ),
         (
-            "Copied '/Users/ada/Work/1. Plans/2. Budget/3. Final' failed",
+            "Copied '/Users/test_user_1/Work/1. Plans/2. Budget/3. Final' failed",
             "Copied '$HOME/<dir>/<dir>/<dir>/<dir>' failed",
         ),
         // Any word ending in sentence punctuation before a deeper segment: an abbreviation,
         // a comma, a closing paren, or an extension-looking word.
         (
-            "Reading /Users/ada/Music/Dr. Dre, Snoop (live) Mr.Big/track.mp3",
+            "Reading /Users/test_user_1/Music/Dr. Dre, Snoop (live) Mr.Big/track.mp3",
             "Reading $HOME/Music/<dir>/<file>.mp3",
         ),
     ];
@@ -355,7 +376,7 @@ fn a_numbered_folder_is_redacted_whole() {
 fn closing_brackets_before_the_seam_keep_a_lowercase_leaf() {
     let cases = [
         (
-            "move: (under /Users/ada/Pictures/Summer trip -> /Volumes/naspi/Photos/Summer trip): disk full",
+            "move: (under /Users/test_user_1/Pictures/Summer trip -> /Volumes/testshare/Photos/Summer trip): disk full",
             "move: (under $HOME/Pictures/<dir> -> /Volumes/<volume>/<dir>/<dir>): disk full",
         ),
         (
@@ -363,8 +384,8 @@ fn closing_brackets_before_the_seam_keep_a_lowercase_leaf() {
             "Skipped [/<dir>/<dir>/<dir>]: busy",
         ),
         // A bracket the path didn't open, and only that, goes back at the end of the line too.
-        ("(/Volumes/naspi/summer trip)", "(/Volumes/<volume>/<dir>)"),
-        ("/Volumes/naspi/Summer (Lake House)", "/Volumes/<volume>/<dir>"),
+        ("(/Volumes/testshare/summer trip)", "(/Volumes/<volume>/<dir>)"),
+        ("/Volumes/testshare/Summer (Lake House)", "/Volumes/<volume>/<dir>"),
     ];
     for (input, expected) in cases {
         assert_eq!(r(input), expected, "input: {input:?}");
@@ -379,7 +400,7 @@ fn closing_brackets_before_the_seam_keep_a_lowercase_leaf() {
 /// segment already recognized on the same line; the path itself is what this test covers.
 #[test]
 fn trash_refusal_line_redacts_its_path() {
-    let input = "op 01a0 (Trash) failed: /Users/kajotac/Library/CloudStorage/Dropbox/Shots/\
+    let input = "op 01a0 (Trash) failed: /Users/test_user_9/Library/CloudStorage/Dropbox/Shots/\
                  Screenshot 2026-09-04 at 01.13.03 PM-2.jpeg: the Trash refused it";
     let out = r(input);
     assert!(
@@ -441,7 +462,7 @@ fn share_relative_paths_in_fields() {
         ),
         // A bare name, and a volume-relative path with a leading slash.
         (
-            "loadDirectory called: paneId=right, path=/private, selectName=-Users-alice-projects-cmdr, currentLoading=false",
+            "loadDirectory called: paneId=right, path=/private, selectName=-Users-test_user_4-projects-cmdr, currentLoading=false",
             "loadDirectory called: paneId=right, path=/private, selectName=<dir>, currentLoading=false",
         ),
         (
@@ -585,8 +606,8 @@ fn context_keeps_extensionless_and_staging_name_shape() {
 #[test]
 fn context_preserves_only_context_proven_home_downloads_role() {
     let context = context("ERR-AAAAA");
-    let home = context.redact_line("/Users/alice/Downloads/client/project/report.pdf");
-    let unrelated = context.redact_line("/Users/alice/Work/Downloads/report.pdf");
+    let home = context.redact_line("/Users/test_user_4/Downloads/client/project/report.pdf");
+    let unrelated = context.redact_line("/Users/test_user_4/Work/Downloads/report.pdf");
     let remote = context.redact_line("smb://server/share/Downloads/report.pdf");
 
     assert!(home.starts_with("$HOME/Downloads/<dir:"), "{home}");
@@ -600,25 +621,28 @@ fn context_preserves_only_context_proven_home_downloads_role() {
 fn context_preserves_every_well_known_home_folder_role() {
     let context = context("ERR-ROLES");
     for (input, role) in [
-        ("/Users/alice/Desktop/client/deep/plan.key", "$HOME/Desktop/<dir:"),
-        ("/Users/alice/Documents/client/deep/plan.pdf", "$HOME/Documents/<dir:"),
-        ("/Users/alice/Pictures/Trip/deep/a.jpg", "$HOME/Pictures/<dir:"),
-        ("/Users/alice/Movies/Trip/deep/a.mov", "$HOME/Movies/<dir:"),
-        ("/Users/alice/Music/Band/deep/a.mp3", "$HOME/Music/<dir:"),
-        ("/Users/alice/Library/Caches/deep/x.db", "$HOME/Library/<dir:"),
+        ("/Users/test_user_4/Desktop/client/deep/plan.key", "$HOME/Desktop/<dir:"),
         (
-            "/Users/alice/Library/Mobile Documents/com~apple~CloudDocs/Taxes/2026.pdf",
+            "/Users/test_user_4/Documents/client/deep/plan.pdf",
+            "$HOME/Documents/<dir:",
+        ),
+        ("/Users/test_user_4/Pictures/Trip/deep/a.jpg", "$HOME/Pictures/<dir:"),
+        ("/Users/test_user_4/Movies/Trip/deep/a.mov", "$HOME/Movies/<dir:"),
+        ("/Users/test_user_4/Music/Band/deep/a.mp3", "$HOME/Music/<dir:"),
+        ("/Users/test_user_4/Library/Caches/deep/x.db", "$HOME/Library/<dir:"),
+        (
+            "/Users/test_user_4/Library/Mobile Documents/com~apple~CloudDocs/Taxes/2026.pdf",
             "$HOME/Library/Mobile Documents/<dir:",
         ),
         (
-            "/Users/alice/Library/CloudStorage/GoogleDrive-alice@example.com/Taxes/2026.pdf",
+            "/Users/test_user_4/Library/CloudStorage/GoogleDrive-test_user_4@example.com/Taxes/2026.pdf",
             "$HOME/Library/CloudStorage/<dir:",
         ),
     ] {
         let redacted = context.redact_line(input);
         assert!(redacted.starts_with(role), "{input} → {redacted}");
         for private in [
-            "alice",
+            "test_user_4",
             "client",
             "Trip",
             "Band",
@@ -630,7 +654,7 @@ fn context_preserves_every_well_known_home_folder_role() {
             assert!(!redacted.contains(private), "{private:?} survived: {redacted}");
         }
     }
-    let unrelated = context.redact_line("/Users/alice/Work/Documents/deep/plan.pdf");
+    let unrelated = context.redact_line("/Users/test_user_4/Work/Documents/deep/plan.pdf");
     let remote = context.redact_line("smb://server/share/Pictures/Trip/a.jpg");
     assert!(!unrelated.contains("Documents"), "{unrelated}");
     assert!(!remote.contains("Pictures"), "{remote}");
@@ -640,11 +664,11 @@ fn context_preserves_every_well_known_home_folder_role() {
 fn typed_paths_consume_extensionless_multiword_leaves_as_complete_values() {
     let context = context("ERR-TYPED");
     let cases = [
-        ("/Users/alice/Plans/client secret", "$HOME/"),
+        ("/Users/test_user_4/Plans/client secret", "$HOME/"),
         ("/Volumes/Client Disk/Plans/client secret", "/Volumes/"),
         ("/media/Client Disk/Plans/client secret", "/media/"),
         ("Plans/client secret", "<dir:"),
-        ("sftp://alice@host.test/Plans/client secret", "sftp://"),
+        ("sftp://test_user_4@host.test/Plans/client secret", "sftp://"),
         (r"\\host\Private Share\Plans\client secret", r"\\"),
     ];
 
@@ -670,8 +694,8 @@ fn typed_raw_paths_never_trust_caller_supplied_token_syntax() {
     let context = context("ERR-TYPED-RAW");
     let cases = [
         (
-            "/mnt/<alice-smith>/<file:abcdef>/secret.txt",
-            ["<alice-smith>", "<file:abcdef>"],
+            "/mnt/<test_user_4-smith>/<file:abcdef>/secret.txt",
+            ["<test_user_4-smith>", "<file:abcdef>"],
         ),
         (
             "https://<raw-user>@<raw-host>/<raw-folder>/secret.txt",
@@ -689,7 +713,7 @@ fn typed_raw_paths_never_trust_caller_supplied_token_syntax() {
         }
     }
 
-    let line = r#"path="/mnt/alice-smith/secret.txt""#;
+    let line = r#"path="/mnt/test_user_4-smith/secret.txt""#;
     let once = context.redact_line(line);
     assert_eq!(
         context.redact_line(&once),
@@ -710,7 +734,7 @@ fn smb_uris() {
             "smb://<ipv4-private>/<share>/<file>.pdf",
         ),
         (
-            "smb://nas.local/backups/2026/jan.zip",
+            "smb://testnas.local/backups/2026/jan.zip",
             "smb://<host>.local/<share>/<dir>/<file>.zip",
         ),
         (
@@ -730,7 +754,7 @@ fn unc_paths() {
     let cases = [
         (r"\\server\share\file.txt", r"\\<host>\<share>\<file>.txt"),
         (
-            r"\\nas.local\public\Documents\plan.docx",
+            r"\\testnas.local\public\Documents\plan.docx",
             r"\\<host>.local\<share>\<dir>\<file>.docx",
         ),
         (r"\\server\share", r"\\<host>\<share>"),
@@ -753,7 +777,7 @@ fn unc_paths() {
 fn mdns_hostnames() {
     let cases = [
         ("connecting to homer.local", "connecting to <host>.local"),
-        ("nas.local resolved", "<host>.local resolved"),
+        ("testnas.local resolved", "<host>.local resolved"),
         ("ping macbook-pro.local for status", "ping <host>.local for status"),
         ("two: alpha.local and beta.local", "two: <host>.local and <host>.local"),
         ("server-1.local", "<host>.local"),
@@ -798,8 +822,8 @@ fn ipv6_addresses() {
 #[test]
 fn email_addresses() {
     let cases = [
-        ("contact alice@example.com please", "contact <email> please"),
-        ("john.doe+tag@example.co.uk", "<email>"),
+        ("contact test_user_4@example.com please", "contact <email> please"),
+        ("test_user_14.doe+tag@example.co.uk", "<email>"),
         ("two: a@b.com and c@d.org", "two: <email> and <email>"),
         ("noreply@subdomain.example.com", "<email>"),
         ("name_with_underscores@x-y.io", "<email>"),
@@ -814,13 +838,13 @@ fn email_addresses() {
 fn url_userinfo() {
     let cases = [
         (
-            "https://alice:s3cret@example.com/path",
+            "https://test_user_4:s3cret@example.com/path",
             "https://<user>:<credential>@<host>/<dir>",
         ),
         ("ftp://anon@files.example.com/pub", "ftp://<user>@<host>/<dir>"),
         ("https://user@host.example.com/", "https://<user>@<host>/"),
         (
-            "fetched https://bob:hunter2@api.example.com/v1, ok",
+            "fetched https://test_user_5:hunter2@api.example.com/v1, ok",
             "fetched https://<user>:<credential>@<host>/<dir>, ok",
         ),
         ("ssh://git@github.com/foo/bar", "ssh://<user>@<host>/<dir>/<dir>"),
@@ -841,8 +865,11 @@ fn bare_userinfo_no_scheme() {
     // (no scheme). A misbehaving server can reflect them in stderr, so the redactor must
     // strip the userinfo on this scheme-less shape too.
     let cases = [
-        ("//alice:s3cret@192.168.1.10", "//<user>:<credential>@<ipv4-private>"),
-        ("//bob@nas.example.com/share", "//<user>@<host>/<share>"),
+        (
+            "//test_user_4:s3cret@192.168.1.10",
+            "//<user>:<credential>@<ipv4-private>",
+        ),
+        ("//test_user_5@nas.example.com/share", "//<user>@<host>/<share>"),
         (
             "smbutil failed for //user:pass@host:10480",
             "smbutil failed for //<user>:<credential>@<host>:10480",
@@ -853,7 +880,7 @@ fn bare_userinfo_no_scheme() {
         ),
         // A scheme'd URL must still go through url_userinfo, not double-match the bare tail.
         (
-            "http://alice:s3cret@example.com/x",
+            "http://test_user_4:s3cret@example.com/x",
             "http://<user>:<credential>@<host>/<dir>",
         ),
         (
@@ -870,18 +897,18 @@ fn bare_userinfo_no_scheme() {
 fn mtp_device_owner_names() {
     let cases = [
         (
-            "Connected to John's Pixel 8 Pro",
+            "Connected to Tester's Pixel 8 Pro",
             "Connected to <mtp-owner>'s Pixel 8 Pro",
         ),
-        ("device: Alice's iPhone 15 Pro", "device: <mtp-owner>'s iPhone 15 Pro"),
+        ("device: Tester's iPhone 15 Pro", "device: <mtp-owner>'s iPhone 15 Pro"),
         (
             "Mary's Galaxy S24 Ultra connected",
             "<mtp-owner>'s Galaxy S24 Ultra connected",
         ),
-        ("Bob's Pixel discovered", "<mtp-owner>'s Pixel discovered"),
+        ("Tester's Pixel discovered", "<mtp-owner>'s Pixel discovered"),
         ("Found Charlie's iPad Pro", "Found <mtp-owner>'s iPad Pro"),
         (
-            "two: Anna's Phone and Diana's Tablet",
+            "two: Tester's Phone and Tester's Tablet",
             "two: <mtp-owner>'s Phone and <mtp-owner>'s Tablet",
         ),
         ("Eric's OnePlus 12 connected", "<mtp-owner>'s OnePlus 12 connected"),
@@ -911,8 +938,8 @@ fn mtp_owner_negatives() {
         "cmdr_lib::redact::tests",
         // Random capitalized phrases that look ownership-y but aren't followed by
         // an MTP model word: must NOT match.
-        "John's car was here",
-        "Alice's project codename",
+        "Tester's car was here",
+        "Tester's project codename",
     ];
     for input in must_be_unchanged {
         assert_eq!(r(input), input, "should be unchanged: {input:?}");
@@ -939,11 +966,11 @@ fn mtp_owner_known_overmatches() {
 fn account_names() {
     let cases = [
         (
-            "Upgrading volume smb-1 to SmbVolume: server=nas, share=media, user=Some(\"david\")",
+            "Upgrading volume smb-1 to SmbVolume: server=nas, share=media, user=Some(\"test_user_3\")",
             "Upgrading volume smb-1 to SmbVolume: server=nas, share=<share>, user=Some(\"<user>\")",
         ),
         (
-            "Found Keychain credentials for user=david",
+            "Found Keychain credentials for user=test_user_3",
             "Found Keychain credentials for user=<user>",
         ),
         (
@@ -952,16 +979,16 @@ fn account_names() {
         ),
         ("username=dvesz connected", "username=<user> connected"),
         // Windows-style domain accounts and dotted names go whole.
-        ("user=WORKGROUP\\david", "user=<user>"),
-        ("user=david.veszelovszki", "user=<user>"),
+        ("user=WORKGROUP\\test_user_3", "user=<user>"),
+        ("user=test_user_3", "user=<user>"),
         // Quoted, and inside a Rust debug struct.
         (
-            "SmbCredentials { username: \"david\", .. }",
+            "SmbCredentials { username: \"test_user_3\", .. }",
             "SmbCredentials { username: \"<user>\", .. }",
         ),
         // Two on one line.
         (
-            "user=alice fell back to user=bob",
+            "user=test_user_4 fell back to user=test_user_5",
             "user=<user> fell back to user=<user>",
         ),
         // An absent username is not a secret and stays readable.
@@ -1057,12 +1084,12 @@ fn negatives_unchanged() {
 #[test]
 fn idempotency() {
     let corpus = [
-        "/Users/john/Documents/budget.pdf",
-        r"C:\Users\Bob\Desktop\x.txt",
+        "/Users/test_user_14/Documents/budget.pdf",
+        r"C:\Users\Test_user_5\Desktop\x.txt",
         "/Volumes/Backup/photo.jpg",
         "smb://homer.local/share/x.txt",
         "https://u:p@host.com/path",
-        "alice@example.com",
+        "test_user_4@example.com",
         "192.168.1.1",
         "2001:db8::1",
         "homer.local",
@@ -1083,7 +1110,7 @@ fn idempotency() {
 
 #[test]
 fn redact_text_handles_multiple_lines() {
-    let input = "first /Users/john/x.txt\nsecond /Volumes/foo/y.bin\nthird clean line\n";
+    let input = "first /Users/test_user_14/x.txt\nsecond /Volumes/foo/y.bin\nthird clean line\n";
     let expected = "first $HOME/<file>.txt\nsecond /Volumes/<volume>/<file>.bin\nthird clean line\n";
     assert_eq!(redact_text(input), expected);
 }

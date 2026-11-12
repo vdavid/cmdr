@@ -22,7 +22,7 @@ function open(onAllowed: () => void, onCancel: () => void) {
   document.body.appendChild(target)
   const component = mount(SmbLinkConsentDialog, {
     target,
-    props: { server: 'nas.local', target: 'fs01.example.com', onAllowed, onCancel },
+    props: { server: 'testnas.local', target: 'fs01.example.com', onAllowed, onCancel },
   })
   flushSync()
   return { target, close: () => void unmount(component) }
@@ -42,7 +42,7 @@ describe('SmbLinkConsentDialog', () => {
 
   it('names both servers plainly', () => {
     const { target, close } = open(vi.fn(), vi.fn())
-    expect(target.textContent).toContain('nas.local')
+    expect(target.textContent).toContain('testnas.local')
     expect(target.textContent).toContain('fs01.example.com')
     close()
   })
@@ -55,7 +55,7 @@ describe('SmbLinkConsentDialog', () => {
     await vi.waitFor(() => {
       expect(onAllowed).toHaveBeenCalledOnce()
     })
-    expect(allowSmbLinkTarget).toHaveBeenCalledWith('nas.local', 'fs01.example.com')
+    expect(allowSmbLinkTarget).toHaveBeenCalledWith('testnas.local', 'fs01.example.com')
     close()
   })
 

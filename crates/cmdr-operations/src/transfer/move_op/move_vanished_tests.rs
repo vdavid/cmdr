@@ -32,7 +32,7 @@ fn state_between(engine: &TestOperations, source_root: &Path, dest_root: &Path) 
                 ),
                 TransferSide::new(
                     "vol-stick".to_string(),
-                    "Fältkamera".to_string(),
+                    "Tëstkamera".to_string(),
                     dest_root.to_path_buf(),
                 ),
             ))),
@@ -104,7 +104,7 @@ fn a_destination_that_left_before_phase_4_keeps_every_source() {
         panic!("the event names the drive that left, got {:?}", event.error);
     };
     assert_eq!(side.role, TransferRole::Destination);
-    assert_eq!(side.volume_name, "Fältkamera", "the name captured when it started");
+    assert_eq!(side.volume_name, "Tëstkamera", "the name captured when it started");
     assert_eq!(side.counterpart_name, "Macintosh HD");
 }
 

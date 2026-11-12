@@ -70,13 +70,13 @@ describe('buildErrorReportIssue', () => {
   it('keeps every personal field out of the title and body', () => {
     const { title, body, labels } = buildErrorReportIssue({
       ...errorReport,
-      userNote: 'my name is Jane and my path is /Users/jane/taxes',
-      email: 'jane@example.com',
+      userNote: 'my name is Test_user_12 and my path is /Users/test_user_12/taxes',
+      email: 'test_user_12@example.com',
     })
 
     expect(title).toBe('Error report ERR-A2345: hand-written on 0.46.0 (macOS 15.3.1)')
-    expect(body).not.toContain('Jane')
-    expect(body).not.toContain('jane@example.com')
+    expect(body).not.toContain('Test_user_12')
+    expect(body).not.toContain('test_user_12@example.com')
     expect(body).not.toContain('taxes')
     expect(body).toContain('ERR-A2345')
     expect(body).toContain('error-reports/prod/2026-09-18/ERR-A2345-abc.zip')
@@ -122,7 +122,7 @@ describe('buildErrorReportIssue', () => {
   })
 
   it('labels a report that carries a reply-to so it can be answered', () => {
-    expect(buildErrorReportIssue({ ...errorReport, email: 'jane@example.com' }).labels).toContain('needs-reply')
+    expect(buildErrorReportIssue({ ...errorReport, email: 'test_user_12@example.com' }).labels).toContain('needs-reply')
     expect(buildErrorReportIssue(errorReport).labels).not.toContain('needs-reply')
   })
 })
@@ -131,15 +131,15 @@ describe('buildFeedbackIssue', () => {
   it('keeps the message in the body but the reply-to out of it', () => {
     const { title, body, labels } = buildFeedbackIssue({
       ...feedbackInput,
-      feedback: 'please add tabs, love from Bob',
-      email: 'bob@example.com',
+      feedback: 'please add tabs, love from Test_user_5',
+      email: 'test_user_5@example.com',
     })
 
     // The policy keeps feedback text so it can be acted on, so the message may live in the body.
     // The reply-to address expires, so it may not.
     expect(title).toBe('Feedback #42 on 0.46.0 (macOS 15.3.1)')
     expect(body).toContain('please add tabs')
-    expect(body).not.toContain('bob@example.com')
+    expect(body).not.toContain('test_user_5@example.com')
     expect(labels).toEqual(['in-app-feedback', 'unprocessed', 'needs-reply'])
   })
 
@@ -271,11 +271,11 @@ describe('buildPersonalComment', () => {
 
   it('includes the reply-to address and the bundle link when present', () => {
     const comment = buildPersonalComment({
-      email: 'jane@example.com',
+      email: 'test_user_12@example.com',
       downloadUrl: 'https://r2.example/bundle.zip?sig=x',
       linkTtlHours: 24,
     })
-    expect(comment).toContain('jane@example.com')
+    expect(comment).toContain('test_user_12@example.com')
     expect(comment).toContain('https://r2.example/bundle.zip?sig=x')
     expect(comment).toContain('24 hours')
   })

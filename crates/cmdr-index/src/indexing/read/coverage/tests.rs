@@ -360,8 +360,8 @@ fn a_single_uncovered_leaf_yields_the_leaf_not_the_root() {
 #[test]
 fn a_cold_volume_yields_the_scope_root() {
     let conn = open_test_index();
-    let map = coverage(&conn, "/Users/dave/projects");
-    assert_eq!(map.frontier, vec!["/Users/dave/projects".to_string()]);
+    let map = coverage(&conn, "/Users/test_user_10/projects");
+    assert_eq!(map.frontier, vec!["/Users/test_user_10/projects".to_string()]);
 }
 
 /// An honest-stale gap on an otherwise complete index yields only that gap, and
@@ -370,32 +370,32 @@ fn a_cold_volume_yields_the_scope_root() {
 fn an_honest_stale_gap_yields_only_that_gap() {
     let conn = open_test_index();
     let users = insert_dir(&conn, ROOT_ID, "Users");
-    let dave = insert_dir(&conn, users, "dave");
-    let pictures = insert_dir(&conn, dave, "Pictures");
+    let test_user_10 = insert_dir(&conn, users, "test_user_10");
+    let pictures = insert_dir(&conn, test_user_10, "Pictures");
     let camera = insert_dir(&conn, pictures, "Camera");
-    let library = insert_dir(&conn, dave, "Library");
+    let library = insert_dir(&conn, test_user_10, "Library");
     let abandoned = insert_dir(&conn, library, "Containers");
     insert_file(&conn, camera, "IMG_0001.heic", 4_000_000);
 
     // The walker abandoned `Containers` (never marked listed); everything else is
     // covered at epoch 5.
-    list_and_aggregate(&conn, &[ROOT_ID, users, dave, pictures, camera, library], 5);
+    list_and_aggregate(&conn, &[ROOT_ID, users, test_user_10, pictures, camera, library], 5);
     assert_eq!(
         IndexStore::get_listed_epoch_by_id(&conn, abandoned).expect("epoch"),
         Some(0)
     );
 
     let map = coverage(&conn, "/");
-    assert_eq!(map.frontier, vec!["/Users/dave/Library/Containers".to_string()]);
+    assert_eq!(map.frontier, vec!["/Users/test_user_10/Library/Containers".to_string()]);
 
     // The covered branch is cut at the shallowest covered node, not walked through.
     let seen = verdicts(&conn, "/");
     let cut_at_pictures = seen
         .iter()
-        .any(|(v, p)| *v == Verdict::Covered && p == "/Users/dave/Pictures");
+        .any(|(v, p)| *v == Verdict::Covered && p == "/Users/test_user_10/Pictures");
     assert!(cut_at_pictures, "a covered sibling is one cut, not a descent: {seen:?}");
     assert!(
-        !seen.iter().any(|(_, p)| p == "/Users/dave/Pictures/Camera"),
+        !seen.iter().any(|(_, p)| p == "/Users/test_user_10/Pictures/Camera"),
         "the descent must stop at a covered node: {seen:?}"
     );
 }
@@ -449,22 +449,22 @@ fn a_fully_covered_scope_yields_an_empty_frontier() {
 fn a_known_unreadable_dir_is_reported_rather_than_walked_again() {
     let conn = open_test_index();
     let users = insert_dir(&conn, ROOT_ID, "Users");
-    let dave = insert_dir(&conn, users, "dave");
-    let documents = insert_dir(&conn, dave, "Documents");
-    let _downloads = insert_dir(&conn, dave, "Downloads");
+    let test_user_10 = insert_dir(&conn, users, "test_user_10");
+    let documents = insert_dir(&conn, test_user_10, "Documents");
+    let _downloads = insert_dir(&conn, test_user_10, "Downloads");
 
-    list_and_aggregate(&conn, &[ROOT_ID, users, dave], 2);
+    list_and_aggregate(&conn, &[ROOT_ID, users, test_user_10], 2);
     IndexStore::mark_dirs_unreadable(&conn, &[documents], Some(UnreadableCause::Denied)).expect("mark unreadable");
 
     let map = coverage(&conn, "/");
-    assert_eq!(map.permission_denied, vec!["/Users/dave/Documents".to_string()]);
+    assert_eq!(map.permission_denied, vec!["/Users/test_user_10/Documents".to_string()]);
     assert!(
         map.declined.is_empty(),
         "a refusal is not a folder Cmdr declines to read"
     );
     assert_eq!(
         map.frontier,
-        vec!["/Users/dave/Downloads".to_string()],
+        vec!["/Users/test_user_10/Downloads".to_string()],
         "the readable sibling is still frontier"
     );
 
@@ -475,7 +475,10 @@ fn a_known_unreadable_dir_is_reported_rather_than_walked_again() {
     assert!(healed.permission_denied.is_empty());
     assert_eq!(
         healed.frontier,
-        vec!["/Users/dave/Documents".to_string(), "/Users/dave/Downloads".to_string()]
+        vec![
+            "/Users/test_user_10/Documents".to_string(),
+            "/Users/test_user_10/Downloads".to_string()
+        ]
     );
 }
 
@@ -606,18 +609,18 @@ fn a_policy_mismatch_hands_back_the_whole_scope() {
 fn a_scoped_query_answers_for_its_subtree_only() {
     let conn = open_test_index();
     let users = insert_dir(&conn, ROOT_ID, "Users");
-    let dave = insert_dir(&conn, users, "dave");
-    let projects = insert_dir(&conn, dave, "projects");
+    let test_user_10 = insert_dir(&conn, users, "test_user_10");
+    let projects = insert_dir(&conn, test_user_10, "projects");
     let cmdr = insert_dir(&conn, projects, "cmdr");
     let other = insert_dir(&conn, users, "guest");
     let _unwalked_elsewhere = insert_dir(&conn, other, "Downloads");
 
-    list_and_aggregate(&conn, &[ROOT_ID, users, dave, projects, other], 2);
+    list_and_aggregate(&conn, &[ROOT_ID, users, test_user_10, projects, other], 2);
 
-    let map = coverage(&conn, "/Users/dave/projects");
+    let map = coverage(&conn, "/Users/test_user_10/projects");
     assert_eq!(
         map.frontier,
-        vec!["/Users/dave/projects/cmdr".to_string()],
+        vec!["/Users/test_user_10/projects/cmdr".to_string()],
         "the other user's gap is out of scope"
     );
     assert_ne!(cmdr, 0);

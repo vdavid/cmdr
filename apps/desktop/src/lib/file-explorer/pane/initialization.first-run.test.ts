@@ -239,15 +239,15 @@ describe('restoring a tab that stood on a server', () => {
     appStatus.loadPaneTabs.mockImplementation((side: 'left' | 'right') => {
       const paneTabs = freshPaneTabs(side)
       if (side === 'left') {
-        paneTabs.tabs[0].path = 'sftp://ada@nas.local:22/srv/data/photos'
-        paneTabs.tabs[0].volumeId = 'sftp-nas-local-22-ada'
+        paneTabs.tabs[0].path = 'sftp://test_user_1@testnas.local:22/srv/data/photos'
+        paneTabs.tabs[0].volumeId = 'sftp-nas-local-22-test_user_1'
       }
       return Promise.resolve(paneTabs)
     })
     commands.resolvePathVolume.mockImplementation((path: string) =>
       Promise.resolve(
         path.startsWith('sftp://')
-          ? { volume: { id: 'sftp-nas-local-22-ada' }, timedOut: false }
+          ? { volume: { id: 'sftp-nas-local-22-test_user_1' }, timedOut: false }
           : { volume: { id: 'root' }, timedOut: false },
       ),
     )
@@ -256,8 +256,8 @@ describe('restoring a tab that stood on a server', () => {
   it('lands on the saved place, keeping both the id and the subpath', async () => {
     const state = await initialize()
     const tab = getActiveTab(state.leftTabMgr)
-    expect(tab.path).toBe('sftp://ada@nas.local:22/srv/data/photos')
-    expect(tab.volumeId).toBe('sftp-nas-local-22-ada')
+    expect(tab.path).toBe('sftp://test_user_1@testnas.local:22/srv/data/photos')
+    expect(tab.volumeId).toBe('sftp-nas-local-22-test_user_1')
   })
 
   it('falls back to the default volume when nothing answers for the path', async () => {

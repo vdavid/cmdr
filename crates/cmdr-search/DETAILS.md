@@ -44,8 +44,8 @@ Each is what a review of this crate checks first.
 
 Desktop behavior moved on purpose in exactly these places, each a red-first commit; the goldens pin the result.
 
-1. **`home_relative_parent` matches home on a `/` boundary**: a bare prefix strip turned `/Users/david/x` into `~id/x`
-   for a home of `/Users/dav`.
+1. **`home_relative_parent` matches home on a `/` boundary**: a bare prefix strip turned `/Users/test_userid/x` into
+   `~_3/x` for a home of `/Users/test_user`.
 2. **Days are local**: "today", every AI time range, the MCP `modifiedAfter` / `modifiedBefore` dates, the AI's date
    chips, and the dialog's own date filter start at the user's local midnight, never UTC's. Every date the app shows a
    person or the model (`summarize_query`, `LocalDays::format_date` and `format_datetime`) reads on that same calendar

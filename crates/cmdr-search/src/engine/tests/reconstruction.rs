@@ -7,7 +7,7 @@ use crate::arena::hash_path_from_index;
 fn path_reconstruction() {
     let index = make_test_index();
     let path = reconstruct_path_from_index(&index, 4); // report.pdf
-    assert_eq!(path, "/Users/alice/report.pdf");
+    assert_eq!(path, "/Users/test_user_4/report.pdf");
 }
 
 #[test]
@@ -85,29 +85,38 @@ fn streamed_hash_matches_whole_path_hash_past_the_inline_depth() {
 
 #[test]
 fn a_parent_under_home_reads_as_tilde() {
-    assert_eq!(home_relative_parent("/Users/dav/x/file.txt", Some("/Users/dav")), "~/x");
-    assert_eq!(home_relative_parent("/Users/dav/file.txt", Some("/Users/dav")), "~");
+    assert_eq!(
+        home_relative_parent("/Users/test_user/x/file.txt", Some("/Users/test_user")),
+        "~/x"
+    );
+    assert_eq!(
+        home_relative_parent("/Users/test_user/file.txt", Some("/Users/test_user")),
+        "~"
+    );
 }
 
 /// A home that is a mere string prefix of the parent isn't the parent's ancestor: with
-/// home `/Users/dav`, `/Users/david/x` belongs to someone else and must stay whole, not
-/// come back as `~id/x`.
+/// home `/Users/test_user`, `/Users/test_userid/x` belongs to someone else and must stay whole, not
+/// come back as `~_3/x`.
 #[test]
 fn a_home_that_only_prefixes_the_name_is_not_an_ancestor() {
     assert_eq!(
-        home_relative_parent("/Users/david/x/file.txt", Some("/Users/dav")),
-        "/Users/david/x"
+        home_relative_parent("/Users/test_userid/x/file.txt", Some("/Users/test_user")),
+        "/Users/test_userid/x"
     );
     assert_eq!(
-        home_relative_parent("/Users/david/file.txt", Some("/Users/dav")),
-        "/Users/david"
+        home_relative_parent("/Users/test_userid/file.txt", Some("/Users/test_user")),
+        "/Users/test_userid"
     );
 }
 
 #[test]
 fn no_home_or_a_root_level_entry_keeps_the_literal_parent() {
-    assert_eq!(home_relative_parent("/Users/dav/x/file.txt", None), "/Users/dav/x");
-    assert_eq!(home_relative_parent("/file.txt", Some("/Users/dav")), "/");
+    assert_eq!(
+        home_relative_parent("/Users/test_user/x/file.txt", None),
+        "/Users/test_user/x"
+    );
+    assert_eq!(home_relative_parent("/file.txt", Some("/Users/test_user")), "/");
 }
 
 // ── Icon ID derivation ───────────────────────────────────────────

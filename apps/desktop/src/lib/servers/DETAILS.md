@@ -61,16 +61,16 @@ go-to-path, MCP, the trash), and the next site added would forget again. The sch
 it is the convention `mtp://` and `adb://` already carry.
 
 **The folding has to match Rust's exactly.** The host is lowercased (DNS is case-insensitive), the account is NOT (a
-POSIX account may be case-sensitive, and `Ada` and `ada` can be two people), and the port is literal. A path folded
-differently misses the volume its own id names, which is the same tuple `sftp_volume_id` hashes.
+POSIX account may be case-sensitive, and `Test_user_1` and `test_user_1` can be two people), and the port is literal. A
+path folded differently misses the volume its own id names, which is the same tuple `sftp_volume_id` hashes.
 
 **The split has to match Rust's too.** `cmdr_fs::volume::ids::server_of_path` reads the account as everything before the
 authority's LAST `@` and the port as everything after its last `:`, and `SERVER_PATH_RE` splits at the same two places.
-An email login (`webdav://ada@example.com@cloud.example.com:443`, common on Nextcloud and Fastmail) and an IPv6 literal
-host (`sftp://ada@::1:22`) both depend on it. ❌ Don't stop at the first `@`: such an account then reads as no place at
-all, so a pasted path to it opens the add sheet, an SFTP sign-in gets no secret writer, and the pane's refusal names the
-place instead of its host. The account can also hold a typed `user:password`, which is why the log lines on this path
-name the host and ❌ never the path.
+An email login (`webdav://test_user_1@example.com@cloud.example.com:443`, common on Nextcloud and Fastmail) and an IPv6
+literal host (`sftp://test_user_1@::1:22`) both depend on it. ❌ Don't stop at the first `@`: such an account then reads
+as no place at all, so a pasted path to it opens the add sheet, an SFTP sign-in gets no secret writer, and the pane's
+refusal names the place instead of its host. The account can also hold a typed `user:password`, which is why the log
+lines on this path name the host and ❌ never the path.
 
 **Matching is by whole components, never a string prefix.** `/srv/data-1` is a legal sibling of `/srv/data`, and a
 string-prefix containment test would strip the root off it and ask the server for `-1/photos`.
@@ -225,23 +225,23 @@ A typed secret is the account's either way (`saveS3Credentials`).
 accounts on one server see different files. An SFTP, WebDAV, or SMB address stays editable (`addressEditable`, with
 `servers.sheet.addressMoveHelp` under it, SMB's own `servers.sheet.smbAddressMoveHelp`), as does an "Other
 S3-compatible" account's endpoint (§ "An S3 edit is the ACCOUNT's or a PLACE's"), because a server that moved (a NAS's
-new IP, `nas.local` → its Tailscale name) must keep its favorites, tabs, pin, and password. ❗ The sheet never decides
-whether an edit is a move: Save passes the id it opened on (`updateSavedServer(target, editing)`), and the backend saves
-in place or moves the server (`apps/desktop/src-tauri/src/server_move.rs`), refusing an address another saved server
-holds (`address_taken`, under the address, naming that server). A save that moved it leaves the place under a NEW id,
-which the sheet reads back (`savedServerId`) for the Remember flip and any Save again (`savedAs`). Typing an address in
-edit mode never steers the username or the root, as it does in add mode. An SMB host's Save sends what the address field
-holds (`updateSavedSmbHost(id, name, username, address)`, through `smbAddressFrom`), and the backend moves the host when
-it names another server: its shares and password move at once, and each share's favorites and tabs follow at its first
-mount there (`docs/notes/server-address-move.md` § "SMB: a pending move"). A share still mounted from the old address
-refuses it (`share_mounted`, under the address, naming the share to eject), and the refusal offers **"Eject and save"**
-(`offersEjectAndSave`, a mini button with a help line, like Add anyway): `ejectAndUpdateSavedSmbHost` with a fresh
-`newServerAttemptId()` ejects every share still mounted from the old address, then saves. While it runs the button reads
-"Ejecting…" with a spinner, blocked with `ariaDisabled` (❌ not `disabled`, which would drop focus) inside a polite live
-region, and the primary button keeps its own label. The sheet's Cancel, close, and Escape all go through `cancel()`,
-which calls a running run off (`cancelServerConnect(ejectAttempt)`), so a closed sheet never saves the edit. A refused
-eject reads as `share_eject_refused` and offers the button again. ❗ This is `ServerFormFields`' own rule and says
-nothing about sign-in mode, where username editability is the SHAPE VARIANT's property (§ "The renderer table").
+new IP, `testnas.local` → its Tailscale name) must keep its favorites, tabs, pin, and password. ❗ The sheet never
+decides whether an edit is a move: Save passes the id it opened on (`updateSavedServer(target, editing)`), and the
+backend saves in place or moves the server (`apps/desktop/src-tauri/src/server_move.rs`), refusing an address another
+saved server holds (`address_taken`, under the address, naming that server). A save that moved it leaves the place under
+a NEW id, which the sheet reads back (`savedServerId`) for the Remember flip and any Save again (`savedAs`). Typing an
+address in edit mode never steers the username or the root, as it does in add mode. An SMB host's Save sends what the
+address field holds (`updateSavedSmbHost(id, name, username, address)`, through `smbAddressFrom`), and the backend moves
+the host when it names another server: its shares and password move at once, and each share's favorites and tabs follow
+at its first mount there (`docs/notes/server-address-move.md` § "SMB: a pending move"). A share still mounted from the
+old address refuses it (`share_mounted`, under the address, naming the share to eject), and the refusal offers **"Eject
+and save"** (`offersEjectAndSave`, a mini button with a help line, like Add anyway): `ejectAndUpdateSavedSmbHost` with a
+fresh `newServerAttemptId()` ejects every share still mounted from the old address, then saves. While it runs the button
+reads "Ejecting…" with a spinner, blocked with `ariaDisabled` (❌ not `disabled`, which would drop focus) inside a
+polite live region, and the primary button keeps its own label. The sheet's Cancel, close, and Escape all go through
+`cancel()`, which calls a running run off (`cancelServerConnect(ejectAttempt)`), so a closed sheet never saves the edit.
+A refused eject reads as `share_eject_refused` and offers the button again. ❗ This is `ServerFormFields`' own rule and
+says nothing about sign-in mode, where username editability is the SHAPE VARIANT's property (§ "The renderer table").
 
 **Edit mode opens on the first field it lets a person change** (`focusFirstEditableField`), which for an SFTP, WebDAV,
 or SMB server and an "Other S3-compatible" account is the address. Decision (David, 2026-10-11): keep it there, since
@@ -430,12 +430,12 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
 **Whose name a refusal says.** In sign-in mode the sentence names the account the refused ROUND sent
 (`SignInSheet.svelte`'s `roundUsername`), and only the refusal the sheet opened with names `endpoint.username`. Where
 the shape lets the username be edited, the account the sheet opened with may not be the one that was turned away, and
-"ada doesn't have access here" after `bob` was refused blames an account nobody tried. Add mode has the same rule for
-the host: an edit retires the refusal, since its sentence reads the live form.
+"test_user_1 doesn't have access here" after `test_user_5` was refused blames an account nobody tried. Add mode has the
+same rule for the host: an edit retires the refusal, since its sentence reads the live form.
 
 **A pane names a saved place by the name the user gave it.** `place-connect.svelte.ts` words its refusal through
-`wordPaneRefusal`, which says `unreachable` as `servers.paneState.unreachable` ("Cmdr couldn't reach Naspolya."),
-falling back to the host when the name is empty. Every other kind reads as in the sheet. The sheet and the Add form keep
+`wordPaneRefusal`, which says `unreachable` as `servers.paneState.unreachable` ("Cmdr couldn't reach Testnas."), falling
+back to the host when the name is empty. Every other kind reads as in the sheet. The sheet and the Add form keep
 `servers.refusal.unreachable` with the host, since there the address is what the person typed and can fix.
 
 Keys live in `#lib/intl/messages/en/servers.json` under `servers.refusal.*`, reached through a `Record` in
@@ -458,9 +458,9 @@ showed no word at all.
 The form reads top to bottom: the SMB / SFTP / WebDAV / S3 / NFS toggle, the address (S3: § "S3 in add mode"), the name,
 then the protocol's own fields and Advanced. ❗ **Only the person moves the toggle, and it alone decides what gets
 dialed** (`serverTargetFrom` for SFTP, WebDAV, S3, and NFS, `smbAddressFrom` for SMB's hand-off). Typing into the
-address used to flip it: `sven@192.168.0.153`, typed for an SMB NAS, read as SFTP and dialed SSH on port 22 without
-anyone clicking SFTP, and the host key the Mac already trusted turned that into a quiet SSH session the user objected to
-(cmdr-reports#8).
+address used to flip it: `test_user_6@192.168.50.20`, typed for an SMB NAS, read as SFTP and dialed SSH on port 22
+without anyone clicking SFTP, and the host key the Mac already trusted turned that into a quiet SSH session the user
+objected to (cmdr-reports#8).
 
 What the address says still earns a sentence: `addressLooksLike` answers which protocol it looks like when that isn't
 the selected one, and the sheet shows it under the field (`servers.sheet.addressLooksLike*`, `role="status"`). Two
@@ -498,11 +498,11 @@ also drops the frontend's cached share lists for that machine (`forgetShareLists
 the add may be the guest list the account now refuses. No password here: the listing or the mount asks.
 
 ❗ **SMB's hand-off spells a scheme-less address as `smb://…`.** `connect_to_server`'s bare-host reader refuses an `@`
-or a `/`, so `sven@192.168.0.153` has to travel as the SMB URL it means; its URL reader drops the account. An address
-naming another scheme keeps only its host.
+or a `/`, so `test_user_6@192.168.50.20` has to travel as the SMB URL it means; its URL reader drops the account. An
+address naming another scheme keeps only its host.
 
 ❗ **The name sits under the address, for every protocol.** It isn't an advanced setting. Its placeholder says what an
-empty one falls back to ("Leave empty to use 192.168.0.153"), through `server-form.ts::nameFallbackOf`, which mirrors
+empty one falls back to ("Leave empty to use 192.168.50.20"), through `server-form.ts::nameFallbackOf`, which mirrors
 the backend's stand-in labels: an SMB host's address (plus a port that isn't 445), an account's `username@host`. An SMB
 address already saved under a name someone gave it reads as that name ("Leave empty to use My NAS"), since Go to path
 and ⌘K open this sheet on any `smb://`; the sheet fetches the saved list on open for it. The account it was saved with
@@ -588,7 +588,7 @@ asks for the export and the identity to act as instead (`NfsPlaceFields.svelte`,
 - **The export**: a `Combobox` the server's own list fills once the address sits still (500 ms), through
   `nfs-discovery.svelte.ts` (`list_nfs_exports`). ❗ Neither ask is a gate: a refused or unreachable listing says so in
   a line and leaves the field typeable, since a typed export may still mount. ❗ Each answer is checked against the
-  latest ask and dropped when the typing moved past it, so a list for `nas` never lands on `nas.local`.
+  latest ask and dropped when the typing moved past it, so a list for `nas` never lands on `testnas.local`.
 - ❗ **The export field may hold more than the export.** A typed `/share/Public/photos` can't say where `/share/Public`
   ends (QNAP nests `/share` and `/share/Public`), so it goes whole, and the backend splits it against the server's
   export list, the rest becoming the start folder (`crates/cmdr-nfs/DETAILS.md` § "Connecting").
@@ -624,10 +624,10 @@ this side:
   username beside the secret (`connectSavedPlace`'s `username`), and the row remembers the new account on success.
 - **`remembered` starts on and the Keychain is ❌ never probed** (`open-sign-in.ts`), SMB's rule everywhere; the backend
   writes the password only once the mount went through, so there is no secret writer here.
-- **A share's next mount may land elsewhere** (`/Volumes/naspi-1`), so `place-connect` asks `placeRootOf` for its
+- **A share's next mount may land elsewhere** (`/Volumes/testshare-1`), so `place-connect` asks `placeRootOf` for its
   landing after a connect and the pane enters the share there; after that it follows the live row's mount path (the
   backend's `remember_mount` rewrites the saved row's path on every Cmdr mount).
-- **The header names the share on its host** (`smb://192.168.0.153/Container`), since that is the place.
+- **The header names the share on its host** (`smb://192.168.50.20/Container`), since that is the place.
 
 ## The device dial, beside the place dial
 

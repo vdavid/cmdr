@@ -518,7 +518,7 @@ async fn a_trash_group_approved_as_a_permanent_delete_on_a_drive_with_no_trash_d
     use crate::file_system::volume::manager::test_support::TestVolumeRegistration;
     use crate::file_system::volume::{InMemoryVolume, Volume};
     let volume_id = "bridge-no-trash-delete-test";
-    let volume = Arc::new(InMemoryVolume::new("naspi"));
+    let volume = Arc::new(InMemoryVolume::new("testshare"));
     volume
         .create_directory(std::path::Path::new("/public"))
         .await
@@ -857,7 +857,7 @@ async fn an_approved_named_move_lands_each_file_under_its_name() {
                 })
                 .expect("an ordinary folder"),
                 sources: vec![
-                    transfer("Invoice-X.pdf", Some("2026-09-27 OpenAI invoice Rymd.pdf")),
+                    transfer("Invoice-X.pdf", Some("2026-09-27 OpenAI invoice Testco.pdf")),
                     transfer("receipt.pdf", None),
                 ],
             },
@@ -874,7 +874,7 @@ async fn an_approved_named_move_lands_each_file_under_its_name() {
     let outcome = approve(&conn, reporting, group_id).await;
 
     assert!(matches!(outcome, super::ApprovalOutcome::Started(_)), "{outcome:?}");
-    let named = paid.join("2026-09-27 OpenAI invoice Rymd.pdf");
+    let named = paid.join("2026-09-27 OpenAI invoice Testco.pdf");
     let kept = paid.join("receipt.pdf");
     crate::test_support::wait_until_async(std::time::Duration::from_secs(5), "both files land", || {
         named.exists() && kept.exists()

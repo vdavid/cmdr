@@ -487,15 +487,15 @@ mod tests {
     #[test]
     fn terminal_opens_the_folder_as_a_document() {
         assert_eq!(
-            launch_argv(&choice(TERMINAL_APP_BUNDLE_ID), Path::new("/Users/dave/code")),
-            vec!["open", "-b", "com.apple.Terminal", "/Users/dave/code"]
+            launch_argv(&choice(TERMINAL_APP_BUNDLE_ID), Path::new("/Users/test_user_10/code")),
+            vec!["open", "-b", "com.apple.Terminal", "/Users/test_user_10/code"]
         );
     }
 
     #[test]
     fn alacritty_takes_the_folder_as_a_flag_on_a_new_instance() {
         assert_eq!(
-            launch_argv(&choice("org.alacritty"), Path::new("/Users/dave/code")),
+            launch_argv(&choice("org.alacritty"), Path::new("/Users/test_user_10/code")),
             vec![
                 "open",
                 "-n",
@@ -503,7 +503,7 @@ mod tests {
                 "org.alacritty",
                 "--args",
                 "--working-directory",
-                "/Users/dave/code"
+                "/Users/test_user_10/code"
             ]
         );
     }
@@ -511,8 +511,8 @@ mod tests {
     #[test]
     fn warp_takes_its_own_uri() {
         assert_eq!(
-            launch_argv(&choice("dev.warp.Warp-Stable"), Path::new("/Users/dave/code")),
-            vec!["open", "warp://action/new_window?path=/Users/dave/code"]
+            launch_argv(&choice("dev.warp.Warp-Stable"), Path::new("/Users/test_user_10/code")),
+            vec!["open", "warp://action/new_window?path=/Users/test_user_10/code"]
         );
     }
 
@@ -520,8 +520,8 @@ mod tests {
     fn a_custom_app_is_launched_by_path() {
         let choice = parse_choice("/Applications/Terminus.app").expect("an absolute path is a custom pick");
         assert_eq!(
-            launch_argv(&choice, Path::new("/Users/dave/code")),
-            vec!["open", "-a", "/Applications/Terminus.app", "/Users/dave/code"]
+            launch_argv(&choice, Path::new("/Users/test_user_10/code")),
+            vec!["open", "-a", "/Applications/Terminus.app", "/Users/test_user_10/code"]
         );
     }
 
@@ -529,7 +529,7 @@ mod tests {
     /// everywhere except Warp's URI, where they're percent-encoded.
     #[test]
     fn awkward_folder_names_travel_literally_as_arguments() {
-        let dir = Path::new("/Users/dave/Ünnepi \"terv\" & co");
+        let dir = Path::new("/Users/test_user_10/Ünnepi \"terv\" & co");
         for terminal in KNOWN_TERMINALS {
             if terminal.recipe == LaunchRecipe::WarpUri {
                 continue;
@@ -537,7 +537,7 @@ mod tests {
             let argv = launch_argv(&TerminalChoice::Known(terminal), dir);
             assert_eq!(
                 argv.last().map(String::as_str),
-                Some("/Users/dave/Ünnepi \"terv\" & co"),
+                Some("/Users/test_user_10/Ünnepi \"terv\" & co"),
                 "{} should take the folder verbatim",
                 terminal.display_name
             );
@@ -548,13 +548,13 @@ mod tests {
     fn warp_percent_encodes_spaces_quotes_ampersands_and_non_ascii() {
         let argv = launch_argv(
             &choice("dev.warp.Warp-Stable"),
-            Path::new("/Users/dave/Ünnepi \"terv\" & co"),
+            Path::new("/Users/test_user_10/Ünnepi \"terv\" & co"),
         );
         assert_eq!(
             argv,
             vec![
                 "open",
-                "warp://action/new_window?path=/Users/dave/%C3%9Cnnepi%20%22terv%22%20%26%20co"
+                "warp://action/new_window?path=/Users/test_user_10/%C3%9Cnnepi%20%22terv%22%20%26%20co"
             ]
         );
     }

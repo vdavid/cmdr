@@ -35,7 +35,9 @@ describe('escapeMarkdown', () => {
   })
 
   it('encodes underscores in a path but leaves dots and slashes', () => {
-    expect(escapeMarkdown('/Volumes/naspi/_todo_pics/file.jpg')).toBe('/Volumes/naspi/&#95;todo&#95;pics/file.jpg')
+    expect(escapeMarkdown('/Volumes/testshare/test_photos/file.jpg')).toBe(
+      '/Volumes/testshare/test&#95;photos/file.jpg',
+    )
   })
 
   it('encodes < and > and tilde', () => {

@@ -95,7 +95,7 @@ async fn a_mount_that_doesnt_answer_in_time_answers_mount_not_responding() {
 async fn the_sign_in_door_answers_volume_gone_too() {
     let answer = connect_directly_with_credentials(
         NEVER_REGISTERED,
-        Some("david".to_string()),
+        Some("test_user_3".to_string()),
         Some("hunter2".to_string()),
         false,
     )
@@ -153,7 +153,7 @@ fn the_reason_crosses_ipc_as_a_tag() {
         share: "data".to_string(),
         port: 445,
         display_name: "observermch".to_string(),
-        username_hint: Some("ada".to_string()),
+        username_hint: Some("test_user_1".to_string()),
         reason: CredentialsNeededReason::AccountNotPermitted,
     };
     let json = serde_json::to_value(&answer).expect("an UpgradeResult serializes");

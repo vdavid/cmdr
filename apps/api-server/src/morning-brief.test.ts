@@ -72,7 +72,7 @@ function testEnv(overrides: Partial<Bindings> = {}): Bindings {
   return {
     TELEMETRY_DB: db.d1,
     ERROR_REPORTS_BUCKET: fakeBucket(),
-    CRASH_NOTIFICATION_EMAIL: 'david@example.com',
+    CRASH_NOTIFICATION_EMAIL: 'test_user_3@example.com',
     SMTP2GO_API_KEY: 'test-smtp2go-key',
     GITHUB_ISSUES_TOKEN: 'ghp_test',
     GITHUB_ISSUES_REPO: 'getcmdr/cmdr-reports',
@@ -130,7 +130,7 @@ describe('handleMorningBrief', () => {
     await handleMorningBrief(testEnv(), TICK)
 
     const { subject, html, to } = lastEmail()
-    expect(to).toBe('david@example.com')
+    expect(to).toBe('test_user_3@example.com')
     expect(subject).toBe('Cmdr morning: 2 waiting on a reply, 1 unprocessed (2026-11-10)')
     expect(html).toContain('Zip copy loses the file')
     expect(html).toContain('https://github.com/getcmdr/cmdr-reports/issues/56')

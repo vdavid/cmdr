@@ -110,7 +110,8 @@ fn what_a_backend_reports_reaches_the_installed_seam() {
     let events = Arc::new(RecordingVolumeEvents::new());
     let indexing = Arc::new(RecordingIndexNotifier::new());
     let analytics = Arc::new(RecordingAnalytics::new());
-    let credentials = Arc::new(InMemoryCredentials::new().with_entry("nas.local", Some("share"), "dori", "hunter2"));
+    let credentials =
+        Arc::new(InMemoryCredentials::new().with_entry("testnas.local", Some("share"), "test_user_7", "hunter2"));
 
     let host = VolumeHost::builder()
         .listings(listings.clone())
@@ -156,10 +157,10 @@ fn what_a_backend_reports_reaches_the_installed_seam() {
     // to answer the narrow entry without also inventing a wide one.
     let found = host
         .credentials()
-        .credentials("nas.local", Some("share"))
+        .credentials("testnas.local", Some("share"))
         .expect("the pre-seeded entry");
-    assert_eq!(found.username, "dori");
-    assert!(host.credentials().credentials("nas.local", None).is_none());
+    assert_eq!(found.username, "test_user_7");
+    assert!(host.credentials().credentials("testnas.local", None).is_none());
 }
 
 /// The dispatch rule, and the instrument that enforces it: a seam call belongs

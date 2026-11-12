@@ -3,18 +3,18 @@ import { buildFavoriteTooltip } from './favorite-tooltip'
 
 describe('buildFavoriteTooltip', () => {
   it('leads with the path so a renamed favorite still reveals where it points', () => {
-    const tip = buildFavoriteTooltip('/Users/dave/Documents', true)
-    expect(tip.startsWith('/Users/dave/Documents\n')).toBe(true)
+    const tip = buildFavoriteTooltip('/Users/test_user_10/Documents', true)
+    expect(tip.startsWith('/Users/test_user_10/Documents\n')).toBe(true)
   })
 
   it('uses the Option symbol and arrow glyphs on macOS (no "Alt")', () => {
-    const tip = buildFavoriteTooltip('/Users/dave/Documents', true)
+    const tip = buildFavoriteTooltip('/Users/test_user_10/Documents', true)
     expect(tip).toContain('⌥↑ / ⌥↓')
     expect(tip).not.toContain('Alt')
   })
 
   it('spells out "Alt" on non-macOS platforms', () => {
-    const tip = buildFavoriteTooltip('/home/dave/docs', false)
+    const tip = buildFavoriteTooltip('/home/test_user_10/docs', false)
     expect(tip).toContain('Alt+↑ / Alt+↓')
     expect(tip).not.toContain('⌥')
   })
@@ -26,10 +26,14 @@ describe('buildFavoriteTooltip', () => {
   })
 
   it('says why a favorite is dimmed on the line right under its path', () => {
-    const tip = buildFavoriteTooltip('/Volumes/naspi/docs', true, 'Not connected. Opening it connects to naspi.')
+    const tip = buildFavoriteTooltip(
+      '/Volumes/testshare/docs',
+      true,
+      'Not connected. Opening it connects to testshare.',
+    )
     const [path, status, hints] = tip.split('\n')
-    expect(path).toBe('/Volumes/naspi/docs')
-    expect(status).toBe('Not connected. Opening it connects to naspi.')
+    expect(path).toBe('/Volumes/testshare/docs')
+    expect(status).toBe('Not connected. Opening it connects to testshare.')
     expect(hints).toContain('Right-click to rename or remove.')
   })
 

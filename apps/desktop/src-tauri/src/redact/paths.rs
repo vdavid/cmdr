@@ -359,7 +359,7 @@ pub(super) fn has_extension_like_suffix(seg: &str) -> bool {
 }
 
 /// Longer extensions common enough to keep; anything else over five chars is more likely the
-/// tail of a name (`Anna.Kovacs`) than a file type.
+/// tail of a name (`Test.Person`) than a file type.
 const KNOWN_LONG_EXTENSIONS: &[&str] = &[
     "sqlite",
     "sqlite3",
@@ -373,7 +373,7 @@ const KNOWN_LONG_EXTENSIONS: &[&str] = &[
 /// The segment's extension, when it's conservatively one: after a dot that isn't the first char
 /// (no `.ssh`), with at least one letter (no `minutes.2026`), and either lowercase alnum up to
 /// five chars, uppercase alnum up to four (camera-style `JPG`, `HEIC`), or a known long one. A
-/// dot inside a name (`Anna.Kovacs`) keeps nothing, so the name's tail can't ship as an
+/// dot inside a name (`Test.Person`) keeps nothing, so the name's tail can't ship as an
 /// "extension".
 pub(super) fn conservative_extension(seg: &str) -> Option<&str> {
     let dot = seg.rfind('.').filter(|&dot| dot > 0)?;

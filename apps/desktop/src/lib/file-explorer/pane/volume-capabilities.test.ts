@@ -293,7 +293,7 @@ describe('volumeKindOf — the unified superset classifier', () => {
     expect(volumeKindOf('root', 'apfs', 'main_volume')).toBe('local')
     expect(volumeKindOf('attached-1', 'exfat', 'attached_volume')).toBe('local')
     expect(volumeKindOf('icloud', 'apfs', 'cloud_drive')).toBe('local')
-    expect(volumeKindOf('volumesnaspi', 'smbfs', 'network')).toBe('smb')
+    expect(volumeKindOf('volumestestshare', 'smbfs', 'network')).toBe('smb')
     expect(volumeKindOf('some-id', 'smbfs', undefined)).toBe('smb')
     expect(volumeKindOf('mtp-336592896:65537', undefined, 'mobile_device')).toBe('mtp')
     expect(volumeKindOf('mtp-336592896:65537', undefined, undefined)).toBe('mtp')
@@ -304,14 +304,14 @@ describe('volumeKindOf — the unified superset classifier', () => {
     // A server row is `category: 'network'`, which used to mean SMB and would give
     // an SFTP pane the SMB capability row and an Open-terminal button that fires
     // with an `sftp://` path. `fsType` is what tells the three apart.
-    expect(volumeKindOf('sftp-nas-22-ada', 'sftp', 'network')).toBe('sftp')
-    expect(volumeKindOf('webdav-cloud-443-ada', 'webdav', 'network')).toBe('webdav')
+    expect(volumeKindOf('sftp-nas-22-test_user_1', 'sftp', 'network')).toBe('sftp')
+    expect(volumeKindOf('webdav-cloud-443-test_user_1', 'webdav', 'network')).toBe('webdav')
     expect(volumeKindOf('s3-127-0-0-1-14480-akia-photos-1a2b', 's3', 'network')).toBe('s3')
-    expect(volumeKindOf('volumesnaspi', 'smbfs', 'network')).toBe('smb')
+    expect(volumeKindOf('volumestestshare', 'smbfs', 'network')).toBe('smb')
   })
 
   it('reads an NFS place by its id, so an NFS share macOS mounted itself stays an OS mount', () => {
-    expect(volumeKindOf('nfs-public-naspolya-1a2b', 'nfs', 'network')).toBe('nfs')
+    expect(volumeKindOf('nfs-public-testnas-1a2b', 'nfs', 'network')).toBe('nfs')
     // `fsType: 'nfs'` alone is the kernel's own mount at `/Volumes/…`, ❌ not a Cmdr session.
     expect(volumeKindOf('path-volumes-public-1a2b', 'nfs', 'network')).toBe('smb')
   })
@@ -340,8 +340,8 @@ describe('volumeKindOf — the unified superset classifier', () => {
       ['mtp-1:1', undefined, 'mobile_device'],
       ['adb-pixel-7-a1b2c3d', 'adb', 'mobile_device'],
       ['x', 'smbfs', undefined],
-      ['sftp-nas-22-ada', 'sftp', 'network'],
-      ['webdav-cloud-443-ada', 'webdav', 'network'],
+      ['sftp-nas-22-test_user_1', 'sftp', 'network'],
+      ['webdav-cloud-443-test_user_1', 'webdav', 'network'],
       ['s3-127-0-0-1-14480-akia-1a2b', 's3', 'network'],
       ['fav', undefined, 'favorite'],
       ['weird', undefined, undefined],
@@ -354,8 +354,8 @@ describe('volumeKindOf — the unified superset classifier', () => {
 
 describe('capabilitiesFor — the store-reading convenience', () => {
   it('resolves fsType/category from the volume store for a real id', () => {
-    volumes.list = [vol({ id: 'volumesnaspi', fsType: 'smbfs', category: 'network' })]
-    expect(capabilitiesFor('volumesnaspi').kind).toBe('smb')
+    volumes.list = [vol({ id: 'volumestestshare', fsType: 'smbfs', category: 'network' })]
+    expect(capabilitiesFor('volumestestshare').kind).toBe('smb')
   })
 
   it('short-circuits the two virtual ids WITHOUT a store entry (lookup miss)', () => {
@@ -388,19 +388,19 @@ describe('paneFolderIsPolledForDeletion — which panes cover the FSEvents blind
     { name: 'local', volume: vol({ id: 'root', fsType: 'apfs' }), path: '/Users/me/Documents', polled: true },
     {
       name: 'smb',
-      volume: vol({ id: 'volumesnaspi', fsType: 'smbfs', category: 'network' }),
-      path: '/Volumes/naspi/photos',
+      volume: vol({ id: 'volumestestshare', fsType: 'smbfs', category: 'network' }),
+      path: '/Volumes/testshare/photos',
       polled: true,
     },
     {
       name: 'sftp',
-      volume: vol({ id: 'sftp-nas-22-ada', fsType: 'sftp', category: 'network' }),
-      path: 'sftp://nas/home/ada',
+      volume: vol({ id: 'sftp-nas-22-test_user_1', fsType: 'sftp', category: 'network' }),
+      path: 'sftp://nas/home/test_user_1',
       polled: false,
     },
     {
       name: 'webdav',
-      volume: vol({ id: 'webdav-cloud-443-ada', fsType: 'webdav', category: 'network' }),
+      volume: vol({ id: 'webdav-cloud-443-test_user_1', fsType: 'webdav', category: 'network' }),
       path: 'webdav://cloud/files',
       polled: false,
     },
@@ -473,7 +473,7 @@ describe('paneFolderIsPolledForDeletion — which panes cover the FSEvents blind
     // boot disk would answer "gone" for a path it can't see.
     volumes.list = []
     expect(paneFolderIsPolledForDeletion('adb-pixel-7-a1b2c3d', 'adb://R58M1/sdcard/DCIM')).toBe(false)
-    expect(paneFolderIsPolledForDeletion('sftp-nas-22-ada', 'sftp://nas/home/ada')).toBe(false)
+    expect(paneFolderIsPolledForDeletion('sftp-nas-22-test_user_1', 'sftp://nas/home/test_user_1')).toBe(false)
   })
 })
 
@@ -650,7 +650,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
     // upgraded to smb2. Capability comes from the backend; kind never does.
     volumes.list = [
       vol({
-        id: 'volumesnaspi',
+        id: 'volumestestshare',
         fsType: 'smbfs',
         category: 'network',
         capabilities: {
@@ -664,7 +664,7 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
         },
       }),
     ]
-    expect(capabilitiesFor('volumesnaspi').kind).toBe('smb')
+    expect(capabilitiesFor('volumestestshare').kind).toBe('smb')
   })
 })
 
@@ -709,8 +709,8 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
   })
 
   it('defers to the id-based kind when the path is undefined', () => {
-    volumes.list = [vol({ id: 'volumesnaspi', fsType: 'smbfs', category: 'network' })]
-    expect(capabilitiesForPane('volumesnaspi', undefined).kind).toBe('smb')
+    volumes.list = [vol({ id: 'volumestestshare', fsType: 'smbfs', category: 'network' })]
+    expect(capabilitiesForPane('volumestestshare', undefined).kind).toBe('smb')
   })
 
   it('returns the READ-ONLY archive row for a tar or 7z path (browse + extract only)', () => {
@@ -847,7 +847,7 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
 
   it("returns the read-only restic row at and below a repo's snapshot view", () => {
     volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
-    const repo = '/Volumes/naspi/backups/m3'
+    const repo = '/Volumes/testshare/backups/m3'
     for (const path of [
       `${repo}/Browse snapshots`,
       `${repo}/Browse snapshots/latest`,

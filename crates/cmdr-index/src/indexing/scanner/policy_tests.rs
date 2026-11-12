@@ -281,7 +281,7 @@ fn mount_inside_the_tree(tree: &Tree, relative: &str) -> crate::indexing::host::
     provider
         .mount("/", MountIdentity::from_raw(1))
         .mount(tree.path(relative), MountIdentity::from_raw(2))
-        .set_mount_kind(tree.path(relative), Some("naspi:/share"), Some("nfs4"));
+        .set_mount_kind(tree.path(relative), Some("testshare:/share"), Some("nfs4"));
     volumes::install_for_test(provider)
 }
 

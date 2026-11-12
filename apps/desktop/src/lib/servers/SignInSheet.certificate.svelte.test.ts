@@ -28,10 +28,10 @@ afterEach(() => {
 
 const endpoint = {
   protocol: 'webdav' as const,
-  displayName: 'Naspolya',
-  address: 'https://nas.local:5006/',
-  host: 'nas.local',
-  username: 'ada',
+  displayName: 'Testnas',
+  address: 'https://testnas.local:5006/',
+  host: 'testnas.local',
+  username: 'test_user_1',
 }
 
 /** Drains the sheet's `onMount` seeding and any attempt in flight. */
@@ -60,15 +60,15 @@ function buttonSaying(text: string): HTMLButtonElement {
 const certificate = (fingerprint: string, kind: 'unknown' | 'changed') =>
   ({
     subject: 'certificate',
-    prompt: { host: 'nas.local', port: 5006, fingerprint, kind },
+    prompt: { host: 'testnas.local', port: 5006, fingerprint, kind },
   }) as const
 
 describe('SignInSheet: the certificate step', () => {
   // The title says who doesn't know the certificate, in each OS's words.
   it.each([
-    ['macos', 'macOS doesn’t know the certificate for nas.local'],
-    ['windows', 'Windows doesn’t know the certificate for nas.local'],
-    ['linux', 'The certificate for nas.local is new to this computer'],
+    ['macos', 'macOS doesn’t know the certificate for testnas.local'],
+    ['windows', 'Windows doesn’t know the certificate for testnas.local'],
+    ['linux', 'The certificate for testnas.local is new to this computer'],
   ] as const)('pins exactly the certificate on screen, then dials again (%s)', async (platform, title) => {
     onTestFinished(withPlatform(platform))
     const { approveWebdavCertificate } = await import('#lib/tauri-commands/index.js')
@@ -92,7 +92,12 @@ describe('SignInSheet: the certificate step', () => {
     buttonSaying('Trust and connect').click()
     await flush()
 
-    expect(approve).toHaveBeenCalledWith({ host: 'nas.local', port: 5006, fingerprint: 'AB:CD:EF', kind: 'unknown' })
+    expect(approve).toHaveBeenCalledWith({
+      host: 'testnas.local',
+      port: 5006,
+      fingerprint: 'AB:CD:EF',
+      kind: 'unknown',
+    })
     expect(attempt).toHaveBeenCalledTimes(1)
   })
 
@@ -100,7 +105,7 @@ describe('SignInSheet: the certificate step', () => {
     const attempt = (): Promise<SignInAttemptOutcome> =>
       Promise.resolve({
         kind: 'needs_certificate',
-        prompt: { host: 'nas.local', port: 5006, fingerprint: '12:34:56', kind: 'changed' },
+        prompt: { host: 'testnas.local', port: 5006, fingerprint: '12:34:56', kind: 'changed' },
       })
 
     await renderSheet({
@@ -116,7 +121,7 @@ describe('SignInSheet: the certificate step', () => {
 
     // ❗ A changed certificate never wears first contact's plain primary button:
     // its trust button sits behind the disclosure.
-    expect(document.body.textContent).toContain('The certificate for nas.local changed')
+    expect(document.body.textContent).toContain('The certificate for testnas.local changed')
     expect(document.body.textContent).toContain('12:34:56')
     expect(document.body.textContent).not.toContain('Trust and connect')
     expect(document.body.textContent).toContain('I’ve checked the certificate')

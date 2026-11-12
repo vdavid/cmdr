@@ -173,7 +173,7 @@ describe('an update found on an install that can’t write its own bundle', () =
   it('reports which phase a failed install stopped at, without carrying its message', async () => {
     await notifyOnboardingComplete()
     checkForUpdateMock.mockResolvedValueOnce(anUpdate)
-    installUpdateMock.mockRejectedValueOnce(new Error('/Users/dave/Applications/Cmdr.app is not writable'))
+    installUpdateMock.mockRejectedValueOnce(new Error('/Users/test_user_10/Applications/Cmdr.app is not writable'))
 
     await checkForUpdates('settings')
 

@@ -62,13 +62,13 @@ export const extensionChangeFixtures: Record<string, ExtensionChangeFixture | un
 export const renameConflictFixtures: Record<string, RenameConflictFixture | undefined> = {
   'newer-and-larger': {
     renamedFile: {
-      name: '2026-07-14_stockholm-archipelago-sunrise-session_DSC09241_final.arw',
+      name: '2026-07-14_test-harbor-sunrise-photo-session_DSC09241_final.arw',
       size: 118_293_504,
       modifiedAt: hoursAgo(3),
       isDirectory: false,
     },
     existingFile: {
-      name: '2026-07-14_stockholm-archipelago-sunrise-session_DSC09241_final.arw',
+      name: '2026-07-14_test-harbor-sunrise-photo-session_DSC09241_final.arw',
       size: 41_238_912,
       modifiedAt: daysAgo(214),
       isDirectory: false,

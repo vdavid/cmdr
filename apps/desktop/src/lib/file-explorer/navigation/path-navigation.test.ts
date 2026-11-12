@@ -27,8 +27,8 @@ const mockPathExists = vi.mocked(pathExists)
 const mockGetLastUsedPath = vi.mocked(getLastUsedPathForVolume)
 
 /** A server place rooted at `/srv/data`, with its start folder one level in. */
-const SERVER_ROOT = 'sftp://ada@nas.local:22/srv/data'
-const SERVER_LANDING = 'sftp://ada@nas.local:22/srv/data/photos'
+const SERVER_ROOT = 'sftp://test_user_1@testnas.local:22/srv/data'
+const SERVER_LANDING = 'sftp://test_user_1@testnas.local:22/srv/data/photos'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -181,15 +181,15 @@ describe('determineNavigationPath', () => {
 
   it('ignores last used path that is foreign to the target volume', async () => {
     // Reproduces the SMB-share-shows-local-path bug: a previously corrupted
-    // `lastUsedPathForVolume('smb-…-naspi') = '/Users/…/vdavid'` must not be
+    // `lastUsedPathForVolume('smb-…-testshare') = '/Users/…/vdavid'` must not be
     // returned just because `pathExists` confirms the local path.
     mockGetLastUsedPath.mockResolvedValue('/Users/test/local-project')
     mockPathExists.mockResolvedValue(true)
 
     const resultPromise = determineNavigationPath({
-      volumeId: 'smb-192-168-1-111-445-naspi',
-      volumePath: '/Volumes/naspi',
-      targetPath: '/Volumes/naspi',
+      volumeId: 'smb-192-168-50-10-445-testshare',
+      volumePath: '/Volumes/testshare',
+      targetPath: '/Volumes/testshare',
       otherPane: {
         otherPaneVolumeId: 'root',
         otherPanePath: '/Users/test/local-project',
@@ -198,7 +198,7 @@ describe('determineNavigationPath', () => {
     await vi.advanceTimersByTimeAsync(500)
     const result = await resultPromise
 
-    expect(result).toBe('/Volumes/naspi')
+    expect(result).toBe('/Volumes/testshare')
   })
 
   it('returns ~ when volume is DEFAULT_VOLUME_ID and no better option', async () => {
@@ -271,7 +271,7 @@ describe('determineNavigationPath', () => {
     mockGetLastUsedPath.mockResolvedValue(undefined)
 
     const resultPromise = determineNavigationPath({
-      volumeId: 'sftp-nas-local-22-ada',
+      volumeId: 'sftp-nas-local-22-test_user_1',
       volumePath: SERVER_ROOT,
       targetPath: SERVER_ROOT,
       otherPane: defaultOtherPane,
@@ -290,7 +290,7 @@ describe('determineNavigationPath', () => {
     mockPathExists.mockImplementation((p: string): Promise<boolean> => Promise.resolve(p === remembered))
 
     const resultPromise = determineNavigationPath({
-      volumeId: 'sftp-nas-local-22-ada',
+      volumeId: 'sftp-nas-local-22-test_user_1',
       volumePath: SERVER_ROOT,
       targetPath: SERVER_ROOT,
       otherPane: defaultOtherPane,
@@ -533,19 +533,19 @@ describe('a slow-but-alive session (a busy NAS holds one stat for seconds)', () 
   })
 
   it('a volume switch still lands on the remembered folder when its stat takes 3 s', async () => {
-    answerLate(3000, ({ path }) => path === '/Volumes/naspi/photos')
-    mockGetLastUsedPath.mockResolvedValue('/Volumes/naspi/photos')
+    answerLate(3000, ({ path }) => path === '/Volumes/testshare/photos')
+    mockGetLastUsedPath.mockResolvedValue('/Volumes/testshare/photos')
 
     const resultPromise = determineNavigationPath({
-      volumeId: 'smb-naspi',
-      volumePath: '/Volumes/naspi',
-      targetPath: '/Volumes/naspi',
+      volumeId: 'smb-testshare',
+      volumePath: '/Volumes/testshare',
+      targetPath: '/Volumes/testshare',
       otherPane: { otherPaneVolumeId: 'root', otherPanePath: '/Users/test' },
       connectionState: 'direct',
     })
     await vi.advanceTimersByTimeAsync(3000)
 
-    expect(await resultPromise).toBe('/Volumes/naspi/photos')
+    expect(await resultPromise).toBe('/Volumes/testshare/photos')
   })
 
   it('a volume switch keeps its 500 ms bound on a volume with no session of its own', async () => {
@@ -564,16 +564,16 @@ describe('a slow-but-alive session (a busy NAS holds one stat for seconds)', () 
   })
 
   it('the walk-up stops at a live parent whose stat takes 3 s instead of skipping it', async () => {
-    answerLate(3000, ({ path, volumeId }) => volumeId === 'smb-naspi' && path === '/Volumes/naspi/photos')
+    answerLate(3000, ({ path, volumeId }) => volumeId === 'smb-testshare' && path === '/Volumes/testshare/photos')
 
-    const resultPromise = resolveValidPath('/Volumes/naspi/photos/gone', {
-      volumeId: 'smb-naspi',
-      volumeRoot: '/Volumes/naspi',
+    const resultPromise = resolveValidPath('/Volumes/testshare/photos/gone', {
+      volumeId: 'smb-testshare',
+      volumeRoot: '/Volumes/testshare',
       connectionState: 'direct',
     })
     await vi.advanceTimersByTimeAsync(6000)
 
-    expect(await resultPromise).toBe('/Volumes/naspi/photos')
+    expect(await resultPromise).toBe('/Volumes/testshare/photos')
   })
 
   it('the walk-up keeps its 1 s step on a volume with no session of its own', async () => {

@@ -149,7 +149,7 @@ fn known() -> &'static Mutex<KnownSftpServersStore> {
 /// Whether two entries describe the same server and account.
 ///
 /// The host folds case (DNS is case-insensitive) and the account does not (POSIX
-/// accounts are case-sensitive, so `Ada` and `ada` may be two people). Same rule
+/// accounts are case-sensitive, so `Test_user_1` and `test_user_1` may be two people). Same rule
 /// as `cmdr_fs::volume::sftp_volume_id`, and it has to stay that way or a server
 /// would get two entries and one volume.
 fn same_server(entry: &KnownSftpServer, host: &str, port: u16, username: &str) -> bool {

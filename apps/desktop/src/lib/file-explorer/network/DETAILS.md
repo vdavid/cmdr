@@ -201,9 +201,9 @@ unit-tested:
   publishes, ❌ never a guess at the string's shape. Without it a person's NAS renames itself the moment they use it: an
   unnamed SMB label is a stand-in, either the way `statfs` spells the server (written to `known_shares` on the first
   share listing, `smb-consumer-guest`) or the address typed into "Add server" with the Name field left empty
-  (`manual_servers` derives `host` or `host:port`), and the friendly name they recognize (`SMB Test (Guest)`,
-  `Naspolya`) would drop out of the column. A name typed into the add or edit sheet is `user` and wins. Four
-  `smb.spec.ts` specs poll on the Bonjour name and are the regression guard.
+  (`manual_servers` derives `host` or `host:port`), and the friendly name they recognize (`SMB Test (Guest)`, `Testnas`)
+  would drop out of the column. A name typed into the add or edit sheet is `user` and wins. Four `smb.spec.ts` specs
+  poll on the Bonjour name and are the regression guard.
 
   ❗ **A saved SMB server claims EVERY host that matches it, not the first.** One machine sits in the discovery list
   twice once a person types a host mDNS already found: the manual entry injects a `manual` host beside the `discovered`
@@ -346,7 +346,7 @@ so a separate flag could only disagree with it.
 - **The username** is resolved in one order everywhere: what an earlier attempt tried, then `getKnownShareByName()`'s
   last username for this share, then `getUsernameHint()` (the account typed in the add or edit sheet, else the host's
   share history). ❗ Both lookups take the server BY NAME and match on its stable identity in Rust, so a hint saved
-  under one spelling (`Naspolya`) is found when the sheet opens under another (`Naspolya._smb._tcp.local`). ❌ Don't
+  under one spelling (`Testnas`) is found when the sheet opens under another (`Testnas._smb._tcp.local`). ❌ Don't
   rebuild the key in TypeScript: that is what made the two sides disagree once.
 - **Remember starts ON, and is ❌ never probed**, because `has_smb_credentials` is `get_credentials(…).is_ok()` and
   asking costs the same Keychain prompt as reading. Why the other protocols seed the box differently:
@@ -552,7 +552,7 @@ same sentence plus the typed `reason`. Why the variants are cut the way they are
 
 A NetFS mount can hang behind a stuck macOS sign-in helper for the whole mount timeout (#604), so `NetworkMountView`
 renders the wait through `../pane/RemoteConnectView.svelte`, the ONE remote-wait view: a `connecting` state named after
-the share, with the server's friendly name beside it ("naspi on Naspolya": the hub's label, else the host's name) and
+the share, with the server's friendly name beside it ("testshare on Testnas": the hub's label, else the host's name) and
 the `host:port` it dials under that, and that view's Cancel (`share.back` cancels too, since no browser is mounted to
 take the key). Each mount mints an attempt id (`newServerAttemptId`) and passes it to `mountNetworkShare`; Cancel hands
 it to `cancelServerConnect`. After 10 s (`MOUNT_SLOW_AFTER_MS`, the backend's `SUSPECT_AFTER`) the state's `hint` swaps

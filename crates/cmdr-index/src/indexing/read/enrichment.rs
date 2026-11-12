@@ -603,8 +603,8 @@ mod tests {
 
     #[test]
     fn listing_parent_path_finds_common_parent() {
-        let entries = [dir("/Users/veszelovszki/project"), dir("/Users/veszelovszki/other")];
-        assert_eq!(listing_parent_path(&entries).as_deref(), Some("/Users/veszelovszki"));
+        let entries = [dir("/Users/test_user_3/project"), dir("/Users/test_user_3/other")];
+        assert_eq!(listing_parent_path(&entries).as_deref(), Some("/Users/test_user_3"));
     }
 
     #[test]
@@ -631,7 +631,7 @@ mod tests {
             "an excluded system path must be skipped by enrichment"
         );
         // A boot-volume listing is NOT excluded — enrichment must still run there.
-        let home = listing_parent_path(&[dir("/Users/veszelovszki/project")]).expect("has a parent");
+        let home = listing_parent_path(&[dir("/Users/test_user_3/project")]).expect("has a parent");
         assert!(!crate::indexing::scanner::should_exclude(
             &home,
             &crate::indexing::scanner::ExclusionScope::boot_disk()

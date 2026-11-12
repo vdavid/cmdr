@@ -453,7 +453,7 @@ struct RawOperationSnapshot {
 #[cfg(test)]
 pub(super) const PRIVACY_TEST_RAW_NAME: &str = "PRIVATE-NAME-SENTINEL-ASYMMETRIC.pdf";
 #[cfg(test)]
-pub(super) const PRIVACY_TEST_RAW_PATH: &str = "/mnt/<alice-smith>/client secret";
+pub(super) const PRIVACY_TEST_RAW_PATH: &str = "/mnt/<test_user_4-smith>/client secret";
 #[cfg(test)]
 pub(super) const PRIVACY_TEST_EXTERNAL_PROSE: &str = "PRIVATE-EXTERNAL-PROSE-SENTINEL-ASYMMETRIC";
 

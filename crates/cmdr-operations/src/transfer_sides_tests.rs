@@ -13,7 +13,7 @@ fn sides() -> TransferSides {
         TransferSide::new("vol-mac".to_string(), "Macintosh HD".to_string(), "/".into()),
         TransferSide::new(
             "vol-stick".to_string(),
-            "Fältkamera".to_string(),
+            "Tëstkamera".to_string(),
             "/Volumes/Stick".into(),
         ),
     )
@@ -43,7 +43,7 @@ fn a_destination_that_left_the_mount_table_names_itself_whatever_the_errno() {
             WriteOperationError::DeviceDisconnected { path, side } => {
                 let side = side.expect("a vanished side is named");
                 assert_eq!(side.role, TransferRole::Destination, "{name}");
-                assert_eq!(side.volume_name, "Fältkamera", "{name}: the name captured at start");
+                assert_eq!(side.volume_name, "Tëstkamera", "{name}: the name captured at start");
                 assert_eq!(side.counterpart_name, "Macintosh HD", "{name}");
                 assert_eq!(path, "/Volumes/Stick/trip/DSC1.arw", "{name}: keeps the failing path");
             }
@@ -68,7 +68,7 @@ fn a_source_that_left_names_itself_and_points_at_the_destination() {
     let side = side.expect("a vanished side is named");
     assert_eq!(side.role, TransferRole::Source);
     assert_eq!(side.volume_name, "Macintosh HD");
-    assert_eq!(side.counterpart_name, "Fältkamera");
+    assert_eq!(side.counterpart_name, "Tëstkamera");
 }
 
 /// The whole point of asking the mount table: with both drives still listed,

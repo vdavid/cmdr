@@ -84,7 +84,7 @@ fn every_listed_folder_and_file_is_protected() {
 #[test]
 fn a_rule_holds_at_any_depth_case_and_unicode_form() {
     for path in [
-        "/Volumes/naspi/backup/home/.ssh/id_rsa",
+        "/Volumes/testshare/backup/home/.ssh/id_rsa",
         "/Users/someone/.SSH/id_rsa",
         "/Users/someone/.Ssh/ID_RSA",
         // An NFD name above the rule mustn't hide it.

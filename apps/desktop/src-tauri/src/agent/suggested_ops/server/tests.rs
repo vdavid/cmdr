@@ -76,7 +76,7 @@ fn new_sftp() -> ServerDraft {
         display_name: Some("Render farm".into()),
         host: Some("render.lan".into()),
         port: Some(22),
-        username: Some("dana".into()),
+        username: Some("test_user_13".into()),
         remote_root: Some("/".into()),
         ..ServerDraft::new(DraftProtocol::Sftp)
     }
@@ -146,7 +146,7 @@ async fn an_approved_add_saves_through_its_core_and_completes_with_its_line_and_
 
     let outcome = approve(&conn, group_id, &saver).await;
 
-    let id = cmdr_fs::volume::sftp_volume_id("render.lan", 22, "dana");
+    let id = cmdr_fs::volume::sftp_volume_id("render.lan", 22, "test_user_13");
     assert_eq!(outcome, ServerApprovalOutcome::Saved { volume_id: Some(id) });
     assert_eq!(
         saver.saves(),
@@ -154,7 +154,7 @@ async fn an_approved_add_saves_through_its_core_and_completes_with_its_line_and_
             display_name: "Render farm".into(),
             host: "render.lan".into(),
             port: 22,
-            username: "dana".into(),
+            username: "test_user_13".into(),
             remote_root: "/".into(),
             start_folder: None,
             // The add form's defaults, ❌ never anything the draft could carry, except the SSH
@@ -281,7 +281,7 @@ async fn an_add_saved_since_it_was_proposed_refuses_already_saved_without_saving
     assert_eq!(
         approve(&conn, group_id, &saver).await,
         ServerApprovalOutcome::AlreadySaved {
-            server_id: cmdr_fs::volume::sftp_volume_id("build.lan", 22, "dana")
+            server_id: cmdr_fs::volume::sftp_volume_id("build.lan", 22, "test_user_13")
         }
     );
     assert!(saver.saves().is_empty());
@@ -292,7 +292,7 @@ async fn an_add_saved_since_it_was_proposed_refuses_already_saved_without_saving
 async fn an_smb_add_of_a_host_saved_since_refuses_already_saved() {
     let conn = migrated_conn();
     let draft = ServerDraft {
-        host: Some("NASPOLYA.local".into()),
+        host: Some("TESTNAS.local".into()),
         port: Some(445),
         ..ServerDraft::new(DraftProtocol::Smb)
     };
@@ -314,7 +314,7 @@ async fn a_name_another_server_took_since_refuses_name_taken_without_saving() {
     let (group_id, _) = stage(
         &conn,
         ServerDraft {
-            display_name: Some("NASPOLYA".into()),
+            display_name: Some("TESTNAS".into()),
             ..new_sftp()
         },
         None,
@@ -323,9 +323,7 @@ async fn a_name_another_server_took_since_refuses_name_taken_without_saving() {
 
     assert_eq!(
         approve(&conn, group_id, &saver).await,
-        ServerApprovalOutcome::NameTaken {
-            name: "Naspolya".into()
-        }
+        ServerApprovalOutcome::NameTaken { name: "Testnas".into() }
     );
     assert!(saver.saves().is_empty());
     assert_eq!(status(&conn, group_id), ProposalStatus::Pending);
@@ -413,7 +411,7 @@ async fn an_smb_edit_ignores_a_changed_share_count_and_saves_the_host_in_place()
     let conn = migrated_conn();
     let draft = ServerDraft {
         display_name: Some("NAS".into()),
-        username: Some("dori".into()),
+        username: Some("test_user_7".into()),
         ..smb_saved()
     };
     let previous = ServerDraft {
@@ -441,7 +439,7 @@ async fn an_smb_edit_ignores_a_changed_share_count_and_saves_the_host_in_place()
         [ServerSave::SmbHostEdit {
             host_id: SMB_HOST.into(),
             name: "NAS".into(),
-            username: Some("dori".into()),
+            username: Some("test_user_7".into()),
         }]
     );
 }
@@ -507,7 +505,7 @@ async fn an_smb_add_saves_contact_free_through_its_address_with_the_share() {
         display_name: Some("Attic".into()),
         host: Some("attic.lan".into()),
         port: Some(4450),
-        username: Some("ada".into()),
+        username: Some("test_user_1".into()),
         share: Some("Backups".into()),
         ..ServerDraft::new(DraftProtocol::Smb)
     };
@@ -521,7 +519,7 @@ async fn an_smb_add_saves_contact_free_through_its_address_with_the_share() {
         [ServerSave::SmbAdd {
             address: "smb://attic.lan:4450/Backups".into(),
             name: "Attic".into(),
-            username: Some("ada".into()),
+            username: Some("test_user_1".into()),
         }]
     );
 }
@@ -617,13 +615,13 @@ async fn each_protocol_saves_through_the_real_stores_lists_back_and_dials_nothin
         ServerDraft {
             host: Some("192.0.2.91".into()),
             port: Some(22),
-            username: Some("ada".into()),
+            username: Some("test_user_1".into()),
             remote_root: Some("/srv".into()),
             ..ServerDraft::new(DraftProtocol::Sftp)
         },
         ServerDraft {
             url: Some("https://192.0.2.92:5006/dav".into()),
-            username: Some("ada".into()),
+            username: Some("test_user_1".into()),
             remote_root: Some("/".into()),
             ..ServerDraft::new(DraftProtocol::Webdav)
         },
@@ -660,7 +658,7 @@ async fn each_protocol_saves_through_the_real_stores_lists_back_and_dials_nothin
     }
 
     // An edit through the same stores: only the name moves, every switch stays as stored.
-    let sftp_id = cmdr_fs::volume::sftp_volume_id("192.0.2.91", 22, "ada");
+    let sftp_id = cmdr_fs::volume::sftp_volume_id("192.0.2.91", 22, "test_user_1");
     let previous = CoreSaver.saved().place(&sftp_id).expect("saved").1.draft.clone();
     let (group_id, _) = stage(
         &conn,
@@ -673,12 +671,12 @@ async fn each_protocol_saves_through_the_real_stores_lists_back_and_dials_nothin
             previous,
         }),
     );
-    let before = crate::network::sftp_known_servers::find("192.0.2.91", 22, "ada").expect("saved");
+    let before = crate::network::sftp_known_servers::find("192.0.2.91", 22, "test_user_1").expect("saved");
     assert!(matches!(
         approve_server(&conn, group_id, 0, &CoreSaver, 200, None).await,
         Ok(ServerApprovalOutcome::Saved { .. })
     ));
-    let after = crate::network::sftp_known_servers::find("192.0.2.91", 22, "ada").expect("saved");
+    let after = crate::network::sftp_known_servers::find("192.0.2.91", 22, "test_user_1").expect("saved");
     assert_eq!(after.display_name, "Build box");
     assert_eq!(
         (after.key_file, after.use_agent, after.auto_reconnect, after.pinned),
@@ -765,7 +763,7 @@ fn an_add_card_lists_what_the_click_saves_and_marks_a_host_nothing_saved_is_at()
             row(ServerField::Name, "Render farm"),
             row(ServerField::Address, "render.lan"),
             row(ServerField::Port, "22"),
-            row(ServerField::Account, "dana"),
+            row(ServerField::Account, "test_user_13"),
             row(ServerField::Folder, "/"),
         ]
     );
@@ -774,7 +772,7 @@ fn an_add_card_lists_what_the_click_saves_and_marks_a_host_nothing_saved_is_at()
 
     let beside_the_nas = card_of(
         ServerDraft {
-            host: Some("Naspolya.local".into()),
+            host: Some("Testnas.local".into()),
             ..new_sftp()
         },
         None,
@@ -875,10 +873,15 @@ fn the_saved_facts_draft_each_place_and_its_smb_host() {
         address: "192.0.2.77".into(),
         port: 445,
         added_at: String::new(),
-        username: Some("david".into()),
+        username: Some("test_user_3".into()),
         awaiting_first_connect: false,
     }];
-    let known = vec![share_row("192.0.2.77", "media", Some("david"), Some("smb-attic-media"))];
+    let known = vec![share_row(
+        "192.0.2.77",
+        "media",
+        Some("test_user_3"),
+        Some("smb-attic-media"),
+    )];
     let smb_hosts = crate::saved_servers::smb_hosts::smb_host_groups(manual, known, &[]);
     let sftp = sftp_entry("192.0.2.78", true);
     let sftp_id = cmdr_fs::volume::sftp_volume_id(&sftp.host, sftp.port, &sftp.username);

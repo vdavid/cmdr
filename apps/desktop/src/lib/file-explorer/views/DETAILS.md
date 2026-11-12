@@ -789,5 +789,5 @@ facts on `FileEntry.resticMeta` (`ResticSnapshotMeta`), on the dated rows and `l
 - **`wordResticSnapshot` words all three** (`fileExplorer.restic.snapshot.*`), one line each, a line left out when the
   snapshot recorded nothing for it. Full hovers it on the Ext cell and on the name (name, blank line, facts, so a
   `showExtensionInName` user still reaches it); Brief, with no Ext cell, puts it above the folder's size tooltip.
-- **The row's accessible name says the host** right after the name, as "(Backed up from) naspolya" (WCAG 2.5.3: the Ext
+- **The row's accessible name says the host** right after the name, as "(Backed up from) testnas" (WCAG 2.5.3: the Ext
   cell is visible text), and only while the Ext column shows.

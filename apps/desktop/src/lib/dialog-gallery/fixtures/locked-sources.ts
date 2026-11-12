@@ -40,6 +40,6 @@ const contracts = (count: number) =>
 
 export const lockedSourcesFixtures: Record<string, LockedSourcesFixture | undefined> = {
   one: fixture(contracts(1), 1, 'Archive'),
-  some: fixture(contracts(3), 3, 'Naspolya Archive'),
-  many: fixture(contracts(5), 1_234, 'Naspolya Archive'),
+  some: fixture(contracts(3), 3, 'Testnas Archive'),
+  many: fixture(contracts(5), 1_234, 'Testnas Archive'),
 }

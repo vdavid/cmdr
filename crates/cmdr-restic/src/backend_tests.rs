@@ -26,7 +26,7 @@ const DEFAULT_N: u32 = 1 << 15;
 /// A key file as restic writes one: plaintext JSON naming its scrypt cost.
 fn key_json(n: u32, r: u32, p: u32) -> Vec<u8> {
     format!(
-        r#"{{"created":"2026-10-12T21:00:03+02:00","username":"david","hostname":"m3","kdf":"scrypt","N":{n},"r":{r},"p":{p},"data":"AAAA","salt":"AAAA"}}"#
+        r#"{{"created":"2026-10-12T21:00:03+02:00","username":"test_user_3","hostname":"test-host","kdf":"scrypt","N":{n},"r":{r},"p":{p},"data":"AAAA","salt":"AAAA"}}"#
     )
     .into_bytes()
 }

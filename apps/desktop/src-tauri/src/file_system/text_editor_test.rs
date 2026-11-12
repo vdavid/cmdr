@@ -121,16 +121,16 @@ fn anything_else_is_a_bundle_id() {
 #[test]
 fn the_system_default_opens_with_open_t_exactly_as_before() {
     assert_eq!(
-        launch_argv(&SystemDefault, Path::new("/Users/dave/notes.txt")),
-        vec!["open", "-t", "/Users/dave/notes.txt"]
+        launch_argv(&SystemDefault, Path::new("/Users/test_user_10/notes.txt")),
+        vec!["open", "-t", "/Users/test_user_10/notes.txt"]
     );
 }
 
 #[test]
 fn a_listed_editor_opens_by_bundle_id() {
     assert_eq!(
-        launch_argv(&BundleId(SUBLIME.into()), Path::new("/Users/dave/notes.txt")),
-        vec!["open", "-b", SUBLIME, "/Users/dave/notes.txt"]
+        launch_argv(&BundleId(SUBLIME.into()), Path::new("/Users/test_user_10/notes.txt")),
+        vec!["open", "-b", SUBLIME, "/Users/test_user_10/notes.txt"]
     );
 }
 
@@ -138,17 +138,22 @@ fn a_listed_editor_opens_by_bundle_id() {
 fn a_picked_app_opens_by_path() {
     assert_eq!(
         launch_argv(
-            &AppPath("/Users/dave/Apps/Homemade.app".into()),
-            Path::new("/Users/dave/notes.txt")
+            &AppPath("/Users/test_user_10/Apps/Homemade.app".into()),
+            Path::new("/Users/test_user_10/notes.txt")
         ),
-        vec!["open", "-a", "/Users/dave/Apps/Homemade.app", "/Users/dave/notes.txt"]
+        vec![
+            "open",
+            "-a",
+            "/Users/test_user_10/Apps/Homemade.app",
+            "/Users/test_user_10/notes.txt"
+        ]
     );
 }
 
 /// No shell sees these argvs, so awkward names are ordinary arguments.
 #[test]
 fn awkward_file_names_travel_verbatim_as_the_last_argument() {
-    let file = Path::new("/Users/dave/Ünnepi \"terv\" & co's árvíztűrő.txt");
+    let file = Path::new("/Users/test_user_10/Ünnepi \"terv\" & co's árvíztűrő.txt");
     for choice in [
         SystemDefault,
         BundleId(SUBLIME.into()),
@@ -157,7 +162,7 @@ fn awkward_file_names_travel_verbatim_as_the_last_argument() {
         let argv = launch_argv(&choice, file);
         assert_eq!(
             argv.last().map(String::as_str),
-            Some("/Users/dave/Ünnepi \"terv\" & co's árvíztűrő.txt"),
+            Some("/Users/test_user_10/Ünnepi \"terv\" & co's árvíztűrő.txt"),
             "{choice:?} should take the file verbatim"
         );
     }
@@ -259,7 +264,7 @@ fn the_system_default_pinned_by_id_gets_a_row_of_its_own() {
 
 #[test]
 fn a_picked_app_without_a_bundle_id_is_added_by_path() {
-    let homemade = "/Users/dave/Apps/Homemade.app";
+    let homemade = "/Users/test_user_10/Apps/Homemade.app";
     let mac = a_mac().with_unidentified_app(homemade);
     let (rows, chosen) = assemble_list(&handlers(&[SUBLIME]), Some(XCODE), &AppPath(homemade.into()), &mac);
     assert_eq!(ids(&rows), sorted(&[homemade, SUBLIME]));
@@ -298,11 +303,11 @@ fn a_pick_of_the_copy_launchservices_launches_is_stored_as_its_bundle_id() {
 #[test]
 fn a_pick_spelled_through_a_symlink_or_a_trailing_slash_is_still_that_copy() {
     let mac = a_mac().with_link(
-        "/Users/dave/Applications/Sublime Text.app",
+        "/Users/test_user_10/Applications/Sublime Text.app",
         "/Applications/Sublime Text.app",
     );
     for picked in [
-        "/Users/dave/Applications/Sublime Text.app",
+        "/Users/test_user_10/Applications/Sublime Text.app",
         "/Applications/Sublime Text.app/",
     ] {
         assert_eq!(
@@ -315,16 +320,16 @@ fn a_pick_spelled_through_a_symlink_or_a_trailing_slash_is_still_that_copy() {
 
 #[test]
 fn a_second_copy_picked_on_purpose_is_stored_as_its_path() {
-    let mac = a_mac().with_copy(WARP, "/Users/dave/Downloads/Warp.app");
-    let choice = canonical_choice(AppPath("/Users/dave/Downloads/Warp.app".into()), &mac);
-    assert_eq!(choice, AppPath("/Users/dave/Downloads/Warp.app".into()));
+    let mac = a_mac().with_copy(WARP, "/Users/test_user_10/Downloads/Warp.app");
+    let choice = canonical_choice(AppPath("/Users/test_user_10/Downloads/Warp.app".into()), &mac);
+    assert_eq!(choice, AppPath("/Users/test_user_10/Downloads/Warp.app".into()));
 }
 
 #[test]
 fn a_pick_without_a_bundle_id_is_stored_as_its_path() {
-    let mac = a_mac().with_unidentified_app("/Users/dave/Apps/Homemade.app");
-    let choice = canonical_choice(AppPath("/Users/dave/Apps/Homemade.app".into()), &mac);
-    assert_eq!(choice, AppPath("/Users/dave/Apps/Homemade.app".into()));
+    let mac = a_mac().with_unidentified_app("/Users/test_user_10/Apps/Homemade.app");
+    let choice = canonical_choice(AppPath("/Users/test_user_10/Apps/Homemade.app".into()), &mac);
+    assert_eq!(choice, AppPath("/Users/test_user_10/Apps/Homemade.app".into()));
 }
 
 /// A browser download keeps its quarantine flag, and macOS may launch it from a

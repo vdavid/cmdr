@@ -119,7 +119,7 @@
   "@stateRecovery.keptCopy": {
     "description": "Line under any of the notices above that a damaged file was set aside rather than deleted, and where. Plain text. Pop-up notice (toast) in the corner of Cmdr's main window.",
     "placeholders": {
-      "path": "the full path of the set-aside copy, like /Users/anna/Library/Application Support/com.veszelovszki.cmdr/settings.json.broken-2026-10-16T101500. Never translated."
+      "path": "the full path of the set-aside copy, like /Users/test_user_16/Library/Application Support/com.veszelovszki.cmdr/settings.json.broken-2026-10-16T101500. Never translated."
     }
   },
   "stateRecovery.showInFinder": "{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}",

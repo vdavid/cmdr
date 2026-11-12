@@ -21,7 +21,7 @@ async function mountDialog(): Promise<HTMLElement> {
   document.body.appendChild(target)
   mount(SmbLinkConsentDialog, {
     target,
-    props: { server: 'nas.local', target: 'fs01.example.com', onAllowed: vi.fn(), onCancel: vi.fn() },
+    props: { server: 'testnas.local', target: 'fs01.example.com', onAllowed: vi.fn(), onCancel: vi.fn() },
   })
   await tick()
   return target
@@ -39,7 +39,7 @@ describe('SmbLinkConsentDialog a11y', () => {
     const dialog = target.querySelector('[role="alertdialog"]')
     expect(dialog).not.toBeNull()
     const description = computeAccessibleDescription(dialog as Element)
-    expect(description).toContain('nas.local')
+    expect(description).toContain('testnas.local')
     expect(description).toContain('fs01.example.com')
     target.remove()
   })

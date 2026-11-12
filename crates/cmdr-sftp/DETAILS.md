@@ -891,11 +891,11 @@ either would spend authentication attempts or dial a server whose key stopped ma
 ## Path handling
 
 **The tree has two spellings, and `cmdr_fs::volume::remote_paths::RemoteRoot` is the only translation between them.**
-The app spells a file `sftp://ada@nas.local:22/srv/data/photos`; the server spells it `/srv/data/photos`. The volume is
-rooted at `<prefix><remote root>`, where the prefix comes from `cmdr_fs::volume::sftp_app_root` — the same function the
-app mints a saved server's row from, and a sibling of the `sftp_volume_id` the registry keys on, so a path and the
-volume it resolves to can't disagree. That module's header holds the rules and the reasoning; what follows is what this
-backend does with them.
+The app spells a file `sftp://test_user_1@testnas.local:22/srv/data/photos`; the server spells it `/srv/data/photos`.
+The volume is rooted at `<prefix><remote root>`, where the prefix comes from `cmdr_fs::volume::sftp_app_root` — the same
+function the app mints a saved server's row from, and a sibling of the `sftp_volume_id` the registry keys on, so a path
+and the volume it resolves to can't disagree. That module's header holds the rules and the reasoning; what follows is
+what this backend does with them.
 
 **Why the prefix.** `commands/volumes.rs::resolve_path_to_volume` falls through to the mount table, which on both
 platforms walks up to `/` and answers the LOCAL root for any absolute path it doesn't recognize. A scheme-free
@@ -923,8 +923,8 @@ one, so leniency buys only that hole. The three root aliases stay (`/`, `.`, the
 Two ways of guessing that would each send a request somewhere wrong, both pinned by cells:
 
 - A string prefix compare strips `/srv/data` off a sibling `/srv/data-1/photos` and asks for `-1/photos`, which is a
-  legal name. The prefix is matched by whole components for the same reason: `…nas.local:2222` must not borrow
-  `…nas.local:22`'s volume.
+  legal name. The prefix is matched by whole components for the same reason: `…testnas.local:2222` must not borrow
+  `…testnas.local:22`'s volume.
 - `..` has to be resolved **before** the containment check, or `photos/../../etc` is the same escape spelled relatively.
 
 Resolution is lexical — no round trip, no symlink following. The question is "did the caller address something outside

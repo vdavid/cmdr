@@ -86,7 +86,7 @@ fn real_ocr_reads_the_known_words_from_prefetched_bytes() {
     let bytes = std::fs::read(fixture_path()).expect("read fixture bytes");
     let input = ImageInput {
         // A path that does NOT exist on disk, proving the backend used `bytes`, not it.
-        path: "/Volumes/naspi/DCIM/prefetched.png".to_string(),
+        path: "/Volumes/testshare/DCIM/prefetched.png".to_string(),
         kind: MediaKind::Image,
         bytes: Some(bytes),
     };

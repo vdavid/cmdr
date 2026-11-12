@@ -762,7 +762,7 @@ impl Volume for LocalPosixVolume {
 
     /// ❗ Overridden so `scan_subtree` gets the stop. The trait default loops
     /// `scan_for_copy` per path, which asks only BETWEEN paths — and one path here
-    /// can be a whole mounted share: `/Volumes/naspi` over a sleeping NAS is
+    /// can be a whole mounted share: `/Volumes/testshare` over a sleeping NAS is
     /// minutes of `readdir` with nothing in between, which is precisely the scan
     /// somebody cancels.
     fn scan_for_copy_batch_with_boundary<'a>(

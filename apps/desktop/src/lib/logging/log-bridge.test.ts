@@ -224,9 +224,9 @@ describe('log-bridge', () => {
   it('does not repeat a key the template already spells out', async () => {
     const message = await renderedMessage({
       rawMessage: 'calling listDirectoryStart: volumeId={volumeId}, path={loadPath}',
-      message: ['calling listDirectoryStart: volumeId=', 'root', ', path=', '/Users/ada/Plans', ''],
+      message: ['calling listDirectoryStart: volumeId=', 'root', ', path=', '/Users/test_user_1/Plans', ''],
     })
-    expect(message).toBe(`calling listDirectoryStart: volumeId="root", path="${DIR_PATH}/Users/ada/Plans${C}"`)
+    expect(message).toBe(`calling listDirectoryStart: volumeId="root", path="${DIR_PATH}/Users/test_user_1/Plans${C}"`)
   })
 
   it('marks each placeholder with the kind its name says', async () => {
@@ -343,13 +343,15 @@ describe('log-bridge', () => {
 
   it('renders a raw caught value readably instead of as [object Object]', async () => {
     // ERR-VEZUB arrived as `detail="[object Object]"`: the bridge stringified with `String(part)`.
-    const failure = { type: 'notFound', path: '/Users/ada/Plans' }
+    const failure = { type: 'notFound', path: '/Users/test_user_1/Plans' }
     expect(
       await renderedMessage({
         rawMessage: 'Eject failed: {error}',
         message: ['Eject failed: ', failure, ''],
       }),
-    ).toBe('Eject failed: detail="{\\"type\\":\\"notFound\\",\\"path\\":\\"\\u{fdd0}/Users/ada/Plans\\u{fdd1}\\"}"')
+    ).toBe(
+      'Eject failed: detail="{\\"type\\":\\"notFound\\",\\"path\\":\\"\\u{fdd0}/Users/test_user_1/Plans\\u{fdd1}\\"}"',
+    )
 
     vi.mocked(invoke).mockClear()
     expect(

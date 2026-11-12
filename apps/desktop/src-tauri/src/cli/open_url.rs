@@ -150,8 +150,8 @@ mod tests {
 
     #[test]
     fn a_single_path_opens_in_the_focused_pane() {
-        let open = parse("cmdr-cli://open?path=%2FUsers%2Fjane%2Fnotes").expect("an open");
-        assert_eq!(open.paths, vec![PathBuf::from("/Users/jane/notes")]);
+        let open = parse("cmdr-cli://open?path=%2FUsers%2Ftest_user_12%2Fnotes").expect("an open");
+        assert_eq!(open.paths, vec![PathBuf::from("/Users/test_user_12/notes")]);
         assert_eq!(open.target, focused());
     }
 

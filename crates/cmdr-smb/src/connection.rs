@@ -11,12 +11,12 @@ use std::time::Duration;
 ///
 /// smb2 uses ONE string for both the TCP dial and the UNC server name
 /// (`\\server\IPC$`), and some servers reject a `.local` name there. So an mDNS
-/// `.local` name (`nas.local`, `nas.local.`) is resolved here, the system resolver
+/// `.local` name (`testnas.local`, `testnas.local.`) is resolved here, the system resolver
 /// answering it through mDNS, and dialed by its IPv4 address, which every server
 /// accepts in a UNC path (the discovered-IP path has always done this).
 ///
 /// ❗ Never dials the `.local`-stripped name when the name resolves (#912): `nas`
-/// alone isn't an mDNS name, so a typed `nas.local` with no discovered IP never
+/// alone isn't an mDNS name, so a typed `testnas.local` with no discovered IP never
 /// connected. A name with only an IPv6 address is dialed as typed (a link-local
 /// address needs its scope, which an addr string can't carry); one that doesn't
 /// resolve at all falls back to the stripped name, which unicast DNS may know.
@@ -57,7 +57,7 @@ enum Resolved {
     Nothing,
 }
 
-/// The host half of an mDNS `.local` name (`nas` for `nas.local` and `nas.local.`),
+/// The host half of an mDNS `.local` name (`nas` for `testnas.local` and `testnas.local.`),
 /// or `None` for any other name or an IP.
 fn mdns_host(hostname: &str) -> Option<&str> {
     let name = hostname.strip_suffix('.').unwrap_or(hostname);
@@ -290,10 +290,13 @@ mod tests {
     #[tokio::test]
     async fn a_discovered_ip_is_dialed_on_any_port() {
         assert_eq!(
-            build_addr("nas.local", Some("192.168.1.50"), 445).await,
+            build_addr("testnas.local", Some("192.168.1.50"), 445).await,
             "192.168.1.50:445"
         );
-        assert_eq!(build_addr("nas.local", Some("10.0.0.5"), 9445).await, "10.0.0.5:9445");
+        assert_eq!(
+            build_addr("testnas.local", Some("10.0.0.5"), 9445).await,
+            "10.0.0.5:9445"
+        );
     }
 
     /// A resolver that answers `answer`, and panics if a name that isn't `.local`
@@ -312,7 +315,7 @@ mod tests {
     #[tokio::test]
     async fn a_local_name_dials_its_resolved_ipv4_address() {
         let ip = std::net::Ipv4Addr::new(192, 168, 1, 50);
-        for typed in ["nas.local", "nas.local.", "NAS.LOCAL"] {
+        for typed in ["testnas.local", "testnas.local.", "TESTNAS.LOCAL"] {
             assert_eq!(
                 smb_addr_with(typed, 11481, resolver(Resolved::V4(ip))).await,
                 "192.168.1.50:11481",
@@ -327,12 +330,12 @@ mod tests {
     #[tokio::test]
     async fn a_local_name_without_ipv4_is_dialed_as_typed_or_stripped() {
         assert_eq!(
-            smb_addr_with("nas.local", 445, resolver(Resolved::V6Only)).await,
-            "nas.local:445"
+            smb_addr_with("testnas.local", 445, resolver(Resolved::V6Only)).await,
+            "testnas.local:445"
         );
         assert_eq!(
-            smb_addr_with("nas.local", 445, resolver(Resolved::Nothing)).await,
-            "nas:445"
+            smb_addr_with("testnas.local", 445, resolver(Resolved::Nothing)).await,
+            "testnas:445"
         );
     }
 

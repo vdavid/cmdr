@@ -18,7 +18,7 @@ fn sftp_draft(host: &str) -> ServerDraft {
         display_name: Some("build-box".to_string()),
         host: Some(host.to_string()),
         port: Some(22),
-        username: Some("dana".to_string()),
+        username: Some("test_user_13".to_string()),
         remote_root: Some("/srv/builds".to_string()),
         ..ServerDraft::new(DraftProtocol::Sftp)
     }
@@ -143,7 +143,7 @@ fn an_amend_that_changes_the_kind_moves_the_draft_with_it() {
     let to_trash = NewGroup {
         intent: GroupIntent::Trash {
             sources: vec![NewOp {
-                source_path: "/Users/dana/old.dmg".to_string(),
+                source_path: "/Users/test_user_13/old.dmg".to_string(),
                 snapshot: None,
             }],
         },

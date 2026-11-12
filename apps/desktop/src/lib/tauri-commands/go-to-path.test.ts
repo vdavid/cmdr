@@ -21,16 +21,16 @@ describe('resolveGoToPath wrapper', () => {
 
   it('sends a backslashed Windows path in the wire form', async () => {
     onTestFinished(withPlatform('windows'))
-    await resolveGoToPath('c:\\Users\\ada\\', 'C:/')
-    expect(commands.resolveGoToPath).toHaveBeenCalledWith('C:/Users/ada', 'C:/')
+    await resolveGoToPath('c:\\Users\\test_user_1\\', 'C:/')
+    expect(commands.resolveGoToPath).toHaveBeenCalledWith('C:/Users/test_user_1', 'C:/')
   })
 
   it.each(['macos', 'linux'] as const)(
     'sends the text untouched on %s, where `\\` is a filename character',
     async (platform) => {
       onTestFinished(withPlatform(platform))
-      await resolveGoToPath('/Users/ada/a\\b', '/Users/ada')
-      expect(commands.resolveGoToPath).toHaveBeenCalledWith('/Users/ada/a\\b', '/Users/ada')
+      await resolveGoToPath('/Users/test_user_1/a\\b', '/Users/test_user_1')
+      expect(commands.resolveGoToPath).toHaveBeenCalledWith('/Users/test_user_1/a\\b', '/Users/test_user_1')
     },
   )
 })

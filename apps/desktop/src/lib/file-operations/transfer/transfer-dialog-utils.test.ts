@@ -104,7 +104,7 @@ describe('getFolderName', () => {
   })
 
   it('handles nested paths', () => {
-    expect(getFolderName('/Users/john/Documents/Projects')).toBe('Projects')
+    expect(getFolderName('/Users/test_user_14/Documents/Projects')).toBe('Projects')
     expect(getFolderName('/Volumes/External/Backup')).toBe('Backup')
   })
 
@@ -113,7 +113,7 @@ describe('getFolderName', () => {
   })
 
   it('handles home directory tilde expansion result', () => {
-    expect(getFolderName('/Users/veszelovszki')).toBe('veszelovszki')
+    expect(getFolderName('/Users/test_user_3')).toBe('test_user_3')
   })
 })
 
@@ -251,7 +251,7 @@ describe('toBackendCursorIndex', () => {
 
 describe('toVolumeRelativePath', () => {
   it('returns the full path unchanged for root volume (/)', () => {
-    expect(toVolumeRelativePath('/Users/david/Desktop', '/')).toBe('/Users/david/Desktop')
+    expect(toVolumeRelativePath('/Users/test_user_3/Desktop', '/')).toBe('/Users/test_user_3/Desktop')
   })
 
   it('returns / for MTP volume root', () => {
@@ -281,21 +281,29 @@ describe('toVolumeRelativePath', () => {
   // A remote volume's root is `<prefix><server-side root>`, so one rooted at `/`
   // (the default for SFTP, WebDAV, and ADB) spells itself WITH a trailing slash.
   // Slicing that off by raw length ate the separator and handed the dialog
-  // `home/ada/…`, which the absolute-path check then rejected: no copy could start.
+  // `home/test_user_1/…`, which the absolute-path check then rejected: no copy could start.
   it('keeps the leading slash when a remote volume is rooted at / (trailing-slash root)', () => {
-    expect(toVolumeRelativePath('sftp://ada@nas.local:22/home/ada/Videos', 'sftp://ada@nas.local:22/')).toBe(
-      '/home/ada/Videos',
-    )
+    expect(
+      toVolumeRelativePath(
+        'sftp://test_user_1@testnas.local:22/home/test_user_1/Videos',
+        'sftp://test_user_1@testnas.local:22/',
+      ),
+    ).toBe('/home/test_user_1/Videos')
   })
 
   it('returns / for the root of a remote volume rooted at /', () => {
-    expect(toVolumeRelativePath('sftp://ada@nas.local:22/', 'sftp://ada@nas.local:22/')).toBe('/')
+    expect(toVolumeRelativePath('sftp://test_user_1@testnas.local:22/', 'sftp://test_user_1@testnas.local:22/')).toBe(
+      '/',
+    )
   })
 
   it('strips the prefix for a remote volume rooted at a subfolder', () => {
-    expect(toVolumeRelativePath('sftp://ada@nas.local:22/srv/data/photos', 'sftp://ada@nas.local:22/srv/data')).toBe(
-      '/photos',
-    )
+    expect(
+      toVolumeRelativePath(
+        'sftp://test_user_1@testnas.local:22/srv/data/photos',
+        'sftp://test_user_1@testnas.local:22/srv/data',
+      ),
+    ).toBe('/photos')
   })
 
   // Matching is by whole components: a raw string prefix lets a sibling volume
@@ -306,9 +314,12 @@ describe('toVolumeRelativePath', () => {
   })
 
   it('refuses a sibling server-side root that merely starts with this one', () => {
-    expect(toVolumeRelativePath('sftp://ada@nas.local:22/srv/data-1/photos', 'sftp://ada@nas.local:22/srv/data')).toBe(
-      '/',
-    )
+    expect(
+      toVolumeRelativePath(
+        'sftp://test_user_1@testnas.local:22/srv/data-1/photos',
+        'sftp://test_user_1@testnas.local:22/srv/data',
+      ),
+    ).toBe('/')
   })
 
   it('passes through a path the caller already spelled volume-relative', () => {
@@ -404,30 +415,33 @@ describe('complete copy targets', () => {
     })
 
     it.each([
-      ['C:\\Users\\ada\\copy.txt', 'C:/Users/ada', 'copy.txt'],
-      ['C:/Users/ada/copy.txt', 'C:/Users/ada', 'copy.txt'],
+      ['C:\\Users\\test_user_1\\copy.txt', 'C:/Users/test_user_1', 'copy.txt'],
+      ['C:/Users/test_user_1/copy.txt', 'C:/Users/test_user_1', 'copy.txt'],
       ['c:\\temp\\x.txt', 'C:/temp', 'x.txt'],
       ['D:\\x.txt', 'D:/', 'x.txt'],
       ['\\\\nas\\share\\docs\\x.txt', '//nas/share/docs', 'x.txt'],
-      ['folder\\copy.txt', 'C:/Users/ada/folder', 'copy.txt'],
+      ['folder\\copy.txt', 'C:/Users/test_user_1/folder', 'copy.txt'],
       ['..\\copy.txt', 'C:/Users', 'copy.txt'],
       ['..\\..\\..\\..\\copy.txt', 'C:/', 'copy.txt'],
       ['~\\copy.txt', 'C:/Users/home', 'copy.txt'],
       ['/DCIM/copy.txt', '/DCIM', 'copy.txt'],
     ])('resolves %s to its exact parent and filename', (entered, parent, name) => {
-      expect(resolveTransferFilename(entered, 'C:/Users/ada', 'C:/Users/home')).toEqual({ parent, name })
+      expect(resolveTransferFilename(entered, 'C:/Users/test_user_1', 'C:/Users/home')).toEqual({ parent, name })
     })
 
     it.each([
       ['D:\\backup\\', 'D:/backup'],
       ['C:\\', 'C:/'],
-      ['folder\\', 'C:/Users/ada/folder'],
+      ['folder\\', 'C:/Users/test_user_1/folder'],
     ])('reads the trailing separator in %s as "into this folder"', (entered, parent) => {
-      expect(resolveTransferFilename(entered, 'C:/Users/ada', '', 'notes.txt')).toEqual({ parent, name: 'notes.txt' })
+      expect(resolveTransferFilename(entered, 'C:/Users/test_user_1', '', 'notes.txt')).toEqual({
+        parent,
+        name: 'notes.txt',
+      })
     })
 
     it.each(['C:', '\\\\nas', '\\\\nas\\'])('finds no target in %s', (entered) => {
-      expect(resolveTransferFilename(entered, 'C:/Users/ada')).toBeNull()
+      expect(resolveTransferFilename(entered, 'C:/Users/test_user_1')).toBeNull()
     })
   })
 })

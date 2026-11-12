@@ -43,9 +43,9 @@ the `sort_listing` call.
 - **100k cold-ish**, two rounds (fresh fixture and fresh process per method, one pass): current 750 / 893 ms · bulk 274
   / 362 ms · bulk + xattr 2,671 / 5,818 ms · current + getattrlist 1,248 / 1,318 ms.
 - **Bulk buffer size** at 100k: 16 KiB 177 ms, 64 KiB 169 ms, 128 KiB 165 ms, 512 KiB 171 ms. Flat; 64–128 KiB is fine.
-- **smbfs** (`/Volumes/naspi/_todo_pics`, 155 entries, QNAP over Tailscale, 3 rounds): current 54.8 ms wall / 1.3 ms CPU
-  · bulk 118.6 / 1.4 · bulk + xattr 814.7 / 13.1 · current + getattrlist 63.1 / 1.9. First pass: current 1,056 ms, bulk
-  848 ms. Warm `lstat` is answered from smbfs's attribute cache; `getattrlistbulk` re-enumerates over the wire.
+- **smbfs** (`/Volumes/testshare/test_photos`, 155 entries, QNAP over Tailscale, 3 rounds): current 54.8 ms wall / 1.3
+  ms CPU · bulk 118.6 / 1.4 · bulk + xattr 814.7 / 13.1 · current + getattrlist 63.1 / 1.9. First pass: current 1,056
+  ms, bulk 848 ms. Warm `lstat` is answered from smbfs's attribute cache; `getattrlistbulk` re-enumerates over the wire.
 
 ### Method and environment
 

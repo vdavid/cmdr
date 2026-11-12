@@ -236,7 +236,7 @@ export function isValidLicenseType(type: string): type is LicenseType {
   return (licenseTypes as readonly string[]).includes(type)
 }
 
-/** Redact an email for logging: "john@example.com" -> "j***@example.com" */
+/** Redact an email for logging: "test_user_14@example.com" -> "t***@example.com" */
 export function redactEmail(email: string): string {
   const atIndex = email.indexOf('@')
   if (atIndex <= 0) return '***'

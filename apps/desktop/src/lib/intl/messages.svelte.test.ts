@@ -149,11 +149,17 @@ describe('t() resolution', () => {
   it('shows a path param with backslashes on Windows, and as is elsewhere', () => {
     _setLocaleForTests('en-US')
     onTestFinished(withPlatform('windows'))
-    expect(tString('fileOperations.delete.fromPath', { path: pathParam('C:/Users/ada') })).toBe('From: C:\\Users\\ada')
+    expect(tString('fileOperations.delete.fromPath', { path: pathParam('C:/Users/test_user_1') })).toBe(
+      'From: C:\\Users\\test_user_1',
+    )
     onTestFinished(withPlatform('macos'))
-    expect(tString('fileOperations.delete.fromPath', { path: pathParam('C:/Users/ada') })).toBe('From: C:/Users/ada')
+    expect(tString('fileOperations.delete.fromPath', { path: pathParam('C:/Users/test_user_1') })).toBe(
+      'From: C:/Users/test_user_1',
+    )
     onTestFinished(withPlatform('linux'))
-    expect(tString('fileOperations.delete.fromPath', { path: pathParam('/home/ada') })).toBe('From: /home/ada')
+    expect(tString('fileOperations.delete.fromPath', { path: pathParam('/home/test_user_1') })).toBe(
+      'From: /home/test_user_1',
+    )
   })
 
   /** #1118: only a param its caller marks as a path is spelled as one; prose stays prose. */

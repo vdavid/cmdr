@@ -23,8 +23,8 @@ Favorites used to be a hardcoded `Vec<LocationInfo>` of four folders, computed f
   "favorites": [
     { "id": "9f1c…", "path": "/Applications", "name": "Applications", "shortcut": "A",
       "volume": { "id": "root", "root": "/", "name": "Macintosh HD" } },
-    { "id": "a83e…", "path": "/Volumes/naspi/docs", "name": "docs",
-      "volume": { "id": "smb-naspi-…", "root": "/Volumes/naspi", "name": "naspi on nas.local" } }
+    { "id": "a83e…", "path": "/Volumes/testshare/docs", "name": "docs",
+      "volume": { "id": "smb-testshare-…", "root": "/Volumes/testshare", "name": "testshare on testnas.local" } }
   ]
 }
 ```
@@ -88,8 +88,8 @@ the UI language at first launch, before any window has resolved it.
 All in `store.rs`, unit-tested without disk or an `AppHandle`:
 
 - `add(path, name?, volume)`: dedups by `(volume.id, path under volume.root)` when both sides know
-  their volume, else by normalized path, so one share mounted at `/Volumes/naspi` and later at
-  `/Volumes/naspi-1` is one favorite, and a legacy entry meets its own re-add. A re-add moves the
+  their volume, else by normalized path, so one share mounted at `/Volumes/testshare` and later at
+  `/Volumes/testshare-1` is one favorite, and a legacy entry meets its own re-add. A re-add moves the
   existing entry to the end, keeps its id (applying a `name` override if given), and takes the add's
   `path` and `volume` (the root and name may have moved). A fresh add appends with a UUID id and a
   label defaulting to the path's file name. Move-to-end (not move-to-top) because favorites are a
@@ -204,7 +204,7 @@ plus two in-memory settings (`ReachFacts`: MTP's manager bit, `adb::volume_wirin
 ❌ never a disk. Per favorite: the target is the stored volume id, or a claim (§ Claiming legacy
 entries). With a row for that id, `volume_root` is the row's path, a mount-rooted volume
 (`VolumeScheme::is_mount_rooted`: root, local, path, SMB, cloud) has the favorite's `path` REBASED
-from the stored root onto the row's (a share back at `/Volumes/naspi-1`, a renamed drive), and a
+from the stored root onto the row's (a share back at `/Volumes/testshare-1`, a renamed drive), and a
 server or phone path stays verbatim (it's in that namespace; an edited remote root doesn't move it, and a server that
 moved to a new address respells it in the store, `follow_server_move`).
 Discovery's `OnDisk::No` counts only when no rebase happened, since it probed the stored path.
@@ -237,7 +237,7 @@ never at load: load stays syscall-free and `AppHandle`-free.
   path, server places, device storages).
 - ❗ **Claim only from evidence.** The boot volume claims a folder only when discovery SAW it
   (`OnDisk::Yes`) or took a TCC-protected home folder on trust while the FDA gate is pending
-  (`Assumed`). Otherwise `/Volumes/naspi/docs` on an unmounted share nobody saved would be
+  (`Assumed`). Otherwise `/Volumes/testshare/docs` on an unmounted share nobody saved would be
   claimed by `/`, written down, and read "not found" forever after the share comes back. Any other
   row names the volume by being there.
 - Claims persist through `store::claim_volumes`, which fills `None` only, reports nothing to
@@ -289,7 +289,7 @@ servers-hub path would be written down with nothing able to reopen it.
    unregistered (the servers hub) answers `NotAPlace`.
 
 It answers `FavoriteVolume { id, root, name }` from the resolved row. On macOS the resolver names an
-SMB share the way its switcher row does ("naspi on nas.local", `volumes/platform/macos/mounts.rs::smb_share_name`),
+SMB share the way its switcher row does ("testshare on testnas.local", `volumes/platform/macos/mounts.rs::smb_share_name`),
 so a pick after the share is forgotten says which server it means; a bare share name couldn't. An OS-mounted SMB share
 served by `LocalPosixVolume` reports `BackendKind::Local`, which is admitted like any drive.
 

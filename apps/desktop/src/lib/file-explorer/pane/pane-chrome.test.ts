@@ -30,7 +30,7 @@ function mountPane(): { q: (selector: string) => HTMLElement; scope: HTMLElement
         <span class="path">
           <button class="seg-users">Users</button>
           <span class="path-sep">/</span>
-          <button class="seg-david">david</button>
+          <button class="seg-test_user_3">test_user_3</button>
           <span>projects</span>
         </span>
         <span class="repo-chip" tabindex="-1" role="img" aria-label="main, clean">main</span>
@@ -123,11 +123,11 @@ describe('movePaneChromeFocus', () => {
     expect(press('ArrowRight')).toBe(true)
     expect(document.activeElement).toBe(q('.seg-users'))
     expect(press('ArrowRight')).toBe(true)
-    expect(document.activeElement).toBe(q('.seg-david'))
+    expect(document.activeElement).toBe(q('.seg-test_user_3'))
     expect(press('ArrowRight')).toBe(true)
     expect(document.activeElement).toBe(q('.repo-chip'))
     expect(press('ArrowLeft')).toBe(true)
-    expect(document.activeElement).toBe(q('.seg-david'))
+    expect(document.activeElement).toBe(q('.seg-test_user_3'))
   })
 
   it('stops at either end without wrapping', () => {

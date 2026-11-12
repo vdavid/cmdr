@@ -60,8 +60,8 @@ export const quitFixtures: Record<string, QuitFixture | undefined> = {
       operation(
         'op-1',
         'copy',
-        '2026-07-14_stockholm-archipelago-sunrise-session_DSC09241_edited_final_v3_reallyfinal.arw',
-        'naspolya-media-photos-2026-07-summer-archive-raw-originals',
+        '2026-07-14_test-harbor-sunrise-photo-session_DSC09241_edited_final_v3_reallyfinal.arw',
+        'testnas-media-photos-2026-07-summer-archive-raw-originals',
       ),
     ],
     secondsLeft: 12,

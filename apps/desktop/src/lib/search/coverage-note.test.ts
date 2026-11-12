@@ -44,7 +44,7 @@ describe('coverageNoteFromRun', () => {
   it('never goes quiet over a folder the walk could not open', () => {
     // Regression: a NAS folder whose name the server didn't recognize came back as
     // a completed walk with nothing in it, and the dialog said "No files match".
-    const folder = '/Volumes/naspi/papers/Rymdskottkärra AB'
+    const folder = '/Volumes/testshare/documents/Testföretag AB'
     const note = coverageNoteFromRun(runCoverage({ failedRoots: [folder] }))
     expect(note?.live?.failedRoots).toEqual([folder])
   })
@@ -117,11 +117,13 @@ describe('coverageNoteFrom', () => {
   })
 
   it('carries an uncovered volume with the volume the backend routed to', () => {
-    const note = coverageNoteFrom(result({ uncoveredScopes: ['/Volumes/naspi/photos'], targetVolumeId: 'smb-naspi' }))
+    const note = coverageNoteFrom(
+      result({ uncoveredScopes: ['/Volumes/testshare/photos'], targetVolumeId: 'smb-testshare' }),
+    )
     expect(note).toEqual({
-      uncoveredScopes: ['/Volumes/naspi/photos'],
+      uncoveredScopes: ['/Volumes/testshare/photos'],
       unresolvedScopes: [],
-      volumeId: 'smb-naspi',
+      volumeId: 'smb-testshare',
     })
   })
 
@@ -163,9 +165,9 @@ describe('isTargetIndexReady', () => {
   })
 
   it('does not wait for a pre-load of a volume the search will not touch', () => {
-    expect(isTargetIndexReady({ targetVolumeId: 'smb-naspi', isVolumeReady: ready(), pendingVolumeId: 'root' })).toBe(
-      true,
-    )
+    expect(
+      isTargetIndexReady({ targetVolumeId: 'smb-testshare', isVolumeReady: ready(), pendingVolumeId: 'root' }),
+    ).toBe(true)
   })
 
   it('runs once the target arena has landed, whatever else is pending', () => {
@@ -217,7 +219,9 @@ describe('offersFullDiskAccess', () => {
     // The silent-failure case the typed cause exists for: these two are the same
     // shape on the wire and only one of them is a permission problem. Offering
     // Full Disk Access here sends the user to System Settings to fix nothing.
-    expect(offersFullDiskAccess({ note: note({ declined: ['/Volumes/naspi/@eaDir'] }), ...onMacWithout })).toBe(false)
+    expect(offersFullDiskAccess({ note: note({ declined: ['/Volumes/testshare/@eaDir'] }), ...onMacWithout })).toBe(
+      false,
+    )
   })
 
   it('offers nothing once Cmdr already has full disk access', () => {

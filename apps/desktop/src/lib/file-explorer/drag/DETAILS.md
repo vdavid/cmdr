@@ -125,7 +125,7 @@ reports 0 bytes / 0 files (and the move-vs-copy badge can read wrong).
 
 **Direct SMB is NOT one of the relative-path cases**, despite being non-local for every other purpose:
 `SmbVolume::list_directory_impl` builds each entry's path from `to_display_path()`, which prefixes the OS mount point,
-so an SMB pane holds `/Volumes/naspi/photos/sunset.jpg`. The reverse direction agrees: `to_smb_path` has an explicit
+so an SMB pane holds `/Volumes/testshare/photos/sunset.jpg`. The reverse direction agrees: `to_smb_path` has an explicit
 branch for "paths that start with the mount path (absolute paths from frontend)". An SMB self-drag would therefore
 resolve correctly through the resolver too; it takes the recorded-identity path for consistency, not out of necessity.
 This also means an SMB pane's drag-out publishes REAL file URLs (see `native_drag/type_plan.rs`) — the paths are

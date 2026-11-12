@@ -23,11 +23,11 @@ Here, because the answer is yes:
 - `smb_addr` — an `smb2` address string. `smb2` uses ONE string for the TCP dial and the UNC server name
   (`\\server\IPC$`), and some servers reject `.local` there, so an mDNS `.local` name is resolved (the system resolver
   answers it through mDNS, bounded at 5 s) and dialed by its IPv4 address. ❗ Never by the stripped name when the name
-  resolves (#912): `nas` alone isn't an mDNS name, so a typed `nas.local` with no discovered IP never connected. Only
-  IPv6 dials as typed (a link-local scope can't ride an addr string); nothing resolved falls back to the stripped name
-  for unicast DNS. Every dial goes through it (listings, `try_open_share`, `probe_server_guid`, `build_session`, the
-  watcher), so a reconnect re-resolves. An IPv6 literal goes in bare (`fe80::1:445`) and still dials: an address that
-  doesn't parse as a socket address reaches the resolver split on its LAST colon. Bare, bracketed, and expanded
+  resolves (#912): `nas` alone isn't an mDNS name, so a typed `testnas.local` with no discovered IP never connected.
+  Only IPv6 dials as typed (a link-local scope can't ride an addr string); nothing resolved falls back to the stripped
+  name for unicast DNS. Every dial goes through it (listings, `try_open_share`, `probe_server_guid`, `build_session`,
+  the watcher), so a reconnect re-resolves. An IPv6 literal goes in bare (`fe80::1:445`) and still dials: an address
+  that doesn't parse as a socket address reaches the resolver split on its LAST colon. Bare, bracketed, and expanded
   spellings all opened a share (verified on smb2 0.21.0 / tokio 1.53.1, `try_open_share` against the `guest` fixture
   through a `[::1]` forwarder, 2026-09-10), so brackets would change nothing. In every spelling smb2 takes the UNC
   server name as what comes before the FIRST colon, and Samba ignores it.
@@ -661,8 +661,8 @@ filesystem in it; what a refresh DOES to the cache is
 
 An SMB name is a byte string the server matches exactly: no Unicode folding, no case folding. One directory can hold its
 own name composed (NFC) and its children's composed or decomposed (NFD) in any mix, and case is significant too.
-Measured against David's QNAP (`naspi`) with the `smb2` CLI on 2026-09-22: in a Google Takeout album whose directory is
-NFC and whose `retusált -185.jpg` is NFD, only the `(NFC directory, NFD file)` spelling opened; the all-NFC, all-NFD,
+Measured against David's QNAP (`testshare`) with the `smb2` CLI on 2026-09-22: in a Google Takeout album whose directory
+is NFC and whose `retusált -185.jpg` is NFD, only the `(NFC directory, NFD file)` spelling opened; the all-NFC, all-NFD,
 and `(NFD, NFC)` spellings answered `STATUS_OBJECT_NAME_NOT_FOUND` or `STATUS_OBJECT_PATH_NOT_FOUND`, and so did the
 right bytes in the wrong case. The fixture's Samba stores names as sent too (verified on the `smb-consumer-guest`
 container, `unicode_names_integration_test.rs`, 2026-09-23). So "SMB servers use form X" is false (ERR-VETBX). The rule,
@@ -978,10 +978,10 @@ The app's `network::smb_encryption` sets it to the setting OR the policy; nothin
 
 ## Re-rooting a share
 
-macOS mounts one share at several roots (`/Volumes/naspi` AND `/Volumes/naspi-1`) and they all derive one volume ID, so
-the registry tracks the SET of roots and promotes a survivor when the active one dies (`volume/DETAILS.md` § "A volume
-ID owns a set of mount roots"). `SmbVolume` implements `Volume::rerooted`, because the OS mount is only an addressing
-prefix here: Cmdr's own I/O rides the smb2 session.
+macOS mounts one share at several roots (`/Volumes/testshare` AND `/Volumes/testshare-1`) and they all derive one volume
+ID, so the registry tracks the SET of roots and promotes a survivor when the active one dies (`volume/DETAILS.md` § "A
+volume ID owns a set of mount roots"). `SmbVolume` implements `Volume::rerooted`, because the OS mount is only an
+addressing prefix here: Cmdr's own I/O rides the smb2 session.
 
 **Shape**: `SmbVolume` is a thin instance over an `Arc<SmbVolumeInner>`. The instance holds what belongs to ONE mount
 root (`name`, `mount_path`, `mount_root_gone`); the inner holds the session and everything scoped to the SHARE (client,
@@ -1486,13 +1486,13 @@ No fixture serves a junction.
 **Decision**: `SmbVolume::to_smb_path` returns `Result<String, VolumeError>` and refuses a path outside the mount root
 **Why**: it turns a path the frontend sent into the share-relative string that goes on the wire, and every way of
 GUESSING an answer for an out-of-root path put a real request at a real, wrong place. It compared the root as a raw
-STRING, so with root `/Volumes/naspi` a path under the sibling mount `/Volumes/naspi-1/x` stripped to `-1/x` — a legal
-file name on the share, which the server would happily create or delete. Anything that matched neither fell through to
-"strip the leading slash", so `/Users/me/notes.txt` went out as the share-relative `Users/me/notes.txt`. Matching whole
-path COMPONENTS (`Path::strip_prefix`) kills the first, and `VolumeError::NotFound` for the rest kills the second: a
-path that isn't on this volume genuinely isn't found there, and the caller surfaces that instead of acting elsewhere.
-`presence` maps the error to `Absent` (the honest answer to the question it was asked; a refusal or a session that won't
-clone is `Unknown`, `mapping.rs::stat_presence`), and the post-mutation listing-cache patches go through
+STRING, so with root `/Volumes/testshare` a path under the sibling mount `/Volumes/testshare-1/x` stripped to `-1/x` — a
+legal file name on the share, which the server would happily create or delete. Anything that matched neither fell
+through to "strip the leading slash", so `/Users/me/notes.txt` went out as the share-relative `Users/me/notes.txt`.
+Matching whole path COMPONENTS (`Path::strip_prefix`) kills the first, and `VolumeError::NotFound` for the rest kills
+the second: a path that isn't on this volume genuinely isn't found there, and the caller surfaces that instead of acting
+elsewhere. `presence` maps the error to `Absent` (the honest answer to the question it was asked; a refusal or a session
+that won't clone is `Unknown`, `mapping.rs::stat_presence`), and the post-mutation listing-cache patches go through
 `display_path_for`, which returns an `Option` so a write that already succeeded is never reported as failed because its
 parent path didn't convert. The Docker integration tests address the fixture share the same way production does, through
 `volume::testing::share_path` (and, app-side, `smb_index_scan_test::unique_base`), so a test path is either relative or

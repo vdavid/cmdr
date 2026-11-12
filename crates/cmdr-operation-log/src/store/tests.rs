@@ -254,8 +254,8 @@ fn intern_dir_round_trips_a_scheme_rooted_path() {
     let conn = open_write_connection(&path).expect("write conn");
 
     for remote in [
-        "adb://46061FDAS000A4/sdcard/Download",
-        "sftp://ada@nas.local:22/home/ada",
+        "adb://TESTSERIAL0001/sdcard/Download",
+        "sftp://test_user_1@testnas.local:22/home/test_user_1",
         "smb://nas/share",
         // A file directly at the remote root.
         "mtp://device",
@@ -266,8 +266,8 @@ fn intern_dir_round_trips_a_scheme_rooted_path() {
     }
 
     // The root is one shared row: two folders under it are siblings of each other.
-    let download = intern_dir(&conn, "remote", "adb://46061FDAS000A4/sdcard/Download").expect("intern");
-    let dcim = intern_dir(&conn, "remote", "adb://46061FDAS000A4/sdcard/DCIM").expect("intern");
+    let download = intern_dir(&conn, "remote", "adb://TESTSERIAL0001/sdcard/Download").expect("intern");
+    let dcim = intern_dir(&conn, "remote", "adb://TESTSERIAL0001/sdcard/DCIM").expect("intern");
     assert_ne!(download, dcim);
 
     // A local path is untouched by the scheme rule, colon or not.

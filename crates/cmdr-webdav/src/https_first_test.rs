@@ -15,7 +15,7 @@ use crate::params::WebdavConnectionParams;
 use crate::transport;
 
 fn params(url: &str) -> WebdavConnectionParams {
-    let mut params = WebdavConnectionParams::new(Url::parse(url).expect("a valid test URL"), "ada", "/Photos");
+    let mut params = WebdavConnectionParams::new(Url::parse(url).expect("a valid test URL"), "test_user_1", "/Photos");
     params.auto_reconnect = false;
     params
 }
@@ -56,9 +56,9 @@ fn up(_: &str) -> Result<(), WebdavConnectError> {
 async fn an_http_address_moves_to_https_when_that_answers() {
     let dials = Dials::new();
     let chosen = dial_preferring_https_with(
-        params("http://nas.local/dav/"),
+        params("http://testnas.local/dav/"),
         |url| async move {
-            assert_eq!(url.as_str(), "https://nas.local/dav/", "the probe asks the twin");
+            assert_eq!(url.as_str(), "https://testnas.local/dav/", "the probe asks the twin");
             true
         },
         &CancellationToken::new(),
@@ -67,26 +67,26 @@ async fn an_http_address_moves_to_https_when_that_answers() {
     .await
     .expect("connected");
 
-    assert_eq!(chosen.base_url.as_str(), "https://nas.local/dav/");
-    assert_eq!(chosen.username, "ada");
+    assert_eq!(chosen.base_url.as_str(), "https://testnas.local/dav/");
+    assert_eq!(chosen.username, "test_user_1");
     assert_eq!(chosen.remote_root.to_string_lossy(), "/Photos");
     assert!(!chosen.auto_reconnect, "the person's switches come along");
-    assert_eq!(dials.tried(), ["https://nas.local/dav/"]);
+    assert_eq!(dials.tried(), ["https://testnas.local/dav/"]);
 }
 
 #[tokio::test]
 async fn an_http_address_is_dialed_as_typed_when_https_does_not_answer() {
     let dials = Dials::new();
     let chosen = dial_preferring_https_with(
-        params("http://nas.local:5005/dav/"),
+        params("http://testnas.local:5005/dav/"),
         |_| async { false },
         &CancellationToken::new(),
         |params| dials.dial(params, up),
     )
     .await
     .expect("connected");
-    assert_eq!(chosen.base_url.as_str(), "http://nas.local:5005/dav/");
-    assert_eq!(dials.tried(), ["http://nas.local:5005/dav/"]);
+    assert_eq!(chosen.base_url.as_str(), "http://testnas.local:5005/dav/");
+    assert_eq!(dials.tried(), ["http://testnas.local:5005/dav/"]);
 }
 
 /// ❗ **An `https` twin that answered the probe but whose dial didn't come up
@@ -103,7 +103,7 @@ async fn an_https_twin_whose_dial_fails_falls_back_to_the_typed_address() {
     for refusal in refusals {
         let dials = Dials::new();
         let chosen = dial_preferring_https_with(
-            params("http://nas.local/dav/"),
+            params("http://testnas.local/dav/"),
             |_| async { true },
             &CancellationToken::new(),
             |params| {
@@ -119,8 +119,11 @@ async fn an_https_twin_whose_dial_fails_falls_back_to_the_typed_address() {
         .await
         .expect("the typed address connected");
 
-        assert_eq!(chosen.base_url.as_str(), "http://nas.local/dav/");
-        assert_eq!(dials.tried(), ["https://nas.local/dav/", "http://nas.local/dav/"]);
+        assert_eq!(chosen.base_url.as_str(), "http://testnas.local/dav/");
+        assert_eq!(
+            dials.tried(),
+            ["https://testnas.local/dav/", "http://testnas.local/dav/"]
+        );
     }
 }
 
@@ -129,7 +132,7 @@ async fn an_https_twin_whose_dial_fails_falls_back_to_the_typed_address() {
 async fn a_cancelled_https_dial_does_not_fall_back() {
     let dials = Dials::new();
     let answer = dial_preferring_https_with(
-        params("http://nas.local/dav/"),
+        params("http://testnas.local/dav/"),
         |_| async { true },
         &CancellationToken::new(),
         |params| dials.dial(params, |_| Err(WebdavConnectError::Cancelled)),
@@ -137,7 +140,7 @@ async fn a_cancelled_https_dial_does_not_fall_back() {
     .await;
 
     assert!(matches!(answer, Err(WebdavConnectError::Cancelled)));
-    assert_eq!(dials.tried(), ["https://nas.local/dav/"]);
+    assert_eq!(dials.tried(), ["https://testnas.local/dav/"]);
 }
 
 /// ❌ Nor does a dial whose attempt was called off while it failed some other way.
@@ -146,7 +149,7 @@ async fn a_called_off_attempt_does_not_fall_back() {
     let cancel = CancellationToken::new();
     let dials = Dials::new();
     let answer = dial_preferring_https_with(
-        params("http://nas.local/dav/"),
+        params("http://testnas.local/dav/"),
         |_| async { true },
         &cancel,
         |params| {
@@ -157,7 +160,7 @@ async fn a_called_off_attempt_does_not_fall_back() {
     .await;
 
     assert!(matches!(answer, Err(WebdavConnectError::TimedOut)));
-    assert_eq!(dials.tried(), ["https://nas.local/dav/"]);
+    assert_eq!(dials.tried(), ["https://testnas.local/dav/"]);
 }
 
 /// A probe Cancel cut short dials nothing at all.
@@ -166,7 +169,7 @@ async fn a_probe_cut_by_cancel_dials_nothing() {
     let cancel = CancellationToken::new();
     let dials = Dials::new();
     let answer = dial_preferring_https_with(
-        params("http://nas.local/dav/"),
+        params("http://testnas.local/dav/"),
         |_| {
             cancel.cancel();
             async { false }
@@ -252,7 +255,7 @@ async fn an_answer_without_a_dav_header_is_not_a_webdav_server() {
     let url = Url::parse(&format!("http://127.0.0.1:{port}/dav/")).expect("url");
     assert!(!transport::answers_as_webdav(url, &CancellationToken::new()).await);
 
-    let port = serving(b"HTTP/1.1 301 Moved Permanently\r\nLocation: http://nas.local/\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").await;
+    let port = serving(b"HTTP/1.1 301 Moved Permanently\r\nLocation: http://testnas.local/\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").await;
     let url = Url::parse(&format!("http://127.0.0.1:{port}/dav/")).expect("url");
     assert!(!transport::answers_as_webdav(url, &CancellationToken::new()).await);
 }

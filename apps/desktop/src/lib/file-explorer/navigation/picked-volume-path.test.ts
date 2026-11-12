@@ -7,13 +7,13 @@ import { describe, expect, it } from 'vitest'
 import type { VolumeInfo } from '../types'
 import { pathForPickedVolume } from './picked-volume-path'
 
-const ROOT = 'sftp://ada@nas.local:22/srv/data'
-const LANDING = 'sftp://ada@nas.local:22/srv/data/photos'
+const ROOT = 'sftp://test_user_1@testnas.local:22/srv/data'
+const LANDING = 'sftp://test_user_1@testnas.local:22/srv/data/photos'
 
 function serverPlace(over: Partial<VolumeInfo>): VolumeInfo {
   return {
-    id: 'sftp-nas-local-22-ada',
-    name: 'Naspolya',
+    id: 'sftp-nas-local-22-test_user_1',
+    name: 'Testnas',
     path: ROOT,
     category: 'network',
     fsType: 'sftp',

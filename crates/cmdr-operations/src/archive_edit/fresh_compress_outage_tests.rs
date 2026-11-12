@@ -174,7 +174,7 @@ async fn compress(direct: bool, atomic: bool, replace: bool, cut: Cut, meanwhile
         crate::host::testing::pane_order_host(),
     ));
 
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     inner.create_directory(Path::new("/share")).await.unwrap();
     if replace {
         inner.create_file(Path::new(ARCHIVE), &old_archive()).await.unwrap();

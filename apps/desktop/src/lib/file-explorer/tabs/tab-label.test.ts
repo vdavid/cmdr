@@ -31,7 +31,7 @@ describe('deriveTabLabel', () => {
   })
 
   it('shows the basename for a local subfolder (convention pinned)', () => {
-    expect(deriveTabLabel('/Users/john/Documents')).toBe('Documents')
+    expect(deriveTabLabel('/Users/test_user_14/Documents')).toBe('Documents')
   })
 
   it('shows the volume folder name for a mounted-volume root (convention pinned)', () => {

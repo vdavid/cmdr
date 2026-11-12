@@ -176,7 +176,7 @@ pub fn path_volume_id(mount_path: &str) -> String {
 ///
 /// Server and share are lowercased before hashing, which is canonicalization
 /// rather than loss: DNS hostnames are case-insensitive, and so are SMB share
-/// names (Windows and Samba default), so `Naspolya`/`naspolya` and
+/// names (Windows and Samba default), so `Testnas`/`testnas` and
 /// `Public`/`public` really are the same mount. The port is literal.
 ///
 /// Both are NFC-folded first, for the same reason and against a worse failure.
@@ -215,7 +215,7 @@ pub fn smb_volume_id(server: &str, port: u16, share: &str) -> String {
 /// # Case folding
 ///
 /// The host is lowercased, because DNS hostnames are case-insensitive. The
-/// username is NOT: POSIX accounts are case-sensitive, so `Ada` and `ada` can be
+/// username is NOT: POSIX accounts are case-sensitive, so `Test_user_1` and `test_user_1` can be
 /// two people. The port is literal.
 pub fn sftp_volume_id(host: &str, port: u16, username: &str) -> String {
     let host = host.to_lowercase();
@@ -437,7 +437,7 @@ impl VolumeScheme {
     }
 
     /// Whether a volume of this scheme addresses its files by an OS path under a root that can
-    /// MOVE: a mount point (a share remounted at `/Volumes/naspi-1`, a renamed drive) or a cloud
+    /// MOVE: a mount point (a share remounted at `/Volumes/testshare-1`, a renamed drive) or a cloud
     /// folder. A path stored against such a root rebases onto the volume's current one. A server or
     /// a phone spells its tree in its own namespace (`sftp://…`, `mtp://…`), which moves with
     /// nothing, so a stored path there stays verbatim.

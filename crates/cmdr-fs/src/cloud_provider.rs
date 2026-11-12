@@ -237,7 +237,7 @@ mod tests {
     #[test]
     fn third_party_providers_resolve_from_their_cloudstorage_directory() {
         assert_eq!(
-            provider_of("/Users/test/Library/CloudStorage/GoogleDrive-me@gmail.com/My Drive/x"),
+            provider_of("/Users/test/Library/CloudStorage/GoogleDrive-test_user_1@example.com/My Drive/x"),
             Some(CloudProvider::GoogleDrive)
         );
         assert_eq!(

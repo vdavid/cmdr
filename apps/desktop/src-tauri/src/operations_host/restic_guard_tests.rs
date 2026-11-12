@@ -26,9 +26,9 @@ use cmdr_operations::{
     WriteOperationConfig, WriteOperationError,
 };
 
-const REPO: &str = "/share/backups/m3-restic";
-const IN_VIEW: &str = "/share/backups/m3-restic/Browse snapshots/latest";
-const IN_VIEW_FILE: &str = "/share/backups/m3-restic/Browse snapshots/latest/a.txt";
+const REPO: &str = "/share/backups/test-restic";
+const IN_VIEW: &str = "/share/backups/test-restic/Browse snapshots/latest";
+const IN_VIEW_FILE: &str = "/share/backups/test-restic/Browse snapshots/latest/a.txt";
 const LOOKALIKE: &str = "/share/photos/Browse snapshots";
 
 /// A drive under a fresh id in the app's registry, holding a repo at [`REPO`]

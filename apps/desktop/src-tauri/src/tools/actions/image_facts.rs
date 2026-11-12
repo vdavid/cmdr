@@ -443,7 +443,7 @@ mod tests {
     #[test]
     fn a_protected_path_answers_a_protected_row_with_nothing_in_it() {
         let dir = TestDir::new("image-facts-protected");
-        let path = "/Volumes/naspi/backup/home/.ssh/key.png";
+        let path = "/Volumes/testshare/backup/home/.ssh/key.png";
         seed_ocr_row(&dir, "root", path, "secret words");
 
         let rows = run_lookup(&dir, &["root".to_string()], &[path.to_string()]);

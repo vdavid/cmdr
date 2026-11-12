@@ -13,12 +13,12 @@ const volumes: VolumeInfo[] = [
 function target(enteredPath: string, selectedVolumeId = 'root') {
   return resolveTransferTarget({
     enteredPath,
-    sourceFolderPath: 'C:/Users/ada',
-    sourcePath: 'C:/Users/ada/notes.txt',
+    sourceFolderPath: 'C:/Users/test_user_1',
+    sourcePath: 'C:/Users/test_user_1/notes.txt',
     sourceVolumeId: 'root',
     selectedVolumeId,
     volumes,
-    homePath: 'C:/Users/ada',
+    homePath: 'C:/Users/test_user_1',
   })
 }
 
@@ -38,8 +38,12 @@ describe('a Windows destination', () => {
   })
 
   it('reads a drive path the same with either separator', () => {
-    expect(target('C:/Users/ada/Documents/notes.txt')?.fullPath).toBe('C:/Users/ada/Documents/notes.txt')
-    expect(target('c:\\Users\\ada\\Documents\\notes.txt')?.fullPath).toBe('C:/Users/ada/Documents/notes.txt')
+    expect(target('C:/Users/test_user_1/Documents/notes.txt')?.fullPath).toBe(
+      'C:/Users/test_user_1/Documents/notes.txt',
+    )
+    expect(target('c:\\Users\\test_user_1\\Documents\\notes.txt')?.fullPath).toBe(
+      'C:/Users/test_user_1/Documents/notes.txt',
+    )
   })
 
   it('takes a drive path while a phone is the picked volume', () => {
@@ -54,7 +58,7 @@ describe('a Windows destination', () => {
       sourceVolumeId: 'mtp-1:65537',
       selectedVolumeId: 'mtp-1:65537',
       volumes,
-      homePath: 'C:/Users/ada',
+      homePath: 'C:/Users/test_user_1',
     })
     expect(fromPhone).toMatchObject({ volumeId: 'local-d', path: '/photos', fullPath: 'D:/photos/IMG_1.JPG' })
   })

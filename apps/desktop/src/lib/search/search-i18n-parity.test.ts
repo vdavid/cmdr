@@ -74,7 +74,7 @@ describe('coverage note parity (en)', () => {
   })
 
   it('gives a network drive its own voice, with no nudge to index it', () => {
-    expect(tString('search.coverage.line.uncovered.network', { count: 2, countText: '2', drive: 'Naspolya' })).toBe(
+    expect(tString('search.coverage.line.uncovered.network', { count: 2, countText: '2', drive: 'Testnas' })).toBe(
       'Cmdr doesn’t index network drives unless you ask, so this search skipped 2 folders.',
     )
   })

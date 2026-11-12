@@ -32,7 +32,7 @@ vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
             sourceVolumeId: 'root',
             sourceFolder: '/Users/someone/Downloads',
             destination: '/backups/Installers',
-            destinationVolumeName: 'Naspolya',
+            destinationVolumeName: 'Testnas',
             reversible: 'restoreMove',
             runsAs: null,
             destinationState: 'exists',

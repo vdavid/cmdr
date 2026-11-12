@@ -83,11 +83,11 @@ function copyProps(): TransferProgressPropsData {
     sourcePaths: ['/Users/me/photos/a.raw'],
     sourceFolderPath: '/Users/me/photos',
     sourcePaneSide: 'right',
-    destinationPath: '/Volumes/Naspolya/Backup',
+    destinationPath: '/Volumes/Testnas/Backup',
     direction: 'left',
     previewId: 'preview-1',
     sourceVolumeId: 'root',
-    destVolumeId: 'naspolya',
+    destVolumeId: 'testnas',
     conflictResolution: 'stop',
     duplicateFollowUp: 'nothing',
   }
@@ -248,7 +248,7 @@ describe('copy anyway from the error dialog', () => {
     type: 'insufficient_space',
     required: 2_000_000_000,
     available: 500_000_000,
-    volumeName: 'Naspolya',
+    volumeName: 'Testnas',
   }
 
   it('starts the same copy again with the free-space check skipped', () => {

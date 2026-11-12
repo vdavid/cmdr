@@ -22,7 +22,7 @@ function mountDecisions(decisions: ProposalDecision[]): HTMLElement {
 
 const rejected: ProposalDecision = {
   verb: 'trash',
-  what: '/Users/dana/Downloads/*.dmg',
+  what: '/Users/test_user_13/Downloads/*.dmg',
   ops: 12,
   outcome: { kind: 'rejected' },
 }
@@ -39,7 +39,7 @@ describe('AskCmdrProposalDecisions a11y', () => {
       rejected,
       {
         verb: 'move',
-        what: '/Users/dana/Desktop/*.png',
+        what: '/Users/test_user_13/Desktop/*.png',
         ops: 3,
         outcome: { kind: 'ran', done: 2, skipped: 1, failed: 0 },
       },

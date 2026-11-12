@@ -155,22 +155,22 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
   })
 
   it.each([
-    { reason: 'permissionDenied', path: '/Volumes/naspi/private' },
-    { reason: 'remotePermissionDenied', path: '/Volumes/naspi/private' },
-    { reason: 'noPermissionErrno', path: '/Volumes/naspi/private' },
-    { reason: 'notPermitted', path: '/Volumes/naspi/private' },
-    { reason: 'tccRestricted', path: '/Volumes/naspi/private' },
-    { reason: 'objectStoreRefused', path: '/Volumes/naspi/private' },
+    { reason: 'permissionDenied', path: '/Volumes/testshare/private' },
+    { reason: 'remotePermissionDenied', path: '/Volumes/testshare/private' },
+    { reason: 'noPermissionErrno', path: '/Volumes/testshare/private' },
+    { reason: 'notPermitted', path: '/Volumes/testshare/private' },
+    { reason: 'tccRestricted', path: '/Volumes/testshare/private' },
+    { reason: 'objectStoreRefused', path: '/Volumes/testshare/private' },
     { reason: 'serverRefused' },
     { reason: 'phoneRefused' },
   ])('shows a $reason refusal in place, never walking up as if the folder were deleted (#1018)', async (reason) => {
     // Pre-fix a direct SMB share answered the existence probe "no" for a folder the
     // account can't read (ACCESS_DENIED read as missing), so the pane jumped to the
     // parent with no word about permissions. A refusal says the folder is THERE.
-    const { loader, state, spies } = makeHarness({ volumeId: 'smb-naspi', volumePath: '/Volumes/naspi' })
+    const { loader, state, spies } = makeHarness({ volumeId: 'smb-testshare', volumePath: '/Volumes/testshare' })
     h.pathExistsChecked.mockResolvedValue({ data: false, timedOut: false })
-    h.resolveValidPath.mockResolvedValue('/Volumes/naspi')
-    await loader.loadDirectory({ path: '/Volumes/naspi/private' })
+    h.resolveValidPath.mockResolvedValue('/Volumes/testshare')
+    await loader.loadDirectory({ path: '/Volumes/testshare/private' })
     h.listeners.error[0]({ listingId: state.listingId, message: 'refused', error: { reason } })
     await vi.waitFor(() => {
       expect(state.error).toBe('refused')
@@ -178,8 +178,8 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
 
     expect(h.pathExistsChecked).not.toHaveBeenCalled()
     expect(h.resolveValidPath).not.toHaveBeenCalled()
-    expect(state.currentPath).not.toBe('/Volumes/naspi')
-    expect(spies.onPathChange).toHaveBeenCalledWith('/Volumes/naspi/private')
+    expect(state.currentPath).not.toBe('/Volumes/testshare')
+    expect(spies.onPathChange).toHaveBeenCalledWith('/Volumes/testshare/private')
   })
 
   it('shows a phone refusal on an MTP pane in place, never as a lost device', async () => {
@@ -201,17 +201,17 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
 
   it("tells the walk-up the volume's session state, so a busy server's slow stat of a live parent isn't skipped", async () => {
     const { loader, state } = makeHarness({
-      volumeId: 'smb-naspi',
-      volumePath: '/Volumes/naspi',
+      volumeId: 'smb-testshare',
+      volumePath: '/Volumes/testshare',
       connectionState: 'direct',
     })
     h.pathExistsChecked.mockResolvedValueOnce({ data: false, timedOut: false })
-    await loader.loadDirectory({ path: '/Volumes/naspi/photos/gone' })
+    await loader.loadDirectory({ path: '/Volumes/testshare/photos/gone' })
     h.listeners.error[0]({ listingId: state.listingId, message: 'no such dir' })
     await vi.waitFor(() => {
       expect(h.resolveValidPath).toHaveBeenCalledWith(
-        '/Volumes/naspi/photos/gone',
-        expect.objectContaining({ volumeId: 'smb-naspi', connectionState: 'direct' }),
+        '/Volumes/testshare/photos/gone',
+        expect.objectContaining({ volumeId: 'smb-testshare', connectionState: 'direct' }),
       )
     })
   })

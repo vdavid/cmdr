@@ -19,7 +19,7 @@ use crate::network::saved_server_fields::SavedServerOutcome;
 use crate::volume_broadcast::{self, RootChangeKind, VolumeRootChanged};
 use cmdr_fs::entry::FileEntry;
 
-const PREFIX: &str = "sftp://ada@nas.local:22";
+const PREFIX: &str = "sftp://test_user_1@testnas.local:22";
 
 /// Roomy for an in-memory stat on a loaded machine.
 const BUDGET: Duration = Duration::from_secs(2);
@@ -151,10 +151,10 @@ fn refusal(outcome: Result<AcceptedEdit, SavedServerOutcome>) -> Option<SavedSer
 #[tokio::test]
 async fn a_wider_root_the_server_has_is_installed_and_announced() {
     let id = "live-edit-wider-root";
-    let live = server_at("ada@nas.local", "/srv/data/tmp");
+    let live = server_at("test_user_1@testnas.local", "/srv/data/tmp");
     let manager = registered(id, &live);
     let edit = PlaceEdit {
-        label: "ada@nas.local",
+        label: "test_user_1@testnas.local",
         remote_root: "/srv/data",
         start_folder: None,
     };
@@ -190,10 +190,10 @@ async fn a_wider_root_the_server_has_is_installed_and_announced() {
 #[tokio::test]
 async fn a_rename_alone_swaps_the_instance_without_asking_the_server() {
     let id = "live-edit-rename";
-    let live = dead_session("ada@nas.local", "/srv/data", true);
+    let live = dead_session("test_user_1@testnas.local", "/srv/data", true);
     let manager = registered(id, &live);
     let edit = PlaceEdit {
-        label: "Naspolya",
+        label: "Testnas",
         remote_root: "/srv/data",
         start_folder: None,
     };
@@ -209,7 +209,7 @@ async fn a_rename_alone_swaps_the_instance_without_asking_the_server() {
     accepted.install(&manager);
 
     let installed = manager.get(id).expect("still registered");
-    assert_eq!(installed.name(), "Naspolya");
+    assert_eq!(installed.name(), "Testnas");
     assert_eq!(installed.root(), Path::new(&app("/srv/data")));
     assert!(
         volume_broadcast::volume_root_changes(id).is_empty(),
@@ -224,10 +224,10 @@ async fn a_rename_alone_swaps_the_instance_without_asking_the_server() {
 #[tokio::test]
 async fn an_edit_that_moves_no_folder_asks_the_server_nothing() {
     let id = "live-edit-switch-only";
-    let live = dead_session("ada@nas.local", "/srv/data", true);
+    let live = dead_session("test_user_1@testnas.local", "/srv/data", true);
     let manager = registered(id, &live);
     let edit = PlaceEdit {
-        label: "ada@nas.local",
+        label: "test_user_1@testnas.local",
         remote_root: "/srv/data",
         start_folder: Some("/srv/data/photos"),
     };
@@ -251,10 +251,10 @@ async fn an_edit_that_moves_no_folder_asks_the_server_nothing() {
 #[tokio::test]
 async fn a_start_folder_alone_moves_the_landing_and_keeps_the_instance() {
     let id = "live-edit-start-folder";
-    let live = server_at("ada@nas.local", "/srv/data");
+    let live = server_at("test_user_1@testnas.local", "/srv/data");
     let manager = registered(id, &live);
     let edit = PlaceEdit {
-        label: "ada@nas.local",
+        label: "test_user_1@testnas.local",
         remote_root: "/srv/data",
         start_folder: Some("/srv/data/photos"),
     };
@@ -283,10 +283,10 @@ async fn a_start_folder_alone_moves_the_landing_and_keeps_the_instance() {
 #[tokio::test]
 async fn clearing_the_start_folder_lands_on_the_root() {
     let id = "live-edit-clear-start-folder";
-    let live = server_at("ada@nas.local", "/srv/data");
+    let live = server_at("test_user_1@testnas.local", "/srv/data");
     let manager = registered(id, &live);
     let edit = PlaceEdit {
-        label: "ada@nas.local",
+        label: "test_user_1@testnas.local",
         remote_root: "/srv/data",
         start_folder: None,
     };
@@ -313,10 +313,10 @@ async fn clearing_the_start_folder_lands_on_the_root() {
 #[tokio::test]
 async fn a_saved_start_folder_outside_the_live_root_isnt_the_old_landing() {
     let id = "live-edit-drifted-start-folder";
-    let live = server_at("ada@nas.local", "/srv/data/tmp");
+    let live = server_at("test_user_1@testnas.local", "/srv/data/tmp");
     let manager = registered(id, &live);
     let edit = PlaceEdit {
-        label: "ada@nas.local",
+        label: "test_user_1@testnas.local",
         remote_root: "/srv/data",
         start_folder: None,
     };
@@ -341,10 +341,10 @@ async fn a_saved_start_folder_outside_the_live_root_isnt_the_old_landing() {
 #[tokio::test]
 async fn a_place_that_disconnected_before_the_install_announces_nothing() {
     let id = "live-edit-gone-before-install";
-    let live = server_at("ada@nas.local", "/srv/data/tmp");
+    let live = server_at("test_user_1@testnas.local", "/srv/data/tmp");
     let manager = registered(id, &live);
     let edit = PlaceEdit {
-        label: "ada@nas.local",
+        label: "test_user_1@testnas.local",
         remote_root: "/srv/data",
         start_folder: None,
     };
@@ -367,10 +367,10 @@ async fn a_place_that_disconnected_before_the_install_announces_nothing() {
 #[tokio::test]
 async fn a_place_that_reconnected_before_the_install_keeps_its_fresh_connection() {
     let id = "live-edit-reconnected-before-install";
-    let live = server_at("ada@nas.local", "/srv/data/tmp");
+    let live = server_at("test_user_1@testnas.local", "/srv/data/tmp");
     let manager = registered(id, &live);
     let edit = PlaceEdit {
-        label: "ada@nas.local",
+        label: "test_user_1@testnas.local",
         remote_root: "/srv/data",
         start_folder: None,
     };
@@ -378,7 +378,7 @@ async fn a_place_that_reconnected_before_the_install_keeps_its_fresh_connection(
     let accepted = check(&place(id, &live, None), &edit, over_the_same_server, BUDGET)
         .await
         .unwrap_or_else(|refusal| panic!("the server has /srv/data, refused with {refusal:?}"));
-    let fresh = server_at("ada@nas.local", "/srv/data/tmp");
+    let fresh = server_at("test_user_1@testnas.local", "/srv/data/tmp");
     manager.register(id, Arc::clone(&fresh));
     accepted.install(&manager);
 
@@ -396,10 +396,10 @@ async fn a_place_that_reconnected_before_the_install_keeps_its_fresh_connection(
 #[tokio::test]
 async fn a_root_the_server_doesnt_have_is_refused_and_nothing_moves() {
     let id = "live-edit-missing-root";
-    let live = server_at("ada@nas.local", "/srv/data/tmp");
+    let live = server_at("test_user_1@testnas.local", "/srv/data/tmp");
     let manager = registered(id, &live);
     let edit = PlaceEdit {
-        label: "ada@nas.local",
+        label: "test_user_1@testnas.local",
         remote_root: "/srv/elsewhere",
         start_folder: None,
     };
@@ -415,9 +415,9 @@ async fn a_root_the_server_doesnt_have_is_refused_and_nothing_moves() {
 #[tokio::test]
 async fn a_root_that_is_a_file_is_refused() {
     let id = "live-edit-file-root";
-    let live = server_at("ada@nas.local", "/srv/data");
+    let live = server_at("test_user_1@testnas.local", "/srv/data");
     let edit = PlaceEdit {
-        label: "ada@nas.local",
+        label: "test_user_1@testnas.local",
         remote_root: "/srv/data/notes.txt",
         start_folder: None,
     };
@@ -430,9 +430,9 @@ async fn a_root_that_is_a_file_is_refused() {
 #[tokio::test]
 async fn a_start_folder_the_server_doesnt_have_is_refused() {
     let id = "live-edit-missing-start-folder";
-    let live = server_at("ada@nas.local", "/srv/data");
+    let live = server_at("test_user_1@testnas.local", "/srv/data");
     let edit = PlaceEdit {
-        label: "ada@nas.local",
+        label: "test_user_1@testnas.local",
         remote_root: "/srv/data",
         start_folder: Some("/srv/data/gone"),
     };
@@ -447,9 +447,9 @@ async fn a_start_folder_the_server_doesnt_have_is_refused() {
 #[tokio::test]
 async fn a_session_that_dropped_confirms_nothing() {
     let id = "live-edit-dropped-session";
-    let live = dead_session("ada@nas.local", "/srv/data/tmp", false);
+    let live = dead_session("test_user_1@testnas.local", "/srv/data/tmp", false);
     let edit = PlaceEdit {
-        label: "ada@nas.local",
+        label: "test_user_1@testnas.local",
         remote_root: "/srv/data",
         start_folder: None,
     };
@@ -470,9 +470,9 @@ async fn a_session_that_dropped_confirms_nothing() {
 #[tokio::test]
 async fn a_session_that_never_answers_runs_out_of_budget() {
     let id = "live-edit-silent-session";
-    let live = dead_session("ada@nas.local", "/srv/data/tmp", true);
+    let live = dead_session("test_user_1@testnas.local", "/srv/data/tmp", true);
     let edit = PlaceEdit {
-        label: "ada@nas.local",
+        label: "test_user_1@testnas.local",
         remote_root: "/srv/data",
         start_folder: None,
     };

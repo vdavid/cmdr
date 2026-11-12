@@ -347,10 +347,14 @@ mod tests {
         // Asserted on the STRING, never on `PathBuf` equality: `Path`'s `Eq` is a
         // component compare, so `sftp:/a` and `sftp://a` compare equal and a
         // `assert_eq!(zip, PathBuf::from(…))` passes on the collapsed spelling.
-        let (zip, inner) =
-            archive_boundary_candidate(Path::new("sftp://ada@nas.local:22/srv/data/foo.zip/inner/b.txt"))
-                .expect("boundary");
-        assert_eq!(zip.to_str().expect("utf-8"), "sftp://ada@nas.local:22/srv/data/foo.zip");
+        let (zip, inner) = archive_boundary_candidate(Path::new(
+            "sftp://test_user_1@testnas.local:22/srv/data/foo.zip/inner/b.txt",
+        ))
+        .expect("boundary");
+        assert_eq!(
+            zip.to_str().expect("utf-8"),
+            "sftp://test_user_1@testnas.local:22/srv/data/foo.zip"
+        );
         assert_eq!(inner, PathBuf::from("inner/b.txt"));
     }
 

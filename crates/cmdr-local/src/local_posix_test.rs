@@ -41,9 +41,14 @@ fn a_folder_on_a_local_disk_can_be_indexed() {
 #[test]
 fn an_os_mounted_smb_share_can_be_indexed_because_the_gate_upgrades_it() {
     assert!(
-        LocalPosixVolume::on_mount("naspi", "/Volumes/naspi", MountClass::SmbShare, VolumeHost::detached())
-            .capabilities()
-            .can_be_indexed
+        LocalPosixVolume::on_mount(
+            "testshare",
+            "/Volumes/testshare",
+            MountClass::SmbShare,
+            VolumeHost::detached()
+        )
+        .capabilities()
+        .can_be_indexed
     );
 }
 

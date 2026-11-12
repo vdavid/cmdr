@@ -29,14 +29,14 @@ fn covered(volume: &str) -> SearchRunCoverage {
 /// over a folder nothing read went out as a confident zero.
 #[test]
 fn a_folder_the_walk_could_not_open_is_never_a_confident_zero() {
-    let folder = "/Volumes/naspi/papers/Rymdskottkärra AB".to_string();
+    let folder = "/Volumes/testshare/documents/Testföretag AB".to_string();
     let result = shape_answer(
         answer(
             settled(SearchRunCoverage {
                 walk: WalkEnding::Completed,
                 kind: CoverageKind::Live,
                 failed_roots: vec![folder.clone()],
-                ..covered("naspi")
+                ..covered("testshare")
             }),
             0,
         ),
@@ -58,7 +58,7 @@ fn a_folder_the_walk_could_not_open_is_never_a_confident_zero() {
 /// An answer with no rows, ending however the test needs.
 fn answer(ending: AnswerEnding, dirs_found: u64) -> LiveAnswer {
     LiveAnswer {
-        target_volume_id: "naspi".to_string(),
+        target_volume_id: "testshare".to_string(),
         entries: Vec::new(),
         match_count: 0,
         dirs_found,
@@ -78,9 +78,9 @@ fn rows(n: usize) -> Vec<SearchResultEntry> {
         .map(|i| SearchResultEntry {
             name: format!("2026-03-{i:04} quarterly report and appendix.pdf"),
             path: format!(
-                "/Users/dave/Documents/Rymd/invoices/2026/q1/2026-03-{i:04} quarterly report and appendix.pdf"
+                "/Users/test_user_10/Documents/Testco/invoices/2026/q1/2026-03-{i:04} quarterly report and appendix.pdf"
             ),
-            parent_path: "~/Documents/Rymd/invoices/2026/q1".to_string(),
+            parent_path: "~/Documents/Testco/invoices/2026/q1".to_string(),
             is_directory: false,
             size: Some(340_000 + i as u64),
             modified_at: Some(1_735_689_600),
@@ -140,7 +140,7 @@ fn a_hit_carries_both_the_raw_number_and_the_spoken_one() {
     let mut fabricated = answer(settled(covered("root")), 0);
     fabricated.entries = vec![SearchResultEntry {
         name: "test.pdf".to_string(),
-        path: "/Users/dave/Documents/test.pdf".to_string(),
+        path: "/Users/test_user_10/Documents/test.pdf".to_string(),
         parent_path: "~/Documents".to_string(),
         is_directory: false,
         size: Some(340_000),
@@ -175,7 +175,7 @@ fn a_size_the_index_has_no_number_for_stays_absent() {
     let mut fabricated = answer(settled(covered("root")), 0);
     fabricated.entries = vec![SearchResultEntry {
         name: "Projects".to_string(),
-        path: "/Users/dave/Projects".to_string(),
+        path: "/Users/test_user_10/Projects".to_string(),
         parent_path: "~".to_string(),
         is_directory: true,
         size: None,
@@ -222,7 +222,7 @@ fn coverage_complete_is_false_when_any_gap_is_set() {
         (
             "a refused folder",
             SearchRunCoverage {
-                permission_denied: vec!["/Users/dave/Documents".to_string()],
+                permission_denied: vec!["/Users/test_user_10/Documents".to_string()],
                 ..covered("root")
             },
         ),
@@ -236,14 +236,14 @@ fn coverage_complete_is_false_when_any_gap_is_set() {
         (
             "a declined snapshot tree",
             SearchRunCoverage {
-                declined: vec!["/Volumes/naspi/@eaDir".to_string()],
+                declined: vec!["/Volumes/testshare/@eaDir".to_string()],
                 ..covered("root")
             },
         ),
         (
             "ground another walk holds",
             SearchRunCoverage {
-                still_covering: vec!["/Volumes/naspi/photos".to_string()],
+                still_covering: vec!["/Volumes/testshare/photos".to_string()],
                 ..covered("root")
             },
         ),
@@ -265,8 +265,8 @@ fn coverage_complete_is_false_when_any_gap_is_set() {
         (
             "a server search can't cover",
             SearchRunCoverage {
-                uncovered_scopes: vec!["sftp://ada@nas.local:22/srv/data".to_string()],
-                ..covered("sftp-nas-local-22-ada")
+                uncovered_scopes: vec!["sftp://test_user_1@testnas.local:22/srv/data".to_string()],
+                ..covered("sftp-nas-local-22-test_user_1")
             },
         ),
     ];
@@ -297,7 +297,7 @@ fn a_still_walking_answer_never_reads_as_no_matches() {
     assert_eq!(result.coverage.folders_found, 480);
     let notes = joined(&result.notes);
     assert!(notes.contains("still walking"), "{notes}");
-    assert!(notes.contains("naspi") && notes.contains("480"), "{notes}");
+    assert!(notes.contains("testshare") && notes.contains("480"), "{notes}");
     assert!(notes.contains("again") && notes.contains("maxWaitSeconds"), "{notes}");
 }
 
@@ -379,7 +379,7 @@ fn a_run_that_covered_its_scope_from_the_index_says_nothing() {
     // The notes exist to name ground the answer doesn't speak for. A complete
     // answer has none, and a line per search would train an agent to skip
     // them all.
-    let result = shape_answer(answer(settled(covered("naspi")), 0), true);
+    let result = shape_answer(answer(settled(covered("testshare")), 0), true);
     assert!(result.notes.is_empty());
     assert!(result.coverage.complete);
 }
@@ -393,28 +393,28 @@ fn each_unreadable_list_gets_its_own_sentence() {
     let coverage = SearchRunCoverage {
         walk: WalkEnding::Completed,
         kind: CoverageKind::Live,
-        permission_denied: vec!["/Users/dave/Documents".to_string()],
-        off_limits: vec!["/Volumes/naspi/.root-only".to_string()],
-        declined: vec!["/Volumes/naspi/@eaDir".to_string()],
-        ..covered("naspi")
+        permission_denied: vec!["/Users/test_user_10/Documents".to_string()],
+        off_limits: vec!["/Volumes/testshare/.root-only".to_string()],
+        declined: vec!["/Volumes/testshare/@eaDir".to_string()],
+        ..covered("testshare")
     };
     let result = shape_answer(answer(settled(coverage), 12), true);
 
-    assert_eq!(result.coverage.permission_denied, vec!["/Users/dave/Documents"]);
-    assert_eq!(result.coverage.off_limits, vec!["/Volumes/naspi/.root-only"]);
-    assert_eq!(result.coverage.declined, vec!["/Volumes/naspi/@eaDir"]);
+    assert_eq!(result.coverage.permission_denied, vec!["/Users/test_user_10/Documents"]);
+    assert_eq!(result.coverage.off_limits, vec!["/Volumes/testshare/.root-only"]);
+    assert_eq!(result.coverage.declined, vec!["/Volumes/testshare/@eaDir"]);
     let notes = joined(&result.notes);
     let off_limits_note = result
         .notes
         .iter()
-        .find(|note| note.contains("/Volumes/naspi/.root-only"))
+        .find(|note| note.contains("/Volumes/testshare/.root-only"))
         .expect("the off-limits folder is named");
     assert!(
         !off_limits_note.contains("Full Disk Access"),
         "no grant opens it: {off_limits_note}"
     );
-    assert!(notes.contains("/Users/dave/Documents"), "{notes}");
-    assert!(notes.contains("/Volumes/naspi/@eaDir"), "{notes}");
+    assert!(notes.contains("/Users/test_user_10/Documents"), "{notes}");
+    assert!(notes.contains("/Volumes/testshare/@eaDir"), "{notes}");
     assert!(notes.contains("snapshot folders"), "{notes}");
     assert!(
         result.notes.len() >= 4,
@@ -424,14 +424,14 @@ fn each_unreadable_list_gets_its_own_sentence() {
 
 #[test]
 fn full_disk_access_is_offered_only_when_granting_it_would_help() {
-    let refused = vec!["/Users/dave/Downloads".to_string()];
+    let refused = vec!["/Users/test_user_10/Downloads".to_string()];
     let offered = refusal_note(&refused, true);
-    assert!(offered.contains("/Users/dave/Downloads"));
+    assert!(offered.contains("/Users/test_user_10/Downloads"));
     assert!(offered.contains("Full Disk Access"));
     // Cmdr already has it (or this isn't macOS): the folder is still named,
     // and no advice that would do nothing.
     let plain = refusal_note(&refused, false);
-    assert!(plain.contains("/Users/dave/Downloads"));
+    assert!(plain.contains("/Users/test_user_10/Downloads"));
     assert!(!plain.contains("Full Disk Access"));
 }
 
@@ -440,7 +440,7 @@ fn an_interrupted_walk_says_the_list_is_a_lower_bound() {
     let coverage = SearchRunCoverage {
         walk: WalkEnding::Interrupted,
         kind: CoverageKind::Live,
-        ..covered("naspi")
+        ..covered("testshare")
     };
     let notes = joined(&shape_answer(answer(settled(coverage), 3), true).notes);
     assert!(notes.contains("lower bound"), "{notes}");
@@ -451,7 +451,7 @@ fn a_completed_walk_reports_the_ground_it_added_to_the_index() {
     let coverage = SearchRunCoverage {
         walk: WalkEnding::Completed,
         kind: CoverageKind::Live,
-        ..covered("naspi")
+        ..covered("testshare")
     };
     let result = shape_answer(answer(settled(coverage), 21_482), true);
     assert!(
@@ -470,7 +470,7 @@ fn a_walk_that_added_one_folder_says_folder_not_folders() {
     let coverage = SearchRunCoverage {
         walk: WalkEnding::Completed,
         kind: CoverageKind::Live,
-        ..covered("naspi")
+        ..covered("testshare")
     };
     let result = shape_answer(answer(settled(coverage), 1), true);
     assert!(joined(&result.notes).contains("1 folder it"), "{:?}", result.notes);

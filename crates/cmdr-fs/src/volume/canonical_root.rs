@@ -3,7 +3,7 @@
 //!
 //! A volume ID is identity, and one filesystem can legitimately be reached
 //! through more than one mount point: macOS mounts the same SMB share at
-//! `/Volumes/naspi` and `/Volumes/naspi-1`, and on Linux a bind mount or a
+//! `/Volumes/testshare` and `/Volumes/testshare-1`, and on Linux a bind mount or a
 //! container mount does the same thing routinely. All of them derive the ID the
 //! first one did (a share keys on `(server, port, share)`, a local disk on its
 //! filesystem UUID), so publishing every mount hands one identity several
@@ -70,7 +70,7 @@ pub fn collapse_by_volume_id<T: MountRootCandidate>(candidates: Vec<T>) -> Vec<T
 /// shorter first, then lexicographic so the choice never depends on order.
 ///
 /// The shortest path wins because the OS suffixes the LATER mount
-/// (`/Volumes/naspi-1`), so the shortest is the original: the root every saved
+/// (`/Volumes/testshare-1`), so the shortest is the original: the root every saved
 /// path, favorite, and index row already refers to. The registry ranks its own
 /// roots by the same path shape, one rank below liveness
 /// (`file_system/volume/manager/roots.rs`).
@@ -110,14 +110,14 @@ mod tests {
 
     #[test]
     fn two_roots_for_one_volume_collapse_to_the_shortest_path() {
-        // The `/Volumes/naspi` + `/Volumes/naspi-1` shape: the OS suffixes the
+        // The `/Volumes/testshare` + `/Volumes/testshare-1` shape: the OS suffixes the
         // later mount, so the shortest path is the original one every saved path
         // already refers to.
         let collapsed = collapse_by_volume_id(vec![
-            mount("smb-naspi", "/Volumes/naspi-1"),
-            mount("smb-naspi", "/Volumes/naspi"),
+            mount("smb-testshare", "/Volumes/testshare-1"),
+            mount("smb-testshare", "/Volumes/testshare"),
         ]);
-        assert_eq!(roots(&collapsed), ["/Volumes/naspi"]);
+        assert_eq!(roots(&collapsed), ["/Volumes/testshare"]);
     }
 
     #[test]
@@ -143,9 +143,9 @@ mod tests {
         let collapsed = collapse_by_volume_id(vec![
             mount("vol-usb", "/media/user/USB"),
             mount("root", "/"),
-            mount("smb-naspi", "/mnt/naspi"),
+            mount("smb-testshare", "/mnt/testshare"),
         ]);
-        assert_eq!(roots(&collapsed), ["/media/user/USB", "/", "/mnt/naspi"]);
+        assert_eq!(roots(&collapsed), ["/media/user/USB", "/", "/mnt/testshare"]);
     }
 
     #[test]
@@ -168,8 +168,8 @@ mod tests {
 
     #[test]
     fn canonical_ranking_is_shortest_then_lexicographic() {
-        assert!(is_more_canonical_root("/Volumes/naspi", "/Volumes/naspi-1"));
-        assert!(!is_more_canonical_root("/Volumes/naspi-1", "/Volumes/naspi"));
+        assert!(is_more_canonical_root("/Volumes/testshare", "/Volumes/testshare-1"));
+        assert!(!is_more_canonical_root("/Volumes/testshare-1", "/Volumes/testshare"));
         assert!(is_more_canonical_root("/mnt/aaa", "/mnt/bbb"));
         assert!(!is_more_canonical_root("/mnt/bbb", "/mnt/aaa"));
         // Not strictly better than itself, so a re-scan can't flip a live choice.

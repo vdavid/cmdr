@@ -189,9 +189,9 @@ reads is dead weight), gated on the registered volume's TYPED kind (`indexing::v
 **A visit is stored in the store's path space, not as the app path the pane hands over.** The recompute looks visits up
 by each folder's index-relative path (`scheduler/recompute.rs::load_visits`), which is absolute only on the boot disk,
 so the command strips the registered volume's root first (`apps/desktop/src-tauri/src/location/store_path.rs`, shared
-with the agent's importance tools): `/Volumes/naspi-1/papers` → `/papers`, and a cloud drive's folder relative to the
-DRIVE's root (its store is the drive's own, though `root`'s index walks it). A path off its volume's root, or a volume
-with no live root, records nothing. Rows written before this as app paths (`/Volumes/…`,
+with the agent's importance tools): `/Volumes/testshare-1/documents` → `/documents`, and a cloud drive's folder relative
+to the DRIVE's root (its store is the drive's own, though `root`'s index walks it). A path off its volume's root, or a
+volume with no live root, records nothing. Rows written before this as app paths (`/Volumes/…`,
 `/Users/…/Library/CloudStorage/…` on non-root stores; seen in a prod data dir, 2026-10-26) are inert: they match no
 folder, and rewriting them is ambiguous once the mount moved. Pinned by `commands::importance::tests`.
 

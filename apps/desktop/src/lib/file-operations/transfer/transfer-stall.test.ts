@@ -150,9 +150,9 @@ describe('waitLineFor', () => {
   // #398: a NAS that dropped off the network. The backend waits for it and says
   // which one, from the first second, on both surfaces.
   it('names the volume a transfer is waiting on to come back', () => {
-    expect(waitLineFor(activity({ waitingOn: 'reconnecting', reconnectingVolume: 'Naspolya' }))).toEqual({
+    expect(waitLineFor(activity({ waitingOn: 'reconnecting', reconnectingVolume: 'Testnas' }))).toEqual({
       kind: 'reconnecting',
-      volumeName: 'Naspolya',
+      volumeName: 'Testnas',
     })
   })
 
@@ -162,12 +162,12 @@ describe('waitLineFor', () => {
       waitLineFor(
         activity({
           waitingOn: 'reconnecting',
-          reconnectingVolume: 'Naspolya',
+          reconnectingVolume: 'Testnas',
           openingSource: true,
           sourceInboundBytesPerSecond: 5,
         }),
       ),
-    ).toEqual({ kind: 'reconnecting', volumeName: 'Naspolya' })
+    ).toEqual({ kind: 'reconnecting', volumeName: 'Testnas' })
   })
 })
 
@@ -176,7 +176,7 @@ describe('stallNoticeFor while a volume comes back', () => {
     // It says what it's waiting on, by name; "no progress for 2m" on top would
     // be true and useless.
     expect(
-      stallNoticeFor(activity({ stillForSeconds: 120, waitingOn: 'reconnecting', reconnectingVolume: 'Naspolya' })),
+      stallNoticeFor(activity({ stillForSeconds: 120, waitingOn: 'reconnecting', reconnectingVolume: 'Testnas' })),
     ).toBeNull()
   })
 })

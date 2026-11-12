@@ -180,7 +180,7 @@ pub(crate) fn snapshot_path(data_dir: &Path, raw_path: &str, now_secs: u64) -> P
 
 /// One folder's importance on ONE volume's store, `path` in that store's own path
 /// space (volume-relative, absolute only on the boot disk). Reads no other store,
-/// so a share's `/papers` never answers for another share's.
+/// so a share's `/documents` never answers for another share's.
 pub(crate) fn snapshot_path_on(data_dir: &Path, volume_id: &str, path: &str, now_secs: u64) -> PathImportance {
     let index = ImportanceIndex::open(data_dir, volume_id, available_for(volume_id));
     match index.lookup(path) {

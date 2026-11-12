@@ -44,7 +44,7 @@ const bindingCommands = vi.hoisted(() => ({
   listTrustedWebdavCertificates: vi.fn(() =>
     Promise.resolve([
       {
-        host: 'nas.local',
+        host: 'testnas.local',
         port: 5006,
         fingerprint: 'CD:6F:DC:7C:4B:21:C9:B5:28:58:69:B3:4E:5C:68:B8:55:26:2C:0A:5C:06:7A:8A:2D:BF:BD:FA:AE:C2:9B:E7',
         approvedAt: '2026-10-20T10:00:00Z',
@@ -52,12 +52,12 @@ const bindingCommands = vi.hoisted(() => ({
     ]),
   ),
   listSmbLinkConsents: vi.fn(() =>
-    Promise.resolve([{ server: 'nas.local', target: 'fs01.example.com', approvedAt: '2026-10-31T10:00:00Z' }]),
+    Promise.resolve([{ server: 'testnas.local', target: 'fs01.example.com', approvedAt: '2026-10-31T10:00:00Z' }]),
   ),
   listTrustedSftpHostKeys: vi.fn(() =>
     Promise.resolve([
       {
-        host: 'nas.local',
+        host: 'testnas.local',
         port: 22,
         algorithm: 'ssh-ed25519',
         fingerprint: 'SHA256:9GbJ2r0Ck9tqZ6y5rQ0m8kFq1sWl4pS2vNbXcYdEfGh',

@@ -18,9 +18,9 @@ import { createInitialTabState } from './tab-operations'
 import type { NavigateIntent, NavigateResult } from './navigate'
 import { followVolumeRootChange, type VolumeRootFollowDeps } from './volume-root-follow'
 
-const NAS = 'sftp-nas-local-22-ada'
-const OLD_ROOT = 'sftp://ada@nas.local:22/srv/data/tmp'
-const NEW_ROOT = 'sftp://ada@nas.local:22/srv/data'
+const NAS = 'sftp-nas-local-22-test_user_1'
+const OLD_ROOT = 'sftp://test_user_1@testnas.local:22/srv/data/tmp'
+const NEW_ROOT = 'sftp://test_user_1@testnas.local:22/srv/data'
 
 /** The prod case: a root narrowed to `/tmp` by mistake, widened back one level. */
 const WIDENED: VolumeRootChanged = {
@@ -66,7 +66,7 @@ function harness(opts: HarnessOpts) {
 
 describe('followVolumeRootChange: the panes', () => {
   it('moves a pane on the old root to the new root through navigate(), after the store patch', async () => {
-    const h = harness({ left: [NAS, OLD_ROOT], right: ['root', '/Users/ada'] })
+    const h = harness({ left: [NAS, OLD_ROOT], right: ['root', '/Users/test_user_1'] })
 
     await followVolumeRootChange(WIDENED, h.deps)
 
@@ -84,7 +84,7 @@ describe('followVolumeRootChange: the panes', () => {
   })
 
   it('leaves a pane deeper inside the new root where it is', async () => {
-    const h = harness({ left: [NAS, `${OLD_ROOT}/photos`], right: ['root', '/Users/ada'] })
+    const h = harness({ left: [NAS, `${OLD_ROOT}/photos`], right: ['root', '/Users/test_user_1'] })
 
     await followVolumeRootChange(WIDENED, h.deps)
 
@@ -104,9 +104,9 @@ describe('followVolumeRootChange: the panes', () => {
 
 describe('followVolumeRootChange: the tabs behind the panes', () => {
   it('moves an inactive tab without navigating, and saves that pane’s tabs', async () => {
-    const h = harness({ left: ['root', '/Users/ada'], right: ['root', '/Users/ada'] })
+    const h = harness({ left: ['root', '/Users/test_user_1'], right: ['root', '/Users/test_user_1'] })
     const left = h.managers.left
-    const behind = createInitialTabState('sftp://ada@nas.local:22/srv/other', NAS)
+    const behind = createInitialTabState('sftp://test_user_1@testnas.local:22/srv/other', NAS)
     behind.cursorFilename = 'notes.txt'
     addTab(left, getActiveTab(left).id, behind)
 
@@ -123,8 +123,8 @@ describe('followVolumeRootChange: the tabs behind the panes', () => {
   })
 
   it('leaves a tab on another volume alone, even one whose path reads the same', async () => {
-    const h = harness({ left: ['root', '/Users/ada'], right: ['root', '/Users/ada'] })
-    const other = createInitialTabState(OLD_ROOT, 'sftp-other-host-22-ada')
+    const h = harness({ left: ['root', '/Users/test_user_1'], right: ['root', '/Users/test_user_1'] })
+    const other = createInitialTabState(OLD_ROOT, 'sftp-other-host-22-test_user_1')
     addTab(h.managers.right, getActiveTab(h.managers.right).id, other)
 
     await followVolumeRootChange(WIDENED, h.deps)

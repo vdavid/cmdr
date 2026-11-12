@@ -410,11 +410,11 @@ mod tests {
             ),
             (
                 SecurityEvent::SmbSignatureRejectionsEnded {
-                    scope: SmbScope::Host("naspolya".into()),
+                    scope: SmbScope::Host("testnas".into()),
                     source: SmbSignatureSource::ShareListing,
                     count: 3,
                 },
-                r#"{"kind":"smb_signature_rejections_ended","scope":{"host":"naspolya"},"source":"share_listing","count":3}"#,
+                r#"{"kind":"smb_signature_rejections_ended","scope":{"host":"testnas"},"source":"share_listing","count":3}"#,
             ),
             (
                 SecurityEvent::SmbNegotiationRejectionsStarted {
@@ -424,10 +424,10 @@ mod tests {
             ),
             (
                 SecurityEvent::SmbNegotiationRejectionsEnded {
-                    scope: SmbScope::Host("naspolya".into()),
+                    scope: SmbScope::Host("testnas".into()),
                     count: 2,
                 },
-                r#"{"kind":"smb_negotiation_rejections_ended","scope":{"host":"naspolya"},"count":2}"#,
+                r#"{"kind":"smb_negotiation_rejections_ended","scope":{"host":"testnas"},"count":2}"#,
             ),
             (
                 SecurityEvent::McpContentRead {

@@ -129,12 +129,12 @@ const FILES: &[(&str, u64)] = &[
     ("README.txt", 412),
     (EXISTING_FILE, 184_320),
     // A folder of photos: the "many files, uniform size" shape.
-    ("Photos/2026-06 Stockholm/IMG_2201.jpg", 3_214_592),
-    ("Photos/2026-06 Stockholm/IMG_2202.jpg", 2_981_888),
-    ("Photos/2026-06 Stockholm/IMG_2203.jpg", 3_450_112),
-    ("Photos/2026-06 Stockholm/IMG_2204.jpg", 2_772_992),
-    ("Photos/2026-06 Stockholm/IMG_2205.jpg", 3_106_816),
-    ("Photos/2026-06 Stockholm/IMG_2206.jpg", 2_899_968),
+    ("Photos/2026-06 Testville/IMG_2201.jpg", 3_214_592),
+    ("Photos/2026-06 Testville/IMG_2202.jpg", 2_981_888),
+    ("Photos/2026-06 Testville/IMG_2203.jpg", 3_450_112),
+    ("Photos/2026-06 Testville/IMG_2204.jpg", 2_772_992),
+    ("Photos/2026-06 Testville/IMG_2205.jpg", 3_106_816),
+    ("Photos/2026-06 Testville/IMG_2206.jpg", 2_899_968),
     // Non-ASCII, both in the folder name and in the file names.
     ("Photos/2026-07 Åre skidresa/DSC00417.arw", 1_258_291),
     ("Photos/2026-07 Åre skidresa/DSC00418.arw", 1_310_720),
@@ -471,7 +471,7 @@ mod tests {
         let root = temp.path().join(FIXTURE_DIR_NAME);
         ensure_dialog_gallery_fixtures(temp.path()).expect("first run should succeed");
 
-        let damaged = root.join("Photos/2026-06 Stockholm/IMG_2201.jpg");
+        let damaged = root.join("Photos/2026-06 Testville/IMG_2201.jpg");
         fs::write(&damaged, b"truncated").expect("truncate fixture file");
 
         ensure_dialog_gallery_fixtures(temp.path()).expect("second run should succeed");

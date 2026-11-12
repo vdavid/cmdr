@@ -431,16 +431,16 @@ mod tests {
     #[test]
     fn the_translated_query_logs_its_shape_not_its_words() {
         let query: SearchQuery = serde_json::from_value(json!({
-            "namePattern": "*anna kovacs medical*",
-            "includePaths": ["/srv/data/Anna"],
+            "namePattern": "*test person medical*",
+            "includePaths": ["/srv/data/Test"],
             "minSize": null, "maxSize": null, "modifiedAfter": null, "modifiedBefore": null, "isDirectory": null
         }))
         .expect("valid query");
         let line = translated_query_for_log(&query);
-        assert!(!line.contains("kovacs") && !line.contains("medical"), "{line}");
+        assert!(!line.contains("person") && !line.contains("medical"), "{line}");
         assert!(line.starts_with("pattern=glob(21 chars)"), "{line}");
         assert!(
-            line.contains(r#"path="/srv/data/Anna""#),
+            line.contains(r#"path="/srv/data/Test""#),
             "the scope stays tokenizable: {line}"
         );
     }

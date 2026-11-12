@@ -18,7 +18,7 @@ const ejectVolume = vi.fn(() => Promise.resolve())
 const disconnectPlace = vi.fn(() => Promise.resolve(true))
 const hasServerSecret = vi.fn(() => Promise.resolve(true))
 const listSavedServers = vi.fn(() =>
-  Promise.resolve([{ id: 'sftp-nas-local-22-ada', places: [{ volumeId: 'sftp-nas-local-22-ada' }] }]),
+  Promise.resolve([{ id: 'sftp-nas-local-22-test_user_1', places: [{ volumeId: 'sftp-nas-local-22-test_user_1' }] }]),
 )
 
 /**
@@ -251,9 +251,9 @@ async function openWithRows(
 describe('VolumeBreadcrumb server rows', () => {
   function serverRow(overrides: Record<string, unknown>) {
     return {
-      id: 'sftp-nas-local-22-ada',
-      name: 'Naspolya',
-      path: 'sftp://ada@nas.local:22/srv/data',
+      id: 'sftp-nas-local-22-test_user_1',
+      name: 'Testnas',
+      path: 'sftp://test_user_1@testnas.local:22/srv/data',
       category: 'network',
       fsType: 'sftp',
       isEjectable: false,
@@ -279,17 +279,17 @@ describe('VolumeBreadcrumb server rows', () => {
     await openWith([serverRow({ connectionState: 'direct' })])
     const button = document.querySelector('[data-menu-row] .eject-button') as HTMLButtonElement
     expect(button).toBeTruthy()
-    expect(button.getAttribute('aria-label')).toBe('Disconnect Naspolya')
+    expect(button.getAttribute('aria-label')).toBe('Disconnect Testnas')
 
     button.click()
     await tick()
-    expect(disconnectPlace).toHaveBeenCalledWith('sftp-nas-local-22-ada')
+    expect(disconnectPlace).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1')
   })
 
   it('gives a dropped-but-registered place one too: there is still a session to close', async () => {
     await openWith([serverRow({ connectionState: 'disconnected' })])
     const button = document.querySelector('[data-menu-row] .eject-button') as HTMLButtonElement
-    expect(button.getAttribute('aria-label')).toBe('Disconnect Naspolya')
+    expect(button.getAttribute('aria-label')).toBe('Disconnect Testnas')
   })
 
   it('gives a saved place NO control: nothing is open to close', async () => {
@@ -347,10 +347,10 @@ describe('VolumeBreadcrumb server rows', () => {
     await openWith([serverRow({ connectionState: 'direct' })])
     await openPlaceSubmenu()
     document
-      .querySelector('[data-menu-submenu] [data-menu-row="row:sftp-nas-local-22-ada:disconnect"]')
+      .querySelector('[data-menu-submenu] [data-menu-row="row:sftp-nas-local-22-test_user_1:disconnect"]')
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await vi.waitFor(() => {
-      expect(disconnectPlace).toHaveBeenCalledWith('sftp-nas-local-22-ada')
+      expect(disconnectPlace).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1')
     })
     expect(switcherSurface()).toBeTruthy()
   })
@@ -364,10 +364,12 @@ describe('VolumeBreadcrumb server rows', () => {
     flushSync()
     await openPlaceSubmenu()
     document
-      .querySelector('[data-menu-submenu] [data-menu-row="row:sftp-nas-local-22-ada:open"]')
+      .querySelector('[data-menu-submenu] [data-menu-row="row:sftp-nas-local-22-test_user_1:open"]')
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await vi.waitFor(() => {
-      expect(onVolumeChange).toHaveBeenCalledWith(expect.objectContaining({ volumeId: 'sftp-nas-local-22-ada' }))
+      expect(onVolumeChange).toHaveBeenCalledWith(
+        expect.objectContaining({ volumeId: 'sftp-nas-local-22-test_user_1' }),
+      )
     })
   })
 })
@@ -448,9 +450,9 @@ describe('VolumeBreadcrumb buttons for assistive tech', () => {
  */
 describe('VolumeBreadcrumb chip control', () => {
   const place = {
-    id: 'sftp-nas-local-22-ada',
-    name: 'Naspolya',
-    path: 'sftp://ada@nas.local:22/srv/data',
+    id: 'sftp-nas-local-22-test_user_1',
+    name: 'Testnas',
+    path: 'sftp://test_user_1@testnas.local:22/srv/data',
     category: 'network',
     fsType: 'sftp',
     isEjectable: false,
@@ -507,7 +509,7 @@ describe('VolumeBreadcrumb chip control', () => {
 
     const button = chipControl()
     expect(button).toBeTruthy()
-    expect(button?.getAttribute('aria-label')).toBe('Disconnect Naspolya')
+    expect(button?.getAttribute('aria-label')).toBe('Disconnect Testnas')
 
     button?.click()
     await tick()
@@ -1254,9 +1256,9 @@ describe('VolumeBreadcrumb row controls do not activate their row', () => {
     await openWithRows(
       [
         {
-          id: 'sftp-nas-local-22-ada',
-          name: 'Naspolya',
-          path: 'sftp://ada@nas.local:22/srv/data',
+          id: 'sftp-nas-local-22-test_user_1',
+          name: 'Testnas',
+          path: 'sftp://test_user_1@testnas.local:22/srv/data',
           category: 'network',
           fsType: 'sftp',
           isEjectable: false,
@@ -1271,7 +1273,7 @@ describe('VolumeBreadcrumb row controls do not activate their row', () => {
     await tick()
     flushSync()
 
-    expect(disconnectPlace).toHaveBeenCalledWith('sftp-nas-local-22-ada')
+    expect(disconnectPlace).toHaveBeenCalledWith('sftp-nas-local-22-test_user_1')
     expect(onVolumeChange).not.toHaveBeenCalled()
     expect(menuSurface()).toBeTruthy()
   })

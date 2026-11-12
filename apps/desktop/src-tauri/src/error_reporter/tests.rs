@@ -207,9 +207,9 @@ fn redaction_is_applied_to_log_lines() {
     let now = SystemTime::now();
     // Simulate the bundle-builder pipeline: redact each input line and then zip.
     let raw_lines = [
-        "INFO  cmdr_lib::network  Mounted /Users/john/Documents/budget.pdf",
-        "WARN  cmdr_lib::mtp  Failed to connect to john@host.local",
-        "DEBUG smb2 SMB share at smb://john@nas.local/share/file.txt",
+        "INFO  cmdr_lib::network  Mounted /Users/test_user_14/Documents/budget.pdf",
+        "WARN  cmdr_lib::mtp  Failed to connect to test_user_14@host.local",
+        "DEBUG smb2 SMB share at smb://test_user_14@testnas.local/share/file.txt",
     ];
     let redacted: Vec<&str> = raw_lines
         .iter()
@@ -225,8 +225,8 @@ fn redaction_is_applied_to_log_lines() {
 
     // No raw `/Users/<name>/` substrings should survive.
     assert!(
-        !log_body.contains("/Users/john"),
-        "redactor should have rewritten `/Users/john/...` (got: {log_body})"
+        !log_body.contains("/Users/test_user_14"),
+        "redactor should have rewritten `/Users/test_user_14/...` (got: {log_body})"
     );
     // The path-shape token from the redactor should appear instead.
     assert!(
@@ -239,11 +239,11 @@ fn redaction_is_applied_to_log_lines() {
 fn prepare_user_note_redacts_paths_in_auto_notes() {
     // Regression: v0.21.0 auto-send bundles shipped `userNote` verbatim, which leaked
     // `/Users/<name>/...` from updater error messages. The redactor must scrub it.
-    let raw = "auto-send: 1 error within 60s, first: FE:updater | Couldn't find .app bundle in path: /Users/jane/projects/cmdr/target/release/Cmdr";
+    let raw = "auto-send: 1 error within 60s, first: FE:updater | Couldn't find .app bundle in path: /Users/test_user_12/projects/cmdr/target/release/Cmdr";
     let redacted = prepare_user_note(raw, BundleKind::Auto, &test_redaction()).expect("non-empty note");
     assert!(
-        !redacted.contains("/Users/jane"),
-        "expected `/Users/jane` to be redacted (got: {redacted})"
+        !redacted.contains("/Users/test_user_12"),
+        "expected `/Users/test_user_12` to be redacted (got: {redacted})"
     );
     assert!(
         redacted.contains("$HOME"),
@@ -260,7 +260,7 @@ fn prepare_user_note_redacts_paths_in_auto_notes() {
 fn prepare_user_note_leaves_user_notes_verbatim() {
     // User-typed notes are previewed in the dialog and shipped verbatim. We trust the
     // user to know what they're sharing; a path they typed in is a path they want sent.
-    let raw = "I opened /Users/jane/Documents/budget.pdf and the app froze";
+    let raw = "I opened /Users/test_user_12/Documents/budget.pdf and the app froze";
     let kept = prepare_user_note(raw, BundleKind::User, &test_redaction()).expect("non-empty note");
     assert_eq!(kept, raw);
 }
@@ -278,10 +278,10 @@ fn prepare_user_note_drops_empty_and_whitespace_for_both_kinds() {
 fn prepare_user_note_redacts_each_line_of_multiline_auto_note() {
     // Defensive for any future automatic caller: a multi-line note must still get redacted
     // on every line.
-    let raw = "auto-send: first error\nlocation: /Users/jane/projects/foo\ndetail: also /Users/jane/Documents/x.pdf";
+    let raw = "auto-send: first error\nlocation: /Users/test_user_12/projects/foo\ndetail: also /Users/test_user_12/Documents/x.pdf";
     let redacted = prepare_user_note(raw, BundleKind::Auto, &test_redaction()).expect("non-empty note");
     assert!(
-        !redacted.contains("/Users/jane"),
+        !redacted.contains("/Users/test_user_12"),
         "every line must be redacted (got: {redacted})"
     );
     // The split-on-newline preserves the line count.

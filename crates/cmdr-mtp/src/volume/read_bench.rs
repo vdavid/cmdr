@@ -5,14 +5,14 @@
 //! device" (another phone may be attached and owned by someone else):
 //!
 //! ```text
-//! CMDR_MTP_BENCH_SERIAL=46061FDAS000A4 \
+//! CMDR_MTP_BENCH_SERIAL=TESTSERIAL0001 \
 //!   cargo test -p cmdr-mtp --lib mtp_read_range_hardware_bench -- --ignored --nocapture
 //! ```
 //!
 //! Under nextest, `--run-ignored all` is required or it reports "0 tests run":
 //!
 //! ```text
-//! CMDR_MTP_BENCH_SERIAL=46061FDAS000A4 cargo nextest run --locked -p cmdr-mtp \
+//! CMDR_MTP_BENCH_SERIAL=TESTSERIAL0001 cargo nextest run --locked -p cmdr-mtp \
 //!   --run-ignored all -E 'test(mtp_read_range_hardware_bench)' --no-capture
 //! ```
 //!

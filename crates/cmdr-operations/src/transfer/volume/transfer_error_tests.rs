@@ -39,7 +39,7 @@ fn a_local_destination_refusing_the_write_names_why() {
         )
     };
 
-    let read_only = map_volume_error("/naspi/shortcut.lnk", PathRole::Destination, refused(libc::EROFS));
+    let read_only = map_volume_error("/testshare/shortcut.lnk", PathRole::Destination, refused(libc::EROFS));
     assert!(
         matches!(
             read_only,
@@ -51,9 +51,9 @@ fn a_local_destination_refusing_the_write_names_why() {
         "got {read_only:?}"
     );
 
-    let full = map_volume_error("/naspi/shortcut.lnk", PathRole::Destination, refused(libc::ENOSPC));
+    let full = map_volume_error("/testshare/shortcut.lnk", PathRole::Destination, refused(libc::ENOSPC));
     assert!(
-        matches!(&full, WriteOperationError::DestinationFull { path } if path == "/naspi/shortcut.lnk"),
+        matches!(&full, WriteOperationError::DestinationFull { path } if path == "/testshare/shortcut.lnk"),
         "got {full:?}"
     );
 }
@@ -172,9 +172,9 @@ fn test_map_volume_error_permission_denied() {
 /// marks it as one span.
 #[test]
 fn a_refused_temps_path_rides_marked_in_the_message() {
-    let temp = "/Volumes/Share/Contracts/.cmdr-tmp-1a2b-Lease, Kovács Anna.pdf";
+    let temp = "/Volumes/Share/Contracts/.cmdr-tmp-1a2b-Lease, Persón Test.pdf";
     let err = map_volume_error(
-        "/Volumes/Share/Contracts/Lease, Kovács Anna.pdf",
+        "/Volumes/Share/Contracts/Lease, Persón Test.pdf",
         PathRole::Destination,
         VolumeError::PermissionDenied {
             path: temp.to_string(),
@@ -201,10 +201,18 @@ fn a_phones_or_a_servers_refusal_names_who_refused() {
     for (path, raw_os_error, expected) in [
         ("adb://R58M123/data/a.txt", None, PermissionRefusal::Phone),
         ("mtp://pixel/65537/a.txt", None, PermissionRefusal::Phone),
-        ("sftp://ada@nas.local:22/etc/a.txt", None, PermissionRefusal::Server),
-        ("webdav://ada@nas.local:443/a.txt", None, PermissionRefusal::Server),
         (
-            "nfs://nas.local:2049/%2Fexport/a.txt",
+            "sftp://test_user_1@testnas.local:22/etc/a.txt",
+            None,
+            PermissionRefusal::Server,
+        ),
+        (
+            "webdav://test_user_1@testnas.local:443/a.txt",
+            None,
+            PermissionRefusal::Server,
+        ),
+        (
+            "nfs://testnas.local:2049/%2Fexport/a.txt",
             Some(libc::EACCES),
             PermissionRefusal::Server,
         ),
@@ -381,14 +389,14 @@ fn test_map_volume_error_invalid_name() {
     // generic IoError the dialog says "couldn't copy the file" and offers a
     // retry, which can only fail again: renaming is the one thing that works.
     let err = map_volume_error(
-        "/Volumes/naspi/export/report:2026.json",
+        "/Volumes/testshare/export/report:2026.json",
         PathRole::Source,
         VolumeError::InvalidName("Protocol error: STATUS_OBJECT_NAME_INVALID during Create".into()),
     );
     assert!(
         matches!(
             &err,
-            WriteOperationError::InvalidName { path, .. } if path == "/Volumes/naspi/export/report:2026.json"
+            WriteOperationError::InvalidName { path, .. } if path == "/Volumes/testshare/export/report:2026.json"
         ),
         "expected a typed InvalidName naming the failing file, got: {err:?}"
     );
@@ -431,14 +439,14 @@ fn test_map_volume_error_needs_password() {
 #[test]
 fn a_share_that_cant_encrypt_stops_with_its_own_reason() {
     let err = map_volume_error(
-        "/Volumes/naspi/photos/a.jpg",
+        "/Volumes/testshare/photos/a.jpg",
         PathRole::Destination,
-        VolumeError::EncryptionRequired("/Volumes/naspi".into()),
+        VolumeError::EncryptionRequired("/Volumes/testshare".into()),
     );
     assert!(
         matches!(
             &err,
-            WriteOperationError::SmbEncryptionRequired { path } if path == "/Volumes/naspi/photos/a.jpg"
+            WriteOperationError::SmbEncryptionRequired { path } if path == "/Volumes/testshare/photos/a.jpg"
         ),
         "got {err:?}"
     );
@@ -450,26 +458,26 @@ fn a_share_that_cant_encrypt_stops_with_its_own_reason() {
 #[test]
 fn an_unconfirmed_negotiation_or_unavailable_encryption_stops_with_its_own_reason() {
     let unconfirmed = map_volume_error(
-        "/Volumes/naspi/photos/a.jpg",
+        "/Volumes/testshare/photos/a.jpg",
         PathRole::Source,
         VolumeError::NegotiationInvalid("the server answered a different dialect".into()),
     );
     assert!(
         matches!(
             &unconfirmed,
-            WriteOperationError::SmbNegotiationInvalid { path, .. } if path == "/Volumes/naspi/photos/a.jpg"
+            WriteOperationError::SmbNegotiationInvalid { path, .. } if path == "/Volumes/testshare/photos/a.jpg"
         ),
         "got {unconfirmed:?}"
     );
     let unencrypted = map_volume_error(
-        "/Volumes/naspi/photos/a.jpg",
+        "/Volumes/testshare/photos/a.jpg",
         PathRole::Destination,
-        VolumeError::EncryptionUnavailable("/Volumes/naspi".into()),
+        VolumeError::EncryptionUnavailable("/Volumes/testshare".into()),
     );
     assert!(
         matches!(
             &unencrypted,
-            WriteOperationError::SmbEncryptionUnavailable { path } if path == "/Volumes/naspi/photos/a.jpg"
+            WriteOperationError::SmbEncryptionUnavailable { path } if path == "/Volumes/testshare/photos/a.jpg"
         ),
         "got {unencrypted:?}"
     );
@@ -510,7 +518,7 @@ fn lost_at(path: &str) -> PathedVolumeError {
 fn a_server_connection_the_wait_gave_up_on_is_named_as_the_cause() {
     let failure = WriteFailure::from(
         lost_at("/smb/share/photos/a.jpg").with_lost_connection(Some(LostConnection {
-            volume_name: "Naspolya".to_string(),
+            volume_name: "Testnas".to_string(),
             gave_up_after: Some(std::time::Duration::from_secs(900)),
         })),
     );
@@ -519,7 +527,7 @@ fn a_server_connection_the_wait_gave_up_on_is_named_as_the_cause() {
         matches!(
             &failure.error,
             WriteOperationError::ServerConnectionLost { path, volume_name, gave_up_after_secs: Some(900) }
-                if path == "/smb/share/photos/a.jpg" && volume_name == "Naspolya"
+                if path == "/smb/share/photos/a.jpg" && volume_name == "Testnas"
         ),
         "got {:?}",
         failure.error
@@ -543,7 +551,7 @@ fn a_disconnect_with_no_lost_connection_keeps_its_device_wording() {
 #[test]
 fn where_the_new_data_is_outranks_a_lost_connection() {
     let mut error = lost_at("/smb/share/a.jpg").with_lost_connection(Some(LostConnection {
-        volume_name: "Naspolya".to_string(),
+        volume_name: "Testnas".to_string(),
         gave_up_after: None,
     }));
     error.aftermath = Some(LandingAftermath::NewDataKeptAt(PathBuf::from(
@@ -597,7 +605,7 @@ fn a_hard_abort_marks_the_path_it_stopped_waiting_for() {
 fn a_long_name_refused_at_the_landing_is_too_long() {
     let long_leaf = format!("{}.flac", "Ölmalmen – a very long live recording title ".repeat(4));
     assert!(long_leaf.len() > cmdr_fs::staging::MAX_SCRATCH_NAME_BYTES);
-    let dest = PathBuf::from(format!("/Volumes/naspi/music/{long_leaf}"));
+    let dest = PathBuf::from(format!("/Volumes/testshare/music/{long_leaf}"));
     let failure = FinalizeFailure {
         error: VolumeError::InvalidName("Protocol error: STATUS_OBJECT_NAME_INVALID during SetInfo".into()),
         aftermath: None,
@@ -615,7 +623,7 @@ fn a_long_name_refused_at_the_landing_is_too_long() {
 /// length proves nothing: it stays the "name not allowed" refusal.
 #[test]
 fn a_short_name_refused_at_the_landing_stays_not_allowed() {
-    let dest = PathBuf::from("/Volumes/naspi/export/CON");
+    let dest = PathBuf::from("/Volumes/testshare/export/CON");
     let failure = FinalizeFailure {
         error: VolumeError::InvalidName("STATUS_OBJECT_NAME_INVALID".into()),
         aftermath: None,
@@ -635,7 +643,7 @@ fn a_short_name_refused_at_the_landing_stays_not_allowed() {
 #[test]
 fn a_destination_refusing_a_name_over_every_limit_says_too_long() {
     let leaf = "a".repeat(300);
-    let path = format!("/Volumes/naspi/{leaf}");
+    let path = format!("/Volumes/testshare/{leaf}");
 
     let error = map_volume_error(&path, PathRole::Destination, VolumeError::InvalidName("refused".into()));
     assert!(
@@ -645,7 +653,7 @@ fn a_destination_refusing_a_name_over_every_limit_says_too_long() {
 
     // 100 three-byte characters: 300 UTF-8 bytes, but 100 UTF-16 units, which
     // NTFS and exFAT store fine, so the length isn't what they refused.
-    let wide = format!("/Volumes/naspi/{}", "日".repeat(100));
+    let wide = format!("/Volumes/testshare/{}", "日".repeat(100));
     let error = map_volume_error(&wide, PathRole::Destination, VolumeError::InvalidName("refused".into()));
     assert!(
         matches!(error, WriteOperationError::InvalidName { .. }),

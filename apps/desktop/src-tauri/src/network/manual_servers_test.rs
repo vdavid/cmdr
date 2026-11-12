@@ -202,21 +202,21 @@ fn id_format_hostname_with_local() {
 #[test]
 fn an_smb_url_names_its_account_and_never_its_password() {
     assert_eq!(
-        parse_server_address("smb://sven@192.168.0.153/Container")
+        parse_server_address("smb://test_user_6@192.168.50.20/Container")
             .unwrap()
             .username
             .as_deref(),
-        Some("sven")
+        Some("test_user_6")
     );
     assert_eq!(
-        parse_server_address("smb://sven:hunter2@naspolya")
+        parse_server_address("smb://test_user_6:hunter2@testnas")
             .unwrap()
             .username
             .as_deref(),
-        Some("sven")
+        Some("test_user_6")
     );
-    assert_eq!(parse_server_address("smb://naspolya").unwrap().username, None);
-    assert_eq!(parse_server_address("naspolya").unwrap().username, None);
+    assert_eq!(parse_server_address("smb://testnas").unwrap().username, None);
+    assert_eq!(parse_server_address("testnas").unwrap().username, None);
 }
 
 /// An entry written before accounts existed reads as having none.
@@ -234,7 +234,7 @@ fn an_entry_without_an_account_reads_as_none() {
 #[test]
 fn the_typed_account_is_found_under_the_address_the_label_and_the_bonjour_name() {
     let mut entry = test_entry(21);
-    entry.username = Some("sven".to_string());
+    entry.username = Some("test_user_6".to_string());
     entry.port = 9445;
     let entries = vec![entry];
     let bonjour = NetworkHost {
@@ -249,15 +249,15 @@ fn the_typed_account_is_found_under_the_address_the_label_and_the_bonjour_name()
     let on = |host: &str, port: u16| SmbServer::new(host, port);
     assert_eq!(
         typed_username_in(&entries, &on("10.0.0.21", 9445), &[]).as_deref(),
-        Some("sven")
+        Some("test_user_6")
     );
     assert_eq!(
         typed_username_in(&entries, &SmbServer::from_name("10.0.0.21:9445"), &[]).as_deref(),
-        Some("sven")
+        Some("test_user_6")
     );
     assert_eq!(
         typed_username_in(&entries, &on("Mars", 9445), &[bonjour]).as_deref(),
-        Some("sven")
+        Some("test_user_6")
     );
     assert_eq!(typed_username_in(&entries, &on("10.0.0.22", 9445), &[]), None);
 }
@@ -272,10 +272,10 @@ fn naming_a_host_can_set_and_clear_its_account() {
 
     let edit = HostEdit {
         name: "Attic".to_string(),
-        username: Some("sven".to_string()),
+        username: Some("test_user_6".to_string()),
     };
     let stored = name_server_entry_at_path(&path, &test_entry(22).id, "10.0.0.22", 445, &edit).unwrap();
-    assert_eq!(stored.username.as_deref(), Some("sven"));
+    assert_eq!(stored.username.as_deref(), Some("test_user_6"));
 
     let cleared = HostEdit {
         name: "Attic".to_string(),
@@ -292,11 +292,14 @@ fn re_adding_a_host_without_an_account_keeps_the_one_it_had() {
     let dir = tempfile::tempdir().expect("create temp dir");
     let path = dir.path().join(MANUAL_SERVERS_FILENAME);
     let mut first = test_entry(23);
-    first.username = Some("sven".to_string());
+    first.username = Some("test_user_6".to_string());
     add_server_entry_to_path(&path, first);
     add_server_entry_to_path(&path, test_entry(23));
 
-    assert_eq!(read_store_from_path(&path).servers[0].username.as_deref(), Some("sven"));
+    assert_eq!(
+        read_store_from_path(&path).servers[0].username.as_deref(),
+        Some("test_user_6")
+    );
 }
 
 /// ❗ **An entry written before names existed reads as unnamed.** Its
@@ -304,18 +307,18 @@ fn re_adding_a_host_without_an_account_keeps_the_one_it_had() {
 /// must keep ranking a Bonjour name above it.
 #[test]
 fn an_entry_whose_name_is_its_own_address_is_unnamed() {
-    let json = r#"{"id":"manual-192-168-0-153-445","displayName":"192.168.0.153","address":"192.168.0.153","port":445,"addedAt":"2026-09-17T10:00:00Z"}"#;
+    let json = r#"{"id":"manual-192-168-50-20-445","displayName":"192.168.50.20","address":"192.168.50.20","port":445,"addedAt":"2026-09-17T10:00:00Z"}"#;
     let entry: ManualServerEntry = serde_json::from_str(json).unwrap();
     assert!(!entry.is_named());
-    assert_eq!(entry.label(), "192.168.0.153");
+    assert_eq!(entry.label(), "192.168.50.20");
 }
 
 #[test]
 fn an_entry_with_a_typed_name_is_labelled_by_it() {
     let mut entry = test_entry(7);
-    entry.display_name = "  Sven's NAS ".to_string();
+    entry.display_name = "  Test NAS ".to_string();
     assert!(entry.is_named());
-    assert_eq!(entry.label(), "Sven's NAS");
+    assert_eq!(entry.label(), "Test NAS");
 }
 
 #[test]
@@ -353,16 +356,16 @@ fn renaming_an_entry_rewrites_only_its_name() {
 fn naming_a_host_nobody_typed_in_saves_it_under_its_own_id() {
     let dir = tempfile::tempdir().expect("create temp dir");
     let path = dir.path().join(MANUAL_SERVERS_FILENAME);
-    let id = generate_server_id("naspolya.local", 445);
+    let id = generate_server_id("testnas.local", 445);
 
     let entry =
-        name_server_entry_at_path(&path, &id, "naspolya.local", 445, &named("Naspolya")).expect("a host with that id");
+        name_server_entry_at_path(&path, &id, "testnas.local", 445, &named("Testnas")).expect("a host with that id");
 
     assert_eq!(entry.port, 445);
     let store = read_store_from_path(&path);
     assert_eq!(store.servers.len(), 1);
     assert_eq!(store.servers[0].id, id);
-    assert_eq!(store.servers[0].label(), "Naspolya");
+    assert_eq!(store.servers[0].label(), "Testnas");
 }
 
 /// An id that doesn't belong to the address can't be named: the pair would mint
@@ -372,7 +375,7 @@ fn naming_refuses_an_id_the_address_does_not_mint() {
     let dir = tempfile::tempdir().expect("create temp dir");
     let path = dir.path().join(MANUAL_SERVERS_FILENAME);
     assert!(
-        name_server_entry_at_path(&path, "manual-elsewhere-445", "naspolya.local", 445, &named("Naspolya")).is_none()
+        name_server_entry_at_path(&path, "manual-elsewhere-445", "testnas.local", 445, &named("Testnas")).is_none()
     );
     assert!(read_store_from_path(&path).servers.is_empty());
 }
@@ -769,7 +772,7 @@ fn a_refused_add_says_whether_it_was_the_address_or_the_server() {
 #[test]
 fn a_route_refused_to_a_lan_address_hints_at_the_local_network_permission() {
     use std::net::SocketAddr;
-    let lan: SocketAddr = "192.168.0.153:445".parse().unwrap();
+    let lan: SocketAddr = "192.168.50.20:445".parse().unwrap();
     let private_10: SocketAddr = "10.0.0.24:445".parse().unwrap();
     let link_local: SocketAddr = "169.254.10.2:445".parse().unwrap();
     let ula: SocketAddr = "[fd12:3456::1]:445".parse().unwrap();
@@ -887,9 +890,9 @@ fn signing_in_as_an_account_makes_it_the_hosts_preference() {
         set_account_at_path(&path, &SmbServer::new("10.0.0.26", 445), &[], None).is_none(),
         "guest on a host nobody saved saves nothing"
     );
-    let fresh = set_account_at_path(&path, &SmbServer::new("10.0.0.25", 11482), &[], Some("ada")).unwrap();
+    let fresh = set_account_at_path(&path, &SmbServer::new("10.0.0.25", 11482), &[], Some("test_user_1")).unwrap();
     assert_eq!(fresh.id, generate_server_id("10.0.0.25", 11482));
-    assert_eq!(fresh.username.as_deref(), Some("ada"));
+    assert_eq!(fresh.username.as_deref(), Some("test_user_1"));
     assert_eq!(read_store_from_path(&path).servers.len(), 2);
 }
 

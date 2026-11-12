@@ -563,7 +563,7 @@ dirty set, a watermark) is warranted.
 `index-query --bin importance-measure`):
 
 - boot volume, 694,963 dirs / 7.09 M entries: **8.29 s wall, 5.8 s CPU**, +166 MB transient `phys_footprint`, 62 MB out
-- NAS (`naspi`), 71,365 dirs / 2.65 M entries: **2.39 s wall, 1.6 s CPU**, +81 MB transient, 19 MB out
+- NAS (`testshare`), 71,365 dirs / 2.65 M entries: **2.39 s wall, 1.6 s CPU**, +81 MB transient, 19 MB out
 
 So hourly across both is ~7.4 s CPU per hour, about **0.2% of one core**. The walk reads the per-volume INDEX DB, never
 the volume itself, so a network volume costs no SMB traffic and does not need to be reachable.

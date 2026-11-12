@@ -312,7 +312,7 @@ pub fn wake_fake_script() -> WakeFakeScript {
 /// fixture share an E2E run uses is mounted AFTER the app is up (`setupSmb` runs
 /// when a spec file loads, and the suite connects to a running app), so the
 /// startup adopter has nothing of the test's to find and everything of the
-/// developer's: on this machine it reliably finds `/Volumes/naspi`, waits on mDNS
+/// developer's: on this machine it reliably finds `/Volumes/testshare`, waits on mDNS
 /// for it, reaches for its Keychain entry, opens an smb2 session to a NAS on the
 /// real LAN, and raises a toast about it that then fails whichever spec is running.
 ///

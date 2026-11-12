@@ -209,7 +209,7 @@ describe('getCommonParentPath', () => {
   })
 
   it('returns parent of single path', () => {
-    expect(getCommonParentPath(['/Users/alice/file.txt'])).toBe('/Users/alice')
+    expect(getCommonParentPath(['/Users/test_user_4/file.txt'])).toBe('/Users/test_user_4')
   })
 
   it('returns / for single root-level path', () => {
@@ -217,11 +217,13 @@ describe('getCommonParentPath', () => {
   })
 
   it('returns common parent for sibling files', () => {
-    expect(getCommonParentPath(['/Users/alice/a.txt', '/Users/alice/b.txt'])).toBe('/Users/alice')
+    expect(getCommonParentPath(['/Users/test_user_4/a.txt', '/Users/test_user_4/b.txt'])).toBe('/Users/test_user_4')
   })
 
   it('returns common parent for paths in different subdirectories', () => {
-    expect(getCommonParentPath(['/Users/alice/docs/a.txt', '/Users/alice/photos/b.jpg'])).toBe('/Users/alice')
+    expect(getCommonParentPath(['/Users/test_user_4/docs/a.txt', '/Users/test_user_4/photos/b.jpg'])).toBe(
+      '/Users/test_user_4',
+    )
   })
 
   it('returns / when only root is common', () => {
@@ -237,7 +239,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
   it('returns correct props for a single dropped file (carries the resolved source volume)', () => {
     const result = buildTransferPropsFromDroppedPaths(
       'copy',
-      ['/Users/alice/file.txt'],
+      ['/Users/test_user_4/file.txt'],
       '/dest',
       'right',
       'vol-dest',
@@ -246,13 +248,13 @@ describe('buildTransferPropsFromDroppedPaths', () => {
 
     expect(result).toEqual({
       operationType: 'copy',
-      sourcePaths: ['/Users/alice/file.txt'],
+      sourcePaths: ['/Users/test_user_4/file.txt'],
       destinationPath: '/dest',
       direction: 'right',
       currentVolumeId: 'vol-dest',
       fileCount: 1,
       folderCount: 0,
-      sourceFolderPath: '/Users/alice',
+      sourceFolderPath: '/Users/test_user_4',
       sourceVolumeId: 'vol-src',
       destVolumeId: 'vol-dest',
     })
@@ -261,7 +263,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
   it('returns correct props for multiple dropped files', () => {
     const result = buildTransferPropsFromDroppedPaths(
       'copy',
-      ['/Users/alice/a.txt', '/Users/alice/b.txt', '/Users/alice/c.txt'],
+      ['/Users/test_user_4/a.txt', '/Users/test_user_4/b.txt', '/Users/test_user_4/c.txt'],
       '/dest/folder',
       'left',
       'vol-1',
@@ -269,7 +271,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
     )
 
     expect(result.fileCount).toBe(3)
-    expect(result.sourceFolderPath).toBe('/Users/alice')
+    expect(result.sourceFolderPath).toBe('/Users/test_user_4')
     expect(result.direction).toBe('left')
   })
 
@@ -281,7 +283,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
     const result = buildTransferPropsFromDroppedPaths(
       'move',
       ['mtp://dev/65538/DCIM/IMG.JPG'],
-      '/Users/alice/dest',
+      '/Users/test_user_4/dest',
       'right',
       'root',
       'mtp-dev:65538',
@@ -295,7 +297,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
   it('splits files and folders when all kind flags are known (3 folders dropped)', () => {
     const result = buildTransferPropsFromDroppedPaths(
       'copy',
-      ['/Users/alice/one', '/Users/alice/two', '/Users/alice/three'],
+      ['/Users/test_user_4/one', '/Users/test_user_4/two', '/Users/test_user_4/three'],
       '/dest',
       'right',
       'vol-dest',
@@ -310,7 +312,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
   it('splits a mixed drop (1 file + 2 folders) when all flags are known', () => {
     const result = buildTransferPropsFromDroppedPaths(
       'copy',
-      ['/Users/alice/a.txt', '/Users/alice/dir1', '/Users/alice/dir2'],
+      ['/Users/test_user_4/a.txt', '/Users/test_user_4/dir1', '/Users/test_user_4/dir2'],
       '/dest',
       'right',
       'vol-dest',
@@ -327,7 +329,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
     // approximate shape (all-files, zero folders) rather than a partial split.
     const result = buildTransferPropsFromDroppedPaths(
       'copy',
-      ['/Users/alice/a.txt', '/Users/alice/dir1', '/Users/alice/mystery'],
+      ['/Users/test_user_4/a.txt', '/Users/test_user_4/dir1', '/Users/test_user_4/mystery'],
       '/dest',
       'right',
       'vol-dest',
@@ -342,7 +344,7 @@ describe('buildTransferPropsFromDroppedPaths', () => {
   it('falls back to the approximate shape when the flags length disagrees', () => {
     const result = buildTransferPropsFromDroppedPaths(
       'copy',
-      ['/Users/alice/a.txt', '/Users/alice/dir1'],
+      ['/Users/test_user_4/a.txt', '/Users/test_user_4/dir1'],
       '/dest',
       'right',
       'vol-dest',

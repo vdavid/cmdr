@@ -5,7 +5,7 @@ use super::{PropfindEntry, decode_href, parse_multistatus, parse_rfc3339};
 const NEXTCLOUD: &str = r#"<?xml version="1.0"?>
 <d:multistatus xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:oc="http://owncloud.org/ns">
   <d:response>
-    <d:href>/remote.php/dav/files/ada/</d:href>
+    <d:href>/remote.php/dav/files/test_user_1/</d:href>
     <d:propstat>
       <d:prop>
         <d:resourcetype><d:collection/></d:resourcetype>
@@ -21,7 +21,7 @@ const NEXTCLOUD: &str = r#"<?xml version="1.0"?>
     </d:propstat>
   </d:response>
   <d:response>
-    <d:href>/remote.php/dav/files/ada/Photos%20from%20Zs%C3%B3fi/</d:href>
+    <d:href>/remote.php/dav/files/test_user_1/Photos%20from%20Zs%C3%B3fi/</d:href>
     <d:propstat>
       <d:prop>
         <d:resourcetype><d:collection/></d:resourcetype>
@@ -31,7 +31,7 @@ const NEXTCLOUD: &str = r#"<?xml version="1.0"?>
     </d:propstat>
   </d:response>
   <d:response>
-    <d:href>/remote.php/dav/files/ada/notes.txt</d:href>
+    <d:href>/remote.php/dav/files/test_user_1/notes.txt</d:href>
     <d:propstat>
       <d:prop>
         <d:resourcetype/>
@@ -78,17 +78,17 @@ const STAMP: u64 = 1_709_296_496;
 fn a_nextcloud_listing_yields_decoded_hrefs_and_typed_props() {
     let entries = parse_multistatus(NEXTCLOUD).expect("a multistatus");
     assert_eq!(entries.len(), 3);
-    assert_eq!(entries[0].href, "/remote.php/dav/files/ada/");
+    assert_eq!(entries[0].href, "/remote.php/dav/files/test_user_1/");
     assert!(entries[0].is_collection);
     assert_eq!(entries[0].size, None, "a 404 propstat never contributes a size");
     assert_eq!(entries[0].quota_available, Some(-3));
     assert_eq!(entries[0].quota_used, Some(1024));
-    assert_eq!(entries[1].href, "/remote.php/dav/files/ada/Photos from Zsófi/");
+    assert_eq!(entries[1].href, "/remote.php/dav/files/test_user_1/Photos from Zsófi/");
     assert!(entries[1].is_collection);
     assert_eq!(
         entries[2],
         PropfindEntry {
-            href: "/remote.php/dav/files/ada/notes.txt".into(),
+            href: "/remote.php/dav/files/test_user_1/notes.txt".into(),
             is_collection: false,
             size: Some(42),
             modified_at: Some(STAMP),
@@ -110,7 +110,7 @@ fn oc_size_is_matched_by_namespace_rather_than_by_prefix() {
     let body = r#"<?xml version="1.0"?>
 <d:multistatus xmlns:d="DAV:" xmlns:xyz="http://owncloud.org/ns" xmlns:oc="http://example.invalid/decoy">
   <d:response>
-    <d:href>/remote.php/dav/files/grace/</d:href>
+    <d:href>/remote.php/dav/files/test_user_2/</d:href>
     <d:propstat>
       <d:prop>
         <d:resourcetype><d:collection/></d:resourcetype>

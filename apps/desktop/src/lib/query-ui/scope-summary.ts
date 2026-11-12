@@ -55,9 +55,9 @@ function folderNameOf(path: string): string {
   const segments = path.split('/').filter((s) => s.length > 0)
   const last = segments.at(-1) ?? ''
   if (last === '~') return ''
-  // A scheme-rooted path splits its scheme into the first segment: `smb://nas.local` becomes
-  // ["smb:", "nas.local"]. At that depth the tail is the HOST, not a folder, so there's no name
-  // to show. Deeper (`smb://nas.local/share/photos`) the tail is an ordinary folder again.
+  // A scheme-rooted path splits its scheme into the first segment: `smb://testnas.local` becomes
+  // ["smb:", "testnas.local"]. At that depth the tail is the HOST, not a folder, so there's no name
+  // to show. Deeper (`smb://testnas.local/share/photos`) the tail is an ordinary folder again.
   if (segments.length <= 2 && segments[0]?.endsWith(':')) return ''
   return last
 }

@@ -54,7 +54,7 @@ Reserve `ort` for a hypothetical non-Apple platform only.
 
 ## Side finding (privacy)
 
-The test folder `/Volumes/naspi/_todo_pics` mixes **sensitive ID scans (passport, driver's license, Covid test)** with
-ordinary photos. The image index will OCR/tag/detect-faces on such documents. On-device default keeps that local (fine),
-but it sharpens the M5 cloud-caption egress consent and argues for sensitive-document awareness — see the plan's privacy
-cross-cutting.
+The test folder `/Volumes/testshare/test_photos` mixes **sensitive ID scans (passport, driver's license, Covid test)**
+with ordinary photos. The image index will OCR/tag/detect-faces on such documents. On-device default keeps that local
+(fine), but it sharpens the M5 cloud-caption egress consent and argues for sensitive-document awareness — see the plan's
+privacy cross-cutting.

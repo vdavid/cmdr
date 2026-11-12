@@ -16,7 +16,7 @@
 #
 # ❗ Every port publishes to 127.0.0.1 via the `${WEBDAV_BIND_ADDR:-127.0.0.1}`
 # prefix. ❌ Never a bare `port:80` mapping: Docker then binds all interfaces, and
-# a writable DAV export whose credentials this repo documents in public (`ada` /
+# a writable DAV export whose credentials this repo documents in public (`test_user_1` /
 # `openthedoor`) lands on the LAN and the tailnet of whoever runs the suite.
 # These containers routinely outlive the run that started them.
 # `TestWebdavFixturePortsBindToLoopback` fails the run if a mapping loses it.
@@ -133,7 +133,7 @@ services:
       # what makes the image install itself unattended instead of waiting for a
       # person in the setup wizard.
       SQLITE_DATABASE: nextcloud
-      NEXTCLOUD_ADMIN_USER: ada
+      NEXTCLOUD_ADMIN_USER: test_user_1
       NEXTCLOUD_ADMIN_PASSWORD: openthedoor
       NEXTCLOUD_TRUSTED_DOMAINS: '127.0.0.1 localhost'
     ports: ['${WEBDAV_BIND_ADDR:-127.0.0.1}:${WEBDAV_FIXTURE_NEXTCLOUD_PORT:-13482}:80']

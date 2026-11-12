@@ -17,7 +17,7 @@ import { createSmtp2GoStub, type WireEmail } from '../email/smtp2go-test-helpers
 const webhookSecret = 'test-webhook-secret'
 const adminToken = 'test-admin-token'
 const perpetualPriceId = 'pri_perpetual'
-const david = 'david@example.com'
+const test_user_3 = 'test_user_3@example.com'
 const privateKey = ed.utils.randomSecretKey()
 const privateKeyHex = Array.from(privateKey, (byte) => byte.toString(16).padStart(2, '0')).join('')
 
@@ -32,7 +32,7 @@ const server = createTestHarness({
         ADMIN_API_TOKEN: adminToken,
         PRICE_ID_COMMERCIAL_PERPETUAL: perpetualPriceId,
         SMTP2GO_API_KEY: 'test-smtp2go-key',
-        CRASH_NOTIFICATION_EMAIL: david,
+        CRASH_NOTIFICATION_EMAIL: test_user_3,
       },
     },
   ],
@@ -194,8 +194,8 @@ describe('the sale notice in the Worker runtime', () => {
 
     expect(delivery.status, `Body: ${delivery.text}\nWorker logs:\n${workerLogs()}`).toBe(200)
     expect(sentTo(buyer.email)).toHaveLength(1)
-    await expect.poll(() => sentTo(david).length).toBe(1)
-    const notice = sentTo(david)[0]
+    await expect.poll(() => sentTo(test_user_3).length).toBe(1)
+    const notice = sentTo(test_user_3)[0]
     expect(notice.subject).toBe('A new Cmdr sale: $59 from Germany')
     expect(notice.text).toContain(`That's sale #${String(await paddleRowCount())}!`)
     expect(notice.text).toContain('buyer@example.com')
@@ -207,18 +207,18 @@ describe('the sale notice in the Worker runtime', () => {
     await settle()
 
     expect(redelivery.status).toBe(200)
-    expect(sentTo(david)).toHaveLength(0)
+    expect(sentTo(test_user_3)).toHaveLength(0)
   })
 
   it('keeps the purchase fulfilled when the notice fails, and lets the backfill send it later', async () => {
     const transactionId = 'txn_sale_notice_rejected'
-    smtp2go.failTo.add(david)
+    smtp2go.failTo.add(test_user_3)
 
     const delivery = await deliver(transactionId)
 
     expect(delivery.status, `Body: ${delivery.text}\nWorker logs:\n${workerLogs()}`).toBe(200)
     expect(sentTo(buyer.email)).toHaveLength(1)
-    await expect.poll(() => sentTo(david).length).toBe(1)
+    await expect.poll(() => sentTo(test_user_3).length).toBe(1)
     await settle()
     expect(await saleNotifiedAt(transactionId)).toBeNull()
     const event = await (
@@ -234,12 +234,12 @@ describe('the sale notice in the Worker runtime', () => {
 
     expect(first.status, workerLogs()).toBe(200)
     expect(first.body.results).toEqual({ [transactionId]: 'sent' })
-    expect(sentTo(david)).toHaveLength(1)
+    expect(sentTo(test_user_3)).toHaveLength(1)
     expect(sentTo(buyer.email)).toHaveLength(0)
 
     const again = await backfill([transactionId])
     expect(again.body.results).toEqual({ [transactionId]: 'already_sent' })
-    expect(sentTo(david)).toHaveLength(1)
+    expect(sentTo(test_user_3)).toHaveLength(1)
   })
 
   it('stays quiet for a $0 purchase, which is a license handed out rather than a sale', async () => {
@@ -251,7 +251,7 @@ describe('the sale notice in the Worker runtime', () => {
 
     expect(delivery.status).toBe(200)
     expect(sentTo(buyer.email)).toHaveLength(1)
-    expect(sentTo(david)).toHaveLength(0)
+    expect(sentTo(test_user_3)).toHaveLength(0)
     expect((await backfill([transactionId])).body.results).toEqual({ [transactionId]: 'free' })
   })
 

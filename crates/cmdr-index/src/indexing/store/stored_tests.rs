@@ -15,7 +15,7 @@ fn stopped_index(dir: &Path) -> std::path::PathBuf {
     let db_path = dir.join("index-smb-test.db");
     let store = IndexStore::open(&db_path).expect("open a live store");
     let conn = IndexStore::open_write_connection(&db_path).expect("write connection");
-    IndexStore::update_meta(&conn, "volume_path", "/Volumes/naspi").expect("volume_path");
+    IndexStore::update_meta(&conn, "volume_path", "/Volumes/testshare").expect("volume_path");
     IndexStore::update_meta(&conn, "scan_completed_at", "1761400000").expect("scan stamp");
     drop(conn);
     drop(store);
@@ -31,7 +31,7 @@ fn reads_a_stopped_volumes_mount_root_and_last_scan() {
         .expect("a current-schema index opens")
         .last_scan()
         .expect("its meta reads");
-    assert_eq!(facts.volume_path.as_deref(), Some("/Volumes/naspi"));
+    assert_eq!(facts.volume_path.as_deref(), Some("/Volumes/testshare"));
     assert_eq!(facts.scan_completed_at.as_deref(), Some("1761400000"));
 }
 

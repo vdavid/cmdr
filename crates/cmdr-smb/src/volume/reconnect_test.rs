@@ -231,7 +231,7 @@ fn a_refused_signature_reaches_the_security_seam() {
 #[test]
 fn a_guest_session_offered_for_a_named_login_is_its_own_state() {
     let guest = smb2::Error::GuestSessionRefused {
-        username: "david".to_string(),
+        username: "test_user_3".to_string(),
         anonymous: false,
     };
     assert_eq!(credentials_refusal_state(&guest), VolumeConnection::GuestSessionRefused);
@@ -363,20 +363,20 @@ fn held(username: &str, secret: &str) -> Option<(String, String)> {
 /// back to, and then the dial failed.
 #[tokio::test]
 async fn a_sign_in_that_does_not_connect_leaves_the_remembered_password_alone() {
-    let store = Arc::new(InMemoryCredentials::new().with_entry("127.0.0.1", None, "ada", "right"));
+    let store = Arc::new(InMemoryCredentials::new().with_entry("127.0.0.1", None, "test_user_1", "right"));
     let vol = offline_volume_over(&store).await;
 
     let refusal = vol
         .inner
         .do_reconnect_with_credentials(SignIn {
-            username: "ada".to_string(),
+            username: "test_user_1".to_string(),
             secret: "a-typo".to_string(),
             remember: false,
         })
         .await;
 
     assert!(refusal.is_err(), "nothing listens on the closed port");
-    assert_eq!(secret_at(&store, None), held("ada", "right"));
+    assert_eq!(secret_at(&store, None), held("test_user_1", "right"));
     assert_eq!(secret_at(&store, Some("TestShare")), None);
 }
 
@@ -391,7 +391,7 @@ async fn a_sign_in_with_nothing_remembered_writes_nothing() {
     let _ = vol
         .inner
         .do_reconnect_with_credentials(SignIn {
-            username: "ada".to_string(),
+            username: "test_user_1".to_string(),
             secret: "typed".to_string(),
             remember: false,
         })
@@ -417,23 +417,23 @@ fn host_over(store: &Arc<InMemoryCredentials>) -> VolumeHost {
 async fn a_working_sign_in_refreshes_the_shares_own_entry_and_leaves_the_servers_alone() {
     let store = Arc::new(
         InMemoryCredentials::new()
-            .with_entry("127.0.0.1", Some("TestShare"), "ada", "old")
-            .with_entry("127.0.0.1", None, "ada", "server-wide"),
+            .with_entry("127.0.0.1", Some("TestShare"), "test_user_1", "old")
+            .with_entry("127.0.0.1", None, "test_user_1", "server-wide"),
     );
 
-    assert!(refresh_remembered_credentials(&host_over(&store), &connected_as("ada", "new"), false).await);
+    assert!(refresh_remembered_credentials(&host_over(&store), &connected_as("test_user_1", "new"), false).await);
 
-    assert_eq!(secret_at(&store, Some("TestShare")), held("ada", "new"));
-    assert_eq!(secret_at(&store, None), held("ada", "server-wide"));
+    assert_eq!(secret_at(&store, Some("TestShare")), held("test_user_1", "new"));
+    assert_eq!(secret_at(&store, None), held("test_user_1", "server-wide"));
 }
 
 #[tokio::test]
 async fn a_working_sign_in_refreshes_the_server_entry_it_reads_for_the_same_account() {
-    let store = Arc::new(InMemoryCredentials::new().with_entry("127.0.0.1", None, "ada", "old"));
+    let store = Arc::new(InMemoryCredentials::new().with_entry("127.0.0.1", None, "test_user_1", "old"));
 
-    assert!(refresh_remembered_credentials(&host_over(&store), &connected_as("ada", "new"), false).await);
+    assert!(refresh_remembered_credentials(&host_over(&store), &connected_as("test_user_1", "new"), false).await);
 
-    assert_eq!(secret_at(&store, None), held("ada", "new"));
+    assert_eq!(secret_at(&store, None), held("test_user_1", "new"));
     assert_eq!(secret_at(&store, Some("TestShare")), None);
 }
 
@@ -441,11 +441,18 @@ async fn a_working_sign_in_refreshes_the_server_entry_it_reads_for_the_same_acco
 /// is one the person never asked for (#530).
 #[tokio::test]
 async fn a_working_sign_in_as_another_account_with_remember_off_writes_nothing() {
-    let store = Arc::new(InMemoryCredentials::new().with_entry("127.0.0.1", None, "ada", "ada-pw"));
+    let store = Arc::new(InMemoryCredentials::new().with_entry("127.0.0.1", None, "test_user_1", "test_user_1-pw"));
 
-    assert!(refresh_remembered_credentials(&host_over(&store), &connected_as("grace", "grace-pw"), false).await);
+    assert!(
+        refresh_remembered_credentials(
+            &host_over(&store),
+            &connected_as("test_user_2", "test_user_2-pw"),
+            false
+        )
+        .await
+    );
 
-    assert_eq!(secret_at(&store, None), held("ada", "ada-pw"));
+    assert_eq!(secret_at(&store, None), held("test_user_1", "test_user_1-pw"));
     assert_eq!(secret_at(&store, Some("TestShare")), None);
 }
 
@@ -454,7 +461,7 @@ async fn a_working_sign_in_as_another_account_with_remember_off_writes_nothing()
 async fn a_working_sign_in_with_remember_off_never_seeds_an_empty_store() {
     let store = Arc::new(InMemoryCredentials::new());
 
-    assert!(refresh_remembered_credentials(&host_over(&store), &connected_as("ada", "new"), false).await);
+    assert!(refresh_remembered_credentials(&host_over(&store), &connected_as("test_user_1", "new"), false).await);
 
     assert_eq!(secret_at(&store, None), None);
     assert_eq!(secret_at(&store, Some("TestShare")), None);
@@ -467,9 +474,9 @@ async fn a_working_sign_in_with_remember_off_never_seeds_an_empty_store() {
 async fn a_working_sign_in_with_remember_on_seeds_the_server_entry() {
     let store = Arc::new(InMemoryCredentials::new());
 
-    assert!(refresh_remembered_credentials(&host_over(&store), &connected_as("ada", "new"), true).await);
+    assert!(refresh_remembered_credentials(&host_over(&store), &connected_as("test_user_1", "new"), true).await);
 
-    assert_eq!(secret_at(&store, None), held("ada", "new"));
+    assert_eq!(secret_at(&store, None), held("test_user_1", "new"));
     assert_eq!(secret_at(&store, Some("TestShare")), None);
 }
 
@@ -478,12 +485,17 @@ async fn a_working_sign_in_with_remember_on_seeds_the_server_entry() {
 /// gets its own.
 #[tokio::test]
 async fn a_working_sign_in_with_remember_on_as_another_account_still_files_the_share_its_own() {
-    let store = Arc::new(InMemoryCredentials::new().with_entry("127.0.0.1", None, "ada", "ada-pw"));
+    let store = Arc::new(InMemoryCredentials::new().with_entry("127.0.0.1", None, "test_user_1", "test_user_1-pw"));
 
-    assert!(refresh_remembered_credentials(&host_over(&store), &connected_as("grace", "grace-pw"), true).await);
+    assert!(
+        refresh_remembered_credentials(&host_over(&store), &connected_as("test_user_2", "test_user_2-pw"), true).await
+    );
 
-    assert_eq!(secret_at(&store, None), held("ada", "ada-pw"));
-    assert_eq!(secret_at(&store, Some("TestShare")), held("grace", "grace-pw"));
+    assert_eq!(secret_at(&store, None), held("test_user_1", "test_user_1-pw"));
+    assert_eq!(
+        secret_at(&store, Some("TestShare")),
+        held("test_user_2", "test_user_2-pw")
+    );
 }
 
 /// The failing sender's `SendFailed` and every other waiter's `Disconnected` both
@@ -589,7 +601,7 @@ async fn remembering_a_sign_in_files_it_by_the_same_rule_without_dialing() {
 
     let filed = vol
         .remember_sign_in(SignIn {
-            username: "ada".to_string(),
+            username: "test_user_1".to_string(),
             secret: "typed".to_string(),
             remember: true,
         })
@@ -597,7 +609,7 @@ async fn remembering_a_sign_in_files_it_by_the_same_rule_without_dialing() {
         .expect("filing needs no server");
 
     assert!(!filed.remember_refused);
-    assert_eq!(secret_at(&store, None), held("ada", "typed"));
+    assert_eq!(secret_at(&store, None), held("test_user_1", "typed"));
     assert_eq!(secret_at(&store, Some("TestShare")), None);
 }
 
@@ -605,17 +617,20 @@ async fn remembering_a_sign_in_files_it_by_the_same_rule_without_dialing() {
 /// the server entry every other share signs in with.
 #[tokio::test]
 async fn remembering_another_accounts_sign_in_files_the_share_its_own() {
-    let store = Arc::new(InMemoryCredentials::new().with_entry("127.0.0.1", None, "ada", "ada-pw"));
+    let store = Arc::new(InMemoryCredentials::new().with_entry("127.0.0.1", None, "test_user_1", "test_user_1-pw"));
     let vol = offline_volume_over(&store).await;
 
     vol.remember_sign_in(SignIn {
-        username: "grace".to_string(),
-        secret: "grace-pw".to_string(),
+        username: "test_user_2".to_string(),
+        secret: "test_user_2-pw".to_string(),
         remember: true,
     })
     .await
     .expect("filing needs no server");
 
-    assert_eq!(secret_at(&store, None), held("ada", "ada-pw"));
-    assert_eq!(secret_at(&store, Some("TestShare")), held("grace", "grace-pw"));
+    assert_eq!(secret_at(&store, None), held("test_user_1", "test_user_1-pw"));
+    assert_eq!(
+        secret_at(&store, Some("TestShare")),
+        held("test_user_2", "test_user_2-pw")
+    );
 }

@@ -95,23 +95,23 @@ mod tests {
     #[test]
     fn the_shape_says_empty_and_domain_form_and_nothing_else() {
         assert_eq!(
-            CredentialShape::of("ada", "secret").to_string(),
+            CredentialShape::of("test_user_1", "secret").to_string(),
             "user_empty=false, user_domain=none, password_empty=false"
         );
         assert_eq!(
-            CredentialShape::of(r"WORKGROUP\ada", "").to_string(),
+            CredentialShape::of(r"WORKGROUP\test_user_1", "").to_string(),
             "user_empty=false, user_domain=backslash, password_empty=true"
         );
         assert_eq!(
-            CredentialShape::of("ada@example.test", "x").to_string(),
+            CredentialShape::of("test_user_1@example.test", "x").to_string(),
             "user_empty=false, user_domain=at, password_empty=false"
         );
         assert_eq!(
             CredentialShape::of("  ", "x").to_string(),
             "user_empty=true, user_domain=none, password_empty=false"
         );
-        let shape = CredentialShape::of("ada@example.test", "hunter2").to_string();
-        for private in ["ada", "example", "hunter2", "7"] {
+        let shape = CredentialShape::of("test_user_1@example.test", "hunter2").to_string();
+        for private in ["test_user_1", "example", "hunter2", "7"] {
             assert!(!shape.contains(private), "{private:?} in {shape}");
         }
     }

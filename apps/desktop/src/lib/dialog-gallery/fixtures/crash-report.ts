@@ -41,7 +41,7 @@ export const crashReportFixtures: Record<string, CrashReport | undefined> = {
     timestamp: '2026-07-21T22:14:07Z',
     signal: null,
     panicMessage:
-      'called `Option::unwrap()` on a `None` value: no cached listing for smb://naspolya.local/media/photos/2026',
+      'called `Option::unwrap()` on a `None` value: no cached listing for smb://testnas.local/media/photos/2026',
     backtraceFrames: BACKTRACE_FRAMES,
     threadName: 'tokio-runtime-worker',
     threadCount: 24,
@@ -63,7 +63,7 @@ export const crashReportFixtures: Record<string, CrashReport | undefined> = {
     timestamp: '2026-07-21T22:14:07Z',
     signal: 'panic',
     panicMessage:
-      'called `Option::unwrap()` on a `None` value: no cached listing for smb://naspolya.local/media/photos/2026',
+      'called `Option::unwrap()` on a `None` value: no cached listing for smb://testnas.local/media/photos/2026',
     backtraceFrames: BACKTRACE_FRAMES,
     threadName: 'tokio-runtime-worker',
     threadCount: 24,

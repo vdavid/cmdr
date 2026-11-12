@@ -137,7 +137,7 @@ describe('ServersHub a11y', () => {
 
   it('populated host list has no a11y violations', async () => {
     mockHosts = [
-      { id: 'h1', name: 'nas.local', hostname: 'nas.local', ipAddress: '10.0.0.10', port: 445 },
+      { id: 'h1', name: 'testnas.local', hostname: 'testnas.local', ipAddress: '10.0.0.10', port: 445 },
       { id: 'h2', name: 'printer.local', hostname: 'printer.local', ipAddress: '10.0.0.20', port: 445 },
     ]
     const target = document.createElement('div')
@@ -183,7 +183,7 @@ describe('PlacesBrowser a11y', () => {
       props: {
         account: {
           protocol: 'smb',
-          host: { id: 'h1', name: 'nas.local', hostname: 'nas.local', ipAddress: '10.0.0.10', port: 445 },
+          host: { id: 'h1', name: 'testnas.local', hostname: 'testnas.local', ipAddress: '10.0.0.10', port: 445 },
         },
         paneId: 'left',
         isFocused: true,
@@ -205,17 +205,17 @@ describe('PlacesBrowser a11y', () => {
  */
 describe('ServersHubRowMenu a11y', () => {
   const row: HubRow = {
-    id: 'sftp-nas-local-22-ada',
+    id: 'sftp-nas-local-22-test_user_1',
     kind: 'server',
     parentId: null,
     account: null,
     place: null,
-    name: 'Naspolya',
+    name: 'Testnas',
     protocol: 'sftp',
-    address: 'nas.local:22',
+    address: 'testnas.local:22',
     status: 'connected',
     lastConnectedAt: null,
-    volumeId: 'sftp-nas-local-22-ada',
+    volumeId: 'sftp-nas-local-22-test_user_1',
     pinned: true,
     saved: null,
     host: null,
@@ -270,7 +270,7 @@ describe('PlacesHeader a11y', () => {
     mount(PlacesHeader, {
       target,
       props: {
-        hostLabel: 'Naspolya',
+        hostLabel: 'Testnas',
         account: { kind: 'user', username: 'testuser' },
         canForgetPassword: true,
         shareCount: 3,
@@ -327,7 +327,7 @@ describe('SmbOsMountFallbackToastContent a11y', () => {
         volumeId: 'smb-archive',
         share: 'archive',
         retryable: true,
-        blockedServer: 'Naspolya',
+        blockedServer: 'Testnas',
       },
     })
     await tick()
@@ -339,7 +339,7 @@ describe('LocalNetworkBlockedToastContent a11y', () => {
   it('default state has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(LocalNetworkBlockedToastContent, { target, props: { server: 'Naspolya', toastId: 'local-network-blocked' } })
+    mount(LocalNetworkBlockedToastContent, { target, props: { server: 'Testnas', toastId: 'local-network-blocked' } })
     await tick()
     await expectNoA11yViolations(target)
   })

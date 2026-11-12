@@ -34,10 +34,10 @@ shortcut, virtual-volume URL).
   `isPlainFilesystemPath`. An unknown scheme is read as a RELATIVE path there and comes back as a file URL under the
   process working directory, silently. `DETAILS.md` § "Canonical is not OS-resolvable".
 - **Ask `isPathOnVolume` whether a path belongs to a volume; ❌ never a raw `startsWith`.** It matches whole COMPONENTS,
-  so `/Volumes/naspi` can't claim `/Volumes/naspi-backup`, and it tolerates the trailing slash a remote volume rooted at
-  `/` genuinely carries (`sftp://ada@nas.local:22/`). ❌ Never slice a volume prefix off by raw length either: that eats
-  the separator on such a root and yields a RELATIVE path, which every absolute-path check downstream then rejects.
-  `DETAILS.md` § "Volume membership is a component match".
+  so `/Volumes/testshare` can't claim `/Volumes/testshare-backup`, and it tolerates the trailing slash a remote volume
+  rooted at `/` genuinely carries (`sftp://test_user_1@testnas.local:22/`). ❌ Never slice a volume prefix off by raw
+  length either: that eats the separator on such a root and yields a RELATIVE path, which every absolute-path check
+  downstream then rejects. `DETAILS.md` § "Volume membership is a component match".
 - **`toCanonical` throws on empty `homeDir`.** `FilePane.svelte`'s `userHomePath` is fetched async on mount and starts
   `''`. The pane-level `canonicalPath` `$derived` returns `null` while it's empty, so reactive callers must guard on
   `canonicalPath !== null` rather than catch the throw.

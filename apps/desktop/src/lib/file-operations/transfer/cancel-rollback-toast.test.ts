@@ -263,7 +263,7 @@ describe('readCancelRollback', () => {
       fate: 'refused',
       count,
       exampleName: 'holiday.jpg.cmdr-tmp-4d1f9c',
-      volumeName: 'Naspolya',
+      volumeName: 'Testnas',
     })
     const staged = [refused(1)]
 
@@ -322,27 +322,27 @@ describe('readCancelRollback', () => {
       const readout = readCancelRollback(
         rollback({
           stagedLeftovers: [
-            { fate: 'removedWhenBack', count: 1, exampleName: 'holiday.jpg.cmdr-tmp-4d1f9c', volumeName: 'Naspolya' },
+            { fate: 'removedWhenBack', count: 1, exampleName: 'holiday.jpg.cmdr-tmp-4d1f9c', volumeName: 'Testnas' },
           ],
         }),
         'copy',
       )
       expect(readout?.staged).toEqual([
-        'holiday.jpg.cmdr-tmp-4d1f9c, an unfinished copy, stays on Naspolya for now. ' +
-          'Cmdr removes it as soon as Naspolya is back.',
+        'holiday.jpg.cmdr-tmp-4d1f9c, an unfinished copy, stays on Testnas for now. ' +
+          'Cmdr removes it as soon as Testnas is back.',
       ])
     })
 
     it('words a complete file waiting for its name as the user’s file, never as scratch', () => {
       const readout = readCancelRollback(
         rollback({
-          stagedLeftovers: [{ fate: 'landsWhenBack', count: 1, exampleName: 'holiday.jpg', volumeName: 'Naspolya' }],
+          stagedLeftovers: [{ fate: 'landsWhenBack', count: 1, exampleName: 'holiday.jpg', volumeName: 'Testnas' }],
         }),
         'copy',
       )
       expect(readout?.staged).toEqual([
-        'holiday.jpg is complete on Naspolya under a temporary name, ' +
-          'and gets its own name the next time Cmdr connects to Naspolya.',
+        'holiday.jpg is complete on Testnas under a temporary name, ' +
+          'and gets its own name the next time Cmdr connects to Testnas.',
       ])
       expect(readout?.staged[0]).not.toMatch(/remove|delete|unfinished/i)
     })
@@ -351,16 +351,16 @@ describe('readCancelRollback', () => {
       const readout = readCancelRollback(
         rollback({
           stagedLeftovers: [
-            { fate: 'rescued', count: 1, exampleName: 'holiday (recovered).jpg', volumeName: 'Naspolya' },
-            { fate: 'rescued', count: 2, exampleName: 'a (recovered).mov', volumeName: 'Naspolya' },
+            { fate: 'rescued', count: 1, exampleName: 'holiday (recovered).jpg', volumeName: 'Testnas' },
+            { fate: 'rescued', count: 2, exampleName: 'a (recovered).mov', volumeName: 'Testnas' },
           ],
         }),
         'copy',
       )
       expect(readout?.staged).toEqual([
-        'Cmdr saved a complete new file on Naspolya as holiday (recovered).jpg, because it couldn’t take its own ' +
+        'Cmdr saved a complete new file on Testnas as holiday (recovered).jpg, because it couldn’t take its own ' +
           'name. Check it, then give it the name you want.',
-        'Cmdr saved 2 complete new files on Naspolya under “(recovered)” names, because they couldn’t take their ' +
+        'Cmdr saved 2 complete new files on Testnas under “(recovered)” names, because they couldn’t take their ' +
           'own. Check them, then give them the names you want.',
       ])
       expect(readout?.staged.join(' ')).not.toMatch(/remove|delete|unfinished/i)
@@ -371,8 +371,8 @@ describe('readCancelRollback', () => {
         rollback({
           stagedLeftovers: [
             refused(1),
-            { fate: 'removedWhenBack', count: 3, exampleName: 'a.mov.cmdr-tmp-1', volumeName: 'Naspolya' },
-            { fate: 'landsWhenBack', count: 2, exampleName: 'b.mov', volumeName: 'Naspolya' },
+            { fate: 'removedWhenBack', count: 3, exampleName: 'a.mov.cmdr-tmp-1', volumeName: 'Testnas' },
+            { fate: 'landsWhenBack', count: 2, exampleName: 'b.mov', volumeName: 'Testnas' },
           ],
         }),
         'copy',
@@ -380,9 +380,9 @@ describe('readCancelRollback', () => {
       expect(readout?.staged).toEqual([
         'Couldn’t remove holiday.jpg.cmdr-tmp-4d1f9c, an unfinished copy left at the destination. ' +
           'It’s safe to delete, and Cmdr tries again the next time it connects there.',
-        '3 unfinished copies stay on Naspolya for now. Cmdr removes them as soon as Naspolya is back.',
-        '2 complete files wait on Naspolya under temporary names. ' +
-          'Each gets its own name the next time Cmdr connects to Naspolya.',
+        '3 unfinished copies stay on Testnas for now. Cmdr removes them as soon as Testnas is back.',
+        '2 complete files wait on Testnas under temporary names. ' +
+          'Each gets its own name the next time Cmdr connects to Testnas.',
       ])
     })
 
@@ -506,7 +506,7 @@ describe('readCancelRollback', () => {
         rollback({
           originalsStillInPlace: landed,
           stagedLeftovers: [
-            { fate: 'refused', count: 1, exampleName: 'holiday.jpg.cmdr-tmp-4d1f9c', volumeName: 'Naspolya' },
+            { fate: 'refused', count: 1, exampleName: 'holiday.jpg.cmdr-tmp-4d1f9c', volumeName: 'Testnas' },
           ],
         }),
         'move',
@@ -544,7 +544,7 @@ describe('raiseCancelRollbackToast', () => {
 
   it('holds longer when Cmdr’s own scratch stayed behind', () => {
     const stagedLeftovers: StagedLeftovers[] = [
-      { fate: 'refused', count: 1, exampleName: 'a.cmdr-tmp-1', volumeName: 'Naspolya' },
+      { fate: 'refused', count: 1, exampleName: 'a.cmdr-tmp-1', volumeName: 'Testnas' },
     ]
     expect(timeoutOf({ outcome: 'rolledBack', reversed: 3, stagedLeftovers })).toBe(12000)
   })

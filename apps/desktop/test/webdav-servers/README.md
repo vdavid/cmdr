@@ -48,10 +48,10 @@ fixture and cut that (`crates/cmdr-webdav/src/volume/connection_drop_test.rs`).
 | `webdav-fixture-tls`       | 13484 | HTTPS with a self-signed certificate, the way a home NAS ships              |
 | `webdav-fixture-impatient` | 13485 | Drops a request body after 3 s of silence, so a paused upload outlasts it   |
 
-The five httpd servers run as `ada` / `openthedoor` and export `/srv/data` at the URL path `/dav/`. They carry the same
-landmarks (`hello.txt`, `docs/` holding a `readme.md`, `nested/deep/file.txt`, `many/` with 300 entries, `empty/`,
-`naïve name.txt`, `photos/2024 summer/`, `large.bin`, `dated.txt`), so a cell can assert on them whichever server it's
-pointed at.
+The five httpd servers run as `test_user_1` / `openthedoor` and export `/srv/data` at the URL path `/dav/`. They carry
+the same landmarks (`hello.txt`, `docs/` holding a `readme.md`, `nested/deep/file.txt`, `many/` with 300 entries,
+`empty/`, `naïve name.txt`, `photos/2024 summer/`, `large.bin`, `dated.txt`), so a cell can assert on them whichever
+server it's pointed at.
 
 `dated.txt` is dated 2021-01-29 08:30:15 UTC by `seed.sh`'s `touch -d`: `mod_dav` can't set a date over the wire, so
 this is how the date cells get a file whose date can't be mistaken for "now" (`crates/cmdr-webdav/DETAILS.md` §
@@ -136,10 +136,10 @@ code does when a server declines, never what a server in the wild chose.
   `desktop-rust-webdav-nextcloud`, which is slow-lane, so `--only-slow`, `pnpm check webdav-nextcloud`, or CI's own step
   is what runs it. The port staying unbound IS the install still running, which is why `start.sh` gives this one service
   a 300 s budget where httpd gets 120 s.
-- **Two accounts, and both are load-bearing.** `ada` / `openthedoor` carries a 5 GiB quota; `grace` / `openthedoor`
-  keeps the stock unlimited one. Nextcloud answers `quota-available-bytes` with a real number for the first and with the
-  negative sentinel `-3` for the second, which the backend reads as a bounded free-space figure and as an unbounded
-  reading (a used figure with no ceiling) respectively. One account each is what makes both observable.
+- **Two accounts, and both are load-bearing.** `test_user_1` / `openthedoor` carries a 5 GiB quota; `test_user_2` /
+  `openthedoor` keeps the stock unlimited one. Nextcloud answers `quota-available-bytes` with a real number for the
+  first and with the negative sentinel `-3` for the second, which the backend reads as a bounded free-space figure and
+  as an unbounded reading (a used figure with no ceiling) respectively. One account each is what makes both observable.
 - **`image-nextcloud/post-install.sh` provisions them**, from inside the official image's post-installation hook. ❗
   That timing is the whole reason it is a hook and not a script anyone runs afterwards: a quota set through `occ`
   against a LIVE server stays invisible to WebDAV until the process restarts, so provisioning after the fact would leave

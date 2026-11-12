@@ -278,7 +278,7 @@ pub fn upgrade_existing_smb_mounts() {
 
     // Hold the mDNS browse for the whole pass so the per-volume hostname resolution
     // can find the host. Without it, the Keychain lookup misses on auth-required
-    // shares (creds are keyed by hostname like `smb://naspolya/share`, not by IP).
+    // shares (creds are keyed by hostname like `smb://testnas/share`, not by IP).
     // Each volume's own `discover_server` holds it too; this one covers the wait
     // below. `None` with networking off, and the pass goes ahead on IPs alone.
     let browse = crate::network::is_network_enabled().then(crate::network::discovery_gate::hold);

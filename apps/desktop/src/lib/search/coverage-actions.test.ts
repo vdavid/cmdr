@@ -32,11 +32,11 @@ function toast(): { message: unknown; level: unknown } {
 describe('indexUncoveredDrive', () => {
   it('confirms the scan started, naming the drive', async () => {
     enableDriveIndexMock.mockResolvedValue({ status: 'ok', data: { status: 'started' } })
-    await indexUncoveredDrive('smb-naspi', 'Naspolya')
+    await indexUncoveredDrive('smb-testshare', 'Testnas')
 
-    expect(enableDriveIndexMock).toHaveBeenCalledWith('smb-naspi')
+    expect(enableDriveIndexMock).toHaveBeenCalledWith('smb-testshare')
     expect(toast()).toEqual({
-      message: tString('search.coverage.toast.started', { drive: 'Naspolya' }),
+      message: tString('search.coverage.toast.started', { drive: 'Testnas' }),
       level: 'info',
     })
   })
@@ -53,22 +53,22 @@ describe('indexUncoveredDrive', () => {
       status: 'ok',
       data: { status: 'refused', reason: 'credentials_needed' },
     })
-    await indexUncoveredDrive('smb-naspi', 'Naspolya')
+    await indexUncoveredDrive('smb-testshare', 'Testnas')
 
     expect(toast()).toEqual({
-      message: tString('search.coverage.toast.notStarted', { drive: 'Naspolya' }),
+      message: tString('search.coverage.toast.notStarted', { drive: 'Testnas' }),
       level: 'warn',
     })
   })
 
   it('says the same when the IPC itself fails or errors, never nothing', async () => {
     enableDriveIndexMock.mockResolvedValue({ status: 'error', error: 'boom' })
-    await indexUncoveredDrive('smb-naspi', 'Naspolya')
+    await indexUncoveredDrive('smb-testshare', 'Testnas')
     expect(toast().level).toBe('warn')
 
     addToastMock.mockReset()
     enableDriveIndexMock.mockRejectedValue(new Error('boom'))
-    await indexUncoveredDrive('smb-naspi', 'Naspolya')
+    await indexUncoveredDrive('smb-testshare', 'Testnas')
     expect(toast().level).toBe('warn')
   })
 
@@ -77,10 +77,10 @@ describe('indexUncoveredDrive', () => {
     // button did what it says. Reporting it as "can't index right now" would be
     // the opposite of true.
     enableDriveIndexMock.mockResolvedValue({ status: 'ok', data: { status: 'deferred_until_search_ends' } })
-    await indexUncoveredDrive('smb-naspi', 'Naspolya')
+    await indexUncoveredDrive('smb-testshare', 'Testnas')
 
     expect(toast()).toEqual({
-      message: tString('search.coverage.toast.deferredUntilSearchEnds', { drive: 'Naspolya' }),
+      message: tString('search.coverage.toast.deferredUntilSearchEnds', { drive: 'Testnas' }),
       level: 'info',
     })
   })
@@ -90,10 +90,10 @@ describe('indexUncoveredDrive', () => {
     // behind it, so the news from here is the news the note asked for: the drive
     // is being indexed. Warning would be the opposite of true.
     enableDriveIndexMock.mockResolvedValue({ status: 'ok', data: { status: 'deferred_until_scan_ends' } })
-    await indexUncoveredDrive('smb-naspi', 'Naspolya')
+    await indexUncoveredDrive('smb-testshare', 'Testnas')
 
     expect(toast()).toEqual({
-      message: tString('search.coverage.toast.started', { drive: 'Naspolya' }),
+      message: tString('search.coverage.toast.started', { drive: 'Testnas' }),
       level: 'info',
     })
   })

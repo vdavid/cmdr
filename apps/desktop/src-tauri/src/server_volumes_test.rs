@@ -28,7 +28,7 @@ fn saved_sftp(host: &str, pinned: bool) -> KnownSftpServer {
     KnownSftpServer {
         host: host.to_string(),
         port: 2222,
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         display_name: format!("{host} server"),
         remote_root: "/srv/data".to_string(),
         start_folder: None,
@@ -46,11 +46,11 @@ fn a_pinned_saved_server_answers_for_its_own_paths_without_connecting() {
     sftp_known_servers::remember(saved_sftp(host, true));
 
     let started = std::time::Instant::now();
-    let volume = server_volume_for_path(&format!("sftp://ada@{host}:2222/srv/data/photos"))
+    let volume = server_volume_for_path(&format!("sftp://test_user_1@{host}:2222/srv/data/photos"))
         .expect("a saved server answers for a path under its own root");
 
-    assert_eq!(volume.id, cmdr_fs::volume::sftp_volume_id(host, 2222, "ada"));
-    assert_eq!(volume.path, format!("sftp://ada@{host}:2222/srv/data"));
+    assert_eq!(volume.id, cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1"));
+    assert_eq!(volume.path, format!("sftp://test_user_1@{host}:2222/srv/data"));
     assert_eq!(volume.fs_type.as_deref(), Some("sftp"));
     assert_eq!(volume.category, LocationCategory::Network);
     assert_eq!(
@@ -73,10 +73,10 @@ fn an_unpinned_saved_server_still_answers_for_its_paths() {
     let host = "198.51.100.12";
     sftp_known_servers::remember(saved_sftp(host, false));
 
-    let volume = server_volume_for_path(&format!("sftp://ada@{host}:2222/srv/data"))
+    let volume = server_volume_for_path(&format!("sftp://test_user_1@{host}:2222/srv/data"))
         .expect("an unpinned server is still where its paths live");
 
-    assert_eq!(volume.id, cmdr_fs::volume::sftp_volume_id(host, 2222, "ada"));
+    assert_eq!(volume.id, cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1"));
     assert_eq!(volume.connection_state, Some(ConnectionState::Saved));
 }
 
@@ -85,7 +85,7 @@ fn a_saved_webdav_server_answers_for_its_own_paths() {
     let host = "198.51.100.13";
     webdav_known_servers::remember(KnownWebdavServer {
         url: format!("http://{host}:8080/dav/"),
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         display_name: "Docs".to_string(),
         remote_root: "/Photos".to_string(),
         start_folder: None,
@@ -94,11 +94,11 @@ fn a_saved_webdav_server_answers_for_its_own_paths() {
         last_connected_at: "2026-09-06T00:00:00Z".to_string(),
     });
 
-    let volume = server_volume_for_path(&format!("webdav://ada@{host}:8080/Photos/2026"))
+    let volume = server_volume_for_path(&format!("webdav://test_user_1@{host}:8080/Photos/2026"))
         .expect("a saved WebDAV server answers for a path under its own root");
 
-    assert_eq!(volume.id, cmdr_fs::volume::webdav_volume_id(host, 8080, "ada"));
-    assert_eq!(volume.path, format!("webdav://ada@{host}:8080/Photos"));
+    assert_eq!(volume.id, cmdr_fs::volume::webdav_volume_id(host, 8080, "test_user_1"));
+    assert_eq!(volume.path, format!("webdav://test_user_1@{host}:8080/Photos"));
     assert_eq!(volume.fs_type.as_deref(), Some("webdav"));
 }
 
@@ -118,7 +118,7 @@ fn a_sibling_root_is_not_this_servers_path() {
     sftp_known_servers::remember(saved_sftp(host, true));
 
     assert!(
-        server_volume_for_path(&format!("sftp://ada@{host}:2222/srv/data-1/photos")).is_none(),
+        server_volume_for_path(&format!("sftp://test_user_1@{host}:2222/srv/data-1/photos")).is_none(),
         "`/srv/data-1` is a different tree, however much of `/srv/data` it spells"
     );
 }
@@ -132,8 +132,8 @@ async fn path_exists_on_a_saved_server_nobody_connected_answers_that_it_couldnt_
     sftp_known_servers::remember(saved_sftp(host, true));
 
     let answer = crate::commands::file_system::path_exists(
-        Some(cmdr_fs::volume::sftp_volume_id(host, 2222, "ada")),
-        format!("sftp://ada@{host}:2222/srv/data/photos"),
+        Some(cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1")),
+        format!("sftp://test_user_1@{host}:2222/srv/data/photos"),
     )
     .await;
 
@@ -156,12 +156,12 @@ async fn listing_a_saved_server_nobody_connected_says_it_is_not_connected() {
     sftp_known_servers::remember(saved_sftp(host, true));
 
     let listing = TestListingGuard::adopt(listings(), unique_test_id("saved-server-listing"));
-    let pane_path = format!("sftp://ada@{host}:2222/srv/data/photos");
+    let pane_path = format!("sftp://test_user_1@{host}:2222/srv/data/photos");
     let outcome = read_to_end(
         listings(),
         &request(
             listing.id(),
-            &cmdr_fs::volume::sftp_volume_id(host, 2222, "ada"),
+            &cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1"),
             std::path::Path::new(&pane_path),
         ),
     )
@@ -203,8 +203,8 @@ async fn a_copy_onto_a_saved_server_nobody_connected_is_refused_as_not_connected
             std::sync::Arc::new(CollectorEventSink::new()),
             source_id.clone(),
             vec![std::path::PathBuf::from("notes.txt")],
-            cmdr_fs::volume::sftp_volume_id(host, 2222, "ada"),
-            format!("sftp://ada@{host}:2222/srv/data/photos"),
+            cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1"),
+            format!("sftp://test_user_1@{host}:2222/srv/data/photos"),
             VolumeCopyConfig::default(),
             Initiator::User,
             None,
@@ -235,9 +235,9 @@ fn an_unnamed_saved_server_gets_a_row_named_username_at_host() {
 
     let row = rows
         .iter()
-        .find(|row| row.id == cmdr_fs::volume::sftp_volume_id(host, 2222, "ada"))
+        .find(|row| row.id == cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1"))
         .expect("a saved server has a row");
-    assert_eq!(row.name, format!("ada@{host}"));
+    assert_eq!(row.name, format!("test_user_1@{host}"));
 }
 
 /// ❗ **A row carries where opening the place lands**, as an app path, so a pane
@@ -261,13 +261,13 @@ fn a_saved_servers_row_carries_its_start_folder_as_the_landing() {
     append_server_volumes(&mut rows);
     let row_for = |row_host: &str| {
         rows.iter()
-            .find(|row| row.id == cmdr_fs::volume::sftp_volume_id(row_host, 2222, "ada"))
+            .find(|row| row.id == cmdr_fs::volume::sftp_volume_id(row_host, 2222, "test_user_1"))
             .expect("a saved server has a row")
     };
 
     assert_eq!(
         row_for(host).landing_path.as_deref(),
-        Some(format!("sftp://ada@{host}:2222/srv/data/photos").as_str())
+        Some(format!("sftp://test_user_1@{host}:2222/srv/data/photos").as_str())
     );
     assert_eq!(
         row_for(plain_host).landing_path,
@@ -297,7 +297,7 @@ fn every_saved_server_gets_a_row_carrying_its_own_pin() {
     let mut rows = Vec::new();
     append_server_volumes(&mut rows);
 
-    let pinned_id = cmdr_fs::volume::sftp_volume_id(pinned_host, 2222, "ada");
+    let pinned_id = cmdr_fs::volume::sftp_volume_id(pinned_host, 2222, "test_user_1");
     let row = rows
         .iter()
         .find(|row| row.id == pinned_id)
@@ -305,7 +305,7 @@ fn every_saved_server_gets_a_row_carrying_its_own_pin() {
     assert_eq!(row.category, LocationCategory::Network);
     assert_eq!(row.fs_type.as_deref(), Some("sftp"));
     assert_eq!(row.name, format!("{pinned_host} server"));
-    assert_eq!(row.path, format!("sftp://ada@{pinned_host}:2222/srv/data"));
+    assert_eq!(row.path, format!("sftp://test_user_1@{pinned_host}:2222/srv/data"));
     assert_eq!(row.connection_state, Some(ConnectionState::Saved));
     assert_eq!(row.pinned, Some(true));
     assert!(
@@ -318,7 +318,7 @@ fn every_saved_server_gets_a_row_carrying_its_own_pin() {
         "❗ enrichment fills this from the registered volume afterwards, which is why the arm folds BEFORE it"
     );
 
-    let unpinned_id = cmdr_fs::volume::sftp_volume_id(unpinned_host, 2222, "ada");
+    let unpinned_id = cmdr_fs::volume::sftp_volume_id(unpinned_host, 2222, "test_user_1");
     let unpinned = rows
         .iter()
         .find(|row| row.id == unpinned_id)
@@ -335,7 +335,7 @@ fn every_saved_server_gets_a_row_carrying_its_own_pin() {
 /// the cap, and it earns its switcher row through its live session instead.
 #[test]
 fn a_row_for_a_live_session_nothing_saved_reports_no_pin() {
-    let volume_id = cmdr_fs::volume::sftp_volume_id("198.51.100.47", 2222, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id("198.51.100.47", 2222, "test_user_1");
     let manager = crate::file_system::volume::manager::get_volume_manager();
     manager.register(
         &volume_id,
@@ -368,7 +368,7 @@ fn a_pinned_webdav_server_gets_a_row_of_its_own_kind() {
     let host = "198.51.100.43";
     webdav_known_servers::remember(KnownWebdavServer {
         url: format!("http://{host}:8080/dav/"),
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         display_name: "Docs".to_string(),
         remote_root: "/Photos".to_string(),
         start_folder: None,
@@ -382,10 +382,10 @@ fn a_pinned_webdav_server_gets_a_row_of_its_own_kind() {
 
     let row = rows
         .iter()
-        .find(|row| row.id == cmdr_fs::volume::webdav_volume_id(host, 8080, "ada"))
+        .find(|row| row.id == cmdr_fs::volume::webdav_volume_id(host, 8080, "test_user_1"))
         .expect("a pinned WebDAV server has a row");
     assert_eq!(row.fs_type.as_deref(), Some("webdav"));
-    assert_eq!(row.path, format!("webdav://ada@{host}:8080/Photos"));
+    assert_eq!(row.path, format!("webdav://test_user_1@{host}:8080/Photos"));
 }
 
 /// ❗ **A registered volume gets a row whether or not it is pinned**, and it is
@@ -394,7 +394,7 @@ fn a_pinned_webdav_server_gets_a_row_of_its_own_kind() {
 fn a_registered_volume_gets_a_row_under_the_id_its_saved_row_carried() {
     let host = "198.51.100.44";
     sftp_known_servers::remember(saved_sftp(host, false));
-    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1");
 
     let mut before = Vec::new();
     append_server_volumes(&mut before);
@@ -433,7 +433,7 @@ fn a_registered_volume_gets_a_row_under_the_id_its_saved_row_carried() {
 async fn a_live_servers_row_comes_out_of_the_pipeline_enriched() {
     let host = "198.51.100.45";
     sftp_known_servers::remember(saved_sftp(host, true));
-    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1");
 
     let manager = crate::file_system::volume::manager::get_volume_manager();
     manager.register(
@@ -466,7 +466,7 @@ async fn a_live_servers_row_comes_out_of_the_pipeline_enriched() {
 /// is worse than one the user can disconnect.
 #[test]
 fn a_registered_volume_nothing_saved_still_gets_a_row() {
-    let volume_id = cmdr_fs::volume::sftp_volume_id("198.51.100.46", 2222, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id("198.51.100.46", 2222, "test_user_1");
     let manager = crate::file_system::volume::manager::get_volume_manager();
     manager.register(
         &volume_id,
@@ -474,7 +474,7 @@ fn a_registered_volume_nothing_saved_still_gets_a_row() {
             cmdr_fs::volume::InMemoryVolume::new("Forgotten but live")
                 .with_backend_kind(BackendKind::Sftp)
                 .with_connection_state(ConnectionState::Direct)
-                .with_root("sftp://ada@198.51.100.46:2222/srv/data"),
+                .with_root("sftp://test_user_1@198.51.100.46:2222/srv/data"),
         ),
     );
 
@@ -489,7 +489,7 @@ fn a_registered_volume_nothing_saved_still_gets_a_row() {
         row.name, "Forgotten but live",
         "the volume's own name, since no entry has one"
     );
-    assert_eq!(row.path, "sftp://ada@198.51.100.46:2222/srv/data");
+    assert_eq!(row.path, "sftp://test_user_1@198.51.100.46:2222/srv/data");
     assert_eq!(row.fs_type.as_deref(), Some("sftp"));
 
     manager.unregister(&volume_id);
@@ -500,13 +500,13 @@ fn a_registered_volume_nothing_saved_still_gets_a_row() {
 fn saved_share(share: &str, volume_id: Option<&str>, pinned: bool) -> crate::network::known_shares::KnownNetworkShare {
     use crate::network::known_shares::{AuthOptions, ConnectionMode, KnownNetworkShare};
     KnownNetworkShare {
-        server_name: "Naspolya".to_string(),
+        server_name: "Testnas".to_string(),
         share_name: share.to_string(),
         protocol: "smb".to_string(),
         last_connected_at: "2026-09-24T10:00:00Z".to_string(),
         last_connection_mode: ConnectionMode::Credentials,
         last_known_auth_options: AuthOptions::GuestOrCredentials,
-        username: Some("sven".to_string()),
+        username: Some("test_user_6".to_string()),
         address: Some("198.51.100.90".to_string()),
         port: None,
         volume_id: volume_id.map(str::to_string),
@@ -521,8 +521,8 @@ fn saved_share(share: &str, volume_id: Option<&str>, pinned: bool) -> crate::net
 fn mount_row(id: &str) -> LocationInfo {
     let mut row = location_from_place(ServerPlace {
         id: id.to_string(),
-        name: "naspi on Naspolya".to_string(),
-        app_root: "/Volumes/naspi".to_string(),
+        name: "testshare on Testnas".to_string(),
+        app_root: "/Volumes/testshare".to_string(),
         landing_path: None,
         fs_type: "sftp",
         pinned: false,
@@ -538,15 +538,19 @@ fn mount_row(id: &str) -> LocationInfo {
 #[test]
 fn an_unmounted_saved_share_is_a_saved_row_carrying_its_pin() {
     let mut volumes = Vec::new();
-    fold_saved_smb_shares(&mut volumes, vec![saved_share("naspi", Some("smb-n"), true)], |_| false);
+    fold_saved_smb_shares(
+        &mut volumes,
+        vec![saved_share("testshare", Some("smb-n"), true)],
+        |_| false,
+    );
 
     assert_eq!(volumes.len(), 1);
     assert_eq!(volumes[0].id, "smb-n");
-    assert_eq!(volumes[0].path, "/Volumes/naspi");
-    assert_eq!(volumes[0].name, "naspi on Naspolya");
+    assert_eq!(volumes[0].path, "/Volumes/testshare");
+    assert_eq!(volumes[0].name, "testshare on Testnas");
     assert_eq!(
         volumes[0].root_label.as_deref(),
-        Some("naspi"),
+        Some("testshare"),
         "a tab at its root says the share"
     );
     assert_eq!(volumes[0].connection_state, Some(ConnectionState::Saved));
@@ -562,7 +566,7 @@ fn a_mounted_saved_share_keeps_its_mount_row_and_only_a_pin_is_added() {
     fold_saved_smb_shares(
         &mut volumes,
         vec![
-            saved_share("naspi", Some("smb-n"), true),
+            saved_share("testshare", Some("smb-n"), true),
             saved_share("media", Some("smb-m"), false),
         ],
         |_| true,
@@ -578,7 +582,11 @@ fn a_mounted_saved_share_keeps_its_mount_row_and_only_a_pin_is_added() {
 #[test]
 fn a_registered_share_the_listing_has_not_caught_up_with_gets_no_saved_row() {
     let mut volumes = Vec::new();
-    fold_saved_smb_shares(&mut volumes, vec![saved_share("naspi", Some("smb-n"), true)], |_| true);
+    fold_saved_smb_shares(
+        &mut volumes,
+        vec![saved_share("testshare", Some("smb-n"), true)],
+        |_| true,
+    );
     assert!(volumes.is_empty());
 }
 
@@ -586,7 +594,7 @@ fn a_registered_share_the_listing_has_not_caught_up_with_gets_no_saved_row() {
 #[test]
 fn a_share_no_mount_went_through_has_no_row() {
     let mut volumes = Vec::new();
-    fold_saved_smb_shares(&mut volumes, vec![saved_share("naspi", None, false)], |_| false);
+    fold_saved_smb_shares(&mut volumes, vec![saved_share("testshare", None, false)], |_| false);
     assert!(volumes.is_empty());
 }
 

@@ -40,7 +40,7 @@ async function makeToken(
     aud: [AUDIENCE],
     exp: now + 3600,
     iat: now,
-    email: 'veszelovszki@gmail.com',
+    email: 'test_user_3@example.com',
     sub: 'user-123',
     ...payload,
   }
@@ -80,7 +80,7 @@ describe('verifyAccessJwt', () => {
     const token = await makeToken(keys.privateKey)
     await expect(verifyAccessJwt(requestWithHeader(token))).resolves.toEqual({
       kind: 'user',
-      email: 'veszelovszki@gmail.com',
+      email: 'test_user_3@example.com',
       sub: 'user-123',
     })
   })
@@ -92,7 +92,7 @@ describe('verifyAccessJwt', () => {
     })
     await expect(verifyAccessJwt(request)).resolves.toMatchObject({
       kind: 'user',
-      email: 'veszelovszki@gmail.com',
+      email: 'test_user_3@example.com',
     })
   })
 
@@ -105,7 +105,7 @@ describe('verifyAccessJwt', () => {
     })
     await expect(verifyAccessJwt(requestWithHeader(token))).resolves.toEqual({
       kind: 'user',
-      email: 'veszelovszki@gmail.com',
+      email: 'test_user_3@example.com',
       sub: 'user-123',
     })
   })
@@ -262,14 +262,14 @@ describe('verifyAccessJwt', () => {
     const oldToken = await makeToken(oldPair.privateKey, { header: { kid: 'old-kid' } })
     await expect(verifyAccessJwt(requestWithHeader(oldToken))).resolves.toMatchObject({
       kind: 'user',
-      email: 'veszelovszki@gmail.com',
+      email: 'test_user_3@example.com',
     })
     expect(fetchMock).toHaveBeenCalledTimes(1)
 
     // Cloudflare rotates: the unseen kid triggers exactly one refresh, and then verifies.
     await expect(verifyAccessJwt(requestWithHeader(await makeToken(keys.privateKey)))).resolves.toMatchObject({
       kind: 'user',
-      email: 'veszelovszki@gmail.com',
+      email: 'test_user_3@example.com',
     })
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })

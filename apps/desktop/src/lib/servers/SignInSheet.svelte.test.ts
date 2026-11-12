@@ -25,7 +25,7 @@ vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
   getWebdavUnattendedReconnect: vi.fn(() => Promise.resolve('possible')),
   forgetServerSecret: vi.fn(() => Promise.resolve(true)),
   updateSavedServer: vi.fn(() => Promise.resolve({ outcome: 'saved' })),
-  savedServerId: vi.fn(() => Promise.resolve('sftp-nas-local-22-ada')),
+  savedServerId: vi.fn(() => Promise.resolve('sftp-nas-local-22-test_user_1')),
   updateSavedSmbHost: vi.fn(() => Promise.resolve({ outcome: 'saved' })),
   saveSftpCredentials: vi.fn(() => Promise.resolve()),
   saveWebdavCredentials: vi.fn(() => Promise.resolve()),
@@ -40,10 +40,10 @@ afterEach(() => {
 
 const endpoint = {
   protocol: 'sftp' as const,
-  displayName: 'Naspolya',
-  address: 'ada@nas.local:22',
-  host: 'nas.local',
-  username: 'ada',
+  displayName: 'Testnas',
+  address: 'test_user_1@testnas.local:22',
+  host: 'testnas.local',
+  username: 'test_user_1',
 }
 
 let submissions: SignInSubmission[] = []
@@ -76,7 +76,7 @@ describe('SignInSheet: where the caret starts', () => {
     await renderSheet({
       mode: 'sign-in',
       remembered: true,
-      endpoint: { ...endpoint, username: 'ada' },
+      endpoint: { ...endpoint, username: 'test_user_1' },
       shape: { kind: 'username_password', guestAllowed: false },
       attempt,
     })
@@ -117,7 +117,7 @@ describe('SignInSheet: the refusal it opens with', () => {
       attempt,
     })
     expect(document.body.querySelector('#sign-in-secret-refusal')?.textContent).toContain(
-      'That password didn’t work for ada',
+      'That password didn’t work for test_user_1',
     )
   })
 })
@@ -142,7 +142,7 @@ describe('SignInSheet: a refusal', () => {
     // read as being about the whole form, which is a puzzle rather than an
     // instruction.
     const inline = document.body.querySelector('#sign-in-secret-refusal')
-    expect(inline?.textContent).toContain('That password didn’t work for ada')
+    expect(inline?.textContent).toContain('That password didn’t work for test_user_1')
     expect(secret?.getAttribute('aria-invalid')).toBe('true')
     expect(secret?.getAttribute('aria-describedby')).toBe('sign-in-secret-refusal')
 
@@ -165,7 +165,7 @@ describe('SignInSheet: a refusal', () => {
 
     const alert = document.body.querySelector('.form-refusal')
     expect(alert?.getAttribute('role')).toBe('alert')
-    expect(alert?.textContent).toContain('Cmdr couldn’t reach nas.local.')
+    expect(alert?.textContent).toContain('Cmdr couldn’t reach testnas.local.')
   })
 
   it('lets the person try again when an attempt breaks down instead of answering', async () => {
@@ -180,7 +180,7 @@ describe('SignInSheet: a refusal', () => {
     await flush()
 
     expect(buttonSaying('Sign in').disabled).toBe(false)
-    expect(document.body.querySelector('.form-refusal')?.textContent).toContain('Cmdr couldn’t reach nas.local.')
+    expect(document.body.querySelector('.form-refusal')?.textContent).toContain('Cmdr couldn’t reach testnas.local.')
   })
 
   it('offers the secret exactly once per press, and never a username the shape calls read-only', async () => {
@@ -236,11 +236,11 @@ describe('SignInSheet: connected, but the password was not kept', () => {
   })
 })
 
-/** A first-contact SSH host key for `nas.local`, as the sheet's trust step takes it. */
+/** A first-contact SSH host key for `testnas.local`, as the sheet's trust step takes it. */
 const hostKey = (fingerprint: string) =>
   ({
     subject: 'host_key',
-    prompt: { host: 'nas.local', port: 22, algorithm: 'ssh-ed25519', fingerprint, kind: 'unknown' },
+    prompt: { host: 'testnas.local', port: 22, algorithm: 'ssh-ed25519', fingerprint, kind: 'unknown' },
   }) as const
 
 describe('SignInSheet: the host-key step', () => {
@@ -249,7 +249,7 @@ describe('SignInSheet: the host-key step', () => {
     const approve = vi.mocked(approveSftpHostKey)
     approve.mockResolvedValueOnce({
       outcome: 'superseded',
-      host: 'nas.local',
+      host: 'testnas.local',
       port: 22,
       algorithm: 'ssh-ed25519',
       fingerprint: 'SHA256:THE-REAL-ONE',
@@ -275,7 +275,7 @@ describe('SignInSheet: the host-key step', () => {
     // that CHANGED never wears first contact's plain primary button.
     expect(document.body.textContent).toContain('SHA256:THE-REAL-ONE')
     expect(document.body.textContent).not.toContain('SHA256:THE-ONE-ON-SCREEN')
-    expect(document.body.textContent).toContain('The key for nas.local changed')
+    expect(document.body.textContent).toContain('The key for testnas.local changed')
   })
 
   /**
@@ -356,7 +356,7 @@ describe('SignInSheet: Add and Add and open', () => {
   it('offers Add beside the primary Add and open, and Enter means Add and open', async () => {
     await renderSheet({ mode: 'add', attempt: recording({ kind: 'handed_off' }) })
     const address = document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement
-    typeInto(address, 'naspolya')
+    typeInto(address, 'testnas')
     await tick()
 
     expect(buttonSaying('Add and open').className).toContain('primary')
@@ -365,30 +365,30 @@ describe('SignInSheet: Add and Add and open', () => {
     address.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     await flush()
     expect(submissions).toEqual([
-      { mode: 'add_smb', address: 'smb://naspolya', name: '', username: null, intent: 'open' },
+      { mode: 'add_smb', address: 'smb://testnas', name: '', username: null, intent: 'open' },
     ])
   })
 
   it('saves without opening on Add, and closes as added', async () => {
     const { done } = await renderSheet({
       mode: 'add',
-      attempt: recording({ kind: 'added', serverId: 'manual-naspolya-445' }),
+      attempt: recording({ kind: 'added', serverId: 'manual-testnas-445' }),
     })
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'naspolya')
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'testnas')
     await tick()
 
     exactButton('Add').click()
     await flush()
 
     expect(submissions).toEqual([
-      { mode: 'add_smb', address: 'smb://naspolya', name: '', username: null, intent: 'save' },
+      { mode: 'add_smb', address: 'smb://testnas', name: '', username: null, intent: 'save' },
     ])
-    expect(done).toEqual([{ kind: 'added', serverId: 'manual-naspolya-445' }])
+    expect(done).toEqual([{ kind: 'added', serverId: 'manual-testnas-445' }])
   })
 
   it('offers Add anyway once the server could not be reached, saying nothing was checked', async () => {
     await renderSheet({ mode: 'add', attempt: recording({ kind: 'refused', refusal: 'unreachable' }) })
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'naspolya')
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'testnas')
     await tick()
     expect(document.body.querySelector('#server-add-anyway-help')).toBeNull()
 
@@ -410,13 +410,13 @@ describe('SignInSheet: Add and Add and open', () => {
       mode: 'add',
       attempt: recording({ kind: 'refused', refusal: 'unreachable', hint: 'local_network_permission' }),
     })
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, '192.168.0.153')
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, '192.168.50.20')
     await tick()
     buttonSaying('Add and open').click()
     await flush()
 
     const refusal = document.body.querySelector('#server-address-refusal')?.textContent ?? ''
-    expect(refusal).toContain('reach 192.168.0.153.')
+    expect(refusal).toContain('reach 192.168.50.20.')
     expect(document.body.querySelector('#server-address-hint')?.textContent).toContain(systemStrings.localNetwork)
     expect(buttonSaying('Add anyway')).toBeTruthy()
 
@@ -428,7 +428,7 @@ describe('SignInSheet: Add and Add and open', () => {
 
   it('shows no Local Network hint for a server that just did not answer', async () => {
     await renderSheet({ mode: 'add', attempt: recording({ kind: 'refused', refusal: 'unreachable' }) })
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'naspolya')
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'testnas')
     await tick()
     buttonSaying('Add and open').click()
     await flush()
@@ -449,16 +449,16 @@ describe('SignInSheet: Add and Add and open', () => {
 
   it('leaves the default port unsaid', async () => {
     await renderSheet({ mode: 'add', attempt: recording({ kind: 'refused', refusal: 'unreachable' }) })
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'naspolya:445')
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'testnas:445')
     await tick()
     buttonSaying('Add and open').click()
     await flush()
-    expect(document.body.textContent).toContain('reach naspolya.')
+    expect(document.body.textContent).toContain('reach testnas.')
   })
 
   it('offers no Add anyway for an address that does not parse: that is a typo, not a sleeping server', async () => {
     await renderSheet({ mode: 'add', attempt: recording({ kind: 'refused', refusal: 'invalid_url' }) })
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'naspolya')
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'testnas')
     await tick()
     buttonSaying('Add and open').click()
     await flush()
@@ -489,10 +489,10 @@ describe('SignInSheet: add mode', () => {
     // SMB keeps nothing Advanced would hold, so there's still no disclosure.
     expect(document.body.querySelector('details')).toBeNull()
 
-    typeInto(address, 'sven@192.168.0.153')
+    typeInto(address, 'test_user_6@192.168.50.20')
     await tick()
     // ❗ The stand-in the hub would show, which for SMB is the host alone.
-    expect(name.placeholder).toBe('Leave empty to use 192.168.0.153')
+    expect(name.placeholder).toBe('Leave empty to use 192.168.50.20')
   })
 
   /**
@@ -523,10 +523,13 @@ describe('SignInSheet: add mode', () => {
   it('says an SFTP add falls back to the account and host', async () => {
     await renderSheet({ mode: 'add', attempt: () => Promise.resolve({ kind: 'cancelled' }) })
     await pickProtocol('SFTP')
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'ada@nas.local:2222')
+    typeInto(
+      document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement,
+      'test_user_1@testnas.local:2222',
+    )
     await tick()
     expect(document.body.querySelector<HTMLInputElement>('#server-name')?.placeholder).toBe(
-      'Leave empty to use ada@nas.local',
+      'Leave empty to use test_user_1@testnas.local',
     )
   })
 
@@ -536,15 +539,15 @@ describe('SignInSheet: add mode', () => {
       return Promise.resolve({ kind: 'handed_off' })
     }
     await renderSheet({ mode: 'add', attempt })
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'naspolya')
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-username') as HTMLInputElement, ' sven ')
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'testnas')
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-username') as HTMLInputElement, ' test_user_6 ')
     await tick()
 
     buttonSaying('Add and open').click()
     await flush()
 
     expect(submissions).toEqual([
-      { mode: 'add_smb', address: 'smb://naspolya', name: '', username: 'sven', intent: 'open' },
+      { mode: 'add_smb', address: 'smb://testnas', name: '', username: 'test_user_6', intent: 'open' },
     ])
   })
 
@@ -554,20 +557,20 @@ describe('SignInSheet: add mode', () => {
       return Promise.resolve({ kind: 'handed_off' })
     }
     await renderSheet({ mode: 'add', attempt })
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'naspolya')
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-name') as HTMLInputElement, "  Sven's NAS ")
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'testnas')
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-name') as HTMLInputElement, '  Test NAS ')
     await tick()
 
     buttonSaying('Add and open').click()
     await flush()
 
     expect(submissions).toEqual([
-      { mode: 'add_smb', address: 'smb://naspolya', name: "Sven's NAS", username: null, intent: 'open' },
+      { mode: 'add_smb', address: 'smb://testnas', name: 'Test NAS', username: null, intent: 'open' },
     ])
   })
 
   /**
-   * ❗ cmdr-reports#8: `sven@192.168.0.153`, typed for an SMB NAS, flipped the
+   * ❗ cmdr-reports#8: `test_user_6@192.168.50.20`, typed for an SMB NAS, flipped the
    * toggle to SFTP and dialed SSH without anyone clicking SFTP.
    */
   it('never moves the protocol while someone types, and dials the one they picked', async () => {
@@ -577,12 +580,15 @@ describe('SignInSheet: add mode', () => {
     }
     await renderSheet({ mode: 'add', attempt })
 
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'sven@192.168.0.153')
+    typeInto(
+      document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement,
+      'test_user_6@192.168.50.20',
+    )
     await tick()
     expect(protocolTab('SMB').getAttribute('aria-selected')).toBe('true')
     // SMB asks for no password here; the account the address named is kept.
     expect(document.body.querySelector('#server-secret')).toBeNull()
-    expect(document.body.querySelector<HTMLInputElement>('#server-username')?.value).toBe('sven')
+    expect(document.body.querySelector<HTMLInputElement>('#server-username')?.value).toBe('test_user_6')
     // `user@host` is a fine SMB address, so nothing warns about it.
     expect(document.body.querySelector('#server-address-warning')).toBeNull()
 
@@ -590,7 +596,13 @@ describe('SignInSheet: add mode', () => {
     await flush()
 
     expect(submissions).toEqual([
-      { mode: 'add_smb', address: 'smb://sven@192.168.0.153', name: '', username: 'sven', intent: 'open' },
+      {
+        mode: 'add_smb',
+        address: 'smb://test_user_6@192.168.50.20',
+        name: '',
+        username: 'test_user_6',
+        intent: 'open',
+      },
     ])
   })
 
@@ -602,7 +614,7 @@ describe('SignInSheet: add mode', () => {
     await renderSheet({ mode: 'add', attempt })
 
     const address = document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement
-    typeInto(address, 'sftp://ada@nas.local')
+    typeInto(address, 'sftp://test_user_1@testnas.local')
     await tick()
 
     const warning = document.body.querySelector('#server-address-warning')
@@ -613,7 +625,7 @@ describe('SignInSheet: add mode', () => {
     // Picking what it says retires the warning.
     await pickProtocol('SFTP')
     expect(document.body.querySelector('#server-address-warning')).toBeNull()
-    expect(document.body.querySelector<HTMLInputElement>('#server-username')?.value).toBe('ada')
+    expect(document.body.querySelector<HTMLInputElement>('#server-username')?.value).toBe('test_user_1')
   })
 
   it('sends an SFTP target once SFTP is picked, with the port and account the address carried', async () => {
@@ -624,9 +636,12 @@ describe('SignInSheet: add mode', () => {
     await renderSheet({ mode: 'add', attempt })
     await pickProtocol('SFTP')
 
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'ada@nas.local:2222')
+    typeInto(
+      document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement,
+      'test_user_1@testnas.local:2222',
+    )
     await tick()
-    expect(document.body.querySelector<HTMLInputElement>('#server-username')?.value).toBe('ada')
+    expect(document.body.querySelector<HTMLInputElement>('#server-username')?.value).toBe('test_user_1')
 
     buttonSaying('Add and open').click()
     await flush()
@@ -634,7 +649,7 @@ describe('SignInSheet: add mode', () => {
     expect(submissions).toHaveLength(1)
     const only = submissions[0]
     if (only.mode !== 'add') throw new Error('expected an add submission')
-    expect(only.target).toMatchObject({ protocol: 'sftp', host: 'nas.local', port: 2222, username: 'ada' })
+    expect(only.target).toMatchObject({ protocol: 'sftp', host: 'testnas.local', port: 2222, username: 'test_user_1' })
   })
 
   it('opens a prefilled URL on the protocol its scheme spells out', async () => {
@@ -654,7 +669,7 @@ describe('SignInSheet: add mode', () => {
     }
     const { done } = await renderSheet({ mode: 'add', attempt })
 
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'naspolya')
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'testnas')
     await tick()
     // ❗ SMB's connect is a share MOUNT: nothing is asked until a listing or a
     // mount refuses, so there is no password field to put in front of anyone.
@@ -664,7 +679,7 @@ describe('SignInSheet: add mode', () => {
     await flush()
 
     expect(submissions).toEqual([
-      { mode: 'add_smb', address: 'smb://naspolya', name: '', username: null, intent: 'open' },
+      { mode: 'add_smb', address: 'smb://testnas', name: '', username: null, intent: 'open' },
     ])
     expect(done).toEqual([{ kind: 'handed_off' }])
   })
@@ -679,7 +694,7 @@ describe('SignInSheet: add mode', () => {
 
     typeInto(
       document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement,
-      'ada@nas.local/srv/data',
+      'test_user_1@testnas.local/srv/data',
     )
     await tick()
     const startFolder = document.body.querySelector<HTMLInputElement>('#server-start-folder') as HTMLInputElement
@@ -705,7 +720,7 @@ describe('SignInSheet: add mode', () => {
 
     typeInto(
       document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement,
-      'ada@nas.local/srv/data',
+      'test_user_1@testnas.local/srv/data',
     )
     await tick()
     buttonSaying('Add and open').click()
@@ -731,23 +746,23 @@ describe('SignInSheet: a refusal and the account that earned it', () => {
         displayName: 'observermch/data',
         address: 'smb://observermch/data',
         host: 'observermch',
-        username: 'ada',
+        username: 'test_user_1',
       },
       shape: { kind: 'username_password', guestAllowed: false },
       attempt,
     })
 
-    typeInto(document.body.querySelector<HTMLInputElement>('#sign-in-username') as HTMLInputElement, 'bob')
+    typeInto(document.body.querySelector<HTMLInputElement>('#sign-in-username') as HTMLInputElement, 'test_user_5')
     typeInto(document.body.querySelector<HTMLInputElement>('#sign-in-secret') as HTMLInputElement, 'hunter2')
     await tick()
     buttonSaying('Sign in').click()
     await flush()
 
-    // The share turned away `bob`, the account that was sent. Naming `ada`, who
+    // The share turned away `test_user_5`, the account that was sent. Naming `test_user_1`, who
     // the sheet happened to open with, blames an account nobody tried.
-    expect(submissions[0]?.mode === 'sign-in' && submissions[0].username).toBe('bob')
-    expect(document.body.textContent).toContain('bob doesn’t have access here')
-    expect(document.body.textContent).not.toContain('ada doesn’t have access here')
+    expect(submissions[0]?.mode === 'sign-in' && submissions[0].username).toBe('test_user_5')
+    expect(document.body.textContent).toContain('test_user_5 doesn’t have access here')
+    expect(document.body.textContent).not.toContain('test_user_1 doesn’t have access here')
   })
 })
 
@@ -761,7 +776,7 @@ describe('SignInSheet: a refusal and the address that earned it', () => {
     await pickProtocol('SFTP')
 
     const address = document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement
-    typeInto(address, 'ada@typo.local:22')
+    typeInto(address, 'test_user_1@typo.local:22')
     await tick()
     buttonSaying('Add and open').click()
     await flush()
@@ -772,9 +787,9 @@ describe('SignInSheet: a refusal and the address that earned it', () => {
     // Correcting the address retires it. Pre-fix the sentence survived AND
     // re-interpolated the live field, so a host Cmdr never contacted was on
     // screen being called unreachable.
-    typeInto(address, 'ada@nas.local:22')
+    typeInto(address, 'test_user_1@testnas.local:22')
     await tick()
-    expect(document.body.textContent).not.toContain('nas.local.')
+    expect(document.body.textContent).not.toContain('testnas.local.')
     expect(document.body.textContent).not.toContain('typo.local')
   })
 })
@@ -792,17 +807,17 @@ describe('SignInSheet: a WebDAV address without encryption', () => {
     await pickProtocol('WebDAV')
     const address = document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement
 
-    typeInto(address, 'http://nas.local:5005')
+    typeInto(address, 'http://testnas.local:5005')
     await tick()
     expect(document.body.querySelector('#server-address-warning')?.textContent).toContain(CLEARTEXT)
     expect(address.getAttribute('aria-describedby')).toBe('server-address-warning')
 
-    typeInto(address, 'https://nas.local:5006')
+    typeInto(address, 'https://testnas.local:5006')
     await tick()
     expect(document.body.querySelector('#server-address-warning')).toBeNull()
 
     // No scheme reads as https, so it needs no warning either.
-    typeInto(address, 'nas.local')
+    typeInto(address, 'testnas.local')
     await tick()
     expect(document.body.querySelector('#server-address-warning')).toBeNull()
   })
@@ -810,7 +825,7 @@ describe('SignInSheet: a WebDAV address without encryption', () => {
   it('says nothing about encryption for another protocol', async () => {
     await renderSheet({ mode: 'add', attempt })
     await pickProtocol('SFTP')
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'nas.local')
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'testnas.local')
     await tick()
     expect(document.body.textContent).not.toContain(CLEARTEXT)
   })
@@ -819,7 +834,7 @@ describe('SignInSheet: a WebDAV address without encryption', () => {
     await renderSheet({
       mode: 'sign-in',
       remembered: false,
-      endpoint: { ...endpoint, protocol: 'webdav', address: 'http://nas.local:5005' },
+      endpoint: { ...endpoint, protocol: 'webdav', address: 'http://testnas.local:5005' },
       shape: { kind: 'password' },
       attempt,
     })
@@ -830,7 +845,7 @@ describe('SignInSheet: a WebDAV address without encryption', () => {
     await renderSheet({
       mode: 'sign-in',
       remembered: false,
-      endpoint: { ...endpoint, protocol: 'webdav', address: 'https://nas.local:5006' },
+      endpoint: { ...endpoint, protocol: 'webdav', address: 'https://testnas.local:5006' },
       shape: { kind: 'password' },
       attempt,
     })

@@ -6,8 +6,8 @@ import (
 )
 
 func TestArchiveFolder(t *testing.T) {
-	got, err := archiveFolder("//nas/share/papers/Company AB/evidence/", "v0.55.0")
-	if err != nil || got != "//nas/share/papers/Company AB/evidence/v0.55.0" {
+	got, err := archiveFolder("//nas/share/documents/Company AB/evidence/", "v0.55.0")
+	if err != nil || got != "//nas/share/documents/Company AB/evidence/v0.55.0" {
 		t.Errorf("got %q %v", got, err)
 	}
 	for _, bad := range []string{"", "/local/path", "//nas", "//nas/share", "smb://nas/share/x", "//nas/share/../x", "//nas//x"} {
@@ -15,7 +15,7 @@ func TestArchiveFolder(t *testing.T) {
 			t.Errorf("%q: want an error", bad)
 		}
 	}
-	if p := pathInShare("//nas/share/papers/Company AB/evidence/v0.55.0"); p != "papers/Company AB/evidence/v0.55.0" {
+	if p := pathInShare("//nas/share/documents/Company AB/evidence/v0.55.0"); p != "documents/Company AB/evidence/v0.55.0" {
 		t.Errorf("pathInShare: got %q", p)
 	}
 }

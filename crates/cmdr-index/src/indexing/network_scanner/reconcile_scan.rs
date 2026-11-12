@@ -97,7 +97,7 @@ pub(crate) async fn reconcile_volume_via_trait(
     // resolve the freshly-written child by `(parent_id, name)` rather than by absolute
     // path, because the index root is the VOLUME root (mapped to ROOT_ID), not `/`. An
     // absolute-path walk from ROOT_ID would fail for any non-`/` root (e.g.
-    // `/Volumes/naspi`), which is exactly the SMB/MTP case — that bug left a post-Forget
+    // `/Volumes/testshare`), which is exactly the SMB/MTP case — that bug left a post-Forget
     // enable resolving zero new dirs, so the reconcile stopped at the root and falsely
     // completed. See `indexing/DETAILS.md` § "Non-destructive rescan".
     let mut new_dirs: Vec<(PathBuf, i64, String)> = Vec::new();

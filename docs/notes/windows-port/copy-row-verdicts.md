@@ -119,8 +119,8 @@ New capabilities needed: `local_network_permission`, `local_ai`, `safe_save_file
   - Windows: undecided. No Windows local backend exists (`crates/cmdr-local/Cargo.toml`
     `platforms = ["linux", "macos"]`), and the plan doesn't pick dot vs `FILE_ATTRIBUTE_HIDDEN` vs system files.
 - **`~` in Go to path on Windows**: `crates/cmdr-fs/src/tilde.rs:expand_tilde` expands only `~` and `~/…` (never `~\…`),
-  via `dirs::home_dir()`. On Windows that yields `C:\Users\ada/Documents`, a backslash root that breaks plan D1's
-  `C:/Users/ada` form (see bugs). Windows path parsing in the go-to-path resolver
+  via `dirs::home_dir()`. On Windows that yields `C:\Users\test_user_1/Documents`, a backslash root that breaks plan
+  D1's `C:/Users/test_user_1` form (see bugs). Windows path parsing in the go-to-path resolver
   (`apps/desktop/src-tauri/src/go_to_path/mod.rs:resolve`) isn't built yet.
 - **adb locator**: searches nothing Windows-specific. `crates/cmdr-adb/src/server.rs:locate_adb_binary` tries the
   override, `$ADB`, `$PATH` entries joined with `adb`, `$ANDROID_HOME` / `$ANDROID_SDK_ROOT` `platform-tools/adb`,
@@ -360,7 +360,8 @@ Skip (no Windows/Linux path, or a macOS-only mechanism):
   everywhere, so `$PATH` and the SDK env vars can't match on Windows (task 46). Linux misses
   `~/Android/Sdk/platform-tools/adb`, Android Studio's default.
 - **`expand_tilde` breaks D1 on Windows**: `crates/cmdr-fs/src/tilde.rs:expand_tilde` splices `dirs::home_dir()`
-  verbatim, giving `C:\Users\ada/Documents`; D1 wants `C:/Users/ada/Documents`. Latent until the Windows backend lands.
+  verbatim, giving `C:\Users\test_user_1/Documents`; D1 wants `C:/Users/test_user_1/Documents`. Latent until the Windows
+  backend lands.
 - **No way to quit with the keyboard on Linux**: `app.quit` is a `NATIVE_SHORTCUT_COMMAND_IDS` entry (dispatch-exempt,
   rebind refused) whose only implementation is the macOS app menu's `Predefined::Quit`; Linux has neither a handler nor
   a menu row, so Ctrl+Q does nothing and can't be rebound. Same mechanism makes binding Ctrl+H on Linux report "reserved

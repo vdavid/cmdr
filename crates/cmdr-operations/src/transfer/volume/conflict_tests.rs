@@ -347,7 +347,7 @@ async fn a_share_that_stays_gone_as_the_destination_is_probed_says_it_lost_the_c
     source.create_file(Path::new("/notes.txt"), b"new").await.unwrap();
     let source_dyn: Arc<dyn Volume> = source.clone();
 
-    let dest = Arc::new(InMemoryVolume::new("Naspolya"));
+    let dest = Arc::new(InMemoryVolume::new("Testnas"));
     dest.create_file(Path::new("/notes.txt"), b"old").await.unwrap();
     let nas = OutageVolume::wrap(Arc::clone(&dest), "conflict-probe-gone");
     nas.drop_at_stat_of(Path::new("/notes.txt"));
@@ -392,7 +392,7 @@ async fn a_share_that_stays_gone_as_the_destination_is_probed_says_it_lost_the_c
         matches!(
             &error,
             WriteOperationError::ServerConnectionLost { path, volume_name, gave_up_after_secs: Some(_) }
-                if path == "/notes.txt" && volume_name == "Naspolya"
+                if path == "/notes.txt" && volume_name == "Testnas"
         ),
         "the connection is the cause: {error:?}"
     );

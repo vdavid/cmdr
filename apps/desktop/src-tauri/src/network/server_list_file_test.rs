@@ -14,7 +14,7 @@ use crate::test_support::TestDir;
 
 const SFTP: &str = r#"{
   "knownSftpServers": [
-    { "host": "nas.local", "port": 22, "username": "ada", "displayName": "NAS", "remoteRoot": "/srv",
+    { "host": "testnas.local", "port": 22, "username": "test_user_1", "displayName": "NAS", "remoteRoot": "/srv",
       "keyFile": null, "useAgent": true, "pinned": true, "lastConnectedAt": "2026-10-01T10:00:00Z" },
     { "port": 22, "username": "typo-no-host", "displayName": "", "remoteRoot": "/",
       "keyFile": null, "useAgent": true, "lastConnectedAt": "2026-10-01T10:00:00Z" }
@@ -23,7 +23,7 @@ const SFTP: &str = r#"{
 
 const WEBDAV: &str = r#"{
   "knownWebdavServers": [
-    { "url": "https://dav.example.com/", "username": "ada", "displayName": "Work", "remoteRoot": "/",
+    { "url": "https://dav.example.com/", "username": "test_user_1", "displayName": "Work", "remoteRoot": "/",
       "pinned": true, "lastConnectedAt": "2026-10-01T10:00:00Z" },
     { "url": 42 }
   ]

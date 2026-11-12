@@ -355,13 +355,13 @@ describe('the readiness gate is per target, not "is root loaded"', () => {
     prepareSearchIndexMock.mockImplementation(
       (volumeId: string | null): Promise<{ ready: boolean; entryCount: number; loading: boolean }> =>
         Promise.resolve(
-          volumeId === 'smb-naspi'
+          volumeId === 'smb-testshare'
             ? { ready: true, entryCount: 7, loading: false }
             : { ready: false, entryCount: 0, loading: true },
         ),
     )
     const { overlay } = await mountDialog({
-      searchVolume: { volumeId: 'smb-naspi', mountRoot: '/Volumes/naspi', isNetwork: true },
+      searchVolume: { volumeId: 'smb-testshare', mountRoot: '/Volumes/testshare', isNetwork: true },
     })
 
     setQuery('*.pdf')
@@ -376,10 +376,10 @@ describe('the readiness gate is per target, not "is root loaded"', () => {
     // multi-second wait a NAS search used to open with.
     prepareSearchIndexMock.mockResolvedValue({ ready: true, entryCount: 7, loading: false })
     await mountDialog({
-      searchVolume: { volumeId: 'smb-naspi', mountRoot: '/Volumes/naspi', isNetwork: true },
+      searchVolume: { volumeId: 'smb-testshare', mountRoot: '/Volumes/testshare', isNetwork: true },
     })
 
-    expect(prepareSearchIndexMock).toHaveBeenCalledWith('smb-naspi')
+    expect(prepareSearchIndexMock).toHaveBeenCalledWith('smb-testshare')
   })
 
   it('keeps searching after ⌘N, which resets the query and not what the backend reported', async () => {
@@ -401,12 +401,12 @@ describe('the coverage note answers "why is this empty?"', () => {
     // The regression anchor: a note is about the run that produced it. Left standing, it
     // explains away a fresh, fully-covered answer that needs no explaining.
     searchFilesMock.mockResolvedValueOnce(
-      result({ uncoveredScopes: ['/Volumes/naspi/photos'], targetVolumeId: 'smb-naspi' }),
+      result({ uncoveredScopes: ['/Volumes/testshare/photos'], targetVolumeId: 'smb-testshare' }),
     )
     const { overlay, target } = await mountDialog({ autoApply: true })
 
     await runAutoApplied(overlay, '*.pdf')
-    expect(noteText(target)).toContain('/Volumes/naspi/photos')
+    expect(noteText(target)).toContain('/Volumes/testshare/photos')
 
     searchFilesMock.mockResolvedValueOnce(result({ entries: [], totalCount: 0 }))
     await runAutoApplied(overlay, '*.png')
@@ -416,16 +416,18 @@ describe('the coverage note answers "why is this empty?"', () => {
   it('renders distinct copy for an uncovered volume and an unresolved path', async () => {
     // Two typed fields, two different truths: the drive has no index at all, versus the
     // drive is indexed but this folder isn't in it. Branching on emptiness, never on text.
-    volumesMock.mockReturnValue([{ id: 'smb-naspi', name: 'Naspolya', path: '/Volumes/naspi', category: 'network' }])
+    volumesMock.mockReturnValue([
+      { id: 'smb-testshare', name: 'Testnas', path: '/Volumes/testshare', category: 'network' },
+    ])
     searchFilesMock.mockResolvedValueOnce(
-      result({ uncoveredScopes: ['/Volumes/naspi/photos'], targetVolumeId: 'smb-naspi' }),
+      result({ uncoveredScopes: ['/Volumes/testshare/photos'], targetVolumeId: 'smb-testshare' }),
     )
     const { overlay, target } = await mountDialog({ autoApply: true })
 
     await runAutoApplied(overlay, '*.pdf')
     const uncovered = noteText(target)
     expect(uncovered).toContain(
-      tString('search.coverage.line.uncovered.network', { count: 1, countText: '1', drive: 'Naspolya' }),
+      tString('search.coverage.line.uncovered.network', { count: 1, countText: '1', drive: 'Testnas' }),
     )
 
     searchFilesMock.mockResolvedValueOnce(result({ unresolvedScopes: ['/Users/test/gone'], targetVolumeId: 'root' }))
@@ -449,7 +451,7 @@ describe('the coverage note answers "why is this empty?"', () => {
 })
 
 describe('the per-drive indexing offer', () => {
-  const NAS_VOLUME = { id: 'smb-naspi', name: 'Naspolya', path: '/Volumes/naspi', category: 'network' }
+  const NAS_VOLUME = { id: 'smb-testshare', name: 'Testnas', path: '/Volumes/testshare', category: 'network' }
 
   function offerButton(target: HTMLElement): HTMLButtonElement | null {
     const buttons = Array.from(target.querySelectorAll<HTMLButtonElement>('.coverage-note button'))
@@ -458,7 +460,7 @@ describe('the per-drive indexing offer', () => {
 
   async function runUncovered(): Promise<{ overlay: Element; target: HTMLElement }> {
     searchFilesMock.mockResolvedValue(
-      result({ uncoveredScopes: ['/Volumes/naspi/photos'], targetVolumeId: 'smb-naspi' }),
+      result({ uncoveredScopes: ['/Volumes/testshare/photos'], targetVolumeId: 'smb-testshare' }),
     )
     const mounted = await mountDialog({ autoApply: true })
     await runAutoApplied(mounted.overlay, '*.pdf')
@@ -472,18 +474,18 @@ describe('the per-drive indexing offer', () => {
     offerButton(target)?.click()
     await settle()
 
-    expect(enableDriveIndexMock).toHaveBeenCalledWith('smb-naspi')
+    expect(enableDriveIndexMock).toHaveBeenCalledWith('smb-testshare')
   })
 
   it('stays quiet for a drive the user silenced, while still telling the truth', async () => {
     // The silence is exactly the "stop offering me this" the first-connect prompt writes.
     // The gap is still real, so the note stays; only the offer goes.
     volumesMock.mockReturnValue([NAS_VOLUME])
-    silencedDrives.value = JSON.stringify(['smb-naspi'])
+    silencedDrives.value = JSON.stringify(['smb-testshare'])
     const { target } = await runUncovered()
 
     expect(offerButton(target)).toBeNull()
-    expect(noteText(target)).toContain('/Volumes/naspi/photos')
+    expect(noteText(target)).toContain('/Volumes/testshare/photos')
   })
 
   it('sticks: "Don’t ask again" persists the per-drive silence', async () => {
@@ -496,7 +498,7 @@ describe('the per-drive indexing offer', () => {
     dismiss?.click()
     await settle()
 
-    expect(setSettingMock).toHaveBeenCalledWith('indexing.silencedDrives', JSON.stringify(['smb-naspi']))
+    expect(setSettingMock).toHaveBeenCalledWith('indexing.silencedDrives', JSON.stringify(['smb-testshare']))
   })
 
   it('offers nothing for an unresolved path, whose drive is already indexed', async () => {
@@ -515,9 +517,9 @@ describe('a server search can’t cover', () => {
   // one for it, so the note says search isn't available there. It must not offer an
   // index that can't exist, and must not promise that Enter reaches the folders.
   const SERVER = {
-    id: 'sftp-nas-local-22-ada',
-    name: 'nas.local',
-    path: 'sftp://ada@nas.local:22/srv/data',
+    id: 'sftp-nas-local-22-test_user_1',
+    name: 'testnas.local',
+    path: 'sftp://test_user_1@testnas.local:22/srv/data',
     category: 'network',
     fsType: 'sftp',
     capabilities: {
@@ -530,7 +532,7 @@ describe('a server search can’t cover', () => {
       canStoreXattrs: false,
     },
   }
-  const SCOPE = 'sftp://ada@nas.local:22/srv/data'
+  const SCOPE = 'sftp://test_user_1@testnas.local:22/srv/data'
 
   it('says plainly that search isn’t available there, and offers nothing', async () => {
     volumesMock.mockReturnValue([SERVER])
@@ -541,7 +543,7 @@ describe('a server search can’t cover', () => {
 
     const note = noteText(target)
     expect(note).toContain(
-      tString('search.coverage.line.uncovered.unavailable', { count: 1, countText: '1', drive: 'nas.local' }),
+      tString('search.coverage.line.uncovered.unavailable', { count: 1, countText: '1', drive: 'testnas.local' }),
     )
     expect(note).toContain(SCOPE)
     expect(note).not.toContain(tString('search.coverage.pressEnter'))
@@ -559,7 +561,7 @@ describe('a server search can’t cover', () => {
 
     const note = noteText(target)
     expect(note).toContain(
-      tString('search.coverage.line.uncovered.unavailable', { count: 1, countText: '1', drive: 'nas.local' }),
+      tString('search.coverage.line.uncovered.unavailable', { count: 1, countText: '1', drive: 'testnas.local' }),
     )
     expect(note).toContain(SCOPE)
     // The line's own folder tip and copy button aren't offers: nothing in `.actions`.

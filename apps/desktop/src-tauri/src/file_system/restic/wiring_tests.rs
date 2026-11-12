@@ -14,7 +14,7 @@ fn repo_shaped(root: &Path) {
 #[test]
 fn the_view_of_a_real_repo_is_in_a_restic_view() {
     let dir = tempfile::tempdir().expect("tempdir");
-    let repo = dir.path().join("m3-restic");
+    let repo = dir.path().join("test-restic");
     repo_shaped(&repo);
 
     assert!(local_path_is_in_a_restic_view(&repo.join("Browse snapshots")));
@@ -45,7 +45,7 @@ fn a_real_folder_with_the_name_is_not() {
 fn the_memo_check_answers_only_what_the_hub_confirmed() {
     use super::wiring::{memo_says_in_a_restic_view, repos};
 
-    let repo = Path::new("/share/backups/m3-restic");
+    let repo = Path::new("/share/backups/test-restic");
     let inside = repo.join("Browse snapshots/latest/a.txt");
     assert!(!memo_says_in_a_restic_view("memo-check", &inside), "never met");
 

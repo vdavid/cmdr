@@ -878,7 +878,7 @@ async fn entry_paths_keep_a_url_rooted_archive_path_spelled_exactly() {
     //
     // Built the way the host builds it, from the boundary split of a pane path,
     // so this covers the whole seam rather than just the join at the end.
-    let pane_path = Path::new("sftp://ada@nas.local:22/srv/data/archive.zip");
+    let pane_path = Path::new("sftp://test_user_1@testnas.local:22/srv/data/archive.zip");
     let (archive_path, inner) = cmdr_fs::archive_format::archive_boundary_candidate(pane_path).expect("boundary");
     assert!(inner.as_os_str().is_empty(), "the pane sits at the archive root");
 
@@ -902,19 +902,22 @@ async fn entry_paths_keep_a_url_rooted_archive_path_spelled_exactly() {
     assert_eq!(
         paths,
         vec![
-            "sftp://ada@nas.local:22/srv/data/archive.zip/dir",
-            "sftp://ada@nas.local:22/srv/data/archive.zip/a.txt"
+            "sftp://test_user_1@testnas.local:22/srv/data/archive.zip/dir",
+            "sftp://test_user_1@testnas.local:22/srv/data/archive.zip/a.txt"
         ]
     );
 
     // And one level in, reached by the path the pane just got handed.
     let inner = volume
-        .list_directory(Path::new("sftp://ada@nas.local:22/srv/data/archive.zip/dir"), None)
+        .list_directory(
+            Path::new("sftp://test_user_1@testnas.local:22/srv/data/archive.zip/dir"),
+            None,
+        )
         .await
         .unwrap();
     assert_eq!(
         inner.iter().map(|e| e.path.as_str()).collect::<Vec<_>>(),
-        vec!["sftp://ada@nas.local:22/srv/data/archive.zip/dir/b.txt"]
+        vec!["sftp://test_user_1@testnas.local:22/srv/data/archive.zip/dir/b.txt"]
     );
 }
 

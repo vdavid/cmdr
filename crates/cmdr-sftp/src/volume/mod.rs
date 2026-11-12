@@ -67,7 +67,7 @@ pub struct SftpVolume {
     /// Display name, as the app chose to label the server.
     name: String,
     /// Both spellings of the directory this volume is rooted at: the app's
-    /// (`sftp://ada@nas.local:22/srv/data`) and the server's (`/srv/data`).
+    /// (`sftp://test_user_1@testnas.local:22/srv/data`) and the server's (`/srv/data`).
     /// Immutable: a different root is a different instance, so `root()` stays a
     /// plain borrow. ❗ Every path translation goes through it and ❌ nothing
     /// here spells a remote path by hand (`cmdr_fs::volume::remote_paths`).

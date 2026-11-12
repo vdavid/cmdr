@@ -7,7 +7,7 @@ use openssh_sftp_client::metadata::{MetaData, Permissions, RawFileType};
 /// Builds a [`FileEntry`] from one SFTP stat answer.
 ///
 /// ❗ `app_path` is the APP spelling, prefix and all
-/// (`sftp://ada@nas.local:22/srv/data/photos`), ❌ never the bare server path.
+/// (`sftp://test_user_1@testnas.local:22/srv/data/photos`), ❌ never the bare server path.
 /// A pane holds what a listing hands it and passes it straight back, and the
 /// app anchors it against the volume root on the way (`root_anchored`), so a
 /// bare server path would come back doubled. `RemoteRoot::to_app_path` is where

@@ -14,7 +14,7 @@ fn a_local_folder_is_stat_and_reads_yes_or_no() {
 #[test]
 fn a_folder_on_a_network_mount_is_never_stat() {
     assert_eq!(
-        on_disk("/Volumes/naspi/docs", Probe::NetworkMount, never_asked),
+        on_disk("/Volumes/testshare/docs", Probe::NetworkMount, never_asked),
         OnDisk::Unchecked
     );
 }
@@ -30,7 +30,11 @@ fn a_protected_folder_is_taken_on_trust_without_a_stat() {
 
 #[test]
 fn a_scheme_path_is_never_stat() {
-    for path in ["sftp://ada@nas:22/srv", "mtp://pixel/65537/DCIM", "adb://serial/sdcard"] {
+    for path in [
+        "sftp://test_user_1@nas:22/srv",
+        "mtp://pixel/65537/DCIM",
+        "adb://serial/sdcard",
+    ] {
         assert_eq!(on_disk(path, Probe::Stat, never_asked), OnDisk::Unchecked, "{path}");
     }
 }
@@ -38,13 +42,13 @@ fn a_scheme_path_is_never_stat() {
 #[test]
 fn discovery_seeds_the_target_from_the_store() {
     let stored = FavoriteVolume {
-        id: "smb-naspi-0123".to_string(),
-        root: "/Volumes/naspi".to_string(),
-        name: "naspi on nas.local".to_string(),
+        id: "smb-testshare-0123".to_string(),
+        root: "/Volumes/testshare".to_string(),
+        name: "testshare on testnas.local".to_string(),
     };
     let target = FavoriteTarget::discovered(Some(stored.clone()), OnDisk::No);
-    assert_eq!(target.volume_id.as_deref(), Some("smb-naspi-0123"));
-    assert_eq!(target.volume_name.as_deref(), Some("naspi on nas.local"));
+    assert_eq!(target.volume_id.as_deref(), Some("smb-testshare-0123"));
+    assert_eq!(target.volume_name.as_deref(), Some("testshare on testnas.local"));
     assert_eq!(target.reach, FavoriteReach::NotFound);
     assert_eq!(target.discovered.stored, Some(stored));
     assert_eq!(

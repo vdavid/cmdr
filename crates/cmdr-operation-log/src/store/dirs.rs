@@ -11,7 +11,7 @@ use super::{OperationLogStoreError, fold_name};
 /// single row with name `""` and NULL parent.
 ///
 /// A remote volume's path is rooted at `scheme://authority` (`adb://serial/…`,
-/// `sftp://ada@nas:22/…`), and that root is ONE name in the chain, see
+/// `sftp://test_user_1@nas:22/…`), and that root is ONE name in the chain, see
 /// [`split_scheme_root`].
 ///
 /// Runs on a write-capable connection — inside the writer thread's transaction

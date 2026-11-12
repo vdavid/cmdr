@@ -37,7 +37,7 @@ pub mod reconnect_error;
 /// The lazy half of "liveness outranks path shape". A volume ID can be reached
 /// through several mount points and the registry keeps the canonical-looking one
 /// active, which is right until that mount wedges: macOS leaves a dead
-/// `/Volumes/naspi` in place and lands the reconnect at `/Volumes/naspi-1`, and
+/// `/Volumes/testshare` in place and lands the reconnect at `/Volumes/testshare-1`, and
 /// the shortest-path rule then picks the corpse on every launch. Nothing may
 /// PROBE a mount to find out (a `statfs` on a wedged one blocks 30–120 s, see
 /// `volumes/DETAILS.md` § "Hung mounts"), so the evidence has to arrive as a

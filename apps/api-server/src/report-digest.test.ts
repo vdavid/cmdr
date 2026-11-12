@@ -35,7 +35,7 @@ const TICK = new Date('2026-11-10T03:00:00Z')
 function testEnv(overrides: Partial<Bindings> = {}): Bindings {
   return {
     TELEMETRY_DB: db.d1,
-    CRASH_NOTIFICATION_EMAIL: 'david@example.com',
+    CRASH_NOTIFICATION_EMAIL: 'test_user_3@example.com',
     SMTP2GO_API_KEY: 'test-smtp2go-key',
     GITHUB_ISSUES_REPO: 'getcmdr/cmdr-reports',
     ...overrides,
@@ -151,7 +151,7 @@ describe('when the digest goes out', () => {
 
     expect(mockSend).toHaveBeenCalledTimes(1)
     const email = lastEmail()
-    expect(email.to).toBe('david@example.com')
+    expect(email.to).toBe('test_user_3@example.com')
     expect(email.subject).toBe(
       'Cmdr digest: 1 crash, 2 errors, 1 note added, 4 feedback in the past 3h (2026-11-10 03:00 UTC)',
     )

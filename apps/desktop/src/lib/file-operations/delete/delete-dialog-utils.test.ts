@@ -74,11 +74,11 @@ describe('generateDeleteTitle', () => {
 
 describe('abbreviatePath', () => {
   it('abbreviates /Users/xxx paths to ~', () => {
-    expect(abbreviatePath('/Users/john/Documents')).toBe('~/Documents')
+    expect(abbreviatePath('/Users/test_user_14/Documents')).toBe('~/Documents')
   })
 
   it('handles /Users/xxx root', () => {
-    expect(abbreviatePath('/Users/john')).toBe('~')
+    expect(abbreviatePath('/Users/test_user_14')).toBe('~')
   })
 
   it('passes through non-user paths', () => {

@@ -88,7 +88,7 @@ describe('a row with no file another app can open', () => {
 
   it('refuses a backup snapshot’s file, whose path looks like a plain one', async () => {
     await expect(
-      openWithDefaultAppOrExplain('root', fileAt('/Users/dave/repo/Browse snapshots/2026-10-01/notes.txt')),
+      openWithDefaultAppOrExplain('root', fileAt('/Users/test_user_10/repo/Browse snapshots/2026-10-01/notes.txt')),
     ).resolves.toBe('refusedNotOnThisMac')
 
     expect(openFile).not.toHaveBeenCalled()
@@ -97,11 +97,11 @@ describe('a row with no file another app can open', () => {
 
 describe('a row that looks openable', () => {
   it('opens it on its own volume, announcing the launch', async () => {
-    const entry = fileAt('/Users/dave/notes.txt')
+    const entry = fileAt('/Users/test_user_10/notes.txt')
 
     await expect(openWithDefaultAppOrExplain('root', entry)).resolves.toBe('opened')
 
-    expect(openFile).toHaveBeenCalledExactlyOnceWith('/Users/dave/notes.txt', 'root')
+    expect(openFile).toHaveBeenCalledExactlyOnceWith('/Users/test_user_10/notes.txt', 'root')
     expect(announceOpening).toHaveBeenCalledExactlyOnceWith(entry)
     expect(addToast).not.toHaveBeenCalled()
   })
@@ -123,7 +123,9 @@ describe('a row that looks openable', () => {
   it('says the file didn’t open when macOS refuses it', async () => {
     openFile.mockRejectedValue(new Refused({ type: 'notOpened', exitCode: 1 }))
 
-    await expect(openWithDefaultAppOrExplain('root', fileAt('/Users/dave/report.pdf'))).resolves.toBe('notOpened')
+    await expect(openWithDefaultAppOrExplain('root', fileAt('/Users/test_user_10/report.pdf'))).resolves.toBe(
+      'notOpened',
+    )
 
     const [text, options] = onlyToast()
     expect(text).toContain('fileExplorer.open.didNotOpen')
@@ -134,7 +136,9 @@ describe('a row that looks openable', () => {
   it('stays quiet when macOS didn’t answer in time, since the app may still open it', async () => {
     openFile.mockRejectedValue(new Refused({ type: 'timedOut' }))
 
-    await expect(openWithDefaultAppOrExplain('root', fileAt('/Users/dave/report.pdf'))).resolves.toBe('notOpened')
+    await expect(openWithDefaultAppOrExplain('root', fileAt('/Users/test_user_10/report.pdf'))).resolves.toBe(
+      'notOpened',
+    )
 
     expect(addToast).not.toHaveBeenCalled()
   })
@@ -148,7 +152,7 @@ describe('a row that looks openable', () => {
     )
     openFile.mockRejectedValue(new Refused({ type: 'notOpened', exitCode: 1 }))
 
-    const opening = openWithDefaultAppOrExplain('root', fileAt('/Users/dave/report.pdf'))
+    const opening = openWithDefaultAppOrExplain('root', fileAt('/Users/test_user_10/report.pdf'))
     await Promise.resolve()
     await Promise.resolve()
     expect(addToast).not.toHaveBeenCalled()

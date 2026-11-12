@@ -53,15 +53,15 @@
         "error": {
           "type": "duplicate_source_names",
           "name": "Summer (Lake House) Trip",
-          "first": "/Users/ada/Pictures/Summer (Lake House) Trip",
+          "first": "/Users/test_user_1/Pictures/Summer (Lake House) Trip",
           "second": "/Volumes/Archive/Summer (Lake House) Trip"
         }
       },
-      "line": "Copy in the background was refused: detail=\"{\\\"type\\\":\\\"duplicate_source_names\\\",\\\"name\\\":\\\"\\u{fdd4}Summer (Lake House) Trip\\u{fdd1}\\\",\\\"first\\\":\\\"\\u{fdd0}/Users/ada/Pictures/Summer (Lake House) Trip\\u{fdd1}\\\",\\\"second\\\":\\\"\\u{fdd0}/Volumes/Archive/Summer (Lake House) Trip\\u{fdd1}\\\"}\"",
-      "private": ["ada", "Archive", "Summer", "Lake House", "Trip"],
+      "line": "Copy in the background was refused: detail=\"{\\\"type\\\":\\\"duplicate_source_names\\\",\\\"name\\\":\\\"\\u{fdd4}Summer (Lake House) Trip\\u{fdd1}\\\",\\\"first\\\":\\\"\\u{fdd0}/Users/test_user_1/Pictures/Summer (Lake House) Trip\\u{fdd1}\\\",\\\"second\\\":\\\"\\u{fdd0}/Volumes/Archive/Summer (Lake House) Trip\\u{fdd1}\\\"}\"",
+      "private": ["test_user_1", "Archive", "Summer", "Lake House", "Trip"],
       "parity": [
         { "kind": "name", "value": "Summer (Lake House) Trip" },
-        { "kind": "path", "value": "/Users/ada/Pictures/Summer (Lake House) Trip" },
+        { "kind": "path", "value": "/Users/test_user_1/Pictures/Summer (Lake House) Trip" },
         { "kind": "path", "value": "/Volumes/Archive/Summer (Lake House) Trip" }
       ]
     },
@@ -102,15 +102,15 @@
         "error": {
           "type": "read_only_device",
           "path": "Phone storage/Holiday Album/IMG_0042.jpg",
-          "deviceName": "Alex's Pixel",
+          "deviceName": "Tester's Pixel",
           "side": "destination"
         }
       },
-      "line": "Copy failed: detail=\"{\\\"type\\\":\\\"read_only_device\\\",\\\"path\\\":\\\"\\u{fdd0}Phone storage/Holiday Album/IMG_0042.jpg\\u{fdd1}\\\",\\\"deviceName\\\":\\\"\\u{fdd7}Alex's Pixel\\u{fdd1}\\\",\\\"side\\\":\\\"destination\\\"}\"",
-      "private": ["Holiday Album", "IMG_0042", "Alex", "Pixel"],
+      "line": "Copy failed: detail=\"{\\\"type\\\":\\\"read_only_device\\\",\\\"path\\\":\\\"\\u{fdd0}Phone storage/Holiday Album/IMG_0042.jpg\\u{fdd1}\\\",\\\"deviceName\\\":\\\"\\u{fdd7}Tester's Pixel\\u{fdd1}\\\",\\\"side\\\":\\\"destination\\\"}\"",
+      "private": ["Holiday Album", "IMG_0042", "Tester", "Pixel"],
       "parity": [
         { "kind": "path", "value": "Phone storage/Holiday Album/IMG_0042.jpg" },
-        { "kind": "volume", "value": "Alex's Pixel" }
+        { "kind": "volume", "value": "Tester's Pixel" }
       ]
     },
     {
@@ -119,15 +119,15 @@
       "values": {
         "path": "Projects/Client \"Q3\"\\Budget/Cafe\u0301 notes.txt",
         "volumeName": "Family Photos",
-        "server": "Alex's NAS",
+        "server": "Tester's NAS",
         "fileName": "Cafe\u0301 notes.txt"
       },
-      "line": "Opening path=\"\ufdd0Projects/Client \\\"Q3\\\"\\\\Budget/Cafe\u0301 notes.txt\ufdd1\" in volumeName=\"\ufdd7Family Photos\ufdd1\" on server=\"\ufdd8Alex's NAS\ufdd1\" as file=\"\ufdd5Cafe\u0301 notes.txt\ufdd1\"",
-      "private": ["Projects", "Client", "Q3", "Budget", "Cafe", "notes", "Family", "Alex"],
+      "line": "Opening path=\"\ufdd0Projects/Client \\\"Q3\\\"\\\\Budget/Cafe\u0301 notes.txt\ufdd1\" in volumeName=\"\ufdd7Family Photos\ufdd1\" on server=\"\ufdd8Tester's NAS\ufdd1\" as file=\"\ufdd5Cafe\u0301 notes.txt\ufdd1\"",
+      "private": ["Projects", "Client", "Q3", "Budget", "Cafe", "notes", "Family", "Tester"],
       "parity": [
         { "kind": "path", "value": "Projects/Client \"Q3\"\\Budget/Cafe\u0301 notes.txt" },
         { "kind": "volume", "value": "Family Photos" },
-        { "kind": "host", "value": "Alex's NAS" },
+        { "kind": "host", "value": "Tester's NAS" },
         { "kind": "file_name", "value": "Cafe\u0301 notes.txt" }
       ]
     },

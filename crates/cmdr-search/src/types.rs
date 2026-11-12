@@ -249,8 +249,8 @@ mod tests {
         let result = SearchResult {
             entries: vec![SearchResultEntry {
                 name: "test.pdf".to_string(),
-                path: "/Users/alice/test.pdf".to_string(),
-                parent_path: "~/alice".to_string(),
+                path: "/Users/test_user_4/test.pdf".to_string(),
+                parent_path: "~/test_user_4".to_string(),
                 is_directory: false,
                 size: Some(1024),
                 modified_at: Some(1000),
@@ -301,9 +301,12 @@ mod tests {
 
     #[test]
     fn serde_query_scope_fields_camel_case() {
-        let json = r#"{"namePattern":"*.rs","patternType":"glob","includePaths":["/Users/alice/projects"],"excludeDirNames":["node_modules",".git"],"limit":30}"#;
+        let json = r#"{"namePattern":"*.rs","patternType":"glob","includePaths":["/Users/test_user_4/projects"],"excludeDirNames":["node_modules",".git"],"limit":30}"#;
         let query: SearchQuery = serde_json::from_str(json).unwrap();
-        assert_eq!(query.include_paths, Some(vec!["/Users/alice/projects".to_string()]));
+        assert_eq!(
+            query.include_paths,
+            Some(vec!["/Users/test_user_4/projects".to_string()])
+        );
         assert_eq!(
             query.exclude_dir_names,
             Some(vec!["node_modules".to_string(), ".git".to_string()])
@@ -321,7 +324,7 @@ mod tests {
     #[test]
     fn serde_parsed_scope_roundtrip() {
         let scope = ParsedScope {
-            include_paths: vec!["/Users/alice/projects".to_string()],
+            include_paths: vec!["/Users/test_user_4/projects".to_string()],
             exclude_patterns: vec!["node_modules".to_string(), ".git".to_string()],
         };
         let json = serde_json::to_string(&scope).unwrap();
