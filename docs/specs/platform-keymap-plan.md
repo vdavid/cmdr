@@ -847,11 +847,12 @@ Sequential, one agent each, in this worktree. Each ends green and committed.
     `⌥⌘⌫` in the path bar or a rename editor go to the field (the quick filter is a drawn badge, not a field, so F5 / F6
     / F8 still act on its filtered files, pinned in `text-field-gate.test.ts`), and a menu click on one of them with a
     field focused does nothing (the menu event can't tell a click from a key); the palette and the F-key bar still run
-    them, Move here from the palette included (`text-field-gate.test.ts`); `⌘⌫`, `⌥⌫`, `⌘⌥⌫`, `⌘⌦`, and `⌥⌦` join
-    macOS's native text keys; no bar row registers a native text key past its own built key, so a pushed `⌥←` (a
-    shadowed `⌘[`) only shows on Go back (`bar_parity_test.rs`); a key the user bound to one command beats another
-    command's default on it (item 20); a rebind or reset to a bar row's own key comes back as the bar built it (item
-    21); and copy a macOS user reads with default keys: Settings' Skip confirmation row
+    them, Move here from the palette included (`text-field-gate.test.ts`); `⌘↑`, `⌘↓`, `⌘⇧↑`, `⌘⇧↓`, `⌘⌫`, `⌥⌫`, `⌘⌥⌫`,
+    `⌘⌦`, and `⌥⌦` join macOS's native text keys, so the macOS bar shows Go to parent's `⌘↑` without registering it
+    (keydown dispatch runs it outside a field); no bar row registers a native text key past its own built key, so a
+    pushed `⌥←` (a shadowed `⌘[`) only shows on Go back (`bar_parity_test.rs`); a key the user bound to one command
+    beats another command's default on it (item 20); a rebind or reset to a bar row's own key comes back as the bar
+    built it (item 21); and copy a macOS user reads with default keys: Settings' Skip confirmation row
     (`settings.fileOperations.skipConfirmation.explanation`, was `.description`: "F5 and F6 copy and move into the other
     pane right away, and F8 moves to the trash without asking. …" → "Copy and Move go into the other pane right away,
     and Delete moves to the trash without asking. …"), the binary-file warning row

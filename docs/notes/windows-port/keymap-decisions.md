@@ -179,9 +179,10 @@ set against this list). The menu bar never registers one either, past a row's ow
 writes the table to `crates/cmdr-menu/src/page_owned_keys.tsv`, where `rebound_row_key` keeps a pushed one display-only
 and `bar_parity_test.rs` holds every built accelerator to it.
 
-- macOS: `⌘C` with a selection, `⌘←`/`⌘→`, `⌥←`/`⌥→`, and their `⇧` forms; `⌘⌫` (delete to the line start), `⌥⌫` (delete
-  the word before), `⌘⌥⌫`, `⌘⌦`, and `⌥⌦`. The bound ones: `⌘⌫` (Move to trash) and `⌘⌥⌫` (Delete permanently), which
-  deleted files from inside a field until 2026-11-12.
+- macOS: `⌘C` with a selection, `⌘←`/`⌘→`, `⌥←`/`⌥→`, `⌘↑`/`⌘↓` (the field's start and end), and their `⇧` forms; `⌘⌫`
+  (delete to the line start), `⌥⌫` (delete the word before), `⌘⌥⌫`, `⌘⌦`, and `⌥⌦`. The bound ones: `⌘↑` (Go to parent,
+  which the macOS bar now only shows), `⌘⌫` (Move to trash), and `⌘⌥⌫` (Delete permanently), which deleted files from
+  inside a field until 2026-11-12.
 - Windows and Linux: `Ctrl+C` with a selection, `Ctrl+Insert`, `Ctrl+←`/`Ctrl+→`, `Ctrl+Shift+←`/`Ctrl+Shift+→`,
   `Home`/`End` with their Shift and Ctrl forms, `Ctrl+Backspace`/`Ctrl+Delete` (word delete), `Shift+Delete` (cut),
   `Ctrl+Shift+V` (paste as plain text), and `Shift+F10` (the field's own context menu). The bound ones today: `Ctrl+←/→`

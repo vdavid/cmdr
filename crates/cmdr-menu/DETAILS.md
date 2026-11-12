@@ -89,9 +89,10 @@ windows that wear the main bar (the operation queue, About). `rebound_row_key` k
 (`page_owns`), and `bar_parity_test.rs` fails a built accelerator on the list unless `PAGE_OWNED_BY_DESIGN` names it
 (Edit > Copy, whose handler copies a field's text; Select all, the queue's own road to its ⌘A). **Why**: a bar
 accelerator fires before the page. A shadowed `⌘[` hands Go back its last key, `⌥←`, and registered, it fired Go back
-from every text field instead of word-left; Go to parent's `Alt+Up` would sit on the queue window's Move earlier.
-(Verified in the Linux lane with real X keys on 2026-11-12: with `Alt+Up` registered on the Go row, the queue window
-still received `Alt+↑`, so GTK didn't take it there; the row only shows it now regardless, and
+from every text field instead of word-left; Go to parent's `Alt+Up` would sit on the queue window's Move earlier, and
+its macOS `⌘↑` fired from a text field instead of moving the caret to the start, so the row only shows its key on every
+platform. (Verified in the Linux lane with real X keys on 2026-11-12: with `Alt+Up` registered on the Go row, the queue
+window still received `Alt+↑`, so GTK didn't take it there; the row only shows it now regardless, and
 `menu-mnemonic-mask.spec.ts` keeps pressing it.)
 
 ## Accelerators

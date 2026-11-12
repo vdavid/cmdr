@@ -127,7 +127,7 @@ menu menu.bar.go id=menu_go
   0 item go_back menu.go.back [Cmd+[] tracked
   1 item go_forward menu.go.forward [Cmd+]] tracked
   2 separator
-  3 item go_parent menu.go.parentFolder [Cmd+Up] tracked
+  3 item go_parent menu.go.parentFolder [display ⌘↑] tracked
   4 item go_root menu.go.rootFolder [Cmd+/] tracked
   5 item go_home menu.go.home [Cmd+Shift+H] tracked
   6 separator

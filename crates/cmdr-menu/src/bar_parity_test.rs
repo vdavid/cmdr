@@ -48,8 +48,9 @@ const EXCEPTIONS: &[Exception] = &[
         menu_id: VIEW_ZOOM_IN_ID,
         reason: SECOND_KEY,
     },
-    // `Backspace` is bare. macOS registers the second key, `⌘↑`; Windows and Linux show theirs,
-    // `Alt+↑`, which the operation queue window (wearing this bar) uses for Move earlier.
+    // `Backspace` is bare, so the bar shows the second key, which the page owns everywhere: macOS's
+    // `⌘↑` is a text field's caret to the start, and the queue window (wearing this bar on Windows
+    // and Linux) uses `Alt+↑` for Move earlier.
     Exception {
         platforms: EVERY_PLATFORM,
         menu_id: GO_PARENT_ID,
@@ -353,14 +354,12 @@ fn a_push_of_a_key_the_page_owns_stays_display_only() {
         rebound_row_key(GO_PARENT_ID, "Alt+↑", Platform::Windows),
         shown("Alt+↑")
     );
+    // macOS: `⌘↑` is a field's caret to the start.
+    assert_eq!(rebound_row_key(GO_PARENT_ID, "⌘↑", Platform::MacOs), shown("⌘↑"));
     // A row's own built key still registers as the bar builds it.
     assert_eq!(
         rebound_row_key(EDIT_COPY_ID, "Ctrl+C", Platform::Linux),
         registered("Ctrl+C")
-    );
-    assert_eq!(
-        rebound_row_key(GO_PARENT_ID, "⌘↑", Platform::MacOs),
-        registered("Cmd+Up")
     );
 }
 

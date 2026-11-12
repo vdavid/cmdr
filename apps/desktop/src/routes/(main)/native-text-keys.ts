@@ -37,6 +37,11 @@ const MACOS: NativeTextKeys = {
     '⌥→',
     '⌥⇧←',
     '⌥⇧→',
+    // The field's start and end, and their Shift forms. `⌘↑` is also Go to parent outside a field.
+    '⌘↑',
+    '⌘↓',
+    '⌘⇧↑',
+    '⌘⇧↓',
     // Delete to the line start, the word before, and (with ⌦, or fn+⌫) forward. `⌘⌫` and `⌥⌘⌫`
     // are also Move to trash and Delete permanently outside a field.
     '⌘Backspace',

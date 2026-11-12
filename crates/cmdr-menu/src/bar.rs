@@ -599,10 +599,15 @@ pub const MENU_BAR: &[BarMenu] = &[
                 split("Cmd+]", "Alt+Right", "Alt+Right"),
             ),
             SEPARATOR,
-            // Shown, not registered, on Windows and Linux: the operation queue window wears this
-            // bar there, and its Move earlier is `Alt+↑` (`page_owned_keys.tsv`), so keydown
-            // dispatch runs Go to parent in the main window.
-            item(GO_PARENT_ID, "menu.go.parentFolder", macos("Cmd+Up")).shown(shown_off_macos("Alt+↑")),
+            // Shown, never registered, so keydown dispatch runs it and the page keeps the key
+            // (`page_owned_keys.tsv`): on macOS `⌘↑` is a text field's caret to the start, and on
+            // Windows and Linux the operation queue window wears this bar, where `Alt+↑` is Move
+            // earlier.
+            displayed_item(
+                GO_PARENT_ID,
+                "menu.go.parentFolder",
+                shown_split("⌘↑", "Alt+↑", "Alt+↑"),
+            ),
             item(GO_ROOT_ID, "menu.go.rootFolder", split("Cmd+/", "Ctrl+\\", "Ctrl+\\")),
             // Shift+Cmd+H, not Cmd+H: AppKit owns Cmd+H for Hide Cmdr and swallows it before the
             // webview ever sees a keydown.

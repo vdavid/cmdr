@@ -8,6 +8,10 @@ macos	⌥←	text field
 macos	⌥→	text field
 macos	⌥⇧←	text field
 macos	⌥⇧→	text field
+macos	⌘↑	text field
+macos	⌘↓	text field
+macos	⌘⇧↑	text field
+macos	⌘⇧↓	text field
 macos	⌘Backspace	text field
 macos	⌥Backspace	text field
 macos	⌘⌥Backspace	text field

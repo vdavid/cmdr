@@ -478,6 +478,11 @@ describe('resolveGlobalKeyAction', () => {
       ['⌘⇧←', { key: 'ArrowLeft', metaKey: true, shiftKey: true }],
       ['⌥←', { key: 'ArrowLeft', altKey: true }],
       ['⌥⇧→', { key: 'ArrowRight', altKey: true, shiftKey: true }],
+      // Caret to the field's start and end, and their select forms: `⌘↑` is also Go to parent.
+      ['⌘↑', { key: 'ArrowUp', metaKey: true }],
+      ['⌘↓', { key: 'ArrowDown', metaKey: true }],
+      ['⌘⇧↑', { key: 'ArrowUp', metaKey: true, shiftKey: true }],
+      ['⌘⇧↓', { key: 'ArrowDown', metaKey: true, shiftKey: true }],
     ])('leaves %s to a focused text field', (_name, init) => {
       cleanupFocus = focus('input')
       expect(resolveGlobalKeyAction(new KeyboardEvent('keydown', init), NOTHING_OPEN)).toEqual({ kind: 'ignore' })

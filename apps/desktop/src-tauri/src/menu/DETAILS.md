@@ -413,7 +413,7 @@ bug.
 
 **Two ways the glyph reaches the user.** `ItemSpec::display_accelerator` carries one string per platform, in that
 platform's spelling, set by `menu_spec::displayed_item` (paired with `NONE`) or `Entry::shown` (where the row registers
-nothing on that platform: the F-key rows, `Tab`, the zoom pair, Go to parent's `Alt+↑`, and Move here's
+nothing on that platform: the F-key rows, `Tab`, the zoom pair, Go to parent's `⌘↑` / `Alt+↑`, and Move here's
 `Ctrl+Shift+V` off macOS), so a row can't register and display a shortcut at once (`cmdr-menu`'s `bar_test.rs` pins
 that too). `display_accelerator_label` is where they part:
 
