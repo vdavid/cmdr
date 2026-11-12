@@ -52,6 +52,9 @@ pub struct ListingProgressEvent {
 pub struct ListingCompleteEvent {
     pub listing_id: String,
     pub total_count: usize,
+    /// How many hidden items revealing hidden files would add, counted only when
+    /// `total_count` is zero: what the pane's empty state says. Zero otherwise.
+    pub hidden_count: usize,
     /// Root path of the volume this listing belongs to
     pub volume_root: String,
     /// The directory in its volume's own spelling, when that differs from the
@@ -332,6 +335,7 @@ impl<W: ListingWire, E: ListingEndEffects> TauriListingEvents<W, E> {
         self.wire.emit_complete(ListingCompleteEvent {
             listing_id: listing_id.to_string(),
             total_count: end.total_count,
+            hidden_count: end.hidden_count,
             volume_root: end.volume_root.to_string_lossy().to_string(),
             stored_path: end.stored_path.map(|path| path.to_string_lossy().into_owned()),
             effective_sort_by: end.effective_sort_by,
@@ -398,6 +402,7 @@ struct Completed<'a> {
     /// The directory as listed: the stored spelling when there was one.
     listed_path: &'a Path,
     total_count: usize,
+    hidden_count: usize,
     volume_root: &'a Path,
     stored_path: Option<PathBuf>,
     empty_at_volume_root: bool,
@@ -428,6 +433,7 @@ impl<W: ListingWire, E: ListingEndEffects> ListingEvents for TauriListingEvents<
                 volume_id,
                 path,
                 total_count,
+                hidden_count,
                 volume_root,
                 stored_path,
                 empty_at_volume_root,
@@ -440,6 +446,7 @@ impl<W: ListingWire, E: ListingEndEffects> ListingEvents for TauriListingEvents<
                         volume_id: &volume_id,
                         listed_path: &listed_path,
                         total_count,
+                        hidden_count,
                         volume_root: &volume_root,
                         stored_path,
                         empty_at_volume_root,

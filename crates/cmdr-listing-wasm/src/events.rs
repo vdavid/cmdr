@@ -66,6 +66,7 @@ pub(crate) struct ListingReadCompleteEvent<'a> {
 pub(crate) struct ListingCompleteEvent<'a> {
     pub(crate) listing_id: &'a str,
     pub(crate) total_count: usize,
+    pub(crate) hidden_count: usize,
     pub(crate) volume_root: String,
     pub(crate) stored_path: Option<String>,
     pub(crate) effective_sort_by: SortColumn,
@@ -175,6 +176,7 @@ impl ListingEvents for DemoEvents {
                 volume_id,
                 path,
                 total_count,
+                hidden_count,
                 volume_root,
                 stored_path,
                 empty_at_volume_root,
@@ -201,6 +203,7 @@ impl ListingEvents for DemoEvents {
                     ListingCompleteEvent {
                         listing_id,
                         total_count,
+                        hidden_count,
                         volume_root: volume_root.to_string_lossy().into_owned(),
                         stored_path: stored_path.map(|p| p.to_string_lossy().into_owned()),
                         effective_sort_by,

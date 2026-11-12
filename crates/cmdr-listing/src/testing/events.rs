@@ -28,6 +28,8 @@ pub struct RecordingEvents {
     pub read_complete: Mutex<Vec<(String, usize)>>,
     /// Per completed listing, its row count.
     pub complete: Mutex<Vec<(String, usize)>>,
+    /// Per completed listing, the hidden items it reported its empty pane hides.
+    pub hidden_counts: Mutex<Vec<(String, usize)>>,
     /// Per completed listing, the stored spelling it reported (`None` = as asked).
     pub stored_paths: Mutex<Vec<(String, Option<PathBuf>)>>,
     /// Per completed listing, whether it came back empty at its volume's root.
@@ -93,6 +95,7 @@ impl ListingEvents for RecordingEvents {
         match end {
             ListingEnd::Complete {
                 total_count,
+                hidden_count,
                 stored_path,
                 empty_at_volume_root,
                 effective_sort_by,
@@ -100,6 +103,7 @@ impl ListingEvents for RecordingEvents {
             } => {
                 self.note("complete");
                 self.complete.lock_ignore_poison().push((id.clone(), total_count));
+                self.hidden_counts.lock_ignore_poison().push((id.clone(), hidden_count));
                 self.effective_sorts
                     .lock_ignore_poison()
                     .push((id.clone(), effective_sort_by));

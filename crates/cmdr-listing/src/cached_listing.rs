@@ -175,6 +175,11 @@ pub(crate) struct CachedListing {
     /// The newest full re-read that landed here, by when it started reading.
     /// A re-read older than this is dropped (`reread.rs`).
     pub(crate) published_generation: ReadGeneration,
+    /// The hidden count ([`Self::hidden_count`]) the pane last heard, from any
+    /// answer that carries one. A change that moves no row publishes only when
+    /// its count moved off this, so a dotfile coming or going in a folder that
+    /// looks empty still reaches the pane's empty state.
+    reported_hidden_count: usize,
 }
 
 impl CachedListing {
@@ -232,6 +237,7 @@ impl CachedListing {
             epoch: engine.epoch,
             overlay_rows,
             published_generation: ReadGeneration::INSERT,
+            reported_hidden_count: 0,
         }
     }
 
@@ -542,10 +548,42 @@ impl CachedListing {
         changes: Vec<super::diff::DiffChange>,
         effective_sort_by: Option<SortColumn>,
     ) {
-        if changes.is_empty() && effective_sort_by.is_none() {
+        if changes.is_empty() && effective_sort_by.is_none() && !self.hidden_count_moved() {
             return;
         }
         self.publish_transition(publish, listing_id, changes, effective_sort_by);
+    }
+
+    /// How many entries the hidden-files setting alone keeps out of a pane with
+    /// this `include_hidden` that shows `shown` rows: what turning hidden files on
+    /// would add, quick filter and scratch rules still applied. It's what the
+    /// pane's empty state says ("There are 3 hidden items in this folder"), so
+    /// it's counted only while the pane shows NO rows, and is zero otherwise or
+    /// with hidden files on. Counting it for every pane would rebuild a second row
+    /// map per mutation in a 100k-entry folder, for a number nothing draws.
+    pub(crate) fn hidden_count(&self, include_hidden: bool, shown: usize) -> usize {
+        if include_hidden || shown > 0 {
+            return 0;
+        }
+        self.rows(true).len()
+    }
+
+    /// [`Self::hidden_count`] for an answer the pane is about to hear, remembered
+    /// so a later rowless change can tell whether the count moved.
+    pub(crate) fn report_hidden_count(&mut self, include_hidden: bool, shown: usize) -> usize {
+        self.reported_hidden_count = self.hidden_count(include_hidden, shown);
+        self.reported_hidden_count
+    }
+
+    /// Whether a change that moved no row moved the pane's hidden count. Asks
+    /// [`Self::shows`] rather than the row map: the patch just dropped the map,
+    /// and rebuilding it per rowless patch would put the map rebuild back on
+    /// every dotfile write in `~`. The scan stops at the first shown entry, so a
+    /// pane with rows answers in a few steps.
+    fn hidden_count_moved(&self) -> bool {
+        let shows_none = !self.include_hidden && !self.entries.iter().any(|entry| self.shows(entry));
+        let now = if shows_none { self.rows(true).len() } else { 0 };
+        now != self.reported_hidden_count
     }
 
     fn publish_transition(
@@ -557,12 +595,15 @@ impl CachedListing {
     ) {
         let from_sequence = self.sequence.load(Ordering::Relaxed);
         let sequence = self.advance_sequence();
+        let total_count = self.pane_rows().len();
+        let hidden_count = self.report_hidden_count(self.include_hidden, total_count);
         publish.enqueue(
             listing_id,
             super::diff::DirectoryDiffBatch {
                 from_sequence,
                 sequence,
-                total_count: self.pane_rows().len(),
+                total_count,
+                hidden_count,
                 changes,
                 effective_sort_by,
             },

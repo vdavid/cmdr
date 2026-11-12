@@ -180,10 +180,13 @@ impl Inner {
             publish.drop_pending(listing_id);
         }
         listing.touch();
+        let total_count = listing.pane_rows().len();
+        let hidden_count = listing.report_hidden_count(include_hidden, total_count);
         let rows = listing.pane_rows();
         Ok(ResortResult {
             sequence: listing.sequence.load(Ordering::Acquire),
-            total_count: rows.len(),
+            total_count,
+            hidden_count,
             effective_sort_by: listing.effective().column(),
             new_cursor_index: cursor_path.and_then(|path| rows.iter().position(|e| e.path == path)),
             new_selected_indices: selected_paths.map(|paths| {
@@ -454,6 +457,9 @@ pub struct ResortResult {
     pub sequence: u64,
     /// How many rows the pane shows.
     pub total_count: usize,
+    /// How many hidden items revealing hidden files would add, counted only when
+    /// `total_count` is zero (`CachedListing::hidden_count`).
+    pub hidden_count: usize,
     /// New index of the file that was at the cursor position before re-sorting.
     /// None if the filename wasn't provided or wasn't found.
     pub new_cursor_index: Option<usize>,
@@ -532,6 +538,8 @@ impl Inner {
         listing.advance_sequence();
         publish.drop_pending(listing_id);
 
+        let total_count = listing.rows(include_hidden).len();
+        let hidden_count = listing.report_hidden_count(include_hidden, total_count);
         let rows = listing.rows(include_hidden);
 
         // Find the new cursor position
@@ -556,7 +564,8 @@ impl Inner {
 
         Ok(ResortResult {
             sequence: listing.sequence.load(Ordering::Acquire),
-            total_count: rows.len(),
+            total_count,
+            hidden_count,
             effective_sort_by: listing.effective().column(),
             new_cursor_index,
             new_selected_indices,

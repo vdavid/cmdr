@@ -32,6 +32,9 @@ pub struct NameFilterResult {
     pub accepted: bool,
     /// How many rows the pane shows under the new filter.
     pub total_count: usize,
+    /// How many hidden items matching the filter revealing hidden files would
+    /// add, counted only when `total_count` is zero (`CachedListing::hidden_count`).
+    pub hidden_count: usize,
     /// The row of the file that was under the cursor, or `None` when the new
     /// filter leaves it out (or no file was given).
     pub new_cursor_index: Option<usize>,
@@ -171,6 +174,8 @@ impl Inner {
                 expected_sequence
             };
 
+            let total_count = listing.rows(include_hidden).len();
+            let hidden_count = listing.report_hidden_count(include_hidden, total_count);
             let rows = listing.rows(include_hidden);
             let names_to_rows: HashMap<&str, usize> = rows
                 .iter()
@@ -179,7 +184,8 @@ impl Inner {
                 .collect();
             NameFilterResult {
                 accepted: !refused,
-                total_count: rows.len(),
+                total_count,
+                hidden_count,
                 new_cursor_index: marks.cursor_filename.and_then(|name| names_to_rows.get(name).copied()),
                 new_selected_indices: selected_names
                     .iter()

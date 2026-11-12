@@ -367,6 +367,7 @@ impl Inner {
         // sizes its scroller with is produced by the same filter every later fetch
         // goes through — including the scratch-file half a plain dotfile count misses.
         let total_count = listing.rows(include_hidden).len();
+        let hidden_count = listing.report_hidden_count(include_hidden, total_count);
         {
             let mut cache = self.cache.write_ignore_poison();
             // Check cancellation while holding the lock - makes check+insert atomic
@@ -416,6 +417,7 @@ impl Inner {
                 volume_id: volume_id.to_string(),
                 path: asked_path.to_path_buf(),
                 total_count,
+                hidden_count,
                 volume_root,
                 stored_path,
                 empty_at_volume_root,

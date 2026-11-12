@@ -100,6 +100,7 @@ fn every_event_matches_the_generated_bindings() {
     let complete = ListingCompleteEvent {
         listing_id,
         total_count: 1,
+        hidden_count: 0,
         volume_root: "/".into(),
         stored_path: None,
         effective_sort_by: SortColumn::Name,

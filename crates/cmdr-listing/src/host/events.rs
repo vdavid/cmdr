@@ -27,6 +27,9 @@ pub enum ListingEnd {
         path: PathBuf,
         /// How many rows the pane shows, from the same filter every later fetch uses.
         total_count: usize,
+        /// How many hidden items revealing hidden files would add, counted only
+        /// when `total_count` is zero (`CachedListing::hidden_count`).
+        hidden_count: usize,
         /// The serving volume's root. For a path inside an archive, the archive file.
         volume_root: PathBuf,
         /// The volume's own spelling of the directory, when it differs from what the

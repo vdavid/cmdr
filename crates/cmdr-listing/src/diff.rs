@@ -131,6 +131,11 @@ pub struct DirectoryDiffBatch {
     pub sequence: u64,
     /// How many rows the pane shows after this batch.
     pub total_count: usize,
+    /// How many hidden items revealing hidden files would add, counted only when
+    /// `total_count` is zero (`CachedListing::hidden_count`). A batch with no
+    /// changes may exist for this alone: a dotfile came or went in a folder that
+    /// looks empty.
+    pub hidden_count: usize,
     /// The row changes, in the order they apply.
     pub changes: Vec<DiffChange>,
     /// The column the rows are now ordered by, when this batch moved it: a

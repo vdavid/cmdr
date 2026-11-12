@@ -347,7 +347,8 @@ holds its own listing, so two panes on one folder each get their own rows.
 side of a change (a dotfile, `~/Library`'s `UF_HIDDEN` flag, in-flight scratch) updates the cache and emits nothing, so
 turning hidden files on later shows fresh data at once. One it shows on one side only arrives as a remove (it turned
 hidden, or went) or an add (it turned visible, or came). One it shows on both is a modify or a move. A change with no
-visible part queues nothing, so no event and no sequence bump.
+visible part queues nothing, so no event and no sequence bump, unless it moved an empty pane's hidden count (§ "The
+hidden count").
 
 **Why.** Two costs of reporting entry indices. The idle one: on a pane on `~`, dotfile writes produce a diff about every
 10 s, in bursts, and each one cost the webview a count, range, stats, and column-width refetch with nothing visible to
@@ -380,6 +381,29 @@ pane's rows; the cursor and selection sit on shown rows, and an entry that turns
 **Known gap**: the Ask Cmdr bulk-rename review listens to every `directory-diff` by filename to recheck clashes. A
 hidden destination name (a rename to a dotfile) appearing or vanishing externally, in a folder whose pane hides hidden
 files, no longer triggers that recheck; the write engine's exclusive final rename still refuses the clash.
+
+## The hidden count (an empty pane's hint)
+
+A pane that shows no rows because hidden files are off says so: "There are 3 hidden items in this folder." Every answer
+that carries a `totalCount` carries `hiddenCount` beside it (`listing-complete`, each `directory-diff` batch, and the
+`ResortResult` of a resort or a hidden-files toggle, and `NameFilterResult`), from `CachedListing::hidden_count`.
+
+- **Decision: counted only while the pane shows no rows; zero otherwise and with hidden files on.** Why: it's the only
+  time anything draws it, and counting it always would rebuild the `include_hidden = true` row map after every mutation
+  of a 100k-entry folder. So read zero as "nothing to say", never as "no hidden entries".
+- **What it counts**: the rows turning hidden files on would add, read off `rows(true)`, so the quick filter and scratch
+  rules still apply. A filter that empties the pane counts only the hidden items it matches, so the hint names exactly
+  what revealing them brings into view; a filter matching nothing hidden counts zero and the pane says "Empty folder".
+  In-flight scratch never counts: it stays out of view with hidden files on too.
+- **A hidden-only change still reaches an empty-looking pane.** § "Diffs speak the pane's rows" says a change the pane
+  shows on neither side publishes nothing, which would leave the hint stale when a dotfile comes or goes. So
+  `publish_changes_and_sort` asks `hidden_count_moved` before dropping a rowless change: when the count moved off the
+  one the pane last heard (`reported_hidden_count`, written by every answer through `report_hidden_count`), it publishes
+  an empty batch carrying the new count and a new revision. A pane with rows always counts zero, so `~`'s dotfile churn
+  stays silent; a rewritten dotfile in an empty-looking folder moves no count and stays silent too.
+- **The check walks entries with `shows`, not the row map**: the patch just dropped the map, and a rebuild per rowless
+  patch is the cost § "Row numbers" avoids. The walk stops at the first shown entry.
+- Tests: `hidden_count_test.rs`.
 
 ## Entries by path (path_index.rs)
 

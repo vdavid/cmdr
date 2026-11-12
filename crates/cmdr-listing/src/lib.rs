@@ -297,6 +297,8 @@ mod find_file_index_test;
 #[cfg(test)]
 mod fuzzy_jump_test;
 #[cfg(test)]
+mod hidden_count_test;
+#[cfg(test)]
 mod hidden_files_test;
 #[cfg(test)]
 mod index_sizes_test;

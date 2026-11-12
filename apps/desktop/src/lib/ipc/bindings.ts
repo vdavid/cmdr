@@ -9140,6 +9140,13 @@ export type DirectoryDiffBatch = {
   sequence: number
   // How many rows the pane shows after this batch.
   totalCount: number
+  /**
+   *  How many hidden items revealing hidden files would add, counted only when
+   *  `total_count` is zero (`CachedListing::hidden_count`). A batch with no
+   *  changes may exist for this alone: a dotfile came or went in a folder that
+   *  looks empty.
+   */
+  hiddenCount: number
   // The row changes, in the order they apply.
   changes: DiffChange[]
   /**
@@ -12008,6 +12015,11 @@ export type ListingCancelledEvent = {
 export type ListingCompleteEvent = {
   listingId: string
   totalCount: number
+  /**
+   *  How many hidden items revealing hidden files would add, counted only when
+   *  `total_count` is zero: what the pane's empty state says. Zero otherwise.
+   */
+  hiddenCount: number
   // Root path of the volume this listing belongs to
   volumeRoot: string
   /**
@@ -14488,6 +14500,11 @@ export type NameFilterResult = {
   // How many rows the pane shows under the new filter.
   totalCount: number
   /**
+   *  How many hidden items matching the filter revealing hidden files would
+   *  add, counted only when `total_count` is zero (`CachedListing::hidden_count`).
+   */
+  hiddenCount: number
+  /**
    *  The row of the file that was under the cursor, or `None` when the new
    *  filter leaves it out (or no file was given).
    */
@@ -16757,6 +16774,11 @@ export type ResortResult = {
   sequence: number
   // How many rows the pane shows.
   totalCount: number
+  /**
+   *  How many hidden items revealing hidden files would add, counted only when
+   *  `total_count` is zero (`CachedListing::hidden_count`).
+   */
+  hiddenCount: number
   /**
    *  New index of the file that was at the cursor position before re-sorting.
    *  None if the filename wasn't provided or wasn't found.
