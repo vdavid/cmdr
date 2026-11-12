@@ -45,6 +45,27 @@ import { searchDialogCommands } from './sources/search-dialog'
 export const NATIVE_SHORTCUT_COMMAND_IDS = ['app.quit', 'app.hide', 'app.hideOthers', 'app.showAll'] as const
 
 /**
+ * The commands that move or remove FILES and have no text twin: while a text field has focus, none
+ * runs from a key or the menu bar (`routes/(main)/text-field-gate.ts`), so typing in the quick
+ * filter, the path bar, or the Ask Cmdr composer can never trash, delete, or move a file, whatever
+ * key the user bound. `edit.cut` isn't here: with a field focused it cuts the field's text. A new
+ * command that moves or removes files joins this list.
+ */
+export const FILE_MOVING_COMMAND_IDS = [
+  'file.delete',
+  'file.deletePermanently',
+  'file.move',
+  'edit.pasteAsMove',
+  'edit.undoTrash',
+  'cloud.removeDownload',
+] as const satisfies readonly CommandId[]
+
+/** Whether `commandId` moves or removes files (`FILE_MOVING_COMMAND_IDS`). */
+export function movesFiles(commandId: CommandId): boolean {
+  return (FILE_MOVING_COMMAND_IDS as readonly CommandId[]).includes(commandId)
+}
+
+/**
  * The app menu commands that exist only where there's an app menu (`needsCapability: 'appMenu'`),
  * so no Cmdr handler ever runs them: `command-handlers/types.ts` sources its Family-1
  * dispatch-exempt list from here. `app.quit` isn't one: without an app menu it's Cmdr's own command.

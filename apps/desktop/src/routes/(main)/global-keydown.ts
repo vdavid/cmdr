@@ -24,6 +24,7 @@ import type { CommandId } from '#lib/commands/index.js'
 import type { DialogsOnScreen } from './command-dispatch-context'
 import { isRefusedOverDialog } from './dialog-command-gate'
 import { nativeTextKeys } from './native-text-keys'
+import { isRefusedInTextField } from './text-field-gate'
 import { getPlatform, isMacOS } from '#lib/platform/index.js'
 
 /** What `+page.svelte` should do with the keypress. */
@@ -127,7 +128,11 @@ function commandForCombo(combo: string): CommandId | undefined {
   if (paneChromeOwnsKey(combo)) return undefined
   // Same for a button in a toast: Enter on Undo presses Undo, not the cursor row.
   if (toastStackOwnsKey(combo)) return undefined
-  return lookupCommand(combo)
+  const commandId = lookupCommand(combo)
+  // A key that would move or remove files is the field's while one has focus, whatever command
+  // it's bound to (`text-field-gate.ts`): F8 in the quick filter trashes nothing.
+  if (commandId !== undefined && isRefusedInTextField(commandId, 'keyboard', isTextInputFocused())) return undefined
+  return commandId
 }
 
 /**

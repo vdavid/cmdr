@@ -1,5 +1,5 @@
 /**
- * Clipboard handlers: copy / cut / paste / paste-as-move. Each branches on
+ * Clipboard handlers: copy / cut / paste / paste-as-move. Copy, cut, and paste branch on
  * input-vs-file focus (`isTextInputFocused`: a focused `<input>` / `<textarea>` /
  * contenteditable routes to the native text op; otherwise the file-scope
  * clipboard runs). This is a SEPARATE focus layer from the pre-dispatch
@@ -7,11 +7,8 @@
  */
 import { readClipboardText } from '#lib/tauri-commands/index.js'
 import { isTextInputFocused } from '#lib/utils/text-input-focus.js'
-import { getAppLogger } from '#lib/logging/logger.js'
 import { detached } from './detached'
 import type { CommandHandlerRecord } from './types'
-
-const log = getAppLogger('user-action')
 
 export const clipboardHandlers = {
   'edit.copy': ({ explorerRef }) => {
@@ -56,14 +53,9 @@ export const clipboardHandlers = {
     detached(explorerRef?.pasteFromClipboard(false))
   },
 
+  // It moves FILES, so the dispatch core refuses it from a key or the menu bar while a text field
+  // has focus (`text-field-gate.ts`): the macOS menu's ⌥⌘V fires before the field sees the key.
   'edit.pasteAsMove': ({ explorerRef }) => {
-    // It moves FILES, so never while a text field has focus, whichever road it came by: the macOS
-    // menu's ⌥⌘V accelerator fires before the field sees the key, and off macOS its `Ctrl+Shift+V`
-    // is the field's own paste as plain text. There's no text twin to run instead.
-    if (isTextInputFocused()) {
-      log.debug('Skipped Move here: a text field has focus')
-      return
-    }
     detached(explorerRef?.pasteFromClipboard(true))
   },
 } satisfies Partial<CommandHandlerRecord>

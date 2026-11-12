@@ -26,6 +26,7 @@ import type { CommandHandler } from './command-handlers'
 import type { CommandDispatchContext } from './command-dispatch-context'
 import { shouldDropCrossSourceDuplicate } from './dispatch-dedup'
 import { isRefusedOverDialog } from './dialog-command-gate'
+import { isRefusedInTextField } from './text-field-gate'
 
 // Re-exported so existing importers (`+page.svelte`, the dispatch tests) keep
 // resolving these from `./command-dispatch` after the move to the context leaf.
@@ -190,6 +191,13 @@ export async function handleCommandExecute<K extends CommandId>(
     isRefusedOverDialog({ commandId: id, source: ctx.source, onScreen: ctx.getDialogsOnScreen(), textInputFocused })
   ) {
     log.debug('Refused {id} from the {source}: a dialog or overlay is in front of it', { id, source: ctx.source })
+    return
+  }
+
+  // A command that moves or removes files never runs from a key or the menu bar while a text
+  // field has focus (`text-field-gate.ts`).
+  if (isRefusedInTextField(id, ctx.source, textInputFocused)) {
+    log.debug('Refused {id} from the {source}: a text field has focus', { id, source: ctx.source })
     return
   }
 

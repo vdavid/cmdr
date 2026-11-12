@@ -24,6 +24,7 @@ const WINDOWS_AND_LINUX = {
     'Ctrl+Shift+End',
     'Ctrl+Backspace',
     'Ctrl+Delete',
+    'Shift+Delete',
     'Ctrl+Shift+V',
     'Shift+F10',
   ],
@@ -33,7 +34,21 @@ const WINDOWS_AND_LINUX = {
 const EXPECTED = {
   macos: {
     copyWithSelection: ['⌘C'],
-    fieldOwned: ['⌘←', '⌘→', '⌘⇧←', '⌘⇧→', '⌥←', '⌥→', '⌥⇧←', '⌥⇧→'],
+    fieldOwned: [
+      '⌘←',
+      '⌘→',
+      '⌘⇧←',
+      '⌘⇧→',
+      '⌥←',
+      '⌥→',
+      '⌥⇧←',
+      '⌥⇧→',
+      '⌘Backspace',
+      '⌥Backspace',
+      '⌘⌥Backspace',
+      '⌘Delete',
+      '⌥Delete',
+    ],
     bailInField: [],
   },
   windows: WINDOWS_AND_LINUX,
@@ -43,7 +58,9 @@ const EXPECTED = {
 describe.each(['macos', 'windows', 'linux'] as const)('the native text keys on %s', (platform) => {
   const table = nativeTextKeys(platform)
 
-  it('are exactly the decisions file’s sets', () => {
+  // A tripwire, not a proof: it compares the table with a hand copy of the decisions file's sets,
+  // so a change to one without the other fails here.
+  it('match the hand copy of the decisions file’s sets', () => {
     expect([...table.copyWithSelection].sort()).toEqual([...EXPECTED[platform].copyWithSelection].sort())
     expect([...table.fieldOwned].sort()).toEqual([...EXPECTED[platform].fieldOwned].sort())
     expect([...table.bailInField].sort()).toEqual([...EXPECTED[platform].bailInField].sort())

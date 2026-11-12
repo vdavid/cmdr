@@ -296,7 +296,7 @@ describe('handleCommandExecute — blockedByCapabilities (search-results / netwo
     input.remove()
   })
 
-  it('neither moves nor toasts on edit.pasteAsMove from a focused text input (it moves nothing there)', async () => {
+  it('neither moves nor toasts on edit.pasteAsMove from the menu with a text input focused (it moves nothing there)', async () => {
     getVolumeId.mockReturnValue('search-results')
     const input = document.createElement('input')
     document.body.appendChild(input)
@@ -306,7 +306,7 @@ describe('handleCommandExecute — blockedByCapabilities (search-results / netwo
     })
     const g = makeGuardCtx()
 
-    await handleCommandExecute('edit.pasteAsMove', g.ctx)
+    await handleCommandExecute('edit.pasteAsMove', { ...g.ctx, source: 'menu' })
 
     expect(g.pasteFromClipboard).not.toHaveBeenCalled()
     expect(addToast).not.toHaveBeenCalled()

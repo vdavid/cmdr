@@ -748,11 +748,12 @@ describe('characterization — activeElement input branches', () => {
     expect(explorer.pasteFromClipboard).toHaveBeenCalledExactlyOnceWith(false)
   })
 
-  // Move here moves FILES, so it never runs while a text field has focus, whichever road it came
-  // by: on macOS the menu's ⌥⌘V accelerator fires before the field sees the key, and off macOS its
-  // `Ctrl+Shift+V` is the field's own paste as plain text.
+  // Move here moves FILES, so it never runs from a key or the menu bar while a text field has focus
+  // (`text-field-gate.ts`): on macOS the menu's ⌥⌘V accelerator fires before the field sees the
+  // key, and off macOS its `Ctrl+Shift+V` is the field's own paste as plain text. A palette pick is
+  // the command itself, so it runs.
   describe.each(['macos', 'windows', 'linux'] as const)('edit.pasteAsMove on %s', (platform) => {
-    it.each(['menu', 'keyboard', 'palette'] as const)(
+    it.each(['menu', 'keyboard'] as const)(
       'moves nothing from the %s road while a text field has focus',
       async (source) => {
         const undoPlatform = withPlatform(platform)
@@ -764,6 +765,16 @@ describe('characterization — activeElement input branches', () => {
         undoPlatform()
       },
     )
+
+    it('moves the clipboard files here from the palette, even with its search field focused', async () => {
+      const undoPlatform = withPlatform(platform)
+      const { cleanup } = focusInput('input')
+      const explorer = makeExplorerSpy()
+      await handleCommandExecute('edit.pasteAsMove', { ...makeCtx(explorer), source: 'palette' })
+      expect(explorer.pasteFromClipboard).toHaveBeenCalledExactlyOnceWith(true)
+      cleanup()
+      undoPlatform()
+    })
 
     it('moves the clipboard files here with nothing focused', async () => {
       const undoPlatform = withPlatform(platform)

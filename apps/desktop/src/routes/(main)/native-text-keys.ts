@@ -15,7 +15,7 @@ import type { Platform } from '#lib/platform/index.js'
 export interface NativeTextKeys {
   /** Copy: the browser's own while the page holds a text selection, in a field or not (the error pane). */
   readonly copyWithSelection: ReadonlySet<string>
-  /** The focused field's own editing keys: caret and word motion, word delete, plain-text paste, its menu. */
+  /** The focused field's own editing keys: caret and word motion, word and line delete, cut, plain-text paste, its menu. */
   readonly fieldOwned: ReadonlySet<string>
   /**
    * Not native editing, but a command on them would act mid-edit, so they bail in a field too. `Ctrl+I`
@@ -26,9 +26,25 @@ export interface NativeTextKeys {
 
 const MACOS: NativeTextKeys = {
   copyWithSelection: new Set(['⌘C']),
-  // Line start and end, word motion, and their Shift forms. Bare Home and End aren't here: on
-  // macOS they scroll and don't move the caret.
-  fieldOwned: new Set(['⌘←', '⌘→', '⌘⇧←', '⌘⇧→', '⌥←', '⌥→', '⌥⇧←', '⌥⇧→']),
+  fieldOwned: new Set([
+    // Line start and end, word motion, and their Shift forms. Bare Home and End aren't here: on
+    // macOS they scroll and don't move the caret.
+    '⌘←',
+    '⌘→',
+    '⌘⇧←',
+    '⌘⇧→',
+    '⌥←',
+    '⌥→',
+    '⌥⇧←',
+    '⌥⇧→',
+    // Delete to the line start, the word before, and (with ⌦, or fn+⌫) forward. `⌘⌫` and `⌥⌘⌫`
+    // are also Move to trash and Delete permanently outside a field.
+    '⌘Backspace',
+    '⌥Backspace',
+    '⌘⌥Backspace',
+    '⌘Delete',
+    '⌥Delete',
+  ]),
   bailInField: new Set(),
 }
 
@@ -51,9 +67,10 @@ const WINDOWS_AND_LINUX: NativeTextKeys = {
     'Ctrl+End',
     'Ctrl+Shift+Home',
     'Ctrl+Shift+End',
-    // Word delete.
+    // Word delete, and cut (`Shift+Delete`, also Delete permanently outside a field).
     'Ctrl+Backspace',
     'Ctrl+Delete',
+    'Shift+Delete',
     // Paste as plain text (Windows, Chromium, and WebKitGTK).
     'Ctrl+Shift+V',
     // The field's own context menu.
