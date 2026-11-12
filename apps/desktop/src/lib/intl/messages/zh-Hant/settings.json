@@ -530,10 +530,6 @@
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
   },
-  "settings.fileOperations.skipConfirmation.description": "{platform, select, windows {F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {按 F5 和 F6 會立刻複製和移動到另一個窗格，按 F8 會直接移到垃圾桶，不會先問你。這樣有點冒險，因為按一個鍵就馬上執行。永久刪除一定會先問你。}}",
-  "@settings.fileOperations.skipConfirmation.description": {
-    "sourceHash": "086379d"
-  },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {確認, 確認對話框, 對話方塊, 詢問, 複製, 移動, 垃圾桶, 刪除, 略過, 跳過, 點擊}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
     "sourceHash": "9f61258"
@@ -1736,10 +1732,6 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "{platform, select, macos {F3 會開啟 Cmdr 的檔案檢視器，它顯示的是原始位元組（非文字內容採用有損的 UTF-8）。當你開啟影像、PDF、壓縮檔或其他二進位檔案時，檢視器會顯示一條紅色橫幅，說明⇧空白鍵（快速查看）或 Enter（在關聯的 App 中開啟）很可能才是你想要的。開啟這一項（或按一下橫幅中的「不要再顯示這個警告」）就能永久關閉這個警告。} windows {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or select “Never show this warning again” in the banner) to suppress the warning for good.} other {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.}}",
-  "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "a93b4cb"
-  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "檢視器, 二進位, 影像, 原始, 警告, 橫幅, 快速查看",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -2235,10 +2227,6 @@
   "settings.behavior.textEditorHintSeen.label": "不顯示文字編輯器提示",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
-  },
-  "settings.behavior.textEditorHintSeen.description": "第一次用 F4 在預設編輯器中開啟檔案，而你還安裝了其他編輯器時，Cmdr 會提一下你可以換一個。關閉這一項，就能再看一次這個提示。",
-  "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "6e84497"
   },
   "settings.behavior.textEditorHintSeen.keywords": "編輯, 編輯器, 文字, 應用程式, 提示",
   "@settings.behavior.textEditorHintSeen.keywords": {

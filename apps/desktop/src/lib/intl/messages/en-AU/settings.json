@@ -179,9 +179,9 @@
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "f1b1b39"
   },
-  "settings.fileOperations.skipConfirmation.description": "{platform, select, windows {F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {F5 and F6 copy and move into the other pane right away, and F8 moves to the Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.}}",
-  "@settings.fileOperations.skipConfirmation.description": {
-    "sourceHash": "4c931bd"
+  "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {Copy and Move go into the other pane right away, and Delete moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {Copy and Move go into the other pane right away, and Delete moves to the Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.}}",
+  "@settings.fileOperations.skipConfirmation.explanation": {
+    "sourceHash": "564f000"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {confirm, confirmation, dialog, ask, copy, move, trash, bin, delete, skip, clicks}}",
   "@settings.fileOperations.skipConfirmation.keywords": {

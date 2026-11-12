@@ -22,7 +22,7 @@
     import Trans from '#lib/intl/Trans.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import { setSetting } from '#lib/settings/index.js'
-    import { commandHasShortcut } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+    import { commandHasShortcut, firstShortcutIs } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import { openShortcutCustomization } from '#lib/settings/settings-window.js'
 
     import { QUICK_LOOK_HINT_TOAST_ID } from './quick-look-hint-id'
@@ -32,6 +32,9 @@
     // runs nothing, and naming it would lie. The chip is non-clickable: the toast
     // already offers the Settings link below.
     const quickLookBound = $derived(commandHasShortcut('file.quickLook'))
+    /** The Quick Look key Finder answers too (canonical form), so the toast's Finder aside holds. */
+    const FINDER_QUICK_LOOK_KEY = '⇧Space'
+    const chipShowsFinderKey = $derived(firstShortcutIs('file.quickLook', FINDER_QUICK_LOOK_KEY))
 
     function handleOpenSettings() {
         dismissToast(QUICK_LOOK_HINT_TOAST_ID)
@@ -62,7 +65,13 @@
     </p>
     {#if quickLookBound}
         <p>
-            <Trans key="fileExplorer.quickLookHint.quickView" snippets={{ key: quickLookChip }} />
+            <!-- The "works in Finder, too" aside is true for ⇧Space, Finder's own key, only. -->
+            <Trans
+                key={chipShowsFinderKey
+                    ? 'fileExplorer.quickLookHint.quickView'
+                    : 'fileExplorer.quickLookHint.quickViewRebound'}
+                snippets={{ key: quickLookChip }}
+            />
         </p>
     {/if}
     <p>

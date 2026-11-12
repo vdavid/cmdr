@@ -528,10 +528,6 @@
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
   },
-  "settings.fileOperations.skipConfirmation.description": "{platform, select, windows {F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {F5 a F6 kopírují a přesouvají do druhého panelu hned a F8 přesouvá do koše bez ptaní. Trochu riskantní, protože jedno stisknutí klávesy hned něco provede. Trvalé smazání se vždy nejdřív zeptá.}}",
-  "@settings.fileOperations.skipConfirmation.description": {
-    "sourceHash": "086379d"
-  },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {potvrdit, potvrzení, dialog, zeptat se, kopírovat, přesunout, koš, smazat, přeskočit, kliknutí}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
     "sourceHash": "9f61258"
@@ -1735,10 +1731,6 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "{platform, select, macos {F3 otevře prohlížeč souborů v Cmdru, který zobrazuje surové bajty (obsah, který není text, ztrátově jako UTF-8). Když otevřete obrázek, PDF, archiv nebo jiný binární soubor, prohlížeč zobrazí červený pruh s vysvětlením, že se spíš hodí ⇧mezerník (Rychlý náhled) nebo Enter (otevření v přiřazené aplikaci). Zapněte tuto volbu (nebo v pruhu klikněte na „Toto varování už nikdy nezobrazovat“) a varování se už nikdy nezobrazí.} windows {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or select “Never show this warning again” in the banner) to suppress the warning for good.} other {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.}}",
-  "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "a93b4cb"
-  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "prohlížeč, binární, obrázek, surový, upozornění, varování, pruh, rychlý náhled",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -2234,10 +2226,6 @@
   "settings.behavior.textEditorHintSeen.label": "Potlačit tip k textovému editoru",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
-  },
-  "settings.behavior.textEditorHintSeen.description": "Když F4 poprvé otevře soubor ve výchozím editoru a přitom je nainstalovaný i jiný editor, Cmdr zmíní, že si můžete vybrat jiný. Vypněte tuto volbu a tip se zobrazí ještě jednou.",
-  "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "6e84497"
   },
   "settings.behavior.textEditorHintSeen.keywords": "upravit, úpravy, editor, F4, aplikace, oznámení, nápověda",
   "@settings.behavior.textEditorHintSeen.keywords": {

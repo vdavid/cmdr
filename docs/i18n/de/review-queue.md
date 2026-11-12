@@ -21,7 +21,7 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 - **`Gib Cmdr auf AlternativeTo ein Like`** (`onboarding.stepBeta.checklist.alternativeTo`): Duden has `das Like`, and
   it keeps the parallel with `Vergib dem Repo auf GitHub einen Stern`, but it reads young.
 
-- **The bold file kind carries its article** (`viewer.binaryWarning.body`: **das eigentliche Bild**, **die eigentliche
+- **The bold file kind carries its article** (`viewer.binaryWarning.body*`: **das eigentliche Bild**, **die eigentliche
   ZIP-Datei**): `<kindName>` wraps the whole select, and `Bild`/`Dokument` (n.) vs `Datei` (f.) need different articles.
   Confirm the wider bold reads fine in the banner.
 

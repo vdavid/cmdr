@@ -20,6 +20,7 @@
  * the chip). Feature code reads through two more, enforced by `cmdr/no-raw-shortcut-text`,
  * and they answer for live keys too:
  *   - `commandHasShortcut(commandId)`, the yes/no a sentence around a chip needs.
+ *   - `firstShortcutIs(commandId, combo)`, for a sentence true of one key only.
  *   - `shortcutAsText(commandId, sink)`, for a sink that can only hold text.
  *
  * All readers return the DISPLAY form (`⌘⌫`, not the canonical `⌘Backspace`):
@@ -90,6 +91,15 @@ export function getFirstShiftShortcutReactive(commandId: CommandId): string | un
  */
 export function commandHasShortcut(commandId: CommandId): boolean {
   return liveReactive(commandId).length > 0
+}
+
+/**
+ * Whether the key a `<ShortcutChip commandId>` shows (the command's first live key) is
+ * `combo`, in canonical form, reactively. For a sentence that's only true of one key: the
+ * Quick Look hint's "works in Finder, too" holds for ⇧Space alone.
+ */
+export function firstShortcutIs(commandId: CommandId, combo: string): boolean {
+  return liveReactive(commandId).at(0) === combo
 }
 
 /**

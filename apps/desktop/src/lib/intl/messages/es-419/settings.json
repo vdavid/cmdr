@@ -147,10 +147,6 @@
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "12824c8"
   },
-  "settings.fileOperations.skipConfirmation.description": "{platform, select, windows {F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {F5 y F6 copian y mueven al otro panel directamente, y F8 mueve al basurero sin preguntar. Es un poco arriesgado, porque una sola tecla actúa al instante. Eliminar permanentemente siempre pregunta antes.}}",
-  "@settings.fileOperations.skipConfirmation.description": {
-    "sourceHash": "6eb9a3d"
-  },
   "settings.fileExplorer.git.showStatusColumn.description": "Agrega una columna que muestra el estado de git por archivo (modificado, sin seguimiento, etc.) en la vista completa.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
     "sourceHash": "f685271"
@@ -214,10 +210,6 @@
   "settings.behavior.textEditorApp.systemDefaultUnnamed": "Predeterminado del sistema",
   "@settings.behavior.textEditorApp.systemDefaultUnnamed": {
     "sourceHash": "c8aa231"
-  },
-  "settings.behavior.textEditorHintSeen.description": "La primera vez que F4 abre un archivo en el editor predeterminado mientras hay otro editor instalado, Cmdr te comenta que puedes elegir otro. Desactiva esto para volver a ver el aviso.",
-  "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "045a97a"
   },
   "settings.behavior.openTerminalHereToastSeen.description": "La primera vez que abres una carpeta en un terminal, Cmdr te dice qué app usó y dónde elegir otra. Desactiva esto para volver a ver el aviso.",
   "@settings.behavior.openTerminalHereToastSeen.description": {

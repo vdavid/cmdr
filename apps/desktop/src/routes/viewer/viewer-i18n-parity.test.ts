@@ -18,6 +18,7 @@
 import { beforeEach, describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '#lib/intl/locale.js'
 import { t, tString, getMessage } from '#lib/intl/messages.svelte.js'
+import type { MessageKey } from '#lib/intl/keys.gen.js'
 import { mediaKindLabel, viewAsMediaLabel, formatMediaDimensions } from './media-view'
 import { withPlatform } from '#lib/platform/test-platform.js'
 
@@ -215,9 +216,9 @@ describe('viewer reload toast + copy/save toasts (en)', () => {
 
 describe('viewer binary-warning banner (en)', () => {
   // Renders the body with plain-text tag handlers, so the sentence reads as one string.
-  const body = (category: string, ext = ''): string => {
+  const body = (category: string, ext = '', key: MessageKey = 'viewer.binaryWarning.bodyWithKeys'): string => {
     const wrap = (chunks: unknown[]) => chunks.join('')
-    const parts = t('viewer.binaryWarning.body', {
+    const parts = t(key, {
       category,
       ext,
       kindName: wrap,
@@ -231,6 +232,21 @@ describe('viewer binary-warning banner (en)', () => {
     expect(body('image')).toContain('You might want to view the actual image instead.')
     expect(body('document')).toContain('You might want to view the actual document instead.')
     expect(body('binary', 'ZIP')).toContain('You might want to view the actual ZIP file instead.')
+  })
+
+  it('names each live key, and reads whole without one', () => {
+    expect(body('image')).toContain(
+      'close this window and press ⇧Space to open Quick Look, or press Enter (or double-click the file) to open it in the associated app.',
+    )
+    expect(body('image', '', 'viewer.binaryWarning.bodyWithQuickLookKey')).toContain(
+      'close this window and press ⇧Space to open Quick Look, or double-click the file to open it in the associated app.',
+    )
+    expect(body('image', '', 'viewer.binaryWarning.bodyWithOpenKey')).toContain(
+      'close this window and press Enter (or double-click the file) to open it in the associated app.',
+    )
+    expect(body('image', '', 'viewer.binaryWarning.bodyWithoutKeys')).toContain(
+      'close this window and double-click the file to open it in the associated app.',
+    )
   })
 
   it('matches the button labels', () => {

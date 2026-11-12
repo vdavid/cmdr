@@ -50,6 +50,25 @@ describe('descriptions that name a key', () => {
     )
   })
 
+  it('fill in the edit key for the text editor hint, and say it without one', () => {
+    liveKey.set('file.edit', 'F4')
+    expect(description('behavior.textEditorHintSeen')).toContain('The first time F4 opens a file in the default editor')
+    liveKey.clear()
+    expect(description('behavior.textEditorHintSeen')).toContain(
+      'The first time Cmdr opens a file in the default editor while another editor is installed, it mentions',
+    )
+  })
+
+  // Three keys each (Copy, Move, Delete; View, Quick Look, Open), so these name the commands and
+  // stay true whatever the user bound.
+  it('name commands, never keys, where a description covers several', () => {
+    for (const key of ['F3', 'F4', 'F5', 'F6', 'F8', '⇧Space', 'Enter']) {
+      expect(description('fileOperations.skipConfirmation')).not.toContain(key)
+      expect(description('fileViewer.suppressBinaryWarning')).not.toContain(key)
+    }
+    expect(description('fileOperations.skipConfirmation')).toContain('Copy and Move go into the other pane right away')
+  })
+
   it('leave the global hotkey’s registry text keyless: its row shows the live binding itself', () => {
     expect(description('behavior.fileSystemWatching.globalGoToLatestShortcut.enabled')).toBe(
       'Jump to your most recent download from any app with a system-wide shortcut. Requires Full Disk Access.',

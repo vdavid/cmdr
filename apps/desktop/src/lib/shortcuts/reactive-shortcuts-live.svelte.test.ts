@@ -20,6 +20,7 @@ vi.mock('./shortcuts-store', () => ({
 
 import {
   commandHasShortcut,
+  firstShortcutIs,
   getFirstShiftShortcutReactive,
   getFirstShortcutReactive,
   getLiveShortcutsReactive,
@@ -40,6 +41,9 @@ describe('reactive hint readers', () => {
     expect(getFirstShiftShortcutReactive('tab.new')).toBe('Shift+F4')
     expect(shortcutAsText('tab.new', 'tooltip')).toBe('Shift+F4')
     expect(commandHasShortcut('tab.new')).toBe(true)
+    // The chip shows the live key, so a sentence about the shadowed default no longer holds.
+    expect(firstShortcutIs('tab.new', 'Shift+F4')).toBe(true)
+    expect(firstShortcutIs('tab.new', 'Ctrl+T')).toBe(false)
   })
 
   it('show no key for a command whose every key is shadowed', () => {

@@ -199,6 +199,21 @@ export const RETIRED_KEYS: readonly RetiredKey[] = [
       'it spelled Delete permanently’s key Shift+F8 for every OS (a Mac reads ⇧F8) and every rebind; `noTrashForVolumeWithKey` takes the live key as `{deletePermanentlyKey}`, and `noTrashForVolumeWithoutKey` names the command',
   },
   {
+    key: 'viewer.binaryWarning.body',
+    reason:
+      'it spelled the Quick Look and open keys ⇧Space and Enter whatever the user bound; four `viewer.binaryWarning.body*` variants name each live key or drop it',
+  },
+  {
+    key: 'settings.fileOperations.skipConfirmation.description',
+    reason:
+      'it spelled F5, F6, and F8 whatever the user bound; `skipConfirmation.explanation` names the Copy, Move, and Delete commands instead',
+  },
+  {
+    key: 'settings.fileViewer.suppressBinaryWarning.description',
+    reason:
+      'it spelled F3, ⇧Space, and Enter whatever the user bound; `suppressBinaryWarning.explanation` names what the banner suggests instead',
+  },
+  {
     key: 'errors.write.homeFolderRename.suggestion.isHome',
     reason:
       'it spelled Rename’s key F2 whatever the user bound; `isHomeWithKey` takes the live key as `{renameKey}`, and `isHomeWithoutKey` says “a quick rename”',

@@ -24,6 +24,9 @@ describe.each(OFF_MAC_PLATFORMS)('default keys on %s', (platform) => {
   it('hold no Ctrl+Alt+<letter>, which AltGr layouts type characters with', () => {
     // AltGr arrives as Ctrl+Alt on Windows, so these collide with typing on Hungarian, German,
     // Polish, Czech, and more. Ctrl+Alt with an arrow or an F-key types nothing, so it's fine.
+    // Outside the registry, the global go-to-latest hotkey's `Ctrl+Alt+Super+J` is a decided
+    // exception: the Windows / Super key makes it a chord no AltGr layout types
+    // (`keymap-decisions.md` § "The rule").
     const ctrlAltLetter = /^Ctrl\+Alt\+(Shift\+)?[A-Z]$/
     expect(rawDefaults(platform).filter((line) => ctrlAltLetter.test(line.split(': ')[1]))).toEqual([])
   })

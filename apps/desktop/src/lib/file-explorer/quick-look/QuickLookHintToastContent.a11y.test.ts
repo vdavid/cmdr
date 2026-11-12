@@ -32,6 +32,7 @@ const quickLookKeys = vi.hoisted(() => ({ value: ['⇧Space'] }))
 vi.mock('#lib/shortcuts/reactive-shortcuts.svelte.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('#lib/shortcuts/reactive-shortcuts.svelte.js')>()),
   commandHasShortcut: (id: string) => id === 'file.quickLook' && quickLookKeys.value.length > 0,
+  firstShortcutIs: (id: string, combo: string) => id === 'file.quickLook' && quickLookKeys.value.at(0) === combo,
   getLiveShortcutsReactive: (id: string) => (id === 'file.quickLook' ? quickLookKeys.value : []),
 }))
 
@@ -65,6 +66,17 @@ describe('QuickLookHintToastContent', () => {
     expect(text).toContain('Enter')
     expect(text).toContain('Settings > Keyboard shortcuts')
     expect(text).toContain('Don’t show again')
+  })
+
+  // Finder's own Quick Look keys include ⇧Space, so the "works in Finder, too" aside holds for
+  // that key alone; a rebound key keeps the sentence and loses the aside.
+  it('names a rebound Quick Look key without claiming Finder answers it', () => {
+    quickLookKeys.value = ['⌘Y']
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(QuickLookHintToastContent, { target, props: {} })
+    expect(target.textContent).toContain('In Cmdr, you can trigger Quick Look via ⌘Y.')
+    expect(target.textContent).not.toContain('works in Finder, too')
   })
 
   it('leaves out the Quick Look key line once no key runs Quick Look', () => {

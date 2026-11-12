@@ -530,10 +530,6 @@
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
   },
-  "settings.fileOperations.skipConfirmation.description": "{platform, select, windows {F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {Az F5 és az F6 azonnal másol és áthelyez a másik panelre, az F8 pedig kérdés nélkül a Kukába helyez. Kicsit kockázatos, mert egyetlen billentyűleütés rögtön végrehajtja a műveletet. Végleges törlés előtt a Cmdr mindig rákérdez.}}",
-  "@settings.fileOperations.skipConfirmation.description": {
-    "sourceHash": "086379d"
-  },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {megerősítés, párbeszédablak, rákérdezés, kérdés, másolás, áthelyezés, kuka, törlés, kihagyás, átugrás, kattintás}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
     "sourceHash": "9f61258"
@@ -1737,10 +1733,6 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "{platform, select, macos {Az F3 megnyitja a Cmdr fájlmegjelenítőjét, amely nyers bájtokat mutat (nem szöveges tartalomnál veszteséges UTF-8-cal). Amikor képet, PDF-et, archívumot vagy más bináris fájlt nyitsz meg, a megjelenítő piros sávot mutat, amely elmagyarázza, hogy valószínűleg a ⇧Szóköz (Gyorsnézet) vagy az Enter (megnyitás a társított appban) az, amit szerettél volna. Kapcsold ezt be (vagy kattints a sávban a „Ne jelenjen meg többé ez a figyelmeztetés” gombra), hogy végleg elnyomd a figyelmeztetést.} windows {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or select “Never show this warning again” in the banner) to suppress the warning for good.} other {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.}}",
-  "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "a93b4cb"
-  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "megjelenítő, bináris, kép, nyers, nyers nézet, figyelmeztetés, sáv, szalag, gyorsnézet",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -2236,10 +2228,6 @@
   "settings.behavior.textEditorHintSeen.label": "Szövegszerkesztő-tipp elnyomása",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
-  },
-  "settings.behavior.textEditorHintSeen.description": "Amikor az F4 először nyit meg egy fájlt az alapértelmezett szerkesztőben, miközben másik szerkesztő is telepítve van, a Cmdr megemlíti, hogy választhatsz másikat. Kapcsold ezt ki, hogy még egyszer lásd a tippet.",
-  "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "6e84497"
   },
   "settings.behavior.textEditorHintSeen.keywords": "szerkesztés, szerkesztő, szöveg, alkalmazás, tipp, buborék",
   "@settings.behavior.textEditorHintSeen.keywords": {

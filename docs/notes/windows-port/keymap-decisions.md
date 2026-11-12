@@ -34,7 +34,10 @@ keys) and the viewer toggles above.
   Linux) joins where it doesn't clash with a TC key. No Finder-style keys off macOS.
 - No `Ctrl+Alt+<letter>` defaults off macOS. Only `H` is free of AltGr characters across Hungarian, German, Polish
   Programmers, Czech, US-International, Swedish, and French (verified, Microsoft's KLC tables via kbdlayout.info,
-  2026-11-12, local `os-report.md`). Ctrl+Alt with arrows or F-keys is fine: those type nothing.
+  2026-11-12, local `os-report.md`). Ctrl+Alt with arrows or F-keys is fine: those type nothing. One decided exception
+  outside the registry: the global go-to-latest hotkey defaults to `Ctrl+Alt+Super+J` (`Ctrl+Alt+Win+J` on Windows),
+  macOS's `⌃⌥⌘J` spelled natively. The Windows / Super key in it makes it a chord no AltGr layout types (David,
+  2026-11-12).
 - macOS stays as it is, plus the additions below.
 - "Mechanical" below means `toPlatformShortcut` of the macOS keys: ⌘ and ⌃ become Ctrl, ⌥ Alt, ⇧ Shift (and ⌃ becomes
   Shift when ⌘ is also held). Every command not listed in § Changed commands keeps its mechanical keys, including

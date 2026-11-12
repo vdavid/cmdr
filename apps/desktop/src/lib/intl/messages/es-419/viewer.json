@@ -19,10 +19,6 @@
   "@viewer.error.archiveUnreadable": {
     "sourceHash": "7898c9e"
   },
-  "viewer.binaryWarning.body": "{platform, select, macos {Esta es la vista en bruto del archivo. Quizá prefieras verlo como <kindName>{category, select, image {imagen} document {documento} other {archivo {ext}}}</kindName>. Para hacerlo, cierra esta ventana y presiona <quickLookKey></quickLookKey> para abrir la Vista rápida, o presiona <openKey></openKey> (o haz doble clic en el archivo) para abrirlo en la app asociada.} other {This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <openKey></openKey> (or double-click the file) to open it in the associated app.}}",
-  "@viewer.binaryWarning.body": {
-    "sourceHash": "0053059"
-  },
   "viewer.statusBar.badge.streamingTooltip": "Este es un archivo grande en modo de transmisión. Indexarlo habría tardado más de {seconds} s, así que no lo hicimos. Los números de línea son estimaciones.",
   "@viewer.statusBar.badge.streamingTooltip": {
     "sourceHash": "ec642c5"

@@ -531,10 +531,6 @@
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
   },
-  "settings.fileOperations.skipConfirmation.description": "{platform, select, windows {F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {F5 et F6 copient et déplacent aussitôt vers l’autre panneau, et F8 place dans la corbeille sans rien demander. Un peu risqué, puisqu’une seule touche suffit à agir. Supprimer définitivement demande toujours une confirmation.}}",
-  "@settings.fileOperations.skipConfirmation.description": {
-    "sourceHash": "086379d"
-  },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {confirmer, confirmation, boîte de dialogue, dialogue, demander, copier, déplacer, corbeille, supprimer, ignorer, sauter, clics}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
     "sourceHash": "9f61258"
@@ -1743,10 +1739,6 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "{platform, select, macos {F3 ouvre la visionneuse de fichiers de Cmdr, qui affiche les octets bruts (avec un UTF-8 avec perte pour le contenu non textuel). Quand vous ouvrez une image, un PDF, une archive ou un autre fichier binaire, la visionneuse affiche une bannière rouge expliquant que ⇧Espace (Coup d’œil) ou Entrée (ouvrir dans l’app associée) est probablement ce que vous vouliez. Activez ceci (ou cliquez sur « Ne plus afficher cet avertissement » dans la bannière) pour masquer l’avertissement définitivement.} windows {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or select “Never show this warning again” in the banner) to suppress the warning for good.} other {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.}}",
-  "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "a93b4cb"
-  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "visionneuse, binaire, image, brut, avertissement, bannière, coup d’œil, masquer",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -2247,10 +2239,6 @@
   "settings.behavior.textEditorHintSeen.label": "Masquer l’astuce sur l’éditeur de texte",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
-  },
-  "settings.behavior.textEditorHintSeen.description": "La première fois que F4 ouvre un fichier dans l’éditeur par défaut alors qu’un autre éditeur est installé, Cmdr signale que vous pouvez en choisir un autre. Désactivez cette option pour revoir l’astuce.",
-  "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "6e84497"
   },
   "settings.behavior.textEditorHintSeen.keywords": "modifier, éditer, éditeur, texte, app, astuce, notification",
   "@settings.behavior.textEditorHintSeen.keywords": {

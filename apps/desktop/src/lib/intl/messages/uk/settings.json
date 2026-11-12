@@ -528,10 +528,6 @@
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
   },
-  "settings.fileOperations.skipConfirmation.description": "{platform, select, windows {F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {F5 і F6 одразу копіюють і переміщують на іншу панель, а F8 переміщує в Смітник без запитання. Трохи ризиковано, бо одне натискання діє відразу. Перед остаточним видаленням Cmdr завжди питає.}}",
-  "@settings.fileOperations.skipConfirmation.description": {
-    "sourceHash": "086379d"
-  },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {підтвердження, діалог, запитання, без запитань, копіювання, переміщення, кошик, видалення, швидко}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
     "sourceHash": "9f61258"
@@ -1734,10 +1730,6 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "{platform, select, macos {F3 відкриває переглядач файлів Cmdr, який показує сирі байти (нетекстовий вміст відображається як UTF-8 із втратами). Коли ви відкриваєте зображення, PDF, архів чи інший двійковий файл, переглядач показує червоний банер із поясненням, що вам, найімовірніше, потрібен ⇧Пробіл (Швидкий перегляд) або Enter (відкрити в повʼязаній програмі). Увімкніть цей параметр (або натисніть «Більше не показувати це застереження» на банері), щоб назавжди прибрати застереження.} windows {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or select “Never show this warning again” in the banner) to suppress the warning for good.} other {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.}}",
-  "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "a93b4cb"
-  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "двійковий, бінарний, зображення, байти, банер, попередження, сирий вигляд",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -2233,10 +2225,6 @@
   "settings.behavior.textEditorHintSeen.label": "Не показувати підказку про текстовий редактор",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
-  },
-  "settings.behavior.textEditorHintSeen.description": "Коли F4 вперше відкриває файл у типовому редакторі, а на Mac інстальовано інший редактор, Cmdr згадує, що можна вибрати інший. Вимкніть цей параметр, щоб побачити підказку ще раз.",
-  "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "6e84497"
   },
   "settings.behavior.textEditorHintSeen.keywords": "редагувати, редагування, редактор, F4, програма, сповіщення",
   "@settings.behavior.textEditorHintSeen.keywords": {

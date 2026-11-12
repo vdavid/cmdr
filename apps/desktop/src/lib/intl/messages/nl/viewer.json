@@ -79,10 +79,6 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "{platform, select, macos {Dit is de ruwe weergave van het bestand. Je wilt waarschijnlijk liever {category, select, image {de} other {het}} eigenlijke <kindName>{category, select, image {afbeelding} document {document} other {{ext}-bestand}}</kindName> bekijken. Sluit hiervoor dit venster en druk op <quickLookKey></quickLookKey> om de snelle weergave te openen, of druk op <openKey></openKey> (of dubbelklik op het bestand) om het in de bijbehorende app te openen.} other {This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <openKey></openKey> (or double-click the file) to open it in the associated app.}}",
-  "@viewer.binaryWarning.body": {
-    "sourceHash": "fd5cfb7"
-  },
   "viewer.binaryWarning.dismiss": "Sluit",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"

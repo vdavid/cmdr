@@ -528,10 +528,6 @@
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
   },
-  "settings.fileOperations.skipConfirmation.description": "{platform, select, windows {F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {F5 và F6 sao chép và di chuyển sang khung kia ngay lập tức, còn F8 chuyển vào thùng rác mà không hỏi. Hơi rủi ro, vì chỉ một lần nhấn phím là thao tác chạy luôn. Xóa vĩnh viễn thì luôn hỏi trước.}}",
-  "@settings.fileOperations.skipConfirmation.description": {
-    "sourceHash": "086379d"
-  },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {xác nhận, hộp thoại, hỏi, sao chép, di chuyển, thùng rác, xóa, bỏ qua, lượt bấm}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
     "sourceHash": "9f61258"
@@ -1734,10 +1730,6 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "{platform, select, macos {F3 mở trình xem tệp của Cmdr, vốn hiển thị byte thô (với UTF-8 mất mát cho nội dung phi văn bản). Khi bạn mở ảnh, PDF, tệp nén, hoặc tệp nhị phân khác, trình xem hiển thị biểu ngữ đỏ giải thích rằng ⇧Dấu cách (Xem nhanh) hoặc Enter (mở trong ứng dụng liên kết) có lẽ là điều bạn muốn. Bật mục này (hoặc bấm “Không hiển thị cảnh báo này nữa” trên biểu ngữ) để ẩn cảnh báo vĩnh viễn.} windows {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or select “Never show this warning again” in the banner) to suppress the warning for good.} other {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.}}",
-  "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "a93b4cb"
-  },
   "settings.fileViewer.suppressBinaryWarning.keywords": "trình xem, nhị phân, hình ảnh, thô, xem thô, cảnh báo, biểu ngữ, xem nhanh",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
     "sourceHash": "1508efc"
@@ -2234,10 +2226,6 @@
   "settings.behavior.textEditorHintSeen.label": "Ẩn gợi ý về trình soạn thảo văn bản",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "28c8305"
-  },
-  "settings.behavior.textEditorHintSeen.description": "Lần đầu F4 mở một tệp trong trình soạn thảo mặc định trong khi máy có cài trình soạn thảo khác, Cmdr sẽ nhắc rằng bạn có thể chọn một trình khác. Tắt mục này để xem lại gợi ý một lần nữa.",
-  "@settings.behavior.textEditorHintSeen.description": {
-    "sourceHash": "6e84497"
   },
   "settings.behavior.textEditorHintSeen.keywords": "sửa, chỉnh sửa, soạn thảo, văn bản, ứng dụng, gợi ý, thông báo nhỏ",
   "@settings.behavior.textEditorHintSeen.keywords": {

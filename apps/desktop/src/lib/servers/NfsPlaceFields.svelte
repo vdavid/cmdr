@@ -68,7 +68,6 @@
         exportHint,
         exportRefusal,
         onChange,
-        // eslint-disable-next-line no-useless-assignment -- a `$bindable` prop, set below for the sheet to place the caret
         exportInput = $bindable(),
         discoveryDeps = {
             listNfsExports: ({ host, port }) => listNfsExports(host, port),

@@ -36,7 +36,7 @@ ALL_FILES_QUIT_*). ❌ `Доступ ко всему диску`: an older label
 
 The TCC button (`QUIT_APP`, 26A428); a back-translated `Завершить и открыть заново` names no real button.
 
-## Click and double-click: нажать over щелкнуть (`*oubleClick*`, `fileExplorer.network.browser.tooltip.*`, `viewer.binaryWarning.body`, `*navigateTooltip`)
+## Click and double-click: нажать over щелкнуть (`*oubleClick*`, `fileExplorer.network.browser.tooltip.*`, `viewer.binaryWarning.body*`, `*navigateTooltip`)
 
 macOS (Finder MR20 `Нажмите «Отменить»`, AppKit `Нажать для выбора`, zero `Щелкните`): `нажмите`, `дважды нажмите` /
 `двойное нажатие`. MS's `щелкнуть` passes the check but isn't the default; one verb per catalog.

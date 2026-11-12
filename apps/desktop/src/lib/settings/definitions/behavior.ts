@@ -167,7 +167,7 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     section: ['Behavior', 'Navigation & file ops'],
     cardKey: 'settings.navigationAndFileOps.card.fileOperations',
     labelKey: 'settings.fileOperations.skipConfirmation.label',
-    descriptionKey: 'settings.fileOperations.skipConfirmation.description',
+    descriptionKey: 'settings.fileOperations.skipConfirmation.explanation',
     keywordsKey: 'settings.fileOperations.skipConfirmation.keywords',
     terms: ['F5', 'F6', 'F8'],
     type: 'boolean',
