@@ -1100,6 +1100,18 @@
   "@fileExplorer.list.empty": {
     "sourceHash": "ca1fd45"
   },
+  "fileExplorer.list.hiddenItems": "{count, plural, =1 {Ce dossier contient un élément caché.} one {Ce dossier contient {countText} élément caché.} many {Ce dossier contient {countText} éléments cachés.} other {Ce dossier contient {countText} éléments cachés.}}",
+  "@fileExplorer.list.hiddenItems": {
+    "sourceHash": "78a4459"
+  },
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Pour afficher les éléments cachés, appuyez sur {shortcut} ou choisissez « {menu} > {item} ».",
+  "@fileExplorer.list.hiddenItemsHowToShortcut": {
+    "sourceHash": "b212fcd"
+  },
+  "fileExplorer.list.hiddenItemsHowToMenu": "Pour afficher les éléments cachés, choisissez « {menu} > {item} ».",
+  "@fileExplorer.list.hiddenItemsHowToMenu": {
+    "sourceHash": "34d817b"
+  },
   "fileExplorer.list.fileListAriaLabel": "Liste des fichiers",
   "@fileExplorer.list.fileListAriaLabel": {
     "sourceHash": "0728b8e"

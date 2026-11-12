@@ -1100,6 +1100,18 @@
   "@fileExplorer.list.empty": {
     "sourceHash": "ca1fd45"
   },
+  "fileExplorer.list.hiddenItems": "{count, plural, other {Thư mục này có {countText} mục ẩn.}}",
+  "@fileExplorer.list.hiddenItems": {
+    "sourceHash": "78a4459"
+  },
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Để xem các mục ẩn, nhấn {shortcut} hoặc chọn “{menu} > {item}”.",
+  "@fileExplorer.list.hiddenItemsHowToShortcut": {
+    "sourceHash": "b212fcd"
+  },
+  "fileExplorer.list.hiddenItemsHowToMenu": "Để xem các mục ẩn, chọn “{menu} > {item}”.",
+  "@fileExplorer.list.hiddenItemsHowToMenu": {
+    "sourceHash": "34d817b"
+  },
   "fileExplorer.list.fileListAriaLabel": "Danh sách tệp",
   "@fileExplorer.list.fileListAriaLabel": {
     "sourceHash": "0728b8e"

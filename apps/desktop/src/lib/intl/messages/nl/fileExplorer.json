@@ -1103,6 +1103,18 @@
   "@fileExplorer.list.empty": {
     "sourceHash": "ca1fd45"
   },
+  "fileExplorer.list.hiddenItems": "{count, plural, one {Er staat één verborgen onderdeel in deze map.} other {Er staan {countText} verborgen onderdelen in deze map.}}",
+  "@fileExplorer.list.hiddenItems": {
+    "sourceHash": "78a4459"
+  },
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Om verborgen onderdelen te zien, druk je op {shortcut} of kies je ‘{menu} > {item}’.",
+  "@fileExplorer.list.hiddenItemsHowToShortcut": {
+    "sourceHash": "b212fcd"
+  },
+  "fileExplorer.list.hiddenItemsHowToMenu": "Om verborgen onderdelen te zien, kies je ‘{menu} > {item}’.",
+  "@fileExplorer.list.hiddenItemsHowToMenu": {
+    "sourceHash": "34d817b"
+  },
   "fileExplorer.list.fileListAriaLabel": "Bestandenlijst",
   "@fileExplorer.list.fileListAriaLabel": {
     "sourceHash": "0728b8e"

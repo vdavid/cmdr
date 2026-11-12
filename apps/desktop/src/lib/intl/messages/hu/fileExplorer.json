@@ -1098,6 +1098,18 @@
   "@fileExplorer.list.empty": {
     "sourceHash": "ca1fd45"
   },
+  "fileExplorer.list.hiddenItems": "{count, plural, one {Ebben a mappában egy rejtett elem van.} other {Ebben a mappában {countText} rejtett elem van.}}",
+  "@fileExplorer.list.hiddenItems": {
+    "sourceHash": "78a4459"
+  },
+  "fileExplorer.list.hiddenItemsHowToShortcut": "A rejtett elemek megjelenítéséhez nyomd meg ezt a billentyűparancsot: {shortcut}, vagy válaszd ezt a menüpontot: „{menu} > {item}”.",
+  "@fileExplorer.list.hiddenItemsHowToShortcut": {
+    "sourceHash": "b212fcd"
+  },
+  "fileExplorer.list.hiddenItemsHowToMenu": "A rejtett elemek megjelenítéséhez válaszd ezt a menüpontot: „{menu} > {item}”.",
+  "@fileExplorer.list.hiddenItemsHowToMenu": {
+    "sourceHash": "34d817b"
+  },
   "fileExplorer.list.fileListAriaLabel": "Fájllista",
   "@fileExplorer.list.fileListAriaLabel": {
     "sourceHash": "0728b8e"

@@ -1096,6 +1096,18 @@
   "@fileExplorer.list.empty": {
     "sourceHash": "ca1fd45"
   },
+  "fileExplorer.list.hiddenItems": "{count, plural, other {这个文件夹里有 {countText} 个隐藏项目。}}",
+  "@fileExplorer.list.hiddenItems": {
+    "sourceHash": "78a4459"
+  },
+  "fileExplorer.list.hiddenItemsHowToShortcut": "按 {shortcut} 或选择“{menu} > {item}”即可查看隐藏项目。",
+  "@fileExplorer.list.hiddenItemsHowToShortcut": {
+    "sourceHash": "b212fcd"
+  },
+  "fileExplorer.list.hiddenItemsHowToMenu": "选择“{menu} > {item}”即可查看隐藏项目。",
+  "@fileExplorer.list.hiddenItemsHowToMenu": {
+    "sourceHash": "34d817b"
+  },
   "fileExplorer.list.fileListAriaLabel": "文件列表",
   "@fileExplorer.list.fileListAriaLabel": {
     "sourceHash": "0728b8e"

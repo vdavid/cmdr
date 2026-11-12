@@ -1099,6 +1099,18 @@
   "@fileExplorer.list.empty": {
     "sourceHash": "ca1fd45"
   },
+  "fileExplorer.list.hiddenItems": "{count, plural, one {Det finns ett dolt objekt i den här mappen.} other {Det finns {countText} dolda objekt i den här mappen.}}",
+  "@fileExplorer.list.hiddenItems": {
+    "sourceHash": "78a4459"
+  },
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Om du vill se dolda objekt trycker du på {shortcut} eller väljer ”{menu} > {item}”.",
+  "@fileExplorer.list.hiddenItemsHowToShortcut": {
+    "sourceHash": "b212fcd"
+  },
+  "fileExplorer.list.hiddenItemsHowToMenu": "Om du vill se dolda objekt väljer du ”{menu} > {item}”.",
+  "@fileExplorer.list.hiddenItemsHowToMenu": {
+    "sourceHash": "34d817b"
+  },
   "fileExplorer.list.fileListAriaLabel": "Fillista",
   "@fileExplorer.list.fileListAriaLabel": {
     "sourceHash": "0728b8e"

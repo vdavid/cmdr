@@ -1101,6 +1101,18 @@
   "@fileExplorer.list.empty": {
     "sourceHash": "ca1fd45"
   },
+  "fileExplorer.list.hiddenItems": "{count, plural, =1 {Esta pasta tem um item oculto.} one {Esta pasta tem {countText} item oculto.} many {Esta pasta tem {countText} itens ocultos.} other {Esta pasta tem {countText} itens ocultos.}}",
+  "@fileExplorer.list.hiddenItems": {
+    "sourceHash": "78a4459"
+  },
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Para ver os itens ocultos, pressione {shortcut} ou escolha “{menu} > {item}”.",
+  "@fileExplorer.list.hiddenItemsHowToShortcut": {
+    "sourceHash": "b212fcd"
+  },
+  "fileExplorer.list.hiddenItemsHowToMenu": "Para ver os itens ocultos, escolha “{menu} > {item}”.",
+  "@fileExplorer.list.hiddenItemsHowToMenu": {
+    "sourceHash": "34d817b"
+  },
   "fileExplorer.list.fileListAriaLabel": "Lista de arquivos",
   "@fileExplorer.list.fileListAriaLabel": {
     "sourceHash": "0728b8e"

@@ -1098,6 +1098,18 @@
   "@fileExplorer.list.empty": {
     "sourceHash": "ca1fd45"
   },
+  "fileExplorer.list.hiddenItems": "{count, plural, one {V této složce je jedna skrytá položka.} few {V této složce jsou {countText} skryté položky.} many {V této složce je {countText} skryté položky.} other {V této složce je {countText} skrytých položek.}}",
+  "@fileExplorer.list.hiddenItems": {
+    "sourceHash": "78a4459"
+  },
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Chcete-li zobrazit skryté položky, stiskněte {shortcut} nebo vyberte „{menu} > {item}“.",
+  "@fileExplorer.list.hiddenItemsHowToShortcut": {
+    "sourceHash": "b212fcd"
+  },
+  "fileExplorer.list.hiddenItemsHowToMenu": "Chcete-li zobrazit skryté položky, vyberte „{menu} > {item}“.",
+  "@fileExplorer.list.hiddenItemsHowToMenu": {
+    "sourceHash": "34d817b"
+  },
   "fileExplorer.list.fileListAriaLabel": "Seznam souborů",
   "@fileExplorer.list.fileListAriaLabel": {
     "sourceHash": "0728b8e"

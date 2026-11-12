@@ -1101,6 +1101,18 @@
   "@fileExplorer.list.empty": {
     "sourceHash": "ca1fd45"
   },
+  "fileExplorer.list.hiddenItems": "{count, plural, one {In diesem Ordner gibt es ein verborgenes Objekt.} other {In diesem Ordner gibt es {countText} verborgene Objekte.}}",
+  "@fileExplorer.list.hiddenItems": {
+    "sourceHash": "78a4459"
+  },
+  "fileExplorer.list.hiddenItemsHowToShortcut": "Um verborgene Objekte zu sehen, drücke {shortcut} oder wähle „{menu} > {item}“.",
+  "@fileExplorer.list.hiddenItemsHowToShortcut": {
+    "sourceHash": "b212fcd"
+  },
+  "fileExplorer.list.hiddenItemsHowToMenu": "Um verborgene Objekte zu sehen, wähle „{menu} > {item}“.",
+  "@fileExplorer.list.hiddenItemsHowToMenu": {
+    "sourceHash": "34d817b"
+  },
   "fileExplorer.list.fileListAriaLabel": "Dateiliste",
   "@fileExplorer.list.fileListAriaLabel": {
     "sourceHash": "0728b8e"
