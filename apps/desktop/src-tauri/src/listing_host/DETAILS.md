@@ -39,7 +39,8 @@ before `index_host::install`, and capturing `index()` would win its slot with an
   cloud-provider readings), computes the PII-free analytics category, records into the MCP recent-errors ring
   (`ui_state/DETAILS.md`), records a TCC denial, and asks `note_root_failure` whether the mount went stale.
   `finished(Complete)` adds the TCC restricted-empty-root hint and clears the path from the restricted set, as a cancel
-  does. Split in two so a test drives the whole policy without an `AppHandle`: payloads go through a `ListingWire`
+  does. The hint keys on the engine's `empty_at_volume_root`, which is false when the root holds only hidden items: the
+  read saw the folder, so the pane shows its hidden-items text instead (`cmdr-listing`'s `hidden_count_test.rs`). Split in two so a test drives the whole policy without an `AppHandle`: payloads go through a `ListingWire`
   (the `AppHandle` in the app, `WireCollector` in tests), bookkeeping through `ListingEndEffects`. The wire structs
   (`listing-progress`, `-complete`, `-error`, `-cancelled`, `-read-complete`, `-opening`, `-stalled`,
   `directory-diff`, `listing-respelled`) keep their names and `tauri_specta` derives, so `bindings.ts` doesn't move.

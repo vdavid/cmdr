@@ -406,8 +406,10 @@ impl Inner {
         let volume_root = volume.root().to_path_buf();
         // An empty listing AT the volume root is what macOS TCC makes of a hidden
         // volume (iCloud Drive without Full Disk Access); the host decides whether
-        // that reads as a hint instead of a blank pane.
-        let empty_at_volume_root = total_count == 0 && volume_root == path;
+        // that reads as a hint instead of a blank pane. "Empty" means the READ found
+        // nothing: a root holding only hidden items shows no rows, but those items
+        // prove the read saw the folder (`hidden_count` is counted exactly then).
+        let empty_at_volume_root = total_count == 0 && hidden_count == 0 && volume_root == path;
 
         // Emit completion event
         let emit_t = crate::rt::now();

@@ -36,8 +36,9 @@ pub enum ListingEnd {
         /// pane asked for; `None` for a path that listed as given. The real bytes:
         /// how the pane is told is the host's.
         stored_path: Option<PathBuf>,
-        /// The listing came back empty AT its volume's root, which on some volumes
-        /// means the OS hid the contents (iCloud Drive without Full Disk Access).
+        /// The read found nothing at all AT its volume's root (no rows and no hidden
+        /// items), which on some volumes means the OS hid the contents (iCloud Drive
+        /// without Full Disk Access).
         empty_at_volume_root: bool,
         /// The column the rows are ordered by: the requested one, or Modified when
         /// it's a date this volume doesn't record (`EffectiveSort`).

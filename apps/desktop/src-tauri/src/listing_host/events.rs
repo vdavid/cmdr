@@ -318,8 +318,9 @@ impl<W: ListingWire, E: ListingEndEffects> TauriListingEvents<W, E> {
     /// A listing that landed in the cache: `listing-complete`, or the
     /// restricted-empty-root hint in its place.
     fn complete(&self, listing_id: &str, end: Completed<'_>) {
-        // Restricted-empty hint: if the listing succeeded but came back empty AT the
-        // volume root, and the volume is one we know is commonly hidden by macOS TCC
+        // Restricted-empty hint: if the listing succeeded but the read found nothing AT
+        // the volume root (a root holding only hidden items doesn't count: the read saw
+        // it, so the pane says how many it hides), and the volume is one we know is commonly hidden by macOS TCC
         // (e.g. iCloud Drive without Full Disk Access), surface a friendly hint instead
         // of a blank pane. Real "I have zero files at the volume root" is rare enough
         // that this hint is acceptable noise, and the FE shows a "Try again" button.

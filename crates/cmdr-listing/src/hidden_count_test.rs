@@ -120,6 +120,28 @@ async fn a_folder_of_only_hidden_items_completes_with_their_count() {
     );
 }
 
+// The volume-root "came back empty" fact feeds the host's "macOS may be hiding this" hint
+// (iCloud Drive without Full Disk Access). Hidden items prove the read saw the folder, so
+// the pane should say how many it hides, not that the OS hid everything.
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_volume_root_of_only_hidden_items_did_not_come_back_empty() {
+    let (engine, listing) = list(vec![root_entry(".DS_Store", false)], false).await;
+    assert_eq!(
+        engine.events.empty_at_volume_root.lock_ignore_poison().as_slice(),
+        [(listing.id().to_string(), false)]
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_volume_root_with_nothing_at_all_came_back_empty() {
+    let (engine, listing) = list(Vec::new(), false).await;
+    assert_eq!(
+        engine.events.empty_at_volume_root.lock_ignore_poison().as_slice(),
+        [(listing.id().to_string(), true)]
+    );
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_folder_with_rows_or_hidden_files_shown_completes_with_no_count() {
     let mixed = vec![root_entry(".git", true), root_entry("readme.md", false)];
