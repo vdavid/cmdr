@@ -436,7 +436,12 @@ fn rows(spec: &'static SubmenuSpec, m: &MenuModel) -> Vec<Row> {
                 EntryKind::Item(item) => Row::Item {
                     id: item.id.to_string(),
                     label: item_label(item.id, item.label, m),
-                    shortcut: shortcut(item.id, item.accelerator.on(PLATFORM), item.display_accelerator, m),
+                    shortcut: shortcut(
+                        item.id,
+                        item.accelerator.on(PLATFORM),
+                        item.display_accelerator.on(PLATFORM),
+                        m,
+                    ),
                     enabled,
                 },
                 EntryKind::Check(check) => {

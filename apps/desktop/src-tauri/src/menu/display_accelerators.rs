@@ -97,7 +97,7 @@ fn set_display_accelerators_inner<R: Runtime>(app: &AppHandle<R>, menu_state: &M
 fn effective_display_accelerator(overrides: &HashMap<String, Option<String>>, item: &ItemSpec) -> Option<String> {
     match overrides.get(item.id) {
         Some(rebound) => rebound.clone(),
-        None => item.display_accelerator.map(str::to_string),
+        None => item.display_accelerator.on(Platform::MacOs).map(str::to_string),
     }
 }
 
@@ -312,7 +312,7 @@ mod tests {
             let shortcuts: Vec<&str> = spec
                 .entries_on(Platform::MacOs)
                 .filter_map(|entry| match entry {
-                    EntryKind::Item(item) => item.display_accelerator,
+                    EntryKind::Item(item) => item.display_accelerator.on(Platform::MacOs),
                     _ => None,
                 })
                 .collect();

@@ -1,7 +1,7 @@
 //! Ties the bar to the frontend's registry: on each platform, every row with a command registers
-//! the accelerator a rebind to that command's first default key would register
-//! (`rebound_row_key`, the same door `update_menu_accelerator` takes), or sits on [`EXCEPTIONS`]
-//! with its reason.
+//! and shows what a rebind to that command's first default key would (`rebound_row_key`, the same
+//! door `update_menu_accelerator` takes), or sits on [`EXCEPTIONS`] with its reason. And no row
+//! registers a key the page owns (`page_owned_keys.tsv`), past [`PAGE_OWNED_BY_DESIGN`].
 //!
 //! The registry side is `registry_default_keys.tsv`, which the frontend's
 //! `lib/commands/default-keymap.test.ts` writes under each OS's capability fixture and checks
@@ -9,12 +9,12 @@
 
 use std::collections::HashMap;
 
-use super::{RowKey, every_entry, rebound_row_key};
-use crate::accelerators::same_chord;
+use super::{RowKey, every_entry, rebound_row_key, registered_accelerators};
+use crate::accelerators::{same_chord, to_menu_text};
 use crate::ids::{
-    EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_MOVE_ID, GO_PARENT_ID, QUICK_LOOK_ID, SELECT_SAME_KIND_ID,
-    SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_ZOOM_IN_ID, VIEW_ZOOM_OUT_ID,
-    menu_id_to_command,
+    EDIT_COPY_ID, EDIT_PASTE_MOVE_ID, FILE_COPY_ID, FILE_MOVE_ID, GO_BACK_ID, GO_PARENT_ID, QUICK_LOOK_ID,
+    SELECT_ALL_ID, SELECT_SAME_KIND_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_FULL_LEFT_ID,
+    VIEW_ZOOM_IN_ID, menu_id_to_command,
 };
 use crate::spec::{EntryKind, Platform};
 
@@ -32,37 +32,24 @@ const WINDOWS: &[Platform] = &[Platform::Windows];
 const WINDOWS_AND_LINUX: &[Platform] = &[Platform::Windows, Platform::Linux];
 const EVERY_PLATFORM: &[Platform] = &Platform::ALL;
 
-/// GTK takes the F-keys (and these two zoom chords) before the webview, so the Linux bar leaves
-/// them to the frontend's keydown dispatch (`menu/DETAILS.md` § "Platform differences").
-const GTK_TAKES_IT: &str = "GTK takes this key before the webview, so keydown dispatch runs it; Windows follows Linux until its menu model is decided";
-
-/// The registry's first key can't be registered (bare, or a key muda has no `Code` for), so the
-/// bar registers the command's second default.
 /// The Windows bar registers the Linux bar's key where the two keymaps differ only in order, so its
 /// F-key chords stay with keydown dispatch, as Linux's do.
 const WINDOWS_FOLLOWS_LINUX: &str = "the first key there is an F-key chord, which the bar leaves to keydown dispatch; the Windows \
                                      bar registers Linux's first key (a default on Windows too) until its menu model is decided";
 
+/// The registry's first key can't be registered (bare, or a key muda has no `Code` for), so the
+/// bar registers the command's second default.
 const SECOND_KEY: &str = "the first default can't be a bar accelerator, so the bar registers the second";
 
 const EXCEPTIONS: &[Exception] = &[
-    Exception {
-        platforms: WINDOWS_AND_LINUX,
-        menu_id: FILE_COMPRESS_ID,
-        reason: GTK_TAKES_IT,
-    },
-    Exception {
-        platforms: WINDOWS_AND_LINUX,
-        menu_id: VIEW_ZOOM_OUT_ID,
-        reason: GTK_TAKES_IT,
-    },
     // `⌘+` has no muda `Code`; `⌘=` is the physical key under it.
     Exception {
         platforms: MACOS,
         menu_id: VIEW_ZOOM_IN_ID,
         reason: SECOND_KEY,
     },
-    // `Backspace` is bare; the bar registers `⌘↑` / `Ctrl+↑`.
+    // `Backspace` is bare. macOS registers the second key, `⌘↑`; Windows and Linux show theirs,
+    // `Alt+↑`, which the operation queue window (wearing this bar) uses for Move earlier.
     Exception {
         platforms: EVERY_PLATFORM,
         menu_id: GO_PARENT_ID,
@@ -80,12 +67,22 @@ const EXCEPTIONS: &[Exception] = &[
         menu_id: VIEW_MODE_BRIEF_LEFT_ID,
         reason: WINDOWS_FOLLOWS_LINUX,
     },
-    Exception {
-        platforms: WINDOWS_AND_LINUX,
-        menu_id: EDIT_PASTE_MOVE_ID,
-        reason: "`Ctrl+Shift+V` is a text field's paste as plain text, and a bar accelerator fires before the \
-                 page, so keydown dispatch runs it, which leaves it to a focused field",
-    },
+];
+
+/// Rows whose built accelerator is a key the page owns, on purpose.
+const PAGE_OWNED_BY_DESIGN: &[(&[Platform], &str, &str)] = &[
+    (
+        EVERY_PLATFORM,
+        EDIT_COPY_ID,
+        "Copy routes through `execute-command`, and the frontend copies the selected text when a field or a text \
+         selection has it (`handleTextRegionShortcut`), so the key stays the field's",
+    ),
+    (
+        WINDOWS_AND_LINUX,
+        SELECT_ALL_ID,
+        "the operation queue window's Select all reaches it through this row, by design \
+         (`menu_handlers.rs`, `QueueSelectAll`)",
+    ),
 ];
 
 /// The command a row stands for, as the registry names it. The left pane's Full / Brief checks
@@ -116,39 +113,58 @@ fn registry_keys() -> HashMap<(&'static str, &'static str), &'static str> {
         .collect()
 }
 
-/// What the row registers against what the registry's first key would, as chords, or `None`
-/// where they agree.
-fn mismatch(built: Option<&str>, expected: Option<&str>) -> Option<String> {
-    match (built, expected) {
-        (None, None) => return None,
-        (Some(built), Some(expected)) if same_chord(built, expected) => return None,
-        _ => {}
+/// What the row registers and shows against what the registry's first key would, as chords, or
+/// `None` where they agree.
+fn mismatch(built: &RowKey, expected: &RowKey, platform: Platform) -> Option<String> {
+    let same = |a: &Option<String>, b: &Option<String>| match (a, b) {
+        (None, None) => true,
+        (Some(a), Some(b)) => same_chord(a, b),
+        _ => false,
+    };
+    // A shown key is the frontend's spelling; compare it as menu text, so `⌥⇧=` meets `Alt+Shift+=`.
+    let shown = |key: &RowKey| {
+        key.display
+            .as_deref()
+            .and_then(|shortcut| to_menu_text(shortcut, platform))
+    };
+    if same(&built.accelerator, &expected.accelerator) && same(&shown(built), &shown(expected)) {
+        return None;
     }
+    let describe = |key: &RowKey| match (&key.accelerator, &key.display) {
+        (Some(accelerator), _) => format!("registers `{accelerator}`"),
+        (None, Some(display)) => format!("shows `{display}`"),
+        (None, None) => "has no key".to_string(),
+    };
     Some(format!(
-        "the bar registers {}, the registry's first default key registers {}",
-        built.map_or_else(|| "nothing".to_string(), |a| format!("`{a}`")),
-        expected.map_or_else(|| "nothing".to_string(), |a| format!("`{a}`")),
+        "the bar {}, the registry's first default key {}",
+        describe(built),
+        describe(expected),
     ))
 }
 
-/// Every row with a command on `platform`, with what it registers and what the registry implies.
-fn rows(platform: Platform) -> Vec<(&'static str, Option<&'static str>, Option<String>)> {
+/// Every row with a command on `platform`, with what it registers and shows, and what the registry
+/// implies.
+fn rows(platform: Platform) -> Vec<(&'static str, RowKey, RowKey)> {
     let keys = registry_keys();
     every_entry(platform)
         .into_iter()
         .filter_map(|entry| {
-            let (menu_id, accelerator) = match entry {
-                EntryKind::Item(item) => (item.id, item.accelerator.on(platform)),
-                EntryKind::Check(check) => (check.id, check.accelerator.on(platform)),
+            let (menu_id, accelerator, display) = match entry {
+                EntryKind::Item(item) => (
+                    item.id,
+                    item.accelerator.on(platform),
+                    item.display_accelerator.on(platform),
+                ),
+                EntryKind::Check(check) => (check.id, check.accelerator.on(platform), None),
                 _ => return None,
             };
             let command_id = row_command(menu_id)?;
             let combo = keys.get(&(platform.wire(), command_id)).copied().unwrap_or("");
-            Some((
-                menu_id,
-                accelerator,
-                rebound_row_key(menu_id, combo, platform).accelerator,
-            ))
+            let built = RowKey {
+                accelerator: accelerator.map(str::to_string),
+                display: display.map(str::to_string),
+            };
+            Some((menu_id, built, rebound_row_key(menu_id, combo, platform)))
         })
         .collect()
 }
@@ -167,7 +183,7 @@ fn every_bar_row_registers_its_commands_first_default_key() {
             if exception(platform, menu_id).is_some() {
                 continue;
             }
-            if let Some(why) = mismatch(built, expected.as_deref()) {
+            if let Some(why) = mismatch(&built, &expected, platform) {
                 drift.push(format!("`{menu_id}` on {platform:?}: {why}"));
             }
         }
@@ -198,9 +214,59 @@ fn every_exception_still_differs() {
                 });
             let (_, built, expected) = row;
             assert!(
-                mismatch(built, expected.as_deref()).is_some(),
+                mismatch(&built, &expected, platform).is_some(),
                 "`{}` is excused on {platform:?} but agrees with the registry there: drop it from `EXCEPTIONS`",
                 exception.menu_id
+            );
+        }
+    }
+}
+
+/// The page-owned key a built accelerator (Tauri spelling) lands on, with why the page owns it.
+fn takes_page_key(accelerator: &str, platform: Platform) -> Option<(&'static str, &'static str)> {
+    super::page_owned_keys(platform)
+        .find(|(combo, _)| to_menu_text(combo, platform).is_some_and(|owned| same_chord(&owned, accelerator)))
+}
+
+/// A bar accelerator fires before the page, so a row registering a key the page owns takes it from
+/// every focused text field, or from a window that wears the bar.
+#[test]
+fn no_bar_row_registers_a_key_the_page_owns() {
+    let mut taken = Vec::new();
+    for platform in Platform::ALL {
+        for (menu_id, accelerator) in registered_accelerators(platform) {
+            let by_design = PAGE_OWNED_BY_DESIGN
+                .iter()
+                .any(|(platforms, id, _)| *id == menu_id && platforms.contains(&platform));
+            if by_design {
+                continue;
+            }
+            if let Some((combo, why)) = takes_page_key(accelerator, platform) {
+                taken.push(format!("`{menu_id}` on {platform:?} registers `{combo}` ({why})"));
+            }
+        }
+    }
+    assert!(
+        taken.is_empty(),
+        "bar rows that take a key from the page (show it instead, or list the row in `PAGE_OWNED_BY_DESIGN` \
+         with its reason):\n  {}",
+        taken.join("\n  ")
+    );
+}
+
+/// A by-design entry that no longer registers a page-owned key would excuse the next one unseen.
+#[test]
+fn every_page_owned_by_design_row_still_takes_its_key() {
+    for (platforms, menu_id, reason) in PAGE_OWNED_BY_DESIGN {
+        assert!(!reason.is_empty(), "`{menu_id}` needs a reason");
+        for &platform in *platforms {
+            let accelerator = registered_accelerators(platform)
+                .into_iter()
+                .find(|(id, _)| id == menu_id)
+                .map(|(_, accelerator)| accelerator);
+            assert!(
+                accelerator.is_some_and(|accelerator| takes_page_key(accelerator, platform).is_some()),
+                "`{menu_id}` is excused on {platform:?} but registers no page-owned key there: drop it"
             );
         }
     }
@@ -263,12 +329,38 @@ fn a_push_of_a_display_only_rows_own_key_stays_display_only() {
     );
     assert_eq!(
         rebound_row_key(SELECT_SAME_KIND_ID, "Alt+Shift+=", Platform::Linux),
-        shown("⌥⇧=")
+        shown("Alt+Shift+=")
     );
     // A different ⌥ chord is a deliberate rebind, and gets a real accelerator.
     assert_eq!(
         rebound_row_key(SELECT_SAME_KIND_ID, "⌥⇧A", Platform::MacOs),
         registered("Alt+Shift+A")
+    );
+}
+
+/// A key the page owns only shows, wherever it's pushed: a native text key would fire the row from
+/// every focused field, and a bar-wearing window's key would never reach that window.
+#[test]
+fn a_push_of_a_key_the_page_owns_stays_display_only() {
+    // macOS: `⌥←` is word-left in a field (a shadowed `⌘[` hands Go back its last key).
+    assert_eq!(rebound_row_key(GO_BACK_ID, "⌥←", Platform::MacOs), shown("⌥←"));
+    // Linux: paste as plain text, and the queue window's Move earlier.
+    assert_eq!(
+        rebound_row_key(EDIT_PASTE_MOVE_ID, "Ctrl+Shift+V", Platform::Linux),
+        shown("Ctrl+Shift+V")
+    );
+    assert_eq!(
+        rebound_row_key(GO_PARENT_ID, "Alt+↑", Platform::Windows),
+        shown("Alt+↑")
+    );
+    // A row's own built key still registers as the bar builds it.
+    assert_eq!(
+        rebound_row_key(EDIT_COPY_ID, "Ctrl+C", Platform::Linux),
+        registered("Ctrl+C")
+    );
+    assert_eq!(
+        rebound_row_key(GO_PARENT_ID, "⌘↑", Platform::MacOs),
+        registered("Cmd+Up")
     );
 }
 

@@ -97,6 +97,38 @@ impl<T: Copy> PerPlatform<T> {
 /// A menu item's keyboard accelerator on each platform, in Tauri's accelerator syntax.
 pub type Accelerator = PerPlatform<Option<&'static str>>;
 
+/// A shortcut a menu item only SHOWS on each platform, in that platform's frontend display
+/// spelling (`⌥⇧=` on macOS, `Alt+Shift+=` on Windows and Linux, `*`, `F5`).
+pub type DisplayShortcut = PerPlatform<Option<&'static str>>;
+
+/// The same shown shortcut on every platform: a key with no modifier glyph (`*`, `+`, `F11`).
+pub const fn shown_on_all(shortcut: &'static str) -> DisplayShortcut {
+    PerPlatform {
+        macos: Some(shortcut),
+        windows: Some(shortcut),
+        linux: Some(shortcut),
+    }
+}
+
+/// One shown shortcut per platform, each in its own spelling.
+pub const fn shown_split(on_macos: &'static str, on_windows: &'static str, on_linux: &'static str) -> DisplayShortcut {
+    PerPlatform {
+        macos: Some(on_macos),
+        windows: Some(on_windows),
+        linux: Some(on_linux),
+    }
+}
+
+/// A shortcut shown on Windows and Linux only, where the bar leaves the key to keydown dispatch
+/// and macOS's bar registers it ([`Entry::shown`]).
+pub const fn shown_off_macos(shortcut: &'static str) -> DisplayShortcut {
+    PerPlatform {
+        macos: None,
+        windows: Some(shortcut),
+        linux: Some(shortcut),
+    }
+}
+
 /// No accelerator on any platform.
 pub const NONE: Accelerator = PerPlatform {
     macos: None,
@@ -312,16 +344,18 @@ pub struct ItemSpec {
     pub id: &'static str,
     pub label: Label,
     pub accelerator: Accelerator,
-    /// A shortcut the menu only SHOWS, in the frontend's display spelling (`⇧8`, `+`).
+    /// A shortcut the menu only SHOWS, per platform, in that platform's frontend display
+    /// spelling (`⌥⇧=` on macOS, `Alt+Shift+=` elsewhere, `+`, `F5`).
     ///
     /// The key carries no ⌘ / ⌃ / ⌥ (or, for Select same kind, stays free on purpose: `menu/DETAILS.md`
-    /// § "Display-only accelerators"), so registering it would swallow the character
-    /// app-wide (`accelerators.rs`'s modifier floor); the file pane's keydown handler
-    /// owns it instead, and this is how the menu still tells the user about it. One
-    /// glyph for every platform: they differ in how it's DRAWN, not in what it says
-    /// ([`display_accelerator_label`]). Set only by [`displayed_item`], which pairs it
-    /// with [`NONE`] so an item can't claim both.
-    pub display_accelerator: Option<&'static str>,
+    /// § "Display-only accelerators"), or the bar must leave it to keydown dispatch on that
+    /// platform (GTK takes the F-keys first; a window wearing the bar uses `Alt+↑`), so
+    /// registering it would swallow the key before the page; the page's keydown handler owns it
+    /// instead, and this is how the menu still tells the user about it. The platforms also
+    /// differ in how it's DRAWN ([`display_accelerator_label`]). Set by [`displayed_item`] (no
+    /// accelerator anywhere) and [`Entry::shown`], which refuses a platform that both registers
+    /// and shows, so a row never shows one key while firing on another.
+    pub display_accelerator: DisplayShortcut,
     pub enabled: bool,
     pub tracking: Tracking,
 }
@@ -454,24 +488,27 @@ pub const fn labeled_item(id: &'static str, label: Label, accelerator: Accelerat
         id,
         label,
         accelerator,
-        display_accelerator: None,
+        display_accelerator: NO_DISPLAY,
         enabled: true,
         tracking: Tracking::Tracked,
     }))
 }
 
+/// No shown shortcut on any platform.
+const NO_DISPLAY: DisplayShortcut = NONE;
+
 /// A command item whose shortcut the menu can only SHOW, [`Tracking::Tracked`].
 ///
-/// `shortcut` is the frontend's display spelling (`⇧8`, `+`, `⌥⇧=`). ❗ It is never
-/// registered: the accelerator is [`NONE`] on every platform, by construction, because a
-/// combo with no ⌘ / ⌃ / ⌥ would fire app-wide and eat that character in every text
-/// field. The file pane's keydown handler is what actually runs the command.
-pub const fn displayed_item(id: &'static str, key: &'static str, shortcut: &'static str) -> Entry {
+/// `shortcut` is each platform's frontend display spelling (`+`, `⌥⇧=` / `Alt+Shift+=`). ❗ It
+/// is never registered: the accelerator is [`NONE`] on every platform, by construction, because
+/// a combo with no ⌘ / ⌃ / ⌥ would fire app-wide and eat that character in every text field.
+/// The file pane's keydown handler is what actually runs the command.
+pub const fn displayed_item(id: &'static str, key: &'static str, shortcut: DisplayShortcut) -> Entry {
     on_every_platform(EntryKind::Item(ItemSpec {
         id,
         label: Label::Key(key),
         accelerator: NONE,
-        display_accelerator: Some(shortcut),
+        display_accelerator: shortcut,
         enabled: true,
         tracking: Tracking::Tracked,
     }))
@@ -559,6 +596,28 @@ impl Entry {
     /// This item, kept as [`Tracking::PinTab`].
     pub const fn pin_tab(self) -> Self {
         self.tracked_as(Tracking::PinTab)
+    }
+
+    /// This item, also SHOWING `shortcut` where it registers nothing: the platforms whose bar
+    /// leaves the key to keydown dispatch ([`ItemSpec::display_accelerator`]). ❗ Refuses, at
+    /// compile time, a platform that both registers an accelerator and shows a shortcut.
+    pub const fn shown(self, shortcut: DisplayShortcut) -> Self {
+        match self.kind {
+            EntryKind::Item(mut item) => {
+                assert!(
+                    !(item.accelerator.macos.is_some() && shortcut.macos.is_some())
+                        && !(item.accelerator.windows.is_some() && shortcut.windows.is_some())
+                        && !(item.accelerator.linux.is_some() && shortcut.linux.is_some()),
+                    "a row either registers its key or shows it, per platform, never both"
+                );
+                item.display_accelerator = shortcut;
+                Self {
+                    on: self.on,
+                    kind: EntryKind::Item(item),
+                }
+            }
+            _ => panic!("only a command item shows a shortcut"),
+        }
     }
 
     /// This item, built disabled.

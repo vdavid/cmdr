@@ -165,19 +165,19 @@ menu menu.bar.help id=menu_help
 const LINUX_MENU_BAR: &str = "\
 menu menu.bar.file
   0 item open menu.file.open tracked
-  1 item file_view menu.file.view tracked
-  2 item edit menu.file.edit tracked
+  1 item file_view menu.file.view (F3) tracked
+  2 item edit menu.file.edit (F4) tracked
   3 separator
-  4 item file_copy menu.file.copy tracked
-  5 item file_move menu.file.move tracked
-  6 item file_duplicate menu.file.duplicate tracked
-  7 item file_compress menu.file.compress tracked
-  8 item file_new_folder menu.file.newFolder tracked
-  9 item file_new_file menu.file.newFile tracked
-  10 item file_delete menu.file.delete tracked
-  11 item file_delete_permanently menu.file.deletePermanently tracked
+  4 item file_copy menu.file.copy (F5) tracked
+  5 item file_move menu.file.move (F6) tracked
+  6 item file_duplicate menu.file.duplicate (Shift+F5) tracked
+  7 item file_compress menu.file.compress (Alt+F5) tracked
+  8 item file_new_folder menu.file.newFolder (F7) tracked
+  9 item file_new_file menu.file.newFile (Shift+F4) tracked
+  10 item file_delete menu.file.delete (F8) tracked
+  11 item file_delete_permanently menu.file.deletePermanently (Shift+F8) tracked
   12 separator
-  13 item rename menu.file.rename tracked
+  13 item rename menu.file.rename (F2) tracked
   14 item multi_rename menu.file.multiRename [Ctrl+M] tracked
   15 separator
   16 item show_in_finder menu.file.showInFileManager [Ctrl+Shift+E] tracked
@@ -189,7 +189,7 @@ menu menu.bar.edit
   2 item edit_cut menu.edit.cut [Ctrl+X] tracked
   3 item edit_copy menu.edit.copy [Ctrl+C] tracked
   4 item edit_paste menu.edit.paste [Ctrl+V] tracked
-  5 item edit_paste_move menu.edit.moveHere tracked
+  5 item edit_paste_move menu.edit.moveHere (Ctrl+Shift+V) tracked
   6 separator
   7 item copy_path menu.edit.copyPath [Ctrl+Shift+C] tracked
   8 item copy_filename menu.edit.copyFilename tracked
@@ -203,13 +203,13 @@ menu menu.bar.edit
 menu menu.bar.select
   0 item select_all_files menu.select.all [Ctrl+A] tracked
   1 item deselect_all menu.select.deselectAll [Ctrl+Shift+A] tracked
-  2 item select_same_kind menu.select.sameKind (⌥⇧=) tracked
+  2 item select_same_kind menu.select.sameKind (Alt+Shift+=) tracked
   3 item invert_selection menu.select.invert (*) tracked
   4 separator
   5 item select_files menu.select.files (+) tracked
   6 item deselect_files menu.select.deselectFiles (-) tracked
   7 separator
-  8 item compare_directories menu.select.compareDirectories tracked
+  8 item compare_directories menu.select.compareDirectories (Shift+F2) tracked
 menu menu.bar.view
   0 submenu menu.view.leftPane pane:left
       0 check view_mode_full_left menu.view.fullView [Ctrl+1] view-mode:left:full
@@ -235,11 +235,11 @@ menu menu.bar.view
       2 item view_zoom_125 menu.zoom.percent125 untracked
       3 item view_zoom_150 menu.zoom.percent150 untracked
       4 separator
-      5 item view_zoom_in menu.zoom.in untracked
-      6 item view_zoom_out menu.zoom.out untracked
+      5 item view_zoom_in menu.zoom.in (Ctrl++) untracked
+      6 item view_zoom_out menu.zoom.out (Ctrl+-) untracked
   6 item view_full_screen menu.view.fullScreen (F11) tracked
   7 separator
-  8 item switch_pane menu.view.switchPane tracked
+  8 item switch_pane menu.view.switchPane (Tab) tracked
   9 item swap_panes menu.view.swapPanes [Ctrl+U] tracked
   10 item clone_pane menu.view.clonePane [Ctrl+Shift+M] tracked
   11 item calculate_folder_sizes menu.view.calculateFolderSizes [Alt+Shift+Enter] tracked
@@ -253,7 +253,7 @@ menu menu.bar.go
   0 item go_back menu.go.back [Alt+Left] tracked
   1 item go_forward menu.go.forward [Alt+Right] tracked
   2 separator
-  3 item go_parent menu.go.parentFolder [Alt+Up] tracked
+  3 item go_parent menu.go.parentFolder (Alt+↑) tracked
   4 item go_root menu.go.rootFolder [Ctrl+\\] tracked
   5 item go_home menu.go.home [Ctrl+Shift+H] tracked
   6 separator
@@ -292,19 +292,19 @@ menu menu.bar.help
 const WINDOWS_MENU_BAR: &str = "\
 menu menu.bar.file
   0 item open menu.file.open tracked
-  1 item file_view menu.file.view tracked
-  2 item edit menu.file.edit tracked
+  1 item file_view menu.file.view (F3) tracked
+  2 item edit menu.file.edit (F4) tracked
   3 separator
-  4 item file_copy menu.file.copy tracked
-  5 item file_move menu.file.move tracked
-  6 item file_duplicate menu.file.duplicate tracked
-  7 item file_compress menu.file.compress tracked
-  8 item file_new_folder menu.file.newFolder tracked
-  9 item file_new_file menu.file.newFile tracked
-  10 item file_delete menu.file.delete tracked
-  11 item file_delete_permanently menu.file.deletePermanently tracked
+  4 item file_copy menu.file.copy (F5) tracked
+  5 item file_move menu.file.move (F6) tracked
+  6 item file_duplicate menu.file.duplicate (Shift+F5) tracked
+  7 item file_compress menu.file.compress (Alt+F5) tracked
+  8 item file_new_folder menu.file.newFolder (F7) tracked
+  9 item file_new_file menu.file.newFile (Shift+F4) tracked
+  10 item file_delete menu.file.delete (F8) tracked
+  11 item file_delete_permanently menu.file.deletePermanently (Shift+F8) tracked
   12 separator
-  13 item rename menu.file.rename tracked
+  13 item rename menu.file.rename (F2) tracked
   14 item multi_rename menu.file.multiRename [Ctrl+M] tracked
   15 separator
   16 item show_in_finder menu.file.showInFileManager [Ctrl+Shift+E] tracked
@@ -316,7 +316,7 @@ menu menu.bar.edit
   2 item edit_cut menu.edit.cut [Ctrl+X] tracked
   3 item edit_copy menu.edit.copy [Ctrl+C] tracked
   4 item edit_paste menu.edit.paste [Ctrl+V] tracked
-  5 item edit_paste_move menu.edit.moveHere tracked
+  5 item edit_paste_move menu.edit.moveHere (Ctrl+Shift+V) tracked
   6 separator
   7 item copy_path menu.edit.copyPath [Ctrl+Shift+C] tracked
   8 item copy_filename menu.edit.copyFilename tracked
@@ -330,13 +330,13 @@ menu menu.bar.edit
 menu menu.bar.select
   0 item select_all_files menu.select.all [Ctrl+A] tracked
   1 item deselect_all menu.select.deselectAll [Ctrl+Shift+A] tracked
-  2 item select_same_kind menu.select.sameKind (⌥⇧=) tracked
+  2 item select_same_kind menu.select.sameKind (Alt+Shift+=) tracked
   3 item invert_selection menu.select.invert (*) tracked
   4 separator
   5 item select_files menu.select.files (+) tracked
   6 item deselect_files menu.select.deselectFiles (-) tracked
   7 separator
-  8 item compare_directories menu.select.compareDirectories tracked
+  8 item compare_directories menu.select.compareDirectories (Shift+F2) tracked
 menu menu.bar.view
   0 submenu menu.view.leftPane pane:left
       0 check view_mode_full_left menu.view.fullView [Ctrl+1] view-mode:left:full
@@ -362,11 +362,11 @@ menu menu.bar.view
       2 item view_zoom_125 menu.zoom.percent125 untracked
       3 item view_zoom_150 menu.zoom.percent150 untracked
       4 separator
-      5 item view_zoom_in menu.zoom.in untracked
-      6 item view_zoom_out menu.zoom.out untracked
+      5 item view_zoom_in menu.zoom.in (Ctrl++) untracked
+      6 item view_zoom_out menu.zoom.out (Ctrl+-) untracked
   6 item view_full_screen menu.view.fullScreen (F11) tracked
   7 separator
-  8 item switch_pane menu.view.switchPane tracked
+  8 item switch_pane menu.view.switchPane (Tab) tracked
   9 item swap_panes menu.view.swapPanes [Ctrl+U] tracked
   10 item clone_pane menu.view.clonePane [Ctrl+Shift+M] tracked
   11 item calculate_folder_sizes menu.view.calculateFolderSizes [Alt+Shift+Enter] tracked
@@ -380,7 +380,7 @@ menu menu.bar.go
   0 item go_back menu.go.back [Alt+Left] tracked
   1 item go_forward menu.go.forward [Alt+Right] tracked
   2 separator
-  3 item go_parent menu.go.parentFolder [Alt+Up] tracked
+  3 item go_parent menu.go.parentFolder (Alt+↑) tracked
   4 item go_root menu.go.rootFolder [Ctrl+\\] tracked
   5 item go_home menu.go.home [Ctrl+Shift+H] tracked
   6 separator
@@ -497,6 +497,26 @@ fn a_panes_full_item_sits_at_0_and_brief_at_1() {
     }
 }
 
+/// A shown shortcut is in its platform's own spelling: a Mac glyph in a Windows or Linux menu is
+/// a key a PC keyboard doesn't print.
+#[test]
+fn no_windows_or_linux_row_shows_a_mac_glyph() {
+    for platform in [Platform::Windows, Platform::Linux] {
+        for entry in every_entry(platform) {
+            let EntryKind::Item(item) = entry else {
+                continue;
+            };
+            if let Some(shortcut) = item.display_accelerator.on(platform) {
+                assert!(
+                    !shortcut.contains(['⌘', '⌃', '⌥', '⇧']),
+                    "`{}` shows `{shortcut}` on {platform:?}",
+                    item.id
+                );
+            }
+        }
+    }
+}
+
 /// A display-only accelerator exists BECAUSE the combo can't be registered. An item carrying
 /// both would show one shortcut and fire on another, and on macOS the attributed title would
 /// draw the display glyph right where AppKit draws the real key equivalent.
@@ -507,7 +527,7 @@ fn no_item_both_registers_and_displays_a_shortcut() {
             let EntryKind::Item(item) = entry else {
                 continue;
             };
-            let Some(shortcut) = item.display_accelerator else {
+            let Some(shortcut) = item.display_accelerator.on(platform) else {
                 continue;
             };
             assert_eq!(
@@ -651,7 +671,7 @@ fn accelerator(accelerator: Option<&str>) -> String {
 /// spelled into the label (`display_accelerator_label`) and a macOS one doesn't.
 fn item_label(item: &ItemSpec, platform: Platform) -> String {
     let base = label(item.label);
-    match item.display_accelerator {
+    match item.display_accelerator.on(platform) {
         Some(shortcut) => display_accelerator_label(&base, shortcut, platform),
         None => base,
     }
@@ -664,7 +684,11 @@ fn item_label(item: &ItemSpec, platform: Platform) -> String {
 /// ❗ The two blocks below diverge for the Select menu because of this, and that is
 /// correct: the same spec really does reach the user two different ways.
 fn item_accelerator(item: &ItemSpec, platform: Platform) -> String {
-    match (item.accelerator.on(platform), item.display_accelerator, platform) {
+    match (
+        item.accelerator.on(platform),
+        item.display_accelerator.on(platform),
+        platform,
+    ) {
         (Some(registered), _, _) => accelerator(Some(registered)),
         (None, Some(shortcut), Platform::MacOs) => format!(" [display {shortcut}]"),
         (None, _, _) => String::new(),

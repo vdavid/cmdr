@@ -3,7 +3,7 @@
  *
  * GTK takes a bar title's `Alt+<letter>` (English: F, E, S, V, G, T, H) before WebKit sees the
  * keydown, so `preventDefault` can't help. While a dialog, an overlay, or the palette is up, the main
- * window's mnemonic modifier is a mask nobody presses (`src-tauri/src/menu/mnemonic_mask.rs`), and
+ * window's mnemonic modifier is a mask nobody presses (`src-tauri/src/menu/mnemonic_mask/`), and
  * Alt again once the last one closes.
  *
  * Real X key events only (`helpers/x11-keys.ts`): `pressKey`'s synthetic DOM event never reaches
@@ -11,7 +11,8 @@
  * window, which is how the spec sees it, and a key GTK took never shows in the page's own keydown
  * record. One language proves it: the mask doesn't read labels. The search dialog's `Alt+F` and
  * every Multi-rename option key (`Alt+<letter>` off macOS, read from the registry's keymap) are
- * covered, the second from a text field and from an option control.
+ * covered, the second from a text field and from an option control, and so are the operation
+ * queue window's `Alt+↑` / `Alt+↓`, which no row of the bar it wears may register.
  */
 import os from 'node:os'
 import { test, expect } from './fixtures.js'
@@ -24,7 +25,9 @@ import {
   type PageLike,
 } from './helpers.js'
 import { ensureMcpClient } from '../e2e-shared/mcp-client.js'
-import { focusMainWindow, pressRealKey, visibleTopLevelWindows } from './helpers/x11-keys.js'
+import { focusMainWindow, focusWindow, pressRealKey, visibleTopLevelWindows } from './helpers/x11-keys.js'
+import { closeScopedWindow, openQueueWindow, QUEUE_WINDOW_LABEL } from './helpers/windows.js'
+import type { TauriPage } from '@srsholmes/tauri-playwright'
 import { defaultKey } from './helpers/registry-keys.js'
 import { closeSearchDialog, getActiveMode, openSearchDialog, pollActiveMode, SEARCH_INPUT } from './search-helpers.js'
 import { waitBudget } from './wait-budget.js'
@@ -138,6 +141,33 @@ test.describe('Menu bar mnemonics while a dialog is up (Linux)', () => {
       if (newWindowsSince(atStart).length > 0) pressRealKey('Escape')
       if ((await tauriPage.count(SHEET)) > 0) await escapeOverlayUntilGone(tauriPage, SHEET)
       await removeKeyRecorder(tauriPage)
+    }
+  })
+
+  // The queue window wears the main bar on Linux, and its Move earlier is `Alt+↑`: no row of that
+  // bar may register a key the queue's own commands use, or GTK takes it before the page.
+  test('a real Alt+Up reaches the operation queue window, past the bar it wears', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    const main = tauriPage as TauriPage
+    const atStart = visibleTopLevelWindows()
+    const queue = await openQueueWindow(main)
+    try {
+      await queue.waitForSelector('.queue-window', waitBudget(5000))
+      await expect.poll(() => newWindowsSince(atStart).length, { timeout: waitBudget(5000) }).toBe(1)
+      const [queueWindow] = newWindowsSince(atStart)
+      await installKeyRecorder(queue)
+      for (const [chord, seen] of [
+        ['alt+Down', 'Alt+ArrowDown'],
+        ['alt+Up', 'Alt+ArrowUp'],
+      ] as const) {
+        await queue.evaluate('window.__keydownsSeen = []')
+        focusWindow(queueWindow)
+        pressRealKey(chord)
+        await expect.poll(() => keydownsSeen(queue), { timeout: waitBudget(3000) }).toContain(seen)
+      }
+    } finally {
+      await removeKeyRecorder(queue)
+      await closeScopedWindow(main, queue, QUEUE_WINDOW_LABEL)
     }
   })
 })

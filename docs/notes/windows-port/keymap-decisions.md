@@ -175,14 +175,25 @@ New commands:
 
 Combos the OS's text editing owns in a focused text input; dispatch leaves them to the field whatever command they're
 bound to (`nativeTextKeys(platform)` in `apps/desktop/src/routes/(main)/native-text-keys.ts`, which a test walks set for
-set against this list).
+set against this list). The menu bar never registers one either, past a row's own built key (Edit > Copy): the frontend
+writes the table to `crates/cmdr-menu/src/page_owned_keys.tsv`, where `rebound_row_key` keeps a pushed one display-only
+and `bar_parity_test.rs` holds every built accelerator to it.
 
-- macOS: `⌘C` with a selection, `⌘←`/`⌘→`, `⌥←`/`⌥→`, and their `⇧` forms.
+- macOS: `⌘C` with a selection, `⌘←`/`⌘→`, `⌥←`/`⌥→`, and their `⇧` forms; `⌘⌫` (delete to the line start), `⌥⌫` (delete
+  the word before), `⌘⌥⌫`, `⌘⌦`, and `⌥⌦`. The bound ones: `⌘⌫` (Move to trash) and `⌘⌥⌫` (Delete permanently), which
+  deleted files from inside a field until 2026-11-12.
 - Windows and Linux: `Ctrl+C` with a selection, `Ctrl+Insert`, `Ctrl+←`/`Ctrl+→`, `Ctrl+Shift+←`/`Ctrl+Shift+→`,
-  `Home`/`End` with their Shift and Ctrl forms, `Ctrl+Backspace`/`Ctrl+Delete` (word delete), `Ctrl+Shift+V` (paste as
-  plain text), and `Shift+F10` (the field's own context menu). The bound ones today: `Ctrl+←/→` (copy path between
-  panes), `Ctrl+Shift+V` (Move here), `Shift+F10` (Open context menu), `Home`/`End` (first and last file).
+  `Home`/`End` with their Shift and Ctrl forms, `Ctrl+Backspace`/`Ctrl+Delete` (word delete), `Shift+Delete` (cut),
+  `Ctrl+Shift+V` (paste as plain text), and `Shift+F10` (the field's own context menu). The bound ones today: `Ctrl+←/→`
+  (copy path between panes), `Shift+Delete` (Delete permanently), `Ctrl+Shift+V` (Move here), `Shift+F10` (Open context
+  menu), `Home`/`End` (first and last file).
 - Not native, but worth a bail: `Ctrl+I` (Switch pane) fires from a rename editor and blurs it.
+- Beyond the table, by command: a command that moves or removes files (`FILE_MOVING_COMMAND_IDS` in
+  `lib/commands/command-registry.ts`: Move to trash, Delete permanently, Move, Move here, Undo trash, Remove download)
+  never runs from a key or the menu bar while a text field has focus, whatever key it's on, F-keys included
+  (`routes/(main)/text-field-gate.ts`). The menu event can't say whether a key or a click sent it, so a click on File >
+  Delete with a field focused does nothing too; the palette and the F-key bar still run them. `text-field-gate.test.ts`
+  walks every default key of those commands on all three OSes.
 
 ## Commands on one OS only
 
@@ -207,7 +218,10 @@ on that OS removed) pair by pair for the same combo in overlapping scopes, using
 - The two `Ctrl+D` clashes of the mechanical keymap are gone (Duplicate moved to `Shift+F5`, the error screen to
   `Ctrl+Shift+D`).
 - Not a clash by scope, worth knowing: `Alt+↑` is Go to parent (File list), Move row up (Multi-rename), and Move earlier
-  (operation queue window); those three scopes never meet.
+  (operation queue window). The scopes never meet, but on Windows and Linux the queue window wears the main bar, so Go
+  to parent only SHOWS `Alt+↑` there (keydown dispatch runs it in the main window), and no bar row may register a key
+  the queue's commands use (`page_owned_keys.tsv`, `bar_parity_test.rs`). A real-X check in `menu-mnemonic-mask.spec.ts`
+  presses `Alt+↑` and `Alt+↓` in the queue window.
 
 ## Reservations behind the Linux keys
 

@@ -61,8 +61,8 @@ is the app menu's predefined item, and AppKit adds its own full-screen item to t
 
 **Decision**: the bar keeps its own accelerators (a reviewed snapshot, buildable standalone for the demo), and
 `bar_parity_test.rs` ties them to the frontend registry: on each platform, every row with a command
-(`menu_id_to_command`, plus the left pane's view-mode pair, which holds the active pane's keys at build) registers
-exactly what a push of its first default key would (`rebound_row_key`, the door `update_menu_accelerator` takes),
+(`menu_id_to_command`, plus the left pane's view-mode pair, which holds the active pane's keys at build) registers and
+shows exactly what a push of its first default key would (`rebound_row_key`, the door `update_menu_accelerator` takes),
 compared as modifier set plus key. **Why**: the bar is a second copy of the default keys, and nothing else noticed when
 the two drifted; generating the bar from the registry would move registry data into Rust and lose the deliberate
 per-platform omissions.
@@ -70,15 +70,29 @@ per-platform omissions.
 - The registry side is `src/registry_default_keys.tsv` (`platform`, command id, first default key, one line per
   `menuCommands` entry the OS offers under its capability fixture). The frontend's `lib/commands/default-keymap.test.ts`
   writes it with `toMatchFileSnapshot`, so a stale file fails there; the Svelte lane's inputs include it.
-- `EXCEPTIONS` lists each row that differs on purpose with its reason: the keys GTK takes on Linux, rows whose first
-  default can't be an accelerator so the bar shows the second (`⌘+`, `Backspace`), Move here's off-macOS `Ctrl+Shift+V`
-  (a text field's paste as plain text, which a bar accelerator would take before the page, so keydown dispatch runs it
-  and leaves it to a focused field), and Windows's view-mode rows, which register Linux's `Ctrl+1` / `Ctrl+2` where
-  Windows puts TC's `Ctrl+F2` / `Ctrl+F1` first (the bar leaves F-key chords to keydown dispatch). An exception that
-  stops differing, or names a row the bar no longer builds, fails `every_exception_still_differs`.
-- macOS's bare F-keys, `Tab`, and `Shift+Space`, and Select same kind's display-only `⌥⇧=`, need no exception: a push of
-  a row's own key comes back as the bar built it (`rebound_row_key`; `apps/desktop/src-tauri/src/menu/DETAILS.md` §
-  "Display-only accelerators").
+- `EXCEPTIONS` lists each row that differs on purpose with its reason: rows whose first default can't be an accelerator
+  so the bar uses the second (`⌘+`, `Backspace`), and Windows's view-mode rows, which register Linux's `Ctrl+1` /
+  `Ctrl+2` where Windows puts TC's `Ctrl+F2` / `Ctrl+F1` first (the bar leaves F-key chords to keydown dispatch). An
+  exception that stops differing, or names a row the bar no longer builds, fails `every_exception_still_differs`.
+- macOS's bare F-keys, `Tab`, and `Shift+Space`, Select same kind's display-only `⌥⇧=` / `Alt+Shift+=`, and every key a
+  Windows or Linux row only shows (the F-keys GTK takes first, `Tab`, the two zoom chords, Go to parent's `Alt+↑`, Move
+  here's `Ctrl+Shift+V`) need no exception: a push of a row's own key comes back as the bar built it (`rebound_row_key`;
+  `apps/desktop/src-tauri/src/menu/DETAILS.md` § "Display-only accelerators"). A row that registers nothing on a
+  platform still shows its key there: a display-only key that went unshown was the F-key rows' state before.
+
+## Keys the page owns
+
+**Decision**: the bar never registers a key the page must get, past a row's own built key. `src/page_owned_keys.tsv`
+(`platform`, frontend combo, why), written by `lib/commands/default-keymap.test.ts` like the registry file, lists them:
+each platform's native text keys (`routes/(main)/native-text-keys.ts`) and, on Windows and Linux, every key of the
+windows that wear the main bar (the operation queue, About). `rebound_row_key` keeps a pushed one display-only
+(`page_owns`), and `bar_parity_test.rs` fails a built accelerator on the list unless `PAGE_OWNED_BY_DESIGN` names it
+(Edit > Copy, whose handler copies a field's text; Select all, the queue's own road to its ⌘A). **Why**: a bar
+accelerator fires before the page. A shadowed `⌘[` hands Go back its last key, `⌥←`, and registered, it fired Go back
+from every text field instead of word-left; Go to parent's `Alt+Up` would sit on the queue window's Move earlier.
+(Verified in the Linux lane with real X keys on 2026-11-12: with `Alt+Up` registered on the Go row, the queue window
+still received `Alt+↑`, so GTK didn't take it there; the row only shows it now regardless, and
+`menu-mnemonic-mask.spec.ts` keeps pressing it.)
 
 ## Accelerators
 

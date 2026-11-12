@@ -61,7 +61,7 @@ use crate::spec::ViewMode;
 use crate::spec::{
     Accelerator, BarMenu, CheckRole, Entry, EntryKind, Label, NONE, Pane, Platform, Predefined, SEPARATOR, SubmenuRole,
     SubmenuSpec, check, cmd_or_ctrl, displayed_item, item, labeled_item, macos, macos_menu, macos_only, menu,
-    predefined, same_on_all, split, submenu, windows_and_linux,
+    predefined, same_on_all, shown_off_macos, shown_on_all, shown_split, split, submenu, windows_and_linux,
 };
 use cmdr_sort::{SortColumn, SortOrder};
 
@@ -90,7 +90,7 @@ pub const SHOW_IN_FILE_MANAGER_ACCELERATOR: Accelerator = split("Alt+Cmd+O", "Ct
 /// change.
 pub fn spec_display_accelerator(menu_id: &str, platform: Platform) -> Option<&'static str> {
     match spec_entry(menu_id, platform)? {
-        EntryKind::Item(item) => item.display_accelerator,
+        EntryKind::Item(item) => item.display_accelerator.on(platform),
         _ => None,
     }
 }
@@ -141,14 +141,45 @@ pub struct RowKey {
     pub display: Option<String>,
 }
 
+/// The keys `platform`'s bar leaves to the page, with why: the native text keys a focused field
+/// owns, and on Windows and Linux the keys of the windows that wear this bar. Written by the
+/// frontend's `lib/commands/default-keymap.test.ts` from `routes/(main)/native-text-keys.ts` and
+/// the registry, ❌ never by hand.
+const PAGE_OWNED_KEYS: &str = include_str!("page_owned_keys.tsv");
+
+/// Every key the page owns on `platform`, as `(frontend combo, why)`.
+pub fn page_owned_keys(platform: Platform) -> impl Iterator<Item = (&'static str, &'static str)> {
+    PAGE_OWNED_KEYS
+        .lines()
+        .filter(|line| !line.starts_with('#') && !line.is_empty())
+        .filter_map(move |line| {
+            let mut fields = line.split('\t');
+            let (Some(on), Some(combo), Some(why)) = (fields.next(), fields.next(), fields.next()) else {
+                panic!("`page_owned_keys.tsv` has a malformed line: `{line}`");
+            };
+            (on == platform.wire()).then_some((combo, why))
+        })
+}
+
+/// Why `platform`'s bar must leave `shortcut` to the page, if it must: a bar accelerator fires
+/// before the page sees the key, so registering one of these would take it from every focused
+/// text field (word motion, line start, word delete) or from a window that wears the bar.
+pub fn page_owns(shortcut: &str, platform: Platform) -> Option<&'static str> {
+    let pushed = to_menu_text(shortcut, platform)?;
+    page_owned_keys(platform)
+        .find(|(combo, _)| to_menu_text(combo, platform).is_some_and(|owned| same_chord(&owned, &pushed)))
+        .map(|(_, why)| why)
+}
+
 /// What `menu_id`'s row registers and shows on `platform` once the frontend pushes `shortcut`
 /// (its rebind door, `update_menu_accelerator`).
 ///
 /// A shortcut that IS the row's built key comes back exactly as `MENU_BAR` builds it: macOS's
 /// bar registers `F5`, `Tab`, and `Shift+Space` bare by design, and Select same kind shows `⌥⇧=`
 /// without registering it, so a rebind back to one of those (or a reset, or a key freed from a
-/// user binding's shadow) must not turn into something else. Any other key goes through
-/// [`to_accelerator`]: registered past the modifier floor, else display-only.
+/// user binding's shadow) must not turn into something else. A key the page owns
+/// ([`page_owns`]) only shows. Any other key goes through [`to_accelerator`]: registered past
+/// the modifier floor, else display-only.
 pub fn rebound_row_key(menu_id: &str, shortcut: &str, platform: Platform) -> RowKey {
     // `to_menu_text` is the unfloored spelling, so a bare `F5` can be compared at all.
     if let Some(pushed) = to_menu_text(shortcut, platform) {
@@ -166,6 +197,12 @@ pub fn rebound_row_key(menu_id: &str, shortcut: &str, platform: Platform) -> Row
             return RowKey {
                 accelerator: None,
                 display: Some(shown.to_string()),
+            };
+        }
+        if page_owns(shortcut, platform).is_some() {
+            return RowKey {
+                accelerator: None,
+                display: Some(shortcut.to_string()),
             };
         }
     }
@@ -256,23 +293,24 @@ pub const MENU_BAR: &[BarMenu] = &[
         "menu.bar.file",
         &[
             item(OPEN_ID, "menu.file.open", NONE),
-            item(FILE_VIEW_ID, "menu.file.view", macos("F3")),
-            item(EDIT_ID, "menu.file.edit", macos("F4")),
+            item(FILE_VIEW_ID, "menu.file.view", macos("F3")).shown(shown_off_macos("F3")),
+            item(EDIT_ID, "menu.file.edit", macos("F4")).shown(shown_off_macos("F4")),
             SEPARATOR,
-            item(FILE_COPY_ID, "menu.file.copy", macos("F5")),
-            item(FILE_MOVE_ID, "menu.file.move", macos("F6")),
-            item(FILE_DUPLICATE_ID, "menu.file.duplicate", macos("Cmd+D")),
-            item(FILE_COMPRESS_ID, "menu.file.compress", macos("Alt+F5")),
-            item(FILE_NEW_FOLDER_ID, "menu.file.newFolder", macos("F7")),
-            item(FILE_NEW_FILE_ID, "menu.file.newFile", macos("Shift+F4")),
-            item(FILE_DELETE_ID, "menu.file.delete", macos("F8")),
+            item(FILE_COPY_ID, "menu.file.copy", macos("F5")).shown(shown_off_macos("F5")),
+            item(FILE_MOVE_ID, "menu.file.move", macos("F6")).shown(shown_off_macos("F6")),
+            item(FILE_DUPLICATE_ID, "menu.file.duplicate", macos("Cmd+D")).shown(shown_off_macos("Shift+F5")),
+            item(FILE_COMPRESS_ID, "menu.file.compress", macos("Alt+F5")).shown(shown_off_macos("Alt+F5")),
+            item(FILE_NEW_FOLDER_ID, "menu.file.newFolder", macos("F7")).shown(shown_off_macos("F7")),
+            item(FILE_NEW_FILE_ID, "menu.file.newFile", macos("Shift+F4")).shown(shown_off_macos("Shift+F4")),
+            item(FILE_DELETE_ID, "menu.file.delete", macos("F8")).shown(shown_off_macos("F8")),
             item(
                 FILE_DELETE_PERMANENTLY_ID,
                 "menu.file.deletePermanently",
                 macos("Shift+F8"),
-            ),
+            )
+            .shown(shown_off_macos("Shift+F8")),
             SEPARATOR,
-            item(RENAME_ID, "menu.file.rename", macos("F2")),
+            item(RENAME_ID, "menu.file.rename", macos("F2")).shown(shown_off_macos("F2")),
             item(MULTI_RENAME_ID, "menu.file.multiRename", same_on_all("Ctrl+M")),
             SEPARATOR,
             item(
@@ -317,9 +355,9 @@ pub const MENU_BAR: &[BarMenu] = &[
             item(EDIT_COPY_ID, "menu.edit.copy", cmd_or_ctrl!("C")),
             item(EDIT_PASTE_ID, "menu.edit.paste", cmd_or_ctrl!("V")),
             // `Ctrl+Shift+V` is a text field's paste as plain text on Windows and Linux, and a bar
-            // accelerator fires before the page, so there keydown dispatch runs it, which leaves it
-            // to a focused field.
-            item(EDIT_PASTE_MOVE_ID, "menu.edit.moveHere", macos("Alt+Cmd+V")),
+            // accelerator fires before the page, so there it's shown and keydown dispatch runs it,
+            // which leaves it to a focused field (`page_owned_keys.tsv`).
+            item(EDIT_PASTE_MOVE_ID, "menu.edit.moveHere", macos("Alt+Cmd+V")).shown(shown_off_macos("Ctrl+Shift+V")),
             SEPARATOR,
             item(COPY_PATH_ID, "menu.edit.copyPath", COPY_PATH_ACCELERATOR),
             item(COPY_FILENAME_ID, "menu.edit.copyFilename", NONE),
@@ -342,21 +380,26 @@ pub const MENU_BAR: &[BarMenu] = &[
             item(SELECT_ALL_ID, "menu.select.all", cmd_or_ctrl!("A")),
             item(DESELECT_ALL_ID, "menu.select.deselectAll", cmd_or_ctrl!("Shift+A")),
             // Built with the neutral label; the frontend rewrites it to say what the cursor row
-            // would select right now (`update_select_same_kind_menu`). `⌥⇧=` is the physical
-            // spelling, the one honest on a layout where that key isn't `+`.
-            displayed_item(SELECT_SAME_KIND_ID, "menu.select.sameKind", "⌥⇧="),
+            // would select right now (`update_select_same_kind_menu`). `⌥⇧=` / `Alt+Shift+=` is
+            // the physical spelling, the one honest on a layout where that key isn't `+`.
+            displayed_item(
+                SELECT_SAME_KIND_ID,
+                "menu.select.sameKind",
+                shown_split("⌥⇧=", "Alt+Shift+=", "Alt+Shift+="),
+            ),
             // `*` means whichever key types `*` on the user's layout (`sources/file-list.ts`).
-            displayed_item(INVERT_SELECTION_ID, "menu.select.invert", "*"),
+            displayed_item(INVERT_SELECTION_ID, "menu.select.invert", shown_on_all("*")),
             SEPARATOR,
-            displayed_item(SELECT_FILES_ID, "menu.select.files", "+"),
-            displayed_item(DESELECT_FILES_ID, "menu.select.deselectFiles", "-"),
+            displayed_item(SELECT_FILES_ID, "menu.select.files", shown_on_all("+")),
+            displayed_item(DESELECT_FILES_ID, "menu.select.deselectFiles", shown_on_all("-")),
             SEPARATOR,
-            // Linux leaves F-keys to JS dispatch, like the File menu's ⇧F4.
+            // Windows and Linux leave F-keys to keydown dispatch and show them, like the File menu's.
             item(
                 COMPARE_DIRECTORIES_ID,
                 "menu.select.compareDirectories",
                 macos("Shift+F2"),
-            ),
+            )
+            .shown(shown_off_macos("Shift+F2")),
         ],
     ),
     menu(
@@ -471,8 +514,8 @@ pub const MENU_BAR: &[BarMenu] = &[
                 ],
             ),
             // Each preset writes `appearance.textSize` through the command-execute event, and Zoom
-            // in / out move it by 10 percentage points. GTK intercepts these two, so Linux leaves
-            // them to JS dispatch.
+            // in / out move it by 10 percentage points. GTK intercepts these two, so Windows and
+            // Linux show them and leave them to keydown dispatch.
             // ❗ Zoom in is `Cmd+Equal`, ❌ never `Cmd+Plus`: muda's key vocabulary has no `Plus`
             // (`accelerator.rs:151`'s `parse_code`), so the item came up with no key at all. `=` is
             // the physical key, and `view.zoom.in` already binds `⌘=` alongside `⌘+`.
@@ -486,17 +529,26 @@ pub const MENU_BAR: &[BarMenu] = &[
                     item(VIEW_ZOOM_125_ID, "menu.zoom.percent125", NONE).untracked(),
                     item(VIEW_ZOOM_150_ID, "menu.zoom.percent150", NONE).untracked(),
                     SEPARATOR,
-                    item(VIEW_ZOOM_IN_ID, "menu.zoom.in", macos("Cmd+Equal")).untracked(),
-                    item(VIEW_ZOOM_OUT_ID, "menu.zoom.out", macos("Cmd+Minus")).untracked(),
+                    item(VIEW_ZOOM_IN_ID, "menu.zoom.in", macos("Cmd+Equal"))
+                        .shown(shown_off_macos("Ctrl++"))
+                        .untracked(),
+                    item(VIEW_ZOOM_OUT_ID, "menu.zoom.out", macos("Cmd+Minus"))
+                        .shown(shown_off_macos("Ctrl+-"))
+                        .untracked(),
                 ],
             ),
             // macOS has no Cmdr row: AppKit adds its own full-screen item to the View menu, with its
             // own key. F11 is shown, not registered: GTK takes a bare F-key before the webview, so the
             // frontend's keydown dispatch runs it.
-            windows_and_linux(displayed_item(VIEW_FULL_SCREEN_ID, "menu.view.fullScreen", "F11")),
+            windows_and_linux(displayed_item(
+                VIEW_FULL_SCREEN_ID,
+                "menu.view.fullScreen",
+                shown_on_all("F11"),
+            )),
             SEPARATOR,
-            // Tab conflicts with GTK's own keyboard navigation, so Linux leaves it to JS dispatch.
-            item(SWITCH_PANE_ID, "menu.view.switchPane", macos("Tab")),
+            // Tab conflicts with GTK's own keyboard navigation, so Windows and Linux show it and
+            // leave it to keydown dispatch.
+            item(SWITCH_PANE_ID, "menu.view.switchPane", macos("Tab")).shown(shown_off_macos("Tab")),
             item(SWAP_PANES_ID, "menu.view.swapPanes", cmd_or_ctrl!("U")),
             item(
                 CLONE_PANE_ID,
@@ -547,11 +599,10 @@ pub const MENU_BAR: &[BarMenu] = &[
                 split("Cmd+]", "Alt+Right", "Alt+Right"),
             ),
             SEPARATOR,
-            item(
-                GO_PARENT_ID,
-                "menu.go.parentFolder",
-                split("Cmd+Up", "Alt+Up", "Alt+Up"),
-            ),
+            // Shown, not registered, on Windows and Linux: the operation queue window wears this
+            // bar there, and its Move earlier is `Alt+↑` (`page_owned_keys.tsv`), so keydown
+            // dispatch runs Go to parent in the main window.
+            item(GO_PARENT_ID, "menu.go.parentFolder", macos("Cmd+Up")).shown(shown_off_macos("Alt+↑")),
             item(GO_ROOT_ID, "menu.go.rootFolder", split("Cmd+/", "Ctrl+\\", "Ctrl+\\")),
             // Shift+Cmd+H, not Cmd+H: AppKit owns Cmd+H for Hide Cmdr and swallows it before the
             // webview ever sees a keydown.

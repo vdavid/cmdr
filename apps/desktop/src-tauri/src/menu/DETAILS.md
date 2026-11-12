@@ -363,7 +363,8 @@ field in the app. So the file pane's keydown handler owns the keys and the menu 
 
 "Select all of the same kind" is a fourth row on the same path for a different reason. `⌥⇧=` WOULD clear the floor, and
 `frontend_shortcut_to_accelerator` really does answer `Some("Alt+Shift+Equal")` for it — but David wants `⌥+` free for
-typing, so the row is built with `displayed_item`, which pairs the glyph with `NONE` by construction. A push of the
+typing, so the row is built with `displayed_item`, which pairs the glyph (`⌥⇧=` on macOS, `Alt+Shift+=` on Windows and
+Linux) with `NONE` by construction. A push of the
 row's own key (a reset, a rebind back, or the key coming free from a user binding's shadow) keeps it display-only,
 because `update_menu_accelerator` hands every push to `cmdr_menu::bar::rebound_row_key` (the next paragraphs); a user who deliberately rebinds the command to another ⌥ combo gets a real accelerator, which is what "a rebind
 stays honest" means below.
@@ -385,7 +386,8 @@ of Copy away from `F5` and back, or a reset to it, a display-only item where the
 `cmdr_menu::bar::rebound_row_key` (the generic `update_menu_accelerator` path, via `rebound_bar_key`) first compares the
 pushed combo, as a chord through `to_menu_text`, with the row's own `MENU_BAR` key: equal to its registered accelerator
 → that accelerator; equal to its display-only glyph → that glyph, display-only. Anything else takes the floored
-`to_accelerator`. So the floor still guards every key the row wasn't built with (`F5` pushed onto Move only shows), and
+`to_accelerator`, unless the page owns the key (`cmdr_menu::bar::page_owns`: a native text key, or a key of a window
+that wears the bar), which only shows. So the floor still guards every key the row wasn't built with (`F5` pushed onto Move only shows), and
 `bar_parity_test.rs` checks the bar through this same door, which is why macOS's bare-key rows need no exception there.
 The view-mode pair keeps its own path (`rebuild_view_mode_items`).
 
@@ -405,9 +407,11 @@ while green unit tests compared the output to strings we had made up. So `accele
 a second test parses every accelerator `MENU_BAR` hardcodes. ❗ Keep both: a string comparison cannot see this class of
 bug.
 
-**Two ways the glyph reaches the user.** `ItemSpec::display_accelerator` carries ONE string for every platform, set by
-`menu_spec::displayed_item`, which pairs it with `NONE` so a row can't register and display a shortcut at once
-(`cmdr-menu`'s `bar_test.rs` pins that too). `display_accelerator_label` is where they part:
+**Two ways the glyph reaches the user.** `ItemSpec::display_accelerator` carries one string per platform, in that
+platform's spelling, set by `menu_spec::displayed_item` (paired with `NONE`) or `Entry::shown` (where the row registers
+nothing on that platform: the F-key rows, `Tab`, the zoom pair, Go to parent's `Alt+↑`, and Move here's
+`Ctrl+Shift+V` off macOS), so a row can't register and display a shortcut at once (`cmdr-menu`'s `bar_test.rs` pins
+that too). `display_accelerator_label` is where they part:
 
 - **Linux** spells it into the label (`Invert selection (⇧8)`). GTK offers no other hook. The mnemonic is allocated on
   the bare label first, so no underline lands inside the parens.

@@ -110,7 +110,7 @@ impl<R: Runtime> Builder<'_, R> {
                     // The mnemonic is assigned on the bare label, then the display shortcut goes
                     // on the end: GTK would otherwise happily underline a letter inside `(⇧8)`.
                     let label = self.label(item.label, &mut mnemonics);
-                    let built_label = match item.display_accelerator {
+                    let built_label = match item.display_accelerator.on(platform) {
                         Some(shortcut) => display_accelerator_label(&label, shortcut, platform),
                         None => label.clone(),
                     };

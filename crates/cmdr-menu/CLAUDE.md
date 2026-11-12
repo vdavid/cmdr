@@ -21,10 +21,14 @@ menus through `cmdr-listing-wasm` (`crates/cmdr-listing-wasm/CLAUDE.md`).
 - **The bar's keys follow the registry**: `bar_parity_test.rs` requires each row's accelerator to be what its command's
   first default key registers, per platform, read from `registry_default_keys.tsv` (written by the frontend's
   `default-keymap.test.ts`, ❌ never by hand). A row that differs on purpose goes in its `EXCEPTIONS` with a reason; a
-  stale one fails.
+  stale one fails. It also compares what a row SHOWS, so a key the bar leaves to keydown dispatch is shown.
+- **The bar never registers a key the page owns** (native text keys; on Windows and Linux the keys of the windows that
+  wear the bar), past a row's own built key: `page_owned_keys.tsv`, generated like the registry file, ❌ never by hand
+  (`DETAILS.md` § "Keys the page owns").
 - **Three platforms, no leftover**: a row is on every platform, `macos_only`, or `windows_and_linux`; an accelerator is
-  `same_on_all`, `cmd_or_ctrl!`, `macos`, or `split(macos, windows, linux)`. Windows has the Linux bar until its menu
-  model is decided (`DETAILS.md` § "Three platforms").
+  `same_on_all`, `cmd_or_ctrl!`, `macos`, or `split(macos, windows, linux)`, and a shown key is `shown_on_all`,
+  `shown_split`, or `shown_off_macos` (`displayed_item`, or `.shown(…)` where the row registers nothing), each in that
+  platform's spelling. Windows has the Linux bar until its menu model is decided (`DETAILS.md` § "Three platforms").
 - **A context menu is rows for a set of facts** (`file_menu`, `tab_menu`, …): a new item is a row there plus its lane in
   `context_click`; `every_row_the_crate_builds_has_a_click` fails a row whose pick does nothing. A `Slot` is a group
   only the OS fills (Open with, Share, tags, the provider, Services): the desktop builds it, the demo leaves it out.

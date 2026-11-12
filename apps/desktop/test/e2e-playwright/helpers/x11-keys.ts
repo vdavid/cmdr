@@ -27,10 +27,16 @@ export function visibleTopLevelWindows(): string[] {
   }
 }
 
-function area(windowId: string): number {
+function size(windowId: string): { width: number; height: number } {
   const shell = xdotool('getwindowgeometry', '--shell', windowId)
-  const width = Number(/WIDTH=(\d+)/.exec(shell)?.[1] ?? 0)
-  const height = Number(/HEIGHT=(\d+)/.exec(shell)?.[1] ?? 0)
+  return {
+    width: Number(/WIDTH=(\d+)/.exec(shell)?.[1] ?? 0),
+    height: Number(/HEIGHT=(\d+)/.exec(shell)?.[1] ?? 0),
+  }
+}
+
+function area(windowId: string): number {
+  const { width, height } = size(windowId)
   return width * height
 }
 
@@ -41,6 +47,18 @@ export function focusMainWindow(): void {
   const main = windows.reduce((best, id) => (area(id) > area(best) ? id : best))
   xdotool('windowfocus', '--sync', main)
   xdotool('mousemove', '--window', main, '400', '300')
+}
+
+/**
+ * Gives one X window (an id from `visibleTopLevelWindows`) the input focus and clicks its middle,
+ * so GTK's own focus lands on the webview: a window that opened under a bar starts with no focused
+ * widget, and real keys go nowhere until the page is clicked, as a user would.
+ */
+export function focusWindow(windowId: string): void {
+  const { width, height } = size(windowId)
+  xdotool('windowfocus', '--sync', windowId)
+  xdotool('mousemove', '--window', windowId, String(Math.floor(width / 2)), String(Math.floor(height / 2)))
+  xdotool('click', '1')
 }
 
 /** Presses one chord as a real keyboard would, in xdotool's spelling (`alt+f`, `Escape`). */
