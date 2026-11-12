@@ -7,6 +7,8 @@ each favorite row tells the frontend about where it points. Full depth in `DETAI
 
 - `store.rs`: the `favorites.json` store (`Favorite { id, path, name, shortcut, volume }`): pure
   mutations (tested in `store_tests.rs`), disk I/O, the cache, seed-once, `claim_volumes`.
+- `platform/`: which folders a first launch seeds and what each OS calls them (Windows' first row
+  is "User folder", ❌ never "Home").
 - `target.rs`: what a favorite row publishes (`FavoriteTarget`, `FavoriteReach`) and discovery's
   side of it (`on_disk`). `reach.rs`: the listing's reach pass, rebase, and legacy claims.
 - IPC lives in `commands/favorites.rs`: the pass-throughs plus THE add gate. No `list_favorites`;

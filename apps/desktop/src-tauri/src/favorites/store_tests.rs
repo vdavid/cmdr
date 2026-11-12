@@ -158,11 +158,7 @@ fn name_from_path_uses_last_component_with_root_fallback() {
 fn default_favorites_are_four_with_unique_ids() {
     let defaults = default_favorites();
     assert_eq!(defaults.len(), 4);
-    let names: Vec<&str> = defaults.iter().map(|f| f.name.as_str()).collect();
-    #[cfg(target_os = "macos")]
-    assert_eq!(names, vec!["Applications", "Desktop", "Documents", "Downloads"]);
-    #[cfg(not(target_os = "macos"))]
-    assert_eq!(names, vec!["Home", "Desktop", "Documents", "Downloads"]);
+    // Which four, and their names, is each OS arm's own test (`platform/`).
     let unique: std::collections::HashSet<&str> = defaults.iter().map(|f| f.id.as_str()).collect();
     assert_eq!(unique.len(), 4, "every seeded favorite gets its own id");
 }

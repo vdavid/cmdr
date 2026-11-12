@@ -92,8 +92,7 @@
       "outsideSeam": 1
     },
     "apps/desktop/src-tauri/src/favorites/store.rs": {
-      "negated": 1,
-      "outsideSeam": 3
+      "outsideSeam": 1
     },
     "apps/desktop/src-tauri/src/favorites/target.rs": {
       "negated": 1,

@@ -70,11 +70,18 @@ Existing beta users (data dir present, no `favorites.json` yet) hit the absent b
 launch after the update and get the platform defaults seeded, so there's no regression from the old
 hardcoded behavior.
 
-Platform defaults (`default_favorites`, platform-native per `design-principles.md`):
+Platform defaults (`platform::default_seed`, one arm per OS, platform-native per `design-principles.md`):
 
 - macOS: `/Applications`, `~/Desktop`, `~/Documents`, `~/Downloads` (the previous hardcoded four).
 - Linux: Home, `~/Desktop`, `~/Documents`, `~/Downloads` (matching the old Linux discovery
   favorites).
+- Windows: User folder, then Desktop, Documents, and Downloads under it. ❌ Never "Home" for the
+  first row: on Windows 11 that's File Explorer's landing page, a different place
+  (`docs/notes/windows-port/copy-decisions.md` § Glossary).
+
+Seeded names are English on every OS and in every UI language: a name is written to
+`favorites.json` once, and it's the user's to rename from then on. Localizing the seed would need
+the UI language at first launch, before any window has resolved it.
 
 ## Operations (pure core)
 

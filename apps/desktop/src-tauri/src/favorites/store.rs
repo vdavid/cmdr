@@ -120,29 +120,11 @@ fn disk_lock() -> &'static Mutex<()> {
 
 /// The favorites seeded on first launch (file absent). Computed from `dirs::home_dir()`.
 ///
-/// Platform-native (per `design-principles.md`): macOS seeds `/Applications`, `~/Desktop`,
-/// `~/Documents`, `~/Downloads` (the previous hardcoded four); Linux seeds Home, `~/Desktop`,
-/// `~/Documents`, `~/Downloads` (the Linux favorites before the store existed).
+/// Which folders, and what each is called, is the OS's answer (`platform::default_seed`).
 fn default_favorites() -> Vec<Favorite> {
     let home = dirs::home_dir().unwrap_or_default();
 
-    #[cfg(target_os = "macos")]
-    let entries: Vec<(PathBuf, &str)> = vec![
-        (PathBuf::from("/Applications"), "Applications"),
-        (home.join("Desktop"), "Desktop"),
-        (home.join("Documents"), "Documents"),
-        (home.join("Downloads"), "Downloads"),
-    ];
-
-    #[cfg(not(target_os = "macos"))]
-    let entries: Vec<(PathBuf, &str)> = vec![
-        (home.clone(), "Home"),
-        (home.join("Desktop"), "Desktop"),
-        (home.join("Documents"), "Documents"),
-        (home.join("Downloads"), "Downloads"),
-    ];
-
-    entries
+    super::platform::default_seed(&home)
         .into_iter()
         .map(|(path, name)| Favorite {
             id: new_id(),

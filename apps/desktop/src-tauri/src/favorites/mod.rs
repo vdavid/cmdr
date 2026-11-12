@@ -9,6 +9,7 @@
 //!
 //! See `favorites/CLAUDE.md` for the seed-once contract and the read side's rules.
 
+mod platform;
 pub(crate) mod reach;
 pub mod store;
 pub mod target;
