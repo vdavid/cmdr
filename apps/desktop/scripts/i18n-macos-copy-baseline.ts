@@ -37,7 +37,8 @@ const README =
  * `reviewedNoChange` rows (Windows "user folder", "recycle bin" keyword), the Quit
  * narration keys, the four permanent-delete siblings (`sourcesGone.continue` is
  * already a proposal row), the unscanned `{system_settings}` value, and the
- * sentences that say "this computer" on macOS and Linux and "this PC" on Windows.
+ * sentences that say "this computer" on macOS and Linux and "this PC" on Windows, and
+ * the switches Windows words "Turn on" where macOS and Linux say "Enable" (#1121).
  */
 const KEYS_BEYOND_PROPOSAL: readonly string[] = [
   'askCmdr.tool.quit.doing',
@@ -59,7 +60,10 @@ const KEYS_BEYOND_PROPOSAL: readonly string[] = [
   'indexing.phase.home',
   'main.quit.countdown',
   'main.quit.countdownAria',
+  'settings.developer.mcpEnabled.label',
   'settings.fileOperations.skipConfirmation.keywords',
+  'settings.network.enabled.label',
+  'settings.summary.smbNetworkShares',
   'stateRecovery.appStatus.title',
   'stateRecovery.credentials.body',
   'suggestedOps.action.delete',
