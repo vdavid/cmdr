@@ -1186,6 +1186,21 @@ replay a lost entry.
     true. What a failure still leaves held carries no count on the error: `WriteFailure` holds only the error, and the
     one count on the wire (`ProgressAtStop::sources_left`) means every original still standing, a different number.
     Their last `write-source-item-done` still says `source_removed: false`.
+  - Between a batch's barrier and its first delete, the sweeps ask the mount table the local move's question ("The
+    destination-listed gate", below) about each side that is a local mount (`volume/local_mounts.rs`, through
+    `TransferSide::has_left`). A destination that left keeps the whole batch, and so does a source that left; either
+    stops the move with `DeviceDisconnected { side: Some(..) }` naming that volume. A source sweep that read something
+    as already gone (`FolderLeftovers::read_gone`: a folder listing's, a husk's, or an empty-only folder delete's
+    `NotFound`, or a top-level delete's after an outage wait) asks again about the source before the source can read as
+    removed. An unreadable table is never evidence. **Which sides are watched**: one with a `local_path` that the table
+    LISTED when the sweeps were set up. A side with no local path (direct SMB, MTP, ADB, S3, SFTP, WebDAV) has no mount
+    to leave: a dropped session fails the barrier or the sweep's next call with a typed `VolumeError`, which
+    `through_outages` waits out or maps, so nothing reads as removed. A local volume rooted at a plain folder (a
+    cloud-sync folder) was never in the table, so asking would read it as gone. **Why its own capture**: the engine
+    can't carry `state.sides`, which also homes its in-flight records (`in_flight_records.rs::home_for`). Pinned by
+    `volume/move_vanished_tests.rs` (a destination that left keeps every source and names it, a mounted one completes,
+    an unreadable table lets the sweep run, a never-mounted folder isn't watched, a source drive that left mid-sweep
+    isn't reported removed).
   - Pause parks the driver with the batch held, and the next due barrier takes it.
   - Per source, the post-sweep steps run in one order (`left_in_source`, `displaced.landed_under`, the closing
     `write-source-item-done`, the journal rows), and sources keep copy order, so the journal's `seq` and the "last event

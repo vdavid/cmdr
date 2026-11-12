@@ -114,6 +114,10 @@ impl SourceLedger {
 pub(crate) struct FolderLeftovers {
     pub(crate) appeared: u32,
     pub(crate) changed: u32,
+    /// Some reading took a `NotFound` as "already gone". A drive that left
+    /// answers exactly that way, so a caller that can ask the mount table asks
+    /// it before reporting the source removed (`held_sweeps.rs`).
+    pub(crate) read_gone: bool,
 }
 
 /// Removes a moved source folder from the ledger its copy walk kept, sparing
@@ -158,7 +162,10 @@ async fn sweep_level(
     let entries = match volume.list_directory_as_source(dir).await {
         Ok(entries) => entries,
         // Gone already: whoever removed it, nothing of it is left to protect.
-        Err(VolumeError::NotFound(_)) => return Ok(false),
+        Err(VolumeError::NotFound(_)) => {
+            left.read_gone = true;
+            return Ok(false);
+        }
         Err(e) => return Err(e).at_source(dir),
     };
 
@@ -234,7 +241,8 @@ async fn sweep_level(
     if !husk.is_empty() {
         for (path, result) in husk.iter().zip(volume.delete_files(&husk).await) {
             match result {
-                Ok(()) | Err(VolumeError::NotFound(_)) => {}
+                Ok(()) => {}
+                Err(VolumeError::NotFound(_)) => left.read_gone = true,
                 Err(e) => return Err(e).at_source(path),
             }
         }
@@ -244,7 +252,14 @@ async fn sweep_level(
     match volume.delete_directory(dir, None).await {
         // A folder that only existed through what was in it (an object
         // store's prefix with no marker) went with its last file.
-        Ok(()) | Err(VolumeError::NotFound(_)) => {
+        Ok(()) => {
+            opened.gone();
+            Ok(false)
+        }
+        // A prefix-only folder legitimately reads so; a local one that left
+        // does too, and only the mount table tells them apart.
+        Err(VolumeError::NotFound(_)) => {
+            left.read_gone = true;
             opened.gone();
             Ok(false)
         }
@@ -355,7 +370,10 @@ async fn sweep_once(
 ) -> Result<FolderLeftovers, PathedVolumeError> {
     let delete_top_level = || async {
         match volume.delete(source).await {
-            Err(VolumeError::NotFound(_)) if after_a_wait => Ok(FolderLeftovers::default()),
+            Err(VolumeError::NotFound(_)) if after_a_wait => Ok(FolderLeftovers {
+                read_gone: true,
+                ..FolderLeftovers::default()
+            }),
             result => result.at_source(source).map(|()| FolderLeftovers::default()),
         }
     };
@@ -374,8 +392,8 @@ async fn sweep_once(
                 Ok(left)
             } else {
                 Ok(FolderLeftovers {
-                    appeared: 0,
                     changed: 1,
+                    ..FolderLeftovers::default()
                 })
             }
         }
