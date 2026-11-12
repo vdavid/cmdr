@@ -200,9 +200,9 @@ branch is ready when it does.
 
 A command's `shortcuts` is three lists (`PlatformShortcuts`: `macos`, `windows`, `linux`), each in that platform's own
 canonical spelling, the one `formatKeyCombo` writes there. Nothing converts a combo at read time: the store reads
-`defaultShortcuts(commandId, platform = getPlatform())` (`command-registry.ts`), a lookup in a per-platform table built
-on first read. That function also owns the `needsCapability` rule, asked on every call outside the cached table, so a
-test that switches capabilities never reads a stale answer.
+`defaultShortcuts(commandId, platform = getPlatform())` (`command-registry.ts`), which reads the command's own list for
+that platform. That function also owns the `needsCapability` rule, asked on every call, so a test that switches
+capabilities never reads a stale answer.
 
 Sources write the lists with the constructors in `platform-shortcuts.ts`, each naming its rule, in macOS glyph spelling
 so the macOS arm is the literal in the source:
