@@ -135,6 +135,26 @@ describe('platformSelectIssues: branch set against the source', () => {
     expect(issues('a.b', '{platform, select, macos {Im Finder} windows {File Explorer} other {Files}}', en)).toEqual([])
   })
 
+  it('lets a locale repeat a text across branches: its branch set is its source’s, and two OS words can translate alike', () => {
+    // German says „Papierkorb“ for the Trash and the Recycle Bin, and a carried translation fills two branches.
+    expect(issues('a.b', '{platform, select, macos {Papierkorb} windows {Papierkorb} other {Papierkorb}}', en)).toEqual(
+      [],
+    )
+    expect(
+      issues(
+        'a.b',
+        '{platform, select, windows {In den Papierkorb} other {In den Papierkorb}}',
+        '{platform, select, windows {Delete} other {Move to Trash}}',
+      ),
+    ).toEqual([])
+  })
+
+  it('still flags an equal branch in a locale whose source isn’t a block', () => {
+    expect(issues('a.b', '{platform, select, windows {Same} other {Same}}', 'Plain')).toEqual(
+      expect.arrayContaining([expect.stringMatching(/windows branch equals other/)]),
+    )
+  })
+
   it('flags a missing branch, an extra branch, and a plain value beside a block', () => {
     expect(issues('a.b', '{platform, select, macos {Im Finder} other {Files}}', en)).toEqual([
       expect.stringMatching(/branches \{macos, other\}, but its source has \{macos, windows, other\}/),

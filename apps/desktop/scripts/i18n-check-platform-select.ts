@@ -13,10 +13,13 @@
  *  - Canonical spelling: the value starts `{platform, select, `, branches come
  *    `macos`, `windows`, `other`, one space apart (`getMessage`'s prefix test
  *    relies on it).
- *  - A legal branch set: `other` plus at least one of `macos`/`windows`; no
- *    `macos` or `windows` branch equal to `other` (fold it into `other`).
- *    `macos` and `windows` MAY be equal: that keeps "Windows says what macOS
- *    says" explicit while Linux differs.
+ *  - A legal branch set: `other` plus at least one of `macos`/`windows`; in a
+ *    SOURCE value, no `macos` or `windows` branch equal to `other` (fold it
+ *    into `other`). `macos` and `windows` MAY be equal: that keeps "Windows
+ *    says what macOS says" explicit while Linux differs. A locale whose source
+ *    is a block takes the source's branch set, so its branches may repeat a
+ *    text: two OS words often translate alike (German says „Papierkorb“ for the
+ *    Trash and the Recycle Bin), and a carried translation can fill two branches.
  *  - `platform` nowhere else: no block inside a sentence or a branch, no
  *    `{platform}` interpolation, so no OS name leaks as text.
  *  - Raw bodies balance their braces (a malformed block reads as not-a-block)
@@ -90,8 +93,11 @@ function canonicalSpelling(branches: PlatformSelectBranches): string {
     .join(' ')}}`
 }
 
-/** The issues of a value that is a well-formed block. */
-function blockIssues(key: string, value: string, branches: PlatformSelectBranches): string[] {
+/**
+ * The issues of a value that is a well-formed block.
+ * @param setFromSource whether the value's source is a block too, which dictates its branch set
+ */
+function blockIssues(key: string, value: string, branches: PlatformSelectBranches, setFromSource: boolean): string[] {
   const issues: string[] = []
   const names = branchNames(branches)
   const bodies = names.map((name) => branches[name] ?? '')
@@ -104,7 +110,7 @@ function blockIssues(key: string, value: string, branches: PlatformSelectBranche
     issues.push('a block needs at least two branches: `other` alone is a plain value')
   }
   for (const name of ['macos', 'windows'] as const) {
-    if (branches[name] === branches.other) {
+    if (!setFromSource && branches[name] === branches.other) {
       issues.push(`${name} branch equals other: drop it, and that OS reads other`)
     }
   }
@@ -147,7 +153,8 @@ export function platformSelectIssues({ key, value, sourceValue }: PlatformSelect
       // A raw `x'}` hides the brace from the splitter, which is the likelier cause then.
       return isRawKey(key) && QUOTE_BEFORE_OPENER.test(value) ? [malformed, APOSTROPHE_ISSUE] : [malformed]
     }
-    const issues = blockIssues(key, value, branches)
+    const setFromSource = sourceValue !== undefined && parsePlatformSelect(sourceValue) !== null
+    const issues = blockIssues(key, value, branches, setFromSource)
     const setIssue = sourceValue === undefined ? null : branchSetIssue(branches, sourceValue)
     return setIssue === null ? issues : [...issues, setIssue]
   }

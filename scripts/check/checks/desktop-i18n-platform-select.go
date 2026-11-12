@@ -10,8 +10,8 @@ import (
 // RunDesktopI18nPlatformSelect FAILS (error, not warn) when a value that reads
 // differently per OS isn't the one platform-select shape,
 // `{platform, select, macos {…} windows {…} other {…}}` as the WHOLE value:
-// canonical spelling and branch order, a legal branch set (no `macos`/`windows`
-// branch equal to `other`), `platform` nowhere else, raw bodies the shared
+// canonical spelling and branch order, a legal branch set (in a source value,
+// no `macos`/`windows` branch equal to `other`), `platform` nowhere else, raw bodies the shared
 // splitter reads the same way ICU does, no block in a key read as-is (the
 // manifest keys, the Finder menu title), and every locale carrying its source's
 // branch set. The raw readers (`getMessage()`, the native-strings generator)

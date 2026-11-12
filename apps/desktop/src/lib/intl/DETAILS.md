@@ -257,19 +257,48 @@ space after each comma). Never a block inside a sentence, never `{platform}` int
 - **Tests**: `withPlatform('macos' | 'windows' | 'linux')` from `#lib/platform/test-platform` moves both the select and
   the split; Vitest's fallback is Linux, so an assertion on macOS text names macOS.
 
+### Migrating copy to platform blocks
+
+`apps/desktop/scripts/apply-platform-copy.ts` turns resolved rows of `docs/notes/windows-port/copy-final.json` (one row
+per key: final English for macOS, Windows, and Linux, before folding; row shape in
+`apps/desktop/scripts/platform-copy-rows.ts`) into blocks in `en`, the 13 full locales, and the three overlays. Its
+docblock has the commands; the rules it applies:
+
+- **English**: `englishValueOf` folds a `macos` or `windows` branch equal to `other` into `other`, and keeps `macos` and
+  `windows` as two equal branches when only Linux differs. An `apply` row carries all three texts, so Windows reading
+  Linux words is always written down.
+- **A full locale** gets the same branch set. The branch macOS reads always keeps the locale's own text. Any other
+  branch keeps it only when that branch's English is unchanged and the translation was current (`@key.sourceHash`
+  matches the old English); otherwise it holds English, pending translation. Hashes are never touched, so
+  `desktop-i18n-stale` lists exactly the migrated keys.
+- **A locale's branches may repeat a text** (the shape check holds the "no branch equal to `other`" rule to source
+  values only): the branch set is the source's, a carried translation can fill two branches, and two OS words often
+  translate alike.
+- **An overlay** changes only where it forks. A branch whose old key it never forked takes its parent's new branch;
+  where it had a fork, a branch it can't carry takes English, ❌ never the parent's translation (that would put
+  Spain-only forms back into `es-419`). A fork left equal to its parent goes. `en-GB` / `en-AU` are English: spell their
+  new branches, then `--restamp-english-overlays`, which touches those two only.
+- **A collapsed pair**: the survivor takes the `.mac` key's place and `@key` block, and the script renames the old keys
+  in the translator guides and termbases under `docs/i18n/`, the term-consistency allowlist, and the capture report.
+- **Nothing is written unless the result passes** on a scratch copy: `macosCopyDrift` (below), the platform-select,
+  parity, ICU, plural, and coverage checks, and a no-op `sync-locale-keys.ts`.
+- `--scan` lists English values with macOS vocabulary that no row or gate covers, and lints every resolved `windows` and
+  `other` branch against `docs/style-guide.md` § "Platform vocabulary" (`apps/desktop/scripts/platform-copy-lint.ts`).
+
 ### The frozen macOS copy
 
 `macos-copy-unchanged.test.ts` holds every locale's macOS text for the platform-copy keys (the rows of
 `docs/notes/windows-port/copy-proposal.json` plus the generator's `KEYS_BEYOND_PROPOSAL`, the rows the plan's § "Copy
 resolution" adds, about 8,650 values) to `__fixtures__/macos-copy-baseline.json`: the RESOLVED value a Mac reader saw
 (locale, its inheritable ancestors, then `en`), read from disk for all 17 catalogs. ICU values compare ASTs, raw ones
-text. The only allowed moves are its `ACCEPTED_ENGLISH_CHANGES` (English only) and its `COLLAPSED_PAIRS` (a survivor's
-macOS branch must equal the old `.mac` value). `apps/desktop/scripts/i18n-macos-copy-baseline.ts` writes it: the first
-write refuses an existing file, and `--add-missing` freezes a newly named key from today's catalogs while leaving every
-existing entry byte-identical. Add a key that way only BEFORE its catalog values change, or the baseline freezes the
-edit. ❌ Never edit or regenerate the baseline to get green: a red means a catalog edit changed what a Mac shows.
-Per-area English goldens (`*i18n-parity.test.ts`, `*.parity.test.ts`) run under `withPlatform('macos')` for the same
-reason.
+text. The comparison is `macosCopyDrift` in `scripts/i18n-macos-copy-baseline-lib.ts`, which the migration script also
+runs on its planned output before writing. The only allowed moves are `ACCEPTED_ENGLISH_CHANGES` (English only) and
+`COLLAPSED_PAIRS` there (a survivor's macOS branch must equal the old `.mac` value).
+`apps/desktop/scripts/i18n-macos-copy-baseline.ts` writes it: the first write refuses an existing file, and
+`--add-missing` freezes a newly named key from today's catalogs while leaving every existing entry byte-identical. Add a
+key that way only BEFORE its catalog values change, or the baseline freezes the edit. ❌ Never edit or regenerate the
+baseline to get green: a red means a catalog edit changed what a Mac shows. Per-area English goldens
+(`*i18n-parity.test.ts`, `*.parity.test.ts`) run under `withPlatform('macos')` for the same reason.
 
 Ask Cmdr tool labels are literal-keyed in `ask-cmdr-tool-label-keys.ts`, so proposal status remains localized without
 dynamic message-key construction. New English keys require translated catalog entries and a regenerated `keys.gen.ts`.
