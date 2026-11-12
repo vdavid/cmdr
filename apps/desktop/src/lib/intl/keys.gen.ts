@@ -2332,6 +2332,7 @@ export type MessageKey =
   | 'fileExplorer.pane.location'
   | 'fileExplorer.pane.locationBarAriaLabel'
   | 'fileExplorer.pane.locationEmpty'
+  | 'fileExplorer.pane.locationHiddenItems'
   | 'fileExplorer.pane.openLocalNetworkSettings'
   | 'fileExplorer.pane.refreshStillRunningToast'
   | 'fileExplorer.pane.resizePanesAriaLabel'

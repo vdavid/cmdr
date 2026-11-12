@@ -140,7 +140,7 @@
     import type { CursorReading } from '../navigation/history-cursor'
     import LiveAnnouncer from '#lib/ui/LiveAnnouncer.svelte'
     import { focusPaneChrome } from './pane-chrome'
-    import { createPaneLocationAnnouncer, paneLocationLabel } from './pane-location-announcer.svelte'
+    import { createPaneLocationAnnouncer, paneArrivalMessage, paneLocationLabel } from './pane-location-announcer.svelte'
     import { createPaneStatusAnnouncer } from './pane-status-announcer.svelte'
 
     interface Props {
@@ -1595,7 +1595,7 @@
     const showsEmptyFolder = $derived(paneViewKind === 'normal' && !loading && !friendlyError && !error
         && listingEntryCount === 0 && !quickFilter.isActive())
     const locationAnnouncer = createPaneLocationAnnouncer({ label: () => locationLabel, isFocused: () => isFocused,
-        message: () => (showsEmptyFolder ? tString('fileExplorer.pane.locationEmpty', { location: locationLabel }) : locationLabel),
+        message: () => paneArrivalMessage(locationLabel, showsEmptyFolder ? (isSearchResultsView ? 0 : hiddenCount) : null),
         isSettled: () => !loading || paneViewKind !== 'normal', announce: (message) => { announcer?.announce(message) } })
     // Changes in place (selection and filter counts, a folder going empty, a slow load).
     createPaneStatusAnnouncer({ announce: (message) => { announcer?.announce(message) }, read: () => ({ isFocused,

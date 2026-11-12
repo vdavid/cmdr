@@ -336,10 +336,13 @@ focused pane settles on another folder (the volume's name at its root, "Search r
 listing batch in the same folder, never for the unfocused pane. The same string is the lists' `aria-label`, for
 VO-cursor browsing. Row first: the message waits for the list's `onCursorRowLanded` (the deferred active descendant
 landing), with a 400 ms fallback when no row lands. An arrival in an empty folder says "Left pane, Downloads, empty
-folder" (the announcer's `message`, read when it goes out). Every other pane message goes through the same region, ❌
-never a second one: a region inserted together with its message announces nothing. In the AX trace the row posts 5–15 ms
-before the announcer every time (VoiceOver 10, macOS 27.0, 2026-10-15); whether VoiceOver cuts the row off is a question
-for the ear (`docs/notes/accessibility-audit-2026-10.md` § VoiceOver checks, V2), not a timing knob.
+folder", and one that only looks empty says the hidden-items text the screen shows ("Left pane, Downloads. There are 3
+hidden items…"): `paneArrivalMessage`, the announcer's `message`, read when it goes out. The status announcer, which
+speaks when an empty pane's hidden count changes, re-baselines on the arrival, so it's heard once
+(`pane-arrival.svelte.test.ts`). Every other pane message goes through the same region, ❌ never a second one: a region
+inserted together with its message announces nothing. In the AX trace the row posts 5–15 ms before the announcer every
+time (VoiceOver 10, macOS 27.0, 2026-10-15); whether VoiceOver cuts the row off is a question for the ear
+(`docs/notes/accessibility-audit-2026-10.md` § VoiceOver checks, V2), not a timing knob.
 
 **Pane status announcer.** `pane-status-announcer.svelte.ts` speaks about changes IN PLACE, for the focused pane only:
 "3 selected" / "Nothing selected", the quick filter's "3 names contain “re”" / "No names contain “zz”" and, when it

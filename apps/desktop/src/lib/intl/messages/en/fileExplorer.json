@@ -75,6 +75,14 @@
       "location": "the pane and folder, already worded by fileExplorer.pane.location (e.g. Left pane, Downloads)"
     }
   },
+  "fileExplorer.pane.locationHiddenItems": "{location}. {emptyState}",
+  "@fileExplorer.pane.locationHiddenItems": {
+    "description": "For screen readers only (never shown): what the pane says when the keyboard arrives in a folder that looks empty only because hidden items are hidden, as in “Left pane, Downloads. There are 3 hidden items in this folder. To see hidden items, press ⇧⌘. or choose “View > Show hidden files”.” The fileExplorer.pane.locationEmpty variant for that case. Use your language’s sentence break between the two parts.",
+    "placeholders": {
+      "location": "the pane and folder, already worded by fileExplorer.pane.location (e.g. Left pane, Downloads)",
+      "emptyState": "the hidden-items sentences, already worded (fileExplorer.list.hiddenItems followed by fileExplorer.list.hiddenItemsHowToShortcut or fileExplorer.list.hiddenItemsHowToMenu)"
+    }
+  },
   "fileExplorer.pane.selectedCount": "{count, plural, =0 {Nothing selected} one {{countText} selected} other {{countText} selected}}",
   "@fileExplorer.pane.selectedCount": {
     "description": "For screen readers only (never shown): how many files and folders are selected in the pane, said once the user pauses after selecting or deselecting, as in “3 selected”, or “Nothing selected” when the last one is deselected.",

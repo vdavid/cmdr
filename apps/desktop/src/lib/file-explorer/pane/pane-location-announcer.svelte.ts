@@ -15,6 +15,7 @@
 
 import { untrack } from 'svelte'
 import { tString } from '#lib/intl/messages.svelte.js'
+import { emptyFolderSpokenText } from '../views/empty-folder-text'
 
 /** How long a pending announcement waits for a cursor row to land before it goes out anyway. */
 const NO_ROW_FALLBACK_MS = 400
@@ -44,11 +45,25 @@ export function paneLocationLabel(input: PaneLocationInput): string {
   return tString('fileExplorer.pane.location', { side: input.side, folder })
 }
 
+/**
+ * What an arrival says: the location, plus what the empty state shows when the pane shows no
+ * rows ("…, empty folder", or the hidden items and how to see them, `../views/empty-folder-text.ts`).
+ * `emptyHiddenCount` is `null` while the pane shows rows.
+ */
+export function paneArrivalMessage(location: string, emptyHiddenCount: number | null): string {
+  if (emptyHiddenCount === null) return location
+  if (emptyHiddenCount <= 0) return tString('fileExplorer.pane.locationEmpty', { location })
+  return tString('fileExplorer.pane.locationHiddenItems', {
+    location,
+    emptyState: emptyFolderSpokenText(emptyHiddenCount),
+  })
+}
+
 export interface PaneLocationAnnouncerDeps {
   /** "Left pane, Documents": which folder the pane shows. A change of it is an arrival. */
   label: () => string
   /**
-   * What an arrival says, when it's more than `label` ("Left pane, Downloads, empty folder").
+   * What an arrival says, when it's more than `label` (`paneArrivalMessage`: "Left pane, Downloads, empty folder").
    * Read when the message goes out, so it describes the settled listing; its own changes
    * announce nothing (`pane-status-announcer.svelte.ts` speaks about changes in place).
    */
