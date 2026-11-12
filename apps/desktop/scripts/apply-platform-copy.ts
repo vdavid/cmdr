@@ -19,11 +19,9 @@
  *
  * `<selection>` is any mix of `--catalog <name>` (like `errors`), `--key <key>`,
  * `--pairs` (the rows that fold a `.mac`/`.other` pair), and `--all`. Only
- * `apply` rows are written; a selected `pending` row is listed and skipped.
+ * `apply` rows are written.
  *
- *  - `--dry-run` prints the report and writes nothing. With `--include-pending`
- *    it also plans the `pending` rows from their seeded texts, to see what the
- *    whole migration would do; that mode never writes and lint hits don't block.
+ *  - `--dry-run` prints the report and writes nothing.
  *  - `--scan` lists every English value using macOS vocabulary that no row and no
  *    gate covers, and every lint hit on the resolved rows.
  *  - `--restamp-english-overlays` restamps the selected keys in `en-GB` and
@@ -64,7 +62,7 @@ import { EXIT_CLEAN } from './i18n-locale-check-lib.ts'
 import type { LocaleCheckOptions } from './i18n-locale-check-lib.ts'
 import { BASELINE_RELATIVE_PATH, desktopPath, macosCopyDrift } from './i18n-macos-copy-baseline-lib.ts'
 import type { MacosCopyBaseline } from './i18n-macos-copy-baseline-lib.ts'
-import { blockingLintHits, hasAllBranches, scanEnglish } from './platform-copy-lint.ts'
+import { blockingLintHits, scanEnglish } from './platform-copy-lint.ts'
 import type { LintHit } from './platform-copy-lint.ts'
 import { isApplyRow, readCopyFinal, rowKeys } from './platform-copy-rows.ts'
 import type { ApplyRow, CopyFinal, CopyRow } from './platform-copy-rows.ts'
@@ -190,8 +188,7 @@ const SEARCH_SKIPS: readonly string[] = [
   join('src', 'lib', 'ipc', 'bindings.ts'),
   // The migration's own tooling names the keys and texts by design.
   join('scripts', 'apply-platform-copy.test.ts'),
-  join('scripts', 'platform-copy-seed-data.ts'),
-  join('scripts', 'platform-copy-seed.test.ts'),
+  join('scripts', 'platform-copy-rows.test.ts'),
   join('scripts', 'i18n-macos-copy-baseline-lib.ts'),
 ]
 
@@ -348,13 +345,6 @@ export function regenerate(
   return steps.filter((step) => runStep(step) !== 0).map((step) => step.label)
 }
 
-/** `pending` rows read as `apply`, for a dry run of the whole migration from the seeded texts. */
-function asApplyRows(rows: readonly CopyRow[]): ApplyRow[] {
-  return rows
-    .filter((row) => row.status === 'pending' && hasAllBranches(row))
-    .map((row) => ({ ...row, status: 'apply' }) as ApplyRow)
-}
-
 function scan(file: CopyFinal, catalogs: readonly string[]): number {
   const english = loadCatalog(BASE_LOCALE).messages
   const prefixes = catalogs.map((name) => `${name.replace(/\.json$/, '')}.`)
@@ -385,7 +375,6 @@ function main(): number {
       pairs: { type: 'boolean' },
       all: { type: 'boolean' },
       'dry-run': { type: 'boolean' },
-      'include-pending': { type: 'boolean' },
       scan: { type: 'boolean' },
       'restamp-english-overlays': { type: 'boolean' },
     },
@@ -411,36 +400,21 @@ function main(): number {
     return 0
   }
 
-  const dryRun = values['dry-run'] === true
-  const includePending = values['include-pending'] === true
-  if (includePending && !dryRun) {
-    console.error('--include-pending plans unresolved rows from their seeded texts, so it only runs with --dry-run.')
-    return 2
-  }
-  return applyRows(selected, { dryRun, includePending })
+  return applyRows(selected, values['dry-run'] === true)
 }
 
 /** Lints, plans, proves, and (outside a dry run) writes the selected rows. */
-function applyRows(selected: readonly CopyRow[], mode: { dryRun: boolean; includePending: boolean }): number {
-  const { dryRun, includePending } = mode
-  const pending = selected.filter((row) => row.status === 'pending')
-  const rows = [...selected.filter(isApplyRow), ...(includePending ? asApplyRows(pending) : [])]
-  if (!includePending)
-    printList(
-      'Selected but still pending, skipped',
-      pending.map((row) => row.key),
-    )
+function applyRows(selected: readonly CopyRow[], dryRun: boolean): number {
+  const rows = selected.filter(isApplyRow)
 
   const messagesRoot = resolveMessagesRoot()
   const english = loadCatalog(BASE_LOCALE).messages
   const hits = lintRows(rows, english)
   printList(
-    includePending
-      ? 'Lint hits (not blocking in this mode)'
-      : 'Lint hits: fix the branch, or add a lintExceptions entry',
+    'Lint hits: fix the branch, or add a lintExceptions entry',
     hits.map(({ key, branch, rule }) => `${key} [${branch}]: ${rule}`),
   )
-  if (hits.length > 0 && !includePending) return 1
+  if (hits.length > 0) return 1
 
   const paths: PlanPaths = {}
   const plan = planPlatformCopy(rows, paths)
@@ -459,7 +433,7 @@ function applyRows(selected: readonly CopyRow[], mode: { dryRun: boolean; includ
     'Files asserting this copy or naming these keys (run the tests among them by name)',
     filesAssertingCopy(plan.texts, [...plan.applied, ...oldKeys], DESKTOP_DIR),
   )
-  if (plan.refused.length > 0 && !includePending) return 1
+  if (plan.refused.length > 0) return 1
   if (problems.length > 0) return 1
   if (dryRun) {
     console.log('\nDry run: nothing written.')

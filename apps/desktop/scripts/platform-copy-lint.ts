@@ -177,8 +177,3 @@ export function scanEnglish(english: Record<string, string>, file: CopyFinal): S
   }
   return hits
 }
-
-/** Whether every branch of a row is a string, so the lint and the block builder can read it. */
-export function hasAllBranches(row: { branches: Record<string, string | null> }): boolean {
-  return BRANCH_NAMES.every((name) => typeof row.branches[name] === 'string')
-}

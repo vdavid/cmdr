@@ -1,7 +1,7 @@
 /**
  * Tests for the resolved-copy file: its row validator and English block builder
- * (`platform-copy-rows.ts`), its seed generator (`platform-copy-seed.ts`), and
- * the committed `docs/notes/windows-port/copy-final.json` itself.
+ * (`platform-copy-rows.ts`), and the committed
+ * `docs/notes/windows-port/copy-final.json` itself.
  */
 import { describe, expect, it } from 'vitest'
 import { parsePlatformSelect } from '../src/lib/intl/platform-select.ts'
@@ -15,8 +15,6 @@ import {
   rowIssues,
 } from './platform-copy-rows.ts'
 import type { ApplyRow, CopyRow } from './platform-copy-rows.ts'
-import { addMissingRows, seedCopyFinal } from './platform-copy-seed.ts'
-import type { Proposal, ProposalRow } from './platform-copy-seed.ts'
 
 function applyRow(overrides: Partial<CopyRow> = {}): ApplyRow {
   return {
@@ -106,8 +104,10 @@ describe('rowIssues', () => {
     expect(isApplyRow(row)).toBe(false)
   })
 
-  it('lets a pending row leave branches unresolved', () => {
-    expect(rowIssues(applyRow({ status: 'pending', branches: { macos: 'A', windows: null, other: null } }))).toEqual([])
+  it('refuses a status outside the four it knows', () => {
+    expect(rowIssues(applyRow({ status: 'pending' as CopyRow['status'] })).join('\n')).toMatch(
+      /`status` must be one of/,
+    )
   })
 
   it('wants a source for each branch an apply row decides', () => {
@@ -144,167 +144,6 @@ describe('matchesKeyPattern', () => {
     expect(matchesKeyPattern('ai.local.*', 'ai.localOnly')).toBe(false)
     expect(matchesKeyPattern('menu.file.getInfo', 'menu.file.getInfo')).toBe(true)
     expect(matchesKeyPattern('menu.file.getInfo', 'menu.file.getInfoMore')).toBe(false)
-  })
-})
-
-function proposalRow(overrides: Partial<ProposalRow>): ProposalRow {
-  return {
-    key: 'area.thing.label',
-    keys: ['area.thing.label'],
-    file: 'area.json',
-    source: 'catalog',
-    mechanism: 'select',
-    glossaryTerms: [],
-    whereInUi: 'A dialog',
-    macos: 'Mac text',
-    windows: 'Windows text',
-    linux: 'Linux text',
-    ...overrides,
-  }
-}
-
-const proposal: Proposal = {
-  strings: [
-    proposalRow({}),
-    proposalRow({ key: 'area.macOnly', keys: ['area.macOnly'], mechanism: 'none', windows: null, linux: null }),
-    proposalRow({ key: 'ai.local.notInstalled', keys: ['ai.local.notInstalled'], mechanism: 'split-feature' }),
-    proposalRow({ key: 'area.neutral', keys: ['area.neutral'], mechanism: 'neutral' }),
-    proposalRow({ key: 'viewer.copyDialog.confirmBody', keys: ['viewer.copyDialog.confirmBody'], mechanism: 'code' }),
-    proposalRow({
-      key: 'errors.provider.appBased.serious',
-      keys: ['errors.provider.appBased.serious'],
-      file: 'errors.json',
-      mechanism: 'none',
-      windows: null,
-      linux: null,
-    }),
-    proposalRow({
-      key: 'area.trash.toast',
-      keys: ['area.trash.toast'],
-      glossaryTerms: ['trash'],
-      macos: 'Moved to Trash',
-    }),
-    proposalRow({ key: 'commands.appQuit.label', keys: ['commands.appQuit.label'], file: 'commands.json' }),
-    proposalRow({
-      key: 'main.upgradeNudge.mac + main.upgradeNudge.other',
-      keys: ['main.upgradeNudge.mac', 'main.upgradeNudge.other'],
-      file: 'main.json',
-    }),
-    proposalRow({
-      key: 'ai.secretError.genericBody',
-      keys: ['ai.secretError.genericBody'],
-      file: 'ai.json',
-      macosChanged: true,
-    }),
-  ],
-  reviewedNoChange: [
-    {
-      key: 'commands.navGoHome.label',
-      file: 'commands.json',
-      reason: 'reads fine',
-      currentEnglish: 'Go to home folder',
-    },
-    { key: 'area.reviewed', file: 'area.json', reason: 'shared word', currentEnglish: 'Eject' },
-  ],
-}
-
-const english = {
-  'commands.navGoHome.label': 'Go to home folder',
-  'main.quit.countdown': 'Quitting in {seconds} seconds',
-}
-
-describe('seedCopyFinal', () => {
-  const { file, missing } = seedCopyFinal(proposal, english)
-  const row = (key: string): CopyRow => {
-    const found = file.rows.find((candidate) => candidate.key === key)
-    if (!found) throw new Error(`no row ${key}`)
-    return found
-  }
-
-  it('produces a file the validator accepts', () => {
-    expect(copyFinalIssues(file)).toEqual([])
-  })
-
-  it('seeds a select row as pending, with the proposal’s three texts', () => {
-    expect(row('area.thing.label')).toMatchObject({
-      status: 'pending',
-      branches: { macos: 'Mac text', windows: 'Windows text', other: 'Linux text' },
-      whereInUi: 'A dialog',
-    })
-  })
-
-  it('keeps a macOS-only row and a neutral row as no change', () => {
-    expect(row('area.macOnly').status).toBe('none')
-    expect(row('area.neutral').status).toBe('none')
-  })
-
-  it('marks a row behind a capability as gated, whatever its mechanism', () => {
-    expect(row('ai.local.notInstalled').status).toBe('gated')
-    expect(row('ai.local.notInstalled').sources.row).toContain('localAi')
-  })
-
-  it('parks the key-placeholder rows until the keymap work', () => {
-    expect(row('viewer.copyDialog.confirmBody').status).toBe('none')
-    expect(row('viewer.copyDialog.confirmBody').note).toContain('#1102')
-  })
-
-  it('promotes a none row a verdict wrote text for', () => {
-    expect(row('errors.provider.appBased.serious').status).toBe('pending')
-  })
-
-  it('seeds the register of a Trash or Quit row', () => {
-    expect(row('commands.appQuit.label').register).toBe('action')
-    expect(row('area.trash.toast').register).toBe('sentence')
-  })
-
-  it('resolves a pair into its survivor, with both old keys on record', () => {
-    const pair = row('main.upgradeNudge')
-    expect(pair).toMatchObject({
-      status: 'apply',
-      proposalKey: 'main.upgradeNudge.mac + main.upgradeNudge.other',
-      collapseFrom: { mac: 'main.upgradeNudge.mac', other: 'main.upgradeNudge.other' },
-    })
-    expect(isApplyRow(pair) && englishValueOf(pair)).toMatch(/^\{platform, select, macos \{.*\} other \{.*\}\}$/)
-  })
-
-  it('resolves the accepted macOS change, keeping the old English for Linux', () => {
-    expect(row('ai.secretError.genericBody')).toMatchObject({
-      status: 'apply',
-      macosChanged: true,
-      branches: {
-        other: 'Check that your system keyring is available, then try again. If it persists, restart the app.',
-      },
-    })
-  })
-
-  it('turns an overturned reviewed row into pending work, and keeps the rest as no change', () => {
-    expect(row('commands.navGoHome.label')).toMatchObject({
-      status: 'pending',
-      branches: { macos: 'Go to home folder', windows: null, other: null },
-    })
-    expect(row('area.reviewed').status).toBe('none')
-    expect(row('area.reviewed').note).toContain('shared word')
-  })
-
-  it('adds a value the proposal never scanned from today’s English, and reports the ones it could not find', () => {
-    expect(row('main.quit.countdown')).toMatchObject({ status: 'pending', register: 'narration', file: 'main.json' })
-    expect(missing).toContain('askCmdr.tool.quit.doing')
-    expect(file.rows.some((candidate) => candidate.key === 'askCmdr.tool.quit.doing')).toBe(false)
-  })
-})
-
-describe('addMissingRows', () => {
-  it('keeps every existing row byte for byte and appends only the new ones', () => {
-    const { file: seeded } = seedCopyFinal(proposal, english)
-    const resolved: CopyRow = { ...seeded.rows[0], status: 'none', note: 'resolved by hand' }
-    const existing = { ...seeded, rows: [resolved, ...seeded.rows.slice(1, 3)] }
-
-    const { file, added } = addMissingRows(existing, seeded)
-
-    expect(file.rows.slice(0, 3)).toEqual(existing.rows)
-    expect(file.rows.length).toBe(seeded.rows.length)
-    expect(added.length).toBe(seeded.rows.length - 3)
-    expect(added).not.toContain(resolved.key)
   })
 })
 

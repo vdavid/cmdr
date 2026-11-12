@@ -1,9 +1,8 @@
 /**
  * The resolved platform copy, `docs/notes/windows-port/copy-final.json`: its row
  * shape, its validator, and the one function that turns a row into the English
- * catalog value. `platform-copy-seed.ts` writes the file, `apply-platform-copy.ts`
- * reads it, and each copy milestone resolves its rows in it by hand, so the
- * review of a milestone's English is a diff of that file.
+ * catalog value. `apply-platform-copy.ts` reads the file, and its rows are
+ * resolved in it by hand, so the review of the English is a diff of that file.
  *
  * A row is one catalog key (a collapsed `.mac`/`.other` pair is one row, named
  * by its survivor key). `status` says what happens to it:
@@ -11,8 +10,6 @@
  *  - `apply`: resolved. `branches` holds the final English for all three OSes,
  *    BEFORE folding; the apply script writes it. All three are required, so
  *    "Windows reads what Linux reads" is always a decision somebody wrote down.
- *  - `pending`: seeded from the proposal, not resolved yet. Its milestone turns
- *    it into one of the others. Never applied.
  *  - `gated`: the surface is hidden off macOS behind a capability, so the text
  *    stays macOS text.
  *  - `none`: no change (macOS-only by backend, the same words on every OS, or
@@ -46,8 +43,8 @@ export const COPY_FINAL_PATH = join(
 export type BranchName = 'macos' | 'windows' | 'other'
 export const BRANCH_NAMES: readonly BranchName[] = Object.freeze(['macos', 'windows', 'other'])
 
-export type CopyStatus = 'apply' | 'pending' | 'gated' | 'none' | 'open'
-const COPY_STATUSES: readonly string[] = ['apply', 'pending', 'gated', 'none', 'open']
+export type CopyStatus = 'apply' | 'gated' | 'none' | 'open'
+const COPY_STATUSES: readonly string[] = ['apply', 'gated', 'none', 'open']
 
 /** Which Windows register a Trash or Quit row speaks in (`docs/style-guide.md` § "Platform vocabulary"). */
 export type CopyRegister = 'label' | 'sentence' | 'action' | 'narration'

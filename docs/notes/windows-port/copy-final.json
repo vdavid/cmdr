@@ -1,5 +1,5 @@
 {
-  "readme": "The resolved platform copy: one row per catalog key (a collapsed .mac/.other pair is one row, named by its survivor). `branches` is the final English per OS before folding; `status` is apply (resolved, the script writes it), pending (seeded from the proposal, its milestone resolves it), gated (hidden off macOS), none (no change), or open (the code settles nothing yet). Seeded by apps/desktop/scripts/platform-copy-seed.ts, which never rewrites an existing row; resolved by hand, milestone by milestone; applied by apps/desktop/scripts/apply-platform-copy.ts. Row shape and rules: apps/desktop/scripts/platform-copy-rows.ts. Vocabulary: docs/style-guide.md § \"Platform vocabulary\".",
+  "readme": "The resolved platform copy: one row per catalog key (a collapsed .mac/.other pair is one row, named by its survivor). `branches` is the final English per OS before folding; `status` is apply (resolved, the script writes it), gated (hidden off macOS), none (no change), or open (the code settles nothing yet). Resolved by hand; applied by apps/desktop/scripts/apply-platform-copy.ts. Row shape and rules: apps/desktop/scripts/platform-copy-rows.ts. Vocabulary: docs/style-guide.md § \"Platform vocabulary\".",
   "gated": [
     {
       "keys": "fileExplorer.quickLookHint.*",
