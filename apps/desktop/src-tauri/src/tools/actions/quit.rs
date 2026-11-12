@@ -35,6 +35,12 @@ pub fn execute_quit<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
         QuitOutcome::Proceed => {
             // The gate is now `Quitting`, so this comes back through
             // `RunEvent::ExitRequested` and sails straight past it.
+            //
+            // Not `app_lifecycle::quit_through_gate`, the way out the window close and
+            // `quit_app` share: it stops the background services, the MCP server among
+            // them, BEFORE it exits, so this reply would never reach the client. Here the
+            // gate already said yes, and `RunEvent::Exit` stops the services after the
+            // reply has gone.
             app.exit(0);
             Ok(json!({
                 "outcome": "quitting",

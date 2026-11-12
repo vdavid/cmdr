@@ -50,6 +50,10 @@ does. Three consequences the gate has to carry:
   frontend's listener is idempotent, so the ordinary path (which closed the prompt first) sees a no-op. Pinned by
   `tests::calling_a_quit_off_tells_the_windows_so_no_prompt_is_left_counting`.
 
+**The `quit` tool exits with its own `app.exit(0)`, not `app_lifecycle::quit_through_gate`**: that one stops the
+background services (the MCP server among them) before exiting, so the tool's reply would never be sent. `request_quit`
+already ran the gate, and `RunEvent::Exit` stops the services afterward.
+
 **An unanswered agent-initiated quit ends exactly like an unanswered human one**: the deadline fires at `COUNTDOWN` and
 the teardown runs. That is the accepted trade for UI parity, and the tool's reply says so in as many words.
 
