@@ -213,8 +213,22 @@ function searchFieldText(tauriPage: PageLike): Promise<string> {
   return tauriPage.evaluate<string>(`document.querySelector(${JSON.stringify(SHEET_SEARCH_FIELD)})?.value ?? 'missing'`)
 }
 
+/**
+ * Puts focus on `selector` and keeps asking until it stays there: the sheet places its own focus
+ * once it has settled after opening (`open-settled.ts`), which can land after a first `focus()`.
+ */
 async function focusIn(tauriPage: PageLike, selector: string): Promise<void> {
   const sel = JSON.stringify(selector)
-  await tauriPage.evaluate(`document.querySelector(${sel})?.focus()`)
-  await tauriPage.waitForFunction(`document.activeElement === document.querySelector(${sel})`, waitBudget(3000))
+  await expect
+    .poll(
+      () =>
+        tauriPage.evaluate<boolean>(`(function(){
+            var el = document.querySelector(${sel});
+            if (!el) return false;
+            if (document.activeElement !== el) el.focus();
+            return document.activeElement === el;
+        })()`),
+      { timeout: waitBudget(5000) },
+    )
+    .toBe(true)
 }
