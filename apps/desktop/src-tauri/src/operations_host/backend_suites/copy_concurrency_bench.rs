@@ -622,14 +622,14 @@ async fn connect_target() -> Target {
                 "CMDR_BENCH_TARGET=nas needs SMB2_TEST_NAS_PASSWORD (this harness deliberately does not \
                  walk up to smb2/.env — inside a worktree that path resolves into .claude/worktrees/)",
             );
-            let host = std::env::var("SMB2_TEST_NAS_HOST").unwrap_or_else(|_| "192.168.1.111".to_owned());
-            let share = std::env::var("SMB2_TEST_NAS_SHARE").unwrap_or_else(|_| "naspi".to_owned());
-            let user = std::env::var("SMB2_TEST_NAS_USER").unwrap_or_else(|_| "david".to_owned());
+            let host = std::env::var("SMB2_TEST_NAS_HOST").unwrap_or_else(|_| "192.168.50.10".to_owned());
+            let share = std::env::var("SMB2_TEST_NAS_SHARE").unwrap_or_else(|_| "testshare".to_owned());
+            let user = std::env::var("SMB2_TEST_NAS_USER").unwrap_or_else(|_| "test_user_3".to_owned());
             let volume_id = smb_volume_id(&host, 445, &share);
             let params = SmbConnectionParams::new(&host, &share, 445, Some(user.as_str()), Some(password.as_str()));
             let volume = connect_smb_volume(
                 &share,
-                MountAnchor::at_share_root("/Volumes/naspi-m43-bench"),
+                MountAnchor::at_share_root("/Volumes/testshare-m43-bench"),
                 &volume_id,
                 params,
                 crate::volume_host::host(),
@@ -641,7 +641,7 @@ async fn connect_target() -> Target {
             // per-rep directories under it come and go.
             let _ = volume.create_directory_all(Path::new(NAS_BENCH_ROOT)).await;
             Target {
-                label: format!("QNAP TS-464 (\"Naspolya\", {host}/{share}, direct smb2)"),
+                label: format!("QNAP TS-464 (\"Testnas\", {host}/{share}, direct smb2)"),
                 volume,
                 scratch_parent: NAS_BENCH_ROOT.to_owned(),
             }

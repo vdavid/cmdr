@@ -11,7 +11,7 @@ fn entry(address: &str, port: u16, name: &str) -> ManualServerEntry {
         address: address.to_string(),
         port,
         added_at: "2026-09-01T00:00:00Z".to_string(),
-        username: Some("ada".to_string()),
+        username: Some("test_user_1".to_string()),
         awaiting_first_connect: false,
     }
 }
@@ -38,7 +38,7 @@ fn a_moved_host_replaces_its_entry_in_place() {
         &path,
         &generate_server_id("10.0.0.2", 445),
         &SmbServer::new("nas.tail1234.ts.net", 11480),
-        &edit("Attic NAS", Some("bob")),
+        &edit("Attic NAS", Some("test_user_5")),
     )
     .expect("nothing holds the new address");
 
@@ -48,7 +48,7 @@ fn a_moved_host_replaces_its_entry_in_place() {
     assert_eq!(servers[0].address, "nas.tail1234.ts.net");
     assert_eq!(servers[0].port, 11480);
     assert_eq!(servers[0].added_at, "2026-09-01T00:00:00Z");
-    assert_eq!(servers[0].username.as_deref(), Some("bob"));
+    assert_eq!(servers[0].username.as_deref(), Some("test_user_5"));
     assert_eq!(servers[0].display_name, "Attic NAS");
     assert_eq!(moved.id, servers[0].id);
 }

@@ -103,7 +103,7 @@ while RSS does not. Not a leak, but worth knowing that `ps`-style monitoring wil
 
 ## NAS scan (2026-07-22): multi-connection scan pool, after measurement
 
-The full fresh SMB index scan of David's QNAP NAS (`/Volumes/naspi`, share `naspi` on `192.168.1.111`) with the
+The full fresh SMB index scan of David's QNAP NAS (`/Volumes/testshare`, share `testshare` on `192.168.50.10`) with the
 multi-connection scan pool (`smb/scan_pool.rs`, `SCAN_POOL_SIZE = 4`) plus the M2 batched writer (periodic transactions,
 ~2 s commit window).
 
@@ -145,12 +145,12 @@ window overran the scan into post-completion idle, so quote the peaks, not the a
 (`≥ 5.53 TB`): the intentionally-skipped NAS system dirs `@Recycle` and `@Recently-Snapshot` each report size 0 with
 `recursiveSizeComplete: false` (unknown, not claimed as exact), exactly as the `min_subtree_epoch` design requires.
 
-**How it was connected (for repeating this).** `/Volumes/naspi` is not OS-mounted by default, and a guest direct smb2
-connection fails on this share (`STATUS_LOGON_FAILURE`; the share requires real credentials). The working recipe:
-`mount_network_share` with `username = "david"` and the password (from the login-keychain internet-password item keyed
-by server `192.168.1.111` + protocol `smb`, which is where Finder stores it, not under an `smb://…` account string),
-which registers a direct smb2 `SmbVolume`, then `enable_drive_index` on volume id `smb-192-168-1-111-445-naspi`. A fresh
-dev data dir gives fresh-scan (truncate) behavior for free.
+**How it was connected (for repeating this).** `/Volumes/testshare` is not OS-mounted by default, and a guest direct
+smb2 connection fails on this share (`STATUS_LOGON_FAILURE`; the share requires real credentials). The working recipe:
+`mount_network_share` with `username = "test_user_3"` and the password (from the login-keychain internet-password item
+keyed by server `192.168.50.10` + protocol `smb`, which is where Finder stores it, not under an `smb://…` account
+string), which registers a direct smb2 `SmbVolume`, then `enable_drive_index` on volume id
+`smb-192-168-50-10-445-testshare`. A fresh dev data dir gives fresh-scan (truncate) behavior for free.
 
 # Run 2, same day, after the three fixes, on a BUSY machine
 

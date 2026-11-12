@@ -140,11 +140,11 @@ appended step). The shape and its non-obvious choices (the fourth, `operation_tr
     one. Pinned by `intern_dir_keeps_case_and_normalization_twins_apart` and
     `v3_migration_keeps_merged_dirs_and_stops_merging_new_twins`.
   - **A remote volume's root is ONE name.** A remote path is rooted at `scheme://authority` (`adb://serial/…`,
-    `sftp://ada@nas:22/…`, `smb://nas/share`), and `intern_dir` keeps that head whole as the first name under the
-    volume-root row (`split_scheme_root`); `reconstruct_dir_path` renders a chain led by such a name without the leading
-    `/`. Splitting it on `/` like the rest drops the empty segment inside `://`, so `adb://serial/x` came back as
-    `/adb:/serial/x`: a path no volume answers to, in the item views AND in the `RollbackUnit` the rollback hands to the
-    volume. No real folder name can hold `://` (a name has no `/`), so the rule can't misfire on a local path. Rows
+    `sftp://test_user_1@nas:22/…`, `smb://nas/share`), and `intern_dir` keeps that head whole as the first name under
+    the volume-root row (`split_scheme_root`); `reconstruct_dir_path` renders a chain led by such a name without the
+    leading `/`. Splitting it on `/` like the rest drops the empty segment inside `://`, so `adb://serial/x` came back
+    as `/adb:/serial/x`: a path no volume answers to, in the item views AND in the `RollbackUnit` the rollback hands to
+    the volume. No real folder name can hold `://` (a name has no `/`), so the rule can't misfire on a local path. Rows
     written before it keep their mangled chain. Pinned by `intern_dir_round_trips_a_scheme_rooted_path`.
 - **`operations` — one row per batch.** `op_id` (the pipeline UUID), typed `kind` + nullable `archive_subkind`,
   `initiator`, the two-axis status (`execution_status` + `rollback_state` + nullable `not_rollbackable_reason`),

@@ -27,7 +27,7 @@ export interface TransferErrorFixture {
 }
 
 const LONG_PATH =
-  '/Volumes/Naspolya/media/photos/2026/07-summer-archive/raw-originals/Sony-A7RV/2026-07-14_stockholm-archipelago-sunrise-session/DSC09241_edited_final_v3_reallyfinal.arw'
+  '/Volumes/Testnas/media/photos/2026/07-summer-archive/raw-originals/camera-1/2026-07-14_test-harbor-sunrise-photo-session/DSC09241_edited_final_v3_reallyfinal.arw'
 
 /**
  * One fixture per `WriteOperationError` variant. A `Record` keyed by every
@@ -47,23 +47,23 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     // A share subfolder, the shape this actually shows up in: the destination
     // is on a NAS that stopped being able to address the folder mid-transfer.
-    error: { type: 'destination_not_found', path: '/Volumes/Naspolya/media/photos/2026' },
+    error: { type: 'destination_not_found', path: '/Volumes/Testnas/media/photos/2026' },
   },
   destination_not_a_folder: {
     operationType: 'copy',
     // The path is the FILE in the way, a level above the folder the copy was
     // told to create (`…/photos/2026/trip`).
-    error: { type: 'destination_not_a_folder', path: '/Volumes/Naspolya/media/photos/2026' },
+    error: { type: 'destination_not_a_folder', path: '/Volumes/Testnas/media/photos/2026' },
   },
   source_not_connected: {
     operationType: 'delete',
     // A phone the switcher lists that nobody has opened in a pane yet.
-    error: { type: 'source_not_connected', path: 'adb://46061FDAS000A4/sdcard/DCIM/Camera/PXL_20260714_052311.jpg' },
+    error: { type: 'source_not_connected', path: 'adb://TESTSERIAL0001/sdcard/DCIM/Camera/PXL_20260714_052311.jpg' },
   },
   destination_not_connected: {
     operationType: 'copy',
     // A saved server nobody has connected this session.
-    error: { type: 'destination_not_connected', path: 'sftp://alex@nas.local:22/share/photos/2026' },
+    error: { type: 'destination_not_connected', path: 'sftp://test_user_11@testnas.local:22/share/photos/2026' },
   },
   source_no_longer_connected: {
     operationType: 'copy',
@@ -72,7 +72,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
   },
   destination_exists: {
     operationType: 'move',
-    error: { type: 'destination_exists', path: '/Users/alex/Documents/invoices/2026-Q2-summary.numbers' },
+    error: { type: 'destination_exists', path: '/Users/test_user_11/Documents/invoices/2026-Q2-summary.numbers' },
   },
   permission_denied: {
     operationType: 'delete',
@@ -94,7 +94,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
       type: 'insufficient_space',
       required: 214_748_364_800,
       available: 3_221_225_472,
-      volumeName: 'Naspolya media (SMB)',
+      volumeName: 'Testnas media (SMB)',
     },
   },
   reply_signature_refused: {
@@ -134,8 +134,8 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'move',
     error: {
       type: 'destination_inside_source',
-      source: '/Users/alex/Pictures/Photo Library',
-      destination: '/Users/alex/Pictures/Photo Library/2026/backup-of-everything',
+      source: '/Users/test_user_11/Pictures/Photo Library',
+      destination: '/Users/test_user_11/Pictures/Photo Library/2026/backup-of-everything',
     },
   },
   duplicate_source_names: {
@@ -143,8 +143,8 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     error: {
       type: 'duplicate_source_names',
       name: 'invoices',
-      first: '/Users/alex/Documents/2025/invoices',
-      second: '/Users/alex/Documents/2026/invoices',
+      first: '/Users/test_user_11/Documents/2025/invoices',
+      second: '/Users/test_user_11/Documents/2026/invoices',
     },
   },
   named_leaves_refused: {
@@ -183,7 +183,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'archive_duplicate_entry_name',
-      path: '/Users/alex/Downloads/photos.zip',
+      path: '/Users/test_user_11/Downloads/photos.zip',
       name: 'Summer/beach.jpg',
     },
   },
@@ -191,7 +191,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'move',
     error: {
       type: 'archive_encrypted_entry',
-      path: '/Users/alex/Downloads/tax-2025.zip',
+      path: '/Users/test_user_11/Downloads/test-2025.zip',
       name: 'receipts/march.pdf',
     },
   },
@@ -199,14 +199,14 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'move',
     error: {
       type: 'archive_entry_under_file',
-      path: '/Users/alex/Downloads/project.zip',
+      path: '/Users/test_user_11/Downloads/project.zip',
       entry: 'notes/a.txt',
       file: 'notes',
     },
   },
   symlink_loop: {
     operationType: 'copy',
-    error: { type: 'symlink_loop', path: '/Users/alex/dev/node_modules/.pnpm/self/node_modules/self' },
+    error: { type: 'symlink_loop', path: '/Users/test_user_11/dev/node_modules/.pnpm/self/node_modules/self' },
   },
   cancelled: {
     operationType: 'copy',
@@ -219,11 +219,11 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'device_disconnected',
-      path: '/Volumes/Fältkamera/DCIM/104MSDCF',
+      path: '/Volumes/Tëstkamera/DCIM/104MSDCF',
       side: {
         role: 'destination',
-        volumeId: 'vol-faltkamera',
-        volumeName: 'Fältkamera',
+        volumeId: 'vol-testkamera',
+        volumeName: 'Tëstkamera',
         counterpartName: 'Macintosh HD',
       },
     },
@@ -240,9 +240,9 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'move',
     error: {
       type: 'move_not_confirmed',
-      path: '/Volumes/Fältkamera/DCIM',
+      path: '/Volumes/Tëstkamera/DCIM',
       errno: 5,
-      volumeName: 'Fältkamera',
+      volumeName: 'Tëstkamera',
     },
   },
   read_only_device: {
@@ -256,11 +256,11 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
   },
   destination_not_writable: {
     operationType: 'copy',
-    error: { type: 'destination_not_writable', path: 'adb://46061FDAS000A4', reason: 'unexplained' },
+    error: { type: 'destination_not_writable', path: 'adb://TESTSERIAL0001', reason: 'unexplained' },
   },
   file_locked: {
     operationType: 'delete',
-    error: { type: 'file_locked', path: '/Users/alex/Documents/Acme/bookkeeping-2025.numbers' },
+    error: { type: 'file_locked', path: '/Users/test_user_11/Documents/Acme/bookkeeping-2025.numbers' },
   },
   trash_not_supported: {
     operationType: 'trash',
@@ -268,14 +268,14 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
   },
   connection_interrupted: {
     operationType: 'copy',
-    error: { type: 'connection_interrupted', path: 'smb://naspolya.local/media/photos/2026' },
+    error: { type: 'connection_interrupted', path: 'smb://testnas.local/media/photos/2026' },
   },
   link_needs_consent: {
     operationType: 'copy',
     error: {
       type: 'link_needs_consent',
-      path: 'smb://naspolya.local/media/archive/2026.zip',
-      server: 'naspolya.local',
+      path: 'smb://testnas.local/media/archive/2026.zip',
+      server: 'testnas.local',
       target: 'fs01.example.com',
     },
   },
@@ -285,7 +285,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     error: {
       type: 'server_connection_lost',
       path: '/Volumes/archive/photos/2026/DSC09241.arw',
-      volumeName: 'Naspolya',
+      volumeName: 'Testnas',
       gaveUpAfterSecs: 900,
     },
   },
@@ -295,14 +295,14 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     error: {
       type: 'changed_while_disconnected',
       path: '/Volumes/archive/photos/2019/DSC01143.arw',
-      volumeName: 'Naspolya',
+      volumeName: 'Testnas',
     },
   },
   read_error: {
     operationType: 'copy',
     error: {
       type: 'read_error',
-      path: '/Volumes/Fältkamera/DCIM/104MSDCF/DSC09241.ARW',
+      path: '/Volumes/Tëstkamera/DCIM/104MSDCF/DSC09241.ARW',
       message: 'os error 5: Input/output error (block 2,398,112)',
     },
   },
@@ -328,7 +328,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
   },
   delete_pending: {
     operationType: 'delete',
-    error: { type: 'delete_pending', path: '/Users/alex/Downloads/ubuntu-26.04-desktop-amd64.iso' },
+    error: { type: 'delete_pending', path: '/Users/test_user_11/Downloads/ubuntu-26.04-desktop-amd64.iso' },
   },
   // A copy off a NAS meeting a PDF someone has open (cmdr-reports#110).
   file_in_use: {
@@ -346,12 +346,12 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
   // A permanent delete of a project folder holding a mounted NAS share.
   mounted_volume_inside: {
     operationType: 'delete',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'delete' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/test_user_11/projects/backup/nas', action: 'delete' },
   },
   // A permanent delete an agent started on the person's own home folder.
   home_folder: {
     operationType: 'delete',
-    error: { type: 'home_folder', path: '/Users/alex', relation: 'isHome', action: 'delete' },
+    error: { type: 'home_folder', path: '/Users/test_user_11', relation: 'isHome', action: 'delete' },
   },
   // A move within an S3 account whose source another app replaced mid-copy.
   source_changed: {
@@ -370,8 +370,8 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
       filesystem: 'fat32',
       maxSize: 4_294_967_295,
       files: [
-        { name: '2026-07-14_stockholm-archipelago-sunrise-session.braw', size: 92_341_338_112 },
-        { name: 'family-videos-2011-2026-master.mov', size: 41_231_223_808 },
+        { name: '2026-07-14_test-harbor-sunrise-photo-session.braw', size: 92_341_338_112 },
+        { name: 'test-videos-2011-2026-master.mov', size: 41_231_223_808 },
         { name: 'ubuntu-26.04-desktop-amd64.iso', size: 6_442_450_944 },
       ],
       totalCount: 3,
@@ -405,7 +405,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'originals_kept_aside',
-      cause: { type: 'source_not_found', path: '/Users/alex/projects/notes/2026-07-24.md' },
+      cause: { type: 'source_not_found', path: '/Users/test_user_11/projects/notes/2026-07-24.md' },
       recovered: [
         {
           path: '/Volumes/archive/documents/reports/2026-annual-report',
@@ -421,11 +421,11 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'move',
     error: {
       type: 'source_not_removed',
-      path: '/Users/alex/Pictures/gate-measurements.jpg',
+      path: '/Users/test_user_11/Pictures/gate-measurements.jpg',
       landedAt: '/Volumes/archive/projects-archive/2023/gate-measurements.jpg',
       cause: {
         type: 'permission_denied',
-        path: '/Users/alex/Pictures/gate-measurements.jpg',
+        path: '/Users/test_user_11/Pictures/gate-measurements.jpg',
         message: 'Operation not permitted (os error 1)',
         errno: 1,
         refusal: 'systemProtected',
@@ -444,12 +444,12 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
       cause: {
         type: 'server_connection_lost',
         path: '/Volumes/archive/photos/2026/DSC09241.arw',
-        volumeName: 'Naspolya',
+        volumeName: 'Testnas',
         gaveUpAfterSecs: 900,
       },
       kept: [
-        { fate: 'landsWhenBack', count: 2, exampleName: 'DSC09239.arw', volumeName: 'Naspolya' },
-        { fate: 'rescued', count: 1, exampleName: 'DSC09240 (recovered).arw', volumeName: 'Naspolya' },
+        { fate: 'landsWhenBack', count: 2, exampleName: 'DSC09239.arw', volumeName: 'Testnas' },
+        { fate: 'rescued', count: 1, exampleName: 'DSC09240 (recovered).arw', volumeName: 'Testnas' },
       ],
     },
   },
@@ -479,7 +479,7 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     error: {
       type: 'archive_needs_password',
-      path: '/Users/alex/Downloads/tax-returns-2019-2025.zip',
+      path: '/Users/test_user_11/Downloads/test-archive-2019-2025.zip',
       container: 'archive',
       wrongAttempt: false,
     },
@@ -497,19 +497,19 @@ const extraStates: Record<string, TransferErrorFixture> = {
     error: {
       type: 'server_connection_lost',
       path: '/Volumes/archive/photos/2019/DSC01142.arw',
-      volumeName: 'Naspolya',
+      volumeName: 'Testnas',
       gaveUpAfterSecs: 900,
     },
   },
   // A copy whose answered Overwrite would replace a folder holding a mounted share.
   'mounted_volume_inside-copy': {
     operationType: 'copy',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'replace' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/test_user_11/projects/backup/nas', action: 'replace' },
   },
   // A move onto an external drive of a project folder holding a mounted share.
   'mounted_volume_inside-move': {
     operationType: 'move',
-    error: { type: 'mounted_volume_inside', mountPoint: '/Users/alex/projects/backup/nas', action: 'move' },
+    error: { type: 'mounted_volume_inside', mountPoint: '/Users/test_user_11/projects/backup/nas', action: 'move' },
   },
   // A trash of `/Users`, which holds the home folder.
   'home_folder-holds': {
@@ -519,7 +519,7 @@ const extraStates: Record<string, TransferErrorFixture> = {
   // A move of the home folder onto an external drive.
   'home_folder-move': {
     operationType: 'move',
-    error: { type: 'home_folder', path: '/Users/alex', relation: 'isHome', action: 'move' },
+    error: { type: 'home_folder', path: '/Users/test_user_11', relation: 'isHome', action: 'move' },
   },
   // A move of `/Users`, which holds the home folder.
   'home_folder-move-holds': {
@@ -529,7 +529,7 @@ const extraStates: Record<string, TransferErrorFixture> = {
   // F2 on the home folder.
   'home_folder-rename': {
     operationType: 'move',
-    error: { type: 'home_folder', path: '/Users/alex', relation: 'isHome', action: 'rename' },
+    error: { type: 'home_folder', path: '/Users/test_user_11', relation: 'isHome', action: 'rename' },
   },
   // F2 on `/Users`.
   'home_folder-rename-holds': {
@@ -542,7 +542,7 @@ const extraStates: Record<string, TransferErrorFixture> = {
       type: 'files_too_large_for_filesystem',
       filesystem: 'fat32',
       maxSize: 4_294_967_295,
-      files: [{ name: '2026-07-14_stockholm-archipelago-sunrise-session.braw', size: 92_341_338_112 }],
+      files: [{ name: '2026-07-14_test-harbor-sunrise-photo-session.braw', size: 92_341_338_112 }],
       totalCount: 1,
     },
   },

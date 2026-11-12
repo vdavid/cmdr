@@ -100,11 +100,11 @@ Both flows pass every log line and the manifest through `apps/desktop/src-tauri/
 [its CLAUDE.md](../apps/desktop/src-tauri/src/redact/CLAUDE.md) for the full pattern catalog and the mandatory
 snapshot-tested corpus.
 
-- **Path-shape preserved.** `/Users/john/Documents/budget.pdf` → `$HOME/Documents/<file>.pdf` (extension and known-safe
-  parent dir kept, user-identifying parts redacted).
+- **Path-shape preserved.** `/Users/test_user_14/Documents/budget.pdf` → `$HOME/Documents/<file>.pdf` (extension and
+  known-safe parent dir kept, user-identifying parts redacted).
 - **Allowlist of safe parent dirs.** `Documents`, `Downloads`, `Desktop`, `Library`, `src`, `Pictures`, `Movies`,
-  `Music`, `Public`, `AppData`, `Application Support`. Anything else (for example, `/Users/john/SecretProjectName/...`)
-  collapses the parent to `<dir>`.
+  `Music`, `Public`, `AppData`, `Application Support`. Anything else (for example,
+  `/Users/test_user_14/SecretProjectName/...`) collapses the parent to `<dir>`.
 - **What's redacted:** Unix/Linux/Windows home paths, `/Volumes/<label>`, `/media/<label>`, SMB UNC URIs, bare `*.local`
   hostnames, MTP device names (in log targets), IPv4/IPv6, email addresses, URL userinfo.
 - **What's NOT redacted:** module paths (`cmdr_lib::network::smb_client`), filenames inside known-safe dirs (just the

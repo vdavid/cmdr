@@ -138,10 +138,10 @@ mod tests {
     fn single_indexed_dir_returns_dir_stats() {
         let (conn, _dir) = open_test_conn();
         let users_id = insert_dir(&conn, ROOT_ID, "Users");
-        let alice_id = insert_dir(&conn, users_id, "alice");
+        let alice_id = insert_dir(&conn, users_id, "test_user_4");
         upsert_stats(&conn, alice_id, 42, 1024 * 1024);
 
-        let totals = sum_expected_totals(&conn, &[PathBuf::from("/Users/alice")]).unwrap();
+        let totals = sum_expected_totals(&conn, &[PathBuf::from("/Users/test_user_4")]).unwrap();
         assert_eq!(totals.files, 42);
         assert_eq!(totals.bytes, 1024 * 1024);
     }
@@ -161,13 +161,13 @@ mod tests {
     fn mixed_files_and_dirs_sum() {
         let (conn, _dir) = open_test_conn();
         let users_id = insert_dir(&conn, ROOT_ID, "Users");
-        let alice_id = insert_dir(&conn, users_id, "alice");
+        let alice_id = insert_dir(&conn, users_id, "test_user_4");
         upsert_stats(&conn, alice_id, 100, 5000);
         insert_file(&conn, users_id, "note.txt", Some(200));
 
         let totals = sum_expected_totals(
             &conn,
-            &[PathBuf::from("/Users/alice"), PathBuf::from("/Users/note.txt")],
+            &[PathBuf::from("/Users/test_user_4"), PathBuf::from("/Users/note.txt")],
         )
         .unwrap();
         assert_eq!(totals.files, 101);
@@ -178,12 +178,15 @@ mod tests {
     fn missing_path_returns_none() {
         let (conn, _dir) = open_test_conn();
         let users_id = insert_dir(&conn, ROOT_ID, "Users");
-        let alice_id = insert_dir(&conn, users_id, "alice");
+        let alice_id = insert_dir(&conn, users_id, "test_user_4");
         upsert_stats(&conn, alice_id, 1, 1);
 
         let totals = sum_expected_totals(
             &conn,
-            &[PathBuf::from("/Users/alice"), PathBuf::from("/Users/never-indexed")],
+            &[
+                PathBuf::from("/Users/test_user_4"),
+                PathBuf::from("/Users/never-indexed"),
+            ],
         );
         assert_eq!(totals, None);
     }
@@ -197,10 +200,10 @@ mod tests {
         // overshoots 100%.
         let (conn, _dir) = open_test_conn();
         let users_id = insert_dir(&conn, ROOT_ID, "Users");
-        let alice_id = insert_dir(&conn, users_id, "alice");
+        let alice_id = insert_dir(&conn, users_id, "test_user_4");
         upsert_stats_with_epoch(&conn, alice_id, 42, 1024 * 1024, 0);
 
-        let totals = sum_expected_totals(&conn, &[PathBuf::from("/Users/alice")]);
+        let totals = sum_expected_totals(&conn, &[PathBuf::from("/Users/test_user_4")]);
         assert_eq!(totals, None);
     }
 
@@ -208,9 +211,9 @@ mod tests {
     fn dir_without_stats_returns_none() {
         let (conn, _dir) = open_test_conn();
         let users_id = insert_dir(&conn, ROOT_ID, "Users");
-        insert_dir(&conn, users_id, "alice");
+        insert_dir(&conn, users_id, "test_user_4");
 
-        let totals = sum_expected_totals(&conn, &[PathBuf::from("/Users/alice")]);
+        let totals = sum_expected_totals(&conn, &[PathBuf::from("/Users/test_user_4")]);
         assert_eq!(totals, None);
     }
 

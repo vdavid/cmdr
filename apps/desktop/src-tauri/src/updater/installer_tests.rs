@@ -44,10 +44,10 @@ fn find_app_bundle_above_returns_bundle_for_installed_layout() {
 
 #[test]
 fn find_app_bundle_above_returns_bundle_for_user_applications_layout() {
-    let exe = Path::new("/Users/jane/Applications/Cmdr.app/Contents/MacOS/Cmdr");
+    let exe = Path::new("/Users/test_user_12/Applications/Cmdr.app/Contents/MacOS/Cmdr");
     assert_eq!(
         find_app_bundle_above(exe),
-        Some(PathBuf::from("/Users/jane/Applications/Cmdr.app"))
+        Some(PathBuf::from("/Users/test_user_12/Applications/Cmdr.app"))
     );
 }
 
@@ -56,13 +56,14 @@ fn find_app_bundle_above_returns_none_for_dev_target_layout() {
     // Regression for the noisy auto-error-reports observed in v0.21.0: dev builds run from
     // `target/<triple>/release/Cmdr` have no `.app` ancestor, so the installer can't possibly
     // succeed. The wrapping `is_running_from_app_bundle()` gate uses exactly this distinction.
-    let exe = Path::new("/Users/jane/code/cmdr/target/aarch64-apple-darwin/release/Cmdr");
+    let exe = Path::new("/Users/test_user_12/code/cmdr/target/aarch64-apple-darwin/release/Cmdr");
     assert_eq!(find_app_bundle_above(exe), None);
 }
 
 #[test]
 fn find_app_bundle_above_returns_none_for_worktree_target_layout() {
-    let exe = Path::new("/Users/jane/code/cmdr/.claude/worktrees/feature/target/aarch64-apple-darwin/release/Cmdr");
+    let exe =
+        Path::new("/Users/test_user_12/code/cmdr/.claude/worktrees/feature/target/aarch64-apple-darwin/release/Cmdr");
     assert_eq!(find_app_bundle_above(exe), None);
 }
 

@@ -213,7 +213,7 @@ prompt paid for the folder nine times and read nine folders' worth of breadth wh
 line counted folder-minutes while calling them folders; and the rail's digest block, keyed by path, threw
 `each_key_duplicate`, which escapes the Svelte flush and rolls back the whole batch, taking the panel's rendering down
 for as long as the block stayed expanded. Measured 2026-09-06 on a dev `main.db`: 58 lines for 38 folders in one wake,
-`/Users/veszelovszki` nine times. `a_folder_busy_across_windows_gets_one_line` pins it.
+`/Users/test_user_3` nine times. `a_folder_busy_across_windows_gets_one_line` pins it.
 
 ### The rendered digest is prompt-only
 

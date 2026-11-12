@@ -82,21 +82,21 @@ fn credentials_and_ipv6_hosts_make_a_valid_proxy_url() {
     let entry = Entry::Http {
         host: "fd00::1".into(),
         port: 3128,
-        credentials: Some(("ada".into(), "p@ss word".into())),
+        credentials: Some(("test_user_1".into(), "p@ss word".into())),
     };
     // `%20`, not `+`: hyper-util percent-decodes userinfo, and `+` would reach the proxy as a `+`.
     assert_eq!(
         walk(&[entry]),
-        Route::Proxy("http://ada:p%40ss%20word@[fd00::1]:3128".into())
+        Route::Proxy("http://test_user_1:p%40ss%20word@[fd00::1]:3128".into())
     );
     let entry = Entry::Socks {
         host: "socks.test".into(),
         port: 1080,
-        credentials: Some(("ada".into(), "p:ss/word".into())),
+        credentials: Some(("test_user_1".into(), "p:ss/word".into())),
     };
     assert_eq!(
         walk(&[entry]),
-        Route::Proxy("socks5h://ada:p%3Ass%2Fword@socks.test:1080".into())
+        Route::Proxy("socks5h://test_user_1:p%3Ass%2Fword@socks.test:1080".into())
     );
 }
 

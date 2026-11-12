@@ -39,8 +39,8 @@ const onlyBootDisk = (p: string) => Promise.resolve(p === '/' || p === '/Volumes
 function storedTab(overrides: Partial<PersistedTab>): PersistedTab {
   return {
     id: 'tab-1',
-    path: '/Volumes/naspi/docs',
-    volumeId: 'smb-naspolya-445-naspi',
+    path: '/Volumes/testshare/docs',
+    volumeId: 'smb-testnas-445-testshare',
     sortBy: 'name',
     sortOrder: 'ascending',
     viewMode: 'full',
@@ -59,7 +59,7 @@ describe('a stored tab on an SMB share', () => {
 
     const paneTabs = await loadPaneTabs('left', onlyBootDisk)
 
-    expect(paneTabs.tabs[0]).toMatchObject({ path: '/Volumes/naspi/docs', volumeId: 'smb-naspolya-445-naspi' })
+    expect(paneTabs.tabs[0]).toMatchObject({ path: '/Volumes/testshare/docs', volumeId: 'smb-testnas-445-testshare' })
   })
 
   it('still walks a local tab whose folder is gone', async () => {

@@ -238,9 +238,9 @@ describe('minting a license in the Worker runtime', () => {
   it('mints a license that validates as active, which is the whole point of minting one', async () => {
     const { status, minted } = await generate({
       email: 'prospect@example.com',
-      customerName: 'Dana',
+      customerName: 'Test Customer',
       organizationName: 'Acme',
-      note: 'Dana Lee, Acme, evaluation',
+      note: 'Test Customer, Acme, evaluation',
     })
     expect(status).toBe(200)
     expect(minted.emailed).toBe(false)

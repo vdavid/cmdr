@@ -166,7 +166,7 @@ async fn run_on(site: Site, cut: Cut, meanwhile: Meanwhile, replace: Replace) ->
     let op_id = format!("op-swap-outage-{site:?}-{cut:?}-{meanwhile:?}-{replace:?}");
     let engine = TestOperations::new();
 
-    let dest_inner = Arc::new(InMemoryVolume::new("Naspolya").with_space_info(10_000_000, 10_000_000));
+    let dest_inner = Arc::new(InMemoryVolume::new("Testnas").with_space_info(10_000_000, 10_000_000));
     dest_inner.create_directory(Path::new("/dest")).await.unwrap();
     if site.folder() != "/dest" {
         dest_inner.create_directory(Path::new(site.folder())).await.unwrap();
@@ -677,7 +677,7 @@ async fn a_stale_error_on_the_move_aside_re_runs_the_swap_at_every_site() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_stale_error_on_a_claimed_names_delete_keeps_the_temp_and_its_resume_lands() {
     let engine = TestOperations::new();
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     inner.create_file(Path::new("/notes.txt"), b"").await.unwrap();
     let nas = OutageVolume::wrap(Arc::clone(&inner), "swap-outage-claimed-name");
     nas.stale_error_at_delete_of(Path::new("/notes.txt"), RenameDrop::BeforeTheServerSeesIt);
@@ -725,7 +725,7 @@ async fn resume_after_someone_saved_at_the_cleared_name(
     dated: Option<u64>,
 ) -> (Arc<InMemoryVolume>, Resumed) {
     let engine = TestOperations::new();
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     inner.create_file(Path::new("/notes.txt"), b"").await.unwrap();
     inner.set_modified_at(Path::new("/notes.txt"), Some(1_700_000_000));
     let nas = OutageVolume::wrap(Arc::clone(&inner), lane);

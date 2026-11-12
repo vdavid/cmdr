@@ -5,14 +5,14 @@ use crate::types::PatternType;
 // ── Scope filtering in search ───────────────────────────────────
 
 /// Build a test index representing:
-/// /Users/alice/projects/app.rs         (id=9)
-/// /Users/alice/projects/node_modules/pkg.json (id=11)
-/// /Users/alice/.git/config             (id=13)
+/// /Users/test_user_4/projects/app.rs         (id=9)
+/// /Users/test_user_4/projects/node_modules/pkg.json (id=11)
+/// /Users/test_user_4/.git/config             (id=13)
 fn make_scope_test_index() -> SearchIndex {
     const NAMES: [&str; 9] = [
         "",             // 0: root
         "Users",        // 1
-        "alice",        // 2
+        "test_user_4",  // 2
         "projects",     // 3
         "app.rs",       // 4
         "node_modules", // 5
@@ -47,7 +47,7 @@ fn search_with_include_path_filter() {
         modified_after: None,
         modified_before: None,
         is_directory: Some(false),
-        include_paths: Some(vec!["/Users/alice/projects".to_string()]),
+        include_paths: Some(vec!["/Users/test_user_4/projects".to_string()]),
         exclude_dir_names: None,
         include_path_ids: Some(vec![4]),
         count_only: false,
@@ -57,8 +57,8 @@ fn search_with_include_path_filter() {
         sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
-    // Should find app.rs and pkg.json (both under /Users/alice/projects)
-    // but NOT config (under /Users/alice/.git)
+    // Should find app.rs and pkg.json (both under /Users/test_user_4/projects)
+    // but NOT config (under /Users/test_user_4/.git)
     assert_eq!(result.total_count, 2);
     let names: Vec<&str> = result.entries.iter().map(|e| e.name.as_str()).collect();
     assert!(names.contains(&"app.rs"));
@@ -138,7 +138,7 @@ fn a_match_outside_the_include_roots_is_not_counted_as_hidden() {
         modified_after: None,
         modified_before: None,
         is_directory: Some(false),
-        include_paths: Some(vec!["/Users/alice/projects".to_string()]),
+        include_paths: Some(vec!["/Users/test_user_4/projects".to_string()]),
         exclude_dir_names: None,
         include_path_ids: Some(vec![4]),
         count_only: false,
@@ -162,7 +162,7 @@ fn search_with_include_and_exclude() {
         modified_after: None,
         modified_before: None,
         is_directory: Some(false),
-        include_paths: Some(vec!["/Users/alice/projects".to_string()]),
+        include_paths: Some(vec!["/Users/test_user_4/projects".to_string()]),
         exclude_dir_names: Some(vec!["node_modules".to_string()]),
         include_path_ids: Some(vec![4]),
         count_only: false,

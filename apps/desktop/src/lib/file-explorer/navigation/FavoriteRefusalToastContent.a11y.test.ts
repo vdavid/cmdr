@@ -21,7 +21,7 @@ async function render(actionLabel: string | null): Promise<HTMLElement> {
     target,
     props: {
       toastId: 'favorite-refusal',
-      message: 'Cmdr doesn’t know how to reach “naspi on nas.local” anymore.',
+      message: 'Cmdr doesn’t know how to reach “testshare on testnas.local” anymore.',
       actionLabel,
       onAction: vi.fn(),
     },

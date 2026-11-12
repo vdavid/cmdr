@@ -268,7 +268,7 @@ pub fn update_known_share(share: KnownNetworkShare) {
 ///
 /// Matching is [`credential_key`](crate::network::server_identity::credential_key), the
 /// same identity the stored PASSWORD is keyed by, so every name form of one server
-/// (`Naspolya`, `naspolya.local`, `Naspolya._smb._tcp.local`) finds the hint saved under
+/// (`Testnas`, `testnas.local`, `Testnas._smb._tcp.local`) finds the hint saved under
 /// any other. The share list records whichever name the connect used, while the login
 /// form opens on whatever discovery produced; a raw compare misses exactly the case the
 /// hint exists for.
@@ -454,7 +454,7 @@ pub fn move_host_rows(rows: &[KnownNetworkShare], from: &SmbServer, to: &SmbServ
 /// ❗ The volume id and mount path STAY: only a mount knows the new id, and the old one
 /// is what favorites, tabs, and the share's `saved` row name until then.
 ///
-/// ❗ A name that ISN'T the old address (a Bonjour name, `Naspolya`) stays: it still names
+/// ❗ A name that ISN'T the old address (a Bonjour name, `Testnas`) stays: it still names
 /// the server, and the password filed under it stays reachable. A row with no address
 /// (the host's sign-in history, or a share an Add named) has only its name to say which
 /// host it is, so it always takes the new one.
@@ -697,7 +697,7 @@ pub(crate) fn fold_name(name: &str) -> String {
 ///
 /// The server half asks [`same_machine`](crate::network::server_identity::same_machine)
 /// rather than comparing keys, because `statfs` echoes whichever name form each mount
-/// used: one NAS is `192.168.1.111` on one mount and `Naspolya._smb._tcp.local` on the
+/// used: one NAS is `192.168.50.10` on one mount and `Testnas._smb._tcp.local` on the
 /// next, and a choice the other spelling can't see looks like the switch resetting
 /// itself.
 fn names_share(entry: &ShareRef, server_names: &[&str], share: &str, hosts: &[NetworkHost]) -> bool {

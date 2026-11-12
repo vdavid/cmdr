@@ -17,11 +17,11 @@ use cmdr_operations::{ConflictResolution, VolumeCopyConfig};
 // ── Phase 4 baseline bench (real QNAP NAS) ────────────────────────
 //
 // Measures end-to-end wall-clock for copying 100 × 10 KB files from
-// the QNAP `naspi` share to a local temp dir, through the real
+// the QNAP `testshare` share to a local temp dir, through the real
 // `copy_volumes_with_progress` code path. Requires:
 //
-// - QNAP reachable at 192.168.1.111 with the `naspi` share, user "david", password in
-//   `SMB2_TEST_NAS_PASSWORD` env var.
+// - The NAS named by `SMB2_TEST_NAS_HOST`, `SMB2_TEST_NAS_SHARE`, and `SMB2_TEST_NAS_USER` (the defaults are
+//   placeholders), password in `SMB2_TEST_NAS_PASSWORD`.
 // - 100 × 10 KB files pre-uploaded at `_test/bench_100tiny/f_000.bin` through `f_099.bin` (see
 //   `smb2`'s `bench_100_tiny_files_seq_vs_parallel` (running that benchmark uploads them as a side
 //   effect).
@@ -31,7 +31,7 @@ use cmdr_operations::{ConflictResolution, VolumeCopyConfig};
 //     --lib phase4_bench -- --ignored --nocapture --test-threads=1
 
 #[tokio::test]
-#[ignore = "Phase 4 baseline: requires QNAP at 192.168.1.111 and SMB2_TEST_NAS_PASSWORD env var"]
+#[ignore = "Phase 4 baseline: requires a NAS (SMB2_TEST_NAS_HOST) and SMB2_TEST_NAS_PASSWORD env var"]
 #[allow(
     clippy::print_stdout,
     clippy::needless_update,
@@ -51,22 +51,24 @@ async fn phase4_bench_baseline_smb_to_local_100_tiny_files() {
         .expect("SMB2_TEST_NAS_PASSWORD not set. Copy smb2/.env.example to smb2/.env, or set in your shell.");
 
     // Host is configurable so the bench can run via Tailscale
-    // (`SMB2_TEST_NAS_HOST=100.127.48.122`) from a different subnet.
-    let host = std::env::var("SMB2_TEST_NAS_HOST").unwrap_or_else(|_| "192.168.1.111".to_string());
+    // (`SMB2_TEST_NAS_HOST=100.64.0.10`) from a different subnet.
+    let host = std::env::var("SMB2_TEST_NAS_HOST").unwrap_or_else(|_| "192.168.50.10".to_string());
+    let share = std::env::var("SMB2_TEST_NAS_SHARE").unwrap_or_else(|_| "testshare".to_string());
+    let user = std::env::var("SMB2_TEST_NAS_USER").unwrap_or_else(|_| "test_user_3".to_string());
 
     // ── Set up source (SMB) ───────────────────────────────────────
     let smb_setup_start = Instant::now();
-    let smb_volume_id = smb_volume_id(&host, 445, "naspi");
-    let params = SmbConnectionParams::new(&host, "naspi", 445, Some("david"), Some(password.as_str()));
+    let smb_volume_id = smb_volume_id(&host, 445, &share);
+    let params = SmbConnectionParams::new(&host, &share, 445, Some(user.as_str()), Some(password.as_str()));
     let smb_volume = connect_smb_volume(
-        "naspi",
-        MountAnchor::at_share_root("/Volumes/naspi-bench-p4"),
+        &share,
+        MountAnchor::at_share_root("/Volumes/testshare-bench-p4"),
         &smb_volume_id,
         params,
         crate::volume_host::host(),
     )
     .await
-    .expect("SMB connect failed (is QNAP at 192.168.1.111 reachable?)");
+    .expect("SMB connect failed (is the NAS at SMB2_TEST_NAS_HOST reachable?)");
     let smb_setup = smb_setup_start.elapsed();
 
     // ── Set up destination (local temp dir) ───────────────────────

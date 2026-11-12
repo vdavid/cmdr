@@ -49,7 +49,7 @@ pub trait Volume: Send + Sync {
     /// backend can't change root without rebuilding its transport.
     ///
     /// One filesystem can be reached through several mount points (macOS mounts
-    /// the same SMB share at `/Volumes/naspi` AND `/Volumes/naspi-1`), and they
+    /// the same SMB share at `/Volumes/testshare` AND `/Volumes/testshare-1`), and they
     /// all derive one volume ID. The registry therefore tracks the SET of roots
     /// carrying an ID and keeps one of them active; when the active one dies it
     /// promotes a survivor, and this is how the promotion is carried out. See
@@ -2399,7 +2399,7 @@ pub trait Volume: Send + Sync {
 /// form every backend accepts.
 ///
 /// Cmdr's UI speaks two path dialects: a pane sends the absolute path it
-/// displays (`/Volumes/naspi/photos`), while the transfer dialog's destination
+/// displays (`/Volumes/testshare/photos`), while the transfer dialog's destination
 /// box is volume-relative (`/photos`, because the volume is a separate
 /// dropdown). Both are legitimate, and the difference is invisible to the
 /// receiving backend: a leading `/` says nothing about which dialect this is.
@@ -2415,8 +2415,8 @@ pub trait Volume: Send + Sync {
 ///
 /// - Every spelling of "the volume root" (empty, `.`, `/`) is `root` itself.
 /// - A path already under `root` is returned untouched, matched by whole
-///   COMPONENTS so the sibling mount `/Volumes/naspi-1` can't pass as being
-///   under `/Volumes/naspi`.
+///   COMPONENTS so the sibling mount `/Volumes/testshare-1` can't pass as being
+///   under `/Volumes/testshare`.
 /// - Anything else is volume-relative: its leading `/` (if any) goes, and the
 ///   rest hangs off `root`.
 ///

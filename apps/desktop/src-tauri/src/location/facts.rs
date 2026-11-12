@@ -109,7 +109,7 @@ impl VolumeFacts {
             }) else {
                 continue;
             };
-            // A share reads as the switcher spells it ("naspi on naspolya") when
+            // A share reads as the switcher spells it ("testshare on testnas") when
             // a saved row names it; the mount's own name is only the share's.
             let name = saved_shares
                 .iter()

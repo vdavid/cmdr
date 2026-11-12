@@ -80,7 +80,7 @@ export interface FileRowNameInput {
  * `..` says "Parent folder" in place of its name, then its cells like any row, its size as
  * "(this folder) 36,860": that cell shows the CURRENT folder's total, and bare after "Parent
  * folder" it sounded like the parent's. A restic snapshot row's Ext cell shows the host its
- * backup ran on, so the name says "(Backed up from) naspolya" right after the row's own name.
+ * backup ran on, so the name says "(Backed up from) testnas" right after the row's own name.
  *
  * It's set as the option's `aria-label`, which replaces the name the row's content would give,
  * so every badge that speaks through content (`FileIcon`'s sync badge, the restricted and

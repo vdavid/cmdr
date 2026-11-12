@@ -9,7 +9,7 @@ use cmdr_operations::{ReadOnlySide, WriteOperationError};
 #[test]
 fn a_restic_view_is_refused_but_a_lookalike_folder_is_not() {
     let dir = tempfile::tempdir().expect("tempdir");
-    let repo = dir.path().join("m3-restic");
+    let repo = dir.path().join("test-restic");
     for folder in ["data", "index", "keys", "snapshots"] {
         std::fs::create_dir_all(repo.join(folder)).expect("repo folder");
     }

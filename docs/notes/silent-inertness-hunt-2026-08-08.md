@@ -59,9 +59,10 @@ exists to keep it doing.
 
 **✅ The FSEvents half is now measured, and it makes finding 2 real rather than contingent.**
 
-Measured 2026-08-08 on macOS 26.5.2 with `notify` 8.2.0 / `notify-debouncer-full` 0.7.0, against the live `naspi` share
-(`//david@192.168.1.111/naspi` on `/Volumes/naspi`, `smbfs`), using a standalone probe that arms the same debounced
-`RecommendedWatcher` Cmdr arms. The tightest run used ONE watcher over one 30 s deadline and both write paths:
+Measured 2026-08-08 on macOS 26.5.2 with `notify` 8.2.0 / `notify-debouncer-full` 0.7.0, against the live `testshare`
+share (`//test_user_3@192.168.50.10/testshare` on `/Volumes/testshare`, `smbfs`), using a standalone probe that arms the
+same debounced `RecommendedWatcher` Cmdr arms. The tightest run used ONE watcher over one 30 s deadline and both write
+paths:
 
 - `t=4 s`, a **remote** write bypassing the mount (`smb2 put`, confirmed landed on the share): **no event, ever.**
 - `t=14 s`, a **local** write through the mount (`touch`): `Create(File)` delivered.

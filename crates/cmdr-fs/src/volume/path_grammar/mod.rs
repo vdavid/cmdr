@@ -246,7 +246,7 @@ impl AppPath {
     }
 
     /// The path the local OS opens. On Windows the long-path form, which lifts `MAX_PATH`
-    /// and skips Win32's own normalization (`\\?\C:\Users\ada`, `\\?\UNC\server\share\x`);
+    /// and skips Win32's own normalization (`\\?\C:\Users\test_user_1`, `\\?\UNC\server\share\x`);
     /// on macOS and Linux the wire spelling itself. Pure, so it's tested on every OS.
     pub fn to_native(&self) -> String {
         match &self.root {
@@ -282,7 +282,7 @@ impl AppPath {
         }
     }
 
-    /// What a person reads: on Windows `C:\Users\ada`, `\\server\share\x` (a share's root
+    /// What a person reads: on Windows `C:\Users\test_user_1`, `\\server\share\x` (a share's root
     /// without the trailing `\`); elsewhere the wire spelling.
     pub fn shown(&self) -> String {
         match &self.root {

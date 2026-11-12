@@ -5,7 +5,7 @@
  *
  * ❗ **Both race the typing**, so each answer is checked against the latest ask
  * and dropped when someone typed past it: a list for `nas` landing after the
- * person finished typing `nas.local` would offer another server's exports.
+ * person finished typing `testnas.local` would offer another server's exports.
  *
  * ❗ **Neither is a gate.** A refused or unreachable listing leaves the export
  * typeable (a typed export may still mount), and the connect reports its own

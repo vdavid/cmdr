@@ -28,23 +28,23 @@ import { openAddServerSheet, openSignInForPlace } from './open-sign-in'
 import { closeSignInSheet, currentSignInRequest, dismissSignInForPlaces } from './sign-in-sheet-state.svelte'
 import type { SignInAttempt, SignInSheetRequest } from './sign-in-contract'
 
-const VOLUME_ID = 'sftp-nas-local-22-ada'
+const VOLUME_ID = 'sftp-nas-local-22-test_user_1'
 
 const SAVED_SERVER = {
   id: VOLUME_ID,
   protocol: 'sftp',
-  displayName: 'Naspolya',
-  address: 'nas.local:22',
-  username: 'ada',
+  displayName: 'Testnas',
+  address: 'testnas.local:22',
+  username: 'test_user_1',
   pinned: true,
   lastConnectedAt: null,
   places: [
     {
       volumeId: VOLUME_ID,
-      name: 'Naspolya',
+      name: 'Testnas',
       pinned: true,
       connected: false,
-      appRoot: 'sftp://ada@nas.local:22/srv/data',
+      appRoot: 'sftp://test_user_1@testnas.local:22/srv/data',
     },
   ],
 }
@@ -96,7 +96,7 @@ describe('a place that is asking, with nothing registered', () => {
     if (request.mode !== 'sign-in') throw new Error('unreachable')
     // ❗ Asked when the sheet renders, ❌ never derived from a protocol or a rung.
     expect(request.shape).toEqual({ kind: 'password' })
-    expect(request.endpoint).toMatchObject({ host: 'nas.local', username: 'ada', displayName: 'Naspolya' })
+    expect(request.endpoint).toMatchObject({ host: 'testnas.local', username: 'test_user_1', displayName: 'Testnas' })
 
     const outcome = await attemptOf(request)({
       mode: 'sign-in',
@@ -122,7 +122,7 @@ describe('a place that is asking, with nothing registered', () => {
     // there), round 2 is refused, round 3 lands. One sheet throughout.
     const prompt = {
       outcome: 'needs_host_key_approval',
-      host: 'nas.local',
+      host: 'testnas.local',
       port: 22,
       algorithm: 'ssh-ed25519',
       fingerprint: 'SHA256:x',
@@ -216,7 +216,7 @@ describe('a place that is asking, with nothing registered', () => {
     const seam = openSignInForPlace({ volumeId: VOLUME_ID, registered: false })
     await parkedRequest()
 
-    dismissSignInForPlaces(['sftp-somewhere-else-22-ada'])
+    dismissSignInForPlaces(['sftp-somewhere-else-22-test_user_1'])
     expect(currentSignInRequest()).not.toBeNull()
     dismissSignInForPlaces([VOLUME_ID])
 
@@ -285,7 +285,7 @@ describe('a REGISTERED place whose session wants a credential', () => {
       volumeId: VOLUME_ID,
       // The account the volume already has: `password` renders it read-only,
       // because the volume id IS the account.
-      username: 'ada',
+      username: 'test_user_1',
       password: 'hunter2',
       remember: false,
     })
@@ -322,10 +322,10 @@ describe('add mode', () => {
 
     const target = {
       protocol: 'sftp' as const,
-      displayName: 'Naspolya',
-      host: 'nas.local',
+      displayName: 'Testnas',
+      host: 'testnas.local',
       port: 22,
-      username: 'ada',
+      username: 'test_user_1',
       remoteRoot: '/',
       startFolder: null,
       keyFile: null,
@@ -354,7 +354,7 @@ describe('add mode', () => {
 
     closeSignInSheet({ kind: 'connected', volumeId: VOLUME_ID })
     await sheet
-    expect(landed).toEqual([{ volumeId: VOLUME_ID, root: 'sftp://ada@nas.local:22/srv/data' }])
+    expect(landed).toEqual([{ volumeId: VOLUME_ID, root: 'sftp://test_user_1@testnas.local:22/srv/data' }])
   })
 
   it('lands nobody anywhere when the sheet closes without connecting', async () => {
@@ -368,7 +368,7 @@ describe('add mode', () => {
   })
 
   it('hands an SMB address to its own places list instead of dialing a session', async () => {
-    ipc.mock('connect_to_server', () => ({ host: { id: 'h1', name: 'naspolya' }, sharePath: null }))
+    ipc.mock('connect_to_server', () => ({ host: { id: 'h1', name: 'testnas' }, sharePath: null }))
     const handOffs: unknown[] = []
     const sheet = openAddServerSheet({
       onSmbHandOff: (handOff) => {
@@ -380,13 +380,13 @@ describe('add mode', () => {
 
     const outcome = await attemptOf(request)({
       mode: 'add_smb',
-      address: 'naspolya',
+      address: 'testnas',
       name: '',
       username: null,
       intent: 'open',
     })
     expect(outcome).toEqual({ kind: 'handed_off' })
-    expect(handOffs).toEqual([{ host: { id: 'h1', name: 'naspolya' }, sharePath: null }])
+    expect(handOffs).toEqual([{ host: { id: 'h1', name: 'testnas' }, sharePath: null }])
     // ❗ SMB's connect is a share MOUNT, not a session: no server command runs.
     expect(ipc.callCount('connect_server')).toBe(0)
 
@@ -395,22 +395,22 @@ describe('add mode', () => {
   })
 
   it('sends the name and the account typed beside an SMB address', async () => {
-    ipc.mock('connect_to_server', () => ({ host: { id: 'h1', name: '192.168.0.153' }, sharePath: null }))
+    ipc.mock('connect_to_server', () => ({ host: { id: 'h1', name: '192.168.50.20' }, sharePath: null }))
     const sheet = openAddServerSheet({ onSmbHandOff: () => {}, onConnected: () => {} })
     const request = await parkedRequest()
 
     await attemptOf(request)({
       mode: 'add_smb',
-      address: 'smb://192.168.0.153',
-      name: "Sven's NAS",
-      username: 'sven',
+      address: 'smb://192.168.50.20',
+      name: 'Test NAS',
+      username: 'test_user_6',
       intent: 'open',
     })
 
     expect(ipc.lastCall('connect_to_server')?.payload).toEqual({
-      address: 'smb://192.168.0.153',
-      name: "Sven's NAS",
-      username: 'sven',
+      address: 'smb://192.168.50.20',
+      name: 'Test NAS',
+      username: 'test_user_6',
       checkReachability: true,
     })
     closeSignInSheet({ kind: 'handed_off' })
@@ -428,7 +428,7 @@ describe('add mode', () => {
 
     const outcome = await attemptOf(request)({
       mode: 'add_smb',
-      address: 'smb://ada:hunter2@naspolya/photos',
+      address: 'smb://test_user_1:hunter2@testnas/photos',
       name: '',
       username: null,
       intent: 'open',
@@ -437,7 +437,7 @@ describe('add mode', () => {
     expect(warn).toHaveBeenCalledOnce()
     expect(JSON.stringify(warn.mock.calls)).not.toContain('hunter2')
     // Still names the machine, so the line stays useful at triage.
-    expect(warn.mock.calls[0][1]).toMatchObject({ host: 'naspolya' })
+    expect(warn.mock.calls[0][1]).toMatchObject({ host: 'testnas' })
 
     closeSignInSheet({ kind: 'cancelled' })
     await sheet
@@ -617,14 +617,14 @@ describe('the Remember box in sign-in mode', () => {
  * the box, since each read can raise a system prompt.
  */
 describe('openSignInForPlace: a saved SMB share', () => {
-  const SHARE_ID = 'smb-192-168-0-153-445-container'
+  const SHARE_ID = 'smb-192-168-50-20-445-container'
   const SMB_HOST = {
-    id: 'manual-192-168-0-153-445',
+    id: 'manual-192-168-50-20-445',
     protocol: 'smb',
-    displayName: "Sven's NAS",
+    displayName: 'Test NAS',
     nameSource: 'user',
-    address: '192.168.0.153',
-    username: 'sven',
+    address: '192.168.50.20',
+    username: 'test_user_6',
     pinned: false,
     lastConnectedAt: null,
     autoReconnect: null,
@@ -635,7 +635,7 @@ describe('openSignInForPlace: a saved SMB share', () => {
         pinned: true,
         connected: false,
         appRoot: '/Volumes/Container',
-        username: 'sven',
+        username: 'test_user_6',
       },
     ],
   }
@@ -650,9 +650,9 @@ describe('openSignInForPlace: a saved SMB share', () => {
     expect(request.endpoint).toMatchObject({
       protocol: 'smb',
       displayName: 'Container',
-      address: 'smb://192.168.0.153/Container',
-      host: '192.168.0.153',
-      username: 'sven',
+      address: 'smb://192.168.50.20/Container',
+      host: '192.168.50.20',
+      username: 'test_user_6',
     })
     expect(request.remembered).toBe(true)
     expect(ipc.callCount('has_server_secret')).toBe(0)
@@ -660,13 +660,13 @@ describe('openSignInForPlace: a saved SMB share', () => {
     const outcome = await attemptOf(request)({
       mode: 'sign-in',
       secret: { secret: 'pw', remember: true },
-      username: 'sven',
+      username: 'test_user_6',
     })
     expect(outcome).toEqual({ kind: 'connected', volumeId: SHARE_ID })
     expect(ipc.lastCall('connect_saved_place')?.payload).toMatchObject({
       volumeId: SHARE_ID,
       secret: { secret: 'pw', remember: true },
-      username: 'sven',
+      username: 'test_user_6',
     })
 
     closeSignInSheet({ kind: 'connected', volumeId: SHARE_ID })
@@ -683,9 +683,9 @@ describe('add mode: Add, Add and open, and Add anyway', () => {
   const SFTP_TARGET = {
     protocol: 'sftp' as const,
     displayName: '',
-    host: 'nas.local',
+    host: 'testnas.local',
     port: 22,
-    username: 'ada',
+    username: 'test_user_1',
     remoteRoot: '/',
     startFolder: null,
     keyFile: null,
@@ -779,7 +779,7 @@ describe('add mode: Add, Add and open, and Add anyway', () => {
     closeSignInSheet({ kind: 'added', serverId: VOLUME_ID })
     await sheet
     expect(landed).toEqual([])
-    expect(added).toEqual([{ serverId: VOLUME_ID, name: 'Naspolya' }])
+    expect(added).toEqual([{ serverId: VOLUME_ID, name: 'Testnas' }])
   })
 
   /**
@@ -836,13 +836,13 @@ describe('add mode: Add, Add and open, and Add anyway', () => {
 
     const outcome = await attemptOf(request)({
       mode: 'add',
-      target: { ...SFTP_TARGET, host: 'nas.local' },
+      target: { ...SFTP_TARGET, host: 'testnas.local' },
       secret: null,
       intent: 'save_unchecked',
     })
 
     expect(ipc.callCount('connect_server')).toBe(0)
-    expect(ipc.lastCall('update_saved_server')?.payload).toMatchObject({ server: { host: 'nas.local' } })
+    expect(ipc.lastCall('update_saved_server')?.payload).toMatchObject({ server: { host: 'testnas.local' } })
     expect(outcome).toEqual({ kind: 'added', serverId: VOLUME_ID })
     closeSignInSheet({ kind: 'cancelled' })
     await sheet
@@ -856,7 +856,7 @@ describe('add mode: Add, Add and open, and Add anyway', () => {
    * round 2, M6). The id comes from the backend's own id funnel instead.
    */
   it('finds the WebDAV server Add anyway saved, whatever spelling the store keeps', async () => {
-    const id = 'webdav-10-255-255-1-443-ada'
+    const id = 'webdav-10-255-255-1-443-test_user_1'
     ipc.mock('update_saved_server', () => ({ outcome: 'saved' }))
     ipc.mock('saved_server_id', () => id)
     ipc.mock('list_saved_servers', () => [
@@ -871,7 +871,7 @@ describe('add mode: Add, Add and open, and Add anyway', () => {
         protocol: 'webdav' as const,
         displayName: '',
         url: 'https://10.255.255.1/dav',
-        username: 'ada',
+        username: 'test_user_1',
         remoteRoot: '/',
         startFolder: null,
         autoReconnect: true,
@@ -901,8 +901,8 @@ describe('add mode: Add, Add and open, and Add anyway', () => {
       target: {
         protocol: 'webdav' as const,
         displayName: '',
-        url: 'https://nas.local/dav',
-        username: 'ada',
+        url: 'https://testnas.local/dav',
+        username: 'test_user_1',
         remoteRoot: '/',
         startFolder: null,
         autoReconnect: true,

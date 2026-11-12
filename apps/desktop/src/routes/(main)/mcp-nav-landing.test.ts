@@ -201,7 +201,7 @@ describe('waitForListingOrStall', () => {
 })
 
 describe('expectsNewListing', () => {
-  const before = { volumeId: 'root', path: '/Users/david' }
+  const before = { volumeId: 'root', path: '/Users/test_user_3' }
 
   it('expects one when the switch moved the pane somewhere that lists', () => {
     expect(
@@ -211,7 +211,7 @@ describe('expectsNewListing', () => {
 
   it('expects none when the switch put the pane back where it already was', () => {
     expect(
-      expectsNewListing({ before, landed: { volumeId: 'root', path: '/Users/david/' }, hasBackendListing: true }),
+      expectsNewListing({ before, landed: { volumeId: 'root', path: '/Users/test_user_3/' }, hasBackendListing: true }),
     ).toBe(false)
   })
 
@@ -239,10 +239,10 @@ describe('classifyVolumeLanding', () => {
     expect(
       classifyVolumeLanding({
         targetVolumeId: 'mtp-1',
-        landed: { volumeId: 'root', path: '/Users/david' },
+        landed: { volumeId: 'root', path: '/Users/test_user_3' },
         rest: 'quiet',
       }),
-    ).toEqual({ outcome: 'fell-back', volumeId: 'root', path: '/Users/david' })
+    ).toEqual({ outcome: 'fell-back', volumeId: 'root', path: '/Users/test_user_3' })
   })
 
   it('says so when the pane’s folder stalled', () => {
@@ -267,63 +267,65 @@ describe('classifyVolumeLanding', () => {
 })
 
 describe('classifyLanding', () => {
-  const target = { volumeId: 'root', path: '/Users/david/code' }
+  const target = { volumeId: 'root', path: '/Users/test_user_3/code' }
 
   it('calls it navigated when the pane came to rest on the target', () => {
-    expect(classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david/code' }, rest: 'quiet' })).toEqual(
-      {
-        outcome: 'navigated',
-        volumeId: 'root',
-        path: '/Users/david/code',
-      },
-    )
+    expect(
+      classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/test_user_3/code' }, rest: 'quiet' }),
+    ).toEqual({
+      outcome: 'navigated',
+      volumeId: 'root',
+      path: '/Users/test_user_3/code',
+    })
   })
 
   it('ignores a trailing slash on either side', () => {
     expect(
-      classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david/code/' }, rest: 'quiet' }),
+      classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/test_user_3/code/' }, rest: 'quiet' }),
     ).toEqual({
       outcome: 'navigated',
       volumeId: 'root',
-      path: '/Users/david/code/',
+      path: '/Users/test_user_3/code/',
     })
   })
 
   it('calls it a fallback when the pane came to rest somewhere else', () => {
-    expect(classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david' }, rest: 'quiet' })).toEqual({
+    expect(
+      classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/test_user_3' }, rest: 'quiet' }),
+    ).toEqual({
       outcome: 'fell-back',
       volumeId: 'root',
-      path: '/Users/david',
+      path: '/Users/test_user_3',
     })
   })
 
   it('calls it a fallback when the pane is on another volume, same-looking path or not', () => {
     expect(
-      classifyLanding({ target, landed: { volumeId: 'mtp-1', path: '/Users/david/code' }, rest: 'quiet' }),
+      classifyLanding({ target, landed: { volumeId: 'mtp-1', path: '/Users/test_user_3/code' }, rest: 'quiet' }),
     ).toEqual({
       outcome: 'fell-back',
       volumeId: 'mtp-1',
-      path: '/Users/david/code',
+      path: '/Users/test_user_3/code',
     })
   })
 
   it('says so when the folder stalled', () => {
     expect(
-      classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david/code' }, rest: 'stalled' }),
+      classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/test_user_3/code' }, rest: 'stalled' }),
     ).toEqual({
       outcome: 'stalled',
       volumeId: 'root',
-      path: '/Users/david/code',
+      path: '/Users/test_user_3/code',
     })
   })
 
   it('says so when the pane never settled, even though it holds the target optimistically', () => {
     expect(
-      classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david/code' }, rest: 'restless' }),
+      classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/test_user_3/code' }, rest: 'restless' }),
     ).toEqual({
       outcome: 'did-not-settle',
       volumeId: 'root',
-      path: '/Users/david/code',
+      path: '/Users/test_user_3/code',
     })
   })
 })

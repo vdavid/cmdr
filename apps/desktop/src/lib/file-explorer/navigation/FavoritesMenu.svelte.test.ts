@@ -543,11 +543,11 @@ describe('the favorites section in the switcher', () => {
     stubs.switcherFavoritesExpanded = true
     stubs.volumes = [
       {
-        ...favorite(1, '/Volumes/naspi/docs', 'Docs'),
+        ...favorite(1, '/Volumes/testshare/docs', 'Docs'),
         favoriteTarget: {
-          volumeId: 'smb-naspi',
-          volumeName: 'naspi',
-          volumeRoot: '/Volumes/naspi',
+          volumeId: 'smb-testshare',
+          volumeName: 'testshare',
+          volumeRoot: '/Volumes/testshare',
           reach: { kind: 'connects' },
         },
       },

@@ -18,12 +18,12 @@ import type { NavigateIntent } from '../pane/navigate'
 import { forgetResticPassword, type ForgetPasswordExplorer } from './forget-password'
 
 const NAS = 'smb-nas'
-const REPO = '/Volumes/naspi/backups/m3-macbook-restic'
+const REPO = '/Volumes/testshare/backups/test-restic-repo'
 const VIEW = `${REPO}/Browse snapshots`
 
 function explorerAt(
   left: string,
-  right = '/Users/david',
+  right = '/Users/test_user_3',
   underCursor: string | null = null,
 ): ForgetPasswordExplorer & { navigated: NavigateIntent[] } {
   const navigated: NavigateIntent[] = []
@@ -75,11 +75,11 @@ describe('forgetResticPassword', () => {
       },
     ])
     expect(lastToast().level).toBe('success')
-    expect(lastToast().message).toContain('m3-macbook-restic')
+    expect(lastToast().message).toContain('test-restic-repo')
   })
 
   it('forgets the repo whose Browse snapshots row is under the cursor, and leaves the pane where it is', async () => {
-    const explorer = explorerAt(REPO, '/Users/david', VIEW)
+    const explorer = explorerAt(REPO, '/Users/test_user_3', VIEW)
 
     await forgetResticPassword(explorer)
 
@@ -89,7 +89,7 @@ describe('forgetResticPassword', () => {
   })
 
   it('says so when it isn’t near a backup, and calls nothing', async () => {
-    const explorer = explorerAt('/Users/david', '/tmp', '/Users/david/notes.txt')
+    const explorer = explorerAt('/Users/test_user_3', '/tmp', '/Users/test_user_3/notes.txt')
 
     await forgetResticPassword(explorer)
 
@@ -126,6 +126,6 @@ describe('forgetResticPassword', () => {
 
     expect(explorer.navigated).toEqual([])
     expect(lastToast().level).toBe('warn')
-    expect(lastToast().message).toContain('m3-macbook-restic')
+    expect(lastToast().message).toContain('test-restic-repo')
   })
 })

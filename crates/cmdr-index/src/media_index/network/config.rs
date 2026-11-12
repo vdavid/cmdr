@@ -27,7 +27,7 @@ pub struct NetworkEnrichConfig {
     /// threshold (a NAS archive scores low on navigation-based importance, so without
     /// this its photos defer forever — media_index Decision 6).
     pub always_index_volumes: HashSet<String>,
-    /// Absolute folder paths (OS-mount form, e.g. `/Volumes/naspi/Photos`) marked
+    /// Absolute folder paths (OS-mount form, e.g. `/Volumes/testshare/Photos`) marked
     /// "always index": every image at or under one enriches regardless of importance.
     pub always_index_folders: HashSet<String>,
     /// Absolute folder paths the user EXCLUDED from photo-search indexing (the privacy
@@ -253,27 +253,27 @@ mod tests {
 
     #[test]
     fn a_remounted_share_stays_excluded_at_the_root_its_exclusion_was_set_under() {
-        // The folder was excluded while the share mounted at /Volumes/naspi; today it's at
-        // /Volumes/naspi-1. The veto has to judge the image at every root the volume is known
+        // The folder was excluded while the share mounted at /Volumes/testshare; today it's at
+        // /Volumes/testshare-1. The veto has to judge the image at every root the volume is known
         // by, or the next pass re-reads the folder the person excluded.
         let _reset = ResetConfig;
         set_config(NetworkEnrichConfig {
-            excluded_folders: ["/Volumes/naspi/Photos".to_string()].into_iter().collect(),
+            excluded_folders: ["/Volumes/testshare/Photos".to_string()].into_iter().collect(),
             ..NetworkEnrichConfig::default()
         });
-        let recorded = ["/Volumes/naspi".to_string()];
+        let recorded = ["/Volumes/testshare".to_string()];
         assert!(is_excluded_at_known_roots(
-            "/Volumes/naspi-1/Photos/scan.jpg",
-            "/Volumes/naspi-1",
+            "/Volumes/testshare-1/Photos/scan.jpg",
+            "/Volumes/testshare-1",
             &recorded
         ));
         assert!(!is_excluded_at_known_roots(
-            "/Volumes/naspi-1/Docs/scan.jpg",
-            "/Volumes/naspi-1",
+            "/Volumes/testshare-1/Docs/scan.jpg",
+            "/Volumes/testshare-1",
             &recorded
         ));
         assert!(
-            is_excluded_at_known_roots("/Volumes/naspi/Photos/scan.jpg", "/Volumes/naspi", &[]),
+            is_excluded_at_known_roots("/Volumes/testshare/Photos/scan.jpg", "/Volumes/testshare", &[]),
             "the live root alone still counts"
         );
     }
@@ -309,7 +309,10 @@ mod tests {
     fn path_within_ignores_case_where_the_filesystem_does() {
         // APFS and SMB shares on macOS treat `IDs` and `ids` as one folder.
         assert!(path_is_within("/Users/me/ids/passport.jpg", "/Users/me/IDs"));
-        assert!(path_is_within("/VOLUMES/NASPI/photos/a.jpg", "/Volumes/naspi/Photos/"));
+        assert!(path_is_within(
+            "/VOLUMES/TESTSHARE/photos/a.jpg",
+            "/Volumes/testshare/Photos/"
+        ));
         assert!(!path_is_within("/Users/me/IDs2/a.jpg", "/users/me/ids"));
     }
 
@@ -323,12 +326,21 @@ mod tests {
 
     #[test]
     fn path_within_is_trailing_slash_safe() {
-        assert!(path_is_within("/Volumes/naspi/Photos", "/Volumes/naspi/Photos"));
-        assert!(path_is_within("/Volumes/naspi/Photos/a.jpg", "/Volumes/naspi/Photos"));
-        assert!(path_is_within("/Volumes/naspi/Photos/a.jpg", "/Volumes/naspi/Photos/"));
+        assert!(path_is_within("/Volumes/testshare/Photos", "/Volumes/testshare/Photos"));
+        assert!(path_is_within(
+            "/Volumes/testshare/Photos/a.jpg",
+            "/Volumes/testshare/Photos"
+        ));
+        assert!(path_is_within(
+            "/Volumes/testshare/Photos/a.jpg",
+            "/Volumes/testshare/Photos/"
+        ));
         // A sibling that shares a name prefix is NOT within.
-        assert!(!path_is_within("/Volumes/naspi/Photos2/a.jpg", "/Volumes/naspi/Photos"));
-        assert!(!path_is_within("/Volumes/other/a.jpg", "/Volumes/naspi/Photos"));
+        assert!(!path_is_within(
+            "/Volumes/testshare/Photos2/a.jpg",
+            "/Volumes/testshare/Photos"
+        ));
+        assert!(!path_is_within("/Volumes/other/a.jpg", "/Volumes/testshare/Photos"));
     }
 
     #[test]
@@ -336,14 +348,14 @@ mod tests {
         let cfg = NetworkEnrichConfig {
             opted_in_volumes: HashSet::new(),
             always_index_volumes: ["smb-vol".to_string()].into_iter().collect(),
-            always_index_folders: ["/Volumes/naspi/Photos".to_string()].into_iter().collect(),
+            always_index_folders: ["/Volumes/testshare/Photos".to_string()].into_iter().collect(),
             excluded_folders: HashSet::new(),
         };
         // Whole-volume override.
         assert!(cfg.covers("smb-vol", "/anything/x.jpg"));
         // Folder override on a different volume.
-        assert!(cfg.covers("other", "/Volumes/naspi/Photos/2026/x.jpg"));
-        assert!(!cfg.covers("other", "/Volumes/naspi/Docs/x.jpg"));
+        assert!(cfg.covers("other", "/Volumes/testshare/Photos/2026/x.jpg"));
+        assert!(!cfg.covers("other", "/Volumes/testshare/Docs/x.jpg"));
     }
 
     #[test]
@@ -353,20 +365,26 @@ mod tests {
         // file whose path is that entry exactly. A dir filter built on `covers` alone
         // would drop that file's parent and lose it; this keeps the parent.
         let cfg = NetworkEnrichConfig {
-            always_index_folders: ["/Users/dave/Photos".to_string()].into_iter().collect(),
+            always_index_folders: ["/Users/test_user_10/Photos".to_string()].into_iter().collect(),
             ..NetworkEnrichConfig::default()
         };
-        assert!(cfg.may_cover_within("vol", "/Users/dave/Photos"), "the entry itself");
-        assert!(cfg.may_cover_within("vol", "/Users/dave/Photos/2026"), "a dir under it");
         assert!(
-            cfg.may_cover_within("vol", "/Users/dave"),
+            cfg.may_cover_within("vol", "/Users/test_user_10/Photos"),
+            "the entry itself"
+        );
+        assert!(
+            cfg.may_cover_within("vol", "/Users/test_user_10/Photos/2026"),
+            "a dir under it"
+        );
+        assert!(
+            cfg.may_cover_within("vol", "/Users/test_user_10"),
             "and its PARENT, because the entry could name a file directly inside it"
         );
         assert!(cfg.may_cover_within("vol", "/"), "up to the root, for the same reason");
         // A dir on neither side of the entry's chain is dropped: that's the whole point.
-        assert!(!cfg.may_cover_within("vol", "/Users/dave/Docs"));
+        assert!(!cfg.may_cover_within("vol", "/Users/test_user_10/Docs"));
         assert!(
-            !cfg.may_cover_within("vol", "/Users/dave/Photos2"),
+            !cfg.may_cover_within("vol", "/Users/test_user_10/Photos2"),
             "a name-prefix sibling"
         );
     }
@@ -374,18 +392,18 @@ mod tests {
     #[test]
     fn chosen_membership_is_exact_and_parent_coverage_is_not() {
         let cfg = NetworkEnrichConfig {
-            always_index_folders: ["/Users/dave/Photos/".to_string()].into_iter().collect(),
+            always_index_folders: ["/Users/test_user_10/Photos/".to_string()].into_iter().collect(),
             ..NetworkEnrichConfig::default()
         };
         // The exact entry, trailing slash either side.
-        assert!(cfg.is_chosen_folder("/Users/dave/Photos"));
-        assert!(cfg.is_chosen_folder("/Users/dave/Photos/"));
-        assert!(!cfg.is_covered_by_parent_folder("/Users/dave/Photos"));
+        assert!(cfg.is_chosen_folder("/Users/test_user_10/Photos"));
+        assert!(cfg.is_chosen_folder("/Users/test_user_10/Photos/"));
+        assert!(!cfg.is_covered_by_parent_folder("/Users/test_user_10/Photos"));
         // A child is covered, but isn't itself an entry.
-        assert!(!cfg.is_chosen_folder("/Users/dave/Photos/2026"));
-        assert!(cfg.is_covered_by_parent_folder("/Users/dave/Photos/2026"));
+        assert!(!cfg.is_chosen_folder("/Users/test_user_10/Photos/2026"));
+        assert!(cfg.is_covered_by_parent_folder("/Users/test_user_10/Photos/2026"));
         // An unrelated folder is neither.
-        assert!(!cfg.is_chosen_folder("/Users/dave/Docs"));
-        assert!(!cfg.is_covered_by_parent_folder("/Users/dave/Docs"));
+        assert!(!cfg.is_chosen_folder("/Users/test_user_10/Docs"));
+        assert!(!cfg.is_covered_by_parent_folder("/Users/test_user_10/Docs"));
     }
 }

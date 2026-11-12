@@ -510,7 +510,7 @@ tool-result JSON the model reads.
   rows AND generation 0; generation alone lies, since only a full pass stamps it), `under` floors, nothing reaches
   `threshold`, or nothing scored there. A named volume with no store answers this way too, ❌ never an `invalid_params`.
 - **`folder_importance`** (`read/importance.rs`) — `path` + optional `volumeId`; the resolver picks ONE volume and only
-  its store answers (`snapshot_path_on`), so `/papers` on one share never answers for another's. Scored (score +
+  its store answers (`snapshot_path_on`), so `/documents` on one share never answers for another's. Scored (score +
   `Explanation` breakdown + `stale` from asOf vs the volume's current `recompute_generation`), Floored (with reason), or
   Unscored, each with its `location`. Offline-capable: a named saved share resolves and its store still answers.
 - **`inspect_file`** (`read/inspect/`) — "what's in this file?" for up to 200 paths in one call. Each row: metadata
@@ -556,7 +556,7 @@ tool-result JSON the model reads.
     volume can't disagree about where its paths start: a mount point, a scheme root (`sftp://…`, `mtp://…`), or for a
     volume that isn't connected the root it last had (its `connectionState` says so). Absent only on a row no location
     lives on (the `Network` hub). It's also the scope a `search` of that drive names. ❌ No `mountPath` here: a saved
-    share's LAST mount point read as "where it is" is what sent the model to a dead `/Volumes/naspi`. `cmdr://state`'s
+    share's LAST mount point read as "where it is" is what sent the model to a dead `/Volumes/testshare`. `cmdr://state`'s
     YAML keeps `mountPath` (an outside client's contract).
   - **The offline vocabulary.** A volume that isn't live, whose index database is on disk with a completed scan,
     reads `indexStatus: stale` plus `asOf` (that scan's date, spoken), the same pair `list_dir`'s offline coverage
@@ -624,7 +624,7 @@ races it.
 - Not registered (a `saved` row) → the only dial: `saved_servers::connect_saved_place` with no secret and no
   account, so a missing Keychain password answers `needsCredentials` before anything mounts, and every NetFS mount is
   `NoUI` anyway (`network/CLAUDE.md`). A Keychain access prompt on a user-started turn is acceptable (invariant 7).
-  `connected` echoes the root it landed on, which may have moved (`naspi-2`).
+  `connected` echoes the root it landed on, which may have moved (`testshare-2`).
 
 **One share, one connect** (`location/same_share.rs::connect_target`, on the same `redirectable` proof every read
 uses): a member whose same-account sibling is serving answers `alreadyConnected` with the sibling's `location` and
@@ -1026,7 +1026,7 @@ refusing the call in the miss shape and re-addressing a write only onto a redire
 (`suggestions/DETAILS.md` § Where a proposal may point).
 
 **Shapes.** An INPUT is the flat pair `path` + optional `volumeId` (`LocationInput`): flat so an AI client's schema stays
-two strings, `volumeId` optional so `~/Downloads` or `/Volumes/naspi-1/papers` simply works. An OUTPUT carries
+two strings, `volumeId` optional so `~/Downloads` or `/Volumes/testshare-1/documents` simply works. An OUTPUT carries
 `location`, the wire shape of `crate::location::Location`, `{ "volumeId", "path" }`, so a result's two fields are a
 valid next input. `path` is always the APP path: the string the panes, `search` rows, `inspect_file`, and
 `propose_suggestions` use. ❌ Never a share-relative path on the wire; translating into a store's own path space
@@ -1070,8 +1070,8 @@ shared), plus the live source's own (§ The live source). ❌ Never an empty lis
 
 **`nearby` and `candidate`.** Every not-connected miss carries `nearby` (possibly empty) and `sameShareAs` (the volume's
 proven siblings, § One share, many ids; empty for a bare path, which names no volume). Each `nearby` entry is `{ volumeId, name, kind, connectionState?, root, candidate }`,
-where `candidate` is the requested place re-rooted onto that volume (`/Volumes/naspi/papers` →
-`{ smb-192-…, /Volumes/naspi-1/papers }`), so the next call is a copy, not arithmetic. Picked in order: volumes whose
+where `candidate` is the requested place re-rooted onto that volume (`/Volumes/testshare/documents` →
+`{ smb-192-…, /Volumes/testshare-1/documents }`), so the next call is a copy, not arithmetic. Picked in order: volumes whose
 mount name shares the requested `/Volumes/<name>` stem (macOS appends `-N` to a second mount), else volumes whose root
 holds the path, else every remote volume; live first, at most 8, never the volume the miss is about.
 
@@ -1153,7 +1153,7 @@ index: folder rows and the folder's own `size` are ABSENT, never the inode's 4 K
   pointing at a subfolder or `search`. ⚠️ The cap bounds what's KEPT, not what the provider reads: no `Volume` lists
   in pages, so a 200,000-entry folder still materializes once inside the provider, as it does for a pane.
 - **The listing is the pane's open** (`cmdr_listing::entries_as_stored`), so a typed path in another Unicode form (an NFD
-  `Rymdskottkärra AB` against an NFC share) finds the stored spelling.
+  `Testföretag AB` against an NFC share) finds the stored spelling.
 
 Its misses ride the same shape as the resolver's (`LocationMissResult::on`, `location` naming the volume):
 `needsDiskAccess` (the FDA question is open, or macOS privacy refused the read; the `detail` says which),

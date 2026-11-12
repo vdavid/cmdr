@@ -291,7 +291,7 @@ fn a_dir_rows_own_folder_resolves_to_its_own_path_local_and_scheme_rooted() {
                 0,
                 EntryType::Dir,
                 RowRole::RollbackUnit,
-                ("root", "/Users/ada", "Photos"),
+                ("root", "/Users/test_user_1", "Photos"),
                 None,
                 None,
             ),
@@ -305,15 +305,15 @@ fn a_dir_rows_own_folder_resolves_to_its_own_path_local_and_scheme_rooted() {
             ),
         ],
     );
-    assert_eq!(j.self_dir_path("op", 0), "root:/Users/ada/Photos");
+    assert_eq!(j.self_dir_path("op", 0), "root:/Users/test_user_1/Photos");
     assert_eq!(j.self_dir_path("op", 1), "smb-1:smb://nas/share/x/y");
     assert_eq!(
         j.golden("op"),
         [
             "root:/ kids=1 direct=0 files=0 bytes=0 sel=1/0/0",
             "root:/Users kids=1 direct=0 files=0 bytes=0 sel=1/0/0",
-            "root:/Users/ada kids=1 direct=0 files=0 bytes=0 sel=1/0/0",
-            "root:/Users/ada/Photos self=0 kids=0 direct=0 files=0 bytes=0 sel=1/0/0",
+            "root:/Users/test_user_1 kids=1 direct=0 files=0 bytes=0 sel=1/0/0",
+            "root:/Users/test_user_1/Photos self=0 kids=0 direct=0 files=0 bytes=0 sel=1/0/0",
             "smb-1:/ kids=1 direct=0 files=0 bytes=0 sel=1/0/0",
             "smb-1:smb://nas kids=1 direct=0 files=0 bytes=0 sel=1/0/0",
             "smb-1:smb://nas/share kids=1 direct=0 files=0 bytes=0 sel=1/0/0",

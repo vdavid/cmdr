@@ -109,7 +109,7 @@ fn lexical_normalize(path: &Path) -> PathBuf {
     out
 }
 
-/// The app-path spelling of a path the local OS reads (`C:/Users/ada` on Windows; the path
+/// The app-path spelling of a path the local OS reads (`C:/Users/test_user_1` on Windows; the path
 /// itself on macOS and Linux), the one form a pane holds. A path the grammar can't read keeps its
 /// native spelling.
 fn app_spelling(path: &Path) -> String {
@@ -157,7 +157,7 @@ pub fn resolve(input: &str, base_dir: &str) -> GoToPathResolution {
 
     let normalized = lexical_normalize(&joined);
     // Every path the dialog hands back is an app path: the disk is read through the OS's own
-    // spelling (`normalized`), the pane gets the grammar's (`C:/Users/ada` on Windows).
+    // spelling (`normalized`), the pane gets the grammar's (`C:/Users/test_user_1` on Windows).
     let normalized_str = app_spelling(&normalized);
 
     // A path that crosses into a supported archive is browsed as a folder, even

@@ -124,8 +124,8 @@ fn test_register_if_absent_existing_volume_keeps_original() {
 fn re_registering_the_same_mount_is_not_an_identity_conflict() {
     // The SMB upgrade swaps an OS-mounted `LocalPosixVolume` for a direct
     // `SmbVolume` at the same root. Routine, and it must stay quiet.
-    let existing: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("OS mount").with_root("/Volumes/naspi"));
-    let incoming: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Direct SMB").with_root("/Volumes/naspi"));
+    let existing: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("OS mount").with_root("/Volumes/testshare"));
+    let incoming: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Direct SMB").with_root("/Volumes/testshare"));
     assert!(!is_identity_conflict(existing.root(), incoming.root()));
 }
 
@@ -140,10 +140,10 @@ fn a_root_nested_in_the_other_is_a_quiet_double_mount() {
 
 #[test]
 fn sibling_roots_under_one_id_stay_a_warning() {
-    // Could be a clone, so a human should see it. `/Volumes/naspi-1` shares a
-    // string prefix with `/Volumes/naspi` but isn't inside it.
+    // Could be a clone, so a human should see it. `/Volumes/testshare-1` shares a
+    // string prefix with `/Volumes/testshare` but isn't inside it.
     assert_eq!(
-        identity_conflict_level(Path::new("/Volumes/naspi"), Path::new("/Volumes/naspi-1")),
+        identity_conflict_level(Path::new("/Volumes/testshare"), Path::new("/Volumes/testshare-1")),
         log::Level::Warn
     );
 }
@@ -166,8 +166,8 @@ fn an_identity_conflict_keeps_the_incumbent_whatever_the_order() {
     // was rooted, so a saved path under the first mount reached a backend
     // rooted at the second and every listing under it failed.
     for (first_root, second_root) in [
-        ("/Volumes/naspi", "/Volumes/naspi-1"),
-        ("/Volumes/naspi-1", "/Volumes/naspi"),
+        ("/Volumes/testshare", "/Volumes/testshare-1"),
+        ("/Volumes/testshare-1", "/Volumes/testshare"),
     ] {
         let manager = VolumeManager::new();
         manager.register(
@@ -188,25 +188,29 @@ fn an_identity_conflict_keeps_the_incumbent_whatever_the_order() {
 #[test]
 fn a_second_mount_of_one_share_is_recorded_as_a_sibling_root() {
     // macOS mounts the same share twice and both mounts derive one ID. The
-    // incumbent stays active (that's what keeps a saved `/Volumes/naspi/…`
+    // incumbent stays active (that's what keeps a saved `/Volumes/testshare/…`
     // path working), but the second root has to stay FINDABLE: the unmount
     // path looks a gone mount up by root, and a sibling it can't see is a
     // sibling it can't promote to.
     let manager = VolumeManager::new();
     manager.register(
         "smb-share",
-        Arc::new(InMemoryVolume::new("First").with_root("/Volumes/naspi")),
+        Arc::new(InMemoryVolume::new("First").with_root("/Volumes/testshare")),
     );
     manager.register(
         "smb-share",
-        Arc::new(InMemoryVolume::new("Second").with_root("/Volumes/naspi-1")),
+        Arc::new(InMemoryVolume::new("Second").with_root("/Volumes/testshare-1")),
     );
 
     let active = manager.get("smb-share").expect("registered above");
-    assert_eq!(active.root(), Path::new("/Volumes/naspi"), "the incumbent stays active");
+    assert_eq!(
+        active.root(),
+        Path::new("/Volumes/testshare"),
+        "the incumbent stays active"
+    );
 
     let (id, _) = manager
-        .find_by_root(Path::new("/Volumes/naspi-1"))
+        .find_by_root(Path::new("/Volumes/testshare-1"))
         .expect("the sibling root is a known root of this volume");
     assert_eq!(id, "smb-share");
 }
@@ -219,11 +223,11 @@ fn replacing_the_volume_at_the_same_root_still_wins() {
     let manager = VolumeManager::new();
     manager.register(
         "smb-share",
-        Arc::new(InMemoryVolume::new("OS mount").with_root("/Volumes/naspi")),
+        Arc::new(InMemoryVolume::new("OS mount").with_root("/Volumes/testshare")),
     );
     manager.register(
         "smb-share",
-        Arc::new(InMemoryVolume::new("Direct SMB").with_root("/Volumes/naspi")),
+        Arc::new(InMemoryVolume::new("Direct SMB").with_root("/Volumes/testshare")),
     );
 
     assert_eq!(manager.get("smb-share").expect("registered above").name(), "Direct SMB");
@@ -363,11 +367,11 @@ fn test_concurrent_read_write() {
 #[test]
 fn unregistering_a_volume_retires_it() {
     let manager = VolumeManager::new();
-    let (volume, is_retired) = RetiringVolume::at("/Volumes/naspi");
-    manager.register("naspi", volume);
+    let (volume, is_retired) = RetiringVolume::at("/Volumes/testshare");
+    manager.register("testshare", volume);
     assert!(!is_retired(), "a registered volume is live");
 
-    manager.unregister("naspi");
+    manager.unregister("testshare");
 
     assert!(
         is_retired(),
@@ -384,11 +388,11 @@ fn unregistering_a_volume_retires_it() {
 #[test]
 fn replacing_a_volume_at_its_own_root_retires_nobody() {
     let manager = VolumeManager::new();
-    let (incumbent, incumbent_retired) = RetiringVolume::at("/Volumes/naspi");
-    let (successor, successor_retired) = RetiringVolume::at("/Volumes/naspi");
-    manager.register("naspi", incumbent);
+    let (incumbent, incumbent_retired) = RetiringVolume::at("/Volumes/testshare");
+    let (successor, successor_retired) = RetiringVolume::at("/Volumes/testshare");
+    manager.register("testshare", incumbent);
 
-    manager.register("naspi", successor);
+    manager.register("testshare", successor);
 
     assert!(
         !incumbent_retired() && !successor_retired(),

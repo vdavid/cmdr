@@ -70,11 +70,11 @@ function buttonSaying(text: string): HTMLButtonElement {
 }
 
 const SMB_HOST = {
-  id: 'manual-192-168-0-153-445',
+  id: 'manual-192-168-50-20-445',
   protocol: 'smb' as const,
-  displayName: "Sven's NAS",
+  displayName: 'Test NAS',
   nameSource: 'user' as const,
-  address: '192.168.0.153',
+  address: '192.168.50.20',
   username: null,
   pinned: false,
   lastConnectedAt: null,
@@ -96,8 +96,8 @@ describe('SignInSheet: editing an SMB host', () => {
   it('opens on the name a person typed, with the address open to a move', async () => {
     await renderSheet({ mode: 'edit', server: SMB_HOST })
 
-    expect(field('server-name').value).toBe("Sven's NAS")
-    expect(field('server-address').value).toBe('192.168.0.153')
+    expect(field('server-name').value).toBe('Test NAS')
+    expect(field('server-address').value).toBe('192.168.50.20')
     expect(field('server-address').disabled).toBe(false)
     expect(document.body.querySelector('#server-secret')).toBeNull()
   })
@@ -131,8 +131,8 @@ describe('SignInSheet: editing an SMB host', () => {
     await flush()
 
     expect(commands.updateSavedSmbHost).toHaveBeenCalledWith(
-      'manual-192-168-0-153-445',
-      "Sven's NAS",
+      'manual-192-168-50-20-445',
+      'Test NAS',
       null,
       'smb://nas.tail1234.ts.net',
     )
@@ -184,8 +184,8 @@ describe('SignInSheet: editing an SMB host', () => {
     await flush()
 
     expect(commands.ejectAndUpdateSavedSmbHost).toHaveBeenCalledWith(
-      'manual-192-168-0-153-445',
-      "Sven's NAS",
+      'manual-192-168-50-20-445',
+      'Test NAS',
       null,
       'smb://192.168.0.200',
       expect.any(String),
@@ -275,30 +275,30 @@ describe('SignInSheet: editing an SMB host', () => {
   })
 
   it('opens an unnamed host with an empty name and the address as its placeholder', async () => {
-    await renderSheet({ mode: 'edit', server: { ...SMB_HOST, displayName: '192.168.0.153', nameSource: 'fallback' } })
+    await renderSheet({ mode: 'edit', server: { ...SMB_HOST, displayName: '192.168.50.20', nameSource: 'fallback' } })
     expect(field('server-name').value).toBe('')
-    expect(field('server-name').placeholder).toBe('Leave empty to use 192.168.0.153')
+    expect(field('server-name').placeholder).toBe('Leave empty to use 192.168.50.20')
   })
 
   it('saves a rename and a changed account through the SMB host writer and closes', async () => {
     const commands = await import('#lib/tauri-commands/index.js')
-    const { done } = await renderSheet({ mode: 'edit', server: { ...SMB_HOST, username: 'sven' } })
+    const { done } = await renderSheet({ mode: 'edit', server: { ...SMB_HOST, username: 'test_user_6' } })
     const username = field('server-username')
     // ❗ Editable: for SMB the account is a preference, not the server's identity.
-    expect(username.value).toBe('sven')
+    expect(username.value).toBe('test_user_6')
     expect(username.disabled).toBe(false)
     typeInto(field('server-name'), 'Attic NAS')
-    typeInto(username, 'bob')
+    typeInto(username, 'test_user_5')
     await tick()
 
     buttonSaying('Save').click()
     await flush()
 
     expect(commands.updateSavedSmbHost).toHaveBeenCalledWith(
-      'manual-192-168-0-153-445',
+      'manual-192-168-50-20-445',
       'Attic NAS',
-      'bob',
-      'smb://192.168.0.153',
+      'test_user_5',
+      'smb://192.168.50.20',
     )
     expect(commands.updateSavedServer).not.toHaveBeenCalled()
     expect(done).toEqual([{ kind: 'saved' }])

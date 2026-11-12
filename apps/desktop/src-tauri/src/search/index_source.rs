@@ -116,8 +116,8 @@ pub(crate) fn path_namespace(volume_id: &str) -> PathNamespace {
 /// A backend volume's paths are in ITS namespace, and the OS mount that may sit at
 /// the same mount point renames them: macOS smbfs hands back every name decomposed
 /// (NFD), while the server stores what it stores (a QNAP: NFC). Canonicalized,
-/// `Rymdskottkärra AB` reached the index lookup and the walk as
-/// `Rymdskottka\u{308}rra AB`, the server answered `STATUS_OBJECT_NAME_NOT_FOUND`, and
+/// `Testföretag AB` reached the index lookup and the walk as
+/// `Testfo\u{308}retag AB`, the server answered `STATUS_OBJECT_NAME_NOT_FOUND`, and
 /// every search of an accented NAS folder came back empty (verified on macOS 27 smbfs
 /// against a QNAP TS-464, `realpath` bytes `61 cc 88`, 2026-11-04). ❌ Don't fix that
 /// by normalizing to NFC: a server that stores NFD names breaks instead.

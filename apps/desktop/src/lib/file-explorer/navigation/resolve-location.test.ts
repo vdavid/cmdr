@@ -21,14 +21,14 @@ describe('resolveLocation', () => {
 
   it('maps a resolved volume to ok with the location', async () => {
     mockCommand.mockResolvedValue({
-      location: { volumeId: 'root', path: '/Users/dave/dir' },
+      location: { volumeId: 'root', path: '/Users/test_user_10/dir' },
       timedOut: false,
     })
 
-    const outcome = await resolveLocation('/Users/dave/dir')
+    const outcome = await resolveLocation('/Users/test_user_10/dir')
 
-    expect(outcome).toEqual({ ok: true, location: { volumeId: 'root', path: '/Users/dave/dir' } })
-    expect(mockCommand).toHaveBeenCalledWith('/Users/dave/dir')
+    expect(outcome).toEqual({ ok: true, location: { volumeId: 'root', path: '/Users/test_user_10/dir' } })
+    expect(mockCommand).toHaveBeenCalledWith('/Users/test_user_10/dir')
   })
 
   it('maps a null location to not-ok with reason no-volume', async () => {

@@ -111,7 +111,7 @@ mod tests {
     fn target(volume_id: &str, reach: FavoriteReach) -> FavoriteTarget {
         FavoriteTarget {
             volume_id: Some(volume_id.to_string()),
-            volume_name: Some("naspi on nas.local".to_string()),
+            volume_name: Some("testshare on testnas.local".to_string()),
             volume_root: None,
             reach,
             discovered: Default::default(),
@@ -123,15 +123,15 @@ mod tests {
         let summary = summary_of_row(
             "fav-9f1c",
             "docs",
-            "/Volumes/naspi/docs",
-            Some(&target("smb-naspi", FavoriteReach::Connects)),
+            "/Volumes/testshare/docs",
+            Some(&target("smb-testshare", FavoriteReach::Connects)),
         );
 
         assert_eq!(summary.id, "9f1c", "the id the favorites tool takes is the bare one");
         assert_eq!(
             build_favorites_yaml(&[summary]),
-            "favorites:\n  - id: 9f1c\n    name: \"docs\"\n    path: \"/Volumes/naspi/docs\"\n    \
-             volume: smb-naspi\n    volumeName: \"naspi on nas.local\"\n    reach: connects\n"
+            "favorites:\n  - id: 9f1c\n    name: \"docs\"\n    path: \"/Volumes/testshare/docs\"\n    \
+             volume: smb-testshare\n    volumeName: \"testshare on testnas.local\"\n    reach: connects\n"
         );
     }
 

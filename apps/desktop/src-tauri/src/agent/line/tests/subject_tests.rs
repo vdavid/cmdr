@@ -67,14 +67,16 @@ fn argument_only_subjects_per_tool() {
         (ToolId::ListVolumes, json!({}), ToolSubject::Drives),
         (
             ToolId::ConnectVolume,
-            json!({ "volumeId": "smb-naspi" }),
-            ToolSubject::Volume { id: "smb-naspi".into() },
+            json!({ "volumeId": "smb-testshare" }),
+            ToolSubject::Volume {
+                id: "smb-testshare".into(),
+            },
         ),
         (
             ToolId::ListDir,
-            json!({ "path": "/Volumes/naspi/papers", "volumeId": "smb-naspi" }),
+            json!({ "path": "/Volumes/testshare/documents", "volumeId": "smb-testshare" }),
             ToolSubject::Folder {
-                path: LinePath::of("/Volumes/naspi/papers"),
+                path: LinePath::of("/Volumes/testshare/documents"),
             },
         ),
         (ToolId::OperationsList, json!({}), ToolSubject::OperationLog),

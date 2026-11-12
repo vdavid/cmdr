@@ -80,7 +80,7 @@ describe('askSentence', () => {
   })
 
   it('removing a server names it', () => {
-    expect(askSentence({ kind: 'removeServer', hostId: 'h', name: 'Naspolya' }).body).toContain('Naspolya')
+    expect(askSentence({ kind: 'removeServer', hostId: 'h', name: 'Testnas' }).body).toContain('Testnas')
   })
 
   it.each<IndexingAction>(['enable', 'disable', 'rescan', 'forget'])('indexing `%s` names the volume', (action) => {

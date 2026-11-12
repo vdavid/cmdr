@@ -187,27 +187,27 @@ fn nonexistent_crash_file_returns_none() {
 
 #[test]
 fn sanitize_unix_home_path() {
-    let msg = r#"No such file or directory (os error 2): /Users/john/Documents/secret-project/file.txt"#;
+    let msg = r#"No such file or directory (os error 2): /Users/test_user_14/Documents/secret-project/file.txt"#;
     let sanitized = sanitize_panic_message(msg);
-    assert!(!sanitized.contains("/Users/john"));
+    assert!(!sanitized.contains("/Users/test_user_14"));
     assert!(!sanitized.contains("secret-project"));
     assert!(sanitized.contains("$HOME"));
 }
 
 #[test]
 fn sanitize_linux_home_path() {
-    let msg = "failed to open /home/alice/.ssh/id_rsa: permission denied";
+    let msg = "failed to open /home/test_user_4/.ssh/id_rsa: permission denied";
     let sanitized = sanitize_panic_message(msg);
-    assert!(!sanitized.contains("/home/alice"));
+    assert!(!sanitized.contains("/home/test_user_4"));
     assert!(!sanitized.contains("id_rsa"));
     assert!(sanitized.contains("$HOME"));
 }
 
 #[test]
 fn sanitize_windows_path() {
-    let msg = r"couldn't read C:\Users\Bob\Desktop\passwords.txt";
+    let msg = r"couldn't read C:\Users\Test_user_5\Desktop\passwords.txt";
     let sanitized = sanitize_panic_message(msg);
-    assert!(!sanitized.contains(r"C:\Users\Bob"));
+    assert!(!sanitized.contains(r"C:\Users\Test_user_5"));
     assert!(sanitized.contains("$HOME"));
 }
 
@@ -572,20 +572,20 @@ fn delivery_keeps_a_redacted_capped_panic_message_and_thread_name() {
     report.diag_id.clear();
     report.build_mode = Some("PRIVATE-BUILD-MODE".to_string());
     report.panic_message = Some(format!(
-        "called `Result::unwrap()` on an `Err` value: Os {{ code: 2 }} at /Users/alice/Secret/payload.txt: {}",
+        "called `Result::unwrap()` on an `Err` value: Os {{ code: 2 }} at /Users/test_user_4/Secret/payload.txt: {}",
         "x".repeat(PANIC_MESSAGE_MAX_CHARS * 2)
     ));
     report.thread_name = Some("smb-watcher /Volumes/Private Share".to_string());
     report.active_settings.ai_provider = Some("PRIVATE PROVIDER".to_string());
-    report.backtrace_frames = vec!["frame at /Users/alice/Secret/frame.rs".to_string()];
-    report.os_exception = Some("fault at /Users/alice/Secret/fault.bin".to_string());
-    report.os_frames = vec!["image /Users/alice/Secret/image.dylib".to_string()];
+    report.backtrace_frames = vec!["frame at /Users/test_user_4/Secret/frame.rs".to_string()];
+    report.os_exception = Some("fault at /Users/test_user_4/Secret/fault.bin".to_string());
+    report.os_frames = vec!["image /Users/test_user_4/Secret/image.dylib".to_string()];
     report.email = Some("explicit-email@example.test".to_string());
 
     report.prepare_for_delivery();
     let json = serde_json::to_string(&report).expect("prepared report serializes");
 
-    for private in ["PRIVATE PROVIDER", "/Users/alice", "Secret", "Private Share"] {
+    for private in ["PRIVATE PROVIDER", "/Users/test_user_4", "Secret", "Private Share"] {
         assert!(!json.contains(private), "private value {private:?} survived: {json}");
     }
     let message = report.panic_message.as_deref().expect("the panic message ships");
@@ -625,9 +625,9 @@ fn delivery_keeps_a_redacted_capped_panic_message_and_thread_name() {
 #[test]
 fn the_hook_stores_a_sanitized_thread_name() {
     assert_eq!(sanitize_thread_name("tokio-runtime-worker"), "tokio-runtime-worker");
-    let redacted = sanitize_thread_name("copy /Users/alice/Secret/a.txt");
+    let redacted = sanitize_thread_name("copy /Users/test_user_4/Secret/a.txt");
     assert!(
-        !redacted.contains("alice") && !redacted.contains("Secret"),
+        !redacted.contains("test_user_4") && !redacted.contains("Secret"),
         "{redacted}"
     );
     assert!(sanitize_thread_name(&"t".repeat(500)).chars().count() <= THREAD_NAME_MAX_CHARS + 1);
@@ -1171,7 +1171,7 @@ fn an_uncaught_objc_exception_reason_ships_redacted_with_the_signal_crash() {
     let sidecar = dir.join(objc_exception::FILE_NAME);
     std::fs::write(
         &sidecar,
-        "NSInvalidArgumentException: fileType '/Users/alice/Secret/plan.mkv' is not a valid UTI",
+        "NSInvalidArgumentException: fileType '/Users/test_user_4/Secret/plan.mkv' is not a valid UTI",
     )
     .unwrap();
 
@@ -1183,7 +1183,7 @@ fn an_uncaught_objc_exception_reason_ships_redacted_with_the_signal_crash() {
         message.starts_with("Uncaught Objective-C exception NSInvalidArgumentException: fileType"),
         "{message}"
     );
-    assert!(!message.contains("alice"), "the user name is redacted: {message}");
+    assert!(!message.contains("test_user_4"), "the user name is redacted: {message}");
     assert!(
         !message.contains("plan.mkv") && !message.contains("Secret"),
         "file and folder names are redacted: {message}"

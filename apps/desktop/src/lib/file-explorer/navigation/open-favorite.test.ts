@@ -65,13 +65,13 @@ function favorite(
   return {
     id: 'fav-123',
     name: 'docs',
-    path: '/Volumes/naspi/docs',
+    path: '/Volumes/testshare/docs',
     category: 'favorite',
     isEjectable: false,
     favoriteTarget: {
-      volumeId: target.volumeId === undefined ? 'smb-naspi' : target.volumeId,
-      volumeName: target.volumeName === undefined ? 'naspi on nas.local' : target.volumeName,
-      volumeRoot: target.volumeRoot === undefined ? '/Volumes/naspi' : target.volumeRoot,
+      volumeId: target.volumeId === undefined ? 'smb-testshare' : target.volumeId,
+      volumeName: target.volumeName === undefined ? 'testshare on testnas.local' : target.volumeName,
+      volumeRoot: target.volumeRoot === undefined ? '/Volumes/testshare' : target.volumeRoot,
       reach,
     },
   }
@@ -109,9 +109,9 @@ describe('openFavorite on a row that names its target', () => {
       // No path lookup: for an unmounted share it would walk up to the boot disk.
       expect(resolvePathVolume).not.toHaveBeenCalled()
       expect(go).toHaveBeenCalledWith({
-        volumeId: 'smb-naspi',
-        volumePath: '/Volumes/naspi',
-        targetPath: '/Volumes/naspi/docs',
+        volumeId: 'smb-testshare',
+        volumePath: '/Volumes/testshare',
+        targetPath: '/Volumes/testshare/docs',
         exact: true,
       })
       expect(result).toEqual({ kind: 'opened', opened: 'went' })

@@ -51,7 +51,7 @@ fn a_live_answer_says_where_it_came_from_and_states_no_folder_size() {
         entry("receipt.pdf", false, Some(52_000)),
     ];
     let result = build_live_list_dir(
-        &at("/Volumes/naspi-1/papers"),
+        &at("/Volumes/testshare-1/documents"),
         entries,
         &unindexed(),
         &ListOptions::default(),
@@ -90,7 +90,7 @@ fn a_folder_past_the_cap_keeps_the_first_ten_thousand_and_says_the_total_is_a_fl
         order: Order::Desc,
         ..ListOptions::default()
     };
-    let result = build_live_list_dir(&at("/Volumes/naspi-1/scans"), entries, &unindexed(), &opts);
+    let result = build_live_list_dir(&at("/Volumes/testshare-1/scans"), entries, &unindexed(), &opts);
     let wire = wire(&result);
 
     assert_eq!(wire["total"], LIVE_ENTRY_CAP);
@@ -106,7 +106,7 @@ fn facts_for(root: &str) -> VolumeFacts {
     VolumeFacts {
         volumes: vec![VolumeFact {
             id: "lan".to_string(),
-            name: "naspi on naspolya".to_string(),
+            name: "testshare on testnas".to_string(),
             kind: VolumeKind::Smb,
             root: root.to_string(),
             live: true,
@@ -129,12 +129,12 @@ fn open_policy() -> GatePolicy {
 
 #[tokio::test]
 async fn an_offset_past_the_cap_is_refused_before_anything_is_read() {
-    let facts = facts_for("/Volumes/naspi-1");
+    let facts = facts_for("/Volumes/testshare-1");
     let resolved = resolve(
         &facts,
         &LocationInput {
             volume_id: Some("lan".to_string()),
-            path: "/Volumes/naspi-1/scans".to_string(),
+            path: "/Volumes/testshare-1/scans".to_string(),
         },
     )
     .expect("resolves");
@@ -161,7 +161,7 @@ async fn an_offset_past_the_cap_is_refused_before_anything_is_read() {
 #[tokio::test]
 async fn a_live_read_lists_a_real_folder_through_its_volume() {
     let dir = TestDir::new("live-real-read");
-    let folder = dir.join("papers");
+    let folder = dir.join("documents");
     std::fs::create_dir_all(folder.join("2024")).expect("dirs");
     std::fs::write(folder.join("receipt.pdf"), b"%PDF").expect("file");
     let root = dir.to_string_lossy().into_owned();
@@ -175,7 +175,7 @@ async fn a_live_read_lists_a_real_folder_through_its_volume() {
     )
     .expect("resolves");
     let volume: Arc<dyn Volume> = Arc::new(cmdr_local::LocalPosixVolume::local_folder(
-        "naspi",
+        "testshare",
         &*dir,
         crate::volume_host::host(),
     ));
@@ -221,7 +221,7 @@ async fn a_missing_folder_read_live_is_a_typed_miss_not_an_empty_listing() {
     )
     .expect("resolves");
     let volume: Arc<dyn Volume> = Arc::new(cmdr_local::LocalPosixVolume::local_folder(
-        "naspi",
+        "testshare",
         &*dir,
         crate::volume_host::host(),
     ));
@@ -243,13 +243,13 @@ async fn a_missing_folder_read_live_is_a_typed_miss_not_an_empty_listing() {
 }
 
 async fn dropped_read_detail(connection_state: Option<cmdr_fs::volume::ConnectionState>) -> String {
-    let mut facts = facts_for("/Volumes/naspi-1");
+    let mut facts = facts_for("/Volumes/testshare-1");
     facts.volumes[0].connection_state = connection_state;
     let resolved = resolve(
         &facts,
         &LocationInput {
             volume_id: Some("lan".to_string()),
-            path: "/Volumes/naspi-1/papers".to_string(),
+            path: "/Volumes/testshare-1/documents".to_string(),
         },
     )
     .expect("resolves");

@@ -51,7 +51,7 @@ async fn a_saved_share_never_reads_roots_freshness_off_its_dead_mount_path() {
     );
 
     let saved = crate::volume_listing::LocationInfo {
-        id: "smb-192-0-2-52-445-share-ada".to_string(),
+        id: "smb-192-0-2-52-445-share-test_user_1".to_string(),
         name: "share on nas".to_string(),
         path: "/Volumes/cmdr-test-never-mounted-share".to_string(),
         category: crate::volumes::LocationCategory::Network,
@@ -115,7 +115,7 @@ async fn a_favorite_never_appears_in_volumes_and_every_other_row_renders_as_befo
         mount_account: None,
     };
     let share = row(
-        "smb-192-0-2-53-445-share-ada",
+        "smb-192-0-2-53-445-share-test_user_1",
         "share on nas",
         "/Volumes/cmdr-test-never-mounted-share",
         crate::volumes::LocationCategory::Network,
@@ -164,7 +164,7 @@ async fn a_saved_server_reaches_the_state_resource() {
     crate::network::sftp_known_servers::remember(crate::network::sftp_known_servers::KnownSftpServer {
         host: host.to_string(),
         port: 2222,
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         display_name: format!("{host} server"),
         remote_root: "/srv/data".to_string(),
         start_folder: None,
@@ -176,7 +176,7 @@ async fn a_saved_server_reaches_the_state_resource() {
     });
 
     let volumes = snapshot_volumes().await;
-    let id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+    let id = cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1");
     let row = volumes
         .iter()
         .find(|v| v.id == id)
@@ -242,8 +242,8 @@ fn an_unwatched_volume_omits_space_rather_than_reporting_zero() {
 #[test]
 fn smb_volume_carries_connection_state_and_kind() {
     let smb = VolumeSummary {
-        name: "naspi".to_string(),
-        id: "smb-192-168-1-111-445-naspi".to_string(),
+        name: "testshare".to_string(),
+        id: "smb-192-168-50-10-445-testshare".to_string(),
         kind: VolumeKind::Smb,
         filesystem: Some("smbfs".to_string()),
         read_only: Some(false),
@@ -251,7 +251,7 @@ fn smb_volume_carries_connection_state_and_kind() {
         index_status: Some("stale"),
         connection_state: Some("direct"),
         device_readiness: None,
-        mount_path: Some("/Volumes/naspi".to_string()),
+        mount_path: Some("/Volumes/testshare".to_string()),
         space: None,
     };
     let yaml = build_volumes_yaml(&[smb]);

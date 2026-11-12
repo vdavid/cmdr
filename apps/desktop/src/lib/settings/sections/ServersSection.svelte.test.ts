@@ -65,8 +65,8 @@ vi.mock('#lib/utils/confirm-dialog.js', () => ({
   confirmDialog: (message: string, title: string) => confirmDialog(message, title),
 }))
 
-const naspolya: HostKey = {
-  host: 'nas.local',
+const testnas: HostKey = {
+  host: 'testnas.local',
   port: 2222,
   algorithm: 'ssh-ed25519',
   fingerprint: 'SHA256:9GbJ2r0Ck9tqZ6y5rQ0m8kFq1sWl4pS2vNbXcYdEfGh',
@@ -99,7 +99,7 @@ function certificateRows(target: HTMLElement): HTMLElement[] {
 }
 
 const synology: Certificate = {
-  host: 'nas.local',
+  host: 'testnas.local',
   port: 5006,
   fingerprint: 'CD:6F:DC:7C:4B:21:C9:B5:28:58:69:B3:4E:5C:68:B8:55:26:2C:0A:5C:06:7A:8A:2D:BF:BD:FA:AE:C2:9B:E7',
   approvedAt: '2026-10-20T10:00:00Z',
@@ -111,7 +111,7 @@ beforeEach(() => {
 })
 
 describe('the SMB link sign-ins list', () => {
-  const pair = { server: 'nas.local', target: 'fs01.example.com', approvedAt: '2026-10-31T10:00:00Z' }
+  const pair = { server: 'testnas.local', target: 'fs01.example.com', approvedAt: '2026-10-31T10:00:00Z' }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -124,12 +124,12 @@ describe('the SMB link sign-ins list', () => {
   it('names both servers, and Forget takes that pair back after confirming', async () => {
     const target = await mountSection()
     const list = target.querySelector('[data-testid="smb-link-consents"]')
-    expect(list?.textContent).toContain('nas.local')
+    expect(list?.textContent).toContain('testnas.local')
     expect(list?.textContent).toContain('fs01.example.com')
 
     list?.querySelector('button')?.click()
     await vi.waitFor(() => {
-      expect(forgetSmbLinkTarget).toHaveBeenCalledWith('nas.local', 'fs01.example.com')
+      expect(forgetSmbLinkTarget).toHaveBeenCalledWith('testnas.local', 'fs01.example.com')
     })
     target.remove()
   })
@@ -151,7 +151,7 @@ describe('the trusted-key list', () => {
     vi.clearAllMocks()
     confirmDialog.mockResolvedValue(true)
     forgetSftpHostKey.mockResolvedValue(true)
-    listTrustedSftpHostKeys.mockResolvedValue([naspolya, jumpBox])
+    listTrustedSftpHostKeys.mockResolvedValue([testnas, jumpBox])
   })
 
   it('shows one row per key, with the fingerprint a person compares against', async () => {
@@ -159,9 +159,9 @@ describe('the trusted-key list', () => {
 
     expect(rows(target)).toHaveLength(2)
     const first = rows(target)[0].textContent
-    expect(first).toContain('nas.local:2222')
+    expect(first).toContain('testnas.local:2222')
     expect(first).toContain('ssh-ed25519')
-    expect(first).toContain(naspolya.fingerprint)
+    expect(first).toContain(testnas.fingerprint)
     target.remove()
   })
 
@@ -189,7 +189,7 @@ describe('forgetting a key', () => {
     vi.clearAllMocks()
     confirmDialog.mockResolvedValue(true)
     forgetSftpHostKey.mockResolvedValue(true)
-    listTrustedSftpHostKeys.mockResolvedValue([naspolya, jumpBox])
+    listTrustedSftpHostKeys.mockResolvedValue([testnas, jumpBox])
   })
 
   /**
@@ -204,7 +204,7 @@ describe('forgetting a key', () => {
     await tick()
     await tick()
 
-    expect(forgetSftpHostKey).toHaveBeenCalledWith('nas.local', 2222, 'ssh-ed25519')
+    expect(forgetSftpHostKey).toHaveBeenCalledWith('testnas.local', 2222, 'ssh-ed25519')
     expect(listTrustedSftpHostKeys).toHaveBeenCalledTimes(2)
     target.remove()
   })
@@ -237,7 +237,7 @@ describe('the trusted certificates', () => {
 
     expect(certificateRows(target)).toHaveLength(1)
     const row = certificateRows(target)[0].textContent
-    expect(row).toContain('nas.local:5006')
+    expect(row).toContain('testnas.local:5006')
     expect(row).toContain(synology.fingerprint)
     target.remove()
   })
@@ -251,7 +251,7 @@ describe('the trusted certificates', () => {
     await tick()
 
     expect(confirmDialog).toHaveBeenCalled()
-    expect(forgetWebdavCertificate).toHaveBeenCalledWith('nas.local', 5006)
+    expect(forgetWebdavCertificate).toHaveBeenCalledWith('testnas.local', 5006)
     expect(listTrustedWebdavCertificates).toHaveBeenCalledTimes(2)
     target.remove()
   })

@@ -4,8 +4,8 @@ use super::*;
 use crate::file_system::volume::SpaceInfo;
 use crate::location::resolve::{IndexSources, VolumeFact};
 
-const TAILSCALE: &str = "smb-100-127-48-122-445-naspi-david";
-const LAN: &str = "smb-192-168-1-111-445-naspi-david";
+const TAILSCALE: &str = "smb-100-64-0-10-445-testshare-test_user_3";
+const LAN: &str = "smb-192-168-50-10-445-testshare-test_user_3";
 
 fn summary(
     id: &str,
@@ -114,7 +114,7 @@ fn an_unwatched_volume_omits_the_human_form_too() {
     assert_eq!(out[0].available_human, None);
 }
 
-/// ❗ The row that sent the model to `/Volumes/naspi/...` carried `mountPath`, the
+/// ❗ The row that sent the model to `/Volumes/testshare/...` carried `mountPath`, the
 /// saved share's last mount point, read as "where it is". `root` is the prefix its
 /// locations start with, and `connectionState` says it isn't connected.
 #[test]
@@ -123,11 +123,11 @@ fn a_saved_share_carries_its_root_and_no_mount_path() {
     let json = wire(
         &map(
             &[row],
-            &facts(vec![fact(TAILSCALE, VolumeKind::Smb, "/Volumes/naspi", false)]),
+            &facts(vec![fact(TAILSCALE, VolumeKind::Smb, "/Volumes/testshare", false)]),
         )
         .volumes[0],
     );
-    assert_eq!(json["root"], "/Volumes/naspi");
+    assert_eq!(json["root"], "/Volumes/testshare");
     assert_eq!(json["connectionState"], "saved");
     assert!(
         json.get("mountPath").is_none(),
@@ -139,7 +139,7 @@ fn a_saved_share_carries_its_root_and_no_mount_path() {
 /// same `stale` + `asOf` `list_dir` voices for an offline read.
 #[test]
 fn a_saved_share_with_an_index_on_disk_reads_stale_as_of_its_last_scan() {
-    let mut tailscale = fact(TAILSCALE, VolumeKind::Smb, "/Volumes/naspi", false);
+    let mut tailscale = fact(TAILSCALE, VolumeKind::Smb, "/Volumes/testshare", false);
     tailscale.index.stored = true;
     tailscale.index.stored_as_of = Some(1_761_000_000); // 2025-10-20T22:40Z
     let row = summary(TAILSCALE, VolumeKind::Smb, Some("off"), Some("saved"));
@@ -157,7 +157,7 @@ fn a_saved_share_with_no_index_stays_off() {
     let json = wire(
         &map(
             &[row],
-            &facts(vec![fact(TAILSCALE, VolumeKind::Smb, "/Volumes/naspi", false)]),
+            &facts(vec![fact(TAILSCALE, VolumeKind::Smb, "/Volumes/testshare", false)]),
         )
         .volumes[0],
     );
@@ -169,7 +169,7 @@ fn a_saved_share_with_no_index_stays_off() {
 /// it: `list_dir` reads it live, so an offline date would describe nothing.
 #[test]
 fn a_live_volume_never_borrows_an_offline_date() {
-    let mut lan = fact(LAN, VolumeKind::Smb, "/Volumes/naspi-1", true);
+    let mut lan = fact(LAN, VolumeKind::Smb, "/Volumes/testshare-1", true);
     lan.index.stored_as_of = Some(1_761_000_000);
     let row = summary(LAN, VolumeKind::Smb, Some("off"), Some("direct"));
     let json = wire(&map(&[row], &facts(vec![lan])).volumes[0]);
@@ -179,8 +179,8 @@ fn a_live_volume_never_borrows_an_offline_date() {
 
 #[test]
 fn a_server_row_has_its_scheme_root() {
-    let root = cmdr_fs::volume::sftp_app_root("nas.local", 22, "ada");
-    let id = cmdr_fs::volume::sftp_volume_id("nas.local", 22, "ada");
+    let root = cmdr_fs::volume::sftp_app_root("testnas.local", 22, "test_user_1");
+    let id = cmdr_fs::volume::sftp_volume_id("testnas.local", 22, "test_user_1");
     let mut row = summary(&id, VolumeKind::Sftp, Some("off"), Some("saved"));
     row.mount_path = None;
     let json = wire(&map(&[row], &facts(vec![fact(&id, VolumeKind::Sftp, &root, false)])).volumes[0]);
@@ -219,13 +219,13 @@ fn an_unreachable_favorite_keeps_its_raw_path_and_no_location() {
 fn a_reachable_favorite_carries_its_location() {
     let out = to_volume_map(
         &[],
-        &[favorite("Downloads", "/Users/ada/Downloads")],
+        &[favorite("Downloads", "/Users/test_user_1/Downloads")],
         &facts(vec![fact("root", VolumeKind::Local, "/", true)]),
         &[],
     );
     let json = wire(&out.favorites[0]);
     assert_eq!(json["location"]["volumeId"], "root");
-    assert_eq!(json["location"]["path"], "/Users/ada/Downloads");
+    assert_eq!(json["location"]["path"], "/Users/test_user_1/Downloads");
     assert!(
         json.get("reachable").is_none(),
         "reachable is said only when it's false"
@@ -248,8 +248,8 @@ fn rows_of_one_share_sit_together_most_recently_connected_first() {
         last_connected_at: at.to_string(),
     };
     let shares = [
-        share(TAILSCALE, "naspi", "2026-10-20T08:00:00Z"),
-        share(LAN, "NASPI", "2026-10-25T19:00:00Z"),
+        share(TAILSCALE, "testshare", "2026-10-20T08:00:00Z"),
+        share(LAN, "TESTSHARE", "2026-10-25T19:00:00Z"),
         share("smb-other", "photos", "2026-10-26T07:00:00Z"),
     ];
     let ids: Vec<String> = to_volume_map(&rows, &[], &facts(vec![]), &shares)
@@ -288,13 +288,13 @@ fn rows_of_one_proven_share_name_each_other() {
                 "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
                 crate::network::server_guid::GuidProof::Authenticated,
             )),
-            "naspi",
+            "testshare",
             None,
         ))
     };
-    let mut ts = fact(TAILSCALE, VolumeKind::Smb, "/Volumes/naspi", false);
+    let mut ts = fact(TAILSCALE, VolumeKind::Smb, "/Volumes/testshare", false);
     ts.share = identity();
-    let mut lan = fact(LAN, VolumeKind::Smb, "/Volumes/naspi-1", true);
+    let mut lan = fact(LAN, VolumeKind::Smb, "/Volumes/testshare-1", true);
     lan.share = identity();
     let out = wire(&map(
         &[

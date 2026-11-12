@@ -32,7 +32,7 @@ fn quick_state(engine: &TestOperations) -> Arc<WriteOperationState> {
 }
 
 fn nas(lane: &str) -> (Arc<OutageVolume>, Arc<dyn Volume>) {
-    let volume = OutageVolume::wrap(Arc::new(InMemoryVolume::new("Naspolya")), lane);
+    let volume = OutageVolume::wrap(Arc::new(InMemoryVolume::new("Testnas")), lane);
     let dynamic: Arc<dyn Volume> = Arc::clone(&volume) as Arc<dyn Volume>;
     (volume, dynamic)
 }
@@ -425,7 +425,7 @@ async fn the_operation_names_the_volume_while_it_waits() {
         .expect("the observer ran")
         .expect("a waiting op classifies itself");
     assert_eq!(activity.waiting_on, TransferWaitReason::Reconnecting);
-    assert_eq!(activity.reconnecting_volume.as_deref(), Some("Naspolya"));
+    assert_eq!(activity.reconnecting_volume.as_deref(), Some("Testnas"));
 }
 
 /// A pause outranks the wait in what the operation says, and stops the dialing.
@@ -748,7 +748,7 @@ async fn through_outages_stops_after_its_outage_cap() {
 
 const FIFTEEN_MINUTES: Duration = Duration::from_secs(15 * 60);
 
-/// The give-up the person reads as "Lost the connection to Naspolya": the
+/// The give-up the person reads as "Lost the connection to Testnas": the
 /// server's own name, and how long the work waited for it.
 #[test]
 fn a_server_given_up_on_is_named_with_how_long_the_work_waited() {
@@ -766,7 +766,7 @@ fn a_server_given_up_on_is_named_with_how_long_the_work_waited() {
     assert_eq!(
         lost,
         Some(LostConnection {
-            volume_name: "Naspolya".to_owned(),
+            volume_name: "Testnas".to_owned(),
             gave_up_after: Some(FIFTEEN_MINUTES),
         })
     );
@@ -784,7 +784,7 @@ fn a_server_the_work_could_not_wait_for_is_named_without_a_wait() {
     assert_eq!(
         lost,
         Some(LostConnection {
-            volume_name: "Naspolya".to_owned(),
+            volume_name: "Testnas".to_owned(),
             gave_up_after: None,
         })
     );

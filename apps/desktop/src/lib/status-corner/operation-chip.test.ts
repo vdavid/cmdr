@@ -44,7 +44,7 @@ function row(
       operationType: 'copy',
       status: 'running',
       source: '/Users/me/Documents',
-      destination: '/Volumes/Naspolya/Backup',
+      destination: '/Volumes/Testnas/Backup',
       rollbackSupport: 'supported',
       reverses: null,
       error: null,
@@ -154,8 +154,8 @@ describe('pickChipOperation', () => {
   })
 
   it('names the destination folder, trailing slash or not', () => {
-    expect(destinationName('/Volumes/Naspolya/Backup')).toBe('Backup')
-    expect(destinationName('/Volumes/Naspolya/Backup/')).toBe('Backup')
+    expect(destinationName('/Volumes/Testnas/Backup')).toBe('Backup')
+    expect(destinationName('/Volumes/Testnas/Backup/')).toBe('Backup')
   })
 
   it('has no destination to name for a delete', () => {

@@ -27,9 +27,9 @@ import { createDirectConnectionSwitches } from './direct-connection-switch.svelt
 import type { VolumeInfo } from '../types'
 
 const osMountShare: VolumeInfo = {
-  id: 'smb-naspi',
-  name: 'naspi',
-  path: '/Volumes/naspi',
+  id: 'smb-testshare',
+  name: 'testshare',
+  path: '/Volumes/testshare',
   category: 'network',
   fsType: 'smbfs',
   isEjectable: true,
@@ -52,13 +52,13 @@ beforeEach(() => {
 
 describe('createDirectConnectionSwitches', () => {
   it('asks only about SMB share rows, and keeps no switch where Rust has none', async () => {
-    getSmbDirectConnectionEnabled.mockImplementation((id) => Promise.resolve(id === 'smb-naspi' ? false : null))
+    getSmbDirectConnectionEnabled.mockImplementation((id) => Promise.resolve(id === 'smb-testshare' ? false : null))
     const switches = createDirectConnectionSwitches()
 
     await switches.fetchForRows([osMountShare, directShare, disk])
 
-    expect(getSmbDirectConnectionEnabled.mock.calls.map(([id]) => id).sort()).toEqual(['smb-media', 'smb-naspi'])
-    expect(switches.valueFor('smb-naspi')).toBe(false)
+    expect(getSmbDirectConnectionEnabled.mock.calls.map(([id]) => id).sort()).toEqual(['smb-media', 'smb-testshare'])
+    expect(switches.valueFor('smb-testshare')).toBe(false)
     expect(switches.valueFor('smb-media')).toBeUndefined()
     expect(switches.valueFor('volumes-backup')).toBeUndefined()
   })
@@ -82,9 +82,9 @@ describe('createDirectConnectionSwitches', () => {
 
     await switches.pick(osMountShare, [osMountShare])
 
-    expect(setSmbDirectConnectionEnabled).toHaveBeenCalledWith('smb-naspi', true)
-    expect(connectDirectly).toHaveBeenCalledWith({ volumeId: 'smb-naspi', shareName: 'naspi' })
-    expect(switches.valueFor('smb-naspi')).toBe(true)
+    expect(setSmbDirectConnectionEnabled).toHaveBeenCalledWith('smb-testshare', true)
+    expect(connectDirectly).toHaveBeenCalledWith({ volumeId: 'smb-testshare', shareName: 'testshare' })
+    expect(switches.valueFor('smb-testshare')).toBe(true)
   })
 
   it('a share that went away keeps its old value and starts no connect', async () => {
@@ -96,6 +96,6 @@ describe('createDirectConnectionSwitches', () => {
     await switches.pick(osMountShare, [osMountShare])
 
     expect(connectDirectly).not.toHaveBeenCalled()
-    expect(switches.valueFor('smb-naspi')).toBe(false)
+    expect(switches.valueFor('smb-testshare')).toBe(false)
   })
 })

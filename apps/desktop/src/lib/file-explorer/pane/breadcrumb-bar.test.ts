@@ -43,10 +43,10 @@ describe('breadcrumbDisplayPath', () => {
 
   it('reads a drive or share volume from its root down, on Windows', () => {
     onTestFinished(withPlatform('windows'))
-    const input = { userHomePath: 'C:/Users/ada', isSearchResultsView: false, searchLabel: undefined }
-    expect(breadcrumbDisplayPath({ ...input, currentPath: 'C:/Users/ada', volumeId: 'c', volumePath: 'C:/' })).toBe(
-      '/Users/ada',
-    )
+    const input = { userHomePath: 'C:/Users/test_user_1', isSearchResultsView: false, searchLabel: undefined }
+    expect(
+      breadcrumbDisplayPath({ ...input, currentPath: 'C:/Users/test_user_1', volumeId: 'c', volumePath: 'C:/' }),
+    ).toBe('/Users/test_user_1')
     expect(breadcrumbDisplayPath({ ...input, currentPath: 'C:/', volumeId: 'c', volumePath: 'C:/' })).toBe('/')
     expect(
       breadcrumbDisplayPath({ ...input, currentPath: '//nas/media/x', volumeId: 'u', volumePath: '//nas/media/' }),

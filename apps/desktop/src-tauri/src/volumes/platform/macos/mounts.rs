@@ -166,7 +166,7 @@ fn private_to_another_user_at(mounts: &[MountEntry], path: &str) -> bool {
 /// A mount's point and the source it was mounted from (`f_mntfromname`), for code that maps
 /// mounts to the disks under them. Straight from the non-blocking snapshot: no syscall per entry.
 pub(crate) struct MountSource {
-    /// Mount point, e.g. `/Volumes/naspi`.
+    /// Mount point, e.g. `/Volumes/testshare`.
     pub(crate) mount_point: std::path::PathBuf,
     /// Mount source, e.g. `/dev/disk5s1` for a local disk.
     pub(crate) mount_from: String,

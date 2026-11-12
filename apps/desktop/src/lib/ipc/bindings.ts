@@ -8650,7 +8650,7 @@ export type CoveragePhase =
  *  `volume_ids`, how many folders score at or above `threshold` and how many images
  *  they hold ((importance ≥ `threshold`) AND volume opted-in — never a non-opted-in
  *  SMB/MTP volume). `pending` is `true` when any requested enabled volume isn't ready
- *  (still scanning, or importance hasn't scored it), so the UI voices "naspi still
+ *  (still scanning, or importance hasn't scored it), so the UI voices "testshare still
  *  scanning" instead of a confident wrong number. Debounce-friendly: the per-folder
  *  image counts are cached, so a drag only re-runs the cheap importance filter.
  */
@@ -12760,7 +12760,7 @@ export type LocationInfo = {
    */
   isCloudMount: boolean
   /**
-   *  Whether names here tell `Ada` from `ada`: what the frontend's path and name
+   *  Whether names here tell `Test_user_1` from `test_user_1`: what the frontend's path and name
    *  comparisons follow wherever typed text meets this volume's listing
    *  (`apps/desktop/src/lib/path/grammar.ts`). ❗ The VOLUME's property, ❌ never
    *  inferred from the OS: a local disk answers its OS arm's
@@ -17458,7 +17458,7 @@ export type SavedPlace = {
   connected: boolean
   /**
    *  The app-facing root this place addresses its files by
-   *  (`sftp://ada@nas.local:22/srv`), which is what a tab, a favorite, and an
+   *  (`sftp://test_user_1@testnas.local:22/srv`), which is what a tab, a favorite, and an
    *  MCP row point at.
    *
    *  ❗ Read from `server_volumes::server_places()`, the one place that mints
@@ -18862,7 +18862,7 @@ export type ServerNameSource =
 export type ServerPlaceMoved = {
   /**
    *  The prefix every app path on these places carried until the move
-   *  (`sftp://ada@nas.local:22`).
+   *  (`sftp://test_user_1@testnas.local:22`).
    */
   oldPrefix: string
   // The prefix they carry now.
@@ -20094,7 +20094,7 @@ export type SuggestedGroupView = {
    */
   destination: string | null
   /**
-   *  What the destination's volume is called ("naspi on 192.168.1.5", "Macintosh HD"): the
+   *  What the destination's volume is called ("testshare on 192.168.1.5", "Macintosh HD"): the
    *  registered volume's own name, or a saved place's while nobody has connected it. `None`
    *  when there's no destination, or nothing knows that id.
    */
@@ -22785,7 +22785,7 @@ export type VolumeReconnectRequested = {
  *  [`RootChangeKind`]: saving an edit to a CONNECTED place, or a mounted drive
  *  being renamed.
  *
- *  Every path is an APP path (`sftp://ada@nas.local:22/srv/data`, `/Volumes/New`),
+ *  Every path is an APP path (`sftp://test_user_1@testnas.local:22/srv/data`, `/Volumes/New`),
  *  and a landing is where opening the place lands: its start folder, else its root.
  *  Emitted only when the root or the landing actually moved. What a pane does with
  *  it: `network/DETAILS.md` § "Editing a connected place".

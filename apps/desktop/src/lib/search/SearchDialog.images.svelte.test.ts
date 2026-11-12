@@ -45,7 +45,7 @@ describe('SearchDialog image-OCR grid targets the active volume', () => {
     // to an openable OS path under the volume's mount root.
     let navigatedTo: string | null = null
     const { cleanup } = await mountDialog({
-      searchVolume: { volumeId: 'smb-naspi', mountRoot: '/Volumes/naspi', isNetwork: true },
+      searchVolume: { volumeId: 'smb-testshare', mountRoot: '/Volumes/testshare', isNetwork: true },
       onNavigate: (path) => {
         navigatedTo = path
       },
@@ -58,8 +58,8 @@ describe('SearchDialog image-OCR grid targets the active volume', () => {
       await tick()
 
       // Both the coverage-state read and the OCR search hit the ACTIVE (network) volume id.
-      expect(mediaVolumeStateMock).toHaveBeenCalledWith('smb-naspi')
-      expect(mediaSearchOcrMock).toHaveBeenCalledWith('smb-naspi', 'invoice', null)
+      expect(mediaVolumeStateMock).toHaveBeenCalledWith('smb-testshare')
+      expect(mediaSearchOcrMock).toHaveBeenCalledWith('smb-testshare', 'invoice', null)
     } finally {
       vi.useRealTimers()
     }
@@ -69,7 +69,7 @@ describe('SearchDialog image-OCR grid targets the active volume', () => {
     expect(tile).not.toBeNull()
     tile?.click()
     await tick()
-    expect(navigatedTo).toBe('/Volumes/naspi/DCIM/photo.png')
+    expect(navigatedTo).toBe('/Volumes/testshare/DCIM/photo.png')
 
     cleanup()
   })

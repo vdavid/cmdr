@@ -25,7 +25,7 @@ fn a_server_is_worth_one_notice_however_many_of_its_shares_fall_back() {
 
     let spoken = shares
         .iter()
-        .filter(|share| notices.claim("naspolya", &format!("smb-naspolya-{share}"), &[]))
+        .filter(|share| notices.claim("testnas", &format!("smb-testnas-{share}"), &[]))
         .count();
 
     assert_eq!(spoken, 1, "50 shares on one NAS must not raise 50 notices");
@@ -38,9 +38,9 @@ fn a_server_is_worth_one_notice_however_many_of_its_shares_fall_back() {
 fn one_server_under_its_many_name_forms_still_gets_one_notice() {
     let mut notices = OsMountNotices::default();
 
-    assert!(notices.claim("Naspolya._smb._tcp.local", "smb-a", &[]));
-    assert!(!notices.claim("naspolya.local", "smb-b", &[]));
-    assert!(!notices.claim("NASPOLYA", "smb-c", &[]));
+    assert!(notices.claim("Testnas._smb._tcp.local", "smb-a", &[]));
+    assert!(!notices.claim("testnas.local", "smb-b", &[]));
+    assert!(!notices.claim("TESTNAS", "smb-c", &[]));
 }
 
 /// Cmdr mounts by IP while Finder mounts by name, so the same NAS arrives as
@@ -48,11 +48,11 @@ fn one_server_under_its_many_name_forms_still_gets_one_notice() {
 /// why the ledger consults it rather than comparing bare names.
 #[test]
 fn a_server_reached_by_ip_and_by_name_is_one_server_when_mdns_knows_the_pairing() {
-    let hosts = [host("Naspolya", "naspolya.local", "192.168.1.111")];
+    let hosts = [host("Testnas", "testnas.local", "192.168.50.10")];
     let mut notices = OsMountNotices::default();
 
-    assert!(notices.claim("192.168.1.111", "smb-a", &hosts));
-    assert!(!notices.claim("Naspolya._smb._tcp.local", "smb-b", &hosts));
+    assert!(notices.claim("192.168.50.10", "smb-a", &hosts));
+    assert!(!notices.claim("Testnas._smb._tcp.local", "smb-b", &hosts));
 }
 
 #[test]
@@ -116,12 +116,12 @@ fn forgetting_a_server_nobody_was_told_about_is_harmless() {
 #[test]
 fn a_server_whose_announced_share_unmounted_can_speak_again() {
     let mut notices = OsMountNotices::default();
-    assert!(notices.claim("naspolya.local", "smb-archive", &[]));
+    assert!(notices.claim("testnas.local", "smb-archive", &[]));
 
     notices.forget_volume("smb-archive");
 
     assert!(
-        notices.claim("naspolya.local", "smb-archive", &[]),
+        notices.claim("testnas.local", "smb-archive", &[]),
         "the remounted share's fallback is news again"
     );
 }
@@ -132,18 +132,18 @@ fn a_server_whose_announced_share_unmounted_can_speak_again() {
 #[test]
 fn only_the_share_the_notice_named_lets_its_server_speak_again() {
     let mut notices = OsMountNotices::default();
-    assert!(notices.claim("naspolya.local", "smb-archive", &[]));
-    assert!(!notices.claim("naspolya.local", "smb-photos", &[]));
+    assert!(notices.claim("testnas.local", "smb-archive", &[]));
+    assert!(!notices.claim("testnas.local", "smb-photos", &[]));
 
     notices.forget_volume("smb-photos");
     assert!(
-        !notices.claim("naspolya.local", "smb-photos", &[]),
+        !notices.claim("testnas.local", "smb-photos", &[]),
         "the notice about archive is still up"
     );
 
     notices.forget_volume("smb-archive");
     assert!(
-        notices.claim("naspolya.local", "smb-photos", &[]),
+        notices.claim("testnas.local", "smb-photos", &[]),
         "no notice speaks for the server anymore"
     );
 }
@@ -157,9 +157,9 @@ fn only_the_share_the_notice_named_lets_its_server_speak_again() {
 fn a_quiet_caller_stays_silent_and_leaves_the_server_untold() {
     let mut notices = OsMountNotices::default();
 
-    assert!(!notices.admit(FallbackNotice::StayQuiet, "naspolya.local", "smb-archive", &[]));
+    assert!(!notices.admit(FallbackNotice::StayQuiet, "testnas.local", "smb-archive", &[]));
     assert!(
-        notices.admit(FallbackNotice::Announce, "naspolya.local", "smb-archive", &[]),
+        notices.admit(FallbackNotice::Announce, "testnas.local", "smb-archive", &[]),
         "the quiet caller mustn't have used up the server's one notice"
     );
 }
@@ -209,12 +209,12 @@ fn an_update_explains_a_block_only_where_the_os_has_a_local_network_permission()
 #[test]
 fn a_quiet_caller_leaves_a_notice_already_up_alone() {
     let mut notices = OsMountNotices::default();
-    assert!(notices.admit(FallbackNotice::Announce, "naspolya.local", "smb-archive", &[]));
+    assert!(notices.admit(FallbackNotice::Announce, "testnas.local", "smb-archive", &[]));
 
-    assert!(!notices.admit(FallbackNotice::StayQuiet, "naspolya.local", "smb-photos", &[]));
+    assert!(!notices.admit(FallbackNotice::StayQuiet, "testnas.local", "smb-photos", &[]));
     notices.forget_volume("smb-photos");
     assert!(
-        !notices.admit(FallbackNotice::Announce, "naspolya.local", "smb-photos", &[]),
+        !notices.admit(FallbackNotice::Announce, "testnas.local", "smb-photos", &[]),
         "the notice naming archive is still up, so the server is still told"
     );
 }

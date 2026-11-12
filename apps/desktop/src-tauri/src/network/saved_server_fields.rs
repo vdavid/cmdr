@@ -173,7 +173,7 @@ pub struct OwnAddress<'a> {
 ///
 /// ❗ Conservative, because a match ERASES a name: whatever isn't provably this
 /// server's own address is a label someone chose, and stays. So a scheme-less
-/// name has to name the account (a bare `nas.local` could be a chosen name),
+/// name has to name the account (a bare `testnas.local` could be a chosen name),
 /// another account or port is another server, and a query or fragment is no
 /// address this app stores. An address with a scheme and no port means the
 /// scheme's own port. A scheme-less `username@host` matches any port: the derived

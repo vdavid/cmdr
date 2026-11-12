@@ -13,25 +13,25 @@ import type { NetworkHost, VolumeInfo } from '../types'
 import type { SignedInAs } from './signed-in-as'
 
 function sftpServer(overrides: Partial<SavedServer> = {}): SavedServer {
-  const id = overrides.id ?? 'sftp-nas.local-22-ada'
+  const id = overrides.id ?? 'sftp-testnas.local-22-test_user_1'
   return {
     id,
     protocol: 'sftp',
-    displayName: 'Naspolya',
+    displayName: 'Testnas',
     nameSource: 'user',
-    address: 'nas.local:22',
-    username: 'ada',
+    address: 'testnas.local:22',
+    username: 'test_user_1',
     pinned: true,
     lastConnectedAt: '2026-09-01T10:00:00Z',
     autoReconnect: true,
     places: [
       {
         volumeId: id,
-        name: 'Naspolya',
+        name: 'Testnas',
         pinned: true,
         connected: false,
-        appRoot: `sftp://ada@nas.local:22`,
-        username: 'ada',
+        appRoot: `sftp://test_user_1@testnas.local:22`,
+        username: 'test_user_1',
         autoReconnect: true,
       },
     ],
@@ -98,8 +98,8 @@ describe('row identity', () => {
 function volume(id: string, connectionState: VolumeInfo['connectionState']): VolumeInfo {
   return {
     id,
-    name: 'Naspolya',
-    path: `sftp://ada@nas.local:22`,
+    name: 'Testnas',
+    path: `sftp://test_user_1@testnas.local:22`,
     category: 'network',
     isEjectable: false,
     fsType: 'sftp',
@@ -114,7 +114,7 @@ describe('buildHubRows: what appears', () => {
       hosts: [host({ id: 'h9', name: 'Someone else' })],
       volumes: [],
     })
-    expect(rows.map((r) => r.name)).toEqual(['Naspolya', 'Someone else'])
+    expect(rows.map((r) => r.name)).toEqual(['Testnas', 'Someone else'])
   })
 
   it('shows a manually-typed SMB host ONCE, not as a saved row and a discovered row', () => {
@@ -134,8 +134,8 @@ describe('buildHubRows: what appears', () => {
     // `known_shares` files a host under the server name statfs reported; mDNS
     // files the same machine under its Bonjour name and its own id.
     const rows = buildHubRows({
-      saved: [smbServer({ id: 'manual-naspolya-445', address: 'Naspolya', displayName: 'Naspolya' })],
-      hosts: [host({ id: 'bonjour-1', name: 'naspolya' })],
+      saved: [smbServer({ id: 'manual-testnas-445', address: 'Testnas', displayName: 'Testnas' })],
+      hosts: [host({ id: 'bonjour-1', name: 'testnas' })],
       volumes: [],
     })
     expect(rows).toHaveLength(1)
@@ -171,16 +171,16 @@ describe('buildHubRows: whose name the Name column shows', () => {
     const rows = buildHubRows({
       saved: [
         smbServer({
-          id: 'manual-naspolya-445',
-          displayName: 'Naspolya',
-          address: 'naspolya.local',
+          id: 'manual-testnas-445',
+          displayName: 'Testnas',
+          address: 'testnas.local',
           nameSource: 'user',
         }),
       ],
-      hosts: [host({ id: 'bonjour-1', name: 'Naspolya Media Server', hostname: 'naspolya.local' })],
+      hosts: [host({ id: 'bonjour-1', name: 'Testnas Media Server', hostname: 'testnas.local' })],
       volumes: [],
     })
-    expect(rows.map((r) => r.name)).toEqual(['Naspolya'])
+    expect(rows.map((r) => r.name)).toEqual(['Testnas'])
   })
 
   it('shows the Bonjour name over the stand-in, which nobody chose', () => {
@@ -296,13 +296,13 @@ describe('buildHubRows: status', () => {
     const server = sftpServer({
       places: [
         {
-          volumeId: 'sftp-nas.local-22-ada',
+          volumeId: 'sftp-testnas.local-22-test_user_1',
           name: 'n',
           pinned: true,
           connected: true,
-          username: 'ada',
+          username: 'test_user_1',
           autoReconnect: true,
-          appRoot: 'sftp://ada@nas.local:22',
+          appRoot: 'sftp://test_user_1@testnas.local:22',
         },
       ],
     })
@@ -367,7 +367,7 @@ describe('savedSmbHostIds', () => {
         host({ id: 'bonjour-attic', name: 'Attic NAS' }),
         host({ id: 'bonjour-printer', name: 'Printer' }),
         // Same name as the SFTP server, which claims no SMB host.
-        host({ id: 'bonjour-naspolya', name: 'Naspolya' }),
+        host({ id: 'bonjour-testnas', name: 'Testnas' }),
       ],
     )
     expect([...ids].sort()).toEqual(['bonjour-attic', 'manual-10-0-0-4-445'])
@@ -390,7 +390,7 @@ describe('savedSmbHostIds', () => {
 describe('buildHubRows: what a row carries', () => {
   it('gives a one-place protocol its place’s volume id and pin, so a command can act on it', () => {
     const rows = buildHubRows({ saved: [sftpServer()], hosts: [], volumes: [] })
-    expect(rows[0].volumeId).toBe('sftp-nas.local-22-ada')
+    expect(rows[0].volumeId).toBe('sftp-testnas.local-22-test_user_1')
     expect(rows[0].pinned).toBe(true)
   })
 
@@ -433,7 +433,7 @@ describe('buildHubRows: what a row carries', () => {
  */
 describe('saved SMB shares', () => {
   const withShares = smbServer({
-    displayName: "Sven's NAS",
+    displayName: 'Test NAS',
     nameSource: 'user',
     places: [
       {
@@ -451,7 +451,7 @@ describe('saved SMB shares', () => {
         pinned: true,
         connected: false,
         appRoot: '/Volumes/Container',
-        username: 'sven',
+        username: 'test_user_6',
         autoReconnect: null,
       },
     ],
@@ -461,8 +461,8 @@ describe('saved SMB shares', () => {
     const rows = buildHubRows({ saved: [withShares], hosts: [], volumes: [] })
 
     expect(rows.map((row) => [row.kind, row.name, row.account])).toEqual([
-      ['server', "Sven's NAS", null],
-      ['place', 'Container', { kind: 'user', username: 'sven' }],
+      ['server', 'Test NAS', null],
+      ['place', 'Container', { kind: 'user', username: 'test_user_6' }],
       ['place', 'Scans', null],
     ])
     const container = rows[1]
@@ -477,7 +477,7 @@ describe('saved SMB shares', () => {
   it('says a share is connected while its volume is mounted, and saved otherwise', () => {
     const mounted: VolumeInfo = {
       id: 'smb-container',
-      name: 'Container on Sven',
+      name: 'Container on Test_user_6',
       path: '/Volumes/Container',
       category: 'network',
       isEjectable: false,
@@ -497,7 +497,7 @@ describe('saved SMB shares', () => {
   it('names the live mount’s account while connected, and the saved one otherwise', () => {
     const live = (mountAccount: string | null): VolumeInfo => ({
       id: 'smb-container',
-      name: 'Container on Sven',
+      name: 'Container on Test_user_6',
       path: '/Volumes/Container',
       category: 'attached_volume',
       isEjectable: false,
@@ -511,11 +511,11 @@ describe('saved SMB shares', () => {
     expect(account([live('GUEST')]), 'a guest mount is signed in as guest').toEqual({ kind: 'guest' })
     expect(account([live(null)]), 'a mount that says nothing leaves the saved one').toEqual({
       kind: 'user',
-      username: 'sven',
+      username: 'test_user_6',
     })
     expect(account([]), 'not connected: the account the next connect uses').toEqual({
       kind: 'user',
-      username: 'sven',
+      username: 'test_user_6',
     })
   })
 
@@ -548,7 +548,10 @@ describe('saved SMB shares', () => {
 
     it('names the account its share list signed in as', () => {
       expect(serverAccount([], { kind: 'guest' })).toEqual({ kind: 'guest' })
-      expect(serverAccount([], { kind: 'user', username: 'ada' })).toEqual({ kind: 'user', username: 'ada' })
+      expect(serverAccount([], { kind: 'user', username: 'test_user_1' })).toEqual({
+        kind: 'user',
+        username: 'test_user_1',
+      })
     })
 
     it('ignores its shares’ mounts, which keep their own account on their own rows', () => {
@@ -558,9 +561,9 @@ describe('saved SMB shares', () => {
     })
 
     it('falls back to the account it is set to be used with when no listing said', () => {
-      expect(serverAccount([live('smb-container', 'GUEST')], undefined, 'sven')).toEqual({
+      expect(serverAccount([live('smb-container', 'GUEST')], undefined, 'test_user_6')).toEqual({
         kind: 'user',
-        username: 'sven',
+        username: 'test_user_6',
       })
     })
 
@@ -587,8 +590,8 @@ describe('saved SMB shares', () => {
     })
 
     const names = rows.map((row) => row.name)
-    expect(names.indexOf('Container')).toBe(names.indexOf("Sven's NAS") + 1)
-    expect(names.indexOf('Scans')).toBe(names.indexOf("Sven's NAS") + 2)
+    expect(names.indexOf('Container')).toBe(names.indexOf('Test NAS') + 1)
+    expect(names.indexOf('Scans')).toBe(names.indexOf('Test NAS') + 2)
   })
 })
 
@@ -611,7 +614,7 @@ describe('openMoveFor', () => {
         pinned: true,
         connected: false,
         appRoot: '/Volumes/Container',
-        username: 'sven',
+        username: 'test_user_6',
         autoReconnect: null,
       },
     ],

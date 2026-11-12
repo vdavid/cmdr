@@ -31,8 +31,8 @@ fn urls(raw: &[&str]) -> Vec<tauri::Url> {
 
 #[test]
 fn a_file_opens_its_parent_with_the_cursor_on_it() {
-    let plan = plan_reveal(&[p("/Users/dave/notes/todo.md")], &dirs(&[])).expect("a plan");
-    assert_eq!(plan.dir, p("/Users/dave/notes"));
+    let plan = plan_reveal(&[p("/Users/test_user_10/notes/todo.md")], &dirs(&[])).expect("a plan");
+    assert_eq!(plan.dir, p("/Users/test_user_10/notes"));
     assert_eq!(plan.entries, vec!["todo.md"]);
 }
 
@@ -40,8 +40,8 @@ fn a_file_opens_its_parent_with_the_cursor_on_it() {
 fn a_folder_is_opened_rather_than_pointed_at() {
     // A reveal OF a folder becomes an open of it. Finder parity isn't the goal here;
     // landing inside the folder the user asked about is.
-    let plan = plan_reveal(&[p("/Users/dave/notes")], &dirs(&["/Users/dave/notes"])).expect("a plan");
-    assert_eq!(plan.dir, p("/Users/dave/notes"));
+    let plan = plan_reveal(&[p("/Users/test_user_10/notes")], &dirs(&["/Users/test_user_10/notes"])).expect("a plan");
+    assert_eq!(plan.dir, p("/Users/test_user_10/notes"));
     assert!(plan.entries.is_empty());
 }
 
@@ -115,10 +115,13 @@ fn revealed_files_elsewhere_are_still_left_out() {
 fn a_revealed_package_is_selected_in_its_folder_like_a_file() {
     // Finder selects a revealed `Foo.app` in its folder, and so do we.
     let plans = plan_moves(
-        &request(&["/Users/dave/Downloads/Foo.app"], RevealOrigin::Finder),
-        &dirs(&["/Users/dave/Downloads/Foo.app"]),
+        &request(&["/Users/test_user_10/Downloads/Foo.app"], RevealOrigin::Finder),
+        &dirs(&["/Users/test_user_10/Downloads/Foo.app"]),
     );
-    assert_eq!(moves(&plans), vec![("/Users/dave/Downloads", vec!["Foo.app"], false)]);
+    assert_eq!(
+        moves(&plans),
+        vec![("/Users/test_user_10/Downloads", vec!["Foo.app"], false)]
+    );
 }
 
 #[test]
@@ -151,7 +154,7 @@ fn not_shown(name: &str, folder: &str, reason: RevealNotShownReason) -> RevealNo
 fn a_move_that_missed_the_file_names_it_and_its_folder() {
     let missed = GoToFailure::NotPointed(crate::tools::ToolError::internal("not found"));
     assert_eq!(
-        not_shown_for_plan(&plan("/Users/dave/Downloads", &["a.zip"]), &missed),
+        not_shown_for_plan(&plan("/Users/test_user_10/Downloads", &["a.zip"]), &missed),
         not_shown("a.zip", "Downloads", RevealNotShownReason::NotInFolder)
     );
 }
@@ -160,7 +163,7 @@ fn a_move_that_missed_the_file_names_it_and_its_folder() {
 fn a_move_that_never_opened_the_folder_says_so() {
     let refused = GoToFailure::NotOpened(crate::tools::ToolError::internal("refused"));
     assert_eq!(
-        not_shown_for_plan(&plan("/Users/dave/Downloads", &["a.zip"]), &refused),
+        not_shown_for_plan(&plan("/Users/test_user_10/Downloads", &["a.zip"]), &refused),
         not_shown("a.zip", "Downloads", RevealNotShownReason::FolderNotOpened)
     );
     // A folder move names the folder as the item too.

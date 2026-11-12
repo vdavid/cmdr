@@ -40,7 +40,7 @@ describe('useShortenMiddle tooltips', () => {
     return document.querySelector('.cmdr-tooltip.visible')
   }
 
-  const LONG_PATH = '/Volumes/naspi/_todo_pics/Meet Recordings/2025-08-19 a very long name indeed.mp4'
+  const LONG_PATH = '/Volumes/testshare/test_photos/Meet Recordings/2025-08-19 a very long name indeed.mp4'
 
   it('shows the full text in the house tooltip, not a native title', () => {
     const el = makeNode()
@@ -64,7 +64,7 @@ describe('useShortenMiddle tooltips', () => {
   it('follows the text through an update', () => {
     const el = makeNode()
     const action = useShortenMiddle(el, { text: LONG_PATH, preferBreakAt: '/' })
-    const nextPath = '/Volumes/naspi/papers/medical/2026 blood work.pdf'
+    const nextPath = '/Volumes/testshare/documents/medical/2026 blood work.pdf'
 
     action.update?.({ text: nextPath, preferBreakAt: '/' })
 

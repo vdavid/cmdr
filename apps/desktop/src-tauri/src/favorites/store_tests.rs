@@ -354,9 +354,9 @@ fn stale_tmp_file_is_cleaned_up_on_read() {
 
 fn share(root: &str) -> FavoriteVolume {
     FavoriteVolume {
-        id: "smb-naspi-0123".to_string(),
+        id: "smb-testshare-0123".to_string(),
         root: root.to_string(),
-        name: "naspi on nas.local".to_string(),
+        name: "testshare on testnas.local".to_string(),
     }
 }
 
@@ -371,7 +371,7 @@ fn a_file_without_volume_and_one_with_unknown_fields_both_read_verbatim() {
         &path,
         r#"{"_schemaVersion": 1, "favorites": [
             {"id": "a", "path": "/Users/x/Docs", "name": "Docs"},
-            {"id": "b", "path": "/Volumes/naspi/docs", "name": "docs", "fromTheFuture": 7}
+            {"id": "b", "path": "/Volumes/testshare/docs", "name": "docs", "fromTheFuture": 7}
         ]}"#,
     )
     .expect("write");
@@ -386,13 +386,15 @@ fn a_file_without_volume_and_one_with_unknown_fields_both_read_verbatim() {
 fn a_favorite_with_a_volume_round_trips() {
     let favorite = Favorite {
         id: "abc".to_string(),
-        path: "/Volumes/naspi/docs".to_string(),
+        path: "/Volumes/testshare/docs".to_string(),
         name: "docs".to_string(),
         shortcut: Some("D".to_string()),
-        volume: Some(share("/Volumes/naspi")),
+        volume: Some(share("/Volumes/testshare")),
     };
     let json = serde_json::to_string(&favorite).expect("serialize");
-    assert!(json.contains(r#""volume":{"id":"smb-naspi-0123","root":"/Volumes/naspi","name":"naspi on nas.local"}"#));
+    assert!(json.contains(
+        r#""volume":{"id":"smb-testshare-0123","root":"/Volumes/testshare","name":"testshare on testnas.local"}"#
+    ));
     assert_eq!(serde_json::from_str::<Favorite>(&json).expect("parse"), favorite);
 }
 
@@ -405,38 +407,53 @@ fn a_favorite_without_a_volume_writes_no_volume_key() {
     assert!(!json.contains("volume"), "{json}");
 }
 
-/// ❗ One share mounted at two paths over time (`/Volumes/naspi`, then `/Volumes/naspi-1` while a
+/// ❗ One share mounted at two paths over time (`/Volumes/testshare`, then `/Volumes/testshare-1` while a
 /// stale dir held the first name) is one favorite, and the re-add moves it onto where the share is
 /// now.
 #[test]
 fn the_same_folder_on_one_volume_at_two_roots_is_one_favorite() {
     let mut store = FavoritesStore::default();
-    let first = add_to_store(&mut store, "/Volumes/naspi/docs", None, Some(share("/Volumes/naspi")));
+    let first = add_to_store(
+        &mut store,
+        "/Volumes/testshare/docs",
+        None,
+        Some(share("/Volumes/testshare")),
+    );
     let again = add_to_store(
         &mut store,
-        "/Volumes/naspi-1/docs",
+        "/Volumes/testshare-1/docs",
         None,
-        Some(share("/Volumes/naspi-1")),
+        Some(share("/Volumes/testshare-1")),
     );
     assert_eq!(first, again);
     assert_eq!(store.favorites.len(), 1);
-    assert_eq!(store.favorites[0].path, "/Volumes/naspi-1/docs");
+    assert_eq!(store.favorites[0].path, "/Volumes/testshare-1/docs");
     assert_eq!(
         store.favorites[0].volume.as_ref().map(|v| v.root.as_str()),
-        Some("/Volumes/naspi-1")
+        Some("/Volumes/testshare-1")
     );
 }
 
 #[test]
 fn different_folders_or_volumes_stay_separate_favorites() {
     let mut store = FavoritesStore::default();
-    add_to_store(&mut store, "/Volumes/naspi/docs", None, Some(share("/Volumes/naspi")));
-    add_to_store(&mut store, "/Volumes/naspi/photos", None, Some(share("/Volumes/naspi")));
+    add_to_store(
+        &mut store,
+        "/Volumes/testshare/docs",
+        None,
+        Some(share("/Volumes/testshare")),
+    );
+    add_to_store(
+        &mut store,
+        "/Volumes/testshare/photos",
+        None,
+        Some(share("/Volumes/testshare")),
+    );
     let other = FavoriteVolume {
         id: "smb-other-4567".to_string(),
-        ..share("/Volumes/naspi")
+        ..share("/Volumes/testshare")
     };
-    add_to_store(&mut store, "/Volumes/naspi/docs", None, Some(other));
+    add_to_store(&mut store, "/Volumes/testshare/docs", None, Some(other));
     assert_eq!(store.favorites.len(), 3);
 }
 
@@ -444,9 +461,14 @@ fn different_folders_or_volumes_stay_separate_favorites() {
 /// teaches it its volume.
 #[test]
 fn a_re_add_of_a_legacy_path_fills_its_volume_in() {
-    let mut store = store_with(&[("/Volumes/naspi/docs", "docs")]);
+    let mut store = store_with(&[("/Volumes/testshare/docs", "docs")]);
     let id = store.favorites[0].id.clone();
-    let again = add_to_store(&mut store, "/Volumes/naspi/docs/", None, Some(share("/Volumes/naspi")));
+    let again = add_to_store(
+        &mut store,
+        "/Volumes/testshare/docs/",
+        None,
+        Some(share("/Volumes/testshare")),
+    );
     assert_eq!(again, id);
     assert_eq!(store.favorites.len(), 1);
     assert!(store.favorites[0].volume.is_some());
@@ -475,10 +497,10 @@ fn scheme_paths_collapse_a_trailing_slash_and_nothing_else() {
 
 #[test]
 fn a_claim_fills_an_empty_volume() {
-    let mut store = store_with(&[("/Volumes/naspi/docs", "docs")]);
+    let mut store = store_with(&[("/Volumes/testshare/docs", "docs")]);
     let id = store.favorites[0].id.clone();
-    assert!(claim_in_store(&mut store, &[(id, share("/Volumes/naspi"))]));
-    assert_eq!(store.favorites[0].volume, Some(share("/Volumes/naspi")));
+    assert!(claim_in_store(&mut store, &[(id, share("/Volumes/testshare"))]));
+    assert_eq!(store.favorites[0].volume, Some(share("/Volumes/testshare")));
 }
 
 /// ❗ A claim is the listing's guess; a volume already there came from the user's own add (or an
@@ -486,7 +508,12 @@ fn a_claim_fills_an_empty_volume() {
 #[test]
 fn a_claim_never_overwrites_a_known_volume_and_reports_no_change() {
     let mut store = FavoritesStore::default();
-    let id = add_to_store(&mut store, "/Volumes/naspi/docs", None, Some(share("/Volumes/naspi")));
+    let id = add_to_store(
+        &mut store,
+        "/Volumes/testshare/docs",
+        None,
+        Some(share("/Volumes/testshare")),
+    );
     let boot = FavoriteVolume {
         id: "root".to_string(),
         root: "/".to_string(),
@@ -496,7 +523,7 @@ fn a_claim_never_overwrites_a_known_volume_and_reports_no_change() {
         &mut store,
         &[(id, boot), ("gone".to_string(), share("/x"))]
     ));
-    assert_eq!(store.favorites[0].volume, Some(share("/Volumes/naspi")));
+    assert_eq!(store.favorites[0].volume, Some(share("/Volumes/testshare")));
 }
 
 // -- following a saved server to a new address --
@@ -505,7 +532,7 @@ fn sftp_place(prefix: &str, id: &str) -> FavoriteVolume {
     FavoriteVolume {
         id: id.to_string(),
         root: format!("{prefix}/srv/data"),
-        name: "Naspolya".to_string(),
+        name: "Testnas".to_string(),
     }
 }
 
@@ -514,8 +541,8 @@ fn sftp_place(prefix: &str, id: &str) -> FavoriteVolume {
 #[test]
 fn a_server_move_rekeys_its_favorites_and_respells_their_paths() {
     let mut store = FavoritesStore::default();
-    let old = "sftp://ada@nas.local:22";
-    let new = "sftp://ada@nas.tail1234.ts.net:2222";
+    let old = "sftp://test_user_1@testnas.local:22";
+    let new = "sftp://test_user_1@nas.tail1234.ts.net:2222";
     let id = add_to_store(
         &mut store,
         &format!("{old}/srv/data/photos"),
@@ -526,7 +553,7 @@ fn a_server_move_rekeys_its_favorites_and_respells_their_paths() {
     let moved = FavoriteVolume {
         id: "sftp-new".to_string(),
         root: format!("{new}/srv/data"),
-        name: "Naspolya at home".to_string(),
+        name: "Testnas at home".to_string(),
     };
 
     assert!(follow_server_move_in_store(
@@ -552,16 +579,16 @@ fn a_server_move_rekeys_its_favorites_and_respells_their_paths() {
 #[test]
 fn a_server_move_respells_an_unclaimed_favorite_under_the_old_address() {
     let mut store = FavoritesStore::default();
-    add_to_store(&mut store, "sftp://ada@nas.local:22/srv/data", None, None);
+    add_to_store(&mut store, "sftp://test_user_1@testnas.local:22/srv/data", None, None);
 
     assert!(follow_server_move_in_store(
         &mut store,
-        "sftp://ada@nas.local:22",
-        "sftp://ada@10.0.0.5:22",
+        "sftp://test_user_1@testnas.local:22",
+        "sftp://test_user_1@10.0.0.5:22",
         &[]
     ));
 
-    assert_eq!(store.favorites[0].path, "sftp://ada@10.0.0.5:22/srv/data");
+    assert_eq!(store.favorites[0].path, "sftp://test_user_1@10.0.0.5:22/srv/data");
     assert_eq!(
         store.favorites[0].volume, None,
         "the claim pass fills it, as for any legacy entry"
@@ -574,18 +601,18 @@ fn a_server_move_leaves_a_lookalike_address_alone_and_reports_no_change() {
     let mut store = FavoritesStore::default();
     add_to_store(
         &mut store,
-        "sftp://ada@nas.local:2222/srv",
+        "sftp://test_user_1@testnas.local:2222/srv",
         None,
-        Some(sftp_place("sftp://ada@nas.local:2222", "sftp-other")),
+        Some(sftp_place("sftp://test_user_1@testnas.local:2222", "sftp-other")),
     );
 
     assert!(!follow_server_move_in_store(
         &mut store,
-        "sftp://ada@nas.local:22",
-        "sftp://ada@10.0.0.5:22",
+        "sftp://test_user_1@testnas.local:22",
+        "sftp://test_user_1@10.0.0.5:22",
         &[]
     ));
-    assert_eq!(store.favorites[0].path, "sftp://ada@nas.local:2222/srv");
+    assert_eq!(store.favorites[0].path, "sftp://test_user_1@testnas.local:2222/srv");
 }
 
 /// An SMB share's favorites live at OS paths under its mount, so a share whose server moved

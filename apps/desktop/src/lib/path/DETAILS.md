@@ -36,16 +36,17 @@ pane that can actually show a file, and the transfer dialog derives its volume-r
 
 Two shapes make the naive `path.startsWith(volumePath)` wrong, and both reach real users:
 
-- **A sibling root sharing a prefix.** `/Volumes/naspi` would claim `/Volumes/naspi-backup`, and a remote volume rooted
-  at `/srv/data` would claim `/srv/data-1`. Appending the separator before comparing is what makes it a component match.
-  `cmdr-fs`'s `RemoteRoot::to_remote_path` defends the same boundary on the Rust side, for the same reason.
+- **A sibling root sharing a prefix.** `/Volumes/testshare` would claim `/Volumes/testshare-backup`, and a remote volume
+  rooted at `/srv/data` would claim `/srv/data-1`. Appending the separator before comparing is what makes it a component
+  match. `cmdr-fs`'s `RemoteRoot::to_remote_path` defends the same boundary on the Rust side, for the same reason.
 - **A root that already ends in a slash.** A remote volume is rooted at `<prefix><server-side root>`, so one rooted at
-  `/` spells itself `sftp://ada@nas.local:22/`. That is the DEFAULT for SFTP, WebDAV, and ADB, not an oddity.
+  `/` spells itself `sftp://test_user_1@testnas.local:22/`. That is the DEFAULT for SFTP, WebDAV, and ADB, not an
+  oddity.
 
 The second shape is why `toVolumeRelativePath` trims the root before slicing. It used to slice by raw length, which ate
-the separator and prefilled the copy destination with `home/ada/…`; `validateDirectoryPath` rejected it as relative and
-`handleConfirm` refused to dispatch, so Copy silently did nothing on every SFTP server rooted at `/`. A volume rooted at
-a subfolder carries no trailing slash and worked fine, which made it look intermittent.
+the separator and prefilled the copy destination with `home/test_user_1/…`; `validateDirectoryPath` rejected it as
+relative and `handleConfirm` refused to dispatch, so Copy silently did nothing on every SFTP server rooted at `/`. A
+volume rooted at a subfolder carries no trailing slash and worked fine, which made it look intermittent.
 
 `isPlainFilesystemPath` is that guard. It answers false for every virtual-volume URL and for `~`-rooted and relative
 paths, since none of them resolves without a base the OS API lacks. Its live caller is the search-results clipboard
@@ -59,7 +60,7 @@ file URL under the process working directory, so a missing check ships a mangled
 absolute path whose first component is the root. The roots are `/` on macOS and Linux, and on Windows a drive (`C:/`,
 letter uppercased) or a UNC share (`//server/share/`, ONE root component). Each drive and share is its own volume, so a
 path names its volume the way a remote volume's `<scheme>://` path already does (`cmdr-fs`'s `remote_paths.rs`). The
-decision and the rejected alternatives (volume-relative `/Users/ada` plus a volume id, native `\` on the wire,
+decision and the rejected alternatives (volume-relative `/Users/test_user_1` plus a volume id, native `\` on the wire,
 MSYS-style `/c/Users`) are D1 in `docs/specs/windows-port-plan.md`.
 
 Choices the grammar makes, each pinned by a row in `crates/cmdr-fs/src/volume/path_grammar_cases.json`:
@@ -78,11 +79,11 @@ Choices the grammar makes, each pinned by a row in `crates/cmdr-fs/src/volume/pa
 
 ## Showing and typing a path
 
-`shownPath` is the one formatter from a wire path to what a person reads: `C:\Users\ada`, `\\server\share\x` (a share's
-root without its trailing `\`), and every other text unchanged. It reaches the screen through three doors:
+`shownPath` is the one formatter from a wire path to what a person reads: `C:\Users\test_user_1`, `\\server\share\x` (a
+share's root without its trailing `\`), and every other text unchanged. It reaches the screen through three doors:
 
 - `#lib/utils/display-path`'s `displayPath` (every shown path: the breadcrumb readout, tooltips, dialogs, toasts, the
-  operation log, `useShortenMiddle`), and `copiedPath`, so Copy path pastes `C:\Users\ada` on Windows.
+  operation log, `useShortenMiddle`), and `copiedPath`, so Copy path pastes `C:\Users\test_user_1` on Windows.
 - `t()` runs it over each param its caller marked with `pathParam(…)` (`intl/messages.svelte.ts`), and over nothing
   else: a formatted message is prose, where a `/` may be "and/or", and a guess read a drive's name (`C:`) as `C:\` and
   an `a//b` as a share (#1118). An unmarked path param reads with `/` on Windows, which is honest; a guessed one mangled

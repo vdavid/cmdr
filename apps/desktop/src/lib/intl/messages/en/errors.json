@@ -2318,7 +2318,7 @@
     "description": "Body of that dialog. Explains why Cmdr won't change the zip: its rewrite can keep only one of the two same-named items. Plain text, raw errors.* string (no ICU): keep {path} and {name} spelled exactly, and reorder them freely.",
     "placeholders": {
       "path": {
-        "description": "The zip file's full path, for example /Users/david/Downloads/photos.zip. Inserted verbatim. Do not translate or reformat it."
+        "description": "The zip file's full path, for example /Users/test_user_3/Downloads/photos.zip. Inserted verbatim. Do not translate or reformat it."
       },
       "name": {
         "description": "The name both items share, as a path inside the zip, for example Summer/beach.jpg. Inserted verbatim. Do not translate or reformat it."
@@ -2331,7 +2331,7 @@
     "description": "Body of that dialog when Cmdr can tell two items share a name but not which name (the zip is too damaged for its reader to list). Same meaning as errors.write.archiveDuplicateEntryName.message, just without the name. Plain text, raw errors.* string (no ICU): keep {path} spelled exactly.",
     "placeholders": {
       "path": {
-        "description": "The zip file's full path, for example /Users/david/Downloads/photos.zip. Inserted verbatim. Do not translate or reformat it."
+        "description": "The zip file's full path, for example /Users/test_user_3/Downloads/photos.zip. Inserted verbatim. Do not translate or reformat it."
       }
     },
     "screenshot": "error-message-example.png",
@@ -2355,7 +2355,7 @@
         "description": "The protected item, as a path inside the zip, for example receipts/march.pdf. Inserted verbatim. Do not translate or reformat it."
       },
       "path": {
-        "description": "The zip file's full path, for example /Users/david/Downloads/tax-2025.zip. Inserted verbatim. Do not translate or reformat it."
+        "description": "The zip file's full path, for example /Users/test_user_3/Downloads/test-2025.zip. Inserted verbatim. Do not translate or reformat it."
       }
     },
     "screenshot": "transfer-error-archive_encrypted_entry.png"
@@ -2381,7 +2381,7 @@
         "description": "The file in the zip that it would land inside, as a path inside the zip, for example notes. Inserted verbatim. Do not translate or reformat it."
       },
       "path": {
-        "description": "The zip file's full path, for example /Users/david/Downloads/project.zip. Inserted verbatim. Do not translate or reformat it."
+        "description": "The zip file's full path, for example /Users/test_user_3/Downloads/project.zip. Inserted verbatim. Do not translate or reformat it."
       }
     },
     "screenshot": "transfer-error-archive_entry_under_file.png"
@@ -3175,7 +3175,7 @@
         "description": "The file's own name, e.g. holiday.jpg, inserted verbatim. Do not translate or reformat it."
       },
       "volumeName": {
-        "description": "The destination drive or server as it names itself, e.g. Naspolya, inserted verbatim. Do not translate it."
+        "description": "The destination drive or server as it names itself, e.g. Testnas, inserted verbatim. Do not translate it."
       }
     },
     "screenshot": "error-message-example.png",
@@ -3188,7 +3188,7 @@
         "description": "How many complete files are waiting, already formatted for display (e.g. 1,234). Always two or more."
       },
       "volumeName": {
-        "description": "The destination drive or server as it names itself, e.g. Naspolya, inserted verbatim. Do not translate it."
+        "description": "The destination drive or server as it names itself, e.g. Testnas, inserted verbatim. Do not translate it."
       }
     },
     "screenshot": "transfer-error-new_files_kept.png"
@@ -3200,7 +3200,7 @@
         "description": "The name the file has now, ending in \"(recovered)\", e.g. holiday (recovered).jpg, inserted verbatim. The \"(recovered)\" part is always English: do not translate or reformat any of it."
       },
       "volumeName": {
-        "description": "The destination drive or server as it names itself, e.g. Naspolya, inserted verbatim. Do not translate it."
+        "description": "The destination drive or server as it names itself, e.g. Testnas, inserted verbatim. Do not translate it."
       }
     },
     "screenshot": "transfer-error-new_files_kept.png"
@@ -3212,7 +3212,7 @@
         "description": "How many files were kept, already formatted for display (e.g. 1,234). Always two or more."
       },
       "volumeName": {
-        "description": "The destination drive or server as it names itself, e.g. Naspolya, inserted verbatim. Do not translate it."
+        "description": "The destination drive or server as it names itself, e.g. Testnas, inserted verbatim. Do not translate it."
       }
     },
     "screenshot": "error-message-example.png",
@@ -3740,7 +3740,7 @@
   "@errors.mount.hostUnreachable": {
     "description": "Shown when nothing answered at the server's address: it's off, asleep, or on another network. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+      "server": "the server's name as the pane shows it (like Testnas), or its network address (like 192.168.1.20) when it has no name"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
@@ -3749,7 +3749,7 @@
   "@errors.mount.timeout": {
     "description": "Shown when the server started answering and then went quiet for longer than Cmdr waits. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+      "server": "the server's name as the pane shows it (like Testnas), or its network address (like 192.168.1.20) when it has no name"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
@@ -3758,7 +3758,7 @@
   "@errors.mount.signInHelperStuck": {
     "description": "Shown when a network share (SMB) waited a long time without connecting while the server itself is reachable: a macOS background helper called NetAuthSysAgent is stuck, and only restarting it helps. Surface: the network pane, after someone opens a shared folder on a network server. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this text under it, and Try again and Back buttons. \"Network sign-in helper\" isn't a name macOS shows anywhere: it describes a nameless background process, so describe it in your language's words (a service or a process). Keep \"killall NetAuthSysAgent\" exactly as written, untranslated: it's a command the person types into Terminal. \"Terminal\" is the macOS app's name; use the name macOS shows for it in your language. Plain text, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+      "server": "the server's name as the pane shows it (like Testnas), or its network address (like 192.168.1.20) when it has no name"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
@@ -3768,7 +3768,7 @@
     "description": "Shown when the server says it has no shared folder by that name, for example because it was renamed or removed after the list loaded. \"Share\" means a folder a server makes available over the network. \"Go back\" points at the Back button, which returns to the server's list of shares. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
       "share": "the name of the shared folder, as the server spells it",
-      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+      "server": "the server's name as the pane shows it (like Testnas), or its network address (like 192.168.1.20) when it has no name"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
@@ -3778,7 +3778,7 @@
     "description": "Shown when the server doesn't let guests (people who haven't signed in) open this shared folder. Surface: not on screen (the pane shows a calm \"Sign in to open …\" screen with a sign-in sheet on top); this sentence is what AI tools connected to Cmdr read about the pane. Plain text, one short sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
       "share": "the name of the shared folder, as the server spells it",
-      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+      "server": "the server's name as the pane shows it (like Testnas), or its network address (like 192.168.1.20) when it has no name"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
@@ -3787,7 +3787,7 @@
   "@errors.mount.authFailed": {
     "description": "Shown when the server turned down the username and password that were offered. A sign-in sheet opens on top of it at the same time, so the person can try again right away. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+      "server": "the server's name as the pane shows it (like Testnas), or its network address (like 192.168.1.20) when it has no name"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
@@ -3796,7 +3796,7 @@
   "@errors.mount.permissionDenied": {
     "description": "Shown when the sign-in itself worked, but the server doesn't allow that account into this shared folder. The password is NOT the problem, so don't suggest checking it; another account is the fix. A sign-in sheet opens on top of it at the same time. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name",
+      "server": "the server's name as the pane shows it (like Testnas), or its network address (like 192.168.1.20) when it has no name",
       "username": "the account name the person signed in with",
       "share": "the name of the shared folder, as the server spells it"
     },
@@ -3816,7 +3816,7 @@
   "@errors.mount.unsupportedProtocol": {
     "description": "Shown when the server only offers an old version of the file-sharing protocol that this computer no longer uses (typically SMB 1). Keep \"SMB\" as-is: it's the protocol's name, and the server's settings use it too. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+      "server": "the server's name as the pane shows it (like Testnas), or its network address (like 192.168.1.20) when it has no name"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
@@ -3825,7 +3825,7 @@
   "@errors.mount.mountRefused": {
     "description": "Shown when the server accepted the sign-in and then still turned down opening this shared folder, for a reason it didn't give. The password is NOT the problem. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name",
+      "server": "the server's name as the pane shows it (like Testnas), or its network address (like 192.168.1.20) when it has no name",
       "share": "the name of the shared folder, as the server spells it"
     },
     "screenshot": "servers-hub.png",
@@ -3836,7 +3836,7 @@
     "description": "Shown when the operating system reported the shared folder as connected, but the folder never actually appeared. It's a glitch on the computer's side, and trying again usually works. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
       "share": "the name of the shared folder, as the server spells it",
-      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+      "server": "the server's name as the pane shows it (like Testnas), or its network address (like 192.168.1.20) when it has no name"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
@@ -3852,7 +3852,7 @@
     "description": "The catch-all shown when nothing more specific applies. Keep it short and general rather than guessing at a reason; the technical reason is written to the log. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
       "share": "the name of the shared folder, as the server spells it",
-      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+      "server": "the server's name as the pane shows it (like Testnas), or its network address (like 192.168.1.20) when it has no name"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open. That list opens from the servers list pictured here."
@@ -3861,7 +3861,7 @@
   "@errors.shareList.hostUnreachable": {
     "description": "Shown when nothing answered at the server's address: it's off, asleep, or on another network. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the servers list shows it (like Naspolya)"
+      "server": "the server's name as the servers list shows it (like Testnas)"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
@@ -3870,7 +3870,7 @@
   "@errors.shareList.timeout": {
     "description": "Shown when the server accepted the connection and then went quiet for longer than Cmdr waits. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the servers list shows it (like Naspolya)"
+      "server": "the server's name as the servers list shows it (like Testnas)"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
@@ -3879,7 +3879,7 @@
   "@errors.shareList.authRequired": {
     "description": "Shown when the server won't show its shared folders to someone who hasn't signed in. \"Shares\" means the folders a server makes available over the network. Surface: the tooltip on that server's row in the servers list. Plain text, one short sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the servers list shows it (like Naspolya)"
+      "server": "the server's name as the servers list shows it (like Testnas)"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
@@ -3888,7 +3888,7 @@
   "@errors.shareList.signingRequired": {
     "description": "Shown when the server only answers over a secured connection that it gives to signed-in accounts, so guests (people who haven't signed in) can't see its shared folders. Surface: the network pane, after someone opens a server (SMB) to see its shared folders. The pane shows a calm \"Sign in to …\" title naming the server, this sentence under it, and Sign in and Back buttons; a sign-in sheet usually sits on top. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the servers list shows it (like Naspolya)"
+      "server": "the server's name as the servers list shows it (like Testnas)"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
@@ -3897,7 +3897,7 @@
   "@errors.shareList.authFailed": {
     "description": "Shown when the server turned down the username and password that were offered. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the servers list shows it (like Naspolya)"
+      "server": "the server's name as the servers list shows it (like Testnas)"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
@@ -3906,7 +3906,7 @@
   "@errors.shareList.signatureInvalid": {
     "description": "Shown when the server's reply on a secured (signed) connection didn't carry a valid signature, so Cmdr refused it. The innocent cause is a misbehaving router or network device; the serious one is someone tampering with traffic. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, two or three short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the servers list shows it (like Naspolya)"
+      "server": "the server's name as the servers list shows it (like Testnas)"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
@@ -3915,7 +3915,7 @@
   "@errors.shareList.negotiationInvalid": {
     "description": "Shown when the server didn't confirm the connection's security settings (the SMB version and options both sides agreed on at the start), so Cmdr closed the connection rather than trust it. The innocent cause is a misbehaving server; the serious one is someone tampering with traffic. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, two or three short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the servers list shows it (like Naspolya)"
+      "server": "the server's name as the servers list shows it (like Testnas)"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
@@ -3924,7 +3924,7 @@
   "@errors.shareList.encryptionUnavailable": {
     "description": "Shown when the server only accepts encrypted connections, but the server and Cmdr didn't agree on an encryption method, so the connection couldn't go on. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. \"SMB\" is a name; keep it. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the servers list shows it (like Naspolya)"
+      "server": "the server's name as the servers list shows it (like Testnas)"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
@@ -3933,7 +3933,7 @@
   "@errors.shareList.encryptionRequired": {
     "description": "Shown when Cmdr's own \"Always require SMB encryption\" setting is on (set by the person in Settings, or forced on by their organization) and this server can't encrypt the connection, so Cmdr didn't connect. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. \"Always require SMB encryption\" names the setting in Settings > File systems > SMB/Network shares; word it the way your language words that setting's label. Plain text, one or two short sentences, no markdown. \"SMB\" is a name; keep it. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the servers list shows it (like Naspolya)"
+      "server": "the server's name as the servers list shows it (like Testnas)"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
@@ -3942,7 +3942,7 @@
   "@errors.shareList.protocolError": {
     "description": "The catch-all shown when nothing more specific applies. Keep it short and general rather than guessing at a reason; the technical reason is written to the log. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the servers list shows it (like Naspolya)"
+      "server": "the server's name as the servers list shows it (like Testnas)"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
@@ -3951,7 +3951,7 @@
   "@errors.shareList.resolutionFailed": {
     "description": "Shown when the server's name never turned into a network address, usually because it's off or the name is misspelled. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
-      "server": "the server's name as the servers list shows it (like Naspolya)"
+      "server": "the server's name as the servers list shows it (like Testnas)"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured here, and the same sentence is the tooltip on that server's row in it."
@@ -4239,7 +4239,7 @@
     "description": "Explanation in that panel. Raw catalog string with markdown (keep the backticks and asterisks) and literal tokens {path}, {server}, {target}.",
     "placeholders": {
       "path": "the folder’s path",
-      "server": "the server the share is on, like nas.local",
+      "server": "the server the share is on, like testnas.local",
       "target": "the other server the link leads to, like fs01.example.com"
     },
     "screenshot": "error-message-example.png",

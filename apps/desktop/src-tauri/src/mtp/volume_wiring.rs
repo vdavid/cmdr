@@ -203,13 +203,13 @@ mod tests {
 
     fn phone() -> MtpDeviceInfo {
         MtpDeviceInfo {
-            id: "mtp-46061fdas000a4".to_string(),
+            id: "mtp-testserial0001".to_string(),
             location_id: 1,
             vendor_id: 0x18d1,
             product_id: 0x4ee1,
             manufacturer: Some("Google".to_string()),
             product: Some("Pixel 9 Pro XL".to_string()),
-            serial_number: Some("46061FDAS000A4".to_string()),
+            serial_number: Some("TESTSERIAL0001".to_string()),
             usb_speed: None,
         }
     }
@@ -220,7 +220,7 @@ mod tests {
         assert_eq!(entry.name, "Pixel 9 Pro XL");
         assert_eq!(entry.fs_type, "mtp");
         assert_eq!(entry.device_readiness, Some(DeviceReadiness::Connecting));
-        assert_eq!(entry.device_serial.as_deref(), Some("46061FDAS000A4"));
+        assert_eq!(entry.device_serial.as_deref(), Some("TESTSERIAL0001"));
     }
 
     #[test]
@@ -245,7 +245,7 @@ mod tests {
     #[test]
     fn a_waiting_row_does_not_claim_the_phones_paths() {
         let entry = waiting_entry(&phone());
-        let on_the_phone = "mtp://mtp-46061fdas000a4/65537/DCIM";
+        let on_the_phone = "mtp://mtp-testserial0001/65537/DCIM";
         assert!(!cmdr_fs::volume::app_paths::path_is_under(on_the_phone, &entry.path));
     }
 }

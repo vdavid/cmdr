@@ -148,7 +148,7 @@ describe('the { returnTo } arm', () => {
 
   it('reopens the Servers hub host the pane showed', () => {
     const h = makeHarness({ left: { volumeId: 'network', path: 'smb://' } })
-    const host = { name: 'nas', hostname: 'nas.local' } as never
+    const host = { name: 'nas', hostname: 'testnas.local' } as never
     h.tab('left').history = { stack: [{ volumeId: 'network', path: 'smb://', networkHost: host }], currentIndex: 0 }
     selectVolume(h, 'ext', '/Volumes/Ext')
 

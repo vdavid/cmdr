@@ -20,21 +20,21 @@ import { addressLooksLike, parseServerAddress } from './address-parser'
 
 describe('parseServerAddress: the SFTP shapes', () => {
   it('reads a full sftp URL', () => {
-    expect(parseServerAddress('sftp://ada@nas.local:2222/srv/data')).toEqual({
+    expect(parseServerAddress('sftp://test_user_1@testnas.local:2222/srv/data')).toEqual({
       kind: 'parsed',
       protocol: 'sftp',
-      host: 'nas.local',
+      host: 'testnas.local',
       port: 2222,
-      username: 'ada',
+      username: 'test_user_1',
       path: '/srv/data',
     })
   })
 
   it('falls back to port 22 and no account', () => {
-    expect(parseServerAddress('sftp://nas.local')).toEqual({
+    expect(parseServerAddress('sftp://testnas.local')).toEqual({
       kind: 'parsed',
       protocol: 'sftp',
-      host: 'nas.local',
+      host: 'testnas.local',
       port: 22,
       username: undefined,
       path: undefined,
@@ -42,23 +42,23 @@ describe('parseServerAddress: the SFTP shapes', () => {
   })
 
   it('reads `ssh://` as the same thing', () => {
-    const parsed = parseServerAddress('ssh://ada@nas.local:2222/srv')
-    expect(parsed).toMatchObject({ protocol: 'sftp', port: 2222, username: 'ada', path: '/srv' })
+    const parsed = parseServerAddress('ssh://test_user_1@testnas.local:2222/srv')
+    expect(parsed).toMatchObject({ protocol: 'sftp', port: 2222, username: 'test_user_1', path: '/srv' })
   })
 
   it('reads a pasted `ssh` command line, with and without its port flag', () => {
-    expect(parseServerAddress('ssh ada@nas.local')).toMatchObject({
+    expect(parseServerAddress('ssh test_user_1@testnas.local')).toMatchObject({
       protocol: 'sftp',
-      host: 'nas.local',
+      host: 'testnas.local',
       port: 22,
-      username: 'ada',
+      username: 'test_user_1',
     })
-    expect(parseServerAddress('ssh -p 2222 ada@nas.local')).toMatchObject({
+    expect(parseServerAddress('ssh -p 2222 test_user_1@testnas.local')).toMatchObject({
       protocol: 'sftp',
       port: 2222,
-      username: 'ada',
+      username: 'test_user_1',
     })
-    expect(parseServerAddress('ssh -p2222 ada@nas.local')).toMatchObject({ port: 2222 })
+    expect(parseServerAddress('ssh -p2222 test_user_1@testnas.local')).toMatchObject({ port: 2222 })
   })
 })
 
@@ -67,43 +67,43 @@ describe('parseServerAddress: no scheme names no protocol', () => {
    * ❗ `user@host` with no scheme names an account and a machine, and NOTHING
    * about the protocol. It is SMB's natural spelling for a NAS share that needs
    * a user just as much as it is SFTP's. Reading it as SFTP once flipped the
-   * toggle on a person typing `sven@192.168.0.153` for their SMB NAS and dialed
+   * toggle on a person typing `test_user_6@192.168.50.20` for their SMB NAS and dialed
    * SSH on port 22 without them ever clicking SFTP (cmdr-reports#8). So it
    * answers no protocol and no port: the toggle, which the person set, decides.
    */
   it('reads a bare `user@host` as an account on a host, with no protocol and no port', () => {
-    expect(parseServerAddress('sven@192.168.0.153')).toEqual({
+    expect(parseServerAddress('test_user_6@192.168.50.20')).toEqual({
       kind: 'parsed',
-      host: '192.168.0.153',
-      username: 'sven',
+      host: '192.168.50.20',
+      username: 'test_user_6',
     })
-    expect(parseServerAddress('ada@nas.local')).not.toHaveProperty('protocol')
+    expect(parseServerAddress('test_user_1@testnas.local')).not.toHaveProperty('protocol')
   })
 
   it('reads a bare hostname with no protocol and no port', () => {
     // Which protocol a NAS name off a sticker speaks is the toggle's call.
-    expect(parseServerAddress('naspolya')).toEqual({ kind: 'parsed', host: 'naspolya' })
-    expect(parseServerAddress('192.168.1.111')).toEqual({ kind: 'parsed', host: '192.168.1.111' })
+    expect(parseServerAddress('testnas')).toEqual({ kind: 'parsed', host: 'testnas' })
+    expect(parseServerAddress('192.168.50.10')).toEqual({ kind: 'parsed', host: '192.168.50.10' })
   })
 
   it('keeps a port and a path the address named, for whichever protocol the toggle says', () => {
-    expect(parseServerAddress('naspolya.local:1445')).toEqual({
+    expect(parseServerAddress('testnas.local:1445')).toEqual({
       kind: 'parsed',
-      host: 'naspolya.local',
+      host: 'testnas.local',
       port: 1445,
     })
-    expect(parseServerAddress('ada@naspolya/media')).toEqual({
+    expect(parseServerAddress('test_user_1@testnas/media')).toEqual({
       kind: 'parsed',
-      host: 'naspolya',
-      username: 'ada',
+      host: 'testnas',
+      username: 'test_user_1',
       path: '/media',
     })
   })
 
   it('reads `user@host:port` as a port, and `user@host:/path` as scp syntax', () => {
-    expect(parseServerAddress('ada@nas.local:2222')).toMatchObject({ port: 2222 })
-    expect(parseServerAddress('ada@nas.local:2222')).not.toHaveProperty('path')
-    const scp = parseServerAddress('ada@nas.local:/srv/data')
+    expect(parseServerAddress('test_user_1@testnas.local:2222')).toMatchObject({ port: 2222 })
+    expect(parseServerAddress('test_user_1@testnas.local:2222')).not.toHaveProperty('path')
+    const scp = parseServerAddress('test_user_1@testnas.local:/srv/data')
     expect(scp).toMatchObject({ path: '/srv/data' })
     expect(scp).not.toHaveProperty('port')
   })
@@ -131,11 +131,11 @@ describe('parseServerAddress: the WebDAV shapes', () => {
     // ❗ Nobody can tell where the base URL ends and the collection begins, and
     // the backend resolves the remote root relative to the base anyway. So the
     // whole path stays with the address and the remote folder starts at the root.
-    expect(parseServerAddress('https://cloud.example.com/remote.php/dav/files/ada/')).toMatchObject({
+    expect(parseServerAddress('https://cloud.example.com/remote.php/dav/files/test_user_1/')).toMatchObject({
       protocol: 'webdav',
       host: 'cloud.example.com',
       port: 443,
-      path: '/remote.php/dav/files/ada',
+      path: '/remote.php/dav/files/test_user_1',
     })
   })
 
@@ -149,9 +149,9 @@ describe('parseServerAddress: the WebDAV shapes', () => {
   })
 
   it('reads the four WebDAV schemes, `davs` secure and `dav` not', () => {
-    expect(parseServerAddress('webdav://ada@nas:5006/dav')).toMatchObject({
+    expect(parseServerAddress('webdav://test_user_1@nas:5006/dav')).toMatchObject({
       protocol: 'webdav',
-      username: 'ada',
+      username: 'test_user_1',
       port: 5006,
       secure: true,
     })
@@ -162,21 +162,21 @@ describe('parseServerAddress: the WebDAV shapes', () => {
 
 describe('parseServerAddress: the SMB shapes', () => {
   it('reads an `smb://` address, account and share and all', () => {
-    expect(parseServerAddress('smb://naspolya')).toEqual({
+    expect(parseServerAddress('smb://testnas')).toEqual({
       kind: 'parsed',
       protocol: 'smb',
-      host: 'naspolya',
+      host: 'testnas',
       port: 445,
       username: undefined,
       path: undefined,
     })
-    expect(parseServerAddress('smb://ada@naspolya/media')).toMatchObject({
+    expect(parseServerAddress('smb://test_user_1@testnas/media')).toMatchObject({
       protocol: 'smb',
-      host: 'naspolya',
-      username: 'ada',
+      host: 'testnas',
+      username: 'test_user_1',
       path: '/media',
     })
-    expect(parseServerAddress('cifs://naspolya')).toMatchObject({ protocol: 'smb', port: 445 })
+    expect(parseServerAddress('cifs://testnas')).toMatchObject({ protocol: 'smb', port: 445 })
   })
 
   /** A UNC path off Windows or a colleague's email is SMB spelled with backslashes (QA round 2). */
@@ -217,16 +217,16 @@ describe('parseServerAddress: the SMB shapes', () => {
  */
 describe('parseServerAddress: the NFS shapes', () => {
   it('reads an `nfs://` URL, export and folder as one path, with no port when it names none', () => {
-    expect(parseServerAddress('nfs://nas.local/volume1/data/photos')).toEqual({
+    expect(parseServerAddress('nfs://testnas.local/volume1/data/photos')).toEqual({
       kind: 'parsed',
       protocol: 'nfs',
-      host: 'nas.local',
+      host: 'testnas.local',
       path: '/volume1/data/photos',
     })
   })
 
   it('keeps a port the URL named: it is the NFS port, and asking portmap is skipped', () => {
-    expect(parseServerAddress('nfs://nas.local:15481/insecure')).toMatchObject({
+    expect(parseServerAddress('nfs://testnas.local:15481/insecure')).toMatchObject({
       protocol: 'nfs',
       port: 15481,
       path: '/insecure',
@@ -234,22 +234,26 @@ describe('parseServerAddress: the NFS shapes', () => {
   })
 
   it('reads a bare `nfs://host`, an export still to pick', () => {
-    expect(parseServerAddress('nfs://NAS.local/')).toEqual({ kind: 'parsed', protocol: 'nfs', host: 'nas.local' })
+    expect(parseServerAddress('nfs://TESTNAS.local/')).toEqual({
+      kind: 'parsed',
+      protocol: 'nfs',
+      host: 'testnas.local',
+    })
   })
 
   it('reads the classic `host:/export/path` as a host and a path, naming no protocol', () => {
     // ❗ Not evidence of NFS: `host:/path` is scp's spelling too, and an SFTP root
     // typed that way must keep landing in the root folder.
-    expect(parseServerAddress('nas.local:/volume1/data')).toEqual({
+    expect(parseServerAddress('testnas.local:/volume1/data')).toEqual({
       kind: 'parsed',
-      host: 'nas.local',
+      host: 'testnas.local',
       path: '/volume1/data',
     })
   })
 
   it('splits the classic spelling at the FIRST `:/`, so a folder may hold a colon', () => {
-    expect(parseServerAddress('nas.local:/share/10:30 meeting')).toMatchObject({
-      host: 'nas.local',
+    expect(parseServerAddress('testnas.local:/share/10:30 meeting')).toMatchObject({
+      host: 'testnas.local',
       path: '/share/10:30 meeting',
     })
   })
@@ -266,16 +270,16 @@ describe('parseServerAddress: the NFS shapes', () => {
 describe('parseServerAddress: folding and refusing', () => {
   it('folds the host to lowercase and leaves the account alone', () => {
     // The same fold `cmdr_fs::volume::ids` performs: DNS is case-insensitive, a
-    // POSIX account is not, and `Ada` and `ada` can be two people.
-    expect(parseServerAddress('SFTP://Ada@NAS.Local:22')).toMatchObject({
+    // POSIX account is not, and `Test_user_1` and `test_user_1` can be two people.
+    expect(parseServerAddress('SFTP://Test_user_1@TESTNAS.Local:22')).toMatchObject({
       protocol: 'sftp',
-      host: 'nas.local',
-      username: 'Ada',
+      host: 'testnas.local',
+      username: 'Test_user_1',
     })
   })
 
   it('ignores whitespace around what was pasted', () => {
-    expect(parseServerAddress('  sftp://nas.local  ')).toMatchObject({ host: 'nas.local' })
+    expect(parseServerAddress('  sftp://testnas.local  ')).toMatchObject({ host: 'testnas.local' })
   })
 
   /**
@@ -284,26 +288,26 @@ describe('parseServerAddress: folding and refusing', () => {
    * a person reads, and the id is what the Keychain scope is keyed on.
    */
   it('takes the account out of a URL that carries a password, and drops the password', () => {
-    expect(parseServerAddress('https://ada:hunter2@nas.local/dav')).toMatchObject({
+    expect(parseServerAddress('https://test_user_1:hunter2@testnas.local/dav')).toMatchObject({
       protocol: 'webdav',
-      host: 'nas.local',
-      username: 'ada',
+      host: 'testnas.local',
+      username: 'test_user_1',
     })
   })
 
   it('refuses a URL whose userinfo is a password with no account', () => {
-    expect(parseServerAddress('sftp://:hunter2@nas.local')).toEqual({ kind: 'unparsed' })
+    expect(parseServerAddress('sftp://:hunter2@testnas.local')).toEqual({ kind: 'unparsed' })
   })
 
   it.each([
     ['', 'nothing typed yet'],
     ['   ', 'whitespace only'],
     ['not a server!!', 'punctuation no host can carry'],
-    ['ftp://nas.local', 'a protocol Cmdr does not speak'],
+    ['ftp://testnas.local', 'a protocol Cmdr does not speak'],
     ['sftp://', 'a scheme with no host'],
-    ['ada@', 'an account with no host'],
-    ['sftp://nas.local:99999', 'a port outside the range'],
-    ['sftp://nas.local:0', 'port zero'],
+    ['test_user_1@', 'an account with no host'],
+    ['sftp://testnas.local:99999', 'a port outside the range'],
+    ['sftp://testnas.local:0', 'port zero'],
     ['sftp://[2001:db8::1]:2222', 'an IPv6 literal, which no remote path can spell yet'],
     ['/srv/data', 'a bare server-absolute path, which names no server at all'],
   ])('refuses %j (%s)', (input) => {
@@ -324,38 +328,38 @@ describe('parseServerAddress: folding and refusing', () => {
  */
 describe('addressLooksLike', () => {
   it.each([
-    ['sftp://ada@nas.local', 'smb', 'sftp', 'an sftp URL'],
-    ['ssh://nas.local', 'webdav', 'sftp', 'an ssh URL'],
-    ['ssh -p 2222 ada@nas.local', 'smb', 'sftp', 'a pasted ssh line'],
-    ['smb://sven@192.168.0.153/sven', 'sftp', 'smb', 'an smb URL'],
+    ['sftp://test_user_1@testnas.local', 'smb', 'sftp', 'an sftp URL'],
+    ['ssh://testnas.local', 'webdav', 'sftp', 'an ssh URL'],
+    ['ssh -p 2222 test_user_1@testnas.local', 'smb', 'sftp', 'a pasted ssh line'],
+    ['smb://test_user_6@192.168.50.20/test_user_6', 'sftp', 'smb', 'an smb URL'],
     ['cifs://nas', 'webdav', 'smb', 'a cifs URL'],
     ['https://cloud.example.com/remote.php/dav', 'smb', 'webdav', 'a web address'],
     ['davs://nas/dav', 'sftp', 'webdav', 'a davs URL'],
-    ['nas.local:22', 'smb', 'sftp', "SSH's port on an address with no scheme"],
-    ['ada@nas.local:445', 'sftp', 'smb', "SMB's port"],
-    ['nas.local:139', 'webdav', 'smb', "NetBIOS SMB's port"],
-    ['nas.local:443', 'sftp', 'webdav', "HTTPS's port"],
-    ['nas.local:80', 'smb', 'webdav', "HTTP's port"],
-    ['nfs://nas.local/share', 'smb', 'nfs', 'an nfs URL'],
-    ['nas.local:2049', 'smb', 'nfs', "NFS's port"],
+    ['testnas.local:22', 'smb', 'sftp', "SSH's port on an address with no scheme"],
+    ['test_user_1@testnas.local:445', 'sftp', 'smb', "SMB's port"],
+    ['testnas.local:139', 'webdav', 'smb', "NetBIOS SMB's port"],
+    ['testnas.local:443', 'sftp', 'webdav', "HTTPS's port"],
+    ['testnas.local:80', 'smb', 'webdav', "HTTP's port"],
+    ['nfs://testnas.local/share', 'smb', 'nfs', 'an nfs URL'],
+    ['testnas.local:2049', 'smb', 'nfs', "NFS's port"],
   ] as const)('with %j and %s selected, says it looks like %s (%s)', (input, selected, looksLike, _why) => {
     expect(addressLooksLike(input, selected)).toBe(looksLike)
   })
 
   it.each([
-    ['sven@192.168.0.153', 'smb', 'the issue #8 shape: `user@host` is a fine SMB address'],
-    ['sven@192.168.0.153', 'sftp', 'and a fine SFTP one'],
-    ['sven@192.168.0.153', 'webdav', 'and a fine WebDAV one'],
-    ['naspolya', 'sftp', 'a bare host fits every protocol'],
-    ['ada@nas.local/srv/data', 'webdav', 'so does a path'],
-    ['nas.local:2222', 'smb', 'a port nobody owns'],
-    ['sftp://nas.local', 'sftp', 'a scheme that agrees'],
+    ['test_user_6@192.168.50.20', 'smb', 'the issue #8 shape: `user@host` is a fine SMB address'],
+    ['test_user_6@192.168.50.20', 'sftp', 'and a fine SFTP one'],
+    ['test_user_6@192.168.50.20', 'webdav', 'and a fine WebDAV one'],
+    ['testnas', 'sftp', 'a bare host fits every protocol'],
+    ['test_user_1@testnas.local/srv/data', 'webdav', 'so does a path'],
+    ['testnas.local:2222', 'smb', 'a port nobody owns'],
+    ['sftp://testnas.local', 'sftp', 'a scheme that agrees'],
     ['https://nas:22/dav', 'webdav', 'a scheme that agrees wins over the port it names'],
     ['', 'smb', 'nothing typed'],
-    ['ada@', 'sftp', 'a half-typed address, which is the normal state of a field being typed into'],
-    ['ftp://nas.local', 'smb', 'a protocol Cmdr does not speak, which Connect refuses on its own'],
-    ['nas.local:/share', 'sftp', 'the classic NFS spelling, which is scp spelling too'],
-    ['nfs://nas.local/share', 'nfs', 'an nfs URL with NFS selected'],
+    ['test_user_1@', 'sftp', 'a half-typed address, which is the normal state of a field being typed into'],
+    ['ftp://testnas.local', 'smb', 'a protocol Cmdr does not speak, which Connect refuses on its own'],
+    ['testnas.local:/share', 'sftp', 'the classic NFS spelling, which is scp spelling too'],
+    ['nfs://testnas.local/share', 'nfs', 'an nfs URL with NFS selected'],
   ] as const)('says nothing about %j with %s selected (%s)', (input, selected, _why) => {
     expect(addressLooksLike(input, selected)).toBeNull()
   })

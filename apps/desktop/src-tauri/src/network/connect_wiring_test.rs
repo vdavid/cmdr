@@ -70,7 +70,7 @@ async fn two_dials_of_one_saved_place_leave_one_volume_serving_its_id() {
     // install retires the first and takes the id over.
     use crate::file_system::volume::InMemoryVolume;
 
-    let volume_id = cmdr_fs::volume::sftp_volume_id("two-dials.example", 22, "ada");
+    let volume_id = cmdr_fs::volume::sftp_volume_id("two-dials.example", 22, "test_user_1");
     let first: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("first dial").with_root("/srv/data"));
     let second: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("second dial").with_root("/srv/data"));
 

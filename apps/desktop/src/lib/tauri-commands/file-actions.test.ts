@@ -44,8 +44,12 @@ describe('openInEditor', () => {
     const report = { outcome: 'opened', openedInName: 'Sublime Text', otherEditorsInstalled: true } as const
     vi.mocked(commands.openInEditor).mockResolvedValueOnce({ status: 'ok', data: report })
 
-    expect(await openInEditor('/Users/dave/notes.txt', 'com.sublimetext.4', true)).toEqual(report)
-    expect(commands.openInEditor).toHaveBeenCalledExactlyOnceWith('/Users/dave/notes.txt', 'com.sublimetext.4', true)
+    expect(await openInEditor('/Users/test_user_10/notes.txt', 'com.sublimetext.4', true)).toEqual(report)
+    expect(commands.openInEditor).toHaveBeenCalledExactlyOnceWith(
+      '/Users/test_user_10/notes.txt',
+      'com.sublimetext.4',
+      true,
+    )
   })
 
   it('throws the typed refusal, and asOpenInEditorError reads it back', async () => {
@@ -54,7 +58,9 @@ describe('openInEditor', () => {
       error: { type: 'launchRefused', errno: 2 },
     })
 
-    const caught: unknown = await openInEditor('/Users/dave/notes.txt', 'system', false).catch((e: unknown) => e)
+    const caught: unknown = await openInEditor('/Users/test_user_10/notes.txt', 'system', false).catch(
+      (e: unknown) => e,
+    )
 
     expect(caught).toBeInstanceOf(OpenInEditorFailure)
     expect(asOpenInEditorError(caught)).toEqual({ type: 'launchRefused', errno: 2 })

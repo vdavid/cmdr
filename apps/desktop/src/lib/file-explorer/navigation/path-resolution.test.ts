@@ -3,7 +3,7 @@
  *
  * A scheme path (`sftp://…`, `mtp://…`, `adb://…`) names a volume with no local
  * mount, so every `pathExists` probe on it is false. The plain walk-up then
- * chops the scheme itself (`sftp://ada@nas:22` → `sftp:/` → `sftp:`), gives up,
+ * chops the scheme itself (`sftp://test_user_1@nas:22` → `sftp:/` → `sftp:`), gives up,
  * and answers `~`, which lands the pane on the boot disk's home folder. Four of
  * this function's six callers hand a `null` to `navigateToFallback`, which turns
  * it into `~` on the ROOT volume, so `null` is the same failure spelled
@@ -26,16 +26,16 @@ const nothingExists = vi.fn(() => Promise.resolve(false))
 
 describe('resolveValidPath on a scheme path', () => {
   it('answers the scheme root rather than walking off the volume', async () => {
-    const resolved = await resolveValidPath('sftp://ada@nas.local:22/srv/data/photos', {
+    const resolved = await resolveValidPath('sftp://test_user_1@testnas.local:22/srv/data/photos', {
       pathExistsFn: nothingExists,
       timeoutMs: 0,
     })
-    expect(resolved).toBe('sftp://ada@nas.local:22')
+    expect(resolved).toBe('sftp://test_user_1@testnas.local:22')
   })
 
   it('❌ never answers `~`, `/`, or null for one', async () => {
     for (const path of [
-      'webdav://ada@nas.local:5006/dav/files/ada',
+      'webdav://test_user_1@testnas.local:5006/dav/files/test_user_1',
       'mtp://device-1/65537/DCIM',
       'adb://R58M12345/sdcard/Download',
     ]) {
@@ -66,26 +66,28 @@ describe('resolveValidPath on a scheme path', () => {
 
   it('takes a path that DOES answer, without walking at all', async () => {
     const exists = vi.fn(() => Promise.resolve(true))
-    const resolved = await resolveValidPath('sftp://ada@nas.local:22/srv/data/photos', {
+    const resolved = await resolveValidPath('sftp://test_user_1@testnas.local:22/srv/data/photos', {
       pathExistsFn: exists,
       timeoutMs: 0,
     })
-    expect(resolved).toBe('sftp://ada@nas.local:22/srv/data/photos')
+    expect(resolved).toBe('sftp://test_user_1@testnas.local:22/srv/data/photos')
     expect(exists).toHaveBeenCalledTimes(1)
   })
 
   it('walks up within the server before settling on its root', async () => {
-    const exists = vi.fn((p: string) => Promise.resolve(p === 'sftp://ada@nas.local:22/srv'))
-    const resolved = await resolveValidPath('sftp://ada@nas.local:22/srv/data/photos', {
+    const exists = vi.fn((p: string) => Promise.resolve(p === 'sftp://test_user_1@testnas.local:22/srv'))
+    const resolved = await resolveValidPath('sftp://test_user_1@testnas.local:22/srv/data/photos', {
       pathExistsFn: exists,
       timeoutMs: 0,
     })
-    expect(resolved).toBe('sftp://ada@nas.local:22/srv')
+    expect(resolved).toBe('sftp://test_user_1@testnas.local:22/srv')
   })
 
   it('leaves a local walk-up exactly as it was', async () => {
-    const exists = vi.fn((p: string) => Promise.resolve(p === '/Users/ada'))
-    expect(await resolveValidPath('/Users/ada/gone/deeper', { pathExistsFn: exists, timeoutMs: 0 })).toBe('/Users/ada')
+    const exists = vi.fn((p: string) => Promise.resolve(p === '/Users/test_user_1'))
+    expect(await resolveValidPath('/Users/test_user_1/gone/deeper', { pathExistsFn: exists, timeoutMs: 0 })).toBe(
+      '/Users/test_user_1',
+    )
     expect(await resolveValidPath('/nowhere', { pathExistsFn: nothingExists, timeoutMs: 0 })).toBeNull()
   })
 })
@@ -109,7 +111,7 @@ describe('resolveValidPath with a volume root on the same scheme', () => {
  * folder on Macintosh HD as if it were the drive (cmdr-reports#4).
  */
 describe('resolveValidPath on a volume whose root does not answer', () => {
-  const root = '/Users/ada/pCloud Drive'
+  const root = '/Users/test_user_1/pCloud Drive'
   /** The volume's rungs never answer; `~` and `/` do. */
   const silentVolume = vi.fn((p: string) =>
     p === '~' || p === '/' ? Promise.resolve(true) : new Promise<boolean>(() => {}),
@@ -173,30 +175,33 @@ describe('resolveValidPath on the volume it was given', () => {
    */
   it('lands on the nearest parent that exists there, asking that volume every time', async () => {
     pathExistsChecked.mockImplementation((path, volumeId) =>
-      Promise.resolve({ data: volumeId === 'sftp-nas' && path === 'sftp://ada@nas.local:22/a', timedOut: false }),
+      Promise.resolve({
+        data: volumeId === 'sftp-nas' && path === 'sftp://test_user_1@testnas.local:22/a',
+        timedOut: false,
+      }),
     )
-    const resolved = await resolveValidPath('sftp://ada@nas.local:22/a/b/c', {
+    const resolved = await resolveValidPath('sftp://test_user_1@testnas.local:22/a/b/c', {
       volumeId: 'sftp-nas',
-      volumeRoot: 'sftp://ada@nas.local:22',
+      volumeRoot: 'sftp://test_user_1@testnas.local:22',
       timeoutMs: 0,
     })
-    expect(resolved).toBe('sftp://ada@nas.local:22/a')
+    expect(resolved).toBe('sftp://test_user_1@testnas.local:22/a')
     expect(pathExistsChecked.mock.calls).toEqual([
-      ['sftp://ada@nas.local:22/a/b/c', 'sftp-nas'],
-      ['sftp://ada@nas.local:22/a/b', 'sftp-nas'],
-      ['sftp://ada@nas.local:22/a', 'sftp-nas'],
+      ['sftp://test_user_1@testnas.local:22/a/b/c', 'sftp-nas'],
+      ['sftp://test_user_1@testnas.local:22/a/b', 'sftp-nas'],
+      ['sftp://test_user_1@testnas.local:22/a', 'sftp-nas'],
     ])
   })
 
   it('asks the boot disk about `~`, never the volume the walk ran on', async () => {
     pathExists.mockImplementation((path, volumeId) => Promise.resolve(path === '~' && volumeId === undefined))
-    const resolved = await resolveValidPath('/Volumes/naspi/gone', {
-      volumeId: 'smb-naspi',
-      volumeRoot: '/Volumes/naspi',
+    const resolved = await resolveValidPath('/Volumes/testshare/gone', {
+      volumeId: 'smb-testshare',
+      volumeRoot: '/Volumes/testshare',
       timeoutMs: 0,
     })
     expect(resolved).toBe('~')
-    expect(pathExistsChecked).toHaveBeenCalledWith('/Volumes/naspi/gone', 'smb-naspi')
+    expect(pathExistsChecked).toHaveBeenCalledWith('/Volumes/testshare/gone', 'smb-testshare')
     expect(pathExists.mock.calls).toEqual([['~']])
   })
 })

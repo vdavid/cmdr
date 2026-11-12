@@ -52,7 +52,12 @@ const THREAD = 1
 const DRIVES: ToolSubject = { kind: 'drives' }
 const ITEMS: ToolOutcome = { kind: 'items', returned: 2, total: 2, lowerBound: false }
 const STATS: TurnStats = { toolCalls: 2, wallMs: 2_400, promptTokens: 120, completionTokens: 30 }
-const DECISION: ProposalDecision = { verb: 'trash', what: '/Users/dana/old.dmg', ops: 1, outcome: { kind: 'rejected' } }
+const DECISION: ProposalDecision = {
+  verb: 'trash',
+  what: '/Users/test_user_13/old.dmg',
+  ops: 1,
+  outcome: { kind: 'rejected' },
+}
 
 function fire(event: AskCmdrStreamEvent): void {
   askCmdrState.conversationId = THREAD

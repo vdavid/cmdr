@@ -89,7 +89,7 @@ mod tests {
 
     fn guest_offered() -> smb2::Error {
         smb2::Error::GuestSessionRefused {
-            username: "david".to_string(),
+            username: "test_user_3".to_string(),
             anonymous: false,
         }
     }
@@ -213,7 +213,7 @@ mod tests {
     /// credentials are WRONG, not that authentication is required. Without the
     /// context-aware classifier, a wrong password surfaced as "Authentication required.
     /// Please enter your credentials." in the login form (observed in QA against the
-    /// Naspolya NAS) instead of "Invalid username or password."
+    /// Testnas NAS) instead of "Invalid username or password."
     #[test]
     fn test_classify_authenticated_error_maps_rejection_to_auth_failed() {
         match classify_authenticated_error(&smb2::Error::Auth {

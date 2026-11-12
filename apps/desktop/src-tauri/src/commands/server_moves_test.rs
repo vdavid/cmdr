@@ -20,8 +20,8 @@ fn sftp_entry(host: &str, port: u16) -> KnownSftpServer {
     KnownSftpServer {
         host: host.to_string(),
         port,
-        username: "ada".to_string(),
-        display_name: "Naspolya".to_string(),
+        username: "test_user_1".to_string(),
+        display_name: "Testnas".to_string(),
         remote_root: "/srv/data".to_string(),
         start_folder: None,
         key_file: None,
@@ -34,7 +34,7 @@ fn sftp_entry(host: &str, port: u16) -> KnownSftpServer {
 
 fn sftp_target(host: &str, port: u16, username: &str) -> ServerTarget {
     ServerTarget::Sftp {
-        display_name: "Naspolya".to_string(),
+        display_name: "Testnas".to_string(),
         host: host.to_string(),
         port,
         username: username.to_string(),
@@ -49,7 +49,7 @@ fn sftp_target(host: &str, port: u16, username: &str) -> ServerTarget {
 fn webdav_entry(url: &str) -> KnownWebdavServer {
     KnownWebdavServer {
         url: url.to_string(),
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         display_name: "Cloud".to_string(),
         remote_root: "/Photos".to_string(),
         start_folder: None,
@@ -63,7 +63,7 @@ fn webdav_target(url: &str) -> ServerTarget {
     ServerTarget::Webdav {
         display_name: "Cloud".to_string(),
         url: url.to_string(),
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         remote_root: "/Photos".to_string(),
         start_folder: None,
         auto_reconnect: true,
@@ -71,7 +71,7 @@ fn webdav_target(url: &str) -> ServerTarget {
 }
 
 fn sftp_id(host: &str, port: u16) -> String {
-    cmdr_fs::volume::sftp_volume_id(host, port, "ada")
+    cmdr_fs::volume::sftp_volume_id(host, port, "test_user_1")
 }
 
 #[tokio::test]
@@ -79,36 +79,36 @@ async fn moving_an_sftp_server_takes_its_entry_password_and_favorites_to_the_new
     let _secrets = crate::test_support::isolate_secrets();
     let (old_host, new_host) = ("203.0.113.10", "203.0.113.11");
     sftp_known_servers::remember(sftp_entry(old_host, 22));
-    save_sftp_credentials(old_host.to_string(), 22, "ada".to_string(), "pa55".to_string())
+    save_sftp_credentials(old_host.to_string(), 22, "test_user_1".to_string(), "pa55".to_string())
         .await
         .expect("the test store always accepts");
-    let old_prefix = cmdr_fs::volume::sftp_app_root(old_host, 22, "ada");
-    let new_prefix = cmdr_fs::volume::sftp_app_root(new_host, 2200, "ada");
+    let old_prefix = cmdr_fs::volume::sftp_app_root(old_host, 22, "test_user_1");
+    let new_prefix = cmdr_fs::volume::sftp_app_root(new_host, 2200, "test_user_1");
     favorites::add(
         &format!("{old_prefix}/srv/data/photos"),
         Some("Photos".to_string()),
         FavoriteVolume {
             id: sftp_id(old_host, 22),
             root: format!("{old_prefix}/srv/data"),
-            name: "Naspolya".to_string(),
+            name: "Testnas".to_string(),
         },
     );
 
-    let outcome = update_saved_server(sftp_target(new_host, 2200, "ada"), Some(sftp_id(old_host, 22))).await;
+    let outcome = update_saved_server(sftp_target(new_host, 2200, "test_user_1"), Some(sftp_id(old_host, 22))).await;
 
     assert_eq!(outcome, SavedServerOutcome::Saved);
     assert!(
-        sftp_known_servers::find(old_host, 22, "ada").is_none(),
+        sftp_known_servers::find(old_host, 22, "test_user_1").is_none(),
         "the old address is gone"
     );
-    let moved = sftp_known_servers::find(new_host, 2200, "ada").expect("saved at the new address");
+    let moved = sftp_known_servers::find(new_host, 2200, "test_user_1").expect("saved at the new address");
     assert!(moved.pinned, "the same server keeps its pin");
     assert!(
-        has_sftp_credentials(new_host.to_string(), 2200, "ada".to_string()).await,
+        has_sftp_credentials(new_host.to_string(), 2200, "test_user_1".to_string()).await,
         "the password moved with it"
     );
     assert!(
-        !has_sftp_credentials(old_host.to_string(), 22, "ada".to_string()).await,
+        !has_sftp_credentials(old_host.to_string(), 22, "test_user_1".to_string()).await,
         "and left nothing behind under the old address"
     );
     let favorite = favorites::list()
@@ -136,11 +136,11 @@ async fn moving_onto_an_address_another_saved_server_holds_is_refused_and_moves_
         display_name: "The other NAS".to_string(),
         ..sftp_entry(taken_host, 22)
     });
-    save_sftp_credentials(old_host.to_string(), 22, "ada".to_string(), "pa55".to_string())
+    save_sftp_credentials(old_host.to_string(), 22, "test_user_1".to_string(), "pa55".to_string())
         .await
         .expect("the test store always accepts");
 
-    let outcome = update_saved_server(sftp_target(taken_host, 22, "ada"), Some(sftp_id(old_host, 22))).await;
+    let outcome = update_saved_server(sftp_target(taken_host, 22, "test_user_1"), Some(sftp_id(old_host, 22))).await;
 
     assert_eq!(
         outcome,
@@ -149,15 +149,15 @@ async fn moving_onto_an_address_another_saved_server_holds_is_refused_and_moves_
         }
     );
     assert!(
-        sftp_known_servers::find(old_host, 22, "ada").is_some(),
+        sftp_known_servers::find(old_host, 22, "test_user_1").is_some(),
         "the edited server stays put"
     );
-    assert!(has_sftp_credentials(old_host.to_string(), 22, "ada".to_string()).await);
+    assert!(has_sftp_credentials(old_host.to_string(), 22, "test_user_1".to_string()).await);
     assert!(
-        !has_sftp_credentials(taken_host.to_string(), 22, "ada".to_string()).await,
+        !has_sftp_credentials(taken_host.to_string(), 22, "test_user_1".to_string()).await,
         "the other server's address got no password"
     );
-    let old_prefix = cmdr_fs::volume::sftp_app_root(old_host, 22, "ada");
+    let old_prefix = cmdr_fs::volume::sftp_app_root(old_host, 22, "test_user_1");
     assert!(crate::volume_broadcast::server_moves_from(&old_prefix).is_empty());
 }
 
@@ -169,7 +169,7 @@ async fn moving_a_server_while_a_copy_runs_on_it_is_refused_and_moves_nothing() 
     let _secrets = crate::test_support::isolate_secrets();
     let (old_host, new_host) = ("203.0.113.100", "203.0.113.101");
     sftp_known_servers::remember(sftp_entry(old_host, 22));
-    save_sftp_credentials(old_host.to_string(), 22, "ada".to_string(), "pa55".to_string())
+    save_sftp_credentials(old_host.to_string(), 22, "test_user_1".to_string(), "pa55".to_string())
         .await
         .expect("the test store always accepts");
     let _copy = QueuedOperationFixture::park_naming_on(
@@ -179,19 +179,19 @@ async fn moving_a_server_while_a_copy_runs_on_it_is_refused_and_moves_nothing() 
         Vec::new(),
     );
 
-    let outcome = update_saved_server(sftp_target(new_host, 22, "ada"), Some(sftp_id(old_host, 22))).await;
+    let outcome = update_saved_server(sftp_target(new_host, 22, "test_user_1"), Some(sftp_id(old_host, 22))).await;
 
     assert_eq!(outcome, SavedServerOutcome::OperationRunning);
     assert!(
-        sftp_known_servers::find(old_host, 22, "ada").is_some(),
+        sftp_known_servers::find(old_host, 22, "test_user_1").is_some(),
         "the server stays put"
     );
-    assert!(sftp_known_servers::find(new_host, 22, "ada").is_none());
+    assert!(sftp_known_servers::find(new_host, 22, "test_user_1").is_none());
     assert!(
-        !has_sftp_credentials(new_host.to_string(), 22, "ada".to_string()).await,
+        !has_sftp_credentials(new_host.to_string(), 22, "test_user_1".to_string()).await,
         "the password wasn't copied"
     );
-    let old_prefix = cmdr_fs::volume::sftp_app_root(old_host, 22, "ada");
+    let old_prefix = cmdr_fs::volume::sftp_app_root(old_host, 22, "test_user_1");
     assert!(crate::volume_broadcast::server_moves_from(&old_prefix).is_empty());
 }
 
@@ -209,10 +209,10 @@ async fn moving_a_server_a_queued_copy_waits_on_is_refused() {
         vec![sftp_id(old_host, 22)],
     );
 
-    let outcome = update_saved_server(sftp_target(new_host, 22, "ada"), Some(sftp_id(old_host, 22))).await;
+    let outcome = update_saved_server(sftp_target(new_host, 22, "test_user_1"), Some(sftp_id(old_host, 22))).await;
 
     assert_eq!(outcome, SavedServerOutcome::OperationRunning);
-    assert!(sftp_known_servers::find(old_host, 22, "ada").is_some());
+    assert!(sftp_known_servers::find(old_host, 22, "test_user_1").is_some());
 }
 
 /// ❗ A dial to the old address that set out before Save and succeeds after it
@@ -229,7 +229,7 @@ async fn a_dial_to_the_old_address_that_was_out_during_the_move_is_called_off_an
         crate::network::connect_wiring::DialTicket::now(),
     );
 
-    let outcome = update_saved_server(sftp_target(new_host, 22, "ada"), Some(sftp_id(old_host, 22))).await;
+    let outcome = update_saved_server(sftp_target(new_host, 22, "test_user_1"), Some(sftp_id(old_host, 22))).await;
 
     assert_eq!(outcome, SavedServerOutcome::Saved);
     assert!(cancel.is_cancelled(), "the dial to the old address is called off");
@@ -255,7 +255,7 @@ async fn an_in_place_edit_saves_while_a_copy_runs() {
         display_name: "Renamed".to_string(),
         host: host.to_string(),
         port: 22,
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         remote_root: "/srv/data".to_string(),
         start_folder: None,
         key_file: None,
@@ -277,7 +277,7 @@ async fn an_edit_that_keeps_the_address_saves_in_place_and_announces_no_move() {
         display_name: "Renamed".to_string(),
         host: host.to_uppercase(),
         port: 22,
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         remote_root: "/srv/data".to_string(),
         start_folder: None,
         key_file: None,
@@ -289,10 +289,10 @@ async fn an_edit_that_keeps_the_address_saves_in_place_and_announces_no_move() {
 
     assert_eq!(outcome, SavedServerOutcome::Saved);
     assert_eq!(
-        sftp_known_servers::find(host, 22, "ada").map(|s| s.display_name),
+        sftp_known_servers::find(host, 22, "test_user_1").map(|s| s.display_name),
         Some("Renamed".to_string())
     );
-    let prefix = cmdr_fs::volume::sftp_app_root(host, 22, "ada");
+    let prefix = cmdr_fs::volume::sftp_app_root(host, 22, "test_user_1");
     assert!(crate::volume_broadcast::server_moves_from(&prefix).is_empty());
 }
 
@@ -303,11 +303,11 @@ async fn an_edit_naming_another_account_is_refused() {
     let host = "203.0.113.40";
     sftp_known_servers::remember(sftp_entry(host, 22));
 
-    let outcome = update_saved_server(sftp_target(host, 22, "grace"), Some(sftp_id(host, 22))).await;
+    let outcome = update_saved_server(sftp_target(host, 22, "test_user_2"), Some(sftp_id(host, 22))).await;
 
     assert_eq!(outcome, SavedServerOutcome::AccountChanged);
-    assert!(sftp_known_servers::find(host, 22, "grace").is_none());
-    assert!(sftp_known_servers::find(host, 22, "ada").is_some());
+    assert!(sftp_known_servers::find(host, 22, "test_user_2").is_none());
+    assert!(sftp_known_servers::find(host, 22, "test_user_1").is_some());
 }
 
 /// A Forget in another pane between opening the sheet and saving it: the save
@@ -316,10 +316,10 @@ async fn an_edit_naming_another_account_is_refused() {
 async fn editing_a_server_nobody_saved_any_more_is_refused() {
     let host = "203.0.113.50";
 
-    let outcome = update_saved_server(sftp_target(host, 22, "ada"), Some(sftp_id(host, 22))).await;
+    let outcome = update_saved_server(sftp_target(host, 22, "test_user_1"), Some(sftp_id(host, 22))).await;
 
     assert_eq!(outcome, SavedServerOutcome::Unreachable);
-    assert!(sftp_known_servers::find(host, 22, "ada").is_none());
+    assert!(sftp_known_servers::find(host, 22, "test_user_1").is_none());
 }
 
 /// A WebDAV base URL can move without its host, port, or account (a Nextcloud
@@ -327,21 +327,21 @@ async fn editing_a_server_nobody_saved_any_more_is_refused() {
 #[tokio::test]
 async fn moving_a_webdav_server_to_a_new_path_keeps_its_id_and_its_password() {
     let _secrets = crate::test_support::isolate_secrets();
-    let old_url = "https://203.0.113.60/remote.php/dav/files/ada/";
+    let old_url = "https://203.0.113.60/remote.php/dav/files/test_user_1/";
     let new_url = "https://203.0.113.60/dav/";
     webdav_known_servers::remember(webdav_entry(old_url));
-    save_webdav_credentials(old_url.to_string(), "ada".to_string(), "pa55".to_string())
+    save_webdav_credentials(old_url.to_string(), "test_user_1".to_string(), "pa55".to_string())
         .await
         .expect("the test store always accepts");
-    let id = cmdr_fs::volume::webdav_volume_id("203.0.113.60", 443, "ada");
+    let id = cmdr_fs::volume::webdav_volume_id("203.0.113.60", 443, "test_user_1");
 
     let outcome = update_saved_server(webdav_target(new_url), Some(id.clone())).await;
 
     assert_eq!(outcome, SavedServerOutcome::Saved);
-    assert!(webdav_known_servers::find(old_url, "ada").is_none());
-    assert!(webdav_known_servers::find(new_url, "ada").is_some_and(|s| s.pinned));
-    assert!(has_webdav_credentials(new_url.to_string(), "ada".to_string()).await);
-    let prefix = cmdr_fs::volume::webdav_app_root("203.0.113.60", 443, "ada");
+    assert!(webdav_known_servers::find(old_url, "test_user_1").is_none());
+    assert!(webdav_known_servers::find(new_url, "test_user_1").is_some_and(|s| s.pinned));
+    assert!(has_webdav_credentials(new_url.to_string(), "test_user_1".to_string()).await);
+    let prefix = cmdr_fs::volume::webdav_app_root("203.0.113.60", 443, "test_user_1");
     let announced = crate::volume_broadcast::server_moves_from(&prefix);
     assert_eq!(announced.len(), 1, "the session at the old URL still has to go");
     assert_eq!(announced[0].places[0].old_volume_id, id);
@@ -354,16 +354,16 @@ async fn moving_a_webdav_server_to_a_new_host_takes_its_password_along() {
     let old_url = "http://203.0.113.70:8080/dav/";
     let new_url = "https://203.0.113.71/dav/";
     webdav_known_servers::remember(webdav_entry(old_url));
-    save_webdav_credentials(old_url.to_string(), "ada".to_string(), "pa55".to_string())
+    save_webdav_credentials(old_url.to_string(), "test_user_1".to_string(), "pa55".to_string())
         .await
         .expect("the test store always accepts");
-    let old_id = cmdr_fs::volume::webdav_volume_id("203.0.113.70", 8080, "ada");
+    let old_id = cmdr_fs::volume::webdav_volume_id("203.0.113.70", 8080, "test_user_1");
 
     let outcome = update_saved_server(webdav_target(new_url), Some(old_id)).await;
 
     assert_eq!(outcome, SavedServerOutcome::Saved);
-    assert!(has_webdav_credentials(new_url.to_string(), "ada".to_string()).await);
-    assert!(!has_webdav_credentials(old_url.to_string(), "ada".to_string()).await);
+    assert!(has_webdav_credentials(new_url.to_string(), "test_user_1".to_string()).await);
+    assert!(!has_webdav_credentials(old_url.to_string(), "test_user_1".to_string()).await);
 }
 
 // -- an S3 account's endpoint --

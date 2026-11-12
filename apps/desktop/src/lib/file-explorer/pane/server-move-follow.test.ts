@@ -19,10 +19,10 @@ import { createInitialTabState } from './tab-operations'
 import type { NavigateIntent, NavigateResult } from './navigate'
 import { followServerMove, type ServerMoveFollowDeps } from './server-move-follow'
 
-const OLD_ID = 'sftp-nas-local-22-ada'
-const NEW_ID = 'sftp-10-0-0-5-2222-ada'
-const OLD_PREFIX = 'sftp://ada@nas.local:22'
-const NEW_PREFIX = 'sftp://ada@10.0.0.5:2222'
+const OLD_ID = 'sftp-nas-local-22-test_user_1'
+const NEW_ID = 'sftp-10-0-0-5-2222-test_user_1'
+const OLD_PREFIX = 'sftp://test_user_1@testnas.local:22'
+const NEW_PREFIX = 'sftp://test_user_1@10.0.0.5:2222'
 
 /** The prod case: a NAS reached by its `.local` name now answers on a fixed IP and another port. */
 const MOVED: ServerPlaceMoved = {
@@ -34,7 +34,7 @@ const MOVED: ServerPlaceMoved = {
       newVolumeId: NEW_ID,
       newRoot: `${NEW_PREFIX}/srv/data`,
       newLanding: `${NEW_PREFIX}/srv/data`,
-      name: 'Naspolya',
+      name: 'Testnas',
       connectionState: null,
     },
   ],
@@ -94,14 +94,14 @@ function harness(opts: HarnessOpts) {
 describe('followServerMove: per-volume settings', () => {
   /** A media-index choice keyed by the old id would quietly switch off for the moved place. */
   it('carries per-volume settings to a place whose id changed, and only that place', async () => {
-    const h = harness({ left: ['root', '/Users/ada'], right: ['root', '/Users/ada'] })
-    const kept = 'webdav-cloud-443-ada'
+    const h = harness({ left: ['root', '/Users/test_user_1'], right: ['root', '/Users/test_user_1'] })
+    const kept = 'webdav-cloud-443-test_user_1'
 
     await followServerMove(MOVED, h.deps)
     await followServerMove(
       {
-        oldPrefix: 'webdav://ada@cloud:443',
-        newPrefix: 'webdav://ada@cloud:443',
+        oldPrefix: 'webdav://test_user_1@cloud:443',
+        newPrefix: 'webdav://test_user_1@cloud:443',
         places: [
           { oldVolumeId: kept, newVolumeId: kept, newRoot: '', newLanding: '', name: 'Cloud', connectionState: null },
         ],
@@ -119,7 +119,7 @@ describe('followServerMove: the panes', () => {
    * address, and the pane's redial at the new one may open a sheet of its own.
    */
   it('moves a pane on the old address to the same folder at the new one, after the store patch', async () => {
-    const h = harness({ left: [OLD_ID, `${OLD_PREFIX}/srv/data/photos`], right: ['root', '/Users/ada'] })
+    const h = harness({ left: [OLD_ID, `${OLD_PREFIX}/srv/data/photos`], right: ['root', '/Users/test_user_1'] })
 
     await followServerMove(MOVED, h.deps)
 
@@ -136,9 +136,9 @@ describe('followServerMove: the panes', () => {
   })
 
   it('redials a pane whose place kept its id without navigating it (a WebDAV base path that moved)', async () => {
-    const id = 'webdav-cloud-443-ada'
-    const prefix = 'webdav://ada@cloud.example.com:443'
-    const h = harness({ left: [id, `${prefix}/Photos`], right: ['root', '/Users/ada'] })
+    const id = 'webdav-cloud-443-test_user_1'
+    const prefix = 'webdav://test_user_1@cloud.example.com:443'
+    const h = harness({ left: [id, `${prefix}/Photos`], right: ['root', '/Users/test_user_1'] })
 
     await followServerMove(
       {
@@ -166,7 +166,7 @@ describe('followServerMove: the panes', () => {
 
 describe('followServerMove: the tabs behind the panes', () => {
   it('respells a tab no pane is showing, keeps its cursor, and saves that pane’s tabs', async () => {
-    const h = harness({ left: ['root', '/Users/ada'], right: ['root', '/Users/ada'] })
+    const h = harness({ left: ['root', '/Users/test_user_1'], right: ['root', '/Users/test_user_1'] })
     const left = h.managers.left
     const behind = createInitialTabState(`${OLD_PREFIX}/srv/data/docs`, OLD_ID)
     behind.cursorFilename = 'notes.txt'
@@ -185,28 +185,33 @@ describe('followServerMove: the tabs behind the panes', () => {
   })
 
   it('respells the back and forward history, so Back lands on the moved place too', async () => {
-    const h = harness({ left: ['root', '/Users/ada'], right: ['root', '/Users/ada'] })
+    const h = harness({ left: ['root', '/Users/test_user_1'], right: ['root', '/Users/test_user_1'] })
     const tab = getActiveTab(h.managers.left)
     tab.history = push(tab.history, { volumeId: OLD_ID, path: `${OLD_PREFIX}/srv/data` }).history
-    tab.history = push(tab.history, { volumeId: 'root', path: '/Users/ada/Desktop' }).history
+    tab.history = push(tab.history, { volumeId: 'root', path: '/Users/test_user_1/Desktop' }).history
 
     await followServerMove(MOVED, h.deps)
 
     expect(tab.history.stack.map((entry) => [entry.volumeId, entry.path])).toEqual([
-      ['root', '/Users/ada'],
+      ['root', '/Users/test_user_1'],
       [NEW_ID, `${NEW_PREFIX}/srv/data`],
-      ['root', '/Users/ada/Desktop'],
+      ['root', '/Users/test_user_1/Desktop'],
     ])
   })
 
   it('leaves a tab on another server alone, even one whose address starts the same', async () => {
-    const h = harness({ left: ['root', '/Users/ada'], right: ['root', '/Users/ada'] })
-    const lookalike = createInitialTabState('sftp://ada@nas.local:2222/srv', 'sftp-nas-local-2222-ada')
+    const h = harness({ left: ['root', '/Users/test_user_1'], right: ['root', '/Users/test_user_1'] })
+    const lookalike = createInitialTabState(
+      'sftp://test_user_1@testnas.local:2222/srv',
+      'sftp-nas-local-2222-test_user_1',
+    )
     addTab(h.managers.right, getActiveTab(h.managers.right).id, lookalike)
 
     await followServerMove(MOVED, h.deps)
 
-    expect(h.managers.right.tabs.find((tab) => tab.id === lookalike.id)?.path).toBe('sftp://ada@nas.local:2222/srv')
+    expect(h.managers.right.tabs.find((tab) => tab.id === lookalike.id)?.path).toBe(
+      'sftp://test_user_1@testnas.local:2222/srv',
+    )
     expect(h.saveTabs).not.toHaveBeenCalled()
   })
 })
@@ -216,16 +221,16 @@ describe('followServerMove: the remembered path', () => {
     const h = harness({
       left: ['root', '/'],
       right: ['root', '/'],
-      remembered: { [OLD_ID]: `${OLD_PREFIX}/srv/data/photos`, root: '/Users/ada' },
+      remembered: { [OLD_ID]: `${OLD_PREFIX}/srv/data/photos`, root: '/Users/test_user_1' },
     })
 
     await followServerMove(MOVED, h.deps)
 
-    expect(h.remembered).toEqual({ [NEW_ID]: `${NEW_PREFIX}/srv/data/photos`, root: '/Users/ada' })
+    expect(h.remembered).toEqual({ [NEW_ID]: `${NEW_PREFIX}/srv/data/photos`, root: '/Users/test_user_1' })
   })
 
   it('writes nothing when the place had no remembered path', async () => {
-    const h = harness({ left: ['root', '/'], right: ['root', '/'], remembered: { root: '/Users/ada' } })
+    const h = harness({ left: ['root', '/'], right: ['root', '/'], remembered: { root: '/Users/test_user_1' } })
     const save = vi.spyOn(h.deps, 'saveLastUsedPath')
 
     await followServerMove(MOVED, h.deps)

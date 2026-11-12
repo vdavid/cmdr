@@ -290,8 +290,8 @@ pub struct Ranked {
 ///
 /// `path_prefix` is prepended to every reconstructed path: empty for the `root`
 /// volume (its index is `/`-rooted, paths are already absolute), the mount root
-/// (`/Volumes/naspi`) for a mount-rooted volume whose index stores mount-relative
-/// paths — so a NAS result reports `/Volumes/naspi/sub/file`, not the bare `/sub/file`
+/// (`/Volumes/testshare`) for a mount-rooted volume whose index stores mount-relative
+/// paths — so a NAS result reports `/Volumes/testshare/sub/file`, not the bare `/sub/file`
 /// its index holds, and opens in a pane. The returned entries are already truncated
 /// to the query's effective limit, so path reconstruction stays bounded even on a
 /// multi-million-entry index.
@@ -498,7 +498,7 @@ fn sort_indices(
 ///
 /// Empty prefix (the `root` volume): return the path unchanged. Otherwise the index
 /// is mount-rooted and `path` is mount-relative (`/sub/file`, or `/` for the mount
-/// root itself), so join them into the mount-absolute path (`/Volumes/naspi/sub/file`).
+/// root itself), so join them into the mount-absolute path (`/Volumes/testshare/sub/file`).
 fn apply_path_prefix(prefix: &str, path: &str) -> String {
     if prefix.is_empty() {
         path.to_string()
@@ -544,7 +544,7 @@ pub fn home_relative_parent(path: &str, home_dir: Option<&str>) -> String {
             let parent = &path[..pos];
             // Replace home dir prefix with ~ (a no-op for a prefixed non-root path,
             // whose mount root is never the home dir). Only at a component
-            // boundary: home `/Users/dav` is no ancestor of `/Users/david`.
+            // boundary: home `/Users/test_user` is no ancestor of `/Users/test_userid`.
             match home_dir
                 .and_then(|home| parent.strip_prefix(home))
                 .filter(|rest| rest.is_empty() || rest.starts_with('/'))

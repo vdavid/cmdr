@@ -22,9 +22,9 @@ does nothing whatsoever for a weak link.
 The dev log (`~/Library/Application Support/com.veszelovszki.cmdr-dev/logs/cmdr.log`, app 0.41.0, pid 63999, 2026-09-01
 12:50 to 13:04). Log files rotate at 50 MB, so the primary evidence is gone; what's below is the extract.
 
-Source `/Volumes/PiHDD` (raspi.local, 192.168.1.150), destination `/Volumes/naspi` (192.168.1.111). Both direct smb2,
-SMB 3.1.1, signed, `max_read` 8,388,608 on both. 119,204 files of roughly 4 MB each. Neither connection dropped, and no
-error appears anywhere in the run: this was a stall, not a failure.
+Source `/Volumes/testshare2` (testpi.local, 192.168.50.30), destination `/Volumes/testshare` (192.168.50.10). Both
+direct smb2, SMB 3.1.1, signed, `max_read` 8,388,608 on both. 119,204 files of roughly 4 MB each. Neither connection
+dropped, and no error appears anywhere in the run: this was a stall, not a failure.
 
 ## The arithmetic
 
@@ -67,16 +67,16 @@ which is the tell that the charge, not the window, had drifted.
 
 Two things in the same log that the arithmetic above does not explain, and that the fix does not improve:
 
-- **The destination's send side was slow, and the destination was not why.** naspi's socket accepted 425 to 767 KB/s,
-  with 1 MB WRITE frames queued 14 to 40 seconds and taking 2.2 to 2.9 seconds each to reach the socket. **Measured the
-  same path on 2026-09-02 with the `smb2` CLI** (Tailscale reported a direct route via 192.168.1.111 at 4 ms, so this is
-  the LAN path, not a relay): one 200 MB file uploaded at **24.7 MB/s** and downloaded at **40.2 MB/s**, and 30 separate
-  4 MB files uploaded serially at **8.6 MB/s** including a fresh connection, session setup, and tree connect per file.
-  Roughly 33× what the stalled copy managed, which rules out both "the QNAP was busy" and "small files are expensive on
-  this NAS". The explanation is the link: the laptop sat much further from the router during the stalled run, and both
-  shares share one radio, so a weak signal shows up as slow sends to one host and unanswered reads from the other at the
-  same moment. That is also why the source stopped responding for 16+ seconds, which is what kept the credit pool from
-  refilling. These numbers are the baseline to compare against before blaming either server again.
+- **The destination's send side was slow, and the destination was not why.** testshare's socket accepted 425 to 767
+  KB/s, with 1 MB WRITE frames queued 14 to 40 seconds and taking 2.2 to 2.9 seconds each to reach the socket.
+  **Measured the same path on 2026-09-02 with the `smb2` CLI** (Tailscale reported a direct route via 192.168.50.10 at 4
+  ms, so this is the LAN path, not a relay): one 200 MB file uploaded at **24.7 MB/s** and downloaded at **40.2 MB/s**,
+  and 30 separate 4 MB files uploaded serially at **8.6 MB/s** including a fresh connection, session setup, and tree
+  connect per file. Roughly 33× what the stalled copy managed, which rules out both "the QNAP was busy" and "small files
+  are expensive on this NAS". The explanation is the link: the laptop sat much further from the router during the
+  stalled run, and both shares share one radio, so a weak signal shows up as slow sends to one host and unanswered reads
+  from the other at the same moment. That is also why the source stopped responding for 16+ seconds, which is what kept
+  the credit pool from refilling. These numbers are the baseline to compare against before blaming either server again.
 - **The source is slow hardware.** The 2026-08-14 run of the same copy averaged 7.4 MB/s over 67 minutes, which reads
   like a Pi-class ceiling and was measured on a healthy link. Ten concurrent readers against one USB disk is seek thrash
   regardless of credits. The credit fix raises the concurrency ceiling; it doesn't make the Pi fast.

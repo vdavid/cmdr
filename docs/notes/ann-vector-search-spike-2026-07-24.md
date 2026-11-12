@@ -10,7 +10,7 @@ turns out not to be ANN at all (exact linear scan, 141 ms p50 at 200k, ~1.4 s ex
 
 - Apple M3 Max, 64 GB RAM, macOS 26.5.2 (build 25F84), rustc 1.97.1, release builds, 2026-07-24.
 - Harness (standalone cargo project, fixed seeds, reproducible):
-  `/private/tmp/claude-501/-Users-veszelovszki-projects-git-vdavid-cmdr/733dfd6f-550d-4e88-80f8-df2cf9cf56ca/scratchpad/m6-ann-spike/`
+  `/private/tmp/claude-501/-Users-test_user_3-projects-git-vdavid-cmdr/733dfd6f-550d-4e88-80f8-df2cf9cf56ca/scratchpad/m6-ann-spike/`
   (session scratchpad; its `README.md` has exact run commands, `results/results.jsonl` the raw records). The scratchpad
   is session-scoped, so treat this note as the durable record.
 - Engines: `sqlite-vec` 0.1.9 (crates.io, MIT OR Apache-2.0, via `rusqlite` 0.40.1 bundled) and `usearch` 2.26.0

@@ -25,7 +25,7 @@ import type { VolumeRootChanged } from '#lib/ipc/bindings.js'
  *    the new root refuses it.
  *
  * Idempotent, so two windows following one edit agree. A server root spelled
- * with a trailing slash (`sftp://ada@nas.local:22/`, as Rust mints a `/` root)
+ * with a trailing slash (`sftp://test_user_1@testnas.local:22/`, as Rust mints a `/` root)
  * matches the same root spelled without one.
  */
 export function pathAfterRootChange(path: string, change: VolumeRootChanged): string {

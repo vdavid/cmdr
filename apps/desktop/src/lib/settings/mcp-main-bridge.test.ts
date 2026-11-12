@@ -205,22 +205,22 @@ describe('MCP settings resource', () => {
   // The audit, pinned: `cmdr://settings` reaches a cloud provider, so no setting, today's or a new
   // one, gets a secret past it, whatever shape the value comes in. ❌ Never carve a setting out.
   const SECRET_SHAPED = [
-    { value: 'https://alice:hunter2@llm.example.com/v1', leaks: ['alice', 'hunter2'] },
+    { value: 'https://test_user_4:hunter2@llm.example.com/v1', leaks: ['test_user_4', 'hunter2'] },
     { value: 'https://llm.example.com/v1/gw-acct-991?api_key=q1w2e3r4', leaks: ['q1w2e3r4', 'gw-acct-991'] },
     { value: 'https://llm.example.com#tok3n', leaks: ['tok3n'] },
-    { value: 'smb://alice:hunter2@nas.local/share', leaks: ['alice', 'hunter2'] },
-    { value: 'alice:hunter2@llm.example.com', leaks: ['hunter2'] },
+    { value: 'smb://test_user_4:hunter2@testnas.local/share', leaks: ['test_user_4', 'hunter2'] },
+    { value: 'test_user_4:hunter2@llm.example.com', leaks: ['hunter2'] },
     { value: 'sk-ant-api03-AbCdEf123456', leaks: ['AbCdEf123456'] },
     { value: 'ghp_abcdefghijklmnop1234', leaks: ['abcdefghijklmnop1234'] },
     { value: 'Bearer 0a1b2c3d', leaks: ['0a1b2c3d'] },
     { value: 'eyJhbGciOiJI.eyJzdWIiOiIx.c2lnbmF0dXJl', leaks: ['c2lnbmF0dXJl'] },
     { value: 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2', leaks: ['a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2'] },
     { value: '-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXk\n', leaks: ['b3BlbnNzaC1rZXk'] },
-    { value: 'alice@example.com', leaks: ['alice@example.com'] },
+    { value: 'test_user_4@example.com', leaks: ['test_user_4@example.com'] },
     { value: '{"custom":{"model":"m","apiKey":"plainword"}}', leaks: ['plainword'] },
     {
-      value: '{"custom":{"model":"m","baseUrl":"https://alice:hunter2@llm.example.com/v1?key=zz9"}}',
-      leaks: ['alice', 'hunter2', 'zz9'],
+      value: '{"custom":{"model":"m","baseUrl":"https://test_user_4:hunter2@llm.example.com/v1?key=zz9"}}',
+      leaks: ['test_user_4', 'hunter2', 'zz9'],
     },
   ]
 
@@ -267,7 +267,7 @@ describe('MCP settings resource', () => {
       ['http://localhost:11434', 'http://localhost:11434'],
       [fireworksModel, fireworksModel],
       ['claude-sonnet-5-5', 'claude-sonnet-5-5'],
-      ['smb://nas.local/share', 'smb://nas.local/share'],
+      ['smb://testnas.local/share', 'smb://testnas.local/share'],
       ['/opt/homebrew/bin/adb', '/opt/homebrew/bin/adb'],
       ['YYYY-MM-DD HH:mm', 'YYYY-MM-DD HH:mm'],
     ]

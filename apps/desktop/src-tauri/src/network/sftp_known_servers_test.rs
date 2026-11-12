@@ -39,26 +39,26 @@ fn entries_for(host: &str) -> Vec<KnownSftpServer> {
 #[test]
 fn a_remembered_server_comes_back() {
     let host = host_for("remembered");
-    remember(server(&host, "ada"));
+    remember(server(&host, "test_user_1"));
 
     let found = entries_for(&host);
     assert_eq!(found.len(), 1);
-    assert_eq!(found[0].username, "ada");
+    assert_eq!(found[0].username, "test_user_1");
     assert_eq!(found[0].remote_root, "/srv/data");
 }
 
 #[test]
 fn connecting_again_updates_the_entry_rather_than_adding_one() {
     let host = host_for("updated");
-    remember(server(&host, "ada"));
-    let mut later = server(&host, "ada");
-    later.remote_root = "/home/ada".to_string();
+    remember(server(&host, "test_user_1"));
+    let mut later = server(&host, "test_user_1");
+    later.remote_root = "/home/test_user_1".to_string();
     later.last_connected_at = "2026-08-23T09:00:00Z".to_string();
     remember(later);
 
     let found = entries_for(&host);
     assert_eq!(found.len(), 1, "one server and one account is one entry");
-    assert_eq!(found[0].remote_root, "/home/ada");
+    assert_eq!(found[0].remote_root, "/home/test_user_1");
 }
 
 #[test]
@@ -67,12 +67,12 @@ fn two_accounts_on_one_server_are_two_entries() {
     // under the same paths, so collapsing them would show one server that opens
     // the wrong home directory half the time.
     let host = host_for("two-accounts");
-    remember(server(&host, "ada"));
-    remember(server(&host, "grace"));
+    remember(server(&host, "test_user_1"));
+    remember(server(&host, "test_user_2"));
 
     let mut usernames: Vec<String> = entries_for(&host).into_iter().map(|entry| entry.username).collect();
     usernames.sort();
-    assert_eq!(usernames, vec!["ada".to_string(), "grace".to_string()]);
+    assert_eq!(usernames, vec!["test_user_1".to_string(), "test_user_2".to_string()]);
 }
 
 #[test]
@@ -80,20 +80,24 @@ fn the_host_folds_case_and_the_account_does_not() {
     // DNS is case-insensitive; POSIX accounts are not. Same split as
     // `sftp_volume_id`, and a drift here would file one volume under two entries.
     let host = host_for("case");
-    remember(server(&host, "ada"));
-    remember(server(&host.to_uppercase(), "ada"));
+    remember(server(&host, "test_user_1"));
+    remember(server(&host.to_uppercase(), "test_user_1"));
     assert_eq!(entries_for(&host).len(), 1, "one server, however it was typed");
 
-    remember(server(&host, "Ada"));
-    assert_eq!(entries_for(&host).len(), 2, "`Ada` and `ada` may be two people");
+    remember(server(&host, "Test_user_1"));
+    assert_eq!(
+        entries_for(&host).len(),
+        2,
+        "`Test_user_1` and `test_user_1` may be two people"
+    );
 }
 
 #[test]
 fn a_port_is_part_of_the_identity() {
     // A jump box and a container on one machine are different servers.
     let host = host_for("ports");
-    remember(server(&host, "ada"));
-    let mut other = server(&host, "ada");
+    remember(server(&host, "test_user_1"));
+    let mut other = server(&host, "test_user_1");
     other.port = 2222;
     remember(other);
 
@@ -103,24 +107,24 @@ fn a_port_is_part_of_the_identity() {
 #[test]
 fn forgetting_answers_whether_anything_was_there() {
     let host = host_for("forget");
-    remember(server(&host, "ada"));
+    remember(server(&host, "test_user_1"));
 
-    assert!(forget(&host, 22, "ada"));
+    assert!(forget(&host, 22, "test_user_1"));
     assert!(entries_for(&host).is_empty());
-    assert!(!forget(&host, 22, "ada"), "a second forget has nothing to do");
+    assert!(!forget(&host, 22, "test_user_1"), "a second forget has nothing to do");
 }
 
 #[test]
 fn forgetting_one_account_leaves_the_other_alone() {
     let host = host_for("forget-one");
-    remember(server(&host, "ada"));
-    remember(server(&host, "grace"));
+    remember(server(&host, "test_user_1"));
+    remember(server(&host, "test_user_2"));
 
-    assert!(forget(&host, 22, "ada"));
+    assert!(forget(&host, 22, "test_user_1"));
 
     let found = entries_for(&host);
     assert_eq!(found.len(), 1);
-    assert_eq!(found[0].username, "grace");
+    assert_eq!(found[0].username, "test_user_2");
 }
 
 /// ❗ **A server saved before this setting existed still reconnects
@@ -134,10 +138,10 @@ fn a_server_saved_before_the_setting_existed_still_reconnects_automatically() {
     let stored = r#"{
       "knownSftpServers": [
         {
-          "host": "naspolya",
+          "host": "testnas",
           "port": 22,
-          "username": "ada",
-          "displayName": "Naspolya",
+          "username": "test_user_1",
+          "displayName": "Testnas",
           "remoteRoot": "/srv/data",
           "keyFile": null,
           "useAgent": true,
@@ -161,10 +165,10 @@ fn a_server_saved_before_start_folders_existed_lands_at_its_root() {
     let stored = r#"{
       "knownSftpServers": [
         {
-          "host": "naspolya",
+          "host": "testnas",
           "port": 22,
-          "username": "ada",
-          "displayName": "Naspolya",
+          "username": "test_user_1",
+          "displayName": "Testnas",
           "remoteRoot": "/srv/data",
           "keyFile": null,
           "useAgent": true,
@@ -180,7 +184,7 @@ fn a_server_saved_before_start_folders_existed_lands_at_its_root() {
 
 #[test]
 fn the_start_folder_round_trips_through_the_stored_file() {
-    let mut deeper = server("start-folder-round-trip.sftp-servers.test", "ada");
+    let mut deeper = server("start-folder-round-trip.sftp-servers.test", "test_user_1");
     deeper.start_folder = Some("/srv/data/photos".to_string());
     let store = KnownSftpServersStore {
         known_sftp_servers: vec![deeper],
@@ -200,22 +204,28 @@ fn the_start_folder_round_trips_through_the_stored_file() {
 #[test]
 fn finding_a_server_uses_the_same_identity_as_remembering_one() {
     let host = host_for("find");
-    remember(server(&host, "ada"));
+    remember(server(&host, "test_user_1"));
 
-    assert!(find(&host.to_uppercase(), 22, "ada").is_some(), "the host folds case");
-    assert!(find(&host, 22, "Ada").is_none(), "the account doesn't");
-    assert!(find(&host, 2222, "ada").is_none(), "the port is part of the identity");
+    assert!(
+        find(&host.to_uppercase(), 22, "test_user_1").is_some(),
+        "the host folds case"
+    );
+    assert!(find(&host, 22, "Test_user_1").is_none(), "the account doesn't");
+    assert!(
+        find(&host, 2222, "test_user_1").is_none(),
+        "the port is part of the identity"
+    );
 }
 
 // ── The label, and names that only repeat the address ────────────────
 
 #[test]
 fn an_unnamed_server_is_labeled_username_at_host() {
-    let mut unnamed = server("192.168.1.111", "david");
+    let mut unnamed = server("192.168.50.10", "test_user_3");
     unnamed.display_name = String::new();
-    assert_eq!(unnamed.label(), "david@192.168.1.111");
+    assert_eq!(unnamed.label(), "test_user_3@192.168.50.10");
 
-    let mut named = server("192.168.1.111", "david");
+    let mut named = server("192.168.50.10", "test_user_3");
     named.display_name = "NAS".to_string();
     assert_eq!(named.label(), "NAS");
 }
@@ -224,13 +234,13 @@ fn an_unnamed_server_is_labeled_username_at_host() {
 /// stops being its name, and nothing else about the entry moves.
 #[test]
 fn a_name_that_only_repeats_the_servers_address_is_cleared_on_load() {
-    let mut prod = server("192.168.1.111", "david");
-    prod.display_name = "sftp://david@192.168.1.111:22/share/ZFS18_DATA/naspi".to_string();
-    prod.remote_root = "/share/ZFS18_DATA/naspi/tmp".to_string();
-    let mut labeled = server("192.168.1.111", "grace");
+    let mut prod = server("192.168.50.10", "test_user_3");
+    prod.display_name = "sftp://test_user_3@192.168.50.10:22/share/ZFS1_DATA/testshare".to_string();
+    prod.remote_root = "/share/ZFS1_DATA/testshare/tmp".to_string();
+    let mut labeled = server("192.168.50.10", "test_user_2");
     labeled.display_name = "NAS".to_string();
-    let mut elsewhere = server("192.168.1.112", "david");
-    elsewhere.display_name = "sftp://david@192.168.1.111:22".to_string();
+    let mut elsewhere = server("192.168.1.112", "test_user_3");
+    elsewhere.display_name = "sftp://test_user_3@192.168.50.10:22".to_string();
     let mut store = KnownSftpServersStore {
         known_sftp_servers: vec![prod, labeled, elsewhere],
     };
@@ -241,11 +251,14 @@ fn a_name_that_only_repeats_the_servers_address_is_cleared_on_load() {
         panic!("three entries in, three out");
     };
     assert_eq!(prod.display_name, "");
-    assert_eq!(prod.label(), "david@192.168.1.111");
-    assert_eq!(prod.remote_root, "/share/ZFS18_DATA/naspi/tmp", "only the name moves");
+    assert_eq!(prod.label(), "test_user_3@192.168.50.10");
+    assert_eq!(
+        prod.remote_root, "/share/ZFS1_DATA/testshare/tmp",
+        "only the name moves"
+    );
     assert_eq!(labeled.display_name, "NAS", "a person's own label stays");
     assert_eq!(
-        elsewhere.display_name, "sftp://david@192.168.1.111:22",
+        elsewhere.display_name, "sftp://test_user_3@192.168.50.10:22",
         "another server's address is a label on this one"
     );
 }
@@ -253,12 +266,12 @@ fn a_name_that_only_repeats_the_servers_address_is_cleared_on_load() {
 #[test]
 fn the_account_at_host_spellings_are_cleared_and_the_port_still_counts() {
     for (name, cleared) in [
-        ("david@192.168.1.111", true),
-        ("david@192.168.1.111:22", true),
-        ("DAVID@192.168.1.111", false),
-        ("david@192.168.1.111:2222", false),
+        ("test_user_3@192.168.50.10", true),
+        ("test_user_3@192.168.50.10:22", true),
+        ("DAVID@192.168.50.10", false),
+        ("test_user_3@192.168.50.10:2222", false),
     ] {
-        let mut entry = server("192.168.1.111", "david");
+        let mut entry = server("192.168.50.10", "test_user_3");
         entry.display_name = name.to_string();
         let mut store = KnownSftpServersStore {
             known_sftp_servers: vec![entry],
@@ -269,8 +282,8 @@ fn the_account_at_host_spellings_are_cleared_and_the_port_still_counts() {
 
 #[test]
 fn a_host_typed_in_another_case_is_still_the_same_servers_address() {
-    let mut entry = server("NAS.local", "david");
-    entry.display_name = "sftp://david@nas.LOCAL:22/srv".to_string();
+    let mut entry = server("TESTNAS.local", "test_user_3");
+    entry.display_name = "sftp://test_user_3@testnas.LOCAL:22/srv".to_string();
     let mut store = KnownSftpServersStore {
         known_sftp_servers: vec![entry],
     };
@@ -283,16 +296,16 @@ fn a_host_typed_in_another_case_is_still_the_same_servers_address() {
 #[test]
 fn a_store_with_no_address_shaped_names_reports_nothing_cleared() {
     let mut store = KnownSftpServersStore {
-        known_sftp_servers: vec![server("nas.local", "ada")],
+        known_sftp_servers: vec![server("testnas.local", "test_user_1")],
     };
     assert_eq!(clear_address_shaped_names(&mut store), 0);
-    assert_eq!(store.known_sftp_servers[0].display_name, "nas.local");
+    assert_eq!(store.known_sftp_servers[0].display_name, "testnas.local");
 }
 
 /// The switch survives a round trip through the file, both ways.
 #[test]
 fn the_switch_round_trips_through_the_stored_file() {
-    let mut off = server("round-trip.sftp-servers.test", "ada");
+    let mut off = server("round-trip.sftp-servers.test", "test_user_1");
     off.auto_reconnect = false;
     let store = KnownSftpServersStore {
         known_sftp_servers: vec![off],
@@ -315,10 +328,10 @@ fn a_server_saved_before_pins_existed_is_not_pinned() {
     let stored = r#"{
       "knownSftpServers": [
         {
-          "host": "naspolya",
+          "host": "testnas",
           "port": 22,
-          "username": "ada",
-          "displayName": "Naspolya",
+          "username": "test_user_1",
+          "displayName": "Testnas",
           "remoteRoot": "/srv/data",
           "keyFile": null,
           "useAgent": true,
@@ -345,7 +358,7 @@ fn a_server_saved_before_pins_existed_is_not_pinned() {
 fn remembering_an_existing_server_carries_its_pin_across() {
     let host = host_for("pin-preserved");
 
-    let mut first = server(&host, "ada");
+    let mut first = server(&host, "test_user_1");
     first.pinned = true;
     remember(first);
 
@@ -357,14 +370,14 @@ fn remembering_an_existing_server_carries_its_pin_across() {
         for entry in store
             .known_sftp_servers
             .iter_mut()
-            .filter(|entry| same_server(entry, &host, 22, "ada"))
+            .filter(|entry| same_server(entry, &host, 22, "test_user_1"))
         {
             entry.pinned = false;
         }
     }
 
     // A later connect remembers the server again, pin flag and all.
-    let mut reconnected = server(&host, "ada");
+    let mut reconnected = server(&host, "test_user_1");
     reconnected.pinned = true;
     reconnected.display_name = "Renamed".to_string();
     remember(reconnected);
@@ -381,7 +394,7 @@ fn remembering_an_existing_server_carries_its_pin_across() {
 fn a_first_connect_pins_the_new_server() {
     let host = host_for("pin-on-first-connect");
 
-    let mut fresh = server(&host, "ada");
+    let mut fresh = server(&host, "test_user_1");
     fresh.pinned = true;
     remember(fresh);
 
@@ -392,20 +405,20 @@ fn a_first_connect_pins_the_new_server() {
 fn relocating_moves_the_entry_in_place_and_keeps_its_pin_and_history() {
     let old_host = host_for("relocate-from");
     let new_host = host_for("relocate-to");
-    let mut saved = server(&old_host, "ada");
+    let mut saved = server(&old_host, "test_user_1");
     saved.pinned = true;
     remember(saved);
-    let mut moved = server(&new_host, "ada");
+    let mut moved = server(&new_host, "test_user_1");
     moved.port = 2222;
     moved.pinned = false;
     moved.last_connected_at = "2026-10-10T00:00:00Z".to_string();
     moved.remote_root = "/srv/moved".to_string();
 
-    let outcome = relocate(&old_host, 22, "ada", moved);
+    let outcome = relocate(&old_host, 22, "test_user_1", moved);
 
     assert!(matches!(outcome, Relocation::Moved { .. }));
     assert!(entries_for(&old_host).is_empty(), "the old address is gone");
-    let found = find(&new_host, 2222, "ada").expect("the entry lives at the new address");
+    let found = find(&new_host, 2222, "test_user_1").expect("the entry lives at the new address");
     assert!(found.pinned, "the same server keeps its pin");
     assert_eq!(
         found.last_connected_at, "2026-08-22T10:00:00Z",
@@ -418,12 +431,12 @@ fn relocating_moves_the_entry_in_place_and_keeps_its_pin_and_history() {
 fn relocating_onto_an_address_another_entry_holds_is_refused_and_writes_nothing() {
     let old_host = host_for("relocate-taken-from");
     let taken_host = host_for("relocate-taken-to");
-    remember(server(&old_host, "ada"));
-    let mut other = server(&taken_host, "ada");
+    remember(server(&old_host, "test_user_1"));
+    let mut other = server(&taken_host, "test_user_1");
     other.display_name = "The other one".to_string();
     remember(other);
 
-    let outcome = relocate(&old_host, 22, "ada", server(&taken_host, "ada"));
+    let outcome = relocate(&old_host, 22, "test_user_1", server(&taken_host, "test_user_1"));
 
     match outcome {
         Relocation::Taken(holder) => assert_eq!(holder.display_name, "The other one"),
@@ -437,7 +450,12 @@ fn relocating_onto_an_address_another_entry_holds_is_refused_and_writes_nothing(
 fn relocating_a_server_nobody_saved_answers_not_found() {
     let host = host_for("relocate-missing");
 
-    let outcome = relocate(&host, 22, "ada", server(&host_for("relocate-missing-to"), "ada"));
+    let outcome = relocate(
+        &host,
+        22,
+        "test_user_1",
+        server(&host_for("relocate-missing-to"), "test_user_1"),
+    );
 
     assert!(matches!(outcome, Relocation::NotFound));
     assert!(entries_for(&host_for("relocate-missing-to")).is_empty());

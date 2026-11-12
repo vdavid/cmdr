@@ -8,7 +8,7 @@
  * reads the endpoint out of all of them, and the sheet dials whatever protocol
  * the person selected. What the address names only feeds `addressLooksLike`,
  * a warning under the field. Typing into the address once flipped the toggle:
- * `sven@192.168.0.153`, meant for an SMB NAS, read as SFTP and dialed SSH
+ * `test_user_6@192.168.50.20`, meant for an SMB NAS, read as SFTP and dialed SSH
  * without anyone clicking SFTP (cmdr-reports#8).
  *
  * ❗ **Pure, and the example table in `address-parser.test.ts` IS the contract**:
@@ -174,7 +174,7 @@ export function addressLooksLike(input: string, selected: ServerProtocol): Serve
  * A pasted `ssh` invocation: its `-p` flag, and its `[user@]host` target.
  *
  * The target is re-read through the `ssh://` scheme rather than as a bare
- * string, so `ssh nas.local` lands on SFTP instead of falling through to the
+ * string, so `ssh testnas.local` lands on SFTP instead of falling through to the
  * bare-host reading. Flags other than `-p` are dropped: `-i`, `-J`, and friends
  * describe a transport this app builds for itself.
  */

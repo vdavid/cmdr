@@ -176,11 +176,11 @@ async fn three_sources_two_renamed_one_kept_land_named_on_every_native_start() {
         let folder = tmp.join("downloads/scans");
         write(&folder.join("page.png"), b"page");
         std::fs::create_dir_all(folder.join("empty")).expect("an empty subfolder");
-        let dest = tmp.join("invoices paid");
+        let dest = tmp.join("invoices");
         std::fs::create_dir_all(&dest).expect("dest");
 
         let leaves = names(&[
-            (&invoice, "2026-09-27 OpenAI invoice Rymd.pdf"),
+            (&invoice, "2026-09-27 OpenAI invoice Testco.pdf"),
             (&folder, "2026-09 scans"),
         ]);
         let events = Arc::new(CollectorEventSink::new());
@@ -192,11 +192,11 @@ async fn three_sources_two_renamed_one_kept_land_named_on_every_native_start() {
 
         assert_eq!(
             names_in(&dest),
-            vec!["2026-09 scans", "2026-09-27 OpenAI invoice Rymd.pdf", "receipt.pdf"],
+            vec!["2026-09 scans", "2026-09-27 OpenAI invoice Testco.pdf", "receipt.pdf"],
             "{via:?}"
         );
         assert_eq!(
-            std::fs::read(dest.join("2026-09-27 OpenAI invoice Rymd.pdf")).expect("named"),
+            std::fs::read(dest.join("2026-09-27 OpenAI invoice Testco.pdf")).expect("named"),
             b"invoice"
         );
         assert_eq!(

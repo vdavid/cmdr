@@ -47,12 +47,12 @@ fn mount_url_percent_encodes_reserved_characters_in_share_names() {
 #[test]
 fn mount_url_leaves_scheme_and_separators_intact() {
     assert_eq!(
-        build_smb_mount_url("192.168.1.111", "naspi", 445),
-        "smb://192.168.1.111/naspi"
+        build_smb_mount_url("192.168.50.10", "testshare", 445),
+        "smb://192.168.50.10/testshare"
     );
     assert_eq!(
-        build_smb_mount_url("naspolya.local", "naspi", 1445),
-        "smb://naspolya.local:1445/naspi"
+        build_smb_mount_url("testnas.local", "testshare", 1445),
+        "smb://testnas.local:1445/testshare"
     );
 }
 
@@ -103,8 +103,8 @@ fn mount_url_brackets_ipv6_literals() {
 /// `Share "data" not found on "observermch"`).
 #[test]
 fn every_netfs_code_maps_to_typed_data() {
-    let share = || "naspi".to_string();
-    let server = || "naspolya".to_string();
+    let share = || "testshare".to_string();
+    let server = || "testnas".to_string();
     let cases = [
         (USER_CANCELLED_ERR, MountError::Cancelled { share: share() }),
         (
@@ -147,7 +147,7 @@ fn every_netfs_code_maps_to_typed_data() {
         ),
     ];
     for (code, expected) in cases {
-        assert_eq!(error_from_code(code, "naspi", "naspolya"), expected, "code {code}");
+        assert_eq!(error_from_code(code, "testshare", "testnas"), expected, "code {code}");
     }
 }
 
@@ -160,25 +160,25 @@ fn every_netfs_code_maps_to_typed_data() {
 #[test]
 fn test_netauth_error_codes() {
     assert_eq!(
-        error_from_code(-6600, "naspi", "naspolya"),
+        error_from_code(-6600, "testshare", "testnas"),
         MountError::AuthFailed {
-            server: "naspolya".to_string()
+            server: "testnas".to_string()
         },
         "kNetAuthErrorInternal (-6600)"
     );
     assert_eq!(
-        error_from_code(-6004, "naspi", "naspolya"),
+        error_from_code(-6004, "testshare", "testnas"),
         MountError::AuthRequired {
-            server: "naspolya".to_string(),
-            share: "naspi".to_string()
+            server: "testnas".to_string(),
+            share: "testshare".to_string()
         },
         "kNetAuthErrorGuestNotSupported (-6004)"
     );
     assert_eq!(
-        error_from_code(-6003, "naspi", "naspolya"),
+        error_from_code(-6003, "testshare", "testnas"),
         MountError::ShareNotFound {
-            server: "naspolya".to_string(),
-            share: "naspi".to_string()
+            server: "testnas".to_string(),
+            share: "testshare".to_string()
         },
         "kNetAuthErrorNoSharesAvailable (-6003)"
     );
@@ -188,10 +188,10 @@ fn test_netauth_error_codes() {
     // login form). It's `MountRefused`, which the pane words as the server turning
     // the share down.
     assert_eq!(
-        error_from_code(-6602, "naspi", "naspolya"),
+        error_from_code(-6602, "testshare", "testnas"),
         MountError::MountRefused {
-            server: "naspolya".to_string(),
-            share: "naspi".to_string()
+            server: "testnas".to_string(),
+            share: "testshare".to_string()
         },
         "kNetAuthErrorMountFailed (-6602)"
     );
@@ -579,12 +579,12 @@ fn sighting(path: &str, mount: Option<SmbMountInfo>, reported_by_netfs: bool) ->
     }
 }
 
-fn naspolya() -> NetworkHost {
+fn testnas() -> NetworkHost {
     NetworkHost {
-        id: "naspolya-smb-tcp-local".to_string(),
-        name: "Naspolya".to_string(),
-        hostname: Some("Naspolya.local".to_string()),
-        ip_address: Some("192.168.1.111".to_string()),
+        id: "testnas-smb-tcp-local".to_string(),
+        name: "Testnas".to_string(),
+        hostname: Some("Testnas.local".to_string()),
+        ip_address: Some("192.168.50.10".to_string()),
         port: 445,
         source: crate::network::HostSource::Discovered,
     }
@@ -654,7 +654,7 @@ fn a_netfs_success_lands_where_the_share_is_mounted() {
 #[test]
 fn an_inferred_path_counts_only_for_the_same_server_and_port() {
     let public = MountTarget {
-        server: "192.168.1.111",
+        server: "192.168.50.10",
         share: "public",
         port: 445,
     };
@@ -663,14 +663,14 @@ fn an_inferred_path_counts_only_for_the_same_server_and_port() {
         public,
         [
             sighting("/Volumes/public", smb_mount("raspberrypi.local", "public", 445), false),
-            sighting("/Volumes/public-1", smb_mount("192.168.1.111", "public", 10480), false),
+            sighting("/Volumes/public-1", smb_mount("192.168.50.10", "public", 10480), false),
             sighting(
                 "/Volumes/public-2",
-                smb_mount("Naspolya._smb._tcp.local", "public", 445),
+                smb_mount("Testnas._smb._tcp.local", "public", 445),
                 false,
             ),
         ],
-        &[naspolya()],
+        &[testnas()],
     );
     assert_eq!(result.expect("mounted").mount_path, "/Volumes/public-2");
 
@@ -682,7 +682,7 @@ fn an_inferred_path_counts_only_for_the_same_server_and_port() {
             smb_mount("raspberrypi.local", "public", 445),
             false,
         )],
-        &[naspolya()],
+        &[testnas()],
     );
     assert!(
         matches!(result, Err(MountError::MountMissing { .. })),
@@ -697,7 +697,7 @@ fn an_inferred_path_counts_only_for_the_same_server_and_port() {
 #[test]
 fn the_path_netfs_reports_speaks_for_the_server_but_not_for_the_share() {
     let public = MountTarget {
-        server: "192.168.1.111",
+        server: "192.168.50.10",
         share: "public",
         port: 445,
     };
@@ -706,7 +706,7 @@ fn the_path_netfs_reports_speaks_for_the_server_but_not_for_the_share() {
         public,
         [sighting(
             "/Volumes/public",
-            smb_mount("Naspolya._smb._tcp.local", "public", 445),
+            smb_mount("Testnas._smb._tcp.local", "public", 445),
             true,
         )],
         &[],
@@ -718,7 +718,7 @@ fn the_path_netfs_reports_speaks_for_the_server_but_not_for_the_share() {
         public,
         [sighting(
             "/Volumes/public",
-            smb_mount("192.168.1.111", "private", 445),
+            smb_mount("192.168.50.10", "private", 445),
             true,
         )],
         &[],
@@ -787,7 +787,7 @@ fn a_host_disconnect_folds_normalization_and_case() {
         &[]
     ));
     assert!(!crate::network::server_identity::mount_is_from(
-        &smb_mount("naspolya", "s", 445).unwrap(),
+        &smb_mount("testnas", "s", 445).unwrap(),
         &[on("raspberrypi")],
         &[]
     ));
@@ -841,7 +841,12 @@ fn a_mount_gets_its_own_session_when_the_machine_has_another_servers_or_accounts
 
     assert!(needs_own_session(target, None, &other_port, &[]));
     assert!(needs_own_session(target, None, &same_server_other_account, &[]));
-    assert!(needs_own_session(target, Some("ada"), &same_server_same_guest, &[]));
+    assert!(needs_own_session(
+        target,
+        Some("test_user_1"),
+        &same_server_same_guest,
+        &[]
+    ));
     assert!(
         !needs_own_session(target, None, &same_server_same_guest, &[]),
         "the same guest session is fine to share"

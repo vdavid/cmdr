@@ -53,7 +53,7 @@ describe('getPaneTintBg with no settings configured', () => {
   it('returns null for every kind when all tints are "none"', () => {
     initVolumeTints()
     expect(getPaneTintBg('root', 'apfs', 'main_volume')).toBeNull()
-    expect(getPaneTintBg('volumesnaspi', 'smbfs', 'network')).toBeNull()
+    expect(getPaneTintBg('volumestestshare', 'smbfs', 'network')).toBeNull()
     expect(getPaneTintBg('mtp-1:1', undefined, 'mobile_device')).toBeNull()
   })
 
@@ -83,7 +83,7 @@ describe('getPaneTintBg with configured tints', () => {
     settings.set('appearance.tintMtp', 'purple')
     initVolumeTints()
     expect(getPaneTintBg('root', 'apfs', 'main_volume')).toContain('var(--color-tint-red)')
-    expect(getPaneTintBg('volumesnaspi', 'smbfs', 'network')).toContain('var(--color-tint-green)')
+    expect(getPaneTintBg('volumestestshare', 'smbfs', 'network')).toContain('var(--color-tint-green)')
     expect(getPaneTintBg('mtp-1:1', undefined, 'mobile_device')).toContain('var(--color-tint-purple)')
   })
 })

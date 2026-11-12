@@ -34,11 +34,11 @@ fn entries_for(url: &str) -> Vec<KnownWebdavServer> {
 #[test]
 fn a_remembered_server_comes_back() {
     let url = url_for("remembered");
-    remember(server(&url, "ada"));
+    remember(server(&url, "test_user_1"));
 
     let found = entries_for(&url);
     assert_eq!(found.len(), 1);
-    assert_eq!(found[0].username, "ada");
+    assert_eq!(found[0].username, "test_user_1");
     assert_eq!(found[0].remote_root, "/");
 }
 
@@ -50,7 +50,7 @@ fn a_server_saved_before_start_folders_existed_lands_at_its_root() {
       "knownWebdavServers": [
         {
           "url": "https://dav.example.test/dav/",
-          "username": "ada",
+          "username": "test_user_1",
           "displayName": "Docs",
           "remoteRoot": "/",
           "lastConnectedAt": "2026-09-01T10:00:00Z"
@@ -68,20 +68,28 @@ fn a_server_saved_before_start_folders_existed_lands_at_its_root() {
 #[test]
 fn finding_a_server_uses_the_same_identity_as_remembering_one() {
     let url = url_for("find");
-    remember(server(&url, "ada"));
+    remember(server(&url, "test_user_1"));
 
     assert!(
-        find(&url.trim_end_matches('/').to_uppercase().replace("/DAV", "/dav"), "ada").is_some(),
+        find(
+            &url.trim_end_matches('/').to_uppercase().replace("/DAV", "/dav"),
+            "test_user_1"
+        )
+        .is_some(),
         "the scheme and host fold case, and the trailing slash is optional"
     );
-    assert!(find(&url, "Ada").is_none(), "the account doesn't fold");
+    assert!(find(&url, "Test_user_1").is_none(), "the account doesn't fold");
 }
 
 #[test]
 fn an_unnamed_server_is_labeled_username_at_host_off_its_url() {
-    let mut unnamed = server("https://dav.example.test:8443/remote.php/dav/", "ada");
+    let mut unnamed = server("https://dav.example.test:8443/remote.php/dav/", "test_user_1");
     unnamed.display_name = String::new();
-    assert_eq!(unnamed.label(), "ada@dav.example.test", "no scheme, port, or path");
+    assert_eq!(
+        unnamed.label(),
+        "test_user_1@dav.example.test",
+        "no scheme, port, or path"
+    );
 }
 
 /// The URL an unnamed server was saved under stops being its name; anything that
@@ -93,12 +101,12 @@ fn a_name_that_only_repeats_the_servers_url_is_cleared_on_load() {
         ("https://dav.example.test/remote.php/dav/", true),
         ("https://dav.example.test", true),
         ("HTTPS://DAV.example.test/remote.php/dav", true),
-        ("ada@dav.example.test", true),
+        ("test_user_1@dav.example.test", true),
         ("https://other.example.test/remote.php/dav/", false),
         ("http://dav.example.test/remote.php/dav/", false),
         ("Docs", false),
     ] {
-        let mut entry = server(url, "ada");
+        let mut entry = server(url, "test_user_1");
         entry.display_name = name.to_string();
         let mut store = KnownWebdavServersStore {
             known_webdav_servers: vec![entry],
@@ -110,8 +118,8 @@ fn a_name_that_only_repeats_the_servers_url_is_cleared_on_load() {
 #[test]
 fn connecting_again_updates_the_entry_rather_than_adding_one() {
     let url = url_for("updated");
-    remember(server(&url, "ada"));
-    let mut later = server(&url, "ada");
+    remember(server(&url, "test_user_1"));
+    let mut later = server(&url, "test_user_1");
     later.remote_root = "/Photos".to_string();
     later.last_connected_at = "2026-09-02T09:00:00Z".to_string();
     remember(later);
@@ -127,12 +135,12 @@ fn two_accounts_on_one_server_are_two_entries() {
     // under the same paths, so collapsing them would show one server that opens
     // the wrong home directory half the time.
     let url = url_for("two-accounts");
-    remember(server(&url, "ada"));
-    remember(server(&url, "grace"));
+    remember(server(&url, "test_user_1"));
+    remember(server(&url, "test_user_2"));
 
     let mut usernames: Vec<String> = entries_for(&url).into_iter().map(|entry| entry.username).collect();
     usernames.sort();
-    assert_eq!(usernames, vec!["ada".to_string(), "grace".to_string()]);
+    assert_eq!(usernames, vec!["test_user_1".to_string(), "test_user_2".to_string()]);
 }
 
 #[test]
@@ -140,8 +148,8 @@ fn a_trailing_slash_is_not_a_different_server() {
     // A user types the same server with and without its trailing slash on two
     // days; that is one entry, not two.
     let url = url_for("slash");
-    remember(server(url.trim_end_matches('/'), "ada"));
-    remember(server(&url, "ada"));
+    remember(server(url.trim_end_matches('/'), "test_user_1"));
+    remember(server(&url, "test_user_1"));
 
     assert_eq!(entries_for(&url).len(), 1, "one server, however it was typed");
 }
@@ -151,12 +159,16 @@ fn the_host_folds_case_and_the_account_does_not() {
     // DNS is case-insensitive; an account may not be. Same split as
     // `webdav_volume_id`, and a drift here would file one volume under two entries.
     let url = url_for("case");
-    remember(server(&url, "ada"));
-    remember(server(&url.replace("case.webdav", "CASE.WEBDAV"), "ada"));
+    remember(server(&url, "test_user_1"));
+    remember(server(&url.replace("case.webdav", "CASE.WEBDAV"), "test_user_1"));
     assert_eq!(entries_for(&url).len(), 1, "one server, however its host was typed");
 
-    remember(server(&url, "Ada"));
-    assert_eq!(entries_for(&url).len(), 2, "`Ada` and `ada` may be two people");
+    remember(server(&url, "Test_user_1"));
+    assert_eq!(
+        entries_for(&url).len(),
+        2,
+        "`Test_user_1` and `test_user_1` may be two people"
+    );
 }
 
 #[test]
@@ -164,8 +176,8 @@ fn the_path_is_part_of_the_identity() {
     // Two DAV roots on one host are two servers: Nextcloud's `/remote.php/dav/`
     // and an Apache `mod_dav` on `/share/` can sit behind one hostname.
     let url = url_for("paths");
-    remember(server(&url, "ada"));
-    remember(server(&format!("{url}other/"), "ada"));
+    remember(server(&url, "test_user_1"));
+    remember(server(&format!("{url}other/"), "test_user_1"));
 
     assert_eq!(entries_for(&url).len(), 1);
     assert_eq!(entries_for(&format!("{url}other/")).len(), 1);
@@ -174,24 +186,24 @@ fn the_path_is_part_of_the_identity() {
 #[test]
 fn forgetting_answers_whether_anything_was_there() {
     let url = url_for("forget");
-    remember(server(&url, "ada"));
+    remember(server(&url, "test_user_1"));
 
-    assert!(forget(&url, "ada"));
+    assert!(forget(&url, "test_user_1"));
     assert!(entries_for(&url).is_empty());
-    assert!(!forget(&url, "ada"), "a second forget has nothing to do");
+    assert!(!forget(&url, "test_user_1"), "a second forget has nothing to do");
 }
 
 #[test]
 fn forgetting_one_account_leaves_the_other_alone() {
     let url = url_for("forget-one");
-    remember(server(&url, "ada"));
-    remember(server(&url, "grace"));
+    remember(server(&url, "test_user_1"));
+    remember(server(&url, "test_user_2"));
 
-    assert!(forget(&url, "ada"));
+    assert!(forget(&url, "test_user_1"));
 
     let found = entries_for(&url);
     assert_eq!(found.len(), 1);
-    assert_eq!(found[0].username, "grace");
+    assert_eq!(found[0].username, "test_user_2");
 }
 
 #[test]
@@ -215,7 +227,7 @@ fn a_server_saved_before_the_setting_existed_still_reconnects_automatically() {
       "knownWebdavServers": [
         {
           "url": "https://dav.example.test/dav/",
-          "username": "ada",
+          "username": "test_user_1",
           "displayName": "Example",
           "remoteRoot": "/",
           "lastConnectedAt": "2026-09-01T10:00:00Z"
@@ -234,7 +246,7 @@ fn a_server_saved_before_the_setting_existed_still_reconnects_automatically() {
 /// The switch survives a round trip through the file, both ways.
 #[test]
 fn the_switch_round_trips_through_the_stored_file() {
-    let mut off = server("https://round-trip.webdav-servers.test/dav/", "ada");
+    let mut off = server("https://round-trip.webdav-servers.test/dav/", "test_user_1");
     off.auto_reconnect = false;
     let store = KnownWebdavServersStore {
         known_webdav_servers: vec![off],
@@ -257,8 +269,8 @@ fn a_server_saved_before_pins_existed_is_not_pinned() {
     let stored = r#"{
       "knownWebdavServers": [
         {
-          "url": "https://nextcloud.example/remote.php/dav/files/ada/",
-          "username": "ada",
+          "url": "https://nextcloud.example/remote.php/dav/files/test_user_1/",
+          "username": "test_user_1",
           "displayName": "Nextcloud",
           "remoteRoot": "/",
           "autoReconnect": true,
@@ -284,7 +296,7 @@ fn a_server_saved_before_pins_existed_is_not_pinned() {
 fn remembering_an_existing_server_carries_its_pin_across() {
     let url = url_for("pin-preserved");
 
-    let mut first = server(&url, "ada");
+    let mut first = server(&url, "test_user_1");
     first.pinned = true;
     remember(first);
 
@@ -297,14 +309,14 @@ fn remembering_an_existing_server_carries_its_pin_across() {
         for entry in store
             .known_webdav_servers
             .iter_mut()
-            .filter(|entry| same_server(entry, &normalized, "ada"))
+            .filter(|entry| same_server(entry, &normalized, "test_user_1"))
         {
             entry.pinned = false;
         }
     }
 
     // A later connect remembers the server again, pin flag and all.
-    let mut reconnected = server(&url, "ada");
+    let mut reconnected = server(&url, "test_user_1");
     reconnected.pinned = true;
     reconnected.display_name = "Renamed".to_string();
     remember(reconnected);
@@ -321,7 +333,7 @@ fn remembering_an_existing_server_carries_its_pin_across() {
 fn a_first_connect_pins_the_new_server() {
     let url = url_for("pin-on-first-connect");
 
-    let mut fresh = server(&url, "ada");
+    let mut fresh = server(&url, "test_user_1");
     fresh.pinned = true;
     remember(fresh);
 
@@ -332,18 +344,18 @@ fn a_first_connect_pins_the_new_server() {
 fn relocating_moves_the_entry_in_place_and_keeps_its_pin_and_history() {
     let old_url = url_for("relocate-from");
     let new_url = "http://relocate-to.webdav-servers.test:8080/remote.php/dav/";
-    let mut saved = server(&old_url, "ada");
+    let mut saved = server(&old_url, "test_user_1");
     saved.pinned = true;
     remember(saved);
-    let mut moved = server(new_url, "ada");
+    let mut moved = server(new_url, "test_user_1");
     moved.last_connected_at = "2026-10-10T00:00:00Z".to_string();
     moved.remote_root = "/Photos".to_string();
 
-    let outcome = relocate(&old_url, "ada", moved);
+    let outcome = relocate(&old_url, "test_user_1", moved);
 
     assert!(matches!(outcome, Relocation::Moved { .. }));
     assert!(entries_for(&old_url).is_empty(), "the old URL is gone");
-    let found = find(new_url, "ada").expect("the entry lives at the new URL");
+    let found = find(new_url, "test_user_1").expect("the entry lives at the new URL");
     assert!(found.pinned, "the same server keeps its pin");
     assert_eq!(found.last_connected_at, "2026-09-01T10:00:00Z");
     assert_eq!(found.remote_root, "/Photos", "the edit's own fields land");
@@ -355,13 +367,13 @@ fn relocating_moves_the_entry_in_place_and_keeps_its_pin_and_history() {
 fn relocating_onto_another_entrys_volume_id_is_refused() {
     let old_url = url_for("relocate-id-from");
     let holder_url = "https://relocate-id-to.webdav-servers.test/dav/";
-    remember(server(&old_url, "ada"));
-    remember(server(holder_url, "ada"));
+    remember(server(&old_url, "test_user_1"));
+    remember(server(holder_url, "test_user_1"));
 
     let outcome = relocate(
         &old_url,
-        "ada",
-        server("https://relocate-id-to.webdav-servers.test/other/", "ada"),
+        "test_user_1",
+        server("https://relocate-id-to.webdav-servers.test/other/", "test_user_1"),
     );
 
     assert!(matches!(outcome, Relocation::Taken(holder) if holder.url == holder_url));
@@ -372,8 +384,8 @@ fn relocating_onto_another_entrys_volume_id_is_refused() {
 fn relocating_a_server_nobody_saved_answers_not_found() {
     let outcome = relocate(
         &url_for("relocate-missing"),
-        "ada",
-        server(&url_for("relocate-missing-to"), "ada"),
+        "test_user_1",
+        server(&url_for("relocate-missing-to"), "test_user_1"),
     );
 
     assert!(matches!(outcome, Relocation::NotFound));

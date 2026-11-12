@@ -124,9 +124,9 @@ mod tests {
     /// carries its length only.
     #[test]
     fn the_selection_request_logs_its_length_not_its_words() {
-        let line = selection_request_for_log("photos of anna from the kovacs wedding", 212, 4_096);
-        assert!(!line.contains("anna"), "{line}");
-        assert!(!line.contains("kovacs"), "{line}");
+        let line = selection_request_for_log("photos of test from the person wedding", 212, 4_096);
+        assert!(!line.contains("test"), "{line}");
+        assert!(!line.contains("person"), "{line}");
         assert!(line.contains("38 chars"), "{line}");
         assert!(line.contains("sample_count=212"), "{line}");
     }

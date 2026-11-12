@@ -135,12 +135,12 @@ fn a_walked_entry_and_its_arena_row_get_the_same_verdict() {
         }),
     ];
     let files = [
-        BothWays::file("/Users/alice/Q1-report.pdf", Some(2_000_000), Some(6_000)),
-        BothWays::file("/Users/alice/notes.txt", Some(500), Some(5_000)),
-        BothWays::dir("/Users/alice/Documents", Some(1_500)),
-        BothWays::file("/Volumes/naspi/photos/holiday.jpg", None, None),
+        BothWays::file("/Users/test_user_4/Q1-report.pdf", Some(2_000_000), Some(6_000)),
+        BothWays::file("/Users/test_user_4/notes.txt", Some(500), Some(5_000)),
+        BothWays::dir("/Users/test_user_4/Documents", Some(1_500)),
+        BothWays::file("/Volumes/testshare/photos/holiday.jpg", None, None),
         // The decomposed form APFS stores, which is what both walks read back.
-        BothWays::file("/Users/alice/cafe\u{301}.txt", Some(10), Some(10_000)),
+        BothWays::file("/Users/test_user_4/cafe\u{301}.txt", Some(10), Some(10_000)),
     ];
 
     for (label, narrow) in cases {
@@ -179,7 +179,7 @@ fn an_accented_name_matches_the_same_way_walked_or_indexed() {
         assert!(
             matches_walked(
                 &compiled,
-                &covered(&format!("/Users/alice/{name}"), false, Some(10), Some(10))
+                &covered(&format!("/Users/test_user_4/{name}"), false, Some(10), Some(10))
             ),
             "{name:?}"
         );
@@ -189,13 +189,13 @@ fn an_accented_name_matches_the_same_way_walked_or_indexed() {
 #[test]
 fn a_walked_entry_matches_on_its_own_name_not_its_path() {
     let mut q = query();
-    q.name_pattern = Some("alice".to_string());
+    q.name_pattern = Some("test_user_4".to_string());
     let compiled = compile(&q);
 
-    // "alice" is a directory on the way to the file, not part of its name.
+    // "test_user_4" is a directory on the way to the file, not part of its name.
     assert!(!matches_walked(
         &compiled,
-        &covered("/Users/alice/notes.txt", false, Some(1), Some(1))
+        &covered("/Users/test_user_4/notes.txt", false, Some(1), Some(1))
     ));
 }
 
@@ -204,9 +204,9 @@ fn a_path_with_no_last_component_yields_the_empty_name() {
     // What the index would store for it too (`insert_visitor`'s `unwrap_or_default`).
     assert_eq!(covered_name(Path::new("/")), "");
     assert_eq!(covered_name(Path::new("")), "");
-    assert_eq!(covered_name(Path::new("/Users/alice/notes.txt")), "notes.txt");
+    assert_eq!(covered_name(Path::new("/Users/test_user_4/notes.txt")), "notes.txt");
     // A trailing separator doesn't hide the name.
-    assert_eq!(covered_name(Path::new("/Users/alice/")), "alice");
+    assert_eq!(covered_name(Path::new("/Users/test_user_4/")), "test_user_4");
 }
 
 #[test]
@@ -220,6 +220,6 @@ fn a_walked_directory_ignores_size_bounds_just_as_an_arena_row_does() {
 
     assert!(matches_walked(
         &compiled,
-        &covered("/Users/alice/Documents", true, Some(4_096), Some(1))
+        &covered("/Users/test_user_4/Documents", true, Some(4_096), Some(1))
     ));
 }

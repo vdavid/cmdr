@@ -14,16 +14,16 @@
       "shown": "/"
     },
     {
-      "path": "/Users/ada",
+      "path": "/Users/test_user_1",
       "flavor": "posix",
       "kind": "posix",
       "root": "/",
-      "normalized": "/Users/ada",
+      "normalized": "/Users/test_user_1",
       "isRoot": false,
       "parent": "/Users",
-      "basename": "ada",
-      "segments": ["Users", "ada"],
-      "shown": "/Users/ada"
+      "basename": "test_user_1",
+      "segments": ["Users", "test_user_1"],
+      "shown": "/Users/test_user_1"
     },
     {
       "path": "/Users",
@@ -38,16 +38,16 @@
       "shown": "/Users"
     },
     {
-      "path": "/Users/ada/",
+      "path": "/Users/test_user_1/",
       "flavor": "posix",
       "kind": "posix",
       "root": "/",
-      "normalized": "/Users/ada",
+      "normalized": "/Users/test_user_1",
       "isRoot": false,
       "parent": "/Users",
-      "basename": "ada",
-      "segments": ["Users", "ada"],
-      "shown": "/Users/ada/"
+      "basename": "test_user_1",
+      "segments": ["Users", "test_user_1"],
+      "shown": "/Users/test_user_1/"
     },
     {
       "path": "/a/./b/../c",
@@ -122,16 +122,16 @@
       "shown": "/C:"
     },
     {
-      "path": "/Users/ada/a\\b",
+      "path": "/Users/test_user_1/a\\b",
       "flavor": "posix",
       "kind": "posix",
       "root": "/",
-      "normalized": "/Users/ada/a\\b",
+      "normalized": "/Users/test_user_1/a\\b",
       "isRoot": false,
-      "parent": "/Users/ada",
+      "parent": "/Users/test_user_1",
       "basename": "a\\b",
-      "segments": ["Users", "ada", "a\\b"],
-      "shown": "/Users/ada/a\\b"
+      "segments": ["Users", "test_user_1", "a\\b"],
+      "shown": "/Users/test_user_1/a\\b"
     },
     {
       "path": "C:/Users",
@@ -230,16 +230,16 @@
       "shown": "mtp://dev/65537/Music"
     },
     {
-      "path": "sftp://ada@nas.local:22/",
+      "path": "sftp://test_user_1@testnas.local:22/",
       "flavor": "posix",
       "kind": "scheme",
       "root": null,
-      "normalized": "sftp://ada@nas.local:22/",
+      "normalized": "sftp://test_user_1@testnas.local:22/",
       "isRoot": null,
-      "parent": "sftp://ada@nas.local:22",
+      "parent": "sftp://test_user_1@testnas.local:22",
       "basename": "",
       "segments": null,
-      "shown": "sftp://ada@nas.local:22/"
+      "shown": "sftp://test_user_1@testnas.local:22/"
     },
     {
       "path": "smb://host/share/dir",
@@ -291,28 +291,28 @@
       "shown": "C:\\x"
     },
     {
-      "path": "C:/Users/ada",
+      "path": "C:/Users/test_user_1",
       "flavor": "windows",
       "kind": "drive",
       "root": "C:/",
-      "normalized": "C:/Users/ada",
+      "normalized": "C:/Users/test_user_1",
       "isRoot": false,
       "parent": "C:/Users",
-      "basename": "ada",
-      "segments": ["Users", "ada"],
-      "shown": "C:\\Users\\ada"
+      "basename": "test_user_1",
+      "segments": ["Users", "test_user_1"],
+      "shown": "C:\\Users\\test_user_1"
     },
     {
-      "path": "C:/Users/ada/",
+      "path": "C:/Users/test_user_1/",
       "flavor": "windows",
       "kind": "drive",
       "root": "C:/",
-      "normalized": "C:/Users/ada",
+      "normalized": "C:/Users/test_user_1",
       "isRoot": false,
       "parent": "C:/Users",
-      "basename": "ada",
-      "segments": ["Users", "ada"],
-      "shown": "C:\\Users\\ada"
+      "basename": "test_user_1",
+      "segments": ["Users", "test_user_1"],
+      "shown": "C:\\Users\\test_user_1"
     },
     {
       "path": "C:/a//b/./c/..",
@@ -531,7 +531,7 @@
       "shown": "/"
     },
     {
-      "path": "/Users/ada",
+      "path": "/Users/test_user_1",
       "flavor": "windows",
       "kind": null,
       "root": null,
@@ -540,7 +540,7 @@
       "parent": null,
       "basename": null,
       "segments": null,
-      "shown": "/Users/ada"
+      "shown": "/Users/test_user_1"
     },
     {
       "path": "",
@@ -555,30 +555,34 @@
       "shown": ""
     },
     {
-      "path": "sftp://ada@nas.local:22/home/ada",
+      "path": "sftp://test_user_1@testnas.local:22/home/test_user_1",
       "flavor": "windows",
       "kind": "scheme",
       "root": null,
-      "normalized": "sftp://ada@nas.local:22/home/ada",
+      "normalized": "sftp://test_user_1@testnas.local:22/home/test_user_1",
       "isRoot": null,
-      "parent": "sftp://ada@nas.local:22/home",
-      "basename": "ada",
+      "parent": "sftp://test_user_1@testnas.local:22/home",
+      "basename": "test_user_1",
       "segments": null,
-      "shown": "sftp://ada@nas.local:22/home/ada"
+      "shown": "sftp://test_user_1@testnas.local:22/home/test_user_1"
     }
   ],
   "userInput": [
-    { "text": "/Users/ada/a\\b", "flavor": "posix", "wire": "/Users/ada/a\\b" },
+    { "text": "/Users/test_user_1/a\\b", "flavor": "posix", "wire": "/Users/test_user_1/a\\b" },
     { "text": "C:\\x", "flavor": "posix", "wire": "C:\\x" },
     { "text": "~/Documents", "flavor": "posix", "wire": "~/Documents" },
-    { "text": "C:\\Users\\ada", "flavor": "windows", "wire": "C:/Users/ada" },
+    { "text": "C:\\Users\\test_user_1", "flavor": "windows", "wire": "C:/Users/test_user_1" },
     { "text": "c:\\", "flavor": "windows", "wire": "C:/" },
     { "text": "c:", "flavor": "windows", "wire": "C:/" },
-    { "text": "C:/Users/ada/", "flavor": "windows", "wire": "C:/Users/ada" },
+    { "text": "C:/Users/test_user_1/", "flavor": "windows", "wire": "C:/Users/test_user_1" },
     { "text": "\\\\server\\share\\x", "flavor": "windows", "wire": "//server/share/x" },
     { "text": "\\\\server\\share", "flavor": "windows", "wire": "//server/share/" },
     { "text": "relative\\dir", "flavor": "windows", "wire": "relative/dir" },
     { "text": "~", "flavor": "windows", "wire": "~" },
-    { "text": "sftp://ada@nas.local:22/home", "flavor": "windows", "wire": "sftp://ada@nas.local:22/home" }
+    {
+      "text": "sftp://test_user_1@testnas.local:22/home",
+      "flavor": "windows",
+      "wire": "sftp://test_user_1@testnas.local:22/home"
+    }
   ]
 }

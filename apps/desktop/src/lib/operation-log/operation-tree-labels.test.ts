@@ -144,11 +144,13 @@ describe('operationRoute', () => {
 
   it('spells every route path the way Windows shows it', () => {
     onTestFinished(withPlatform('windows'))
-    expect(operationRoute('copy', 'D:/Backup', 'C:/Users/ada/Documents')).toBe(
-      'From C:\\Users\\ada\\Documents to D:\\Backup',
+    expect(operationRoute('copy', 'D:/Backup', 'C:/Users/test_user_1/Documents')).toBe(
+      'From C:\\Users\\test_user_1\\Documents to D:\\Backup',
     )
     expect(operationRoute('move', 'D:/Backup', null)).toBe('To D:\\Backup')
-    expect(operationRoute('trash', 'C:/Users/ada/Downloads', null)).toMatch(/^From C:\\Users\\ada\\Downloads /)
+    expect(operationRoute('trash', 'C:/Users/test_user_1/Downloads', null)).toMatch(
+      /^From C:\\Users\\test_user_1\\Downloads /,
+    )
     expect(operationRoute('delete', 'C:/tmp/x', null)).toBe('From C:\\tmp\\x')
     expect(operationRoute('rename', 'C:/tmp/x', null)).toBe('In C:\\tmp\\x')
   })

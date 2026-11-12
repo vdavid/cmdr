@@ -16,14 +16,14 @@ walk is 7.0 s cold-ish / 4.7 s warm on the same query shape.
 - Apple M3 Max, 64 GB RAM, macOS 26.5.2 (build 25F84), rustc 1.97.1, release build, 2026-07-24.
 - Harness (standalone cargo project mirroring the walk 1:1, same `rusqlite` 0.40.1 bundled as the app, same read-path
   pragmas + `platform_case` collation):
-  `/private/tmp/claude-501/-Users-veszelovszki-projects-git-vdavid-cmdr/733dfd6f-550d-4e88-80f8-df2cf9cf56ca/scratchpad/m7-walk-bench/harness/`
+  `/private/tmp/claude-501/-Users-test_user_3-projects-git-vdavid-cmdr/733dfd6f-550d-4e88-80f8-df2cf9cf56ca/scratchpad/m7-walk-bench/harness/`
   (session scratchpad, so treat this note as the durable record; `src/main.rs` has `baseline` / `migrate` / `m7walk` /
   `vacuum` subcommands).
 - Source DBs, copied 2026-07-24 08:26 with the SQLite backup API (`.backup`) from the live dev data dir
   (`com.veszelovszki.cmdr-dev`), app possibly running (backup API is WAL-safe):
   - `index-root.db`: 950 MB + 190 MB WAL at copy time → 991 MB copy. 6,127,098 entries (5,532,305 files, 594,793 dirs),
     schema v14.
-  - `index-smb-192-168-1-111-445-naspi.db` (the NAS): 497 MB, empty WAL → 522 MB copy. 2,642,641 entries (2,571,675
+  - `index-smb-192-168-50-10-445-testshare.db` (the NAS): 497 MB, empty WAL → 522 MB copy. 2,642,641 entries (2,571,675
     files, 70,966 dirs), schema v14.
 
 ## Method

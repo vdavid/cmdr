@@ -196,7 +196,7 @@ pub fn normalize_url(url: &str) -> String {
 /// Whether two entries describe the same server and account.
 ///
 /// The URL is compared normalized ([`normalize_url`]) and the account is not
-/// folded (a server may treat `Ada` and `ada` as two people). Same rule as
+/// folded (a server may treat `Test_user_1` and `test_user_1` as two people). Same rule as
 /// `cmdr_fs::volume::webdav_volume_id` folds the host, and it has to stay that
 /// way or a server would get two entries and one volume.
 fn same_server(entry: &KnownWebdavServer, url: &str, username: &str) -> bool {

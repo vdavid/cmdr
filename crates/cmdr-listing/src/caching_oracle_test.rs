@@ -82,7 +82,7 @@ fn try_get_authoritative_listing_miss_when_volume_reports_no_coverage() {
 
 /// A LIVE watch that can't see other writers must not authorize skipping a read.
 ///
-/// This is the OS-mounted-share case (`/Volumes/naspi` served by
+/// This is the OS-mounted-share case (`/Volumes/testshare` served by
 /// `LocalPosixVolume`): FSEvents is armed and does update the pane from this
 /// machine's writes, so every "is it watched?" signal says yes, while another
 /// client's changes never arrive. Handing these entries to a delete walker or a

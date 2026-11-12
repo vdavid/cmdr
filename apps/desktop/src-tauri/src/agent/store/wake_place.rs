@@ -1,7 +1,7 @@
 //! Where a wake thread's activity happened, for its display title.
 //!
 //! A wake names its thread after the busiest folder's BASENAME (`wake::job::thread_title`), so a
-//! list of them reads `veszelovszki`, `tmp`, `Downloads`: data with no clue what the thread is.
+//! list of them reads `test_user_3`, `tmp`, `Downloads`: data with no clue what the thread is.
 //! The stored title stays that way (a backend English sentence would be untranslatable copy
 //! frozen into `main.db`), and this hands the frontend the structure to say "Activity in
 //! ~/tmp and 2 other folders" in the user's language instead.

@@ -2,7 +2,7 @@
 //! write it makes.
 //!
 //! The checks run over a fixture [`SavedServers`]: an SFTP build box, a WebDAV account, an NFS
-//! export, an S3 account with one bucket, and an SMB host (Naspolya) with two saved shares.
+//! export, an S3 account with one bucket, and an SMB host (Testnas) with two saved shares.
 
 use cmdr_fs::validation::PlainLeafRefusal;
 use rusqlite::Connection;
@@ -45,7 +45,7 @@ fn every_secret_shaped_key_refuses_as_secret_refused_naming_it() {
         "privateKey",
         "passphrase",
     ] {
-        let mut call = json!({ "protocol": "sftp", "host": "new.lan", "username": "dana" });
+        let mut call = json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13" });
         call[key] = json!("hunter2");
         assert_eq!(
             refused(call),
@@ -57,14 +57,16 @@ fn every_secret_shaped_key_refuses_as_secret_refused_naming_it() {
 
 #[test]
 fn a_password_inside_a_url_refuses_as_a_secret() {
-    let problem = refused(json!({ "protocol": "webdav", "url": "https://ada:hunter2@dav.lan/", "username": "ada" }));
+    let problem = refused(
+        json!({ "protocol": "webdav", "url": "https://test_user_1:hunter2@dav.lan/", "username": "test_user_1" }),
+    );
     assert_eq!(token(&problem), "secretRefused");
 }
 
 #[test]
 fn a_switch_that_unlocks_a_secret_is_no_field_at_all() {
     for key in ["useAgent", "autoReconnect", "pinned"] {
-        let mut call = json!({ "protocol": "sftp", "host": "new.lan", "username": "dana" });
+        let mut call = json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13" });
         call[key] = json!(true);
         assert_eq!(
             refused(call),
@@ -80,8 +82,8 @@ fn a_switch_that_unlocks_a_secret_is_no_field_at_all() {
 fn a_field_outside_a_protocols_add_refuses_as_unbound() {
     let cases = [
         json!({ "protocol": "smb", "host": "nas2.lan", "path": "/x" }),
-        json!({ "protocol": "sftp", "host": "new.lan", "username": "dana", "share": "media" }),
-        json!({ "protocol": "webdav", "url": "https://d.lan/", "username": "ada", "host": "d.lan" }),
+        json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13", "share": "media" }),
+        json!({ "protocol": "webdav", "url": "https://d.lan/", "username": "test_user_1", "host": "d.lan" }),
         json!({ "protocol": "nfs", "host": "f.lan", "export": "/x", "username": "root" }),
         json!({ "protocol": "s3", "account": S3_ACCOUNT, "bucket": "b", "host": "s3.lan" }),
     ];
@@ -109,7 +111,7 @@ fn an_add_without_what_it_needs_names_the_missing_field() {
     let cases = [
         (json!({ "protocol": "smb" }), "host"),
         (json!({ "protocol": "sftp", "host": "new.lan" }), "username"),
-        (json!({ "protocol": "webdav", "username": "ada" }), "url"),
+        (json!({ "protocol": "webdav", "username": "test_user_1" }), "url"),
         (json!({ "protocol": "nfs", "host": "f.lan" }), "export"),
         (json!({ "protocol": "s3", "account": S3_ACCOUNT }), "bucket"),
     ];
@@ -134,7 +136,7 @@ fn a_new_s3_account_or_another_protocol_is_not_proposable() {
 fn a_shape_this_tool_cant_read_is_malformed() {
     assert_eq!(refused(json!(["sftp"])), ServerProblem::Malformed);
     assert_eq!(
-        refused(json!({ "protocol": "sftp", "host": "new.lan", "username": "dana", "port": "twenty-two" })),
+        refused(json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13", "port": "twenty-two" })),
         ServerProblem::Malformed
     );
 }
@@ -156,7 +158,7 @@ fn a_name_share_or_folder_that_reads_as_something_else_refuses() {
             FieldRule::Plain(PlainLeafRefusal::Invisible('\u{200D}')),
         ),
         (
-            json!({ "protocol": "sftp", "host": "new.lan", "username": "dana", "path": "/srv/\u{7}bell" }),
+            json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13", "path": "/srv/\u{7}bell" }),
             "path",
             FieldRule::Plain(PlainLeafRefusal::Control('\u{7}')),
         ),
@@ -166,12 +168,12 @@ fn a_name_share_or_folder_that_reads_as_something_else_refuses() {
             FieldRule::Plain(PlainLeafRefusal::DotName),
         ),
         (
-            json!({ "protocol": "smb", "host": "nas2.lan", "name": " Naspolya" }),
+            json!({ "protocol": "smb", "host": "nas2.lan", "name": " Testnas" }),
             "name",
             FieldRule::Plain(PlainLeafRefusal::EdgeWhitespace),
         ),
         (
-            json!({ "protocol": "sftp", "host": "new.lan", "username": "dana", "path": "srv" }),
+            json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13", "path": "srv" }),
             "path",
             FieldRule::NotAbsolute,
         ),
@@ -183,9 +185,9 @@ fn a_name_share_or_folder_that_reads_as_something_else_refuses() {
 
 #[test]
 fn a_host_that_only_looks_like_a_host_refuses() {
-    // A Cyrillic `а` spoofing the saved `naspolya.local`, a path smuggled into the host, a
+    // A Cyrillic `а` spoofing the saved `testnas.local`, a path smuggled into the host, a
     // newline, and a port the host field doesn't carry.
-    for host in ["n\u{0430}spolya.local", "nas.lan/evil", "nas.lan\nx", "nas.lan:445", ""] {
+    for host in ["t\u{0435}stnas.local", "nas.lan/evil", "nas.lan\nx", "nas.lan:445", ""] {
         assert_eq!(
             refused(json!({ "protocol": "smb", "host": host })),
             ServerProblem::BadField {
@@ -209,11 +211,13 @@ fn a_url_that_isnt_plain_http_refuses() {
     for url in [
         "ftp://d.lan/",
         "https://d\u{0430}v.lan/",
-        "https://ada@d.lan/",
+        "https://test_user_1@d.lan/",
         "not a url",
     ] {
         assert_eq!(
-            token(&refused(json!({ "protocol": "webdav", "url": url, "username": "ada" }))),
+            token(&refused(
+                json!({ "protocol": "webdav", "url": url, "username": "test_user_1" })
+            )),
             "badField",
             "{url}"
         );
@@ -224,7 +228,7 @@ fn a_url_that_isnt_plain_http_refuses() {
 fn a_start_folder_outside_the_remote_root_refuses() {
     assert_eq!(
         refused(
-            json!({ "protocol": "sftp", "host": "new.lan", "username": "dana", "path": "/srv", "startFolder": "/etc" })
+            json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13", "path": "/srv", "startFolder": "/etc" })
         ),
         ServerProblem::BadField {
             field: "startFolder",
@@ -237,15 +241,15 @@ fn a_start_folder_outside_the_remote_root_refuses() {
 
 #[test]
 fn a_valid_add_per_protocol_drafts_the_add_forms_defaults() {
-    let sftp =
-        plan(json!({ "protocol": "sftp", "host": "new.lan", "username": "dana", "name": "New box" })).expect("sftp");
+    let sftp = plan(json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13", "name": "New box" }))
+        .expect("sftp");
     assert_eq!(
         sftp.draft,
         ServerDraft {
             display_name: Some("New box".into()),
             host: Some("new.lan".into()),
             port: Some(22),
-            username: Some("dana".into()),
+            username: Some("test_user_13".into()),
             remote_root: Some("/".into()),
             ..ServerDraft::new(DraftProtocol::Sftp)
         }
@@ -258,7 +262,8 @@ fn a_valid_add_per_protocol_drafts_the_add_forms_defaults() {
     assert_eq!(smb.draft.share.as_deref(), Some("media"));
     assert_eq!(smb.display_name, "nas2.lan", "an unnamed card leads with its address");
 
-    let webdav = plan(json!({ "protocol": "webdav", "url": "https://d.lan/dav/", "username": "ada" })).expect("webdav");
+    let webdav =
+        plan(json!({ "protocol": "webdav", "url": "https://d.lan/dav/", "username": "test_user_1" })).expect("webdav");
     assert_eq!(webdav.draft.remote_root.as_deref(), Some("/"));
 
     let nfs =
@@ -280,8 +285,8 @@ fn a_valid_add_per_protocol_drafts_the_add_forms_defaults() {
 fn an_add_of_a_saved_address_refuses_with_the_id_to_edit_instead() {
     // Saved spellings differing only by the store's own normalization still meet the saved one.
     let cases = [
-        json!({ "protocol": "sftp", "host": "BUILD.lan", "username": "dana" }),
-        json!({ "protocol": "webdav", "url": "https://dav.example.com/other/", "username": "ada" }),
+        json!({ "protocol": "sftp", "host": "BUILD.lan", "username": "test_user_13" }),
+        json!({ "protocol": "webdav", "url": "https://dav.example.com/other/", "username": "test_user_1" }),
         json!({ "protocol": "nfs", "host": "files.lan", "export": "/Public/", "uid": 0, "gid": 0 }),
         json!({ "protocol": "s3", "account": S3_ACCOUNT, "bucket": "invoices" }),
     ];
@@ -296,14 +301,14 @@ fn an_add_of_a_saved_address_refuses_with_the_id_to_edit_instead() {
         );
     }
     assert_eq!(
-        refused(json!({ "protocol": "smb", "host": "Naspolya.LOCAL", "share": "photos" })),
+        refused(json!({ "protocol": "smb", "host": "Testnas.LOCAL", "share": "photos" })),
         ServerProblem::AlreadySaved {
             server_id: SMB_SHARE.to_string()
         },
         "an SMB host is its address and port, in any case"
     );
     assert!(
-        plan(json!({ "protocol": "smb", "host": "naspolya.local", "port": 4450 })).is_ok(),
+        plan(json!({ "protocol": "smb", "host": "testnas.local", "port": 4450 })).is_ok(),
         "another port on the same machine is another server"
     );
 }
@@ -320,7 +325,7 @@ fn an_s3_bucket_under_an_unknown_account_refuses() {
 
 #[test]
 fn a_name_another_saved_server_wears_refuses_folded() {
-    for name in ["naspolya", "NASPOLYA", "Build Box", "photos"] {
+    for name in ["testnas", "TESTNAS", "Build Box", "photos"] {
         assert_eq!(
             token(&refused(
                 json!({ "protocol": "smb", "host": "10.0.0.66", "name": name })
@@ -378,7 +383,7 @@ fn an_edit_that_names_another_address_or_account_refuses() {
             "host",
         ),
         (
-            json!({ "protocol": "smb", "editing": SMB_SHARE, "username": "dori" }),
+            json!({ "protocol": "smb", "editing": SMB_SHARE, "username": "test_user_7" }),
             "username",
         ),
         (
@@ -398,7 +403,7 @@ fn an_edit_that_names_another_address_or_account_refuses() {
 #[test]
 fn an_edit_may_restate_its_address_in_the_stores_own_spelling() {
     let restated = plan(json!({
-        "protocol": "webdav", "editing": WEBDAV_ID, "url": "https://DAV.example.com:443/dav", "username": "ada", "name": "Pictures"
+        "protocol": "webdav", "editing": WEBDAV_ID, "url": "https://DAV.example.com:443/dav", "username": "test_user_1", "name": "Pictures"
     }))
     .expect("the same place");
     assert_eq!(
@@ -407,7 +412,7 @@ fn an_edit_may_restate_its_address_in_the_stores_own_spelling() {
         "the draft keeps the saved address, never the call's spelling"
     );
     assert!(plan(json!({ "protocol": "sftp", "editing": SFTP_ID, "host": "Build.LAN", "port": 22 })).is_ok());
-    assert!(plan(json!({ "protocol": "smb", "editing": SMB_SHARE, "username": "david", "name": "NAS" })).is_ok());
+    assert!(plan(json!({ "protocol": "smb", "editing": SMB_SHARE, "username": "test_user_3", "name": "NAS" })).is_ok());
     assert!(plan(json!({ "protocol": "nfs", "editing": NFS_ID, "uid": 1000, "gid": 1000, "name": "Files" })).is_ok());
 }
 
@@ -433,7 +438,7 @@ fn an_smb_edits_name_lands_on_the_host_and_counts_its_shares() {
     assert_eq!(planned.draft.display_name.as_deref(), Some("NAS"));
     assert_eq!(
         planned.draft.username.as_deref(),
-        Some("david"),
+        Some("test_user_3"),
         "the saved account rides along"
     );
     assert_eq!(planned.draft.share, None, "a name is the host's, never a share's");
@@ -466,7 +471,7 @@ fn stage(conn: &Connection, call: Value) -> Result<crate::tools::suggestions::pr
 fn a_turn_the_user_didnt_start_stages_nothing() {
     let conn = migrated_conn();
     for origin in [TurnOrigin::Wake, TurnOrigin::Outcomes] {
-        let call = json!({ "protocol": "sftp", "host": "new.lan", "username": "dana" });
+        let call = json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13" });
         let refusal = apply_server(&conn, &saved(), &call, origin, None, 100).expect_err("refused");
         assert!(
             matches!(refusal, ServerRefusal::Problem(ServerProblem::RefusedInBackground)),
@@ -500,7 +505,7 @@ fn a_valid_suggestion_stages_one_server_group_with_its_draft() {
     let conn = migrated_conn();
     let report = stage(
         &conn,
-        json!({ "protocol": "sftp", "host": "new.lan", "username": "dana", "rationale": "You copy builds there." }),
+        json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13", "rationale": "You copy builds there." }),
     )
     .expect("staged");
     assert!(report.ready_for_review);
@@ -525,14 +530,14 @@ fn rewriting_a_pending_suggestion_bumps_its_revision() {
     let conn = migrated_conn();
     let first = stage(
         &conn,
-        json!({ "protocol": "sftp", "host": "new.lan", "username": "dana" }),
+        json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13" }),
     )
     .expect("staged");
     let group_id = first.groups[0].group_id;
     let before = get_group(&conn, group_id).expect("read").expect("group").revision;
     let amended = stage(
         &conn,
-        json!({ "protocol": "sftp", "host": "new.lan", "username": "dana", "port": 2222,
+        json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13", "port": 2222,
                 "sweepId": first.sweep_id, "groupId": group_id }),
     )
     .expect("amended");
@@ -546,7 +551,7 @@ fn rewriting_a_pending_suggestion_bumps_its_revision() {
     assert_eq!(proposal_rows(&conn), 1);
 
     assert_eq!(
-        refused(json!({ "protocol": "sftp", "host": "new.lan", "username": "dana", "groupId": group_id })),
+        refused(json!({ "protocol": "sftp", "host": "new.lan", "username": "test_user_13", "groupId": group_id })),
         ServerProblem::GroupIdWithoutSweep
     );
 }

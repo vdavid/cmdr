@@ -1,6 +1,6 @@
 //! The saved servers both server suites check against (`propose_server`'s and the approval's):
 //! an SFTP build box, a WebDAV account, an NFS export, an S3 account with one bucket, and an SMB
-//! host (Naspolya) with two saved shares.
+//! host (Testnas) with two saved shares.
 
 use super::saved::{SavedPlaceDraft, SavedRow, SavedServers};
 use crate::agent::store::proposals::ServerDraft;
@@ -12,9 +12,9 @@ pub(crate) const WEBDAV_ID: &str = "webdav-photos";
 pub(crate) const NFS_ID: &str = "nfs-public";
 pub(crate) const S3_ACCOUNT: &str = "s3-account";
 pub(crate) const S3_BUCKET_ID: &str = "s3-invoices";
-pub(crate) const SMB_SHARE: &str = "smb-naspolya-media";
+pub(crate) const SMB_SHARE: &str = "smb-testnas-media";
 /// The SMB host's row id.
-pub(crate) const SMB_HOST: &str = "naspolya.local";
+pub(crate) const SMB_HOST: &str = "testnas.local";
 
 pub(crate) fn row(id: &str, name: &str, protocol: DraftProtocol, places: Vec<(&str, ServerDraft)>) -> SavedRow {
     SavedRow {
@@ -38,7 +38,7 @@ pub(crate) fn sftp_saved() -> ServerDraft {
         display_name: Some("Build box".into()),
         host: Some("build.lan".into()),
         port: Some(22),
-        username: Some("dana".into()),
+        username: Some("test_user_13".into()),
         remote_root: Some("/srv".into()),
         ..ServerDraft::new(DraftProtocol::Sftp)
     }
@@ -46,10 +46,10 @@ pub(crate) fn sftp_saved() -> ServerDraft {
 
 pub(crate) fn smb_saved() -> ServerDraft {
     ServerDraft {
-        display_name: Some("Naspolya".into()),
-        host: Some("naspolya.local".into()),
+        display_name: Some("Testnas".into()),
+        host: Some("testnas.local".into()),
         port: Some(445),
-        username: Some("david".into()),
+        username: Some("test_user_3".into()),
         shares_affected: Some(2),
         ..ServerDraft::new(DraftProtocol::Smb)
     }
@@ -57,8 +57,8 @@ pub(crate) fn smb_saved() -> ServerDraft {
 
 pub(crate) fn saved() -> SavedServers {
     // Real ids from the id funnel, so an add of the same address meets the saved one.
-    let sftp_id = cmdr_fs::volume::sftp_volume_id("build.lan", 22, "dana");
-    let webdav_id = cmdr_fs::volume::webdav_volume_id("dav.example.com", 443, "ada");
+    let sftp_id = cmdr_fs::volume::sftp_volume_id("build.lan", 22, "test_user_13");
+    let webdav_id = cmdr_fs::volume::webdav_volume_id("dav.example.com", 443, "test_user_1");
     let nfs_id = cmdr_fs::volume::nfs_volume_id("files.lan", 2049, "/Public");
     let s3 = crate::network::s3_known_places::KnownS3Place {
         provider: S3ProviderChoice::Aws {
@@ -87,11 +87,11 @@ pub(crate) fn saved() -> SavedServers {
     s3_row.s3_account = Some((s3.provider.clone(), s3.access_key_id.clone()));
     let mut smb = row(
         SMB_HOST,
-        "Naspolya",
+        "Testnas",
         DraftProtocol::Smb,
-        vec![(SMB_SHARE, smb_saved()), ("smb-naspolya-backup", smb_saved())],
+        vec![(SMB_SHARE, smb_saved()), ("smb-testnas-backup", smb_saved())],
     );
-    smb.smb_host = Some(("naspolya.local".into(), 445));
+    smb.smb_host = Some(("testnas.local".into(), 445));
     let rows = vec![
         row(
             &sftp_id,
@@ -108,7 +108,7 @@ pub(crate) fn saved() -> SavedServers {
                 ServerDraft {
                     display_name: Some("Photos".into()),
                     url: Some("https://dav.example.com/dav/".into()),
-                    username: Some("ada".into()),
+                    username: Some("test_user_1".into()),
                     remote_root: Some("/Photos".into()),
                     ..ServerDraft::new(DraftProtocol::Webdav)
                 },

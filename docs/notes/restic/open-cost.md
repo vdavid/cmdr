@@ -7,9 +7,9 @@ through a counting copy of the crate's storage adapter (every write refused and 
 ## Setup
 
 - **Where**: rustic_core 0.13.0, release build, macOS 27.0.1 on an M3 Max (16 cores), 2026-10-20.
-- **Repo**: `/Volumes/naspi/backups/m3-macbook-restic` on the QNAP TS-464 over Tailscale on a direct LAN path (ping RTT
-  ~3.6 ms). Nine snapshots, one key file, 45 index files totalling 112,303,608 bytes, 2,382,907 blobs, 131.9 GiB stored
-  (261.8 GiB uncompressed). The latest snapshot is ~182 GiB.
+- **Repo**: `/Volumes/testshare/backups/test-restic-repo` on the QNAP TS-464 over Tailscale on a direct LAN path (ping
+  RTT ~3.6 ms). Nine snapshots, one key file, 45 index files totalling 112,303,608 bytes, 2,382,907 blobs, 131.9 GiB
+  stored (261.8 GiB uncompressed). The latest snapshot is ~182 GiB.
 - **Two parents**: `mount` is a `LocalPosixVolume` over the OS smbfs mount; `smb` is a direct `cmdr-smb` session (smb2
   0.32.1) to the same share. Connecting the direct session took 0.11–0.12 s.
 - **Method**: one phase per process under `/usr/bin/time -l`, so peak RSS is that phase's alone. Every number ran at

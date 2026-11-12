@@ -51,9 +51,9 @@ fn volume(id: &str) -> LocationInfo {
 /// A server row: same id whatever its folder, which is what made a stale one bite.
 fn server(folder: &str) -> LocationInfo {
     LocationInfo {
-        path: format!("sftp://ada@nas.local:22{folder}"),
+        path: format!("sftp://test_user_1@testnas.local:22{folder}"),
         category: LocationCategory::Network,
-        ..volume("sftp-ada-nas")
+        ..volume("sftp-test_user_1-nas")
     }
 }
 
@@ -94,11 +94,11 @@ fn a_timeout_carries_the_last_good_set_instead_of_blanking_the_picker() {
     let mut snapshot = LocalSnapshot::new();
     apply(
         &mut snapshot,
-        ListingOutcome::Listed(vec![volume("Macintosh HD"), volume("naspi")]),
+        ListingOutcome::Listed(vec![volume("Macintosh HD"), volume("testshare")]),
     );
     let (published, timed_out) = apply(&mut snapshot, ListingOutcome::TimedOut);
 
-    assert_eq!(ids(&published), ["Macintosh HD", "naspi"]);
+    assert_eq!(ids(&published), ["Macintosh HD", "testshare"]);
     assert!(timed_out, "still flagged incomplete, so the UI keeps saying so");
 }
 
@@ -255,7 +255,7 @@ async fn a_hung_mount_doesnt_hold_back_a_re_added_servers_new_folder() {
     );
     assert_eq!(
         paths(&first.data),
-        ["/Volumes/Macintosh HD", "sftp://ada@nas.local:22/B"],
+        ["/Volumes/Macintosh HD", "sftp://test_user_1@testnas.local:22/B"],
         "fresh server row beside the cached local part"
     );
     assert!(
@@ -271,7 +271,7 @@ async fn a_hung_mount_doesnt_hold_back_a_re_added_servers_new_folder() {
     assert_eq!(*at, LIST_TIMEOUT);
     assert_eq!(
         paths(&last.data),
-        ["/Volumes/Macintosh HD", "sftp://ada@nas.local:22/B"]
+        ["/Volumes/Macintosh HD", "sftp://test_user_1@testnas.local:22/B"]
     );
     assert!(
         last.timed_out,
@@ -301,7 +301,7 @@ async fn a_healthy_discovery_publishes_once() {
     assert_eq!(events.len(), 1, "no provisional event when discovery is on time");
     let (at, only) = &events[0];
     assert_eq!(*at, Duration::from_millis(30));
-    assert_eq!(ids(&only.data), ["Macintosh HD", "sftp-ada-nas"]);
+    assert_eq!(ids(&only.data), ["Macintosh HD", "sftp-test_user_1-nas"]);
     assert!(!only.timed_out);
     assert!(!only.discovery_pending);
 }

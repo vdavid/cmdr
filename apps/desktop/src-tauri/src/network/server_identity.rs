@@ -1,8 +1,8 @@
 //! Server identity equivalence for SMB.
 //!
 //! The same physical server shows up under different names depending on who reports it:
-//! mDNS advertises `Naspolya._smb._tcp.local`, DNS knows `naspolya.local`, Cmdr mounts
-//! by IP (`192.168.1.111`), and `statfs` echoes back whichever form the mount used.
+//! mDNS advertises `Testnas._smb._tcp.local`, DNS knows `testnas.local`, Cmdr mounts
+//! by IP (`192.168.50.10`), and `statfs` echoes back whichever form the mount used.
 //! Comparing these as strings treats one server as three, which made
 //! `disambiguated_mount_path` mount a second copy of an already-mounted share with
 //! `ForceNewSession` (fresh auth, guest, dead end) instead of reusing the existing one.
@@ -143,21 +143,21 @@ fn normalize(s: &str) -> String {
 /// The stable key for a server's stored credentials.
 ///
 /// The same NAS reaches the credential store under different names depending on the
-/// caller: the frontend saves under the mDNS instance name (`Naspolya`), while the
-/// OS-mount upgrade path looks up by the `statfs` server (`Naspolya._smb._tcp.local`)
-/// or the resolved hostname (`naspolya.local`). Keying credentials on the raw string
+/// caller: the frontend saves under the mDNS instance name (`Testnas`), while the
+/// OS-mount upgrade path looks up by the `statfs` server (`Testnas._smb._tcp.local`)
+/// or the resolved hostname (`testnas.local`). Keying credentials on the raw string
 /// splits one server's password across several entries, so a password saved on mount
 /// is never found on the next connect. `credential_key` collapses every name form to
 /// the same bare identity (IP literals pass through unchanged — they have no bare form).
 ///
 /// ❗ A PORT off 445 is part of the identity and stays on the key (`nas:11482`), in
 /// whichever form it arrives: the discovery name a sheet saves under
-/// (`nas.local:11482`) and [`smb_server`]'s host + port from a mount fold to the same
+/// (`testnas.local:11482`) and [`smb_server`]'s host + port from a mount fold to the same
 /// key. One machine can run several SMB servers, each with its own accounts. On 445
 /// (or with no port) the key is exactly the bare name, as it always was.
 ///
 /// ❗ A fully qualified name's trailing dot goes from the HOST half, before the port
-/// (`nas.local.:11481` is `nas:11481`), or the sheet's spelling and the mount's key
+/// (`testnas.local.:11481` is `nas:11481`), or the sheet's spelling and the mount's key
 /// one password twice (#915).
 pub fn credential_key(server: &str) -> String {
     let normalized = normalize(server);
@@ -169,7 +169,7 @@ pub fn credential_key(server: &str) -> String {
 }
 
 /// The key [`credential_key`] gave `server` before it dropped a trailing dot ahead of
-/// the port, when that differs: `nas.local.:11481` was filed as itself. Only for a
+/// the port, when that differs: `testnas.local.:11481` was filed as itself. Only for a
 /// FORGET, so a password saved under the old spelling can't outlive its server.
 pub fn legacy_credential_key(server: &str) -> Option<String> {
     let normalized = normalize(server);
@@ -210,8 +210,8 @@ fn split_port(s: &str) -> Option<(&str, u16)> {
 }
 
 /// Extracts the bare name from any of the forms a server name arrives in:
-/// `Naspolya._smb._tcp.local` → `naspolya`, `naspolya.local` → `naspolya`,
-/// `naspolya` → `naspolya`. Input must already be normalized.
+/// `Testnas._smb._tcp.local` → `testnas`, `testnas.local` → `testnas`,
+/// `testnas` → `testnas`. Input must already be normalized.
 fn bare_name(normalized: &str) -> String {
     if normalized.contains("._tcp") || normalized.contains("._udp") {
         // mDNS service name: the instance label is everything before the first
@@ -277,12 +277,12 @@ mod tests {
         );
     }
 
-    fn naspolya() -> NetworkHost {
+    fn testnas() -> NetworkHost {
         NetworkHost {
-            id: "naspolya-smb-tcp-local".to_string(),
-            name: "Naspolya".to_string(),
-            hostname: Some("Naspolya.local".to_string()),
-            ip_address: Some("192.168.1.111".to_string()),
+            id: "testnas-smb-tcp-local".to_string(),
+            name: "Testnas".to_string(),
+            hostname: Some("Testnas.local".to_string()),
+            ip_address: Some("192.168.50.10".to_string()),
             port: 445,
             source: HostSource::Discovered,
         }
@@ -293,7 +293,7 @@ mod tests {
             id: "raspberrypi-smb-tcp-local".to_string(),
             name: "raspberrypi".to_string(),
             hostname: Some("raspberrypi.local".to_string()),
-            ip_address: Some("192.168.1.150".to_string()),
+            ip_address: Some("192.168.50.30".to_string()),
             port: 445,
             source: HostSource::Discovered,
         }
@@ -305,27 +305,27 @@ mod tests {
     /// second session.
     #[test]
     fn test_ip_matches_mdns_service_name_via_discovery() {
-        let hosts = [naspolya(), raspberrypi()];
-        assert!(same_machine("192.168.1.111", "Naspolya._smb._tcp.local", &hosts));
-        assert!(same_machine("Naspolya._smb._tcp.local", "192.168.1.111", &hosts));
-        assert!(same_machine("192.168.1.111", "naspolya.local", &hosts));
-        assert!(same_machine("192.168.1.111", "Naspolya", &hosts));
+        let hosts = [testnas(), raspberrypi()];
+        assert!(same_machine("192.168.50.10", "Testnas._smb._tcp.local", &hosts));
+        assert!(same_machine("Testnas._smb._tcp.local", "192.168.50.10", &hosts));
+        assert!(same_machine("192.168.50.10", "testnas.local", &hosts));
+        assert!(same_machine("192.168.50.10", "Testnas", &hosts));
     }
 
     #[test]
     fn test_different_servers_stay_different() {
-        let hosts = [naspolya(), raspberrypi()];
-        assert!(!same_machine("192.168.1.150", "Naspolya._smb._tcp.local", &hosts));
-        assert!(!same_machine("192.168.1.111", "192.168.1.150", &hosts));
-        assert!(!same_machine("raspberrypi.local", "naspolya.local", &hosts));
+        let hosts = [testnas(), raspberrypi()];
+        assert!(!same_machine("192.168.50.30", "Testnas._smb._tcp.local", &hosts));
+        assert!(!same_machine("192.168.50.10", "192.168.50.30", &hosts));
+        assert!(!same_machine("raspberrypi.local", "testnas.local", &hosts));
     }
 
     /// Name-form equivalence needs no discovery data: all name shapes of the same
     /// instance normalize to the same bare name.
     #[test]
     fn test_name_forms_match_without_discovery() {
-        assert!(same_machine("NASPOLYA.local", "naspolya._smb._tcp.local", &[]));
-        assert!(same_machine("Naspolya", "naspolya.local.", &[]));
+        assert!(same_machine("TESTNAS.local", "testnas._smb._tcp.local", &[]));
+        assert!(same_machine("Testnas", "testnas.local.", &[]));
         assert!(same_machine("localhost", "LOCALHOST", &[]));
     }
 
@@ -334,37 +334,37 @@ mod tests {
     /// mount path, which is the pre-existing behavior).
     #[test]
     fn test_ip_vs_name_unknown_without_discovery() {
-        assert!(!same_machine("192.168.1.111", "naspolya._smb._tcp.local", &[]));
+        assert!(!same_machine("192.168.50.10", "testnas._smb._tcp.local", &[]));
     }
 
     #[test]
     fn test_exact_strings_always_match() {
-        assert!(same_machine("192.168.1.111", "192.168.1.111", &[]));
+        assert!(same_machine("192.168.50.10", "192.168.50.10", &[]));
         assert!(same_machine("some-nas", "some-nas", &[]));
     }
 
     /// Every name form of one server must produce the SAME credential key, so a password
     /// saved by the frontend (mDNS instance name) is found by the upgrade path (`statfs`
     /// service name / resolved hostname). This is the keying split-brain that left a
-    /// just-saved Naspolya password unusable on the next connect.
+    /// just-saved Testnas password unusable on the next connect.
     #[test]
     fn test_credential_key_collapses_name_forms() {
-        assert_eq!(credential_key("Naspolya"), "naspolya");
-        assert_eq!(credential_key("Naspolya.local"), "naspolya");
-        assert_eq!(credential_key("Naspolya.local."), "naspolya");
-        assert_eq!(credential_key("Naspolya._smb._tcp.local"), "naspolya");
-        assert_eq!(credential_key("Naspolya._smb._tcp.local."), "naspolya");
+        assert_eq!(credential_key("Testnas"), "testnas");
+        assert_eq!(credential_key("Testnas.local"), "testnas");
+        assert_eq!(credential_key("Testnas.local."), "testnas");
+        assert_eq!(credential_key("Testnas._smb._tcp.local"), "testnas");
+        assert_eq!(credential_key("Testnas._smb._tcp.local."), "testnas");
     }
 
     /// ❗ A port off 445 is part of the key, in every form it arrives in; on 445 the
     /// key is exactly today's, so nothing saved on a standard NAS moves.
     #[test]
     fn credential_key_keeps_a_port_off_445_and_drops_445() {
-        assert_eq!(credential_key("nas.local:11482"), "nas:11482");
-        assert_eq!(credential_key(&smb_server("Nas", 11482)), "nas:11482");
+        assert_eq!(credential_key("testnas.local:11482"), "testnas:11482");
+        assert_eq!(credential_key(&smb_server("Testnas", 11482)), "testnas:11482");
         assert_eq!(
-            credential_key(&smb_server("nas.local", 445)),
-            credential_key("nas.local")
+            credential_key(&smb_server("testnas.local", 445)),
+            credential_key("testnas.local")
         );
         assert_eq!(credential_key("nas:445"), "nas");
         assert_eq!(credential_key(&smb_server("fe80::1", 11482)), "fe80::1:11482");
@@ -373,8 +373,8 @@ mod tests {
     }
 
     /// ❗ A fully qualified name keeps its trailing dot BEFORE the port (#915): the Add
-    /// server sheet's `nas.local.:11481` saved under one key while the upgrade and
-    /// "Connect directly" (`nas.local:11481`) read and saved under another, so
+    /// server sheet's `testnas.local.:11481` saved under one key while the upgrade and
+    /// "Connect directly" (`testnas.local:11481`) read and saved under another, so
     /// forgetting the server by one spelling left the other's password behind.
     #[test]
     fn credential_key_drops_a_trailing_dot_before_the_port() {
@@ -390,7 +390,7 @@ mod tests {
     /// different hosts can't collide on one credential entry.
     #[test]
     fn test_credential_key_passes_ip_through() {
-        assert_eq!(credential_key("192.168.1.111"), "192.168.1.111");
+        assert_eq!(credential_key("192.168.50.10"), "192.168.50.10");
         assert_eq!(credential_key("localhost"), "localhost");
     }
 }

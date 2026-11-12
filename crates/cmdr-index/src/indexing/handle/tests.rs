@@ -355,17 +355,17 @@ fn a_stopped_volumes_status_carries_its_last_scan_off_disk_without_registering_i
     let _serialized = crate::indexing::handle::test_lock();
     let data = tempfile::tempdir().expect("index data dir");
     let (index, _installed) = Index::builder().data_dir(data.path()).install_for_test();
-    let volume_id = "smb-192-0-2-60-445-naspi";
+    let volume_id = "smb-192-0-2-60-445-testshare";
     let db_path = data.path().join(format!("index-{volume_id}.db"));
     let store = IndexStore::open(&db_path).expect("write the index a past scan left");
     let conn = IndexStore::open_write_connection(&db_path).expect("write connection");
-    IndexStore::update_meta(&conn, "volume_path", "/Volumes/naspi").expect("root");
+    IndexStore::update_meta(&conn, "volume_path", "/Volumes/testshare").expect("root");
     IndexStore::update_meta(&conn, "scan_completed_at", "1761400000").expect("stamp");
     drop((conn, store));
 
     let status = index.status(volume_id).expect("status answers");
     let last = status.index_status.expect("the last scan's facts, off disk");
-    assert_eq!(last.volume_path.as_deref(), Some("/Volumes/naspi"));
+    assert_eq!(last.volume_path.as_deref(), Some("/Volumes/testshare"));
     assert_eq!(last.scan_completed_at.as_deref(), Some("1761400000"));
     assert!(!status.initialized, "nothing was stood up to answer");
     assert!(
@@ -375,22 +375,22 @@ fn a_stopped_volumes_status_carries_its_last_scan_off_disk_without_registering_i
     assert!(index.read_pool(volume_id).is_none(), "no read pool was installed");
 }
 
-/// The database a past walk of a share left behind, rooted at `/Volumes/naspi`:
-/// `papers/invoices paid` listed, holding one file, with its recursive totals;
-/// `papers/unlisted` holding a row nothing listed. Returns the share's id.
+/// The database a past walk of a share left behind, rooted at `/Volumes/testshare`:
+/// `documents/invoices` listed, holding one file, with its recursive totals;
+/// `documents/unlisted` holding a row nothing listed. Returns the share's id.
 fn a_stopped_share_on_disk(data: &std::path::Path) -> &'static str {
     use crate::indexing::store::{DirStatsById, IndexStore, ROOT_ID};
 
-    let volume_id = "smb-192-0-2-61-445-naspi";
+    let volume_id = "smb-192-0-2-61-445-testshare";
     let db_path = data.join(format!("index-{volume_id}.db"));
     let store = IndexStore::open(&db_path).expect("write the index a past scan left");
     let conn = IndexStore::open_write_connection(&db_path).expect("write connection");
-    IndexStore::update_meta(&conn, "volume_path", "/Volumes/naspi").expect("root");
+    IndexStore::update_meta(&conn, "volume_path", "/Volumes/testshare").expect("root");
     let dir = |parent, name| {
         IndexStore::insert_entry_v2(&conn, parent, name, true, false, None, None, None, None).expect("insert dir")
     };
-    let papers = dir(ROOT_ID, "papers");
-    let invoices = dir(papers, "invoices paid");
+    let papers = dir(ROOT_ID, "documents");
+    let invoices = dir(papers, "invoices");
     let unlisted = dir(papers, "unlisted");
     IndexStore::insert_entry_v2(
         &conn,
@@ -435,28 +435,28 @@ fn a_stopped_volume_lists_its_folders_from_its_database_on_disk() {
     let volume_id = a_stopped_share_on_disk(data.path());
 
     let children = index
-        .list_children(volume_id, "/Volumes/naspi/papers/invoices paid")
+        .list_children(volume_id, "/Volumes/testshare/documents/invoices")
         .expect("the stored index reads")
         .expect("its last walk listed the folder");
     let names: Vec<&str> = children.iter().map(|row| row.name.as_str()).collect();
     assert_eq!(names, ["hetzner.pdf"]);
     assert!(
         index
-            .list_children(volume_id, "/Volumes/naspi/papers/unlisted")
+            .list_children(volume_id, "/Volumes/testshare/documents/unlisted")
             .expect("reads")
             .is_none(),
         "a folder nothing listed has no contents to report, offline too"
     );
     assert!(
         index
-            .list_children(volume_id, "/Volumes/other/papers")
+            .list_children(volume_id, "/Volumes/other/documents")
             .expect("reads")
             .is_none(),
         "a path outside the root the walk recorded isn't on this volume"
     );
 
     let stats = index
-        .dir_stats(volume_id, "/Volumes/naspi/papers/invoices paid")
+        .dir_stats(volume_id, "/Volumes/testshare/documents/invoices")
         .expect("reads")
         .expect("the folder's totals are on disk");
     assert_eq!(stats.recursive_size, 10);
@@ -465,8 +465,8 @@ fn a_stopped_volume_lists_its_folders_from_its_database_on_disk() {
         .dir_stats_batch(
             volume_id,
             &[
-                "/Volumes/naspi/papers/invoices paid".to_string(),
-                "/Volumes/naspi/papers/unlisted".to_string(),
+                "/Volumes/testshare/documents/invoices".to_string(),
+                "/Volumes/testshare/documents/unlisted".to_string(),
             ],
         )
         .expect("reads");
@@ -492,9 +492,9 @@ fn a_mounted_volume_with_no_index_running_never_reads_its_leftover_database() {
         .volumes(Arc::clone(&volumes) as Arc<_>)
         .install_for_test();
     let volume_id = a_stopped_share_on_disk(data.path());
-    volumes.register(volume_id, in_memory_share("/Volumes/naspi"));
+    volumes.register(volume_id, in_memory_share("/Volumes/testshare"));
 
-    let path = "/Volumes/naspi/papers/invoices paid";
+    let path = "/Volumes/testshare/documents/invoices";
     assert!(index.list_children(volume_id, path).expect("reads").is_none());
     assert!(index.dir_stats(volume_id, path).expect("reads").is_none());
 }

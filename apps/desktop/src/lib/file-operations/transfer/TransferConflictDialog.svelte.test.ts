@@ -122,7 +122,7 @@ describe('a clash with a name the destination spells differently', () => {
 })
 
 describe('a name the destination refused', () => {
-  const path = '/Volumes/naspi/music/a very long title.flac'
+  const path = '/Volumes/testshare/music/a very long title.flac'
 
   it('says the name is too long, with no comparison of a file that isn’t there', async () => {
     const target = await mountDialog({ ...conflict(path), destinationSize: null, refusedName: 'tooLong' })
@@ -132,7 +132,7 @@ describe('a name the destination refused', () => {
   })
 
   it('says a name it can’t store for another reason isn’t allowed', async () => {
-    const target = await mountDialog({ ...conflict('/Volumes/naspi/CON'), refusedName: 'notAllowed' })
+    const target = await mountDialog({ ...conflict('/Volumes/testshare/CON'), refusedName: 'notAllowed' })
     expect(target.querySelector('.conflict-refused')?.textContent).toContain('can’t store this name')
   })
 

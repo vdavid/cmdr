@@ -242,7 +242,7 @@ mod tests {
     fn every_prop_value_is_a_short_token_or_bucket() {
         let envelope = envelope();
         let p = params(
-            Some(UserTurn::Text("please rename /Users/dave/photos")),
+            Some(UserTurn::Text("please rename /Users/test_user_10/photos")),
             ProviderTag::Anthropic,
             &envelope,
         );

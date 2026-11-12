@@ -22,8 +22,8 @@ const VOLUMES = new Map<string, { id: string; name: string; path: string }>([
   ['ext', { id: 'ext', name: 'Ext', path: '/Volumes/Ext' }],
   ['network', { id: 'network', name: 'Network', path: 'smb://' }],
   [
-    'sftp-nas-local-22-ada',
-    { id: 'sftp-nas-local-22-ada', name: 'Naspolya', path: 'sftp://ada@nas.local:22/srv/data' },
+    'sftp-nas-local-22-test_user_1',
+    { id: 'sftp-nas-local-22-test_user_1', name: 'Testnas', path: 'sftp://test_user_1@testnas.local:22/srv/data' },
   ],
 ])
 
@@ -119,7 +119,7 @@ function makePaneFixture(spec: { path: string; volumeId: string } | undefined, s
 }
 
 /** Where each volume lands when nothing is remembered, when that isn't its root. */
-const LANDINGS = new Map<string, string>([['sftp-nas', 'sftp://ada@nas.local:22/srv/data/photos']])
+const LANDINGS = new Map<string, string>([['sftp-nas', 'sftp://test_user_1@testnas.local:22/srv/data/photos']])
 
 /** Each connected server's session state; a disk has none. */
 const CONNECTION_STATES = new Map<string, ConnectionState>([['sftp-nas', 'direct']])

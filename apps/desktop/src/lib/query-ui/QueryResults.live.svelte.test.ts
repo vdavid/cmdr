@@ -139,7 +139,7 @@ describe('rows stay on screen while the run keeps finding more', () => {
     const target = mountWith({
       results: rows(3),
       totalCount: 1234,
-      live: liveView({ matchCount: 1234, dirsFound: 4312, currentPath: '/Volumes/naspi/photos' }),
+      live: liveView({ matchCount: 1234, dirsFound: 4312, currentPath: '/Volumes/testshare/photos' }),
     })
     await tick()
     const status = statusText(target)
@@ -154,12 +154,12 @@ describe('rows stay on screen while the run keeps finding more', () => {
     // catches a wiring change that leaves a blank strip where progress should be.
     const target = mountWith({
       results: rows(1),
-      live: liveView({ currentPath: '/Volumes/naspi/photos/2019' }),
+      live: liveView({ currentPath: '/Volumes/testshare/photos/2019' }),
     })
     await tick()
     const path = target.querySelector('.status-path')
-    expect(path?.textContent ?? '').toContain('naspi')
-    expect(path?.getAttribute('aria-label')).toContain('/Volumes/naspi/photos/2019')
+    expect(path?.textContent ?? '').toContain('testshare')
+    expect(path?.getAttribute('aria-label')).toContain('/Volumes/testshare/photos/2019')
   })
 
   it('offers a way out, with the key that does the same thing', async () => {

@@ -33,6 +33,10 @@
       "lines": 834,
       "reason": "Test support that the file-length check budgets as source only because its name ends in `_test_support.rs`: the backend-blind transfer scenarios every network backend runs, plus the one copy driver they share (`RunningCopy`, `start_copy` / `run_copy` and their `_on` twins for a cell on an engine of its own). The scenarios and the driver change together, and the cells in the backend files reach both. TODO: move the copy driver (`RunningCopy` and the start/run functions) into its own `network_copy_driver_test_support.rs` if the scenarios grow further."
     },
+    "apps/desktop/src-tauri/src/redact/tests.rs": {
+      "lines": 1215,
+      "reason": "TODO: move the Windows-path and mount-owner case tables into `redact/path_tests.rs` beside `prose_tests.rs`; the file crossed 1,200 when its fixture names became the longer obviously-fake ones (`test_user_N`, `testshare`) and rustfmt wrapped the case tuples"
+    },
     "apps/desktop/src-tauri/src/tools/table.rs": {
       "lines": 821,
       "reason": "The one authored tool table: nothing but entries, a new tool is one entry, and its schemas already live in `schemas/`. Cutting it by category would hide the order the wire pins and the single view of every tool's access and load."

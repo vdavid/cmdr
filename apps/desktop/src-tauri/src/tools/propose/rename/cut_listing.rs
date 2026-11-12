@@ -253,14 +253,14 @@ mod tests {
     /// Every value is a bucket or a token: never the folder, a name, or a raw count.
     #[test]
     fn every_prop_value_is_a_short_token_or_bucket() {
-        let cuts = cuts_after(&listing("/Users/dave/shots", 5_000, 200));
+        let cuts = cuts_after(&listing("/Users/test_user_10/shots", 5_000, 200));
         let props = cuts
-            .cut_plan_props(THREAD, &plan("/Users/dave/shots", 12))
+            .cut_plan_props(THREAD, &plan("/Users/test_user_10/shots", 12))
             .expect("counted");
         for (key, value) in props.as_object().expect("props are an object") {
             let s = value.as_str().unwrap_or_else(|| panic!("{key} is a string token"));
             assert!(
-                !s.contains('/') && !s.contains("dave") && s.len() <= 24,
+                !s.contains('/') && !s.contains("test_user_10") && s.len() <= 24,
                 "prop '{key}' carries a non-categorical value: {s}"
             );
         }

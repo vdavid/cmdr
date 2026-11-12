@@ -50,7 +50,7 @@ export interface PlaceConnectDeps {
   enter: (change: VolumeChangePayload) => void
   /**
    * Where a place sits once live, off the saved list. Asked only for an SMB
-   * share, whose next mount can land on another path (`/Volumes/naspi-1`) than
+   * share, whose next mount can land on another path (`/Volumes/testshare-1`) than
    * the one its saved row remembered; a server place's root never moves on a
    * connect.
    */
@@ -302,7 +302,7 @@ function walksOnConnect(volumeId: string): boolean {
 
 /**
  * `path` moved from under `oldRoot` to under `newRoot`, keeping the folder inside:
- * `/Volumes/naspi/docs` is `/Volumes/naspi-1/docs` once the share mounts there. A
+ * `/Volumes/testshare/docs` is `/Volumes/testshare-1/docs` once the share mounts there. A
  * path outside `oldRoot` lands at `newRoot`.
  */
 export function rebaseOnRoot(path: string, oldRoot: string, newRoot: string): string {

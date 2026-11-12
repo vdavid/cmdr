@@ -309,7 +309,7 @@ fn matches_pattern(address: &str, pattern: &str) -> bool {
 
 - **Mechanism:** Both `http` and `https` are accepted, and Basic auth rides every request, so on `http://` the password
   crosses the network in base64 on each listing and each upload. Nothing in the sign-in UI (`lib/servers/`) warns.
-- **Trigger:** Adding a NAS by `http://nas.local:5005`, a common default on Synology and QNAP.
+- **Trigger:** Adding a NAS by `http://testnas.local:5005`, a common default on Synology and QNAP.
 - **Guard ruled out:** None found: no warning, no refusal, no HTTPS-upgrade attempt.
 - **Impact:** The account password is readable to anyone on the network path (shared Wi-Fi), which gives them the data.
 - **Suggested fix:** Warn in the sign-in sheet for `http://` (or require an explicit opt-in) before the first secret is

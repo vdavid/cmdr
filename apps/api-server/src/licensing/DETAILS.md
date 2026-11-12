@@ -206,8 +206,8 @@ Paddle outage gets, so a D1 blip can't drop a working license to Personal.
 **Minting** (`/admin/generate`) writes the ledger row before the KV entry, then emails only if asked:
 
 ```bash
-node apps/api-server/scripts/mint-license.js --email dana@example.com --org Acme \
-  --note "Dana Lee, Acme, evaluation" --expires 90d --send
+node apps/api-server/scripts/mint-license.js --email test_user_13@example.com --org Acme \
+  --note "Test Customer, Acme, evaluation" --expires 90d --send
 ```
 
 `--expires` takes a date (`2027-01-31`, meaning through the end of that day) or a span (`30d`, `6m`, `1y`); omit it for

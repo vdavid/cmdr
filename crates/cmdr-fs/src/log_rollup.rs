@@ -159,7 +159,7 @@ mod tests {
         rollup.record_at("root", t0).expect("root's first line");
         assert!(rollup.record_at("root", t0).is_none(), "root is now inside its window");
         let batch = rollup
-            .record_at("naspi", t0)
+            .record_at("testshare", t0)
             .expect("a different share is on its own clock");
         assert_eq!(batch.count, 1);
     }
@@ -192,10 +192,10 @@ mod tests {
     fn forgetting_a_key_restores_its_immediate_first_line() {
         let t0 = Instant::now();
         let rollup = LogRollup::new(WINDOW);
-        rollup.record_at("naspi", t0).expect("the first line");
-        assert!(rollup.record_at("naspi", t0).is_none());
-        rollup.forget("naspi");
-        let batch = rollup.record_at("naspi", t0).expect("a forgotten key logs again");
+        rollup.record_at("testshare", t0).expect("the first line");
+        assert!(rollup.record_at("testshare", t0).is_none());
+        rollup.forget("testshare");
+        let batch = rollup.record_at("testshare", t0).expect("a forgotten key logs again");
         assert_eq!(batch.count, 1);
     }
 }

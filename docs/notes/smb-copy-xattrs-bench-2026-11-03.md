@@ -47,8 +47,8 @@ in another: order effects, which is why the reads now interleave.
 
 ## On a real QNAP, over the LAN
 
-- **Rig**: David's QNAP TS-464 (QuTS hero, ZFS, Samba 4.20, `catia fruit qnap_macea streams_depot`), share `naspi`, from
-  the M3 MacBook on the home LAN at ~2.9 ms ping. smb2 0.40.0's `nas_the_listing_on_a_small_read_costs`
+- **Rig**: David's QNAP TS-464 (QuTS hero, ZFS, Samba 4.20, `catia fruit qnap_macea streams_depot`), share `testshare`,
+  from the M3 MacBook on the home LAN at ~2.9 ms ping. smb2 0.40.0's `nas_the_listing_on_a_small_read_costs`
   (`crates/smb2/tests/integration.rs`, debug build): 200 plain 4 KiB files read one at a time with
   `read_file_compound_sized_with_info` (before) and `read_file_compound_sized_with_streams` (a copy's read), interleaved
   file by file, the order flipped every run, median of seven runs. The protocol-level calls Cmdr's two read paths make,

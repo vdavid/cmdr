@@ -195,7 +195,7 @@ describe('PathPills a11y', () => {
     document.body.appendChild(target)
     mount(PathPills, {
       target,
-      props: { path: '/Users/dave/code', onPick: () => {} },
+      props: { path: '/Users/test_user_10/code', onPick: () => {} },
     })
     await tick()
     await expectNoA11yViolations(target)

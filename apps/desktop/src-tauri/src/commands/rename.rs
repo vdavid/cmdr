@@ -304,7 +304,7 @@ mod tests {
         );
 
         let result = check_rename_permission(
-            "sftp://ada@nas.local:22/srv/data/nothing-here.xml".to_string(),
+            "sftp://test_user_1@testnas.local:22/srv/data/nothing-here.xml".to_string(),
             Some(volume_id.to_string()),
         )
         .await;
@@ -321,7 +321,7 @@ mod tests {
     #[tokio::test]
     async fn an_unregistered_volume_skips_the_local_rename_preflight() {
         let result = check_rename_permission(
-            "sftp://ada@nas.local:22/srv/data/nothing-here.xml".to_string(),
+            "sftp://test_user_1@testnas.local:22/srv/data/nothing-here.xml".to_string(),
             Some("sftp-never-registered-test".to_string()),
         )
         .await;

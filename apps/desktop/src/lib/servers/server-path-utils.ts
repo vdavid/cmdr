@@ -4,12 +4,12 @@
  *
  * Path format: `<protocol>://<user>@<host>:<port>/<server path>`
  * Examples:
- *   - `sftp://ada@nas.local:22` (the volume's root)
- *   - `sftp://ada@nas.local:22/srv/data/photos` (a folder on the server)
- *   - `webdav://ada@nas.local:5006/remote.php/dav/files/ada`
+ *   - `sftp://test_user_1@testnas.local:22` (the volume's root)
+ *   - `sftp://test_user_1@testnas.local:22/srv/data/photos` (a folder on the server)
+ *   - `webdav://test_user_1@testnas.local:5006/remote.php/dav/files/test_user_1`
  *   - `s3://AKIAEXAMPLE@s3.eu-west-1.amazonaws.com:443/photos/2026` (the account is
  *     the access key id; the first segment is the bucket)
- *   - `nfs://nas.local:2049/volume1%2Fdata/photos` (no account: the first segment is
+ *   - `nfs://testnas.local:2049/volume1%2Fdata/photos` (no account: the first segment is
  *     the EXPORT, escaped into one segment; § "NFS" below)
  *
  * ❗ **The prefix is what makes a remote path self-describing.** Rust's mount
@@ -79,7 +79,7 @@ const SERVER_SCHEMES: ServerPathProtocol[] = ['sftp', 'webdav', 's3', 'nfs']
  * does: the account is everything before the LAST `@`, the port everything after
  * the LAST `:`. The account takes `@` (an email login) and backtracks to the last
  * one, since the host can't hold an `@`; the host takes `:`, so an IPv6 literal
- * (`sftp://ada@::1:22`) still splits.
+ * (`sftp://test_user_1@::1:22`) still splits.
  */
 const SERVER_PATH_RE = /^(sftp|webdav|s3):\/\/([^/]+)@([^@/]+):(\d{1,5})(?=\/|$)/
 
@@ -114,7 +114,7 @@ export function isServerVolumeId(volumeId: string): boolean {
 
 /**
  * Whether `path` is `root` or a folder inside it, by whole components: a share's
- * mount at `/Volumes/naspi` doesn't hold `/Volumes/naspi-1`.
+ * mount at `/Volumes/testshare` doesn't hold `/Volumes/testshare-1`.
  */
 export function isAtOrUnder(path: string, root: string): boolean {
   return path === root || path.startsWith(root.endsWith('/') ? root : `${root}/`)

@@ -477,7 +477,7 @@ fn typed_variants_populate_path_param() {
 /// FE can interpolate (and escape) them.
 #[test]
 fn io_serious_carries_path_and_os_message() {
-    let path = Path::new("/Volumes/share/_todo_pics/photo.jpg");
+    let path = Path::new("/Volumes/share/test_photos/photo.jpg");
     let os_msg = "Protocol error: STATUS_DELETE_PENDING during Create";
     let err = VolumeError::IoError {
         message: os_msg.into(),
@@ -485,7 +485,7 @@ fn io_serious_carries_path_and_os_message() {
     };
     match listing_error_from_volume_error(&err, path).reason {
         ListingErrorReason::IoSerious { path: p, os_message } => {
-            assert_eq!(p, "/Volumes/share/_todo_pics/photo.jpg");
+            assert_eq!(p, "/Volumes/share/test_photos/photo.jpg");
             assert_eq!(os_message, os_msg);
         }
         other => panic!("IoError without errno should be IoSerious, got {other:?}"),
@@ -630,9 +630,9 @@ fn a_phone_refusal_is_the_phones() {
 #[test]
 fn a_connected_servers_refusal_is_the_servers() {
     for (path, raw_os_error) in [
-        ("sftp://ada@nas.local:22/etc/ssl", None),
-        ("webdav://ada@nas.local:443/private", None),
-        ("nfs://nas.local:2049/%2Fexport/private", Some(libc::EACCES)),
+        ("sftp://test_user_1@testnas.local:22/etc/ssl", None),
+        ("webdav://test_user_1@testnas.local:443/private", None),
+        ("nfs://testnas.local:2049/%2Fexport/private", Some(libc::EACCES)),
     ] {
         let err = VolumeError::PermissionDenied {
             path: path.to_string(),
@@ -680,8 +680,8 @@ fn remote_permission_denied_offers_no_privacy_settings_action() {
 /// ❌ never System Settings, and keeps its path for the pane (#966).
 #[test]
 fn encryption_required_points_at_the_smb_encryption_setting() {
-    let path = Path::new("/Volumes/naspi/photos");
-    let listing = listing_error_from_volume_error(&VolumeError::EncryptionRequired("/Volumes/naspi".into()), path);
+    let path = Path::new("/Volumes/testshare/photos");
+    let listing = listing_error_from_volume_error(&VolumeError::EncryptionRequired("/Volumes/testshare".into()), path);
     assert_eq!(listing.category, ErrorCategory::NeedsAction);
     assert_eq!(listing.action_kind, Some(ErrorActionKind::OpenSmbEncryptionSetting));
     assert!(
@@ -690,7 +690,7 @@ fn encryption_required_points_at_the_smb_encryption_setting() {
     );
     assert!(matches!(
         listing.reason,
-        ListingErrorReason::SmbEncryptionRequired { path } if path == "/Volumes/naspi/photos"
+        ListingErrorReason::SmbEncryptionRequired { path } if path == "/Volumes/testshare/photos"
     ));
 }
 
@@ -699,17 +699,17 @@ fn encryption_required_points_at_the_smb_encryption_setting() {
 /// the same) and no action (no Cmdr setting changes it).
 #[test]
 fn an_unconfirmed_negotiation_and_unavailable_encryption_have_their_own_reasons() {
-    let path = Path::new("/Volumes/naspi/photos");
+    let path = Path::new("/Volumes/testshare/photos");
     let unconfirmed = listing_error_from_volume_error(&VolumeError::NegotiationInvalid("dialect".into()), path);
     assert!(matches!(
         &unconfirmed.reason,
-        ListingErrorReason::SmbNegotiationInvalid { path } if path == "/Volumes/naspi/photos"
+        ListingErrorReason::SmbNegotiationInvalid { path } if path == "/Volumes/testshare/photos"
     ));
     let unencrypted =
-        listing_error_from_volume_error(&VolumeError::EncryptionUnavailable("/Volumes/naspi".into()), path);
+        listing_error_from_volume_error(&VolumeError::EncryptionUnavailable("/Volumes/testshare".into()), path);
     assert!(matches!(
         &unencrypted.reason,
-        ListingErrorReason::SmbEncryptionUnavailable { path } if path == "/Volumes/naspi/photos"
+        ListingErrorReason::SmbEncryptionUnavailable { path } if path == "/Volumes/testshare/photos"
     ));
     for listing in [unconfirmed, unencrypted] {
         assert_eq!(listing.category, ErrorCategory::NeedsAction);

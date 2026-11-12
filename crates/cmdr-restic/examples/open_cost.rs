@@ -3,7 +3,7 @@
 //!
 //! ```sh
 //! RESTIC_PASSWORD_COMMAND='secret NAME' /usr/bin/time -l \
-//!   cargo run --release -p cmdr-restic --example open_cost -- mount ids /Volumes/naspi/backups/repo
+//!   cargo run --release -p cmdr-restic --example open_cost -- mount ids /Volumes/testshare/backups/repo
 //! ```
 //!
 //! - Via: `mount` (a `LocalPosixVolume` over the OS mount) or `smb` (a direct

@@ -19,8 +19,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio_util::sync::CancellationToken;
 
 const PASSWORD: &str = "correct horse";
-const ROOT: &str = "/Volumes/naspi/backups/m3-restic";
-const VOLUME_ID: &str = "smb-naspi";
+const ROOT: &str = "/Volumes/testshare/backups/test-restic";
+const VOLUME_ID: &str = "smb-testshare";
 /// 2001-09-09: old enough that a stream reporting "now" can't pass for it.
 const OLD_DATE: u64 = 1_000_000_000;
 const LONG_NAME_LEN: usize = 255;
@@ -79,7 +79,7 @@ impl Browse {
         let source = source_folder();
         let fixture = FixtureRepo::init(PASSWORD);
         fixture.backup(&source, at(1_791_000_000));
-        let parent = Arc::new(InMemoryVolume::new("naspi"));
+        let parent = Arc::new(InMemoryVolume::new("testshare"));
         fixture.write_into(parent.as_ref(), Path::new(ROOT)).await;
         let hub = Arc::new(ResticRepos::with_tuning(VolumeHost::detached(), tuning));
         let volume = view_over(&hub, &parent);
@@ -146,8 +146,8 @@ async fn read_all(volume: &ResticVolume, path: &Path) -> Vec<u8> {
 #[tokio::test(flavor = "multi_thread")]
 async fn without_a_password_the_view_asks_for_one() {
     let fixture = FixtureRepo::init(PASSWORD);
-    fixture.add_snapshot(at(1_791_000_000), "m3");
-    let parent = Arc::new(InMemoryVolume::new("naspi"));
+    fixture.add_snapshot(at(1_791_000_000), "test-host");
+    let parent = Arc::new(InMemoryVolume::new("testshare"));
     fixture.write_into(parent.as_ref(), Path::new(ROOT)).await;
     let hub = Arc::new(ResticRepos::new(VolumeHost::detached()));
     let volume = view_over(&hub, &parent);
@@ -168,8 +168,8 @@ async fn without_a_password_the_view_asks_for_one() {
 #[tokio::test(flavor = "multi_thread")]
 async fn a_wrong_password_unlocks_nothing_and_keeps_nothing() {
     let fixture = FixtureRepo::init(PASSWORD);
-    fixture.add_snapshot(at(1_791_000_000), "m3");
-    let parent = Arc::new(InMemoryVolume::new("naspi"));
+    fixture.add_snapshot(at(1_791_000_000), "test-host");
+    let parent = Arc::new(InMemoryVolume::new("testshare"));
     fixture.write_into(parent.as_ref(), Path::new(ROOT)).await;
     let hub = Arc::new(ResticRepos::new(VolumeHost::detached()));
     let volume = view_over(&hub, &parent);
@@ -226,8 +226,8 @@ async fn the_view_lists_one_folder_per_snapshot_plus_latest() {
 #[tokio::test(flavor = "multi_thread")]
 async fn a_snapshot_without_a_summary_lists_without_a_size() {
     let fixture = FixtureRepo::init(PASSWORD);
-    fixture.add_snapshot(at(1_791_000_000), "m3");
-    let parent = Arc::new(InMemoryVolume::new("naspi"));
+    fixture.add_snapshot(at(1_791_000_000), "test-host");
+    let parent = Arc::new(InMemoryVolume::new("testshare"));
     fixture.write_into(parent.as_ref(), Path::new(ROOT)).await;
     let hub = Arc::new(ResticRepos::new(VolumeHost::detached()));
     let volume = view_over(&hub, &parent);
@@ -242,14 +242,14 @@ async fn a_snapshot_without_a_summary_lists_without_a_size() {
 #[tokio::test(flavor = "multi_thread")]
 async fn a_snapshot_row_carries_its_host_tags_and_paths() {
     let fixture = FixtureRepo::init(PASSWORD);
-    fixture.add_tagged_snapshot(at(1_791_000_000), "m3", &["daily"], &["/Users/david"]);
+    fixture.add_tagged_snapshot(at(1_791_000_000), "test-host", &["daily"], &["/Users/test_user_3"]);
     fixture.add_tagged_snapshot(
         at(1_792_000_000),
-        "naspolya",
+        "testnas",
         &["weekly", "nas"],
         &["/share/photos", "/share/docs"],
     );
-    let parent = Arc::new(InMemoryVolume::new("naspi"));
+    let parent = Arc::new(InMemoryVolume::new("testshare"));
     fixture.write_into(parent.as_ref(), Path::new(ROOT)).await;
     let hub = Arc::new(ResticRepos::new(VolumeHost::detached()));
     let volume = view_over(&hub, &parent);
@@ -261,11 +261,11 @@ async fn a_snapshot_row_carries_its_host_tags_and_paths() {
         .restic_meta
         .as_ref()
         .expect("a dated row carries its snapshot's facts");
-    assert_eq!(older.hostname, "m3");
+    assert_eq!(older.hostname, "test-host");
     assert_eq!(older.tags, vec!["daily"]);
-    assert_eq!(older.paths, vec!["/Users/david"]);
+    assert_eq!(older.paths, vec!["/Users/test_user_3"]);
     let newer = entries[1].restic_meta.as_ref().expect("every dated row does");
-    assert_eq!(newer.hostname, "naspolya");
+    assert_eq!(newer.hostname, "testnas");
     assert_eq!(newer.tags, vec!["nas", "weekly"], "sorted");
     assert_eq!(newer.paths, vec!["/share/docs", "/share/photos"], "sorted");
     assert_eq!(
@@ -640,7 +640,7 @@ async fn a_replaced_parent_is_read_through_from_then_on() {
     let browse = Browse::new().await;
     let dir = browse.source_in("latest").await;
 
-    let replacement = Arc::new(InMemoryVolume::new("naspi"));
+    let replacement = Arc::new(InMemoryVolume::new("testshare"));
     browse.fixture.write_into(replacement.as_ref(), Path::new(ROOT)).await;
     let reconnected = view_over(&browse.hub, &replacement);
     // The retired parent loses its copy of the repo: anything still reading

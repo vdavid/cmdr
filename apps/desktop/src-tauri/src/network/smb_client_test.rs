@@ -220,12 +220,12 @@ fn a_refused_signature_on_a_listing_reaches_the_security_log() {
     let refused: Result<ShareListResult, ShareListError> = Err(ShareListError::SignatureInvalid {
         message: "the reply's signature didn't match".to_string(),
     });
-    record_security_refusal("naspolya", &refused);
-    record_security_refusal("naspolya", &refused);
+    record_security_refusal("testnas", &refused);
+    record_security_refusal("testnas", &refused);
     assert_eq!(
         capture.events(),
         vec![SecurityEvent::SmbSignatureRejectionsStarted {
-            scope: SmbScope::Host("naspolya".into()),
+            scope: SmbScope::Host("testnas".into()),
             source: SmbSignatureSource::ShareListing,
         }]
     );
@@ -241,18 +241,18 @@ fn an_unconfirmed_negotiation_on_a_listing_reaches_the_security_log() {
     let unconfirmed: Result<ShareListResult, ShareListError> = Err(ShareListError::NegotiationInvalid {
         message: "the server answered a different dialect".to_string(),
     });
-    record_security_refusal("naspolya", &unconfirmed);
+    record_security_refusal("testnas", &unconfirmed);
     record_security_refusal(
-        "naspolya",
+        "testnas",
         &Err(ShareListError::Timeout {
             message: "slow".to_string(),
         }),
     );
-    record_security_refusal("naspolya", &Ok(listing(AuthMode::GuestAllowed)));
+    record_security_refusal("testnas", &Ok(listing(AuthMode::GuestAllowed)));
     assert_eq!(
         capture.events(),
         vec![SecurityEvent::SmbNegotiationRejectionsStarted {
-            scope: SmbScope::Host("naspolya".into())
+            scope: SmbScope::Host("testnas".into())
         }]
     );
 }

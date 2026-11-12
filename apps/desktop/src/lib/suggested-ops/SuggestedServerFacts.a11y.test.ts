@@ -35,7 +35,7 @@ const addServer: ServerProposalView = {
     { field: 'name', value: 'Build box', changed: false, previous: null },
     { field: 'address', value: 'build.local', changed: false, previous: null },
     { field: 'port', value: '22', changed: false, previous: null },
-    { field: 'account', value: 'ada', changed: false, previous: null },
+    { field: 'account', value: 'test_user_1', changed: false, previous: null },
     { field: 'folder', value: '/srv/builds', changed: false, previous: null },
   ],
   addressIsNew: true,
@@ -45,9 +45,9 @@ const addServer: ServerProposalView = {
 const editServer: ServerProposalView = {
   protocol: 'smb',
   fields: [
-    { field: 'name', value: 'Naspolya', changed: true, previous: 'naspi' },
-    { field: 'address', value: 'naspi.local', changed: false, previous: null },
-    { field: 'account', value: 'david', changed: true, previous: null },
+    { field: 'name', value: 'Testnas', changed: true, previous: 'testshare' },
+    { field: 'address', value: 'testshare.local', changed: false, previous: null },
+    { field: 'account', value: 'test_user_3', changed: true, previous: null },
     { field: 'startFolder', value: null, changed: true, previous: '/media' },
   ],
   addressIsNew: false,
@@ -97,7 +97,7 @@ describe('an add card', () => {
       ['Name', 'Build box'],
       ['Address', 'build.local A new address'],
       ['Port', '22'],
-      ['Account', 'ada'],
+      ['Account', 'test_user_1'],
       ['Root folder', '/srv/builds'],
     ])
     expect(list.querySelector('.arrow')).toBeNull()
@@ -123,9 +123,9 @@ describe('an edit card', () => {
 
     expect(spokenRows(list)).toEqual([
       ['Type', 'SMB'],
-      ['Name', 'naspi changes to Naspolya'],
-      ['Address', 'naspi.local'],
-      ['Account', 'Not set changes to david'],
+      ['Name', 'testshare changes to Testnas'],
+      ['Address', 'testshare.local'],
+      ['Account', 'Not set changes to test_user_3'],
       ['Start folder', '/media changes to Not set'],
     ])
     const arrows = [...list.querySelectorAll('.arrow')]
@@ -137,7 +137,7 @@ describe('an edit card', () => {
 
 describe('a refused card', () => {
   it('keeps its facts readable beside the alert that says why, with no violations', async () => {
-    store.state.refusals = new Map([[7, { kind: 'server', answer: { kind: 'nameTaken', name: 'Naspolya' } }]])
+    store.state.refusals = new Map([[7, { kind: 'server', answer: { kind: 'nameTaken', name: 'Testnas' } }]])
     const SuggestedOpsGroup = (await import('./SuggestedOpsGroup.svelte')).default
     const host = document.createElement('div')
     document.body.appendChild(host)
@@ -169,7 +169,7 @@ describe('a refused card', () => {
 
     const refusal = host.querySelector('.refusal')
     expect(refusal?.getAttribute('role')).toBe('alert')
-    expect(refusal?.textContent).toContain('Another saved server is already called Naspolya')
+    expect(refusal?.textContent).toContain('Another saved server is already called Testnas')
     const facts = host.querySelector<HTMLElement>('dl.facts')
     expect(facts).not.toBeNull()
     expect(spokenRows(facts as HTMLElement)).toContainEqual(['Address', 'build.local A new address'])

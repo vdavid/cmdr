@@ -419,7 +419,7 @@ mod tests {
     fn snapshot() -> Vec<cmdr_local::mount_table::MountEntry> {
         vec![
             mounts::mount_entry_for_test("/", "apfs"),
-            mounts::mount_entry_for_test("/Volumes/naspi", "smbfs"),
+            mounts::mount_entry_for_test("/Volumes/testshare", "smbfs"),
         ]
     }
 
@@ -432,7 +432,7 @@ mod tests {
     /// and no `statfs` (its type comes from the snapshot).
     #[test]
     fn a_favorite_on_a_network_mount_is_listed_without_touching_it() {
-        let row = favorite_location(favorite("/Volumes/naspi/docs"), &snapshot(), false, never_asked);
+        let row = favorite_location(favorite("/Volumes/testshare/docs"), &snapshot(), false, never_asked);
         assert_eq!(row.fs_type.as_deref(), Some("smbfs"));
         assert!(row.icon.is_none());
         let target = row.favorite_target.expect("a favorite row carries its target");
@@ -502,7 +502,12 @@ mod tests {
 
     #[test]
     fn a_scheme_path_favorite_is_listed_without_a_mount() {
-        let row = favorite_location(favorite("sftp://ada@nas:22/srv"), &snapshot(), false, never_asked);
+        let row = favorite_location(
+            favorite("sftp://test_user_1@nas:22/srv"),
+            &snapshot(),
+            false,
+            never_asked,
+        );
         assert_eq!(row.fs_type, None);
         assert!(!row.supports_trash);
     }

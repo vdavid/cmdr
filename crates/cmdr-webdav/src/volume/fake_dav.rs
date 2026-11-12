@@ -157,19 +157,24 @@ impl FakeDav {
         self.probes.load(Ordering::SeqCst)
     }
 
-    /// The store key the fake's volumes file account `ada` under.
+    /// The store key the fake's volumes file account `test_user_1` under.
     pub(super) fn credential_service(&self) -> String {
         self.params().credential_service()
     }
 
     fn params(&self) -> WebdavConnectionParams {
         let base = Url::parse(&format!("http://127.0.0.1:{}/dav/", self.port)).expect("a valid URL");
-        WebdavConnectionParams::new(base, "ada", "/")
+        WebdavConnectionParams::new(base, "test_user_1", "/")
     }
 
     /// A volume on the fake server, on the short ladder.
     pub(super) async fn connected(&self) -> (WebdavVolume, Arc<RecordingVolumeEvents>) {
-        let store = InMemoryCredentials::new().with_entry(&self.credential_service(), Some("ada"), "ada", "secret");
+        let store = InMemoryCredentials::new().with_entry(
+            &self.credential_service(),
+            Some("test_user_1"),
+            "test_user_1",
+            "secret",
+        );
         self.connected_with(Arc::new(store)).await
     }
 

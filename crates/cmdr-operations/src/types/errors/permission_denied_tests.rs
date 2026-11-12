@@ -13,10 +13,10 @@ fn a_refusal_on_a_mounted_share_is_the_servers_whatever_the_errno() {
             refused_folder,
             ..
         } = WriteOperationError::permission_denied_on(
-            "/Volumes/naspi/a.txt".to_string(),
+            "/Volumes/testshare/a.txt".to_string(),
             "denied".to_string(),
             errno,
-            Some("/Volumes/naspi".to_string()),
+            Some("/Volumes/testshare".to_string()),
             None,
             true,
         )
@@ -36,10 +36,10 @@ fn a_refusal_off_a_share_still_reads_its_errno_and_keeps_its_folder() {
         refused_folder,
         ..
     } = WriteOperationError::permission_denied_on(
-        "/Users/ada/a.txt".to_string(),
+        "/Users/test_user_1/a.txt".to_string(),
         "denied".to_string(),
         Some(libc::EACCES),
-        Some("/Users/ada".to_string()),
+        Some("/Users/test_user_1".to_string()),
         None,
         false,
     )
@@ -47,5 +47,5 @@ fn a_refusal_off_a_share_still_reads_its_errno_and_keeps_its_folder() {
         panic!("expected PermissionDenied");
     };
     assert_eq!(refusal, PermissionRefusal::FolderPermissions);
-    assert_eq!(refused_folder.as_deref(), Some("/Users/ada"));
+    assert_eq!(refused_folder.as_deref(), Some("/Users/test_user_1"));
 }

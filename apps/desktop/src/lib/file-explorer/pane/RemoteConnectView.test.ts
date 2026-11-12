@@ -16,7 +16,7 @@ describe('a changed host key', () => {
     document.body.appendChild(target)
     mount(RemoteConnectView, {
       target,
-      props: { name: 'Naspolya', state: { kind: 'host_key_changed', checkKey, disconnect } },
+      props: { name: 'Testnas', state: { kind: 'host_key_changed', checkKey, disconnect } },
     })
     await tick()
 
@@ -41,11 +41,11 @@ describe('a refused guest session', () => {
     document.body.appendChild(target)
     mount(RemoteConnectView, {
       target,
-      props: { name: 'Naspolya', state: { kind: 'guest_session_refused', signIn, disconnect } },
+      props: { name: 'Testnas', state: { kind: 'guest_session_refused', signIn, disconnect } },
     })
     await tick()
 
-    expect(target.textContent).toContain('Cmdr didn’t sign in to Naspolya as a guest')
+    expect(target.textContent).toContain('Cmdr didn’t sign in to Testnas as a guest')
     const buttons = [...target.querySelectorAll('button')]
     buttons.find((button) => button.textContent.trim() === 'Try another password…')?.click()
     expect(signIn).toHaveBeenCalledTimes(1)
@@ -62,7 +62,7 @@ describe('the address under the name', () => {
     document.body.appendChild(target)
     mount(RemoteConnectView, {
       target,
-      props: { name: 'Naspolya', address: '100.64.0.7:22', state: { kind: 'connecting', cancel: vi.fn() } },
+      props: { name: 'Testnas', address: '100.64.0.7:22', state: { kind: 'connecting', cancel: vi.fn() } },
     })
     await tick()
 
@@ -78,7 +78,7 @@ describe('a single dial with its own hint', () => {
     mount(RemoteConnectView, {
       target,
       props: {
-        name: 'naspi',
+        name: 'testshare',
         state: { kind: 'connecting', cancel: vi.fn(), hint: 'Still waiting for macOS to connect.' },
       },
     })

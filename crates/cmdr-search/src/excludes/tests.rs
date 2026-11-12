@@ -130,9 +130,9 @@ fn an_exclude_with_a_slash_is_a_path_prefix_in_the_space_the_walk_reports() {
     // A path exclude is absolute, so it has to be compared against the path the
     // user would recognize — mount-absolute on a share, not the mount-relative
     // form the index stores.
-    let rules = rules_for(&with_excludes(&["/Volumes/naspi/Photos"]), true).expect("the test excludes compile");
-    assert!(rules.excludes_walked("/Volumes/naspi/Photos/2019/a.jpg", Some("/Volumes/naspi")));
-    assert!(!rules.excludes_walked("/Volumes/naspi/Docs/a.pdf", Some("/Volumes/naspi")));
+    let rules = rules_for(&with_excludes(&["/Volumes/testshare/Photos"]), true).expect("the test excludes compile");
+    assert!(rules.excludes_walked("/Volumes/testshare/Photos/2019/a.jpg", Some("/Volumes/testshare")));
+    assert!(!rules.excludes_walked("/Volumes/testshare/Docs/a.pdf", Some("/Volumes/testshare")));
 }
 
 #[test]

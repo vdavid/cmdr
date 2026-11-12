@@ -20,11 +20,11 @@ function seg(label: string, fullPath: string): Segment {
 
 const segs = [
   seg('Users', '/Users'),
-  seg('dave', '/Users/dave'),
-  seg('projects', '/Users/dave/projects'),
-  seg('cmdr', '/Users/dave/projects/cmdr'),
-  seg('src', '/Users/dave/projects/cmdr/src'),
-  seg('lib', '/Users/dave/projects/cmdr/src/lib'),
+  seg('test_user_10', '/Users/test_user_10'),
+  seg('projects', '/Users/test_user_10/projects'),
+  seg('cmdr', '/Users/test_user_10/projects/cmdr'),
+  seg('src', '/Users/test_user_10/projects/cmdr/src'),
+  seg('lib', '/Users/test_user_10/projects/cmdr/src/lib'),
 ]
 
 const charMeasure = (s: string) => s.length // 1 px per char
@@ -73,7 +73,7 @@ describe('computePathPillsLayout (R2)', () => {
       pillChrome: chrome,
       pillMinWidth: 0,
     })
-    expect(out.leading.map((s) => s.label)).toEqual(['Users', 'dave', 'projects', 'cmdr', 'src', 'lib'])
+    expect(out.leading.map((s) => s.label)).toEqual(['Users', 'test_user_10', 'projects', 'cmdr', 'src', 'lib'])
     expect(out.collapsed).toHaveLength(0)
     expect(out.trailing).toHaveLength(0)
   })
@@ -91,7 +91,7 @@ describe('computePathPillsLayout (R2)', () => {
     })
     expect(out.collapsed).toHaveLength(0)
     expect(out.trailing).toHaveLength(0)
-    expect(out.leading.map((s) => s.label)).toEqual(['Users', 'dave', 'projects', 'cmdr', 'src', 'lib'])
+    expect(out.leading.map((s) => s.label)).toEqual(['Users', 'test_user_10', 'projects', 'cmdr', 'src', 'lib'])
   })
 
   it('collapses the middle pills behind … when the strip genuinely overflows', () => {
@@ -106,7 +106,7 @@ describe('computePathPillsLayout (R2)', () => {
     })
     expect(out.leading.map((s) => s.label)).toEqual(['Users'])
     expect(out.trailing.map((s) => s.label)).toEqual(['lib'])
-    expect(out.collapsed.map((s) => s.label)).toEqual(['dave', 'projects', 'cmdr', 'src'])
+    expect(out.collapsed.map((s) => s.label)).toEqual(['test_user_10', 'projects', 'cmdr', 'src'])
   })
 
   it('adds back trailing-side pills while they fit', () => {
@@ -120,7 +120,7 @@ describe('computePathPillsLayout (R2)', () => {
       pillMinWidth: 0,
     })
     expect(out.leading.map((s) => s.label)).toEqual(['Users'])
-    expect(out.collapsed.map((s) => s.label)).toEqual(['dave', 'projects', 'cmdr'])
+    expect(out.collapsed.map((s) => s.label)).toEqual(['test_user_10', 'projects', 'cmdr'])
     expect(out.trailing.map((s) => s.label)).toEqual(['src', 'lib'])
   })
 

@@ -14,7 +14,7 @@ import AskCmdrWakeDigest from './AskCmdrWakeDigest.svelte'
 import type { WakeDigestFolderView, WakeDigestRollupView } from '#lib/tauri-commands/index.js'
 
 function folder(overrides: Partial<WakeDigestFolderView> = {}): WakeDigestFolderView {
-  return { folder: '/Users/dana/Downloads', created: 0, modified: 0, removed: 0, renamed: 0, ...overrides }
+  return { folder: '/Users/test_user_13/Downloads', created: 0, modified: 0, removed: 0, renamed: 0, ...overrides }
 }
 
 function render(folders: WakeDigestFolderView[], rollups: WakeDigestRollupView[] = []): HTMLElement {
@@ -40,8 +40,8 @@ describe('AskCmdrWakeDigest', () => {
 
   it('counts every folder the digest covered, the rolled-up ones included', async () => {
     const target = render(
-      [folder({ created: 1 }), folder({ folder: '/Users/dana/Desktop', modified: 2 })],
-      [{ ancestor: '/Users/dana/Projects', folders: 7, changes: 40 }],
+      [folder({ created: 1 }), folder({ folder: '/Users/test_user_13/Desktop', modified: 2 })],
+      [{ ancestor: '/Users/test_user_13/Projects', folders: 7, changes: 40 }],
     )
     await tick()
     // Two named plus seven summarized: a summary that counted only the named ones would
@@ -70,13 +70,16 @@ describe('AskCmdrWakeDigest', () => {
   })
 
   it('admits how many folders it is not showing', async () => {
-    const target = render([folder({ created: 1 })], [{ ancestor: '/Users/dana/Projects', folders: 7, changes: 40 }])
+    const target = render(
+      [folder({ created: 1 })],
+      [{ ancestor: '/Users/test_user_13/Projects', folders: 7, changes: 40 }],
+    )
     await tick()
     toggleOf(target).click()
     await tick()
     const rollup = target.querySelector('.rollup')?.textContent ?? ''
     expect(rollup).toContain('7')
-    expect(rollup).toContain('/Users/dana/Projects')
+    expect(rollup).toContain('/Users/test_user_13/Projects')
     expect(rollup).toContain('40')
   })
 
@@ -89,8 +92,8 @@ describe('AskCmdrWakeDigest', () => {
    */
   it('renders a repeated folder path rather than throwing', async () => {
     const target = render([
-      folder({ folder: '/Users/dana/Downloads', created: 3 }),
-      folder({ folder: '/Users/dana/Downloads', created: 5 }),
+      folder({ folder: '/Users/test_user_13/Downloads', created: 3 }),
+      folder({ folder: '/Users/test_user_13/Downloads', created: 5 }),
     ])
     await tick()
     toggleOf(target).click()
@@ -101,11 +104,11 @@ describe('AskCmdrWakeDigest', () => {
   /** A folder name is attacker-controlled: the rail renders it as escaped plain text, and
    *  this is the one block whose whole content comes from disk. */
   it('renders a folder name as text, never as markup', async () => {
-    const target = render([folder({ folder: '/Users/dana/<img src=x onerror=alert(1)>', created: 1 })])
+    const target = render([folder({ folder: '/Users/test_user_13/<img src=x onerror=alert(1)>', created: 1 })])
     await tick()
     toggleOf(target).click()
     await tick()
     expect(target.querySelector('img')).toBeNull()
-    expect(target.querySelector('.path')?.textContent).toBe('/Users/dana/<img src=x onerror=alert(1)>')
+    expect(target.querySelector('.path')?.textContent).toBe('/Users/test_user_13/<img src=x onerror=alert(1)>')
   })
 })

@@ -14,10 +14,10 @@ use crate::tools::resources::importance::tests::{low_score_signals, scored_signa
 use crate::tools::resources::volumes::VolumeKind;
 
 const NOW: u64 = 1_000_000;
-const TAILSCALE: &str = "smb-100-127-48-122-445-naspi-david";
-const LAN: &str = "smb-192-168-1-111-445-naspi-david";
+const TAILSCALE: &str = "smb-100-64-0-10-445-testshare-test_user_3";
+const LAN: &str = "smb-192-168-50-10-445-testshare-test_user_3";
 /// A share scored under an id no listing row carries (the Bonjour address).
-const BONJOUR: &str = "smb-naspolya-smb-tcp-local-4-naspi-david";
+const BONJOUR: &str = "smb-testnas-smb-tcp-local-4-testshare-test_user_3";
 
 fn volume(id: &str, kind: VolumeKind, root: &str, live: bool) -> VolumeFact {
     VolumeFact {
@@ -37,14 +37,14 @@ fn volume(id: &str, kind: VolumeKind, root: &str, live: bool) -> VolumeFact {
     }
 }
 
-/// The boot disk, the NAS live over the LAN at `/Volumes/naspi-1`, and the same NAS
-/// saved over Tailscale at its last root `/Volumes/naspi`. No row for `BONJOUR`.
+/// The boot disk, the NAS live over the LAN at `/Volumes/testshare-1`, and the same NAS
+/// saved over Tailscale at its last root `/Volumes/testshare`. No row for `BONJOUR`.
 fn facts() -> VolumeFacts {
     VolumeFacts {
         volumes: vec![
             volume("root", VolumeKind::Local, "/", true),
-            volume(LAN, VolumeKind::Smb, "/Volumes/naspi-1", true),
-            volume(TAILSCALE, VolumeKind::Smb, "/Volumes/naspi", false),
+            volume(LAN, VolumeKind::Smb, "/Volumes/testshare-1", true),
+            volume(TAILSCALE, VolumeKind::Smb, "/Volumes/testshare", false),
         ],
         mount_areas: vec!["/Volumes".to_string()],
     }
@@ -78,7 +78,7 @@ fn every_row_is_a_location_on_its_volumes_root() {
     write_db(
         dir.path(),
         LAN,
-        &[("/papers/x", scored_signals(PathClass::UserContent, NOW))],
+        &[("/documents/x", scored_signals(PathClass::UserContent, NOW))],
         NOW,
     );
     write_db(
@@ -100,8 +100,8 @@ fn every_row_is_a_location_on_its_volumes_root() {
         got,
         [
             loc("root", "/Users/test/Projects"),
-            loc(TAILSCALE, "/Volumes/naspi/photos"),
-            loc(LAN, "/Volumes/naspi-1/papers/x"),
+            loc(TAILSCALE, "/Volumes/testshare/photos"),
+            loc(LAN, "/Volumes/testshare-1/documents/x"),
         ],
         "a share's store paths join onto its root (the last one, offline); the boot disk's are already absolute"
     );
@@ -113,7 +113,7 @@ fn every_row_is_a_location_on_its_volumes_root() {
 fn a_volume_id_alone_ranks_that_volume() {
     let dir = tempfile::tempdir().expect("temp dir");
     let rows = [
-        ("/papers", scored_signals(PathClass::UserContent, NOW)),
+        ("/documents", scored_signals(PathClass::UserContent, NOW)),
         ("/photos", scored_signals(PathClass::UserContent, NOW)),
     ];
     write_db(dir.path(), LAN, &rows, NOW);
@@ -128,7 +128,10 @@ fn a_volume_id_alone_ranks_that_volume() {
     let lan = important(dir.path(), json!({ "volumeId": LAN }));
     assert_eq!(
         locations(&lan),
-        [loc(LAN, "/Volumes/naspi-1/papers"), loc(LAN, "/Volumes/naspi-1/photos")]
+        [
+            loc(LAN, "/Volumes/testshare-1/documents"),
+            loc(LAN, "/Volumes/testshare-1/photos")
+        ]
     );
     assert!(lan.get("under").is_none());
 
@@ -136,8 +139,8 @@ fn a_volume_id_alone_ranks_that_volume() {
     assert_eq!(
         locations(&offline),
         [
-            loc(TAILSCALE, "/Volumes/naspi/papers"),
-            loc(TAILSCALE, "/Volumes/naspi/photos")
+            loc(TAILSCALE, "/Volumes/testshare/documents"),
+            loc(TAILSCALE, "/Volumes/testshare/photos")
         ]
     );
 }
@@ -148,13 +151,13 @@ fn a_volume_that_cant_be_placed_yields_no_rows_and_is_named_unplaced() {
     write_db(
         dir.path(),
         BONJOUR,
-        &[("/papers", scored_signals(PathClass::ProjectRoot, NOW))],
+        &[("/documents", scored_signals(PathClass::ProjectRoot, NOW))],
         NOW,
     );
-    write_db(dir.path(), LAN, &[("/papers", low_score_signals())], NOW);
+    write_db(dir.path(), LAN, &[("/documents", low_score_signals())], NOW);
 
     let result = important(dir.path(), json!({ "top": 5 }));
-    assert_eq!(locations(&result), [loc(LAN, "/Volumes/naspi-1/papers")]);
+    assert_eq!(locations(&result), [loc(LAN, "/Volumes/testshare-1/documents")]);
     let overview = result["volumes"].as_array().expect("volumes");
     let bonjour = overview
         .iter()
@@ -172,39 +175,42 @@ fn a_volume_that_cant_be_placed_yields_no_rows_and_is_named_unplaced() {
 fn under_takes_a_location_and_reads_only_that_volume() {
     let dir = tempfile::tempdir().expect("temp dir");
     let papers = [
-        ("/papers", scored_signals(PathClass::UserContent, NOW)),
-        ("/papers/invoices", scored_signals(PathClass::UserContent, NOW)),
+        ("/documents", scored_signals(PathClass::UserContent, NOW)),
+        ("/documents/invoices", scored_signals(PathClass::UserContent, NOW)),
         ("/docs", scored_signals(PathClass::UserContent, NOW)),
     ];
     write_db(dir.path(), LAN, &papers, NOW);
     write_db(dir.path(), TAILSCALE, &papers, NOW);
 
     for params in [
-        json!({ "under": "/Volumes/naspi-1/papers", "volumeId": LAN }),
-        json!({ "under": "/Volumes/naspi-1/papers" }),
+        json!({ "under": "/Volumes/testshare-1/documents", "volumeId": LAN }),
+        json!({ "under": "/Volumes/testshare-1/documents" }),
     ] {
         let result = important(dir.path(), params.clone());
         assert_eq!(
             locations(&result),
             [
-                loc(LAN, "/Volumes/naspi-1/papers"),
-                loc(LAN, "/Volumes/naspi-1/papers/invoices"),
+                loc(LAN, "/Volumes/testshare-1/documents"),
+                loc(LAN, "/Volumes/testshare-1/documents/invoices"),
             ],
             "{params}"
         );
         assert_eq!(
             result["under"],
-            json!({ "volumeId": LAN, "path": "/Volumes/naspi-1/papers" })
+            json!({ "volumeId": LAN, "path": "/Volumes/testshare-1/documents" })
         );
     }
 
     let offline = important(
         dir.path(),
-        json!({ "under": "/Volumes/naspi/papers/invoices", "volumeId": TAILSCALE }),
+        json!({ "under": "/Volumes/testshare/documents/invoices", "volumeId": TAILSCALE }),
     );
-    assert_eq!(locations(&offline), [loc(TAILSCALE, "/Volumes/naspi/papers/invoices")]);
+    assert_eq!(
+        locations(&offline),
+        [loc(TAILSCALE, "/Volumes/testshare/documents/invoices")]
+    );
 
-    let dead = important(dir.path(), json!({ "under": "/Volumes/naspi/papers" }));
+    let dead = important(dir.path(), json!({ "under": "/Volumes/testshare/documents" }));
     assert_eq!(
         dead["miss"], "noVolumeAtPath",
         "a bare path never reaches a saved share"
@@ -214,11 +220,11 @@ fn under_takes_a_location_and_reads_only_that_volume() {
 #[test]
 fn folder_importance_reads_only_the_resolved_volumes_store() {
     let dir = tempfile::tempdir().expect("temp dir");
-    // Both stores hold `/papers`; only the Tailscale one scores it.
+    // Both stores hold `/documents`; only the Tailscale one scores it.
     write_db(
         dir.path(),
         TAILSCALE,
-        &[("/papers", scored_signals(PathClass::UserContent, NOW))],
+        &[("/documents", scored_signals(PathClass::UserContent, NOW))],
         NOW,
     );
     write_db(dir.path(), LAN, &[("/elsewhere", low_score_signals())], NOW);
@@ -230,28 +236,28 @@ fn folder_importance_reads_only_the_resolved_volumes_store() {
         folder_importance_on(dir.path(), &facts(), &input, NOW).expect("answers")
     };
 
-    let lan = explain(None, "/Volumes/naspi-1/papers");
+    let lan = explain(None, "/Volumes/testshare-1/documents");
     assert_eq!(
         lan["status"], "unscored",
         "the LAN store has no row, whatever another store holds"
     );
     assert_eq!(
         lan["location"],
-        json!({ "volumeId": LAN, "path": "/Volumes/naspi-1/papers" })
+        json!({ "volumeId": LAN, "path": "/Volumes/testshare-1/documents" })
     );
 
-    let tailscale = explain(Some(TAILSCALE), "/Volumes/naspi/papers");
+    let tailscale = explain(Some(TAILSCALE), "/Volumes/testshare/documents");
     assert_eq!(tailscale["status"], "scored");
     assert_eq!(
         tailscale["location"],
-        json!({ "volumeId": TAILSCALE, "path": "/Volumes/naspi/papers" })
+        json!({ "volumeId": TAILSCALE, "path": "/Volumes/testshare/documents" })
     );
 
-    let floored = explain(Some(LAN), "/Volumes/naspi-1/papers/node_modules");
+    let floored = explain(Some(LAN), "/Volumes/testshare-1/documents/node_modules");
     assert_eq!(floored["status"], "floored");
     assert_eq!(floored["location"]["volumeId"], LAN);
 
-    let dead = explain(None, "/Volumes/naspi/papers");
+    let dead = explain(None, "/Volumes/testshare/documents");
     assert_eq!(dead["miss"], "noVolumeAtPath");
 }
 
@@ -323,12 +329,12 @@ fn one_share(lan_username: &str) -> VolumeFacts {
     for v in &mut facts.volumes {
         let username = match v.id.as_str() {
             LAN => lan_username,
-            TAILSCALE => "david",
+            TAILSCALE => "test_user_3",
             _ => continue,
         };
         v.share = Some(ShareIdentity::new(
             Some((BOX, crate::network::server_guid::GuidProof::Authenticated)),
-            "naspi",
+            "testshare",
             Some(username),
         ));
     }
@@ -345,26 +351,29 @@ fn a_share_members_rows_land_on_the_preferred_member_once() {
         dir.path(),
         TAILSCALE,
         &[
-            ("/papers", scored_signals(PathClass::ProjectRoot, NOW)),
+            ("/documents", scored_signals(PathClass::ProjectRoot, NOW)),
             ("/photos", scored_signals(PathClass::UserContent, NOW)),
         ],
         NOW,
     );
-    write_db(dir.path(), LAN, &[("/papers", low_score_signals())], NOW);
+    write_db(dir.path(), LAN, &[("/documents", low_score_signals())], NOW);
 
-    let result =
-        important_folders_on(dir.path(), &one_share("david"), &json!({ "threshold": 0.0 }), NOW).expect("answers");
+    let result = important_folders_on(dir.path(), &one_share("test_user_3"), &json!({ "threshold": 0.0 }), NOW)
+        .expect("answers");
 
     let folders = result["folders"].as_array().expect("folders");
     let mut got = locations(&result);
     got.sort();
     assert_eq!(
         got,
-        [loc(LAN, "/Volumes/naspi-1/papers"), loc(LAN, "/Volumes/naspi-1/photos")]
+        [
+            loc(LAN, "/Volumes/testshare-1/documents"),
+            loc(LAN, "/Volumes/testshare-1/photos")
+        ]
     );
     let papers = folders
         .iter()
-        .find(|f| f["location"]["path"] == "/Volumes/naspi-1/papers")
+        .find(|f| f["location"]["path"] == "/Volumes/testshare-1/documents")
         .expect("papers");
     assert_eq!(
         papers["via"],
@@ -377,7 +386,7 @@ fn a_share_members_rows_land_on_the_preferred_member_once() {
 
     // Naming either member ranks the one share.
     let named =
-        important_folders_on(dir.path(), &one_share("david"), &json!({ "volumeId": LAN }), NOW).expect("answers");
+        important_folders_on(dir.path(), &one_share("test_user_3"), &json!({ "volumeId": LAN }), NOW).expect("answers");
     assert_eq!(locations(&named).len(), 2);
 }
 
@@ -393,9 +402,9 @@ fn a_share_opened_as_another_account_keeps_its_own_rows() {
         NOW,
     );
 
-    let result = important_folders_on(dir.path(), &one_share("dori"), &json!({}), NOW).expect("answers");
+    let result = important_folders_on(dir.path(), &one_share("test_user_7"), &json!({}), NOW).expect("answers");
 
-    assert_eq!(locations(&result), [loc(TAILSCALE, "/Volumes/naspi/photos")]);
+    assert_eq!(locations(&result), [loc(TAILSCALE, "/Volumes/testshare/photos")]);
     assert!(result["folders"][0].get("via").is_none());
 }
 
@@ -454,12 +463,12 @@ fn an_empty_ranking_says_why() {
         "a store with no rows at generation 0 hasn't finished its first pass"
     );
 
-    write_db(dir.path(), LAN, &[("/papers", low_score_signals())], NOW);
+    write_db(dir.path(), LAN, &[("/documents", low_score_signals())], NOW);
     assert_eq!(
         empty_reason(
             dir.path(),
             &facts,
-            json!({ "volumeId": LAN, "under": "/Volumes/naspi-1/papers/node_modules" })
+            json!({ "volumeId": LAN, "under": "/Volumes/testshare-1/documents/node_modules" })
         ),
         "underFloored"
     );
@@ -467,7 +476,7 @@ fn an_empty_ranking_says_why() {
         empty_reason(
             dir.path(),
             &facts,
-            json!({ "volumeId": LAN, "under": "/Volumes/naspi-1/photos" })
+            json!({ "volumeId": LAN, "under": "/Volumes/testshare-1/photos" })
         ),
         "nothingScored"
     );

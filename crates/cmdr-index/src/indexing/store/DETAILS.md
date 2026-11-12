@@ -317,8 +317,8 @@ epoch and no children, and the coverage frontier never re-covers it.
 
 High-bit inodes are ordinary on a MOUNTED SMB share, which the local scanner walks like any other volume:
 `ATTR_CMN_FILEID` on smbfs is the server's 64-bit file id, or a path hash when the server has none. 43% of the files in
-one directory on a QNAP measured above `i64::MAX` (verified on macOS 26.5.2 against `//…/naspi`, `stat -f '%i'` over 111
-files, 2026-08-27), which is how a user's 609-entry directory indexed as empty (`ERR-AYVM4`).
+one directory on a QNAP measured above `i64::MAX` (verified on macOS 26.5.2 against `//…/testshare`, `stat -f '%i'` over
+111 files, 2026-08-27), which is how a user's 609-entry directory indexed as empty (`ERR-AYVM4`).
 
 ## Decision: SQLite page memory is one process-wide slab, not a per-connection budget
 

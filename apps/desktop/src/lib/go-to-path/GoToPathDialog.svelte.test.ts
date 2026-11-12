@@ -271,11 +271,11 @@ describe('GoToPathDialog', () => {
   })
 
   it('previews what a pasted server address will do, and asks no local resolver', async () => {
-    readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'smb://naspolya' })
+    readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'smb://testnas' })
     const { target, cleanup } = setup()
     await flush()
     const input = target.querySelector('input') as HTMLInputElement
-    input.value = 'smb://naspolya'
+    input.value = 'smb://testnas'
     input.dispatchEvent(new Event('input', { bubbles: true }))
 
     // ❗ "Adds a server", ❌ never "this path doesn't exist": the local resolver
@@ -294,11 +294,11 @@ describe('GoToPathDialog', () => {
    * one in the warning colour tells a person the good outcome is a problem.
    */
   it('previews a server address neutrally, and keeps the warning tone for a path that misses', async () => {
-    readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'smb://naspolya' })
+    readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'smb://testnas' })
     const { target, cleanup } = setup()
     await flush()
     const input = target.querySelector('input') as HTMLInputElement
-    input.value = 'smb://naspolya'
+    input.value = 'smb://testnas'
     input.dispatchEvent(new Event('input', { bubbles: true }))
     await waitForPreview(() => {
       expect(target.querySelector('#go-to-path-hint')?.textContent).toContain('Adds a server')
@@ -322,13 +322,13 @@ describe('GoToPathDialog', () => {
   })
 
   it('prefills the box from a copied server address', async () => {
-    readClipboardTextMock.mockResolvedValue('sftp://ada@nas.local:22/srv')
-    readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'sftp://ada@nas.local:22/srv' })
+    readClipboardTextMock.mockResolvedValue('sftp://test_user_1@testnas.local:22/srv')
+    readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'sftp://test_user_1@testnas.local:22/srv' })
     const { target, cleanup } = setup()
     await flush()
     const input = target.querySelector('input') as HTMLInputElement
     // An address someone copied is exactly what this box was opened to paste.
-    expect(input.value).toBe('sftp://ada@nas.local:22/srv')
+    expect(input.value).toBe('sftp://test_user_1@testnas.local:22/srv')
     expect(resolveGoToPathMock).not.toHaveBeenCalled()
     cleanup()
   })

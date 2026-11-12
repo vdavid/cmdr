@@ -110,16 +110,16 @@ describe('requestVolumeRefresh', () => {
 function doublyMountedShare(): VolumeInfo[] {
   return [
     {
-      id: 'smb-naspi-a1b2c3',
-      name: 'naspi on Naspolya',
-      path: '/Volumes/naspi',
+      id: 'smb-testshare-a1b2c3',
+      name: 'testshare on Testnas',
+      path: '/Volumes/testshare',
       category: 'attached_volume',
       isEjectable: false,
     },
     {
-      id: 'smb-naspi-a1b2c3',
-      name: 'naspi on Naspolya',
-      path: '/Volumes/naspi-1',
+      id: 'smb-testshare-a1b2c3',
+      name: 'testshare on Testnas',
+      path: '/Volumes/testshare-1',
       category: 'attached_volume',
       isEjectable: false,
     },
@@ -141,9 +141,9 @@ function doublyMountedShare(): VolumeInfo[] {
  */
 describe('applyVolumeRootChanged', () => {
   const place: VolumeInfo = {
-    id: 'sftp-nas-local-22-ada',
-    name: 'Naspolya',
-    path: 'sftp://ada@nas.local:22/srv/data/tmp',
+    id: 'sftp-nas-local-22-test_user_1',
+    name: 'Testnas',
+    path: 'sftp://test_user_1@testnas.local:22/srv/data/tmp',
     category: 'network',
     isEjectable: false,
     connectionState: 'direct',
@@ -165,17 +165,17 @@ describe('applyVolumeRootChanged', () => {
     applyVolumeRootChanged({
       volumeId: place.id,
       oldRoot: place.path,
-      newRoot: 'sftp://ada@nas.local:22/srv/data',
+      newRoot: 'sftp://test_user_1@testnas.local:22/srv/data',
       oldLanding: place.path,
-      newLanding: 'sftp://ada@nas.local:22/srv/data/photos',
+      newLanding: 'sftp://test_user_1@testnas.local:22/srv/data/photos',
       kind: 'edited',
     })
 
     expect(getVolumes()).toEqual([
       {
         ...place,
-        path: 'sftp://ada@nas.local:22/srv/data',
-        landingPath: 'sftp://ada@nas.local:22/srv/data/photos',
+        path: 'sftp://test_user_1@testnas.local:22/srv/data',
+        landingPath: 'sftp://test_user_1@testnas.local:22/srv/data/photos',
       },
     ])
   })
@@ -187,9 +187,9 @@ describe('applyVolumeRootChanged', () => {
     applyVolumeRootChanged({
       volumeId: place.id,
       oldRoot: place.path,
-      newRoot: 'sftp://ada@nas.local:22/srv/data',
+      newRoot: 'sftp://test_user_1@testnas.local:22/srv/data',
       oldLanding: place.path,
-      newLanding: 'sftp://ada@nas.local:22/srv/data',
+      newLanding: 'sftp://test_user_1@testnas.local:22/srv/data',
       kind: 'edited',
     })
 
@@ -202,11 +202,11 @@ describe('applyVolumeRootChanged', () => {
     const before = getVolumes()
 
     applyVolumeRootChanged({
-      volumeId: 'sftp-somewhere-else-22-ada',
-      oldRoot: 'sftp://ada@somewhere.else:22/a',
-      newRoot: 'sftp://ada@somewhere.else:22/',
-      oldLanding: 'sftp://ada@somewhere.else:22/a',
-      newLanding: 'sftp://ada@somewhere.else:22/',
+      volumeId: 'sftp-somewhere-else-22-test_user_1',
+      oldRoot: 'sftp://test_user_1@somewhere.else:22/a',
+      newRoot: 'sftp://test_user_1@somewhere.else:22/',
+      oldLanding: 'sftp://test_user_1@somewhere.else:22/a',
+      newLanding: 'sftp://test_user_1@somewhere.else:22/',
       kind: 'edited',
     })
 
@@ -222,9 +222,9 @@ describe('applyVolumeRootChanged', () => {
  */
 describe('applyServerPlaceMoved', () => {
   const place: VolumeInfo = {
-    id: 'sftp-nas-local-22-ada',
-    name: 'Naspolya',
-    path: 'sftp://ada@nas.local:22/srv/data',
+    id: 'sftp-nas-local-22-test_user_1',
+    name: 'Testnas',
+    path: 'sftp://test_user_1@testnas.local:22/srv/data',
     category: 'network',
     isEjectable: false,
     connectionState: 'direct',
@@ -244,15 +244,15 @@ describe('applyServerPlaceMoved', () => {
     await initVolumeStore()
 
     applyServerPlaceMoved({
-      oldPrefix: 'sftp://ada@nas.local:22',
-      newPrefix: 'sftp://ada@10.0.0.5:22',
+      oldPrefix: 'sftp://test_user_1@testnas.local:22',
+      newPrefix: 'sftp://test_user_1@10.0.0.5:22',
       places: [
         {
           oldVolumeId: place.id,
-          newVolumeId: 'sftp-10-0-0-5-22-ada',
-          newRoot: 'sftp://ada@10.0.0.5:22/srv/data',
-          newLanding: 'sftp://ada@10.0.0.5:22/srv/data',
-          name: 'Naspolya',
+          newVolumeId: 'sftp-10-0-0-5-22-test_user_1',
+          newRoot: 'sftp://test_user_1@10.0.0.5:22/srv/data',
+          newLanding: 'sftp://test_user_1@10.0.0.5:22/srv/data',
+          name: 'Testnas',
           connectionState: null,
         },
       ],
@@ -261,8 +261,8 @@ describe('applyServerPlaceMoved', () => {
     expect(getVolumes()).toEqual([
       {
         ...place,
-        id: 'sftp-10-0-0-5-22-ada',
-        path: 'sftp://ada@10.0.0.5:22/srv/data',
+        id: 'sftp-10-0-0-5-22-test_user_1',
+        path: 'sftp://test_user_1@10.0.0.5:22/srv/data',
         landingPath: null,
         connectionState: 'saved',
       },
@@ -275,14 +275,14 @@ describe('applyServerPlaceMoved', () => {
     const before = getVolumes()
 
     applyServerPlaceMoved({
-      oldPrefix: 'sftp://ada@elsewhere:22',
-      newPrefix: 'sftp://ada@10.0.0.6:22',
+      oldPrefix: 'sftp://test_user_1@elsewhere:22',
+      newPrefix: 'sftp://test_user_1@10.0.0.6:22',
       places: [
         {
-          oldVolumeId: 'sftp-elsewhere-22-ada',
-          newVolumeId: 'sftp-10-0-0-6-22-ada',
-          newRoot: 'sftp://ada@10.0.0.6:22/',
-          newLanding: 'sftp://ada@10.0.0.6:22/',
+          oldVolumeId: 'sftp-elsewhere-22-test_user_1',
+          newVolumeId: 'sftp-10-0-0-6-22-test_user_1',
+          newRoot: 'sftp://test_user_1@10.0.0.6:22/',
+          newLanding: 'sftp://test_user_1@10.0.0.6:22/',
           name: 'Elsewhere',
           connectionState: null,
         },
@@ -369,8 +369,8 @@ describe('volume-store duplicate IDs', () => {
     await initVolumeStore()
 
     const volumes = getVolumes()
-    expect(volumes.map((v) => v.id)).toEqual(['smb-naspi-a1b2c3', 'root'])
-    expect(volumes[0].path).toBe('/Volumes/naspi')
+    expect(volumes.map((v) => v.id)).toEqual(['smb-testshare-a1b2c3', 'root'])
+    expect(volumes[0].path).toBe('/Volumes/testshare')
   })
 
   it('drops a duplicate ID from a pushed volumes-changed event', async () => {
@@ -379,11 +379,11 @@ describe('volume-store duplicate IDs', () => {
     if (!lastVolumesHandler) throw new Error("init() didn't install a listener")
     lastVolumesHandler({ data: doublyMountedShare(), timedOut: false })
 
-    expect(getVolumes().map((v) => v.id)).toEqual(['smb-naspi-a1b2c3', 'root'])
+    expect(getVolumes().map((v) => v.id)).toEqual(['smb-testshare-a1b2c3', 'root'])
   })
 
   it('leaves a list with distinct IDs untouched', async () => {
-    const distinct = doublyMountedShare().filter((v) => v.path !== '/Volumes/naspi-1')
+    const distinct = doublyMountedShare().filter((v) => v.path !== '/Volumes/testshare-1')
     mockListVolumes.mockResolvedValue({ data: distinct, timedOut: false })
     await initVolumeStore()
 
@@ -419,9 +419,9 @@ describe('volume-store duplicate IDs', () => {
     push({ data: doublyMountedShare(), timedOut: false })
     push({ data: doublyMountedShare(), timedOut: false })
     expect(warn).toHaveBeenCalledOnce()
-    expect(warn.mock.calls[0][1]).toMatchObject({ ids: 'smb-naspi-a1b2c3' })
+    expect(warn.mock.calls[0][1]).toMatchObject({ ids: 'smb-testshare-a1b2c3' })
 
-    push({ data: doublyMountedShare().filter((v) => v.path !== '/Volumes/naspi-1'), timedOut: false })
+    push({ data: doublyMountedShare().filter((v) => v.path !== '/Volumes/testshare-1'), timedOut: false })
     push({ data: doublyMountedShare(), timedOut: false })
     expect(warn).toHaveBeenCalledTimes(2)
   })
@@ -444,9 +444,9 @@ describe('toConnectionState — the wire enum the picker renders', () => {
 /** A pinned server place, as the servers arm publishes one. */
 function pinnedPlace(index: number): VolumeInfo {
   return {
-    id: `sftp-nas${String(index)}.local-22-ada`,
+    id: `sftp-nas${String(index)}.local-22-test_user_1`,
     name: `NAS ${String(index)}`,
-    path: `sftp://ada@nas${String(index)}.local:22`,
+    path: `sftp://test_user_1@nas${String(index)}.local:22`,
     category: 'network',
     isEjectable: false,
     pinned: true,

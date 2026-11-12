@@ -17,7 +17,7 @@ use super::tokens::is_redacted_segment;
 /// - a later word that starts a new reference (`… and https://…`, or the `smb:` the regex
 ///   stopped at before `//`), so the scanner gets to claim that reference.
 /// - `, `, `; `, or ` key=` after the LAST separator. Before it, a deeper segment proves the
-///   path goes on (`Smith, John/x.pdf`), and cutting there would ship the rest.
+///   path goes on (`Smith, Test_user_14/x.pdf`), and cutting there would ship the rest.
 /// - a ` -> ` arrow, anywhere (`{from} -> {to}`), and the ` -` the regex stopped at before a
 ///   Windows path's `>`.
 /// - a word that's already a token (`…/<dir:…> in 3ms`): this scanner's own output, met again

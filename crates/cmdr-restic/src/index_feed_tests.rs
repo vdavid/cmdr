@@ -108,7 +108,7 @@ fn a_waiting_decoder_hears_a_failed_read() {
         std::thread::spawn(move || feed.take(&id(1)).map(|_| ()))
     };
 
-    feed.fail(cmdr_fs::volume::VolumeError::DeviceDisconnected("naspi".into()));
+    feed.fail(cmdr_fs::volume::VolumeError::DeviceDisconnected("testshare".into()));
 
     assert!(matches!(
         waiting.join().expect("the decoder"),

@@ -23,7 +23,7 @@ func TestReleaseLogBullets(t *testing.T) {
 			{job: "Desktop (Rust, fixtures)", name: "rust-integration-tests", status: "warn", summary: "1 test failed under load"},
 		},
 		hasSecurity:  true,
-		archivePath:  "papers/Company AB/evidence/v0.55.0",
+		archivePath:  "documents/Company AB/evidence/v0.55.0",
 		archiveFiles: 15,
 	}
 	want := strings.Join([]string{
@@ -32,7 +32,7 @@ func TestReleaseLogBullets(t *testing.T) {
 		"    - **SBOMs and provenance**: https://github.com/vdavid/cmdr/releases/tag/v0.55.0 (three CycloneDX SBOMs and `Cmdr_0.55.0.intoto.jsonl`); `gh attestation verify` on `Cmdr_0.55.0_aarch64.dmg` passed for provenance (signer `release-pipeline.yml` at `refs/tags/v0.55.0`) and the SBOM binding.",
 		"    - **Test evidence**: `svelte-tests` (Desktop (Svelte)): 17,121 tests passed; `rust-integration-tests` (Desktop (Rust, fixtures), warn): 1 test failed under load. The old-macOS smoke test didn't run.",
 		"    - **Security content**: the CHANGELOG has a `### Security` section; no advisory or CVE ids.",
-		"    - **NAS copy**: `papers/Company AB/evidence/v0.55.0/` (15 files, listed back after upload).",
+		"    - **NAS copy**: `documents/Company AB/evidence/v0.55.0/` (15 files, listed back after upload).",
 		"",
 	}, "\n")
 	if got := releaseLogBullets(f); got != want {

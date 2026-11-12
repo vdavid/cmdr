@@ -97,19 +97,19 @@ describe('isPlainFilesystemPath', () => {
 
 describe('isPathOnVolume', () => {
   it('accepts an exact match', () => {
-    expect(isPathOnVolume('/Volumes/naspi', '/Volumes/naspi')).toBe(true)
+    expect(isPathOnVolume('/Volumes/testshare', '/Volumes/testshare')).toBe(true)
   })
 
   it('accepts a descendant path', () => {
-    expect(isPathOnVolume('/Volumes/naspi/photos/2024', '/Volumes/naspi')).toBe(true)
+    expect(isPathOnVolume('/Volumes/testshare/photos/2024', '/Volumes/testshare')).toBe(true)
   })
 
   it('rejects a sibling whose name shares a prefix', () => {
-    expect(isPathOnVolume('/Volumes/naspi-backup', '/Volumes/naspi')).toBe(false)
+    expect(isPathOnVolume('/Volumes/testshare-backup', '/Volumes/testshare')).toBe(false)
   })
 
   it('rejects a foreign path', () => {
-    expect(isPathOnVolume('/Users/test/project', '/Volumes/naspi')).toBe(false)
+    expect(isPathOnVolume('/Users/test/project', '/Volumes/testshare')).toBe(false)
   })
 
   it('treats root volume `/` as matching any absolute path', () => {
@@ -125,24 +125,28 @@ describe('isPathOnVolume', () => {
   // A remote volume rooted at `/` carries a trailing slash in its own root, so
   // this is the everyday shape for SFTP, WebDAV, and ADB, not a curiosity.
   it('accepts a descendant of a remote volume rooted at /', () => {
-    expect(isPathOnVolume('sftp://ada@nas.local:22/home/ada', 'sftp://ada@nas.local:22/')).toBe(true)
+    expect(
+      isPathOnVolume('sftp://test_user_1@testnas.local:22/home/test_user_1', 'sftp://test_user_1@testnas.local:22/'),
+    ).toBe(true)
   })
 
   it('rejects a sibling server-side root that merely shares a prefix', () => {
-    expect(isPathOnVolume('sftp://ada@nas.local:22/srv/data-1', 'sftp://ada@nas.local:22/srv/data')).toBe(false)
+    expect(
+      isPathOnVolume('sftp://test_user_1@testnas.local:22/srv/data-1', 'sftp://test_user_1@testnas.local:22/srv/data'),
+    ).toBe(false)
   })
 })
 
 describe('on Windows', () => {
-  const WIN_HOME = 'C:/Users/ada'
+  const WIN_HOME = 'C:/Users/test_user_1'
 
   it('admits drive and UNC paths, and no bare POSIX one', () => {
     onTestFinished(withPlatform('windows'))
-    expect(toCanonical('C:/Users/ada/x', WIN_HOME)).toBe('C:/Users/ada/x')
+    expect(toCanonical('C:/Users/test_user_1/x', WIN_HOME)).toBe('C:/Users/test_user_1/x')
     expect(toCanonical('//server/share/x', WIN_HOME)).toBe('//server/share/x')
-    expect(toCanonical('~/Documents', WIN_HOME)).toBe('C:/Users/ada/Documents')
+    expect(toCanonical('~/Documents', WIN_HOME)).toBe('C:/Users/test_user_1/Documents')
     expect(toCanonical('mtp://dev/65537/Music', WIN_HOME)).toBe('mtp://dev/65537/Music')
-    expect(() => toCanonical('/Users/ada', WIN_HOME)).toThrow(/not absolute/)
+    expect(() => toCanonical('/Users/test_user_1', WIN_HOME)).toThrow(/not absolute/)
     expect(() => toCanonical('C:\\Users', WIN_HOME)).toThrow(/not absolute/)
   })
 
@@ -159,20 +163,20 @@ describe('on Windows', () => {
     onTestFinished(withPlatform('windows'))
     expect(basenameOf(toCanonical('C:/', WIN_HOME))).toBe('')
     expect(basenameOf(toCanonical('//server/share/', WIN_HOME))).toBe('')
-    expect(basenameOf(toCanonical('C:/Users/ada', WIN_HOME))).toBe('ada')
+    expect(basenameOf(toCanonical('C:/Users/test_user_1', WIN_HOME))).toBe('test_user_1')
   })
 
   it('reads drive and UNC paths as OS-resolvable, and a bare /x as not', () => {
     onTestFinished(withPlatform('windows'))
-    expect(isPlainFilesystemPath('C:/Users/ada')).toBe(true)
+    expect(isPlainFilesystemPath('C:/Users/test_user_1')).toBe(true)
     expect(isPlainFilesystemPath('//server/share/a.txt')).toBe(true)
-    expect(isPlainFilesystemPath('/Users/ada')).toBe(false)
+    expect(isPlainFilesystemPath('/Users/test_user_1')).toBe(false)
     expect(isPlainFilesystemPath('smb://host/share/a.txt')).toBe(false)
   })
 
   it('places a path on its drive or share volume', () => {
     onTestFinished(withPlatform('windows'))
-    expect(isPathOnVolume('C:/Users/ada', 'C:/')).toBe(true)
+    expect(isPathOnVolume('C:/Users/test_user_1', 'C:/')).toBe(true)
     expect(isPathOnVolume('D:/x', 'C:/')).toBe(false)
     expect(isPathOnVolume('//server/share/x', '//server/share/')).toBe(true)
     expect(isPathOnVolume('//server/share-1/x', '//server/share')).toBe(false)
@@ -190,12 +194,12 @@ describe('on macOS and Linux, the new roots stay unknown', () => {
 
 describe('isPathOnVolume with a case rule', () => {
   it('stays exact without a rule or on a case-sensitive volume', () => {
-    expect(isPathOnVolume('/volumes/NASPI/x', '/Volumes/naspi')).toBe(false)
-    expect(isPathOnVolume('/volumes/NASPI/x', '/Volumes/naspi', { caseSensitive: true })).toBe(false)
+    expect(isPathOnVolume('/volumes/TESTSHARE/x', '/Volumes/testshare')).toBe(false)
+    expect(isPathOnVolume('/volumes/TESTSHARE/x', '/Volumes/testshare', { caseSensitive: true })).toBe(false)
   })
 
   it('folds case on a case-insensitive volume, still by whole components', () => {
-    expect(isPathOnVolume('/volumes/NASPI/x', '/Volumes/naspi', { caseSensitive: false })).toBe(true)
-    expect(isPathOnVolume('/volumes/NASPI-1', '/Volumes/naspi', { caseSensitive: false })).toBe(false)
+    expect(isPathOnVolume('/volumes/TESTSHARE/x', '/Volumes/testshare', { caseSensitive: false })).toBe(true)
+    expect(isPathOnVolume('/volumes/TESTSHARE-1', '/Volumes/testshare', { caseSensitive: false })).toBe(false)
   })
 })

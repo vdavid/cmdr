@@ -259,7 +259,7 @@ mod tests {
     /// permanent delete it would have to be.
     #[test]
     fn a_trash_group_on_a_volume_without_a_trash_runs_as_a_permanent_delete() {
-        let share = InMemoryVolume::new("naspi");
+        let share = InMemoryVolume::new("testshare");
         let disk = LocalDisk(InMemoryVolume::new("Macintosh HD"));
 
         assert_eq!(
@@ -277,7 +277,7 @@ mod tests {
     /// Only trash depends on a Trash: every other verb runs the same on either volume.
     #[test]
     fn other_verbs_run_as_themselves() {
-        let share = InMemoryVolume::new("naspi");
+        let share = InMemoryVolume::new("testshare");
         for verb in [
             ProposalVerb::Move,
             ProposalVerb::Copy,

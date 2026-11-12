@@ -419,7 +419,7 @@ fn check_path(path: &str) -> Result<(), FieldRule> {
 }
 
 /// A plain ASCII host name or IP literal. ASCII only, so a look-alike of a saved host
-/// (`nаspolya` with a Cyrillic `а`) can't stand in for it; an internationalized name goes in
+/// (`tеstnas` with a Cyrillic `е`) can't stand in for it; an internationalized name goes in
 /// its `xn--` form.
 fn check_host(host: &str) -> Result<(), FieldRule> {
     if host.len() > MAX_HOST_BYTES {

@@ -11,7 +11,7 @@ fn row(address: &str, share: &str, guid: Option<&str>) -> KnownNetworkShare {
         last_connected_at: "2026-10-26T10:00:00Z".to_string(),
         last_connection_mode: ConnectionMode::Credentials,
         last_known_auth_options: AuthOptions::GuestOrCredentials,
-        username: Some("david".to_string()),
+        username: Some("test_user_3".to_string()),
         address: Some(address.to_string()),
         port: None,
         volume_id: Some(format!("smb-{address}-{share}")),
@@ -27,27 +27,27 @@ fn row(address: &str, share: &str, guid: Option<&str>) -> KnownNetworkShare {
 #[test]
 fn the_probe_dials_only_rows_missing_a_guid_that_another_row_shares_a_name_with() {
     let rows = [
-        row("100.127.48.122", "naspi", Some(BOX)),
-        row("192.168.1.111", "NASPI", None),
-        row("192.168.1.111", "media", None),
+        row("100.64.0.10", "testshare", Some(BOX)),
+        row("192.168.50.10", "TESTSHARE", None),
+        row("192.168.50.10", "media", None),
     ];
 
     let picked: Vec<&str> = rows_to_probe(&rows).iter().map(|r| r.share_name.as_str()).collect();
 
-    assert_eq!(picked, ["NASPI"]);
+    assert_eq!(picked, ["TESTSHARE"]);
 }
 
 #[test]
 fn a_lone_share_or_one_whose_rows_all_hold_guids_is_never_probed() {
-    assert!(rows_to_probe(&[row("192.168.1.111", "naspi", None)]).is_empty());
-    assert!(rows_to_probe(&[row("a", "naspi", Some(BOX)), row("b", "naspi", Some(BOX))]).is_empty());
+    assert!(rows_to_probe(&[row("192.168.50.10", "testshare", None)]).is_empty());
+    assert!(rows_to_probe(&[row("a", "testshare", Some(BOX)), row("b", "testshare", Some(BOX))]).is_empty());
 }
 
 #[test]
 fn a_zero_guid_is_probed_like_a_missing_one() {
     let rows = [
-        row("a", "naspi", Some("00000000-0000-0000-0000-000000000000")),
-        row("b", "naspi", Some(BOX)),
+        row("a", "testshare", Some("00000000-0000-0000-0000-000000000000")),
+        row("b", "testshare", Some(BOX)),
     ];
     assert_eq!(rows_to_probe(&rows).len(), 1);
 }
@@ -63,20 +63,20 @@ fn a_share_no_mount_went_through_is_never_probed_nor_counted_as_a_twin() {
         volume_id: None,
         mount_path: None,
         pinned: false,
-        ..row("nas-backup.example", "naspi", None)
+        ..row("nas-backup.example", "testshare", None)
     };
-    let mounted = row("192.168.1.111", "naspi", None);
+    let mounted = row("192.168.50.10", "testshare", None);
 
     assert!(rows_to_probe(std::slice::from_ref(&named)).is_empty());
     assert!(
         rows_to_probe(&[named.clone(), mounted.clone()]).is_empty(),
         "the mounted row has no connected twin"
     );
-    let picked: Vec<_> = rows_to_probe(&[named, mounted, row("100.127.48.122", "naspi", Some(BOX))])
+    let picked: Vec<_> = rows_to_probe(&[named, mounted, row("100.64.0.10", "testshare", Some(BOX))])
         .iter()
         .map(|r| r.address.clone())
         .collect();
-    assert_eq!(picked, [Some("192.168.1.111".to_string())]);
+    assert_eq!(picked, [Some("192.168.50.10".to_string())]);
 }
 
 /// A direct session coming up records the GUID its NEGOTIATE answered, read off
@@ -144,12 +144,12 @@ fn no_tool_handler_reaches_the_probe() {
 
 // -- Every writer onto a saved row: the row's own account decides the proof --
 //
-// Each test files one saved row (signed in as `david`) in the process's share
+// Each test files one saved row (signed in as `test_user_3`) in the process's share
 // store under an address of its own, so tests sharing a process never meet.
 
-/// Files a saved `david` row at `address` and answers its place.
+/// Files a saved `test_user_3` row at `address` and answers its place.
 fn saved_row(address: &str) -> String {
-    let row = row(address, "naspi", None);
+    let row = row(address, "testshare", None);
     let place = known_shares::place_id(&row);
     known_shares::update_known_share(row);
     place
@@ -170,11 +170,11 @@ fn guid() -> ServerGuid {
 #[test]
 fn a_session_proves_a_rows_guid_only_signed_in_as_its_account() {
     let place = saved_row("10.9.0.1");
-    record_negotiated_guid(&place, "naspi", guid(), Some("dori"));
+    record_negotiated_guid(&place, "testshare", guid(), Some("test_user_7"));
     assert_eq!(proof_of(&place), GuidProof::Unauthenticated, "another account");
-    record_negotiated_guid(&place, "naspi", guid(), None);
+    record_negotiated_guid(&place, "testshare", guid(), None);
     assert_eq!(proof_of(&place), GuidProof::Unauthenticated, "a guest");
-    record_negotiated_guid(&place, "naspi", guid(), Some("david"));
+    record_negotiated_guid(&place, "testshare", guid(), Some("test_user_3"));
     assert_eq!(proof_of(&place), GuidProof::Authenticated);
     assert_eq!(
         live_share(&place).map(|live| live.proof),
@@ -191,15 +191,15 @@ fn an_adopted_guid_is_proven_only_for_the_rows_own_account() {
     let live = |username: &str| LiveShare {
         server_guid: guid(),
         proof: GuidProof::Authenticated,
-        share_name: "naspi".to_string(),
+        share_name: "testshare".to_string(),
         username: Some(username.to_string()),
     };
 
-    LIVE.lock_ignore_poison().insert(place.clone(), live("dori"));
+    LIVE.lock_ignore_poison().insert(place.clone(), live("test_user_7"));
     adopt_live_guid(&place);
     assert_eq!(proof_of(&place), GuidProof::Unauthenticated);
 
-    LIVE.lock_ignore_poison().insert(place.clone(), live("David"));
+    LIVE.lock_ignore_poison().insert(place.clone(), live("Test_user_3"));
     adopt_live_guid(&place);
     assert_eq!(proof_of(&place), GuidProof::Authenticated, "the same account, folded");
 }

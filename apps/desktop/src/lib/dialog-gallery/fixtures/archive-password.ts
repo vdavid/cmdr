@@ -30,7 +30,7 @@ export interface ArchivePasswordFixture {
 export const archivePasswordFixtures: Record<string, ArchivePasswordFixture | undefined> = {
   'first-attempt': {
     container: 'archive',
-    name: 'tax-returns-2019-2025.zip',
+    name: 'test-archive-2019-2025.zip',
     wrongAttempt: false,
   },
   // A long archive name rides into the body copy, which is where the 400px-wide
@@ -42,12 +42,12 @@ export const archivePasswordFixtures: Record<string, ArchivePasswordFixture | un
   },
   'repo-first-attempt': {
     container: 'resticRepo',
-    name: 'm3-macbook-restic',
+    name: 'test-restic-repo',
     wrongAttempt: false,
   },
   'repo-checking': {
     container: 'resticRepo',
-    name: 'm3-macbook-restic',
+    name: 'test-restic-repo',
     wrongAttempt: false,
     checking: true,
   },
@@ -58,7 +58,7 @@ export const archivePasswordFixtures: Record<string, ArchivePasswordFixture | un
   },
   'repo-unreachable': {
     container: 'resticRepo',
-    name: 'm3-macbook-restic',
+    name: 'test-restic-repo',
     wrongAttempt: false,
     unreachable: true,
   },

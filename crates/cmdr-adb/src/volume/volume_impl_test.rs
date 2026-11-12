@@ -244,7 +244,7 @@ async fn a_listing_maps_kinds_sizes_and_symlinked_folders() {
 /// volume id's slug is folded).
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_listing_through_the_app_prefix_reaches_the_device_and_hands_back_prefixed_paths() {
-    const SERIAL: &str = "46061FDAS000A4";
+    const SERIAL: &str = "TESTSERIAL0001";
     let mut tree = FakeTree::new();
     tree.add_file("/sdcard/a.txt", b"hello").add_dir("/sdcard/DCIM");
     let server = FakeAdbServer::start(tree).await;

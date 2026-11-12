@@ -36,7 +36,7 @@ export const alertFixtures: Record<string, AlertFixture | undefined> = {
   'long-unbroken-path': {
     title: 'Path is too long',
     message: 'This path doesn’t fit:',
-    path: '/Volumes/Naspolya/media/photos/2026/07-summer-archive/raw-originals/Sony-A7RV/2026-07-14_stockholm-archipelago-sunrise-session/DSC09241_edited_final_v3_reallyfinal.arw',
+    path: '/Volumes/Testnas/media/photos/2026/07-summer-archive/raw-originals/camera-1/2026-07-14_test-harbor-sunrise-photo-session/DSC09241_edited_final_v3_reallyfinal.arw',
   },
   // Past the display cap, so the middle-truncation shows. Longer than macOS allows
   // (1024 bytes), which is the point: the panel must survive a string that can't
@@ -44,6 +44,6 @@ export const alertFixtures: Record<string, AlertFixture | undefined> = {
   'path-past-display-cap': {
     title: 'Path is too long',
     message: 'This path doesn’t fit:',
-    path: `/Volumes/Naspolya/${Array.from({ length: 60 }, (_, i) => `deeply-nested-folder-number-${String(i + 1).padStart(2, '0')}`).join('/')}/DSC09241.arw`,
+    path: `/Volumes/Testnas/${Array.from({ length: 60 }, (_, i) => `deeply-nested-folder-number-${String(i + 1).padStart(2, '0')}`).join('/')}/DSC09241.arw`,
   },
 }

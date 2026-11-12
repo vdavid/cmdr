@@ -17,7 +17,7 @@ const OTHER_ED25519_BLOB: &str = "AAAAC3NzaC1lZDI1NTE5AAAAIA6rWI3G1sz07DnfFlrouT
 /// The same host's SECOND key type, which a healthy server may present instead.
 const RSA_BLOB: &str = "AAAAB3NzaC1yc2EAAAADAQABAAABgQDexampleexampleexample";
 
-const HOST: &str = "naspolya";
+const HOST: &str = "testnas";
 const PORT: u16 = 12480;
 
 fn ed25519() -> PresentedHostKey {

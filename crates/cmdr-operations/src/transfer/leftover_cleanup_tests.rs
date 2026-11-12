@@ -23,7 +23,7 @@ async fn an_outage_the_operation_gave_up_on_gets_one_look_and_no_wait() {
     const VOLUME_ID: &str = "leftover-cleanup-test-gave-up";
     let engine = TestOperations::new();
     let ledger = Ledger::for_test();
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     let nas = OutageVolume::wrap(Arc::clone(&inner), "leftover-cleanup-test-gave-up");
     let volume: Arc<dyn Volume> = Arc::clone(&nas) as Arc<dyn Volume>;
     let temp = PathBuf::from("/holiday.jpg.cmdr-tmp-9b62");
@@ -94,7 +94,7 @@ async fn a_temp_the_share_refuses_the_moment_it_is_back_goes_on_the_retries() {
     const VOLUME_ID: &str = "leftover-cleanup-test-held-by-the-dropped-session";
     let engine = TestOperations::new();
     let ledger = Ledger::for_test();
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     let nas = OutageVolume::wrap(Arc::clone(&inner), VOLUME_ID);
     let volume: Arc<dyn Volume> = Arc::clone(&nas) as Arc<dyn Volume>;
     let temp = PathBuf::from("/holiday.jpg.cmdr-tmp-5c17");

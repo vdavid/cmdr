@@ -98,7 +98,7 @@ describe('englishMatchTexts', () => {
   it('drops file-system paths and domains, whose words are names rather than copy', () => {
     const text = englishMatchText(
       'a.b',
-      'Install adb in /usr/local/bin or ~/Documents, then see getcmdr.com or nas.local.',
+      'Install adb in /usr/local/bin or ~/Documents, then see getcmdr.com or testnas.local.',
     )
     expect(text).not.toMatch(/local|usr|bin|Documents|getcmdr|com/)
     expect(text).toMatch(/Install adb in .*or .*, then see .*or .*\./)

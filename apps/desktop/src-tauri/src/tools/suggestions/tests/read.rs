@@ -210,7 +210,8 @@ fn the_agent_hears_that_a_trash_group_on_a_volume_without_a_trash_runs_as_a_perm
     use crate::file_system::volume::manager::test_support::TestVolumeRegistration;
 
     let volume_id = "suggestions-list-no-trash-test";
-    let _registration = TestVolumeRegistration::install(volume_id, std::sync::Arc::new(InMemoryVolume::new("naspi")));
+    let _registration =
+        TestVolumeRegistration::install(volume_id, std::sync::Arc::new(InMemoryVolume::new("testshare")));
     let mut on_share = summary(1, 10, 2, 2, None);
     on_share.group.source_volume_id = volume_id.to_string();
 

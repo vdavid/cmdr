@@ -104,7 +104,7 @@ pub(crate) enum ServerAddress {
     /// Ready to dial: an IP, a DNS hostname, or an mDNS service name discovery
     /// has already resolved.
     Connectable(String),
-    /// An mDNS SERVICE instance name (`Naspolya._smb._tcp.local.`) that discovery
+    /// An mDNS SERVICE instance name (`Testnas._smb._tcp.local.`) that discovery
     /// hasn't seen yet.
     ///
     /// Not a hostname, so `getaddrinfo` can never resolve it: dialing it spends
@@ -118,9 +118,9 @@ pub(crate) enum ServerAddress {
 /// Resolves a server address from `statfs` to something dialable.
 ///
 /// `statfs` can return different formats depending on how the mount was created:
-/// - An IP address like `192.168.1.111`: usable as-is
+/// - An IP address like `192.168.50.10`: usable as-is
 /// - A DNS hostname like `fileserver.corp.example.com`: usable as-is
-/// - An mDNS service name like `Naspolya._smb._tcp.local`: NOT resolvable by DNS, must be resolved
+/// - An mDNS service name like `Testnas._smb._tcp.local`: NOT resolvable by DNS, must be resolved
 ///   to an IP via the mDNS discovery state
 ///
 /// The last kind is the only one that can come back
@@ -163,7 +163,7 @@ fn service_address(server: &str) -> Option<String> {
 
 /// Extracts the friendly display name from a server address.
 ///
-/// For mDNS service names like `Naspolya._smb._tcp.local`, returns `Naspolya`.
+/// For mDNS service names like `Testnas._smb._tcp.local`, returns `Testnas`.
 /// For IPs, the mDNS name discovery last paired it with (a stale pairing is fine for a
 /// label), else the raw string.
 pub(crate) fn friendly_server_name(server: &str) -> String {
@@ -189,7 +189,7 @@ fn friendly_name_in(server: &str, hosts: &[NetworkHost]) -> String {
 
 /// The server-name forms another app (Finder) might have keyed an SMB password under for
 /// this server, gathered from the discovery state. Finder typically uses the full mDNS
-/// service name (`Naspolya._smb._tcp.local`), while we mount by IP — so for each
+/// service name (`Testnas._smb._tcp.local`), while we mount by IP — so for each
 /// discovered host that's the same identity as `server`, we contribute its advertised
 /// name, its `.local` hostname, and the synthesized `{name}._smb._tcp.local` service form.
 /// Pure over `hosts` for testability; the live wrapper feeds `fresh_discovered_hosts()`.

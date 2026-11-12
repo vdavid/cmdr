@@ -31,7 +31,7 @@ import path from 'path'
 export type ServerProtocol = 'sftp' | 'webdav'
 
 /** The account every fixture server runs as. Public on purpose: see the fixtures' READMEs. */
-export const SERVER_USERNAME = 'ada'
+export const SERVER_USERNAME = 'test_user_1'
 export const SERVER_PASSWORD = 'openthedoor'
 
 /** One fixture server, from the spec's side. Paths are relative to the scratch-able export root. */

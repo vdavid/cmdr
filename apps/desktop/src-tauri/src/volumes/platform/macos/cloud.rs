@@ -179,7 +179,7 @@ mod tests {
 
         // Google Drive: the CloudStorage dir carries the account suffix.
         assert_eq!(
-            id("/Users/test/Library/CloudStorage/GoogleDrive-me@gmail.com/My Drive/x").as_deref(),
+            id("/Users/test/Library/CloudStorage/GoogleDrive-test_user_1@example.com/My Drive/x").as_deref(),
             Some("cloud-google-drive")
         );
 

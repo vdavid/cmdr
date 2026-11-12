@@ -1,6 +1,6 @@
 <script lang="ts">
     // A volume as its own entity in a fact line: the volume picker's icon and name in a soft
-    // pill, so "Naspolya" reads as a drive and not as the first folder of the path beside it.
+    // pill, so "Testnas" reads as a drive and not as the first folder of the path beside it.
     //
     // The icon comes from the same `getIconForVolume` the picker uses, looked up by id in the
     // live volume list. A volume that isn't listed (a saved share nobody connected) keeps the

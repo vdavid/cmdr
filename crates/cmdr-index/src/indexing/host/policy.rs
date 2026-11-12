@@ -401,19 +401,19 @@ mod tests {
         let fake = FakeHostPolicy::shared();
         assert!(fake.open_listings().is_empty(), "no panes open yet");
 
-        fake.note_open_listing("root", "/Users/david")
-            .note_open_listing("smb-naspi", "/Volumes/naspi/media");
+        fake.note_open_listing("root", "/Users/test_user_3")
+            .note_open_listing("smb-testshare", "/Volumes/testshare/media");
 
         assert_eq!(
             fake.open_listings(),
             vec![
                 OpenListing {
                     volume_id: "root".into(),
-                    path: PathBuf::from("/Users/david")
+                    path: PathBuf::from("/Users/test_user_3")
                 },
                 OpenListing {
-                    volume_id: "smb-naspi".into(),
-                    path: PathBuf::from("/Volumes/naspi/media")
+                    volume_id: "smb-testshare".into(),
+                    path: PathBuf::from("/Volumes/testshare/media")
                 },
             ]
         );
@@ -442,17 +442,20 @@ mod tests {
         let fake = FakeHostPolicy::shared();
         assert!(fake.priority_roots("root").is_empty(), "nothing noted yet");
 
-        fake.note_priority_root("root", "/Users/david/Downloads")
-            .note_priority_root("smb-naspi", "/Volumes/naspi/media")
-            .note_priority_root("root", "/Users/david");
+        fake.note_priority_root("root", "/Users/test_user_3/Downloads")
+            .note_priority_root("smb-testshare", "/Volumes/testshare/media")
+            .note_priority_root("root", "/Users/test_user_3");
 
         assert_eq!(
             fake.priority_roots("root"),
-            vec![PathBuf::from("/Users/david/Downloads"), PathBuf::from("/Users/david"),]
+            vec![
+                PathBuf::from("/Users/test_user_3/Downloads"),
+                PathBuf::from("/Users/test_user_3"),
+            ]
         );
         assert_eq!(
-            fake.priority_roots("smb-naspi"),
-            vec![PathBuf::from("/Volumes/naspi/media")]
+            fake.priority_roots("smb-testshare"),
+            vec![PathBuf::from("/Volumes/testshare/media")]
         );
     }
 }

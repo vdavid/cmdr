@@ -1,7 +1,7 @@
 [package]
 name = "cmdr-fsevent-stream"
 version = "0.3.0"
-authors = ["LightQuantum <self@lightquantum.me>", "David Veszelovszki <david@veszelovszki.com>"]
+authors = ["LightQuantum <self@lightquantum.me>", "David Veszelovszki <test_user_3@veszelovszki.com>"]
 edition = "2024"
 description = "Stream-based macOS FSEvents bindings for Cmdr, forked from `fsevent-stream` and maintained in the Cmdr monorepo."
 license = "MIT"

@@ -397,29 +397,29 @@ mod tests {
 
     #[test]
     fn auth_file_contents_plain_username() {
-        let contents = build_smbclient_auth_file_contents("alice", "s3cret");
-        assert_eq!(contents, "username = alice\npassword = s3cret\ndomain = \n");
+        let contents = build_smbclient_auth_file_contents("test_user_4", "s3cret");
+        assert_eq!(contents, "username = test_user_4\npassword = s3cret\ndomain = \n");
     }
 
     #[test]
     fn auth_file_contents_splits_backslash_domain() {
-        let contents = build_smbclient_auth_file_contents("WORKGROUP\\bob", "pw");
-        assert_eq!(contents, "username = bob\npassword = pw\ndomain = WORKGROUP\n");
+        let contents = build_smbclient_auth_file_contents("WORKGROUP\\test_user_5", "pw");
+        assert_eq!(contents, "username = test_user_5\npassword = pw\ndomain = WORKGROUP\n");
     }
 
     #[test]
     fn auth_file_contents_splits_forward_slash_domain() {
-        let contents = build_smbclient_auth_file_contents("CORP/carol", "pw");
-        assert_eq!(contents, "username = carol\npassword = pw\ndomain = CORP\n");
+        let contents = build_smbclient_auth_file_contents("CORP/test_user_15", "pw");
+        assert_eq!(contents, "username = test_user_15\npassword = pw\ndomain = CORP\n");
     }
 
     #[test]
     fn write_auth_file_is_owner_only_and_unlinks_on_drop() {
         let path = {
-            let file = write_smbclient_auth_file("dave", "hunter2").expect("write auth file");
+            let file = write_smbclient_auth_file("test_user_10", "hunter2").expect("write auth file");
             let path = file.path().to_path_buf();
             let contents = std::fs::read_to_string(&path).expect("read back");
-            assert_eq!(contents, "username = dave\npassword = hunter2\ndomain = \n");
+            assert_eq!(contents, "username = test_user_10\npassword = hunter2\ndomain = \n");
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;

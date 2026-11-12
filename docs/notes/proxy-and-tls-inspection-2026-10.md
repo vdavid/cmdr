@@ -160,8 +160,8 @@ on loopback. macOS 27.0, 2026-10-08. Every Wi-Fi change was undone by a shell `t
 - **`ALL_PROXY=socks5h://…`**: both requests → 200, the server logged `CONNECT NAME getcmdr.com:443` and
   `NAME example.com:80`. Loopback went direct.
 - **`ALL_PROXY=socks5://…`**: → 200, logged as IPv4 addresses: the name was resolved on the Mac, as the scheme says.
-- **`socks5h://ada:p%40ss%20word@…`, server requiring sign-in**: → 200, signed in as `ada`. A wrong password fails with
-  `SOCKS error: credentials not accepted`.
+- **`socks5h://test_user_1:p%40ss%20word@…`, server requiring sign-in**: → 200, signed in as `test_user_1`. A wrong
+  password fails with `SOCKS error: credentials not accepted`.
 - **macOS SOCKS setting** (`networksetup -setsocksfirewallproxy Wi-Fi 127.0.0.1 21080`): → 200, both as names. A
   `URLSession` request from a Swift script reached the same server as `NAME example.com:80`, so `socks5h` matches what
   macOS's own stack does. Loopback went direct.

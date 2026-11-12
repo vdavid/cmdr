@@ -148,7 +148,7 @@
 
     // ❗ Credential-class mount failures ASK (the one sign-in sheet) instead of
     // dead-ending in the error pane: "Try again" there replayed the identical
-    // credentials, which is the "Naspolya dead end". That covers a signed-in
+    // credentials, which is the "Testnas dead end". That covers a signed-in
     // account the share turned away too, since another account is the fix.
     // `isMountSignInQuestion` and the refusal vocabulary live in `../network/smb-sign-in`.
 

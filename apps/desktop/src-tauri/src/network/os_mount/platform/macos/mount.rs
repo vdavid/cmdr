@@ -164,8 +164,8 @@ impl MountTarget<'_> {
     }
 
     /// Whether `info` is THIS mount: the share and port, plus the server by identity,
-    /// since `statfs` may name it `Naspolya._smb._tcp.local` where we mount
-    /// `192.168.1.111`.
+    /// since `statfs` may name it `Testnas._smb._tcp.local` where we mount
+    /// `192.168.50.10`.
     fn is_mounted_as(&self, info: &SmbMountInfo, hosts: &[NetworkHost]) -> bool {
         same_share_name(&info.share, self.share)
             && SmbServer::new(self.server, self.port).is(&SmbServer::new(&info.server, info.port), hosts)

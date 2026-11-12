@@ -98,7 +98,7 @@ describe('a live run that came back short', () => {
     const text = noteText(
       liveNote({
         permissionDenied: ['/Users/me/Documents'],
-        declined: ['/Volumes/naspi/@eaDir'],
+        declined: ['/Volumes/testshare/@eaDir'],
         abandonedGround: true,
         abandonedLocations: 2,
       }),
@@ -110,7 +110,7 @@ describe('a live run that came back short', () => {
   })
 
   it('names a folder it could not open, and offers no Enter it already pressed', () => {
-    const folder = '/Volumes/naspi/papers/Rymdskottkärra AB'
+    const folder = '/Volumes/testshare/documents/Testföretag AB'
     const text = noteText(liveNote({ failedRoots: [folder] }))
     expect(text).toContain(tString('search.coverage.line.failedRoots', one))
     expect(text).toContain(folder)
@@ -140,14 +140,16 @@ describe('ground the run did not read', () => {
   it('says a snapshot folder is one Cmdr skips, and NEVER offers a permission for it', () => {
     // The whole point of the typed cause: no permission opens a snapshot tree, so
     // offering one here would be advice that does nothing.
-    const text = noteText(liveNote({ declined: ['/Volumes/naspi/@eaDir'] }), () => {})
-    expect(text).toContain('/Volumes/naspi/@eaDir')
+    const text = noteText(liveNote({ declined: ['/Volumes/testshare/@eaDir'] }), () => {})
+    expect(text).toContain('/Volumes/testshare/@eaDir')
     expect(text).toContain(tString('search.coverage.line.declined', one))
     expect(text).not.toContain(tString('search.coverage.setUpFullDiskAccess'))
   })
 
   it('keeps the two apart when a run met both', () => {
-    const text = noteText(liveNote({ permissionDenied: ['/Users/me/Documents'], declined: ['/Volumes/naspi/@eaDir'] }))
+    const text = noteText(
+      liveNote({ permissionDenied: ['/Users/me/Documents'], declined: ['/Volumes/testshare/@eaDir'] }),
+    )
     expect(text).toContain(tString('search.coverage.line.denied', one))
     expect(text).toContain(tString('search.coverage.line.declined', one))
   })
@@ -236,7 +238,7 @@ describe('each list as one line', () => {
   })
 
   it('gives every line its copy button and a keyboard-reachable folder list', () => {
-    const root = mountNote(liveNote({ declined: ['/Volumes/naspi/@eaDir'], stillCovering: ['/Users/me/Music'] }))
+    const root = mountNote(liveNote({ declined: ['/Volumes/testshare/@eaDir'], stillCovering: ['/Users/me/Music'] }))
     for (const kind of ['declined', 'stillCovering']) {
       const el = line(root, kind)
       expect(el?.querySelector('button.info-tip')?.getAttribute('aria-label')).toBe(

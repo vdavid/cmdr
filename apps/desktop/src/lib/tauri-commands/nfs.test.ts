@@ -22,14 +22,14 @@ beforeEach(() => {
 describe('asking a server before a place exists', () => {
   it('lists exports for the host and port as typed, a missing port staying null for the portmapper', async () => {
     vi.mocked(commands.listNfsExports).mockResolvedValueOnce({ outcome: 'listed', exports: ['/volume1/data'] })
-    expect(await listNfsExports('nas.local', null)).toEqual({ outcome: 'listed', exports: ['/volume1/data'] })
-    expect(commands.listNfsExports).toHaveBeenCalledWith('nas.local', null)
+    expect(await listNfsExports('testnas.local', null)).toEqual({ outcome: 'listed', exports: ['/volume1/data'] })
+    expect(commands.listNfsExports).toHaveBeenCalledWith('testnas.local', null)
   })
 
   it('passes a refused listing through as an outcome, so the form keeps the export field open', async () => {
     vi.mocked(commands.listNfsExports).mockResolvedValueOnce({ outcome: 'listing_refused' })
-    expect(await listNfsExports('nas.local', 2049)).toEqual({ outcome: 'listing_refused' })
-    expect(commands.listNfsExports).toHaveBeenCalledWith('nas.local', 2049)
+    expect(await listNfsExports('testnas.local', 2049)).toEqual({ outcome: 'listing_refused' })
+    expect(commands.listNfsExports).toHaveBeenCalledWith('testnas.local', 2049)
   })
 
   it('guesses the identity for that export, keeping host, port, and export in order', async () => {
@@ -39,20 +39,20 @@ describe('asking a server before a place exists', () => {
       otherGids: [],
       source: 'most_common_owner',
     })
-    expect(await guessNfsIdentity('nas.local', 2049, '/volume1/data')).toEqual({
+    expect(await guessNfsIdentity('testnas.local', 2049, '/volume1/data')).toEqual({
       uid: 1026,
       gid: 100,
       otherGids: [],
       source: 'most_common_owner',
     })
-    expect(commands.guessNfsIdentity).toHaveBeenCalledWith('nas.local', 2049, '/volume1/data')
+    expect(commands.guessNfsIdentity).toHaveBeenCalledWith('testnas.local', 2049, '/volume1/data')
   })
 })
 
 describe('the saved places', () => {
   const data: SavedNfsPlace = {
     volumeId: 'nfs-data',
-    host: 'nas.local',
+    host: 'testnas.local',
     port: null,
     export: '/volume1/data',
     uid: 1026,

@@ -49,7 +49,7 @@ struct Download {
 }
 
 async fn download(lane: &str, local: InMemoryVolume) -> Download {
-    let nas_store = Arc::new(InMemoryVolume::new("Naspolya").with_space_info(10_000_000, 10_000_000));
+    let nas_store = Arc::new(InMemoryVolume::new("Testnas").with_space_info(10_000_000, 10_000_000));
     nas_store
         .create_file(Path::new("/big.bin"), &patterned())
         .await

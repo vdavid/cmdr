@@ -342,7 +342,7 @@ pub fn expand_tilde<'a>(path: &'a str, home: Option<&str>) -> Cow<'a, str> {
 /// so a source's path lookup, which walks component by component from the index
 /// root, hits. A `/`-rooted volume (`mount_root` `None`) passes the path through.
 /// A mount-rooted volume's index root is its mount root, so the mount prefix is
-/// stripped: `/Volumes/naspi/sub` → `/sub`, the mount root itself → `/`. A path
+/// stripped: `/Volumes/testshare/sub` → `/sub`, the mount root itself → `/`. A path
 /// outside the mount root yields `None` (don't mis-root it).
 pub(crate) fn to_index_relative(path: &str, mount_root: Option<&str>) -> Option<String> {
     let Some(root) = mount_root else {

@@ -133,7 +133,7 @@ fn win(text: &str) -> AppPath {
 
 #[test]
 fn to_native_is_the_long_path_form_on_windows() {
-    assert_eq!(win("C:/Users/ada").to_native(), r"\\?\C:\Users\ada");
+    assert_eq!(win("C:/Users/test_user_1").to_native(), r"\\?\C:\Users\test_user_1");
     assert_eq!(win("C:/").to_native(), r"\\?\C:\");
     assert_eq!(
         win("//nas/media/films/a.mkv").to_native(),
@@ -144,16 +144,21 @@ fn to_native_is_the_long_path_form_on_windows() {
 
 #[test]
 fn to_native_is_the_wire_spelling_on_posix() {
-    let path = AppPath::parse("/Users/ada/a\\b", PathFlavor::Posix).expect("a POSIX path");
-    assert_eq!(path.to_native(), "/Users/ada/a\\b");
+    let path = AppPath::parse("/Users/test_user_1/a\\b", PathFlavor::Posix).expect("a POSIX path");
+    assert_eq!(path.to_native(), "/Users/test_user_1/a\\b");
     assert_eq!(AppPath::parse("/", PathFlavor::Posix).expect("root").to_native(), "/");
 }
 
 #[test]
 fn from_native_takes_every_windows_spelling_to_one_app_path() {
-    for native in [r"\\?\C:\Users\ada", r"C:\Users\ada", "C:/Users/ada", r"c:\Users\ada\"] {
+    for native in [
+        r"\\?\C:\Users\test_user_1",
+        r"C:\Users\test_user_1",
+        "C:/Users/test_user_1",
+        r"c:\Users\test_user_1\",
+    ] {
         let path = AppPath::from_native(native, PathFlavor::Windows).expect(native);
-        assert_eq!(path.to_string(), "C:/Users/ada", "{native}");
+        assert_eq!(path.to_string(), "C:/Users/test_user_1", "{native}");
     }
     for native in [r"\\?\UNC\nas\media\x", r"\\nas\media\x", "//nas/media/x"] {
         let path = AppPath::from_native(native, PathFlavor::Windows).expect(native);
@@ -176,7 +181,7 @@ fn from_native_refuses_what_names_no_folder() {
 
 #[test]
 fn native_round_trips() {
-    for wire in ["C:/", "C:/Users/ada", "//nas/media/", "//nas/media/a/b"] {
+    for wire in ["C:/", "C:/Users/test_user_1", "//nas/media/", "//nas/media/a/b"] {
         let path = win(wire);
         assert_eq!(
             AppPath::from_native(&path.to_native(), PathFlavor::Windows),
@@ -193,13 +198,16 @@ fn join_and_parent_never_leave_the_volume() {
     assert_eq!(root.join("../../Windows").to_string(), "C:/Windows");
     assert_eq!(win("//nas/media/x").join("../..").to_string(), "//nas/media/");
     let posix = AppPath::parse("/Users", PathFlavor::Posix).expect("a POSIX path");
-    assert_eq!(posix.join("ada/./notes.txt").to_string(), "/Users/ada/notes.txt");
+    assert_eq!(
+        posix.join("test_user_1/./notes.txt").to_string(),
+        "/Users/test_user_1/notes.txt"
+    );
     assert_eq!(posix.parent().map(|p| p.to_string()), Some("/".to_string()));
 }
 
 #[test]
 fn starts_with_matches_whole_components_on_one_root() {
-    assert!(win("C:/Users/ada").starts_with(&win("C:/Users")));
+    assert!(win("C:/Users/test_user_1").starts_with(&win("C:/Users")));
     assert!(win("C:/Users").starts_with(&win("C:/")));
     assert!(!win("C:/Users-1").starts_with(&win("C:/Users")));
     assert!(!win("D:/Users").starts_with(&win("C:/")));

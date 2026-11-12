@@ -14,11 +14,11 @@ use super::statfs::statfs_string;
 /// enumeration `getattrlist`s every mount, which blocks 30s–forever on a hung
 /// network mount and froze the app at launch. See `apps/desktop/src-tauri/src/volumes/DETAILS.md` § "Hung mounts".
 pub struct MountEntry {
-    /// Mount point, e.g. `/Volumes/naspi` (`f_mntonname`).
+    /// Mount point, e.g. `/Volumes/testshare` (`f_mntonname`).
     pub mount_point: String,
     /// Filesystem type, e.g. `apfs`, `exfat`, `smbfs` (`f_fstypename`).
     pub fs_type: String,
-    /// Mount source, e.g. `//david@192.168.1.111/naspi` for SMB (`f_mntfromname`).
+    /// Mount source, e.g. `//test_user_3@192.168.50.10/testshare` for SMB (`f_mntfromname`).
     pub mount_from: String,
     /// Whether the mount carries the `MNT_RDONLY` flag.
     pub is_read_only: bool,

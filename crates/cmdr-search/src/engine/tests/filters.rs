@@ -128,7 +128,7 @@ fn search_modified_before() {
         sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
-    // Users (1000), alice (2000), Documents (1500)
+    // Users (1000), test_user_4 (2000), Documents (1500)
     assert_eq!(result.total_count, 3);
 }
 
@@ -263,7 +263,7 @@ fn search_directories_only() {
         sort_by: None,
     };
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
-    // Users, alice, Documents (root excluded)
+    // Users, test_user_4, Documents (root excluded)
     assert_eq!(result.total_count, 3);
     assert!(result.entries.iter().all(|e| e.is_directory));
 }

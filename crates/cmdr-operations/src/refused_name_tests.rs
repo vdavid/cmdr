@@ -78,7 +78,7 @@ struct Paths {
 fn paths(name: &str) -> Paths {
     Paths {
         source: PathBuf::from(format!("/Users/me/Music/{name}")),
-        dest: PathBuf::from(format!("/Volumes/naspi/music/{name}")),
+        dest: PathBuf::from(format!("/Volumes/testshare/music/{name}")),
     }
 }
 

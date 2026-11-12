@@ -46,7 +46,7 @@ describe('getLicenseDescription', () => {
  */
 describe('renderLicenseEmail', () => {
   const base = {
-    customerName: 'Dana',
+    customerName: 'Test Customer',
     productName: 'Cmdr',
     supportEmail: 'hello@getcmdr.com',
     licenseType: 'commercial_perpetual' as const,

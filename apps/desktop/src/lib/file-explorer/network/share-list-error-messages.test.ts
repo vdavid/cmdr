@@ -43,7 +43,7 @@ const ALL: ShareListError[] = Object.values(CASES)
 describe('renderShareListError', () => {
   it('gives every variant a sentence from the catalog', () => {
     for (const error of ALL) {
-      const message = renderShareListError(error, 'Naspolya')
+      const message = renderShareListError(error, 'Testnas')
       expect(message, `${error.type} must have words`).not.toBe('')
       expect(message, `${error.type} must resolve, not echo its key`).not.toMatch(/^errors\./)
       expect(message, `${error.type} must not leave a placeholder unfilled`).not.toMatch(/\{[a-zA-Z]+\}/)
@@ -52,7 +52,7 @@ describe('renderShareListError', () => {
 
   it('follows the error-copy writing rules', () => {
     for (const error of ALL) {
-      const message = renderShareListError(error, 'Naspolya')
+      const message = renderShareListError(error, 'Testnas')
       const lower = message.toLowerCase()
       expect(lower, `${error.type} must not say "error"`).not.toMatch(/\berrors?\b/)
       expect(lower, `${error.type} must not say "failed"`).not.toMatch(/\bfail(ed|ure)?\b/)
@@ -66,13 +66,13 @@ describe('renderShareListError', () => {
   })
 
   it('gives each variant its own words', () => {
-    const rendered = new Set(ALL.map((error) => renderShareListError(error, 'Naspolya')))
+    const rendered = new Set(ALL.map((error) => renderShareListError(error, 'Testnas')))
     expect(rendered.size).toBe(ALL.length)
   })
 
   it('never shows the backend diagnostic, or the install command the pane shows on its own', () => {
     for (const error of ALL) {
-      const message = renderShareListError(error, 'Naspolya')
+      const message = renderShareListError(error, 'Testnas')
       expect(message, error.type).not.toContain('smbutil')
       expect(message, error.type).not.toContain('os error')
       expect(message, error.type).not.toContain('sudo')
@@ -81,7 +81,7 @@ describe('renderShareListError', () => {
 
   it('names the server for everything but a missing local tool', () => {
     for (const error of ALL.filter((e) => e.type !== 'missing_dependency')) {
-      expect(renderShareListError(error, 'Naspolya'), error.type).toContain('“Naspolya”')
+      expect(renderShareListError(error, 'Testnas'), error.type).toContain('“Testnas”')
     }
   })
 })

@@ -82,36 +82,36 @@ const host: NetworkHost = { id: 'h1', name: 'Attic NAS', ipAddress: '10.0.0.4', 
 
 /** A one-place server: the servers family speaks for it. */
 const placeRow: HubRow = {
-  id: 'sftp-nas.local-22-ada',
+  id: 'sftp-testnas.local-22-test_user_1',
   kind: 'server',
   parentId: null,
   account: null,
   place: null,
-  name: 'Naspolya',
+  name: 'Testnas',
   protocol: 'sftp',
-  address: 'nas.local:22',
+  address: 'testnas.local:22',
   status: 'saved',
   lastConnectedAt: null,
-  volumeId: 'sftp-nas.local-22-ada',
+  volumeId: 'sftp-testnas.local-22-test_user_1',
   pinned: true,
   saved: {
-    id: 'sftp-nas.local-22-ada',
+    id: 'sftp-testnas.local-22-test_user_1',
     protocol: 'sftp',
-    displayName: 'Naspolya',
+    displayName: 'Testnas',
     nameSource: 'user',
-    address: 'nas.local:22',
-    username: 'ada',
+    address: 'testnas.local:22',
+    username: 'test_user_1',
     pinned: true,
     lastConnectedAt: null,
     autoReconnect: true,
     places: [
       {
-        volumeId: 'sftp-nas.local-22-ada',
-        name: 'Naspolya',
+        volumeId: 'sftp-testnas.local-22-test_user_1',
+        name: 'Testnas',
         pinned: true,
         connected: false,
-        appRoot: 'sftp://ada@nas.local:22',
-        username: 'ada',
+        appRoot: 'sftp://test_user_1@testnas.local:22',
+        username: 'test_user_1',
         autoReconnect: true,
       },
     ],
@@ -154,7 +154,7 @@ const shareRow: HubRow = {
   id: 'share:smb-container',
   kind: 'place',
   parentId: savedHostRow.id,
-  account: { kind: 'user', username: 'sven' },
+  account: { kind: 'user', username: 'test_user_6' },
   name: 'Container',
   status: 'saved',
   volumeId: 'smb-container',
@@ -165,7 +165,7 @@ const shareRow: HubRow = {
     pinned: true,
     connected: false,
     appRoot: '/Volumes/Container',
-    username: 'sven',
+    username: 'test_user_6',
     autoReconnect: null,
   },
 }
@@ -179,9 +179,9 @@ const nearbyOnlyRow: HubRow = {
 }
 
 const liveVolume: VolumeInfo = {
-  id: 'sftp-nas.local-22-ada',
-  name: 'Naspolya',
-  path: 'sftp://ada@nas.local:22',
+  id: 'sftp-testnas.local-22-test_user_1',
+  name: 'Testnas',
+  path: 'sftp://test_user_1@testnas.local:22',
   category: 'network',
   fsType: 'sftp',
   isEjectable: false,
@@ -215,7 +215,7 @@ beforeEach(() => {
 describe('forget', () => {
   it('sends a one-place server to the servers family, so the hub asks what the switcher asks', async () => {
     await actions().forget(placeRow)
-    expect(forgetSavedServer).toHaveBeenCalledWith('sftp-nas.local-22-ada', 'Naspolya')
+    expect(forgetSavedServer).toHaveBeenCalledWith('sftp-testnas.local-22-test_user_1', 'Testnas')
     expect(forgetSavedSmbHost).not.toHaveBeenCalled()
   })
 
@@ -279,7 +279,10 @@ describe('forget', () => {
 
   it('offers the box for a host used with an account, even with nothing read', async () => {
     credentialStatus = 'unknown'
-    const withAccount = { ...savedHostRow, saved: savedHostRow.saved && { ...savedHostRow.saved, username: 'ada' } }
+    const withAccount = {
+      ...savedHostRow,
+      saved: savedHostRow.saved && { ...savedHostRow.saved, username: 'test_user_1' },
+    }
     await actions().forget(withAccount)
     expect(confirmWithCheckbox).toHaveBeenCalledOnce()
   })
@@ -390,7 +393,7 @@ describe('runRowEntry', () => {
       checked: true,
     } as const
     await actions([liveVolume]).runRowEntry(placeRow, toggle)
-    expect(setServerAutoReconnect).toHaveBeenCalledWith('sftp-nas.local-22-ada', false)
+    expect(setServerAutoReconnect).toHaveBeenCalledWith('sftp-testnas.local-22-test_user_1', false)
   })
 })
 
@@ -548,8 +551,8 @@ describe('editHubRow', () => {
     await editHubRow(placeRow)
     expect(runServerRowAction).toHaveBeenCalledExactlyOnceWith({
       action: 'edit',
-      volumeId: 'sftp-nas.local-22-ada',
-      volumeName: 'Naspolya',
+      volumeId: 'sftp-testnas.local-22-test_user_1',
+      volumeName: 'Testnas',
     })
   })
 

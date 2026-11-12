@@ -250,7 +250,7 @@ fn alternating_between_two_dbs_reuses_both_connections() {
     let mut cache = ThreadConnCache::new(THREAD_CONN_SLOTS);
     let opener = CountingOpener::new();
     let left = Path::new("/tmp/cmdr-test/index-root.db");
-    let right = Path::new("/tmp/cmdr-test/index-smb-naspi.db");
+    let right = Path::new("/tmp/cmdr-test/index-smb-testshare.db");
 
     for _ in 0..50 {
         cache.with(left, 0, opener.open(), |_| ()).expect("left");

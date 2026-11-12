@@ -18,7 +18,7 @@ use cmdr_fs::volume::{InMemoryVolume, Volume};
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_volume_delete_reports_each_top_level_source_once_it_is_gone() {
-    let volume = Arc::new(InMemoryVolume::new("naspi"));
+    let volume = Arc::new(InMemoryVolume::new("testshare"));
     volume.create_directory(Path::new("/exports")).await.expect("dir");
     volume
         .create_file(Path::new("/exports/a.key"), b"aa")

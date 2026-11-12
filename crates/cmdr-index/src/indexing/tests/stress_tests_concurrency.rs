@@ -977,7 +977,7 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
 
     // Mirror these into the DB. To make `process_fs_event` find parents during the
     // storm, we model the full path components from `/` down to the synthetic tree.
-    // E.g. `/Users/veszelovszki/.../cmdr-stall-repro-XXX/subdir_000` is indexed as
+    // E.g. `/Users/test_user_3/.../cmdr-stall-repro-XXX/subdir_000` is indexed as
     // a chain: `/` → `Users` → ... → `cmdr-stall-repro-XXX` → `subdir_000`.
     let mut next_id: i64 = 2;
     let mut entries: Vec<EntryRow> = Vec::new();

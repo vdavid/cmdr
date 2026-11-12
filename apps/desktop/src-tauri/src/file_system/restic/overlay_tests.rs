@@ -14,7 +14,7 @@ use cmdr_fs::entry::FileEntry;
 use cmdr_fs::restic_view::VIRTUAL_ENTRY_NAME;
 use cmdr_listing::host::ListingOverlay;
 
-const REPO: &str = "/share/backups/m3-restic";
+const REPO: &str = "/share/backups/test-restic";
 
 fn entry(name: &str, is_directory: bool) -> FileEntry {
     FileEntry::new(name.to_string(), format!("{REPO}/{name}"), is_directory, false)

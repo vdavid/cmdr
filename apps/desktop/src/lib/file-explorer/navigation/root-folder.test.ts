@@ -18,9 +18,9 @@ const volumes = [root, usb, phone]
 
 describe('rootFolderOf', () => {
   it('takes the boot disk to /', () => {
-    expect(rootFolderOf({ volumes, volumeId: 'root', path: '/Users/david/Library', containingVolumeId: 'root' })).toBe(
-      '/',
-    )
+    expect(
+      rootFolderOf({ volumes, volumeId: 'root', path: '/Users/test_user_3/Library', containingVolumeId: 'root' }),
+    ).toBe('/')
   })
 
   it('takes a drive the pane walked into from the boot disk to that drive’s root', () => {
@@ -37,13 +37,18 @@ describe('rootFolderOf', () => {
   })
 
   it('falls back to the pane’s own volume while the containing one is unknown', () => {
-    expect(rootFolderOf({ volumes, volumeId: 'root', path: '/Users/david', containingVolumeId: null })).toBe('/')
+    expect(rootFolderOf({ volumes, volumeId: 'root', path: '/Users/test_user_3', containingVolumeId: null })).toBe('/')
   })
 
   it('takes a pane inside an archive to the archive’s root, not the drive’s', () => {
     expect(
-      rootFolderOf({ volumes, volumeId: 'root', path: '/Users/david/a.zip/inner/deep', containingVolumeId: 'root' }),
-    ).toBe('/Users/david/a.zip')
+      rootFolderOf({
+        volumes,
+        volumeId: 'root',
+        path: '/Users/test_user_3/a.zip/inner/deep',
+        containingVolumeId: 'root',
+      }),
+    ).toBe('/Users/test_user_3/a.zip')
   })
 
   it('resolves a nested archive against the outer one', () => {
@@ -93,7 +98,7 @@ describe('goToRootFolder', () => {
 
   it('opens the root in place, on the pane’s own volume', async () => {
     vi.mocked(resolvePathVolume).mockResolvedValue({ volume: root, timedOut: false })
-    const { deps, navigate } = setup({ volumeId: 'root', path: '/Users/david' })
+    const { deps, navigate } = setup({ volumeId: 'root', path: '/Users/test_user_3' })
     await goToRootFolder(deps, 'right')
     expect(navigate).toHaveBeenCalledWith({
       pane: 'right',
@@ -110,9 +115,9 @@ describe('goToRootFolder', () => {
   })
 
   it('does nothing when the pane moved on while the backend answered', async () => {
-    const pane = { volumeId: 'root', path: '/Users/david' }
+    const pane = { volumeId: 'root', path: '/Users/test_user_3' }
     vi.mocked(resolvePathVolume).mockImplementation(() => {
-      pane.path = '/Users/david/Downloads'
+      pane.path = '/Users/test_user_3/Downloads'
       return Promise.resolve({ volume: root, timedOut: false })
     })
     const { deps, navigate } = setup(pane)

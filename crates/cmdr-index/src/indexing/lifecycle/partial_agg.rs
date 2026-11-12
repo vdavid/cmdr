@@ -105,10 +105,10 @@ mod tests {
     fn keeps_matching_volume_absolute_paths_normalized_and_deduped() {
         let listings = vec![
             // On the scanned volume, absolute: kept.
-            summary("vol-main", "/Users/david"),
+            summary("vol-main", "/Users/test_user_3"),
             // Same path on another local volume: dropped (would resolve against
             // the wrong per-volume DB).
-            summary("vol-other", "/Users/david"),
+            summary("vol-other", "/Users/test_user_3"),
             // Virtual / device listings: dropped by the volume-id filter.
             summary("mtp-1234", "/DCIM"),
             summary("search-results", "/anything"),
@@ -119,7 +119,7 @@ mod tests {
             // Needs firmlink normalization.
             summary("vol-main", "/tmp/scratch"),
             // Duplicate of the first (two panes on the same dir): deduped.
-            summary("vol-main", "/Users/david"),
+            summary("vol-main", "/Users/test_user_3"),
         ];
 
         let hot = collect_hot_paths(&listings, "vol-main");
@@ -127,12 +127,12 @@ mod tests {
         // First-seen order preserved; the /tmp entry normalized; duplicate gone;
         // every other-volume / virtual / relative entry filtered out.
         let expected_tmp = firmlinks::normalize_path("/tmp/scratch");
-        assert_eq!(hot, vec!["/Users/david".to_string(), expected_tmp]);
+        assert_eq!(hot, vec!["/Users/test_user_3".to_string(), expected_tmp]);
     }
 
     #[test]
     fn empty_when_no_listing_matches_the_scanned_volume() {
-        let listings = vec![summary("vol-other", "/Users/david"), summary("mtp-1", "/DCIM")];
+        let listings = vec![summary("vol-other", "/Users/test_user_3"), summary("mtp-1", "/DCIM")];
         assert!(collect_hot_paths(&listings, "vol-main").is_empty());
     }
 

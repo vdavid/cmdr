@@ -242,7 +242,7 @@ fn process_events(receiver: Receiver<ServiceEvent>, browse: u64, app_handle: App
 
 /// Extracts the instance name from a full mDNS service name.
 ///
-/// For example, `"David's MacBook._smb._tcp.local."` → `"David's MacBook"`.
+/// For example, `"Tester's MacBook._smb._tcp.local."` → `"Tester's MacBook"`.
 fn extract_instance_name(fullname: &str) -> String {
     // The instance name is everything before the first `._` separator.
     // mdns-sd escapes dots in instance names as `\.`, so splitting on `._`
@@ -284,8 +284,8 @@ mod tests {
     #[test]
     fn test_extract_instance_name_basic() {
         assert_eq!(
-            extract_instance_name("David's MacBook._smb._tcp.local."),
-            "David's MacBook"
+            extract_instance_name("Tester's MacBook._smb._tcp.local."),
+            "Tester's MacBook"
         );
     }
 

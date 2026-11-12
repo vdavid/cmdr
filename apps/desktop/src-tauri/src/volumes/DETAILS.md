@@ -63,7 +63,7 @@ DO (`supports_eviction`), which is why the enum sits in `file_system/` rather th
 
 ## Case sensitivity
 
-Every row carries `case_sensitive`: whether names on it tell `Ada` from `ada`, which the frontend's path comparisons
+Every row carries `case_sensitive`: whether names on it tell `Test_user_1` from `test_user_1`, which the frontend's path comparisons
 follow (`apps/desktop/src/lib/path/DETAILS.md` § "Case sensitivity is the volume's"). It's the volume's property, ❌
 never inferred from the OS by a caller, and no row asks the mount: a `pathconf(_PC_CASE_SENSITIVE)` or a probe file is a
 call on the mount, which can hang on a dead share (§ Hung mounts). So each answer is a stated default:
@@ -153,7 +153,7 @@ for exactly the rows whose owner isn't 0 (verified with the same probe beside `m
 **Why network mounts are left alone**: whether another account's SMB, NFS, WebDAV, or AFP mount is usable from this one
 is unverified, and hiding a share someone can reach is worse than showing one they can't. The test Mac has one account,
 so nothing could be tried from a second. What's known: an SMB mount's root is `drwx------` and owned by the mounting
-user (`/Volumes/naspi`, macOS 27.0, `stat`, 2026-09-30), which suggests another account can't enter it. To widen the
+user (`/Volumes/testshare`, macOS 27.0, `stat`, 2026-09-30), which suggests another account can't enter it. To widen the
 rule, mount a share as one account, fast-user-switch, and list it from the other; if it refuses, drop the
 `is_network_fs_type` clause and its test. ❗ `is_network_fs_type` also picks the volume-ID derivation and which mounts
 skip blocking enrichment: this rule only reads it.
@@ -237,12 +237,12 @@ platform-specific ID derivation. A second copy would rot independently, which is
 share this one.
 
 **Why**: a volume ID is identity, and one filesystem can legitimately be mounted twice: macOS mounts the same SMB share
-at `/Volumes/naspi` and `/Volumes/naspi-1`, and both derive the same ID (a share keys on `(server, port, share)`; a
+at `/Volumes/testshare` and `/Volumes/testshare-1`, and both derive the same ID (a share keys on `(server, port, share)`; a
 local disk on its filesystem UUID). Deduplicating on path alone let both survive under one ID, and everything
 downstream keys on the ID:
 
 - `file_system::register_discovered_volumes` registered both, so the registry ended up rooted at whichever mount
-  registered last. A pane restoring a saved `/Volumes/naspi/…` path then hit a backend rooted at `/Volumes/naspi-1` and
+  registered last. A pane restoring a saved `/Volumes/testshare/…` path then hit a backend rooted at `/Volumes/testshare-1` and
   the listing failed.
 - The frontend builds keyed lists from the volume list, and duplicate keys throw during render (Svelte
   `each_key_duplicate`), which took the transfer dialog down with it.
@@ -264,7 +264,7 @@ collapse stays purely about what the switcher SHOWS, and it still runs without t
 with such syscalls, and a single dead mount used to take the whole app down at launch: `init_volume_manager` ran
 `get_attached_volumes` synchronously on the main thread (inside the Tauri `setup` closure), and NSFileManager's
 `mountedVolumeURLsIncludingResourceValuesForKeys` `getattrlist`s every mount to build the URL array. On a wedged
-`/Volumes/naspi` the main thread stuck in `__getattrlist` for 90s+ and the webview never recovered (its startup IPC piled
+`/Volumes/testshare` the main thread stuck in `__getattrlist` for 90s+ and the webview never recovered (its startup IPC piled
 up behind the frozen process). The MCP `cmdr://state` resource hit the same wall through `list_locations`: reads took a
 flat ~30s (one smbfs kernel timeout). (Incident: live NAS QA, 2026-07-13.)
 
@@ -526,7 +526,7 @@ Three properties make that unreachable rather than unlikely:
 
 1. **Injective encoding.** Every derived ID is `{scheme}-{slug}-{digest}`, where the digest is 64 bits of BLAKE3 over
    the length-prefixed, scheme-separated canonical tuple. The slug is lossy and cosmetic (so a data dir stays
-   eyeballable); nothing may key off it. Length-prefixing is what stops `("nas", "polyashare")` and `("naspolya",
+   eyeballable); nothing may key off it. Length-prefixing is what stops `("test", "nasshare")` and `("testnas",
    "share")` hashing the same bytes. Cryptographic rather than a fast hash because volume names are user-controlled, so
    a *chosen* collision has to be out of reach too. The bounded length matters: these are filename components
    (`index-{id}.db`).
@@ -634,7 +634,7 @@ The escaping half lives with the mount: `network/mount.rs::build_smb_mount_url`.
 ## A mount can sit inside its share
 
 A share name is ONE path segment: it's what goes to TreeConnect, so it can never carry a separator. A mount source with
-more segments than that (`//dana@example.com/SYSVOL/example.com`) names a DIRECTORY inside the share, and
+more segments than that (`//test_user_13@example.com/SYSVOL/example.com`) names a DIRECTORY inside the share, and
 `parse_smb_mount_source` splits it accordingly into `share` plus `SmbMountInfo::subpath` (`None` at the share root,
 never `Some("")`, which would make the downstream join prepend a `/`).
 

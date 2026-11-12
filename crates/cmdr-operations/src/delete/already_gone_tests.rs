@@ -152,7 +152,7 @@ async fn a_delete_with_nothing_gone_carries_no_already_gone_note() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_volume_delete_of_an_item_that_is_already_gone_completes() {
-    let volume = Arc::new(InMemoryVolume::new("naspi"));
+    let volume = Arc::new(InMemoryVolume::new("testshare"));
     volume.create_file(Path::new("/here.txt"), b"here").await.expect("file");
     let engine = TestOperations::new();
     let volume_id = format!("already-gone-volume-{}", std::process::id());
@@ -460,7 +460,7 @@ fn settle_as_not_found(engine: &TestOperations, preview_id: &str, path: &Path) {
 /// delete of an already-gone file auto-sent an error report.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_volume_delete_whose_preview_found_the_item_gone_completes() {
-    let volume = Arc::new(InMemoryVolume::new("naspi"));
+    let volume = Arc::new(InMemoryVolume::new("testshare"));
     let engine = TestOperations::new();
     let volume_id = format!("already-gone-preview-volume-{}", std::process::id());
     engine.volumes().register(&volume_id, volume as Arc<dyn Volume>);
@@ -619,7 +619,7 @@ impl Volume for RacingVolume {
 
 async fn racing_folder(vanishes: Option<&str>, answers_not_found: Option<&str>) -> Arc<RacingVolume> {
     let volume = Arc::new(RacingVolume {
-        inner: InMemoryVolume::new("naspi"),
+        inner: InMemoryVolume::new("testshare"),
         vanishes_after_listing: vanishes.map(PathBuf::from),
         delete_answers_not_found: answers_not_found.map(PathBuf::from),
     });

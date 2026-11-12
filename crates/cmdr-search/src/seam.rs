@@ -20,7 +20,7 @@ use super::types::{SearchQuery, SearchResultEntry, SearchSort};
 pub trait SearchRows {
     /// The loaded arena.
     fn arena(&self) -> &SearchIndex;
-    /// The mount root a row's index path is prefixed with (`/Volumes/naspi`), empty
+    /// The mount root a row's index path is prefixed with (`/Volumes/testshare`), empty
     /// for a volume whose index is `/`-rooted.
     fn path_prefix(&self) -> &str;
     /// The entry id each index-relative path (`/photos/2024`) names, or `None` for a

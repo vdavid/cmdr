@@ -63,7 +63,7 @@ const MUTATION_CASES: MutationError[] = [
   { type: 'parentNotWritable', path: '/Users/me/locked' },
   { type: 'fileLocked', path: '/Users/me/locked.txt' },
   { type: 'sipProtected', path: '/System/Library' },
-  { type: 'volumeGone', volumeId: 'smb-naspi-papers' },
+  { type: 'volumeGone', volumeId: 'smb-testshare-papers' },
   { type: 'archiveNotEditable' },
   { type: 'archiveReadOnly' },
   { type: 'renameOutOfArchive' },

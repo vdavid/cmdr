@@ -29,13 +29,13 @@ describe('getTechnicalDetails: volume-gone variants', () => {
   it('states the server and how long Cmdr waited before giving up', () => {
     const error: WriteOperationError = {
       type: 'server_connection_lost',
-      path: '/Volumes/naspi/photos/b.jpg',
-      volumeName: 'naspi',
+      path: '/Volumes/testshare/photos/b.jpg',
+      volumeName: 'testshare',
       gaveUpAfterSecs: 120,
     }
 
     expect(getTechnicalDetails(error)).toBe(
-      'Path: /Volumes/naspi/photos/b.jpg\nServer: naspi\nWaited: 120 s\nError type: server_connection_lost',
+      'Path: /Volumes/testshare/photos/b.jpg\nServer: testshare\nWaited: 120 s\nError type: server_connection_lost',
     )
   })
 
@@ -43,8 +43,8 @@ describe('getTechnicalDetails: volume-gone variants', () => {
   it('says "no" when Cmdr did not wait for the server', () => {
     const error: WriteOperationError = {
       type: 'server_connection_lost',
-      path: '/Volumes/naspi/a',
-      volumeName: 'naspi',
+      path: '/Volumes/testshare/a',
+      volumeName: 'testshare',
       gaveUpAfterSecs: null,
     }
 
@@ -54,12 +54,12 @@ describe('getTechnicalDetails: volume-gone variants', () => {
   it('names the item and the volume when it changed while the server was away', () => {
     const error: WriteOperationError = {
       type: 'changed_while_disconnected',
-      path: '/Volumes/naspi/old/c.txt',
-      volumeName: 'naspi',
+      path: '/Volumes/testshare/old/c.txt',
+      volumeName: 'testshare',
     }
 
     expect(getTechnicalDetails(error)).toBe(
-      'Path: /Volumes/naspi/old/c.txt\nVolume: naspi\nError type: changed_while_disconnected',
+      'Path: /Volumes/testshare/old/c.txt\nVolume: testshare\nError type: changed_while_disconnected',
     )
   })
 

@@ -41,7 +41,7 @@ pub struct VolumeSnapshot {
     pub id: String,
     pub kind: String,
     /// The app-path prefix every location on this volume starts with: a mount
-    /// point (`/Volumes/naspi-1`) or a scheme root (`sftp://…`, `mtp://…`). For a
+    /// point (`/Volumes/testshare-1`) or a scheme root (`sftp://…`, `mtp://…`). For a
     /// volume that isn't connected, the root it last had. Absent only where no
     /// location lives (the `Network` hub row).
     #[serde(skip_serializing_if = "Option::is_none")]

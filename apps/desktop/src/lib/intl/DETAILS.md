@@ -267,8 +267,8 @@ space after each comma). Never a block inside a sentence, never `{platform}` int
 ### Path params
 
 `pathParam(path)` (`messages.svelte.ts`) marks a param as an app path, and `format()` spells only those through
-`#lib/path/grammar`'s `shownPath` (`C:\Users\ada`, `\\server\share\x` on Windows; a no-op elsewhere). Every other param
-passes to the engine untouched, on every OS.
+`#lib/path/grammar`'s `shownPath` (`C:\Users\test_user_1`, `\\server\share\x` on Windows; a no-op elsewhere). Every
+other param passes to the engine untouched, on every OS.
 
 - **Decision/Why: the caller marks it, ❌ nothing guesses** (#1118). Running every string param through `shownPath` read
   a drive's name (`C:`) as the root `C:\`, and any `a//b`-shaped prose as a share. A smarter guess would still be a

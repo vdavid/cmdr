@@ -5,7 +5,7 @@ use super::*;
 /// A home directory to expand `~` against. Never touched on disk: nothing here
 /// stats anything, which is the property half these tests exist to hold.
 fn home() -> &'static Path {
-    Path::new("/Users/dave")
+    Path::new("/Users/test_user_10")
 }
 
 /// The location rows, in order, as `(rendered-ish label, path, kind)`.
@@ -50,8 +50,8 @@ fn the_four_commands_come_first_split_by_a_separator() {
 #[test]
 fn bookmarks_and_tabs_each_get_their_own_separated_group() {
     let rows = menu_rows(
-        &[Candidate::bookmark("Desktop", "/Users/dave/Desktop")],
-        &[Candidate::tab("/Users/dave/code")],
+        &[Candidate::bookmark("Desktop", "/Users/test_user_10/Desktop")],
+        &[Candidate::tab("/Users/test_user_10/code")],
         Some(home()),
     );
 
@@ -66,14 +66,14 @@ fn bookmarks_and_tabs_each_get_their_own_separated_group() {
             DockRow::Separator,
             DockRow::Location(DockLocation {
                 label: DockLabel::Plain("Desktop".to_string()),
-                path: "/Users/dave/Desktop".to_string(),
+                path: "/Users/test_user_10/Desktop".to_string(),
                 kind: LocationKind::Bookmark,
                 favorite_id: Some("Desktop".to_string()),
             }),
             DockRow::Separator,
             DockRow::Location(DockLocation {
                 label: DockLabel::Plain("code".to_string()),
-                path: "/Users/dave/code".to_string(),
+                path: "/Users/test_user_10/code".to_string(),
                 kind: LocationKind::Tab,
                 favorite_id: None,
             }),
@@ -83,7 +83,7 @@ fn bookmarks_and_tabs_each_get_their_own_separated_group() {
 
 #[test]
 fn an_empty_group_takes_its_separator_with_it() {
-    let rows = menu_rows(&[], &[Candidate::tab("/Users/dave/code")], Some(home()));
+    let rows = menu_rows(&[], &[Candidate::tab("/Users/test_user_10/code")], Some(home()));
 
     let separators = rows.iter().filter(|row| **row == DockRow::Separator).count();
     assert_eq!(separators, 2, "one between the command pairs, one before the tabs");
@@ -102,8 +102,8 @@ fn an_empty_group_takes_its_separator_with_it() {
 fn a_bookmark_listed_twice_is_drawn_once() {
     let rows = menu_rows(
         &[
-            Candidate::bookmark("Desktop", "/Users/dave/Desktop"),
-            Candidate::bookmark("Desktop again", "/Users/dave/Desktop/"),
+            Candidate::bookmark("Desktop", "/Users/test_user_10/Desktop"),
+            Candidate::bookmark("Desktop again", "/Users/test_user_10/Desktop/"),
         ],
         &[],
         Some(home()),
@@ -116,7 +116,10 @@ fn a_bookmark_listed_twice_is_drawn_once() {
 fn a_tab_that_repeats_a_bookmark_is_dropped() {
     let rows = menu_rows(
         &[Candidate::bookmark("Applications", "/Applications")],
-        &[Candidate::tab("/Applications"), Candidate::tab("/Users/dave/code")],
+        &[
+            Candidate::tab("/Applications"),
+            Candidate::tab("/Users/test_user_10/code"),
+        ],
         Some(home()),
     );
 
@@ -130,8 +133,8 @@ fn a_tab_that_repeats_a_bookmark_is_dropped() {
 #[test]
 fn a_favorite_row_carries_its_id_so_a_click_opens_the_favorite_rather_than_the_path() {
     let rows = menu_rows(
-        &[Candidate::favorite("f1", "Docs", "/Volumes/naspi/docs")],
-        &[Candidate::tab("/Users/dave/code")],
+        &[Candidate::favorite("f1", "Docs", "/Volumes/testshare/docs")],
+        &[Candidate::tab("/Users/test_user_10/code")],
         Some(home()),
     );
 
@@ -147,7 +150,7 @@ fn a_favorite_row_carries_its_id_so_a_click_opens_the_favorite_rather_than_the_p
         vec![
             // A `RevealPath` of an unmounted share's path would resolve onto the boot disk.
             LocationClick::OpenFavorite("f1".to_string()),
-            LocationClick::Reveal("/Users/dave/code".to_string()),
+            LocationClick::Reveal("/Users/test_user_10/code".to_string()),
         ]
     );
 }
@@ -155,8 +158,8 @@ fn a_favorite_row_carries_its_id_so_a_click_opens_the_favorite_rather_than_the_p
 #[test]
 fn a_tab_sharing_a_favorites_path_leaves_the_favorites_row_and_id_in_place() {
     let rows = menu_rows(
-        &[Candidate::favorite("f1", "Docs", "/Users/dave/Docs")],
-        &[Candidate::tab("/Users/dave/Docs/")],
+        &[Candidate::favorite("f1", "Docs", "/Users/test_user_10/Docs")],
+        &[Candidate::tab("/Users/test_user_10/Docs/")],
         Some(home()),
     );
 
@@ -175,10 +178,10 @@ fn a_tab_sharing_a_favorites_path_leaves_the_favorites_row_and_id_in_place() {
 fn a_favorite_on_a_server_or_phone_is_offered_since_its_click_goes_by_id() {
     let rows = menu_rows(
         &[
-            Candidate::favorite("f1", "Photos", "sftp://ada@nas.local:22/srv/photos"),
+            Candidate::favorite("f1", "Photos", "sftp://test_user_1@testnas.local:22/srv/photos"),
             Candidate::favorite("f2", "Camera", "mtp://pixel-7/65537/DCIM"),
         ],
-        &[Candidate::tab("sftp://ada@nas.local:22/srv/photos")],
+        &[Candidate::tab("sftp://test_user_1@testnas.local:22/srv/photos")],
         Some(home()),
     );
 
@@ -211,8 +214,8 @@ fn two_rows_sharing_a_name_are_told_apart_by_their_parent() {
     let rows = menu_rows(
         &[],
         &[
-            Candidate::tab("/Users/dave/Documents/Projects"),
-            Candidate::tab("/Users/dave/Work/Projects"),
+            Candidate::tab("/Users/test_user_10/Documents/Projects"),
+            Candidate::tab("/Users/test_user_10/Work/Projects"),
         ],
         Some(home()),
     );
@@ -240,8 +243,8 @@ fn a_name_nothing_else_carries_is_left_alone() {
     let rows = menu_rows(
         &[],
         &[
-            Candidate::tab("/Users/dave/Documents/Projects"),
-            Candidate::tab("/Users/dave/Work/Notes"),
+            Candidate::tab("/Users/test_user_10/Documents/Projects"),
+            Candidate::tab("/Users/test_user_10/Work/Notes"),
         ],
         Some(home()),
     );
@@ -284,8 +287,8 @@ fn rows_whose_parents_also_match_fall_back_to_the_whole_path() {
 fn a_user_named_favorite_collides_on_its_own_label_not_its_folder() {
     let rows = menu_rows(
         &[
-            Candidate::bookmark("Work", "/Users/dave/Documents/clients"),
-            Candidate::bookmark("Work", "/Users/dave/Archive/old-clients"),
+            Candidate::bookmark("Work", "/Users/test_user_10/Documents/clients"),
+            Candidate::bookmark("Work", "/Users/test_user_10/Archive/old-clients"),
         ],
         &[],
         Some(home()),
@@ -319,7 +322,7 @@ fn a_tilde_path_is_expanded_against_home() {
     let rows = menu_rows(&[], &[Candidate::tab("~/Downloads"), Candidate::tab("~")], Some(home()));
 
     let offered: Vec<String> = locations(&rows).into_iter().map(|(_, path, _)| path).collect();
-    assert_eq!(offered, vec!["/Users/dave/Downloads", "/Users/dave"]);
+    assert_eq!(offered, vec!["/Users/test_user_10/Downloads", "/Users/test_user_10"]);
 }
 
 #[test]
@@ -331,7 +334,7 @@ fn a_virtual_location_never_reaches_the_menu() {
             Candidate::tab("mtp://Pixel/DCIM"),
             Candidate::tab(""),
             Candidate::tab("relative/path"),
-            Candidate::tab("/Users/dave/real"),
+            Candidate::tab("/Users/test_user_10/real"),
         ],
         Some(home()),
     );

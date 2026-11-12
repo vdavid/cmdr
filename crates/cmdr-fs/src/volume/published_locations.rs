@@ -142,11 +142,11 @@ mod tests {
     #[test]
     fn a_favorite_at_a_mount_root_keeps_that_volume() {
         let published = dedupe_locations(vec![
-            favorite("fav-1", "/Volumes/naspi"),
+            favorite("fav-1", "/Volumes/testshare"),
             volume("root", "/"),
-            volume("smb-naspi", "/Volumes/naspi"),
+            volume("smb-testshare", "/Volumes/testshare"),
         ]);
-        assert_eq!(ids(&published), ["fav-1", "root", "smb-naspi"]);
+        assert_eq!(ids(&published), ["fav-1", "root", "smb-testshare"]);
     }
 
     #[test]

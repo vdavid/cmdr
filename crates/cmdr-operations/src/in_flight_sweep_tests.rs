@@ -340,7 +340,7 @@ struct ReturnedDrive {
 
 fn returned_drive(name: &str, volume_id: &str, staged: Option<&[u8]>) -> ReturnedDrive {
     let dir = TestDir::new(name);
-    let root = dir.join("Volumes").join("Faltkamera");
+    let root = dir.join("Volumes").join("Testkamera");
     std::fs::create_dir_all(&root).expect("create the drive root");
     let staging_name = format!(".cmdr-staging-{}", uuid::Uuid::new_v4());
     let staging = root.join(&staging_name);
@@ -349,7 +349,7 @@ fn returned_drive(name: &str, volume_id: &str, staged: Option<&[u8]>) -> Returne
         std::fs::write(staging.join("footage.mov"), bytes).expect("stage a file");
     }
     let volume = Arc::new(LocalPosixVolume::local_folder(
-        "Fältkamera",
+        "Tëstkamera",
         &root,
         crate::host::testing::pane_order_host(),
     )) as Arc<dyn Volume>;
@@ -431,7 +431,7 @@ async fn a_staging_folder_kept_on_a_drive_raises_the_notice() {
 
     let notices = drive.sweep.kept_notices();
     assert_eq!(notices.len(), 1, "one notice for the one kept folder");
-    assert_eq!(notices[0].volume_name, "Fältkamera");
+    assert_eq!(notices[0].volume_name, "Tëstkamera");
     assert_eq!(
         notices[0].kept,
         KeptLeftover::StagingFolder {
@@ -662,7 +662,7 @@ async fn a_landing_kept_aside_on_a_drive_raises_the_notice() {
 
     let notices = drive.sweep.kept_notices();
     assert_eq!(notices.len(), 1, "one notice for the one kept landing");
-    assert_eq!(notices[0].volume_name, "Fältkamera");
+    assert_eq!(notices[0].volume_name, "Tëstkamera");
     assert_eq!(
         notices[0].kept,
         KeptLeftover::UnfinishedLanding {

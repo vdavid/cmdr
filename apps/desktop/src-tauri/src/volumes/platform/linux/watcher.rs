@@ -542,13 +542,13 @@ mod tests {
         let table = linux_mounts::parse_proc_mounts_from_content(&format!(
             "\
 /dev/sda1 / ext4 rw,relatime 0 0
-pcloud /home/sven/pCloudDrive fuse.pcloud rw,relatime,user_id={me},group_id={me} 0 0
+pcloud /home/test_user_6/pCloudDrive fuse.pcloud rw,relatime,user_id={me},group_id={me} 0 0
 pcloud /home/rin/pCloudDrive fuse.pcloud rw,relatime,user_id={someone_else},group_id={someone_else} 0 0
 "
         ));
         let mut watched: Vec<String> = real_mounts(table).into_keys().collect();
         watched.sort();
-        assert_eq!(watched, ["/", "/home/sven/pCloudDrive"]);
+        assert_eq!(watched, ["/", "/home/test_user_6/pCloudDrive"]);
     }
 
     /// Regression anchor for the self-feeding watch: an inotify watch on

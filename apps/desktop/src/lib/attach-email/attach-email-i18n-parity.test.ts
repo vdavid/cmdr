@@ -37,8 +37,8 @@ describe('attach-email copy parity (en)', () => {
   })
 
   it('renders the label around the address and the link text', () => {
-    expect(renderFlat('common.attachEmail', { emailAddress: 'alex@example.com' })).toBe(
-      'Attach my email address (alex@example.com – change) so you can follow up',
+    expect(renderFlat('common.attachEmail', { emailAddress: 'test_user_11@example.com' })).toBe(
+      'Attach my email address (test_user_11@example.com – change) so you can follow up',
     )
   })
 

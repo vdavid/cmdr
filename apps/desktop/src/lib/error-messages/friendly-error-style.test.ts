@@ -118,7 +118,7 @@ const LISTING_REASONS: ListingErrorReason[] = [
   { reason: 'deviceReconnecting', path: PATH },
   { reason: 'notConnected', path: PATH },
   { reason: 'linkTargetUnreachable', path: PATH },
-  { reason: 'linkNeedsConsent', path: PATH, server: 'nas.local', target: 'fs01.local' },
+  { reason: 'linkNeedsConsent', path: PATH, server: 'testnas.local', target: 'fs01.local' },
   { reason: 'smbEncryptionRequired', path: PATH },
   { reason: 'smbNegotiationInvalid', path: PATH },
   { reason: 'smbEncryptionUnavailable', path: PATH },
@@ -277,8 +277,8 @@ const PANE_STATE_KEYS = Object.keys(serversCatalog).filter(
  * WORDS around the placeholder rather than the value in it.
  */
 const PANE_STATE_PARAMS = {
-  name: 'Naspolya',
-  server: 'Naspolya',
+  name: 'Testnas',
+  server: 'Testnas',
   duration: '2 minutes',
   // The two duration keys carry an ICU plural: the raw number selects the form,
   // the `*Text` twin is what the reader sees (`#lib/intl/messages/CLAUDE.md`).
@@ -340,7 +340,7 @@ describe('servers copy obeys the writing rules', () => {
 
   for (const kind of REFUSAL_KINDS) {
     it(`refusal "${kind}" is clean`, () => {
-      const sentence = wordConnectRefusal(kind, { host: 'nas.local', username: 'ada' })
+      const sentence = wordConnectRefusal(kind, { host: 'testnas.local', username: 'test_user_1' })
       for (const word of [...NEVER_WORDS, ...TRIVIALIZING_WORDS]) {
         expect(containsWord(sentence, word), `servers.refusal.${kind} contains "${word}": ${sentence}`).toBe(false)
       }

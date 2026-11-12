@@ -113,7 +113,7 @@ pub(crate) fn annotate(rows: &mut [LocationInfo], facts: &ReachFacts) -> Vec<(St
 ///
 /// ❗ Claim only from evidence. The boot volume claims only a folder discovery SAW (`OnDisk::Yes`),
 /// or took on trust as a TCC-protected home folder while the FDA gate is pending (`Assumed`):
-/// otherwise `/Volumes/naspi/docs` on an unmounted share nobody saved would be claimed by `/`,
+/// otherwise `/Volumes/testshare/docs` on an unmounted share nobody saved would be claimed by `/`,
 /// written down, and read "not found" forever after the share comes back. Any other row (a live
 /// mount, a saved share at its last mount path, a server place, a device storage) names the volume
 /// by itself being there.

@@ -153,7 +153,7 @@ the write; any refusal writes nothing.
 - **Only on a turn the user started.** The handler reads the turn's origin (`CallContext`, routed by `../../agent/tool_gate.rs`) and
   answers `refusedInBackground` on a wake or a follow-up, before it reads a store. ❌ Not a tool-name check in `admit`:
   the gate stays tier-only and this rule lives with the one tool it belongs to. A badge saying "AI suggestion: add
-  server naspi-backup" arriving unprompted is the social-engineering shape an injection wants. An outside client
+  server testshare-backup" arriving unprompted is the social-engineering shape an injection wants. An outside client
   counts as a turn a person started, since nothing else makes one call.
 - **No secret, ever.** The schema has no field for one and is closed like every agent schema, so the dispatch gate
   refuses a `password` key by name first; the handler refuses `password`, `secret`, `secretAccessKey`, `keyFile`, and
@@ -192,7 +192,7 @@ the write; any refusal writes nothing.
   way round: an SMB host signing in as someone else, or an NFS export acting as uid 0, is a power the user never picked.
 - **Every value one plain thing.** `name`, `share`, `username`, and `bucket` pass `validate_plain_leaf`; `path`,
   `export`, and `startFolder` are absolute, each folder a plain leaf; a host is a plain ASCII host name or IP literal
-  (a look-alike of a saved host, `nаspolya` with a Cyrillic `а`, can't stand in for it; an internationalized name goes
+  (a look-alike of a saved host, `tеstnas` with a Cyrillic `е`, can't stand in for it; an internationalized name goes
   as `xn--`); a URL is ASCII `http` or `https` with a host and no account in it; every string is capped. A start folder
   outside the remote root refuses here rather than at the save. One token, `badField`, with the rule's sentence.
 - **Against what's saved** (`SavedServers` and its checks, in `../../agent/suggested_ops/server/` so the approval runs the

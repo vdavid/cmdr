@@ -65,7 +65,7 @@ fn stopped_with_a_temp_on(
 
 /// A NAS behind an [`OutageVolume`], named the way the leftover line names it.
 fn nas(lane: &str) -> (Arc<InMemoryVolume>, Arc<OutageVolume>, Arc<dyn Volume>) {
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     let nas = OutageVolume::wrap(Arc::clone(&inner), lane);
     let volume: Arc<dyn Volume> = Arc::clone(&nas) as Arc<dyn Volume>;
     (inner, nas, volume)
@@ -531,7 +531,7 @@ async fn a_stop_with_the_destination_out_reports_at_once_and_the_temp_goes_once_
         vec![leftover(
             StagedLeftoverFate::RemovedWhenBack,
             "holiday.jpg.cmdr-tmp-5d2e",
-            "Naspolya"
+            "Testnas"
         )]
     );
     wait_until_async(WAIT, "the background pass to dial the share", || {
@@ -558,7 +558,7 @@ async fn a_stop_with_the_destination_out_reports_at_once_and_the_temp_goes_once_
 async fn a_temp_the_destination_still_refuses_waits_in_the_ledger_for_its_next_reconnect() {
     let engine = TestOperations::new();
     let ledger = Ledger::for_test();
-    let vol = Arc::new(InMemoryVolume::new("Naspolya").with_delete_failing());
+    let vol = Arc::new(InMemoryVolume::new("Testnas").with_delete_failing());
     let temp = PathBuf::from("/holiday.jpg.cmdr-tmp-6e3f");
     vol.create_file(&temp, b"half a photo").await.unwrap();
     let volume: Arc<dyn Volume> = vol.clone();
@@ -572,7 +572,7 @@ async fn a_temp_the_destination_still_refuses_waits_in_the_ledger_for_its_next_r
         vec![leftover(
             StagedLeftoverFate::Refused,
             "holiday.jpg.cmdr-tmp-6e3f",
-            "Naspolya"
+            "Testnas"
         )]
     );
     assert!(vol.exists(&temp).await, "a refused temp stays where it is");
@@ -591,7 +591,7 @@ async fn a_temp_refused_once_goes_on_the_background_retry() {
 
     let engine = TestOperations::new();
     let ledger = Ledger::for_test();
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     let temp = PathBuf::from("/holiday.jpg.cmdr-tmp-7f40");
     inner.create_file(&temp, b"half a photo").await.unwrap();
     let faulty = FaultyVolume::wrapping(Arc::clone(&inner))
@@ -667,7 +667,7 @@ async fn a_kept_landing_is_reported_as_a_file_that_lands_once_the_share_is_back(
 
     assert_eq!(
         leftovers,
-        vec![leftover(StagedLeftoverFate::LandsWhenBack, "holiday.jpg", "Naspolya")]
+        vec![leftover(StagedLeftoverFate::LandsWhenBack, "holiday.jpg", "Testnas")]
     );
 }
 

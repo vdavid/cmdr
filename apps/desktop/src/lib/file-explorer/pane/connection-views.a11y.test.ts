@@ -159,7 +159,7 @@ describe('RemoteConnectView a11y', () => {
     const target = container()
     mount(RemoteConnectView, {
       target,
-      props: { name: 'Naspolya', state: { kind: 'connecting' as const, cancel: vi.fn() } },
+      props: { name: 'Testnas', state: { kind: 'connecting' as const, cancel: vi.fn() } },
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -170,10 +170,10 @@ describe('RemoteConnectView a11y', () => {
     mount(RemoteConnectView, {
       target,
       props: {
-        name: 'Naspolya',
+        name: 'Testnas',
         state: {
           kind: 'refused' as const,
-          refusal: 'Cmdr couldn’t reach nas.local.',
+          refusal: 'Cmdr couldn’t reach testnas.local.',
           retry: vi.fn(),
           disconnect: vi.fn(),
         },
@@ -188,7 +188,7 @@ describe('RemoteConnectView a11y', () => {
     mount(RemoteConnectView, {
       target,
       props: {
-        name: 'Naspolya',
+        name: 'Testnas',
         state: { kind: 'refused' as const, refusal: 'This server asks for a password.', retry: vi.fn() },
       },
     })
@@ -201,7 +201,7 @@ describe('RemoteConnectView a11y', () => {
     mount(RemoteConnectView, {
       target,
       props: {
-        name: 'naspi',
+        name: 'testshare',
         state: {
           kind: 'connecting' as const,
           cancel: vi.fn(),
@@ -223,7 +223,7 @@ describe('RemoteConnectView a11y', () => {
     mount(RemoteConnectView, {
       target,
       props: {
-        name: 'naspi',
+        name: 'testshare',
         state: {
           kind: 'connecting' as const,
           cancel: vi.fn(),
@@ -244,7 +244,7 @@ describe('RemoteConnectView a11y', () => {
     const target = container()
     mount(RemoteConnectView, {
       target,
-      props: { name: 'Naspolya', state: { kind: 'signed_out' as const, signIn: vi.fn() } },
+      props: { name: 'Testnas', state: { kind: 'signed_out' as const, signIn: vi.fn() } },
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -256,7 +256,7 @@ describe('RemoteConnectView a11y', () => {
     const target = container()
     mount(RemoteConnectView, {
       target,
-      props: { name: 'Naspolya', state: { kind: 'signed_out' as const, signIn: null } },
+      props: { name: 'Testnas', state: { kind: 'signed_out' as const, signIn: null } },
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -317,7 +317,7 @@ describe('RemoteConnectView a11y', () => {
     const target = container()
     mount(RemoteConnectView, {
       target,
-      props: { name: 'Naspolya', state: { kind: 'host_key_changed' as const, checkKey: vi.fn(), disconnect: vi.fn() } },
+      props: { name: 'Testnas', state: { kind: 'host_key_changed' as const, checkKey: vi.fn(), disconnect: vi.fn() } },
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -328,7 +328,7 @@ describe('RemoteConnectView a11y', () => {
     mount(RemoteConnectView, {
       target,
       props: {
-        name: 'Naspolya',
+        name: 'Testnas',
         state: { kind: 'guest_session_refused' as const, signIn: vi.fn(), disconnect: vi.fn() },
       },
     })

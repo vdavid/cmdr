@@ -131,7 +131,7 @@ describe('s3FieldsFromAppPath', () => {
   })
 
   it('answers null for anything that is not an S3 path', () => {
-    expect(s3FieldsFromAppPath('sftp://ada@nas:22/srv')).toBeNull()
+    expect(s3FieldsFromAppPath('sftp://test_user_1@nas:22/srv')).toBeNull()
     expect(s3FieldsFromAppPath('https://s3.amazonaws.com')).toBeNull()
   })
 })

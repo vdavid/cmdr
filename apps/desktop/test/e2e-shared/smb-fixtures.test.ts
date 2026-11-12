@@ -10,11 +10,11 @@ import { fixtureMountPoints, preMountPlan } from './smb-fixtures.js'
 
 const mountOutput = [
   '/dev/disk3s1s1 on / (apfs, sealed, local, read-only, journaled)',
-  '//david@192.168.1.111/naspi on /Volumes/naspi (smbfs, nodev, nosuid, mounted by veszelovszki)',
-  '//GUEST:@localhost:11480/public on /Volumes/public (smbfs, nodev, nosuid, noowners, mounted by veszelovszki)',
-  '//guest@localhost:10480/public on /Volumes/public-1 (smbfs, nodev, nosuid, mounted by veszelovszki)',
-  '//testuser@localhost:10481/private on /Volumes/my private (smbfs, nodev, nosuid, mounted by veszelovszki)',
-  '//testuser@localhost:11481/private on /Volumes/private (smbfs, nodev, nosuid, mounted by veszelovszki)',
+  '//test_user_3@192.168.50.10/testshare on /Volumes/testshare (smbfs, nodev, nosuid, mounted by test_user_3)',
+  '//GUEST:@localhost:11480/public on /Volumes/public (smbfs, nodev, nosuid, noowners, mounted by test_user_3)',
+  '//guest@localhost:10480/public on /Volumes/public-1 (smbfs, nodev, nosuid, mounted by test_user_3)',
+  '//testuser@localhost:10481/private on /Volumes/my private (smbfs, nodev, nosuid, mounted by test_user_3)',
+  '//testuser@localhost:11481/private on /Volumes/private (smbfs, nodev, nosuid, mounted by test_user_3)',
 ].join('\n')
 
 const fixture = [
@@ -29,8 +29,8 @@ describe('fixtureMountPoints', () => {
 
   it('leaves a share of the same name on another port or machine alone', () => {
     expect(fixtureMountPoints(mountOutput, [{ host: 'localhost', port: 445, share: 'public' }])).toEqual([])
-    expect(fixtureMountPoints(mountOutput, [{ host: '192.168.1.111', port: 445, share: 'naspi' }])).toEqual([
-      '/Volumes/naspi',
+    expect(fixtureMountPoints(mountOutput, [{ host: '192.168.50.10', port: 445, share: 'testshare' }])).toEqual([
+      '/Volumes/testshare',
     ])
   })
 
@@ -49,7 +49,7 @@ describe('fixtureMountPoints', () => {
 describe('preMountPlan', () => {
   const guest = { host: 'localhost', port: 10480, share: 'public' }
   const foreignAtPublic =
-    '//david@192.168.1.111/public on /Volumes/public (smbfs, nodev, nosuid, mounted by veszelovszki)'
+    '//test_user_3@192.168.50.10/public on /Volumes/public (smbfs, nodev, nosuid, mounted by test_user_3)'
 
   it('reuses the fixture’s own mount, wherever it landed', () => {
     const out = `${foreignAtPublic}\n//guest@localhost:10480/public on /Volumes/public-1 (smbfs, nodev, nosuid)`

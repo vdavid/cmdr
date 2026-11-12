@@ -125,20 +125,22 @@ async function typeEmail(target: HTMLElement, value: string) {
 
 describe('AttachEmailCheckbox a11y', () => {
   it('has no violations when an email is on file', async () => {
-    mockEmail = 'alex@example.com'
+    mockEmail = 'test_user_11@example.com'
     const target = await render()
     await expectNoA11yViolations(target)
   })
 
   it('names the checkbox with the label, including the address', async () => {
-    mockEmail = 'alex@example.com'
+    mockEmail = 'test_user_11@example.com'
     const target = await render()
     expect(checkboxIn(target)).not.toBeNull()
-    expect(flatText(target)).toContain('Attach my email address (alex@example.com – change) so you can follow up')
+    expect(flatText(target)).toContain(
+      'Attach my email address (test_user_11@example.com – change) so you can follow up',
+    )
   })
 
   it('offers no field when the address on file already answers the question', async () => {
-    mockEmail = 'alex@example.com'
+    mockEmail = 'test_user_11@example.com'
     const target = await render()
     await tickBox(target)
     expect(emailInputIn(target)).toBeNull()
@@ -210,7 +212,7 @@ describe('AttachEmailCheckbox change link', () => {
   })
 
   it('names the link and puts it in the tab order', async () => {
-    mockEmail = 'alex@example.com'
+    mockEmail = 'test_user_11@example.com'
     const target = await render()
     const link = changeLinkIn(target)
     expect(link).not.toBeNull()
@@ -222,7 +224,7 @@ describe('AttachEmailCheckbox change link', () => {
   })
 
   it('deep-links Settings to the contact-email row', async () => {
-    mockEmail = 'alex@example.com'
+    mockEmail = 'test_user_11@example.com'
     const target = await render()
     changeLinkIn(target)?.click()
     // The module is imported lazily, so the call lands a microtask or two later.
@@ -236,7 +238,7 @@ describe('AttachEmailCheckbox change link', () => {
   })
 
   it('leaves the tick alone when the link inside the label is clicked', async () => {
-    mockEmail = 'alex@example.com'
+    mockEmail = 'test_user_11@example.com'
     const { target, email } = await renderFixture()
     expect(email.attach).toBe(false)
 
@@ -257,15 +259,17 @@ describe('AttachEmailCheckbox following analytics.email live', () => {
     await tickBox(target)
     expect(emailInputIn(target)).not.toBeNull()
 
-    await setContactEmailFromSettings('alex@example.com')
+    await setContactEmailFromSettings('test_user_11@example.com')
 
     expect(emailInputIn(target)).toBeNull()
-    expect(flatText(target)).toContain('Attach my email address (alex@example.com – change) so you can follow up')
+    expect(flatText(target)).toContain(
+      'Attach my email address (test_user_11@example.com – change) so you can follow up',
+    )
     await expectNoA11yViolations(target)
   })
 
   it('reveals the collect field when the address on file is cleared under a ticked box', async () => {
-    mockEmail = 'alex@example.com'
+    mockEmail = 'test_user_11@example.com'
     const { target } = await renderFixture()
     await tickBox(target)
     expect(emailInputIn(target)).toBeNull()
@@ -292,7 +296,7 @@ describe('AttachEmailCheckbox following analytics.email live', () => {
   })
 
   it('stops following once the dialog closes', async () => {
-    mockEmail = 'alex@example.com'
+    mockEmail = 'test_user_11@example.com'
     const { unmountFixture } = await renderFixture()
     expect(emailListeners.size).toBe(1)
 

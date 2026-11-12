@@ -53,7 +53,7 @@ pub(crate) enum LocalExternalEnable {
 /// - **The backend isn't a real filesystem.** Only [`cmdr_fs::volume::BackendKind::Local`] is
 ///   readable by the local guarded walker. `Smb` is Cmdr's own smb2 session and
 ///   the SMB gate's business; `Sftp`, `Webdav`, `Adb`, `Mtp`, `Archive`, and
-///   `GitPortal` are rooted at a scheme path (`sftp://ada@nas:22/srv`) that no
+///   `GitPortal` are rooted at a scheme path (`sftp://test_user_1@nas:22/srv`) that no
 ///   `readdir` can open.
 /// - **The mount is a network filesystem** (SMB os-mount, NFS, AFP, ...). Those
 ///   are served by a `LocalPosixVolume`, so they DO answer `Local`, and a network
@@ -242,7 +242,7 @@ mod tests {
 
     /// A server is not a drive, whatever its mount probe says.
     ///
-    /// An SFTP or WebDAV volume is rooted at `sftp://ada@nas:22/srv`, which
+    /// An SFTP or WebDAV volume is rooted at `sftp://test_user_1@nas:22/srv`, which
     /// `detect_filesystem_for_path` reports as NON-network because it is not a
     /// mount point at all. So the network flag can't save this gate, and
     /// `enable_drive_index` takes any volume id: an SFTP one used to classify as

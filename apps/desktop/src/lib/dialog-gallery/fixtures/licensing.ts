@@ -26,7 +26,7 @@ export const expirationFixtures: Record<string, ExpirationFixture | undefined> =
   // A long organization name is the layout risk here: it lands mid-sentence in
   // the body copy, so a tidy "Acme Inc" would hide the wrap.
   organization: {
-    organizationName: 'Rymdskottkärra AB (Nordics, Baltics & Benelux division)',
+    organizationName: 'Testföretag AB (Nordics, Baltics & Benelux division)',
     expiredAt: '2026-06-30T23:59:59Z',
   },
   personal: {

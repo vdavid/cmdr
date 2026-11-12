@@ -269,7 +269,7 @@ pub fn os_join(mount_root: &str, index_relative: &str) -> String {
 /// The inverse of [`os_join`]: map an OS-mount folder path back into a volume's
 /// index-path space by stripping the mount root, so the privacy retro-delete can match
 /// it against the stored (index-relative) rows. `Some("/Photos")` for
-/// `/Volumes/naspi/Photos` under mount `/Volumes/naspi`; `Some("")` for the mount root
+/// `/Volumes/testshare/Photos` under mount `/Volumes/testshare`; `Some("")` for the mount root
 /// itself (the whole volume); the OS folder passes through unchanged on a `root`/local
 /// volume (mount root `/`). `None` when the folder isn't under this volume's mount at
 /// all (a different volume) — the caller skips it.
@@ -371,8 +371,14 @@ mod tests {
 
     #[test]
     fn os_join_prepends_the_mount_root() {
-        assert_eq!(os_join("/Volumes/naspi", "/DCIM/x.jpg"), "/Volumes/naspi/DCIM/x.jpg");
-        assert_eq!(os_join("/Volumes/naspi/", "/DCIM/x.jpg"), "/Volumes/naspi/DCIM/x.jpg");
+        assert_eq!(
+            os_join("/Volumes/testshare", "/DCIM/x.jpg"),
+            "/Volumes/testshare/DCIM/x.jpg"
+        );
+        assert_eq!(
+            os_join("/Volumes/testshare/", "/DCIM/x.jpg"),
+            "/Volumes/testshare/DCIM/x.jpg"
+        );
         // Root / local volume: index-relative is already absolute.
         assert_eq!(os_join("/", "/a/b.jpg"), "/a/b.jpg");
         assert_eq!(os_join("", "/a/b.jpg"), "/a/b.jpg");
@@ -382,12 +388,12 @@ mod tests {
     fn os_folder_to_index_prefix_is_the_inverse_of_os_join() {
         // Network volume: strip the mount root to reach the stored index-path space.
         assert_eq!(
-            os_folder_to_index_prefix("/Volumes/naspi/Photos", "/Volumes/naspi"),
+            os_folder_to_index_prefix("/Volumes/testshare/Photos", "/Volumes/testshare"),
             Some("/Photos".to_string())
         );
         // The mount root itself ⇒ the whole volume (empty prefix matches every path).
         assert_eq!(
-            os_folder_to_index_prefix("/Volumes/naspi", "/Volumes/naspi"),
+            os_folder_to_index_prefix("/Volumes/testshare", "/Volumes/testshare"),
             Some(String::new())
         );
         // Local / root volume: index path == OS path, so the folder passes through.
@@ -396,9 +402,15 @@ mod tests {
             Some("/Users/me/Documents/IDs".to_string())
         );
         // A folder on a DIFFERENT volume isn't under this mount ⇒ None (skip it).
-        assert_eq!(os_folder_to_index_prefix("/Volumes/other/x", "/Volumes/naspi"), None);
+        assert_eq!(
+            os_folder_to_index_prefix("/Volumes/other/x", "/Volumes/testshare"),
+            None
+        );
         // A name-prefix sibling is NOT within the mount.
-        assert_eq!(os_folder_to_index_prefix("/Volumes/naspi2/x", "/Volumes/naspi"), None);
+        assert_eq!(
+            os_folder_to_index_prefix("/Volumes/testshare2/x", "/Volumes/testshare"),
+            None
+        );
     }
 
     /// The exclusion veto already matches a folder against the mount root with the
@@ -410,7 +422,7 @@ mod tests {
     #[test]
     fn os_folder_to_index_prefix_folds_the_mount_root_like_the_veto() {
         assert_eq!(
-            os_folder_to_index_prefix("/Volumes/NASPI/Photos", "/Volumes/naspi"),
+            os_folder_to_index_prefix("/Volumes/TESTSHARE/Photos", "/Volumes/testshare"),
             Some("/Photos".to_string()),
             "a mount root differing only in case"
         );
@@ -421,11 +433,14 @@ mod tests {
             "a mount root differing only in Unicode form"
         );
         assert_eq!(
-            os_folder_to_index_prefix("/volumes/Naspi", "/Volumes/naspi/"),
+            os_folder_to_index_prefix("/volumes/Testshare", "/Volumes/testshare/"),
             Some(String::new()),
             "the mount root itself, folded"
         );
-        assert_eq!(os_folder_to_index_prefix("/Volumes/NASPI2/x", "/Volumes/naspi"), None);
+        assert_eq!(
+            os_folder_to_index_prefix("/Volumes/TESTSHARE2/x", "/Volumes/testshare"),
+            None
+        );
     }
 
     #[test]

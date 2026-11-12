@@ -39,7 +39,7 @@ fn outage_state(engine: &TestOperations) -> Arc<WriteOperationState> {
 
 /// A source share holding `/batch/f0.txt`…`/batch/f3.txt` and `/single.txt`.
 async fn source_share(lane: &str) -> (Arc<InMemoryVolume>, Arc<OutageVolume>) {
-    let inner = Arc::new(InMemoryVolume::new("Naspolya").with_space_info(10_000_000, 10_000_000));
+    let inner = Arc::new(InMemoryVolume::new("Testnas").with_space_info(10_000_000, 10_000_000));
     inner.create_directory(Path::new("/batch")).await.unwrap();
     for n in 0..4 {
         inner

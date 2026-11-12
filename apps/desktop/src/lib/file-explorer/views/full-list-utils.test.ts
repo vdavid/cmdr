@@ -348,7 +348,7 @@ describe('restic snapshot rows', () => {
   }
 
   it('shows the hostname in the Ext cell, which a folder otherwise leaves empty', () => {
-    expect(extCellText(snapshotRow({ hostname: 'naspolya', tags: [], paths: [] }))).toBe('naspolya')
+    expect(extCellText(snapshotRow({ hostname: 'testnas', tags: [], paths: [] }))).toBe('testnas')
     expect(extCellText(snapshotRow({ hostname: '', tags: [], paths: [] }))).toBe('')
   })
 
@@ -361,14 +361,14 @@ describe('restic snapshot rows', () => {
     const tooltip = wordResticSnapshot({
       hostname: 'm3',
       tags: ['daily', 'home'],
-      paths: ['/Users/david', '/etc'],
+      paths: ['/Users/test_user_3', '/etc'],
     })
-    expect(tooltip).toBe('Backed up from m3\nTags: daily, home\nBacked-up paths: /Users/david, /etc')
+    expect(tooltip).toBe('Backed up from m3\nTags: daily, home\nBacked-up paths: /Users/test_user_3, /etc')
   })
 
   it('picks the singular noun for one tag or one path', () => {
-    expect(wordResticSnapshot({ hostname: 'm3', tags: ['daily'], paths: ['/Users/david'] })).toBe(
-      'Backed up from m3\nTag: daily\nBacked-up path: /Users/david',
+    expect(wordResticSnapshot({ hostname: 'm3', tags: ['daily'], paths: ['/Users/test_user_3'] })).toBe(
+      'Backed up from m3\nTag: daily\nBacked-up path: /Users/test_user_3',
     )
   })
 

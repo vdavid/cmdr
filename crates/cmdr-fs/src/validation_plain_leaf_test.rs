@@ -6,7 +6,7 @@ use super::{MAX_NAME_BYTES, PlainLeafRefusal, validate_plain_leaf};
 #[test]
 fn ordinary_names_pass() {
     for name in [
-        "2026-09-27 OpenAI invoice Rymd.pdf",
+        "2026-09-27 OpenAI invoice Testco.pdf",
         ".gitignore",
         "...",
         "Résumé.pdf",

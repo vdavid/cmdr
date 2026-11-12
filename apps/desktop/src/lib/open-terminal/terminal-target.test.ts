@@ -4,7 +4,7 @@ import type { VolumeKind } from '#lib/file-explorer/pane/volume-capabilities.js'
 
 function pane(overrides: Partial<TerminalTargetPane> = {}): TerminalTargetPane {
   return {
-    panePath: '/Users/dave/code',
+    panePath: '/Users/test_user_10/code',
     volumeKind: 'local',
     cursorEntry: null,
     virtualGitPortalOn: true,
@@ -33,37 +33,39 @@ describe('canOpenTerminalIn', () => {
 describe('resolveTerminalFolder', () => {
   it('opens the pane folder when the cursor is on a file', () => {
     const folder = resolveTerminalFolder(
-      pane({ cursorEntry: { name: 'notes.md', path: '/Users/dave/code/notes.md', isDirectory: false } }),
+      pane({ cursorEntry: { name: 'notes.md', path: '/Users/test_user_10/code/notes.md', isDirectory: false } }),
     )
-    expect(folder).toBe('/Users/dave/code')
+    expect(folder).toBe('/Users/test_user_10/code')
   })
 
   it('opens the folder under the cursor when the cursor is on one', () => {
     const folder = resolveTerminalFolder(
-      pane({ cursorEntry: { name: 'src', path: '/Users/dave/code/src', isDirectory: true } }),
+      pane({ cursorEntry: { name: 'src', path: '/Users/test_user_10/code/src', isDirectory: true } }),
     )
-    expect(folder).toBe('/Users/dave/code/src')
+    expect(folder).toBe('/Users/test_user_10/code/src')
   })
 
   it('opens the pane folder on the `..` row, not the parent', () => {
     // Standing on `..` means "I'm looking at this folder", the same reading
     // `getPathToCopyUnderCursor` takes.
-    const folder = resolveTerminalFolder(pane({ cursorEntry: { name: '..', path: '/Users/dave', isDirectory: true } }))
-    expect(folder).toBe('/Users/dave/code')
+    const folder = resolveTerminalFolder(
+      pane({ cursorEntry: { name: '..', path: '/Users/test_user_10', isDirectory: true } }),
+    )
+    expect(folder).toBe('/Users/test_user_10/code')
   })
 
   it('opens the pane folder when the pane is empty and has no cursor row', () => {
-    expect(resolveTerminalFolder(pane({ cursorEntry: null }))).toBe('/Users/dave/code')
+    expect(resolveTerminalFolder(pane({ cursorEntry: null }))).toBe('/Users/test_user_10/code')
   })
 
   it('opens the folder holding the archive when the pane is inside one', () => {
     const folder = resolveTerminalFolder(
       pane({
-        panePath: '/Users/dave/code/photos.zip/2026/june',
-        cursorEntry: { name: 'a.jpg', path: '/Users/dave/code/photos.zip/2026/june/a.jpg', isDirectory: false },
+        panePath: '/Users/test_user_10/code/photos.zip/2026/june',
+        cursorEntry: { name: 'a.jpg', path: '/Users/test_user_10/code/photos.zip/2026/june/a.jpg', isDirectory: false },
       }),
     )
-    expect(folder).toBe('/Users/dave/code')
+    expect(folder).toBe('/Users/test_user_10/code')
   })
 
   it('opens the folder holding the archive even with a folder under the cursor inside it', () => {
@@ -71,18 +73,18 @@ describe('resolveTerminalFolder', () => {
     // shell can stand.
     const folder = resolveTerminalFolder(
       pane({
-        panePath: '/Users/dave/code/photos.zip',
-        cursorEntry: { name: '2026', path: '/Users/dave/code/photos.zip/2026', isDirectory: true },
+        panePath: '/Users/test_user_10/code/photos.zip',
+        cursorEntry: { name: '2026', path: '/Users/test_user_10/code/photos.zip/2026', isDirectory: true },
       }),
     )
-    expect(folder).toBe('/Users/dave/code')
+    expect(folder).toBe('/Users/test_user_10/code')
   })
 
   it('opens the pane folder when the cursor sits on an archive file', () => {
     const folder = resolveTerminalFolder(
-      pane({ cursorEntry: { name: 'photos.zip', path: '/Users/dave/code/photos.zip', isDirectory: false } }),
+      pane({ cursorEntry: { name: 'photos.zip', path: '/Users/test_user_10/code/photos.zip', isDirectory: false } }),
     )
-    expect(folder).toBe('/Users/dave/code')
+    expect(folder).toBe('/Users/test_user_10/code')
   })
 
   it('resolves an archive at the filesystem root to `/`', () => {
@@ -94,25 +96,29 @@ describe('resolveTerminalFolder', () => {
     // Nothing under `Browse snapshots` is on disk; the repo folder is the nearest place.
     const folder = resolveTerminalFolder(
       pane({
-        panePath: '/Volumes/naspi/backups/m3/Browse snapshots/latest/Users',
+        panePath: '/Volumes/testshare/backups/m3/Browse snapshots/latest/Users',
         cursorEntry: {
           name: 'me',
-          path: '/Volumes/naspi/backups/m3/Browse snapshots/latest/Users/me',
+          path: '/Volumes/testshare/backups/m3/Browse snapshots/latest/Users/me',
           isDirectory: true,
         },
       }),
     )
-    expect(folder).toBe('/Volumes/naspi/backups/m3')
+    expect(folder).toBe('/Volumes/testshare/backups/m3')
   })
 
   it('opens the repo folder itself when the cursor sits on its `Browse snapshots` row', () => {
     const folder = resolveTerminalFolder(
       pane({
-        panePath: '/Users/dave/backup',
-        cursorEntry: { name: 'Browse snapshots', path: '/Users/dave/backup/Browse snapshots', isDirectory: true },
+        panePath: '/Users/test_user_10/backup',
+        cursorEntry: {
+          name: 'Browse snapshots',
+          path: '/Users/test_user_10/backup/Browse snapshots',
+          isDirectory: true,
+        },
       }),
     )
-    expect(folder).toBe('/Users/dave/backup')
+    expect(folder).toBe('/Users/test_user_10/backup')
   })
 
   it('takes the outermost container when an archive and a snapshot view nest', () => {
@@ -125,28 +131,28 @@ describe('resolveTerminalFolder', () => {
     // handed it lands nowhere. The repo's working tree is where git commands run.
     const folder = resolveTerminalFolder(
       pane({
-        panePath: '/Users/dave/code/.git/branches/main/src',
-        cursorEntry: { name: 'lib', path: '/Users/dave/code/.git/branches/main/src/lib', isDirectory: true },
+        panePath: '/Users/test_user_10/code/.git/branches/main/src',
+        cursorEntry: { name: 'lib', path: '/Users/test_user_10/code/.git/branches/main/src/lib', isDirectory: true },
       }),
     )
-    expect(folder).toBe('/Users/dave/code')
+    expect(folder).toBe('/Users/test_user_10/code')
   })
 
   it('opens the `.git` folder itself, not a portal category under the cursor', () => {
     const folder = resolveTerminalFolder(
       pane({
-        panePath: '/Users/dave/code/.git',
-        cursorEntry: { name: 'branches', path: '/Users/dave/code/.git/branches', isDirectory: true },
+        panePath: '/Users/test_user_10/code/.git',
+        cursorEntry: { name: 'branches', path: '/Users/test_user_10/code/.git/branches', isDirectory: true },
       }),
     )
-    expect(folder).toBe('/Users/dave/code/.git')
+    expect(folder).toBe('/Users/test_user_10/code/.git')
   })
 
   it('treats `.git/branches` as a real folder while the portal is switched off', () => {
     const folder = resolveTerminalFolder(
-      pane({ panePath: '/Users/dave/code/.git/branches/old', virtualGitPortalOn: false }),
+      pane({ panePath: '/Users/test_user_10/code/.git/branches/old', virtualGitPortalOn: false }),
     )
-    expect(folder).toBe('/Users/dave/code/.git/branches/old')
+    expect(folder).toBe('/Users/test_user_10/code/.git/branches/old')
   })
 
   it('refuses a pane whose volume hands out no OS-visible paths', () => {
@@ -157,7 +163,7 @@ describe('resolveTerminalFolder', () => {
   })
 
   it('opens a folder on a mounted share', () => {
-    const folder = resolveTerminalFolder(pane({ volumeKind: 'smb', panePath: '/Volumes/naspi/papers' }))
-    expect(folder).toBe('/Volumes/naspi/papers')
+    const folder = resolveTerminalFolder(pane({ volumeKind: 'smb', panePath: '/Volumes/testshare/documents' }))
+    expect(folder).toBe('/Volumes/testshare/documents')
   })
 })

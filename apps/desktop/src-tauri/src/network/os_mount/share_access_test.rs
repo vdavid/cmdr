@@ -93,7 +93,7 @@ fn verdict_reads_each_answer_by_status_and_command() {
 #[test]
 fn clarified_answers_every_identity_and_verdict() {
     let guest = ShareAttempt::new("observermch", "data", 445, None, None);
-    let account = ShareAttempt::new("observermch", "data", 445, Some("ada"), Some("hunter2"));
+    let account = ShareAttempt::new("observermch", "data", 445, Some("test_user_1"), Some("hunter2"));
     let table = [
         (&guest, ShareVerdict::RefusedAtShare, "auth_required"),
         (&guest, ShareVerdict::RefusedAtSignIn, "auth_required"),
@@ -130,13 +130,13 @@ fn clarified_answers_carry_the_names_the_pane_words() {
         }
     );
 
-    let account = ShareAttempt::new("observermch", "data", 445, Some("ada"), Some("hunter2"));
+    let account = ShareAttempt::new("observermch", "data", 445, Some("test_user_1"), Some("hunter2"));
     assert_eq!(
         clarified(not_found(), &account, ShareVerdict::RefusedAtShare),
         MountError::PermissionDenied {
             server: "observermch".to_string(),
             share: "data".to_string(),
-            username: "ada".to_string(),
+            username: "test_user_1".to_string(),
         }
     );
 }
@@ -155,7 +155,7 @@ fn clarified_keeps_the_original_error_untouched() {
 /// The answers reach logs and error reports, so the password must never be in one.
 #[test]
 fn clarified_answers_never_carry_the_password() {
-    let account = ShareAttempt::new("observermch", "data", 445, Some("ada"), Some("hunter2"));
+    let account = ShareAttempt::new("observermch", "data", 445, Some("test_user_1"), Some("hunter2"));
     for verdict in [ShareVerdict::RefusedAtShare, ShareVerdict::RefusedAtSignIn] {
         let debug = format!("{:?}", clarified(not_found(), &account, verdict));
         // allowed-error-string-match: asserting a secret is absent from a diagnostic, not classifying an error
@@ -188,7 +188,7 @@ fn a_guest_turned_away_at_sign_in_is_asked_to_sign_in() {
 #[test]
 fn refusal_for_identity_keeps_every_other_answer() {
     let guest = ShareAttempt::new("observermch", "data", 445, None, None);
-    let account = ShareAttempt::new("observermch", "data", 445, Some("ada"), Some("hunter2"));
+    let account = ShareAttempt::new("observermch", "data", 445, Some("test_user_1"), Some("hunter2"));
     let auth_failed = MountError::AuthFailed {
         server: "observermch".to_string(),
     };

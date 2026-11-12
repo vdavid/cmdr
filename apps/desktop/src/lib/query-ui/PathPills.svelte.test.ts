@@ -26,10 +26,10 @@ function pillTooltip(pill: HTMLElement): string | null {
 
 describe('PathPills', () => {
   it('splits an absolute POSIX path into one pill per segment', async () => {
-    const target = renderPills('/Users/dave/code')
+    const target = renderPills('/Users/test_user_10/code')
     await tick()
     const labels = Array.from(target.querySelectorAll('.pill')).map((p) => p.textContent.trim())
-    expect(labels).toEqual(['Users', 'dave', 'code'])
+    expect(labels).toEqual(['Users', 'test_user_10', 'code'])
     target.remove()
   })
 
@@ -44,10 +44,10 @@ describe('PathPills', () => {
   })
 
   it('collapses empty segments from leading/trailing/double slashes', async () => {
-    const target = renderPills('//Users//dave///')
+    const target = renderPills('//Users//test_user_10///')
     await tick()
     const labels = Array.from(target.querySelectorAll('.pill')).map((p) => p.textContent.trim())
-    expect(labels).toEqual(['Users', 'dave'])
+    expect(labels).toEqual(['Users', 'test_user_10'])
     target.remove()
   })
 
@@ -83,21 +83,21 @@ describe('PathPills', () => {
 
   it('passes each ancestor path to onPick on click', async () => {
     const onPick = vi.fn()
-    const target = renderPills('/Users/dave/code', onPick)
+    const target = renderPills('/Users/test_user_10/code', onPick)
     await tick()
     const pills = Array.from(target.querySelectorAll<HTMLElement>('.pill'))
     pills[0]?.click()
     pills[1]?.click()
     pills[2]?.click()
-    expect(onPick.mock.calls).toEqual([['/Users'], ['/Users/dave'], ['/Users/dave/code']])
+    expect(onPick.mock.calls).toEqual([['/Users'], ['/Users/test_user_10'], ['/Users/test_user_10/code']])
     target.remove()
   })
 
   it('does not split on backslashes (macOS + Linux only)', async () => {
-    const target = renderPills('/Users/dave\\windows\\path')
+    const target = renderPills('/Users/test_user_10\\windows\\path')
     await tick()
     const labels = Array.from(target.querySelectorAll('.pill')).map((p) => p.textContent.trim())
-    expect(labels).toEqual(['Users', 'dave\\windows\\path'])
+    expect(labels).toEqual(['Users', 'test_user_10\\windows\\path'])
     target.remove()
   })
 
@@ -122,7 +122,7 @@ describe('PathPills', () => {
     // strip falls back to rendering every segment. `overflow: hidden` on the container
     // handles any pathological narrowing. This pins the "never wrap to two lines"
     // contract: the strip is `flex-wrap: nowrap`.
-    const target = renderPills('/Users/dave/code/proj/file')
+    const target = renderPills('/Users/test_user_10/code/proj/file')
     await tick()
     const strip = target.querySelector('.path-pills') as HTMLElement
     expect(strip).not.toBeNull()
@@ -136,10 +136,10 @@ describe('PathPills', () => {
   })
 
   it('hides the strip from assistive technology and leaves it the whole path as text', async () => {
-    const target = renderPills('/Users/dave/code')
+    const target = renderPills('/Users/test_user_10/code')
     await tick()
     expect(target.querySelector('.path-pills')?.getAttribute('aria-hidden')).toBe('true')
-    expect(target.querySelector('.sr-only')?.textContent).toBe('/Users/dave/code')
+    expect(target.querySelector('.sr-only')?.textContent).toBe('/Users/test_user_10/code')
     target.remove()
   })
 
@@ -149,7 +149,7 @@ describe('PathPills', () => {
     // tests that frame could land after the DOM environment was gone.
     const target = document.createElement('div')
     document.body.appendChild(target)
-    const instance = mount(PathPills, { target, props: { path: '/Users/dave/code', onPick: () => {} } })
+    const instance = mount(PathPills, { target, props: { path: '/Users/test_user_10/code', onPick: () => {} } })
     await tick()
     vi.mocked(scheduleStableWidthMeasure).mockClear()
     await unmount(instance)

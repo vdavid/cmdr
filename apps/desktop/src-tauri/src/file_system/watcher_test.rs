@@ -24,10 +24,10 @@ fn make_entry_in(name: &str, dir: &str, size: Option<u64>) -> FileEntry {
 
 #[test]
 fn test_rebase_event_path_exact_parent_match() {
-    let dir = Path::new("/Users/jane/docs");
+    let dir = Path::new("/Users/test_user_12/docs");
     assert_eq!(
-        rebase_event_path(Path::new("/Users/jane/docs/file.txt"), dir, dir),
-        Some(PathBuf::from("/Users/jane/docs/file.txt"))
+        rebase_event_path(Path::new("/Users/test_user_12/docs/file.txt"), dir, dir),
+        Some(PathBuf::from("/Users/test_user_12/docs/file.txt"))
     );
 }
 
@@ -58,18 +58,26 @@ fn test_rebase_event_path_resolves_symlinked_watch_root() {
     // silently never updated on rename/create/delete. `canonical_dir` (the symlink-
     // resolved watch root) closes the gap; the rebase still lands in the listing's own
     // path space.
-    let listing_dir = Path::new("/Users/jane/Library/CloudStorage/GoogleDrive-jane/My Drive");
-    let canonical_dir = Path::new("/Users/jane/My Drive");
+    let listing_dir = Path::new("/Users/test_user_12/Library/CloudStorage/GoogleDrive-test_user_12/My Drive");
+    let canonical_dir = Path::new("/Users/test_user_12/My Drive");
     assert_eq!(
-        rebase_event_path(Path::new("/Users/jane/My Drive/photo.jpg"), listing_dir, canonical_dir),
+        rebase_event_path(
+            Path::new("/Users/test_user_12/My Drive/photo.jpg"),
+            listing_dir,
+            canonical_dir
+        ),
         Some(PathBuf::from(
-            "/Users/jane/Library/CloudStorage/GoogleDrive-jane/My Drive/photo.jpg"
+            "/Users/test_user_12/Library/CloudStorage/GoogleDrive-test_user_12/My Drive/photo.jpg"
         )),
         "event under the symlink-resolved target must rebase into the listing's own path space"
     );
     // A sibling of the real target, outside the watched dir, stays rejected.
     assert_eq!(
-        rebase_event_path(Path::new("/Users/jane/Other/photo.jpg"), listing_dir, canonical_dir),
+        rebase_event_path(
+            Path::new("/Users/test_user_12/Other/photo.jpg"),
+            listing_dir,
+            canonical_dir
+        ),
         None
     );
 }
@@ -110,8 +118,8 @@ fn event_targets_watch_root_matches_the_dir_itself() {
     assert!(event_targets_watch_root(Path::new("/tmp/work"), dir, dir));
 
     // A symlinked watch root: the notifier reports the resolved target.
-    let listing_dir = Path::new("/Users/jane/Library/CloudStorage/GoogleDrive-jane/My Drive");
-    let canonical_dir = Path::new("/Users/jane/My Drive");
+    let listing_dir = Path::new("/Users/test_user_12/Library/CloudStorage/GoogleDrive-test_user_12/My Drive");
+    let canonical_dir = Path::new("/Users/test_user_12/My Drive");
     assert!(event_targets_watch_root(canonical_dir, listing_dir, canonical_dir));
 }
 

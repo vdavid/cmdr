@@ -9,15 +9,15 @@ use cmdr_fs::volume::Volume;
 use crate::volume::test_support::*;
 
 /// The prefix this crate's test volume mints.
-const PREFIX: &str = "sftp://ada@127.0.0.1:12599";
+const PREFIX: &str = "sftp://test_user_1@127.0.0.1:12599";
 
 #[test]
 fn an_instance_sharing_the_connection_answers_to_its_own_name_and_root() {
     let narrow = make_test_volume_at("/srv/data/tmp");
 
-    let wide = narrow.sharing_connection("ada@nas.local", Path::new("/srv/data"));
+    let wide = narrow.sharing_connection("test_user_1@testnas.local", Path::new("/srv/data"));
 
-    assert_eq!(wide.name(), "ada@nas.local");
+    assert_eq!(wide.name(), "test_user_1@testnas.local");
     assert_eq!(wide.root(), Path::new(&format!("{PREFIX}/srv/data")));
     assert_eq!(
         wide.to_remote_path(Path::new(&format!("{PREFIX}/srv/data/photos")))
@@ -54,7 +54,7 @@ fn an_instance_sharing_the_connection_shares_its_state() {
 #[test]
 fn redial_params_move_on_the_live_connection() {
     let volume = make_test_volume_at("/srv/data/tmp");
-    let key = PathBuf::from("/Users/ada/.ssh/id_ed25519");
+    let key = PathBuf::from("/Users/test_user_1/.ssh/id_ed25519");
 
     volume.set_redial_params(Path::new("/srv/data"), Some(key.clone()), true);
 
@@ -64,6 +64,6 @@ fn redial_params_move_on_the_live_connection() {
     assert!(params.use_agent);
     assert_eq!(
         (params.host.as_str(), params.port, params.username.as_str()),
-        ("127.0.0.1", CLOSED_PORT, "ada")
+        ("127.0.0.1", CLOSED_PORT, "test_user_1")
     );
 }

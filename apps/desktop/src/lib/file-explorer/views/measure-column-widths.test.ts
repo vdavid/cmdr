@@ -134,7 +134,7 @@ describe('computeFullListColumnWidths', () => {
     const bare = computeFullListColumnWidths({ ...baseArgs, entries: [entry(folder)] })
     const snapshot = computeFullListColumnWidths({
       ...baseArgs,
-      entries: [entry({ ...folder, resticMeta: { hostname: 'naspolya', tags: [], paths: [] } })],
+      entries: [entry({ ...folder, resticMeta: { hostname: 'testnas', tags: [], paths: [] } })],
     })
     expect(snapshot.ext).toBeGreaterThan(bare.ext)
   })

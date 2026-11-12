@@ -40,19 +40,19 @@ fn canonicalize_scope_path_expands_the_home_tilde() {
 
 /// Regression: a backend volume's scope path never goes through `realpath`. The
 /// OS mount at the same mount point spells names its own way (macOS smbfs: NFD),
-/// and a canonicalized `Rymdskottkärra AB` reached the NAS as
-/// `Rymdskottka\u{308}rra AB`, which it didn't have. A symlink stands in for the
+/// and a canonicalized `Testföretag AB` reached the NAS as
+/// `Testfo\u{308}retag AB`, which it didn't have. A symlink stands in for the
 /// rename here: anything `realpath` would change, a backend path must keep.
 #[cfg(unix)]
 #[test]
 fn a_backend_scope_path_keeps_the_backends_spelling() {
     let base = TestDir::new("scope-backend");
     let real = base.join("real");
-    std::fs::create_dir_all(real.join("Rymdskottkärra AB")).expect("create real dir");
+    std::fs::create_dir_all(real.join("Testföretag AB")).expect("create real dir");
     let link = base.join("link");
     std::os::unix::fs::symlink(&real, &link).expect("create symlink");
 
-    let scope = link.join("Rymdskottkärra AB").to_string_lossy().into_owned();
+    let scope = link.join("Testföretag AB").to_string_lossy().into_owned();
     assert_eq!(canonicalize_scope_path(&scope, PathNamespace::Backend), scope);
     assert_ne!(
         canonicalize_scope_path(&scope, PathNamespace::Os),
@@ -93,7 +93,7 @@ fn canonicalize_scope_path_resolves_symlinks() {
 // ── A mount-rooted volume's scope, through the database ──────────────
 //
 // Regression tests for the two live-QA failures: a volume-root scope
-// (`/Volumes/naspi`) must search the WHOLE volume, and a path that isn't in the
+// (`/Volumes/testshare`) must search the WHOLE volume, and a path that isn't in the
 // index must be reported as unresolved rather than silently returning nothing.
 
 const TEST_MOUNT: &str = "/Volumes/cmdr-test-nas";
@@ -133,7 +133,7 @@ fn resolved_in(
 /// backend's own spelling, even where the OS mount at that path spells it
 /// differently. Here the mount point is reached through a symlink, so `realpath`
 /// would move the scope out from under the mount root, the way smbfs's NFD moved
-/// `Rymdskottkärra AB` out from under the index's NFC row.
+/// `Testföretag AB` out from under the index's NFC row.
 #[cfg(unix)]
 #[test]
 fn a_backend_scope_resolves_under_the_backends_spelling() {

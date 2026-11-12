@@ -19,7 +19,7 @@ vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => ({
   getWebdavUnattendedReconnect: vi.fn(() => Promise.resolve('possible')),
   forgetServerSecret: vi.fn(() => Promise.resolve(true)),
   updateSavedServer: vi.fn(() => Promise.resolve({ outcome: 'saved' })),
-  savedServerId: vi.fn(() => Promise.resolve('sftp-nas-local-22-ada')),
+  savedServerId: vi.fn(() => Promise.resolve('sftp-nas-local-22-test_user_1')),
   updateSavedSmbHost: vi.fn(() => Promise.resolve({ outcome: 'saved' })),
   saveSftpCredentials: vi.fn(() => Promise.resolve()),
   saveWebdavCredentials: vi.fn(() => Promise.resolve()),
@@ -41,12 +41,12 @@ afterEach(() => {
  */
 describe('SignInSheet: edit mode', () => {
   const SAVED = {
-    id: 'sftp-nas-local-22-ada',
+    id: 'sftp-nas-local-22-test_user_1',
     protocol: 'sftp' as const,
-    displayName: 'Naspolya',
+    displayName: 'Testnas',
     nameSource: 'user' as const,
-    address: 'nas.local:22',
-    username: 'ada',
+    address: 'testnas.local:22',
+    username: 'test_user_1',
     pinned: true,
     lastConnectedAt: null,
     autoReconnect: true,
@@ -57,10 +57,10 @@ describe('SignInSheet: edit mode', () => {
   beforeEach(() => withPlatform('macos'))
 
   const KNOWN_SFTP = {
-    host: 'nas.local',
+    host: 'testnas.local',
     port: 22,
-    username: 'ada',
-    displayName: 'Naspolya',
+    username: 'test_user_1',
+    displayName: 'Testnas',
     remoteRoot: '/srv/data',
     keyFile: null,
     useAgent: true,
@@ -80,15 +80,18 @@ describe('SignInSheet: edit mode', () => {
   it('opens an unnamed server with an empty name, its label as the placeholder, and the label in the title', async () => {
     const commands = await import('#lib/tauri-commands/index.js')
     vi.mocked(commands.getKnownSftpServers).mockResolvedValue([{ ...KNOWN_SFTP, displayName: '' }])
-    await renderSheet({ mode: 'edit', server: { ...SAVED, displayName: 'ada@nas.local', nameSource: 'fallback' } })
+    await renderSheet({
+      mode: 'edit',
+      server: { ...SAVED, displayName: 'test_user_1@testnas.local', nameSource: 'fallback' },
+    })
 
     // ❗ The field holds what the user TYPED, which for an unnamed server is
     // nothing. A name that looked like the address is what sent a person to
     // widen the root through the wrong field.
     const name = document.body.querySelector<HTMLInputElement>('#server-name')
     expect(name?.value).toBe('')
-    expect(name?.placeholder).toBe('Leave empty to use ada@nas.local')
-    expect(document.body.textContent).toContain('Edit ada@nas.local')
+    expect(name?.placeholder).toBe('Leave empty to use test_user_1@testnas.local')
+    expect(document.body.textContent).toContain('Edit test_user_1@testnas.local')
   })
 
   it('shows the saved root folder and start folder', async () => {
@@ -131,7 +134,7 @@ describe('SignInSheet: edit mode', () => {
 
     const root = document.body.querySelector<HTMLInputElement>('#server-remote-root') as HTMLInputElement
     expect(done).toEqual([])
-    expect(document.body.querySelector('#server-remote-root-refusal')?.textContent).toContain('nas.local')
+    expect(document.body.querySelector('#server-remote-root-refusal')?.textContent).toContain('testnas.local')
     expect(root.getAttribute('aria-invalid')).toBe('true')
     expect(document.activeElement).toBe(root)
     // ❗ A refusal saved nothing, so the password typed beside it isn't filed
@@ -181,7 +184,7 @@ describe('SignInSheet: edit mode', () => {
     expect(done).toEqual([])
     const formRefusal = document.body.querySelector('.form-refusal')
     expect(formRefusal?.getAttribute('role')).toBe('alert')
-    expect(formRefusal?.textContent).toContain('nas.local')
+    expect(formRefusal?.textContent).toContain('testnas.local')
   })
 
   it('lets the address move, locks the account and the protocol, and says what each does', async () => {
@@ -189,7 +192,7 @@ describe('SignInSheet: edit mode', () => {
 
     const address = document.body.querySelector<HTMLInputElement>('#server-address')
     const username = document.body.querySelector<HTMLInputElement>('#server-username')
-    expect(address?.value).toBe('ada@nas.local:22')
+    expect(address?.value).toBe('test_user_1@testnas.local:22')
     // ❗ A server that moved (a new IP, a Tailscale name) keeps everything: the
     // backend moves it on Save.
     expect(address?.disabled).toBe(false)
@@ -212,8 +215,8 @@ describe('SignInSheet: edit mode', () => {
     await flush()
 
     expect(vi.mocked(commands.updateSavedServer)).toHaveBeenCalledWith(
-      expect.objectContaining({ protocol: 'sftp', host: '10.0.0.5', username: 'ada' }),
-      'sftp-nas-local-22-ada',
+      expect.objectContaining({ protocol: 'sftp', host: '10.0.0.5', username: 'test_user_1' }),
+      'sftp-nas-local-22-test_user_1',
     )
   })
 
@@ -236,7 +239,7 @@ describe('SignInSheet: edit mode', () => {
   it('forgets the password at the NEW address when Remember went off in the same save that moved it', async () => {
     const commands = await import('#lib/tauri-commands/index.js')
     vi.mocked(commands.hasServerSecret).mockResolvedValueOnce(true)
-    vi.mocked(commands.savedServerId).mockResolvedValueOnce('sftp-10-0-0-5-22-ada')
+    vi.mocked(commands.savedServerId).mockResolvedValueOnce('sftp-10-0-0-5-22-test_user_1')
     await renderSheet({ mode: 'edit', server: SAVED })
 
     typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, '10.0.0.5')
@@ -250,7 +253,7 @@ describe('SignInSheet: edit mode', () => {
 
     // ❗ The old id names nothing after a move, so a forget aimed there would leave
     // the moved password filed.
-    expect(vi.mocked(commands.forgetServerSecret)).toHaveBeenCalledWith('sftp-10-0-0-5-22-ada')
+    expect(vi.mocked(commands.forgetServerSecret)).toHaveBeenCalledWith('sftp-10-0-0-5-22-test_user_1')
   })
 
   it('writes a typed password through the Keychain, so the field does what it shows', async () => {
@@ -264,7 +267,7 @@ describe('SignInSheet: edit mode', () => {
 
     // The tuple the volume id is minted from, so the entry the next dial reads
     // is the one this writes.
-    expect(vi.mocked(commands.saveSftpCredentials)).toHaveBeenCalledWith('nas.local', 22, 'ada', 'hunter2')
+    expect(vi.mocked(commands.saveSftpCredentials)).toHaveBeenCalledWith('testnas.local', 22, 'test_user_1', 'hunter2')
     expect(vi.mocked(commands.forgetServerSecret)).not.toHaveBeenCalled()
   })
 

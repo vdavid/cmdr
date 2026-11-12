@@ -44,7 +44,7 @@ use crate::test_support::TestDir;
 /// folder restored onto a new install, or a cloned VM.
 fn moved_to_a_new_machine(dir: &TestDir) -> EncryptedFileStore {
     EncryptedFileStore::with_password(dir.to_path_buf(), b"old-machine-id".to_vec())
-        .set("smb://naspolya/photos", b"anna\0secret")
+        .set("smb://testnas/photos", b"test\0secret")
         .expect("the old machine saves");
     EncryptedFileStore::with_password(dir.to_path_buf(), b"new-machine-id".to_vec())
 }
@@ -64,10 +64,10 @@ fn saving_on_a_new_machine_sets_the_old_file_aside_and_starts_a_new_store() {
     let store = moved_to_a_new_machine(&dir);
 
     store
-        .set("smb://naspolya/photos", b"anna\0typed-again")
+        .set("smb://testnas/photos", b"test\0typed-again")
         .expect("a save works again");
 
-    assert_eq!(store.get("smb://naspolya/photos").expect("get"), b"anna\0typed-again");
+    assert_eq!(store.get("smb://testnas/photos").expect("get"), b"test\0typed-again");
     let kept = recovery::kept_copies(&store.path);
     assert_eq!(kept.len(), 1, "the unreadable file is kept, not deleted");
     assert_eq!(
@@ -86,14 +86,14 @@ fn forgetting_on_a_new_machine_sets_the_old_file_aside_too() {
     let store = moved_to_a_new_machine(&dir);
 
     assert!(matches!(
-        store.delete("smb://naspolya/photos"),
+        store.delete("smb://testnas/photos"),
         Err(SecretStoreError::NotFound(_))
     ));
 
     assert_eq!(recovery::kept_copies(&store.path).len(), 1);
     assert_eq!(notices.recoveries().len(), 1);
     store
-        .set("smb://naspolya/photos", b"anna\0new")
+        .set("smb://testnas/photos", b"test\0new")
         .expect("and the next save works");
     assert_eq!(notices.recoveries().len(), 1, "told once");
 }
@@ -121,7 +121,7 @@ fn a_machine_id_that_cant_be_read_right_now_never_sets_the_file_aside() {
     let machine_id = dir.join("machine-id");
     std::fs::write(&machine_id, "this-machine\n").expect("machine id");
     EncryptedFileStore::with_machine_id(dir.to_path_buf(), machine_id.clone())
-        .set("smb://naspolya/photos", b"anna\0secret")
+        .set("smb://testnas/photos", b"test\0secret")
         .expect("saved under this machine's id");
 
     // A read that fails for a reason other than "there's no such file": EISDIR stands in for
@@ -131,14 +131,14 @@ fn a_machine_id_that_cant_be_read_right_now_never_sets_the_file_aside() {
     let store = EncryptedFileStore::with_machine_id(dir.to_path_buf(), machine_id.clone());
 
     assert!(store.set("license.key", b"{}").is_err(), "the save says it didn't save");
-    assert!(store.delete("smb://naspolya/photos").is_err());
+    assert!(store.delete("smb://testnas/photos").is_err());
     assert!(recovery::kept_copies(&store.path).is_empty(), "nothing set aside");
     assert!(notices.recoveries().is_empty());
 
     // Once the id reads again, everything is where it was.
     std::fs::remove_dir(&machine_id).expect("remove");
     std::fs::write(&machine_id, "this-machine\n").expect("machine id");
-    assert_eq!(store.get("smb://naspolya/photos").expect("get"), b"anna\0secret");
+    assert_eq!(store.get("smb://testnas/photos").expect("get"), b"test\0secret");
 }
 
 /// A machine with no machine id at all keys by the fixed fallback, for good: that IS this
@@ -159,7 +159,7 @@ fn reading_on_a_new_machine_answers_an_error_and_leaves_the_file_alone() {
     let store = moved_to_a_new_machine(&dir);
 
     assert!(matches!(
-        store.get("smb://naspolya/photos"),
+        store.get("smb://testnas/photos"),
         Err(SecretStoreError::Other(_))
     ));
     assert!(store.keys().is_err());

@@ -213,8 +213,8 @@ async fn predecessor_is_superseded_not_unmounted() {
 
     // Both at the SAME mount root: an upgrade replaces the backend serving a
     // mount, so this is not an identity conflict and the swap goes through.
-    let (old_volume, old_hooks) = tracking::TrackingVolume::create_at("/Volumes/naspi", None);
-    let (new_volume, new_hooks) = tracking::TrackingVolume::create_at("/Volumes/naspi", None);
+    let (old_volume, old_hooks) = tracking::TrackingVolume::create_at("/Volumes/testshare", None);
+    let (new_volume, new_hooks) = tracking::TrackingVolume::create_at("/Volumes/testshare", None);
 
     manager.register(volume_id, old_volume);
     assert!(!old_hooks.superseded.load(Ordering::Relaxed));
@@ -257,8 +257,8 @@ async fn a_registration_the_registry_refuses_leaves_the_incumbent_untouched() {
     let manager = crate::file_system::volume::manager::get_volume_manager();
 
     // A SECOND live mount of the same filesystem, which macOS suffixes.
-    let (incumbent, incumbent_hooks) = tracking::TrackingVolume::create_at("/Volumes/naspi", None);
-    let (second_mount, second_hooks) = tracking::TrackingVolume::create_at("/Volumes/naspi-1", None);
+    let (incumbent, incumbent_hooks) = tracking::TrackingVolume::create_at("/Volumes/testshare", None);
+    let (second_mount, second_hooks) = tracking::TrackingVolume::create_at("/Volumes/testshare-1", None);
 
     manager.register(volume_id, std::sync::Arc::clone(&incumbent));
 
@@ -288,7 +288,7 @@ async fn a_registration_the_registry_refuses_leaves_the_incumbent_untouched() {
         manager
             .known_roots(volume_id)
             .iter()
-            .any(|r| r.as_path() == Path::new("/Volumes/naspi-1")),
+            .any(|r| r.as_path() == Path::new("/Volumes/testshare-1")),
         "the second mount root is recorded as a fallback"
     );
 
@@ -309,7 +309,7 @@ async fn a_held_volume_reference_keeps_working_across_a_replace() {
     let manager = crate::file_system::volume::manager::get_volume_manager();
     manager.unregister(volume_id);
 
-    let (old_volume, _) = tracking::TrackingVolume::create_at("/Volumes/naspi", None);
+    let (old_volume, _) = tracking::TrackingVolume::create_at("/Volumes/testshare", None);
     manager.register(volume_id, old_volume);
 
     // What a running transfer holds: an `Arc` clone taken before the swap.
@@ -319,7 +319,7 @@ async fn a_held_volume_reference_keeps_working_across_a_replace() {
         "the held reference works before the swap"
     );
 
-    let (new_volume, _) = tracking::TrackingVolume::create_at("/Volumes/naspi", None);
+    let (new_volume, _) = tracking::TrackingVolume::create_at("/Volumes/testshare", None);
     register_replacing_predecessor(volume_id, new_volume).await;
 
     assert!(
@@ -590,16 +590,19 @@ fn a_second_upgrade_pass_is_dropped_while_one_is_pending() {
 #[test]
 fn a_share_the_registry_has_not_caught_up_with_is_still_adopted() {
     let kernel = vec![
-        ("/Volumes/naspi".to_string(), mount_of("192.168.1.111", "naspi", 445)),
+        (
+            "/Volumes/testshare".to_string(),
+            mount_of("192.168.50.10", "testshare", 445),
+        ),
         (
             "/Volumes/Multimedia".to_string(),
-            mount_of("192.168.1.111", "Multimedia", 445),
+            mount_of("192.168.50.10", "Multimedia", 445),
         ),
     ];
     // An empty registry: nothing is served by an `SmbVolume`, nothing is registered at all.
     let picked = shares_to_adopt(kernel, |_| false);
     let paths: Vec<&str> = picked.iter().map(|(path, _)| path.as_str()).collect();
-    assert_eq!(paths, ["/Volumes/naspi", "/Volumes/Multimedia"]);
+    assert_eq!(paths, ["/Volumes/testshare", "/Volumes/Multimedia"]);
 }
 
 /// A share an `SmbVolume` already serves is left alone, whatever its state: a
@@ -608,13 +611,19 @@ fn a_share_the_registry_has_not_caught_up_with_is_still_adopted() {
 fn a_share_with_a_session_is_not_adopted_again() {
     use crate::file_system::volume::smb_volume_id;
     let kernel = vec![
-        ("/Volumes/naspi".to_string(), mount_of("192.168.1.111", "naspi", 445)),
-        ("/Volumes/PiHDD".to_string(), mount_of("192.168.1.150", "PiHDD", 445)),
+        (
+            "/Volumes/testshare".to_string(),
+            mount_of("192.168.50.10", "testshare", 445),
+        ),
+        (
+            "/Volumes/testshare2".to_string(),
+            mount_of("192.168.50.30", "testshare2", 445),
+        ),
     ];
-    let direct = smb_volume_id("192.168.1.111", 445, "naspi");
+    let direct = smb_volume_id("192.168.50.10", 445, "testshare");
     let picked = shares_to_adopt(kernel, |id| id == direct);
     let paths: Vec<&str> = picked.iter().map(|(path, _)| path.as_str()).collect();
-    assert_eq!(paths, ["/Volumes/PiHDD"]);
+    assert_eq!(paths, ["/Volumes/testshare2"]);
 }
 
 /// Two mounts of one share (macOS follows a DFS referral with a second mount inside

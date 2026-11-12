@@ -9,7 +9,7 @@ use cmdr_fs::volume::Volume;
 
 /// The prefix this crate's test volume mints, spelled out so a cell reads as the
 /// app would see it.
-const PREFIX: &str = "sftp://ada@127.0.0.1:12599";
+const PREFIX: &str = "sftp://test_user_1@127.0.0.1:12599";
 
 #[test]
 fn the_three_spellings_of_the_root_all_mean_the_root() {
@@ -79,7 +79,7 @@ fn a_prefixed_path_outside_the_root_is_refused() {
 fn another_accounts_prefix_is_refused() {
     let vol = make_test_volume();
     assert!(matches!(
-        vol.to_remote_path(Path::new("sftp://grace@127.0.0.1:12599/srv/data/photos")),
+        vol.to_remote_path(Path::new("sftp://test_user_2@127.0.0.1:12599/srv/data/photos")),
         Err(VolumeError::NotFound(_))
     ));
 }

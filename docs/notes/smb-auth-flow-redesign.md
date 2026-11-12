@@ -1,29 +1,29 @@
 # SMB auth flow: incident analysis and UX redesign proposal
 
 Status: P0 implemented (2026-06-06); P1/P2 are proposals. Written 2026-06-06 after a real-world dead-end login flow on
-the `Naspolya` NAS. Owner doc for the planned login/connect lifecycle rework (SMB now, S3/FTP/WebDAV later).
+the `Testnas` NAS. Owner doc for the planned login/connect lifecycle rework (SMB now, S3/FTP/WebDAV later).
 
 ## The incident
 
-What David saw: Network > Naspolya > naspi → a **macOS system dialog** ("You entered an invalid username or password for
-the server 192.168.1.111") → Cmdr's error pane ("Couldn't mount share – Mount failed with error code -6600") → "Try
+What David saw: Network > Testnas > testshare → a **macOS system dialog** ("You entered an invalid username or password
+for the server 192.168.50.10") → Cmdr's error pane ("Couldn't mount share – Mount failed with error code -6600") → "Try
 again" loops forever. At no point did Cmdr offer a credential prompt. Complete dead end.
 
 ### Timeline (from `cmdr.log`, worktree instance `progressive-scan-sizes`, 2026-06-06 16:15–16:19)
 
-1. **16:15:21** App start. macOS had auto-mounted `naspi` at `/Volumes/naspi` (Finder creds, saved in the **system**
-   Keychain). Cmdr registered it as an os-mount volume (`smb-naspolya-smb-tcp-local-445-naspi`,
+1. **16:15:21** App start. macOS had auto-mounted `testshare` at `/Volumes/testshare` (Finder creds, saved in the
+   **system** Keychain). Cmdr registered it as an os-mount volume (`smb-testnas-smb-tcp-local-445-testshare`,
    `smbConnectionState: os_mount`).
-2. **16:15:22** Startup smb2 upgrade: Cmdr's own secret store has no creds for Naspolya (dev runs `PlainFileStore` via
+2. **16:15:22** Startup smb2 upgrade: Cmdr's own secret store has no creds for Testnas (dev runs `PlainFileStore` via
    `CMDR_SECRET_STORE=file`, so even creds saved in a prod Cmdr session are invisible here) → guest attempt →
    `STATUS_LOGON_FAILURE` → silently stayed `LocalPosixVolume`. Fine so far.
-3. **16:16:54** User opens Network > Naspolya. Share listing: guest smb2 fails (auth) → Cmdr secret store: no creds →
+3. **16:16:54** User opens Network > Testnas. Share listing: guest smb2 fails (auth) → Cmdr secret store: no creds →
    `smbutil view -N` fallback succeeds **using the system Keychain** → 8 shares, `authMode: CredsRequired`. The UI
    renders the share list as if everything is fine, but `authenticatedCredentials` stays `null` (`ShareBrowser.svelte`):
    Cmdr knows auth is required and holds no credentials, and tells the user nothing.
-4. **16:16:57** User selects `naspi`. `disambiguated_mount_path` compares the mount target server (`192.168.1.111`, we
-   prefer IP) against `statfs`'s server for the existing `/Volumes/naspi` (`Naspolya._smb._tcp.local`) by **string
-   equality** → mismatch → "taken by another server" → picks `/Volumes/naspi-1` and sets `ForceNewSession`.
+4. **16:16:57** User selects `testshare`. `disambiguated_mount_path` compares the mount target server (`192.168.50.10`,
+   we prefer IP) against `statfs`'s server for the existing `/Volumes/testshare` (`Testnas._smb._tcp.local`) by **string
+   equality** → mismatch → "taken by another server" → picks `/Volumes/testshare-1` and sets `ForceNewSession`.
 5. `mountNetworkShare(server, share, null, null, …)` → `want_guest = true` → NetFS `Guest` key. `ForceNewSession`
    prevents NetFS from riding the existing authenticated kernel session. The server rejects guest. Because Cmdr never
    sets `kNAUIOptionNoUI`, NetFS hands the failure to **NetAuthAgent, which shows the system dialog**. User clicks OK →
@@ -35,8 +35,8 @@ again" loops forever. At no point did Cmdr offer a credential prompt. Complete d
 
 ### Root causes, ranked by user pain
 
-1. **Server identity is compared as strings.** The same NAS is known as `Naspolya._smb._tcp.local`, `Naspolya.local`,
-   and `192.168.1.111`; the disambiguation logic treats these as different servers, forcing a doomed second mount + new
+1. **Server identity is compared as strings.** The same NAS is known as `Testnas._smb._tcp.local`, `Testnas.local`, and
+   `192.168.50.10`; the disambiguation logic treats these as different servers, forcing a doomed second mount + new
    session. Where: `mount.rs::disambiguated_mount_path`
 2. **No already-mounted short-circuit.** The share the user picked was already mounted AND registered as a Cmdr volume.
    Selecting it should navigate, not mount again. Where: `NetworkMountView.svelte::handleShareSelect`
@@ -126,7 +126,7 @@ flowchart TD
 Notes on the boxes:
 
 - **Registered-volume short-circuit** (🟪): kills incident cause 2. The lookup key is `ServerIdentity` + share name, so
-  `192.168.1.111` finds the volume that `statfs` knows as `Naspolya._smb._tcp.local`. The existing
+  `192.168.50.10` finds the volume that `statfs` knows as `Testnas._smb._tcp.local`. The existing
   `resolve_server_address` / `friendly_server_name` helpers in `smb_upgrade.rs` already do most of this resolution; they
   become methods on `ServerIdentity`.
 - **Credential resolver** (🟪): today steps 1–2 exist (`CREDENTIAL_CACHE`, `keychain.rs` → `secrets`), but each caller
@@ -144,7 +144,7 @@ Notes on the boxes:
 - **Login dialog** (🟪): replaces the in-pane `NetworkLoginForm` placement (the form component itself is largely
   reusable). Soft dialog via the existing dialog manager. Carries: server display name, optional share name, guest
   toggle (only when `authMode === 'guest_allowed'`), username (pre-filled from `known_shares` hints), password,
-  "Remember this password" (default on), and an inline error slot ("That password didn't work for naspolya").
+  "Remember this password" (default on), and an inline error slot ("That password didn't work for testnas").
 
 ### Connection lifecycle (per server, proposed)
 
@@ -202,7 +202,7 @@ ConnectionProvider {
     id: "smb" | "s3" | "ftp" | …,
     credentialFields: [ { key, label, kind: text|password|select|checkbox, optional, … } ],
     supportsGuest: bool,             // SMB, FTP-anonymous: yes; S3: no
-    secretAccountKey(identity, scope) -> String,   // "smb://naspolya/naspi", "s3://bucket@endpoint"
+    secretAccountKey(identity, scope) -> String,   // "smb://testnas/testshare", "s3://bucket@endpoint"
     probe(identity) -> AuthMode,
     connect(identity, creds) -> Volume(s),
 }

@@ -27,7 +27,7 @@ fn a_refused_mount_asks_the_right_question() {
         outcome(MountError::PermissionDenied {
             server: server.clone(),
             share: share.clone(),
-            username: "sven".to_string()
+            username: "test_user_6".to_string()
         }),
         "AuthenticationRejected"
     );
@@ -94,26 +94,26 @@ fn a_favorited_share_row_is_an_unpinned_place_the_mount_described() {
     let row = favorited_share_row(
         "192.0.2.9",
         10445,
-        "naspi",
-        Some("david"),
-        "/Volumes/naspi",
-        "smb-naspi-1",
+        "testshare",
+        Some("test_user_3"),
+        "/Volumes/testshare",
+        "smb-testshare-1",
     );
     assert!(row.is_share());
     assert!(!row.pinned);
     assert_eq!(row.address.as_deref(), Some("192.0.2.9"));
     assert_eq!(row.port, Some(10445));
-    assert_eq!(row.username.as_deref(), Some("david"));
+    assert_eq!(row.username.as_deref(), Some("test_user_3"));
     assert_eq!(row.last_connection_mode, ConnectionMode::Credentials);
-    assert_eq!(row.volume_id.as_deref(), Some("smb-naspi-1"));
-    assert_eq!(row.mount_path.as_deref(), Some("/Volumes/naspi"));
-    assert_eq!(known_shares::place_id(&row), "smb-naspi-1");
+    assert_eq!(row.volume_id.as_deref(), Some("smb-testshare-1"));
+    assert_eq!(row.mount_path.as_deref(), Some("/Volumes/testshare"));
+    assert_eq!(known_shares::place_id(&row), "smb-testshare-1");
 
-    let guest = favorited_share_row("nas.local", 445, "public", None, "/Volumes/public", "smb-public-1");
+    let guest = favorited_share_row("testnas.local", 445, "public", None, "/Volumes/public", "smb-public-1");
     assert_eq!(guest.port, None, "445 is the default and isn't written");
     assert_eq!(guest.last_connection_mode, ConnectionMode::Guest);
     assert_eq!(
-        guest.server_name, "nas.local",
+        guest.server_name, "testnas.local",
         "on 445 the server goes by its bare address"
     );
 }

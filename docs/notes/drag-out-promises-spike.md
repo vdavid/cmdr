@@ -83,7 +83,7 @@ Notes on the controls:
 ```
 SPIKE DRAG paths=["/DCIM/photo-001.jpg"]
 fileNameForType -> photo-001.jpg
-writePromiseToURL dest=Some("/Users/veszelovszki/Desktop/photo-001.jpg")
+writePromiseToURL dest=Some("/Users/test_user_3/Desktop/photo-001.jpg")
 fulfillment OK
 ```
 
@@ -108,7 +108,7 @@ the recorded-identity self-drag path keeps working. This was the only real M1 ri
 ```
 SPIKE DRAG paths=["/DCIM"]
 fileNameForType -> DCIM
-writePromiseToURL dest=Some("/Users/veszelovszki/Desktop/DCIM")
+writePromiseToURL dest=Some("/Users/test_user_3/Desktop/DCIM")
 fulfillment OK
 ```
 

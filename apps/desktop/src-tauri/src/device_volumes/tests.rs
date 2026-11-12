@@ -80,8 +80,8 @@ async fn names_after_fold(mtp: Vec<DeviceVolumeEntry>, adb: Vec<DeviceVolumeEntr
 #[tokio::test]
 async fn a_serial_only_row_takes_the_name_of_the_phone_it_is() {
     let names = names_after_fold(
-        vec![phone_entry("mtp", "Pixel 9 Pro XL", "46061FDAS000A4")],
-        vec![phone_entry("adb", "46061FDAS000A4", "46061FDAS000A4")],
+        vec![phone_entry("mtp", "Pixel 9 Pro XL", "TESTSERIAL0001")],
+        vec![phone_entry("adb", "TESTSERIAL0001", "TESTSERIAL0001")],
     )
     .await;
 
@@ -94,11 +94,11 @@ async fn a_serial_only_row_takes_the_name_of_the_phone_it_is() {
 async fn a_serial_only_row_takes_the_name_of_a_phone_still_connecting() {
     let connecting = DeviceVolumeEntry {
         device_readiness: Some(DeviceReadiness::Connecting),
-        ..phone_entry("mtp", "Pixel 9 Pro XL", "46061FDAS000A4")
+        ..phone_entry("mtp", "Pixel 9 Pro XL", "TESTSERIAL0001")
     };
     let names = names_after_fold(
         vec![connecting],
-        vec![phone_entry("adb", "46061FDAS000A4", "46061FDAS000A4")],
+        vec![phone_entry("adb", "TESTSERIAL0001", "TESTSERIAL0001")],
     )
     .await;
 
@@ -108,8 +108,8 @@ async fn a_serial_only_row_takes_the_name_of_a_phone_still_connecting() {
 #[tokio::test]
 async fn a_serial_only_row_matches_whatever_case_each_side_reports_the_serial_in() {
     let names = names_after_fold(
-        vec![phone_entry("mtp", "Pixel 9 Pro XL", "46061fdas000a4")],
-        vec![phone_entry("adb", "46061FDAS000A4", "46061FDAS000A4")],
+        vec![phone_entry("mtp", "Pixel 9 Pro XL", "testserial0001")],
+        vec![phone_entry("adb", "TESTSERIAL0001", "TESTSERIAL0001")],
     )
     .await;
 
@@ -120,18 +120,18 @@ async fn a_serial_only_row_matches_whatever_case_each_side_reports_the_serial_in
 async fn a_serial_only_row_keeps_its_serial_when_nothing_else_knows_the_phone() {
     let names = names_after_fold(
         vec![phone_entry("mtp", "Galaxy S24", "OTHER")],
-        vec![phone_entry("adb", "46061FDAS000A4", "46061FDAS000A4")],
+        vec![phone_entry("adb", "TESTSERIAL0001", "TESTSERIAL0001")],
     )
     .await;
 
-    assert_eq!(names[1], "46061FDAS000A4");
+    assert_eq!(names[1], "TESTSERIAL0001");
 }
 
 #[tokio::test]
 async fn a_row_that_already_has_a_name_keeps_it() {
     let names = names_after_fold(
-        vec![phone_entry("mtp", "Pixel 9 Pro XL", "46061FDAS000A4")],
-        vec![phone_entry("adb", "Pixel 9 Pro", "46061FDAS000A4")],
+        vec![phone_entry("mtp", "Pixel 9 Pro XL", "TESTSERIAL0001")],
+        vec![phone_entry("adb", "Pixel 9 Pro", "TESTSERIAL0001")],
     )
     .await;
 

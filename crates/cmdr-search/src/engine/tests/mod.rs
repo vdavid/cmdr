@@ -17,7 +17,7 @@ pub(super) fn make_test_index() -> SearchIndex {
     const NAMES: [&str; 8] = [
         "",
         "Users",
-        "alice",
+        "test_user_4",
         "report.pdf",
         "photo.jpg",
         "notes.txt",

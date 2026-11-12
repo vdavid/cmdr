@@ -34,10 +34,10 @@ describe('readSavedServerOutcome', () => {
   })
 
   it('names the saved server that already holds the address a move asked for', () => {
-    expect(readSavedServerOutcome({ outcome: 'address_taken', name: 'Naspolya' })).toEqual({
+    expect(readSavedServerOutcome({ outcome: 'address_taken', name: 'Testnas' })).toEqual({
       kind: 'refused',
       refusal: 'address_taken',
-      takenBy: 'Naspolya',
+      takenBy: 'Testnas',
     })
   })
 

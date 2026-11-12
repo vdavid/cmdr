@@ -29,7 +29,7 @@ const ANSWER_BUDGET: std::time::Duration = std::time::Duration::from_secs(6);
 /// it. Unregistered on drop.
 struct Server {
     volume_id: String,
-    /// `sftp://ada@nas.local:22/srv/data`, the spelling a server pane holds.
+    /// `sftp://test_user_1@testnas.local:22/srv/data`, the spelling a server pane holds.
     root: String,
 }
 
@@ -40,8 +40,8 @@ impl Drop for Server {
 }
 
 fn a_connected_sftp_server(username: &str) -> Server {
-    let volume_id = sftp_volume_id("nas.local", 22, username);
-    let root = format!("{}/srv/data", sftp_app_root("nas.local", 22, username));
+    let volume_id = sftp_volume_id("testnas.local", 22, username);
+    let root = format!("{}/srv/data", sftp_app_root("testnas.local", 22, username));
     let entries = vec![FileEntry::new(
         "report.txt".into(),
         format!("{root}/report.txt"),
@@ -61,9 +61,9 @@ fn a_connected_sftp_server(username: &str) -> Server {
 
 #[test]
 fn a_server_scope_routes_to_the_server_never_the_boot_disk() {
-    let root = format!("{}/srv/data", sftp_app_root("nas.local", 22, "ada"));
+    let root = format!("{}/srv/data", sftp_app_root("testnas.local", 22, "test_user_1"));
     let target = resolve_target(&pattern_query_for(&root, "report")).expect("one volume");
-    assert_eq!(target.volume_id, sftp_volume_id("nas.local", 22, "ada"));
+    assert_eq!(target.volume_id, sftp_volume_id("testnas.local", 22, "test_user_1"));
     assert!(target.from_scope);
 }
 
@@ -78,7 +78,7 @@ fn the_index_only_answer_for_a_server_is_not_covered() {
         .volumes(Arc::new(AppVolumeProvider))
         .install_for_test();
     let _search_data = volumes::install_data_dir_for_test(data.path());
-    let server = a_connected_sftp_server("ada-index-only");
+    let server = a_connected_sftp_server("test_user_1-index-only");
 
     let result = run_blocking(pattern_query_for(&server.root, "report")).expect("the search");
 
@@ -100,7 +100,7 @@ fn a_live_search_on_a_server_walks_nothing_and_says_it_is_not_covered() {
         .volumes(Arc::new(AppVolumeProvider))
         .install_for_test();
     let _search_data = volumes::install_data_dir_for_test(data.path());
-    let server = a_connected_sftp_server("ada-live");
+    let server = a_connected_sftp_server("test_user_1-live");
 
     let answer =
         run_live_collected(pattern_query_for(&server.root, "report"), None, ANSWER_BUDGET).expect("the live search");

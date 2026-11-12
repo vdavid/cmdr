@@ -262,7 +262,7 @@ fn dirs_listed_at_epoch(conn: &Connection, epoch: u64) -> i64 {
 /// already-partially-indexed share must DESCEND into every existing child
 /// dir, not stop at the root after matching its children by name.
 ///
-/// Setup mirrors prod (`naspi`): the DB knows the root + its top-level dirs
+/// Setup mirrors prod (`testshare`): the DB knows the root + its top-level dirs
 /// from an earlier interrupted scan, but those dirs are EMPTY in the index —
 /// their real subtrees were never listed. The live volume has the full tree.
 /// A child dir being "unchanged" at the root's level (same mtime → no UPSERT)
@@ -416,8 +416,8 @@ async fn reconcile_empty_root_does_not_complete() {
 /// The enable path routes a no-completion-marker DB through the reconcile walk;
 /// post-Forget that DB is empty, so EVERY dir is "new". New dirs are resolved
 /// after a flush to get their freshly-assigned ids before recursing. Resolving
-/// by ABSOLUTE PATH (`/Volumes/naspi/_test`) walks component-by-component from
-/// ROOT_ID, but the index root IS `/Volumes/naspi` (mapped to ROOT_ID) — so the
+/// by ABSOLUTE PATH (`/Volumes/testshare/_test`) walks component-by-component from
+/// ROOT_ID, but the index root IS `/Volumes/testshare` (mapped to ROOT_ID) — so the
 /// walk fails at the first component (`Volumes`) and resolves NOTHING. The
 /// reconcile then stops at the root and falsely "completes" with only the
 /// top-level entries (badge green, no real scan). Resolving by `(parent_id,
@@ -425,16 +425,16 @@ async fn reconcile_empty_root_does_not_complete() {
 /// and its immediate children are indexed, the subtrees are missing.
 #[tokio::test]
 async fn reconcile_from_empty_db_with_non_root_mount_indexes_full_tree() {
-    // An SMB-shaped mount: root is `/Volumes/naspi`, with a multi-level tree.
-    let root = PathBuf::from("/Volumes/naspi");
+    // An SMB-shaped mount: root is `/Volumes/testshare`, with a multi-level tree.
+    let root = PathBuf::from("/Volumes/testshare");
     let tree = vec![
-        entry("top", "/Volumes/naspi/top", true, None),
-        entry("sub", "/Volumes/naspi/top/sub", true, None),
-        entry("deep.txt", "/Volumes/naspi/top/sub/deep.txt", false, Some(42)),
-        entry("other", "/Volumes/naspi/other", true, None),
-        entry("leaf.txt", "/Volumes/naspi/other/leaf.txt", false, Some(7)),
+        entry("top", "/Volumes/testshare/top", true, None),
+        entry("sub", "/Volumes/testshare/top/sub", true, None),
+        entry("deep.txt", "/Volumes/testshare/top/sub/deep.txt", false, Some(42)),
+        entry("other", "/Volumes/testshare/other", true, None),
+        entry("leaf.txt", "/Volumes/testshare/other/leaf.txt", false, Some(7)),
     ];
-    let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("naspi", tree));
+    let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("testshare", tree));
 
     // Empty DB + writer (the post-Forget state). The manager bumps the epoch at
     // the scan-start funnel before spawning the walk; mirror that so listed dirs
@@ -466,7 +466,7 @@ async fn reconcile_from_empty_db_with_non_root_mount_indexes_full_tree() {
 
     // The deep files prove recursion actually listed the subtrees rather than
     // just stamping the top level. Resolved by (parent_id, name) chains since
-    // `resolve_path` from `/` can't reach a `/Volumes/naspi`-rooted index.
+    // `resolve_path` from `/` can't reach a `/Volumes/testshare`-rooted index.
     let id_of = |parent: i64, name: &str| -> i64 {
         IndexStore::resolve_component(&conn, parent, name)
             .expect("resolve")

@@ -101,8 +101,8 @@ describe('effectiveVolumeRootFor', () => {
     // The listing reports the container as its root (`/x/foo.zip`, `/r/Browse snapshots`),
     // but the pane sits on the parent drive, and the container's top folder has a parent.
     expect(effectiveVolumeRootFor('archive', '/', '/x/foo.zip')).toBe('/')
-    expect(effectiveVolumeRootFor('restic', '/Volumes/naspi', '/Volumes/naspi/r/Browse snapshots')).toBe(
-      '/Volumes/naspi',
+    expect(effectiveVolumeRootFor('restic', '/Volumes/testshare', '/Volumes/testshare/r/Browse snapshots')).toBe(
+      '/Volumes/testshare',
     )
     expect(effectiveVolumeRootFor('git-portal', '/', '/repo/.git')).toBe('/')
   })

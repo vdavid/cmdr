@@ -308,7 +308,7 @@ func TestWriterCPU(t *testing.T) {
 	}
 	// A second volume's writer has its own thread and its own counter; folding
 	// them would make a NAS reconnect look like boot-disk write-path work.
-	if !w.addLine(prefix + `heartbeat volume_id=smb-naspolya queue_depth=0 since_last_heartbeat_ms=60003 ` +
+	if !w.addLine(prefix + `heartbeat volume_id=smb-testnas queue_depth=0 since_last_heartbeat_ms=60003 ` +
 		`messages_processed_since_last_heartbeat=0 transaction_commits_since_last_heartbeat=0 ` +
 		`time_in_recv_ms=60000 time_in_processing_ms=0 time_in_commit_ms=0 writer_cpu_ms_total=907`) {
 		t.Fatal("the SMB heartbeat did not match")
@@ -317,7 +317,7 @@ func TestWriterCPU(t *testing.T) {
 	w.addLine(prefix + `heartbeat volume_id=root queue_depth=0 since_last_heartbeat_ms=5001 ` +
 		`messages_processed_since_last_heartbeat=9 transaction_commits_since_last_heartbeat=1 ` +
 		`time_in_recv_ms=4900 time_in_processing_ms=80 time_in_commit_ms=20 writer_cpu_ms_total=41880`)
-	if w.RootMs() != 41880 || w.MsByVolume["smb-naspolya"] != 907 {
+	if w.RootMs() != 41880 || w.MsByVolume["smb-testnas"] != 907 {
 		t.Errorf("MsByVolume = %v", w.MsByVolume)
 	}
 
@@ -331,7 +331,7 @@ func TestWriterCPU(t *testing.T) {
 	}
 	// A volume with no BEFORE reading is dropped, not reported as having burned
 	// its whole since-launch total during this phase.
-	if _, present := d.MsByVolume["smb-naspolya"]; present {
+	if _, present := d.MsByVolume["smb-testnas"]; present {
 		t.Errorf("a volume unseen at phase start must not appear: %v", d.MsByVolume)
 	}
 	if w.addLine(prefix + `Writer: +271 msgs (242 upserts) in 5.0s [383707 total]`) {

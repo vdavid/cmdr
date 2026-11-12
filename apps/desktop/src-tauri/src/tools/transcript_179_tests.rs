@@ -2,11 +2,11 @@
 //! volume-aware tools (`DETAILS.md` § The location contract).
 //!
 //! One NAS, two ids. The Tailscale share is saved and not connected, last root
-//! `/Volumes/naspi`, with a drive index on disk; the LAN share is live at
-//! `/Volumes/naspi-1` with no drive index. Both rows record one server GUID, each
+//! `/Volumes/testshare`, with a drive index on disk; the LAN share is live at
+//! `/Volumes/testshare-1` with no drive index. Both rows record one server GUID, each
 //! by a signed-in session (David connected both), one share name, and one
-//! username. Only the Tailscale share's importance store scored `invoices paid`.
-//! The model guessed `/Volumes/naspi/papers`, a dead mount point, and read
+//! username. Only the Tailscale share's importance store scored `invoices`.
+//! The model guessed `/Volumes/testshare/documents`, a dead mount point, and read
 //! `root`'s fresh, empty, "authoritative" answer three times.
 
 use std::path::Path;
@@ -28,25 +28,25 @@ use crate::tools::read::listing::{GatePolicy, LIVE_READ, ListOptions, LiveDeps, 
 use crate::tools::resources::importance::tests::{scored_signals, write_db};
 use crate::tools::resources::volumes::VolumeKind;
 
-pub(super) const TAILSCALE: &str = "smb-100-127-48-122-445-naspi-david";
-pub(super) const LAN: &str = "smb-192-168-1-111-445-naspi-david";
+pub(super) const TAILSCALE: &str = "smb-100-64-0-10-445-testshare-test_user_3";
+pub(super) const LAN: &str = "smb-192-168-50-10-445-testshare-test_user_3";
 /// The NAS's server GUID, as both share rows record it.
-const NASPOLYA: &str = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
+const TESTNAS: &str = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
 /// When the Tailscale share's on-disk index last finished a walk.
 pub(super) const TAILSCALE_AS_OF: u64 = 1_761_000_000;
 const NOW: u64 = 1_761_500_000;
-pub(super) const INVOICES: &str = "papers/Rymdskottkärra AB/invoices paid";
+pub(super) const INVOICES: &str = "documents/Testföretag AB/invoices";
 
 pub(super) fn conversation_179() -> VolumeFacts {
-    conversation_179_with("/Volumes/naspi-1", ConnectionState::Direct)
+    conversation_179_with("/Volumes/testshare-1", ConnectionState::Direct)
 }
 
 /// The facts with the LAN share at `lan_root` (a temp dir standing in for
-/// `/Volumes/naspi-1`, so a live read has a real folder to list) in `lan_state`.
+/// `/Volumes/testshare-1`, so a live read has a real folder to list) in `lan_state`.
 pub(super) fn conversation_179_with(lan_root: &str, lan_state: ConnectionState) -> VolumeFacts {
     let share = |id: &str, server: &str, root: &str, state: ConnectionState, stored: bool| VolumeFact {
         id: id.to_string(),
-        name: format!("naspi on {server}"),
+        name: format!("testshare on {server}"),
         kind: VolumeKind::Smb,
         root: root.to_string(),
         live: state != ConnectionState::Saved,
@@ -58,9 +58,9 @@ pub(super) fn conversation_179_with(lan_root: &str, lan_state: ConnectionState) 
             ..IndexSources::none(id)
         },
         share: Some(ShareIdentity::new(
-            Some((NASPOLYA, GuidProof::Authenticated)),
-            "naspi",
-            Some("david"),
+            Some((TESTNAS, GuidProof::Authenticated)),
+            "testshare",
+            Some("test_user_3"),
         )),
     };
     VolumeFacts {
@@ -82,37 +82,37 @@ pub(super) fn conversation_179_with(lan_root: &str, lan_state: ConnectionState) 
             },
             share(
                 TAILSCALE,
-                "100.127.48.122",
-                "/Volumes/naspi",
+                "100.64.0.10",
+                "/Volumes/testshare",
                 ConnectionState::Saved,
                 true,
             ),
-            share(LAN, "naspolya", lan_root, lan_state, false),
+            share(LAN, "testnas", lan_root, lan_state, false),
         ],
         mount_areas: vec!["/Volumes".to_string()],
     }
 }
 
-/// The Tailscale share's drive index as prod holds it: rooted at `/Volumes/naspi`,
-/// its last walk having listed `invoices paid` and its two children.
+/// The Tailscale share's drive index as prod holds it: rooted at `/Volumes/testshare`,
+/// its last walk having listed `invoices` and its two children.
 pub(super) fn tailscale_index_on_disk(data: &Path) {
     use cmdr_index::store::{IndexStore, ROOT_ID};
 
     let db_path = data.join(format!("index-{TAILSCALE}.db"));
     let _store = IndexStore::open(&db_path).expect("open store");
     let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
-    IndexStore::update_meta(&conn, "volume_path", "/Volumes/naspi").expect("meta");
+    IndexStore::update_meta(&conn, "volume_path", "/Volumes/testshare").expect("meta");
     let dir = |parent, name| {
         IndexStore::insert_entry_v2(&conn, parent, name, true, false, None, None, None, None).expect("insert dir")
     };
-    let papers = dir(ROOT_ID, "papers");
-    let company = dir(papers, "Rymdskottkärra AB");
-    let invoices = dir(company, "invoices paid");
+    let papers = dir(ROOT_ID, "documents");
+    let company = dir(papers, "Testföretag AB");
+    let invoices = dir(company, "invoices");
     dir(invoices, "2025");
     IndexStore::insert_entry_v2(
         &conn,
         invoices,
-        "hetzner-2026-09.pdf",
+        "invoice-2026-09.pdf",
         false,
         false,
         Some(4),
@@ -124,12 +124,12 @@ pub(super) fn tailscale_index_on_disk(data: &Path) {
     IndexStore::mark_dirs_listed(&conn, &[ROOT_ID, papers, company, invoices], 1).expect("mark listed");
 }
 
-/// The LAN mount's `invoices paid`, live: a folder and a file.
+/// The LAN mount's `invoices`, live: a folder and a file.
 fn lan_mount() -> TestDir {
-    let mount = TestDir::new("conversation-179-naspi-1");
+    let mount = TestDir::new("conversation-179-testshare-1");
     let invoices = mount.join(INVOICES);
     std::fs::create_dir_all(invoices.join("2025")).expect("dirs");
-    std::fs::write(invoices.join("hetzner-2026-09.pdf"), b"%PDF").expect("file");
+    std::fs::write(invoices.join("invoice-2026-09.pdf"), b"%PDF").expect("file");
     mount
 }
 
@@ -142,7 +142,7 @@ fn list_dir(facts: &VolumeFacts, mount: &Path, volume_id: &str, path: &str) -> V
     };
     let resolved = resolve(facts, &input).expect("a named volume resolves");
     let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
-        "naspi",
+        "testshare",
         mount,
         crate::volume_host::host(),
     ));
@@ -186,13 +186,13 @@ fn child_names(wire: &Value) -> Vec<&str> {
 fn the_bare_guess_under_the_dead_mount_is_a_miss_pointing_at_the_live_share() {
     let input = LocationInput {
         volume_id: None,
-        path: "/Volumes/naspi/papers".to_string(),
+        path: "/Volumes/testshare/documents".to_string(),
     };
-    let miss = resolve(&conversation_179(), &input).expect_err("nothing live is mounted at /Volumes/naspi");
+    let miss = resolve(&conversation_179(), &input).expect_err("nothing live is mounted at /Volumes/testshare");
     let wire: Value = serde_json::to_value(LocationMissResult::from(miss)).expect("serializes");
 
     assert_eq!(wire["miss"], "noVolumeAtPath");
-    assert_eq!(wire["location"]["path"], "/Volumes/naspi/papers");
+    assert_eq!(wire["location"]["path"], "/Volumes/testshare/documents");
     assert!(wire.get("authoritative").is_none() && wire.get("children").is_none());
     let nearby = wire["nearby"].as_array().expect("nearby");
     let lan = nearby
@@ -200,11 +200,11 @@ fn the_bare_guess_under_the_dead_mount_is_a_miss_pointing_at_the_live_share() {
         .find(|n| n["volumeId"] == LAN)
         .expect("the live LAN share is nearby");
     assert_eq!(lan["candidate"]["volumeId"], LAN);
-    assert_eq!(lan["candidate"]["path"], "/Volumes/naspi-1/papers");
+    assert_eq!(lan["candidate"]["path"], "/Volumes/testshare-1/documents");
     assert_eq!(nearby[0]["volumeId"], LAN, "the live share leads");
 }
 
-/// The whole story. `important_folders` hands the model `invoices paid` on the
+/// The whole story. `important_folders` hands the model `invoices` on the
 /// LAN share, `via` the Tailscale store that scored it, and `list_dir` on that
 /// location lists its children from one live read of the share. Asking the
 /// Tailscale id instead is answered the same way: the live share beats the offline
@@ -237,12 +237,8 @@ fn important_folders_hands_over_the_live_share_and_list_dir_reads_it() {
         .as_array()
         .expect("folders")
         .iter()
-        .find(|f| {
-            f["location"]["path"]
-                .as_str()
-                .is_some_and(|p| p.ends_with("invoices paid"))
-        })
-        .expect("invoices paid is ranked");
+        .find(|f| f["location"]["path"].as_str().is_some_and(|p| p.ends_with("invoices")))
+        .expect("invoices is ranked");
     assert_eq!(
         invoices["location"],
         json!({ "volumeId": LAN, "path": format!("{lan_root}/{INVOICES}") })
@@ -259,9 +255,9 @@ fn important_folders_hands_over_the_live_share_and_list_dir_reads_it() {
     assert_eq!(wire["coverage"]["source"], "live");
     assert_eq!(wire["location"], *location);
     assert!(wire.get("via").is_none(), "asked on the LAN share, answered there");
-    assert_eq!(child_names(&wire), ["2025", "hetzner-2026-09.pdf"]);
+    assert_eq!(child_names(&wire), ["2025", "invoice-2026-09.pdf"]);
 
-    let asked_offline = list_dir(&facts, &mount, TAILSCALE, &format!("/Volumes/naspi/{INVOICES}"));
+    let asked_offline = list_dir(&facts, &mount, TAILSCALE, &format!("/Volumes/testshare/{INVOICES}"));
     assert_eq!(
         asked_offline["coverage"]["source"], "live",
         "the live share beats the offline index"
@@ -271,7 +267,7 @@ fn important_folders_hands_over_the_live_share_and_list_dir_reads_it() {
 }
 
 /// With the LAN share disconnected too, the NAS is still answerable: `list_dir`
-/// on the Tailscale share's `volumeId` reads `invoices paid` from the index its
+/// on the Tailscale share's `volumeId` reads `invoices` from the index its
 /// last walk left, honestly dated, before anyone decides whether a connect is
 /// even needed.
 #[test]
@@ -280,8 +276,8 @@ fn with_the_lan_share_gone_the_tailscale_index_lists_invoices_paid_offline() {
     let data = TestDir::new("conversation-179-drive-index");
     let (_index, _installed) = cmdr_index::Index::builder().data_dir(&*data).install_for_test();
     tailscale_index_on_disk(&data);
-    let facts = conversation_179_with("/Volumes/naspi-1", ConnectionState::Saved);
-    let path = format!("/Volumes/naspi/{INVOICES}");
+    let facts = conversation_179_with("/Volumes/testshare-1", ConnectionState::Saved);
+    let path = format!("/Volumes/testshare/{INVOICES}");
 
     let wire = list_dir(&facts, &data, TAILSCALE, &path);
 
@@ -293,7 +289,7 @@ fn with_the_lan_share_gone_the_tailscale_index_lists_invoices_paid_offline() {
         crate::search::format_local_date(TAILSCALE_AS_OF)
     );
     assert_eq!(wire["location"], json!({ "volumeId": TAILSCALE, "path": path }));
-    assert_eq!(child_names(&wire), ["2025", "hetzner-2026-09.pdf"]);
+    assert_eq!(child_names(&wire), ["2025", "invoice-2026-09.pdf"]);
 }
 
 /// Asked on the LAN id while it's disconnected, the offline Tailscale index
@@ -304,14 +300,14 @@ fn asked_on_the_disconnected_lan_share_the_tailscale_index_answers_via() {
     let data = TestDir::new("conversation-179-via-offline");
     let (_index, _installed) = cmdr_index::Index::builder().data_dir(&*data).install_for_test();
     tailscale_index_on_disk(&data);
-    let facts = conversation_179_with("/Volumes/naspi-1", ConnectionState::Saved);
+    let facts = conversation_179_with("/Volumes/testshare-1", ConnectionState::Saved);
 
-    let wire = list_dir(&facts, &data, LAN, &format!("/Volumes/naspi-1/{INVOICES}"));
+    let wire = list_dir(&facts, &data, LAN, &format!("/Volumes/testshare-1/{INVOICES}"));
 
     assert_eq!(wire["coverage"]["source"], "offlineIndex");
     assert_eq!(wire["location"]["volumeId"], TAILSCALE);
     assert_eq!(wire["via"], json!({ "volumeId": LAN }));
-    assert_eq!(child_names(&wire), ["2025", "hetzner-2026-09.pdf"]);
+    assert_eq!(child_names(&wire), ["2025", "invoice-2026-09.pdf"]);
 }
 
 /// Had the Tailscale row's GUID only come from the background probe (whatever
@@ -324,16 +320,16 @@ fn a_probe_filled_tailscale_guid_never_answers_for_the_lan_share() {
     let data = TestDir::new("conversation-179-probe-only");
     let (_index, _installed) = cmdr_index::Index::builder().data_dir(&*data).install_for_test();
     tailscale_index_on_disk(&data);
-    let mut facts = conversation_179_with("/Volumes/naspi-1", ConnectionState::Saved);
+    let mut facts = conversation_179_with("/Volumes/testshare-1", ConnectionState::Saved);
     for v in facts.volumes.iter_mut().filter(|v| v.id == TAILSCALE) {
         v.share = Some(ShareIdentity::new(
-            Some((NASPOLYA, GuidProof::Unauthenticated)),
-            "naspi",
-            Some("david"),
+            Some((TESTNAS, GuidProof::Unauthenticated)),
+            "testshare",
+            Some("test_user_3"),
         ));
     }
 
-    let wire = list_dir(&facts, &data, LAN, &format!("/Volumes/naspi-1/{INVOICES}"));
+    let wire = list_dir(&facts, &data, LAN, &format!("/Volumes/testshare-1/{INVOICES}"));
 
     assert_eq!(wire["miss"], "volumeNotConnected");
     assert_eq!(wire["sameShareAs"], json!([TAILSCALE]));

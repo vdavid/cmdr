@@ -28,38 +28,41 @@ fn report_shape(input: &str) -> String {
 #[test]
 fn unsalted_api_runs_the_report_policy_with_bare_tokens() {
     let cases = [
-        ("/Users/alice/Secret Project/report.pdf", "$HOME/<dir>/<file>.pdf"),
+        ("/Users/test_user_4/Secret Project/report.pdf", "$HOME/<dir>/<file>.pdf"),
         (
-            "smb://ada:secret@nas.local:1445/Finance/Downloads/report.pdf?token=secret#customer",
+            "smb://test_user_1:secret@testnas.local:1445/Finance/Downloads/report.pdf?token=secret#customer",
             "smb://<user>:<credential>@<host>.local:1445/<share>/<dir>/<file>.pdf?<query>=<query>#<fragment>",
         ),
         (
-            r"\\nas.local\Finance\Downloads\report.pdf",
+            r"\\testnas.local\Finance\Downloads\report.pdf",
             r"\\<host>.local\<share>\<dir>\<file>.pdf",
         ),
         (
-            "sftp://ada:secret@files.example.test:2222/home/ada/Client/report.pdf?token=secret#customer",
+            "sftp://test_user_1:secret@files.example.test:2222/home/test_user_1/Client/report.pdf?token=secret#customer",
             "sftp://<user>:<credential>@<host>:2222/<dir>/<dir>/<dir>/<file>.pdf?<query>=<query>#<fragment>",
         ),
         // A URL path may contain spaces, so the prose after it rides along as path segments:
         // over-redacted, never leaked.
         (
-            "https://u@host.example/a then /Users/alice/secret.txt",
+            "https://u@host.example/a then /Users/test_user_4/secret.txt",
             "https://<user>@<host>/<dir>/<dir>/<dir>/<file>.txt",
         ),
         (
-            "webdav://nas.local/dav/ada/report.pdf?owner=ada@example.test#customer",
+            "webdav://testnas.local/dav/test_user_1/report.pdf?owner=test_user_1@example.test#customer",
             "webdav://<host>.local/<dir>/<dir>/<file>.pdf?<query>=<query>#<fragment>",
         ),
         (
-            "https://10.24.8.3/customer/acme/report.json?owner=ada@example.test#customer",
+            "https://10.24.8.3/customer/acme/report.json?owner=test_user_1@example.test#customer",
             "https://<ipv4-private>/<dir>/<dir>/<file>.json?<query>=<query>#<fragment>",
         ),
         (
             r#"host="Client Nimbus" share="Private Vault""#,
             r#"host="<host>" share="<share>""#,
         ),
-        (r#"host="nas.local" user="ada""#, r#"host="<host>.local" user="<user>""#),
+        (
+            r#"host="testnas.local" user="test_user_1""#,
+            r#"host="<host>.local" user="<user>""#,
+        ),
         (
             "IDs smb-nas-private-445-client-0123456789abcdef manual-192-168-40-9-1445",
             "IDs smb-<volume-id> manual-<server-id>-1445",
@@ -77,13 +80,13 @@ fn unsalted_api_runs_the_report_policy_with_bare_tokens() {
 #[test]
 fn a_space_containing_url_never_hides_the_path_after_it() {
     let cases = [
-        "fetched https://u@host.example/My Folder/a.txt then /Users/alice/secret.txt",
-        "fetched sftp://ada@nas.example/Client Nimbus/report.pdf and /Users/alice/Private Plans/b.pdf",
-        "webdav://nas.local/dav/Shared Stuff/x.docx then /Volumes/Alice Backup/notes.md",
+        "fetched https://u@host.example/My Folder/a.txt then /Users/test_user_4/secret.txt",
+        "fetched sftp://test_user_1@nas.example/Client Nimbus/report.pdf and /Users/test_user_4/Private Plans/b.pdf",
+        "webdav://testnas.local/dav/Shared Stuff/x.docx then /Volumes/Test_user_4 Backup/notes.md",
     ];
     for input in cases {
         for out in [r(input), report_shape(input)] {
-            assert!(!out.contains("alice") && !out.contains("Alice"), "{out}");
+            assert!(!out.contains("test_user_4") && !out.contains("Test_user_4"), "{out}");
             assert!(
                 !out.contains("Private") && !out.contains("Nimbus") && !out.contains("Shared"),
                 "{out}"
@@ -115,14 +118,20 @@ fn svelte_error_code_urls_survive_but_only_in_their_exact_shape() {
     }
 
     let redacted = [
-        ("https://svelte.dev/e/Alice", "https://<host>/<dir>/<dir>"),
+        ("https://svelte.dev/e/Test_user_4", "https://<host>/<dir>/<dir>"),
         ("https://svelte.dev/e/code/secret", "https://<host>/<dir>/<dir>/<dir>"),
         (
-            "https://svelte.dev/e/code?owner=ada",
+            "https://svelte.dev/e/code?owner=test_user_1",
             "https://<host>/<dir>/<dir>?<query>=<query>",
         ),
-        ("https://svelte.dev/e/code#ada", "https://<host>/<dir>/<dir>#<fragment>"),
-        ("https://ada@svelte.dev/e/code", "https://<user>@<host>/<dir>/<dir>"),
+        (
+            "https://svelte.dev/e/code#test_user_1",
+            "https://<host>/<dir>/<dir>#<fragment>",
+        ),
+        (
+            "https://test_user_1@svelte.dev/e/code",
+            "https://<user>@<host>/<dir>/<dir>",
+        ),
         ("https://svelte.dev:8443/e/code", "https://<host>:8443/<dir>/<dir>"),
         ("https://svelte.dev.evil.test/e/code", "https://<host>/<dir>/<dir>"),
         ("http://svelte.dev/e/code", "http://<host>/<dir>/<dir>"),
@@ -147,7 +156,7 @@ fn token(output: &str, kind: &str) -> String {
 fn complete_remote_urls_redact_every_identity_but_keep_diagnostic_shape() {
     let cases = [
         (
-            "sftp://alice@files.example.test:2222/home/alice/Client Nimbus/report.final.pdf",
+            "sftp://test_user_4@files.example.test:2222/home/test_user_4/Client Nimbus/report.final.pdf",
             "sftp://<user>@<host>:2222/<dir>/<dir>/<dir>/<file>.pdf",
         ),
         (
@@ -155,7 +164,7 @@ fn complete_remote_urls_redact_every_identity_but_keep_diagnostic_shape() {
             "ssh://<user>:<credential>@[<ipv6-private>]:22/<dir>/<dir>/<file>.gz",
         ),
         (
-            "webdav://ada@nas.local:8443/remote.php/dav/files/ada/Secret%20Plan.docx",
+            "webdav://test_user_1@testnas.local:8443/remote.php/dav/files/test_user_1/Secret%20Plan.docx",
             "webdav://<user>@<host>.local:8443/<dir>/<dir>/<dir>/<dir>/<file>.docx",
         ),
         (
@@ -219,19 +228,19 @@ fn unc_scheme_less_and_malformed_but_recognizable_references_are_safe() {
             r"\\<ipv4-private>\<share>\<dir>\<file>.xlsx",
         ),
         (
-            "fallback //alice:p%40ss@10.0.0.8:445/Finance/plan.pdf",
+            "fallback //test_user_4:p%40ss@10.0.0.8:445/Finance/plan.pdf",
             "fallback //<user>:<credential>@<ipv4-private>:445/<share>/<file>.pdf",
         ),
         (
-            "webdav://alice:secret@nas%ZZ.local:8443/a%ZZ/report.pdf?token=private#customer",
+            "webdav://test_user_4:secret@nas%ZZ.local:8443/a%ZZ/report.pdf?token=private#customer",
             "webdav://<user>:<credential>@<host>.local:8443/<dir>/<file>.pdf?<query>=<query>#<fragment>",
         ),
         (
-            "https://alice:secret@[not-an-ipv6/Client Nimbus/private.txt?token=private#customer",
+            "https://test_user_4:secret@[not-an-ipv6/Client Nimbus/private.txt?token=private#customer",
             "https://<user>:<credential>@[<host>/<dir>/<file>.txt?<query>=<query>#<fragment>",
         ),
         (
-            "sftp://alice@:22/home/alice/private.txt",
+            "sftp://test_user_4@:22/home/test_user_4/private.txt",
             "sftp://<user>@:22/<dir>/<dir>/<file>.txt",
         ),
     ];
@@ -245,9 +254,9 @@ fn unc_scheme_less_and_malformed_but_recognizable_references_are_safe() {
 fn report_context_correlates_remote_entities_across_spellings_and_separates_domains() {
     let context = context();
     let url = context
-        .redact_line("smb://ada:secret@cafe%CC%81-nas.local:445/Re%CC%81gi%20NAS/cafe%CC%81/report.pdf?owner=ada#ada");
+        .redact_line("smb://test_user_1:secret@cafe%CC%81-nas.local:445/Re%CC%81gi%20NAS/cafe%CC%81/report.pdf?owner=test_user_1#test_user_1");
     let host = context.redact_line("café-nas.local");
-    let account = context.redact_line("user=ada");
+    let account = context.redact_line("user=test_user_1");
     let unc = context.redact_line(r"\\café-nas.local\Régi NAS\café\report.pdf");
 
     assert_eq!(token(&url, "host"), token(&host, "host"));
@@ -274,8 +283,11 @@ fn current_name_derived_ids_are_tokenized_only_at_the_diagnostic_boundary() {
     let mtp = mtp_ids::device_id_for(Some("Pixel 8 / Client Nimbus"), 0);
     let cases = [
         (smb_volume_id("nas.private", 445, "Client Share"), "smb-<volume-id>"),
-        (sftp_volume_id("nas.private", 22, "ada"), "sftp-<volume-id>"),
-        (webdav_volume_id("dav.private", 443, "ada"), "webdav-<volume-id>"),
+        (sftp_volume_id("nas.private", 22, "test_user_1"), "sftp-<volume-id>"),
+        (
+            webdav_volume_id("dav.private", 443, "test_user_1"),
+            "webdav-<volume-id>",
+        ),
         (
             s3_volume_id("s3.private", 443, "AKIAKEY", Some("client-photos")),
             "s3-<volume-id>",
@@ -382,7 +394,7 @@ fn debug_escaped_structured_fields_are_consumed_as_complete_values() {
         ("serverId", "server\"id\nnext"),
         ("deviceId", "device\\id\t雪"),
         ("user", "account\"name\nnext\\part\t雪"),
-        ("path", "/Users/alice/Plans/client \"secret\"\nnext\\leaf\t雪"),
+        ("path", "/Users/test_user_4/Plans/client \"secret\"\nnext\\leaf\t雪"),
     ];
 
     for (key, value) in cases {
@@ -447,8 +459,8 @@ fn remote_and_id_lookalikes_remain_unchanged() {
 #[test]
 fn remote_references_and_derived_ids_are_idempotent() {
     let inputs = [
-        "sftp://alice:secret@files.private:2222/home/alice/Client Nimbus/report.pdf",
-        "webdav://alice@nas%ZZ.local:8443/a%ZZ/report.pdf?token=private#customer",
+        "sftp://test_user_4:secret@files.private:2222/home/test_user_4/Client Nimbus/report.pdf",
+        "webdav://test_user_4@nas%ZZ.local:8443/a%ZZ/report.pdf?token=private#customer",
         r"\\files.private\Client Share\Secret Folder\plan.docx",
         "smb-nas-private-445-client-0123456789abcdef",
         "manual-192-168-40-9-1445",
@@ -469,14 +481,14 @@ fn angle_brackets_inside_a_remote_name_never_end_its_reference() {
     let context = context();
     for input in [
         "copy smb://nas/Photos/Secret <draft> Plans/beach.jpg",
-        "open sftp://alice:pw@nas:2222/home/Secret >draft< Plans/beach.jpg: denied",
+        "open sftp://test_user_4:pw@nas:2222/home/Secret >draft< Plans/beach.jpg: denied",
         "get https://nas.example/dav/Secret<draft>Plans/beach.jpg?k=Secret#Plans took 3ms",
         r"copy \\nas\Photos\Secret <draft> Plans\beach.jpg",
         r"open \\nas\Photos\<draft> Secret Plans\beach.jpg, retrying",
         "moving smb://nas/Photos/Secret <draft> Plans -> smb://nas/Backup/Secret <draft> Plans",
     ] {
         for out in [r(input), context.redact_line(input).into_owned()] {
-            for word in ["Secret", "draft", "Plans", "beach", "alice", "nas"] {
+            for word in ["Secret", "draft", "Plans", "beach", "test_user_4", "nas"] {
                 assert!(!out.contains(word), "{word:?} shipped from {input:?}: {out}");
             }
         }

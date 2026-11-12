@@ -233,7 +233,7 @@ async fn a_system_socks_proxy_carries_the_request_and_resolves_the_name() {
 async fn an_environment_socks_proxy_signs_in_with_its_credentials() {
     let (socks, seen) = socks_server().await;
     let client = builder_with(
-        env(&[("ALL_PROXY", &format!("socks5h://ada:p%40ss%20word@{socks}"))]),
+        env(&[("ALL_PROXY", &format!("socks5h://test_user_1:p%40ss%20word@{socks}"))]),
         Arc::new(FixedSystem(Route::Direct)),
     )
     .build()
@@ -248,7 +248,7 @@ async fn an_environment_socks_proxy_signs_in_with_its_credentials() {
     assert_eq!(
         *seen.lock().expect("an unpoisoned test log"),
         [SocksAsk {
-            credentials: Some(("ada".into(), "p@ss word".into())),
+            credentials: Some(("test_user_1".into(), "p@ss word".into())),
             target: "name cmdr.invalid:80".into(),
         }]
     );

@@ -44,38 +44,38 @@ async fn the_credential_trio_agrees_on_where_a_secret_lives() {
     let url = "https://credential-trio.webdav.test/dav/";
 
     assert!(
-        !has_webdav_credentials(url.to_string(), "ada".to_string()).await,
+        !has_webdav_credentials(url.to_string(), "test_user_1".to_string()).await,
         "nothing is stored before anything is saved"
     );
 
-    save_webdav_credentials(url.to_string(), "ada".to_string(), "pa55".to_string())
+    save_webdav_credentials(url.to_string(), "test_user_1".to_string(), "pa55".to_string())
         .await
         .expect("the test store always accepts");
-    assert!(has_webdav_credentials(url.to_string(), "ada".to_string()).await);
+    assert!(has_webdav_credentials(url.to_string(), "test_user_1".to_string()).await);
 
     // ❗ Another account on the same server is a different entry, not a shared
     // one: a reconnect that retried the wrong account's secret is how an account
     // gets locked.
-    assert!(!has_webdav_credentials(url.to_string(), "grace".to_string()).await);
+    assert!(!has_webdav_credentials(url.to_string(), "test_user_2".to_string()).await);
     // And so is the same account on another port.
     assert!(
         !has_webdav_credentials(
             "https://credential-trio.webdav.test:8443/dav/".to_string(),
-            "ada".to_string()
+            "test_user_1".to_string()
         )
         .await
     );
     // A URL that isn't one has nothing stored and refuses to store anything.
-    assert!(!has_webdav_credentials("nope".to_string(), "ada".to_string()).await);
+    assert!(!has_webdav_credentials("nope".to_string(), "test_user_1".to_string()).await);
     assert!(matches!(
-        save_webdav_credentials("nope".to_string(), "ada".to_string(), "pa55".to_string()).await,
+        save_webdav_credentials("nope".to_string(), "test_user_1".to_string(), "pa55".to_string()).await,
         Err(KeychainError::Other(_))
     ));
 
-    delete_webdav_credentials(url.to_string(), "ada".to_string())
+    delete_webdav_credentials(url.to_string(), "test_user_1".to_string())
         .await
         .expect("the test store always accepts");
-    assert!(!has_webdav_credentials(url.to_string(), "ada".to_string()).await);
+    assert!(!has_webdav_credentials(url.to_string(), "test_user_1".to_string()).await);
 }
 
 /// The known-servers commands round-trip through the same store the connect path
@@ -89,7 +89,7 @@ async fn the_known_servers_trio_round_trips() {
     let url = "https://known-servers-trio.webdav.test/dav";
     let saved = webdav_volume_wiring::save_without_connecting(KnownWebdavServer {
         url: url.to_string(),
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         display_name: "Trio".to_string(),
         remote_root: "/".to_string(),
         start_folder: None,
@@ -116,7 +116,7 @@ async fn the_known_servers_trio_round_trips() {
         "❗ the switch is the user's, so editing a server has to be able to turn it off"
     );
 
-    assert!(webdav_known_servers::forget(url, "ada"));
+    assert!(webdav_known_servers::forget(url, "test_user_1"));
     assert!(
         !get_known_webdav_servers()
             .iter()

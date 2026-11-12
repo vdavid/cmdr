@@ -22,19 +22,19 @@ function answering(outcome: SignInAttemptOutcome) {
 
 const endpoint = {
   protocol: 'sftp' as const,
-  displayName: 'Naspolya',
-  address: 'ada@nas.local:22',
-  host: 'nas.local',
-  username: 'ada',
+  displayName: 'Testnas',
+  address: 'test_user_1@testnas.local:22',
+  host: 'testnas.local',
+  username: 'test_user_1',
 }
 
 /** The same NAS over WebDAV, with the self-signed certificate it ships with. */
 const webdavEndpoint = {
   protocol: 'webdav' as const,
-  displayName: 'Naspolya',
-  address: 'https://nas.local:5006/',
-  host: 'nas.local',
-  username: 'ada',
+  displayName: 'Testnas',
+  address: 'https://testnas.local:5006/',
+  host: 'testnas.local',
+  username: 'test_user_1',
 }
 
 export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined> = {
@@ -51,7 +51,7 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
   'add-local-network': {
     request: {
       mode: 'add',
-      prefill: 'sftp://ada@nas.local',
+      prefill: 'sftp://test_user_1@testnas.local',
       attempt: answering({ kind: 'refused', refusal: 'unreachable', hint: 'local_network_permission' }),
     },
   },
@@ -90,7 +90,7 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
     request: {
       mode: 'sign-in',
       remembered: true,
-      endpoint: { ...endpoint, protocol: 'smb', displayName: 'media', address: 'naspolya/media' },
+      endpoint: { ...endpoint, protocol: 'smb', displayName: 'media', address: 'testnas/media' },
       shape: { kind: 'username_password', guestAllowed: true },
       attempt: answering({ kind: 'refused', refusal: 'authentication_rejected' }),
     },
@@ -104,7 +104,7 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
       trust: {
         subject: 'host_key',
         prompt: {
-          host: 'nas.local',
+          host: 'testnas.local',
           port: 22,
           algorithm: 'ssh-ed25519',
           fingerprint: 'SHA256:2Bp0aJ8h5rXKk1vN7qTt3fYw9cLmQzE4sVuG6dRhPxA',
@@ -123,7 +123,7 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
       trust: {
         subject: 'host_key',
         prompt: {
-          host: 'nas.local',
+          host: 'testnas.local',
           port: 22,
           algorithm: 'ssh-ed25519',
           fingerprint: 'SHA256:9Xq4mE1cRt7vBn2sKw5jHy8dZpLu3aFgQoI6tNbVxYc',
@@ -142,7 +142,7 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
       trust: {
         subject: 'certificate',
         prompt: {
-          host: 'nas.local',
+          host: 'testnas.local',
           port: 5006,
           fingerprint:
             'CD:6F:DC:7C:4B:21:C9:B5:28:58:69:B3:4E:5C:68:B8:55:26:2C:0A:5C:06:7A:8A:2D:BF:BD:FA:AE:C2:9B:E7',
@@ -161,7 +161,7 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
       trust: {
         subject: 'certificate',
         prompt: {
-          host: 'nas.local',
+          host: 'testnas.local',
           port: 5006,
           fingerprint:
             '3A:91:0E:F7:42:B8:6C:D5:19:A4:7E:23:C0:58:9F:B6:E1:04:7D:2A:93:C8:5B:F0:16:4E:A7:D9:38:62:BC:05',
@@ -177,10 +177,10 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
       server: {
         id: 'sftp-gallery-fixture',
         protocol: 'sftp',
-        displayName: 'Naspolya',
+        displayName: 'Testnas',
         nameSource: 'user',
-        address: 'nas.local:22',
-        username: 'ada',
+        address: 'testnas.local:22',
+        username: 'test_user_1',
         pinned: true,
         lastConnectedAt: '2026-09-06T09:12:00Z',
         autoReconnect: true,

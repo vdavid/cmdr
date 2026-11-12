@@ -151,8 +151,8 @@ describe('a restored server tab', () => {
       tabs: [
         {
           id: 'tab-1',
-          path: 'sftp://ada@nas.local:22/srv/data/photos',
-          volumeId: 'sftp-nas-local-22-ada',
+          path: 'sftp://test_user_1@testnas.local:22/srv/data/photos',
+          volumeId: 'sftp-nas-local-22-test_user_1',
           sortBy: 'name',
           sortOrder: 'ascending',
           viewMode: 'full',
@@ -161,8 +161,8 @@ describe('a restored server tab', () => {
       ],
     })
     const paneTabs = await loadPaneTabs('left', neverExists)
-    expect(paneTabs.tabs[0].path).toBe('sftp://ada@nas.local:22/srv/data/photos')
-    expect(paneTabs.tabs[0].volumeId).toBe('sftp-nas-local-22-ada')
+    expect(paneTabs.tabs[0].path).toBe('sftp://test_user_1@testnas.local:22/srv/data/photos')
+    expect(paneTabs.tabs[0].volumeId).toBe('sftp-nas-local-22-test_user_1')
     expect(neverExists).not.toHaveBeenCalled()
   })
 
@@ -187,12 +187,12 @@ describe('a restored server tab', () => {
   })
 
   it('leaves both pane paths on their servers too', async () => {
-    disk.set('leftVolumeId', 'sftp-nas-local-22-ada')
-    disk.set('leftPath', 'sftp://ada@nas.local:22/srv/data')
+    disk.set('leftVolumeId', 'sftp-nas-local-22-test_user_1')
+    disk.set('leftPath', 'sftp://test_user_1@testnas.local:22/srv/data')
     disk.set('rightVolumeId', 'root')
-    disk.set('rightPath', '/Users/ada')
+    disk.set('rightPath', '/Users/test_user_1')
     const status = await loadAppStatus(neverExists)
-    expect(status.leftPath).toBe('sftp://ada@nas.local:22/srv/data')
+    expect(status.leftPath).toBe('sftp://test_user_1@testnas.local:22/srv/data')
     expect(status.rightPath).toBe('~')
   })
 })

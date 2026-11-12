@@ -33,7 +33,7 @@ pub fn enrich_from_volume_registry(volumes: &mut [LocationInfo]) {
 /// - A GVFS share folder (`/run/user/<uid>/gvfs/smb-share:…`) answers from its name
 ///   ([`parse_gvfs_smb_dirname`]), with no syscall, so a dead share can't block it.
 /// - A CIFS mount answers from its `/proc/mounts` device field, like
-///   `//192.168.1.111/share` or `//user@192.168.1.111/share`.
+///   `//192.168.50.10/share` or `//user@192.168.50.10/share`.
 ///
 /// Returns `None` if the path is neither, or parsing fails. A folder inside a share is
 /// not the mount.
@@ -114,8 +114,8 @@ pub(crate) struct GvfsSmbShare {
 ///
 /// GVFS names the folder after the mount spec (`g_mount_spec_to_string`): the keys
 /// sorted, each value URI-escaped with UTF-8 kept, and `port`, `user`, and `domain`
-/// present only when the mount URL carried them. So `smb://alice@nas:1445/photos`
-/// lands as `smb-share:port=1445,server=nas,share=photos,user=alice` (verified on
+/// present only when the mount URL carried them. So `smb://test_user_4@nas:1445/photos`
+/// lands as `smb-share:port=1445,server=nas,share=photos,user=test_user_4` (verified on
 /// gvfs 1.60 in the `cmdr-e2e` image, `gio mount` + `ls`, 2026-10-10). GVFS lowercases
 /// the server and share. Returns `None` for non-SMB entries and malformed names.
 pub(crate) fn parse_gvfs_smb_dirname(dirname: &str) -> Option<GvfsSmbShare> {
@@ -199,7 +199,7 @@ mod enrichment_tests {
         let mut locations = vec![LocationInfo {
             id: id.to_string(),
             name: "photos".to_string(),
-            path: "sftp://ada@nas:22/srv".to_string(),
+            path: "sftp://test_user_1@nas:22/srv".to_string(),
             category: LocationCategory::Network,
             icon: None,
             is_ejectable: false,
@@ -248,14 +248,15 @@ mod tests {
 
     #[test]
     fn test_parse_gvfs_smb_dirname_basic() {
-        let result = parse_gvfs_smb_dirname("smb-share:server=192.168.1.150,share=pihdd");
-        assert_eq!(result, gvfs("192.168.1.150", "pihdd", 445, None));
+        let result = parse_gvfs_smb_dirname("smb-share:server=192.168.50.30,share=testshare2");
+        assert_eq!(result, gvfs("192.168.50.30", "testshare2", 445, None));
     }
 
     #[test]
     fn test_parse_gvfs_smb_dirname_with_extra_params() {
-        let result = parse_gvfs_smb_dirname("smb-share:server=mynas.local,share=photos,user=alice,domain=WORKGROUP");
-        assert_eq!(result, gvfs("mynas.local", "photos", 445, Some("alice")));
+        let result =
+            parse_gvfs_smb_dirname("smb-share:server=mynas.local,share=photos,user=test_user_4,domain=WORKGROUP");
+        assert_eq!(result, gvfs("mynas.local", "photos", 445, Some("test_user_4")));
     }
 
     /// The shape `gio mount smb://testuser@localhost:11481/private` leaves: keys sorted,
@@ -289,8 +290,11 @@ mod tests {
         assert_eq!(gvfs_share_root("/run/user/1000/gvfs"), None);
         assert_eq!(gvfs_share_root("/run/user/1000/gvfs/dav+sd:host=example.com/x"), None);
         assert_eq!(gvfs_share_root("/run/user/1000/gvfs/smb-share:server=only"), None);
-        assert_eq!(gvfs_share_root("/home/ada/gvfs/smb-share:server=a,share=b"), None);
-        assert_eq!(gvfs_share_root("/home/ada/docs"), None);
+        assert_eq!(
+            gvfs_share_root("/home/test_user_1/gvfs/smb-share:server=a,share=b"),
+            None
+        );
+        assert_eq!(gvfs_share_root("/home/test_user_1/docs"), None);
     }
 
     /// GVFS writes the folder name with `g_mount_spec_to_string`, which URI-escapes
@@ -334,9 +338,9 @@ mod tests {
 
     #[test]
     fn parses_a_plain_share_mount() {
-        let info = parse_smb_mount_source("//192.168.1.111/naspi").expect("a well-formed source");
-        assert_eq!(info.server, "192.168.1.111");
-        assert_eq!(info.share, "naspi");
+        let info = parse_smb_mount_source("//192.168.50.10/testshare").expect("a well-formed source");
+        assert_eq!(info.server, "192.168.50.10");
+        assert_eq!(info.share, "testshare");
         assert_eq!(info.subpath, None);
         assert_eq!(info.port, 445);
     }
@@ -347,11 +351,12 @@ mod tests {
     /// (`volumes/platform/macos/smb.rs`); keeping the two parsers in step is the point.
     #[test]
     fn a_subdirectory_mount_keeps_only_the_first_segment_as_the_share() {
-        let info = parse_smb_mount_source("//alice@nas.local/media/photos/2026").expect("a well-formed source");
-        assert_eq!(info.server, "nas.local");
+        let info =
+            parse_smb_mount_source("//test_user_4@testnas.local/media/photos/2026").expect("a well-formed source");
+        assert_eq!(info.server, "testnas.local");
         assert_eq!(info.share, "media");
         assert_eq!(info.subpath.as_deref(), Some("photos/2026"));
-        assert_eq!(info.username.as_deref(), Some("alice"));
+        assert_eq!(info.username.as_deref(), Some("test_user_4"));
     }
 
     #[test]

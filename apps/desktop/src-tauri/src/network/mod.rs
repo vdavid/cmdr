@@ -238,7 +238,7 @@ pub(crate) fn service_name_to_id(name: &str) -> String {
 }
 
 /// Converts a service name to a hostname that can be resolved.
-/// Service names like "David's MacBook" become "davids-macbook.local".
+/// Service names like "Tester's MacBook" become "testers-macbook.local".
 pub fn service_name_to_hostname(name: &str) -> String {
     let cleaned: String = name
         .chars()
@@ -304,7 +304,7 @@ mod tests {
 
     #[test]
     fn test_service_name_to_id() {
-        assert_eq!(service_name_to_id("David's MacBook"), "davidsmacbook");
+        assert_eq!(service_name_to_id("Tester's MacBook"), "testersmacbook");
         assert_eq!(service_name_to_id("NAS-Server"), "nas-server");
         assert_eq!(service_name_to_id("my_server_1"), "my_server_1");
     }
@@ -349,7 +349,7 @@ mod tests {
         assert_eq!(service_name_to_hostname("MacBook"), "macbook.local");
 
         // With spaces and apostrophe
-        assert_eq!(service_name_to_hostname("David's MacBook"), "david-s-macbook.local");
+        assert_eq!(service_name_to_hostname("Tester's MacBook"), "tester-s-macbook.local");
 
         // Already hyphenated
         assert_eq!(service_name_to_hostname("NAS-Server"), "nas-server.local");

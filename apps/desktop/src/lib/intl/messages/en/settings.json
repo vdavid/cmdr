@@ -985,7 +985,7 @@
   "@settings.mediaIndex.networkVolumes.optInLabel": {
     "description": "Accessible label for the on/off switch that opts a network drive into background image indexing.",
     "placeholders": {
-      "name": "The network drive’s name, like \"naspi\"."
+      "name": "The network drive’s name, like \"testshare\"."
     }
   },
   "settings.mediaIndex.networkVolumes.optInHelp": "Cmdr reads the text inside these photos so you can search it. It runs on your Mac, and the photos never leave your network.",
@@ -1004,7 +1004,7 @@
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
     "description": "Accessible label for the “Always index this drive” switch (settings.mediaIndex.networkVolumes.alwaysLabel): it contains that visible label word for word, then the drive's name, so a voice-control user can say what they see.",
     "placeholders": {
-      "name": "The network drive’s name, like \"naspi\"."
+      "name": "The network drive’s name, like \"testshare\"."
     }
   },
   "settings.mediaIndex.networkVolumes.paused": "Paused, resumes when this drive reconnects",
@@ -4106,7 +4106,7 @@
   "@settings.mediaIndex.chosenFolders.removeAria": {
     "description": "Accessible label for the per-row remove button, so screen-reader users hear which folder the button removes.",
     "placeholders": {
-      "folder": "the folder's absolute path, like /Users/dave/Photos"
+      "folder": "the folder's absolute path, like /Users/test_user_10/Photos"
     }
   },
   "settings.window.title": "Settings",
@@ -4150,7 +4150,7 @@
   "@settings.servers.trustedCertificates.confirm": {
     "description": "Body of that confirmation: what changes if they go ahead. States a consequence rather than warning; nothing is lost. \"Cmdr\" is the app name; keep it.",
     "placeholders": {
-      "host": "the server’s hostname or address, like \"nas.local\""
+      "host": "the server’s hostname or address, like \"testnas.local\""
     }
   },
   "settings.servers.trustedHostKeys.description": "Cmdr asks before it trusts a server’s key the first time you connect, and remembers your answer here. Saved servers live in the Servers list, not on this page.",
@@ -4177,7 +4177,7 @@
   "@settings.servers.trustedHostKeys.confirm": {
     "description": "Body of that confirmation: what changes if they go ahead. States a consequence rather than warning; nothing is lost. \"Cmdr\" is the app name; keep it.",
     "placeholders": {
-      "host": "the server’s address, as the user typed it, for example nas.local"
+      "host": "the server’s address, as the user typed it, for example testnas.local"
     }
   },
   "settings.adb.status.label": "Status",

@@ -422,7 +422,7 @@ async fn the_agent_reads_the_logs_through_use_tool() {
     crate::logging::set_log_dir(dir.to_path_buf());
     std::fs::write(
         dir.join("cmdr.log"),
-        "2026-11-02T08:00:00.000+01:00 WARN listing /Users/dorka/plan.pdf failed\n",
+        "2026-11-02T08:00:00.000+01:00 WARN listing /Users/test_user_8/plan.pdf failed\n",
     )
     .expect("write the log");
 
@@ -430,7 +430,7 @@ async fn the_agent_reads_the_logs_through_use_tool() {
         let answer = FakeFrontend::new().call(call.clone(), TurnOrigin::Text).await;
         let text = answer["text"].as_str().unwrap_or_else(|| panic!("{call:?}: {answer}"));
         assert!(text.contains("WARN listing"), "{text}");
-        assert!(!text.contains("dorka"), "{text}");
+        assert!(!text.contains("test_user_8"), "{text}");
     }
 }
 

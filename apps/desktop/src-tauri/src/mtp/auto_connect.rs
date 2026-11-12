@@ -475,7 +475,7 @@ mod tests {
             product_id: 0x4ee1,
             manufacturer: Some("Google".to_string()),
             product: Some("Pixel 9 Pro XL".to_string()),
-            serial_number: Some("46061FDAS000A4".to_string()),
+            serial_number: Some("TESTSERIAL0001".to_string()),
             usb_speed: None,
         }
     }

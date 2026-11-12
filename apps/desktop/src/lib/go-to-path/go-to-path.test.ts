@@ -155,8 +155,8 @@ describe('goToPath handler', () => {
 
   describe('a pasted server address', () => {
     it('navigates to a saved place, and ❌ never asks the local resolver', async () => {
-      const path = 'sftp://ada@nas.local:22/srv/data'
-      readSchemeInputMock.mockResolvedValue({ kind: 'place', path, label: 'Naspolya' })
+      const path = 'sftp://test_user_1@testnas.local:22/srv/data'
+      readSchemeInputMock.mockResolvedValue({ kind: 'place', path, label: 'Testnas' })
       actOnSchemeInputMock.mockResolvedValue({ kind: 'directory', path })
 
       const outcome = await goToPath(makeExplorerStub(), path)
@@ -192,10 +192,10 @@ describe('goToPath handler', () => {
     })
 
     it('hands an unsaved address to the sheet, and navigates nowhere', async () => {
-      readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'smb://naspolya' })
+      readSchemeInputMock.mockResolvedValue({ kind: 'add', address: 'smb://testnas' })
       actOnSchemeInputMock.mockResolvedValue({ kind: 'handed_off' })
 
-      const outcome = await goToPath(makeExplorerStub(), 'smb://naspolya')
+      const outcome = await goToPath(makeExplorerStub(), 'smb://testnas')
 
       expect(outcome).toEqual({ kind: 'handed_off' })
       expect(navigateToDirMock).not.toHaveBeenCalled()
@@ -273,8 +273,8 @@ describe('goToPath handler', () => {
     })
 
     it('a saved place', async () => {
-      const path = 'sftp://ada@nas.local:22/srv/data'
-      readSchemeInputMock.mockResolvedValue({ kind: 'place', path, label: 'Naspolya' })
+      const path = 'sftp://test_user_1@testnas.local:22/srv/data'
+      readSchemeInputMock.mockResolvedValue({ kind: 'place', path, label: 'Testnas' })
       actOnSchemeInputMock.mockResolvedValue({ kind: 'directory', path })
       navigateToDirMock.mockResolvedValue(false)
       await goToPath(makeExplorerStub(), path)

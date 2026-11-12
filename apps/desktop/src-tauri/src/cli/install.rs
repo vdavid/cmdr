@@ -470,7 +470,7 @@ mod tests {
         // A link made from a copy that has since moved or been deleted is still ours to remove.
         let host = FakeHost::new().with_link(
             "/usr/local/bin/cmdr",
-            "/Users/jane/Downloads/Cmdr.app/Contents/Resources/bin/cmdr",
+            "/Users/test_user_12/Downloads/Cmdr.app/Contents/Resources/bin/cmdr",
         );
         assert_eq!(installer(host).status().state, CliCommandState::Installed);
     }

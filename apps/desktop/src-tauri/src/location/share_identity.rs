@@ -10,7 +10,7 @@ use crate::network::server_guid::{GuidProof, ServerGuid};
 pub(crate) struct ShareIdentity {
     /// `None` until a session or the probe learned it; with how it was learned.
     server_guid: Option<(ServerGuid, GuidProof)>,
-    /// Case- and NFC-folded, so `naspi` and `NASPI` are one share.
+    /// Case- and NFC-folded, so `testshare` and `TESTSHARE` are one share.
     share_name: String,
     /// The account the share is opened as, folded; `None` for a guest.
     username: Option<String>,

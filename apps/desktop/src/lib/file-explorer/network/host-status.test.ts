@@ -40,8 +40,8 @@ vi.mock('#lib/intl/messages.svelte.js', () => ({
 
 const host = (over: Partial<NetworkHost> = {}): NetworkHost => ({
   id: 'host-1',
-  name: 'Naspolya',
-  hostname: 'nas.local',
+  name: 'Testnas',
+  hostname: 'testnas.local',
   port: 445,
   ...over,
 })

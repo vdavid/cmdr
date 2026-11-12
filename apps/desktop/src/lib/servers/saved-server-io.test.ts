@@ -27,7 +27,7 @@ const server = (protocol: SavedServer['protocol'], address: string): SavedServer
   displayName: 'x',
   nameSource: 'fallback',
   address,
-  username: 'ada',
+  username: 'test_user_1',
   pinned: false,
   lastConnectedAt: null,
   autoReconnect: true,
@@ -47,7 +47,15 @@ beforeEach(() => {
 describe('savedEditForm', () => {
   it('matches SFTP and WebDAV on the published address and account', async () => {
     m.getKnownSftpServers.mockResolvedValue([
-      { host: 'nas', port: 22, username: 'ada', displayName: '', remoteRoot: '/', autoReconnect: true, useAgent: true },
+      {
+        host: 'nas',
+        port: 22,
+        username: 'test_user_1',
+        displayName: '',
+        remoteRoot: '/',
+        autoReconnect: true,
+        useAgent: true,
+      },
     ])
     expect((await savedEditForm(server('sftp', 'nas:22'), 'id'))?.protocol).toBe('sftp')
     m.getKnownWebdavServers.mockResolvedValue([])
@@ -79,7 +87,7 @@ describe('saveTargetSecret', () => {
         protocol: 'sftp',
         host: 'nas',
         port: 22,
-        username: 'ada',
+        username: 'test_user_1',
         remoteRoot: '/',
         startFolder: null,
         keyFile: null,
@@ -88,7 +96,7 @@ describe('saveTargetSecret', () => {
       's',
     )
     await saveTargetSecret(
-      { ...base, protocol: 'webdav', url: 'https://dav/', username: 'ada', remoteRoot: '/', startFolder: null },
+      { ...base, protocol: 'webdav', url: 'https://dav/', username: 'test_user_1', remoteRoot: '/', startFolder: null },
       's',
     )
     const s3: ServerTarget = {
@@ -99,8 +107,8 @@ describe('saveTargetSecret', () => {
       bucket: null,
     }
     await saveTargetSecret(s3, 's')
-    expect(m.saveSftpCredentials).toHaveBeenCalledWith('nas', 22, 'ada', 's')
-    expect(m.saveWebdavCredentials).toHaveBeenCalledWith('https://dav/', 'ada', 's')
+    expect(m.saveSftpCredentials).toHaveBeenCalledWith('nas', 22, 'test_user_1', 's')
+    expect(m.saveWebdavCredentials).toHaveBeenCalledWith('https://dav/', 'test_user_1', 's')
     expect(m.saveS3Credentials).toHaveBeenCalledWith({ kind: 'aws', region: 'eu-west-1' }, 'AKIA', 's')
   })
 })

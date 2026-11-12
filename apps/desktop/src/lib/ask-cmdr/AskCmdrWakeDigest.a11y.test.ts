@@ -20,7 +20,7 @@ function mountDigest(folders: WakeDigestFolderView[], rollups: WakeDigestRollupV
 }
 
 const downloads: WakeDigestFolderView = {
-  folder: '/Users/dana/Downloads',
+  folder: '/Users/test_user_13/Downloads',
   created: 4,
   modified: 0,
   removed: 1,
@@ -35,7 +35,7 @@ describe('AskCmdrWakeDigest a11y', () => {
   })
 
   it('the expanded block, rollup line included, has no a11y violations', async () => {
-    const target = mountDigest([downloads], [{ ancestor: '/Users/dana/Projects', folders: 7, changes: 40 }])
+    const target = mountDigest([downloads], [{ ancestor: '/Users/test_user_13/Projects', folders: 7, changes: 40 }])
     await tick()
     const toggle = target.querySelector<HTMLButtonElement>('.digest-toggle')
     if (toggle === null) throw new Error('expected a .digest-toggle button')

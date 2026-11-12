@@ -194,7 +194,7 @@ pub struct VolumeUnmounted {
 /// [`RootChangeKind`]: saving an edit to a CONNECTED place, or a mounted drive
 /// being renamed.
 ///
-/// Every path is an APP path (`sftp://ada@nas.local:22/srv/data`, `/Volumes/New`),
+/// Every path is an APP path (`sftp://test_user_1@testnas.local:22/srv/data`, `/Volumes/New`),
 /// and a landing is where opening the place lands: its start folder, else its root.
 /// Emitted only when the root or the landing actually moved. What a pane does with
 /// it: `network/DETAILS.md` § "Editing a connected place".
@@ -240,7 +240,7 @@ pub enum RootChangeKind {
 #[serde(rename_all = "camelCase")]
 pub struct ServerPlaceMoved {
     /// The prefix every app path on these places carried until the move
-    /// (`sftp://ada@nas.local:22`).
+    /// (`sftp://test_user_1@testnas.local:22`).
     pub old_prefix: String,
     /// The prefix they carry now.
     pub new_prefix: String,

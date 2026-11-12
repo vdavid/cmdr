@@ -92,7 +92,7 @@ async fn move_host_past(
     let mut moving = connect_wiring::start_move().await;
     let from_name = smb_server(host.server.host(), host.server.port());
     let to_name = smb_server(to.host(), to.port());
-    // ❗ One key for both spellings (`nas.local` → `nas`) is one Keychain entry: copying
+    // ❗ One key for both spellings (`testnas.local` → `nas`) is one Keychain entry: copying
     // it onto itself and deleting the "old" one would delete the password.
     let moves_secret = credential_key(&from_name) != credential_key(&to_name);
     let share_names: Vec<String> = shares.iter().map(|row| row.share_name.clone()).collect();

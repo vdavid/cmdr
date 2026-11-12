@@ -397,7 +397,7 @@ that file (never a test's temp path), since the mount-table volume list has no `
 Finder's Get Info still shows the address.
 
 "Different server" is an identity comparison (`server_identity::same_machine`), never a string compare: `statfs`
-may report the existing mount as `Naspolya._smb._tcp.local` while we mount by `192.168.1.111`, and a string mismatch
+may report the existing mount as `Testnas._smb._tcp.local` while we mount by `192.168.50.10`, and a string mismatch
 would treat one NAS as two, force a second mount with `ForceNewSession`, and break session reuse. For the same reason,
 `mount_share_sync` returns early with `already_mounted: true` when `find_mount_path_for_share` finds the same
 server+share+port already mounted, skipping NetFS entirely.
@@ -703,7 +703,7 @@ The alternative is what this used to be: a command returning `HashMap<server_key
 which puts the KEY in the IPC contract. The caller then has to rebuild that key to read its own answer, so the rule
 exists twice, in two languages, and only one of them is the real one. It had already drifted. Rust keyed on
 `server_name.to_lowercase()` while the frontend looked up `host.name.toLowerCase()`, and neither is
-`credential_key`, so a server saved as `Naspolya` was invisible to a form opened on `Naspolya._smb._tcp.local`, which
+`credential_key`, so a server saved as `Testnas` was invisible to a form opened on `Testnas._smb._tcp.local`, which
 is exactly the case a hint exists for. The failure is silent (no pre-fill, no error), which is why it sat there.
 
 Keying on [`server_identity::credential_key`] is what pairs the name forms, and it is deliberately the SAME identity the
@@ -962,13 +962,13 @@ it identically. A NAS whose shares all remount at login would raise one notice p
 silence it replaces.
 
 **The ledger asks `server_identity::same_machine`, not a string key.** `statfs` echoes back whichever name form each
-mount used, so one NAS arrives as `192.168.1.111` on one mount and `Naspolya._smb._tcp.local` on the next. That's also
+mount used, so one NAS arrives as `192.168.50.10` on one mount and `Testnas._smb._tcp.local` on the next. That's also
 why the ledger is a `Vec` rather than a `HashSet`: identity here is an equivalence relation over the live mDNS state,
 not a value to hash. Its one weak spot is the same one `same_machine` documents: before discovery warms, an IP and a
 name look like two servers, so the worst case is two notices rather than one, never a missed one.
 
 **An E2E run never gets here at all.** The notice's one trigger is the auto-upgrade of a mount the app didn't make, and
-under E2E every such mount is the developer's own, on this machine reliably `/Volumes/naspi`. So the startup adopter
+under E2E every such mount is the developer's own, on this machine reliably `/Volumes/testshare`. So the startup adopter
 returns early (`test_mode::may_adopt_preexisting_network_mounts`, checked in
 `file_system::upgrade_existing_smb_mounts` BEFORE the scan), and no E2E run waits on mDNS for a real NAS, reaches for
 its Keychain entry, opens a session to it, or raises a toast about it that then fails whichever spec is running. The
@@ -1020,8 +1020,8 @@ servers hub. Absence means on, so a
 without an `AppHandle` (the path is stashed at load), because "Connect directly" records consent from code the MCP
 executor calls too.
 
-**Matched by `server_identity::same_machine`, never a key.** `statfs` spells one NAS `192.168.1.111` on one mount and
-`Naspolya._smb._tcp.local` on the next, and a choice the other spelling can't see looks like the switch resetting
+**Matched by `server_identity::same_machine`, never a key.** `statfs` spells one NAS `192.168.50.10` on one mount and
+`Testnas._smb._tcp.local` on the next, and a choice the other spelling can't see looks like the switch resetting
 itself. Setting it clears every entry naming the share first, so one share keeps one entry. The auto path passes both
 the `statfs` name and the address it resolved, so discovery that has just resolved the name is what pairs them.
 
@@ -1290,7 +1290,7 @@ publishes `name_source: fallback` for an unnamed account so the frontend never d
 `connect_and_register` (the name a live volume is built with).
 
 ❗ **A label that looks exactly like the address sends a person to edit the wrong field.** Unnamed servers were saved
-with the whole typed address as their name (`sftp://david@192.168.1.111:22/share/ZFS18_DATA/naspi`), which left the
+with the whole typed address as their name (`sftp://test_user_3@192.168.50.10:22/share/ZFS1_DATA/testshare`), which left the
 edit sheet's name as its only URL-shaped field, and a root got widened through the name. So each store's load runs
 `clear_address_shaped_names`, which unnames an entry whose name `saved_server_fields::spells_own_address` reads as that
 entry's OWN address, and writes the file back only when one changed. Conservative, because a match erases a name:
@@ -1472,9 +1472,9 @@ credential's shape (`user_empty`, `user_domain=none|backslash|at`, `password_emp
 - **NetFS error 17 (EEXIST) is success** (macOS): the share is already mounted, so `already_mounted: true`, once `statfs` finds that mount (§ "A reported mount counts once it's there").
 - **mDNS service type must include `.local.`**: `mdns-sd` requires full form `"_smb._tcp.local."` (trailing dot). Without it, browse() fails silently.
 - **`mdns-sd` 0.21.5 is the floor**: older releases retry a failed IPv4 multicast join every 5 s, forever, on Macs whose VM or container runtime (OrbStack, Docker, UTM) brings `bridge1NN` interfaces up and down. The join comes back `AddrInUse`, the interface never got recorded, and every IP check retried it: 9,322 retries and 29 MB of logs from one `bridge102` in a 39-hour run. 0.21.5 treats `AddrInUse` as already joined and keeps a shared membership when one interface goes away (keepsimple1/mdns-sd#513). Windows reports a repeated join as `WSAEINVAL`, which 0.21.5 still retries (verified on 0.21.5, OrbStack network churn A/B and upstream CI, 2026-10-01).
-- **Account name is keyed by server identity, not the raw string**: `make_account_name` runs the server through `server_identity::credential_key` (lowercase + strip the mDNS service suffix / `.local` down to the bare instance name), so `Naspolya`, `naspolya.local`, and `Naspolya._smb._tcp.local` all key the same entry. Without this the frontend saved under the mDNS instance name while the OS-mount upgrade path looked up by the `statfs` service name, so a just-saved password was never found on the next connect (the picker kept showing the `os_mount` dot and re-prompted). IP literals have no bare form and pass through unchanged.
-- **A port off 445 is part of the key** (`smb://localhost:11482`): `credential_key` keeps it in whichever form it arrives (the sheet's discovery name `nas.local:11482`, or `server_identity::smb_server(host, port)` from the upgrade), and drops 445, so a standard NAS keys exactly as before. `smb_server_address::get_keychain_password` takes the mount's port and tries the port-keyed names first, then (off 445) the port-less ones a password saved earlier sits under. Without the port on the upgrade side, a password the sheet saved for `localhost:11482` was never found and the direct session went out as a guest while the macOS mount was signed in. ❗ The system-keychain (Finder) read in `smb_connect_directly` is still matched by server name only.
-- **A trailing dot goes from the host half, before the port** (#915): the Add server sheet keeps a typed `nas.local.:11481` as the discovery name, and `credential_key` used to trim the dot only off the whole string, so the sheet's sign-in filed `smb://nas.local.:11481` while the upgrade and "Connect directly" filed `smb://nas:11481`. Now both key `nas:11481`. A forget also deletes the old spelling (`keychain::legacy_account_name`), so a password saved before the fix can't outlive its server.
+- **Account name is keyed by server identity, not the raw string**: `make_account_name` runs the server through `server_identity::credential_key` (lowercase + strip the mDNS service suffix / `.local` down to the bare instance name), so `Testnas`, `testnas.local`, and `Testnas._smb._tcp.local` all key the same entry. Without this the frontend saved under the mDNS instance name while the OS-mount upgrade path looked up by the `statfs` service name, so a just-saved password was never found on the next connect (the picker kept showing the `os_mount` dot and re-prompted). IP literals have no bare form and pass through unchanged.
+- **A port off 445 is part of the key** (`smb://localhost:11482`): `credential_key` keeps it in whichever form it arrives (the sheet's discovery name `testnas.local:11482`, or `server_identity::smb_server(host, port)` from the upgrade), and drops 445, so a standard NAS keys exactly as before. `smb_server_address::get_keychain_password` takes the mount's port and tries the port-keyed names first, then (off 445) the port-less ones a password saved earlier sits under. Without the port on the upgrade side, a password the sheet saved for `localhost:11482` was never found and the direct session went out as a guest while the macOS mount was signed in. ❗ The system-keychain (Finder) read in `smb_connect_directly` is still matched by server name only.
+- **A trailing dot goes from the host half, before the port** (#915): the Add server sheet keeps a typed `testnas.local.:11481` as the discovery name, and `credential_key` used to trim the dot only off the whole string, so the sheet's sign-in filed `smb://testnas.local.:11481` while the upgrade and "Connect directly" filed `smb://nas:11481`. Now both key `nas:11481`. A forget also deletes the old spelling (`keychain::legacy_account_name`), so a password saved before the fix can't outlive its server.
 - **Every SMB secret Forget reads one scope** (`saved_servers::smb_hosts::smb_secret_scope`, #915): a host's listing id or a share's place id, resolved to every name the host's password can sit under (`SmbHostGroup::credential_names`: the dialed address, the discovery name, each row's server name and mount address, a discovered twin) plus the shares whose own entries go. `forget_server_secret`, `has_server_secret`, and `forget_saved_smb_host_password` all use it. Keyed by the share row's server name alone, the share's Forget missed the entries a mount or "Connect directly" filed under the dialed IP or the resolved hostname, and an SMB host's listing id answered a silent `false`.
 - **Linux `gio mount` requires GVFS**: The `gvfs-smb` package must be installed. Standard on Ubuntu/Fedora GNOME desktops. KDE desktops may need it explicitly.
 - **macOS smbutil and NetFSMountURLSync fail with loopback IP + non-standard port**: `//127.0.0.1:10480` gives "Broken pipe", but `//localhost:10480` works. `build_smbutil_url` and `NetworkMountView.svelte` both fall back to hostname when IP is `127.0.0.1` or `::1`. This matters for E2E testing against Docker containers on localhost.
@@ -1483,7 +1483,7 @@ credential's shape (`user_empty`, `user_domain=none|backslash|at`, `password_emp
 - **SMB upgrade waits briefly for mDNS to warm**: the browse runs only while something needs it (§ "Discovery runs only
   while something needs it"), so every upgrade meets a cold cache: `statfs` gives an IP (or an mDNS service name) and
   nothing fresh pairs it with a name yet. Stored Keychain credentials are keyed by mDNS hostname
-  (`smb://naspolya/share`), not by IP, so a sync IP→hostname lookup misses and we'd prompt the user for credentials they
+  (`smb://testnas/share`), not by IP, so a sync IP→hostname lookup misses and we'd prompt the user for credentials they
   already saved; a service name has nothing to dial at all. So every upgrade calls
   `smb_server_address::discover_server`, which holds the browse and polls the fresh host list every 100 ms up to 1500 ms
   for a private-range IPv4 or a service name. Other addresses (Tailscale, public DNS) skip the wait, since mDNS won't
@@ -1507,4 +1507,4 @@ credential's shape (`user_empty`, `user_domain=none|backslash|at`, `password_emp
   2026-09-05: 39 consecutive timeouts across two commits and two worktrees, then a 1.5 s pass immediately after the
   restart, with no code change.) What the app does about it for a user: § "A mount Cmdr gave up on, and a wedged
   sign-in helper".
-- **`statfs` can return mDNS service names instead of IPs**: When macOS auto-reconnects an SMB mount on login, `statfs.f_mntfromname` may contain `//user@Naspolya._smb._tcp.local/share` instead of `//user@192.168.1.111/share`. These service names are not DNS-resolvable. `resolve_server_address()` in `smb_server_address.rs` detects these (by checking for `._tcp`/`._udp`) and resolves them to IPs via `fresh_discovered_hosts()`. All upgrade paths (startup, mount-time, manual) go through this resolution. Similarly, `friendly_server_name()` extracts the display name (e.g., `Naspolya`) for UI display.
+- **`statfs` can return mDNS service names instead of IPs**: When macOS auto-reconnects an SMB mount on login, `statfs.f_mntfromname` may contain `//user@Testnas._smb._tcp.local/share` instead of `//user@192.168.50.10/share`. These service names are not DNS-resolvable. `resolve_server_address()` in `smb_server_address.rs` detects these (by checking for `._tcp`/`._udp`) and resolves them to IPs via `fresh_discovered_hosts()`. All upgrade paths (startup, mount-time, manual) go through this resolution. Similarly, `friendly_server_name()` extracts the display name (e.g., `Testnas`) for UI display.

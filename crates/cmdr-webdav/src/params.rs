@@ -11,7 +11,7 @@ use url::Url;
 #[derive(Debug, Clone)]
 pub struct WebdavConnectionParams {
     /// Scheme, host, port, and the path prefix every request goes under, e.g.
-    /// `https://cloud.example.com/remote.php/dav/files/ada/`. ❗ Always ends in
+    /// `https://cloud.example.com/remote.php/dav/files/test_user_1/`. ❗ Always ends in
     /// a slash: [`Self::new`] normalizes it, because `Url::join` treats the last
     /// segment of a slash-less path as a file and replaces it.
     pub base_url: Url,

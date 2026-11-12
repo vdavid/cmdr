@@ -176,8 +176,8 @@ describe('TransferProgressReadout', () => {
   // #398: the share dropped off the network, and the copy waits for it rather
   // than failing. The line names it, and reads as the row's news.
   it('says which volume the transfer is waiting on to come back', () => {
-    render({ ...halfway, waitLine: { kind: 'reconnecting', volumeName: 'Naspolya' } })
-    expect(texts('.time')).toEqual(['Waiting for Naspolya to come back…'])
+    render({ ...halfway, waitLine: { kind: 'reconnecting', volumeName: 'Testnas' } })
+    expect(texts('.time')).toEqual(['Waiting for Testnas to come back…'])
     expect(target.querySelector('.time')?.classList.contains('stalled')).toBe(true)
   })
 

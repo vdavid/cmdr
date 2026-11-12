@@ -24,12 +24,12 @@ const ALL_REASONS: UpgradeFailure[] = [
 describe('directConnectionUnavailableMessage', () => {
   it('names the server so the user knows which one to check', () => {
     for (const reason of ALL_REASONS) {
-      expect(directConnectionUnavailableMessage(reason, 'Naspolya')).toContain('Naspolya')
+      expect(directConnectionUnavailableMessage(reason, 'Testnas')).toContain('Testnas')
     }
   })
 
   it('gives each reason its own words', () => {
-    const rendered = ALL_REASONS.map((reason) => directConnectionUnavailableMessage(reason, 'Naspolya'))
+    const rendered = ALL_REASONS.map((reason) => directConnectionUnavailableMessage(reason, 'Testnas'))
     expect(new Set(rendered).size).toBe(ALL_REASONS.length)
   })
 
@@ -38,7 +38,7 @@ describe('directConnectionUnavailableMessage', () => {
     // the words "error" or "failed". The old copy led with "Direct connection
     // failed:" and then pasted a raw errno after it.
     for (const reason of ALL_REASONS) {
-      const message = directConnectionUnavailableMessage(reason, 'Naspolya').toLowerCase()
+      const message = directConnectionUnavailableMessage(reason, 'Testnas').toLowerCase()
       expect(message).not.toMatch(/\berrors?\b|\bfail(ed|ure)?\b/)
     }
   })
@@ -89,15 +89,15 @@ describe('directConnectionUnavailableMessage', () => {
     // (`fileExplorer.navigation.connectionTooltipSystem`); reusing it keeps the
     // vocabulary consistent and tells the user nothing was lost.
     for (const reason of ALL_REASONS.filter((r) => r !== 'encryptionRequired')) {
-      expect(directConnectionUnavailableMessage(reason, 'Naspolya')).toContain('system connection')
+      expect(directConnectionUnavailableMessage(reason, 'Testnas')).toContain('system connection')
     }
   })
 
   it('promises no system connection when the refusal is for encryption (#966)', () => {
     // Under "Always require SMB encryption" the macOS mount is refused too unless it's
     // encrypted, so the sentence says only what Cmdr didn't do.
-    const message = directConnectionUnavailableMessage('encryptionRequired', 'Naspolya')
-    expect(message).toContain('Naspolya')
+    const message = directConnectionUnavailableMessage('encryptionRequired', 'Testnas')
+    expect(message).toContain('Testnas')
     expect(message).not.toContain('system connection')
   })
 })

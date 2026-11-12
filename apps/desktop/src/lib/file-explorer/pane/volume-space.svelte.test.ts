@@ -217,7 +217,7 @@ describe('createVolumeSpace', () => {
           answerNull = resolve
         }),
     )
-    volume = { id: 'sftp-nas', path: 'sftp://ada@nas:22/srv', isDiskImage: false, isLive: true }
+    volume = { id: 'sftp-nas', path: 'sftp://test_user_1@nas:22/srv', isDiskImage: false, isLive: true }
     const ctl = setup()
     ctl.startListening()
     await vi.waitFor(() => {

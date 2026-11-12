@@ -50,7 +50,7 @@ fn find_gvfs_mount(wanted: &WantedShare<'_>) -> Option<String> {
 ///
 /// The mount as `wanted.username` wins. A guest lookup settles for any account's mount
 /// of the share, which reads at least as much; an account lookup takes only its own,
-/// since a share saved "as sven" mounts as sven.
+/// since a share saved "as test_user_6" mounts as test_user_6.
 fn match_gvfs_mount<'a>(
     dirnames: impl IntoIterator<Item = &'a str>,
     wanted: &WantedShare<'_>,
@@ -367,7 +367,7 @@ mod tests {
     /// takes only its own, and prefers it when both are there.
     #[test]
     fn an_account_lookup_takes_only_that_accounts_mount() {
-        let as_sven = "smb-share:server=nas,share=docs,user=sven";
+        let as_sven = "smb-share:server=nas,share=docs,user=test_user_6";
         let as_guest = "smb-share:server=nas,share=docs";
         assert_eq!(
             match_gvfs_mount([as_sven], &wanted("nas", "docs", 445, None), &[]),
@@ -378,11 +378,15 @@ mod tests {
             Some(as_guest)
         );
         assert_eq!(
-            match_gvfs_mount([as_guest], &wanted("nas", "docs", 445, Some("sven")), &[]),
+            match_gvfs_mount([as_guest], &wanted("nas", "docs", 445, Some("test_user_6")), &[]),
             None
         );
         assert_eq!(
-            match_gvfs_mount([as_guest, as_sven], &wanted("nas", "docs", 445, Some("Sven")), &[]),
+            match_gvfs_mount(
+                [as_guest, as_sven],
+                &wanted("nas", "docs", 445, Some("Test_user_6")),
+                &[]
+            ),
             Some(as_sven)
         );
     }
@@ -394,23 +398,26 @@ mod tests {
     fn the_mount_lookup_is_identity_aware() {
         use crate::network::{HostSource, NetworkHost};
         let hosts = [NetworkHost {
-            id: "naspolya".into(),
-            name: "Naspolya".into(),
-            hostname: Some("naspolya.local".into()),
-            ip_address: Some("192.168.1.111".into()),
+            id: "testnas".into(),
+            name: "Testnas".into(),
+            hostname: Some("testnas.local".into()),
+            ip_address: Some("192.168.50.10".into()),
             port: 445,
             source: HostSource::Discovered,
         }];
-        let folders = ["smb-share:server=naspolya.local,share=naspi", "dav+sd:host=example.com"];
+        let folders = [
+            "smb-share:server=testnas.local,share=testshare",
+            "dav+sd:host=example.com",
+        ];
 
         // Looking up by IP finds the hostname-mounted share via discovery identity.
-        let hit = match_gvfs_mount(folders, &wanted("192.168.1.111", "naspi", 445, None), &hosts);
+        let hit = match_gvfs_mount(folders, &wanted("192.168.50.10", "testshare", 445, None), &hosts);
         assert_eq!(hit, Some(folders[0]), "expected identity match by IP");
 
         // A genuinely different share name does not match.
-        assert!(match_gvfs_mount(folders, &wanted("192.168.1.111", "other", 445, None), &hosts).is_none());
+        assert!(match_gvfs_mount(folders, &wanted("192.168.50.10", "other", 445, None), &hosts).is_none());
         // A different server (no identity link) does not match.
-        assert!(match_gvfs_mount(folders, &wanted("192.168.1.150", "naspi", 445, None), &[]).is_none());
+        assert!(match_gvfs_mount(folders, &wanted("192.168.50.30", "testshare", 445, None), &[]).is_none());
     }
 
     #[test]
@@ -511,11 +518,11 @@ mod tests {
     fn classify_mount_error_snapshot_permission_denied_explicit() {
         let stderr = "Error mounting location: Permission denied";
         assert_eq!(
-            classify_mount_error(stderr, "server", "share", Some("ada")),
+            classify_mount_error(stderr, "server", "share", Some("test_user_1")),
             MountError::PermissionDenied {
                 server: "server".to_string(),
                 share: "share".to_string(),
-                username: "ada".to_string(),
+                username: "test_user_1".to_string(),
             }
         );
         // A guest turned away is a credential question, the way `share_access::clarified`

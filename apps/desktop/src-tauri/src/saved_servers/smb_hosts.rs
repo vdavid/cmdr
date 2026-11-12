@@ -29,7 +29,7 @@ pub(crate) struct SmbHostGroup {
     pub host: String,
     pub port: u16,
     /// The name the discovery list gives it, which is what the share list files
-    /// its history under (`localhost:11482`, `Naspolya`).
+    /// its history under (`localhost:11482`, `Testnas`).
     discovery_name: String,
     /// Whether a manual entry backs it; its id is then that entry's.
     pub manual: bool,

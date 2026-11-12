@@ -343,7 +343,7 @@ export interface VolumeInfo {
    */
   isCloudMount?: boolean
   /**
-   * Whether names here tell `Ada` from `ada`: the volume's own answer (Rust's `LocationInfo.case_sensitive`),
+   * Whether names here tell `Test_user_1` from `test_user_1`: the volume's own answer (Rust's `LocationInfo.case_sensitive`),
    * ❌ never the OS's. What `#lib/path/grammar`'s comparisons take wherever typed text meets this volume's listing.
    * `undefined` compares exactly, as a path spelled by the backend always matches itself.
    */

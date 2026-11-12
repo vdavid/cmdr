@@ -92,16 +92,16 @@ describe('openTerminalHereForFolder: the ordinary run', () => {
     settings.set(SEEN_KEY, true)
     settings.set(APP_KEY, WARP)
 
-    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'root' })
+    await openTerminalHereForFolder({ folder: '/Users/test_user_10/code', volumeId: 'root' })
 
-    expect(openTerminalHere).toHaveBeenCalledWith('/Users/dave/code', 'root', WARP)
+    expect(openTerminalHere).toHaveBeenCalledWith('/Users/test_user_10/code', 'root', WARP)
     expect(addToast).not.toHaveBeenCalled()
   })
 
   it('skips the list query once the hint has been spent', async () => {
     settings.set(SEEN_KEY, true)
 
-    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'root' })
+    await openTerminalHereForFolder({ folder: '/Users/test_user_10/code', volumeId: 'root' })
 
     expect(listTerminalApps).not.toHaveBeenCalled()
   })
@@ -111,9 +111,9 @@ describe('openTerminalHereForFolder: the first-use picker', () => {
   it('adopts the one running terminal, writes it down, and raises the hint once', async () => {
     installed(app(TERMINAL), app(WARP, true))
 
-    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'root' })
+    await openTerminalHereForFolder({ folder: '/Users/test_user_10/code', volumeId: 'root' })
 
-    expect(openTerminalHere).toHaveBeenCalledWith('/Users/dave/code', 'root', WARP)
+    expect(openTerminalHere).toHaveBeenCalledWith('/Users/test_user_10/code', 'root', WARP)
     expect(settings.get(APP_KEY)).toBe(WARP)
     expect(settings.get(SEEN_KEY)).toBe(true)
     expect(addToast).toHaveBeenCalledOnce()
@@ -122,9 +122,9 @@ describe('openTerminalHereForFolder: the first-use picker', () => {
   it('leaves the hint unspent when Terminal is the only terminal installed', async () => {
     installed(app(TERMINAL, true))
 
-    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'root' })
+    await openTerminalHereForFolder({ folder: '/Users/test_user_10/code', volumeId: 'root' })
 
-    expect(openTerminalHere).toHaveBeenCalledWith('/Users/dave/code', 'root', TERMINAL)
+    expect(openTerminalHere).toHaveBeenCalledWith('/Users/test_user_10/code', 'root', TERMINAL)
     expect(settings.get(SEEN_KEY)).toBe(false)
     expect(addToast).not.toHaveBeenCalled()
   })
@@ -132,9 +132,9 @@ describe('openTerminalHereForFolder: the first-use picker', () => {
   it('still launches when the app list times out', async () => {
     listTerminalApps.mockResolvedValue({ data: { apps: [], chosenId: null }, timedOut: true })
 
-    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'root' })
+    await openTerminalHereForFolder({ folder: '/Users/test_user_10/code', volumeId: 'root' })
 
-    expect(openTerminalHere).toHaveBeenCalledWith('/Users/dave/code', 'root', TERMINAL)
+    expect(openTerminalHere).toHaveBeenCalledWith('/Users/test_user_10/code', 'root', TERMINAL)
     expect(settings.get(SEEN_KEY)).toBe(false)
   })
 })
@@ -146,7 +146,7 @@ describe('openTerminalHereForFolder: the outcomes it reports', () => {
     openTerminalHere.mockResolvedValue('app_missing_opened_terminal_instead')
     terminalAppDisplayName.mockResolvedValue('Warp')
 
-    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'root' })
+    await openTerminalHereForFolder({ folder: '/Users/test_user_10/code', volumeId: 'root' })
 
     expect(terminalAppDisplayName).toHaveBeenCalledWith(WARP)
     expect(settings.get(APP_KEY)).toBe(TERMINAL)
@@ -158,7 +158,7 @@ describe('openTerminalHereForFolder: the outcomes it reports', () => {
     settings.set(SEEN_KEY, true)
     openTerminalHere.mockResolvedValue('not_a_local_path')
 
-    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'mtp-1' })
+    await openTerminalHereForFolder({ folder: '/Users/test_user_10/code', volumeId: 'mtp-1' })
 
     expect(addToast).toHaveBeenCalledWith('commands.handler.openTerminalHere.noPath', expect.anything())
   })
@@ -167,7 +167,7 @@ describe('openTerminalHereForFolder: the outcomes it reports', () => {
     settings.set(SEEN_KEY, true)
     openTerminalHere.mockRejectedValue(new FakeOpenTerminalFailure({ type: 'launchRefused', errno: 2 }))
 
-    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'root' })
+    await openTerminalHereForFolder({ folder: '/Users/test_user_10/code', volumeId: 'root' })
 
     expect(addToast).toHaveBeenCalledWith(
       'commands.handler.openTerminalHere.launchRefused',
@@ -179,7 +179,7 @@ describe('openTerminalHereForFolder: the outcomes it reports', () => {
     settings.set(SEEN_KEY, true)
     openTerminalHere.mockRejectedValue(new FakeOpenTerminalFailure({ type: 'timedOut' }))
 
-    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'root' })
+    await openTerminalHereForFolder({ folder: '/Users/test_user_10/code', volumeId: 'root' })
 
     expect(addToast).toHaveBeenCalledWith(
       'commands.handler.openTerminalHere.timedOut',
@@ -200,7 +200,7 @@ describe('openTerminalHereForFolder: one toast at a time', () => {
     settings.set(APP_KEY, WARP)
     openTerminalHere.mockResolvedValue('app_missing_opened_terminal_instead')
 
-    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'root' })
+    await openTerminalHereForFolder({ folder: '/Users/test_user_10/code', volumeId: 'root' })
 
     expect(dismissToast).toHaveBeenCalledWith(TOAST_ID)
     expect(dismissToast.mock.invocationCallOrder[0]).toBeLessThan(addToast.mock.invocationCallOrder[0])
@@ -210,7 +210,7 @@ describe('openTerminalHereForFolder: one toast at a time', () => {
     settings.set(SEEN_KEY, true)
     openTerminalHere.mockResolvedValue('not_a_local_path')
 
-    await openTerminalHereForFolder({ folder: '/Users/dave/code', volumeId: 'root' })
+    await openTerminalHereForFolder({ folder: '/Users/test_user_10/code', volumeId: 'root' })
     await openTerminalHereForFolder({ folder: null, volumeId: 'mtp-1' })
 
     expect(addToast).toHaveBeenCalledTimes(2)

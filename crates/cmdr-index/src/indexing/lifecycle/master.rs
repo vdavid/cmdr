@@ -216,7 +216,7 @@ mod tests {
     /// `start_scan` deletes `scan_completed_at` before it walks, so a drive that
     /// finished yesterday looks like this for the whole of today's rescan.
     fn enabled_but_never_finished_db(dir: &Path) -> std::path::PathBuf {
-        let db_path = dir.join("index-smb-192-168-1-111-445-naspi.db");
+        let db_path = dir.join("index-smb-192-168-50-10-445-testshare.db");
         drop(IndexStore::open(&db_path).expect("open store"));
         IndexStore::set_drive_index_intent(&db_path, true).expect("record the enable");
         db_path

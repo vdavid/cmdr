@@ -78,8 +78,8 @@ async function navigatePane(
 
 const NEARBY_HOST = {
   id: 'capture-nearby-host',
-  name: 'Naspolya',
-  hostname: 'naspolya.local',
+  name: 'Testnas',
+  hostname: 'testnas.local',
   ipAddress: '192.168.1.20',
   port: 445,
   source: 'discovered',

@@ -25,7 +25,7 @@ import { startLeftoverNoticeBridge } from './leftover-notice-bridge'
 const FOLDER = '.cmdr-staging-0199a2c4-7b31-7c2a-9f10-4e1d8c6b2a55'
 
 function folderKept(folderName: string): LeftoversKeptEvent {
-  return { volumeName: 'Fältkamera', kept: { kind: 'stagingFolder', folderName } }
+  return { volumeName: 'Tëstkamera', kept: { kind: 'stagingFolder', folderName } }
 }
 
 beforeEach(async () => {
@@ -40,7 +40,7 @@ describe('the kept-leftovers notice', () => {
 
     expect(addToast).toHaveBeenCalledTimes(1)
     const [message] = addToast.mock.calls[0]
-    expect(message).toContain('Fältkamera')
+    expect(message).toContain('Tëstkamera')
     expect(message).toContain(FOLDER)
   })
 
@@ -82,7 +82,7 @@ describe('the kept-leftovers notice', () => {
 
 describe('the kept unfinished landing notice', () => {
   const landing = (keptName: string): LeftoversKeptEvent => ({
-    volumeName: 'Naspolya',
+    volumeName: 'Testnas',
     kept: { kind: 'unfinishedLanding', fileName: 'notes.txt', keptName },
   })
 
@@ -91,7 +91,7 @@ describe('the kept unfinished landing notice', () => {
 
     expect(addToast).toHaveBeenCalledTimes(1)
     const [message, options] = addToast.mock.calls[0]
-    expect(message).toContain('Naspolya')
+    expect(message).toContain('Testnas')
     expect(message).toContain('notes.txt')
     expect(message).toContain('notes (recovered).txt')
     expect(options.level).toBe('info')

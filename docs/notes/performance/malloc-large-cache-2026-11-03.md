@@ -32,9 +32,9 @@ untouched: the dev `target/debug/Cmdr`, prod 0.58.0, and a JetBrains `chatter` p
   below, timed from the MCP client. Side-by-side arms aren't usable for this: their timings came out identical to the
   millisecond in places, so something is shared between them.
 - **Restic**: `crates/cmdr-restic/examples/open_cost.rs`, which refuses and counts writes (zero), against
-  `/Volumes/naspi/backups/m3-macbook-restic` through the OS mount: 18 snapshots, 64 index files, 162.5 MB of `index/`.
-  `lifecycle` is unlock, enter `latest`, browse three levels, close the view, sample every 30 s past the idle drop.
-  Three paired runs side by side, then interleaved `load` and `full` runs one process at a time.
+  `/Volumes/testshare/backups/test-restic-repo` through the OS mount: 18 snapshots, 64 index files, 162.5 MB of
+  `index/`. `lifecycle` is unlock, enter `latest`, browse three levels, close the view, sample every 30 s past the idle
+  drop. Three paired runs side by side, then interleaved `load` and `full` runs one process at a time.
 
 ## Memory
 

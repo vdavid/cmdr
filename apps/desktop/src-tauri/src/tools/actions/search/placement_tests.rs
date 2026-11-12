@@ -7,9 +7,9 @@ use super::*;
 use crate::location::resolve::{IndexSources, VolumeFact};
 use crate::tools::resources::volumes::VolumeKind;
 
-const TAILSCALE: &str = "smb-100-127-48-122-445-naspi-david";
-const LAN: &str = "smb-192-168-1-111-445-naspi-david";
-const ATTIC: &str = "smb-attic-445-old-david";
+const TAILSCALE: &str = "smb-100-64-0-10-445-testshare-test_user_3";
+const LAN: &str = "smb-192-168-50-10-445-testshare-test_user_3";
+const ATTIC: &str = "smb-attic-445-old-test_user_3";
 const DRIVE: &str = "cloud-google-drive";
 const DRIVE_ROOT: &str = "/Users/me/Library/CloudStorage/GoogleDrive";
 
@@ -45,7 +45,7 @@ fn facts() -> VolumeFacts {
             volume("root", "/", true, root_index()),
             volume(
                 TAILSCALE,
-                "/Volumes/naspi",
+                "/Volumes/testshare",
                 false,
                 IndexSources {
                     stored: true,
@@ -53,7 +53,7 @@ fn facts() -> VolumeFacts {
                     ..IndexSources::none(TAILSCALE)
                 },
             ),
-            volume(LAN, "/Volumes/naspi-1", true, IndexSources::none(LAN)),
+            volume(LAN, "/Volumes/testshare-1", true, IndexSources::none(LAN)),
             volume(ATTIC, "/Volumes/attic", false, IndexSources::none(ATTIC)),
             volume(DRIVE, DRIVE_ROOT, true, root_index()),
         ],
@@ -72,7 +72,7 @@ fn wire(miss: Box<LocationMissResult>) -> Value {
 #[test]
 fn a_volume_id_with_no_scope_covers_that_volumes_root() {
     let placed = place(&facts(), Some(LAN), None).expect("a live share");
-    assert_eq!(placed.include_paths, scope(&["/Volumes/naspi-1"]));
+    assert_eq!(placed.include_paths, scope(&["/Volumes/testshare-1"]));
     assert_eq!(placed.on_index.as_deref(), Some(LAN));
     assert_eq!(placed.offline, None);
 }
@@ -97,8 +97,8 @@ fn a_cloud_drive_by_id_searches_its_root_on_the_index_that_holds_it() {
 
 #[test]
 fn a_share_that_isnt_connected_answers_from_its_index_on_disk() {
-    let placed = place(&facts(), Some(TAILSCALE), scope(&["/Volumes/naspi/papers"])).expect("indexed earlier");
-    assert_eq!(placed.include_paths, scope(&["/Volumes/naspi/papers"]));
+    let placed = place(&facts(), Some(TAILSCALE), scope(&["/Volumes/testshare/documents"])).expect("indexed earlier");
+    assert_eq!(placed.include_paths, scope(&["/Volumes/testshare/documents"]));
     assert_eq!(placed.on_index.as_deref(), Some(TAILSCALE));
     let offline = placed.offline.expect("says it's offline");
     assert_eq!(offline.as_of, Some(1_790_000_000));
@@ -117,11 +117,11 @@ fn a_share_that_isnt_connected_with_no_index_is_volume_not_connected() {
 /// `/Volumes` once routed to the boot disk and walked a folder that isn't the NAS.
 #[test]
 fn a_bare_scope_under_a_dead_mount_is_no_volume_at_path() {
-    let miss = place(&facts(), None, scope(&["/Volumes/naspi/papers"])).expect_err("nothing is mounted there");
+    let miss = place(&facts(), None, scope(&["/Volumes/testshare/documents"])).expect_err("nothing is mounted there");
     let wire = wire(miss);
     assert_eq!(wire["miss"], "noVolumeAtPath");
     assert_eq!(wire["nearby"][0]["candidate"]["volumeId"], LAN);
-    assert_eq!(wire["nearby"][0]["candidate"]["path"], "/Volumes/naspi-1/papers");
+    assert_eq!(wire["nearby"][0]["candidate"]["path"], "/Volumes/testshare-1/documents");
 }
 
 /// Only a dead mount point is a miss: every other bare scope routes as it did, so a
@@ -129,7 +129,7 @@ fn a_bare_scope_under_a_dead_mount_is_no_volume_at_path() {
 #[test]
 fn other_bare_scopes_route_as_before() {
     for paths in [
-        scope(&["/Volumes/naspi-1/papers", "/Volumes/naspi-1/photos"]),
+        scope(&["/Volumes/testshare-1/documents", "/Volumes/testshare-1/photos"]),
         scope(&["/Users/me/projects"]),
         scope(&["mtp://pixel/65537/DCIM"]),
         None,
@@ -148,11 +148,15 @@ fn other_bare_scopes_route_as_before() {
 
 #[test]
 fn a_scope_off_the_named_volume_is_path_outside_volume() {
-    let miss = place(&facts(), Some(LAN), scope(&["/Volumes/naspi-1/papers", "/Users/me"]))
-        .expect_err("the second path isn't on the share");
+    let miss = place(
+        &facts(),
+        Some(LAN),
+        scope(&["/Volumes/testshare-1/documents", "/Users/me"]),
+    )
+    .expect_err("the second path isn't on the share");
     let wire = wire(miss);
     assert_eq!(wire["miss"], "pathOutsideVolume");
-    assert_eq!(wire["root"], "/Volumes/naspi-1");
+    assert_eq!(wire["root"], "/Volumes/testshare-1");
 }
 
 #[test]

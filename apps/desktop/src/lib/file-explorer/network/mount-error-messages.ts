@@ -57,7 +57,7 @@ const MOUNT_MESSAGE: {
  * The sentence a mount refusal says.
  *
  * `serverName` is what the pane calls the server (the host's own name, like
- * `Naspolya`). The backend only knows the address it mounted by, often an IP,
+ * `Testnas`). The backend only knows the address it mounted by, often an IP,
  * so that's the fallback.
  */
 export function renderMountError(error: MountError, serverName?: string): string {

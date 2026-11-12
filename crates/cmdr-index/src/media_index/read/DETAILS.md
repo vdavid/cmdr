@@ -61,10 +61,10 @@ and a row can commit between the veto and the delete. Ask Cmdr's `search_photos`
 - **Where a volume's rows sit: every root it's known by.** Each local and network pass records its mount root in `meta`
   through the writer (`mount_root:<root>`, one row per root, never overwritten), and the live mount root joins them
   while the volume is mounted. A row is hidden when a folder excludes it at ANY of them, so an unmounted NAS still hides
-  its excluded folders, and a share remounted as `/Volumes/naspi-1` keeps a folder excluded at `/Volumes/naspi/Photos`
-  hidden. The network pass's veto (`is_excluded_at_known_roots`) and the retro-delete take the same union. A volume with
-  no known root shows NOTHING while any folder is excluded, until a pass records one; only a NAS indexed before roots
-  were recorded, and offline ever since, can land there.
+  its excluded folders, and a share remounted as `/Volumes/testshare-1` keeps a folder excluded at
+  `/Volumes/testshare/Photos` hidden. The network pass's veto (`is_excluded_at_known_roots`) and the retro-delete take
+  the same union. A volume with no known root shows NOTHING while any folder is excluded, until a pass records one; only
+  a NAS indexed before roots were recorded, and offline ever since, can land there.
 - **Filter before the cut.** A ranked read that dropped hidden rows after truncating would answer fewer than `k` hits
   whenever the excluded images ranked first. So the vector scans skip inside `top_k`; dedup drops skipped images BEFORE
   clustering (single linkage would otherwise chain two visible images through a hidden one and give it away); the OCR

@@ -27,13 +27,13 @@ beforeEach(() => {
 describe('credentials', () => {
   it('saving forwards url, account, and secret', async () => {
     vi.mocked(commands.saveWebdavCredentials).mockResolvedValueOnce(ok)
-    await saveWebdavCredentials(URL, 'ada', 'pa55')
-    expect(commands.saveWebdavCredentials).toHaveBeenCalledWith(URL, 'ada', 'pa55')
+    await saveWebdavCredentials(URL, 'test_user_1', 'pa55')
+    expect(commands.saveWebdavCredentials).toHaveBeenCalledWith(URL, 'test_user_1', 'pa55')
   })
 
   it('a refusing store throws rather than reporting success', async () => {
     vi.mocked(commands.saveWebdavCredentials).mockResolvedValueOnce(err)
-    await expect(saveWebdavCredentials(URL, 'ada', 'pa55')).rejects.toThrow('nope')
+    await expect(saveWebdavCredentials(URL, 'test_user_1', 'pa55')).rejects.toThrow('nope')
   })
 })
 
@@ -46,7 +46,7 @@ describe('the saved-server list', () => {
   it('fills in the auto-reconnect switch for a server saved before it existed', async () => {
     const saved = {
       url: URL,
-      username: 'ada',
+      username: 'test_user_1',
       displayName: 'Example',
       remoteRoot: '/',
       lastConnectedAt: '2026-09-01T10:00:00Z',
@@ -61,7 +61,7 @@ describe('the saved-server list', () => {
   it('leaves a switch the user turned off turned off', async () => {
     const saved = {
       url: URL,
-      username: 'ada',
+      username: 'test_user_1',
       displayName: 'Example',
       remoteRoot: '/',
       autoReconnect: false,

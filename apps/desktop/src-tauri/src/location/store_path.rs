@@ -1,7 +1,7 @@
 //! Where an app path sits in a volume's importance store, and back.
 //!
 //! An importance store keeps its volume's index paths: volume-relative
-//! (`/papers` for `/Volumes/naspi-1/papers`), absolute only on the boot disk,
+//! (`/documents` for `/Volumes/testshare-1/documents`), absolute only on the boot disk,
 //! whose root is `/`. A cloud drive's store is relative to the DRIVE's root,
 //! though `root`'s index walks it, so every caller passes the importance
 //! volume's own root (from [`super::resolve::volume_root`]), ❌ never the

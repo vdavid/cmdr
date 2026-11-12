@@ -6,7 +6,7 @@
   },
   "ui.alertDialog.copyPathAria": "Copy path to clipboard",
   "@ui.alertDialog.copyPathAria": {
-    "description": "aria-label for the Copy button beside the path shown in an alert dialog (for example \"Path is too long\"). Screen-reader-only; the visible button label is the shared \"Copy\" / \"Copied!\" pair. \"Path\" here means a filesystem path such as /Users/dave/photos/img.jpg. Keep it identical in wording to commands.fileCopyPath.label.",
+    "description": "aria-label for the Copy button beside the path shown in an alert dialog (for example \"Path is too long\"). Screen-reader-only; the visible button label is the shared \"Copy\" / \"Copied!\" pair. \"Path\" here means a filesystem path such as /Users/test_user_10/photos/img.jpg. Keep it identical in wording to commands.fileCopyPath.label.",
     "screenshot": "alert-long-unbroken-path.png"
   },
   "ui.modalDialog.close": "Close",

@@ -171,7 +171,7 @@ fn normalize_for_dedup(path: &str) -> String {
 /// Whether `favorite` and an add of `path` on `volume` name the same folder.
 ///
 /// By `(volume id, path under its root)` when both know their volume, so one share mounted at
-/// `/Volumes/naspi` and later at `/Volumes/naspi-1` is one favorite. Otherwise by normalized path,
+/// `/Volumes/testshare` and later at `/Volumes/testshare-1` is one favorite. Otherwise by normalized path,
 /// which is how a legacy entry (no volume yet) meets its own re-add.
 fn is_same_folder(favorite: &Favorite, path: &str, volume: Option<&FavoriteVolume>) -> bool {
     if let (Some(known), Some(added)) = (favorite.volume.as_ref(), volume)

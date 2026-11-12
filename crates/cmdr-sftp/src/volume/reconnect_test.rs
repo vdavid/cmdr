@@ -133,7 +133,10 @@ impl CredentialStore for CountingCredentials {
 
 /// A volume on `rung` whose server is a closed port, plus the events it reports.
 fn offline_volume(rung: AuthRungUsed) -> (Arc<RecordingVolumeEvents>, Arc<CountingCredentials>, SftpVolume) {
-    offline_volume_holding(rung, CountingCredentials::holding("127.0.0.1:12599", "ada", "whatever"))
+    offline_volume_holding(
+        rung,
+        CountingCredentials::holding("127.0.0.1:12599", "test_user_1", "whatever"),
+    )
 }
 
 /// The same, on a store of the caller's choosing.
@@ -265,7 +268,7 @@ async fn signing_in_is_refused_where_a_secret_would_not_help() {
         let (_events, credentials, volume) = offline_volume(rung);
         let refusal = volume
             .reconnect_with_credentials(cmdr_fs::volume::secret_store::SignIn {
-                username: "ada".to_string(),
+                username: "test_user_1".to_string(),
                 secret: "hunter2".to_string(),
                 remember: false,
             })
@@ -290,7 +293,7 @@ async fn signing_in_as_a_different_account_is_refused() {
 
     let refusal = volume
         .reconnect_with_credentials(cmdr_fs::volume::secret_store::SignIn {
-            username: "grace".to_string(),
+            username: "test_user_2".to_string(),
             secret: "hunter2".to_string(),
             remember: false,
         })
@@ -794,14 +797,14 @@ async fn an_attended_sign_in_never_starts_remembering_a_secret_on_its_own() {
 
         let _ = volume
             .reconnect_with_credentials(cmdr_fs::volume::secret_store::SignIn {
-                username: "ada".to_string(),
+                username: "test_user_1".to_string(),
                 secret: "hunter2".to_string(),
                 remember: false,
             })
             .await;
 
         assert_eq!(
-            credentials.stored("127.0.0.1:12599", "ada"),
+            credentials.stored("127.0.0.1:12599", "test_user_1"),
             None,
             "{rung:?}: ❌ nothing was remembered, because nobody asked for it to be"
         );
@@ -828,7 +831,7 @@ async fn a_sign_in_that_does_not_connect_leaves_the_remembered_secret_alone() {
 
         let refusal = volume
             .reconnect_with_credentials(cmdr_fs::volume::secret_store::SignIn {
-                username: "ada".to_string(),
+                username: "test_user_1".to_string(),
                 secret: "a-typo".to_string(),
                 remember: false,
             })
@@ -836,7 +839,7 @@ async fn a_sign_in_that_does_not_connect_leaves_the_remembered_secret_alone() {
 
         assert!(refusal.is_err(), "{rung:?}: the closed port refuses every dial");
         assert_eq!(
-            credentials.stored("127.0.0.1:12599", "ada").as_deref(),
+            credentials.stored("127.0.0.1:12599", "test_user_1").as_deref(),
             Some("whatever"),
             "{rung:?}: ❌ the secret that worked before is still the one remembered"
         );
@@ -957,7 +960,7 @@ async fn remembering_a_sign_in_files_it_without_dialing() {
 
     let filed = volume
         .remember_sign_in(cmdr_fs::volume::secret_store::SignIn {
-            username: "ada".to_string(),
+            username: "test_user_1".to_string(),
             secret: "typed".to_string(),
             remember: true,
         })
@@ -965,7 +968,10 @@ async fn remembering_a_sign_in_files_it_without_dialing() {
         .expect("filing needs no server");
 
     assert!(!filed.remember_refused);
-    assert_eq!(credentials.stored("127.0.0.1:12599", "ada").as_deref(), Some("typed"));
+    assert_eq!(
+        credentials.stored("127.0.0.1:12599", "test_user_1").as_deref(),
+        Some("typed")
+    );
     assert_eq!(reported(&events), vec![]);
 }
 
@@ -973,7 +979,10 @@ async fn remembering_a_sign_in_files_it_without_dialing() {
 /// and a rung no secret mends has nothing to file.
 #[tokio::test]
 async fn remembering_is_refused_where_signing_in_is() {
-    for (rung, username) in [(AuthRungUsed::Password, "grace"), (AuthRungUsed::Agent, "ada")] {
+    for (rung, username) in [
+        (AuthRungUsed::Password, "test_user_2"),
+        (AuthRungUsed::Agent, "test_user_1"),
+    ] {
         let (_events, credentials, volume) = offline_volume_holding(rung, CountingCredentials::empty());
         let refusal = volume
             .remember_sign_in(cmdr_fs::volume::secret_store::SignIn {

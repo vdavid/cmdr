@@ -25,7 +25,7 @@ Depth and rationale. `CLAUDE.md` holds the must-knows and the pattern table.
 | `account` | `user=`/`username:` fields | `user=<user>`, `None` untouched |
 | `identity_field` | quoted `host=`, `server=`, `share=`, `volumeName=`, `source_volume=`, `dest_volume=`, the ID keys | the value tokenized in its identity's domain |
 | `label_field` | bare `share=`, `source_volume=`, `dest_volume=` (`share=Family Photos, …`) | `share=<share:T>`, value ends like any bare field value |
-| `quoted_bonjour` | a quoted instance, any name (`"Alex's MacBook Pro (2)._companion-link._tcp.local."`) | `"<host:T>._companion-link._tcp.local."` |
+| `quoted_bonjour` | a quoted instance, any name (`"Tester's MacBook Pro (2)._companion-link._tcp.local."`) | `"<host:T>._companion-link._tcp.local."` |
 | `bonjour_instance` | `Name._smb._tcp.local.` (DNS-SD instance) | `<host:T>._smb._tcp.local.`, T shared with `server="name"` |
 | `bonjour_service` | `_smb._tcp.local.` (a public service type) | kept verbatim |
 | `mdns` | `<label>.local`, every label (`nas.home.local`) | `<host>.local` |
@@ -188,12 +188,12 @@ guessing `<dir>` is right far more often on real triage data than the reverse.
 
 What counts as an extension is deliberately narrow (`paths.rs::conservative_extension`): at least one letter, and
 lowercase alnum up to five chars, uppercase up to four (camera-style `JPG`, `HEIC`), or a short list of known long ones
-(`sqlite3`, `numbers`, …). A dot inside a name (`Anna.Kovacs`, `minutes.2026`) keeps nothing, so the tail of a name
+(`sqlite3`, `numbers`, …). A dot inside a name (`Test.Person`, `minutes.2026`) keeps nothing, so the tail of a name
 can't ship as its "extension".
 
 ## Decision: MTP owner names redacted, model names kept
 
-`mtp_owner` catches the common `<Owner>'s <Model>` shape (`John's Pixel 8 Pro`). The owner becomes `<mtp-owner>`; the
+`mtp_owner` catches the common `<Owner>'s <Model>` shape (`Tester's Pixel 8 Pro`). The owner becomes `<mtp-owner>`; the
 model phrase (`Pixel 8 Pro`, `iPhone 15 Pro`) is kept because model strings alone aren't identifying and are useful
 diagnostic context. The pattern requires both a capitalized possessive AND a model word from a known set
 (`iPhone | iPad | Pixel | Galaxy | OnePlus | Note | Tablet | Phone | Camera | ...`) right after the `'s `, which keeps
@@ -208,7 +208,7 @@ identifier, as personal as the email pattern, and it appeared verbatim in three 
 is a recognized identity and gets a report-local `<share>` token, and so does a `share=` field, quoted or bare (`smb2`
 prints `tree: connected share=Family Photos, …`). The bare volume labels `copy_between_volumes` prints
 (`source_volume=`, `dest_volume=`) get the same treatment in the volume domain, so a share and the volume it mounts as
-correlate. A bare NetBIOS name (`server=NASPOLYA`) is a known remaining gap.
+correlate. A bare NetBIOS name (`server=TESTNAS`) is a known remaining gap.
 
 `None` passes through because it isn't a name, and the difference between "no username in the mount info" and "a
 username we then looked up in the Keychain" is exactly what a triager reads these lines for. That's why this can't be a
@@ -238,8 +238,8 @@ What ends a prose path now, and nothing else:
    trailing `scheme:` the match stopped at before `//` (`/Volumes/d/f.txt and smb://host/…`). Handed back, the scanner
    claims the reference (§ "Why the scan resumes mid-match").
 3. **`, `, `; `, or ` key=` after the last separator.** Before it, a deeper segment proves the path goes on
-   (`Smith, John/x.pdf`, `Dr. Dre, Snoop (live)/track.mp3`), and cutting there would ship the rest: nothing claims
-   `John/x.pdf` (no `\B/` anchor). A match never holds ` /` (the space before a slash ends it), so every later
+   (`Smith, Test_user_14/x.pdf`, `Dr. Dre, Snoop (live)/track.mp3`), and cutting there would ship the rest: nothing claims
+   `Test_user_14/x.pdf` (no `\B/` anchor). A match never holds ` /` (the space before a slash ends it), so every later
    separator belongs to the same path. The separator is `\` for a Windows home or UNC path, `/` otherwise (there a `\`
    is a `{:?}` escape).
 4. **A ` -> ` arrow, anywhere** (`{from} -> {to}`), and the ` -` a Windows path's match stops at before its `>`.
@@ -263,7 +263,7 @@ stays (`Summer (Lake House)`), and so does the `}` of a `\u{301}` escape. `(` an
 
 **The cost, accepted until producers mark their values (#491):** prose after an unkeyed path goes with it, extension
 and file kind included. `/Users/jo/Documents/notes.md failed to open` reads `$HOME/Documents/<dir>`, an extension in the
-swallowed prose becomes the leaf's (`x.pdf for alice@example.com` reads `<file>.com`), and
+swallowed prose becomes the leaf's (`x.pdf for test_user_4@example.com` reads `<file>.com`), and
 `VolumeManager::report_identity_conflict`'s line loses its volume ID up to the `; ` (the 98 truncated reports this
 section used to warn about). Pinned by `prose_after_an_unkeyed_path_goes_with_it`. A keyed field (`path={:?}`) keeps
 everything after it; that's the fix for a line whose prose matters.

@@ -23,17 +23,17 @@ fn field_value(line: &str, key: &str) -> String {
 #[test]
 fn report_mode_redacts_identities_inside_detail_and_keeps_the_rest() {
     let line = format!(
-        "smbclient share listing stopped: host=\"nas.local\", share=\"Client Plans\", code=Some(1), nt_status=STATUS_ACCESS_DENIED, detail={:?}",
-        "tree connect failed for \"Client Plans\" at /Users/alice/Client Plans/budget.xlsx; on 10.0.0.7 (alice@example.com)"
+        "smbclient share listing stopped: host=\"testnas.local\", share=\"Client Plans\", code=Some(1), nt_status=STATUS_ACCESS_DENIED, detail={:?}",
+        "tree connect failed for \"Client Plans\" at /Users/test_user_4/Client Plans/budget.xlsx; on 10.0.0.7 (test_user_4@example.com)"
     );
     let redacted = context().redact_line(&line).into_owned();
 
     for private in [
-        "alice",
+        "test_user_4",
         "Client Plans",
         "budget",
         "10.0.0.7",
-        "nas.local",
+        "testnas.local",
         "example.com",
     ] {
         assert!(!redacted.contains(private), "{private:?} survived: {redacted}");
@@ -89,7 +89,7 @@ fn short_detail_passes_uncapped_and_redaction_is_idempotent() {
     let once = context.redact_line(&line).into_owned();
     assert_eq!(once, line);
 
-    let line = format!("x detail={:?}", format!("{} /Users/alice/a.txt", "z".repeat(300)));
+    let line = format!("x detail={:?}", format!("{} /Users/test_user_4/a.txt", "z".repeat(300)));
     let once = context.redact_line(&line).into_owned();
     assert_eq!(context.redact_line(&once), once);
 }
@@ -98,12 +98,12 @@ fn short_detail_passes_uncapped_and_redaction_is_idempotent() {
 fn detail_tokens_correlate_with_the_rest_of_the_report() {
     let context = context();
     let path_line = context
-        .redact_line(r#"SFTP path="/home/alice/Client Plans/report.pdf": error_kind=no_such_file"#)
+        .redact_line(r#"SFTP path="/home/test_user_4/Client Plans/report.pdf": error_kind=no_such_file"#)
         .into_owned();
     let detail_line = context
         .redact_line(&format!(
             "SFTP detail={:?}",
-            "no such file: /home/alice/Client Plans/report.pdf"
+            "no such file: /home/test_user_4/Client Plans/report.pdf"
         ))
         .into_owned();
     let token = Regex::new(r"<file:[0-9a-f]{12}>").expect("valid regex");
@@ -116,10 +116,10 @@ fn detail_tokens_correlate_with_the_rest_of_the_report() {
 
 #[test]
 fn unsalted_mode_redacts_and_caps_like_a_report() {
-    let text = format!("/Users/alice/secret.txt: {}", "q".repeat(300));
+    let text = format!("/Users/test_user_4/secret.txt: {}", "q".repeat(300));
     let line = format!("x detail={text:?}");
     let redacted = redact_line(&line).into_owned();
-    assert!(!redacted.contains("alice"), "{redacted}");
+    assert!(!redacted.contains("test_user_4"), "{redacted}");
     assert!(redacted.contains("$HOME/<file>.txt"), "{redacted}");
     assert!(
         !redacted.contains(&"q".repeat(300)),
@@ -133,12 +133,12 @@ fn keyed_identities_are_scrubbed_where_the_prose_repeats_them_bare() {
     let context = context();
     // The detail comes first: the scrub reads the whole line, not just what precedes it.
     let line = format!(
-        "SmbVolume::read detail={:?}, share=\"Plans\", user=\"ada\", path=\"docs/Quarterly Report.pdf\"",
-        "tree connect to \"Plans\" as ada failed; Planscape unaffected; Quarterly Report.pdf is locked"
+        "SmbVolume::read detail={:?}, share=\"Plans\", user=\"test_user_1\", path=\"docs/Quarterly Report.pdf\"",
+        "tree connect to \"Plans\" as test_user_1 failed; Planscape unaffected; Quarterly Report.pdf is locked"
     );
     let redacted = context.redact_line(&line).into_owned();
     let detail = field_value(&redacted, "detail");
-    for private in ["\"Plans\"", " ada ", "Quarterly Report"] {
+    for private in ["\"Plans\"", " test_user_1 ", "Quarterly Report"] {
         assert!(!detail.contains(private), "{private:?} survived in {detail:?}");
     }
     assert!(
@@ -169,10 +169,10 @@ fn an_unkeyed_bare_name_in_prose_survives() {
 #[test]
 fn report_mode_tokenizes_identity_pairs_in_json_inside_detail() {
     let context = context();
-    let json = r#"{"type":"authFailed","message":"kept","server":"NASPOLYA","share":"Private Share","username":"anna","path":"/srv/Private Share/x.txt"}"#;
-    let line = format!("Mount of share=\"Private Share\" on host=\"Naspolya\" did not go through: detail={json:?}");
+    let json = r#"{"type":"authFailed","message":"kept","server":"TESTNAS","share":"Private Share","username":"test","path":"/srv/Private Share/x.txt"}"#;
+    let line = format!("Mount of share=\"Private Share\" on host=\"Testnas\" did not go through: detail={json:?}");
     let redacted = context.redact_line(&line).into_owned();
-    for private in ["NASPOLYA", "Naspolya", "Private Share", "anna"] {
+    for private in ["TESTNAS", "Testnas", "Private Share", "test"] {
         assert!(!redacted.contains(private), "{private:?} survived: {redacted}");
     }
     for kept in [
@@ -200,10 +200,10 @@ fn report_mode_tokenizes_absolute_paths_with_any_prefix_inside_detail() {
     let context = context();
     let line = format!(
         "FE:uncaught Unhandled promise rejection: detail={:?}",
-        "Error: Permission denied: /srv/data/Anna Kovacs/Medical records (and /Users/ada/Downloads/a.pdf)"
+        "Error: Permission denied: /srv/data/Test Person/Medical records (and /Users/test_user_1/Downloads/a.pdf)"
     );
     let redacted = context.redact_line(&line).into_owned();
-    for private in ["srv/data", "Anna", "Kovacs", "Medical", "records", "ada"] {
+    for private in ["srv/data", "Test", "Person", "Medical", "records", "test_user_1"] {
         assert!(!redacted.contains(private), "{private:?} survived: {redacted}");
     }
     assert!(redacted.contains("Permission denied: /<dir:"), "{redacted}");

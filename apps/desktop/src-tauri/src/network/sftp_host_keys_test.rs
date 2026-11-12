@@ -172,7 +172,7 @@ fn one_approval_that_doesnt_read_keeps_the_rest_and_a_copy() {
     let dir = crate::test_support::TestDir::new("sftp_host_keys_partial");
     let path = dir.join("known-sftp-hosts.json");
     let original = r#"{"trustedHostKeys": [
-        {"host": "nas.local", "port": 22, "algorithm": "ssh-ed25519", "fingerprint": "SHA256:abc",
+        {"host": "testnas.local", "port": 22, "algorithm": "ssh-ed25519", "fingerprint": "SHA256:abc",
          "approvedAt": "2026-10-01T10:00:00Z"},
         {"host": "box.local", "port": "from a newer build"}
     ]}"#;
@@ -182,7 +182,7 @@ fn one_approval_that_doesnt_read_keeps_the_rest_and_a_copy() {
     server_list_file::save(&path, "the trusted SSH host keys", &store);
 
     assert_eq!(store.trusted_host_keys.len(), 1);
-    assert_eq!(store.trusted_host_keys[0].host, "nas.local");
+    assert_eq!(store.trusted_host_keys[0].host, "testnas.local");
     let kept = crate::state_recovery::testing::kept_copies(&path);
     assert_eq!(kept.len(), 1, "{kept:?}");
     assert_eq!(std::fs::read_to_string(&kept[0]).expect("read the copy"), original);

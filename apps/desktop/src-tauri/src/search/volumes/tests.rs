@@ -172,8 +172,8 @@ fn mount_root_falls_back_to_the_volume_registry() {
     manager.unregister(vid);
 }
 
-/// A share remounted at `/Volumes/naspi-1` still carries its last scan's
-/// `/Volumes/naspi` in the meta. Its root is the one root function's answer, live
+/// A share remounted at `/Volumes/testshare-1` still carries its last scan's
+/// `/Volumes/testshare` in the meta. Its root is the one root function's answer, live
 /// first, so search strips and prefixes the same root `list_dir` checks against;
 /// the meta's would make every scope under the live mount match nothing.
 #[test]

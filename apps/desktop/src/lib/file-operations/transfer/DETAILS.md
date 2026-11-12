@@ -21,7 +21,7 @@ readings drive it, and the readout's time line shows at most one, below a stall 
   is no countdown to protect, so there's nothing to wait out; the backend heartbeats from the first still second for
   exactly this. Past 10 s with nothing arriving, the stall notice takes over and names the source.
 
-- `waitingOn: 'reconnecting'`: "Waiting for Naspolya to come back…", named by `reconnectingVolume`. A share dropped off
+- `waitingOn: 'reconnecting'`: "Waiting for Testnas to come back…", named by `reconnectingVolume`. A share dropped off
   the network and the backend is reconnecting it for a bounded time (`crates/cmdr-operations/src/transfer/DETAILS.md` §
   "Waiting out a volume that went away"). It outranks the other two (nothing arrives from a volume that's gone), shows
   from the first second, holds back the stall notice (the wait is named), and wears the stalled tone, since it's the

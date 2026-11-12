@@ -135,7 +135,7 @@ describe('createRowOverlays', () => {
     // domain lives on a share, so the answer was never anything but "unknown".
     it('asks nothing for a pane that is not on a local volume', async () => {
       const { overlays } = create({ isLocal: false })
-      await overlays.fetchSyncStatusForPaths(['/Volumes/naspi/photos/a.jpg'])
+      await overlays.fetchSyncStatusForPaths(['/Volumes/testshare/photos/a.jpg'])
       expect(ipc.getSyncStatus).not.toHaveBeenCalled()
     })
 

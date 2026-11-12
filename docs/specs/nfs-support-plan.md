@@ -68,12 +68,12 @@ Each is a recommendation for David to confirm or overturn; the plan is built on 
   must not orphan every tab). Folding: host lowercased, port literal, export by bytes after `normalize_remote_path` (so
   `/volume1/data/` and `/volume1//data` are one export), and only then escaped.
 - ❗ **The app root carries the export as ONE percent-escaped segment** (`%` → `%25`, `/` → `%2F`, leading `/` dropped,
-  the root export `/` → `%2F`): `nfs://nas.local:2049/volume1%2Fdata/photos`. Why: `server_of_path` must mint a volume
-  id from a path alone, and with nested exports (`/share` and `/share/Public`, common on QNAP) a server-only prefix
-  can't say which export a path belongs to. The cost, accepted: a file under nested exports has two spellings, one per
-  place. ❗ A HUMAN-typed `nfs://nas/volume1/data/photos` (unescaped) is an address, ❌ not an app path: Go to path and
-  ⌘K hand it to the NFS prefill and the connect-time split below, never straight to `server_of_path`, which would read
-  it as export `/volume1` and folder `data/photos`.
+  the root export `/` → `%2F`): `nfs://testnas.local:2049/volume1%2Fdata/photos`. Why: `server_of_path` must mint a
+  volume id from a path alone, and with nested exports (`/share` and `/share/Public`, common on QNAP) a server-only
+  prefix can't say which export a path belongs to. The cost, accepted: a file under nested exports has two spellings,
+  one per place. ❗ A HUMAN-typed `nfs://nas/volume1/data/photos` (unescaped) is an address, ❌ not an app path: Go to
+  path and ⌘K hand it to the NFS prefill and the connect-time split below, never straight to `server_of_path`, which
+  would read it as export `/volume1` and folder `data/photos`.
 - **The export/folder split happens in `connect`, before the id is minted.** `ServerTarget::Nfs.export` is what the
   person picked or typed (`host:/share/Public/photos` from Go to path). The backend resolves the real export by longest
   match against `EXPORT`, or, when `EXPORT` is refused, by `MNT` on ever-shorter prefixes; the rest becomes the start
@@ -109,8 +109,8 @@ Each is a recommendation for David to confirm or overturn; the plan is built on 
   friendly error in seconds", NFS servers answer `NULL` from the RPC layer even when busy, and a stopped `nfsd` on a
   live host already answers instantly with a TCP reset. Decision (revisit in review).
 - **The Network view hint**: one muted line under the hub's server list, "NFS servers don't announce themselves. Add one
-  with its address, like nfs://nas.local/share." with the address as an "Add server" link that opens the sheet on NFS.
-  No Bonjour browse, no port probing of known hosts. Decision (revisit in review).
+  with its address, like nfs://testnas.local/share." with the address as an "Add server" link that opens the sheet on
+  NFS. No Bonjour browse, no port probing of known hosts. Decision (revisit in review).
 - **Non-UTF-8 names**: listed nowhere, counted, and logged once per listing (`debug!`, the count only). A lossy name
   would point every operation at bytes that don't exist. Decision (revisit in review).
 - **`root_squash` and `all_squash` are the server's business**: no detection; a refusal maps to `PermissionDenied` with
@@ -306,10 +306,10 @@ M0 (one agent, ~20 min)  ──►  wave 1: M1 ∥ M2 ∥ M3 (~60 min)
   `nfs://<host lowercased>:<port>/<segment>`, where the export is first canonical (`canonical_nfs_export`, i.e.
   `normalize_remote_path`: absolute, no empty / `.` / `..` segment, no trailing `/`, bytes otherwise kept), then its
   leading `/` is dropped and only `%` → `%25` and `/` → `%2F` are escaped; the root export `/` is the segment `%2F`.
-  Examples: `/Public` → `nfs://nas.local:2049/Public`, `/volume1/data/` → `nfs://nas.local:2049/volume1%2Fdata`, `/` →
-  `nfs://nas.local:2049/%2F`, `/100%/x` → `nfs://nas.local:2049/100%25%2Fx`. Everything after the segment is the
-  export-relative path. `server_of_path` refuses an empty segment, a missing port, and any escape other than `%25` /
-  `%2F`. No `@` and no account in the authority.
+  Examples: `/Public` → `nfs://testnas.local:2049/Public`, `/volume1/data/` → `nfs://testnas.local:2049/volume1%2Fdata`,
+  `/` → `nfs://testnas.local:2049/%2F`, `/100%/x` → `nfs://testnas.local:2049/100%25%2Fx`. Everything after the segment
+  is the export-relative path. `server_of_path` refuses an empty segment, a missing port, and any escape other than
+  `%25` / `%2F`. No `@` and no account in the authority.
 - **Intentions**: after M0, M1–M3 touch disjoint files and compile against fixed signatures.
 - **Landmines**: `index-crate-isolation` needs a surface ceiling for the new crate; start it at what the stub exposes
   and let later milestones raise it with a reason. `workspace-member-coverage` and `rcgu_prune_test.go` list crates.

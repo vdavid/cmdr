@@ -146,8 +146,8 @@ indexing; the transfer signal is `priority::transfers`' per-volume gauge). All t
 cover walk included: it runs over the same session the pane browses through, so a search of one folder must not bury the
 navigation the user makes while reading its results. **Why it exists:** a scan and the pane's own listings share ONE SMB
 session (every `SmbVolume` clone multiplexes frames over the same connection), so 64 in-flight listings bury a
-navigation behind the backlog — a 40-entry folder took **10.7 s** to open mid-scan on a real QNAP (`/Volumes/naspi`, ~2M
-entries, 2026-07-19) and was instant the second the scan finished. That's also the first impression the app makes on
+navigation behind the backlog — a 40-entry folder took **10.7 s** to open mid-scan on a real QNAP (`/Volumes/testshare`,
+~2M entries, 2026-07-19) and was instant the second the scan finished. That's also the first impression the app makes on
 someone who connects a NAS and enables indexing because it sounds good.
 
 **The signals** are `priority::foreground`'s per-volume answer (an in-flight LEASE held for a foreground listing's real

@@ -86,8 +86,8 @@ successfully:
 - `CrashReportDialog.svelte`: right after `await sendCrashReport(…)` returns (its `catch` swallows send failures).
 
 Onboarding's email field persists per keystroke, which is right there: the user is on a page whose whole purpose is
-giving an address. Here it would be wrong. A dialog abandoned mid-typing would leave `alex@ex` as the address every
-future report replies to, and nothing in the UI would say so.
+giving an address. Here it would be wrong. A dialog abandoned mid-typing would leave `test_user_11@ex` as the address
+every future report replies to, and nothing in the UI would say so.
 
 Each dialog also folds `blocksSend` into one `canSend` derived that gates the Send button, the keyboard send combo, and
 `handleSend`'s own guard, so no path can slip past the block.

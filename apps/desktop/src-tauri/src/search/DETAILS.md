@@ -48,8 +48,8 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   `index_source::canonicalize_scope_path`) every site calls, since the coverage
   question, the index lookup, and the walk's frontier are matched by string). A backend volume's paths are in the
   backend's namespace, and the OS mount at the same mount point spells names its own way: macOS smbfs returns every
-  name decomposed (NFD) while a QNAP stores NFC, so a canonicalized `Rymdskottkärra AB` reached both the index and the
-  server as `Rymdskottka\u{308}rra AB` and every search of an accented NAS folder came back empty (verified on macOS 27
+  name decomposed (NFD) while a QNAP stores NFC, so a canonicalized `Testföretag AB` reached both the index and the
+  server as `Testfo\u{308}retag AB` and every search of an accented NAS folder came back empty (verified on macOS 27
   smbfs against a QNAP TS-464, `realpath` bytes `61 cc 88`, 2026-11-04). ❌ Don't normalize to NFC instead: a server
   that stores NFD breaks the other way. A backend path came from that backend's own listing, so it's already right.
   Pinned end to end against real Samba by `execute/tests/smb_share.rs` (the NFC scope finds its file; the NFD one lands
@@ -123,10 +123,10 @@ Deleted with the fan-out (❌ don't reintroduce): the k-way merge, `ColdVolumePo
 
 An SMB volume id is `smb_volume_id(server, port, share)`, keyed on the ADDRESS the share was mounted from, so one NAS
 reached over Tailscale and over the LAN gets two ids and two full index DBs (David's box: 2.6 M entries and ~525 MB
-EACH, both stamping `volume_path = /Volumes/naspi`). Under the fan-out both were scanned, hits were merged twice, and
+EACH, both stamping `volume_path = /Volumes/testshare`). Under the fan-out both were scanned, hits were merged twice, and
 two arenas stayed resident, which is why a read-time dedupe existed.
 
-With one volume per search there's nothing to dedupe: a `/Volumes/naspi` scope routes through the live `VolumeManager`
+With one volume per search there's nothing to dedupe: a `/Volumes/testshare` scope routes through the live `VolumeManager`
 to the id that IS mounted there, and the other DB is never opened. The stale DB still occupies disk (the `resources/`
 retention cap's problem, not search's) and wins straight back the moment it's the one mounted. Fixing the ROOT cause
 (keying the index on a stable server identity instead of `host:port`) was deliberately NOT attempted: see "Why the index
@@ -208,8 +208,8 @@ The read-time half of that reconciliation exists: the server GUID is recorded on
 `ReadPool` straight from `index-{id}.db` on disk — deliberately NOT via `INDEX_REGISTRY`, because the DB file is the
 source of truth and an ejected/unmounted drive's index is still searchable. The mount root is the one root function's
 answer (`location::resolve::volume_root`, the rule every agent tool reads): the LIVE volume registry's root while the
-volume is mounted, else the DB's `volume_path` meta. Live first, because a remounted share (`/Volumes/naspi-1`) still
-carries its last scan's `/Volumes/naspi` in the meta, and stripping that off a live scope matched nothing
+volume is mounted, else the DB's `volume_path` meta. Live first, because a remounted share (`/Volumes/testshare-1`) still
+carries its last scan's `/Volumes/testshare` in the meta, and stripping that off a live scope matched nothing
 (`a_live_volumes_root_beats_the_root_its_last_scan_recorded`). Historically SMB index DBs never wrote `volume_path`
 (only the local scan-completion path did); both the SMB scan-completion path and `start_indexing_for_smb` now persist
 it (the latter heals an existing DB on the next registration — no rescan).
@@ -244,14 +244,14 @@ indexer itself lags by seconds. Evidence: `docs/notes/search-latency-2026-07-28.
 ### Mount-relative path spaces (the load-bearing gotcha)
 
 A non-root volume's index `ROOT_ID` is its MOUNT ROOT, so it stores mount-relative paths (`/sub/file`, not
-`/Volumes/naspi/sub/file`). Two mirror transforms bridge the spaces:
+`/Volumes/testshare/sub/file`). Two mirror transforms bridge the spaces:
 
 - **Read side** — `engine::search_ranked` takes a `path_prefix` (the mount root, empty for root) and PREPENDS it to
-  every reconstructed path, so a NAS result reports `/Volumes/naspi/sub/file` and opens in a pane.
+  every reconstructed path, so a NAS result reports `/Volumes/testshare/sub/file` and opens in a pane.
 - **Scope side** — `seam::resolve_scope` STRIPS the mount root from each include path (`query::to_index_relative`)
   before the source looks it up (`IndexSource` through `store::resolve_path`, which walks from `ROOT_ID`), with two
   special cases:
-  - **The mount root itself** (`/Volumes/naspi` → stripped to `/`) means the WHOLE VOLUME — routing already scoped to
+  - **The mount root itself** (`/Volumes/testshare` → stripped to `/`) means the WHOLE VOLUME — routing already scoped to
     this volume, so there's no sub-restriction: `ResolvedScope::Whole`. Without this, the empty strip resolved to
     nothing and every volume-root scope returned 0.
   - **A path not found in the volume's index** (a typo, a since-deleted folder, or one outside the mount root) is

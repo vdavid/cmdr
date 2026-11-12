@@ -1366,13 +1366,13 @@ switcher's port is what moved them here):
 - **VoiceOver reads every house menu, submenus included** (macOS 27.0, VoiceOver 10, dev builds at `1e669900c` and
   `f58df3754`, real keys with the spoken text polled through VoiceOver's AppleScript bridge, 2026-10-15). Volume
   switcher: ⌥F1 "Macintosh HD APFS current location menu item, group Volumes group (2 of 4)" (the deferred active
-  descendant at work: without it, only "menu Volume switcher"); → "naspi on 100.127.48.122 expanded submenu", ↓ "Connect
-  directly now selected menu item (2 of 4)", ↓ "Use Cmdr's fast direct connection selected checked menu item (4 of 4)",
-  ← "… collapsed submenu", Escape twice back to the list's cursor row; ⌥F1 then `Tab` keeps focus on the moved chooser.
-  Favorites (⌃D): "Applications collapsed submenu Favorites group (1 of 2)", ↓ "Desktop collapsed submenu". Archive
-  Enter popup: "Browse like a folder menu item menu Open archive or bundle", ↓ "Open with default app menu item".
-  Drive-index badge menu: "Rescan now menu item menu Drive index status", ↓ "Turn off indexing for this drive menu
-  item", Escape back to the badge. A submenu that never takes focus itself stays silent on every ↓. The viewer's
+  descendant at work: without it, only "menu Volume switcher"); → "testshare on 100.64.0.10 expanded submenu", ↓
+  "Connect directly now selected menu item (2 of 4)", ↓ "Use Cmdr's fast direct connection selected checked menu item (4
+  of 4)", ← "… collapsed submenu", Escape twice back to the list's cursor row; ⌥F1 then `Tab` keeps focus on the moved
+  chooser. Favorites (⌃D): "Applications collapsed submenu Favorites group (1 of 2)", ↓ "Desktop collapsed submenu".
+  Archive Enter popup: "Browse like a folder menu item menu Open archive or bundle", ↓ "Open with default app menu
+  item". Drive-index badge menu: "Rescan now menu item menu Drive index status", ↓ "Turn off indexing for this drive
+  menu item", Escape back to the badge. A submenu that never takes focus itself stays silent on every ↓. The viewer's
   right-click menu (native muda, not this primitive) was heard by ear in David's VoiceOver guide run on `main` at
   `8feba4c02` (2026-10-15). Full log: `docs/notes/accessibility-audit-2026-10.md` § VoiceOver listening runs.
 

@@ -13,17 +13,17 @@ import type { VolumeInfo } from '#lib/file-explorer/types.js'
 
 function row(overrides: Partial<HubRow> = {}): HubRow {
   return {
-    id: 'sftp-nas.local-22-ada',
+    id: 'sftp-testnas.local-22-test_user_1',
     kind: 'server',
     parentId: null,
     account: null,
     place: null,
-    name: 'Naspolya',
+    name: 'Testnas',
     protocol: 'sftp',
-    address: 'nas.local:22',
+    address: 'testnas.local:22',
     status: 'saved',
     lastConnectedAt: null,
-    volumeId: 'sftp-nas.local-22-ada',
+    volumeId: 'sftp-testnas.local-22-test_user_1',
     pinned: true,
     saved: null,
     host: null,
@@ -33,9 +33,9 @@ function row(overrides: Partial<HubRow> = {}): HubRow {
 
 function volume(overrides: Partial<VolumeInfo> = {}): VolumeInfo {
   return {
-    id: 'webdav-nas.local-5006-ada',
+    id: 'webdav-testnas.local-5006-test_user_1',
     name: 'Nextcloud',
-    path: 'webdav://ada@nas.local:5006',
+    path: 'webdav://test_user_1@testnas.local:5006',
     category: 'network',
     isEjectable: false,
     fsType: 'webdav',
@@ -47,18 +47,18 @@ function volume(overrides: Partial<VolumeInfo> = {}): VolumeInfo {
 describe('serverCommandTarget', () => {
   it('takes the hub row under the cursor when the focused pane is the hub', () => {
     const target = serverCommandTarget({ cursorRow: row(), paneVolume: null })
-    expect(target).toEqual({ volumeId: 'sftp-nas.local-22-ada', name: 'Naspolya', pinned: true })
+    expect(target).toEqual({ volumeId: 'sftp-testnas.local-22-test_user_1', name: 'Testnas', pinned: true })
   })
 
   it('falls back to the focused pane’s own volume when it is a server place', () => {
     const target = serverCommandTarget({ cursorRow: null, paneVolume: volume() })
-    expect(target?.volumeId).toBe('webdav-nas.local-5006-ada')
+    expect(target?.volumeId).toBe('webdav-testnas.local-5006-test_user_1')
     expect(target?.name).toBe('Nextcloud')
   })
 
   it('prefers the cursor row over the pane volume, because the cursor is what the user is looking at', () => {
     const target = serverCommandTarget({ cursorRow: row(), paneVolume: volume() })
-    expect(target?.volumeId).toBe('sftp-nas.local-22-ada')
+    expect(target?.volumeId).toBe('sftp-testnas.local-22-test_user_1')
   })
 
   it('answers nothing for an SMB host row: its places are mounted shares, not one place', () => {

@@ -36,7 +36,7 @@ async fn an_add_without_a_dial_writes_the_store_and_contacts_nothing() {
         display_name: "Build box".to_string(),
         host: "192.0.2.81".to_string(),
         port: 22,
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         remote_root: "/srv".to_string(),
         start_folder: None,
         key_file: None,
@@ -44,7 +44,7 @@ async fn an_add_without_a_dial_writes_the_store_and_contacts_nothing() {
         auto_reconnect: false,
     })
     .await;
-    let sftp = sftp_known_servers::find("192.0.2.81", 22, "ada").expect("saved");
+    let sftp = sftp_known_servers::find("192.0.2.81", 22, "test_user_1").expect("saved");
     assert!(sftp.pinned, "a new place shows in the switcher, as the add form's does");
     assert_eq!(sftp.last_connected_at, "", "a save claims no connection");
 
@@ -52,13 +52,13 @@ async fn an_add_without_a_dial_writes_the_store_and_contacts_nothing() {
     saved_without_contact(ServerTarget::Webdav {
         display_name: "NAS over dav".to_string(),
         url: url.to_string(),
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         remote_root: "/".to_string(),
         start_folder: None,
         auto_reconnect: false,
     })
     .await;
-    let webdav = webdav_known_servers::find(url, "ada").expect("saved");
+    let webdav = webdav_known_servers::find(url, "test_user_1").expect("saved");
     assert_eq!(webdav.last_connected_at, "", "a save claims no connection");
 
     let s3 = saved_without_contact(ServerTarget::S3 {

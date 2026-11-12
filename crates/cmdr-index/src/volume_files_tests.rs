@@ -1,6 +1,6 @@
 use super::*;
 
-const VOLUME_ID: &str = "smb-192-168-1-111-445-naspi-bbe2c537964d80d0";
+const VOLUME_ID: &str = "smb-192-168-50-10-445-testshare-bbe2c537964d80d0";
 
 #[test]
 fn the_wider_removal_takes_every_store_either_takes() {
@@ -114,7 +114,7 @@ fn removing_a_volume_leaves_every_other_volumes_files() {
     let dir = tempfile::tempdir().expect("temp dir");
     let dirs = StoreDirs::single(dir.path());
     write_every_file(&dirs, "smb-nas");
-    let neighbours = write_every_file(&dirs, "smb-nas.local-photos");
+    let neighbours = write_every_file(&dirs, "smb-testnas.local-photos");
     let root = write_every_file(&dirs, "root");
 
     remove(&dirs, "smb-nas", Removal::Unreachable).expect("remove");

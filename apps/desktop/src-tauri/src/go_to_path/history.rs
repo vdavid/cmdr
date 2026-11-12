@@ -99,19 +99,24 @@ mod tests {
     #[test]
     fn a_server_move_respells_the_recent_paths_under_its_old_address() {
         let list = RecentsFile::<RecentPathEntry>::new();
-        list.add_at(None, entry("sftp://ada@nas.local:2222/srv"), MAX_RECENTS);
+        list.add_at(None, entry("sftp://test_user_1@testnas.local:2222/srv"), MAX_RECENTS);
         list.add_at(None, entry("/Users/x/a"), MAX_RECENTS);
-        list.add_at(None, entry("sftp://ada@nas.local:22/srv/data"), MAX_RECENTS);
+        list.add_at(None, entry("sftp://test_user_1@testnas.local:22/srv/data"), MAX_RECENTS);
 
-        follow_server_move_at(&list, None, "sftp://ada@nas.local:22", "sftp://ada@10.0.0.5:22");
+        follow_server_move_at(
+            &list,
+            None,
+            "sftp://test_user_1@testnas.local:22",
+            "sftp://test_user_1@10.0.0.5:22",
+        );
 
         let paths: Vec<String> = list.entries(None).into_iter().map(|e| e.path).collect();
         assert_eq!(
             paths,
             [
-                "sftp://ada@10.0.0.5:22/srv/data",
+                "sftp://test_user_1@10.0.0.5:22/srv/data",
                 "/Users/x/a",
-                "sftp://ada@nas.local:2222/srv"
+                "sftp://test_user_1@testnas.local:2222/srv"
             ]
         );
     }
@@ -120,13 +125,18 @@ mod tests {
     #[test]
     fn a_server_move_onto_a_path_already_listed_keeps_one_row() {
         let list = RecentsFile::<RecentPathEntry>::new();
-        list.add_at(None, entry("sftp://ada@10.0.0.5:22/srv"), MAX_RECENTS);
-        list.add_at(None, entry("sftp://ada@nas.local:22/srv"), MAX_RECENTS);
+        list.add_at(None, entry("sftp://test_user_1@10.0.0.5:22/srv"), MAX_RECENTS);
+        list.add_at(None, entry("sftp://test_user_1@testnas.local:22/srv"), MAX_RECENTS);
 
-        follow_server_move_at(&list, None, "sftp://ada@nas.local:22", "sftp://ada@10.0.0.5:22");
+        follow_server_move_at(
+            &list,
+            None,
+            "sftp://test_user_1@testnas.local:22",
+            "sftp://test_user_1@10.0.0.5:22",
+        );
 
         let paths: Vec<String> = list.entries(None).into_iter().map(|e| e.path).collect();
-        assert_eq!(paths, ["sftp://ada@10.0.0.5:22/srv"]);
+        assert_eq!(paths, ["sftp://test_user_1@10.0.0.5:22/srv"]);
     }
 
     #[test]

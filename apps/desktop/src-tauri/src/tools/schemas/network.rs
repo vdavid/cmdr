@@ -36,7 +36,7 @@ pub fn upgrade_smb_to_direct_schema() -> Value {
         "properties": {
             "volumeId": {
                 "type": "string",
-                "description": "Volume ID of the SMB share (e.g. smb-192-168-1-111-445-naspi). See cmdr://state volumes."
+                "description": "Volume ID of the SMB share (e.g. smb-192-168-50-10-445-testshare). See cmdr://state volumes."
             }
         },
         "required": ["volumeId"],

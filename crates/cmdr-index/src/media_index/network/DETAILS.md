@@ -4,9 +4,9 @@ The depth behind `CLAUDE.md`. Read this before any non-trivial work here: editin
 Subsystem-wide context lives in `media_index/DETAILS.md`; the scheduler that routes SMB volumes here is
 `../scheduler/DETAILS.md` § The lifecycle bus.
 
-Making an opted-in NAS's images searchable by content is the headline use case (`/Volumes/naspi` over SMB). `importance`
-follows a hard rule ("never a filesystem syscall against an SMB/MTP mount"), but media enrichment MUST read image bytes
-off the wire, so everything network lives here. Scoped to the existing Vision backend — no new models.
+Making an opted-in NAS's images searchable by content is the headline use case (`/Volumes/testshare` over SMB).
+`importance` follows a hard rule ("never a filesystem syscall against an SMB/MTP mount"), but media enrichment MUST read
+image bytes off the wire, so everything network lives here. Scoped to the existing Vision backend — no new models.
 
 ## The byte-fetch decision (`fetch.rs`) — the app's own session first, OS mount as fallback
 
@@ -56,9 +56,9 @@ let a `match` handle one and skip another.
 
 **Path mapping.** An SMB index's `ROOT_ID` is the mount root, so `walk_image_entries` reconstructs MOUNT-RELATIVE paths
 (`/DCIM/x.jpg`). `os_join(mount_root, rel)` prepends the mount root to reach the real file
-(`/Volumes/naspi/DCIM/x.jpg`); for the `root`/local volume the mount root is `/`, so the path passes through unchanged.
-The stored `media.db` row keeps the index-relative identity (matching the index + GC set); the network-enrichment UI
-reconstructs the display/open path via the mount root.
+(`/Volumes/testshare/DCIM/x.jpg`); for the `root`/local volume the mount root is `/`, so the path passes through
+unchanged. The stored `media.db` row keeps the index-relative identity (matching the index + GC set); the
+network-enrichment UI reconstructs the display/open path via the mount root.
 
 **Non-blocking discipline (the crux).** A network read can block indefinitely on a hung transport. `FsByteFetcher` runs
 its `std::fs` read on a throwaway thread and waits with `recv_timeout`; `VolumeByteFetcher` bounds the whole async read

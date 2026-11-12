@@ -306,7 +306,7 @@ gvfsd-fuse /run/user/1000/gvfs fuse.gvfsd-fuse rw 0 0
         );
         assert!(
             !private(
-                "pcloud /home/sven/pCloudDrive fuse.pcloud rw,nosuid,nodev,relatime,user_id=1000,group_id=1000 0 0"
+                "pcloud /home/test_user_6/pCloudDrive fuse.pcloud rw,nosuid,nodev,relatime,user_id=1000,group_id=1000 0 0"
             ),
             "this account's own"
         );
@@ -318,7 +318,7 @@ gvfsd-fuse /run/user/1000/gvfs fuse.gvfsd-fuse rw 0 0
         // NTFS disk is mounted with `allow_other`.
         assert!(private("vault /mnt/vault fuse rw,relatime,user_id=0,group_id=0 0 0"));
         assert!(!private(
-            "/dev/sdb1 /media/sven/Win fuseblk rw,relatime,user_id=0,group_id=0,default_permissions,allow_other,blksize=4096 0 0"
+            "/dev/sdb1 /media/test_user_6/Win fuseblk rw,relatime,user_id=0,group_id=0,default_permissions,allow_other,blksize=4096 0 0"
         ));
         // Not FUSE, so there's no such rule: a CIFS `uid=` says who owns the files.
         assert!(!private("/dev/sdb1 /mnt/data xfs rw,relatime 0 0"));
@@ -336,7 +336,7 @@ gvfsd-fuse /run/user/1000/gvfs fuse.gvfsd-fuse rw 0 0
         let content = format!(
             "\
 /dev/sda1 / ext4 rw,relatime 0 0
-pcloud /home/sven/pCloudDrive fuse.pcloud rw,nosuid,nodev,relatime,user_id={me},group_id={me} 0 0
+pcloud /home/test_user_6/pCloudDrive fuse.pcloud rw,nosuid,nodev,relatime,user_id={me},group_id={me} 0 0
 pcloud /home/rin/pCloudDrive fuse.pcloud rw,nosuid,nodev,relatime,user_id={someone_else},group_id={someone_else} 0 0
 "
         );
@@ -344,9 +344,9 @@ pcloud /home/rin/pCloudDrive fuse.pcloud rw,nosuid,nodev,relatime,user_id={someo
 
         let volumes = get_mounted_volumes_with(&mounts, path_volume_id);
         let paths: Vec<&str> = volumes.iter().map(|v| v.path.as_str()).collect();
-        assert_eq!(paths, ["/home/sven/pCloudDrive"]);
+        assert_eq!(paths, ["/home/test_user_6/pCloudDrive"]);
 
-        assert_eq!(registrable_roots(mounts, me), ["/", "/home/sven/pCloudDrive"]);
+        assert_eq!(registrable_roots(mounts, me), ["/", "/home/test_user_6/pCloudDrive"]);
     }
 
     #[test]
@@ -392,8 +392,8 @@ share /mnt/cmdr virtiofs rw,relatime 0 0
         // so the two rows couldn't both be honest about where they navigate.
         let content = "\
 /dev/vda1 / ext4 rw,relatime 0 0
-//192.168.1.111/naspi /mnt/naspi-second cifs rw,relatime 0 0
-//192.168.1.111/naspi /mnt/naspi cifs rw,relatime 0 0
+//192.168.50.10/testshare /mnt/testshare-second cifs rw,relatime 0 0
+//192.168.50.10/testshare /mnt/testshare cifs rw,relatime 0 0
 /dev/sdb1 /srv/exported-data xfs rw,relatime 0 0
 /dev/sdb1 /mnt/data xfs rw,relatime 0 0
 ";
@@ -413,7 +413,7 @@ share /mnt/cmdr virtiofs rw,relatime 0 0
         let paths: Vec<&str> = volumes.iter().map(|v| v.path.as_str()).collect();
         assert_eq!(
             paths,
-            ["/mnt/data", "/mnt/naspi"],
+            ["/mnt/data", "/mnt/testshare"],
             "each filesystem publishes once, at its shortest mount root"
         );
     }

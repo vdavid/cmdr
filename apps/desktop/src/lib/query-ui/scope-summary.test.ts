@@ -36,12 +36,12 @@ describe('scopeSummaryFor', () => {
   })
 
   it('tolerates a trailing slash on a mount root', () => {
-    expect(scopeSummaryFor(input({ defaultScopePath: '/Volumes/naspi/photos/' }))).toBe('photos')
+    expect(scopeSummaryFor(input({ defaultScopePath: '/Volumes/testshare/photos/' }))).toBe('photos')
   })
 
   it('names a folder inside a remote volume, but not the remote root itself', () => {
-    expect(scopeSummaryFor(input({ defaultScopePath: 'smb://nas.local/share/photos' }))).toBe('photos')
-    expect(scopeSummaryFor(input({ defaultScopePath: 'smb://nas.local', defaultScopeLabel: 'This volume' }))).toBe(
+    expect(scopeSummaryFor(input({ defaultScopePath: 'smb://testnas.local/share/photos' }))).toBe('photos')
+    expect(scopeSummaryFor(input({ defaultScopePath: 'smb://testnas.local', defaultScopeLabel: 'This volume' }))).toBe(
       'This volume',
     )
   })

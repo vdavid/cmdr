@@ -342,7 +342,7 @@ export interface BrowseUnlockRequest {
 export interface UnlockPromptPropsData {
   /** What's locked, as the backend's `NeedsPassword` said. */
   container: UnlockContainer
-  /** Display name: the archive file ("photos.zip") or the repo folder ("m3-restic"). */
+  /** Display name: the archive file ("photos.zip") or the repo folder ("test-restic"). */
   name: string
   /** True when a password was rejected: re-prompt with distinct copy. */
   wrongAttempt: boolean

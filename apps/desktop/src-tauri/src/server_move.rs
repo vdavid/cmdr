@@ -2,7 +2,7 @@
 //! that follows it there. An SMB host's move waits for its shares' first mounts:
 //! `server_move_smb.rs`.
 //!
-//! A server that MOVED (a NAS on a new IP, `nas.local` → its Tailscale name, a new
+//! A server that MOVED (a NAS on a new IP, `testnas.local` → its Tailscale name, a new
 //! port) keeps its pin, its settings, its password, its favorites, and the tabs
 //! on it. The protocol and the account never move: another account is another
 //! place, so an edit naming one is refused (`AccountChanged`).

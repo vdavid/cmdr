@@ -176,7 +176,7 @@ fn indexed_but_missing_path_is_a_distinct_not_in_index_note() {
 #[test]
 fn a_folder_the_index_doesnt_list_is_never_authoritative() {
     let result = build_list_dir(
-        &at("/Volumes/naspi/papers"),
+        &at("/Volumes/testshare/documents"),
         None,
         None,
         &fresh_volume(),
@@ -834,7 +834,7 @@ fn a_not_connected_volume_answers_volume_not_connected_with_nearby_and_same_shar
 
     let share = |id: &str, root: &str, live: bool| VolumeFact {
         id: id.to_string(),
-        name: format!("naspi ({id})"),
+        name: format!("testshare ({id})"),
         kind: VolumeKind::Smb,
         root: root.to_string(),
         live,
@@ -849,14 +849,14 @@ fn a_not_connected_volume_answers_volume_not_connected_with_nearby_and_same_shar
     };
     let facts = VolumeFacts {
         volumes: vec![
-            share("saved", "/Volumes/naspi", false),
-            share("live", "/Volumes/naspi-1", true),
+            share("saved", "/Volumes/testshare", false),
+            share("live", "/Volumes/testshare-1", true),
         ],
         mount_areas: vec!["/Volumes".to_string()],
     };
     let input = LocationInput {
         volume_id: Some("saved".to_string()),
-        path: "/Volumes/naspi/papers".to_string(),
+        path: "/Volumes/testshare/documents".to_string(),
     };
     let resolved = resolve(&facts, &input).expect("a named volume resolves");
     assert!(!resolved.live);
@@ -865,17 +865,17 @@ fn a_not_connected_volume_answers_volume_not_connected_with_nearby_and_same_shar
     assert_eq!(wire["miss"], "volumeNotConnected");
     assert_eq!(
         wire["location"],
-        json!({ "volumeId": "saved", "path": "/Volumes/naspi/papers" })
+        json!({ "volumeId": "saved", "path": "/Volumes/testshare/documents" })
     );
     assert_eq!(
         wire["nearby"],
         json!([{
             "volumeId": "live",
-            "name": "naspi (live)",
+            "name": "testshare (live)",
             "kind": "smb",
             "connectionState": "direct",
-            "root": "/Volumes/naspi-1",
-            "candidate": { "volumeId": "live", "path": "/Volumes/naspi-1/papers" },
+            "root": "/Volumes/testshare-1",
+            "candidate": { "volumeId": "live", "path": "/Volumes/testshare-1/documents" },
         }]),
         "the volume the miss is about isn't its own suggestion"
     );
@@ -903,7 +903,7 @@ fn an_offline_answer_is_dated_stale_and_never_authoritative() {
         enabled: false,
         freshness: None,
         reach: IndexReach::Offline {
-            name: "naspi on 100.127.48.122".to_string(),
+            name: "testshare on 100.64.0.10".to_string(),
             as_of: Some(1_761_000_000),
         },
         ..fresh_volume()
@@ -911,7 +911,7 @@ fn an_offline_answer_is_dated_stale_and_never_authoritative() {
     let page = page_of(vec![row("hetzner.pdf", RowKind::File, Some(10))]);
     let stats = dir_stats(10, true, false, false);
     let result = build_list_dir(
-        &at("/Volumes/naspi/p"),
+        &at("/Volumes/testshare/p"),
         Some(page),
         Some(&stats),
         &offline,
@@ -928,7 +928,7 @@ fn an_offline_answer_is_dated_stale_and_never_authoritative() {
     );
     let note = wire["coverage"]["note"].as_str().expect("a note");
     assert!(
-        note.contains("naspi on 100.127.48.122") && note.contains("Connect it"),
+        note.contains("testshare on 100.64.0.10") && note.contains("Connect it"),
         "{note}"
     );
     assert_eq!(wire["size"]["recursiveSize"], 10, "the stored totals still answer");

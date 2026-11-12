@@ -15,7 +15,7 @@ const ROOT: &str = "/srv/data";
 /// The prefix this crate's test volume mints, spelled out so a cell reads as the
 /// app would see it. `webdav://` whatever the transport is: `http` and `https` to
 /// one host and port are the same server.
-const PREFIX: &str = "webdav://ada@127.0.0.1:1";
+const PREFIX: &str = "webdav://test_user_1@127.0.0.1:1";
 
 #[test]
 fn every_spelling_of_the_root_is_the_root() {
@@ -80,7 +80,7 @@ fn a_sibling_that_shares_a_prefix_is_refused() {
 fn another_accounts_prefix_is_refused() {
     let volume = make_test_volume(ROOT);
     assert!(matches!(
-        volume.to_remote_path(Path::new("webdav://grace@127.0.0.1:1/srv/data/photos")),
+        volume.to_remote_path(Path::new("webdav://test_user_2@127.0.0.1:1/srv/data/photos")),
         Err(VolumeError::NotFound(_))
     ));
 }

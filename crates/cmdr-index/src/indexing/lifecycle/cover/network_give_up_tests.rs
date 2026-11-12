@@ -190,15 +190,15 @@ fn a_frontier_root_that_will_not_list_covers_nothing() {
 
 /// Regression: a frontier root the share doesn't have under that name is a
 /// FAILED root, named as one. A scope path spelled the way macOS smbfs spells it
-/// (`Rymdskottka\u{308}rra`, NFD) reached a QNAP that stores NFC, the server said
+/// (`Testfo\u{308}retag`, NFD) reached a QNAP that stores NFC, the server said
 /// `STATUS_OBJECT_NAME_NOT_FOUND`, and the walk dropped the root with nothing but
 /// a log line: the search said "no matches" over a folder nothing read.
 #[test]
 fn a_frontier_root_the_share_does_not_have_is_named_as_failed() {
     let share = Share::new("cover-share-missing-root-test", |t| {
-        vec![t.dir("Rymdskottkärra AB"), t.file("Rymdskottkärra AB/a.pdf", 1)]
+        vec![t.dir("Testföretag AB"), t.file("Testföretag AB/a.pdf", 1)]
     });
-    let spelled_otherwise = share.path("Rymdskottka\u{308}rra AB");
+    let spelled_otherwise = share.path("Testfo\u{308}retag AB");
 
     let (entries, outcome) = drain(share.walk(&spelled_otherwise).0);
 

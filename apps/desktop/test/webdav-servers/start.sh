@@ -126,6 +126,6 @@ docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" ps
 echo ""
 echo "WebDAV servers ready. The stock one:"
 stock_port=$(docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" port webdav-fixture-apache 80 2>/dev/null | awk -F: '{print $NF}')
-[ -n "$stock_port" ] && echo "  curl -u ada:openthedoor -X PROPFIND -H 'Depth: 1' http://127.0.0.1:$stock_port/dav/"
+[ -n "$stock_port" ] && echo "  curl -u test_user_1:openthedoor -X PROPFIND -H 'Depth: 1' http://127.0.0.1:$stock_port/dav/"
 echo ""
 echo "Stop them with './apps/desktop/test/webdav-servers/stop.sh'."

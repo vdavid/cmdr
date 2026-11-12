@@ -27,9 +27,9 @@ use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 
 const PASSWORD: &str = "correct horse";
-const VOLUME_ID: &str = "smb-naspi";
-const ROOT: &str = "/Volumes/naspi/backups/m3-restic";
-const OTHER_ROOT: &str = "/Volumes/naspi/backups/mini-restic";
+const VOLUME_ID: &str = "smb-testshare";
+const ROOT: &str = "/Volumes/testshare/backups/test-restic";
+const OTHER_ROOT: &str = "/Volumes/testshare/backups/mini-restic";
 /// Backups in the fixture: each one changes a file, so each writes an index file,
 /// more than the prefetch reads at once.
 const BACKUPS: u64 = 6;
@@ -223,7 +223,7 @@ impl Rig {
             std::fs::write(source.join("a.txt"), format!("version {i}")).expect("source file");
             fixture.backup(&source, at(1_791_000_000 + i * 3_600));
         }
-        let inner = Arc::new(InMemoryVolume::new("naspi"));
+        let inner = Arc::new(InMemoryVolume::new("testshare"));
         fixture.write_into(inner.as_ref(), Path::new(ROOT)).await;
         if options.second_repo {
             fixture.write_into(inner.as_ref(), Path::new(OTHER_ROOT)).await;
@@ -685,7 +685,7 @@ async fn a_new_snapshot_reloads_the_index_while_an_old_reader_finishes() {
     std::fs::write(source.join("a.txt"), vec![7u8; 3 * 1024 * 1024]).expect("source file");
     let fixture = FixtureRepo::init(PASSWORD);
     fixture.backup(&source, at(1_791_000_000));
-    let parent = Arc::new(InMemoryVolume::new("naspi"));
+    let parent = Arc::new(InMemoryVolume::new("testshare"));
     fixture.write_into(parent.as_ref(), Path::new(ROOT)).await;
     let hub = Arc::new(ResticRepos::new(VolumeHost::detached()));
     let volume = ResticVolume::new(
@@ -884,7 +884,7 @@ async fn a_repo_replaced_in_place_opens_again_and_lists_the_new_one() {
 
     rig.delete_repo_files().await;
     let replacement = FixtureRepo::init(PASSWORD);
-    replacement.add_snapshot(at(1_795_000_000), "m3");
+    replacement.add_snapshot(at(1_795_000_000), "test-host");
     replacement.write_into(rig.parent.inner.as_ref(), Path::new(ROOT)).await;
 
     let rows = rig

@@ -322,8 +322,8 @@ mod tests {
             verb: ProposalVerb::Move,
             status: crate::agent::types::ProposalStatus::Pending,
             source_volume_id: "root".into(),
-            destination: Some("/papers/invoices".into()),
-            destination_volume_id: Some("naspi".into()),
+            destination: Some("/documents/invoices".into()),
+            destination_volume_id: Some("testshare".into()),
             reversible: crate::agent::types::Reversibility::RestoreMove,
             display_name: "invoices".into(),
             rationale: None,
@@ -346,7 +346,7 @@ mod tests {
         };
         assert_eq!(
             landing_path(&group, &op(Some("2026-07 Telia.pdf"))).as_deref(),
-            Some("/papers/invoices/2026-07 Telia.pdf")
+            Some("/documents/invoices/2026-07 Telia.pdf")
         );
         assert_eq!(landing_path(&group, &op(None)), None);
     }

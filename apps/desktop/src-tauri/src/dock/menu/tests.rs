@@ -76,9 +76,9 @@ fn only_the_open_cmdr_row_acts_without_a_frontend_command() {
 #[test]
 fn every_clickable_row_carries_a_tag_that_points_back_at_it() {
     let built = rows::menu_rows(
-        &[Candidate::bookmark("Desktop", "/Users/dave/Desktop")],
-        &[Candidate::tab("/Users/dave/code")],
-        Some(std::path::Path::new("/Users/dave")),
+        &[Candidate::bookmark("Desktop", "/Users/test_user_10/Desktop")],
+        &[Candidate::tab("/Users/test_user_10/code")],
+        Some(std::path::Path::new("/Users/test_user_10")),
     );
 
     // `native::build` tags each item with its index in this exact list, so the

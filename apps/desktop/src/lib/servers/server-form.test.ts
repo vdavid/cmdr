@@ -35,42 +35,45 @@ describe('applyParsedAddress', () => {
    * sheet dialed SSH without them clicking SFTP (cmdr-reports#8).
    */
   it('never moves the protocol toggle, whatever the address says', () => {
-    expect(typed('sven@192.168.0.153')).toMatchObject({ protocol: 'smb' })
-    expect(typed('sftp://ada@nas.local')).toMatchObject({ protocol: 'smb' })
+    expect(typed('test_user_6@192.168.50.20')).toMatchObject({ protocol: 'smb' })
+    expect(typed('sftp://test_user_1@testnas.local')).toMatchObject({ protocol: 'smb' })
     expect(typed('https://cloud.example.com', 'sftp')).toMatchObject({ protocol: 'sftp' })
-    expect(typed('smb://naspolya', 'webdav')).toMatchObject({ protocol: 'webdav' })
+    expect(typed('smb://testnas', 'webdav')).toMatchObject({ protocol: 'webdav' })
   })
 
   it('picks up the account the address carried', () => {
-    expect(typed('ada@nas.local:2222', 'sftp')).toMatchObject({ username: 'ada' })
+    expect(typed('test_user_1@testnas.local:2222', 'sftp')).toMatchObject({ username: 'test_user_1' })
     // Kept on SMB too, where the field is hidden, so switching the toggle later
     // shows what was typed.
-    expect(typed('ada@nas.local:2222')).toMatchObject({ username: 'ada' })
+    expect(typed('test_user_1@testnas.local:2222')).toMatchObject({ username: 'test_user_1' })
   })
 
   it('fills the SFTP root folder from a path, and only when the address means SFTP too', () => {
-    expect(typed('ada@nas.local:/srv/data', 'sftp')).toMatchObject({ remoteRoot: '/srv/data' })
-    expect(typed('sftp://ada@nas.local/srv/data', 'sftp')).toMatchObject({ remoteRoot: '/srv/data' })
+    expect(typed('test_user_1@testnas.local:/srv/data', 'sftp')).toMatchObject({ remoteRoot: '/srv/data' })
+    expect(typed('sftp://test_user_1@testnas.local/srv/data', 'sftp')).toMatchObject({ remoteRoot: '/srv/data' })
     // An SMB path is a share, and another protocol's path is not this one's folder.
-    expect(typed('ada@nas.local/media')).toMatchObject({ remoteRoot: '' })
-    expect(typed('smb://nas.local/media', 'sftp')).toMatchObject({ remoteRoot: '' })
+    expect(typed('test_user_1@testnas.local/media')).toMatchObject({ remoteRoot: '' })
+    expect(typed('smb://testnas.local/media', 'sftp')).toMatchObject({ remoteRoot: '' })
   })
 
   it('leaves everything alone when the address says nothing yet', () => {
     // A half-typed address is the normal state of a field someone is typing
     // into, so it must not wipe what they already put in the other fields.
-    const form = { ...emptyServerForm(), username: 'ada', protocol: 'sftp' as const }
-    expect(applyParsedAddress(form, parseServerAddress('ada@'))).toEqual(form)
+    const form = { ...emptyServerForm(), username: 'test_user_1', protocol: 'sftp' as const }
+    expect(applyParsedAddress(form, parseServerAddress('test_user_1@'))).toEqual(form)
   })
 
   /**
    * ❗ A username the ADDRESS filled follows the address: `smb://x@nas/share` changed
-   * to `nas.local:2222` kept "x" (QA round 2, m6). One the person typed stays.
+   * to `testnas.local:2222` kept "x" (QA round 2, m6). One the person typed stays.
    */
   it('drops a username the address filled once the address stops naming it', () => {
     const filled = typed('smb://x@nas/share')
     expect(filled.username).toBe('x')
-    const next = applyParsedAddress({ ...filled, address: 'nas.local:2222' }, parseServerAddress('nas.local:2222'))
+    const next = applyParsedAddress(
+      { ...filled, address: 'testnas.local:2222' },
+      parseServerAddress('testnas.local:2222'),
+    )
     expect(next.username).toBe('')
   })
 
@@ -85,17 +88,17 @@ describe('applyParsedAddress', () => {
     expect(next.username).toBe('typed')
   })
 
-  /** ❗ `\\sven@nas\share` edited toward something that doesn't parse kept "sven" (QA round 3). */
+  /** ❗ `\\test_user_6@nas\share` edited toward something that doesn't parse kept "test_user_6" (QA round 3). */
   it('drops a username the address filled once the address stops parsing', () => {
-    const filled = typed('\\\\sven@nas\\share')
-    expect(filled.username).toBe('sven')
-    const next = applyParsedAddress({ ...filled, address: 'sven@' }, parseServerAddress('sven@'))
+    const filled = typed('\\\\test_user_6@nas\\share')
+    expect(filled.username).toBe('test_user_6')
+    const next = applyParsedAddress({ ...filled, address: 'test_user_6@' }, parseServerAddress('test_user_6@'))
     expect(next.username).toBe('')
   })
 
   it('keeps a username the address did not carry', () => {
-    const form = { ...emptyServerForm(), username: 'ada' }
-    expect(applyParsedAddress(form, parseServerAddress('nas.local')).username).toBe('ada')
+    const form = { ...emptyServerForm(), username: 'test_user_1' }
+    expect(applyParsedAddress(form, parseServerAddress('testnas.local')).username).toBe('test_user_1')
   })
 })
 
@@ -113,17 +116,17 @@ describe('formFromPrefill', () => {
   it('opens on the protocol a pasted URL spells out, since that is what the person asked to open', () => {
     // Go to path hands over only addresses with a scheme, and opening a sheet on
     // `sftp://…` with SMB selected would make the person say it twice.
-    expect(formFromPrefill('sftp://ada@nas.local/srv')).toMatchObject({
+    expect(formFromPrefill('sftp://test_user_1@testnas.local/srv')).toMatchObject({
       protocol: 'sftp',
-      address: 'sftp://ada@nas.local/srv',
-      username: 'ada',
+      address: 'sftp://test_user_1@testnas.local/srv',
+      username: 'test_user_1',
       remoteRoot: '/srv',
     })
     expect(formFromPrefill('https://cloud.example.com')).toMatchObject({ protocol: 'webdav' })
   })
 
   it('stays on the default for an address that names no protocol', () => {
-    expect(formFromPrefill('ada@nas.local')).toMatchObject({ protocol: 'smb', username: 'ada' })
+    expect(formFromPrefill('test_user_1@testnas.local')).toMatchObject({ protocol: 'smb', username: 'test_user_1' })
   })
 })
 
@@ -132,24 +135,24 @@ describe('serverTargetFrom', () => {
   it('never dials a protocol the person did not select', () => {
     // SMB is the default and has no target here (its connect is a share mount),
     // so an address that looks like SFTP still dials nothing over SSH.
-    expect(serverTargetFrom(typed('sven@192.168.0.153'))).toBeNull()
-    expect(serverTargetFrom(typed('sftp://ada@nas.local'))).toBeNull()
-    expect(serverTargetFrom(typed('ssh ada@nas.local'))).toBeNull()
+    expect(serverTargetFrom(typed('test_user_6@192.168.50.20'))).toBeNull()
+    expect(serverTargetFrom(typed('sftp://test_user_1@testnas.local'))).toBeNull()
+    expect(serverTargetFrom(typed('ssh test_user_1@testnas.local'))).toBeNull()
     expect(serverTargetFrom(typed('https://cloud.example.com', 'sftp'))).toMatchObject({ protocol: 'sftp' })
   })
 
   it('builds an SFTP target from the address and the advanced fields', () => {
     const form = {
-      ...typed('ada@nas.local:2222/srv/data', 'sftp'),
+      ...typed('test_user_1@testnas.local:2222/srv/data', 'sftp'),
       keyFile: ' ~/.ssh/id_ed25519 ',
       useAgent: false,
     }
     expect(serverTargetFrom(form)).toEqual({
       protocol: 'sftp',
       displayName: '',
-      host: 'nas.local',
+      host: 'testnas.local',
       port: 2222,
-      username: 'ada',
+      username: 'test_user_1',
       remoteRoot: '/srv/data',
       startFolder: null,
       keyFile: '~/.ssh/id_ed25519',
@@ -159,44 +162,47 @@ describe('serverTargetFrom', () => {
   })
 
   it('builds a WebDAV target whose URL keeps the pasted path and drops a default port', () => {
-    const form = { ...typed('https://cloud.example.com/remote.php/dav/files/ada/', 'webdav'), username: 'ada' }
+    const form = {
+      ...typed('https://cloud.example.com/remote.php/dav/files/test_user_1/', 'webdav'),
+      username: 'test_user_1',
+    }
     expect(serverTargetFrom(form)).toMatchObject({
       protocol: 'webdav',
-      url: 'https://cloud.example.com/remote.php/dav/files/ada',
-      username: 'ada',
+      url: 'https://cloud.example.com/remote.php/dav/files/test_user_1',
+      username: 'test_user_1',
       remoteRoot: '/',
     })
-    expect(serverTargetFrom({ ...typed('http://nas:8080/dav', 'webdav'), username: 'ada' })).toMatchObject({
+    expect(serverTargetFrom({ ...typed('http://nas:8080/dav', 'webdav'), username: 'test_user_1' })).toMatchObject({
       url: 'http://nas:8080/dav',
     })
   })
 
   it('dials a port the address named with no scheme on whichever protocol is selected', () => {
-    expect(serverTargetFrom(typed('ada@nas.local:2222', 'sftp'))).toMatchObject({ port: 2222 })
+    expect(serverTargetFrom(typed('test_user_1@testnas.local:2222', 'sftp'))).toMatchObject({ port: 2222 })
     expect(serverTargetFrom(typed('nas:5006/dav', 'webdav'))).toMatchObject({ url: 'https://nas:5006/dav' })
   })
 
   it('falls back to the protocol’s own port, and never carries another protocol’s over', () => {
     // ❗ A scheme's port belongs to that scheme: SMB's 445 in an SFTP dial opens a
     // socket nothing answers SSH on.
-    expect(serverTargetFrom(typed('naspolya', 'sftp'))).toMatchObject({
+    expect(serverTargetFrom(typed('testnas', 'sftp'))).toMatchObject({
       protocol: 'sftp',
-      host: 'naspolya',
+      host: 'testnas',
       port: 22,
     })
-    expect(serverTargetFrom(typed('smb://naspolya:1445/media', 'sftp'))).toMatchObject({ port: 22 })
-    expect(serverTargetFrom(typed('naspolya', 'webdav'))).toMatchObject({ url: 'https://naspolya' })
-    expect(serverTargetFrom(typed('sftp://naspolya:2222/srv', 'webdav'))).toMatchObject({ url: 'https://naspolya' })
+    expect(serverTargetFrom(typed('smb://testnas:1445/media', 'sftp'))).toMatchObject({ port: 22 })
+    expect(serverTargetFrom(typed('testnas', 'webdav'))).toMatchObject({ url: 'https://testnas' })
+    expect(serverTargetFrom(typed('sftp://testnas:2222/srv', 'webdav'))).toMatchObject({ url: 'https://testnas' })
   })
 
   it('names no target for SMB or for an address that says nothing', () => {
-    expect(serverTargetFrom(typed('naspolya'))).toBeNull()
+    expect(serverTargetFrom(typed('testnas'))).toBeNull()
     expect(serverTargetFrom(typed('not a server!!', 'sftp'))).toBeNull()
   })
 
   it('reads all three root spellings as the volume root', () => {
     for (const remoteRoot of ['', ' ', '.']) {
-      expect(serverTargetFrom({ ...typed('ada@nas.local', 'sftp'), remoteRoot })).toMatchObject({
+      expect(serverTargetFrom({ ...typed('test_user_1@testnas.local', 'sftp'), remoteRoot })).toMatchObject({
         remoteRoot: '/',
       })
     }
@@ -206,22 +212,26 @@ describe('serverTargetFrom', () => {
     // ❗ Pre-fix an empty name fell back to the whole typed address, path and
     // all, which left the edit sheet with a name that looked exactly like the
     // address and sent a person to widen the root through the wrong field.
-    expect(serverTargetFrom(typed('sftp://david@192.168.1.111:22/share/naspi/tmp', 'sftp'))).toMatchObject({
+    expect(serverTargetFrom(typed('sftp://test_user_3@192.168.50.10:22/share/testshare/tmp', 'sftp'))).toMatchObject({
       displayName: '',
     })
-    expect(serverTargetFrom({ ...typed('https://cloud.example.com/dav', 'webdav'), username: 'ada' })).toMatchObject({
+    expect(
+      serverTargetFrom({ ...typed('https://cloud.example.com/dav', 'webdav'), username: 'test_user_1' }),
+    ).toMatchObject({
       displayName: '',
     })
   })
 
   it('trims a typed name', () => {
-    expect(serverTargetFrom({ ...typed('ada@nas.local', 'sftp'), displayName: '  Naspolya ' })).toMatchObject({
-      displayName: 'Naspolya',
+    expect(
+      serverTargetFrom({ ...typed('test_user_1@testnas.local', 'sftp'), displayName: '  Testnas ' }),
+    ).toMatchObject({
+      displayName: 'Testnas',
     })
   })
 
   it('carries a typed start folder trimmed, and none when the field is empty', () => {
-    const form = typed('ada@nas.local/srv/data', 'sftp')
+    const form = typed('test_user_1@testnas.local/srv/data', 'sftp')
     expect(serverTargetFrom({ ...form, startFolder: ' /srv/data/photos ' })).toMatchObject({
       remoteRoot: '/srv/data',
       startFolder: '/srv/data/photos',
@@ -248,20 +258,20 @@ describe('smbAddressFrom', () => {
 
   it('spells an address with no scheme as an SMB URL, so `user@host` and a share path reach the backend', () => {
     // ❗ cmdr-reports#8's shape: the backend's bare-host reader refuses the `@`,
-    // so `sven@192.168.0.153` has to travel as the SMB URL it means.
-    expect(smbAddressFrom('sven@192.168.0.153')).toBe('smb://sven@192.168.0.153')
-    expect(smbAddressFrom('  naspolya:1445/media ')).toBe('smb://naspolya:1445/media')
+    // so `test_user_6@192.168.50.20` has to travel as the SMB URL it means.
+    expect(smbAddressFrom('test_user_6@192.168.50.20')).toBe('smb://test_user_6@192.168.50.20')
+    expect(smbAddressFrom('  testnas:1445/media ')).toBe('smb://testnas:1445/media')
   })
 
   it('passes an SMB URL through as typed', () => {
-    expect(smbAddressFrom('smb://Ada@NAS/media')).toBe('smb://Ada@NAS/media')
+    expect(smbAddressFrom('smb://Test_user_1@NAS/media')).toBe('smb://Test_user_1@NAS/media')
   })
 
   it('keeps only the host of an address that names another protocol', () => {
     // SMB is selected, so SMB is what gets dialed; another scheme's port and
     // path mean nothing to it.
-    expect(smbAddressFrom('sftp://ada@nas.local:2222/srv')).toBe('smb://nas.local')
-    expect(smbAddressFrom('ssh -p 2222 ada@nas.local')).toBe('smb://nas.local')
+    expect(smbAddressFrom('sftp://test_user_1@testnas.local:2222/srv')).toBe('smb://testnas.local')
+    expect(smbAddressFrom('ssh -p 2222 test_user_1@testnas.local')).toBe('smb://testnas.local')
   })
 
   it('leaves an address it can’t read to the backend, which says what is wrong with it', () => {
@@ -273,9 +283,9 @@ describe('smbAddressFrom', () => {
 describe('formFromSftpServer', () => {
   it('opens an unnamed server with an empty name field, never its label or address', () => {
     const form = formFromSftpServer({
-      host: 'nas.local',
+      host: 'testnas.local',
       port: 22,
-      username: 'ada',
+      username: 'test_user_1',
       displayName: '',
       remoteRoot: '/srv/data',
       startFolder: '/srv/data/photos',
@@ -315,7 +325,7 @@ describe('isStartFolderUnderRoot', () => {
 
   it('refuses a folder above or beside the root', () => {
     expect(isStartFolderUnderRoot('/srv/data', '/srv')).toBe(false)
-    expect(isStartFolderUnderRoot('/srv/data', '/home/ada')).toBe(false)
+    expect(isStartFolderUnderRoot('/srv/data', '/home/test_user_1')).toBe(false)
   })
 
   it('resolves `.` and `..` the way the backend does before comparing', () => {
@@ -331,15 +341,15 @@ describe('isStartFolderUnderRoot', () => {
 
   it('treats every root spelling of the server root as holding everything', () => {
     for (const root of ['', '.', '/']) {
-      expect(isStartFolderUnderRoot(root, '/home/ada')).toBe(true)
+      expect(isStartFolderUnderRoot(root, '/home/test_user_1')).toBe(true)
     }
   })
 })
 
 describe('nextcloudAddress', () => {
   it('appends the collection path nobody knows', () => {
-    expect(nextcloudAddress('https://cloud.example.com/', 'ada')).toBe(
-      'https://cloud.example.com/remote.php/dav/files/ada/',
+    expect(nextcloudAddress('https://cloud.example.com/', 'test_user_1')).toBe(
+      'https://cloud.example.com/remote.php/dav/files/test_user_1/',
     )
   })
 
@@ -406,10 +416,10 @@ describe('withSavedAccount', () => {
   })
 
   it('leaves an account the person or the address already named', () => {
-    const typed = { ...emptyServerForm(), address: 'localhost:11481', username: 'ada' }
-    expect(withSavedAccount(typed, [saved]).username).toBe('ada')
-    const inAddress = typed_('smb://sven@localhost:11481/private')
-    expect(withSavedAccount(inAddress, [saved]).username).toBe('sven')
+    const typed = { ...emptyServerForm(), address: 'localhost:11481', username: 'test_user_1' }
+    expect(withSavedAccount(typed, [saved]).username).toBe('test_user_1')
+    const inAddress = typed_('smb://test_user_6@localhost:11481/private')
+    expect(withSavedAccount(inAddress, [saved]).username).toBe('test_user_6')
   })
 })
 
@@ -482,8 +492,8 @@ describe('the S3 form', () => {
   })
 
   it('lets no address left over from another protocol fill the access key ID', () => {
-    const sftp = typed('ada@nas.local', 'sftp')
-    expect(sftp.username).toBe('ada')
+    const sftp = typed('test_user_1@testnas.local', 'sftp')
+    expect(sftp.username).toBe('test_user_1')
     const switched = applyParsedAddress({ ...sftp, protocol: 's3' }, parseServerAddress(sftp.address))
     expect(switched.username).toBe('')
   })

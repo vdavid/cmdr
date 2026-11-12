@@ -6,7 +6,7 @@ use crate::propfind::PropfindEntry;
 /// Builds a [`FileEntry`] from one PROPFIND response.
 ///
 /// ❗ `app_path` is the APP spelling, prefix and all
-/// (`webdav://ada@nas.local:443/Photos/a.jpg`), ❌ never the bare remote path.
+/// (`webdav://test_user_1@testnas.local:443/Photos/a.jpg`), ❌ never the bare remote path.
 /// A pane holds what a listing hands it and passes it straight back, and the app
 /// anchors it against the volume root on the way (`root_anchored`), so a bare
 /// remote path would come back doubled. `RemoteRoot::to_app_path` is where it is
@@ -61,13 +61,13 @@ pub(super) fn self_entry_index(own: &str, hrefs: &[&str]) -> Option<usize> {
 mod tests {
     use super::self_entry_index;
 
-    const OWN: &str = "/remote.php/dav/files/ada/Photos";
+    const OWN: &str = "/remote.php/dav/files/test_user_1/Photos";
 
     #[test]
     fn the_exact_path_wins_in_any_position() {
         let hrefs = [
-            "/remote.php/dav/files/ada/Photos/a.jpg",
-            "/remote.php/dav/files/ada/Photos/",
+            "/remote.php/dav/files/test_user_1/Photos/a.jpg",
+            "/remote.php/dav/files/test_user_1/Photos/",
         ];
         assert_eq!(self_entry_index(OWN, &hrefs), Some(1));
     }
@@ -75,8 +75,8 @@ mod tests {
     #[test]
     fn a_child_named_like_its_folder_is_never_the_self_entry() {
         let hrefs = [
-            "/remote.php/dav/files/ada/Photos/Photos/",
-            "/remote.php/dav/files/ada/Photos/",
+            "/remote.php/dav/files/test_user_1/Photos/Photos/",
+            "/remote.php/dav/files/test_user_1/Photos/",
         ];
         assert_eq!(self_entry_index(OWN, &hrefs), Some(1));
     }
@@ -85,11 +85,11 @@ mod tests {
     fn a_proxy_that_strips_a_path_prefix_still_finds_the_self_entry() {
         // Cmdr asked for `/cloud/remote.php/...`; the Nextcloud behind the proxy
         // answers as if it lived at the root.
-        let own = "/cloud/remote.php/dav/files/ada/Photos";
+        let own = "/cloud/remote.php/dav/files/test_user_1/Photos";
         let hrefs = [
-            "/remote.php/dav/files/ada/Photos/a.jpg",
-            "/remote.php/dav/files/ada/Photos/",
-            "/remote.php/dav/files/ada/Photos/Trips/",
+            "/remote.php/dav/files/test_user_1/Photos/a.jpg",
+            "/remote.php/dav/files/test_user_1/Photos/",
+            "/remote.php/dav/files/test_user_1/Photos/Trips/",
         ];
         assert_eq!(self_entry_index(own, &hrefs), Some(1));
     }
@@ -97,8 +97,8 @@ mod tests {
     #[test]
     fn a_proxy_that_adds_a_path_prefix_still_finds_the_self_entry() {
         let hrefs = [
-            "/cloud/remote.php/dav/files/ada/Photos/",
-            "/cloud/remote.php/dav/files/ada/Photos/Photos/",
+            "/cloud/remote.php/dav/files/test_user_1/Photos/",
+            "/cloud/remote.php/dav/files/test_user_1/Photos/Photos/",
         ];
         assert_eq!(self_entry_index(OWN, &hrefs), Some(0));
     }
@@ -107,8 +107,8 @@ mod tests {
     fn a_rewritten_empty_folder_hides_its_lone_self_entry() {
         assert_eq!(
             self_entry_index(
-                "/cloud/remote.php/dav/files/ada/Photos",
-                &["/remote.php/dav/files/ada/Photos/"]
+                "/cloud/remote.php/dav/files/test_user_1/Photos",
+                &["/remote.php/dav/files/test_user_1/Photos/"]
             ),
             Some(0)
         );

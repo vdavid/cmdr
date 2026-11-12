@@ -131,7 +131,7 @@ no state push fires.
 `nav_to_path` goes one step further: its reply carries a typed outcome, so the result says what the pane DID, not what
 was asked of it. Three shapes, and only the first is an `OK`:
 
-- **Navigated**: the pane came to rest on the target. `OK: Navigated left pane to /Users/david`.
+- **Navigated**: the pane came to rest on the target. `OK: Navigated left pane to /Users/test_user_3`.
 - **Fell back**: the pane came to rest somewhere else, which is what an edge-flow fallback (MTP-fatal, retry, open-home)
   does after a destination fails to list. The error names both places: read `cmdr://state` for what the pane is showing.
 - **Didn't settle**: no listing completed inside the FE's 20 s window. The pane reports its destination optimistically

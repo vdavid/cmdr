@@ -221,10 +221,10 @@ mod tests {
     #[cfg(debug_assertions)]
     #[test]
     fn pii_guard_trips_on_pii_shaped_strings() {
-        assert!(looks_pii_shaped("/Users/dave/secret"), "absolute path");
+        assert!(looks_pii_shaped("/Users/test_user_10/secret"), "absolute path");
         assert!(looks_pii_shaped("~/Documents"), "home prefix");
         assert!(looks_pii_shaped("person@example.com"), "email");
-        assert!(looks_pii_shaped("C:\\Users\\dave"), "windows path");
+        assert!(looks_pii_shaped("C:\\Users\\test_user_10"), "windows path");
         assert!(looks_pii_shaped("photos/sunset.jpg"), "relative path");
     }
 
@@ -244,7 +244,7 @@ mod tests {
     fn sanitize_props_returns_props_unchanged() {
         // The guard only warns; it never strips. A PII-shaped value still passes through (so the
         // dev sees the warning AND the bug isn't silently masked).
-        let props = json!({ "volume_kind": "local", "leaked": "/Users/dave" });
+        let props = json!({ "volume_kind": "local", "leaked": "/Users/test_user_10" });
         let out = sanitize_props("test_event", props.clone());
         assert_eq!(out, props);
     }

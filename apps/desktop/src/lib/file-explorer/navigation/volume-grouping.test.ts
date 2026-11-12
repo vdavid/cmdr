@@ -28,9 +28,9 @@ describe('the Mobile group', () => {
 
   function mobileRow(overrides: Partial<VolumeInfo>): VolumeInfo {
     return {
-      id: 'mtp-46061fdas000a4-abc:65537',
+      id: 'mtp-testserial0001-abc:65537',
       name: 'Pixel 9 Pro XL',
-      path: 'mtp://mtp-46061fdas000a4-abc/65537',
+      path: 'mtp://mtp-testserial0001-abc/65537',
       category: 'mobile_device',
       isEjectable: true,
       fsType: 'mtp',
@@ -40,7 +40,7 @@ describe('the Mobile group', () => {
   }
 
   const adbRow = (overrides: Partial<VolumeInfo>): VolumeInfo =>
-    mobileRow({ id: 'adb-46061fdas000a4-def', path: 'adb://46061FDAS000A4', fsType: 'adb', ...overrides })
+    mobileRow({ id: 'adb-testserial0001-def', path: 'adb://TESTSERIAL0001', fsType: 'adb', ...overrides })
 
   function mobileIds(vols: VolumeInfo[]): string[] {
     return (groupByCategory(vols).find((g) => g.category === 'mobile_device')?.items ?? []).map((v) => v.id)
@@ -65,9 +65,9 @@ describe('the Mobile group', () => {
 
 function serverRow(overrides: Partial<VolumeInfo>): VolumeInfo {
   return {
-    id: 'sftp-nas-22-ada',
-    name: 'Naspolya',
-    path: 'sftp://ada@nas:22/srv/data',
+    id: 'sftp-nas-22-test_user_1',
+    name: 'Testnas',
+    path: 'sftp://test_user_1@nas:22/srv/data',
     category: 'network',
     isEjectable: false,
     fsType: 'sftp',
@@ -93,12 +93,12 @@ describe('groupByCategory: the Network group', () => {
   it('shows a connected place, pinned or not', () => {
     // A live session earns its row through the session, never through a pin.
     const items = networkItems([serverRow({ connectionState: 'direct', pinned: false })])
-    expect(items.map((v) => v.id)).toEqual(['network', 'sftp-nas-22-ada'])
+    expect(items.map((v) => v.id)).toEqual(['network', 'sftp-nas-22-test_user_1'])
   })
 
   it('shows a pinned place that has no session, as its `saved` row', () => {
     const items = networkItems([serverRow({ connectionState: 'saved', pinned: true })])
-    expect(items.map((v) => v.id)).toEqual(['network', 'sftp-nas-22-ada'])
+    expect(items.map((v) => v.id)).toEqual(['network', 'sftp-nas-22-test_user_1'])
     expect(items[1].connectionState).toBe('saved')
   })
 
@@ -106,7 +106,7 @@ describe('groupByCategory: the Network group', () => {
     // A saved share's row carries the volume id its last mount had, so the pin
     // and the mounted share are one id and never two rows.
     const share = serverRow({
-      id: 'smb-naspi-media',
+      id: 'smb-testshare-media',
       name: 'media',
       path: '/Volumes/media',
       fsType: 'smbfs',
@@ -114,13 +114,13 @@ describe('groupByCategory: the Network group', () => {
       pinned: true,
     })
     const items = networkItems([share])
-    expect(items.map((v) => v.id)).toEqual(['network', 'smb-naspi-media'])
+    expect(items.map((v) => v.id)).toEqual(['network', 'smb-testshare-media'])
     expect(items[1].connectionState).toBe('saved')
   })
 
   it('hides an unmounted SMB share nobody pinned', () => {
     const share = serverRow({
-      id: 'smb-naspi-media',
+      id: 'smb-testshare-media',
       name: 'media',
       path: '/Volumes/media',
       fsType: 'smbfs',
@@ -142,7 +142,7 @@ describe('groupByCategory: the Network group', () => {
     // A dropped session is mid-recovery, and a row that vanishes while the
     // backoff loop runs takes the user's Disconnect control with it.
     const items = networkItems([serverRow({ connectionState: 'disconnected', pinned: false })])
-    expect(items.map((v) => v.id)).toEqual(['network', 'sftp-nas-22-ada'])
+    expect(items.map((v) => v.id)).toEqual(['network', 'sftp-nas-22-test_user_1'])
   })
 
   it('keeps a row that carries no pin at all', () => {
@@ -150,7 +150,7 @@ describe('groupByCategory: the Network group', () => {
     // to the cap, and on Linux it also carries no connection state, so a rule
     // written as "live or pinned" would drop it off the switcher entirely.
     const mounted = serverRow({
-      id: 'smb-naspi-media',
+      id: 'smb-testshare-media',
       name: 'media',
       path: '/Volumes/media',
       fsType: 'smbfs',
@@ -158,7 +158,7 @@ describe('groupByCategory: the Network group', () => {
       pinned: undefined,
     })
     const items = networkItems([mounted])
-    expect(items.map((v) => v.id)).toEqual(['network', 'smb-naspi-media'])
+    expect(items.map((v) => v.id)).toEqual(['network', 'smb-testshare-media'])
   })
 
   it('invents no row of its own beyond the hub', () => {
@@ -169,7 +169,7 @@ describe('groupByCategory: the Network group', () => {
 
   it('keeps mounted shares beside the server rows', () => {
     const mounted = serverRow({
-      id: 'smb-naspi-media',
+      id: 'smb-testshare-media',
       name: 'media',
       path: '/Volumes/media',
       fsType: 'smbfs',
@@ -177,6 +177,6 @@ describe('groupByCategory: the Network group', () => {
       pinned: undefined,
     })
     const items = networkItems([mounted, serverRow({ connectionState: 'saved', pinned: true })])
-    expect(items.map((v) => v.id)).toEqual(['network', 'smb-naspi-media', 'sftp-nas-22-ada'])
+    expect(items.map((v) => v.id)).toEqual(['network', 'smb-testshare-media', 'sftp-nas-22-test_user_1'])
   })
 })

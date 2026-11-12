@@ -22,15 +22,15 @@ fn hashes(line: &str) -> Vec<String> {
 fn a_bonjour_instance_name_is_a_host_token_and_the_service_type_stays() {
     let context = context();
     let prose = context
-        .redact_line("call queriers to resolve Naspolya._smb._tcp.local. now")
+        .redact_line("call queriers to resolve Testnas._smb._tcp.local. now")
         .into_owned();
     let keyed = context
-        .redact_line(r#"No Keychain credentials: server="Naspolya._smb._tcp.local", share="Multimedia""#)
+        .redact_line(r#"No Keychain credentials: server="Testnas._smb._tcp.local", share="Multimedia""#)
         .into_owned();
-    let bare_host = context.redact_line(r#"Resolved: server="naspolya""#).into_owned();
+    let bare_host = context.redact_line(r#"Resolved: server="testnas""#).into_owned();
 
     for line in [&prose, &keyed, &bare_host] {
-        assert!(!line.to_lowercase().contains("naspolya"), "{line}");
+        assert!(!line.to_lowercase().contains("testnas"), "{line}");
         assert!(!line.contains("Multimedia"), "{line}");
     }
     assert!(
@@ -62,7 +62,7 @@ fn a_bare_service_type_and_multi_label_local_hosts_redact_whole() {
 #[test]
 fn a_leaf_with_a_space_gets_one_token_in_every_path_shape() {
     let context = context();
-    let url = "sftp://ada@127.0.0.1:12480/srv/data/Anna Kovacs/Medical records";
+    let url = "sftp://test_user_1@127.0.0.1:12480/srv/data/Test Person/Medical records";
     let lines = [
         format!("read_directory_with_progress: listing_id=l-1, path={url}"),
         format!("ended in error: PermissionDenied {{ path: {url:?} }} (NeedsAction)"),
@@ -73,7 +73,7 @@ fn a_leaf_with_a_space_gets_one_token_in_every_path_shape() {
         .map(|line| context.redact_line(line).into_owned())
         .collect();
     for line in &redacted {
-        for private in ["Anna", "Kovacs", "Medical", "records", "ada"] {
+        for private in ["Test", "Person", "Medical", "records", "test_user_1"] {
             assert!(!line.contains(private), "{private:?} survived: {line}");
         }
     }
@@ -83,7 +83,7 @@ fn a_leaf_with_a_space_gets_one_token_in_every_path_shape() {
 
     // The typed SFTP path (no scheme) shares every segment token with the URL form.
     let typed = context
-        .redact_line(r#"SFTP path="/srv/data/Anna Kovacs/Medical records": error_kind=permission_denied"#)
+        .redact_line(r#"SFTP path="/srv/data/Test Person/Medical records": error_kind=permission_denied"#)
         .into_owned();
     let typed_hashes = hashes(&typed);
     let url_hashes = hashes(&redacted[2]);
@@ -111,13 +111,13 @@ fn an_address_gets_one_label_in_every_field() {
     assert_eq!(tokens[0], tokens[2], "{redacted}");
 }
 
-/// A dot in a name isn't an extension: `Anna.Kovacs` must not keep `.Kovacs`. Short lowercase
+/// A dot in a name isn't an extension: `Test.Person` must not keep `.Person`. Short lowercase
 /// extensions, camera-style uppercase ones, and a few known long ones stay.
 #[test]
 fn only_conservative_extensions_survive() {
     let context = context();
     for (name, kept) in [
-        ("Anna.Kovacs", None),
+        ("Test.Person", None),
         ("minutes.2026", None),
         ("report.docx", Some(".docx")),
         ("IMG_0001.JPG", Some(".JPG")),
@@ -136,15 +136,15 @@ fn only_conservative_extensions_survive() {
     }
 }
 
-/// A real folder can be named `<anna-kovacs>`; only a token with its hash (or a bare
+/// A real folder can be named `<test-person>`; only a token with its hash (or a bare
 /// placeholder word unsalted redaction writes) counts as already redacted.
 #[test]
 fn a_folder_named_like_a_token_without_a_hash_is_still_tokenized() {
     let context = context();
     let redacted = context
-        .redact_line(r#"listing path="docs/<anna-kovacs>/<dir>/plan.pdf" failed"#)
+        .redact_line(r#"listing path="docs/<test-person>/<dir>/plan.pdf" failed"#)
         .into_owned();
-    assert!(!redacted.contains("anna-kovacs"), "{redacted}");
+    assert!(!redacted.contains("test-person"), "{redacted}");
     assert!(redacted.contains("/<dir>/"), "a bare placeholder stays: {redacted}");
     assert_eq!(context.redact_line(&redacted), redacted, "idempotent");
 }

@@ -68,7 +68,7 @@ pub struct LocationInfo {
     /// ❗ `false` for a `~/Library/CloudStorage` folder, which is an ordinary directory on the
     /// data volume that the cloud-drive arm publishes and the index reads at local speed.
     pub is_cloud_mount: bool,
-    /// Whether names here tell `Ada` from `ada`: what the frontend's path and name
+    /// Whether names here tell `Test_user_1` from `test_user_1`: what the frontend's path and name
     /// comparisons follow wherever typed text meets this volume's listing
     /// (`apps/desktop/src/lib/path/grammar.ts`). ❗ The VOLUME's property, ❌ never
     /// inferred from the OS: a local disk answers its OS arm's
@@ -189,9 +189,9 @@ pub use LocationInfo as VolumeInfo;
 /// Linux) or a GVFS share's folder name.
 #[derive(Debug, Clone)]
 pub struct SmbMountInfo {
-    /// Server hostname or IP (for example, "192.168.1.111").
+    /// Server hostname or IP (for example, "192.168.50.10").
     pub server: String,
-    /// Share name, ONE path segment (for example, "naspi"). This is what goes to
+    /// Share name, ONE path segment (for example, "testshare"). This is what goes to
     /// TreeConnect, so it can never carry a separator.
     pub share: String,
     /// Where inside the share this mount is anchored, `/`-separated and without
@@ -206,7 +206,7 @@ pub struct SmbMountInfo {
     /// anchor is what a path on this mount has to be joined onto before it goes on
     /// the wire, and it reaches the backend as `SmbVolume`'s `share_root`.
     pub subpath: Option<String>,
-    /// Username if present in the mount source (for example, "david").
+    /// Username if present in the mount source (for example, "test_user_3").
     pub username: Option<String>,
     /// Port from the mount source (for example, 10480). Defaults to 445.
     pub port: u16,
@@ -217,7 +217,7 @@ pub struct SmbMountInfo {
 /// which on a slow share waits on the server.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct NetworkMount {
-    /// Where it's mounted, for example `/Volumes/naspi`.
+    /// Where it's mounted, for example `/Volumes/testshare`.
     pub mount_point: String,
     /// What the switcher calls it, from the table alone (an SMB share reads "share on server").
     pub name: String,

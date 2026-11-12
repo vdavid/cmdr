@@ -86,7 +86,7 @@ describe('FunctionKeyBar capability disablement', () => {
   it('a virtual `.git` snapshot disables F2 / F7, keeping the source ops that read real content', () => {
     const [f2Rename, f3View, f4Edit, f5Copy, f6Move, f7NewFolder, f8Delete] = mountOn(
       'root',
-      '/Users/david/code/.git/branches/main',
+      '/Users/test_user_3/code/.git/branches/main',
     )
 
     expect(f7NewFolder.disabled).toBe(true)
@@ -103,7 +103,7 @@ describe('FunctionKeyBar capability disablement', () => {
   it("a restic repo's snapshot view disables F2 / F7, keeping copy-out", () => {
     const [f2Rename, f3View, , f5Copy, , f7NewFolder] = mountOn(
       'root',
-      '/Users/david/backup/Browse snapshots/latest/Users',
+      '/Users/test_user_3/backup/Browse snapshots/latest/Users',
     )
 
     expect(f7NewFolder.disabled).toBe(true)
@@ -113,7 +113,7 @@ describe('FunctionKeyBar capability disablement', () => {
   })
 
   it('a read-only archive (tar) disables F2 / F7, keeping copy-out', () => {
-    const [f2Rename, , , f5Copy, , f7NewFolder] = mountOn('root', '/Users/david/backup.tar/etc')
+    const [f2Rename, , , f5Copy, , f7NewFolder] = mountOn('root', '/Users/test_user_3/backup.tar/etc')
 
     expect(f7NewFolder.disabled).toBe(true)
     expect(f2Rename.disabled).toBe(true)
@@ -122,7 +122,7 @@ describe('FunctionKeyBar capability disablement', () => {
   })
 
   it('a zip keeps F2 / F7 enabled — it is the one writable archive format', () => {
-    const [f2Rename, , , , , f7NewFolder] = mountOn('root', '/Users/david/bundle.zip/inner')
+    const [f2Rename, , , , , f7NewFolder] = mountOn('root', '/Users/test_user_3/bundle.zip/inner')
 
     expect(f7NewFolder.disabled).toBe(false)
     expect(f2Rename.disabled).toBe(false)
@@ -131,7 +131,7 @@ describe('FunctionKeyBar capability disablement', () => {
   it('a real file under a repo dot-git folder is not a portal path and keeps the drive row', () => {
     // `.git/config` and friends are ordinary files on the parent volume: still
     // editable, renamable, deletable, which the backend defends too.
-    const [f2Rename, , , , , f7NewFolder] = mountOn('root', '/Users/david/code/.git')
+    const [f2Rename, , , , , f7NewFolder] = mountOn('root', '/Users/test_user_3/code/.git')
 
     expect(f7NewFolder.disabled).toBe(false)
     expect(f2Rename.disabled).toBe(false)

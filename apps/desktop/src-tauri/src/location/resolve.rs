@@ -126,7 +126,7 @@ impl VolumeFacts {
     }
 
     /// The mount point `path` falls under inside a mount area, and its name:
-    /// `/Volumes/naspi/papers` → (`/Volumes/naspi`, `naspi`).
+    /// `/Volumes/testshare/documents` → (`/Volumes/testshare`, `testshare`).
     fn mount_point_of<'a>(&self, path: &'a str) -> Option<(String, &'a str)> {
         self.mount_areas.iter().find_map(|area| {
             let rest = path_under(path, area).filter(|rest| !rest.is_empty())?;
@@ -223,8 +223,8 @@ pub struct NearbyVolume {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub connection_state: Option<&'static str>,
     pub root: String,
-    /// The requested place on THIS volume (`/Volumes/naspi/papers` →
-    /// `/Volumes/naspi-1/papers`), so the next call is a copy, not arithmetic.
+    /// The requested place on THIS volume (`/Volumes/testshare/documents` →
+    /// `/Volumes/testshare-1/documents`), so the next call is a copy, not arithmetic.
     pub candidate: Location,
 }
 
@@ -302,7 +302,7 @@ fn placed(volume: &VolumeFact, path: String, rebased_from: Option<String>) -> Re
 /// [`NEARBY_CAP`]. `exclude` is the volume the miss is about.
 ///
 /// In order of preference: volumes whose mount name shares the requested one's
-/// stem (`naspi-1` for `/Volumes/naspi`, macOS's suffix for a second mount), else
+/// stem (`testshare-1` for `/Volumes/testshare`, macOS's suffix for a second mount), else
 /// volumes whose root holds the path, else every remote volume. Each carries the
 /// requested place re-rooted onto it as `candidate`.
 pub(crate) fn nearby(facts: &VolumeFacts, path: &str, exclude: Option<&str>) -> Vec<NearbyVolume> {
@@ -352,7 +352,7 @@ pub(crate) fn nearby(facts: &VolumeFacts, path: &str, exclude: Option<&str>) -> 
 }
 
 /// A mount name without the `-N` macOS appends to a second mount of the same
-/// name: `naspi-1` → `naspi`.
+/// name: `testshare-1` → `testshare`.
 fn mount_stem(name: &str) -> &str {
     match name.rsplit_once('-') {
         Some((stem, suffix))

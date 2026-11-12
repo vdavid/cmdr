@@ -40,7 +40,7 @@
          */
         address?: string | null
         /**
-         * The server `name` lives on, by the name a person knows it by ("Naspolya"),
+         * The server `name` lives on, by the name a person knows it by ("Testnas"),
          * for a place that's one of several on it (a share mount). Absent where
          * `name` already is the server, or where the server has no name but its
          * address, which `address` shows already.

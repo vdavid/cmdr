@@ -113,13 +113,13 @@ describe('TransferErrorDialog: typed-error rendering', () => {
   // the wait, and offers a Retry for once it's back.
   it('renders a lost server connection with the server as the cause, and a Retry', async () => {
     const target = mountDialog({
-      error: { type: 'server_connection_lost', path: '/nas/a.jpg', volumeName: 'Naspolya', gaveUpAfterSecs: null },
+      error: { type: 'server_connection_lost', path: '/nas/a.jpg', volumeName: 'Testnas', gaveUpAfterSecs: null },
       operationType: 'copy',
       onRetry: () => {},
     })
     await tick()
-    expect(target.textContent).toContain('Lost the connection to Naspolya')
-    expect(target.textContent).toContain('The connection to Naspolya dropped while Cmdr was copying a.jpg.')
+    expect(target.textContent).toContain('Lost the connection to Testnas')
+    expect(target.textContent).toContain('The connection to Testnas dropped while Cmdr was copying a.jpg.')
     expect(target.querySelector('.error-icon')?.className).toContain('icon-info')
     expect(Array.from(target.querySelectorAll('button')).map(buttonLabel)).toContain('Retry')
   })

@@ -34,7 +34,7 @@ vi.mock('#lib/tauri-commands/index.js', () => commands)
 vi.mock('#lib/app-mode.js', () => ({ isE2eRun: () => false }))
 vi.mock('#lib/ask-cmdr/ask-cmdr-trigger.svelte.js', () => ({ hydrateRail: vi.fn() }))
 
-const shareId = 'smb-naspolya-445-naspi'
+const shareId = 'smb-testnas-445-testshare'
 const existing = new Set(['/', '/Volumes', '~'])
 
 function paneTabs(side: 'left' | 'right', path: string, volumeId: string): PersistedPaneTabs {
@@ -46,14 +46,21 @@ function paneTabs(side: 'left' | 'right', path: string, volumeId: string): Persi
   }
 }
 
-/** The saved-server listing with one SMB host whose share `naspi` last mounted at `/Volumes/naspi`. */
+/** The saved-server listing with one SMB host whose share `testshare` last mounted at `/Volumes/testshare`. */
 function savedShare(connected: boolean) {
   return [
     {
-      id: 'manual-naspolya',
+      id: 'manual-testnas',
       protocol: 'smb',
       places: [
-        { volumeId: shareId, name: 'naspi', pinned: true, connected, appRoot: '/Volumes/naspi', username: null },
+        {
+          volumeId: shareId,
+          name: 'testshare',
+          pinned: true,
+          connected,
+          appRoot: '/Volumes/testshare',
+          username: null,
+        },
       ],
     },
   ]
@@ -63,7 +70,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   appStatus.loadPaneTabs.mockImplementation((side: 'left' | 'right') =>
     Promise.resolve(
-      side === 'left' ? paneTabs(side, '/Volumes/naspi/docs/2026', shareId) : paneTabs(side, '~', 'root'),
+      side === 'left' ? paneTabs(side, '/Volumes/testshare/docs/2026', shareId) : paneTabs(side, '~', 'root'),
     ),
   )
   appStatus.loadAppStatus.mockResolvedValue({
@@ -102,7 +109,7 @@ describe('loadPersistedState: a tab on an SMB share', () => {
     const tab = await leftTab()
 
     expect(tab.volumeId).toBe(shareId)
-    expect(tab.path).toBe('/Volumes/naspi/docs/2026')
+    expect(tab.path).toBe('/Volumes/testshare/docs/2026')
   })
 
   it('walks a share nobody saved up to a folder that exists, on the volume that holds it', async () => {
@@ -117,17 +124,17 @@ describe('loadPersistedState: a tab on an SMB share', () => {
 
   it('probes a mounted share like any folder, so a folder deleted inside it still walks up', async () => {
     commands.listSavedServers.mockResolvedValue(savedShare(true))
-    existing.add('/Volumes/naspi')
-    existing.add('/Volumes/naspi/docs')
+    existing.add('/Volumes/testshare')
+    existing.add('/Volumes/testshare/docs')
     commands.resolvePathVolume.mockResolvedValue({ volume: { id: shareId }, timedOut: false })
     try {
       const tab = await leftTab()
 
-      expect(tab.path).toBe('/Volumes/naspi/docs')
+      expect(tab.path).toBe('/Volumes/testshare/docs')
       expect(tab.volumeId).toBe(shareId)
     } finally {
-      existing.delete('/Volumes/naspi')
-      existing.delete('/Volumes/naspi/docs')
+      existing.delete('/Volumes/testshare')
+      existing.delete('/Volumes/testshare/docs')
     }
   })
 

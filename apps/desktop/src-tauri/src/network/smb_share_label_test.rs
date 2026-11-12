@@ -48,21 +48,21 @@ fn a_named_servers_share_reads_by_the_typed_name() {
 #[test]
 fn an_unnamed_or_other_port_server_keeps_its_address() {
     let named = named_for_test(&[
-        entry("nas.local", 11481, "Home NAS"),
+        entry("testnas.local", 11481, "Home NAS"),
         // Its "name" spells its own address: not a name (`ManualServerEntry::is_named`).
         entry("127.0.0.1", 11482, "127.0.0.1:11482"),
     ]);
     assert_eq!(
-        filed_among(&named, "public", "nas.local:11490", None, None, &[]),
-        "public on nas.local:11490"
+        filed_among(&named, "public", "testnas.local:11490", None, None, &[]),
+        "public on testnas.local:11490"
     );
     assert_eq!(
         filed_among(&named, "public", "127.0.0.1:11482", None, None, &[]),
         "public on 127.0.0.1:11482"
     );
     assert_eq!(
-        filed_among(&named, "public", "nas.local", None, None, &[]),
-        "public on nas.local",
+        filed_among(&named, "public", "testnas.local", None, None, &[]),
+        "public on testnas.local",
         "the server on 445 is another server"
     );
 }

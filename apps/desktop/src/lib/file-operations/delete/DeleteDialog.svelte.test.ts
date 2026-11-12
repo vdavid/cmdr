@@ -32,7 +32,7 @@ vi.mock('#lib/settings/reactive-settings.svelte.js', () => ({
 }))
 
 const LONG_NAME = '2025-08-19 Szakál Adri sole pain exercise help.cmdr-tmp-0f3a91.mp4'
-const FOLDER = '/Volumes/naspi/_todo_pics/Meet Recordings'
+const FOLDER = '/Volumes/testshare/test_photos/Meet Recordings'
 
 /** happy-dom lays nothing out, so overflow has to be stated for `overflowOnly` to mean anything. */
 function setOverflowing(el: Element, overflowing: boolean): void {
@@ -111,13 +111,13 @@ describe('DeleteDialog path tooltips', () => {
   })
 
   it('spells out a home path that the "From" line abbreviates to ~', async () => {
-    const target = mountDialog('/Users/veszelovszki/projects-git/vdavid/cmdr')
+    const target = mountDialog('/Users/test_user_3/projects-git/vdavid/cmdr')
     await tick()
 
     const from = target.querySelectorAll('.source-path')[0]
     expect(from.textContent).toContain('~/projects-git/vdavid/cmdr')
     setOverflowing(from, false)
 
-    expect(hover(from)?.textContent).toBe('/Users/veszelovszki/projects-git/vdavid/cmdr')
+    expect(hover(from)?.textContent).toBe('/Users/test_user_3/projects-git/vdavid/cmdr')
   })
 })

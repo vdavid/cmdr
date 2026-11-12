@@ -10,7 +10,7 @@ fn env() -> SearchEnv {
         path_dirs: vec![PathBuf::from("/p1"), PathBuf::from("/p2")],
         android_home: Some(PathBuf::from("/ah")),
         android_sdk_root: Some(PathBuf::from("/asr")),
-        home: Some(PathBuf::from("/home/ada")),
+        home: Some(PathBuf::from("/home/test_user_1")),
         local_app_data: Some(PathBuf::from("/lad")),
     }
 }
@@ -31,7 +31,7 @@ fn macos_searches_the_path_the_sdk_variables_its_default_sdk_and_homebrew() {
             "/p2/adb",
             "/ah/platform-tools/adb",
             "/asr/platform-tools/adb",
-            "/home/ada/Library/Android/sdk/platform-tools/adb",
+            "/home/test_user_1/Library/Android/sdk/platform-tools/adb",
             "/opt/homebrew/bin/adb",
             "/usr/local/bin/adb",
         ]
@@ -48,7 +48,7 @@ fn linux_searches_android_studios_default_sdk_under_home() {
             "/p2/adb",
             "/ah/platform-tools/adb",
             "/asr/platform-tools/adb",
-            "/home/ada/Android/Sdk/platform-tools/adb",
+            "/home/test_user_1/Android/Sdk/platform-tools/adb",
             "/usr/local/bin/adb",
         ]
     );

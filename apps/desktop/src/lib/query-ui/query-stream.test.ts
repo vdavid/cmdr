@@ -32,7 +32,7 @@ function view(overrides: Partial<LiveRunView> = {}): LiveRunView {
     phase: 'walking',
     matchCount: 12,
     dirsFound: 340,
-    currentPath: '/Volumes/naspi/photos',
+    currentPath: '/Volumes/testshare/photos',
     capped: false,
     phaseSince: 0,
     running: true,

@@ -4069,8 +4069,8 @@
     "entries": [
       {
         "name": "report.txt",
-        "path": "/Volumes/cmdr-golden-share/papers/report.txt",
-        "parentPath": "/Volumes/cmdr-golden-share/papers",
+        "path": "/Volumes/cmdr-golden-share/documents/report.txt",
+        "parentPath": "/Volumes/cmdr-golden-share/documents",
         "isDirectory": false,
         "size": 20,
         "modifiedAt": 1705000000,
@@ -4086,15 +4086,15 @@
     "entries": [],
     "totalCount": 0,
     "unresolvedScopes": [
-      "/elsewhere/papers"
+      "/elsewhere/documents"
     ],
     "hiddenByExcludes": 0
   },
   "share_scope_subfolder": {
     "entries": [
       {
-        "name": "papers",
-        "path": "/Volumes/cmdr-golden-share/papers",
+        "name": "documents",
+        "path": "/Volumes/cmdr-golden-share/documents",
         "parentPath": "/Volumes/cmdr-golden-share",
         "isDirectory": true,
         "size": 30,
@@ -4104,8 +4104,8 @@
       },
       {
         "name": "report.txt",
-        "path": "/Volumes/cmdr-golden-share/papers/report.txt",
-        "parentPath": "/Volumes/cmdr-golden-share/papers",
+        "path": "/Volumes/cmdr-golden-share/documents/report.txt",
+        "parentPath": "/Volumes/cmdr-golden-share/documents",
         "isDirectory": false,
         "size": 20,
         "modifiedAt": 1705000000,
@@ -4113,9 +4113,9 @@
         "entryId": 5
       },
       {
-        "name": "invoices paid",
-        "path": "/Volumes/cmdr-golden-share/papers/invoices paid",
-        "parentPath": "/Volumes/cmdr-golden-share/papers",
+        "name": "invoices",
+        "path": "/Volumes/cmdr-golden-share/documents/invoices",
+        "parentPath": "/Volumes/cmdr-golden-share/documents",
         "isDirectory": true,
         "size": 10,
         "modifiedAt": 1700000000,
@@ -4124,8 +4124,8 @@
       },
       {
         "name": "hetzner.pdf",
-        "path": "/Volumes/cmdr-golden-share/papers/invoices paid/hetzner.pdf",
-        "parentPath": "/Volumes/cmdr-golden-share/papers/invoices paid",
+        "path": "/Volumes/cmdr-golden-share/documents/invoices/hetzner.pdf",
+        "parentPath": "/Volumes/cmdr-golden-share/documents/invoices",
         "isDirectory": false,
         "size": 10,
         "modifiedAt": 1700000000,
@@ -4141,8 +4141,8 @@
     "entries": [
       {
         "name": "report.txt",
-        "path": "/Volumes/cmdr-golden-share/papers/report.txt",
-        "parentPath": "/Volumes/cmdr-golden-share/papers",
+        "path": "/Volumes/cmdr-golden-share/documents/report.txt",
+        "parentPath": "/Volumes/cmdr-golden-share/documents",
         "isDirectory": false,
         "size": 20,
         "modifiedAt": 1705000000,

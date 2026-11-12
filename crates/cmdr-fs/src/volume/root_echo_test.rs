@@ -3,7 +3,7 @@
 use super::root_echo;
 use std::path::Path;
 
-const SERVER_ROOT: &str = "sftp://ada@nas:22/srv/data";
+const SERVER_ROOT: &str = "sftp://test_user_1@nas:22/srv/data";
 
 #[test]
 fn a_path_repeating_the_server_folder_is_flagged_with_both_readings() {
@@ -48,7 +48,7 @@ fn every_spelling_of_the_root_and_a_full_app_path_are_not_flagged() {
     assert!(
         root_echo(
             Path::new(SERVER_ROOT),
-            Path::new("sftp://ada@nas:22/srv/data/srv/data/x")
+            Path::new("sftp://test_user_1@nas:22/srv/data/srv/data/x")
         )
         .is_none()
     );
@@ -58,7 +58,7 @@ fn every_spelling_of_the_root_and_a_full_app_path_are_not_flagged() {
 fn a_place_rooted_at_the_server_root_never_echoes() {
     // Root `/` on the server: every path is volume-relative and server-absolute
     // at once, and both readings land in the same place.
-    assert!(root_echo(Path::new("sftp://ada@nas:22/"), Path::new("/srv/data")).is_none());
+    assert!(root_echo(Path::new("sftp://test_user_1@nas:22/"), Path::new("/srv/data")).is_none());
     assert!(root_echo(Path::new("adb://R58M1"), Path::new("/sdcard")).is_none());
 }
 
@@ -66,13 +66,17 @@ fn a_place_rooted_at_the_server_root_never_echoes() {
 fn a_mounted_volume_never_echoes() {
     // A local or OS-mounted root has no separate server folder: a path starting
     // with the mount passes through anchoring untouched.
-    assert!(root_echo(Path::new("/Volumes/naspi"), Path::new("/Volumes/naspi/photos")).is_none());
-    assert!(root_echo(Path::new("/"), Path::new("/Users/david")).is_none());
+    assert!(root_echo(Path::new("/Volumes/testshare"), Path::new("/Volumes/testshare/photos")).is_none());
+    assert!(root_echo(Path::new("/"), Path::new("/Users/test_user_3")).is_none());
 }
 
 #[test]
 fn a_trailing_slash_on_the_root_still_matches() {
-    let echo = root_echo(Path::new("webdav://ada@nas:443/dav/files/"), Path::new("/dav/files/a")).expect("an echo");
+    let echo = root_echo(
+        Path::new("webdav://test_user_1@nas:443/dav/files/"),
+        Path::new("/dav/files/a"),
+    )
+    .expect("an echo");
     assert_eq!(echo.root_folder, Path::new("/dav/files"));
     assert_eq!(echo.stripped, Path::new("/a"));
 }

@@ -91,7 +91,7 @@ const archiveProps = (overrides: Partial<DialogProps> = {}): DialogProps => ({
 
 const repoProps = (overrides: Partial<DialogProps> = {}): DialogProps => ({
   container: 'resticRepo',
-  name: 'm3-restic',
+  name: 'test-restic',
   wrongAttempt: false,
   onSubmit: () => {},
   onCancel: () => {},
@@ -180,7 +180,7 @@ describe('UnlockDialog, restic repo', () => {
     await settle()
 
     const message = target.querySelector('#unlock-message')?.textContent ?? ''
-    expect(message).toContain('m3-restic')
+    expect(message).toContain('test-restic')
     expect(message).toContain('backup')
     expect(message).not.toContain('archive')
     expect(document.activeElement).toBe(passwordInput(target))
@@ -300,7 +300,7 @@ describe('UnlockDialog, a refused password', () => {
     const note = wrongNote(target)
     expect(note?.getAttribute('role')).toBe('alert')
     expect(note?.textContent).toContain('didn’t unlock')
-    expect(note?.textContent).toContain('m3-restic')
+    expect(note?.textContent).toContain('test-restic')
     const input = passwordInput(target)
     expect(input.getAttribute('aria-invalid')).toBe('true')
     expect(input.getAttribute('aria-describedby')).toBe('unlock-wrong')

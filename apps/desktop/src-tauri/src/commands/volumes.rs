@@ -292,7 +292,7 @@ mod tests {
         crate::network::sftp_known_servers::remember(crate::network::sftp_known_servers::KnownSftpServer {
             host: host.to_string(),
             port: 2222,
-            username: "ada".to_string(),
+            username: "test_user_1".to_string(),
             display_name: "Nowhere".to_string(),
             remote_root: "/srv/data".to_string(),
             start_folder: None,
@@ -303,13 +303,17 @@ mod tests {
             last_connected_at: "2026-09-06T00:00:00Z".to_string(),
         });
 
-        let result = resolve_location_inner(format!("sftp://ada@{host}:2222/srv/data/photos"), TEST_FS_TIMEOUT).await;
+        let result = resolve_location_inner(
+            format!("sftp://test_user_1@{host}:2222/srv/data/photos"),
+            TEST_FS_TIMEOUT,
+        )
+        .await;
 
         assert!(!result.timed_out);
         let location = result.location.expect("a saved server's path resolves to that server");
         assert_eq!(
             location.volume_id,
-            cmdr_fs::volume::sftp_volume_id(host, 2222, "ada"),
+            cmdr_fs::volume::sftp_volume_id(host, 2222, "test_user_1"),
             "❗ the id a `saved` row carries is the id the dial will register, so a tab survives the dial"
         );
         assert_ne!(location.volume_id, DEFAULT_VOLUME_ID, "❌ never the boot disk");

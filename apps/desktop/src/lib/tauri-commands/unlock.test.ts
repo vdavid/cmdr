@@ -54,7 +54,7 @@ describe('setArchivePassword wrapper', () => {
 describe('unlockContainer wrapper', () => {
   const request = {
     parentVolumeId: 'root',
-    path: '/b/m3-restic/Browse snapshots',
+    path: '/b/test-restic/Browse snapshots',
     password: 'hunter2',
     remember: true,
     unlockId: 'unlock-1',
@@ -65,7 +65,7 @@ describe('unlockContainer wrapper', () => {
     await expect(unlockContainer(request)).resolves.toBe('wrongPassword')
     expect(commands.unlockContainer).toHaveBeenCalledWith(
       'root',
-      '/b/m3-restic/Browse snapshots',
+      '/b/test-restic/Browse snapshots',
       'hunter2',
       true,
       'unlock-1',

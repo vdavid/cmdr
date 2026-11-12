@@ -36,7 +36,7 @@ fn outage_state(engine: &TestOperations, budget: Duration) -> Arc<WriteOperation
 
 /// A share holding `/photos` (two files) and `/photos/trip` (two more).
 async fn nas(lane: &str) -> Arc<OutageVolume> {
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     inner.create_directory(Path::new("/photos")).await.unwrap();
     inner.create_directory(Path::new("/photos/trip")).await.unwrap();
     for path in [
@@ -147,7 +147,7 @@ async fn a_planning_walk_the_share_drops_under_waits_and_plans_every_entry_once(
 }
 
 /// The share never comes back: the compress stops with "Lost the connection
-/// to Naspolya", the folder it was listing as context.
+/// to Testnas", the folder it was listing as context.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_planning_walk_whose_share_stays_gone_says_it_lost_the_connection() {
     let engine = TestOperations::new();
@@ -164,7 +164,7 @@ async fn a_planning_walk_whose_share_stays_gone_says_it_lost_the_connection() {
         matches!(
             &error,
             EditError::Op(WriteOperationError::ServerConnectionLost { path, volume_name, gave_up_after_secs: Some(_) })
-                if path == "/photos/trip" && volume_name == "Naspolya"
+                if path == "/photos/trip" && volume_name == "Testnas"
         ),
         "the connection is the cause, named with the wait: {}",
         describe(&error)

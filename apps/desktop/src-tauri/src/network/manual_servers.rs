@@ -580,7 +580,7 @@ fn save_parsed_at(
         add_server_entry_to_path(path, entry);
     }
 
-    // A share the address named (`smb://sven@host/Container`) is the place the
+    // A share the address named (`smb://test_user_6@host/Container`) is the place the
     // person meant to save, so it becomes a row under the host now, before any
     // mount: `docs/specs/saved-smb-shares.md`.
     if let Some(share) = parsed.share_path.as_deref().and_then(|path| path.split('/').next()) {

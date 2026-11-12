@@ -40,7 +40,7 @@ describe('displayPath', () => {
   })
 
   it('leaves an S3 address without an account, and other schemes’ accounts, alone', () => {
-    for (const text of ['s3://bucket/key@2x.png', 'sftp://ada@nas:22/x', 'xs3://key@host:1/b']) {
+    for (const text of ['s3://bucket/key@2x.png', 'sftp://test_user_1@nas:22/x', 'xs3://key@host:1/b']) {
       expect(displayPath(text)).toBe(text)
     }
   })
@@ -67,7 +67,7 @@ describe('withoutPicks', () => {
 describe('a local path on each platform', () => {
   it('reads with backslashes on Windows, a twin pick still taken out', () => {
     onTestFinished(withPlatform('windows'))
-    expect(displayPath('C:/Users/ada/notes.txt')).toBe('C:\\Users\\ada\\notes.txt')
+    expect(displayPath('C:/Users/test_user_1/notes.txt')).toBe('C:\\Users\\test_user_1\\notes.txt')
     expect(displayPath('//server/share/x')).toBe('\\\\server\\share\\x')
     expect(displayPath(twinRowPath('C:/DCIM', 4, 'a.jpg'))).toBe('C:\\DCIM\\a.jpg')
   })
@@ -75,19 +75,21 @@ describe('a local path on each platform', () => {
   it('leaves prose holding a path, and every scheme URL, alone on Windows', () => {
     onTestFinished(withPlatform('windows'))
     expect(displayPath('Copy C:/a to D:/b')).toBe('Copy C:/a to D:/b')
-    expect(displayPath('sftp://ada@nas.local:22/home/ada')).toBe('sftp://ada@nas.local:22/home/ada')
+    expect(displayPath('sftp://test_user_1@testnas.local:22/home/test_user_1')).toBe(
+      'sftp://test_user_1@testnas.local:22/home/test_user_1',
+    )
   })
 
   it.each(['macos', 'linux'] as const)('leaves every path alone on %s', (platform) => {
     onTestFinished(withPlatform(platform))
-    expect(displayPath('/Users/ada/a\\b')).toBe('/Users/ada/a\\b')
-    expect(displayPath('C:/Users/ada')).toBe('C:/Users/ada')
-    expect(copiedPath('/Users/ada/notes.txt')).toBe('/Users/ada/notes.txt')
+    expect(displayPath('/Users/test_user_1/a\\b')).toBe('/Users/test_user_1/a\\b')
+    expect(displayPath('C:/Users/test_user_1')).toBe('C:/Users/test_user_1')
+    expect(copiedPath('/Users/test_user_1/notes.txt')).toBe('/Users/test_user_1/notes.txt')
   })
 
   it('copies the shown form of a path on Windows, an S3 account kept', () => {
     onTestFinished(withPlatform('windows'))
-    expect(copiedPath('C:/Users/ada/notes.txt')).toBe('C:\\Users\\ada\\notes.txt')
+    expect(copiedPath('C:/Users/test_user_1/notes.txt')).toBe('C:\\Users\\test_user_1\\notes.txt')
     expect(copiedPath('s3://AKIA@host:9000/bucket/a')).toBe('s3://AKIA@host:9000/bucket/a')
   })
 })

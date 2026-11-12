@@ -149,7 +149,7 @@ pub(super) fn redact_detail_field(
     )
 }
 
-/// Tokenize the values of identity-keyed JSON pairs (`"server":"NASPOLYA"`): the frontend logs
+/// Tokenize the values of identity-keyed JSON pairs (`"server":"TESTNAS"`): the frontend logs
 /// a typed error as compact JSON, whose keys say what each value is, in whatever spelling the
 /// error carried. The frontend marks these same values (`log-markers.json` `jsonKeyKinds`), so
 /// this is the fallback for a pair that reached the log unmarked; `fe_bridge_tests.rs` keeps the

@@ -35,16 +35,16 @@ beforeEach(() => {
 
 describe('openGetInfoOrExplain', () => {
   it('asks for the window and says nothing when Finder takes the ask', async () => {
-    await openGetInfoOrExplain('/Users/dave/notes.txt')
+    await openGetInfoOrExplain('/Users/test_user_10/notes.txt')
 
-    expect(getInfo).toHaveBeenCalledExactlyOnceWith('/Users/dave/notes.txt')
+    expect(getInfo).toHaveBeenCalledExactlyOnceWith('/Users/test_user_10/notes.txt')
     expect(addToast).not.toHaveBeenCalled()
   })
 
   it('shows the Automation toast when the user turned off control of Finder', async () => {
     refuseWith({ type: 'automationDenied' })
 
-    await openGetInfoOrExplain('/Users/dave/notes.txt')
+    await openGetInfoOrExplain('/Users/test_user_10/notes.txt')
 
     expect(addToast).toHaveBeenCalledExactlyOnceWith(
       'FinderAutomationOffToastContent',
@@ -57,7 +57,7 @@ describe('openGetInfoOrExplain', () => {
     async (failure) => {
       refuseWith(failure)
 
-      await openGetInfoOrExplain('/Users/dave/notes.txt')
+      await openGetInfoOrExplain('/Users/test_user_10/notes.txt')
 
       expect(addToast).toHaveBeenCalledExactlyOnceWith(
         expect.any(String),

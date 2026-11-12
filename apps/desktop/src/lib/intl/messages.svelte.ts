@@ -412,7 +412,7 @@ export interface PathParam {
 
 /**
  * Marks `path` (an app path: `/…`, `C:/…`, `//server/share/…`) as a path, so `t()` spells
- * it the way this OS shows it (`C:\Users\ada` on Windows; as is elsewhere). ❌ Never
+ * it the way this OS shows it (`C:\Users\test_user_1` on Windows; as is elsewhere). ❌ Never
  * guessed: an unmarked string param is prose and passes through untouched on every OS, so
  * a drive's name (`C:`) or an `a//b` in a message can't turn into a path.
  */
@@ -495,7 +495,7 @@ function format(compiled: IntlMessageFormat, params: TranslationParams | undefin
 
 /**
  * `params` with each {@link pathParam} spelled as a person reads it (on Windows,
- * `C:\Users\ada`; `#lib/path/grammar`'s `shownPath`, which is a no-op elsewhere). Per param,
+ * `C:\Users\test_user_1`; `#lib/path/grammar`'s `shownPath`, which is a no-op elsewhere). Per param,
  * because `asShown` sees the whole message, where a `/` may be prose. A call with no path
  * param gets its own object back.
  */

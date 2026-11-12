@@ -295,7 +295,7 @@ describe('{ location } arm — self-routing by volume', () => {
   it('(the bug) volumeId ≠ current switches the volume and lands on the resolved volume', () => {
     // Repro: pane sits on an SMB-like fake volume; navigating to a `root`
     // location must SWITCH to root, not load the local path over the NAS.
-    h = makeHarness({ left: { path: '/naspi/share', volumeId: 'naspi' } })
+    h = makeHarness({ left: { path: '/testshare/share', volumeId: 'testshare' } })
     const depthBefore = h.tab('left').history.stack.length
 
     const result = navigate(
@@ -333,7 +333,7 @@ describe('{ location } arm — self-routing by volume', () => {
   })
 
   it('a pinned tab forks a new unpinned tab on the { location } cross-volume switch', () => {
-    h = makeHarness({ left: { path: '/naspi/share', volumeId: 'naspi' } })
+    h = makeHarness({ left: { path: '/testshare/share', volumeId: 'testshare' } })
     getActiveTab(h.mgr('left')).pinned = true
     const pinnedId = getActiveTab(h.mgr('left')).id
     const countBefore = h.mgr('left').tabs.length

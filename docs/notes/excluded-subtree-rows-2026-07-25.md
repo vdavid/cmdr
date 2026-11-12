@@ -4,9 +4,9 @@ Measurements behind the one-time exclusion-list rebuild. Mechanism and decisions
 `crates/cmdr-index/src/indexing/network_scanner/DETAILS.md` § "Rebuilding an index that predates the current list".
 
 All figures come from a **copy** of the author's live production index,
-`~/Library/Application Support/com.veszelovszki.cmdr/index-smb-192-168-1-111-445-naspi.db` (QNAP TS-464 over SMB, schema
-v14, 1.88 GB), queried offline. The drive index registers a custom `platform_case` collation that isn't persisted in the
-file, so a stock `sqlite3` CLI fails on any query comparing `name`; these ran through Python with
+`~/Library/Application Support/com.veszelovszki.cmdr/index-smb-192-168-50-10-445-testshare.db` (QNAP TS-464 over SMB,
+schema v14, 1.88 GB), queried offline. The drive index registers a custom `platform_case` collation that isn't persisted
+in the file, so a stock `sqlite3` CLI fails on any query comparing `name`; these ran through Python with
 
 ```python
 con.create_collation('platform_case', lambda a, b: (a.lower() > b.lower()) - (a.lower() < b.lower()))

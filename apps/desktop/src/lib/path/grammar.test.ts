@@ -96,11 +96,11 @@ describe('hostPathFlavor', () => {
 describe('joinPath', () => {
   it.each([
     ['/', 'Users', '/Users'],
-    ['/Users', 'ada', '/Users/ada'],
+    ['/Users', 'test_user_1', '/Users/test_user_1'],
     ['C:/', 'Users', 'C:/Users'],
-    ['C:/Users', 'ada', 'C:/Users/ada'],
+    ['C:/Users', 'test_user_1', 'C:/Users/test_user_1'],
     ['//server/share/', 'x', '//server/share/x'],
-    ['sftp://ada@nas.local:22/', 'home', 'sftp://ada@nas.local:22/home'],
+    ['sftp://test_user_1@testnas.local:22/', 'home', 'sftp://test_user_1@testnas.local:22/home'],
     ['mtp://dev/65537', 'Music', 'mtp://dev/65537/Music'],
     ['/Users', 'a/b', '/Users/a/b'],
   ])('%s + %s = %s', (base, name, joined) => {
@@ -110,32 +110,32 @@ describe('joinPath', () => {
 
 describe('pathRelativeTo', () => {
   it('answers the part below the ancestor, by whole components', () => {
-    expect(pathRelativeTo('/Users/ada/x', '/Users/ada')).toBe('x')
-    expect(pathRelativeTo('/Users/ada', '/Users/ada')).toBe('')
-    expect(pathRelativeTo('/Users/ada-1', '/Users/ada')).toBeNull()
-    expect(pathRelativeTo('/Users/ada', '/')).toBe('Users/ada')
-    expect(pathRelativeTo('C:/Users/ada', 'C:/')).toBe('Users/ada')
+    expect(pathRelativeTo('/Users/test_user_1/x', '/Users/test_user_1')).toBe('x')
+    expect(pathRelativeTo('/Users/test_user_1', '/Users/test_user_1')).toBe('')
+    expect(pathRelativeTo('/Users/test_user_1-1', '/Users/test_user_1')).toBeNull()
+    expect(pathRelativeTo('/Users/test_user_1', '/')).toBe('Users/test_user_1')
+    expect(pathRelativeTo('C:/Users/test_user_1', 'C:/')).toBe('Users/test_user_1')
     expect(pathRelativeTo('//server/share/x/y', '//server/share/')).toBe('x/y')
     expect(pathRelativeTo('//server/share-1/x', '//server/share')).toBeNull()
   })
 
   it('folds case only on a case-insensitive volume', () => {
-    expect(pathRelativeTo('C:/users/ADA/x', 'C:/Users/ada')).toBeNull()
-    expect(pathRelativeTo('C:/users/ADA/x', 'C:/Users/ada', { caseSensitive: false })).toBe('x')
+    expect(pathRelativeTo('C:/users/TEST_USER_1/x', 'C:/Users/test_user_1')).toBeNull()
+    expect(pathRelativeTo('C:/users/TEST_USER_1/x', 'C:/Users/test_user_1', { caseSensitive: false })).toBe('x')
     expect(pathRelativeTo('//SERVER/Share/x', '//server/share/', { caseSensitive: false })).toBe('x')
   })
 })
 
 describe('samePath', () => {
   it('compares exactly on a case-sensitive volume', () => {
-    expect(samePath('/Users/ada', '/Users/ada', { caseSensitive: true })).toBe(true)
-    expect(samePath('/Users/ada', '/users/ada', { caseSensitive: true })).toBe(false)
+    expect(samePath('/Users/test_user_1', '/Users/test_user_1', { caseSensitive: true })).toBe(true)
+    expect(samePath('/Users/test_user_1', '/users/test_user_1', { caseSensitive: true })).toBe(false)
   })
 
   it('folds case and Unicode form on a case-insensitive one', () => {
-    expect(samePath('C:/Users/Ada', 'C:/users/ada', { caseSensitive: false })).toBe(true)
+    expect(samePath('C:/Users/Test_user_1', 'C:/users/test_user_1', { caseSensitive: false })).toBe(true)
     expect(samePath('/Caf\u00e9', '/cafe\u0301', { caseSensitive: false })).toBe(true)
-    expect(samePath('C:/Users/Ada', 'C:/Users/Bea', { caseSensitive: false })).toBe(false)
+    expect(samePath('C:/Users/Test_user_1', 'C:/Users/Bea', { caseSensitive: false })).toBe(false)
   })
 })
 
@@ -143,8 +143,8 @@ describe('shownSeparator', () => {
   it('is a backslash only for a Windows local path on Windows', () => {
     expect(shownSeparator('C:/Users', 'windows')).toBe('\\')
     expect(shownSeparator('//server/share/x', 'windows')).toBe('\\')
-    expect(shownSeparator('sftp://ada@nas.local:22/home', 'windows')).toBe('/')
-    expect(shownSeparator('/Users/ada', 'posix')).toBe('/')
+    expect(shownSeparator('sftp://test_user_1@testnas.local:22/home', 'windows')).toBe('/')
+    expect(shownSeparator('/Users/test_user_1', 'posix')).toBe('/')
   })
 })
 
@@ -155,19 +155,19 @@ describe('volumePrefix', () => {
     expect(volumePrefix('//server/share', 'windows')).toBe('//server/share')
     expect(volumePrefix('C:/Users', 'windows')).toBe('C:/Users')
     expect(volumePrefix('/', 'posix')).toBe('/')
-    expect(volumePrefix('/Volumes/naspi', 'posix')).toBe('/Volumes/naspi')
-    expect(volumePrefix('sftp://ada@nas.local:22/', 'windows')).toBe('sftp://ada@nas.local:22/')
+    expect(volumePrefix('/Volumes/testshare', 'posix')).toBe('/Volumes/testshare')
+    expect(volumePrefix('sftp://test_user_1@testnas.local:22/', 'windows')).toBe('sftp://test_user_1@testnas.local:22/')
   })
 })
 
 describe('parentOrRoot and lastName', () => {
   it.each([
-    ['/Users/ada', 'posix', '/Users', 'ada'],
+    ['/Users/test_user_1', 'posix', '/Users', 'test_user_1'],
     ['/Users', 'posix', '/', 'Users'],
     ['/', 'posix', '/', ''],
     ['name.txt', 'posix', '/', 'name.txt'],
     ['mtp://dev/65537/Music', 'posix', 'mtp://dev/65537', 'Music'],
-    ['C:/Users/ada', 'windows', 'C:/Users', 'ada'],
+    ['C:/Users/test_user_1', 'windows', 'C:/Users', 'test_user_1'],
     ['C:/Users', 'windows', 'C:/', 'Users'],
     ['C:/', 'windows', 'C:/', ''],
     ['//server/share/x', 'windows', '//server/share/', 'x'],

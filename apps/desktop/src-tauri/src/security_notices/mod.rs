@@ -265,7 +265,7 @@ mod tests {
             },
             // A share listing's refusal: the listing's own error says it where the person looks.
             SecurityEvent::SmbSignatureRejectionsStarted {
-                scope: SmbScope::Host("naspolya".into()),
+                scope: SmbScope::Host("testnas".into()),
                 source: SmbSignatureSource::ShareListing,
             },
             SecurityEvent::UpdateInstalled {

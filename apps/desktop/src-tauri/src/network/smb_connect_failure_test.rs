@@ -180,8 +180,8 @@ fn a_failed_upgrade_is_a_refusal_or_a_network_answer() {
     let at_share = UpgradeError::from_failed_dial(
         &failed(protocol(NtStatus::ACCESS_DENIED, Command::TreeConnect)),
         MountEvidence::Answered,
-        Some("ada"),
-        "Naspolya".to_string(),
+        Some("test_user_1"),
+        "Testnas".to_string(),
     );
     assert!(
         matches!(
@@ -197,8 +197,8 @@ fn a_failed_upgrade_is_a_refusal_or_a_network_answer() {
     let wrong_password = UpgradeError::from_failed_dial(
         &failed(protocol(NtStatus::LOGON_FAILURE, Command::SessionSetup)),
         MountEvidence::Answered,
-        Some("ada"),
-        "Naspolya".to_string(),
+        Some("test_user_1"),
+        "Testnas".to_string(),
     );
     assert!(
         matches!(
@@ -215,7 +215,7 @@ fn a_failed_upgrade_is_a_refusal_or_a_network_answer() {
         &failed(smb2::Error::Timeout),
         MountEvidence::Answered,
         None,
-        "Naspolya".to_string(),
+        "Testnas".to_string(),
     );
     assert!(
         matches!(
@@ -342,7 +342,7 @@ fn a_missing_share_is_read_as_such_and_its_look_alikes_are_not() {
             // condition that can pass: `Unreachable`, never `ShareNotOnServer`.
             "a DFS namespace whose every target refused",
             smb2::Error::DfsNoReachableTarget {
-                namespace: r"\\example.com\dana".to_string(),
+                namespace: r"\\example.com\test_user_13".to_string(),
                 target_count: 2,
                 source: Box::new(smb2::Error::Timeout),
             },

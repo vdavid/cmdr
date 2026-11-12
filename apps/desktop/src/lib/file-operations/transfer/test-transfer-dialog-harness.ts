@@ -129,9 +129,9 @@ vi.mock('#lib/stores/volume-store.svelte.js', () => ({
       isEjectable: true,
     },
     {
-      id: 'smb://nas.local/public',
+      id: 'smb://testnas.local/public',
       name: 'NAS share',
-      path: 'smb://nas.local/public',
+      path: 'smb://testnas.local/public',
       category: 'network',
       isEjectable: false,
     },

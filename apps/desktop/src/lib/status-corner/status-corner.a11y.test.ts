@@ -130,7 +130,7 @@ describe('OperationChip a11y', () => {
       operationType: 'copy',
       status,
       source: '/Users/me/Documents',
-      destination: '/Volumes/Naspolya/Backup',
+      destination: '/Volumes/Testnas/Backup',
       rollbackSupport: 'supported',
       reverses: null,
       error: null,

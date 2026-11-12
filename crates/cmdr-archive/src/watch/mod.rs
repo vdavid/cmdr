@@ -235,8 +235,8 @@ mod tests {
     #[test]
     fn event_matches_the_exact_archive_path() {
         assert!(event_path_targets_archive(
-            Path::new("/Users/jane/docs/bundle.zip"),
-            Path::new("/Users/jane/docs/bundle.zip"),
+            Path::new("/Users/test_user_12/docs/bundle.zip"),
+            Path::new("/Users/test_user_12/docs/bundle.zip"),
         ));
     }
 
@@ -256,8 +256,8 @@ mod tests {
         // The parent-directory watch reports every child; a sibling must not
         // trigger an archive refresh.
         assert!(!event_path_targets_archive(
-            Path::new("/Users/jane/docs/other.txt"),
-            Path::new("/Users/jane/docs/bundle.zip"),
+            Path::new("/Users/test_user_12/docs/other.txt"),
+            Path::new("/Users/test_user_12/docs/bundle.zip"),
         ));
     }
 
@@ -266,12 +266,12 @@ mod tests {
         // `bundle.zip.tmp` (an editor's temp) and `bundle.zipper` share a prefix
         // but aren't the archive; only the exact file counts.
         assert!(!event_path_targets_archive(
-            Path::new("/Users/jane/docs/bundle.zip.tmp"),
-            Path::new("/Users/jane/docs/bundle.zip"),
+            Path::new("/Users/test_user_12/docs/bundle.zip.tmp"),
+            Path::new("/Users/test_user_12/docs/bundle.zip"),
         ));
         assert!(!event_path_targets_archive(
-            Path::new("/Users/jane/docs/bundle.zipper"),
-            Path::new("/Users/jane/docs/bundle.zip"),
+            Path::new("/Users/test_user_12/docs/bundle.zipper"),
+            Path::new("/Users/test_user_12/docs/bundle.zip"),
         ));
     }
 }

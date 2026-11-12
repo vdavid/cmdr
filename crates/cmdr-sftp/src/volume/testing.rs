@@ -135,7 +135,7 @@ pub fn assert_same_bytes(read: &[u8], expected: &[u8], what: &str) {
 }
 
 /// The account every fixture server runs as.
-pub const FIXTURE_USER: &str = "ada";
+pub const FIXTURE_USER: &str = "test_user_1";
 /// Its password, for the rungs that use one.
 pub const FIXTURE_PASSWORD: &str = "openthedoor";
 /// The passphrase on `sftp-fixture-passphrase`'s private key.

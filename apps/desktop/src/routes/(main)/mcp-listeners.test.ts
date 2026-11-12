@@ -859,7 +859,7 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
 
   it('acks `navigated` once the switched pane has come to rest on the target', async () => {
     resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'usb-1', path: '/Volumes/Stick/photos' } })
-    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' })
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0' })
     const handlers = await setup(explorer)
 
     getHandler(
@@ -887,7 +887,7 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
 
   it('acks `fell-back` with the resting place when the listing dies and an edge flow redirects the pane', async () => {
     resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'mtp-1', path: 'mtp://phone/DCIM' } })
-    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' })
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0' })
     const handlers = await setup(explorer)
 
     getHandler(
@@ -902,7 +902,7 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
     // …and the MTP-fatal fallback puts the pane back on the home folder.
     await vi.advanceTimersByTimeAsync(100)
     pane.volumeId = 'root'
-    pane.path = '/Users/david'
+    pane.path = '/Users/test_user_3'
     pane.listingId = 'L2'
     pane.loading = true
     await vi.advanceTimersByTimeAsync(200)
@@ -914,7 +914,7 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
       ok: false,
       outcome: 'fell-back',
       volumeId: 'root',
-      path: '/Users/david',
+      path: '/Users/test_user_3',
     })
   })
 
@@ -923,7 +923,7 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
   // not after the backend's 30 s budget.
   it('acks `stalled` as soon as a switched pane’s folder stops answering', async () => {
     resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'nas', path: '/Volumes/nas/photos' } })
-    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' })
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0' })
     const handlers = await setup(explorer)
 
     getHandler(
@@ -946,15 +946,15 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
   })
 
   it('acks `stalled` for a same-volume navigation whose listing never lands', async () => {
-    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'root', path: '/Users/david/nfs' } })
+    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'root', path: '/Users/test_user_3/nfs' } })
     const neverLands = new Promise<void>(() => {})
-    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' }, neverLands)
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0' }, neverLands)
     const handlers = await setup(explorer)
 
     getHandler(
       handlers,
       'mcp-nav-to-path',
-    )({ payload: { pane: 'left', path: '/Users/david/nfs', requestId: 'req-in-place' } })
+    )({ payload: { pane: 'left', path: '/Users/test_user_3/nfs', requestId: 'req-in-place' } })
     await vi.advanceTimersByTimeAsync(300)
     expect(emit).not.toHaveBeenCalled()
 
@@ -966,7 +966,7 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
       ok: false,
       outcome: 'stalled',
       volumeId: 'root',
-      path: '/Users/david/nfs',
+      path: '/Users/test_user_3/nfs',
     })
   })
 
@@ -974,7 +974,7 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
     // The E2E harness navigates by raw Tauri event with no `requestId`. Polling a
     // switched pane for up to 20 s to answer nobody is pure waste.
     resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'usb-1', path: '/Volumes/Stick' } })
-    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' })
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0' })
     const handlers = await setup(explorer)
 
     getHandler(handlers, 'mcp-nav-to-path')({ payload: { pane: 'left', path: '/Volumes/Stick' } })
@@ -988,7 +988,7 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
 
   it('acks `did-not-settle` when no listing ever completes, rather than trusting the optimistic path', async () => {
     resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'smb-1', path: 'smb://nas/share' } })
-    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' })
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/test_user_3', listingId: 'L0' })
     const handlers = await setup(explorer)
 
     getHandler(

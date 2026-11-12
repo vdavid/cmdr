@@ -5,7 +5,7 @@ journaling never measurably slows an operation (requirement 8). Linked from `cra
 
 Evidence anchor: measured on an Apple Silicon dev machine (macOS 15), release-adjacent `cargo nextest` test profile
 (unoptimized + debuginfo — so absolute numbers are conservative vs a release build), 2026-07-10, branch
-`david/action-log`. Reproduce with the ignored benches:
+`test_user_3/action-log`. Reproduce with the ignored benches:
 
 - `cargo nextest run --run-ignored ignored-only -E 'test(bench_enumeration_latency_by_subtree_size)' --no-capture`
 - `cargo nextest run --run-ignored ignored-only -E 'test(bench_persist_throughput)' --no-capture`

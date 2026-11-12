@@ -86,15 +86,15 @@ mod tests {
         // shares on different servers are two.
         assert_eq!(
             volume_id_for(
-                "/Volumes/naspi",
+                "/Volumes/testshare",
                 Some("smbfs"),
-                Some(&smb_info("nas", 445, "naspi")),
+                Some(&smb_info("nas", 445, "testshare")),
                 None
             ),
             volume_id_for(
-                "/Volumes/naspi-1",
+                "/Volumes/testshare-1",
                 Some("smbfs"),
-                Some(&smb_info("nas", 445, "naspi")),
+                Some(&smb_info("nas", 445, "testshare")),
                 None
             ),
         );

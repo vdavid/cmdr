@@ -40,10 +40,10 @@ fn all_proxy_fills_a_scheme_left_unset() {
 
 #[test]
 fn credentials_in_the_variable_are_kept() {
-    let env = env(&[("HTTPS_PROXY", "http://ada:secret@proxy.corp:3128")]);
+    let env = env(&[("HTTPS_PROXY", "http://test_user_1:secret@proxy.corp:3128")]);
     assert_eq!(
         route(&env, "https://example.com"),
-        proxy("http://ada:secret@proxy.corp:3128")
+        proxy("http://test_user_1:secret@proxy.corp:3128")
     );
 }
 
@@ -51,12 +51,12 @@ fn credentials_in_the_variable_are_kept() {
 fn a_socks_variable_keeps_its_scheme_and_so_its_dns_choice() {
     // `socks5` resolves names on this Mac, `socks5h` at the proxy: curl's convention, kept as typed.
     let env = env(&[
-        ("ALL_PROXY", "socks5h://ada:secret@socks.corp:1080"),
+        ("ALL_PROXY", "socks5h://test_user_1:secret@socks.corp:1080"),
         ("HTTP_PROXY", "socks5://socks.corp"),
     ]);
     assert_eq!(
         route(&env, "https://example.com"),
-        proxy("socks5h://ada:secret@socks.corp:1080")
+        proxy("socks5h://test_user_1:secret@socks.corp:1080")
     );
     assert_eq!(route(&env, "http://example.com"), proxy("socks5://socks.corp"));
 }

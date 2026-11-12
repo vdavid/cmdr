@@ -148,9 +148,9 @@ describe('CoverageLine a11y', () => {
 
 describe('CoverageNote a11y', () => {
   const UNCOVERED: Note = {
-    uncoveredScopes: ['/Volumes/naspi/photos'],
+    uncoveredScopes: ['/Volumes/testshare/photos'],
     unresolvedScopes: [],
-    volumeId: 'smb-naspi',
+    volumeId: 'smb-testshare',
   }
 
   function mountNote(note: Note | null, onIndexDrive: (() => void) | null) {
@@ -160,7 +160,7 @@ describe('CoverageNote a11y', () => {
       target,
       props: {
         note,
-        driveName: 'Naspolya',
+        driveName: 'Testnas',
         isNetwork: true,
         isIndexing: false,
         canBeIndexed: true,
@@ -360,7 +360,7 @@ describe('ImageSearchResults a11y', () => {
 
   it('the network "disconnected / paused" notice has no a11y violations', async () => {
     volumeState.mockResolvedValue(state({ networkOptIn: true, paused: true }))
-    const target = await mountAndSettle({ isNetwork: true, mountRoot: '/Volumes/naspi' })
+    const target = await mountAndSettle({ isNetwork: true, mountRoot: '/Volumes/testshare' })
     expect(target.querySelector('.ir-notice')).not.toBeNull()
     await expectNoA11yViolations(target)
   })

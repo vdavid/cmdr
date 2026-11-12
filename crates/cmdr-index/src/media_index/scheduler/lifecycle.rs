@@ -658,40 +658,43 @@ mod tests {
     fn the_chosen_folders_scope_enriches_a_chosen_folder_and_nothing_else() {
         // The whole point: a folder the user named enriches even though importance
         // would rank it nowhere, and a high-importance folder they didn't name doesn't.
-        let config = config_with_folder("/Users/dave/Photos");
+        let config = config_with_folder("/Users/test_user_10/Photos");
         let coverage = pass_coverage(gate::IndexScope::ChosenFolders, || {
-            Some([("/Users/dave/Work", 1.0)].into_iter().collect())
+            Some([("/Users/test_user_10/Work", 1.0)].into_iter().collect())
         });
         let covered = |path: &str| local_should_enrich(path, coverage.scores.as_ref(), &config, "vol");
 
-        assert!(covered("/Users/dave/Photos/2026/a.jpg"), "a chosen folder enriches");
-        assert!(covered("/Users/dave/Photos/a.jpg"));
         assert!(
-            !covered("/Users/dave/Work/screenshot.png"),
+            covered("/Users/test_user_10/Photos/2026/a.jpg"),
+            "a chosen folder enriches"
+        );
+        assert!(covered("/Users/test_user_10/Photos/a.jpg"));
+        assert!(
+            !covered("/Users/test_user_10/Work/screenshot.png"),
             "a folder nobody chose never enriches, however important it scores"
         );
-        assert!(!covered("/Users/dave/Downloads/a.jpg"));
+        assert!(!covered("/Users/test_user_10/Downloads/a.jpg"));
     }
 
     #[test]
     fn the_automatic_scope_adds_the_above_threshold_folders_to_the_chosen_ones() {
         // Same chosen folder, same scores, the other scope: now importance broadens it.
-        let config = config_with_folder("/Users/dave/Photos");
+        let config = config_with_folder("/Users/test_user_10/Photos");
         let coverage = pass_coverage(gate::IndexScope::ByImportance, || {
-            Some([("/Users/dave/Work", 1.0)].into_iter().collect())
+            Some([("/Users/test_user_10/Work", 1.0)].into_iter().collect())
         });
         let covered = |path: &str| local_should_enrich(path, coverage.scores.as_ref(), &config, "vol");
 
         assert!(
-            covered("/Users/dave/Photos/2026/a.jpg"),
+            covered("/Users/test_user_10/Photos/2026/a.jpg"),
             "the chosen folder still enriches"
         );
         assert!(
-            covered("/Users/dave/Work/screenshot.png"),
+            covered("/Users/test_user_10/Work/screenshot.png"),
             "and so does an important one"
         );
         assert!(
-            !covered("/Users/dave/Downloads/a.jpg"),
+            !covered("/Users/test_user_10/Downloads/a.jpg"),
             "an unscored folder still doesn't"
         );
     }

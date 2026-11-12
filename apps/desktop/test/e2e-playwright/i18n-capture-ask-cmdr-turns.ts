@@ -210,8 +210,8 @@ export async function captureAskCmdrDecisions(
     { verb: 'rename', what: left, ops: 5, outcome: { kind: 'rejected' } },
     { verb: 'compress', what: left, ops: 7, outcome: { kind: 'rejected' } },
     { verb: 'extract', what: left, ops: 1, outcome: { kind: 'rejected' } },
-    { verb: 'addServer', what: 'nas.local', ops: 0, outcome: { kind: 'saved', note: 'none' } },
-    { verb: 'editServer', what: 'nas.local', ops: 0, outcome: { kind: 'saved', note: 'shareNotSaved' } },
+    { verb: 'addServer', what: 'testnas.local', ops: 0, outcome: { kind: 'saved', note: 'none' } },
+    { verb: 'editServer', what: 'testnas.local', ops: 0, outcome: { kind: 'saved', note: 'shareNotSaved' } },
     { verb: 'addServer', what: 'cloud.example.com', ops: 0, outcome: { kind: 'rejected' } },
   ]
   await openChat(main)

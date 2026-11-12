@@ -178,8 +178,8 @@ Commander One (verified by hand, 2026-10-06). This command is the one-keystroke 
 3. Anywhere else → the new landing, since the new root refuses it.
 
 It's idempotent, and it reads a root with or without a trailing slash as the same folder (Rust mints a `/` root as
-`sftp://ada@nas.local:22/`). Who applies it to panes, tabs, and the remembered path: `../pane/DETAILS.md` § "A place
-whose root moved under the pane".
+`sftp://test_user_1@testnas.local:22/`). Who applies it to panes, tabs, and the remembered path: `../pane/DETAILS.md` §
+"A place whose root moved under the pane".
 
 `withTimeout(promise, ms, fallback)`: imported from `#lib/utils/timing` and re-exported. Races a promise against a
 timeout, returning the fallback on expiry. Used by `determineNavigationPath` and also by `VolumeBreadcrumb.svelte`
@@ -231,9 +231,9 @@ imports `getLastUsedPathForVolume` from `app-status-store.ts`.
 ### Restoring a remote path
 
 A `<scheme>://` path names a volume with no local mount, so EVERY `pathExists` probe on it answers false. The plain walk
-then chops the scheme itself (`sftp://ada@nas:22` → `sftp:/` → `sftp:`), runs out, and answers `~` — the boot disk's
-home folder, on the root volume. `null` is the same failure spelled differently: four of this function's six callers
-hand it to `navigateToFallback`, which turns it into `~` on the root volume.
+then chops the scheme itself (`sftp://test_user_1@nas:22` → `sftp:/` → `sftp:`), runs out, and answers `~` — the boot
+disk's home folder, on the root volume. `null` is the same failure spelled differently: four of this function's six
+callers hand it to `navigateToFallback`, which turns it into `~` on the root volume.
 
 So `walkUp` carries a SCHEME FLOOR (`schemeFloorFor`) and returns it rather than falling through. The floor is the
 caller's `volumeRoot` when that is on the same scheme, because a volume can sit BELOW its scheme root: an MTP storage is

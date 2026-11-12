@@ -133,12 +133,12 @@ describe('createListingLoader — generation / drop-foreign token model', () => 
 
   it('lands the pane on the stored spelling a complete event reports', async () => {
     // The kernel mount's decomposed `fotók`, which the share stores composed.
-    const asked = '/Volumes/naspi/fotók'
-    const stored = '/Volumes/naspi/fotók'
+    const asked = '/Volumes/testshare/fotók'
+    const stored = '/Volumes/testshare/fotók'
     const { loader, state, spies } = makeHarness()
     await loader.loadDirectory({ path: asked })
 
-    completeCb(0)({ listingId: state.listingId, totalCount: 1, volumeRoot: '/Volumes/naspi', storedPath: stored })
+    completeCb(0)({ listingId: state.listingId, totalCount: 1, volumeRoot: '/Volumes/testshare', storedPath: stored })
     await vi.waitFor(() => {
       expect(spies.onPathChange).toHaveBeenCalledWith(stored)
     })

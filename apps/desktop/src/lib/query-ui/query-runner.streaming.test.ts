@@ -215,12 +215,12 @@ describe('the live view the dialog renders', () => {
     const run = await startRun(h)
     expect(h.runner.live).toMatchObject({ phase: 'resolvingCoverage', running: true, matchCount: 0 })
 
-    run.onProgress(progress({ phase: 'walking', matchCount: 9, dirsFound: 120, currentPath: '/Volumes/naspi' }))
+    run.onProgress(progress({ phase: 'walking', matchCount: 9, dirsFound: 120, currentPath: '/Volumes/testshare' }))
     expect(h.runner.live).toMatchObject({
       phase: 'walking',
       matchCount: 9,
       dirsFound: 120,
-      currentPath: '/Volumes/naspi',
+      currentPath: '/Volumes/testshare',
     })
 
     run.onEnd(ended({ matchCount: 9 }))

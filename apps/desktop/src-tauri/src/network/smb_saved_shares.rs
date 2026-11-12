@@ -105,7 +105,7 @@ pub async fn remember_mount(mounted: MountedShare<'_>) -> Option<String> {
 
 /// The landing key a moved SMB SERVER leaves behind (`server_move::smb`), for a mount that
 /// names no saved place until it's up: the share-list mount. Keyed by the server's
-/// `credential_key`, so the spellings a password already pairs (`nas.local`, `nas`) pair here too.
+/// `credential_key`, so the spellings a password already pairs (`testnas.local`, `nas`) pair here too.
 pub fn server_place(host: &str, port: u16) -> String {
     use crate::network::server_identity::{credential_key, smb_server};
     format!("smb-server:{}", credential_key(&smb_server(host, port)))
@@ -123,7 +123,7 @@ pub async fn remember_mount_since(mounted: MountedShare<'_>, set_out: DialTicket
     remember_mount(mounted).await
 }
 
-/// Records a share an ADD named (`smb://sven@host/Container`), before anything
+/// Records a share an ADD named (`smb://test_user_6@host/Container`), before anything
 /// mounted it: a row in the hub with no place yet.
 ///
 /// ❗ Republishes the lists: the hub re-reads the saved stores on `volumes-changed`,
@@ -231,7 +231,7 @@ fn favorited_share_row(
 /// direct session the usual way, and records the mount. The SMB arm of
 /// `commands::servers::connect_saved_place`.
 ///
-/// ❗ A share saved "as sven" mounts as sven, with the password the sheet just
+/// ❗ A share saved "as test_user_6" mounts as test_user_6, with the password the sheet just
 /// offered or the one the Keychain holds for the host. No password for it answers
 /// `NeedsCredentials`, ❌ never a guest attempt, which on a `map to guest` Samba
 /// would "work" and show the wrong files. A share saved without an account mounts

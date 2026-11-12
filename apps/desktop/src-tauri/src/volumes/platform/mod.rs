@@ -112,7 +112,7 @@ pub(crate) use imp::watcher::stop_volume_watcher;
 /// a consumer classifying by fs type sees a share and not an unknown filesystem.
 pub(crate) use imp::NETWORK_FS_TYPE;
 
-/// Whether this OS's local disks tell `Ada` from `ada`, the answer every local-disk row's
+/// Whether this OS's local disks tell `Test_user_1` from `test_user_1`, the answer every local-disk row's
 /// `case_sensitive` carries. Read from no mount: a per-mount `pathconf` could block on a dead
 /// one, so each arm states what its local filesystems do by default.
 pub(crate) use imp::LOCAL_DISK_CASE_SENSITIVE;

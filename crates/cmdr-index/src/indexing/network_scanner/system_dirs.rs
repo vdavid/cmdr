@@ -186,7 +186,7 @@ mod tests {
     fn keeps_ordinary_dirs() {
         for name in [
             "photos",
-            "Dori-Dropbox",
+            "Test_user_7-Dropbox",
             "videos",
             "eaDir",
             "recycle",

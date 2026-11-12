@@ -109,7 +109,7 @@ enum Replace {
 async fn run_on(cut: Cut, meanwhile: Meanwhile, replace: Replace) -> Ran {
     let label = format!("{cut:?}/{meanwhile:?}/{replace:?}");
     let engine = TestOperations::new();
-    let inner = Arc::new(InMemoryVolume::new("Naspolya"));
+    let inner = Arc::new(InMemoryVolume::new("Testnas"));
     inner.create_directory(Path::new("/share")).await.unwrap();
     inner.create_file(Path::new(ARCHIVE), &original_zip()).await.unwrap();
     let nas = OutageVolume::wrap(Arc::clone(&inner), &format!("zip-edit-{label}"));
@@ -360,7 +360,7 @@ async fn a_share_that_stays_gone_at_the_upload_reports_the_lost_connection() {
             gave_up_after_secs,
             ..
         })) => {
-            assert_eq!(volume_name, "Naspolya");
+            assert_eq!(volume_name, "Testnas");
             assert!(gave_up_after_secs.is_some(), "it waited before stopping");
         }
         _ => panic!("expected ServerConnectionLost"),

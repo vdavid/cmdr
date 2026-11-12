@@ -3,7 +3,7 @@
 
 use super::*;
 
-const PREFIX: &str = "sftp://ada@nas.local:22";
+const PREFIX: &str = "sftp://test_user_1@testnas.local:22";
 
 fn rooted_at(remote_root: &str) -> RemoteRoot {
     RemoteRoot::new(PREFIX.to_string(), Path::new(remote_root))
@@ -27,7 +27,10 @@ fn a_remote_path_normalizes_to_one_absolute_spelling() {
 #[test]
 fn the_app_root_is_the_prefix_plus_the_remote_root() {
     let root = rooted_at("/srv/data");
-    assert_eq!(root.app_root(), Path::new("sftp://ada@nas.local:22/srv/data"));
+    assert_eq!(
+        root.app_root(),
+        Path::new("sftp://test_user_1@testnas.local:22/srv/data")
+    );
     assert_eq!(root.remote_root(), Path::new("/srv/data"));
 }
 
@@ -36,7 +39,7 @@ fn the_app_root_is_the_prefix_plus_the_remote_root() {
 #[test]
 fn a_volume_at_the_server_root_still_carries_the_prefix() {
     let root = rooted_at("/");
-    assert_eq!(root.app_root(), Path::new("sftp://ada@nas.local:22/"));
+    assert_eq!(root.app_root(), Path::new("sftp://test_user_1@testnas.local:22/"));
     assert_eq!(root.remote_root(), Path::new("/"));
 }
 
@@ -54,7 +57,7 @@ fn the_three_spellings_of_the_root_all_mean_the_root() {
 fn a_prefixed_and_a_relative_path_land_on_the_same_server_path() {
     let root = rooted_at("/srv/data");
     let from_prefix = root
-        .to_remote_path(Path::new("sftp://ada@nas.local:22/srv/data/photos"))
+        .to_remote_path(Path::new("sftp://test_user_1@testnas.local:22/srv/data/photos"))
         .expect("a path under this volume's own prefix is on this volume");
     let from_relative = root
         .to_remote_path(Path::new("photos"))
@@ -63,7 +66,7 @@ fn a_prefixed_and_a_relative_path_land_on_the_same_server_path() {
     assert_eq!(from_relative, from_prefix);
     assert_eq!(
         root.to_app_path(&from_prefix).as_deref(),
-        Some(Path::new("sftp://ada@nas.local:22/srv/data/photos")),
+        Some(Path::new("sftp://test_user_1@testnas.local:22/srv/data/photos")),
         "`to_app_path` is the exact inverse, so a round trip is the identity"
     );
 }
@@ -77,7 +80,9 @@ fn a_server_path_outside_the_root_has_no_app_path() {
     let root = rooted_at("/srv/data");
     assert_eq!(
         root.to_app_path("/srv/data/photos/trip.jpg").as_deref(),
-        Some(Path::new("sftp://ada@nas.local:22/srv/data/photos/trip.jpg"))
+        Some(Path::new(
+            "sftp://test_user_1@testnas.local:22/srv/data/photos/trip.jpg"
+        ))
     );
     assert_eq!(root.to_app_path("/srv"), None, "an href above the collection");
     assert_eq!(root.to_app_path("/etc/passwd"), None, "somewhere else entirely");
@@ -111,10 +116,13 @@ fn a_bare_server_absolute_path_is_refused() {
 fn a_prefixed_path_outside_the_root_is_refused() {
     let root = rooted_at("/srv/data");
     assert_eq!(
-        root.to_remote_path(Path::new("sftp://ada@nas.local:22/etc/passwd")),
+        root.to_remote_path(Path::new("sftp://test_user_1@testnas.local:22/etc/passwd")),
         None
     );
-    assert_eq!(root.to_remote_path(Path::new("sftp://ada@nas.local:22/srv")), None);
+    assert_eq!(
+        root.to_remote_path(Path::new("sftp://test_user_1@testnas.local:22/srv")),
+        None
+    );
 }
 
 /// Another server's path, or another account's on the same server, is not this
@@ -123,15 +131,15 @@ fn a_prefixed_path_outside_the_root_is_refused() {
 fn another_servers_prefix_is_not_this_volume() {
     let root = rooted_at("/srv/data");
     assert_eq!(
-        root.to_remote_path(Path::new("sftp://ada@other.local:22/srv/data/photos")),
+        root.to_remote_path(Path::new("sftp://test_user_1@other.local:22/srv/data/photos")),
         None
     );
     assert_eq!(
-        root.to_remote_path(Path::new("sftp://grace@nas.local:22/srv/data/photos")),
+        root.to_remote_path(Path::new("sftp://test_user_2@testnas.local:22/srv/data/photos")),
         None
     );
     assert_eq!(
-        root.to_remote_path(Path::new("webdav://ada@nas.local:22/srv/data/photos")),
+        root.to_remote_path(Path::new("webdav://test_user_1@testnas.local:22/srv/data/photos")),
         None
     );
 }
@@ -143,11 +151,11 @@ fn another_servers_prefix_is_not_this_volume() {
 fn the_root_is_matched_by_whole_components() {
     let root = rooted_at("/srv/data");
     assert_eq!(
-        root.to_remote_path(Path::new("sftp://ada@nas.local:22/srv/data-1/photos")),
+        root.to_remote_path(Path::new("sftp://test_user_1@testnas.local:22/srv/data-1/photos")),
         None
     );
     assert_eq!(
-        root.to_remote_path(Path::new("sftp://ada@nas.local:22/srv/dataX")),
+        root.to_remote_path(Path::new("sftp://test_user_1@testnas.local:22/srv/dataX")),
         None
     );
 }
@@ -158,7 +166,7 @@ fn the_root_is_matched_by_whole_components() {
 fn the_prefix_is_matched_by_whole_components() {
     let root = rooted_at("/srv/data");
     assert_eq!(
-        root.to_remote_path(Path::new("sftp://ada@nas.local:2222/srv/data/photos")),
+        root.to_remote_path(Path::new("sftp://test_user_1@testnas.local:2222/srv/data/photos")),
         None
     );
 }
@@ -172,7 +180,7 @@ fn a_relative_path_cannot_climb_out_of_the_root() {
     assert_eq!(root.to_remote_path(Path::new("../secrets")), None);
     assert_eq!(root.to_remote_path(Path::new("photos/../../secrets")), None);
     assert_eq!(
-        root.to_remote_path(Path::new("sftp://ada@nas.local:22/srv/data/../secrets")),
+        root.to_remote_path(Path::new("sftp://test_user_1@testnas.local:22/srv/data/../secrets")),
         None
     );
 }
@@ -183,7 +191,7 @@ fn a_relative_path_cannot_climb_out_of_the_root() {
 fn a_volume_at_the_server_root_reaches_everything_through_the_prefix() {
     let root = rooted_at("/");
     assert_eq!(
-        root.to_remote_path(Path::new("sftp://ada@nas.local:22/etc/passwd"))
+        root.to_remote_path(Path::new("sftp://test_user_1@testnas.local:22/etc/passwd"))
             .as_deref(),
         Some("/etc/passwd")
     );
@@ -194,7 +202,7 @@ fn a_volume_at_the_server_root_reaches_everything_through_the_prefix() {
     assert_eq!(root.to_remote_path(Path::new("/")).as_deref(), Some("/"));
     assert_eq!(
         root.to_app_path("/").as_deref(),
-        Some(Path::new("sftp://ada@nas.local:22/")),
+        Some(Path::new("sftp://test_user_1@testnas.local:22/")),
         "the root round-trips to the app root"
     );
 }
@@ -207,13 +215,16 @@ fn a_volume_at_the_server_root_reaches_everything_through_the_prefix() {
 fn a_path_anchored_by_the_app_still_lands_where_the_pane_says() {
     let root = rooted_at("/srv/data");
     let anchored = crate::volume::root_anchored(root.app_root(), Path::new("photos/trip.jpg"));
-    assert_eq!(anchored, Path::new("sftp://ada@nas.local:22/srv/data/photos/trip.jpg"));
+    assert_eq!(
+        anchored,
+        Path::new("sftp://test_user_1@testnas.local:22/srv/data/photos/trip.jpg")
+    );
     assert_eq!(
         root.to_remote_path(&anchored).as_deref(),
         Some("/srv/data/photos/trip.jpg")
     );
 
-    let already_full = Path::new("sftp://ada@nas.local:22/srv/data/photos/trip.jpg");
+    let already_full = Path::new("sftp://test_user_1@testnas.local:22/srv/data/photos/trip.jpg");
     assert_eq!(
         crate::volume::root_anchored(root.app_root(), already_full),
         already_full,
@@ -227,7 +238,7 @@ fn a_path_anchored_by_the_app_still_lands_where_the_pane_says() {
 fn an_adb_prefix_keeps_the_serial_exactly_as_the_server_names_it() {
     // The ADB server keys on the exact serial, so a folded prefix would dial a
     // device nobody listed. The id folds its slug; the prefix never does.
-    assert_eq!(adb_app_root("46061FDAS000A4"), "adb://46061FDAS000A4");
+    assert_eq!(adb_app_root("TESTSERIAL0001"), "adb://TESTSERIAL0001");
     assert_eq!(adb_app_root("192.168.1.5:5555"), "adb://192.168.1.5:5555");
     assert_ne!(adb_app_root("R58M1"), adb_app_root("r58m1"));
 }
@@ -282,45 +293,45 @@ fn an_nfs_app_root_carries_the_export_as_one_segment() {
     // ❗ No account in the authority (the uid is a setting, not identity), and the
     // export rides as ONE segment, so `server_of_path` can tell where it ends.
     assert_eq!(
-        nfs_app_root("NAS.local", 2049, "/Public"),
-        "nfs://nas.local:2049/Public"
+        nfs_app_root("TESTNAS.local", 2049, "/Public"),
+        "nfs://testnas.local:2049/Public"
     );
     assert_eq!(
-        nfs_app_root("nas.local", 2049, "/volume1/data/"),
-        "nfs://nas.local:2049/volume1%2Fdata"
+        nfs_app_root("testnas.local", 2049, "/volume1/data/"),
+        "nfs://testnas.local:2049/volume1%2Fdata"
     );
-    assert_eq!(nfs_app_root("nas.local", 2049, "/"), "nfs://nas.local:2049/%2F");
+    assert_eq!(nfs_app_root("testnas.local", 2049, "/"), "nfs://testnas.local:2049/%2F");
     assert_eq!(
-        nfs_app_root("nas.local", 2049, "/100%/x"),
-        "nfs://nas.local:2049/100%25%2Fx"
+        nfs_app_root("testnas.local", 2049, "/100%/x"),
+        "nfs://testnas.local:2049/100%25%2Fx"
     );
 }
 
 #[test]
 fn an_nfs_path_names_the_place_of_its_export() {
     for (export, path) in [
-        ("/Public", "nfs://nas.local:2049/Public/photos/a.jpg"),
-        ("/Public", "nfs://nas.local:2049/Public"),
-        ("/volume1/data", "nfs://nas.local:2049/volume1%2Fdata/photos"),
-        ("/", "nfs://nas.local:2049/%2F/etc"),
-        ("/100%/x", "nfs://nas.local:2049/100%25%2Fx"),
+        ("/Public", "nfs://testnas.local:2049/Public/photos/a.jpg"),
+        ("/Public", "nfs://testnas.local:2049/Public"),
+        ("/volume1/data", "nfs://testnas.local:2049/volume1%2Fdata/photos"),
+        ("/", "nfs://testnas.local:2049/%2F/etc"),
+        ("/100%/x", "nfs://testnas.local:2049/100%25%2Fx"),
     ] {
         let server = server_of_path(path).expect("an NFS path");
         assert_eq!(server.kind, super::super::BackendKind::Nfs, "{path}");
-        assert_eq!(server.volume_id, nfs_volume_id("nas.local", 2049, export), "{path}");
+        assert_eq!(server.volume_id, nfs_volume_id("testnas.local", 2049, export), "{path}");
     }
 }
 
 #[test]
 fn an_nfs_path_without_an_export_or_a_port_names_nothing() {
     for path in [
-        "nfs://nas.local:2049",
-        "nfs://nas.local:2049/",
-        "nfs://nas.local/Public",
+        "nfs://testnas.local:2049",
+        "nfs://testnas.local:2049/",
+        "nfs://testnas.local/Public",
         "nfs://:2049/Public",
         // A broken escape is no spelling `nfs_app_root` mints.
-        "nfs://nas.local:2049/a%2",
-        "nfs://nas.local:2049/a%zz",
+        "nfs://testnas.local:2049/a%2",
+        "nfs://testnas.local:2049/a%zz",
     ] {
         assert_eq!(server_of_path(path), None, "{path}");
     }
@@ -331,9 +342,13 @@ fn an_nfs_app_root_and_its_volume_id_agree_through_server_of_path() {
     // Invariant 11: the path a volume mints and the id it registers under come
     // from one tuple, so routing a path finds the volume that minted it.
     for export in ["/Public", "/volume1/data", "/", "/Caf\u{e9} & co"] {
-        let root = nfs_app_root("Nas.Local", 15481, export);
+        let root = nfs_app_root("Testnas.Local", 15481, export);
         let server = server_of_path(&format!("{root}/sub/file")).expect("an NFS path");
-        assert_eq!(server.volume_id, nfs_volume_id("nas.local", 15481, export), "{export}");
+        assert_eq!(
+            server.volume_id,
+            nfs_volume_id("testnas.local", 15481, export),
+            "{export}"
+        );
     }
 }
 
@@ -352,21 +367,20 @@ fn a_shown_s3_path_names_the_host_and_bucket_but_never_the_key_id() {
 #[test]
 fn every_s3_path_in_a_line_loses_its_key_id_and_nothing_else_changes() {
     // Marked log spans, quotes, and another scheme's account all stay as they are.
-    let line =
-        "copy \u{FDD2}s3://GK00c0de@127.0.0.1:14480/b/x\u{FDEF} -> \"s3://AKIA2@h:443/c/\" (sftp://ada@nas:22/x)";
+    let line = "copy \u{FDD2}s3://GK00c0de@127.0.0.1:14480/b/x\u{FDEF} -> \"s3://AKIA2@h:443/c/\" (sftp://test_user_1@nas:22/x)";
     assert_eq!(
         without_s3_key_ids(line),
-        "copy \u{FDD2}s3://127.0.0.1:14480/b/x\u{FDEF} -> \"s3://h:443/c/\" (sftp://ada@nas:22/x)"
+        "copy \u{FDD2}s3://127.0.0.1:14480/b/x\u{FDEF} -> \"s3://h:443/c/\" (sftp://test_user_1@nas:22/x)"
     );
 }
 
 #[test]
 fn text_without_an_s3_account_comes_back_untouched() {
     for text in [
-        "/Users/ada/file.txt",
+        "/Users/test_user_1/file.txt",
         // The AWS CLI's spelling carries no account.
         "s3://bucket/key@2x.png",
-        "mail ada@example.com about s3://bucket",
+        "mail test_user_1@example.com about s3://bucket",
         "xs3://key@host:1/b",
     ] {
         assert!(
@@ -385,16 +399,16 @@ fn a_refusal_names_the_backend_the_path_is_on() {
         ("adb://R58M123/data", RemoteRefuser::Phone),
         ("adb://R58M123", RemoteRefuser::Phone),
         ("mtp://pixel/65537/DCIM", RemoteRefuser::Phone),
-        ("sftp://ada@nas.local:22/etc", RemoteRefuser::Server),
-        ("webdav://ada@nas.local:443/a", RemoteRefuser::Server),
-        ("nfs://nas.local:2049/%2Fexport/a", RemoteRefuser::Server),
+        ("sftp://test_user_1@testnas.local:22/etc", RemoteRefuser::Server),
+        ("webdav://test_user_1@testnas.local:443/a", RemoteRefuser::Server),
+        ("nfs://testnas.local:2049/%2Fexport/a", RemoteRefuser::Server),
         ("s3://AKIATEST@s3.example.com:443/photos/a", RemoteRefuser::ObjectStore),
     ] {
         assert_eq!(refuser_of_path(path), Some(refuser), "{path}");
     }
     for path in [
         "/Users/me/a",
-        "/Volumes/naspi/adb://x",
+        "/Volumes/testshare/adb://x",
         "smb://nas/share",
         "adb://",
         "mtp://",

@@ -51,7 +51,7 @@ test.describe('An AI suggestion to add a server', () => {
       `window.__TAURI_INTERNALS__.invoke('e2e_propose_server', { params: ${JSON.stringify({
         protocol: 'sftp',
         host: HOST,
-        username: 'ada',
+        username: 'test_user_1',
         path: '/srv/builds',
         name,
         rationale: 'You open this box in the terminal every day.',
@@ -77,7 +77,7 @@ test.describe('An AI suggestion to add a server', () => {
         })
         .toContain(HOST)
       const facts = await tauriPage.evaluate<string>(`(${card}).querySelector('.facts').textContent`)
-      for (const text of ['SFTP', '22', 'ada', '/srv/builds', 'A new address']) expect(facts).toContain(text)
+      for (const text of ['SFTP', '22', 'test_user_1', '/srv/builds', 'A new address']) expect(facts).toContain(text)
       const inputs = await tauriPage.evaluate<number>(
         `(${card}).querySelectorAll('input, textarea, select, [contenteditable]').length`,
       )

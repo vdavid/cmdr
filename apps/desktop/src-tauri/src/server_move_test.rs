@@ -6,7 +6,7 @@ use super::*;
 
 fn stored() -> Result<SmbCredentials, KeychainError> {
     Ok(SmbCredentials {
-        username: "ada".to_string(),
+        username: "test_user_1".to_string(),
         password: "pa55".to_string(),
     })
 }

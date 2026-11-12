@@ -3,7 +3,7 @@
 // + GC set): for a local volume that's already the absolute OS path (mount root is
 // `/`), but for a network (SMB) volume it's mount-relative (like `/DCIM/x.jpg`) and
 // needs the volume's mount root prepended to reach the real file
-// (`/Volumes/naspi/DCIM/x.jpg`). Mirrors the backend `os_join` (media_index/DETAILS.md
+// (`/Volumes/testshare/DCIM/x.jpg`). Mirrors the backend `os_join` (media_index/DETAILS.md
 // § "The byte-fetch decision" → Path mapping), kept pure + FE-side so the search grid
 // can mint thumbnail tokens and open results with the correct absolute path.
 

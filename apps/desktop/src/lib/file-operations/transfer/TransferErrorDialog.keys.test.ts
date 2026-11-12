@@ -92,7 +92,7 @@ describe('TransferErrorDialog keys', () => {
 
   it('retries a lost server connection on R, for once the server is back', () => {
     const target = render(
-      { type: 'server_connection_lost', path: '/nas/a.jpg', volumeName: 'Naspolya', gaveUpAfterSecs: 900 },
+      { type: 'server_connection_lost', path: '/nas/a.jpg', volumeName: 'Testnas', gaveUpAfterSecs: 900 },
       { retry: true },
     )
     arm()

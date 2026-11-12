@@ -58,10 +58,10 @@ fn a_path_in_a_subfolder_is_allowed_and_creates_it() {
     let (_dir, store) = store();
 
     store
-        .write("people/dori.md", "Dóri reads in Hungarian.")
+        .write("people/test_user_7.md", "Test_user_7 reads in Hungarian.")
         .expect("a subfolder");
 
-    assert!(store.root().join("people").join("dori.md").is_file());
+    assert!(store.root().join("people").join("test_user_7.md").is_file());
 }
 
 #[test]
@@ -140,10 +140,10 @@ fn a_symlinked_parent_folder_is_refused() {
     std::os::unix::fs::symlink(&outside, store.root().join("people")).expect("symlink");
 
     assert_eq!(
-        store.write("people/dori.md", "planted"),
+        store.write("people/test_user_7.md", "planted"),
         Err(MemoryRefusal::OutsideMemory)
     );
-    assert!(!outside.join("dori.md").exists(), "the write followed the link");
+    assert!(!outside.join("test_user_7.md").exists(), "the write followed the link");
 }
 
 // ── The disk cap ──────────────────────────────────────────────────────────────
@@ -267,10 +267,10 @@ fn a_hub_file_that_is_not_text_reads_as_absent_and_is_logged() {
 fn an_edit_replaces_one_exact_occurrence() {
     let (_dir, store) = store();
     store
-        .write(HUB_FILE, "Prefers ISO dates.\nWorks in Stockholm.\n")
+        .write(HUB_FILE, "Prefers ISO dates.\nWorks in Testville.\n")
         .expect("write");
 
-    store.edit(HUB_FILE, "Stockholm", "Budapest").expect("the edit lands");
+    store.edit(HUB_FILE, "Testville", "Budapest").expect("the edit lands");
 
     assert_eq!(
         std::fs::read_to_string(store.root().join(HUB_FILE)).expect("read back"),

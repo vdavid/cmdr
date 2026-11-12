@@ -37,7 +37,7 @@ impl MountRoot {
     ///
     /// The path half is the original rule (shortest, ties lexicographic) and it
     /// still decides between equally-live roots: macOS suffixes the LATER mount
-    /// (`/Volumes/naspi-1`), so the shortest is the original, which is what every
+    /// (`/Volumes/testshare-1`), so the shortest is the original, which is what every
     /// saved path, favorite, and index row already refers to. What changed is its
     /// RANK — a proven-dead shortest root loses to a live longer one, because
     /// path shape is a guess about identity and an errno is evidence about health.
@@ -394,8 +394,11 @@ mod tests {
     fn among_equally_live_roots_the_shortest_path_wins() {
         // The original fix, now a tie-break: macOS suffixes the later mount, so
         // the shortest root is the one saved paths and favorites refer to.
-        let reg = registration_over(&["/Volumes/naspi-1", "/Volumes/naspi"]);
-        assert_eq!(reg.best_root().expect("two roots").path, Path::new("/Volumes/naspi"));
+        let reg = registration_over(&["/Volumes/testshare-1", "/Volumes/testshare"]);
+        assert_eq!(
+            reg.best_root().expect("two roots").path,
+            Path::new("/Volumes/testshare")
+        );
     }
 
     #[test]
@@ -410,25 +413,28 @@ mod tests {
         // The "worse variant": the NAS drops, macOS leaves the original mount
         // wedged, and the reconnect lands at the suffixed path. Path shape alone
         // picks the dead one every time, including across restarts.
-        let mut reg = registration_over(&["/Volumes/naspi", "/Volumes/naspi-1"]);
+        let mut reg = registration_over(&["/Volumes/testshare", "/Volumes/testshare-1"]);
         reg.roots[0].proven_stale = true;
-        assert_eq!(reg.best_root().expect("two roots").path, Path::new("/Volumes/naspi-1"));
+        assert_eq!(
+            reg.best_root().expect("two roots").path,
+            Path::new("/Volumes/testshare-1")
+        );
     }
 
     #[test]
     fn promotion_rebuilds_the_volume_at_the_new_root() {
-        let mut reg = registration_over(&["/Volumes/naspi", "/Volumes/naspi-1"]);
+        let mut reg = registration_over(&["/Volumes/testshare", "/Volumes/testshare-1"]);
         reg.roots[0].proven_stale = true;
         assert!(matches!(reg.promote_to_best_root(), Promotion::Promoted(_)));
-        assert_eq!(reg.volume.root(), Path::new("/Volumes/naspi-1"));
+        assert_eq!(reg.volume.root(), Path::new("/Volumes/testshare-1"));
         assert_eq!(reg.volume.name(), "share", "the display name survives a promotion");
     }
 
     #[test]
     fn promotion_is_a_no_op_when_the_active_root_is_already_the_best() {
-        let mut reg = registration_over(&["/Volumes/naspi", "/Volumes/naspi-1"]);
+        let mut reg = registration_over(&["/Volumes/testshare", "/Volumes/testshare-1"]);
         assert!(matches!(reg.promote_to_best_root(), Promotion::AlreadyBest));
-        assert_eq!(reg.volume.root(), Path::new("/Volumes/naspi"));
+        assert_eq!(reg.volume.root(), Path::new("/Volumes/testshare"));
     }
 
     /// Every errno: the seven that say the mount is gone or wedged promote, and none
@@ -531,14 +537,14 @@ mod tests {
         // serving, so the registration stays — but every path it hands out now
         // names a mount that isn't there, and only the registry knows.
         let manager = VolumeManager::new();
-        let (spy, told) = root_spy("/Volumes/naspi");
+        let (spy, told) = root_spy("/Volumes/testshare");
         manager.register("share", spy);
 
-        let outcome = manager.mark_root_stale("share", Path::new("/Volumes/naspi"));
+        let outcome = manager.mark_root_stale("share", Path::new("/Volumes/testshare"));
         assert!(matches!(outcome, StaleRootOutcome::Unchanged), "nowhere to promote to");
         assert_eq!(
             told(),
-            vec![PathBuf::from("/Volumes/naspi")],
+            vec![PathBuf::from("/Volumes/testshare")],
             "the volume has to hear that its mount is gone"
         );
     }
@@ -548,10 +554,10 @@ mod tests {
         // The promotion IS the fix here: the new root is a real mount, so the
         // volume's paths are openable again and nothing should be marked.
         let manager = doubly_mounted_share();
-        let (spy, told) = root_spy("/Volumes/naspi");
+        let (spy, told) = root_spy("/Volumes/testshare");
         manager.register("share", spy);
 
-        let outcome = manager.mark_root_stale("share", Path::new("/Volumes/naspi"));
+        let outcome = manager.mark_root_stale("share", Path::new("/Volumes/testshare"));
         assert!(matches!(outcome, StaleRootOutcome::Promoted { .. }));
         assert!(told().is_empty(), "a live root needs no warning");
     }
@@ -562,27 +568,27 @@ mod tests {
         // unmount event. The promotion lands on a corpse, so the honest answer
         // travels with it.
         let manager = VolumeManager::new();
-        let (spy, told) = root_spy("/Volumes/naspi");
+        let (spy, told) = root_spy("/Volumes/testshare");
         manager.register("share", spy);
-        manager.register("share", local_volume("naspi", "/Volumes/naspi-1"));
+        manager.register("share", local_volume("testshare", "/Volumes/testshare-1"));
 
-        manager.mark_root_stale("share", Path::new("/Volumes/naspi-1"));
+        manager.mark_root_stale("share", Path::new("/Volumes/testshare-1"));
         assert!(told().is_empty(), "the ACTIVE root still looks alive");
 
-        manager.remove_root(Path::new("/Volumes/naspi"));
+        manager.remove_root(Path::new("/Volumes/testshare"));
         assert_eq!(
             manager.get("share").expect("still registered").root(),
-            Path::new("/Volumes/naspi-1")
+            Path::new("/Volumes/testshare-1")
         );
-        assert_eq!(told(), vec![PathBuf::from("/Volumes/naspi-1")]);
+        assert_eq!(told(), vec![PathBuf::from("/Volumes/testshare-1")]);
     }
 
     /// A registry holding one share reached through two mount points, the
     /// shortest one active. The shape every multi-root test starts from.
     fn doubly_mounted_share() -> VolumeManager {
         let manager = VolumeManager::new();
-        manager.register("share", local_volume("naspi", "/Volumes/naspi"));
-        manager.register("share", local_volume("naspi", "/Volumes/naspi-1"));
+        manager.register("share", local_volume("testshare", "/Volumes/testshare"));
+        manager.register("share", local_volume("testshare", "/Volumes/testshare-1"));
         manager
     }
 
@@ -593,20 +599,20 @@ mod tests {
         // the unmount path unregistered the ID it found by root.
         let manager = doubly_mounted_share();
 
-        let outcome = manager.remove_root(Path::new("/Volumes/naspi"));
+        let outcome = manager.remove_root(Path::new("/Volumes/testshare"));
         assert!(matches!(outcome, RootRemoval::Promoted { .. }), "a sibling survives");
         assert_eq!(
             manager.get("share").expect("still registered").root(),
-            Path::new("/Volumes/naspi-1")
+            Path::new("/Volumes/testshare-1")
         );
     }
 
     #[test]
     fn losing_the_last_mount_unregisters_the_volume() {
         let manager = doubly_mounted_share();
-        manager.remove_root(Path::new("/Volumes/naspi"));
+        manager.remove_root(Path::new("/Volumes/testshare"));
 
-        let outcome = manager.remove_root(Path::new("/Volumes/naspi-1"));
+        let outcome = manager.remove_root(Path::new("/Volumes/testshare-1"));
         assert!(
             matches!(outcome, RootRemoval::Unregistered { .. }),
             "the last root gone means gone"
@@ -618,13 +624,13 @@ mod tests {
     fn losing_a_fallback_mount_leaves_the_active_one_alone() {
         let manager = doubly_mounted_share();
 
-        let outcome = manager.remove_root(Path::new("/Volumes/naspi-1"));
+        let outcome = manager.remove_root(Path::new("/Volumes/testshare-1"));
         assert!(matches!(outcome, RootRemoval::SiblingDropped { .. }));
         assert_eq!(
             manager.get("share").expect("still registered").root(),
-            Path::new("/Volumes/naspi")
+            Path::new("/Volumes/testshare")
         );
-        assert_eq!(manager.known_roots("share"), vec![PathBuf::from("/Volumes/naspi")]);
+        assert_eq!(manager.known_roots("share"), vec![PathBuf::from("/Volumes/testshare")]);
     }
 
     #[test]
@@ -637,68 +643,70 @@ mod tests {
         let manager = VolumeManager::new();
         manager.register(
             "share",
-            Arc::new(InMemoryVolume::new("Direct SMB").with_root("/Volumes/naspi")),
+            Arc::new(InMemoryVolume::new("Direct SMB").with_root("/Volumes/testshare")),
         );
         manager.register(
             "share",
-            Arc::new(InMemoryVolume::new("Second mount").with_root("/Volumes/naspi-1")),
+            Arc::new(InMemoryVolume::new("Second mount").with_root("/Volumes/testshare-1")),
         );
 
-        let outcome = manager.remove_root(Path::new("/Volumes/naspi"));
+        let outcome = manager.remove_root(Path::new("/Volumes/testshare"));
         assert!(matches!(outcome, RootRemoval::ActiveRootStranded { .. }));
         assert_eq!(
             manager.get("share").expect("still registered").root(),
-            Path::new("/Volumes/naspi"),
+            Path::new("/Volumes/testshare"),
             "it stays where its transport is anchored"
         );
     }
 
     #[test]
     fn a_stranded_root_stays_findable_even_though_its_mount_is_gone() {
-        // The entry is still anchored to `/Volumes/naspi` (the backend declined to
+        // The entry is still anchored to `/Volumes/testshare` (the backend declined to
         // re-root), so the set must still contain it, or `find_by_root` stops
         // recognizing the volume by the very root `volume.root()` reports and a
         // later event for that path lands nowhere.
         let manager = VolumeManager::new();
         manager.register(
             "share",
-            Arc::new(InMemoryVolume::new("Direct SMB").with_root("/Volumes/naspi")),
+            Arc::new(InMemoryVolume::new("Direct SMB").with_root("/Volumes/testshare")),
         );
         manager.register(
             "share",
-            Arc::new(InMemoryVolume::new("Second mount").with_root("/Volumes/naspi-1")),
+            Arc::new(InMemoryVolume::new("Second mount").with_root("/Volumes/testshare-1")),
         );
 
-        manager.remove_root(Path::new("/Volumes/naspi"));
+        manager.remove_root(Path::new("/Volumes/testshare"));
 
         assert_eq!(
-            manager.find_by_root(Path::new("/Volumes/naspi")).map(|(id, _)| id),
+            manager.find_by_root(Path::new("/Volumes/testshare")).map(|(id, _)| id),
             Some("share".to_string()),
             "the stranded active root is still one of the volume's known roots"
         );
         assert!(
-            manager.known_roots("share").contains(&PathBuf::from("/Volumes/naspi")),
+            manager
+                .known_roots("share")
+                .contains(&PathBuf::from("/Volumes/testshare")),
             "and it reports as such"
         );
     }
 
     #[test]
     fn a_stale_mount_errno_hands_the_id_to_a_live_sibling() {
-        // Liveness outranks path shape. macOS leaves a wedged `/Volumes/naspi`
-        // in place and lands the reconnect at `/Volumes/naspi-1`; picking the
+        // Liveness outranks path shape. macOS leaves a wedged `/Volumes/testshare`
+        // in place and lands the reconnect at `/Volumes/testshare-1`; picking the
         // shortest path then picks the corpse, on every launch, forever.
         let manager = doubly_mounted_share();
         assert_eq!(
             manager.get("share").expect("registered").root(),
-            Path::new("/Volumes/naspi"),
+            Path::new("/Volumes/testshare"),
             "while both look alive, the shortest path is active"
         );
 
-        let outcome = manager.mark_root_stale("share", Path::new("/Volumes/naspi"));
+        let outcome = manager.mark_root_stale("share", Path::new("/Volumes/testshare"));
         assert!(matches!(outcome, StaleRootOutcome::Promoted { .. }));
         assert_eq!(
             manager.get("share").expect("still registered").root(),
-            Path::new("/Volumes/naspi-1")
+            Path::new("/Volumes/testshare-1")
         );
     }
 
@@ -711,8 +719,8 @@ mod tests {
         let id = "cmdr-test-stale-errno-share";
         let manager = get_volume_manager();
         manager.unregister(id);
-        manager.register(id, local_volume("naspi", "/Volumes/cmdr-test-stale"));
-        manager.register(id, local_volume("naspi", "/Volumes/cmdr-test-stale-1"));
+        manager.register(id, local_volume("testshare", "/Volumes/cmdr-test-stale"));
+        manager.register(id, local_volume("testshare", "/Volumes/cmdr-test-stale-1"));
 
         // A missing file says nothing about the mount.
         note_root_failure(
@@ -754,10 +762,10 @@ mod tests {
     #[test]
     fn losing_the_last_mount_retires_the_volume() {
         let manager = VolumeManager::new();
-        let (volume, is_retired) = RetiringVolume::at("/Volumes/naspi");
-        manager.register("naspi", volume);
+        let (volume, is_retired) = RetiringVolume::at("/Volumes/testshare");
+        manager.register("testshare", volume);
 
-        manager.remove_root(Path::new("/Volumes/naspi"));
+        manager.remove_root(Path::new("/Volumes/testshare"));
 
         assert!(
             is_retired(),
@@ -771,11 +779,11 @@ mod tests {
     #[test]
     fn promoting_a_surviving_mount_retires_nobody() {
         let manager = VolumeManager::new();
-        let (volume, is_retired) = RetiringVolume::at("/Volumes/naspi");
-        manager.register("naspi", Arc::clone(&volume) as Arc<dyn Volume>);
-        manager.register("naspi", volume.rerooted(Path::new("/Volumes/naspi-1")).unwrap());
+        let (volume, is_retired) = RetiringVolume::at("/Volumes/testshare");
+        manager.register("testshare", Arc::clone(&volume) as Arc<dyn Volume>);
+        manager.register("testshare", volume.rerooted(Path::new("/Volumes/testshare-1")).unwrap());
 
-        let outcome = manager.remove_root(Path::new("/Volumes/naspi"));
+        let outcome = manager.remove_root(Path::new("/Volumes/testshare"));
 
         assert!(matches!(outcome, RootRemoval::Promoted { .. }), "expected a promotion");
         assert!(!is_retired(), "the share is still registered, just at another mount");

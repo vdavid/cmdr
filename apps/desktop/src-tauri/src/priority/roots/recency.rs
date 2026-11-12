@@ -164,7 +164,7 @@ mod tests {
             vec![
                 folder("/Users/x/Library/Application Support/SomeApp", 90),
                 folder("/Users/x/Library/CloudStorage/Dropbox/notes", 30),
-                folder("/Users/x/Library/Mobile Documents/com~apple~CloudDocs/papers", 20),
+                folder("/Users/x/Library/Mobile Documents/com~apple~CloudDocs/documents", 20),
                 folder("/Users/x/code", 10),
             ],
         );
@@ -172,7 +172,7 @@ mod tests {
             kept,
             vec![
                 PathBuf::from("/Users/x/Library/CloudStorage/Dropbox/notes"),
-                PathBuf::from("/Users/x/Library/Mobile Documents/com~apple~CloudDocs/papers"),
+                PathBuf::from("/Users/x/Library/Mobile Documents/com~apple~CloudDocs/documents"),
                 PathBuf::from("/Users/x/code"),
             ]
         );

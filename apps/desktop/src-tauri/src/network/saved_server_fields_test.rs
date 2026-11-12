@@ -6,17 +6,20 @@ use super::*;
 
 #[test]
 fn a_named_server_is_called_by_its_name() {
-    assert_eq!(server_label("NAS", "david", "192.168.1.111"), "NAS");
+    assert_eq!(server_label("NAS", "test_user_3", "192.168.50.10"), "NAS");
 }
 
 /// ❗ No port, scheme, or path: a label that looks like an address is what sent a
 /// person to edit the wrong field.
 #[test]
 fn an_unnamed_server_is_called_username_at_host() {
-    assert_eq!(server_label("", "david", "192.168.1.111"), "david@192.168.1.111");
     assert_eq!(
-        server_label("   ", "david", "192.168.1.111"),
-        "david@192.168.1.111",
+        server_label("", "test_user_3", "192.168.50.10"),
+        "test_user_3@192.168.50.10"
+    );
+    assert_eq!(
+        server_label("   ", "test_user_3", "192.168.50.10"),
+        "test_user_3@192.168.50.10",
         "a blank name is no name"
     );
 }
@@ -49,25 +52,25 @@ fn sftp_account<'a>(username: &'a str, host: &'a str, port: u16) -> OwnAddress<'
 /// The prod case: an unnamed server saved with its whole address as its name.
 #[test]
 fn the_app_root_spelling_with_or_without_a_path_is_the_servers_own_address() {
-    let nas = sftp_account("david", "192.168.1.111", 22);
+    let nas = sftp_account("test_user_3", "192.168.50.10", 22);
     assert!(spells_own_address(
-        "sftp://david@192.168.1.111:22/share/ZFS18_DATA/naspi",
+        "sftp://test_user_3@192.168.50.10:22/share/ZFS1_DATA/testshare",
         &nas
     ));
-    assert!(spells_own_address("sftp://david@192.168.1.111:22", &nas));
+    assert!(spells_own_address("sftp://test_user_3@192.168.50.10:22", &nas));
     assert!(
-        spells_own_address("  ssh://david@192.168.1.111:22/  ", &nas),
+        spells_own_address("  ssh://test_user_3@192.168.50.10:22/  ", &nas),
         "surrounding blanks and `ssh://` alike"
     );
 }
 
 #[test]
 fn username_at_host_with_or_without_the_port_is_the_servers_own_address() {
-    let nas = sftp_account("david", "192.168.1.111", 22);
-    assert!(spells_own_address("david@192.168.1.111", &nas));
-    assert!(spells_own_address("david@192.168.1.111:22", &nas));
+    let nas = sftp_account("test_user_3", "192.168.50.10", 22);
+    assert!(spells_own_address("test_user_3@192.168.50.10", &nas));
+    assert!(spells_own_address("test_user_3@192.168.50.10:22", &nas));
     assert!(
-        !spells_own_address("david@192.168.1.111:2222", &nas),
+        !spells_own_address("test_user_3@192.168.50.10:2222", &nas),
         "another port is another server"
     );
 }
@@ -75,45 +78,48 @@ fn username_at_host_with_or_without_the_port_is_the_servers_own_address() {
 /// A scheme names the port when the address doesn't: `sftp://` with none is 22.
 #[test]
 fn a_scheme_without_a_port_means_the_schemes_own_port() {
-    let address = "sftp://david@192.168.1.111/srv";
-    assert!(spells_own_address(address, &sftp_account("david", "192.168.1.111", 22)));
+    let address = "sftp://test_user_3@192.168.50.10/srv";
+    assert!(spells_own_address(
+        address,
+        &sftp_account("test_user_3", "192.168.50.10", 22)
+    ));
     assert!(!spells_own_address(
         address,
-        &sftp_account("david", "192.168.1.111", 2222)
+        &sftp_account("test_user_3", "192.168.50.10", 2222)
     ));
 }
 
 #[test]
 fn the_host_folds_case_and_the_account_does_not() {
-    let nas = sftp_account("david", "NAS.local", 22);
-    assert!(spells_own_address("sftp://david@nas.LOCAL:22", &nas));
-    assert!(!spells_own_address("sftp://David@nas.local:22", &nas));
+    let nas = sftp_account("test_user_3", "TESTNAS.local", 22);
+    assert!(spells_own_address("sftp://test_user_3@testnas.LOCAL:22", &nas));
+    assert!(!spells_own_address("sftp://David@testnas.local:22", &nas));
 }
 
 #[test]
 fn a_bracketed_ipv6_host_matches_with_or_without_its_brackets() {
     assert!(spells_own_address(
-        "sftp://ada@[fe80::1]:22",
-        &sftp_account("ada", "fe80::1", 22)
+        "sftp://test_user_1@[fe80::1]:22",
+        &sftp_account("test_user_1", "fe80::1", 22)
     ));
     assert!(spells_own_address(
-        "ada@[fe80::1]",
-        &sftp_account("ada", "[fe80::1]", 22)
+        "test_user_1@[fe80::1]",
+        &sftp_account("test_user_1", "[fe80::1]", 22)
     ));
 }
 
 /// ❗ Whatever isn't provably this account's own address is a label, and stays.
 #[test]
 fn anything_else_is_a_label_someone_chose() {
-    let nas = sftp_account("david", "192.168.1.111", 22);
+    let nas = sftp_account("test_user_3", "192.168.50.10", 22);
     for label in [
         "NAS",
-        "192.168.1.111",
-        "sftp://david@192.168.1.112:22/share",
-        "sftp://grace@192.168.1.111:22",
-        "smb://david@192.168.1.111",
-        "sftp://david@192.168.1.111:22/x?y",
-        "david@192.168.1.111 at home",
+        "192.168.50.10",
+        "sftp://test_user_3@192.168.1.112:22/share",
+        "sftp://test_user_2@192.168.50.10:22",
+        "smb://test_user_3@192.168.50.10",
+        "sftp://test_user_3@192.168.50.10:22/x?y",
+        "test_user_3@192.168.50.10 at home",
         "",
     ] {
         assert!(!spells_own_address(label, &nas), "{label:?} is a label");
@@ -125,21 +131,21 @@ fn anything_else_is_a_label_someone_chose() {
 #[test]
 fn a_webdav_url_for_the_same_endpoint_is_the_servers_own_address() {
     let dav = OwnAddress {
-        username: "ada",
+        username: "test_user_1",
         host: "dav.example.test",
         port: 443,
         schemes: WEBDAV,
     };
     assert!(spells_own_address("https://dav.example.test/remote.php/dav/", &dav));
     assert!(spells_own_address("https://dav.example.test", &dav));
-    assert!(spells_own_address("https://ada@dav.example.test:443/dav", &dav));
-    assert!(spells_own_address("ada@dav.example.test", &dav));
+    assert!(spells_own_address("https://test_user_1@dav.example.test:443/dav", &dav));
+    assert!(spells_own_address("test_user_1@dav.example.test", &dav));
     assert!(
         !spells_own_address("http://dav.example.test/dav/", &dav),
         "plain HTTP is port 80, another endpoint"
     );
     assert!(
-        !spells_own_address("https://grace@dav.example.test/dav/", &dav),
+        !spells_own_address("https://test_user_2@dav.example.test/dav/", &dav),
         "another account"
     );
     assert!(
@@ -152,12 +158,12 @@ fn a_webdav_url_for_the_same_endpoint_is_the_servers_own_address() {
 #[test]
 fn an_account_with_an_at_sign_still_finds_the_host() {
     let dav = OwnAddress {
-        username: "ada@example.test",
+        username: "test_user_1@example.test",
         host: "dav.example.test",
         port: 443,
         schemes: WEBDAV,
     };
-    assert!(spells_own_address("ada@example.test@dav.example.test", &dav));
+    assert!(spells_own_address("test_user_1@example.test@dav.example.test", &dav));
     assert!(spells_own_address("https://dav.example.test/dav/", &dav));
 }
 
@@ -177,20 +183,20 @@ fn a_start_folder_at_the_root_is_stored_as_none() {
     assert_eq!(start_folder_under_root("/", Some("/")), Ok(None));
 }
 
-/// The prod case: a root widened to `naspi`, landing where it used to be rooted.
+/// The prod case: a root widened to `testshare`, landing where it used to be rooted.
 #[test]
 fn a_start_folder_under_the_root_is_stored_normalized() {
     assert_eq!(
-        start_folder_under_root("/share/ZFS18_DATA/naspi", Some("/share/ZFS18_DATA/naspi/tmp/")),
-        Ok(Some("/share/ZFS18_DATA/naspi/tmp".to_string()))
+        start_folder_under_root("/share/ZFS1_DATA/testshare", Some("/share/ZFS1_DATA/testshare/tmp/")),
+        Ok(Some("/share/ZFS1_DATA/testshare/tmp".to_string()))
     );
     assert_eq!(
         start_folder_under_root("/srv/data", Some("/srv/data/photos/../docs")),
         Ok(Some("/srv/data/docs".to_string()))
     );
     assert_eq!(
-        start_folder_under_root("/", Some("/home/ada")),
-        Ok(Some("/home/ada".to_string()))
+        start_folder_under_root("/", Some("/home/test_user_1")),
+        Ok(Some("/home/test_user_1".to_string()))
     );
 }
 

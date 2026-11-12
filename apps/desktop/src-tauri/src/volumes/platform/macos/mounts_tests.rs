@@ -36,8 +36,13 @@ fn a_live_smb_mount_off_445_names_its_port() {
         "private on localhost:11482"
     );
     assert_eq!(
-        network_name(&mount("/Volumes/naspi", "smbfs", "//david@192.0.2.9/naspi", false)),
-        "naspi on 192.0.2.9"
+        network_name(&mount(
+            "/Volumes/testshare",
+            "smbfs",
+            "//test_user_3@192.0.2.9/testshare",
+            false
+        )),
+        "testshare on 192.0.2.9"
     );
 }
 
@@ -76,7 +81,7 @@ fn the_browsable_flag_is_what_separates_drives_from_plumbing() {
     let hidden = |path: &str| is_user_facing_mount(&unbrowsable(path, "apfs"), None);
 
     assert!(browsable("/Volumes/MyDrive"));
-    assert!(browsable("/Volumes/naspi"));
+    assert!(browsable("/Volumes/testshare"));
     // Everything macOS marks `MNT_DONTBROWSE`: `/System/Volumes/*`, `devfs`,
     // the Recovery volume, autofs triggers. The old prefix filter needed a
     // name check for Recovery and missed the rest.
@@ -98,24 +103,24 @@ fn the_browsable_flag_is_what_separates_drives_from_plumbing() {
 fn an_unbrowsable_mount_shows_only_when_its_provider_is_recognized() {
     let row = |path: &str, fs_type: &str| build_attached_location(&unbrowsable(path, fs_type), plain_resolver);
 
-    let pcloud = row("/Users/sven/pCloud Drive", "pcloudfs").expect("a recognized provider's mount gets a row");
+    let pcloud = row("/Users/test_user_6/pCloud Drive", "pcloudfs").expect("a recognized provider's mount gets a row");
     assert_eq!(pcloud.category, LocationCategory::CloudDrive);
     assert!(
         row("/Volumes/pCloudDrive", "pcloudfs").is_some(),
         "outside the home folder too"
     );
-    assert!(row("/Users/sven/.CMVolumes/S3", "macfuse").is_some());
+    assert!(row("/Users/test_user_6/.CMVolumes/S3", "macfuse").is_some());
 
     assert!(
-        row("/Users/sven/vaults/work", "apfs").is_none(),
+        row("/Users/test_user_6/vaults/work", "apfs").is_none(),
         "an unrecognized mount stays out"
     );
     assert!(
-        row("/Users/sven", "nfs").is_none(),
+        row("/Users/test_user_6", "nfs").is_none(),
         "a network-mounted home folder is not a drive"
     );
     assert!(
-        row("/Users/sven/.hidden-vault", "macfuse").is_none(),
+        row("/Users/test_user_6/.hidden-vault", "macfuse").is_none(),
         "a name-hidden mount stays hidden"
     );
 }
@@ -124,7 +129,7 @@ fn an_unbrowsable_mount_shows_only_when_its_provider_is_recognized() {
 /// mount inside the home folder, and showed up as a phantom "Devices" drive.
 #[test]
 fn xcodes_device_fs_mount_gets_no_row() {
-    let device_fs = unbrowsable("/Users/sven/Library/Developer/CoreDevice/DeviceFS", "devicefs");
+    let device_fs = unbrowsable("/Users/test_user_6/Library/Developer/CoreDevice/DeviceFS", "devicefs");
     assert!(build_attached_location(&device_fs, plain_resolver).is_none());
 }
 
@@ -135,7 +140,7 @@ fn xcodes_device_fs_mount_gets_no_row() {
 /// way or the other.
 #[test]
 fn an_unbrowsable_fuse_container_gets_a_row_as_an_ordinary_volume() {
-    let vault = unbrowsable("/Users/sven/vaults/work", "macfuse");
+    let vault = unbrowsable("/Users/test_user_6/vaults/work", "macfuse");
     let loc = build_attached_location(&vault, plain_resolver).expect("a recognized FUSE mount gets a row");
     assert_eq!(loc.category, LocationCategory::AttachedVolume);
     assert!(!loc.is_cloud_mount, "a FUSE container keeps its index affordances");
@@ -161,23 +166,28 @@ fn a_mount_on_icloud_drive_lands_on_the_cloud_arms_path() {
 fn smb_mount_classifies_without_blocking_enrichment() {
     // A wedged SMB mount must be classified purely from getfsstat data; the
     // blocking resolver must never run, so a dead NAS can't stall discovery.
-    let m = mount("/Volumes/naspi", "smbfs", "//david@192.168.1.111/naspi", false);
+    let m = mount(
+        "/Volumes/testshare",
+        "smbfs",
+        "//test_user_3@192.168.50.10/testshare",
+        false,
+    );
     let loc = build_attached_location(&m, forbidden_resolver).expect("SMB mount is an attached volume");
 
     assert_eq!(
         loc.id,
-        crate::file_system::volume::smb_volume_id("192.168.1.111", 445, "naspi")
+        crate::file_system::volume::smb_volume_id("192.168.50.10", 445, "testshare")
     );
-    assert!(loc.name.contains("naspi"), "name shows the share: {}", loc.name);
+    assert!(loc.name.contains("testshare"), "name shows the share: {}", loc.name);
     assert!(loc.name.contains(" on "), "name shows 'share on server': {}", loc.name);
-    // ❗ A disambiguated mount (`/Volumes/naspi-1`) named its tab after the mount dir.
+    // ❗ A disambiguated mount (`/Volumes/testshare-1`) named its tab after the mount dir.
     assert_eq!(
         loc.root_label.as_deref(),
-        Some("naspi"),
+        Some("testshare"),
         "a tab at its root says the share"
     );
     // ❗ The account the mount signed in as, which the hub shows while it's connected.
-    assert_eq!(loc.mount_account.as_deref(), Some("david"));
+    assert_eq!(loc.mount_account.as_deref(), Some("test_user_3"));
     assert_eq!(loc.fs_type.as_deref(), Some("smbfs"));
     assert_eq!(loc.category, LocationCategory::AttachedVolume);
     assert!(!loc.is_ejectable, "network mounts take the safe non-blocking default");
@@ -269,7 +279,7 @@ fn another_accounts_cloud_drive_gets_no_row() {
 
 #[test]
 fn this_accounts_cloud_drive_keeps_its_row() {
-    let mine = pcloud_drive("/Users/sven", MountedBy::ThisUser);
+    let mine = pcloud_drive("/Users/test_user_6", MountedBy::ThisUser);
     let loc = build_attached_location(&mine, plain_resolver).expect("this account's own drive gets a row");
     assert_eq!(loc.category, LocationCategory::CloudDrive);
 }
@@ -298,7 +308,7 @@ fn a_disk_another_account_mounted_keeps_its_row() {
 #[test]
 fn a_network_mount_another_account_made_keeps_its_row() {
     for (fs_type, source) in [
-        ("smbfs", "//rin@192.0.2.9/naspi"),
+        ("smbfs", "//rin@192.0.2.9/testshare"),
         ("nfs", "server:/export"),
         ("webdav", "https://dav.example.com/"),
         ("afpfs", "//rin@nas/share"),
@@ -318,7 +328,7 @@ fn the_registry_sweep_skips_another_accounts_mount() {
     let table = || {
         vec![
             mount("/", "apfs", "/dev/disk3s1s1", true),
-            pcloud_drive("/Users/sven", MountedBy::ThisUser),
+            pcloud_drive("/Users/test_user_6", MountedBy::ThisUser),
             pcloud_drive("/Users/rin", MountedBy::AnotherUser),
             mounted_by(
                 MountedBy::AnotherUser,
@@ -329,12 +339,12 @@ fn the_registry_sweep_skips_another_accounts_mount() {
 
     assert_eq!(
         registrable_roots(table()),
-        ["/", "/Users/sven/pCloud Drive", "/Volumes/USB"]
+        ["/", "/Users/test_user_6/pCloud Drive", "/Volumes/USB"]
     );
 
     let table = table();
     assert!(private_to_another_user_at(&table, "/Users/rin/pCloud Drive"));
-    assert!(!private_to_another_user_at(&table, "/Users/sven/pCloud Drive"));
+    assert!(!private_to_another_user_at(&table, "/Users/test_user_6/pCloud Drive"));
     assert!(!private_to_another_user_at(&table, "/Volumes/USB"));
     assert!(
         !private_to_another_user_at(&table, "/Volumes/Gone"),
@@ -354,8 +364,18 @@ fn two_mount_roots_for_one_share_collapse_to_the_shortest_path() {
     // published location at the original path, while a different volume stays
     // its own row. The collapse rule itself is proved on a toy struct in
     // `cmdr_fs::volume::canonical_root`.
-    let first = mount("/Volumes/naspi", "smbfs", "//david@192.168.1.111/naspi", false);
-    let second = mount("/Volumes/naspi-1", "smbfs", "//david@192.168.1.111/naspi", false);
+    let first = mount(
+        "/Volumes/testshare",
+        "smbfs",
+        "//test_user_3@192.168.50.10/testshare",
+        false,
+    );
+    let second = mount(
+        "/Volumes/testshare-1",
+        "smbfs",
+        "//test_user_3@192.168.50.10/testshare",
+        false,
+    );
     let nfs = mount("/Volumes/export", "nfs", "server:/export", true);
     let locations: Vec<LocationInfo> = [&second, &first, &nfs]
         .iter()
@@ -366,7 +386,7 @@ fn two_mount_roots_for_one_share_collapse_to_the_shortest_path() {
     let collapsed = collapse_by_volume_id(locations);
     assert_eq!(collapsed.len(), 2, "one volume ID publishes one location");
     assert_eq!(
-        collapsed[0].path, "/Volumes/naspi",
+        collapsed[0].path, "/Volumes/testshare",
         "the canonical root is the original mount, whatever order they arrive in"
     );
     assert_eq!(
@@ -380,15 +400,20 @@ fn mount_under_picks_the_deepest_whole_component_mount() {
     let mounts = vec![
         mount("/", "apfs", "/dev/disk3s1s1", true),
         mount("/System/Volumes/Data", "apfs", "/dev/disk3s5", false),
-        mount("/Volumes/naspi", "smbfs", "//david@192.0.2.9/naspi", false),
-        mount("/Volumes/naspi-1", "exfat", "/dev/disk6s1", false),
+        mount(
+            "/Volumes/testshare",
+            "smbfs",
+            "//test_user_3@192.0.2.9/testshare",
+            false,
+        ),
+        mount("/Volumes/testshare-1", "exfat", "/dev/disk6s1", false),
     ];
     let fs_type = |path: &str| mount_under(&mounts, Path::new(path)).map(|m| m.fs_type.as_str());
-    assert_eq!(fs_type("/Volumes/naspi/photos/2024"), Some("smbfs"));
-    assert_eq!(fs_type("/Volumes/naspi"), Some("smbfs"));
+    assert_eq!(fs_type("/Volumes/testshare/photos/2024"), Some("smbfs"));
+    assert_eq!(fs_type("/Volumes/testshare"), Some("smbfs"));
     // A sibling whose name extends the share's is its own mount, not the share's subfolder.
-    assert_eq!(fs_type("/Volumes/naspi-1/backup"), Some("exfat"));
-    assert_eq!(fs_type("/Users/david"), Some("apfs"));
+    assert_eq!(fs_type("/Volumes/testshare-1/backup"), Some("exfat"));
+    assert_eq!(fs_type("/Users/test_user_3"), Some("apfs"));
 }
 
 /// The add gate's lexical read (cmdr-reports#40): the share a folder sits on, named as its row is,
@@ -398,25 +423,30 @@ fn mount_under_picks_the_deepest_whole_component_mount() {
 fn network_mount_in_names_the_share_and_skips_local_disks() {
     let mounts = vec![
         mount("/", "apfs", "/dev/disk3s1s1", true),
-        mount("/Volumes/naspi", "smbfs", "//david@192.0.2.9/naspi", false),
-        mount("/Volumes/naspi/nested", "nfs", "192.0.2.10:/export", false),
-        mount("/Volumes/naspi-1", "exfat", "/dev/disk6s1", false),
+        mount(
+            "/Volumes/testshare",
+            "smbfs",
+            "//test_user_3@192.0.2.9/testshare",
+            false,
+        ),
+        mount("/Volumes/testshare/nested", "nfs", "192.0.2.10:/export", false),
+        mount("/Volumes/testshare-1", "exfat", "/dev/disk6s1", false),
     ];
     let network = |path: &str| network_mount_in(&mounts, Path::new(path));
 
-    let share = network("/Volumes/naspi/photos").expect("a folder on the share is on a network mount");
-    assert_eq!(share.mount_point, "/Volumes/naspi");
+    let share = network("/Volumes/testshare/photos").expect("a folder on the share is on a network mount");
+    assert_eq!(share.mount_point, "/Volumes/testshare");
     assert!(
-        share.name.starts_with("naspi on "),
+        share.name.starts_with("testshare on "),
         "named as its row is, got {:?}",
         share.name
     );
     assert_eq!(
-        network("/Volumes/naspi/nested/x").map(|m| m.mount_point),
-        Some("/Volumes/naspi/nested".to_string())
+        network("/Volumes/testshare/nested/x").map(|m| m.mount_point),
+        Some("/Volumes/testshare/nested".to_string())
     );
-    assert_eq!(network("/Volumes/naspi-1/backup"), None);
-    assert_eq!(network("/Users/david"), None);
+    assert_eq!(network("/Volumes/testshare-1/backup"), None);
+    assert_eq!(network("/Users/test_user_3"), None);
 }
 
 #[test]

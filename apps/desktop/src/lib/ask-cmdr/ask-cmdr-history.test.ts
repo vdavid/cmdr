@@ -272,8 +272,8 @@ describe('buildRailMessages', () => {
         view(7, 'user', [
           {
             type: 'wakeDigest',
-            folders: [{ folder: '/Users/dana/Downloads', created: 4, modified: 0, removed: 0, renamed: 0 }],
-            rollups: [{ ancestor: '/Users/dana/Projects', folders: 7, changes: 40 }],
+            folders: [{ folder: '/Users/test_user_13/Downloads', created: 4, modified: 0, removed: 0, renamed: 0 }],
+            rollups: [{ ancestor: '/Users/test_user_13/Projects', folders: 7, changes: 40 }],
           },
         ]),
       ]),
@@ -283,8 +283,8 @@ describe('buildRailMessages', () => {
       {
         kind: 'wakeDigest',
         id: 7,
-        folders: [{ folder: '/Users/dana/Downloads', created: 4, modified: 0, removed: 0, renamed: 0 }],
-        rollups: [{ ancestor: '/Users/dana/Projects', folders: 7, changes: 40 }],
+        folders: [{ folder: '/Users/test_user_13/Downloads', created: 4, modified: 0, removed: 0, renamed: 0 }],
+        rollups: [{ ancestor: '/Users/test_user_13/Projects', folders: 7, changes: 40 }],
       },
     ])
   })
@@ -296,7 +296,7 @@ describe('buildRailMessages', () => {
   it('renders a decision the same way whether it arrives as an event or as a follow-up opener', () => {
     const rejected = {
       verb: 'trash' as const,
-      what: '/Users/dana/Downloads/*.dmg',
+      what: '/Users/test_user_13/Downloads/*.dmg',
       ops: 12,
       outcome: { kind: 'rejected' as const },
     }

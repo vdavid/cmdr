@@ -72,18 +72,18 @@ Settled:
 - **Native window decorations on Windows** (as on Linux): no custom title bar fighting Snap Layouts.
 - **NSIS installer, per-user (`currentUser`), `embedBootstrapper` for WebView2.** MSI only if enterprise asks.
 - **D1. The path model** (David, 2026-11-04): every local path on Windows is an absolute forward-slash path whose first
-  component names its root: `C:/Users/ada` for a drive, `//server/share/x` for a UNC share. Each drive and UNC share is
-  its own volume, rooted at `C:/` or `//server/share/`. The drive letter is always uppercase. Backslashes exist only
-  inside the Windows local backend (`\\?\C:\…` for long paths) and in the one display formatter. Case sensitivity is a
-  per-volume property (`caseSensitive`), never inferred from the OS.
+  component names its root: `C:/Users/test_user_1` for a drive, `//server/share/x` for a UNC share. Each drive and UNC
+  share is its own volume, rooted at `C:/` or `//server/share/`. The drive letter is always uppercase. Backslashes exist
+  only inside the Windows local backend (`\\?\C:\…` for long paths) and in the one display formatter. Case sensitivity
+  is a per-volume property (`caseSensitive`), never inferred from the OS.
   - Why: it's the rule `crates/cmdr-fs/src/volume/remote_paths.rs` already sets for remote volumes, that an app path
     names its own volume. So the grammar becomes "a scheme URL, or a `/`-separated absolute path whose first component
     is the root". Every existing `/` arithmetic in the frontend, the index, and `lib/path` stays correct; `lib/path`
     only learns the two new root shapes; Win32 APIs accept `/` everywhere except the `\\?\` form.
-  - ❌ Rejected: a drive as a volume rooted at `/` with volume-relative paths (`/Users/ada` plus a volume id). Those are
-    exactly the bare paths `remote_paths.rs` forbids: a restored tab, favorite, drag, or go-to-path that loses the
-    volume hint resolves to the wrong disk. Also rejected: native `\` on the wire (touches ~110 frontend sites and every
-    Rust↔TS fixture) and MSYS-style `/c/Users` (unfamiliar, and pasted paths need translating).
+  - ❌ Rejected: a drive as a volume rooted at `/` with volume-relative paths (`/Users/test_user_1` plus a volume id).
+    Those are exactly the bare paths `remote_paths.rs` forbids: a restored tab, favorite, drag, or go-to-path that loses
+    the volume hint resolves to the wrong disk. Also rejected: native `\` on the wire (touches ~110 frontend sites and
+    every Rust↔TS fixture) and MSYS-style `/c/Users` (unfamiliar, and pasted paths need translating).
 - **D2. MTP ships on Windows** (David, 2026-11-04), through `mtp-rs`'s WPD COM backend. `mtp-rs` picks it automatically
   behind its high-level `mtp::` API, with no driver install (verified on a Pixel 9 Pro XL, per its README), and
   `cmdr-mtp` uses only that API, never the USB-only `ptp::` layer. Windows' MTP driver can stall any call for 5–6

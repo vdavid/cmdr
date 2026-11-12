@@ -105,7 +105,7 @@ mod tests {
     fn a_malformed_stored_guid_is_no_guid() {
         for text in [
             "",
-            "naspolya",
+            "testnas",
             "{6ba7b810-9dad-11d1-80b4-00c04fd430c8}",
             "6ba7b810-9dad-11d1-80b4",
         ] {

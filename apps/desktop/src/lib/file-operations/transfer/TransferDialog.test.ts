@@ -618,8 +618,8 @@ describe('TransferDialog destination path', () => {
     destinationExistsMock.mockResolvedValue({ data: false, timedOut: false })
     const target = mountDialog({
       operationType: 'copy',
-      currentVolumeId: 'smb://nas.local/public',
-      destinationPath: 'smb://nas.local/public/brand-new',
+      currentVolumeId: 'smb://testnas.local/public',
+      destinationPath: 'smb://testnas.local/public/brand-new',
     })
     await settleExistsCheck()
 
@@ -686,7 +686,7 @@ describe('TransferDialog destination path', () => {
 
     it('names where the path goes and offers the stripped reading, prefilled or typed', async () => {
       // A prefilled path is ambiguous the same way a typed one is: a place rooted
-      // at `/home/bob` can really hold `/home/bob/home/bob/folder`.
+      // at `/home/test_user_5` can really hold `/home/test_user_5/home/test_user_5/folder`.
       destinationRootEchoMock.mockResolvedValue(ECHO)
       const target = mountDialog({ destinationPath: '/srv/data/photos' })
       await settleExistsCheck()
@@ -786,7 +786,7 @@ describe('TransferDialog destination path', () => {
 
   it('stays quiet when the backend can’t tell whether the folder takes writes', async () => {
     destinationWriteAccessMock.mockResolvedValue({ kind: 'unknown' })
-    const target = mountDialog({ destinationPath: '/Volumes/naspi/share' })
+    const target = mountDialog({ destinationPath: '/Volumes/testshare/share' })
     await settleExistsCheck()
 
     expect(target.querySelector('.path-error')).toBeNull()

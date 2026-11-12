@@ -67,7 +67,7 @@ export interface UnlockFlowDeps {
 }
 
 /** The name a person knows the locked `container` at `path` by: the repo
- *  folder ("m3-restic") or the archive file ("photos.zip"). Lexical, no I/O. */
+ *  folder ("test-restic") or the archive file ("photos.zip"). Lexical, no I/O. */
 export function containerName(container: UnlockContainer, path: string): string {
   const repoRoot = container === 'resticRepo' ? resticRepoRoot(path) : null
   if (repoRoot !== null) return repoRoot.split('/').filter(Boolean).at(-1) ?? repoRoot

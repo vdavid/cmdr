@@ -133,6 +133,6 @@ docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" ps
 echo ""
 echo "SFTP servers ready. The stock one:"
 stock_port=$(docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" port sftp-fixture-openssh 22 2>/dev/null | awk -F: '{print $NF}')
-[ -n "$stock_port" ] && echo "  sftp -P $stock_port ada@127.0.0.1     # password: openthedoor, export: /srv/data"
+[ -n "$stock_port" ] && echo "  sftp -P $stock_port test_user_1@127.0.0.1     # password: openthedoor, export: /srv/data"
 echo ""
 echo "Stop them with './apps/desktop/test/sftp-servers/stop.sh'."

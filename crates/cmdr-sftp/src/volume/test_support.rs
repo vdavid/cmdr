@@ -40,7 +40,7 @@ pub fn make_test_volume_at(root: &str) -> SftpVolume {
 pub fn make_test_volume_with(root: &str, rung: AuthRungUsed, host: VolumeHost) -> SftpVolume {
     super::testing::offline_volume(
         "data",
-        SftpConnectionParams::new("127.0.0.1", CLOSED_PORT, "ada", root).without_agent(),
+        SftpConnectionParams::new("127.0.0.1", CLOSED_PORT, "test_user_1", root).without_agent(),
         rung,
         host,
     )

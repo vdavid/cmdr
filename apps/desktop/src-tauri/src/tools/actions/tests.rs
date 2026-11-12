@@ -193,9 +193,9 @@ fn test_required_pane_param() {
 fn test_is_virtual_path() {
     // Scheme-prefixed virtual paths skip the local existence check
     assert!(is_virtual_path("mtp://device-1/DCIM"));
-    assert!(is_virtual_path("smb://nas.local/share/folder"));
+    assert!(is_virtual_path("smb://testnas.local/share/folder"));
     // Local paths don't
-    assert!(!is_virtual_path("/Users/jane/Documents"));
+    assert!(!is_virtual_path("/Users/test_user_12/Documents"));
     assert!(!is_virtual_path("~/Downloads"));
     assert!(!is_virtual_path(""));
     // A "://" that isn't a scheme prefix isn't virtual
@@ -404,19 +404,19 @@ fn parse_mcp_response_ignores_malformed_payloads() {
 
 #[test]
 fn parse_nav_response_reads_the_landing_the_frontend_reported() {
-    let landed = r#"{"requestId":"r-1","ok":true,"outcome":"navigated","path":"/Users/david"}"#;
+    let landed = r#"{"requestId":"r-1","ok":true,"outcome":"navigated","path":"/Users/test_user_3"}"#;
     assert_eq!(
         parse_nav_response(landed, "r-1"),
         Some(Ok(NavAck::Navigated {
-            path: "/Users/david".to_string()
+            path: "/Users/test_user_3".to_string()
         }))
     );
 
-    let fell_back = r#"{"requestId":"r-1","ok":false,"outcome":"fell-back","path":"/Users/david"}"#;
+    let fell_back = r#"{"requestId":"r-1","ok":false,"outcome":"fell-back","path":"/Users/test_user_3"}"#;
     assert_eq!(
         parse_nav_response(fell_back, "r-1"),
         Some(Ok(NavAck::FellBack {
-            path: "/Users/david".to_string()
+            path: "/Users/test_user_3".to_string()
         }))
     );
 
@@ -487,12 +487,15 @@ fn nav_result_reports_the_landing_place_not_the_request() {
         "left",
         "mtp://phone/DCIM",
         NavAck::FellBack {
-            path: "/Users/david".to_string(),
+            path: "/Users/test_user_3".to_string(),
         },
     )
     .expect_err("a fallback is not an OK");
     assert!(fell_back.message.contains("mtp://phone/DCIM"), "names the request");
-    assert!(fell_back.message.contains("/Users/david"), "names where it landed");
+    assert!(
+        fell_back.message.contains("/Users/test_user_3"),
+        "names where it landed"
+    );
 
     let unsettled = nav_result(
         "right",
@@ -578,17 +581,17 @@ fn a_go_to_failure_folds_into_the_tool_error_it_carries() {
 fn select_volume_result_says_the_folder_is_stalled() {
     let stalled = select_volume_result(
         "right",
-        "naspi",
+        "testshare",
         NavAck::Stalled {
-            path: "/Volumes/naspi/photos".to_string(),
+            path: "/Volumes/testshare/photos".to_string(),
         },
     )
     .expect_err("a stalled folder is not an OK");
-    assert!(stalled.message.contains("naspi"), "names the request");
+    assert!(stalled.message.contains("testshare"), "names the request");
     assert!(stalled.message.contains("isn't answering"), "says why");
     assert_eq!(
         stalled.data,
-        Some(json!({ "reason": "folderStalled", "path": "/Volumes/naspi/photos" }))
+        Some(json!({ "reason": "folderStalled", "path": "/Volumes/testshare/photos" }))
     );
 }
 
@@ -608,7 +611,7 @@ fn the_servers_hub_lands_whatever_language_the_pane_names_it_in() {
     assert!(pane_reports_volume(Some("network"), Some("Servery"), &servers_hub()));
     assert!(pane_reports_volume(
         Some("network"),
-        Some("Servery > naspi"),
+        Some("Servery > testshare"),
         &servers_hub()
     ));
 }
@@ -624,10 +627,10 @@ fn a_selection_without_an_id_falls_back_to_the_name() {
     // Off macOS the selector isn't resolved against the volume list, so a name-only call has no id.
     let by_name = SelectableVolume {
         id: String::new(),
-        name: "naspi".to_string(),
+        name: "testshare".to_string(),
         is_favorite: false,
     };
-    assert!(pane_reports_volume(Some("smb-1"), Some("naspi"), &by_name));
+    assert!(pane_reports_volume(Some("smb-1"), Some("testshare"), &by_name));
     assert!(!pane_reports_volume(Some("smb-1"), Some("other"), &by_name));
 }
 
@@ -660,22 +663,25 @@ fn select_volume_result_is_not_an_ok_when_the_pane_rests_elsewhere_or_never_sett
         "left",
         "Internal Storage",
         NavAck::FellBack {
-            path: "/Users/david".to_string(),
+            path: "/Users/test_user_3".to_string(),
         },
     )
     .expect_err("a fallback is not an OK");
     assert!(fell_back.message.contains("Internal Storage"), "names the request");
-    assert!(fell_back.message.contains("/Users/david"), "names where it landed");
+    assert!(
+        fell_back.message.contains("/Users/test_user_3"),
+        "names where it landed"
+    );
 
     let unsettled = select_volume_result(
         "right",
-        "Naspolya",
+        "Testnas",
         NavAck::DidNotSettle {
-            path: "sftp://ada@nas.local:22/srv/data".to_string(),
+            path: "sftp://test_user_1@testnas.local:22/srv/data".to_string(),
         },
     )
     .expect_err("an unsettled pane is not an OK");
-    assert!(unsettled.message.contains("Naspolya"), "names the request");
+    assert!(unsettled.message.contains("Testnas"), "names the request");
     assert!(unsettled.message.contains("didn't settle"));
 }
 

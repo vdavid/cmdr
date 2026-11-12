@@ -3,7 +3,7 @@
  * do with one: hand it to the local resolver.
  *
  * ❗ `resolve_go_to_path` walks `std::fs::metadata` over a path joined onto the
- * pane's directory. Given `sftp://ada@nas.local:22/srv` it answers `invalid`,
+ * pane's directory. Given `sftp://test_user_1@testnas.local:22/srv` it answers `invalid`,
  * and the dialog would tell someone their own NAS address doesn't exist. The
  * last cell in each block is what catches a scheme leaking through.
  */
@@ -19,17 +19,17 @@ import { _setLocaleForTests } from '#lib/intl/locale.js'
 import { actOnSchemeInput, previewSchemeInput, readSchemeInput } from './scheme-intercept'
 import { closeSignInSheet, currentSignInRequest } from '#lib/servers/sign-in-sheet-state.svelte.js'
 
-const APP_ROOT = 'sftp://ada@nas.local:22/srv/data'
+const APP_ROOT = 'sftp://test_user_1@testnas.local:22/srv/data'
 
 const SAVED_SERVER = {
   id: 'sftp-nas',
   protocol: 'sftp',
-  displayName: 'Naspolya',
-  address: 'nas.local:22',
-  username: 'ada',
+  displayName: 'Testnas',
+  address: 'testnas.local:22',
+  username: 'test_user_1',
   pinned: true,
   lastConnectedAt: null,
-  places: [{ volumeId: 'sftp-nas', name: 'Naspolya', pinned: true, connected: false, appRoot: APP_ROOT }],
+  places: [{ volumeId: 'sftp-nas', name: 'Testnas', pinned: true, connected: false, appRoot: APP_ROOT }],
 }
 
 let ipc: IpcRecorder
@@ -54,12 +54,12 @@ describe('readSchemeInput: a saved-servers store that does not answer', () => {
       throw new Error('store unavailable')
     })
 
-    await readSchemeInput('sftp://ada:hunter2@nas.local:22/srv')
+    await readSchemeInput('sftp://test_user_1:hunter2@testnas.local:22/srv')
 
     expect(warn).toHaveBeenCalledOnce()
     expect(JSON.stringify(warn.mock.calls)).not.toContain('hunter2')
     // Still names the machine, so the line stays useful at triage.
-    expect(warn.mock.calls[0][1]).toMatchObject({ host: 'nas.local' })
+    expect(warn.mock.calls[0][1]).toMatchObject({ host: 'testnas.local' })
   })
 
   it('keeps the password out of the log for an account that is an email address, too', async () => {
@@ -69,7 +69,7 @@ describe('readSchemeInput: a saved-servers store that does not answer', () => {
       throw new Error('store unavailable')
     })
 
-    await readSchemeInput('webdav://ada@example.com:hunter2@cloud.example.com:443/remote.php')
+    await readSchemeInput('webdav://test_user_1@example.com:hunter2@cloud.example.com:443/remote.php')
 
     expect(warn).toHaveBeenCalledOnce()
     expect(JSON.stringify(warn.mock.calls)).not.toContain('hunter2')
@@ -82,14 +82,14 @@ describe('readSchemeInput: which scheme means what', () => {
     expect(await readSchemeInput(`${APP_ROOT}/photos`)).toEqual({
       kind: 'place',
       path: `${APP_ROOT}/photos`,
-      label: 'Naspolya',
+      label: 'Testnas',
     })
   })
 
   it('navigates to a saved place whose account is an email address', async () => {
     // Email logins are common on WebDAV hosts. A path to such a place that didn't
     // parse opened the add sheet over a server that is already saved.
-    const root = 'webdav://ada@example.com@cloud.example.com:443'
+    const root = 'webdav://test_user_1@example.com@cloud.example.com:443'
     ipc.mock('list_saved_servers', () => [
       {
         ...SAVED_SERVER,
@@ -108,16 +108,16 @@ describe('readSchemeInput: which scheme means what', () => {
   it('adds a server path nothing saved, rather than calling it a dead end', async () => {
     // Someone pasted a link to a server they haven't added yet, which is an
     // ADDRESS. The sheet is what adds it.
-    expect(await readSchemeInput('sftp://ada@other.local:22/srv')).toEqual({
+    expect(await readSchemeInput('sftp://test_user_1@other.local:22/srv')).toEqual({
       kind: 'add',
-      address: 'sftp://ada@other.local:22/srv',
+      address: 'sftp://test_user_1@other.local:22/srv',
     })
   })
 
   it('reads a typed `nfs://` as an ADDRESS, ❌ never as a path to a saved export', async () => {
-    // ❗ A person's `nfs://nas.local/volume1/data` has no port and no escaped export,
+    // ❗ A person's `nfs://testnas.local/volume1/data` has no port and no escaped export,
     // so it names no place: read as an app path it would mint export `/volume1`.
-    const root = 'nfs://nas.local:2049/volume1%2Fdata'
+    const root = 'nfs://testnas.local:2049/volume1%2Fdata'
     ipc.mock('list_saved_servers', () => [
       {
         ...SAVED_SERVER,
@@ -126,9 +126,9 @@ describe('readSchemeInput: which scheme means what', () => {
         places: [{ ...SAVED_SERVER.places[0], volumeId: 'nfs-data', name: 'Data', appRoot: root }],
       },
     ])
-    expect(await readSchemeInput('nfs://nas.local/volume1/data/photos')).toEqual({
+    expect(await readSchemeInput('nfs://testnas.local/volume1/data/photos')).toEqual({
       kind: 'add',
-      address: 'nfs://nas.local/volume1/data/photos',
+      address: 'nfs://testnas.local/volume1/data/photos',
     })
     // Cmdr's own spelling of a path in the saved export navigates.
     expect(await readSchemeInput(`${root}/photos`)).toEqual({ kind: 'place', path: `${root}/photos`, label: 'Data' })
@@ -143,14 +143,16 @@ describe('readSchemeInput: which scheme means what', () => {
     expect(await readSchemeInput('mtp://PIXEL7')).toMatchObject({ kind: 'place', label: 'PIXEL7' })
   })
 
-  it.each(['smb://naspolya', 'ssh://ada@nas.local', 'davs://cloud.example.com/dav', 'https://cloud.example.com'])(
-    'reads %j as an address to add',
-    async (input) => {
-      expect(await readSchemeInput(input)).toEqual({ kind: 'add', address: input })
-    },
-  )
+  it.each([
+    'smb://testnas',
+    'ssh://test_user_1@testnas.local',
+    'davs://cloud.example.com/dav',
+    'https://cloud.example.com',
+  ])('reads %j as an address to add', async (input) => {
+    expect(await readSchemeInput(input)).toEqual({ kind: 'add', address: input })
+  })
 
-  it.each(['~/Documents', '/srv/data', 'Downloads', '', '   ', 'ftp://nas.local'])(
+  it.each(['~/Documents', '/srv/data', 'Downloads', '', '   ', 'ftp://testnas.local'])(
     'leaves %j to the local resolver',
     async (input) => {
       // ❗ A bare hostname is a legal RELATIVE path, and Go to path has always
@@ -160,7 +162,7 @@ describe('readSchemeInput: which scheme means what', () => {
   )
 
   it('❌ never asks the local resolver about a scheme', async () => {
-    for (const input of [`${APP_ROOT}/photos`, 'smb://naspolya', 'adb://ABC123']) {
+    for (const input of [`${APP_ROOT}/photos`, 'smb://testnas', 'adb://ABC123']) {
       await readSchemeInput(input)
     }
     expect(ipc.callCount('resolve_go_to_path')).toBe(0)
@@ -190,8 +192,8 @@ describe('readSchemeInput: a search-results path', () => {
 
 describe('previewSchemeInput: what the box says under it', () => {
   it('names what will open, or says a server gets added', () => {
-    expect(previewSchemeInput({ kind: 'place', path: APP_ROOT, label: 'Naspolya' })).toBe('Opens Naspolya')
-    expect(previewSchemeInput({ kind: 'add', address: 'smb://naspolya' })).toBe('Adds a server')
+    expect(previewSchemeInput({ kind: 'place', path: APP_ROOT, label: 'Testnas' })).toBe('Opens Testnas')
+    expect(previewSchemeInput({ kind: 'add', address: 'smb://testnas' })).toBe('Adds a server')
   })
 
   it('says a search-results path is not somewhere to go', () => {
@@ -215,7 +217,7 @@ describe('actOnSchemeInput: what the jump does', () => {
   it('reports a place as a directory, so the caller navigates the way it always has', async () => {
     expect(
       await actOnSchemeInput(
-        { kind: 'place', path: APP_ROOT, label: 'Naspolya' },
+        { kind: 'place', path: APP_ROOT, label: 'Testnas' },
         { onSmbHandOff: () => {}, onConnected: () => {} },
       ),
     ).toEqual({
@@ -253,10 +255,10 @@ describe('actOnSchemeInput: what the jump does', () => {
    * into one sheet ending differently for one input is the bug.
    */
   it('sends an SMB address on to the hub, the same place ⌘K does', async () => {
-    ipc.mock('connect_to_server', () => ({ host: { id: 'h1', name: 'naspolya' }, sharePath: null }))
+    ipc.mock('connect_to_server', () => ({ host: { id: 'h1', name: 'testnas' }, sharePath: null }))
     let handedOver = 0
     const outcome = await actOnSchemeInput(
-      { kind: 'add', address: 'smb://naspolya' },
+      { kind: 'add', address: 'smb://testnas' },
       {
         onSmbHandOff: () => {
           handedOver++
@@ -270,7 +272,7 @@ describe('actOnSchemeInput: what the jump does', () => {
     if (request?.mode !== 'add') throw new Error('expected the add sheet')
 
     expect(
-      await request.attempt({ mode: 'add_smb', address: 'naspolya', name: '', username: null, intent: 'open' }),
+      await request.attempt({ mode: 'add_smb', address: 'testnas', name: '', username: null, intent: 'open' }),
     ).toEqual({
       kind: 'handed_off',
     })
@@ -283,7 +285,7 @@ describe('actOnSchemeInput: what the jump does', () => {
   it('lands on the place an SFTP or WebDAV address connected, the same place ⌘K does', async () => {
     const landed: unknown[] = []
     const outcome = await actOnSchemeInput(
-      { kind: 'add', address: 'sftp://ada@nas.local:22/srv/data' },
+      { kind: 'add', address: 'sftp://test_user_1@testnas.local:22/srv/data' },
       { onSmbHandOff: () => {}, onConnected: (place) => landed.push(place) },
     )
     const sheet = openSheetOf(outcome)

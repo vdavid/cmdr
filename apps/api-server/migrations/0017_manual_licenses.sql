@@ -22,6 +22,6 @@ ALTER TABLE license_issuance ADD COLUMN expires_at TEXT;
 -- canceling the subscription in Paddle, never here.
 ALTER TABLE license_issuance ADD COLUMN revoked_at TEXT;
 
--- Why the license was issued, for example "Dana Lee, Acme, evaluation". Required when
+-- Why the license was issued, for example "Test Customer, Acme, evaluation". Required when
 -- minting a manual license: a free license nobody can explain later is worse than no record.
 ALTER TABLE license_issuance ADD COLUMN note TEXT;

@@ -15,7 +15,7 @@ describe('the home-folder refusal and the trash errors per OS', () => {
     ['linux', 'Please don’t delete your home folder', 'Hey, you can’t delete your own home folder.'],
   ] as const)('names the home folder in %s’s words', (platform, title, message) => {
     onTestFinished(withPlatform(platform))
-    const refusal = homeFolderMessage('/Users/ada', 'isHome', 'delete')
+    const refusal = homeFolderMessage('/Users/test_user_1', 'isHome', 'delete')
     expect(refusal.title).toBe(title)
     expect(refusal.message).toBe(message)
   })

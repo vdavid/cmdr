@@ -10,7 +10,7 @@
 #   LARGE_MB    size of `large.bin` in MiB (default: 4)
 set -e
 
-USER_NAME="${USER_NAME:-ada}"
+USER_NAME="${USER_NAME:-test_user_1}"
 USER_PASSWORD="${USER_PASSWORD:-openthedoor}"
 AUTH="${AUTH:-basic}"
 RANGES="${RANGES:-honour}"

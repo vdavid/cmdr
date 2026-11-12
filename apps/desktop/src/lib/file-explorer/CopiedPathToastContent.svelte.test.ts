@@ -35,7 +35,7 @@ describe('CopiedPathToastContent', () => {
   })
 
   it('renders a path with spaces and non-ASCII characters verbatim', async () => {
-    const path = '/Volumes/naspi/papers/Rymdskottkärra AB/2026 — kvitton/räkning #7.pdf'
+    const path = '/Volumes/testshare/documents/Testföretag AB/2026 — receipts/räkning #7.pdf'
     const target = await mountToast(path)
     expect(target.querySelector('.path')?.textContent).toBe(path)
     target.remove()

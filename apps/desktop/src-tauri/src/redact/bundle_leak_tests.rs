@@ -78,8 +78,8 @@ fn a_flattened_typed_error_tokenizes_every_segment() {
 #[test]
 fn a_quoted_bonjour_instance_is_claimed_whole() {
     let input = "2026-10-19T10:00:00.000+02:00 WARN  mdns_sd::service_daemon  resolve failed for \
-                 name: \"Alex's MacBook Pro (2)._companion-link._tcp.local.\"";
-    assert_ships_none(input, &["Alex", "MacBook", "Pro", "(2)"]);
+                 name: \"Tester's MacBook Pro (2)._companion-link._tcp.local.\"";
+    assert_ships_none(input, &["Tester", "MacBook", "Pro", "(2)"]);
     assert!(
         r(input).ends_with("name: \"<host>._companion-link._tcp.local.\""),
         "{}",
@@ -89,7 +89,7 @@ fn a_quoted_bonjour_instance_is_claimed_whole() {
     let context = context();
     let instance = context.redact_line(input).into_owned();
     let keyed = context
-        .redact_line("Resolved: server=\"Alex's MacBook Pro (2)\"")
+        .redact_line("Resolved: server=\"Tester's MacBook Pro (2)\"")
         .into_owned();
     let token = |line: &str| {
         line.split("<host:")
@@ -198,12 +198,12 @@ fn a_failed_move_ships_no_part_of_a_file_name_holding_a_comma() {
     use cmdr_operations::WriteOperationError;
 
     // A home path, so the constructor's mounted-share probe has nothing to `statfs`.
-    let path = "/Users/me/Shared/Contracts/2026/Lease, Kovács Anna.pdf";
+    let path = "/Users/me/Shared/Contracts/2026/Lease, Persón Test.pdf";
     // The server refused the staged temp beside it, which `message` names
     // (`map_volume_error`, as `ErrorDetail::path`).
-    let temp = "/Users/me/Shared/Contracts/2026/.cmdr-tmp-1a2b3c-Lease, Kovács Anna.pdf";
+    let temp = "/Users/me/Shared/Contracts/2026/.cmdr-tmp-1a2b3c-Lease, Persón Test.pdf";
     let error = WriteOperationError::permission_denied(path.to_string(), ErrorDetail::path(temp), None, None, None);
-    let private = ["Lease", "Kovács", "Anna", "Contracts"];
+    let private = ["Lease", "Persón", "Test", "Contracts"];
     let lines = [
         format!("WARN move: move operation op-1 failed: detail={:?}", error.log_detail()),
         format!(
@@ -224,7 +224,7 @@ fn a_failed_move_ships_no_part_of_a_file_name_holding_a_comma() {
     // The shape it replaced: the derived `Debug` reaches the fallback unmarked, which reads the
     // path only up to the `, `. Pinned so the site fix stays the fix.
     let derived = format!("WARN move: move operation op-1 failed: {error:?}");
-    assert!(r(&derived).contains("Anna"), "{}", r(&derived));
+    assert!(r(&derived).contains("Test"), "{}", r(&derived));
 }
 
 #[test]
@@ -234,7 +234,7 @@ fn leak_shapes_redact_idempotently() {
         "list_directory_core: path=/Users/me/Pictures/Astro/2026/Summer (Lake House) 2026, entries=5",
         "copying /Users/me/Pictures/A/B/Summer (Lake House) 2026 -> /Volumes/Backup/A/B/Summer (Lake House) 2026",
         "Copy error: detail=\"Path: /Volumes/Backup/A/B/Summer (Lake House) Trip/2026-08-24/Sub/.DS_Store; Error type: io_error\"",
-        "resolve failed for name: \"Alex's MacBook Pro (2)._companion-link._tcp.local.\"",
+        "resolve failed for name: \"Tester's MacBook Pro (2)._companion-link._tcp.local.\"",
         "copy_between_volumes: source_volume=Macintosh HD, dest_volume=Family Photos, 2 sources",
     ] {
         let once = context.redact_line(input).into_owned();

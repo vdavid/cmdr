@@ -14,7 +14,7 @@
     interface Props {
         /** What's locked: picks the wording, and whether the Keychain box shows. */
         container: UnlockContainer
-        /** Display name: the archive file ("photos.zip") or the repo folder ("m3-restic"). */
+        /** Display name: the archive file ("photos.zip") or the repo folder ("test-restic"). */
         name: string
         /** True when a password was just rejected: re-prompt with distinct copy. */
         wrongAttempt: boolean

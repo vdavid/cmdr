@@ -485,7 +485,7 @@ impl SmbVolume {
     ///
     /// An unrecorded `new_root` is treated as another mount of the SHARE ROOT,
     /// which is what every ordinary mount is and what this method assumed before
-    /// anchored mounts existed at all (`/Volumes/naspi-1` beside `/Volumes/naspi`).
+    /// anchored mounts existed at all (`/Volumes/testshare-1` beside `/Volumes/testshare`).
     /// Roots reach the registry from more places than the SMB upgrade path (the
     /// FSEvents watcher registers a fallback volume too), so refusing an
     /// unrecorded one would strand a share on a dead mount for the common case.
@@ -680,10 +680,10 @@ mod params_test {
     /// not a rewrite.
     #[test]
     fn new_leaves_composed_names_alone() {
-        let params = SmbConnectionParams::new("naspolya", "R\u{e9}gi NAS", 445, Some("david"), Some("pw"));
+        let params = SmbConnectionParams::new("testnas", "R\u{e9}gi NAS", 445, Some("test_user_3"), Some("pw"));
         assert_eq!(params.share_name, "R\u{e9}gi NAS");
-        assert_eq!(params.server, "naspolya");
-        assert_eq!(params.username, "david");
+        assert_eq!(params.server, "testnas");
+        assert_eq!(params.username, "test_user_3");
     }
 
     /// The password stays out of `{:?}`, the way smb2's own `ClientConfig` keeps
@@ -692,10 +692,13 @@ mod params_test {
     /// user attaches to a report.
     #[test]
     fn debug_output_hides_the_password() {
-        let params = SmbConnectionParams::new("naspolya", "photos", 445, Some("david"), Some("hunter2-secret"));
+        let params = SmbConnectionParams::new("testnas", "photos", 445, Some("test_user_3"), Some("hunter2-secret"));
         let printed = format!("{params:?}");
         assert!(!printed.contains("hunter2-secret"), "leaked: {printed}");
-        assert!(printed.contains("david") && printed.contains("photos"), "{printed}");
+        assert!(
+            printed.contains("test_user_3") && printed.contains("photos"),
+            "{printed}"
+        );
     }
 }
 

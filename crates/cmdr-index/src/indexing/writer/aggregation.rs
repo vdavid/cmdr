@@ -57,7 +57,7 @@ fn classify_skip_severity(inserted: u64, skipped: u64) -> SkipSeverity {
 
 /// Maximum directory depth (from the scan root) that a partial-aggregation pass
 /// writes `dir_stats` for. Depth from the scan root: `/Users` = 1,
-/// `/Users/david` = 2, `~/Downloads` = 3. Covers onboarding browsing while
+/// `/Users/test_user_3` = 2, `~/Downloads` = 3. Covers onboarding browsing while
 /// keeping each pass's write set to a few thousand rows rather than 100K+.
 ///
 /// Real-volume measurement (Apple Silicon, 5.94M entries / 558K dirs, release

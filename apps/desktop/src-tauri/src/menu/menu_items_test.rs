@@ -120,7 +120,7 @@ fn the_detach_word_comes_off_the_volume_id() {
     // A mounted SMB share, whichever backend serves it (#1117): its id is the only fact both
     // native menus carry, and the scheme says share on every OS.
     assert_eq!(
-        detach_word_for_volume_id(&cmdr_fs::volume::smb_volume_id("naspi", 445, "media")),
+        detach_word_for_volume_id(&cmdr_fs::volume::smb_volume_id("testshare", 445, "media")),
         DetachWord::Share
     );
 }

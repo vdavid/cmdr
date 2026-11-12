@@ -372,9 +372,13 @@ mod tests {
     /// case a timestamp-only signal gets wrong, and the reason the lease exists.
     #[test]
     fn an_operation_in_flight_is_busy_even_with_a_quiet_timestamp() {
-        let listing_running = BusyVolumes::new().holds_a_lease("smb://naspi/media");
-        assert!(volume_idle_for(&listing_running, "smb://naspi/media", ANY_WINDOW));
-        assert!(volume_busy_for_user(&listing_running, "smb://naspi/media", ANY_WINDOW));
+        let listing_running = BusyVolumes::new().holds_a_lease("smb://testshare/media");
+        assert!(volume_idle_for(&listing_running, "smb://testshare/media", ANY_WINDOW));
+        assert!(volume_busy_for_user(
+            &listing_running,
+            "smb://testshare/media",
+            ANY_WINDOW
+        ));
     }
 
     /// The timestamp half on its own: nothing is in flight, but the user was here
@@ -382,33 +386,37 @@ mod tests {
     /// case a lease-only signal gets wrong.
     #[test]
     fn a_fresh_timestamp_is_busy_even_with_nothing_in_flight() {
-        let just_navigated = BusyVolumes::new().is_busy("smb://naspi/media");
-        assert_eq!(just_navigated.volume_foreground_leases("smb://naspi/media"), 0);
-        assert!(volume_busy_for_user(&just_navigated, "smb://naspi/media", ANY_WINDOW));
+        let just_navigated = BusyVolumes::new().is_busy("smb://testshare/media");
+        assert_eq!(just_navigated.volume_foreground_leases("smb://testshare/media"), 0);
+        assert!(volume_busy_for_user(
+            &just_navigated,
+            "smb://testshare/media",
+            ANY_WINDOW
+        ));
     }
 
     /// Both halves clear ⇒ free. Releasing the last lease on an otherwise-quiet
     /// volume is what lets background work resume with no re-arming.
     #[test]
     fn a_volume_is_free_once_both_halves_are_clear() {
-        let activity = BusyVolumes::new().holds_a_lease("smb://naspi/media");
-        activity.releases_a_lease("smb://naspi/media");
-        assert!(!volume_busy_for_user(&activity, "smb://naspi/media", ANY_WINDOW));
+        let activity = BusyVolumes::new().holds_a_lease("smb://testshare/media");
+        activity.releases_a_lease("smb://testshare/media");
+        assert!(!volume_busy_for_user(&activity, "smb://testshare/media", ANY_WINDOW));
     }
 
     /// The scope guarantee survives the composition: a listing on one share must
     /// not park a copy running on another.
     #[test]
     fn a_lease_on_one_volume_leaves_every_other_volume_free() {
-        let activity = BusyVolumes::new().holds_a_lease("smb://naspi/media");
-        assert!(!volume_busy_for_user(&activity, "smb://naspi/backups", ANY_WINDOW));
+        let activity = BusyVolumes::new().holds_a_lease("smb://testshare/media");
+        assert!(!volume_busy_for_user(&activity, "smb://testshare/backups", ANY_WINDOW));
     }
 
     /// A host with no signals reports free, so a bench or a CLI tool runs at the
     /// protocol's real speed rather than standing aside for a user who isn't there.
     #[test]
     fn a_host_that_tracks_nothing_is_never_busy() {
-        assert!(!volume_busy_for_user(&AlwaysIdle, "smb://naspi/media", ANY_WINDOW));
+        assert!(!volume_busy_for_user(&AlwaysIdle, "smb://testshare/media", ANY_WINDOW));
     }
 
     /// A free volume doesn't park at all, and a host that tracks nothing never
@@ -416,8 +424,8 @@ mod tests {
     /// would hang a bench forever.
     #[tokio::test(start_paused = true)]
     async fn a_free_volume_never_parks() {
-        wait_until_volume_free(&AlwaysIdle, "smb://naspi/media", ANY_WINDOW).await;
-        wait_until_volume_free(&BusyVolumes::new(), "smb://naspi/media", ANY_WINDOW).await;
+        wait_until_volume_free(&AlwaysIdle, "smb://testshare/media", ANY_WINDOW).await;
+        wait_until_volume_free(&BusyVolumes::new(), "smb://testshare/media", ANY_WINDOW).await;
     }
 
     /// THE reason this is a wait and not a poll: the park ends on the EVENT of the
@@ -425,7 +433,7 @@ mod tests {
     /// timer can fire at all, so a tick loop would hang here.
     #[tokio::test(start_paused = true)]
     async fn the_park_ends_the_moment_the_last_lease_comes_back() {
-        let volume_id = "smb://naspi/media";
+        let volume_id = "smb://testshare/media";
         let activity = Arc::new(BusyVolumes::new().holds_a_lease(volume_id));
 
         let releasing = Arc::clone(&activity);
@@ -442,7 +450,7 @@ mod tests {
     /// the transfer through: the wake means "something moved", never "you're free".
     #[tokio::test(start_paused = true)]
     async fn a_second_operation_starting_re_parks_the_wait() {
-        let volume_id = "smb://naspi/media";
+        let volume_id = "smb://testshare/media";
         let activity = Arc::new(BusyVolumes::new().holds_a_lease(volume_id));
 
         let scripted = Arc::clone(&activity);
@@ -500,7 +508,7 @@ mod tests {
         // the timeout fires immediately if the wakeup was dropped.
         tokio::time::timeout(
             Duration::from_secs(60),
-            wait_until_volume_free(&activity, "smb://naspi/media", ANY_WINDOW),
+            wait_until_volume_free(&activity, "smb://testshare/media", ANY_WINDOW),
         )
         .await
         .expect("a lease released between the read and the await must still wake the park");
@@ -546,7 +554,7 @@ mod tests {
         };
 
         let started = tokio::time::Instant::now();
-        wait_until_volume_free(&activity, "smb://naspi/media", window).await;
+        wait_until_volume_free(&activity, "smb://testshare/media", window).await;
 
         assert_eq!(
             started.elapsed(),
@@ -565,7 +573,7 @@ mod tests {
     /// stale instant.
     #[tokio::test(start_paused = true)]
     async fn navigation_during_the_quiet_window_pushes_the_deadline_out() {
-        let volume_id = "smb://naspi/media";
+        let volume_id = "smb://testshare/media";
         let activity = Arc::new(BusyVolumes::new().is_busy(volume_id));
 
         let scripted = Arc::clone(&activity);

@@ -158,7 +158,7 @@ mod url_tests {
 
     #[test]
     fn build_smbutil_url_uses_ip_when_not_loopback() {
-        let url = build_smbutil_url("nas.local", Some("192.168.1.50"), 445);
+        let url = build_smbutil_url("testnas.local", Some("192.168.1.50"), 445);
         assert_eq!(url, "//192.168.1.50");
     }
 
@@ -182,13 +182,13 @@ mod url_tests {
 
     #[test]
     fn build_smbutil_url_omits_port_for_445() {
-        let url = build_smbutil_url("nas.local", Some("10.0.0.5"), 445);
+        let url = build_smbutil_url("testnas.local", Some("10.0.0.5"), 445);
         assert_eq!(url, "//10.0.0.5");
     }
 
     #[test]
     fn build_smbutil_url_includes_non_standard_port() {
-        let url = build_smbutil_url("nas.local", Some("10.0.0.5"), 9445);
+        let url = build_smbutil_url("testnas.local", Some("10.0.0.5"), 9445);
         assert_eq!(url, "//10.0.0.5:9445");
     }
 
@@ -197,7 +197,7 @@ mod url_tests {
     /// passwordless regardless of host/port shape.
     #[test]
     fn build_smbutil_url_never_carries_credentials() {
-        let url = build_smbutil_url("nas.local", Some("10.0.0.5"), 9446);
+        let url = build_smbutil_url("testnas.local", Some("10.0.0.5"), 9446);
         assert!(!url.contains('@'), "smbutil URL must never embed credentials: {url}");
         assert_eq!(url, "//10.0.0.5:9446");
     }

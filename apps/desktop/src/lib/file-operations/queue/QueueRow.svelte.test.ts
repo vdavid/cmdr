@@ -498,13 +498,13 @@ describe('QueueRow', () => {
   // #398: a background copy to a NAS that dropped off gets the same Retry the
   // foreground error dialog offers.
   it('offers Retry on a failure the backend can start again and that is worth retrying', () => {
-    render({ row: buildFailedRow({ type: 'connection_interrupted', path: '/Volumes/naspi/a.raw' }, 'copy', true) })
+    render({ row: buildFailedRow({ type: 'connection_interrupted', path: '/Volumes/testshare/a.raw' }, 'copy', true) })
     expect(retryButton()).not.toBeNull()
     expect(target.querySelector('[aria-label="Dismiss this operation"]')).not.toBeNull()
   })
 
   it('clicking Retry starts this operation again', () => {
-    render({ row: buildFailedRow({ type: 'connection_interrupted', path: '/Volumes/naspi/a.raw' }, 'copy', true) })
+    render({ row: buildFailedRow({ type: 'connection_interrupted', path: '/Volumes/testshare/a.raw' }, 'copy', true) })
     retryButton()?.click()
     expect(retryFailedOperation).toHaveBeenCalledWith('op-1')
   })
@@ -873,11 +873,11 @@ describe('QueueRow reporting', () => {
         waitingOn: 'reconnecting',
         openingSource: false,
         sourceInboundBytesPerSecond: null,
-        reconnectingVolume: 'Naspolya',
+        reconnectingVolume: 'Testnas',
       },
     }
     render({ row: buildRow('running', 'copy', progress) })
-    expect(target.textContent).toContain('Waiting for Naspolya to come back…')
+    expect(target.textContent).toContain('Waiting for Testnas to come back…')
     expect(reportControl('Taking long? Send a report')).toBeNull()
   })
 })

@@ -83,7 +83,7 @@ fn automatic_note_carries_the_first_category_and_a_report_redacted_message() {
 
     record_error_for_test(
         "cmdr_lib::network::smb",
-        "couldn't open /Users/alice/Secret/a.txt on nas.local",
+        "couldn't open /Users/test_user_4/Secret/a.txt on testnas.local",
     );
     record_error_for_test("cmdr_lib::other", "second message must NOT overwrite");
     record_error_for_test("cmdr_lib::yet_another", "third message must NOT overwrite either");
@@ -91,13 +91,13 @@ fn automatic_note_carries_the_first_category_and_a_report_redacted_message() {
     let note = note_for_test().expect("state should be active");
     assert_eq!(
         note,
-        r#"auto-send: 3 errors within 60s, first: cmdr_lib::network::smb detail="couldn't open /Users/alice/Secret/a.txt on nas.local""#,
+        r#"auto-send: 3 errors within 60s, first: cmdr_lib::network::smb detail="couldn't open /Users/test_user_4/Secret/a.txt on testnas.local""#,
         "the local note keeps the first error whole"
     );
 
     let redaction = crate::redact::RedactionContext::for_test([0x42; 32], "ERR-NOTE1");
     let shipped = prepare_user_note(&note, BundleKind::Auto, &redaction).expect("non-empty note");
-    for private in ["alice", "Secret", "nas", "second message"] {
+    for private in ["test_user_4", "Secret", "nas", "second message"] {
         assert!(!shipped.contains(private), "{private:?} survived: {shipped}");
     }
     assert!(

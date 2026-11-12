@@ -246,7 +246,7 @@ export interface PaneRefusalSubject extends RefusalSubject {
 
 /**
  * The sentence a pane standing on a saved place says. ❗ `unreachable` names the
- * place by the name the user gave it ("Naspolya", not "nas.local"); the sheet and
+ * place by the name the user gave it ("Testnas", not "testnas.local"); the sheet and
  * the Add form keep the host, since there it's the address the person typed.
  */
 export function wordPaneRefusal(kind: ConnectRefusalKind, subject: PaneRefusalSubject): string {

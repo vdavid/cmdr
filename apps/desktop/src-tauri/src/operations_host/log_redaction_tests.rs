@@ -11,18 +11,18 @@ use cmdr_operations::testing::ScanTarget;
 /// root` as prose and shipped `trip` (ERR-UK5NH). The user-facing label stays plain.
 #[test]
 fn the_log_label_keys_the_source_so_a_report_redacts_it_whole() {
-    let one = ScanTarget::of(&[PathBuf::from("/Users/ada/Pictures/Summer trip")], "root");
+    let one = ScanTarget::of(&[PathBuf::from("/Users/test_user_1/Pictures/Summer trip")], "root");
     let line = format!("scan preview 3 started: {}", one.log_label);
     assert_eq!(
         crate::redact::redact_line(&line),
         r#"scan preview 3 started: path="$HOME/Pictures/<dir>" on volume root"#
     );
-    assert_eq!(one.label, "/Users/ada/Pictures/Summer trip on volume root");
+    assert_eq!(one.label, "/Users/test_user_1/Pictures/Summer trip on volume root");
 
     let two = ScanTarget::of(
         &[
-            PathBuf::from("/Volumes/naspi/Photos/Summer trip"),
-            PathBuf::from("/Volumes/naspi/b"),
+            PathBuf::from("/Volumes/testshare/Photos/Summer trip"),
+            PathBuf::from("/Volumes/testshare/b"),
         ],
         "smb-1",
     );

@@ -140,7 +140,7 @@ fn resolve_target(query: &SearchQuery) -> Result<Target, ScopeError> {
 /// (`tools/actions/search/placement.rs`), so its paths aren't routed again.
 ///
 /// The one case path routing can't express: a share that isn't connected. Its
-/// locations sit under its last root (`/Volumes/naspi`), which routes to the boot
+/// locations sit under its last root (`/Volumes/testshare`), which routes to the boot
 /// disk once nothing is mounted there, so only the caller's resolution reaches the
 /// share's index on disk. Empty include paths are the whole volume, as unscoped is.
 fn target_on(query: &SearchQuery, volume_id: &str) -> Target {

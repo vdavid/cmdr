@@ -167,7 +167,7 @@ async fn smb_integration_move_into_a_subfolder_addressed_the_way_the_dialog_addr
     ensure_clean(&smb_vol, &base).await;
     let dest_vol: Arc<dyn Volume> = smb_vol.clone();
 
-    // The destination subfolder exists already, as `_todo_pics/…` did.
+    // The destination subfolder exists already, as `test_photos/…` did.
     smb_vol.create_directory(Path::new(&base)).await.unwrap();
     smb_vol
         .create_directory(Path::new(&format!("{base}/photos")))

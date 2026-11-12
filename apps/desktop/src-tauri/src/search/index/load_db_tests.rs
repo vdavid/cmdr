@@ -128,7 +128,8 @@ fn integration_load_and_search() {
 
     // Insert test entries
     let users_id = IndexStore::insert_entry_v2(&conn, ROOT_ID, "Users", true, false, None, None, None, None).unwrap();
-    let alice_id = IndexStore::insert_entry_v2(&conn, users_id, "alice", true, false, None, None, None, None).unwrap();
+    let alice_id =
+        IndexStore::insert_entry_v2(&conn, users_id, "test_user_4", true, false, None, None, None, None).unwrap();
     let _pdf_id = IndexStore::insert_entry_v2(
         &conn,
         alice_id,
@@ -183,7 +184,7 @@ fn integration_load_and_search() {
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     assert_eq!(result.total_count, 1);
     assert_eq!(result.entries[0].name, "report.pdf");
-    assert_eq!(result.entries[0].path, "/Users/alice/report.pdf");
+    assert_eq!(result.entries[0].path, "/Users/test_user_4/report.pdf");
 }
 
 #[test]

@@ -8,8 +8,8 @@
         'sudo /usr/libexec/PlistBuddy -c "Delete :rootless" /System/Library/Frameworks/IOKit.framework/Versions/A/Resources/Info.plist'
     /* Not a command: the box also carries a path (what `AlertDialog` shows), and a
        caller that shortens a long one for display still copies the whole string. */
-    const path = '/Volumes/Naspolya/media/photos/2026/07-summer-archive/DSC09241_edited_final_v3_reallyfinal.arw'
-    const shortenedPath = '/Volumes/Naspolya/media/…/DSC09241_edited_final_v3_reallyfinal.arw'
+    const path = '/Volumes/Testnas/media/photos/2026/07-summer-archive/DSC09241_edited_final_v3_reallyfinal.arw'
+    const shortenedPath = '/Volumes/Testnas/media/…/DSC09241_edited_final_v3_reallyfinal.arw'
 </script>
 
 <SectionCard id="components-copybox" label="CopyBox">
