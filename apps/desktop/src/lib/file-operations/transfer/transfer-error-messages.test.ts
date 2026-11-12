@@ -525,6 +525,19 @@ describe('getUserFriendlyMessage', () => {
       expect(result.suggestion).toContain('Wait a moment')
     })
 
+    // cmdr-reports#110: an SMB sharing violation read as "Couldn't copy" with `copy/io_error`.
+    it('handles file_in_use with a dedicated message that says what to do', () => {
+      const error: WriteOperationError = { type: 'file_in_use', path: '/Volumes/share/report.pdf' }
+      for (const op of ['copy', 'move', 'delete'] as const) {
+        const result = getUserFriendlyMessage(error, op)
+
+        expect(result.title).toBe('File is in use')
+        expect(result.message).toContain('/Volumes/share/report.pdf')
+        expect(result.message).toContain('open somewhere else')
+        expect(result.suggestion).toContain('try again')
+      }
+    })
+
     it('handles read_only_device with a dedicated message (no fallthrough)', () => {
       const error: WriteOperationError = {
         type: 'read_only_device',
@@ -1006,6 +1019,7 @@ describe('getErrorDisplayMeta', () => {
     { error: { type: 'name_too_long', path: '/p' }, category: 'needs_action', retryHint: false },
     { error: { type: 'invalid_name', path: '/p', message: 'm' }, category: 'needs_action', retryHint: false },
     { error: { type: 'delete_pending', path: '/p' }, category: 'transient', retryHint: true },
+    { error: { type: 'file_in_use', path: '/p' }, category: 'needs_action', retryHint: true },
     { error: { type: 'source_in_cold_storage', path: '/p' }, category: 'needs_action', retryHint: false },
     { error: { type: 'source_changed', path: '/p' }, category: 'transient', retryHint: true },
     {

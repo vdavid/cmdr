@@ -330,6 +330,11 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'delete',
     error: { type: 'delete_pending', path: '/Users/david/Downloads/ubuntu-26.04-desktop-amd64.iso' },
   },
+  // A copy off a NAS meeting a PDF someone has open (cmdr-reports#110).
+  file_in_use: {
+    operationType: 'copy',
+    error: { type: 'file_in_use', path: '/Volumes/naspi/papers/finances/2026-tax-return.pdf' },
+  },
   // A copy off an S3 bucket meeting an object in Glacier.
   source_in_cold_storage: {
     operationType: 'copy',

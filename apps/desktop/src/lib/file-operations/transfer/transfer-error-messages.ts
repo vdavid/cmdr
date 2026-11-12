@@ -211,6 +211,9 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   // person looks first, then deletes again if they still want it gone.
   changed_while_disconnected: { category: 'needs_action', retryHint: false },
   delete_pending: { category: 'transient', retryHint: true },
+  // Retry: the suggestion asks the person to close the file where it's open, and
+  // once they have, the same request is the way out (cmdr-reports#110).
+  file_in_use: { category: 'needs_action', retryHint: true },
   // No Retry: the file stays archived until someone restores it, which Cmdr
   // can't do yet, so the identical request can only meet it again.
   source_in_cold_storage: { category: 'needs_action', retryHint: false },
@@ -570,7 +573,50 @@ function trashRefusedMessage(error: Extract<WriteOperationError, { type: 'trash_
  */
 function fieldDrivenMessage(error: WriteOperationError): FriendlyErrorMessage | null {
   if (error.type === 'link_needs_consent') return linkNeedsConsentMessage(error)
-  return otherFieldDrivenMessage(error)
+  return namedItemMessage(error) ?? otherFieldDrivenMessage(error)
+}
+
+/**
+ * The refusals whose words name one item and take nothing else from the error: that
+ * item is the whole problem, so naming it is the message's job, and one sentence fits
+ * every operation. Each family is `errors.write.<family>.{title,message,suggestion}`,
+ * its message taking `{path}`.
+ */
+const NAMED_ITEM_FAMILY: Partial<Record<WriteOperationError['type'], string>> = {
+  // A file sits where the destination folder, or one above it, has to be.
+  // `error.path` is that FILE, which is often not the folder the user typed.
+  // Refused before copy or move writes anything.
+  destination_not_a_folder: 'destinationNotAFolder',
+  // STATUS_DELETE_PENDING: the file is marked for deletion on the server but an
+  // open handle is keeping it alive. Transient: retry-after-a-moment. Named,
+  // because a move involves two files and "this file" didn't say which.
+  delete_pending: 'deletePending',
+  // An SMB sharing violation: another app, computer, or the server holds the
+  // file open. Named for the same reason as `delete_pending` (cmdr-reports#110).
+  file_in_use: 'fileInUse',
+  // An S3 object in Glacier: one archived file deep in a selected folder is the
+  // whole problem, and only a restore gets it back.
+  source_in_cold_storage: 'sourceInColdStorage',
+  // A selection straddling a view (a backup's snapshots, an archive's inside, a
+  // repository's history) and its drive. The item to leave out is the user's to find.
+  sources_span_volumes: 'sourcesSpanVolumes',
+  // A server-side copy whose source was replaced mid-copy. It says the source
+  // stays, because a move would otherwise look like it lost it.
+  source_changed: 'sourceChanged',
+  // Cmdr refused to clear the way because its note of the replace couldn't be
+  // saved. It says the file stays, because that's what was at stake.
+  landing_not_recorded: 'landingNotRecorded',
+}
+
+/** A `NAMED_ITEM_FAMILY` variant's message, or `null` for any other variant. */
+function namedItemMessage(error: WriteOperationError): FriendlyErrorMessage | null {
+  const family = NAMED_ITEM_FAMILY[error.type]
+  if (family === undefined || !('path' in error)) return null
+  return {
+    title: w(`${family}.title`),
+    message: w(`${family}.message`, { path: escapeHtml(error.path) }),
+    suggestion: w(`${family}.suggestion`),
+  }
 }
 
 /**
@@ -595,64 +641,12 @@ function otherFieldDrivenMessage(error: WriteOperationError): FriendlyErrorMessa
       return readOnlyMessage(error)
     case 'destination_not_writable':
       return destinationNotWritableMessage(error)
-    // A file sits where the destination folder, or one above it, has to be.
-    // `error.path` is that FILE, which is often not the folder the user typed,
-    // so naming it is the message's whole job. One sentence for copy and move
-    // alike: it's refused before either writes anything.
-    case 'destination_not_a_folder':
-      return {
-        title: w('destinationNotAFolder.title'),
-        message: w('destinationNotAFolder.message', { path: escapeHtml(error.path) }),
-        suggestion: w('destinationNotAFolder.suggestion'),
-      }
     case 'archive_entry_name_refused':
     case 'archive_entry_names_collide':
     case 'archive_duplicate_entry_name':
     case 'archive_encrypted_entry':
     case 'archive_entry_under_file':
       return archiveEditMessage(error)
-    // STATUS_DELETE_PENDING: the file is marked for deletion on the server but an
-    // open handle is keeping it alive. Transient: retry-after-a-moment. Named,
-    // because a move involves two files and "this file" didn't say which.
-    case 'delete_pending':
-      return {
-        title: w('deletePending.title'),
-        message: w('deletePending.message', { path: escapeHtml(error.path) }),
-        suggestion: w('deletePending.suggestion'),
-      }
-    // An S3 object in Glacier: named, because one archived file deep in a
-    // selected folder is the whole problem, and only a restore gets it back.
-    case 'source_in_cold_storage':
-      return {
-        title: w('sourceInColdStorage.title'),
-        message: w('sourceInColdStorage.message', { path: escapeHtml(error.path) }),
-        suggestion: w('sourceInColdStorage.suggestion'),
-      }
-    // A selection straddling a view (a backup's snapshots, an archive's inside, a
-    // repository's history) and its drive. Named, because the item to leave out
-    // is the user's to find, and one sentence fits copy, move, and compress.
-    case 'sources_span_volumes':
-      return {
-        title: w('sourcesSpanVolumes.title'),
-        message: w('sourcesSpanVolumes.message', { path: escapeHtml(error.path) }),
-        suggestion: w('sourcesSpanVolumes.suggestion'),
-      }
-    // A server-side copy whose source was replaced mid-copy: named, and it says
-    // the source stays, because a move would otherwise look like it lost it.
-    case 'source_changed':
-      return {
-        title: w('sourceChanged.title'),
-        message: w('sourceChanged.message', { path: escapeHtml(error.path) }),
-        suggestion: w('sourceChanged.suggestion'),
-      }
-    // Cmdr refused to clear the way because its note of the replace couldn't be
-    // saved: named, and it says the file stays, because that's what was at stake.
-    case 'landing_not_recorded':
-      return {
-        title: w('landingNotRecorded.title'),
-        message: w('landingNotRecorded.message', { path: escapeHtml(error.path) }),
-        suggestion: w('landingNotRecorded.suggestion'),
-      }
     default:
       return null
   }

@@ -1806,9 +1806,10 @@ while the window fills (a strictly increasing sequence is the signature of count
 
 ## What a `VolumeError` payload carries
 
-`VolumeError::NotFound`, `PermissionDenied`, `AlreadyExists`, `IsADirectory`, and `DeletePending` are DEFINED to carry
-the PATH (`cmdr-fs/src/volume/types.rs`), and the transfer layer takes that literally:
-`transfer_error.rs::map_volume_error` forwards the payload straight into `SourceNotFound { path }` /
+`VolumeError::NotFound`, `PermissionDenied`, `AlreadyExists`, `IsADirectory`, `DeletePending`, and `FileInUse` (smb2's
+`ErrorKind::SharingViolation`: `STATUS_SHARING_VIOLATION` or `STATUS_FILE_LOCK_CONFLICT`, a file open somewhere else,
+cmdr-reports#110) are DEFINED to carry the PATH (`cmdr-fs/src/volume/types.rs`), and the transfer layer takes that
+literally: `transfer_error.rs::map_volume_error` forwards the payload straight into `SourceNotFound { path }` /
 `DestinationNotFound { path }`, which the frontend renders as the name of the file the user is missing.
 
 So `mapping.rs::map_smb_error` takes the path it is mapping a failure for, and `session.rs::handle_smb_result` takes the

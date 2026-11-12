@@ -330,6 +330,24 @@ fn test_map_volume_error_delete_pending() {
 }
 
 #[test]
+fn test_map_volume_error_file_in_use() {
+    // An SMB sharing violation (cmdr-reports#110): another client has the file
+    // open. It must reach the dialog typed, naming the item the walker was on,
+    // or the user reads "Couldn't copy" with reference `copy/io_error`.
+    for role in [PathRole::Source, PathRole::Destination] {
+        let err = map_volume_error(
+            "/ctx",
+            role,
+            VolumeError::FileInUse("/Volumes/share/report.pdf".to_string()),
+        );
+        assert!(
+            matches!(&err, WriteOperationError::FileInUse { path } if path == "/ctx"),
+            "{role:?}: got {err:?}"
+        );
+    }
+}
+
+#[test]
 fn test_map_volume_error_cold_storage() {
     // An S3 object in Glacier can't be read until it's restored. It must stay
     // typed to the dialog: as an `IoError` it would offer a Retry that can only

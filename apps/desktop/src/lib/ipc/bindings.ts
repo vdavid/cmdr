@@ -1257,6 +1257,13 @@ export const commands = {
        */
       | { type: 'delete_pending'; path: string }
       /**
+       *  Something else has the file open in a way that keeps this operation out
+       *  (`VolumeError::FileInUse`: an SMB sharing violation or lock conflict). The
+       *  person closes it where it's open, then retries. An expected refusal, so it
+       *  logs at warn (`is_expected_refusal`). SMB-only today.
+       */
+      | { type: 'file_in_use'; path: string }
+      /**
        *  The source file is archived in cold storage (S3 Glacier Flexible
        *  Retrieval or Deep Archive) and can't be read until someone restores it.
        *  Not transient: a retry meets the same archived object.
@@ -22414,6 +22421,19 @@ export type VolumeError =
    */
   | { type: 'deletePending'; data: string }
   /**
+   *  Something else has the file open in a way that keeps this request out: another
+   *  app, another machine, or the server itself holds a handle that denies sharing,
+   *  or a byte-range lock covers it. Carries the path.
+   *
+   *  SMB raises it from `STATUS_SHARING_VIOLATION` and `STATUS_FILE_LOCK_CONFLICT`
+   *  (smb2's `ErrorKind::SharingViolation`, cmdr-reports#110). Typed rather than an
+   *  [`IoError`](Self::IoError): the fix is closing the file where it's open, which
+   *  the person can do and Cmdr can't, and the expected refusal must log at warn
+   *  so it never files an error report. ❌ Never a transport fault: asking again
+   *  meets the same handle until it closes. SMB-only today.
+   */
+  | { type: 'fileInUse'; data: string }
+  /**
    *  A path names more than one stored entry, so the backend refused to pick
    *  one. Carries the path as it was given.
    *
@@ -23651,6 +23671,13 @@ export type WriteOperationError =
    *  last handle closes. SMB-only today.
    */
   | { type: 'delete_pending'; path: string }
+  /**
+   *  Something else has the file open in a way that keeps this operation out
+   *  (`VolumeError::FileInUse`: an SMB sharing violation or lock conflict). The
+   *  person closes it where it's open, then retries. An expected refusal, so it
+   *  logs at warn (`is_expected_refusal`). SMB-only today.
+   */
+  | { type: 'file_in_use'; path: string }
   /**
    *  The source file is archived in cold storage (S3 Glacier Flexible
    *  Retrieval or Deep Archive) and can't be read until someone restores it.

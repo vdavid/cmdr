@@ -425,6 +425,24 @@ impl crate::Operations {
                             failure,
                         ));
                     }
+                    Err(failure) if failure.error.is_expected_refusal() => {
+                        // The world said no (a file open somewhere else) and the
+                        // dialog says what to do, so no error report: `warn` keeps it
+                        // below the auto-report threshold (cmdr-reports#111). See
+                        // `WriteOperationError::is_expected_refusal`.
+                        log::warn!(
+                            target: "copy",
+                            "copy_between_volumes: operation {} refused: detail={:?}",
+                            op_id,
+                            failure.error.log_detail()
+                        );
+                        events.emit_error(write_error_event_from(
+                            &state,
+                            op_id.to_string(),
+                            WriteOperationType::Copy,
+                            failure,
+                        ));
+                    }
                     Err(failure) => {
                         // Toast-visible failure for cross-volume copy (Local↔SMB↔MTP).
                         state

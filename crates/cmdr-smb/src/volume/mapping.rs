@@ -98,7 +98,7 @@ pub(super) fn stat_presence<T>(stat: Result<T, smb2::Error>, path: &str) -> Pres
 ///
 /// ❗ **`path` is the payload, not context.** [`VolumeError::NotFound`],
 /// [`VolumeError::PermissionDenied`], [`VolumeError::AlreadyExists`],
-/// [`VolumeError::IsADirectory`], and [`VolumeError::DeletePending`] are defined
+/// [`VolumeError::IsADirectory`], [`VolumeError::DeletePending`], and [`VolumeError::FileInUse`] are defined
 /// to carry the path (`cmdr-fs/src/volume/types.rs`), and the transfer layer takes
 /// that literally: `map_volume_error` forwards the string straight into
 /// `SourceNotFound { path }`, which the frontend renders as the name of the file
@@ -162,6 +162,10 @@ pub(super) fn map_smb_error(err: smb2::Error, path: &str) -> VolumeError {
         ErrorKind::NotFound => VolumeError::NotFound(path.to_string()),
         ErrorKind::AlreadyExists => VolumeError::AlreadyExists(path.to_string()),
         ErrorKind::IsADirectory => VolumeError::IsADirectory(path.to_string()),
+        // `STATUS_SHARING_VIOLATION` or `STATUS_FILE_LOCK_CONFLICT`: someone else has
+        // the file open (another app, another machine, the NAS itself), so asking
+        // again meets the same handle until it closes (cmdr-reports#110).
+        ErrorKind::SharingViolation => VolumeError::FileInUse(path.to_string()),
         ErrorKind::AccessDenied
         | ErrorKind::AuthRequired
         | ErrorKind::SigningRequired

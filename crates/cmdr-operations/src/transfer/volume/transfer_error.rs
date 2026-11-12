@@ -585,6 +585,10 @@ pub(crate) fn map_volume_error(context_path: &str, role: PathRole, e: VolumeErro
         VolumeError::DeletePending(_) => WriteOperationError::DeletePending {
             path: context_path.to_string(),
         },
+        // Open somewhere else: the person closes it there, then retries.
+        VolumeError::FileInUse(_) => WriteOperationError::FileInUse {
+            path: context_path.to_string(),
+        },
         // Only a source can be archived: nothing writes into cold storage. Typed
         // to the dialog, because the fix is a restore and a Retry can't be one.
         VolumeError::ColdStorage(_) => WriteOperationError::SourceInColdStorage {

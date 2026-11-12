@@ -295,6 +295,8 @@ export type WriteOperationError =
   | { type: 'name_too_long'; path: string }
   | { type: 'invalid_name'; path: string; message: string }
   | { type: 'delete_pending'; path: string }
+  // Open somewhere else (an SMB sharing violation or lock conflict).
+  | { type: 'file_in_use'; path: string }
   | { type: 'source_in_cold_storage'; path: string }
   | { type: 'source_changed'; path: string }
   | {

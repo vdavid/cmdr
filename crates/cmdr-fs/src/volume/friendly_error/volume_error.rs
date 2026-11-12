@@ -152,6 +152,16 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
         VolumeError::Cancelled(_) => kinds::cancelled(raw),
         VolumeError::InvalidName(_) => kinds::invalid_name(&path_display, raw),
         VolumeError::DeletePending(_) => kinds::delete_pending(&path_display, raw),
+        // The fact `EBUSY` states, already typed: another handle holds it
+        // exclusively until it closes, so it's the same reason and a Retry.
+        VolumeError::FileInUse(_) => ListingError {
+            category: ErrorCategory::Transient,
+            reason: ListingErrorReason::ResourceBusy { path: path_display },
+            provider: None,
+            action_kind: None,
+            retry_hint: true,
+            raw_detail: raw,
+        },
         VolumeError::AmbiguousName(_) => kinds::ambiguous_name(&path_display, raw),
         VolumeError::DuplicateName(_) => kinds::duplicate_name(&path_display, raw),
         VolumeError::ColdStorage(_) => kinds::cold_storage(&path_display, raw),

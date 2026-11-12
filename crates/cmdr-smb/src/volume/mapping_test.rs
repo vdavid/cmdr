@@ -175,6 +175,28 @@ fn map_smb_error_delete_pending() {
 }
 
 #[test]
+fn map_smb_error_file_in_use() {
+    // Another client holds the file open with a deny-share mode, or a byte-range
+    // lock covers it (cmdr-reports#110: a PDF open elsewhere refused the copy's
+    // read-open). smb2 types both as `ErrorKind::SharingViolation`; as a generic
+    // IoError the dialog said "Couldn't copy" with nothing to act on.
+    for status in [
+        smb2::types::status::NtStatus::SHARING_VIOLATION,
+        smb2::types::status::NtStatus::FILE_LOCK_CONFLICT,
+    ] {
+        let err = smb2::Error::Protocol {
+            status,
+            command: smb2::types::Command::Create,
+        };
+        let ve = map_smb_error(err, "/Volumes/share/report.pdf");
+        assert!(
+            matches!(&ve, VolumeError::FileInUse(path) if path == "/Volumes/share/report.pdf"),
+            "{status:?} should map to VolumeError::FileInUse carrying the path, got: {ve:?}",
+        );
+    }
+}
+
+#[test]
 fn map_smb_error_invalid_name() {
     // STATUS_OBJECT_NAME_INVALID means the server can't hold this name at all, so
     // the copy can only succeed under a different one. smb2 ≥ 0.18 maps the

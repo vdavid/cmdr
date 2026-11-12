@@ -24,6 +24,7 @@ fn errors(path: &str) -> Vec<VolumeError> {
         VolumeError::IsADirectory(p()),
         VolumeError::NotADirectory(p()),
         VolumeError::DeletePending(p()),
+        VolumeError::FileInUse(p()),
         VolumeError::AmbiguousName(p()),
         VolumeError::DuplicateName(p()),
         VolumeError::StaleDestinationHandle(p()),

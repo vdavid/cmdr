@@ -846,6 +846,19 @@ const cases: Case[] = [
         'Wait a moment and try again. Once the last handle closes, the file disappears. If it sticks around, close any other apps that might have it open.',
     },
   },
+  {
+    // An SMB sharing violation (cmdr-reports#110). Names the file, for the same
+    // reason as `delete_pending`.
+    name: 'file_in_use',
+    error: { type: 'file_in_use', path: '/Volumes/naspi/photos/a.pdf' },
+    expected: {
+      title: 'File is in use',
+      message:
+        'The file at /Volumes/naspi/photos/a.pdf is open somewhere else: in another app, on another computer, or on the server itself.',
+      suggestion:
+        'Close it there and try again. If nothing seems to have it open, wait a moment: the server may be busy with it.',
+    },
+  },
 
   {
     // Names the archived file: one object deep in a copied folder is the whole

@@ -296,6 +296,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'name_too_long', label: 'Name too long' },
       { id: 'invalid_name', label: 'Invalid name' },
       { id: 'delete_pending', label: 'Delete pending' },
+      { id: 'file_in_use', label: 'File open somewhere else (SMB)' },
       { id: 'source_in_cold_storage', label: 'Archived source (S3 Glacier)' },
       { id: 'source_changed', label: 'Source changed mid-copy (S3)' },
       { id: 'mounted_volume_inside', label: 'Delete reaches a mounted drive' },

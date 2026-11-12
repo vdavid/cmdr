@@ -2845,6 +2845,29 @@
     "description": "Recovery suggestion when a file is marked for deletion but still held open. Plain text.",
     "screenshot": "transfer-error-delete_pending.png"
   },
+  "errors.write.fileInUse.title": "File is in use",
+  "errors.write.fileInUse.message": "The file at {path} is open somewhere else: in another app, on another computer, or on the server itself.",
+  "errors.write.fileInUse.suggestion": "Close it there and try again. If nothing seems to have it open, wait a moment: the server may be busy with it.",
+  "@errors.write.fileInUse.title": {
+    "description": "Title of the copy, move, or delete error dialog when a file on a network share can’t be used because something else has it open and won’t share it. Plain text. Short, like a heading.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.fileInUse.message": {
+    "description": "Body of the copy, move, or delete error dialog when a file on a network share (SMB) is open somewhere else, so the server refused this operation. The holder can be another app on this Mac, another computer on the network, or the server’s own software (an indexer, a thumbnail maker). Plain text. Names the file, because a move involves two (the one being moved and the one at the destination) and the reader has to know which one this is.",
+    "placeholders": {
+      "path": {
+        "description": "The full path of the file that is open somewhere else, inserted verbatim. Do not translate or reformat it."
+      }
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.fileInUse.suggestion": {
+    "description": "Recovery suggestion under the message when a file on a network share is open somewhere else. The dialog shows a Try again button beside it, which is the “try again” this sentence means. The second sentence covers a server that briefly holds files itself while it indexes them. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.sourceInColdStorage.title": "This file is archived",
   "errors.write.sourceInColdStorage.message": "The file at {path} is archived, so it can’t be read until it’s restored.",
   "errors.write.sourceInColdStorage.suggestion": "Restore it in your storage provider’s console, then try again. A restore can take anywhere from minutes to two days.",
@@ -3453,6 +3476,12 @@
   "errors.volume.deletePending": "That file is on its way out, and something still has it open. Try again in a moment.",
   "@errors.volume.deletePending": {
     "description": "Shown for a file on a network share whose deletion was requested but that an open handle is keeping alive. It clears on its own, so word it as temporary. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "mkdir-confirmation-too-long.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
+  },
+  "errors.volume.fileInUse": "This file is open somewhere else. Close it there and try again.",
+  "@errors.volume.fileInUse": {
+    "description": "Shown when a file on a network share is open somewhere else (another app, another computer, or the server itself), so the server refused to rename or change it. Inline one-line message under the name field in Cmdr’s Rename / New folder / New file flow, or in a brief toast. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },

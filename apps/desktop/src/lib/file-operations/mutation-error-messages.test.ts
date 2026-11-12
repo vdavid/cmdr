@@ -36,6 +36,7 @@ const VOLUME_CASES: VolumeError[] = [
   { type: 'notADirectory', data: '/Volumes/share/album/notes' },
   { type: 'invalidName', data: 'STATUS_OBJECT_NAME_INVALID' },
   { type: 'deletePending', data: '/Volumes/share/doomed.txt' },
+  { type: 'fileInUse', data: '/Volumes/share/report.pdf' },
   { type: 'coldStorage', data: '/photos/2019.tar' },
   { type: 'linkTargetUnreachable', data: '/smb/nas/data/holiday.raw' },
   { type: 'linkNeedsConsent', data: { path: '/smb/nas/data/holiday.raw', server: 'nas', target: 'fs01' } },
@@ -114,6 +115,13 @@ describe('renderVolumeError', () => {
     expect(backup).not.toContain('archive')
     const archive = renderVolumeError({ type: 'needsPassword', data: { container: 'archive', wrongAttempt: false } })
     expect(archive).toContain('archive')
+  })
+
+  // cmdr-reports#110: an SMB sharing violation, which a rename of an open file meets too.
+  it('says a file in use is open somewhere else, and what to do about it', () => {
+    const inUse = renderVolumeError({ type: 'fileInUse', data: '/Volumes/share/report.pdf' })
+    expect(inUse).toContain('open somewhere else')
+    expect(inUse).toContain('try again')
   })
 
   it('keeps a git failure speaking git rather than flattening it', () => {

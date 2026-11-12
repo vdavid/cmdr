@@ -298,6 +298,14 @@ fn volume_error_variants_map_correctly() {
             |r| matches!(r, ListingErrorReason::DeletePending { .. }),
         ),
         (
+            // An SMB sharing violation: another handle holds it exclusively, the
+            // same fact `EBUSY` states, and it clears once that handle closes.
+            VolumeError::FileInUse("x".into()),
+            ErrorCategory::Transient,
+            true,
+            |r| matches!(r, ListingErrorReason::ResourceBusy { .. }),
+        ),
+        (
             VolumeError::IsADirectory("x".into()),
             ErrorCategory::NeedsAction,
             false,

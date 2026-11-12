@@ -22,6 +22,7 @@ const pathOnlyTypes = new Set<WriteOperationError['type']>([
   'link_needs_consent',
   'name_too_long',
   'delete_pending',
+  'file_in_use',
   'destination_not_writable',
   'destination_full',
   'landing_not_recorded',

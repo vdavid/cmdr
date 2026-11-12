@@ -396,6 +396,13 @@ pub enum WriteOperationError {
     DeletePending {
         path: String,
     },
+    /// Something else has the file open in a way that keeps this operation out
+    /// (`VolumeError::FileInUse`: an SMB sharing violation or lock conflict). The
+    /// person closes it where it's open, then retries. An expected refusal, so it
+    /// logs at warn (`is_expected_refusal`). SMB-only today.
+    FileInUse {
+        path: String,
+    },
     /// The source file is archived in cold storage (S3 Glacier Flexible
     /// Retrieval or Deep Archive) and can't be read until someone restores it.
     /// Not transient: a retry meets the same archived object.
@@ -576,6 +583,7 @@ macro_rules! item_path_of {
             | WriteOperationError::NameTooLong { path }
             | WriteOperationError::InvalidName { path, .. }
             | WriteOperationError::DeletePending { path }
+            | WriteOperationError::FileInUse { path }
             | WriteOperationError::SourceInColdStorage { path }
             | WriteOperationError::SourceChanged { path }
             | WriteOperationError::LandingNotRecorded { path }

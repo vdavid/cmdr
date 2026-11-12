@@ -161,6 +161,30 @@ impl WriteOperationError {
     pub(crate) fn is_expected_recoverable(&self) -> bool {
         matches!(self, WriteOperationError::ArchiveNeedsPassword { .. })
     }
+
+    /// Whether this failure is an expected refusal from the world, which the error
+    /// dialog explains with a way forward, rather than something that may be our
+    /// own defect.
+    ///
+    /// Callers log it at `warn`, for the same reason as
+    /// [`is_expected_recoverable`](Self::is_expected_recoverable): an error log
+    /// counts toward an auto-sent report (cmdr-reports#111: a file open elsewhere on
+    /// a share refused three copies and auto-sent one). A wrapper that carries the
+    /// reason it stopped answers for its cause, the way the frontend's
+    /// `logLevelFor` does.
+    ///
+    /// Deliberately narrow: only the variants an auto-sent report has shown to be
+    /// noise. The frontend's `transfer-error-log-level.ts` is the broader rule for
+    /// the lines it writes.
+    pub(crate) fn is_expected_refusal(&self) -> bool {
+        match self {
+            Self::FileInUse { .. } => true,
+            Self::OriginalsKeptAside { cause, .. }
+            | Self::SourceNotRemoved { cause, .. }
+            | Self::NewFilesKept { cause, .. } => cause.is_expected_refusal(),
+            _ => false,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -256,6 +280,45 @@ mod tests {
             ),
             "got {error:?}"
         );
+    }
+
+    /// cmdr-reports#111: a file open elsewhere on a share refused three copies, and
+    /// each logged at error, which crossed the auto-send threshold. The refusal is
+    /// the world's doing and the dialog says what to do, so it logs at warn, on
+    /// its own and as the cause a wrapper carries.
+    #[test]
+    fn a_file_in_use_is_an_expected_refusal() {
+        let in_use = || WriteOperationError::FileInUse {
+            path: "/Volumes/share/report.pdf".to_string(),
+        };
+        assert!(in_use().is_expected_refusal());
+        let not_removed = WriteOperationError::SourceNotRemoved {
+            path: "/Volumes/share/report.pdf".to_string(),
+            landed_at: "/Users/me/report.pdf".to_string(),
+            cause: Box::new(in_use()),
+        };
+        assert!(not_removed.is_expected_refusal());
+    }
+
+    #[test]
+    fn genuine_failures_are_not_expected_refusals() {
+        let failures = [
+            WriteOperationError::IoError {
+                path: "/x".to_string(),
+                message: "boom".into(),
+            },
+            WriteOperationError::SourceNotRemoved {
+                path: "/x".to_string(),
+                landed_at: "/y".to_string(),
+                cause: Box::new(WriteOperationError::IoError {
+                    path: "/x".to_string(),
+                    message: "boom".into(),
+                }),
+            },
+        ];
+        for err in failures {
+            assert!(!err.is_expected_refusal(), "must still log at error: {err:?}");
+        }
     }
 
     #[test]

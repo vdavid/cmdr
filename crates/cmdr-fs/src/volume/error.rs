@@ -164,6 +164,17 @@ pub enum VolumeError {
     /// once the last handle closes; any new `Create` (stat, open, write) on the path
     /// fails with this status in the meantime. SMB-only today.
     DeletePending(String),
+    /// Something else has the file open in a way that keeps this request out: another
+    /// app, another machine, or the server itself holds a handle that denies sharing,
+    /// or a byte-range lock covers it. Carries the path.
+    ///
+    /// SMB raises it from `STATUS_SHARING_VIOLATION` and `STATUS_FILE_LOCK_CONFLICT`
+    /// (smb2's `ErrorKind::SharingViolation`, cmdr-reports#110). Typed rather than an
+    /// [`IoError`](Self::IoError): the fix is closing the file where it's open, which
+    /// the person can do and Cmdr can't, and the expected refusal must log at warn
+    /// so it never files an error report. ❌ Never a transport fault: asking again
+    /// meets the same handle until it closes. SMB-only today.
+    FileInUse(String),
     /// A path names more than one stored entry, so the backend refused to pick
     /// one. Carries the path as it was given.
     ///
@@ -320,6 +331,7 @@ impl ErrorLogText for VolumeError {
             Self::IsADirectory(path) => ("Is a directory: ", LogPrivate::dir_path(path)),
             Self::NotADirectory(path) => ("Not a directory: ", LogPrivate::path(path)),
             Self::DeletePending(path) => ("Delete pending: ", LogPrivate::path(path)),
+            Self::FileInUse(path) => ("Open somewhere else: ", LogPrivate::path(path)),
             Self::AmbiguousName(path) => ("More than one stored name matches: ", LogPrivate::path(path)),
             Self::DuplicateName(path) => ("Same-named siblings: ", LogPrivate::path(path)),
             Self::StaleDestinationHandle(path) => ("Destination folder handle was stale: ", LogPrivate::dir_path(path)),

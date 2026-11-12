@@ -133,6 +133,7 @@ fn refusals_and_data_facts_are_not_transport_faults() {
         VolumeError::NotADirectory("/x".into()),
         VolumeError::InvalidName("CON".into()),
         VolumeError::DeletePending("/x".into()),
+        VolumeError::FileInUse("/x".into()),
         VolumeError::AmbiguousName("/x".into()),
         VolumeError::DuplicateName("/x".into()),
         VolumeError::SignatureInvalid("refused".into()),

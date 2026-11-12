@@ -78,6 +78,7 @@ impl VolumeError {
             | Self::NotADirectory(_) // a file is in the way until someone moves it
             | Self::InvalidName(_) // the destination can't hold this name
             | Self::DeletePending(_)
+            | Self::FileInUse(_) // another handle keeps it out until someone closes it
             | Self::ColdStorage(_) // archived until someone restores it
             | Self::SourceChanged(_) // a new version is there; copying it is the person's call
             | Self::NoContent(_) // a link or a special file has no bytes, however often asked

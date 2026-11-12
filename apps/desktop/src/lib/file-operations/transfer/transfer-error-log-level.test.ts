@@ -21,6 +21,14 @@ describe('logLevelFor', () => {
     expect(logLevelFor({ type: 'delete_pending', path: '/p' })).toBe('warn')
   })
 
+  // ERR-XFP5T (cmdr-reports#111): a file open elsewhere on a share refused three copies,
+  // and their error lines auto-sent a report.
+  it('logs a file in use at warn, on its own and as a move’s cause', () => {
+    const inUse: WriteOperationError = { type: 'file_in_use', path: '/Volumes/share/report.pdf' }
+    expect(logLevelFor(inUse)).toBe('warn')
+    expect(logLevelFor({ type: 'source_not_removed', path: '/a', landedAt: '/b', cause: inUse })).toBe('warn')
+  })
+
   it('keeps the serious kinds at error', () => {
     expect(logLevelFor(writeError)).toBe('error')
     expect(logLevelFor({ type: 'read_error', path: '/p', message: 'm' })).toBe('error')
