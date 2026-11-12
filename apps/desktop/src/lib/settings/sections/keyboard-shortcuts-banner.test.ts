@@ -1,5 +1,5 @@
 import { beforeEach, describe, it, expect, onTestFinished } from 'vitest'
-import { withCapabilities } from '#lib/platform/test-platform.js'
+import { withCapabilities, withPlatform } from '#lib/platform/test-platform.js'
 import type { Command } from '#lib/commands/types.js'
 import { BLOCKED_BY_DIALOGS } from '#lib/commands/while-dialog-open.js'
 import { sameOnAll } from '#lib/commands/platform-shortcuts.js'
@@ -107,24 +107,71 @@ describe('fixedKeyMessage', () => {
 })
 
 describe('classifySystemShortcut', () => {
-  it('flags well-known macOS system combos with their feature label', () => {
-    expect(classifySystemShortcut('⌘Space')).toEqual({ kind: 'system', label: 'Spotlight' })
-    expect(classifySystemShortcut('⌃↑')).toEqual({ kind: 'system', label: 'Mission Control' })
-    expect(classifySystemShortcut('⌘⇧4')).toEqual({ kind: 'system', label: 'screenshots' })
+  it('flags well-known macOS system combos with the feature that takes them', () => {
+    onTestFinished(withPlatform('macos'))
+    expect(classifySystemShortcut('⌘Space')).toEqual({
+      kind: 'system',
+      reservation: { os: 'macos', featureKey: 'shortcuts.system.spotlight' },
+    })
+    expect(classifySystemShortcut('⌃↑')?.reservation).toEqual({
+      os: 'macos',
+      featureKey: 'shortcuts.system.missionControl',
+    })
   })
 
-  it('returns null for ordinary combos', () => {
+  it('returns null for ordinary combos and for another OS’s reservations', () => {
+    onTestFinished(withPlatform('macos'))
     expect(classifySystemShortcut('⌘⇧P')).toBeNull()
     expect(classifySystemShortcut('F5')).toBeNull()
-    expect(classifySystemShortcut('Ctrl+Space')).toBeNull() // non-mac display form never matches
+    expect(classifySystemShortcut('Ctrl+Space')).toBeNull() // Windows' IME key, not a Mac one
+  })
+
+  it('flags what Windows itself takes, on Windows', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(classifySystemShortcut('Alt+Tab')?.reservation).toEqual({
+      os: 'windows',
+      featureKey: 'shortcuts.system.switchingApps',
+    })
+    expect(classifySystemShortcut('⌘Space')).toBeNull()
+    expect(classifySystemShortcut('Ctrl+Shift+K')).toBeNull()
+  })
+
+  it('flags what a Linux desktop takes, naming every one that does', () => {
+    onTestFinished(withPlatform('linux'))
+    expect(classifySystemShortcut('Ctrl+Alt+→')?.reservation).toEqual({
+      os: 'linux',
+      desktops: ['GNOME', 'Xfce', 'Cinnamon', 'Ubuntu'],
+    })
+    expect(classifySystemShortcut('Alt+F4')?.reservation).toEqual({
+      os: 'linux',
+      desktops: ['GNOME', 'KDE Plasma', 'Xfce', 'Cinnamon', 'Ubuntu'],
+    })
   })
 })
 
 describe('systemShortcutMessage', () => {
-  it('names the combo and the owning feature and points at System Settings', () => {
-    const message = systemShortcutMessage('⌘Space', 'Spotlight')
-    expect(message).toContain('⌘Space')
-    expect(message).toContain('Spotlight')
-    expect(message).toContain('System Settings')
+  it('names the combo and the owning feature and points at System Settings on macOS', () => {
+    onTestFinished(withPlatform('macos'))
+    const message = systemShortcutMessage('⌘Space', { os: 'macos', featureKey: 'shortcuts.system.spotlight' })
+    expect(message).toBe(
+      '⌘Space is usually taken by macOS (Spotlight), so it may never reach Cmdr. You can free it up in System Settings > Keyboard.',
+    )
+  })
+
+  it('names Windows and the feature on Windows', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(systemShortcutMessage('Ctrl+Shift+Esc', { os: 'windows', featureKey: 'shortcuts.system.taskManager' })).toBe(
+      'Ctrl+Shift+Esc is usually taken by Windows (Task Manager), so it may never reach Cmdr.',
+    )
+  })
+
+  it('names every desktop that takes it on Linux, as a list in the UI language', () => {
+    onTestFinished(withPlatform('linux'))
+    expect(systemShortcutMessage('Alt+F1', { os: 'linux', desktops: ['KDE Plasma', 'Xfce', 'Cinnamon'] })).toBe(
+      'On KDE Plasma, Xfce, and Cinnamon, the desktop usually takes Alt+F1 for itself, so it may never reach Cmdr. You can free it up in your desktop’s keyboard settings.',
+    )
+    expect(systemShortcutMessage('Ctrl+Alt+D', { os: 'linux', desktops: ['Ubuntu'] })).toBe(
+      'On Ubuntu, the desktop usually takes Ctrl+Alt+D for itself, so it may never reach Cmdr. You can free it up in your desktop’s keyboard settings.',
+    )
   })
 })

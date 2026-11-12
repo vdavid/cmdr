@@ -301,8 +301,9 @@ pins the whole contract by reconstructing a synthetic keydown from every registr
 reproduce it byte for byte. macOS-native commands are exempt there: AppKit owns their accelerator, so their strings are
 pure display mirroring the OS menu (`⌥⌘H`), never dispatched.
 
-The macOS system-shortcut table in `../settings/sections/keyboard-shortcuts-banner.ts` is keyed by the same canonical
-strings for the same reason — Apple spells force-quit `⌥⌘⎋`, but the user's keypress arrives as `⌘⌥Escape`.
+The per-OS reserved-key tables in `../settings/sections/system-reserved-keys.ts` are keyed by the same canonical strings
+for the same reason — Apple spells force-quit `⌥⌘⎋`, but the user's keypress arrives as `⌘⌥Escape` — and the vocabulary
+test walks all three.
 
 The Settings key-search box holds what `formatKeyCombo` produced (while only modifiers are held, `formatChord`, the same
 token writer), so it filters against stored combos and reads `⌘Backspace`, not `⌘⌫`. It shows that value through

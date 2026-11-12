@@ -23,6 +23,7 @@ import { withPlatform } from '#lib/platform/test-platform.js'
 import { commands } from '#lib/commands/command-registry.js'
 import { PLATFORMS } from '#lib/commands/platform-shortcuts.js'
 import { classifySystemShortcut } from '#lib/settings/sections/keyboard-shortcuts-banner.js'
+import { reservedCombos } from '#lib/settings/sections/system-reserved-keys.js'
 import { formatKeyCombo } from './key-capture'
 
 type ModifierFlag = 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'
@@ -112,6 +113,16 @@ describe.each(PLATFORMS)('registry default shortcuts on %s', (platform) => {
       return positions.some((position, i) => i > 0 && position < positions[i - 1])
     })
     expect(misordered).toEqual([])
+  })
+})
+
+describe.each(PLATFORMS)('the system-reserved keys on %s', (platform) => {
+  beforeAll(() => withPlatform(platform))
+
+  // Each table is keyed by the canonical strings `formatKeyCombo` produces on its OS, so a
+  // combo spelled any other way (Apple's `⌥⌘⎋`, Microsoft's `Ctrl+Alt+Del`) silently never warns.
+  it.each(reservedCombos(platform))('%s is reachable by a real keypress', (combo) => {
+    expect(formatKeyCombo(keydownFor(combo, platform))).toBe(combo)
   })
 })
 

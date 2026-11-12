@@ -306,10 +306,18 @@ sections compose).
 - **`keyboard-shortcuts-grouping.ts`**: Pure scope→group logic for `KeyboardShortcutsSection` (one titled group per
   `CommandScope`, fixed order). Tested by the set-equality regression guard
 - **`keyboard-shortcuts-banner.ts`**: Pure conflict-banner classification for `KeyboardShortcutsSection`
-  (`classifyConflict` → native vs fixed vs normal, `classifySystemShortcut` → soft macOS-system warning with "Use
-  anyway"; `reservedByMacOsMessage` / `fixedKeyMessage` / `systemShortcutMessage` / `typingConflictMessage`). Native
-  beats fixed beats normal in mixed sets; system checked only when no in-app conflict; a combo typing takes first is
-  refused before any of them (`lib/shortcuts/DETAILS.md` § Combos typing takes first). Unit-tested
+  (`classifyConflict` → native vs fixed vs normal, `classifySystemShortcut` → soft "usually taken by the OS" warning
+  with "Use anyway"; `reservedByMacOsMessage` / `fixedKeyMessage` / `systemShortcutMessage` / `typingConflictMessage`).
+  Native beats fixed beats normal in mixed sets; system checked only when no in-app conflict; a combo typing takes first
+  is refused before any of them (`lib/shortcuts/DETAILS.md` § Combos typing takes first). Unit-tested
+- **`system-reserved-keys.ts`**: What each OS takes before Cmdr sees it, one table per platform, keyed by canonical
+  combos: macOS features, Windows features, and on Linux every listed desktop (GNOME, KDE Plasma, Xfce, Cinnamon,
+  Ubuntu) that binds the combo, since Cmdr can't ask which desktop runs until task 59 (then `systemReservation` narrows
+  the list, same shape). Only entries `docs/notes/windows-port/keymap-decisions.md` verified from each OS's source. Each
+  owner gets its own banner sentence (`shortcuts.conflict.systemShortcut` / `takenByWindows` / `takenByLinuxDesktops`),
+  picked by the reservation's `os`, and the desktop names go through `formatConjunctionList`. The keymap invariants test
+  reads it too: no Windows default is a key Windows takes, and a Linux command holding a desktop's key also holds one no
+  desktop takes
 
 Every section is axe-audited (tier-3) from one of the four directory-level `*.a11y.test.ts` files here, because
 `svelte-tests` charges per test FILE (`docs/testing.md` § "What a test actually costs"). `McpServerSection`,

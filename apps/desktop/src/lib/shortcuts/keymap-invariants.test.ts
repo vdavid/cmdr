@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest'
 import { commands } from '#lib/commands/command-registry.js'
 import { PLATFORMS } from '#lib/commands/platform-shortcuts.js'
+import { systemReservation } from '#lib/settings/sections/system-reserved-keys.js'
 import { scopesOverlap } from './scope-hierarchy'
 
 const OFF_MAC_PLATFORMS = ['windows', 'linux'] as const
@@ -16,28 +17,8 @@ function rawDefaults(platform: 'windows' | 'linux'): string[] {
   return commands.flatMap((command) => command.shortcuts[platform].map((combo) => `${command.id}: ${combo}`))
 }
 
-/**
- * The Linux keys some common desktop (GNOME, KDE Plasma, Xfce, Cinnamon, Ubuntu) takes before an
- * app sees them, among the keys Cmdr binds: `keymap-decisions.md` § "Reservations behind the Linux
- * keys", "Dead somewhere". Named by hand, until Settings' reserved-key table covers Linux.
- */
-const TAKEN_BY_A_LINUX_DESKTOP: ReadonlySet<string> = new Set([
-  'Alt+F1', // KDE, Xfce, Cinnamon
-  'Alt+F2', // all five
-  'Alt+F5', // GNOME, Cinnamon
-  'Alt+F7', // GNOME, Xfce, Cinnamon
-  'Ctrl+F1', // KDE, Xfce
-  'Ctrl+F2', // KDE, Xfce
-  'Ctrl+F3', // KDE, Xfce
-  'Ctrl+F4', // KDE, Xfce
-  'Ctrl+F5', // Xfce
-  'Ctrl+F6', // Xfce
-  'Ctrl+Alt+←', // GNOME, Xfce, Cinnamon
-  'Ctrl+Alt+→', // GNOME, Xfce, Cinnamon
-])
-
-/** The commands whose FIRST Linux key a desktop takes, so each needs a second key. */
-const FIRST_LINUX_KEY_TAKEN = ['file.compress', 'pane.leftVolumeChooser', 'pane.rightVolumeChooser']
+/** A key the OS (Windows) or some common desktop (Linux) takes before Cmdr sees it: Settings' reserved table. */
+const takenOn = (platform: 'windows' | 'linux', combo: string): boolean => systemReservation(combo, platform) !== null
 
 describe.each(OFF_MAC_PLATFORMS)('default keys on %s', (platform) => {
   it('hold no Ctrl+Alt+<letter>, which AltGr layouts type characters with', () => {
@@ -72,22 +53,22 @@ describe.each(PLATFORMS)('raw default keys on %s', (platform) => {
   })
 })
 
-describe('default keys on linux, against the desktops', () => {
-  const linuxKeys = (id: string): readonly string[] =>
-    commands.find((command) => command.id === id)?.shortcuts.linux ?? []
-
-  it('name every command whose first key a desktop takes', () => {
-    const taken = commands
-      .filter((command) => TAKEN_BY_A_LINUX_DESKTOP.has(command.shortcuts.linux[0] ?? ''))
-      .map((command) => command.id)
-      .sort()
-    expect(taken).toEqual(FIRST_LINUX_KEY_TAKEN)
+describe('default keys against what each OS takes first', () => {
+  it('never put a default on a key Windows itself takes', () => {
+    expect(rawDefaults('windows').filter((line) => takenOn('windows', line.split(': ')[1]))).toEqual([])
   })
 
-  it.each(FIRST_LINUX_KEY_TAKEN)('%s has a second key no listed desktop takes', (id) => {
-    const free = linuxKeys(id)
-      .slice(1)
-      .filter((combo) => !TAKEN_BY_A_LINUX_DESKTOP.has(combo))
-    expect(free.length).toBeGreaterThan(0)
+  // A desktop that takes the key leaves the command keyless there, so the other key carries it.
+  const holdingADesktopKey = commands.filter((command) => command.shortcuts.linux.some((c) => takenOn('linux', c)))
+
+  it('find the Linux defaults some desktop takes (the check below has something to bite)', () => {
+    expect(holdingADesktopKey.map((command) => command.id)).toContain('pane.rightVolumeChooser')
   })
+
+  it.each(holdingADesktopKey.map((command) => [command.id, command.shortcuts.linux] as const))(
+    '%s also holds a Linux key no listed desktop takes',
+    (_id, keys) => {
+      expect(keys.filter((combo) => !takenOn('linux', combo))).not.toEqual([])
+    },
+  )
 })

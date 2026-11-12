@@ -208,10 +208,10 @@
                     >
                 </div>
             {:else if conflict.kind === 'system'}
-                <!-- macOS usually intercepts this combo before Cmdr sees it, but the user
-                     may have disabled the system shortcut — warn and let them decide. -->
+                <!-- The OS (or a Linux desktop) usually intercepts this combo before Cmdr sees it,
+                     but the user may have freed it — warn and let them decide. -->
                 <span class="warning-text">
-                    {systemShortcutMessage(toDisplayShortcut(conflictWarning.shortcut), conflict.label)}
+                    {systemShortcutMessage(toDisplayShortcut(conflictWarning.shortcut), conflict.reservation)}
                 </span>
                 <div class="warning-actions">
                     <Button variant="secondary" size="mini" onclick={controller.handleKeepBoth}

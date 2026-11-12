@@ -176,10 +176,32 @@
 
   "shortcuts.conflict.systemShortcut": "{combo} is usually taken by macOS ({label}), so it may never reach Cmdr. You can free it up in System Settings > Keyboard.",
   "@shortcuts.conflict.systemShortcut": {
-    "description": "Soft warning when the user assigns a shortcut macOS usually uses for a system feature; they can still keep it. \"Cmdr\" and \"macOS\" are names; do not translate them. \"System Settings > Keyboard\" is a macOS settings path; reuse the localized macOS wording for that screen.",
+    "description": "Soft warning when the user assigns a shortcut macOS usually uses for a system feature; they can still keep it. Shown on macOS only (Windows and Linux have their own sentences). \"Cmdr\" and \"macOS\" are names; do not translate them. \"System Settings > Keyboard\" is a macOS settings path; reuse the localized macOS wording for that screen.",
     "placeholders": {
       "combo": "the key combination the user pressed, shown as glyphs (e.g. ⌘Space)",
       "label": "the macOS feature that usually uses this combination (e.g. Spotlight)"
+    },
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
+
+  "shortcuts.conflict.takenByWindows": "{combo} is usually taken by Windows ({label}), so it may never reach Cmdr.",
+  "@shortcuts.conflict.takenByWindows": {
+    "description": "Soft warning on Windows when the user assigns a shortcut Windows itself uses (for example Alt+Tab or Ctrl+Shift+Esc); they can still keep it with a \"Use anyway\" button. Shown on Windows only. \"Cmdr\" and \"Windows\" are names; do not translate them.",
+    "placeholders": {
+      "combo": "the key combination the user pressed, as Windows key names (e.g. Ctrl+Shift+Esc)",
+      "label": "the Windows feature that usually uses this combination, lowercase mid-sentence unless it's a name (e.g. switching apps, Task Manager)"
+    },
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
+
+  "shortcuts.conflict.takenByLinuxDesktops": "On {desktops}, the desktop usually takes {combo} for itself, so it may never reach Cmdr. You can free it up in your desktop’s keyboard settings.",
+  "@shortcuts.conflict.takenByLinuxDesktops": {
+    "description": "Soft warning on Linux when the user assigns a shortcut that some common Linux desktops use for themselves; they can still keep it with a \"Use anyway\" button, since they may run a different desktop or have changed the key. Shown on Linux only. Word it so it reads right for one desktop or several. \"Cmdr\" is the product name; do not translate it.",
+    "placeholders": {
+      "desktops": "the names of every Linux desktop that takes this key, already joined as a list in your language (e.g. “KDE Plasma, Xfce, and Cinnamon” or just “Ubuntu”). The names (GNOME, KDE Plasma, Xfce, Cinnamon, Ubuntu) are proper nouns and stay untranslated",
+      "combo": "the key combination the user pressed, as Linux key names (e.g. Alt+F1)"
     },
     "screenshot": "settings-keyboard-shortcuts.png",
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
@@ -272,6 +294,62 @@
   "shortcuts.system.forceQuit": "Force Quit",
   "@shortcuts.system.forceQuit": {
     "description": "The macOS Force Quit dialog, shown inside a shortcut-conflict warning. Reuse the localized macOS wording for Force Quit.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
+
+  "shortcuts.system.switchingApps": "switching apps",
+  "@shortcuts.system.switchingApps": {
+    "description": "What Windows uses Alt+Tab and Ctrl+Alt+Tab for (switching between open apps), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Lowercase because it appears mid-sentence.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
+
+  "shortcuts.system.cyclingWindows": "cycling through windows",
+  "@shortcuts.system.cyclingWindows": {
+    "description": "What Windows uses Alt+Esc for (moving through open windows in the order they were opened), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Lowercase because it appears mid-sentence.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
+
+  "shortcuts.system.windowMenu": "the window menu",
+  "@shortcuts.system.windowMenu": {
+    "description": "What Windows uses Alt+Space for (the active window's shortcut menu with Restore, Move, Minimize, Close), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Lowercase because it appears mid-sentence; use the name Windows gives that menu in your language.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
+
+  "shortcuts.system.closingWindow": "closing the window",
+  "@shortcuts.system.closingWindow": {
+    "description": "What Windows uses Alt+F4 for (closing the active window), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Lowercase because it appears mid-sentence.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
+
+  "shortcuts.system.startMenu": "the Start menu",
+  "@shortcuts.system.startMenu": {
+    "description": "What Windows uses Ctrl+Esc for (opening the Start menu), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. \"Start\" is the Windows feature name; reuse Windows' localized name for the Start menu.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
+
+  "shortcuts.system.taskManager": "Task Manager",
+  "@shortcuts.system.taskManager": {
+    "description": "What Windows uses Ctrl+Shift+Esc for (opening Task Manager), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Reuse Windows' localized name for Task Manager.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
+
+  "shortcuts.system.securityScreen": "the security screen",
+  "@shortcuts.system.securityScreen": {
+    "description": "What Windows uses Ctrl+Alt+Delete for (the full-screen menu with Lock, Switch user, Sign out, and Task Manager), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Lowercase because it appears mid-sentence.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
+
+  "shortcuts.system.inputMethodToggle": "turning an input method on or off",
+  "@shortcuts.system.inputMethodToggle": {
+    "description": "What Windows uses Ctrl+Space for (turning a Chinese input method editor, IME, on or off), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Lowercase because it appears mid-sentence.",
     "screenshot": "settings-keyboard-shortcuts.png",
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },

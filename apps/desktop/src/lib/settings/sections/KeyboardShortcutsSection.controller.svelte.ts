@@ -200,8 +200,8 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
       }
 
       const conflicts = findConflictsForShortcut(combo, command.scope, command.id)
-      // In-app conflicts take priority; with none, still warn when macOS
-      // itself usually owns the combo (Spotlight, Mission Control, …).
+      // In-app conflicts take priority; with none, still warn when the OS
+      // (or a Linux desktop) usually takes the combo (Spotlight, Alt+Tab, …).
       const conflict = classifyConflict(conflicts) ?? classifySystemShortcut(combo)
       if (conflict) {
         conflictWarning = { shortcut: combo, conflict }

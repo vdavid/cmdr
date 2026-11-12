@@ -16,8 +16,8 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 4026 / 5735 keys have a screenshot (70%):** 2195 direct (38%) and 1831 representative (32%). 1517 remain
-uncoupled, and 192 are native surfaces a webview capture cannot reach.
+**Total: 4036 / 5751 keys have a screenshot (70%):** 2195 direct (38%) and 1841 representative (32%). 1521 remain
+uncoupled, and 194 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
 | --------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
@@ -25,21 +25,21 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | ai              |      1 |            141 |         0 |      0 |   142 |  100% |
 | askCmdr         |    192 |            298 |        47 |      0 |   537 |   91% |
 | commandPalette  |      3 |              2 |         2 |      0 |     7 |   71% |
-| commands        |    239 |              5 |        90 |      0 |   334 |   73% |
+| commands        |    239 |              5 |        91 |      0 |   335 |   73% |
 | common          |      9 |              1 |         9 |      0 |    19 |   53% |
 | crashReporter   |     12 |             11 |         0 |      0 |    23 |  100% |
 | downloads       |     10 |              5 |        21 |      0 |    36 |   42% |
 | errorReporter   |     16 |              0 |        43 |      0 |    59 |   27% |
 | errors          |    181 |            495 |         0 |      0 |   676 |  100% |
 | feedback        |      8 |              6 |         2 |      0 |    16 |   88% |
-| fileExplorer    |    163 |             82 |       336 |      0 |   581 |   42% |
+| fileExplorer    |    163 |             82 |       339 |      0 |   584 |   42% |
 | fileOperations  |    145 |             93 |       120 |      0 |   358 |   66% |
 | goToPath        |      5 |              6 |         2 |      0 |    13 |   85% |
 | indexing        |     34 |             18 |        18 |      0 |    70 |   74% |
 | licensing       |     49 |             35 |        25 |      0 |   109 |   77% |
 | lowDiskSpace    |      0 |              0 |         5 |      0 |     5 |    0% |
 | main            |      7 |              0 |        57 |      2 |    66 |   11% |
-| menu            |      5 |              0 |         0 |    190 |   195 |    3% |
+| menu            |      5 |              0 |         0 |    192 |   197 |    3% |
 | mtp             |     18 |              3 |         0 |      0 |    21 |  100% |
 | multiRename     |     90 |              0 |       141 |      0 |   231 |   39% |
 | notifications   |      0 |              0 |         1 |      0 |     1 |    0% |
@@ -52,7 +52,7 @@ uncoupled, and 192 are native surfaces a webview capture cannot reach.
 | selection       |     14 |              0 |         1 |      0 |    15 |   93% |
 | servers         |     95 |             83 |        57 |      0 |   235 |   76% |
 | settings        |    487 |             47 |       387 |      0 |   921 |   58% |
-| shortcuts       |     37 |             31 |         0 |      0 |    68 |  100% |
+| shortcuts       |     37 |             41 |         0 |      0 |    78 |  100% |
 | stateRecovery   |      0 |              0 |        33 |      0 |    33 |    0% |
 | suggestedOps    |     86 |              0 |        26 |      0 |   112 |   77% |
 | transfer        |      2 |             22 |         0 |      0 |    24 |  100% |

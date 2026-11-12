@@ -16,8 +16,9 @@
  */
 import { ownedByAppMenu } from '#lib/commands/command-registry.js'
 import type { Command } from '#lib/commands/types.js'
-import type { MessageKey } from '#lib/intl/keys.gen.js'
+import { formatConjunctionList } from '#lib/intl/list-format.js'
 import { tString } from '#lib/intl/messages.svelte.js'
+import { systemReservation, type SystemReservation } from './system-reserved-keys'
 
 /** A native conflict: the combo is reserved by macOS and can't reach Cmdr. */
 export interface NativeConflict {
@@ -84,53 +85,40 @@ export function typingConflictMessage(combo: string, kind: TypingConflict['kind'
   return tString(kind === 'shiftLetter' ? 'shortcuts.conflict.shiftLetter' : 'shortcuts.conflict.bareKey', { combo })
 }
 
-/** A system conflict: macOS itself usually owns the combo (Spotlight, Mission Control, …). */
+/** A system conflict: the OS (or, on Linux, a desktop) usually takes the combo before Cmdr sees it. */
 export interface SystemConflict {
   kind: 'system'
-  /** The macOS feature that owns the combo (drives the banner copy). */
-  label: string
+  /** Who takes it (drives the banner copy). */
+  reservation: SystemReservation
 }
 
 /**
- * Default macOS system-wide shortcuts, keyed by the CANONICAL combo string
- * `formatKeyCombo` produces (⌘⌃⌥⇧ modifier order, word key names) — Apple's own
- * spelling of these (⌥⌘⎋) would silently never match what the user pressed.
- * Best-effort: users can disable or remap these in System Settings, so the
- * banner warns and offers "Use anyway" instead of refusing. Keys only ever match
- * on macOS — other platforms capture `Ctrl+…`-style strings.
- */
-const macSystemShortcutToFeatureKey: Partial<Record<string, MessageKey>> = {
-  '⌘Space': 'shortcuts.system.spotlight',
-  '⌘⌥Space': 'shortcuts.system.finderSearch',
-  '⌘⌃Space': 'shortcuts.system.characterViewer',
-  '⌃Space': 'shortcuts.system.inputSourceSwitching',
-  '⌘Tab': 'shortcuts.system.appSwitcher',
-  '⌃↑': 'shortcuts.system.missionControl',
-  '⌃↓': 'shortcuts.system.appWindows',
-  '⌃←': 'shortcuts.system.spaces',
-  '⌃→': 'shortcuts.system.spaces',
-  '⌘⇧3': 'shortcuts.system.screenshots',
-  '⌘⇧4': 'shortcuts.system.screenshots',
-  '⌘⇧5': 'shortcuts.system.screenRecording',
-  '⌘⇧Q': 'shortcuts.system.loggingOut',
-  '⌘⌃Q': 'shortcuts.system.lockingScreen',
-  '⌘⌥Escape': 'shortcuts.system.forceQuit',
-}
-
-/**
- * Classify a combo against the macOS system-shortcut list. Checked only when
- * there's no in-app conflict (those banners take priority); a match produces a
- * soft warning, not a refusal. `label` is the resolved (rendered) feature name.
+ * Classify a combo against this OS's reserved-key table (`system-reserved-keys.ts`). Checked
+ * only when there's no in-app conflict (those banners take priority); a match produces a soft
+ * warning with "Use anyway", not a refusal, since the user can free most of these.
  */
 export function classifySystemShortcut(combo: string): SystemConflict | null {
-  const labelKey = macSystemShortcutToFeatureKey[combo]
-  return labelKey ? { kind: 'system', label: tString(labelKey) } : null
+  const reservation = systemReservation(combo)
+  return reservation ? { kind: 'system', reservation } : null
 }
 
 /**
  * The banner copy for a system-owned combo, like
- * `⌘Space is usually taken by macOS (Spotlight), so it may never reach Cmdr.`
+ * `⌘Space is usually taken by macOS (Spotlight), so it may never reach Cmdr. …`, or on Linux
+ * `On KDE Plasma and Xfce, the desktop usually takes Ctrl+F3 for itself, …`. Each owner has its
+ * own sentence: what's reserved, who reserves it, and where to free it differ per OS.
  */
-export function systemShortcutMessage(combo: string, label: string): string {
-  return tString('shortcuts.conflict.systemShortcut', { combo, label })
+export function systemShortcutMessage(combo: string, reservation: SystemReservation): string {
+  switch (reservation.os) {
+    case 'macos':
+      return tString('shortcuts.conflict.systemShortcut', { combo, label: tString(reservation.featureKey) })
+    case 'windows':
+      return tString('shortcuts.conflict.takenByWindows', { combo, label: tString(reservation.featureKey) })
+    case 'linux':
+      // Proper nouns, joined the UI language's way (`formatConjunctionList`, never a `', '` join).
+      return tString('shortcuts.conflict.takenByLinuxDesktops', {
+        combo,
+        desktops: formatConjunctionList(reservation.desktops),
+      })
+  }
 }
