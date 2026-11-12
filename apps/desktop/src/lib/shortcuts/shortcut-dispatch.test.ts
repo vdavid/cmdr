@@ -7,18 +7,26 @@ const customOverrides = new Map<string, string[]>()
 // The mock registry's defaults, filled from `commands` below.
 const mockDefaults = new Map<string, string[]>()
 
-// Mock the shortcuts store before importing the module under test
-vi.mock('./shortcuts-store', () => ({
-  getEffectiveShortcuts: vi.fn(),
-  getDefaultShortcuts: (commandId: string) => [...(mockDefaults.get(commandId) ?? [])],
-  getCustomizedCommandIds: () => [...customOverrides.keys()],
-  isFixedKeyCommand: (commandId: string) => commandId === 'search.newQuery',
-  isNativeShortcutCommand: () => false,
-  onShortcutChange: vi.fn((listener: (commandId: string) => void) => {
-    listeners.add(listener)
-    return () => listeners.delete(listener)
-  }),
-}))
+// Mock the shortcuts store before importing the module under test. `isShadowed` is the real
+// rule (`binding-priority.ts`) over the mock's reads, as the store composes it.
+vi.mock('./shortcuts-store', async () => {
+  const { isShadowedDefault } = await vi.importActual<typeof import('./binding-priority')>('./binding-priority')
+  const getEffectiveShortcuts = vi.fn<(commandId: string) => string[]>()
+  const reader = {
+    effective: (commandId: string) => getEffectiveShortcuts(commandId),
+    defaults: (commandId: string) => [...(mockDefaults.get(commandId) ?? [])],
+    customizedIds: () => [...customOverrides.keys()],
+    isRebindable: (commandId: string) => commandId !== 'search.newQuery',
+  }
+  return {
+    getEffectiveShortcuts,
+    isShadowed: (commandId: string, combo: string) => isShadowedDefault(reader, commandId, combo),
+    onShortcutChange: vi.fn((listener: (commandId: string) => void) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    }),
+  }
+})
 
 // Mock the command registry with a controlled set of commands
 vi.mock('#lib/commands/command-registry.js', () => ({

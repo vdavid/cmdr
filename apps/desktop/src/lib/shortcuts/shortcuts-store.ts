@@ -13,7 +13,7 @@ import { resolveStorePath } from '#lib/settings/store-path.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { pluralize } from '#lib/utils/pluralize.js'
 import { toCanonicalShortcut, typingRefusal } from './key-capture'
-import { firstLiveShortcut, liveShortcuts, type BindingReader } from './binding-priority'
+import { firstLiveShortcut, isShadowedDefault, liveShortcuts, type BindingReader } from './binding-priority'
 
 const log = getAppLogger('shortcuts')
 
@@ -718,6 +718,14 @@ export function getMenuShortcut(commandId: string): string {
  */
 export function getLiveShortcuts(commandId: string): string[] {
   return liveShortcuts(bindingReader, commandId)
+}
+
+/**
+ * True when `combo` is one of `commandId`'s defaults that another command's user binding shadows
+ * (`binding-priority.ts`), so the keypress means that other command. The dispatcher's reader.
+ */
+export function isShadowed(commandId: string, combo: string): boolean {
+  return isShadowedDefault(bindingReader, commandId, combo)
 }
 
 // What each menu item was last told. A never-told item still carries the key the bar

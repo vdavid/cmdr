@@ -272,28 +272,16 @@ const NO_KEYS: readonly string[] = Object.freeze([])
 
 const commandById = new Map<string, Command>(commands.map((command) => [command.id, command]))
 
-/** Each platform's id → default keys table, built on first read. Pure data, so it never goes stale. */
-const defaultKeysByPlatform = new Map<Platform, ReadonlyMap<string, readonly string[]>>()
-
-function defaultKeysOn(platform: Platform): ReadonlyMap<string, readonly string[]> {
-  let table = defaultKeysByPlatform.get(platform)
-  if (!table) {
-    table = new Map(commands.map((command) => [command.id, command.shortcuts[platform]]))
-    defaultKeysByPlatform.set(platform, table)
-  }
-  return table
-}
-
 /**
  * `commandId`'s default keys on `platform`, in that platform's spelling: none where the OS lacks
  * the command's `needsCapability`, so its combo stays free. The capability is asked on every call,
- * outside the cached table, so a test that switches capabilities never reads a stale answer.
- * Read-only: copy before mutating (`getDefaultShortcuts` in the shortcuts store does).
+ * so a test that switches capabilities never reads a stale answer. Read-only: copy before
+ * mutating (`getDefaultShortcuts` in the shortcuts store does).
  */
 export function defaultShortcuts(commandId: string, platform: Platform = getPlatform()): readonly string[] {
   const command = commandById.get(commandId)
   if (!command || !commandOffered(command)) return NO_KEYS
-  return defaultKeysOn(platform).get(commandId) ?? NO_KEYS
+  return command.shortcuts[platform]
 }
 
 // Re-exported from `sources/app.ts`, where the flag it flips lives beside the

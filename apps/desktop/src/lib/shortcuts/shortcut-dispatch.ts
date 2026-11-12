@@ -18,24 +18,9 @@
 
 import { commands } from '#lib/commands/command-registry.js'
 import type { CommandId } from '#lib/commands/index.js'
-import {
-  getCustomizedCommandIds,
-  getDefaultShortcuts,
-  getEffectiveShortcuts,
-  isFixedKeyCommand,
-  isNativeShortcutCommand,
-  onShortcutChange,
-} from './shortcuts-store'
-import { isShadowedDefault, type BindingReader } from './binding-priority'
+import { getEffectiveShortcuts, isShadowed, onShortcutChange } from './shortcuts-store'
 import { keyComboCandidates } from './key-capture'
 import { getActiveScopes } from './scope-hierarchy'
-
-const reader: BindingReader = {
-  effective: getEffectiveShortcuts,
-  defaults: getDefaultShortcuts,
-  customizedIds: getCustomizedCommandIds,
-  isRebindable: (commandId) => !isFixedKeyCommand(commandId) && !isNativeShortcutCommand(commandId),
-}
 
 // Command IDs that have showInPalette: false but still need central dispatch
 const ALWAYS_DISPATCH_IDS = new Set<CommandId>(['app.commandPalette'])
@@ -71,7 +56,7 @@ function buildShortcutMap(): Map<string, CommandId> {
 
     const depth = getActiveScopes(command.scope).length
     for (const shortcut of getEffectiveShortcuts(command.id)) {
-      if (isShadowedDefault(reader, command.id, shortcut)) continue
+      if (isShadowed(command.id, shortcut)) continue
       const list = claims.get(shortcut) ?? []
       list.push({ id: command.id, depth, registryIndex })
       claims.set(shortcut, list)
@@ -145,7 +130,7 @@ export function comboMatchesCommand(
   { allowShift = false }: MatchOptions = {},
 ): boolean {
   const shortcuts = getEffectiveShortcuts(commandId)
-  const held = (candidate: string) => shortcuts.includes(candidate) && !isShadowedDefault(reader, commandId, candidate)
+  const held = (candidate: string) => shortcuts.includes(candidate) && !isShadowed(commandId, candidate)
   if (held(combo)) return true
   return allowShift && held(withoutShift(combo))
 }
