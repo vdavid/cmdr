@@ -32,7 +32,14 @@ function withResolvers<T>() {
   })
   return { promise, resolve, reject }
 }
-const filtered = { accepted: true, totalCount: 2, newCursorIndex: 1, newSelectedIndices: [1], sequence: 5 }
+const filtered = {
+  accepted: true,
+  totalCount: 2,
+  hiddenCount: 0,
+  newCursorIndex: 1,
+  newSelectedIndices: [1],
+  sequence: 5,
+}
 const added: DirectoryDiff = {
   listingId: 'listing',
   batches: [
@@ -40,6 +47,7 @@ const added: DirectoryDiff = {
       fromSequence: 5,
       sequence: 6,
       totalCount: 3,
+      hiddenCount: 0,
       effectiveSortBy: null,
       changes: [
         {
@@ -85,6 +93,7 @@ describe('filter and watcher row-space ordering', () => {
   function wire() {
     let cursor = 4
     let count = 8
+    let hidden = 0
     const rowState = createPaneRowState({
       getListingId: () => 'listing',
       getLoading: () => false,
@@ -107,6 +116,7 @@ describe('filter and watcher row-space ordering', () => {
       getSelectedIndices: () => selection.getSelectedIndices(),
       apply: (result) => {
         count = result.totalCount
+        hidden = result.hiddenCount
         cursor = result.cursorIndex
         selection.setSelectedIndices(result.selectedIndices)
       },
@@ -135,6 +145,9 @@ describe('filter and watcher row-space ordering', () => {
         setTotalCount: (value) => {
           count = value
         },
+        setHiddenCount: (value) => {
+          hidden = value
+        },
         bumpSoftRefreshTick: vi.fn(),
         scheduleColumnWidthRefetch: vi.fn(),
         fetchEntryUnderCursor: vi.fn(),
@@ -149,8 +162,30 @@ describe('filter and watcher row-space ordering', () => {
       ctl,
       ready: rowState.isReady,
       state: () => ({ cursor, count, selection: selection.getSelectedIndices(), sequence: rowState.getSequence() }),
+      hidden: () => hidden,
     }
   }
+
+  // A dotfile coming or going in a folder that looks empty moves no row: the backend
+  // sends a batch with no changes for the count alone, and the empty state must hear it.
+  it('takes the hidden count from a batch that changes no row', async () => {
+    const pane = wire()
+    emit({
+      listingId: 'listing',
+      batches: [{ fromSequence: 0, sequence: 1, totalCount: 0, hiddenCount: 3, effectiveSortBy: null, changes: [] }],
+    })
+    await settle()
+    expect(pane.hidden()).toBe(3)
+    expect(pane.state().sequence).toBe(1)
+  })
+
+  it('takes the hidden count a filter answer carries', async () => {
+    ipc.setListingNameFilter.mockResolvedValue({ ...filtered, totalCount: 0, hiddenCount: 2, newSelectedIndices: [] })
+    const pane = wire()
+    pane.ctl.append('git')
+    await settle()
+    expect(pane.hidden()).toBe(2)
+  })
 
   it('applies a new-row diff only after the filter response establishes those rows', async () => {
     const answer = withResolvers<typeof filtered>()

@@ -169,6 +169,8 @@ export interface SwapState {
   currentPath: string
   listingId: string
   totalCount: number
+  /** The hidden items the pane's empty state names: it travels with the rows. */
+  hiddenCount: number
   /** The column the listing's rows are ordered by: it travels with them. */
   effectiveSortBy: SortColumn | null
   cursorIndex: number

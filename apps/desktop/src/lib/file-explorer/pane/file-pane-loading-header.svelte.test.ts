@@ -203,7 +203,7 @@ describe('FilePane column header during a load', () => {
     expect(getTarget().querySelector('.loading-container')).toBeTruthy()
     expect(showsHeader(getTarget())).toBe(true)
     // No settled rows means nothing to call empty: the loading view says what's happening.
-    expect(getTarget().querySelector('.empty-folder-message, .empty-folder-overlay')).toBeNull()
+    expect(getTarget().querySelector('.empty-folder-state')).toBeNull()
     await unmount(component)
   })
 })

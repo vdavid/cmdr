@@ -39,6 +39,7 @@ interface PaneState {
   listingId: string
   loading: boolean
   totalCount: number
+  hiddenCount: number
   effectiveSortBy: SortColumn | null
   lastSequence: number
   error: string | null
@@ -72,6 +73,7 @@ export function makeHarness(over: Partial<PaneState> = {}) {
     listingId: '',
     loading: true,
     totalCount: 0,
+    hiddenCount: 0,
     effectiveSortBy: null,
     lastSequence: 0,
     error: null,
@@ -146,6 +148,10 @@ export function makeHarness(over: Partial<PaneState> = {}) {
     getTotalCount: () => state.totalCount,
     setTotalCount: (c) => {
       state.totalCount = c
+    },
+    getHiddenCount: () => state.hiddenCount,
+    setHiddenCount: (c) => {
+      state.hiddenCount = c
     },
     getEffectiveSortBy: () => state.effectiveSortBy,
     setEffectiveSortBy: (column) => {

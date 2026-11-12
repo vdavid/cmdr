@@ -1641,6 +1641,31 @@
     "description": "Placeholder shown in the file list when the current folder has no files.",
     "screenshot": "main-window.png"
   },
+  "fileExplorer.list.hiddenItems": "{count, plural, one {There’s one hidden item in this folder.} other {There are {countText} hidden items in this folder.}}",
+  "@fileExplorer.list.hiddenItems": {
+    "description": "Shown in the middle of the file list, in place of \"Empty folder\", when the folder looks empty only because hidden items are hidden (dot-files, dot-folders like .git, and system-hidden items; they can be files or folders, so \"item\"). The next paragraph (fileExplorer.list.hiddenItemsHowToShortcut or fileExplorer.list.hiddenItemsHowToMenu) says how to reveal them. Also read aloud by screen readers when the folder turns empty.",
+    "placeholders": {
+      "countText": "the number of hidden items, formatted for the UI language (always 2 or more in the \"other\" form)",
+      "count": "the same number (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.list.hiddenItemsHowToShortcut": "To see hidden items, press {shortcut} or choose “{menu} > {item}”.",
+  "@fileExplorer.list.hiddenItemsHowToShortcut": {
+    "description": "Second paragraph under fileExplorer.list.hiddenItems, telling how to reveal the hidden items. \"{menu} > {item}\" is a menu path, filled with the app's own menu bar labels (menu.bar.view and menu.view.showHiddenFiles), so it always matches the real menu. Names \"hidden items\" again rather than saying \"them\", since it's a separate sentence.",
+    "placeholders": {
+      "shortcut": "the keyboard shortcut that toggles hidden files, for example \"⇧⌘.\"; do NOT translate the glyphs or key names",
+      "menu": "the menu bar's View menu name (menu.bar.view), already translated",
+      "item": "the View menu's \"Show hidden files\" item (menu.view.showHiddenFiles), already translated"
+    }
+  },
+  "fileExplorer.list.hiddenItemsHowToMenu": "To see hidden items, choose “{menu} > {item}”.",
+  "@fileExplorer.list.hiddenItemsHowToMenu": {
+    "description": "fileExplorer.list.hiddenItemsHowToShortcut for when the person removed the keyboard shortcut that toggles hidden files, so only the menu path is given. \"{menu} > {item}\" is a menu path filled with the app's own menu bar labels.",
+    "placeholders": {
+      "menu": "the menu bar's View menu name (menu.bar.view), already translated",
+      "item": "the View menu's \"Show hidden files\" item (menu.view.showHiddenFiles), already translated"
+    }
+  },
   "fileExplorer.list.fileListAriaLabel": "File list",
   "@fileExplorer.list.fileListAriaLabel": {
     "description": "Accessibility label for the scrollable list of files."

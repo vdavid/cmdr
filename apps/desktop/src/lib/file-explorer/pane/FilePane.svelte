@@ -277,6 +277,8 @@
     // via injected setters) but read by many non-loader concerns, so they stay here.
     let listingId = $state('')
     let totalCount = $state(0)
+    // Hidden items an empty pane hides, for its empty state; zero whenever it shows rows or hidden files.
+    let hiddenCount = $state(0)
     // The column the listing's rows are in (the requested one, or Modified for a date the volume doesn't record).
     // Written only with the rows it describes; never persisted. `getEffectiveSortBy` answers a snapshot pane's own.
     let effectiveSortBy = $state<SortColumn | null>(null)
@@ -340,9 +342,10 @@
         getHasParent: () => hasParent,
         getCursorFilename: () => selectionInfo.entry?.name,
         getSelectedIndices: () => selection.getSelectedIndices(),
-        apply: ({ totalCount: count, cursorIndex: cursor, selectedIndices }) => {
+        apply: ({ totalCount: count, hiddenCount: hidden, cursorIndex: cursor, selectedIndices }) => {
             // Diffs numbered up to the switch speak the old rows; the refetch below holds them.
             totalCount = count
+            hiddenCount = hidden
             selection.setSelectedIndices(selectedIndices)
             cacheGeneration++
             void setCursorIndex(cursor)
@@ -399,6 +402,10 @@
         getTotalCount: () => totalCount,
         setTotalCount: (count) => {
             totalCount = count
+        },
+        getHiddenCount: () => hiddenCount,
+        setHiddenCount: (count) => {
+            hiddenCount = count
         },
         getEffectiveSortBy: () => effectiveSortBy,
         setEffectiveSortBy: (column) => {
@@ -479,6 +486,7 @@
     const listingPresentation = createListingPresentation({
         getListingId: () => listingId,
         getTotalCount: () => effectiveTotalCount,
+        getHiddenCount: () => hiddenCount,
         getLoading: () => loading,
         getParentRow: () => ({ hasParent, parentPath: hasParent && canonicalPath ? parentOf(canonicalPath) : '' }),
         getEffectiveSortBy: () => effectiveSortBy,
@@ -1072,6 +1080,7 @@
     export function getRowState() { return rowState }
     export function applyRowResult(result: ResortResult): () => void {
         totalCount = result.totalCount
+        hiddenCount = result.hiddenCount
         effectiveSortBy = result.effectiveSortBy
         if (result.newSelectedIndices !== null) selection.setSelectedIndices(toFrontendIndices(result.newSelectedIndices, hasParent))
         cursorIndex = result.newCursorIndex === null ? Math.max(0, Math.min(cursorIndex, effectiveTotalCount - 1)) : result.newCursorIndex + (hasParent ? 1 : 0)
@@ -1592,7 +1601,7 @@
     // Changes in place (selection and filter counts, a folder going empty, a slow load).
     createPaneStatusAnnouncer({ announce: (message) => { announcer?.announce(message) }, read: () => ({ isFocused,
         location: currentPath, loading: loading && paneViewKind === 'normal', hasError: !!(friendlyError || error),
-        entryCount: listingEntryCount, selectedCount: selection.selectedIndices.size,
+        entryCount: listingEntryCount, hiddenCount: isSearchResultsView ? 0 : hiddenCount, selectedCount: selection.selectedIndices.size,
         filterPattern: quickFilter.isActive() ? quickFilter.pattern : null }) })
 
     // Effective total count includes ".." entry if not at root.
@@ -2028,6 +2037,9 @@
         setTotalCount: (count: number) => {
             totalCount = count
         },
+        setHiddenCount: (count: number) => {
+            hiddenCount = count
+        },
         setEffectiveSortBy: (column) => {
             effectiveSortBy = column
         },
@@ -2332,6 +2344,7 @@
                 getRowSequence={rowState.getSequence}
                 {volumeId}
                 totalCount={listingPresentation.totalCount}
+                hiddenCount={listingPresentation.hiddenCount}
                 {includeHidden}
                 {cacheGeneration}
                 {softRefreshTick}
@@ -2384,6 +2397,7 @@
                 getRowSequence={rowState.getSequence}
                 {volumeId}
                 totalCount={listingPresentation.totalCount}
+                hiddenCount={listingPresentation.hiddenCount}
                 {includeHidden}
                 {cacheGeneration}
                 {softRefreshTick}

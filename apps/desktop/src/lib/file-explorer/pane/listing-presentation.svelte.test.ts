@@ -32,6 +32,7 @@ describe('createListingPresentation', () => {
       presentation = createListingPresentation({
         getListingId: () => listingId,
         getTotalCount: () => totalCount,
+        getHiddenCount: () => 0,
         getLoading: () => loading,
         getParentRow: () => parentRow,
         getEffectiveSortBy: () => effectiveSortBy,

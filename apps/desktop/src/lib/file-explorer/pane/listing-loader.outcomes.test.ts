@@ -336,6 +336,7 @@ describe('createListingLoader — the effective sort column travels with the row
       currentPath: '/Volumes/USB',
       listingId: 'partner',
       totalCount: 2,
+      hiddenCount: 0,
       effectiveSortBy: 'modified',
       cursorIndex: 0,
       selectedIndices: [],

@@ -42,6 +42,7 @@ beforeEach(() => {
     newSelectedIndices: null,
     sequence: 1,
     totalCount: 3,
+    hiddenCount: 0,
     effectiveSortBy: 'modified',
   })
 })

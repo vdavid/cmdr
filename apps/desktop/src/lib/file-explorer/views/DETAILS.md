@@ -75,9 +75,9 @@ grid template, same fetch loop, same DOM.
 **Both views take a `loadingOverlay?: Snippet` for a slow load.** The pane passes its `LoadingIcon` once a load outlasts
 the grace period, and the view lays it over a `.row-area` wrapper around the scroller, so the header above stays. While
 it's up the scroller is `visibility: hidden` (`is-covered`): the retained rows keep their layout, so scroll and
-measurements hold, but neither paint nor reach the a11y tree, and the pane's own background shows through. The "empty
-folder" text stays hidden too. ❌ Don't render the loading view in place of the list: unmounting the list is what
-blinked the column header out on every slow navigation (`../pane/DETAILS.md` has the pane side).
+measurements hold, but neither paint nor reach the a11y tree, and the pane's own background shows through. The empty
+state stays hidden too. ❌ Don't render the loading view in place of the list: unmounting the list is what blinked the
+column header out on every slow navigation (`../pane/DETAILS.md` has the pane side).
 
 ### FullList's siblings
 
@@ -350,10 +350,24 @@ Virtual-scroll math: `.full-list`'s own `clientHeight` IS the row area, bound st
 `getVisibleItemsCountUtil`. `scrollTop` and the spacer's offset differ only by `.listbox-region`'s gutter (see the
 gutter gotcha below), which `spacerScrollTop` and `scrollToIndex` convert between. A11y: in BOTH views the listbox role
 sits on a `.listbox-region` wrapper around `.virtual-spacer`, never on the scroller, because the scroll content holds
-non-options **beside** it: Full's "Empty folder" text and both views' rename field (`../rename/RenameOverlay.svelte`).
-An empty listbox passes `aria-required-children`, a listbox holding a non-option child doesn't. `BriefList` keeps its
-empty-folder overlay outside `.brief-list` for the identical reason. ❌ Don't move any of them inside to simplify the
-layout.
+non-options **beside** it: both views' rename field (`../rename/RenameOverlay.svelte`). An empty listbox passes
+`aria-required-children`, a listbox holding a non-option child doesn't. The empty state (`EmptyFolderState.svelte`) sits
+outside the scroller for the identical reason. ❌ Don't move any of them inside to simplify the layout.
+
+### The empty state
+
+Both views render ONE `EmptyFolderState` when the listing has no rows and no load is covering them: "Empty folder", or,
+when the folder looks empty only because hidden files are off, "There are N hidden items in this folder." plus how to
+reveal them (the live `view.showHidden` binding and the View menu path, or the menu path alone once unbound). The words
+come from `empty-folder-text.ts`, which the pane's status announcer reads aloud too, so screen and speech can't drift.
+The count is the backend's `hiddenCount` (`crates/cmdr-listing/DETAILS.md` § "The hidden count"), nonzero only while the
+pane shows no rows and hides hidden files, so the views do no hidden-file logic of their own.
+
+- **Placement: absolutely laid over `.row-area`**, the box below the header in both views, so it sits mid-pane in Full
+  and Brief alike. Inside Full's `.full-list` it sat right under `..`: that's a plain block scroller, so a flex child's
+  centering did nothing. Pinned by the hidden-items cases in `full-list.a11y.test.ts` / `BriefList.a11y.test.ts`.
+- `pointer-events: none`, so a click on it still lands on the list background (double-click to the parent).
+- Debug > Components > Empty states shows all three variants.
 
 **`aria-activedescendant` names a row only when that row is RENDERED.** Both views derive the id from the rows in the
 virtual window (`visibleColumns` / `visibleFiles`), not from `cursorIndex >= 0`: the cursor legitimately points at

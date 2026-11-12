@@ -1,6 +1,7 @@
 /**
  * What a focused pane says through its live region (`FilePaneAPI.announce`) besides where it
- * is: a load that's taking a while, a folder that just went empty, the selection count, and
+ * is: a load that's taking a while, a folder that just went empty (or whose hidden-item count
+ * moved while it looks empty), the selection count, and
  * the quick filter's match count (and its clearing, which brings every name back). Each is otherwise visible only (the loading icon, the
  * "Empty folder" text, the status bar, the filter badge).
  *
@@ -18,6 +19,9 @@
 import { untrack } from 'svelte'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { formatInteger } from '#lib/intl/number-format.js'
+import { joinSentences } from '#lib/intl/sentence-join.js'
+import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
+import { emptyFolderParagraphs } from '../views/empty-folder-text'
 
 /** How long a load runs before "Loading…" is said; a quicker one says nothing about itself. */
 export const LOADING_ANNOUNCE_MS = 1000
@@ -33,6 +37,8 @@ export interface PaneStatusInput {
   hasError: boolean
   /** Entries in the listing as shown (after the quick filter), `..` excluded. */
   entryCount: number
+  /** Hidden items an empty pane hides (the backend's `hiddenCount`), zero while it shows rows. */
+  hiddenCount: number
   selectedCount: number
   /** The quick filter's pattern while it narrows the list, else `null`. */
   filterPattern: string | null
@@ -58,7 +64,10 @@ function messageFor(from: PaneStatusInput, to: PaneStatusInput): string | null {
       countText: formatInteger(to.entryCount),
     })
   }
-  if (!to.hasError && to.entryCount === 0 && from.entryCount > 0) return tString('fileExplorer.list.empty')
+  if (!to.hasError && to.entryCount === 0 && (from.entryCount > 0 || from.hiddenCount !== to.hiddenCount)) {
+    // What the empty state shows, read aloud: "Empty folder", or the hidden items and how to see them.
+    return joinSentences(emptyFolderParagraphs(to.hiddenCount, getFirstShortcutReactive('view.showHidden')))
+  }
   if (to.selectedCount !== from.selectedCount) {
     return tString('fileExplorer.pane.selectedCount', {
       count: to.selectedCount,

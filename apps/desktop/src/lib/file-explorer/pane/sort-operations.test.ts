@@ -105,6 +105,7 @@ describe('createSortOperations', () => {
         newSelectedIndices: null,
         sequence: 1,
         totalCount: 3,
+        hiddenCount: 0,
         effectiveSortBy: column as SortColumn,
       }),
     )
@@ -136,6 +137,7 @@ describe('createSortOperations', () => {
         newSelectedIndices: [1],
         sequence: 1,
         totalCount: 3,
+        hiddenCount: 0,
         effectiveSortBy: 'size',
       })
     })
@@ -351,6 +353,7 @@ describe('createSortOperations', () => {
         newSelectedIndices: null,
         sequence: 1,
         totalCount: 3,
+        hiddenCount: 0,
         effectiveSortBy: 'modified',
       }),
     )

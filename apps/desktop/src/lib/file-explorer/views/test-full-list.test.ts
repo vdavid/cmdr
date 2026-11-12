@@ -30,6 +30,6 @@ describe('mountFullList', () => {
     const list = await mountFullList()
 
     expect(list.rowNames()).toEqual([])
-    expect(list.target.querySelector('.empty-folder-message')).toBeTruthy()
+    expect(list.target.querySelector('.empty-folder-state')).toBeTruthy()
   })
 })

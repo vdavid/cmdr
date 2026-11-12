@@ -69,6 +69,7 @@ function harness(input: { initialized?: boolean; pendingRename?: string; operati
     getDiffGeneration: () => 0,
     bumpDiffGeneration: () => 0,
     setTotalCount: vi.fn(),
+    setHiddenCount: vi.fn(),
     setEffectiveSortBy: (column: SortColumn) => {
       effectiveSortBy = column
     },

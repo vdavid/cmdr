@@ -450,7 +450,7 @@ export async function captureFrontendToasts(
  *
  * The fixture `right/` starts empty. Focus the right pane and navigate it there
  * via the production `mcp-nav-to-path` event (the same path the MCP nav tool
- * uses); the list view renders `.empty-folder-message` when the directory has no
+ * uses); the list view renders `.empty-folder-state` when the directory has no
  * entries. Mounted markup, so the normal `captureSurface` rerender path records
  * its keys, no snapshot-before-trigger needed.
  */
@@ -467,7 +467,7 @@ export async function captureEmptyPane(
     // (not the start-path `right/`, which a prior copy or cached listing can leave
     // non-empty) reliably forces a re-listing of an empty directory. Navigate the
     // LEFT (focused) pane so the empty state sits in the visible, focused pane.
-    // The list view renders `.empty-folder-message` when the directory is empty.
+    // The list view renders `.empty-folder-state` when the directory is empty.
     recreateFixtures(getFixtureRoot())
     await ensureAppReady(main)
     await initMcpClient(main)
@@ -475,7 +475,7 @@ export async function captureEmptyPane(
     mkdirSync(emptyDir, { recursive: true })
     await mcpNavToPath('left', emptyDir)
     await mcpAwaitPath('left', 'empty-for-capture')
-    await main.waitForSelector('.empty-folder-message', 5000)
+    await main.waitForSelector('.empty-folder-state', 5000)
     await captureCall(main, 'reset')
     await captureCall<boolean>(main, 'enable')
     return { page: main }

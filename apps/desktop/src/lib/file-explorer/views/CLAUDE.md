@@ -12,6 +12,7 @@ via `@chenglou/pretext`, and the `*-utils.ts` trio holds the rendering helpers. 
 listboxes their focus and `aria-activedescendant` (❌ focus never on a row), and `file-row-a11y.ts` is what every row
 says (id, name, marked, position); ❌ no per-view copy. `mark-run.ts` gives the marked-file bar its run ends from the
 marked set by global index, ❌ never from rendered neighbors (the virtual window's edge would fake an end).
+`EmptyFolderState.svelte`: both views' empty state.
 
 ## Must-knows
 

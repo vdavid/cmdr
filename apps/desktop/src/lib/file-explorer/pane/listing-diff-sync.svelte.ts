@@ -114,6 +114,8 @@ export interface ListingDiffSyncDeps {
   getVolumePath: () => string
   getOperationSelectedNames: () => string[] | 'all' | null
   setTotalCount: (count: number) => void
+  /** The hidden items an empty pane hides; a batch may carry only this (a dotfile came or went). */
+  setHiddenCount: (count: number) => void
   /** Installs the column a re-read re-sorted the rows into, with the batch that lands them. */
   setEffectiveSortBy: (column: SortColumn) => void
   bumpSoftRefreshTick: () => void
@@ -186,6 +188,7 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
       if (reconciled.selectedIndices !== null) deps.selection.setSelectedIndices(reconciled.selectedIndices)
       deps.applyCursorIndex(reconciled.cursorIndex)
       deps.setTotalCount(diff.totalCount)
+      deps.setHiddenCount(diff.hiddenCount)
       if (diff.effectiveSortBy !== null) deps.setEffectiveSortBy(diff.effectiveSortBy)
       scrollCursor ||= reconciled.cursorFollowedMove
       return () => {

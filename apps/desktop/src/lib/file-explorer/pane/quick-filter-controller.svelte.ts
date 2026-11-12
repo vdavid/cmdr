@@ -51,6 +51,8 @@ const log = getAppLogger('fileExplorer')
 /** What the pane needs to apply after a filter change, in FRONTEND indices (`..` included). */
 export interface QuickFilterApplied {
   totalCount: number
+  /** Hidden items matching the filter that an empty pane hides (its empty state's hint). */
+  hiddenCount: number
   cursorIndex: number
   selectedIndices: number[]
   /** The diff sequence the new row space starts at; `null` when the row space didn't change. */
@@ -135,6 +137,7 @@ export function createQuickFilterController(deps: QuickFilterControllerDeps): Qu
           const offset = hasParent ? 1 : 0
           deps.apply({
             totalCount: result.totalCount,
+            hiddenCount: result.hiddenCount,
             cursorIndex:
               result.newCursorIndex === null ? (result.totalCount > 0 ? offset : 0) : result.newCursorIndex + offset,
             selectedIndices: result.newSelectedIndices.map((i) => i + offset),
@@ -163,6 +166,7 @@ export function createQuickFilterController(deps: QuickFilterControllerDeps): Qu
       const firstRow = result.totalCount > 0 ? offset : 0
       deps.apply({
         totalCount: result.totalCount,
+        hiddenCount: result.hiddenCount,
         cursorIndex: result.newCursorIndex === null ? firstRow : result.newCursorIndex + offset,
         selectedIndices: result.newSelectedIndices.map((i) => i + offset),
         sequence: result.sequence,

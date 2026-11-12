@@ -118,6 +118,19 @@ describe('createListingLoader — generation / drop-foreign token model', () => 
     expect(spies.onPathChange).toHaveBeenCalledWith('/a')
   })
 
+  it('takes the hidden count a complete event reports, and a new load clears it', async () => {
+    const { loader, state } = makeHarness()
+    await loader.loadDirectory({ path: '/a' })
+
+    completeCb(0)({ listingId: state.listingId, totalCount: 0, hiddenCount: 2, volumeRoot: '/' })
+    await vi.waitFor(() => {
+      expect(state.hiddenCount).toBe(2)
+    })
+
+    await loader.loadDirectory({ path: '/b' })
+    expect(state.hiddenCount).toBe(0)
+  })
+
   it('lands the pane on the stored spelling a complete event reports', async () => {
     // The kernel mount's decomposed `fotók`, which the share stores composed.
     const asked = '/Volumes/naspi/fotók'
@@ -229,6 +242,7 @@ describe('createListingLoader — generation / drop-foreign token model', () => 
       currentPath: '/x',
       listingId: 'swapped',
       totalCount: 0,
+      hiddenCount: 0,
       effectiveSortBy: null,
       cursorIndex: 0,
       selectedIndices: [],

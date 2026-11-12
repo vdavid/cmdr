@@ -59,7 +59,11 @@ afterEach(() => {
 describe('FullList a11y', () => {
   /** An empty listing still gets a measured surface: the empty-state branch is
    *  about having no ENTRIES, not about having no room to show them. */
-  async function mountEmpty(props: { cursorIndex: number; isFocused?: boolean }): Promise<HTMLElement> {
+  async function mountEmpty(props: {
+    cursorIndex: number
+    isFocused?: boolean
+    hiddenCount?: number
+  }): Promise<HTMLElement> {
     installLayoutMock({ '[data-file-list-surface]': { clientHeight: 400, clientWidth: 800, offsetWidth: 800 } })
     const target = document.createElement('div')
     document.body.appendChild(target)
@@ -98,7 +102,19 @@ describe('FullList a11y', () => {
   // passes `aria-required-children`, one holding a non-option child does not.
   it('empty folder with no cursor has no a11y violations', async () => {
     const target = await mountEmpty({ cursorIndex: -1 })
-    expect(target.querySelector('.empty-folder-message')).toBeTruthy()
+    expect(target.querySelector('.empty-folder-state')).toBeTruthy()
+    await expectNoA11yViolations(target)
+  })
+
+  // The hidden-items hint is the same sibling, laid over the row area (not inside the
+  // block scroller, where it sat right under `..` instead of mid-pane).
+  it('a folder holding only hidden items says so, beside the listbox, with no a11y violations', async () => {
+    const target = await mountEmpty({ cursorIndex: -1, hiddenCount: 2 })
+    const state = target.querySelector('.empty-folder-state')
+    expect(state?.textContent).toContain('There are 2 hidden items in this folder.')
+    expect(state?.closest('[role="listbox"]')).toBeNull()
+    expect(state?.closest('[data-file-list-surface]')).toBeNull()
+    expect(state?.parentElement?.classList.contains('row-area')).toBe(true)
     await expectNoA11yViolations(target)
   })
 

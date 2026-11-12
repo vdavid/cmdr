@@ -15,6 +15,7 @@
     } from '../drag/drag-auto-scroll'
     import { startClickToRename, cancelClickToRename } from '../rename/rename-activation'
     import SortableHeader from '../selection/SortableHeader.svelte'
+    import EmptyFolderState from './EmptyFolderState.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
     import FileIcon from '../selection/FileIcon.svelte'
     import TagDots from '../selection/TagDots.svelte'
@@ -100,6 +101,8 @@
          *  round-trip. `'root'` for a local pane. */
         volumeId: string
         totalCount: number
+        /** Hidden items the pane hides while it shows no rows: the empty state's hint (`EmptyFolderState`). */
+        hiddenCount?: number
         includeHidden: boolean
         cacheGeneration?: number
         /**
@@ -173,6 +176,7 @@
         getRowSequence,
         volumeId,
         totalCount,
+        hiddenCount = 0,
         includeHidden,
         cacheGeneration = 0,
         softRefreshTick = 0,
@@ -1183,11 +1187,11 @@
     </div>
     {#if loadingOverlay}
         <div class="loading-overlay">{@render loadingOverlay()}</div>
+    {:else if (hasParent ? totalCount - 1 : totalCount) === 0}
+        <!-- Beside the listbox, never in it: see `EmptyFolderState`. -->
+        <EmptyFolderState {hiddenCount} />
     {/if}
     </div>
-    {#if !loadingOverlay && (hasParent ? totalCount - 1 : totalCount) === 0}
-        <div class="empty-folder-overlay">{tString('fileExplorer.list.empty')}</div>
-    {/if}
 </div>
 
 <style>
@@ -1390,17 +1394,4 @@
         color: var(--color-selection-fg);
     }
 
-    .empty-folder-overlay {
-        position: absolute;
-        top: calc(22px * var(--font-scale)); /* Below the header row */
-        left: 0;
-        right: 0;
-        bottom: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
-        pointer-events: none;
-    }
 </style>

@@ -11,6 +11,8 @@ export const LISTING_LOADING_DELAY_MS = 100
 export interface ListingPresentationDeps {
   getListingId: () => string
   getTotalCount: () => number
+  /** Hidden items an empty listing hides, for the empty state. */
+  getHiddenCount: () => number
   getLoading: () => boolean
   /** The `..` row the CURRENT path asks for, which moves before its listing lands. */
   getParentRow: () => ParentRow
@@ -29,6 +31,8 @@ export interface ListingPresentation {
   readonly listingId: string
   /** Row count paired with `listingId`. */
   readonly totalCount: number
+  /** The hidden items an empty `listingId` hides, paired with `totalCount`. */
+  readonly hiddenCount: number
   /**
    * The `..` row paired with `listingId`. It is part of that listing: the current
    * path's `..` over the previous rows can repeat one of them (`/a` → `/a/b/c` makes
@@ -48,6 +52,7 @@ export interface ListingPresentation {
 export function createListingPresentation(deps: ListingPresentationDeps): ListingPresentation {
   let settledListingId = $state('')
   let settledTotalCount = $state(0)
+  let settledHiddenCount = $state(0)
   let settledParentRow = $state<ParentRow>({ hasParent: false, parentPath: '' })
   let settledEffectiveSortBy = $state<SortColumn | null>(null)
   let showLoading = $state(deps.getLoading())
@@ -61,6 +66,7 @@ export function createListingPresentation(deps: ListingPresentationDeps): Listin
       if (listingId) {
         settledListingId = listingId
         settledTotalCount = deps.getTotalCount()
+        settledHiddenCount = deps.getHiddenCount()
         settledParentRow = deps.getParentRow()
         settledEffectiveSortBy = deps.getEffectiveSortBy()
       }
@@ -86,6 +92,9 @@ export function createListingPresentation(deps: ListingPresentationDeps): Listin
     },
     get totalCount() {
       return deps.getLoading() ? settledTotalCount : deps.getTotalCount()
+    },
+    get hiddenCount() {
+      return deps.getLoading() ? settledHiddenCount : deps.getHiddenCount()
     },
     get parentRow() {
       return deps.getLoading() ? settledParentRow : deps.getParentRow()

@@ -88,6 +88,37 @@ describe('BriefList a11y', () => {
     await expectNoA11yViolations(target)
   })
 
+  it('a folder holding only hidden items says so, beside the listbox, with no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(BriefList, {
+      target,
+      props: {
+        listingId: 'l1',
+        volumeId: 'root',
+        totalCount: 0,
+        hiddenCount: 1,
+        includeHidden: false,
+        cursorIndex: -1,
+        isFocused: true,
+        hasParent: false,
+        parentPath: '',
+        currentPath: '/root',
+        sortBy: 'name',
+        sortOrder: 'ascending',
+        effectiveSortBy: 'name',
+        onSelect: () => {},
+        onNavigate: () => {},
+      },
+    })
+    await tick()
+    const state = target.querySelector('.empty-folder-state')
+    expect(state?.textContent).toContain('There’s one hidden item in this folder.')
+    expect(state?.closest('[role="listbox"]')).toBeNull()
+    expect(state?.parentElement?.classList.contains('row-area')).toBe(true)
+    await expectNoA11yViolations(target)
+  })
+
   it('empty folder with no cursor has no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)

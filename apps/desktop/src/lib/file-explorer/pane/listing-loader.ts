@@ -128,6 +128,12 @@ export interface ListingLoaderDeps {
   getTotalCount: () => number
   setTotalCount: (count: number) => void
   /**
+   * The hidden items an empty pane hides (`hiddenCount` on `listing-complete`), for its
+   * empty state. Zero whenever the pane shows rows or hidden files.
+   */
+  getHiddenCount: () => number
+  setHiddenCount: (count: number) => void
+  /**
    * The column the shown rows are ordered by (`null` before any listing landed).
    * Written only together with the rows it describes: a landed listing, a swap.
    */
@@ -308,7 +314,10 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     // flips a cancel flag, and a listing that already landed in the cache ignores it.
     abandonListing(deps.getListingId())
     deps.setListingId('')
-    if (!preserveTotalCount) deps.setTotalCount(0)
+    if (!preserveTotalCount) {
+      deps.setTotalCount(0)
+      deps.setHiddenCount(0)
+    }
     deps.setLoading(false)
     deps.setOpeningFolder(false)
     deps.setStalled(null)
@@ -437,6 +446,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     deps.clearSyncRetryTimer()
     deps.selection.clearSelection()
     deps.setTotalCount(0) // Reset to show empty list immediately
+    deps.setHiddenCount(0)
     deps.clearEntryUnderCursor() // Clear old under-the-cursor entry info
 
     // Store the load for use in event handlers, and as the one a cancel would stop
@@ -680,6 +690,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     benchmark.logEventValue('listing-complete received, totalCount', payload.totalCount)
     trackLanded(deps.getListingId())
     deps.setTotalCount(payload.totalCount)
+    deps.setHiddenCount(payload.hiddenCount)
     // With the count, before any await: the rows that land now are in this column's
     // order, and the rows still on screen until then keep the column they were in.
     deps.setEffectiveSortBy(payload.effectiveSortBy)
@@ -839,6 +850,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
       currentPath: deps.getCurrentPath(),
       listingId: deps.getListingId(),
       totalCount: deps.getTotalCount(),
+      hiddenCount: deps.getHiddenCount(),
       effectiveSortBy: deps.getEffectiveSortBy(),
       cursorIndex: deps.getCursorIndex(),
       selectedIndices: deps.selection.getSelectedIndices(),
@@ -858,6 +870,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     loadedPath = state.currentPath
     trackLanded(state.listingId)
     deps.setTotalCount(state.totalCount)
+    deps.setHiddenCount(state.hiddenCount)
     deps.setEffectiveSortBy(state.effectiveSortBy)
     deps.setLastSequence(state.lastSequence)
 

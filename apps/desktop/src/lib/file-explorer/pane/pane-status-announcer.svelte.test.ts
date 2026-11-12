@@ -16,6 +16,7 @@ import {
   STATUS_SETTLE_MS,
   type PaneStatusInput,
 } from './pane-status-announcer.svelte'
+import { getEffectiveShortcuts, toDisplayShortcut } from '#lib/shortcuts/index.js'
 
 describe('createPaneStatusAnnouncer', () => {
   let dispose: (() => void) | null = null
@@ -37,6 +38,7 @@ describe('createPaneStatusAnnouncer', () => {
       loading: false,
       hasError: false,
       entryCount: 5,
+      hiddenCount: 0,
       selectedCount: 0,
       filterPattern: null,
       ...initial,
@@ -206,6 +208,29 @@ describe('createPaneStatusAnnouncer', () => {
       change(() => {
         state.entryCount = 0
         state.selectedCount = 0
+      })
+      vi.advanceTimersByTime(STATUS_SETTLE_MS)
+      expect(announce).toHaveBeenCalledExactlyOnceWith('Empty folder')
+    })
+
+    it('names the hidden items when the last visible entry goes', () => {
+      const { state, announce } = setup({ entryCount: 1 })
+      change(() => {
+        state.entryCount = 0
+        state.hiddenCount = 2
+      })
+      vi.advanceTimersByTime(STATUS_SETTLE_MS)
+      // The live binding, as this platform displays it (`⇧⌘.` on a Mac).
+      const shortcut = toDisplayShortcut(getEffectiveShortcuts('view.showHidden')[0])
+      expect(announce).toHaveBeenCalledExactlyOnceWith(
+        `There are 2 hidden items in this folder. To see hidden items, press ${shortcut} or choose “View > Show hidden files”.`,
+      )
+    })
+
+    it('says when a hidden item comes or goes in a folder that looks empty', () => {
+      const { state, announce } = setup({ entryCount: 0, hiddenCount: 1 })
+      change(() => {
+        state.hiddenCount = 0
       })
       vi.advanceTimersByTime(STATUS_SETTLE_MS)
       expect(announce).toHaveBeenCalledExactlyOnceWith('Empty folder')

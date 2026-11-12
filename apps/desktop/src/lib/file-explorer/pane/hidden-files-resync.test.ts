@@ -40,6 +40,7 @@ function harness() {
 const result: ResortResult = {
   sequence: 8,
   totalCount: 3,
+  hiddenCount: 0,
   newCursorIndex: 1,
   newSelectedIndices: [1],
   effectiveSortBy: 'name',
@@ -70,7 +71,9 @@ describe('hidden visibility row transition', () => {
       order.push('diff')
     })
     ipc.setListingIncludeHidden.mockImplementation(() => {
-      pane.rows.receive([{ fromSequence: 8, sequence: 9, totalCount: 2, changes: [], effectiveSortBy: null }])
+      pane.rows.receive([
+        { fromSequence: 8, sequence: 9, totalCount: 2, hiddenCount: 0, changes: [], effectiveSortBy: null },
+      ])
       expect(order).toEqual([])
       return Promise.resolve(result)
     })
@@ -92,7 +95,9 @@ describe('hidden visibility row transition', () => {
     })
     ipc.setListingIncludeHidden
       .mockImplementationOnce(() => {
-        pane.rows.receive([{ fromSequence: 7, sequence: 8, totalCount: 2, changes: [], effectiveSortBy: null }])
+        pane.rows.receive([
+          { fromSequence: 7, sequence: 8, totalCount: 2, hiddenCount: 0, changes: [], effectiveSortBy: null },
+        ])
         return Promise.reject(Object.assign(new Error(), { type: 'changed', listingId: 'listing-1' }))
       })
       .mockResolvedValueOnce({ ...result, sequence: 9 })

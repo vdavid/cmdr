@@ -344,12 +344,14 @@ for the ear (`docs/notes/accessibility-audit-2026-10.md` § VoiceOver checks, V2
 **Pane status announcer.** `pane-status-announcer.svelte.ts` speaks about changes IN PLACE, for the focused pane only:
 "3 selected" / "Nothing selected", the quick filter's "3 names contain “re”" / "No names contain “zz”" and, when it
 clears, "Filter cleared, 8 names" (the cursor row alone can't say it: it often keeps its name and only its position
-moves, and VoiceOver drops the repeat), "Empty folder" when the last entry goes, and "Loading…" when a load outlasts 1
-s. It re-baselines silently on focus, folder change, and load end, so arriving never repeats what the location message
-said. Chatty-safe: one message, 750 ms after the changes pause, so a held ↓ while marking or a filter typed letter by
-letter says only its end state; when several things moved at once the cause wins (the filter's count or clearing over
-the selection it dropped or brought back). `TypeToJumpIndicator` is visual only: it mounts with its text, so as a live
-region its first message would drop. A jump speaks through the cursor row it lands on.
+moves, and VoiceOver drops the repeat), the empty state's words when the last entry goes or an empty pane's hidden count
+moves ("Empty folder", or "There are 2 hidden items in this folder." plus how to see them, from
+`../views/empty-folder-text.ts`), and "Loading…" when a load outlasts 1 s. It re-baselines silently on focus, folder
+change, and load end, so arriving never repeats what the location message said. Chatty-safe: one message, 750 ms after
+the changes pause, so a held ↓ while marking or a filter typed letter by letter says only its end state; when several
+things moved at once the cause wins (the filter's count or clearing over the selection it dropped or brought back).
+`TypeToJumpIndicator` is visual only: it mounts with its text, so as a live region its first message would drop. A jump
+speaks through the cursor row it lands on.
 
 **Type-to-jump factory.** One `createTypeToJumpState` instance per pane, inside `FilePane`. Reset triggers (ESC, arrows,
 Page/Home/End, Enter, Tab, Backspace, rename entry, context menu, drag start, pane switch, tab switch, dir change,

@@ -145,7 +145,10 @@ describe('NewEntryNameCheck', () => {
   }
 
   function diff(listingId: string): DirectoryDiff {
-    return { listingId, batches: [{ fromSequence: 0, sequence: 1, totalCount: 0, changes: [], effectiveSortBy: null }] }
+    return {
+      listingId,
+      batches: [{ fromSequence: 0, sequence: 1, totalCount: 0, hiddenCount: 0, changes: [], effectiveSortBy: null }],
+    }
   }
 
   beforeEach(() => {

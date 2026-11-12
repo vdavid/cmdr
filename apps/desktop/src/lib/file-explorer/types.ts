@@ -227,6 +227,8 @@ export interface DirectoryDiffBatch {
   fromSequence: number
   sequence: number
   totalCount: number
+  /** Hidden items revealing hidden files would add, counted only when `totalCount` is zero (the empty state's hint). */
+  hiddenCount: number
   changes: DiffChange[]
   /** The column the rows are now ordered by, when this batch moved it (a re-read into a volume recording other dates). */
   effectiveSortBy: SortColumn | null

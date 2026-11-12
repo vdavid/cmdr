@@ -20,6 +20,7 @@
     } from '../drag/drag-auto-scroll'
     import { startClickToRename, cancelClickToRename } from '../rename/rename-activation'
     import FullListHeader from './FullListHeader.svelte'
+    import EmptyFolderState from './EmptyFolderState.svelte'
     import FileIcon from '../selection/FileIcon.svelte'
     import TagDots from '../selection/TagDots.svelte'
     import InlineRenameEditor from '../rename/InlineRenameEditor.svelte'
@@ -108,6 +109,8 @@
          *  round-trip. `'root'` for a local pane. */
         volumeId: string
         totalCount: number
+        /** Hidden items the pane hides while it shows no rows: the empty state's hint (`EmptyFolderState`). */
+        hiddenCount?: number
         includeHidden: boolean
         cacheGeneration?: number
         /**
@@ -211,6 +214,7 @@
         getRowSequence,
         volumeId,
         totalCount,
+        hiddenCount = 0,
         includeHidden,
         cacheGeneration = 0,
         softRefreshTick = 0,
@@ -863,7 +867,7 @@
     <div class="row-area">
     <!-- Scrollable file list. `role="listbox"` lives on the inner rows wrapper
          because a listbox's children must be options/groups, and the scroller also
-         holds the "empty folder" message. -->
+         holds the rename field. -->
     <div
         class="full-list"
         class:is-covered={loadingOverlay !== undefined}
@@ -1143,12 +1147,6 @@
             </div>
         </div>
         </div>
-        <!-- Sibling of the listbox, not a child: the empty-state text is not an
-             option, and a listbox holding a non-option child is an
-             aria-required-children violation. An EMPTY listbox is fine. -->
-        {#if !loadingOverlay && (hasParent ? totalCount - 1 : totalCount) === 0}
-            <div class="empty-folder-message">{tString('fileExplorer.list.empty')}</div>
-        {/if}
         <!-- Beside the listbox too: an option can't hold a text field (`RenameOverlay`). -->
         {#if renameState?.active && renameSlot && scrollContainer}
             {#key renameSlot}
@@ -1180,6 +1178,10 @@
     </div>
     {#if loadingOverlay}
         <div class="loading-overlay">{@render loadingOverlay()}</div>
+    {:else if (hasParent ? totalCount - 1 : totalCount) === 0}
+        <!-- Laid over the row area, beside the listbox, never in it (an EMPTY listbox is
+             fine): see `EmptyFolderState`. Inside the block scroller it sat right under `..`. -->
+        <EmptyFolderState {hiddenCount} />
     {/if}
     </div>
 </div>
@@ -1244,15 +1246,6 @@
     .listbox-region {
         outline: none;
         padding: var(--spacing-xs);
-    }
-
-    .empty-folder-message {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex: 1;
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
     }
 
     /* No `will-change: transform` on `.virtual-window`: it force-promoted a
