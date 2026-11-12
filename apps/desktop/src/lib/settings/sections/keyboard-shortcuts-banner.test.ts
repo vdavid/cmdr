@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { Command } from '#lib/commands/types.js'
 import { BLOCKED_BY_DIALOGS } from '#lib/commands/while-dialog-open.js'
+import { sameOnAll } from '#lib/commands/platform-shortcuts.js'
 import {
   classifyConflict,
   classifySystemShortcut,
@@ -18,7 +19,7 @@ function cmd(partial: { id: string; name?: string; nativeShortcut?: true; fixedK
     displayName: partial.name ?? partial.id,
     scope: 'App',
     showInPalette: false,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   }
   if (partial.nativeShortcut) command.nativeShortcut = true

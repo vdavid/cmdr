@@ -4,28 +4,17 @@
  * A new command that has none of the three fails here, so the keyboard path
  * ships with the command instead of being found missing later (#383).
  *
- * Runs on macOS, with every capability a command asks for, because that's where every command
- * exists: the capability-gated ones (Quick Look, Get Info, tags, cloud actions) are
- * hidden from the palette elsewhere AND cfg-gated out of the native menus, so
- * off macOS they're absent, not mouse-only.
+ * Runs per platform, on what that OS can offer (`withCapabilitiesPossibleOn`): a command whose
+ * capability the OS lacks isn't there at all (hidden from the palette, cfg-gated out of the
+ * native menus), so it's absent, not mouse-only.
  */
-import { describe, it, expect, vi } from 'vitest'
-import { commands } from './command-registry'
+import { afterAll, beforeAll, describe, it, expect } from 'vitest'
+import { withCapabilitiesPossibleOn, withPlatform } from '#lib/platform/test-platform.js'
+import { getDefaultShortcuts } from '#lib/shortcuts/shortcuts-store.js'
+import { commandOffered, commands } from './command-registry'
 import { mcpCommands } from './sources/mcp'
+import { PLATFORMS } from './platform-shortcuts'
 import type { CommandId } from './command-ids'
-
-vi.hoisted(() => {
-  vi.stubGlobal('__CMDR_PLATFORM__', 'macos')
-  // Every capability a command asks for, as macOS answers them.
-  vi.stubGlobal('__CMDR_CAPABILITIES__', {
-    quickLook: true,
-    getInfo: true,
-    openTerminalHere: true,
-    cloudFileActions: true,
-    colorTags: true,
-    cliCommand: true,
-  })
-})
 
 const MCP_ONLY_REASON =
   'MCP-only: carries a per-pane payload for an MCP tool, and the focused-pane commands are the keyboard path.'
@@ -40,11 +29,23 @@ const KEYBOARD_PATH_NOT_NEEDED: Partial<Record<CommandId, string>> = {
   'sort.set': MCP_ONLY_REASON,
 }
 
-const hasNoKeyboardPath = (c: (typeof commands)[number]): boolean => c.shortcuts.length === 0 && !c.showInPalette
+const hasNoKeyboardPath = (c: (typeof commands)[number]): boolean =>
+  getDefaultShortcuts(c.id).length === 0 && !c.showInPalette
 
-describe('keyboard reachability', () => {
+describe.each(PLATFORMS)('keyboard reachability on %s', (platform) => {
+  const undos: (() => void)[] = []
+
+  beforeAll(() => {
+    undos.push(withPlatform(platform), withCapabilitiesPossibleOn(platform))
+  })
+
+  afterAll(() => {
+    for (const undo of undos.reverse()) undo()
+  })
+
   it('gives every command a default key or a palette row, or a reason it needs neither', () => {
     const unreachable = commands
+      .filter(commandOffered)
       .filter(hasNoKeyboardPath)
       .map((c) => c.id)
       .filter((id) => !(id in KEYBOARD_PATH_NOT_NEEDED))
@@ -56,6 +57,7 @@ describe('keyboard reachability', () => {
 
   it('keeps the exemption list tight: every exempt command really has no key and no palette row', () => {
     const exemptButReachable = commands
+      .filter(commandOffered)
       .filter((c) => c.id in KEYBOARD_PATH_NOT_NEEDED && !hasNoKeyboardPath(c))
       .map((c) => c.id)
     expect(exemptButReachable, 'Drop these from KEYBOARD_PATH_NOT_NEEDED').toEqual([])

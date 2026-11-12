@@ -1,7 +1,6 @@
 /**
  * The F-key bar on macOS, where "Open terminal here" exists (`openTerminalHere`) and takes the F9 slot.
- * Its own file because the platform and capabilities are read at module load (by the command registry
- * too), so both have to be set before either imports; the platform-neutral
+ * Its own file because the platform and capabilities are set before anything imports; the platform-neutral
  * cases live in `FunctionKeyBar.test.ts`.
  */
 import { describe, it, expect, vi } from 'vitest'
@@ -28,7 +27,6 @@ vi.mock('#lib/ipc/bindings.js', () => ({
 
 import FunctionKeyBar from './FunctionKeyBar.svelte'
 import type { CommandId } from '#lib/commands/index.js'
-import { toPlatformShortcut } from '#lib/shortcuts/key-capture.js'
 
 describe('FunctionKeyBar on macOS', () => {
   it('adds a Terminal button in the F9 slot that opens a terminal here', () => {
@@ -59,8 +57,7 @@ describe('FunctionKeyBar on macOS', () => {
     const buttons = target.querySelectorAll('button')
     expect(buttons).toHaveLength(8)
     expect(buttons[7].disabled).toBe(true)
-    // The chip goes through `toPlatformShortcut`, whose own platform read isn't mocked.
-    expect(buttons[7].querySelector('kbd')?.textContent).toBe(toPlatformShortcut('⇧F9'))
+    expect(buttons[7].querySelector('kbd')?.textContent).toBe('⇧F9')
 
     document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Shift' }))
     document.body.removeChild(target)

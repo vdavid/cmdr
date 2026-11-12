@@ -9,6 +9,7 @@
  * the scope arrays are concatenated.
  */
 import type { CommandSource } from '../types'
+import { cmdOrCtrl, sameOnAll } from '../platform-shortcuts'
 import type { CommandId } from '../command-ids'
 import { BLOCKED_BY_DIALOGS } from '../while-dialog-open'
 
@@ -38,25 +39,30 @@ const viewerKey = {
 } as const
 
 export const viewerWindowCommands: CommandSource[] = [
-  { id: 'viewer.toggleWordWrap', nameKey: 'commands.viewerToggleWordWrap.label', shortcuts: ['W'], ...viewerKey },
-  { id: 'viewer.toggleTail', nameKey: 'commands.viewerToggleTail.label', shortcuts: ['F'], ...viewerKey },
+  {
+    id: 'viewer.toggleWordWrap',
+    nameKey: 'commands.viewerToggleWordWrap.label',
+    shortcuts: sameOnAll('W'),
+    ...viewerKey,
+  },
+  { id: 'viewer.toggleTail', nameKey: 'commands.viewerToggleTail.label', shortcuts: sameOnAll('F'), ...viewerKey },
   // The view modes on Total Commander's Lister keys. 0 also fits a zoomed image back to the
   // window: it's the "media" key, and that's the view it already shows.
-  { id: 'viewer.viewAsMedia', nameKey: 'commands.viewerViewAsMedia.label', shortcuts: ['0'], ...viewerKey },
-  { id: 'viewer.viewAsText', nameKey: 'commands.viewerViewAsText.label', shortcuts: ['1'], ...viewerKey },
-  { id: 'viewer.viewAsBinary', nameKey: 'commands.viewerViewAsBinary.label', shortcuts: ['2'], ...viewerKey },
-  { id: 'viewer.viewAsHex', nameKey: 'commands.viewerViewAsHex.label', shortcuts: ['3'], ...viewerKey },
+  { id: 'viewer.viewAsMedia', nameKey: 'commands.viewerViewAsMedia.label', shortcuts: sameOnAll('0'), ...viewerKey },
+  { id: 'viewer.viewAsText', nameKey: 'commands.viewerViewAsText.label', shortcuts: sameOnAll('1'), ...viewerKey },
+  { id: 'viewer.viewAsBinary', nameKey: 'commands.viewerViewAsBinary.label', shortcuts: sameOnAll('2'), ...viewerKey },
+  { id: 'viewer.viewAsHex', nameKey: 'commands.viewerViewAsHex.label', shortcuts: sameOnAll('3'), ...viewerKey },
   // `+` and `=` share a key on US layouts, so both zoom in, Shift held or not.
-  { id: 'viewer.zoomIn', nameKey: 'commands.viewerZoomIn.label', shortcuts: ['+', '='], ...viewerKey },
-  { id: 'viewer.zoomOut', nameKey: 'commands.viewerZoomOut.label', shortcuts: ['-'], ...viewerKey },
+  { id: 'viewer.zoomIn', nameKey: 'commands.viewerZoomIn.label', shortcuts: sameOnAll('+', '='), ...viewerKey },
+  { id: 'viewer.zoomOut', nameKey: 'commands.viewerZoomOut.label', shortcuts: sameOnAll('-'), ...viewerKey },
   {
     id: 'viewer.toggleImageZoom',
     nameKey: 'commands.viewerToggleImageZoom.label',
-    shortcuts: ['Enter', 'Space'],
+    shortcuts: sameOnAll('Enter', 'Space'),
     ...viewerKey,
   },
   // Back / Forward through the documents a Markdown link led to, on the browser's and the
   // main window's keys. The viewer bar's Go menu reaches the same two steps.
-  { id: 'viewer.goBack', nameKey: 'commands.viewerGoBack.label', shortcuts: ['⌘['], ...viewerKey },
-  { id: 'viewer.goForward', nameKey: 'commands.viewerGoForward.label', shortcuts: ['⌘]'], ...viewerKey },
+  { id: 'viewer.goBack', nameKey: 'commands.viewerGoBack.label', shortcuts: cmdOrCtrl('⌘['), ...viewerKey },
+  { id: 'viewer.goForward', nameKey: 'commands.viewerGoForward.label', shortcuts: cmdOrCtrl('⌘]'), ...viewerKey },
 ]

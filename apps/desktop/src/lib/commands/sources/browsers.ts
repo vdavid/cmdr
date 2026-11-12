@@ -4,6 +4,7 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
+import { cmdOrCtrl, concatShortcuts, sameOnAll } from '../platform-shortcuts'
 import { BLOCKED_BY_DIALOGS } from '../while-dialog-open'
 
 export const browsersCommands: CommandSource[] = [
@@ -15,7 +16,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.networkSelectHost.label',
     scope: 'Main window/Servers',
     showInPalette: false,
-    shortcuts: ['Enter'],
+    shortcuts: sameOnAll('Enter'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -27,7 +28,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.networkRefresh.label',
     scope: 'Main window/Servers',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
 
@@ -41,7 +42,7 @@ export const browsersCommands: CommandSource[] = [
     showInPalette: true,
     // `⌘↑` mirrors the file list's `⌘↑` = parent; PlacesBrowser handles all three
     // keys (`handleBackToHostKey`). Display-only — `fixedKey` handling is in-component.
-    shortcuts: ['Backspace', 'Escape', '⌘↑'],
+    shortcuts: concatShortcuts(sameOnAll('Backspace', 'Escape'), cmdOrCtrl('⌘↑')),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -50,7 +51,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.shareSelectShare.label',
     scope: 'Main window/Places',
     showInPalette: true,
-    shortcuts: ['Enter'],
+    shortcuts: sameOnAll('Enter'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -65,7 +66,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.serversShow.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -73,7 +74,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.serversTogglePin.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -81,7 +82,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.serversDisconnect.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -89,7 +90,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.serversForgetSecret.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -100,7 +101,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.serversConnect.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘K'],
+    shortcuts: cmdOrCtrl('⌘K'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -110,7 +111,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.serversEdit.label',
     scope: 'Main window/Servers',
     showInPalette: true,
-    shortcuts: ['⌘E'],
+    shortcuts: cmdOrCtrl('⌘E'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
 
@@ -122,7 +123,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.volumeSelect.label',
     scope: 'Main window/Volume chooser',
     showInPalette: false,
-    shortcuts: ['Enter'],
+    shortcuts: sameOnAll('Enter'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -131,7 +132,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.volumeClose.label',
     scope: 'Main window/Volume chooser',
     showInPalette: false,
-    shortcuts: ['Escape'],
+    shortcuts: sameOnAll('Escape'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -149,7 +150,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'commands.favoritesOpenByNumber.label',
     scope: 'Main window/Favorites menu',
     showInPalette: false,
-    shortcuts: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+    shortcuts: sameOnAll('1', '2', '3', '4', '5', '6', '7', '8', '9'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -163,7 +164,7 @@ export const browsersCommands: CommandSource[] = [
     nameKey: 'fileExplorer.navigation.favoritesAddCurrent',
     scope: 'Main window/Favorites menu',
     showInPalette: false,
-    shortcuts: ['0'],
+    shortcuts: sameOnAll('0'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },

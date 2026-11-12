@@ -10,13 +10,13 @@ Centralized command registry and fuzzy search engine for the command palette.
   arg-tuple shape).
 - **`command-registry.ts`**: the `commands` array, `listedCommands()` (minus `needsCapability` misses),
   `getPaletteCommands()`, `updateLicenseCommandName()`, and the `NATIVE_SHORTCUT_COMMAND_IDS` / `FIXED_KEY_COMMAND_IDS`
-  lists. Registry DATA is in **`sources/*.ts`**.
+  lists, `defaultShortcuts()`. Registry DATA is in **`sources/*.ts`**, keys via **`platform-shortcuts.ts`** (one list
+  per OS, ❌ never converted; `DETAILS.md` § "Default keys per platform").
 - **`sort-commands.ts`**: `SORT_BY_COMMANDS` (column → `sort.by*`).
 - **`fuzzy-search.ts`**: `searchCommands()` (palette set) + `searchAllCommands()` (listed set), via the shared
   `#lib/utils/unicode-fuzzy.ts` engine (any script, accents optional).
-- Tests: `fuzzy-search.test.ts`, `command-registry.test.ts` (set-equality + palette pin), `command-types.test.ts`
-  (arg-shape guards), `rust-command-id-drift.test.ts` (Rust ids ∈ `COMMAND_IDS`), `command-reachability.test.ts` (key,
-  palette row, or reasoned exemption).
+- Tests: `command-registry.test.ts` (set-equality + palette pin), `command-types.test.ts` (arg shapes),
+  `rust-command-id-drift.test.ts` (Rust ids ∈ `COMMAND_IDS`), `command-reachability.test.ts`, `default-keymap.test.ts`.
 
 ## Must-knows (invariants and guardrails)
 
@@ -27,9 +27,8 @@ Centralized command registry and fuzzy search engine for the command palette.
   PALETTE's alone**, falling back to `name`. A live-state label takes a generic hook — a `nameKey` thunk or a
   `displayName` resolver — ❌ never a per-id branch in `resolveCommand`. Rust's native-menu labels are a SEPARATE
   mechanism. `DETAILS.md` § "Two labels".
-- **Two set-equality guards keep tuple and registry in sync.** `Command.id: CommandId` enforces tuple ⊇ registry at
-  compile time; `command-registry.test.ts` enforces registry ⊇ tuple. Adding to one without the other fails the build or
-  the test.
+- **Two set-equality guards keep tuple and registry in sync**: `Command.id: CommandId` (tuple ⊇ registry, compile time)
+  and `command-registry.test.ts` (registry ⊇ tuple).
 - **Never `as CommandId`-cast at an untyped edge; use `isCommandId()`.** Ids enter the frontend untyped from the Rust
   `execute-command` payload, the cross-window emit from `LicenseSection.svelte`, and the selection-dialog `onCommand`
   prop. A stale id cast through would miss the handler record and silently no-op. The IPC boundary is untyped (Rust

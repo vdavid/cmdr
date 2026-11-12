@@ -12,22 +12,41 @@
  * modifier order (`'⌥⌘A'` vs the emitted `'⌘⌥A'`), or a symbol spelled as Shift plus
  * a US key (`'⇧8'` or `'⇧*'` for `'*'`): a typed symbol is named by its character, so
  * that default would only work on some layouts.
+ *
+ * It runs per platform over every command's RAW arm for that platform, capability ignored:
+ * a gated command's keys must be spelled right before its capability flips on.
  */
 
 import { describe, it, expect, beforeAll } from 'vitest'
+import type { Platform } from '#lib/platform/index.js'
 import { withPlatform } from '#lib/platform/test-platform.js'
 import { commands } from '#lib/commands/command-registry.js'
+import { PLATFORMS } from '#lib/commands/platform-shortcuts.js'
 import { classifySystemShortcut } from '#lib/settings/sections/keyboard-shortcuts-banner.js'
 import { formatKeyCombo } from './key-capture'
-beforeAll(() => withPlatform('macos'))
 
-/** The modifier symbols `formatKeyCombo` emits, mapped to the event flag each one sets. */
-const modifierSymbolToFlag = {
-  '⌘': 'metaKey',
-  '⌃': 'ctrlKey',
-  '⌥': 'altKey',
-  '⇧': 'shiftKey',
-} as const satisfies Record<string, keyof KeyboardEvent>
+type ModifierFlag = 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'
+
+/**
+ * Each platform's modifier tokens, in the order `formatKeyCombo` emits them, with the event
+ * flag each one sets: ⌘⌃⌥⇧ glyphs on macOS, `Ctrl+Alt+Shift+Super` words elsewhere.
+ */
+const offMacModifierTokens: readonly [token: string, flag: ModifierFlag][] = [
+  ['Ctrl+', 'ctrlKey'],
+  ['Alt+', 'altKey'],
+  ['Shift+', 'shiftKey'],
+  ['Super+', 'metaKey'],
+]
+const modifierTokens: Record<Platform, readonly [token: string, flag: ModifierFlag][]> = {
+  macos: [
+    ['⌘', 'metaKey'],
+    ['⌃', 'ctrlKey'],
+    ['⌥', 'altKey'],
+    ['⇧', 'shiftKey'],
+  ],
+  windows: offMacModifierTokens,
+  linux: offMacModifierTokens,
+}
 
 /** Stored key token → the `event.key` a real keypress carries. */
 const keyTokenToEventKey: Record<string, string> = {
@@ -38,42 +57,58 @@ const keyTokenToEventKey: Record<string, string> = {
   Space: ' ',
 }
 
+/** Splits a stored combo into its leading modifier tokens (in written order) and its key. */
+function parseCombo(shortcut: string, platform: Platform): { tokens: string[]; key: string } {
+  const tokens: string[] = []
+  let rest = shortcut
+  for (;;) {
+    // The key itself may look like a token's tail (`Ctrl++`), so a token never eats the last char.
+    const token = modifierTokens[platform].find(([t]) => rest.startsWith(t) && rest.length > t.length)?.[0]
+    if (token === undefined) break
+    tokens.push(token)
+    rest = rest.slice(token.length)
+  }
+  return { tokens, key: rest }
+}
+
 /**
  * Turn a stored shortcut string back into the keydown that would produce it.
  * Letters go back to lowercase (an unshifted `A` key reports `'a'`), everything
  * else is the token itself unless the table above remaps it.
  */
-function keydownFor(shortcut: string): KeyboardEvent {
+function keydownFor(shortcut: string, platform: Platform): KeyboardEvent {
   const event = { metaKey: false, ctrlKey: false, altKey: false, shiftKey: false, key: '', code: '' }
-
-  let rest = shortcut
-  while (rest.length > 0 && rest[0] in modifierSymbolToFlag) {
-    event[modifierSymbolToFlag[rest[0] as keyof typeof modifierSymbolToFlag]] = true
-    rest = rest.slice(1)
+  const { tokens, key } = parseCombo(shortcut, platform)
+  for (const token of tokens) {
+    const flag = modifierTokens[platform].find(([t]) => t === token)?.[1]
+    if (flag) event[flag] = true
   }
-
-  event.key = keyTokenToEventKey[rest] ?? (rest.length === 1 ? rest.toLowerCase() : rest)
+  event.key = keyTokenToEventKey[key] ?? (key.length === 1 ? key.toLowerCase() : key)
   return event as unknown as KeyboardEvent
 }
 
 /**
- * macOS-native commands are exempt: AppKit owns both their behavior and their
- * accelerator, so their strings are pure display that mirrors what the OS menu
+ * macOS-native commands are exempt on macOS: AppKit owns both their behavior and their
+ * accelerator there, so their strings are pure display that mirrors what the OS menu
  * shows (`⌥⌘H`), and nothing ever dispatches them from a keydown.
  */
-const dispatchableDefaults = commands
-  .filter((command) => !command.nativeShortcut)
-  .flatMap((command) => command.shortcuts.map((shortcut) => [command.id, shortcut] as const))
+function dispatchableDefaults(platform: Platform): (readonly [string, string])[] {
+  return commands
+    .filter((command) => platform !== 'macos' || !command.nativeShortcut)
+    .flatMap((command) => command.shortcuts[platform].map((shortcut) => [command.id, shortcut] as const))
+}
 
-describe('registry default shortcuts', () => {
-  it.each(dispatchableDefaults)('%s: %s is reachable by a real keypress', (_id, shortcut) => {
-    expect(formatKeyCombo(keydownFor(shortcut))).toBe(shortcut)
+describe.each(PLATFORMS)('registry default shortcuts on %s', (platform) => {
+  beforeAll(() => withPlatform(platform))
+
+  it.each(dispatchableDefaults(platform))('%s: %s is reachable by a real keypress', (_id, shortcut) => {
+    expect(formatKeyCombo(keydownFor(shortcut, platform))).toBe(shortcut)
   })
 
-  it('spells modifiers in the ⌘⌃⌥⇧ order formatKeyCombo emits, not Apple display order', () => {
-    const emittedOrder = ['⌘', '⌃', '⌥', '⇧']
-    const misordered = dispatchableDefaults.filter(([, shortcut]) => {
-      const positions = (shortcut.match(/[⌘⌃⌥⇧]/gu) ?? []).map((char) => emittedOrder.indexOf(char))
+  it('spells modifiers in the order formatKeyCombo emits, not Apple display order', () => {
+    const emittedOrder = modifierTokens[platform].map(([token]) => token)
+    const misordered = dispatchableDefaults(platform).filter(([, shortcut]) => {
+      const positions = parseCombo(shortcut, platform).tokens.map((token) => emittedOrder.indexOf(token))
       return positions.some((position, i) => i > 0 && position < positions[i - 1])
     })
     expect(misordered).toEqual([])
@@ -81,6 +116,8 @@ describe('registry default shortcuts', () => {
 })
 
 describe('macOS system-shortcut warnings', () => {
+  beforeAll(() => withPlatform('macos'))
+
   // The table is keyed by the display strings `formatKeyCombo` produces, so a
   // combo spelled Apple's way there silently never warns.
   it.each([

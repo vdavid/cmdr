@@ -7,6 +7,7 @@
  * See `../command-registry.ts` for how the scope arrays are concatenated.
  */
 import type { CommandSource } from '../types'
+import { cmdOrCtrl, sameOnAll } from '../platform-shortcuts'
 import { BLOCKED_BY_DIALOGS } from '../while-dialog-open'
 
 /** Every entry shares these: the dialog answers them itself, never the dispatch spine. */
@@ -23,21 +24,21 @@ export const operationLogCommands: CommandSource[] = [
   {
     id: 'operationLog.goToItems',
     nameKey: 'commands.operationLogGoToItems.label',
-    shortcuts: ['→', 'Enter'],
+    shortcuts: sameOnAll('→', 'Enter'),
     ...operationLogKey,
   },
   // In the tree. Space is the checkbox's own key; on a folder, everything inside follows.
   {
     id: 'operationLog.toggleItem',
     nameKey: 'commands.operationLogToggleItem.label',
-    shortcuts: ['Space'],
+    shortcuts: sameOnAll('Space'),
     ...operationLogKey,
   },
   // The panes' `selection.toggleAndDown` key, as a twin: a command lives in one scope.
   {
     id: 'operationLog.toggleItemAndDown',
     nameKey: 'commands.operationLogToggleItemAndDown.label',
-    shortcuts: ['Insert'],
+    shortcuts: sameOnAll('Insert'),
     ...operationLogKey,
   },
   // ⌘A and ⌘⇧A are also Edit > Select all / Deselect all's accelerators, which fire before
@@ -46,20 +47,20 @@ export const operationLogCommands: CommandSource[] = [
   {
     id: 'operationLog.selectAll',
     nameKey: 'commands.operationLogSelectAll.label',
-    shortcuts: ['⌘A'],
+    shortcuts: cmdOrCtrl('⌘A'),
     ...operationLogKey,
   },
   {
     id: 'operationLog.deselectAll',
     nameKey: 'commands.operationLogDeselectAll.label',
-    shortcuts: ['⌘⇧A'],
+    shortcuts: cmdOrCtrl('⌘⇧A'),
     ...operationLogKey,
   },
   // The action bar's key, from anywhere in the dialog. It asks first, as the button does.
   {
     id: 'operationLog.rollBack',
     nameKey: 'commands.operationLogRollBack.label',
-    shortcuts: ['⌘Enter'],
+    shortcuts: cmdOrCtrl('⌘Enter'),
     ...operationLogKey,
   },
 ]

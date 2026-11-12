@@ -19,10 +19,9 @@
 - `hooks.client.ts` calls `applyPlatformAttributes()` at module evaluation, which every window runs before its first
   route renders, so `:root[data-platform=…]` and `:root[data-overlay-title-bar]` selectors hold from the first paint.
 
-Decision: an init script, not an IPC command. Why: several modules read these AT MODULE LOAD (the command registry's
-`showInPalette` and `shortcuts` arrays, the settings registry), and an awaited `invoke` can't answer before they
-evaluate. The other option, a `tauri-plugin-os` call, is async for the same reason, adds a dependency, and knows nothing
-about Cmdr's features.
+Decision: an init script, not an IPC command. Why: several modules read these AT MODULE LOAD (the settings registry, for
+one), and an awaited `invoke` can't answer before they evaluate. The other option, a `tauri-plugin-os` call, is async
+for the same reason, adds a dependency, and knows nothing about Cmdr's features.
 
 Decision: one platform value per process, typed in TS, and Rust's own `std::env::consts::OS` on the backend. Why: Rust's
 names for the three targets are exactly the `Platform` values, so nothing maps or mirrors them, and the crate root
@@ -68,10 +67,9 @@ backend says what exists, and a surface asks for exactly the thing it needs.
   own), Full Disk Access everywhere it shows, the F9 terminal slot, the Services selection push, and the overlay title
   bar.
 - **What doesn't**: `isMacOS()` stays where the question really is the platform. Key glyphs and the combo grammar
-  (`key-capture.ts`, the shortcut filter, the favorites tooltip), the default keymap's per-platform combos, the
-  updater's macOS flow, and the old-macOS notice. ❌ Never copy: wording that differs per OS is one catalog value with a
-  branch per OS (`../intl/DETAILS.md` § Platform variants), and `cmdr/no-platform-copy-branch` refuses an OS test that
-  picks a string.
+  (`key-capture.ts`, the shortcut filter, the favorites tooltip), the updater's macOS flow, and the old-macOS notice. ❌
+  Never copy: wording that differs per OS is one catalog value with a branch per OS (`../intl/DETAILS.md` § Platform
+  variants), and `cmdr/no-platform-copy-branch` refuses an OS test that picks a string.
 
 Decision: booleans, not a list of names or an OS-file-manager name. Why: a flag per surface is exhaustive in both
 languages (a missing answer is a compile error in Rust and a type error in the demo's table), and the per-platform names

@@ -51,8 +51,8 @@ async function readFavorites(): Promise<{ id: string; name: string; path: string
 /**
  * Opens the favorites menu the way a person does.
  *
- * ❗ ⌃D only on macOS. `toPlatformShortcut` folds both ⌘ and ⌃ onto `Ctrl` off macOS, so
- * on Linux Ctrl+D is Duplicate's combo too and the more specific scope wins it — pressing
+ * ❗ ⌃D only on macOS. Off macOS, Show favorites' default is `Ctrl+D`, so
+ * on Linux it's Duplicate's combo too and the more specific scope wins it — pressing
  * it here would copy a fixture file and fail the dirty-tree guard. The command dispatch is
  * the same path ⌃D reaches, so Linux takes that half and macOS proves the key.
  */

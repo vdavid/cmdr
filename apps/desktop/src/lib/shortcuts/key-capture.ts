@@ -224,20 +224,29 @@ export function isModifierKey(key: string): boolean {
  */
 export function formatKeyCombo(event: KeyboardEvent): string {
   const shiftTypedTheKey = event.shiftKey && !hasCommandModifier(event) && !event.altKey && isTypedSymbol(event.key)
-  const parts = modifierTokens({ ...eventModifiers(event), shiftKey: event.shiftKey && !shiftTypedTheKey })
-
+  const modifiers = { ...eventModifiers(event), shiftKey: event.shiftKey && !shiftTypedTheKey }
   // Don't include modifier keys themselves as the main key
-  if (!isModifierKey(event.key)) {
-    const key = normalizeKeyName(event.key, event.code)
-    parts.push(key)
-  }
+  const key = isModifierKey(event.key) ? '' : normalizeKeyName(event.key, event.code)
+  return formatChord(modifiers, key)
+}
 
+/** Which modifiers a chord holds, by the `KeyboardEvent` flag each one sets. */
+export type ChordModifiers = Partial<Pick<KeyboardEvent, 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'>>
+
+/**
+ * A chord in this platform's canonical spelling, from its modifiers and its canonical key name:
+ * the token writer `formatKeyCombo` uses, for a surface that shows a fixed chord with no command
+ * behind it (`formatChord({ shiftKey: true }, 'F9')` is `⇧F9` on macOS, `Shift+F9` elsewhere).
+ */
+export function formatChord(modifiers: ChordModifiers, key: string): string {
+  const parts = modifierTokens(modifiers)
+  if (key) parts.push(key)
   return isMacOS() ? parts.join('') : parts.join('+')
 }
 
 /** The held modifiers as combo tokens, in the fixed order: ⌘⌃⌥⇧ on macOS, Ctrl+Alt+Shift+Super elsewhere. */
-function modifierTokens(modifiers: Pick<KeyboardEvent, 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'>): string[] {
-  const { metaKey, ctrlKey, altKey, shiftKey } = modifiers
+function modifierTokens(modifiers: ChordModifiers): string[] {
+  const { metaKey = false, ctrlKey = false, altKey = false, shiftKey = false } = modifiers
   const ordered: [boolean, string][] = isMacOS()
     ? [
         [metaKey, '⌘'],
@@ -357,70 +366,6 @@ export function keyComboCandidates(event: KeyboardEvent): string[] {
  */
 export function capturedKeyCombo(event: KeyboardEvent): string {
   return physicalKeyCombo(event) ?? latinKeyCombo(event) ?? formatKeyCombo(event)
-}
-
-/** Modifier symbols used in macOS shortcut format */
-const macModifierToLinux: Record<string, string> = {
-  '⌘': 'Ctrl',
-  '⌥': 'Alt',
-  '⇧': 'Shift',
-  '⌃': 'Ctrl',
-}
-
-const macModifierSymbols = new Set(Object.keys(macModifierToLinux))
-
-/**
- * Convert a macOS-format shortcut string to the current platform's format.
- * On macOS, returns as-is. On Linux, converts symbols to names with `+` separator.
- * Special case: when both ⌃ and ⌘ are present, one maps to Ctrl and the other to Shift
- * (since both would otherwise become Ctrl).
- */
-export function toPlatformShortcut(shortcut: string): string {
-  if (isMacOS()) return shortcut
-
-  // Check if the shortcut contains any macOS modifier symbols
-  const chars = Array.from(shortcut)
-  const hasModifierSymbols = chars.some((ch) => macModifierSymbols.has(ch))
-  if (!hasModifierSymbols) return shortcut
-
-  // Parse the macOS symbol string character by character
-  const modifiers: string[] = []
-  let key = ''
-  let hasCmdSymbol = false
-  let hasCtrlSymbol = false
-
-  for (const ch of chars) {
-    if (macModifierSymbols.has(ch)) {
-      if (ch === '⌘') hasCmdSymbol = true
-      if (ch === '⌃') hasCtrlSymbol = true
-      modifiers.push(ch)
-    } else {
-      key += ch
-    }
-  }
-
-  // Build the Linux modifier list, handling the ⌃+⌘ collision
-  const linuxModifiers: string[] = []
-  const hasCollision = hasCmdSymbol && hasCtrlSymbol
-
-  for (const mod of modifiers) {
-    if (hasCollision && mod === '⌃') {
-      // When both ⌃ and ⌘ are present, ⌃ maps to Shift instead of Ctrl
-      linuxModifiers.push('Shift')
-    } else {
-      linuxModifiers.push(macModifierToLinux[mod])
-    }
-  }
-
-  // Deduplicate modifiers while preserving order
-  const seen = new Set<string>()
-  const uniqueModifiers = linuxModifiers.filter((m) => {
-    if (seen.has(m)) return false
-    seen.add(m)
-    return true
-  })
-
-  return [...uniqueModifiers, key].join('+')
 }
 
 /** Both platforms' modifier tokens → the modifier names `aria-keyshortcuts` uses. */

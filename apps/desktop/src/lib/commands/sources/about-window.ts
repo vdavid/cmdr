@@ -4,6 +4,7 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
+import { sameOnAll } from '../platform-shortcuts'
 import { BLOCKED_BY_DIALOGS } from '../while-dialog-open'
 
 export const aboutWindowCommands: CommandSource[] = [
@@ -15,7 +16,7 @@ export const aboutWindowCommands: CommandSource[] = [
     nameKey: 'commands.aboutOpenWebsite.label',
     scope: 'About window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -23,7 +24,7 @@ export const aboutWindowCommands: CommandSource[] = [
     nameKey: 'commands.aboutOpenUpgrade.label',
     scope: 'About window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -31,7 +32,7 @@ export const aboutWindowCommands: CommandSource[] = [
     nameKey: 'commands.aboutClose.label',
     scope: 'About window',
     showInPalette: true,
-    shortcuts: ['Escape'],
+    shortcuts: sameOnAll('Escape'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
 ]

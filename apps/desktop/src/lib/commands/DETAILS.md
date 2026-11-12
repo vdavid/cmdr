@@ -13,7 +13,7 @@ interface Command {
   name: string // shown in palette
   scope: CommandScope // hierarchical, display-only (does not enforce routing)
   showInPalette: boolean
-  shortcuts: string[] // e.g. ['⌘Q'], ['Backspace', '⌘↑']
+  shortcuts: PlatformShortcuts // { macos, windows, linux }, each in that OS's spelling (platform-shortcuts.ts)
   nativeShortcut?: true // macOS owns behavior AND accelerator (PredefinedMenuItem); read-only in the editor
   fixedKey?: true // key hardcoded in the owning component, never reads the store; read-only in the editor
   status?: 'alpha' | 'beta' // stability badge in the palette row; derive via getBadgeStatus() from #lib/feature-status
@@ -114,9 +114,9 @@ drift test compares the compiled slice back to the authored tuple. This keeps on
 IPC boundary; the generated Specta payload remains `commandId: string`, and the frontend wrapper narrows it to
 `CommandId`.
 
-`isMacOS()` is called at module load so the registry contains platform-correct names and `showInPalette` values
-(`Get info`, `Quick look`, `Show in Finder` only make sense on macOS), keeping the palette and shortcut systems
-platform-aware without platform checks scattered through the UI.
+No source reads the platform or a capability at module load: a name that differs per OS is a catalog platform block read
+per access (§ i18n), a command an OS lacks is gated by `needsCapability` at call time, and default keys are a three-way
+table (§ "Default keys per platform").
 
 ### i18n: keys, not English
 
@@ -182,8 +182,7 @@ A command that drives an OS feature (Get info, Quick Look, Open terminal here, t
   Keyboard shortcuts section and its search (`searchAllCommands`), the help window (`ShortcutsList.svelte`), and the MCP
   settings resource's shortcuts all read it. Dispatch, conflict detection, and the id guards keep the whole `commands`
   array.
-- It gets no default key (`resolveCommand`, at load, like the shortcuts store's defaults), so ⌘I or ⇧Space stays free
-  for a user binding.
+- It gets no default key (`defaultShortcuts`, asked on every read), so ⌘I or ⇧Space stays free for a user binding.
 
 Why one declaration over `showInPalette: hasCapability(…)` plus a ternary on `shortcuts`: those hid the command from the
 palette only, so Linux's Keyboard shortcuts section listed "File properties" and "Preview" rows that did nothing. The
@@ -195,15 +194,41 @@ properties" or "Preview" off macOS today, so `commands.fileGetInfo.label` and `c
 plain macOS values. They stay blocks: Windows has a native Properties dialog, so `getInfo` may turn on there, and the
 branch is ready when it does.
 
+### Default keys per platform
+
+A command's `shortcuts` is three lists (`PlatformShortcuts`: `macos`, `windows`, `linux`), each in that platform's own
+canonical spelling, the one `formatKeyCombo` writes there. Nothing converts a combo at read time: the store reads
+`defaultShortcuts(commandId, platform = getPlatform())` (`command-registry.ts`), a lookup in a per-platform table built
+on first read. That function also owns the `needsCapability` rule, asked on every call outside the cached table, so a
+test that switches capabilities never reads a stale answer.
+
+Sources write the lists with the constructors in `platform-shortcuts.ts`, each naming its rule, in macOS glyph spelling
+so the macOS arm is the literal in the source:
+
+- `sameOnAll('F5', '⇧F6')`: the same physical chord everywhere (Alt and Shift words off macOS). Refuses ⌘ and ⌃.
+  `sameOnAll()` is "no key".
+- `cmdOrCtrl('⌘⇧P')`: ⌘ on macOS, Ctrl on Windows and Linux. Needs ⌘, refuses ⌃.
+- `macOnly('⌘H')`: keys on macOS, none elsewhere.
+- `concatShortcuts(sameOnAll('Backspace'), cmdOrCtrl('⌘↑'))`: joins parts arm by arm, in order; throws on a repeat.
+- The literal `{ macos, windows, linux }`, for a list holding ⌃ or keys that truly differ per platform.
+
+Decision: refuse at the type level (template-literal types) and by throwing at load. Why: the old one-way converter put
+⌘ and ⌃ both on Ctrl, so `⌘D` and `⌃D` landed on one key with nobody deciding; with the refusals that mistake can't be
+written. The helpers write the off-macOS arms in canonical `Ctrl+Alt+Shift+Super` order whatever the authored order.
+
 ### The default keymap snapshot
 
 `default-keymap.test.ts` renders the default keys a user gets on each OS into `__snapshots__/default-keymap.macos.txt`,
 `.windows.txt`, and `.linux.txt`: one `<command id>\t<combo>, <combo>` line per command, in registry order, a keyless
 command as an empty list, a command the OS can't offer left out (under `withCapabilitiesPossibleOn(os)`,
 `../platform/DETAILS.md` § "Test helpers"). It reads through `getDefaultShortcuts`, so the registry's internals can
-change under it, and reloads the registry per platform because the sources read the platform at load. Every key change,
-and every added or removed command, is a reviewed line diff there; ❌ never refresh a snapshot without reading which
-lines moved and why.
+change under it. Every key change, and every added or removed command, is a reviewed line diff there; ❌ never refresh a
+snapshot without reading which lines moved and why.
+
+The other per-platform keymap tests take one of two inputs. What a user on that OS gets (conflicts in
+`../shortcuts/registry-conflicts.test.ts`, `command-reachability.test.ts`) runs under the per-OS capability fixture.
+What the data says (`../shortcuts/shortcut-vocabulary.test.ts`) walks every command's raw arm, capability ignored, so a
+gated command's keys are checked before its capability flips on.
 
 ## Adding a command (full steps)
 

@@ -10,11 +10,11 @@ const overrides = vi.hoisted(() => new Map<string, string[]>())
 
 vi.mock('#lib/shortcuts/shortcuts-store.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('#lib/shortcuts/shortcuts-store.js')>()
-  const { toPlatformShortcut } = await import('#lib/shortcuts/key-capture.js')
-  // Platform form, as the real store hands it out (`⌃W` is `Ctrl+W` off macOS).
+  // Overrides are in the platform's own spelling, as the real store hands them out (this suite
+  // runs on the fallback platform, Linux).
   return {
     ...actual,
-    getEffectiveShortcuts: (id: string) => overrides.get(id)?.map(toPlatformShortcut) ?? actual.getDefaultShortcuts(id),
+    getEffectiveShortcuts: (id: string) => overrides.get(id) ?? actual.getDefaultShortcuts(id),
   }
 })
 
@@ -31,7 +31,7 @@ afterEach(() => {
 
 describe('viewer keys follow the shortcuts registry', () => {
   it('word wrap moves to its new key and leaves W alone', () => {
-    overrides.set('viewer.toggleWordWrap', ['⌃W'])
+    overrides.set('viewer.toggleWordWrap', ['Ctrl+W'])
     const toggle = vi.fn()
 
     expect(handleToggleKey(key('w'), toggle)).toBe(false)
@@ -40,7 +40,7 @@ describe('viewer keys follow the shortcuts registry', () => {
   })
 
   it('a rebinding that carries a modifier still reaches word wrap through the full router', () => {
-    overrides.set('viewer.toggleWordWrap', ['⌃W'])
+    overrides.set('viewer.toggleWordWrap', ['Ctrl+W'])
     const toggleWordWrap = vi.fn()
     const keyboard = createViewerKeyboard(makeDeps({ toggleWordWrap }))
 

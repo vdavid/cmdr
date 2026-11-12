@@ -18,7 +18,8 @@
     import Trans from '#lib/intl/Trans.svelte'
     import ShortcutChip from '#lib/ui/ShortcutChip.svelte'
     import { commandHasShortcut, shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
-    import { toPlatformShortcut } from '#lib/shortcuts/key-capture.js'
+    import { formatChord, type ChordModifiers } from '#lib/shortcuts/key-capture.js'
+    import { getPlatform, type Platform } from '#lib/platform/index.js'
 
     interface Props {
         /** File name shown at the start of the bar. */
@@ -61,8 +62,13 @@
     // key turned off drops its part of the hint.
     const wrapBound = $derived(commandHasShortcut('viewer.toggleWordWrap'))
     const tailBound = $derived(commandHasShortcut('viewer.toggleTail'))
-    /** Search isn't a registry key: the viewer opens it on ⌘F (Ctrl+F off macOS). */
-    const SEARCH_KEY = toPlatformShortcut('⌘F')
+    /** Search isn't a registry key: the viewer opens it on its own fixed chord per platform. */
+    const SEARCH_MODIFIER: Record<Platform, ChordModifiers> = {
+        macos: { metaKey: true },
+        windows: { ctrlKey: true },
+        linux: { ctrlKey: true },
+    }
+    const SEARCH_KEY = formatChord(SEARCH_MODIFIER[getPlatform()], 'F')
 </script>
 
 <!-- Non-clickable: a chip's deep link opens Settings, which this restricted window can't create. -->

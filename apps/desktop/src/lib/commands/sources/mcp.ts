@@ -4,6 +4,7 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
+import { sameOnAll } from '../platform-shortcuts'
 import { BLOCKED_BY_DIALOGS, runsOverDialogs } from '../while-dialog-open'
 
 // MCP sends `dialog.confirm` to answer the open dialog, so it has to run while one is up.
@@ -21,7 +22,7 @@ export const mcpCommands: CommandSource[] = [
     nameKey: 'commands.volumeSelectByName.label',
     scope: 'Main window',
     showInPalette: false,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -29,7 +30,7 @@ export const mcpCommands: CommandSource[] = [
     nameKey: 'commands.selectionMcpSelect.label',
     scope: 'Main window',
     showInPalette: false,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -37,7 +38,7 @@ export const mcpCommands: CommandSource[] = [
     nameKey: 'commands.selectionMcpSelectByNames.label',
     scope: 'Main window',
     showInPalette: false,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -45,7 +46,7 @@ export const mcpCommands: CommandSource[] = [
     nameKey: 'commands.cursorMoveTo.label',
     scope: 'Main window',
     showInPalette: false,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -53,7 +54,7 @@ export const mcpCommands: CommandSource[] = [
     nameKey: 'commands.cursorScrollTo.label',
     scope: 'Main window',
     showInPalette: false,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -61,7 +62,7 @@ export const mcpCommands: CommandSource[] = [
     nameKey: 'commands.navOpenUnderCursor.label',
     scope: 'Main window',
     showInPalette: false,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -69,7 +70,7 @@ export const mcpCommands: CommandSource[] = [
     nameKey: 'commands.tabMcpAction.label',
     scope: 'Main window',
     showInPalette: false,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -77,7 +78,7 @@ export const mcpCommands: CommandSource[] = [
     nameKey: 'commands.dialogConfirm.label',
     scope: 'Main window',
     showInPalette: false,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: ANSWERS_OPEN_DIALOG,
   },
 ]

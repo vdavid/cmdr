@@ -4,7 +4,7 @@ import {
   formatKeyCombo,
   physicalKeyCombo,
   latinKeyCombo,
-  toPlatformShortcut,
+  formatChord,
   isTypingKeyCombo,
   typingRefusal,
   toDisplayShortcut,
@@ -32,72 +32,26 @@ function makeKeyEvent(overrides: Partial<KeyboardEvent>): KeyboardEvent {
   } as KeyboardEvent
 }
 
-describe('toPlatformShortcut', () => {
-  it('returns shortcut as-is on macOS', () => {
+describe('formatChord', () => {
+  it('writes macOS glyphs in ⌘⌃⌥⇧ order on macOS', () => {
     setMacOS(true)
-    expect(toPlatformShortcut('⌘Q')).toBe('⌘Q')
-    expect(toPlatformShortcut('⌘⇧P')).toBe('⌘⇧P')
+    expect(formatChord({ shiftKey: true }, 'F9')).toBe('⇧F9')
+    expect(formatChord({ shiftKey: true, metaKey: true, altKey: true }, 'F')).toBe('⌘⌥⇧F')
   })
 
-  it('converts basic modifiers on Linux', () => {
+  it('writes Ctrl+Alt+Shift+Super words off macOS', () => {
     setMacOS(false)
-    expect(toPlatformShortcut('⌘Q')).toBe('Ctrl+Q')
-    expect(toPlatformShortcut('⌘⇧P')).toBe('Ctrl+Shift+P')
-    expect(toPlatformShortcut('⌥⌘O')).toBe('Alt+Ctrl+O')
+    expect(formatChord({ shiftKey: true }, 'F9')).toBe('Shift+F9')
+    expect(formatChord({ metaKey: true, shiftKey: true, ctrlKey: true }, 'F')).toBe('Ctrl+Shift+Super+F')
   })
 
-  it('handles ⌃⌘ collision by mapping ⌃ to Shift on Linux', () => {
-    setMacOS(false)
-    expect(toPlatformShortcut('⌃⌘C')).toBe('Shift+Ctrl+C')
-  })
-
-  it('passes through platform-neutral shortcuts unchanged', () => {
-    setMacOS(false)
-    expect(toPlatformShortcut('Tab')).toBe('Tab')
-    expect(toPlatformShortcut('Enter')).toBe('Enter')
-    expect(toPlatformShortcut('F4')).toBe('F4')
-    expect(toPlatformShortcut('Space')).toBe('Space')
-    expect(toPlatformShortcut('Backspace')).toBe('Backspace')
-    expect(toPlatformShortcut('↑')).toBe('↑')
-    expect(toPlatformShortcut('PageUp')).toBe('PageUp')
-  })
-
-  it('converts Cmd+arrow shortcuts on Linux', () => {
-    setMacOS(false)
-    expect(toPlatformShortcut('⌘↑')).toBe('Ctrl+↑')
-    expect(toPlatformShortcut('⌘[')).toBe('Ctrl+[')
-    expect(toPlatformShortcut('⌘]')).toBe('Ctrl+]')
-  })
-
-  it('converts view mode shortcuts on Linux', () => {
-    setMacOS(false)
-    expect(toPlatformShortcut('⌘1')).toBe('Ctrl+1')
-    expect(toPlatformShortcut('⌘2')).toBe('Ctrl+2')
-    expect(toPlatformShortcut('⌘,')).toBe('Ctrl+,')
-  })
-
-  it('converts Ctrl-only shortcut on Linux', () => {
-    setMacOS(false)
-    expect(toPlatformShortcut('⌃Tab')).toBe('Ctrl+Tab')
-  })
-
-  it('converts Shift+F-key shortcuts on Linux', () => {
-    setMacOS(false)
-    expect(toPlatformShortcut('⇧F6')).toBe('Shift+F6')
-    expect(toPlatformShortcut('⇧F8')).toBe('Shift+F8')
-  })
-
-  it('converts complex modifier combos on Linux', () => {
-    setMacOS(false)
-    expect(toPlatformShortcut('⌘⇧.')).toBe('Ctrl+Shift+.')
-    expect(toPlatformShortcut('⌘⇧A')).toBe('Ctrl+Shift+A')
-    expect(toPlatformShortcut('⌃⇧Tab')).toBe('Ctrl+Shift+Tab')
-  })
-
-  it('converts Alt+F-key shortcuts for volume choosers', () => {
-    setMacOS(false)
-    expect(toPlatformShortcut('⌥F1')).toBe('Alt+F1')
-    expect(toPlatformShortcut('⌥F2')).toBe('Alt+F2')
+  it('agrees with formatKeyCombo for the same keypress', () => {
+    for (const platform of ['macos', 'linux'] as const) {
+      const undo = withPlatform(platform)
+      const event = makeKeyEvent({ ctrlKey: true, altKey: true, key: 'r' })
+      expect(formatChord({ ctrlKey: true, altKey: true }, 'R')).toBe(formatKeyCombo(event))
+      undo()
+    }
   })
 })
 

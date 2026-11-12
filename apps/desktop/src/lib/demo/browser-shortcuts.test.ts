@@ -5,12 +5,12 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-// The registry gates some defaults on `isMacOS()` at module load, so pin macOS before the
-// imports, as `registry-conflicts.test.ts` does: this walks the macOS defaults the demo shows.
+// The map is spelled for macOS, so the keypresses it stands for format the macOS way: pin it
+// before the imports. This walks the macOS defaults the demo shows.
 vi.hoisted(() => vi.stubGlobal('__CMDR_PLATFORM__', 'macos'))
 
 import { COMMAND_IDS } from '#lib/commands/command-ids.js'
-import { commands } from '#lib/commands/command-registry.js'
+import { commands, defaultShortcuts } from '#lib/commands/command-registry.js'
 import { formatKeyCombo } from '#lib/shortcuts/key-capture.js'
 import { scopesOverlap } from '#lib/shortcuts/scope-hierarchy.js'
 import { browserSafeShortcuts } from './browser-shortcuts.js'
@@ -37,7 +37,8 @@ function keydownFor(combo: string): KeyboardEvent {
 const effective = commands.map((command) => ({
   id: command.id,
   scope: command.scope,
-  shortcuts: (browserSafeShortcuts as Record<string, string[] | undefined>)[command.id] ?? command.shortcuts,
+  shortcuts:
+    (browserSafeShortcuts as Record<string, string[] | undefined>)[command.id] ?? defaultShortcuts(command.id, 'macos'),
 }))
 
 describe('browser-safe shortcut map', () => {

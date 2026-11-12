@@ -8,6 +8,7 @@ import type { MessageKey } from '#lib/intl/keys.gen.js'
 import type { Capability } from '#lib/platform/index.js'
 import type { Initiator } from '#lib/tauri-commands/index.js'
 import type { CommandId } from './command-ids'
+import type { PlatformShortcuts } from './platform-shortcuts'
 import type { WhileDialogOpen } from './while-dialog-open'
 
 export type { CommandId } from './command-ids'
@@ -217,8 +218,13 @@ export interface Command {
   scope: CommandScope
   /** Show in command palette? (false for low-level nav like ↑/↓) */
   showInPalette: boolean
-  /** Keyboard shortcuts (like ['⌘⇧P', 'F1']) */
-  shortcuts: string[]
+  /**
+   * Default keys, one list per platform, each in that platform's canonical spelling
+   * (`./platform-shortcuts.ts`). Raw data: read a user's defaults through
+   * `defaultShortcuts` (`./command-registry.ts`), which also drops them where the OS lacks
+   * `needsCapability`.
+   */
+  shortcuts: PlatformShortcuts
   /**
    * What the command does while a dialog or overlay is up in the main window. REQUIRED, so a
    * new command doesn't compile until someone has decided: `BLOCKED_BY_DIALOGS` for anything

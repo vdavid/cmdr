@@ -466,7 +466,7 @@ describe('resolveGlobalKeyAction', () => {
       // If this fails, a command started relying on the central dispatch for Escape,
       // which `resolveEscape` never does. Wire it there, or handle it in its component.
       const escapeBound = commands
-        .filter((command) => command.shortcuts.includes('Escape'))
+        .filter((command) => Object.values(command.shortcuts).some((keys) => keys.includes('Escape')))
         .map((command) => command.id)
         .sort()
       expect(escapeBound).toEqual(['about.close', 'palette.close', 'queue.close', 'share.back', 'volume.close'])

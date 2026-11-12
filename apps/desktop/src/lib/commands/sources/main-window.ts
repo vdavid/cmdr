@@ -4,8 +4,8 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
+import { cmdOrCtrl, concatShortcuts, sameOnAll } from '../platform-shortcuts'
 import { getBadgeStatus } from '#lib/feature-status.js'
-import { isMacOS } from '#lib/platform/index.js'
 import { BLOCKED_BY_DIALOGS, runsOverDialogs } from '../while-dialog-open'
 
 // Zoom scales the whole app, dialog included, and touches no pane.
@@ -22,7 +22,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.searchOpen.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘F', '⌥F7'],
+    shortcuts: concatShortcuts(cmdOrCtrl('⌘F'), sameOnAll('⌥F7')),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     status: getBadgeStatus('search'),
   },
@@ -36,7 +36,7 @@ export const mainWindowCommands: CommandSource[] = [
     scope: 'Main window',
     showInPalette: true,
     // ⌘⇧G is Finder's "Go to Folder…"; ⌘G stays first, so it's the one the menu shows.
-    shortcuts: ['⌘G', '⌘⇧G'],
+    shortcuts: cmdOrCtrl('⌘G', '⌘⇧G'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.navGoToPath.description',
     keywords: ['jump', 'navigate', 'goto'],
@@ -52,7 +52,7 @@ export const mainWindowCommands: CommandSource[] = [
     showInPalette: true,
     // No default shortcut: adding a favorite is infrequent, so it doesn't earn a global key by
     // default. Stays in the command palette and is assignable in Settings > Keyboard shortcuts.
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.favoritesAdd.description',
     keywords: ['bookmark', 'favorite', 'pin', 'shortcut'],
@@ -66,7 +66,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.favoritesOpen.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌃D'],
+    shortcuts: { macos: ['⌃D'], windows: ['Ctrl+D'], linux: ['Ctrl+D'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.favoritesOpen.description',
     keywords: ['bookmark', 'hotlist', 'favorite'],
@@ -80,7 +80,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.downloadsGoToLatest.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘J'],
+    shortcuts: cmdOrCtrl('⌘J'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.downloadsGoToLatest.description',
     keywords: ['jump', 'navigate', 'goto'],
@@ -94,7 +94,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewShowHidden.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘⇧.'],
+    shortcuts: cmdOrCtrl('⌘⇧.'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -104,7 +104,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewCalculateFolderSizes.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌥⇧Enter'],
+    shortcuts: sameOnAll('⌥⇧Enter'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.viewCalculateFolderSizes.description',
   },
@@ -113,7 +113,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewBriefMode.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘2'],
+    shortcuts: cmdOrCtrl('⌘2'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -121,7 +121,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewFullMode.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘1'],
+    shortcuts: cmdOrCtrl('⌘1'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -134,7 +134,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewSetMode.label',
     scope: 'Main window',
     showInPalette: false,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
 
@@ -146,7 +146,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewZoomSet75.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: ZOOM_SCALES_APP,
   },
   {
@@ -154,7 +154,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewZoomSet100.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘0'],
+    shortcuts: cmdOrCtrl('⌘0'),
     whileDialogOpen: ZOOM_SCALES_APP,
   },
   {
@@ -162,7 +162,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewZoomSet125.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: ZOOM_SCALES_APP,
   },
   {
@@ -170,7 +170,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewZoomSet150.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: ZOOM_SCALES_APP,
   },
   {
@@ -181,7 +181,7 @@ export const mainWindowCommands: CommandSource[] = [
     // unshifted key. The menu row spells it `Cmd+Equal` (`crates/cmdr-menu/src/bar.rs`), because
     // muda parses an accelerator into a PHYSICAL key and has no `Plus` token, so
     // `Cmd+Plus` registered nothing at all and Zoom in showed no key.
-    shortcuts: ['⌘+', '⌘='],
+    shortcuts: cmdOrCtrl('⌘+', '⌘='),
     showInPalette: true,
     whileDialogOpen: ZOOM_SCALES_APP,
   },
@@ -190,7 +190,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewZoomOut.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘-'],
+    shortcuts: cmdOrCtrl('⌘-'),
     whileDialogOpen: ZOOM_SCALES_APP,
   },
 
@@ -202,7 +202,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.sortByName.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘3', '⌘F3'],
+    shortcuts: cmdOrCtrl('⌘3', '⌘F3'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -210,7 +210,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.sortByExtension.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘4', '⌘F4'],
+    shortcuts: cmdOrCtrl('⌘4', '⌘F4'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -218,7 +218,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.sortByModified.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘5', '⌘F5'],
+    shortcuts: cmdOrCtrl('⌘5', '⌘F5'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -226,7 +226,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.sortBySize.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘6', '⌘F6'],
+    shortcuts: cmdOrCtrl('⌘6', '⌘F6'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -234,7 +234,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.sortByCreated.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -242,7 +242,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.sortByAdded.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -250,7 +250,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.sortAscending.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -258,7 +258,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.sortDescending.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -266,7 +266,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.sortToggleOrder.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   // Per-pane sort carrying `{ pane, column, order }`, dispatched by the MCP `sort`
@@ -277,7 +277,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.sortSet.label',
     scope: 'Main window',
     showInPalette: false,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
 
@@ -289,7 +289,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneSwitch.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['Tab'],
+    shortcuts: sameOnAll('Tab'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -297,7 +297,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneSwap.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘U'],
+    shortcuts: cmdOrCtrl('⌘U'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -307,31 +307,31 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneClone.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘⇧C'],
+    shortcuts: cmdOrCtrl('⌘⇧C'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.paneClone.description',
   },
   {
     // The keyboard way into pane chrome (`pane/pane-chrome.ts`) without giving up `Tab`,
     // which stays the pane switch. ⌃F5 mirrors macOS's "Move focus to the window toolbar".
-    // Off macOS, ⌃ and ⌘ both map to Ctrl, so ⌃F5 would land on ⌘F5 (sort by modified).
+    // Off macOS, ⌃F5 would be Ctrl+F5, which is ⌘F5's key there (sort by modified): Ctrl+Shift+F5.
     id: 'pane.focusControls',
     nameKey: 'commands.paneFocusControls.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: isMacOS() ? ['⌃F5'] : ['⌘⇧F5'],
+    shortcuts: { macos: ['⌃F5'], windows: ['Ctrl+Shift+F5'], linux: ['Ctrl+Shift+F5'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.paneFocusControls.description',
   },
   {
     // The keyboard way to the toasts (`#lib/ui/toast/toast-focus.ts`), whose buttons (Undo trash)
     // Tab can't reach, since Tab is the pane switch. ⌃F6 mirrors macOS's "Move focus to the
-    // floating window"; off macOS, ⌃F6 would land on ⌘F6, so it takes ⌘⇧F6 like `pane.focusControls`.
+    // floating window"; off macOS, ⌃F6 would be ⌘F6's Ctrl+F6, so it takes Ctrl+Shift+F6 like `pane.focusControls`.
     id: 'app.focusNotifications',
     nameKey: 'commands.appFocusNotifications.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: isMacOS() ? ['⌃F6'] : ['⌘⇧F6'],
+    shortcuts: { macos: ['⌃F6'], windows: ['Ctrl+Shift+F6'], linux: ['Ctrl+Shift+F6'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.appFocusNotifications.description',
     keywords: ['toast', 'notification', 'notifications', 'undo', 'keyboard', 'focus'],
@@ -341,7 +341,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneLeftVolumeChooser.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌥F1'],
+    shortcuts: sameOnAll('⌥F1'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -349,7 +349,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneRightVolumeChooser.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌥F2'],
+    shortcuts: sameOnAll('⌥F2'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -357,7 +357,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneCopyPathLeftToRight.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘→'],
+    shortcuts: cmdOrCtrl('⌘→'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.paneCopyPathLeftToRight.description',
   },
@@ -366,7 +366,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneCopyPathRightToLeft.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘←'],
+    shortcuts: cmdOrCtrl('⌘←'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.paneCopyPathRightToLeft.description',
   },
@@ -379,18 +379,18 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneRefresh.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘R'],
+    shortcuts: cmdOrCtrl('⌘R'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
     // Held or tapped quickly, the step grows; heading through the middle, it stops
     // at 50% until a fresh press (`pane-split.ts`). ⌃← / ⌃→ alone are macOS Spaces. Off macOS,
-    // ⌃ and ⌘ both map to Ctrl, so ⌃⌥← would land on the tab keys' Ctrl+Alt+←: Ctrl+Alt+Shift there.
+    // ⌃⌥← would be the tab keys' Ctrl+Alt+←, so it takes Ctrl+Alt+Shift there.
     id: 'pane.moveDividerLeft',
     nameKey: 'commands.paneMoveDividerLeft.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: isMacOS() ? ['⌃⌥←'] : ['⌘⌥⇧←'],
+    shortcuts: { macos: ['⌃⌥←'], windows: ['Ctrl+Alt+Shift+←'], linux: ['Ctrl+Alt+Shift+←'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -398,7 +398,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneMoveDividerRight.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: isMacOS() ? ['⌃⌥→'] : ['⌘⌥⇧→'],
+    shortcuts: { macos: ['⌃⌥→'], windows: ['Ctrl+Alt+Shift+→'], linux: ['Ctrl+Alt+Shift+→'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -407,7 +407,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneResetDivider.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
 
@@ -419,7 +419,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabNew.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘T'],
+    shortcuts: cmdOrCtrl('⌘T'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -427,7 +427,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabClose.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘W'],
+    shortcuts: cmdOrCtrl('⌘W'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -435,7 +435,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabReopen.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘⇧T'],
+    shortcuts: cmdOrCtrl('⌘⇧T'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -446,7 +446,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabNext.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌃Tab', '⌘⌥→'],
+    shortcuts: { macos: ['⌃Tab', '⌘⌥→'], windows: ['Ctrl+Tab', 'Ctrl+Alt+→'], linux: ['Ctrl+Tab', 'Ctrl+Alt+→'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -454,7 +454,11 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabPrev.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌃⇧Tab', '⌘⌥←'],
+    shortcuts: {
+      macos: ['⌃⇧Tab', '⌘⌥←'],
+      windows: ['Ctrl+Shift+Tab', 'Ctrl+Alt+←'],
+      linux: ['Ctrl+Shift+Tab', 'Ctrl+Alt+←'],
+    },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -462,7 +466,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabTogglePin.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -470,7 +474,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabCloseOthers.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -480,7 +484,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabMoveLeft.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘⌃⇧←'],
+    shortcuts: { macos: ['⌘⌃⇧←'], windows: ['Ctrl+Shift+←'], linux: ['Ctrl+Shift+←'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -488,7 +492,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabMoveRight.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘⌃⇧→'],
+    shortcuts: { macos: ['⌘⌃⇧→'], windows: ['Ctrl+Shift+→'], linux: ['Ctrl+Shift+→'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -498,7 +502,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabMoveToOtherPane.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
 
@@ -514,7 +518,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.askCmdrNewChat.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: ['⌘N'],
+    shortcuts: cmdOrCtrl('⌘N'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.askCmdrNewChat.description',
     status: getBadgeStatus('ask-cmdr'),
@@ -531,7 +535,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.askCmdrFind.label',
     scope: 'Main window/Ask Cmdr',
     showInPalette: false,
-    shortcuts: ['⌘F'],
+    shortcuts: cmdOrCtrl('⌘F'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -540,7 +544,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.askCmdrFindNext.label',
     scope: 'Main window/Ask Cmdr',
     showInPalette: false,
-    shortcuts: ['⌘G', 'Enter'],
+    shortcuts: concatShortcuts(cmdOrCtrl('⌘G'), sameOnAll('Enter')),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -549,7 +553,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.askCmdrFindPrevious.label',
     scope: 'Main window/Ask Cmdr',
     showInPalette: false,
-    shortcuts: ['⌘⇧G', '⇧Enter'],
+    shortcuts: concatShortcuts(cmdOrCtrl('⌘⇧G'), sameOnAll('⇧Enter')),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },

@@ -4,6 +4,7 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
+import { cmdOrCtrl, concatShortcuts, sameOnAll } from '../platform-shortcuts'
 import { getBadgeStatus } from '#lib/feature-status.js'
 import { sameKindCommandLabel } from '#lib/file-explorer/pane/same-kind-target.svelte.js'
 import { trashUndoCommandLabel } from '#lib/file-operations/delete/trash-undo.js'
@@ -18,7 +19,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navUp.label',
     scope: 'Main window/File list',
     showInPalette: false, // Too basic for palette
-    shortcuts: ['↑'],
+    shortcuts: sameOnAll('↑'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -27,7 +28,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navDown.label',
     scope: 'Main window/File list',
     showInPalette: false,
-    shortcuts: ['↓'],
+    shortcuts: sameOnAll('↓'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -38,7 +39,7 @@ export const fileListCommands: CommandSource[] = [
     showInPalette: true,
     // `Enter` and `⌘↓` are display entries; FilePane handles both keys directly in
     // `handleKeyDown` (mirroring `⌘↑` = parent), the palette/MCP path uses the handler.
-    shortcuts: ['Enter', '⌘↓'],
+    shortcuts: concatShortcuts(sameOnAll('Enter'), cmdOrCtrl('⌘↓')),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -46,7 +47,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navParent.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['Backspace', '⌘↑'],
+    shortcuts: concatShortcuts(sameOnAll('Backspace'), cmdOrCtrl('⌘↑')),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -54,7 +55,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navHome.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌥↑', 'Home'],
+    shortcuts: sameOnAll('⌥↑', 'Home'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -62,7 +63,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navEnd.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌥↓', 'End'],
+    shortcuts: sameOnAll('⌥↓', 'End'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -70,7 +71,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navPageUp.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['PageUp'],
+    shortcuts: sameOnAll('PageUp'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -78,7 +79,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navPageDown.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['PageDown'],
+    shortcuts: sameOnAll('PageDown'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -86,7 +87,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navBack.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘['],
+    shortcuts: cmdOrCtrl('⌘['),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -94,7 +95,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navForward.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘]'],
+    shortcuts: cmdOrCtrl('⌘]'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -103,7 +104,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navGoToRoot.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘/'],
+    shortcuts: cmdOrCtrl('⌘/'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -113,7 +114,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navGoHome.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘⇧H'],
+    shortcuts: cmdOrCtrl('⌘⇧H'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     // Windows names it "Go to user folder", so "home" stays findable for muscle memory.
     keywords: ['home'],
@@ -128,7 +129,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.errorPaneToggleTechnicalDetails.label',
     scope: 'Main window/Error screen',
     showInPalette: false,
-    shortcuts: ['⌘D'],
+    shortcuts: cmdOrCtrl('⌘D'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -141,7 +142,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navLeft.label',
     scope: 'Main window/Brief mode',
     showInPalette: false,
-    shortcuts: ['←'],
+    shortcuts: sameOnAll('←'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -150,7 +151,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navRight.label',
     scope: 'Main window/Brief mode',
     showInPalette: false,
-    shortcuts: ['→'],
+    shortcuts: sameOnAll('→'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -163,7 +164,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navFirstInFull.label',
     scope: 'Main window/Full mode',
     showInPalette: false,
-    shortcuts: ['←'],
+    shortcuts: sameOnAll('←'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -172,7 +173,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navLastInFull.label',
     scope: 'Main window/Full mode',
     showInPalette: false,
-    shortcuts: ['→'],
+    shortcuts: sameOnAll('→'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -185,7 +186,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileRename.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['F2', '⇧F6'],
+    shortcuts: sameOnAll('F2', '⇧F6'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -195,7 +196,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.paneQuickFilter.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌃S'],
+    shortcuts: { macos: ['⌃S'], windows: ['Ctrl+S'], linux: ['Ctrl+S'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.paneQuickFilter.description',
     keywords: ['narrow', 'type to jump', 'search names'],
@@ -206,7 +207,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileMultiRename.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌃M'],
+    shortcuts: { macos: ['⌃M'], windows: ['Ctrl+M'], linux: ['Ctrl+M'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileMultiRename.description',
     // Phrases, not loose words: the palette's uFuzzy matches a query's words in order and at
@@ -218,7 +219,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileView.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['F3'],
+    shortcuts: sameOnAll('F3'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -226,7 +227,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileEdit.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['F4'],
+    shortcuts: sameOnAll('F4'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -234,7 +235,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileCopy.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['F5'],
+    shortcuts: sameOnAll('F5'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -242,7 +243,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileMove.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['F6'],
+    shortcuts: sameOnAll('F6'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -253,7 +254,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileDuplicate.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘D'],
+    shortcuts: cmdOrCtrl('⌘D'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileDuplicate.description',
   },
@@ -262,7 +263,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileCompress.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌥F5'],
+    shortcuts: sameOnAll('⌥F5'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
 
@@ -274,7 +275,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.editCopy.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘C'],
+    shortcuts: cmdOrCtrl('⌘C'),
     whileDialogOpen: IN_TEXT_INPUTS_ONLY,
     descriptionKey: 'commands.editCopy.description',
   },
@@ -283,7 +284,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.editCut.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘X'],
+    shortcuts: cmdOrCtrl('⌘X'),
     whileDialogOpen: IN_TEXT_INPUTS_ONLY,
     descriptionKey: 'commands.editCut.description',
   },
@@ -292,7 +293,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.editPaste.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘V'],
+    shortcuts: cmdOrCtrl('⌘V'),
     whileDialogOpen: IN_TEXT_INPUTS_ONLY,
     descriptionKey: 'commands.editPaste.description',
   },
@@ -301,7 +302,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.editPasteAsMove.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘⌥V'],
+    shortcuts: cmdOrCtrl('⌘⌥V'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.editPasteAsMove.description',
   },
@@ -310,7 +311,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileNewFolder.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['F7'],
+    shortcuts: sameOnAll('F7'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -318,7 +319,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileNewFile.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⇧F4'],
+    shortcuts: sameOnAll('⇧F4'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -331,7 +332,7 @@ export const fileListCommands: CommandSource[] = [
     // and Windows users reach for it. The menu accelerator stays `F8` (first
     // shortcut); the other two dispatch purely via the document keydown handler,
     // which leaves them to a focused text field.
-    shortcuts: ['F8', '⌘Backspace', 'Delete'],
+    shortcuts: concatShortcuts(sameOnAll('F8'), cmdOrCtrl('⌘Backspace'), sameOnAll('Delete')),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -341,7 +342,7 @@ export const fileListCommands: CommandSource[] = [
     showInPalette: true,
     // Each delete-to-trash key with Shift, Total Commander's way (`⇧F8`, `⇧Delete`),
     // plus Finder's "Delete Immediately" (`⌥⌘⌫`). The menu accelerator stays `⇧F8`.
-    shortcuts: ['⇧F8', '⇧Delete', '⌘⌥Backspace'],
+    shortcuts: concatShortcuts(sameOnAll('⇧F8', '⇧Delete'), cmdOrCtrl('⌘⌥Backspace')),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -352,7 +353,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.editUndoTrash.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.editUndoTrash.description',
     keywords: ['undo', 'trash', 'bin', 'recycle bin', 'restore', 'put back', 'recover', 'deleted'],
@@ -368,7 +369,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileGoToTrash.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileGoToTrash.description',
     keywords: ['trash', 'bin', 'recycle bin', 'deleted', 'recover', 'restore', 'goto'],
@@ -378,7 +379,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileShowInFileManager.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘⌥O'],
+    shortcuts: cmdOrCtrl('⌘⌥O'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -392,7 +393,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'openTerminalHere',
     showInPalette: true,
-    shortcuts: ['F9', '⌘⌥T'],
+    shortcuts: concatShortcuts(sameOnAll('F9'), cmdOrCtrl('⌘⌥T')),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileOpenTerminalHere.description',
     keywords: ['terminal', 'shell', 'console', 'cd', 'iterm', 'ghostty', 'warp'],
@@ -402,7 +403,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileCopyPath.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘⌥C'],
+    shortcuts: cmdOrCtrl('⌘⌥C'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -410,7 +411,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileCopyCurrentDirectoryPath.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -418,7 +419,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileCopyFilename.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -428,7 +429,7 @@ export const fileListCommands: CommandSource[] = [
     showInPalette: true,
     // Only where the focused pane's volume can mint one (S3 today), by capability.
     paletteCondition: 'focusedPaneSharesLinks',
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileCopyShareLink.description',
   },
@@ -439,7 +440,7 @@ export const fileListCommands: CommandSource[] = [
     showInPalette: true,
     // Only where the focused pane's volume can mint one (S3 today), by capability.
     paletteCondition: 'focusedPaneSharesLinks',
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileCopyShareLinkOneDay.description',
   },
@@ -450,7 +451,7 @@ export const fileListCommands: CommandSource[] = [
     showInPalette: true,
     // Only where the focused pane's volume can mint one (S3 today), by capability.
     paletteCondition: 'focusedPaneSharesLinks',
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileCopyShareLinkOneHour.description',
   },
@@ -460,7 +461,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'getInfo',
     showInPalette: true,
-    shortcuts: ['⌘I'],
+    shortcuts: cmdOrCtrl('⌘I'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -472,7 +473,7 @@ export const fileListCommands: CommandSource[] = [
     // ⇧Space matches the menu accelerator. key-capture.ts maps `' '` → 'Space',
     // and registry shortcuts use that same `⇧Space` form (no separator) for the
     // Tier-1 dispatcher and the menu-accelerator sync to agree.
-    shortcuts: ['⇧Space'],
+    shortcuts: sameOnAll('⇧Space'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -483,7 +484,7 @@ export const fileListCommands: CommandSource[] = [
     // Finder's own combo for the same thing. `⌃` is nearly unused here (only
     // `⌃Tab` / `⌃⇧Tab`), and `#lib/context-menu-ownership.ts` listens for the DOM
     // `contextmenu` event rather than a keydown, so nothing else wants it.
-    shortcuts: ['⌃Enter'],
+    shortcuts: { macos: ['⌃Enter'], windows: ['Ctrl+Enter'], linux: ['Ctrl+Enter'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileContextMenu.description',
   },
@@ -493,7 +494,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'cloudFileActions',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.cloudMakeOffline.description',
   },
@@ -503,7 +504,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'cloudFileActions',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.cloudRemoveDownload.description',
   },
@@ -513,7 +514,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'cloudFileActions',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.cloudOpenInGoogleDrive.description',
   },
@@ -523,7 +524,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'cloudFileActions',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.cloudCopyGoogleDriveLink.description',
   },
@@ -533,7 +534,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'cloudFileActions',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.cloudAskGemini.description',
   },
@@ -543,7 +544,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.resticForgetPassword.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.resticForgetPassword.description',
   },
@@ -558,7 +559,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'colorTags',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsToggleGrey.description',
   },
@@ -568,7 +569,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'colorTags',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsToggleGreen.description',
   },
@@ -578,7 +579,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'colorTags',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsTogglePurple.description',
   },
@@ -588,7 +589,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'colorTags',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsToggleBlue.description',
   },
@@ -598,7 +599,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'colorTags',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsToggleYellow.description',
   },
@@ -608,7 +609,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'colorTags',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsToggleRed.description',
   },
@@ -618,7 +619,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'colorTags',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.tagsToggleOrange.description',
   },
@@ -631,7 +632,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.selectionToggle.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['Space'],
+    shortcuts: sameOnAll('Space'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -639,7 +640,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.selectionToggleAndDown.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['Insert'],
+    shortcuts: sameOnAll('Insert'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.selectionToggleAndDown.description',
   },
@@ -648,7 +649,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.selectionSelectAll.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘A'],
+    shortcuts: cmdOrCtrl('⌘A'),
     whileDialogOpen: IN_TEXT_INPUTS_ONLY,
   },
   {
@@ -656,7 +657,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.selectionDeselectAll.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⌘⇧A'],
+    shortcuts: cmdOrCtrl('⌘⇧A'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -667,7 +668,7 @@ export const fileListCommands: CommandSource[] = [
     // Total Commander's invert key: whichever key types `*` on the user's layout
     // (US ⇧8, Swedish ⇧', the numpad, an AltGr-style ⌥ combo), since
     // `formatKeyCombo` names typed symbols by character.
-    shortcuts: ['*'],
+    shortcuts: sameOnAll('*'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.selectionInvert.description',
   },
@@ -683,7 +684,7 @@ export const fileListCommands: CommandSource[] = [
     // menu DISPLAYS; the file pane's keydown handler owns both, so neither is a
     // real menu accelerator (a bare-ish `⌥` combo would eat the character in
     // every text field).
-    shortcuts: ['⌥⇧=', '⌥+'],
+    shortcuts: sameOnAll('⌥⇧=', '⌥+'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.selectionSelectSameKind.description',
     // The palette alone reads this; every listing surface keeps the static name.
@@ -696,7 +697,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.selectionCompareDirectories.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⇧F2'],
+    shortcuts: sameOnAll('⇧F2'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.selectionCompareDirectories.description',
   },
@@ -705,7 +706,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.selectionCompareDirectoriesMissing.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.selectionCompareDirectoriesMissing.description',
   },
@@ -714,7 +715,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.selectionCompareDirectoriesSize.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: [],
+    shortcuts: sameOnAll(),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.selectionCompareDirectoriesSize.description',
   },
@@ -723,7 +724,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.selectionSelectFiles.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['+'],
+    shortcuts: sameOnAll('+'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     status: getBadgeStatus('select-files'),
     descriptionKey: 'commands.selectionSelectFiles.description',
@@ -736,7 +737,7 @@ export const fileListCommands: CommandSource[] = [
     // Total Commander's `-`: the main-row key and the numpad one, whatever Shift
     // the layout needs to type it (`formatKeyCombo` names typed symbols by
     // character). The menu only displays it: no ⌘ / ⌃ / ⌥, so no accelerator.
-    shortcuts: ['-'],
+    shortcuts: sameOnAll('-'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     status: getBadgeStatus('select-files'),
     descriptionKey: 'commands.selectionDeselectFiles.description',

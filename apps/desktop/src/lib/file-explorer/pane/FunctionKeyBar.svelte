@@ -7,7 +7,7 @@
         getFirstShortcutReactive,
     } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import { hasCapability } from '#lib/platform/index.js'
-    import { toAriaKeyShortcut, toPlatformShortcut } from '#lib/shortcuts/key-capture.js'
+    import { formatChord, toAriaKeyShortcut } from '#lib/shortcuts/key-capture.js'
     import { canOpenTerminalIn } from '#lib/open-terminal/terminal-target.js'
     import { fnKeyToCommand } from './function-key-commands'
     import { tString } from '#lib/intl/messages.svelte.js'
@@ -233,7 +233,7 @@
 {#snippet emptySlot(index: number)}
     {@const fnKey = `F${String(index + FIRST_FN_KEY)}`}
     <button disabled tabindex={-1} aria-label={tString('fileExplorer.functionKeyBar.noShiftAction', { fnKey })}>
-        <kbd>{toPlatformShortcut(`⇧${fnKey}`)}</kbd>
+        <kbd>{formatChord({ shiftKey: true }, fnKey)}</kbd>
     </button>
 {/snippet}
 

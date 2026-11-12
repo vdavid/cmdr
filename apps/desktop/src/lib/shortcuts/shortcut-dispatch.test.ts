@@ -92,7 +92,8 @@ function setupEffectiveShortcuts() {
     if (override) {
       return [...override]
     }
-    const cmd = commands.find((c) => c.id === commandId)
+    // The mock registry above holds one key list per command, the stub store's defaults.
+    const cmd = commands.find((c) => c.id === commandId) as { shortcuts: string[] } | undefined
     return [...(cmd?.shortcuts ?? [])]
   })
 }

@@ -1,6 +1,6 @@
 app.quit	Ctrl+Q
 app.hide	Ctrl+H
-app.hideOthers	Alt+Ctrl+H
+app.hideOthers	Ctrl+Alt+H
 app.showAll	
 app.about	
 app.acknowledgements	

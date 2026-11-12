@@ -83,7 +83,6 @@ import {
 } from './ask-cmdr-trigger.svelte'
 import { handleTurnEvent, resetTurnBookkeeping } from './ask-cmdr-stream.svelte'
 import { toDisplayShortcut } from '#lib/shortcuts/index.js'
-import { toPlatformShortcut } from '#lib/shortcuts/key-capture.js'
 
 /** The thread a fired event belongs to when the test doesn't name one. */
 const THREAD_ID = 1
@@ -710,8 +709,8 @@ describe('openRail bootstrap + newChat + hydrate', () => {
   })
 
   it('names the New chat shortcut for its tooltip, in the platform display form', () => {
-    // ⌘N on macOS; this suite's navigator isn't a Mac, so the platform form is Ctrl+N.
-    expect(newChatShortcutText()).toBe(toDisplayShortcut(toPlatformShortcut('⌘N')))
+    // ⌘N on macOS; this suite runs on the fallback platform (Linux), whose key is Ctrl+N.
+    expect(newChatShortcutText()).toBe(toDisplayShortcut('Ctrl+N'))
   })
 
   it('hydrateRail applies a persisted width and opens when the flag is set', () => {

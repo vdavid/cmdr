@@ -10,9 +10,17 @@ import { fileURLToPath } from 'node:url'
 import { COMMAND_CAPTIONS, keyLabel } from './marketing-clips-keys.js'
 
 /**
- * Every command's first default shortcut, read from the registry's source files as text:
- * importing the registry would pull the app's Svelte and i18n modules into this suite's
- * tsconfig, which can't resolve them.
+ * A source entry's first macOS key, in each form an entry takes (`lib/commands/platform-shortcuts.ts`):
+ * a helper call (`sameOnAll`, `cmdOrCtrl`, `macOnly`, the first part of a `concatShortcuts`), whose
+ * argument IS the macOS spelling, or a literal's `macos` arm.
+ */
+const MAC_FIRST_KEY =
+  /shortcuts: (?:(?:concatShortcuts\(\s*)?(?:sameOnAll|cmdOrCtrl|macOnly)\(|\{\s*macos: \[)\s*'([^']*)'/
+
+/**
+ * Every command's first macOS default shortcut (the clips are filmed on macOS), read from the
+ * registry's source files as text: importing the registry would pull the app's Svelte and i18n
+ * modules into this suite's tsconfig, which can't resolve them.
  */
 function defaultShortcuts(): Map<string, string> {
   const dir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'lib', 'commands', 'sources')
@@ -22,7 +30,7 @@ function defaultShortcuts(): Map<string, string> {
     // One chunk per entry, so an entry without shortcuts can't borrow the next one's.
     for (const entry of text.split(/\n\s*id: /).slice(1)) {
       const id = /^'([^']+)'/.exec(entry)?.[1]
-      const first = /shortcuts: \[\s*'([^']*)'/.exec(entry)?.[1]
+      const first = MAC_FIRST_KEY.exec(entry)?.[1]
       if (id !== undefined && first !== undefined && !found.has(id)) found.set(id, first)
     }
   }

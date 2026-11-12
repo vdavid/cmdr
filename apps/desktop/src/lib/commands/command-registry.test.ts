@@ -1,8 +1,9 @@
 import { describe, it, expect, onTestFinished } from 'vitest'
-import { withCapabilities } from '#lib/platform/test-platform.js'
+import { withCapabilities, withPlatform } from '#lib/platform/test-platform.js'
 import {
   commands,
   commandOffered,
+  defaultShortcuts,
   getPaletteCommands,
   listedCommands,
   updateLicenseCommandName,
@@ -341,8 +342,24 @@ describe('a capability-gated command', () => {
   })
 
   it('carries no default key where the OS lacks it, so nothing claims ⌘I or ⇧Space for it', () => {
-    expect(byId('file.getInfo')?.shortcuts).toEqual([])
-    expect(byId('file.quickLook')?.shortcuts).toEqual([])
+    onTestFinished(withPlatform('macos'))
+    expect(defaultShortcuts('file.getInfo')).toEqual([])
+    expect(defaultShortcuts('file.quickLook')).toEqual([])
+  })
+
+  it('asks the capability on every read, so a later answer is never stale', () => {
+    onTestFinished(withPlatform('macos'))
+    expect(defaultShortcuts('file.getInfo')).toEqual([])
+    onTestFinished(withCapabilities('getInfo'))
+    expect(defaultShortcuts('file.getInfo')).toEqual(['⌘I'])
+  })
+
+  it('reads each platform its own arm, whatever platform this window runs on', () => {
+    onTestFinished(withPlatform('macos'))
+    expect(defaultShortcuts('app.commandPalette', 'macos')).toEqual(['⌘⇧P'])
+    expect(defaultShortcuts('app.commandPalette', 'windows')).toEqual(['Ctrl+Shift+P'])
+    expect(defaultShortcuts('app.commandPalette', 'linux')).toEqual(['Ctrl+Shift+P'])
+    expect(defaultShortcuts('app.commandPalette')).toEqual(['⌘⇧P'])
   })
 
   it('leaves every ungated command listed', () => {
@@ -510,9 +527,9 @@ describe('fixedKey flag', () => {
   })
 })
 
-/** Every command whose default shortcuts include `shortcut`, to guard against a silent double-bind. */
+/** Every command whose macOS defaults include `shortcut`, to guard against a silent double-bind. */
 const claimants = (shortcut: string): CommandId[] =>
-  commands.filter((c) => c.shortcuts.includes(shortcut)).map((c) => c.id)
+  commands.filter((c) => c.shortcuts.macos.includes(shortcut)).map((c) => c.id)
 
 describe('operation-log shortcut binding', () => {
   // The alpha "Operation log" command opens the dialog from the View menu and
@@ -521,7 +538,7 @@ describe('operation-log shortcut binding', () => {
   it('binds log.operationLog to exactly ⌘⌥L', () => {
     const cmd = commands.find((c) => c.id === 'log.operationLog')
     expect(cmd, 'log.operationLog must be registered').toBeDefined()
-    expect(cmd?.shortcuts).toEqual(['⌘⌥L'])
+    expect(cmd?.shortcuts.macos).toEqual(['⌘⌥L'])
   })
 
   it('does not double-bind ⌘⌥L (its default) or ⌘⌥O (Show in Finder, the plan pick it avoided)', () => {
@@ -536,7 +553,7 @@ describe('go-to-path shortcut binding', () => {
   // while the rail has focus (it shadows Go to path there, on purpose).
   it('binds nav.goToPath to ⌘G, then ⌘⇧G, and only the rail’s find shares them', () => {
     const cmd = commands.find((c) => c.id === 'nav.goToPath')
-    expect(cmd?.shortcuts).toEqual(['⌘G', '⌘⇧G'])
+    expect(cmd?.shortcuts.macos).toEqual(['⌘G', '⌘⇧G'])
     expect(claimants('⌘G')).toEqual(['nav.goToPath', 'askCmdr.findNext'])
     expect(claimants('⌘⇧G')).toEqual(['nav.goToPath', 'askCmdr.findPrevious'])
   })

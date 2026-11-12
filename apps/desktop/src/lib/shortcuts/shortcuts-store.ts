@@ -8,11 +8,16 @@ import {
   getRestrictedWindowShortcuts,
   updateMenuAccelerator as updateMenuAcceleratorCommand,
 } from '#lib/tauri-commands/index.js'
-import { commands, FIXED_KEY_COMMAND_IDS, NATIVE_SHORTCUT_COMMAND_IDS } from '#lib/commands/command-registry.js'
+import {
+  commands,
+  defaultShortcuts,
+  FIXED_KEY_COMMAND_IDS,
+  NATIVE_SHORTCUT_COMMAND_IDS,
+} from '#lib/commands/command-registry.js'
 import { resolveStorePath } from '#lib/settings/store-path.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { pluralize } from '#lib/utils/pluralize.js'
-import { toCanonicalShortcut, toPlatformShortcut, typingRefusal } from './key-capture'
+import { toCanonicalShortcut, typingRefusal } from './key-capture'
 
 const log = getAppLogger('shortcuts')
 
@@ -453,9 +458,7 @@ export function getEffectiveShortcuts(commandId: string): string[] {
     return [...custom]
   }
 
-  // Defaults are stored in macOS format; convert to current platform
-  const command = commands.find((c) => c.id === commandId)
-  return (command?.shortcuts ?? []).map(toPlatformShortcut)
+  return [...defaultShortcuts(commandId)]
 }
 
 /**
@@ -463,9 +466,7 @@ export function getEffectiveShortcuts(commandId: string): string[] {
  * Always returns a copy to prevent mutation of the original arrays.
  */
 export function getDefaultShortcuts(commandId: string): string[] {
-  const command = commands.find((c) => c.id === commandId)
-  // Defaults are stored in macOS format; convert to current platform
-  return (command?.shortcuts ?? []).map(toPlatformShortcut)
+  return [...defaultShortcuts(commandId)]
 }
 
 /**

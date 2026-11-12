@@ -18,13 +18,13 @@ import { initShortcutDispatch, lookupCommand, destroyShortcutDispatch } from '#l
 
 // These modules read the platform (`isMacOS()`) only at call time, never
 // at module load, so a static import is safe: the platform below is set before any of them run.
-// macOS for both the shortcut-map build (toPlatformShortcut) and formatKeyCombo, so they agree
+// macOS for both the shortcut-map build (the registry's macOS arm) and formatKeyCombo, so they agree
 // the way they do on a real Mac.
 beforeAll(() => withPlatform('macos'))
 
 describe('log.operationLog default shortcut (⌘⌥L)', () => {
   it('a real Option+Command+L keydown resolves to log.operationLog', () => {
-    // The registry default, converted to the active platform (macOS: unchanged).
+    // The registry's default for the active platform.
     expect(getEffectiveShortcuts('log.operationLog')).toEqual(['⌘⌥L'])
 
     // The string a genuine keypress produces must match that exactly.

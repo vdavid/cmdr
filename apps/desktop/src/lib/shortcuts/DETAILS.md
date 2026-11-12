@@ -205,14 +205,14 @@ Example: `⌘N` in `Main window/File list` and `⌘N` in `Main window` conflict 
 `Main window`. Two `Main window/File list` commands sharing a combo also conflict (same scope). `←` in
 `Main window/Brief mode` and `←` in `Main window/Full mode` do NOT, because Brief and Full are siblings.
 
-`registry-conflicts.test.ts` walks the WHOLE shipped default set through `getAllConflicts` and demands the result match
-an `allowedConflicts` list that is empty today. Without it the detector only ever ran against what a user typed into
-Settings, so a new registry entry could silently shadow an existing binding for everyone (the dispatch map keeps one
-winner per combo, so the loser just stops working, with no warning anywhere). A deliberate "keep both" clash is legal —
-it goes in `allowedConflicts` with its reason, and a second test fails on a stale entry so the list can't rot. The test
-pins macOS (`withPlatform`) from a `vi.hoisted` block because several registry entries gate their `shortcuts` array on
-`isMacOS()` AT MODULE LOAD; a `beforeAll` spy would leave those combos unchecked. It also asserts the detector can still
-find a claimed combo, so a broken import or a scope typo can't turn the whole check vacuous.
+`registry-conflicts.test.ts` walks the WHOLE shipped default set through `getAllConflicts`, once per platform, and
+demands the result match that platform's `allowedConflicts` list (empty on macOS; off macOS it holds the one `Ctrl+D`
+clash the keymap work removes). Without it the detector only ever ran against what a user typed into Settings, so a new
+registry entry could silently shadow an existing binding for everyone (the dispatch map keeps one winner per combo, so
+the loser just stops working, with no warning anywhere). A deliberate "keep both" clash is legal — it goes in
+`allowedConflicts` with its reason, and a second test fails on a stale entry so the list can't rot. Each platform runs
+under `withCapabilitiesPossibleOn(platform)`, so the gated commands that OS can offer take part. It also asserts the
+detector can still find a claimed combo, so a broken import or a scope typo can't turn the whole check vacuous.
 
 ### Key capture (`key-capture.ts`)
 
@@ -470,14 +470,10 @@ The main window owns the window-creation perms; the help window needs only `core
 ### Why platform-specific storage?
 
 Cross-platform normalization of the MODIFIERS is complex and error-prone, so each platform captures and matches in its
-native modifier form (`⌘⇧P` vs `Ctrl+Shift+P`); `toPlatformShortcut` converts the macOS-form registry defaults for
-Linux. The KEY NAMES are platform-neutral words, and the macOS glyphs are a render-time concern — see § Key capture for
-why that separation is load-bearing.
-
-❗ **`toPlatformShortcut` is NOT injective off macOS**: it maps BOTH `⌘` and `⌃` onto `Ctrl`, so `⌘D` (`file.duplicate`)
-and `⌃D` (`favorites.open`) arrive as one combo there. Cmdr ships on macOS, where they stay distinct, so this is parked
-rather than solved: `conflict-detector-registry.test.ts` subtracts that one pair. ❌ Don't grow the set to quiet a new
-conflict — a second entry means the mapping itself needs fixing.
+native modifier form (`⌘⇧P` vs `Ctrl+Shift+P`). The registry stores each platform's defaults in that platform's own form
+(`../commands/platform-shortcuts.ts`), and the store reads them through `defaultShortcuts` with no conversion. The KEY
+NAMES are platform-neutral words, and the macOS glyphs are a render-time concern — see § Key capture for why that
+separation is load-bearing.
 
 ### Why delta-only persistence?
 

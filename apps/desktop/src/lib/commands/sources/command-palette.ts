@@ -4,6 +4,7 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
+import { sameOnAll } from '../platform-shortcuts'
 import { BLOCKED_BY_DIALOGS } from '../while-dialog-open'
 
 export const commandPaletteCommands: CommandSource[] = [
@@ -15,7 +16,7 @@ export const commandPaletteCommands: CommandSource[] = [
     nameKey: 'commands.paletteUp.label',
     scope: 'Command palette',
     showInPalette: false,
-    shortcuts: ['↑'],
+    shortcuts: sameOnAll('↑'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -24,7 +25,7 @@ export const commandPaletteCommands: CommandSource[] = [
     nameKey: 'commands.paletteDown.label',
     scope: 'Command palette',
     showInPalette: false,
-    shortcuts: ['↓'],
+    shortcuts: sameOnAll('↓'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -33,7 +34,7 @@ export const commandPaletteCommands: CommandSource[] = [
     nameKey: 'commands.paletteExecute.label',
     scope: 'Command palette',
     showInPalette: false,
-    shortcuts: ['Enter'],
+    shortcuts: sameOnAll('Enter'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -42,7 +43,7 @@ export const commandPaletteCommands: CommandSource[] = [
     nameKey: 'commands.paletteClose.label',
     scope: 'Command palette',
     showInPalette: false,
-    shortcuts: ['Escape'],
+    shortcuts: sameOnAll('Escape'),
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },

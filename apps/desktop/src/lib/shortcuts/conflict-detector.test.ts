@@ -34,7 +34,7 @@ function setupEffectiveShortcuts() {
     const override = customOverrides.get(commandId)
     if (override) return [...override]
     const cmd = testCommands.find((c) => c.id === commandId)
-    return [...(cmd?.shortcuts ?? [])]
+    return [...(cmd?.shortcuts.linux ?? [])]
   })
 }
 
@@ -46,13 +46,21 @@ function setCommands(...cmds: Command[]) {
 // Synthetic test ids ('a', 'b', …) aren't real `CommandId`s, so this helper
 // types `id` as a plain `string` and casts the result to `Command`. The
 // conflict detector only reads `id`/`scope`/`shortcuts` as opaque values.
-function makeCommand(partial: Omit<Partial<Command>, 'id' | 'scope'> & { id: string; scope?: CommandScope }): Command {
+function makeCommand(
+  partial: Omit<Partial<Command>, 'id' | 'scope' | 'shortcuts'> & {
+    id: string
+    scope?: CommandScope
+    shortcuts?: string[]
+  },
+): Command {
+  const { shortcuts = [], ...rest } = partial
   return {
     name: partial.id,
     scope: 'App',
     showInPalette: true,
-    shortcuts: [],
-    ...partial,
+    ...rest,
+    // One list for every platform: the detector reads keys only through `getEffectiveShortcuts`.
+    shortcuts: { macos: shortcuts, windows: shortcuts, linux: shortcuts },
   } as Command
 }
 

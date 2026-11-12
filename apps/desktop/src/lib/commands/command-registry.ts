@@ -19,7 +19,7 @@ import type { Command, CommandSource, PaletteCondition } from './types'
 import type { CommandId } from './command-ids'
 import { BLOCKED_BY_DIALOGS, type WhileDialogOpen } from './while-dialog-open'
 import { tString } from '#lib/intl/messages.svelte.js'
-import { hasCapability } from '#lib/platform/index.js'
+import { getPlatform, hasCapability, type Platform } from '#lib/platform/index.js'
 import { appCommands } from './sources/app'
 import { mainWindowCommands } from './sources/main-window'
 import { fileListCommands } from './sources/file-list'
@@ -181,9 +181,6 @@ function resolveCommand(src: CommandSource): Command {
   const resolveName = (): string => tString(typeof nameKey === 'function' ? nameKey() : nameKey)
   const cmd = {
     ...rest,
-    // Default keys are read once, at load, like the shortcuts store's defaults: an OS
-    // without the feature leaves its combo free.
-    shortcuts: commandOffered(src) ? rest.shortcuts : [],
     get name(): string {
       return resolveName()
     },
@@ -228,6 +225,34 @@ export function commandOffered(command: Pick<Command, 'needsCapability'>): boole
  */
 export function listedCommands(): Command[] {
   return commands.filter(commandOffered)
+}
+
+const NO_KEYS: readonly string[] = Object.freeze([])
+
+const commandById = new Map<string, Command>(commands.map((command) => [command.id, command]))
+
+/** Each platform's id → default keys table, built on first read. Pure data, so it never goes stale. */
+const defaultKeysByPlatform = new Map<Platform, ReadonlyMap<string, readonly string[]>>()
+
+function defaultKeysOn(platform: Platform): ReadonlyMap<string, readonly string[]> {
+  let table = defaultKeysByPlatform.get(platform)
+  if (!table) {
+    table = new Map(commands.map((command) => [command.id, command.shortcuts[platform]]))
+    defaultKeysByPlatform.set(platform, table)
+  }
+  return table
+}
+
+/**
+ * `commandId`'s default keys on `platform`, in that platform's spelling: none where the OS lacks
+ * the command's `needsCapability`, so its combo stays free. The capability is asked on every call,
+ * outside the cached table, so a test that switches capabilities never reads a stale answer.
+ * Read-only: copy before mutating (`getDefaultShortcuts` in the shortcuts store does).
+ */
+export function defaultShortcuts(commandId: string, platform: Platform = getPlatform()): readonly string[] {
+  const command = commandById.get(commandId)
+  if (!command || !commandOffered(command)) return NO_KEYS
+  return defaultKeysOn(platform).get(commandId) ?? NO_KEYS
 }
 
 // Re-exported from `sources/app.ts`, where the flag it flips lives beside the
