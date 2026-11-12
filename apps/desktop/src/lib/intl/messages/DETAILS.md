@@ -85,7 +85,7 @@ The shape:
 {
   "transfer.trash": "Moved {countText} {count, plural, one {file} other {files}} to trash",
   "@transfer.trash": {
-    "description": "Toast confirming items were moved to the macOS Trash. Shown briefly after a delete-to-trash (F8).",
+    "description": "Toast confirming items were moved to the trash. Shown briefly after a delete-to-trash (F8).",
     "placeholders": {
       "countText": "how many files, already formatted for display (e.g. 1,234)",
       "count": "the same number of files (drives the singular/plural form of the noun)",
@@ -115,6 +115,14 @@ The shape:
     description MUST say whether to keep it as-is or translate what it means. Translators do what the note says: on
     2026-10-22 all 11 kept the quoted `insecure` the note named, and all 11 translated "as nobody", which no note
     covered, by meaning. Better still, keep jargon out of the English when the meaning reads as well.
+  - **Which OS's words a key wants.** A key shown off macOS never sends the translator to the macOS term alone. A plain
+    value names the concept OS-neutrally ("your language's standard word for a folder, the one the OS's own file
+    managers use"). A per-OS value (`{platform, select, …}`) says what each branch names that differs ("the macOS branch
+    names the Keychain, the Windows branch Credential Manager, the Linux branch the keyring"), and its Windows register
+    where Trash or Quit is in play (`docs/style-guide.md` § "Platform vocabulary"). Which branch each OS reads, and
+    where each OS's words live in the reference pile, is the brief's job (`docs/i18n/translator-instructions.md`, Per-OS
+    values), not each description's. A key only macOS shows (a gated surface) may keep Finder steering. A per-OS key
+    with a `screenshot` ends with "The screenshot shows the macOS wording.", since the capture runs on a Mac.
 - `placeholders`: an ARB-style map giving each placeholder a PLAIN-LANGUAGE meaning plus an example value, in the
   translator's terms ("number of files", "the folder name"), never the ICU mechanics ("raw integer for plural
   selection"). Include it whenever a message has placeholders; omit it for static strings. This is what lets a

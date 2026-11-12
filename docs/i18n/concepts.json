@@ -53,6 +53,7 @@
     "sense": "Entering a license key to turn on a paid license."
   },
   "activity-monitor": {
+    "distinct": ["task-manager"],
     "en": "Activity Monitor",
     "match": ["activity monitor"],
     "note": "Apple localizes some of these names per language; quote the name the user's Mac shows.",
@@ -230,6 +231,13 @@
     "en": "app bundle",
     "match": ["app bundle", "app bundles"],
     "sense": "A folder macOS shows as one item (.app, .bundle, .framework)."
+  },
+  "app-closes": {
+    "distinct": ["quit", "exit", "close"],
+    "en": "Cmdr closes",
+    "match": ["cmdr closes", "cmdr closed", "closing cmdr", "then closes", "closes afterwards", "closing in"],
+    "note": "Not a window or dialog closing: use the verb Windows uses when an app closes.",
+    "sense": "Cmdr itself shutting down, narrated with Cmdr as the subject in the Windows branch (\"then closes\", \"Cmdr closed unexpectedly\")."
   },
   "app-switcher": {
     "distinct": ["volume-switcher"],
@@ -417,11 +425,58 @@
     "note": "Not the gamification sense some term bases give for badge. The pane box that holds typed text is `typing-badge`.",
     "sense": "A small marker showing a state: an overlay on a file icon, or a label in the title bar."
   },
+  "credential-manager": {
+    "distinct": ["keychain"],
+    "en": "Credential Manager",
+    "match": ["credential manager"],
+    "sense": "The Windows password store, and the Control Panel app of that name: the Windows branch’s counterpart to the Keychain."
+  },
+  "exit": {
+    "distinct": ["quit", "app-closes", "close"],
+    "en": "Exit",
+    "match": ["exit"],
+    "notMatch": ["exit full screen"],
+    "sense": "Stopping Cmdr, as the Windows branch names the action the user picks (\"Exit Cmdr\", \"Exit now\"): the Windows counterpart to Quit."
+  },
+  "file-explorer": {
+    "distinct": ["finder"],
+    "en": "File Explorer",
+    "match": ["file explorer"],
+    "note": "Microsoft localizes the name in many languages (de \"Datei-Explorer\"): take it from the Microsoft TBX, never from an older \"Windows Explorer\" entry.",
+    "sense": "Windows’ file manager, the Windows branch’s counterpart to Finder."
+  },
   "maker": {
     "en": "maker",
     "sense": "The person who makes Cmdr, as in “the maker of Cmdr” (commands.feedbackSend.description): whoever reads the feedback.",
     "match": ["maker of cmdr", "the maker"],
     "note": "Gender-neutral: never a masculine or feminine agent noun (German “Macher”, French “créateur”). Restructure around the act (“the people behind Cmdr”, “whoever makes Cmdr”, German “wer Cmdr macht”, French “l’équipe de Cmdr” or “la personne qui fait Cmdr”), as the principles ask for gender."
+  },
+  "powershell": {
+    "distinct": ["terminal"],
+    "en": "PowerShell",
+    "match": ["powershell"],
+    "note": "A product name Microsoft keeps in English.",
+    "sense": "The Windows command shell, where the Windows branch sends people to run a command."
+  },
+  "recycle-bin": {
+    "distinct": ["trash", "move-to-trash", "go-to-trash", "delete"],
+    "en": "Recycle Bin",
+    "match": ["recycle bin"],
+    "note": "Windows labels the action itself \"Delete\" and names the Recycle Bin only in sentences: mine the Windows word from the Microsoft TBX.",
+    "sense": "Windows’ Recycle Bin, where Windows sends deleted files: the Windows branch’s word for the Trash, in sentences."
+  },
+  "task-manager": {
+    "distinct": ["activity-monitor"],
+    "en": "Task Manager",
+    "match": ["task manager"],
+    "sense": "The Windows app that shows running apps and their memory use: the Windows branch’s counterpart to Activity Monitor."
+  },
+  "this-pc": {
+    "distinct": ["this-mac", "this-computer"],
+    "en": "this PC",
+    "match": ["this pc", "your pc"],
+    "note": "The Microsoft TBX has no entry for it; take the noun Windows uses for a PC in your language.",
+    "sense": "The user’s own computer as Windows prose names it (\"on this PC\", \"your PC’s network connection\")."
   },
   "typing-badge": {
     "en": "badge (typing)",
@@ -1386,6 +1441,7 @@
     "sense": "The find half of Multi-Rename’s find and replace: the text to look for inside names, never finding files."
   },
   "finder": {
+    "distinct": ["file-explorer"],
     "en": "Finder",
     "match": ["finder"],
     "sense": "Apple's Finder, kept as a proper name."
@@ -1636,7 +1692,7 @@
     "sense": "The dialog and command for typing a path to navigate to. Named after Finder's Go to Folder, so a locale uses Finder's wording."
   },
   "go-to-trash": {
-    "distinct": ["move-to-trash"],
+    "distinct": ["move-to-trash", "recycle-bin"],
     "en": "Go to trash",
     "match": ["go to trash", "go to the trash"],
     "notMatch": ["you can undo this"],
@@ -1734,7 +1790,7 @@
     "sense": "A record of past things: file operations Cmdr ran, a chat's earlier messages, recent searches, closed tabs, git history."
   },
   "home-folder": {
-    "distinct": ["root-folder", "folder"],
+    "distinct": ["root-folder", "folder", "user-folder"],
     "en": "home folder",
     "match": ["home folder", "home directory", "=home"],
     "sense": "The user's home folder (~), and the Go menu's Home item."
@@ -1944,6 +2000,7 @@
     "sense": "The private-key file (and its passphrase) the user signs in to an SFTP server with."
   },
   "keychain": {
+    "distinct": ["credential-manager"],
     "en": "Keychain",
     "match": ["keychain", "keychain access", "keyring", "keyrings"],
     "note": "Apple localizes Keychain and Keychain Access in many languages; it is not a do-not-translate brand.",
@@ -2301,7 +2358,7 @@
     "sense": "Relocating files to another folder (F6)."
   },
   "move-to-trash": {
-    "distinct": ["delete", "go-to-trash", "trash"],
+    "distinct": ["delete", "go-to-trash", "trash", "recycle-bin"],
     "en": "Move to trash",
     "match": [
       "move to trash",
@@ -2814,7 +2871,7 @@
     "sense": "Apple's Quick Look feature and its menu action."
   },
   "quit": {
-    "distinct": ["close", "stop", "force-quit"],
+    "distinct": ["close", "stop", "force-quit", "exit", "app-closes"],
     "en": "Quit",
     "match": ["quit", "quits", "quitting"],
     "sense": "The app stopping (Quit Cmdr, the quit gate, quit unexpectedly)."
@@ -3764,6 +3821,7 @@
     "sense": "Short-lived files or states."
   },
   "terminal": {
+    "distinct": ["powershell"],
     "en": "terminal",
     "match": ["terminal", "open terminal here"],
     "sense": "A terminal app in general, and Apple's Terminal app by name."
@@ -3788,13 +3846,14 @@
     "sense": "The AI's reasoning status line."
   },
   "this-computer": {
+    "distinct": ["this-pc"],
     "en": "this computer",
     "match": ["this computer", "your computer", "your machine", "this machine"],
     "note": "Regional vocabulary splits here (es ordenador / computadora / equipo); a locale records its pan-regional choice.",
     "sense": "The user's own computer, named generically (not Mac) because the sentence also runs on Linux or means any machine."
   },
   "this-mac": {
-    "distinct": ["this-computer", "local"],
+    "distinct": ["this-computer", "local", "this-pc"],
     "en": "this Mac",
     "match": ["this mac", "your mac"],
     "note": "Apple's prose names the machine with a classifier in several languages; keep \"Mac\" itself verbatim.",
@@ -3893,10 +3952,10 @@
     "sense": "A copy or move of data in flight (the transfer progress dialog), narrower than operation."
   },
   "trash": {
-    "distinct": ["move-to-trash", "go-to-trash", "delete"],
+    "distinct": ["move-to-trash", "go-to-trash", "delete", "recycle-bin"],
     "en": "trash",
     "match": ["trash"],
-    "sense": "The macOS Trash, per drive."
+    "sense": "The trash, per drive: macOS's Trash, and the Linux desktops' trash in a per-OS value's `other` branch (Windows names the Recycle Bin)."
   },
   "trust": {
     "distinct": ["allow"],
@@ -4040,6 +4099,13 @@
     "match": ["user", "users"],
     "notMatch": ["user name", "username"],
     "sense": "A person using Cmdr, or a macOS or server user account."
+  },
+  "user-folder": {
+    "distinct": ["home-folder"],
+    "en": "user folder",
+    "match": ["user folder"],
+    "note": "The Microsoft TBX’s \"home folder\" is a different sense (a folder an admin assigns on a file server); don’t take it here.",
+    "sense": "The user’s own folder under C:\\Users on Windows: the Windows branch’s word for the home folder."
   },
   "username": {
     "distinct": ["credentials", "account"],

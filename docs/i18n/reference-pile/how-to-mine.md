@@ -38,11 +38,14 @@ for them before trusting a source.
 4. **Microsoft terminology's first hit is often the wrong SENSE.** A `.tbx` term has multiple senses and the first match
    isn't always the UI one: read each entry's `<descrip type="definition">` before taking it. Seen in fr: item →
    "article" (publishing sense) where the UI wants macOS "élément"; sidebar → "encadré" (callout) vs macOS "barre
-   latérale"; share → "part" vs macOS "partage". Disambiguate against macOS Tier-1 (Cmdr is a macOS app) and record
-   which sense you took.
+   latérale"; share → "part" vs macOS "partage". Disambiguate against macOS Tier-1 for a plain value or a `macos`
+   branch, and against the Windows UI senses (the `<descrip>` naming a Windows feature) for a `windows` branch, and
+   record which sense you took. The TBX's "home folder" is one such trap: an admin-assigned server folder, not Cmdr's
+   Windows "user folder".
 5. **Formality is per-language and OS-driven — never carry one language's call to another.** German macOS is informal
    `du` (Microsoft's formal `Sie` is the Windows convention, not Cmdr's); French macOS AND Microsoft are both `vous`.
-   Mine the actual native-OS register for each language; don't generalize.
+   Mine the actual native-OS register for each language; don't generalize. A per-OS value's `windows` branch borrows
+   Windows' TERMS, never its register: the German `windows` branch still says `du`, as the style guide does.
 6. **A Cmdr catalog tag may not equal the pile folder to mine.** `pt` → mine `pt-BR/`; `zh` → mine the composed `zh/`
    (Simplified). When substituting the tag into the translator-agent prompt's "mine `_ignored/i18n/<tag>/`" line, use
    the variant-correct folder, which each language's `style.md` names.
@@ -53,9 +56,10 @@ for them before trusting a source.
 8. **False friends hide in every source.** A hit that looks like your term can mean something else in context (Total
    Commander's sv `Skrivfel!` is a write error, not a typo). Read the neighboring entries before citing one.
 
-For WHICH term to pick once you've mined the candidates (localize the Apple feature names Apple localizes; prefer the
-macOS Finder term over the Windows/Microsoft one; let brand names inflect), see `docs/guides/i18n-translation.md` §
-Term-choice principles. Trap 5 above is the formality instance of the macOS-over-Windows rule.
+For WHICH term to pick once you've mined the candidates (localize the Apple feature names Apple localizes; each branch
+of a per-OS value takes its own OS's term, and a plain value the macOS Finder term where the OSes split; let brand names
+inflect), see `docs/guides/i18n-translation.md` § Term-choice principles. Which pile folders serve which branch:
+`docs/i18n/translator-instructions.md` (Per-OS values).
 
 (Trap 1's "Double Commander directory hotlist is a different feature, not a bookmark" lives in the four mining gotchas
 in `docs/guides/i18n-translation.md` § Researching terms.)

@@ -226,7 +226,7 @@ A `###` section whose `##` parent also matches is left out, since the parent's b
 
 ## Tooling
 
-### `pnpm i18n:brief` (`apps/desktop/scripts/i18n-brief.ts`, assembly in `i18n-brief-lib.ts`, key selection in `i18n-brief-select.ts`, memory in `i18n-brief-memory.ts`)
+### `pnpm i18n:brief` (`apps/desktop/scripts/i18n-brief.ts`, assembly in `i18n-brief-lib.ts`, key selection in `i18n-brief-select.ts`, memory in `i18n-brief-memory.ts`, the per-OS key note in `i18n-brief-per-os.ts`)
 
 - `--lang nl` | `--lang nl,de` | `--lang all` (every full translation; overlays are refused).
 - Key selectors, which narrow each other when combined: `--keys a.b.c,servers.sheet.*` (exact keys or `*` globs; a
@@ -266,7 +266,8 @@ Sections, each selected by the batch:
    value, and "No concept yet": the key's content words no concept's `match` covers, leaving out generic English, brand
    words, and words fewer than three English keys use (a concept recurs). That line is how a missing concept ("offline")
    shows up as work instead of passing for settled. A search keyword list gets a one-line note instead (§ Search keyword
-   lists below).
+   lists below). A per-OS value gets a note naming which OS reads each of its branches, that OS's pile folders, and
+   which branch macOS reads (its translation stays).
    - Regional overlays, when a target language has one (`es-419` for `es`): the batch keys it already forks (values
      withheld in a blind run), that a value using a form it replaces needs a fork, and the
      `sync-locale-keys.ts <overlay> --restamp <key>` that stamps a fork with the hash of the base value it overrides.

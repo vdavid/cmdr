@@ -65,24 +65,43 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
 ## Term-choice principles
 
 Three settled decisions about WHICH term to pick. They apply to every language; the don't-translate check enforces what
-it can, but the judgment is yours.
+it can, but the judgment is yours. A per-OS value (`{platform, select, …}`) applies 1 and 2 BRANCH BY BRANCH: each
+branch takes its own OS's term. The rule and the branch-to-OS map are canonical in
+`docs/i18n/translator-instructions.md` (Per-OS values), which every brief embeds.
 
-1. **Apple feature names — localize what Apple localizes.** Some Apple feature names are translated per-OS (Quick Look →
-   fr "Coup d’œil", de "Übersicht", es "Vista rápida"); others Apple keeps English in every locale (Spotlight, Mission
-   Control, AirDrop, Siri, Time Machine, Finder). To decide, check `<tag>/macOS/` in the reference pile: if Apple's
-   localized macOS uses a translated term, use it; if it keeps the English name, keep it. Match what the user actually
-   sees in their Finder. (This is why `BRAND_WORDS` in `apps/desktop/scripts/i18n-catalog-lib.ts` lists the kept-English
-   names but NOT Quick Look — a translated Quick Look must not read as a dropped brand.) It's decided per LABEL, not per
-   app: Apple keeps `Finder` and `Terminal` English almost everywhere yet localizes `Get Info`, `Locked`, and
-   `Sharing & Permissions` in every locale. A `@key.description` telling you to keep such a label English is not
-   authority; verify it against the OS, and fix the `en` description when it's wrong. The direct key-match recipe
-   against the shipped Finder bundle, plus the caveat that these labels follow the SYSTEM language while our catalog
-   follows the APP language, are in `../i18n/translation-learnings.md` § "Quoting a macOS UI label".
-2. **Prefer the macOS Finder term when macOS and Windows/Microsoft differ.** Cmdr is a macOS app, so the native-OS term
-   wins over the Windows convention. For example, pt-BR delete = "Apagar" (Finder), not "Excluir" (Windows); German
-   move = "Bewegen" (Finder), not "Verschieben" (Microsoft). The Microsoft terminology entry is the Windows wording, not
-   ours — use it only as a tiebreak below macOS. (Same shape as the formality trap in
-   `../i18n/reference-pile/how-to-mine.md` § "Source-quality traps", trap 5.)
+1. **Apple feature names — localize what Apple localizes.** This is the `macos` branch's rule, and a plain value's. Some
+   Apple feature names are translated per-OS (Quick Look → fr "Coup d’œil", de "Übersicht", es "Vista rápida"); others
+   Apple keeps English in every locale (Spotlight, Mission Control, AirDrop, Siri, Time Machine, Finder). To decide,
+   check `<tag>/macOS/` in the reference pile: if Apple's localized macOS uses a translated term, use it; if it keeps
+   the English name, keep it. Match what the user actually sees in their Finder. (This is why `BRAND_WORDS` in
+   `apps/desktop/scripts/i18n-catalog-lib.ts` lists the kept-English names but NOT Quick Look — a translated Quick Look
+   must not read as a dropped brand.) It's decided per LABEL, not per app: Apple keeps `Finder` and `Terminal` English
+   almost everywhere yet localizes `Get Info`, `Locked`, and `Sharing & Permissions` in every locale. A
+   `@key.description` telling you to keep such a label English is not authority; verify it against the OS, and fix the
+   `en` description when it's wrong. The direct key-match recipe against the shipped Finder bundle, plus the caveat that
+   these labels follow the SYSTEM language while our catalog follows the APP language, are in
+   `../i18n/translation-learnings.md` § "Quoting a macOS UI label".
+2. **Each branch takes its own OS's term; a plain value takes the macOS one where the OSes split.** Per branch:
+   - `macos` mines `<tag>/macOS/`, and the Finder term wins: pt-BR delete = "Apagar" (Finder), German move = "Bewegen"
+     (Finder). This branch is already translated almost everywhere: leave it as it is.
+   - `windows` mines `<tag>/microsoft-terminology/` and `<tag>/microsoft-style-guides/`, and the Microsoft term wins:
+     pt-BR "Excluir" is right THERE. Mirror the English branch's register (Trash: "Delete" as a label, "the Recycle Bin"
+     in a sentence; Quit: "Exit" as an action, "close" in narration; `docs/style-guide.md` § "Platform vocabulary").
+   - `other` (Linux) mines `<tag>/gnome-nautilus/`, `<tag>/kde-dolphin/`, and `<tag>/xfce-thunar/` and picks the word
+     they share, or the desktop-neutral one where they split. Desktop-specific words (GNOME's, KDE's) wait for the
+     per-desktop value (Windows port plan task 59).
+   - A plain value shows on every OS: the word the OSes share, else the macOS Finder term, with the key logged in
+     `docs/i18n/source-queue.md` as needing a per-OS value. The Microsoft entry is then a tiebreak below macOS. (Same
+     shape as the formality trap in `../i18n/reference-pile/how-to-mine.md` § "Source-quality traps", trap 5.)
+
+   What the pile lacks for the `windows` branch: the TBX has no Windows shell labels such as "This PC" or "user folder",
+   and its "home folder" is an admin-assigned server folder, a different sense from Cmdr's Windows "user folder".
+   `Eject` is in some TBX files and not others. `zh-Hant/` carries only the Microsoft sources; its macOS and Linux
+   file-manager sources are under `zh-TW/` (trap 1). Where the pile is silent, choose on the evidence you have and
+   record the term `tentative`. A ruling's per-OS forms (`windows`, `other` in `terms.json`; schema in
+   `docs/i18n/termbase.md`) record what each branch settles, so the next translator and the drift check judge that
+   branch against its own OS.
+
 3. **Brand/product names may inflect.** In agglutinative/inflecting languages, let the brand take its natural
    inflectional suffix rather than forcing an unnatural bare form: Hungarian "Cmdrben" (in Cmdr), Swedish genitive
    "Cmdrs". Keep the brand recognizable but grammatical. Pick the suffix by how the name is PRONOUNCED, not spelled:
@@ -114,7 +133,8 @@ jq, `msggrep`, `pdftotext`, `.lng`).
 For each term or convention: triangulate across every source the language has, pick the most native-sounding fit for
 Cmdr's voice, then record it as a `terms.json` entry (`chosen`, `sources`, `confidence`, plus `accept` / `forms` /
 `avoid` as needed; a concept with no `concepts.json` entry gets one first). Weight by authority: macOS first, then
-Microsoft, then the file-manager corpora (community-translated, so below the first-party vendors for general terms).
+Microsoft, then the file-manager corpora (community-translated, so below the first-party vendors for general terms); in
+a per-OS value's `windows` or `other` branch, that OS's own sources come first instead (§ Term-choice principles).
 Confidence is `confirmed` (a human signed off), `high` (authoritative sources agree), or `tentative` (sources conflict
 or none had it). A choice only David can make goes in the style guide's decisions-to-confirm section, and a doubt only a
 native reviewer can settle goes in `review-queue.md`, rather than burying either — but for Hungarian, resolve by
@@ -340,6 +360,14 @@ The routine maintenance loop, run for every change that adds or edits user-facin
 4. **Human-review (optional)** the changed strings and set `@key.reviewed: true` again if a reviewer is available (the
    stale check reset it when the source changed). Not a gate — the re-translated strings ship without it.
 
+**A key whose English became a per-OS value** (`{platform, select, …}`) arrives stale with a half-done value: its
+`macos` branch holds the existing translation, and each branch whose English changed holds that English. Work it branch
+by branch under `docs/i18n/translator-instructions.md` (Per-OS values): translate only the English branches, each in its
+own OS's words, and leave the `macos` branch alone (`macos-copy-unchanged.test.ts` holds it). The stale hash is
+whole-value, so restamp (`--restamp <key>`) only once EVERY branch is in the language; a half-translated key stays on
+the worklist. A collapsed `.mac`/`.other` pair is the same: its survivor key's `macos` branch is the old `.mac`
+translation. The brief's per-key "Per-OS value" note names each branch's OS and pile folders.
+
 ### Write placeholder strings to be restructurable
 
 When a user-facing string contains a placeholder (`{path}`, `{name}`, `{volumeName}`), phrase the English so a
@@ -438,7 +466,7 @@ teammates". Only the lead session can name them. Write each language's brief to 
 the path, rather than inlining ten briefs into prompts. The whole handoff prompt is then:
 
 ```
-You are translating UI strings for Cmdr, a macOS file manager, into [LANGUAGE]. Your brief is at [BRIEF PATH]: read it,
+You are translating UI strings for Cmdr, a file manager for macOS, Windows, and Linux, into [LANGUAGE]. Your brief is at [BRIEF PATH]: read it,
 then docs/i18n/[TAG]/style.md, and follow the brief's Instructions and Principles sections. Report every string you
 flagged, and end with the Source feedback section the instructions describe.
 ```

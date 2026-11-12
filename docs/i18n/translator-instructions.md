@@ -7,11 +7,11 @@ process around them is `docs/guides/i18n-translation.md` § The translator-agent
 
 ## Instructions
 
-You are translating UI strings for Cmdr, a macOS file manager, from English into {{LANGUAGE}}. This brief holds
-everything you need: the keys with their context, the style digest, the ruling for every term in play, the nearest
-shipped translations, and the past decisions about these keys. The Principles section right after these instructions
-holds the judgment calls every language shares (voice, names vs prose, no hedged grammar, native typography, escalating
-source problems); they bind as much as these instructions do. Also read the full style guide
+You are translating UI strings for Cmdr, a file manager for macOS, Windows, and Linux, from English into {{LANGUAGE}}.
+This brief holds everything you need: the keys with their context, the style digest, the ruling for every term in play,
+the nearest shipped translations, and the past decisions about these keys. The Principles section right after these
+instructions holds the judgment calls every language shares (voice, names vs prose, no hedged grammar, native
+typography, escalating source problems); they bind as much as these instructions do. Also read the full style guide
 (docs/i18n/{{TAG}}/style.md) before writing. A term with a ruling below is settled: use it. Reopen a ruling only with
 new evidence, and then edit it in place (the old form moves to "avoid" with its reason). Where a ruling's form and the
 style guide disagree, the style guide's general rule wins unless the ruling says why it's an exception; flag it.
@@ -37,6 +37,28 @@ style guide disagree, the style guide's general rule wins unless the ruling says
 - **Raw families (no ICU)**: `errors.*` and the native `menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`. Use
   NORMAL apostrophes (a doubled '' renders as two on a real menu), keep {token} verbatim, treat <…> as literal text, and
   pass markdown through untouched.
+- **Per-OS values** (`{platform, select, macos {…} windows {…} other {…}}`): one branch per OS. `macos` is macOS,
+  `windows` is Windows, `other` is Linux, plus whichever of the two has no branch of its own. Keep the frame and the
+  branch names exactly. **In a platform select, each branch uses that OS's own localized term (Windows' own word for the
+  Recycle Bin, File Explorer, Settings), sourced from that OS's localization, never the macOS term carried over.**
+  - **The branch macOS reads, once in {{LANGUAGE}}, stays byte for byte**: that's `macos`, or `other` in a block with no
+    `macos` branch (each key's note in the brief says which). A key that became per-OS kept its translation there, and
+    `macos-copy-unchanged.test.ts` fails on any change. Your work is every branch still in English (all of them, for a
+    new key); any other branch already in {{LANGUAGE}} whose English didn't change stays too.
+  - **Where each OS's word lives** in the pile: `macos` mines `macOS/`; `windows` mines `microsoft-terminology/` (the
+    TBX) and `microsoft-style-guides/`; `other` mines `gnome-nautilus/`, `kde-dolphin/`, and `xfce-thunar/`, taking the
+    word they share, or the desktop-neutral one where they split (GNOME- or KDE-only words wait for per-desktop text).
+    The TBX has no "This PC" or "user folder", and its "home folder" is a different sense (a folder an admin assigns on
+    a server); where the pile lacks the OS's word, choose by the evidence you have and record it `tentative`.
+  - **Two registers on Windows**, which the English branch already picks: Trash is "Delete" as an action's name (a
+    button, menu row, or command) and "the Recycle Bin" in a sentence; Quit is "Exit" as an action and "close" when Cmdr
+    is the subject ("Cmdr closes"). Use {{LANGUAGE}} Windows' own word for each, in the same register.
+  - **Rulings**: a `terms.json` ruling may carry `windows` and `other` forms, and the brief prints them. When a branch's
+    OS names a ruled concept differently from the base ruling, add that OS's form (docs/i18n/termbase.md, `terms.json`
+    schema) with sources from that OS's folder.
+  - **Done**: once every branch is in {{LANGUAGE}}, restamp the key as above; that's what takes it off the stale list.
+  - **A plain value** (no select) shows on every OS. Use the word the OSes share in {{LANGUAGE}}; where they split, keep
+    the macOS term and log the key in docs/i18n/source-queue.md as needing a per-OS value.
 - **Uncontrolled inserts**: {message}, {reason}, and a raw {path} carry text Cmdr doesn't control. Make the sentence
   read right whatever lands there; never assume its gender, number, case, or length.
 - **Fragment keys**: a fragment assembled by a named `*Join` key must read naturally once assembled; the `*Join` key is
@@ -56,8 +78,8 @@ style guide disagree, the style guide's general rule wins unless the ruling says
   placeholder-only string, a shared word), record a short, sourced `@key.sameAsSourceJustification` in your catalog
   instead of forcing a change.
 - **Term choice**: (1) localize what Apple localizes, verified per locale in the pile's macOS folder (Quick Look is
-  translated, Spotlight isn't); (2) prefer the macOS Finder term over the Windows one; (3) let brands inflect by
-  PRONUNCIATION ("Cmdrben", "Cmdrs").
+  translated, Spotlight isn't); (2) each OS's own term in its branch (Per-OS values above), and in a plain value the
+  macOS Finder term where the OSes split; (3) let brands inflect by PRONUNCIATION ("Cmdrben", "Cmdrs").
 - **Reference pile (mandatory for "no ruling" terms)**: for every term the brief marks "no ruling" and every content
   word it lists under "No concept yet", mine the pile at the header's path (it lives only in the MAIN clone, never your
   worktree) for how macOS, Microsoft, Nautilus/Thunar/Dolphin, and Total/Double Commander render it; reuse and cite,

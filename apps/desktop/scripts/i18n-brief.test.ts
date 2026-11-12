@@ -175,6 +175,7 @@ describe('buildBrief (fixture tree)', () => {
       'errors.queue.revealHint':
         '{platform, select, macos {Open {system_settings} and allow it.} other {Check the folder permissions.}}',
       'errors.queue.undoHint': '{platform, select, macos {Undo the operation from the Edit menu.} other {Try again.}}',
+      'queue.trash': '{platform, select, windows {Delete} other {Move to trash}}',
     })
     write(join(messagesRoot, 'en', 'settings.json'), {
       'settings.queue.keywords': 'operation, offline, jobs',
@@ -271,7 +272,23 @@ describe('buildBrief (fixture tree)', () => {
     const notes = text.split('\n').filter((line) => line.startsWith('  - {'))
     expect(notes).toEqual(['  - {name}', '  - {system_settings}'])
     expect(text).not.toContain('{platform}')
-    expect(text.match(/Per-OS value: translate each branch/g)?.length).toBe(2)
+    expect(
+      text.match(/`macos` is macOS \(pile: `macOS\/`\), and macOS reads it, so a translation already there stays/g)
+        ?.length,
+    ).toBe(2)
+    expect(
+      text.match(
+        /`other` is Windows and Linux \(pile: `microsoft-terminology\/`, `microsoft-style-guides\/`; `gnome-nautilus\/`/g,
+      )?.length,
+    ).toBe(2)
+  })
+
+  it('names which OS reads each branch a block has, so a Mac reading `other` keeps its translation there', () => {
+    const text = renderBrief(buildBrief({ ...opts, keys: ['queue.trash'] }))
+    expect(text).toContain('`windows` is Windows (pile: `microsoft-terminology/`, `microsoft-style-guides/`);')
+    expect(text).toContain(
+      '`other` is macOS and Linux (pile: `macOS/`; `gnome-nautilus/`, `kde-dolphin/`, `xfce-thunar/`), and macOS reads it, so a translation already there stays.',
+    )
   })
 
   it('finds a concept in a raw block’s branch, where a whole-value strip would delete every body', () => {

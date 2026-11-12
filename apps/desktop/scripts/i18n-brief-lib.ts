@@ -54,6 +54,7 @@ import {
   visibleLiterals,
 } from './i18n-catalog-lib.ts'
 import type { Catalog } from './i18n-catalog-lib.ts'
+import { perOsNote } from './i18n-brief-per-os.ts'
 import { staleKeys } from './i18n-brief-select.ts'
 import { buildMemoryIndex, contentWords, isGenericWord, nearestKeys } from './i18n-brief-memory.ts'
 import type { MemoryIndex } from './i18n-brief-memory.ts'
@@ -386,10 +387,6 @@ function changeLines(previous: Record<string, string> | undefined, current: stri
   )
 }
 
-/** What a per-OS `{platform, select, …}` key gets: each branch is its own sentence, and the frame is structure. */
-const PER_OS_NOTE =
-  'Per-OS value: translate each branch (`macos`, `windows`, `other` = Linux) in that OS’s own words; keep the `{platform, select, …}` frame and the branch names exactly as they are.'
-
 /** What a search keyword key gets in place of "No concept yet": the termbase doesn't govern it. */
 const KEYWORDS_NOTE =
   'Search keywords: hidden synonyms, outside the termbase (no ruling, avoid-list, or pile mining applies; see the Search keywords instruction).'
@@ -402,7 +399,8 @@ function keysSection(ctx: BriefContext): BriefSection {
     lines.push(`- \`${key}\`: ${JSON.stringify(value)}`)
     lines.push(...changeLines(ctx.opts.previousEnglish?.[key], value))
     if (typeof metadata?.description === 'string') lines.push(`  - Note: ${metadata.description}`)
-    if (platformBranches(value)[0].name !== null) lines.push(`  - ${PER_OS_NOTE}`)
+    const perOs = perOsNote(value)
+    if (perOs !== undefined) lines.push(`  - ${perOs}`)
     const notes = placeholderNotes(key, value, metadata)
     if (notes.length > 0) lines.push(`  - ${notes.join(' · ')}`)
     if (isSearchKeywordsKey(key)) lines.push(`  - ${KEYWORDS_NOTE}`)
