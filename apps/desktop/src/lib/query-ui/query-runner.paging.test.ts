@@ -83,6 +83,18 @@ describe('paging a one-shot run', () => {
     expect(h.config.state.getTotalCount()).toBe(1_000)
   })
 
+  it('lists a path once when the answer names it twice', async () => {
+    // The list keys its rows by path, and a repeated key throws the whole dialog away
+    // (ERR-XVTB2). A stale index can answer with one path under two rows, so the answer
+    // is held to the rule the live batches and the pages already keep.
+    const all = sampleEntries(3)
+    const h = makePagingRunner({
+      runQuery: () => Promise.resolve({ entries: [all[0], all[1], { ...all[0] }, all[2]], totalCount: 4 }),
+    })
+    await h.runner.executeQuery()
+    expect(paths(h.config.state.getResults())).toEqual(paths(all))
+  })
+
   it('keeps the rows on screen in their order and the cursor on its row', async () => {
     // The page answers ranked from the top, in an order that differs from the screen's.
     const all = sampleEntries(100)

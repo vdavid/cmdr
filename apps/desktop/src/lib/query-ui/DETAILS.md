@@ -322,7 +322,9 @@ merge live in `result-paging.ts`; the run state in `query-runner.svelte.ts`.
   match list. A `loadMore` must also skip a run's side effects (Search's coverage note and analytics).
 - **A page only ever ADDS.** It comes back ranked from the top, so `appendUnseen` keeps every row on screen in its place
   and appends the unseen ones by path; nothing reorders under the reader and nothing leaves the screen. A live walk's
-  batches go through the same merge, since a page from the index can already hold a row the walk sends later.
+  batches go through the same merge, since a page from the index can already hold a row the walk sends later. A one-shot
+  answer goes through it too (onto an empty list): the list keys rows by path, and a stale index can name one path
+  twice.
 - **Under a live walk, the walk keeps streaming at the limit it started with** (it can't be widened mid-flight), so a
   page comes from the index and the walk's batches keep landing on top. The run's own counter stays the total's owner:
   the index can't count what the walk hasn't written yet. Once a page has grown the list, the completion re-rank is

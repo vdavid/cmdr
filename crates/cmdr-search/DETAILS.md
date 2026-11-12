@@ -242,6 +242,21 @@ ranking phase first.
 **Gotcha**: this is why an out-of-order fixture is now a bug rather than a curiosity. `ranking/tests.rs` built rows in
 spec order, which the hash map tolerated and a binary search silently answers wrong on.
 
+## One path, one returned row
+
+**The arena can hold a path under two ids, and an answer never does** (`engine::one_row_per_path`). The host's load
+reads the id ranges on separate connections with no shared snapshot, and a warm arena keeps rows the index has deleted
+since, so a file deleted and created again is in it as both the row that went and the row that replaced it (same parent
+and name, or the same path under a folder that was itself created again). A path is a row's identity for every consumer,
+and the dialog's list throws on a repeated key: that closed Search on David's machine (ERR-XVTB2).
+
+The returned rows are folded after ranking: per path the highest id wins (the row created last), in the place of the
+path's first row, and `total_count` drops by the rows folded. Only the returned rows are judged, because a path is a
+string the arena doesn't hold and building one per candidate is what the limit avoids; so past the limit the total can
+still count a repeated file twice, the same bounded error `ResultStream` accepts for a walk past its cap. A deleted file
+with no replacement still shows until the arena reloads: that staleness is the host's Decision 12, and this doesn't
+change it. Regression anchor: `crates/cmdr-search/src/engine/tests/duplicates.rs`.
+
 ## Directory size filters and `sortBy`
 
 A directory's size lives in `dir_stats`, not in the search arena, so the parallel scan can't judge it on its own. The

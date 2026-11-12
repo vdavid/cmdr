@@ -504,7 +504,9 @@ export function createQueryRunner<E>(deps: QueryRunnerDeps<E>): QueryRunner {
       // A newer run started while this one was out (a ⏎ walk inside the debounce's
       // answer, or the bar emptied): its list is the one on screen, so this answer goes.
       if (generation !== runGeneration) return
-      config.state.setResults(result.entries)
+      // One row per path, the rule the live batches and the pages keep: the list keys
+      // its rows by path, and a stale index can answer with one path under two rows.
+      config.state.setResults(appendUnseen([], result.entries))
       config.state.setTotalCount(result.totalCount)
       config.state.setCursorIndex(0)
       // D8: results just landed. ⏎ now owns "go-to-file" (when results > 0).
