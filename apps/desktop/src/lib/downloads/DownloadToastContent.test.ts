@@ -116,15 +116,26 @@ describe('DownloadToastContent', () => {
     expect(target.querySelector('.shortcut-animation')).toBeNull()
   })
 
-  it('keeps the global chip but drops the animation when the global binding is remapped', async () => {
+  it('animates a remapped global binding on its own keys', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(DownloadToastContent, { target, props: makeProps({ globalBinding: '⌃⌥⌘K' }) })
     await tick()
 
-    // The remapped combo is taught via the text chip...
     expect(target.textContent).toContain('⌃⌥⌘K')
-    // ...but the animation (which lights up the literal default keys) is gone.
+    const litKey = target.querySelector('.shortcut-animation .target-group text')
+    expect(litKey?.textContent).toBe('K')
+  })
+
+  it('keeps the global chip but drops the animation for a key the keyboard doesn’t draw', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(DownloadToastContent, { target, props: makeProps({ globalBinding: '⌃⌥⌘P' }) })
+    await tick()
+
+    // The remapped combo is taught via the text chip...
+    expect(target.textContent).toContain('⌃⌥⌘P')
+    // ...but the drawn keyboard has no P to press, so there's no animation.
     expect(target.querySelector('.shortcut-animation')).toBeNull()
   })
 

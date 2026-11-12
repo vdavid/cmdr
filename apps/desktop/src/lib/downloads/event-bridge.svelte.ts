@@ -40,6 +40,7 @@ import { downloadsWatcherStatus, onDownloadDetected } from '#lib/tauri-commands/
 import { addToast } from '#lib/ui/toast/index.js'
 import { commandHasShortcut } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
 import { getAppLogger } from '#lib/logging/logger.js'
+import { hasCapability } from '#lib/platform/index.js'
 import { sendMacosNotification } from '#lib/notifications/send-macos-notification.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { formatInteger } from '#lib/intl/number-format.js'
@@ -165,7 +166,9 @@ function dispatchToast(payload: DownloadDetectedEvent, explorer: ExplorerAPI | u
   // Global ⌃⌥⌘J (jump from any app): only teachable when the hotkey is turned
   // on AND has a binding. A disabled or unbound hotkey contributes no hint, so
   // collapse both cases to `''` for the component.
-  const globalBinding = getGlobalGoToLatestEnabled() ? getGlobalGoToLatestBinding() : ''
+  // A Linux Wayland session has no global shortcuts at all, whatever the switch says.
+  const globalBinding =
+    hasCapability('globalShortcuts') && getGlobalGoToLatestEnabled() ? getGlobalGoToLatestBinding() : ''
 
   // The toast's reason to exist is teaching these shortcuts. With neither one
   // teachable, skip it entirely — even though downloads notifications aren't

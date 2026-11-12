@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 
 /**
  * The bridge mounts one `download-detected` listener and dispatches to the
@@ -141,6 +142,11 @@ async function startBridgeAndCaptureListener(): Promise<DetectedListener> {
 }
 
 describe('startDownloadsEventBridge', () => {
+  let restoreCapabilities: () => void = () => {}
+  afterEach(() => {
+    restoreCapabilities()
+  })
+
   beforeEach(() => {
     listenMock.mockReset()
     getDownloadsNotificationsModeMock.mockReset().mockReturnValue('in-app')
@@ -150,6 +156,8 @@ describe('startDownloadsEventBridge', () => {
     getGlobalGoToLatestEnabledMock.mockReset().mockReturnValue(true)
     getGlobalGoToLatestBindingMock.mockReset().mockReturnValue('⌃⌥⌘J')
     getDownloadsToastCollapsedMock.mockReset().mockReturnValue(false)
+    // macOS, Windows, and Linux under X11 offer the global hotkey.
+    restoreCapabilities = withCapabilities('globalShortcuts')
     downloadsWatcherStatusMock.mockReset().mockResolvedValue({
       status: 'ok',
       data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
@@ -263,6 +271,19 @@ describe('startDownloadsEventBridge', () => {
   it('passes an empty global binding when the hotkey is disabled (no global hint to teach)', async () => {
     getGlobalGoToLatestEnabledMock.mockReturnValue(false)
     getGlobalGoToLatestBindingMock.mockReturnValue('⌃⌥⌘J')
+    const listener = await startBridgeAndCaptureListener()
+    listener({ payload: payload() })
+    await flushAsync()
+
+    const [, options] = addToastMock.mock.calls[0] as unknown as [unknown, { props: { globalBinding: string } }]
+    expect(options.props.globalBinding).toBe('')
+  })
+
+  // A Linux Wayland session has no global shortcuts: the switch reads on by default, but the
+  // hotkey never registers there, so teaching it would send the user to a dead key.
+  it('passes an empty global binding where the OS offers no global shortcuts', async () => {
+    restoreCapabilities()
+    restoreCapabilities = withCapabilities()
     const listener = await startBridgeAndCaptureListener()
     listener({ payload: payload() })
     await flushAsync()

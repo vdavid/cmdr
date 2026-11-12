@@ -12,21 +12,14 @@
  * reverse direction is unused; we never decode an accelerator from the plugin.
  */
 
-/**
- * The one chord `GlobalShortcutAnimation` draws, with the Mac's own key caps. The toast plays it
- * only when the binding is exactly this, so a remapped combo, or another OS's spelling of it,
- * never animates keys the user doesn't press.
- */
-export const ANIMATED_GLOBAL_GO_TO_LATEST_BINDING = '⌃⌥⌘J'
-
 /** Each spelling's modifier token → its accelerator name. */
-const SYMBOL_TO_MODIFIER: ReadonlyArray<readonly [string, string]> = [
+const SYMBOL_TO_MODIFIER: ReadonlyArray<readonly [string, AcceleratorModifier]> = [
   ['⌃', 'Control'],
   ['⌥', 'Alt'],
   ['⇧', 'Shift'],
   ['⌘', 'Super'], // global-hotkey accepts Command/Cmd/Super for the Cmd key, NOT "Meta"
 ]
-const WORD_TO_MODIFIER: ReadonlyArray<readonly [string, string]> = [
+const WORD_TO_MODIFIER: ReadonlyArray<readonly [string, AcceleratorModifier]> = [
   ['Ctrl+', 'Control'],
   ['Alt+', 'Alt'],
   ['Shift+', 'Shift'],
@@ -48,9 +41,21 @@ const MODIFIER_ONLY_KEYS = new Set([
  * modifier names; we always emit the canonical capitalization.
  */
 export function toAccelerator(binding: string): string | null {
+  const chord = parseBinding(binding)
+  return chord === null ? null : [...chord.modifiers, chord.key.toUpperCase()].join('+')
+}
+
+/** A modifier as the accelerator names it. */
+export type AcceleratorModifier = 'Control' | 'Alt' | 'Shift' | 'Super'
+
+/**
+ * A stored binding's modifiers (deduplicated, in written order) and its key as written, or
+ * `null` when it has no modifier or no key (a global shortcut needs both).
+ */
+export function parseBinding(binding: string): { modifiers: AcceleratorModifier[]; key: string } | null {
   if (!binding) return null
 
-  const modifiers: string[] = []
+  const modifiers: AcceleratorModifier[] = []
   let rest = binding
   for (;;) {
     // A token never eats the last character, so a key that looks like a token's tail stays the key.
@@ -66,5 +71,5 @@ export function toAccelerator(binding: string): string | null {
   if (!key || MODIFIER_ONLY_KEYS.has(key)) return null
   if (modifiers.length === 0) return null // global shortcuts always need at least one modifier
 
-  return [...modifiers, key.toUpperCase()].join('+')
+  return { modifiers, key }
 }

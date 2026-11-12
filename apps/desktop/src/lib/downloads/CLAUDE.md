@@ -28,9 +28,9 @@ when they're off, never throws), `'both'` → both, `'neither'` → no-op. We DO
 - **Skip-the-whole-toast edge case**: when NEITHER shortcut is teachable (in-app `⌘J` unbound AND global off/unbound),
   `dispatchToast` skips the toast even when the mode isn't `'neither'` — teaching them is its reason to exist. A
   `'both'`-mode macOS notification still fires (separate surface, never carried a hint).
-- **Two shortcut hints**: in-app `⌘J` (shown while a key runs `downloads.goToLatest`) and global `⌃⌥⌘J` (`''` unless the
-  hotkey is BOTH enabled and bound). `GlobalShortcutAnimation` renders ONLY for the default global combo, because the
-  SVG lights up literal keys.
+- **Two shortcut hints**: in-app `⌘J` (shown while a key runs `downloads.goToLatest`) and global `⌃⌥⌘J` (`''` unless
+  offered, enabled, and bound). The animation renders ONLY when this OS's drawn keyboard has every key
+  (`chordOnKeyboard`).
 - **FDA defense-in-depth**: the watcher won't emit when the FDA gate is closed (`runtime::refresh_runtime`), but the
   bridge re-checks `commands.downloadsWatcherStatus()` per event anyway, guarding a stale event during a gate flip.
   `goToLatestDownload` mirrors this.

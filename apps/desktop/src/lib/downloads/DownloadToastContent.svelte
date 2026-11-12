@@ -26,7 +26,8 @@
         setDownloadsNotificationsMode,
         openSettingsToDownloadsNotifications,
     } from './notifications-mode'
-    import { ANIMATED_GLOBAL_GO_TO_LATEST_BINDING } from './global-shortcut-binding'
+    import { getPlatform } from '#lib/platform/index.js'
+    import { chordOnKeyboard, keyboardFor } from './global-shortcut-keyboard'
     import { setDownloadsToastCollapsed } from './downloads-toast-collapsed'
     import { buildShortcutSummary } from './download-toast-shortcuts'
     import GlobalShortcutAnimation from './GlobalShortcutAnimation.svelte'
@@ -101,11 +102,12 @@
     }
 
     /**
-     * Only show the keyboard animation for the default combo. The SVG lights up
-     * the literal ⌃⌥⌘J keys, so a remapped binding would teach the wrong keys —
-     * we keep the text chip (it tracks the snapshot) but drop the animation.
+     * The keyboard animation presses the binding on this OS's keyboard, so it shows only when
+     * that keyboard draws every key of it; a chord on `P`, an F-key, or Space keeps the text chip
+     * (it tracks the snapshot) and drops the animation.
      */
-    const showShortcutAnimation = $derived(globalBinding === ANIMATED_GLOBAL_GO_TO_LATEST_BINDING)
+    const platform = getPlatform()
+    const showShortcutAnimation = $derived(chordOnKeyboard(globalBinding, keyboardFor(platform)) !== null)
 
     /** Nullable in-app / global keys for the collapsed summary line. */
     const summary = $derived(buildShortcutSummary(inAppBound, globalBinding))
@@ -259,7 +261,7 @@
                     >
                     {#if showShortcutAnimation}
                         <div class="shortcut-animation">
-                            <GlobalShortcutAnimation />
+                            <GlobalShortcutAnimation binding={globalBinding} {platform} />
                         </div>
                     {/if}
                 {/if}

@@ -141,7 +141,7 @@ describe('GlobalShortcutAnimation a11y', () => {
   it('is a decorative, aria-hidden SVG with no a11y violations', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(GlobalShortcutAnimation, { target })
+    mount(GlobalShortcutAnimation, { target, props: { binding: '⌃⌥⌘J', platform: 'macos' } })
     await tick()
 
     // Decorative only: the toast states the keys in text, so the SVG is hidden

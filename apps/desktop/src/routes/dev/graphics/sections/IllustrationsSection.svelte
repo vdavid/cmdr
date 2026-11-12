@@ -4,8 +4,14 @@
     import GlobalShortcutAnimation from '#lib/downloads/GlobalShortcutAnimation.svelte'
     import { tooltip } from '#lib/tooltip/tooltip.js'
 
-    const KEYBOARD_USAGE = 'Plays in the download toast to teach the global go-to-latest-download shortcut (⌃⌥⌘J).'
+    const KEYBOARD_USAGE =
+        'Plays in the download toast to teach the global go-to-latest-download shortcut, on each OS’s own keyboard.'
     const NETWORK_USAGE = 'Empty state when no SMB hosts are found on the network.'
+    const KEYBOARDS = [
+        { platform: 'macos', binding: '⌃⌥⌘J', caption: 'Global shortcut keyboard, macOS' },
+        { platform: 'windows', binding: 'Ctrl+Alt+Super+J', caption: 'Global shortcut keyboard, Windows' },
+        { platform: 'linux', binding: 'Ctrl+Alt+Super+J', caption: 'Global shortcut keyboard, Linux' },
+    ] as const
 </script>
 
 <SectionCard id="graphics-illustrations" label="Illustrations">
@@ -13,12 +19,14 @@
         Larger decorative graphics: the keyboard animation that teaches a shortcut, and the empty-network illustration.
     </p>
     <div class="grid">
-        <div class="cell" use:tooltip={KEYBOARD_USAGE}>
-            <div class="illustration-host">
-                <GlobalShortcutAnimation />
+        {#each KEYBOARDS as keyboard (keyboard.platform)}
+            <div class="cell" use:tooltip={KEYBOARD_USAGE}>
+                <div class="illustration-host">
+                    <GlobalShortcutAnimation binding={keyboard.binding} platform={keyboard.platform} />
+                </div>
+                <p class="caption">{keyboard.caption}</p>
             </div>
-            <p class="caption">Global shortcut keyboard</p>
-        </div>
+        {/each}
         <div class="cell" use:tooltip={NETWORK_USAGE}>
             <div class="illustration-host">
                 <img src={asset('icons/network-no-hosts.svg')} alt="" />

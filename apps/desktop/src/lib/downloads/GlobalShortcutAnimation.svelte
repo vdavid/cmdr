@@ -1,157 +1,81 @@
 <!--
-    Looping keyboard animation that shows a hand pressing the default global
-    go-to-latest hotkey (⌃⌥⌘J): the three modifiers press down and glow, then J
-    follows a beat later, the way a person actually types the chord.
+    Looping keyboard animation that shows a hand pressing the global go-to-latest hotkey: the
+    chord's modifiers press down and glow, then its key follows a beat later, the way a person
+    actually types it.
 
-    Decorative only. The toast already states the keys in text ("⌃⌥⌘J") via a
-    ShortcutChip, so this SVG carries no information of its own — it's
-    `aria-hidden` and screen readers skip it.
+    Drawn from the live binding on this OS's own keyboard (`global-shortcut-keyboard.ts`): Apple's
+    key caps on macOS (⌃⌥⌘J by default), a PC laptop's on Windows and Linux (Ctrl+Alt+Win+J,
+    Ctrl+Alt+Super+J). The caller renders this ONLY when the keyboard draws every key of the
+    binding (`chordOnKeyboard` isn't `null`); a chord on `P`, an F-key, or Space keeps the text
+    chip and drops the animation. See `DownloadToastContent.svelte` and the downloads `CLAUDE.md`.
 
-    Hard-coded to ⌃⌥⌘J on purpose. The caller renders this ONLY when the binding
-    is still the default; a remapped combo would no longer match the keys lit up
-    here, so the toast drops the animation (but keeps the text chip) in that
-    case. See `DownloadToastContent.svelte` and the downloads `CLAUDE.md`.
+    Decorative only. The toast already states the keys in text via a ShortcutChip, so this SVG
+    carries no information of its own: it's `aria-hidden` and screen readers skip it.
 
-    Colors come from design tokens so the keyboard reads on both the light and
-    dark info-toast backgrounds; the pressed state borrows the system accent.
-    `prefers-reduced-motion: reduce` swaps the loop for a static frame with the
-    four target keys lit, so the "which keys" message survives without motion.
+    Colors come from design tokens so the keyboard reads on both the light and dark info-toast
+    backgrounds; the pressed state borrows the system accent. `prefers-reduced-motion: reduce`
+    swaps the loop for a static frame with the chord's keys lit, so the "which keys" message
+    survives without motion.
 -->
+<script lang="ts">
+    import type { Platform } from '#lib/platform/index.js'
+    import { chordOnKeyboard, keyboardFor, WORD_Y } from './global-shortcut-keyboard'
+
+    interface Props {
+        /** The binding to press, in any OS's spelling (`⌃⌥⌘J`, `Ctrl+Alt+Super+J`). */
+        binding: string
+        /** Whose keyboard to draw. */
+        platform: Platform
+    }
+
+    const { binding, platform }: Props = $props()
+
+    const keys = $derived(keyboardFor(platform))
+    const pressed = $derived(chordOnKeyboard(binding, keys) ?? new Set<number>())
+    const wordY = $derived(WORD_Y[platform])
+</script>
+
 <svg
     class="kbd-anim"
     viewBox="10 115 585 199"
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
     focusable="false"
+    data-platform={platform}
 >
     <g transform="translate(16, 16)">
-        <!-- ROW 2 (QWERTY) -->
-        <g transform="translate(0, 60)">
-            <rect class="key-shadow" x="0" y="2" width="74" height="54" rx="6" />
-            <g><rect class="key-cap" x="0" y="0" width="74" height="54" rx="6" /><text class="key-label-sm" x="6" y="46">tab</text></g>
-        </g>
-        <g transform="translate(80, 60)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">Q</text></g></g>
-        <g transform="translate(140, 60)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">W</text></g></g>
-        <g transform="translate(200, 60)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">E</text></g></g>
-        <g transform="translate(260, 60)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">R</text></g></g>
-        <g transform="translate(320, 60)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">T</text></g></g>
-        <g transform="translate(380, 60)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">Y</text></g></g>
-        <g transform="translate(440, 60)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">U</text></g></g>
-        <g transform="translate(500, 60)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">I</text></g></g>
-        <g transform="translate(560, 60)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">O</text></g></g>
-
-        <!-- ROW 3 (Home row) -->
-        <g transform="translate(0, 120)">
-            <rect class="key-shadow" x="0" y="2" width="94" height="54" rx="6" />
-            <g><rect class="key-cap" x="0" y="0" width="94" height="54" rx="6" /><text class="key-label-sm" x="6" y="46">caps lock</text></g>
-        </g>
-        <g transform="translate(100, 120)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">A</text></g></g>
-        <g transform="translate(160, 120)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">S</text></g></g>
-        <g transform="translate(220, 120)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">D</text></g></g>
-
-        <!-- F (homing bar) -->
-        <g transform="translate(280, 120)">
-            <rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" />
-            <g>
-                <rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" />
-                <text class="key-label" x="27" y="34" text-anchor="middle">F</text>
-                <rect class="homing-bar" x="20" y="44" width="14" height="2" rx="1" />
+        {#each keys as key, i (i)}
+            {@const isPressed = pressed.has(i)}
+            {@const isModifier = isPressed && key.modifier !== undefined}
+            {@const isTarget = isPressed && key.modifier === undefined}
+            <g transform="translate({key.x}, {key.y})">
+                <rect class="key-shadow" x="0" y="2" width={key.width} height="54" rx="6" />
+                <g class:mod-group={isModifier} class:target-group={isTarget}>
+                    <rect
+                        class="key-cap"
+                        class:mod-cap={isModifier}
+                        class:target-cap={isTarget}
+                        x="0"
+                        y="0"
+                        width={key.width}
+                        height="54"
+                        rx="6"
+                    />
+                    {#if key.char !== undefined}
+                        <text class="key-label" x={key.width / 2} y="34" text-anchor="middle">{key.char}</text>
+                    {/if}
+                    {#if key.word !== undefined}
+                        <text class="key-label-sm" x={key.wordX ?? 6} y={wordY}>{key.word}</text>
+                    {/if}
+                    {#if key.symbol !== undefined}
+                        <text class="key-label-sym" x={key.symbolX ?? 6} y="22">{key.symbol}</text>
+                    {/if}
+                    {#if key.homing}
+                        <rect class="homing-bar" class:target-bar={isTarget} x="20" y="44" width="14" height="2" rx="1" />
+                    {/if}
+                </g>
             </g>
-        </g>
-
-        <g transform="translate(340, 120)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">G</text></g></g>
-        <g transform="translate(400, 120)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">H</text></g></g>
-
-        <!-- TARGET: J (homing bar + press animation) -->
-        <g transform="translate(460, 120)">
-            <rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" />
-            <g class="j-group">
-                <rect class="key-cap j-cap" x="0" y="0" width="54" height="54" rx="6" />
-                <text class="key-label" x="27" y="34" text-anchor="middle">J</text>
-                <rect class="homing-bar j-bar" x="20" y="44" width="14" height="2" rx="1" />
-            </g>
-        </g>
-
-        <g transform="translate(520, 120)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">K</text></g></g>
-        <g transform="translate(580, 120)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">L</text></g></g>
-        <g transform="translate(640, 120)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">;</text></g></g>
-
-        <!-- ROW 4 (ZXCV) -->
-        <g transform="translate(0, 180)">
-            <rect class="key-shadow" x="0" y="2" width="114" height="54" rx="6" />
-            <g><rect class="key-cap" x="0" y="0" width="114" height="54" rx="6" /><text class="key-label-sm" x="6" y="46">shift</text></g>
-        </g>
-        <g transform="translate(120, 180)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">Z</text></g></g>
-        <g transform="translate(180, 180)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">X</text></g></g>
-        <g transform="translate(240, 180)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">C</text></g></g>
-        <g transform="translate(300, 180)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">V</text></g></g>
-        <g transform="translate(360, 180)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">B</text></g></g>
-        <g transform="translate(420, 180)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">N</text></g></g>
-        <g transform="translate(480, 180)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">M</text></g></g>
-        <g transform="translate(540, 180)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">,</text></g></g>
-        <g transform="translate(600, 180)"><rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" /><g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label" x="27" y="34" text-anchor="middle">.</text></g></g>
-
-        <!-- ROW 5 (Modifiers + space) -->
-        <g transform="translate(0, 240)">
-            <rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" />
-            <g><rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" /><text class="key-label-sm" x="6" y="46">fn</text></g>
-        </g>
-
-        <!-- TARGET: control ⌃ -->
-        <g transform="translate(60, 240)">
-            <rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" />
-            <g class="mod-group">
-                <rect class="key-cap mod-cap" x="0" y="0" width="54" height="54" rx="6" />
-                <text class="key-label-sm" x="6" y="46">control</text>
-                <text class="key-label-sym" x="42" y="22">⌃</text>
-            </g>
-        </g>
-
-        <!-- TARGET: option ⌥ -->
-        <g transform="translate(120, 240)">
-            <rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" />
-            <g class="mod-group">
-                <rect class="key-cap mod-cap" x="0" y="0" width="54" height="54" rx="6" />
-                <text class="key-label-sm" x="6" y="46">option</text>
-                <text class="key-label-sym" x="40" y="22">⌥</text>
-            </g>
-        </g>
-
-        <!-- TARGET: command ⌘ -->
-        <g transform="translate(180, 240)">
-            <rect class="key-shadow" x="0" y="2" width="68" height="54" rx="6" />
-            <g class="mod-group">
-                <rect class="key-cap mod-cap" x="0" y="0" width="68" height="54" rx="6" />
-                <text class="key-label-sm" x="6" y="46">command</text>
-                <text class="key-label-sym" x="52" y="22">⌘</text>
-            </g>
-        </g>
-
-        <!-- Spacebar -->
-        <g transform="translate(254, 240)">
-            <rect class="key-shadow" x="0" y="2" width="280" height="54" rx="6" />
-            <g><rect class="key-cap" x="0" y="0" width="280" height="54" rx="6" /></g>
-        </g>
-
-        <!-- Right command ⌘ (layout balance) -->
-        <g transform="translate(540, 240)">
-            <rect class="key-shadow" x="0" y="2" width="68" height="54" rx="6" />
-            <g>
-                <rect class="key-cap" x="0" y="0" width="68" height="54" rx="6" />
-                <text class="key-label-sm" x="22" y="46">command</text>
-                <text class="key-label-sym" x="6" y="22">⌘</text>
-            </g>
-        </g>
-
-        <!-- Right option ⌥ -->
-        <g transform="translate(614, 240)">
-            <rect class="key-shadow" x="0" y="2" width="54" height="54" rx="6" />
-            <g>
-                <rect class="key-cap" x="0" y="0" width="54" height="54" rx="6" />
-                <text class="key-label-sm" x="18" y="46">option</text>
-                <text class="key-label-sym" x="6" y="22">⌥</text>
-            </g>
-        </g>
+        {/each}
     </g>
 </svg>
 
@@ -199,7 +123,7 @@
     }
 
     /* Motion path: the chord types itself on a loop. Modifiers press first and
-       glow, J follows a beat later, both release together. Held out of the
+       glow, the key follows a beat later, both release together. Held out of the
        reduce branch so reduced-motion users get the static frame below. */
     @media (prefers-reduced-motion: no-preference) {
         .mod-group {
@@ -208,14 +132,14 @@
         .mod-cap {
             animation: colorMod 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
-        .j-group {
-            animation: pressJ 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        .target-group {
+            animation: pressTarget 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
-        .j-cap {
-            animation: colorJ 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        .target-cap {
+            animation: colorTarget 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
-        .j-bar {
-            animation: barJ 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        .target-bar {
+            animation: barTarget 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
 
         @keyframes pressMod {
@@ -230,33 +154,33 @@
             60%, 100% { fill: var(--color-bg-tertiary); }
         }
 
-        @keyframes pressJ {
+        @keyframes pressTarget {
             0%, 25% { transform: translateY(0); }
             30%, 40% { transform: translateY(2px); }
             45%, 100% { transform: translateY(0); }
         }
 
-        @keyframes colorJ {
+        @keyframes colorTarget {
             0%, 25% { fill: var(--color-bg-tertiary); }
             30%, 40% { fill: var(--color-accent-subtle); }
             45%, 100% { fill: var(--color-bg-tertiary); }
         }
 
-        @keyframes barJ {
+        @keyframes barTarget {
             0%, 25% { fill: var(--color-text-tertiary); }
             30%, 40% { fill: var(--color-accent); }
             45%, 100% { fill: var(--color-text-tertiary); }
         }
     }
 
-    /* Static frame: no looping press, but the four target keys stay lit so the
+    /* Static frame: no looping press, but the chord's keys stay lit so the
        "press these keys" message still lands without any motion. */
     @media (prefers-reduced-motion: reduce) {
         .mod-cap,
-        .j-cap {
+        .target-cap {
             fill: var(--color-accent-subtle);
         }
-        .j-bar {
+        .target-bar {
             fill: var(--color-accent);
         }
     }

@@ -15,22 +15,26 @@ mechanics, deep-link wiring, and the smoke-test guide.
   settings enum, re-checks the FDA gate per event, and coalesces the macOS banner (see § One toast at a time).
 - **`DownloadToastContent.svelte`**: in-app toast: title with filename + size, optional subdir line, two shortcut hints
   (in-app `⌘J` as a live `commandId` chip, global `⌃⌥⌘J` as a literal chip of the snapshotted binding),
-  `GlobalShortcutAnimation` for the default global combo, and a button row (secondary "Stop showing these" + primary
-  "Jump to file"). Collapsible; auto-hides at 10s; `widthPx: 432` (wider than the 360 default so the animation reads).
-  Carries `toastGroup: 'downloads'` with `maxInGroup: 1` (see § One toast at a time).
+  `GlobalShortcutAnimation` pressing the global one, and a button row (secondary "Stop showing these" + primary "Jump to
+  file"). Collapsible; auto-hides at 10s; `widthPx: 432` (wider than the 360 default so the animation reads). Carries
+  `toastGroup: 'downloads'` with `maxInGroup: 1` (see § One toast at a time).
 - **`downloads-toast-collapsed.ts`**: getter/setter for the hidden `behavior.fileSystemWatching.downloadsToastCollapsed`
   setting. No Settings UI.
 - **`download-toast-shortcuts.ts`**: pure `buildShortcutSummary(inAppBound, globalBinding)` → `{ inApp, global }` (a
   boolean and a nullable key) for the collapsed summary line. Unit-tested in isolation.
-- **`GlobalShortcutAnimation.svelte`**: decorative looping keyboard SVG showing ⌃⌥⌘J pressed. Tokenized colors,
-  `aria-hidden`, honors `prefers-reduced-motion` (static lit frame). Hard-coded to ⌃⌥⌘J.
+- **`GlobalShortcutAnimation.svelte`**: decorative looping keyboard SVG pressing the `binding` prop on `platform`'s
+  keyboard. Tokenized colors, `aria-hidden`, honors `prefers-reduced-motion` (static lit frame). Debug > Graphics shows
+  all three.
+- **`global-shortcut-keyboard.ts`**: the drawn keyboard per OS (`keyboardFor`: one geometry; Apple's caps on macOS, a PC
+  laptop's Ctrl, Fn, Win or Super, Alt elsewhere) and `chordOnKeyboard`, the keys a binding presses, or `null` when the
+  keyboard can't draw one (`P`, an F-key, Space).
 - **`notifications-mode.ts`**: reader, writer, and deep-link helper for
   `behavior.fileSystemWatching.downloadsNotifications`. Exports `DOWNLOADS_NOTIFICATIONS_ANCHOR_ID`.
 - **`global-shortcut-bridge.svelte.ts`**: one `global-shortcut-fired` subscription; calls `goToLatestDownload` plus, on
   the first un-acknowledged trigger, the warn toast.
 - **`GlobalShortcutWarnToastContent.svelte`**: first-trigger persistent warn toast for ⌃⌥⌘J.
 - **`global-shortcut-binding.ts`**: the stored binding (either OS spelling) → plugin accelerator (`⌘` / `Super` →
-  `Super`), plus `ANIMATED_GLOBAL_GO_TO_LATEST_BINDING`, the one chord the animation draws.
+  `Super`), through `parseBinding`, which the keyboard reads too.
 - **`global-shortcut-setting.ts`**: getters/setters for `behavior.fileSystemWatching.globalGoToLatestShortcut.*`.
   `setGlobalGoToLatestBinding` resets `acknowledged` to `false`.
 - **`global-shortcut-description.ts`**: pure builder for the on/off toggle's helper text, tracking the live binding.
@@ -49,14 +53,15 @@ mechanics, deep-link wiring, and the smoke-test guide.
 
 Two states, toggled by a chevron button:
 
-- **Expanded** (default): full teaching view (intro line, both shortcut hints, `GlobalShortcutAnimation` for the default
-  combo) plus an up-chevron under the animation.
+- **Expanded** (default): full teaching view (intro line, both shortcut hints, `GlobalShortcutAnimation`) plus an
+  up-chevron under the animation.
 - **Collapsed**: same title, one compact summary (`Jump with ⌘J in-app, ⌃⌥⌘J globally.`, dynamic on which shortcuts are
   set, keys as literal `ShortcutChip`s, from the pure `buildShortcutSummary`), and a down-chevron.
 
-`GlobalShortcutAnimation` renders ONLY when `globalBinding === ANIMATED_GLOBAL_GO_TO_LATEST_BINDING` (`⌃⌥⌘J`): the SVG
-lights up the Mac's literal key caps, so a remapped combo, or Windows' and Linux's spelling of the same chord, would
-animate keys the user doesn't read on their keyboard. Those keep the text chip and drop the animation.
+`GlobalShortcutAnimation` presses the toast's own `globalBinding` snapshot on this OS's keyboard, and renders ONLY when
+`chordOnKeyboard` finds every key of it there: a chord on a key the drawing leaves out keeps the text chip and drops the
+animation rather than light the wrong keys. `globalBinding` is `''` where the OS has no global shortcuts (a Linux
+Wayland session), so neither the hint nor the animation shows there.
 
 The action button row is identical in both states. The bridge passes `getDownloadsToastCollapsed()` as
 `initialCollapsed`; the component holds the live toggle in local `$state` (seeded from it), and the chevron's `onclick`
