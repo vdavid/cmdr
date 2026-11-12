@@ -4503,16 +4503,16 @@
       "file": "main.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{count, plural, one {Quit while an operation is running?} other {Quit while {countText} operations are running?}}",
-        "windows": "{count, plural, one {Close Cmdr while an operation is running?} other {Close Cmdr while {countText} operations are running?}}",
+        "windows": "{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}",
         "other": "{count, plural, one {Quit while an operation is running?} other {Quit while {countText} operations are running?}}"
       },
       "register": "action",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "plan § Copy resolution (action: “Exit while … running?”)",
+        "other": "decisions (Linux “quit” in both registers, equal to macOS)"
       },
       "whereInUi": "Confirmation dialog when you quit while operations run (QuitConfirmationDialog), title."
     },
@@ -4521,16 +4521,16 @@
       "file": "main.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Quit now",
-        "windows": "Close now",
+        "windows": "Exit now",
         "other": "Quit now"
       },
       "register": "action",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "plan § Copy resolution (action: “Exit now”)",
+        "other": "decisions (Linux “quit” in both registers, equal to macOS)"
       },
       "whereInUi": "Same dialog, the destructive button."
     },
@@ -4538,15 +4538,16 @@
       "key": "main.oldWebkit.title",
       "file": "main.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "none",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr needs a newer Safari",
-        "windows": null,
-        "other": null
+        "windows": "Cmdr needs a newer WebKitGTK",
+        "other": "Cmdr needs a newer WebKitGTK"
       },
       "sources": {
-        "row": "proposal: none"
+        "windows": "verdicts: Windows can’t reach the guard, so it shares the Linux text",
+        "other": "verdicts"
       },
       "whereInUi": "Boot-guard screen when the WebKit is too old (app.html)."
     },
@@ -4554,15 +4555,16 @@
       "key": "main.oldWebkit.body",
       "file": "main.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "none",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr’s interface needs Safari 15.4 or newer, and this Mac has an older one. Open Software Update and install everything pending. That should sort it out.",
-        "windows": null,
-        "other": null
+        "windows": "Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.",
+        "other": "Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out."
       },
       "sources": {
-        "row": "proposal: none"
+        "windows": "verdicts: Windows can’t reach the guard, so it shares the Linux text",
+        "other": "verdicts"
       },
       "whereInUi": "Same boot-guard screen, body."
     },
@@ -5121,15 +5123,15 @@
       "file": "onboarding.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Crash reports are on too: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.",
-        "windows": "Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped. Never your files. You can turn both of these off in Settings whenever you like.",
-        "other": "Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped. Never your files. You can turn both of these off in Settings whenever you like."
+        "windows": "Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.",
+        "other": "Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "proposal, with the macOS text’s line breaks kept",
+        "other": "proposal, with the macOS text’s line breaks kept"
       },
       "whereInUi": "Onboarding beta step, crash reports note."
     },
@@ -5138,15 +5140,15 @@
       "file": "onboarding.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Crash reports are on: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.",
-        "windows": "Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped. Never your files. You can turn them off in Settings whenever you like.",
-        "other": "Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped. Never your files. You can turn them off in Settings whenever you like."
+        "windows": "Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.",
+        "other": "Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "proposal, with the macOS text’s line breaks kept",
+        "other": "proposal, with the macOS text’s line breaks kept"
       },
       "whereInUi": "Same step, variant when only crash reports are on."
     },
@@ -5155,7 +5157,7 @@
       "file": "onboarding.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
         "windows": "Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this PC: hit Save again in a minute, or any time from Settings › Updates & privacy.",
@@ -5165,14 +5167,24 @@
         "windows": "proposal",
         "other": "proposal"
       },
-      "whereInUi": "Onboarding beta step, error under the email field."
+      "whereInUi": "Onboarding beta step, error under the email field.",
+      "lintExceptions": [
+        {
+          "branch": "windows",
+          "reason": "“just now” is a time (“a moment ago”), not the trivializing “just”; the sentence is the macOS text with only the machine word changed"
+        },
+        {
+          "branch": "other",
+          "reason": "“just now” is a time (“a moment ago”), not the trivializing “just”; the sentence is the macOS text with only the machine word changed"
+        }
+      ]
     },
     {
       "key": "onboarding.stepBeta.emailNote",
       "file": "onboarding.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your Mac and it’s never connected to your usage stats, the two are intentionally two separate subsystems.",
         "windows": "Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your PC and it’s never connected to your usage stats, the two are intentionally two separate subsystems.",
@@ -5189,15 +5201,15 @@
       "file": "onboarding.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Needs accepting “Local Network” once",
         "windows": "Windows may ask to let Cmdr through its firewall",
         "other": "No permission needed"
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: proposal (a firewall prompt is expected)",
+        "other": "verdicts: proposal"
       },
       "whereInUi": "Onboarding optional-features step, Networking row summary."
     },
@@ -5206,14 +5218,14 @@
       "file": "onboarding.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow “Local Network”, and one for “Accepting incoming connections”.\nBoth dialogs are harmless, but if you don’t know what these are, they might be scary or annoying.",
-        "windows": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like. Windows may ask once whether to let Cmdr through its firewall.",
+        "windows": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nWindows may ask once whether to let Cmdr through its firewall.",
         "other": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like."
       },
       "sources": {
-        "windows": "proposal",
+        "windows": "proposal, with the macOS text’s line break kept",
         "other": "proposal"
       },
       "whereInUi": "Same step, Networking row detail."
@@ -5223,15 +5235,15 @@
       "file": "onboarding.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Instant search of your whole drive. Think Spotlight, but even faster.",
         "windows": "Instant search of your whole drive. Think Windows Search, but much faster.",
         "other": "Instant search of your whole drive."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: proposal",
+        "other": "verdicts: proposal"
       },
       "whereInUi": "Onboarding optional-features step, Indexing benefit line."
     },
@@ -5240,7 +5252,7 @@
       "file": "onboarding.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Lets you connect Android phones and the such, suppresses macOS native handler",
         "windows": "Lets you connect Android phones and similar devices",
@@ -5257,17 +5269,18 @@
       "file": "onboarding.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nThe cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can’t just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it’s running.\nWhen you quit Cmdr, this is politely restored.",
-        "windows": "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.",
-        "other": "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP. Your desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first."
+        "windows": "If you turn this on, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.",
+        "other": "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nYour desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: proposal (WPD shares the device), with the evidence’s “turn this on”",
+        "other": "verdicts: proposal, with the macOS text’s line break kept"
       },
-      "whereInUi": "Same step, MTP row detail."
+      "whereInUi": "Same step, MTP row detail.",
+      "register": "narration"
     },
     {
       "key": "onboarding.cloudSetup.step.ollamaModel",
@@ -5961,7 +5974,7 @@
       "file": "ai.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Your Ask Cmdr chats stay on your Mac, in a local database you can open and read.",
         "windows": "Your Ask Cmdr chats stay on your PC, in a local database you can open and read.",
@@ -5978,7 +5991,7 @@
       "file": "ai.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your Mac. Those call logs stay local, never sent anywhere.",
         "windows": "If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.",
@@ -5995,17 +6008,25 @@
       "file": "ai.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
-        "windows": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, Windows credentials, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
-        "other": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider."
+        "windows": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+        "other": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: open, and a blocker (no `AppData` rules in `sensitive.rs`)",
+        "other": "verdicts (rewritten to match `sensitive.rs:RULES`: no mail rule on Linux)"
       },
-      "whereInUi": "Same consent panel, list of what never leaves."
+      "whereInUi": "Same consent panel, list of what never leaves.",
+      "openBranches": ["windows"],
+      "lintExceptions": [
+        {
+          "branch": "windows",
+          "reason": "open on Windows (`sensitive.rs` has no Windows rules yet, so the Windows list isn’t settled), so it keeps the macOS text until they land"
+        }
+      ],
+      "note": "No `CLOUD_AI_CONSENT_VERSION` bump: the Linux list names fewer kinds than before, nothing reaches the provider that didn’t."
     },
     {
       "key": "ai.local.notInstalled",
@@ -6115,7 +6136,7 @@
       "file": "ai.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Your organization allows only on-device AI, and this Mac can’t run it.",
         "windows": "Your organization allows only on-device AI, and this PC can’t run it.",
@@ -6126,7 +6147,7 @@
         "other": "proposal"
       },
       "whereInUi": "Settings > AI, notice when policy allows only on-device AI and this machine can’t run it.",
-      "note": "Reachable off macOS now that the Local AI option is gated there (an MDM “local only” policy)."
+      "note": "Reachable off macOS: the Local AI option is gated there, so an on-device-only policy always lands here."
     },
     {
       "key": "askCmdr.tool.outcome.miss.needsDiskAccess",
@@ -6165,7 +6186,7 @@
       "file": "askCmdr.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr quit before this finished",
         "windows": "Cmdr closed before this finished",
@@ -6174,7 +6195,7 @@
       "register": "narration",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "decisions (Linux “quit” in both registers, equal to macOS)"
       },
       "whereInUi": "Ask Cmdr proposal card when the app quit mid-operation."
     },
@@ -6183,7 +6204,7 @@
       "file": "askCmdr.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "trashing",
         "windows": "moving to the Recycle Bin",
@@ -6191,10 +6212,11 @@
       },
       "register": "sentence",
       "sources": {
-        "windows": "proposal",
+        "windows": "plan § Copy resolution (every other trash row is a sentence: the proposal’s Windows text)",
         "other": "proposal"
       },
-      "whereInUi": "Ask Cmdr proposal card, the verb in “Approved trashing…”."
+      "whereInUi": "Ask Cmdr proposal card, the verb in “Approved trashing…”.",
+      "note": "It fills {verbName} in “You approved {verbName} {countText} items”, so Windows reads “You approved moving to the Recycle Bin 3 items”: the slot comes before the count. Flagged for the English review."
     },
     {
       "key": "askCmdr.tool.tag.doing",
@@ -6249,7 +6271,7 @@
       "file": "askCmdr.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Asked Cmdr to quit",
         "windows": "Asked Cmdr to close",
@@ -6258,7 +6280,7 @@
       "register": "narration",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "decisions (Linux “quit” in both registers, equal to macOS)"
       },
       "whereInUi": "Ask Cmdr tool line."
     },
@@ -6267,7 +6289,7 @@
       "file": "askCmdr.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Tried to quit Cmdr",
         "windows": "Tried to close Cmdr",
@@ -6276,7 +6298,7 @@
       "register": "narration",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "decisions (Linux “quit” in both registers, equal to macOS)"
       },
       "whereInUi": "Ask Cmdr tool line."
     },
@@ -6415,15 +6437,15 @@
       "file": "downloads.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Add a modifier (⌘, ⌃, ⌥, or ⇧)",
         "windows": "Add a modifier (Ctrl, Alt, Shift, or Win)",
         "other": "Add a modifier (Ctrl, Alt, Shift, or Super)"
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "verdicts: proposal",
+        "other": "verdicts: proposal (shown where `globalShortcuts` holds)"
       },
       "whereInUi": "Settings > Keyboard shortcuts, the global download shortcut row’s hint when the combo lacks a modifier."
     },
@@ -6432,16 +6454,16 @@
       "file": "crashReporter.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr quit unexpectedly last time. Here’s a crash report with details that can help fix this.",
         "windows": "Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this.",
-        "other": "Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this."
+        "other": "Cmdr quit unexpectedly last time. Here’s a crash report with details that can help fix this."
       },
       "register": "narration",
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "decisions (Linux says “quit”, including this key; the proposal’s “closed” was a slip)"
       },
       "whereInUi": "Crash report dialog on next launch after a crash."
     },
@@ -6450,7 +6472,7 @@
       "file": "crashReporter.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "It includes the app version, macOS version, and which part of the code ran into the problem. No file names or personal data.",
         "windows": "It includes the app version, Windows version, and which part of the code ran into the problem. No file names or personal data.",
@@ -6467,7 +6489,7 @@
       "file": "errorReporter.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Reveal in Finder",
         "windows": "Show in File Explorer",
@@ -6990,7 +7012,7 @@
       "file": "multiRename.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Couldn’t write the names list. Check that your startup disk has free space.",
         "windows": "Couldn’t write the names list. Check that your system drive has free space.",
@@ -7159,7 +7181,7 @@
       "file": "search.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "{count, plural, one {macOS didn’t let Cmdr look inside one folder, so nothing from it is in the results.} other {macOS didn’t let Cmdr look inside {countText} folders, so nothing from them is in the results.}}",
         "windows": "{count, plural, one {Windows didn’t let Cmdr look inside one folder, so nothing from it is in the results.} other {Windows didn’t let Cmdr look inside {countText} folders, so nothing from them is in the results.}}",
@@ -7167,7 +7189,7 @@
       },
       "sources": {
         "windows": "proposal",
-        "other": "proposal"
+        "other": "proposal (already the Linux actor rule: Cmdr as the subject)"
       },
       "whereInUi": "Search results, coverage note when folders were denied."
     },
@@ -7532,34 +7554,34 @@
       "file": "shortcuts.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "none",
       "branches": {
         "macos": "{combo} is reserved by macOS ({command}) and won’t reach Cmdr. Pick a different combo.",
-        "windows": "{combo} is reserved by Windows ({command}) and won’t reach Cmdr. Pick a different combo.",
-        "other": "{combo} is reserved by your desktop ({command}) and won’t reach Cmdr. Pick a different combo."
+        "windows": null,
+        "other": null
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "row": "verdicts § Gates: macOS-only once #1102 lands"
       },
-      "whereInUi": "Settings > Keyboard shortcuts, banner when a combo is owned by a native menu item (Hide, Quit…)."
+      "whereInUi": "Settings > Keyboard shortcuts, banner when a combo is owned by a native menu item (Hide, Quit…).",
+      "note": "verdicts: waits for the keymap work (#1102), which makes `NATIVE_SHORTCUT_COMMAND_IDS` macOS-only and so hides this off macOS; the native ids exist only in the macOS app menu."
     },
     {
       "key": "shortcuts.conflict.systemShortcut",
       "file": "shortcuts.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "none",
       "branches": {
         "macos": "{combo} is usually taken by macOS ({label}), so it may never reach Cmdr. You can free it up in System Settings > Keyboard.",
-        "windows": "{combo} is usually taken by Windows ({label}), so it may never reach Cmdr.",
-        "other": "{combo} is usually taken by your desktop ({label}), so it may never reach Cmdr. You can free it up in your keyboard settings."
+        "windows": null,
+        "other": null
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "row": "milestone: unreachable off macOS"
       },
-      "whereInUi": "Same settings page, soft banner for system-wide combos."
+      "whereInUi": "Same settings page, soft banner for system-wide combos.",
+      "note": "macOS-only by reach: `keyboard-shortcuts-banner.ts:classifySystemShortcut` matches only the ⌘-glyph combos macOS captures; other platforms capture `Ctrl+…` strings, so this banner never shows there."
     },
     {
       "key": "shortcuts.system.spotlight",
@@ -7630,34 +7652,34 @@
       "file": "shortcuts.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "none",
       "branches": {
         "macos": "macOS handles this shortcut. Cmdr can’t change it.",
-        "windows": "Windows handles this shortcut. Cmdr can’t change it.",
-        "other": "Your desktop handles this shortcut. Cmdr can’t change it."
+        "windows": null,
+        "other": null
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "row": "verdicts § Gates: macOS-only once #1102 lands"
       },
-      "whereInUi": "Settings > Keyboard shortcuts, tooltip on the badge of a native-owned shortcut row."
+      "whereInUi": "Settings > Keyboard shortcuts, tooltip on the badge of a native-owned shortcut row.",
+      "note": "verdicts: waits for the keymap work (#1102), which makes `NATIVE_SHORTCUT_COMMAND_IDS` macOS-only and so hides this off macOS; the native ids exist only in the macOS app menu."
     },
     {
       "key": "shortcuts.section.macOsBadge",
       "file": "shortcuts.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "none",
       "branches": {
         "macos": "macOS",
-        "windows": "Windows",
-        "other": "System"
+        "windows": null,
+        "other": null
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "row": "verdicts § Gates: macOS-only once #1102 lands"
       },
-      "whereInUi": "Same row, the small “macOS” badge."
+      "whereInUi": "Same row, the small “macOS” badge.",
+      "note": "verdicts: waits for the keymap work (#1102), which makes `NATIVE_SHORTCUT_COMMAND_IDS` macOS-only and so hides this off macOS; the native ids exist only in the macOS app menu."
     },
     {
       "key": "shortcuts.system.appWindows",
@@ -7680,7 +7702,7 @@
       "file": "stateRecovery.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Show in Finder",
         "windows": "Show in File Explorer",
@@ -7913,16 +7935,16 @@
       "file": "ui.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Quit Cmdr?",
-        "windows": "Close Cmdr?",
+        "windows": "Exit Cmdr?",
         "other": "Quit Cmdr?"
       },
       "register": "action",
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "plan § Copy resolution (action: “Exit Cmdr?”)",
+        "other": "decisions (Linux “quit” in both registers, equal to macOS)"
       },
       "whereInUi": "Ask-before-acting dialog when an AI tool wants to quit Cmdr."
     },
@@ -8059,7 +8081,7 @@
       "file": "updates.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr {available} is out, but your organization keeps this Mac on {ceiling} or earlier.",
         "windows": "Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.",
@@ -8108,17 +8130,18 @@
       "file": "viewer.json",
       "source": "catalog",
       "mechanism": "select",
-      "status": "pending",
+      "status": "apply",
       "branches": {
         "macos": "This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <quickLookKey></quickLookKey> to open Quick Look, or press <openKey></openKey> (or double-click the file) to open it in the associated app.",
-        "windows": "This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press Enter to open it in its app.",
-        "other": "This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <quickLookKey></quickLookKey> to open Quick Look, or press <openKey></openKey> (or double-click the file) to open it in the associated app."
+        "windows": "This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <openKey></openKey> (or double-click the file) to open it in the associated app.",
+        "other": "This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <openKey></openKey> (or double-click the file) to open it in the associated app."
       },
       "sources": {
-        "windows": "proposal",
-        "other": "proposal"
+        "windows": "written: the evidence’s Linux text, since Windows has no Quick Look either; it keeps the bound-key chip where the proposal wrote a literal “Enter”",
+        "other": "evidence § Corrections (no Quick Look on Linux)"
       },
-      "whereInUi": "Viewer window (F3), red banner on a binary file."
+      "whereInUi": "Viewer window (F3), red banner on a binary file.",
+      "written": ["windows"]
     },
     {
       "key": "viewer.copyDialog.confirmBody",
@@ -8493,29 +8516,33 @@
       "key": "indexing.phase.home",
       "file": "indexing.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Indexing the rest of your home folder",
-        "windows": null,
-        "other": null
+        "windows": "Indexing the rest of your user folder",
+        "other": "Indexing the rest of your home folder"
       },
-      "sources": {},
-      "note": "plan § Rows beyond the proposal: the decisions overturn “reviewed, no change”. Windows says “user folder”."
+      "sources": {
+        "windows": "decisions (Windows “user folder”)",
+        "other": "decisions (Linux keeps “home folder”)"
+      }
     },
     {
       "key": "stateRecovery.appStatus.title",
       "file": "stateRecovery.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Cmdr couldn’t read which folders your panes had open, so they start at your home folder",
-        "windows": null,
-        "other": null
+        "windows": "Cmdr couldn’t read which folders your panes had open, so they start at your user folder",
+        "other": "Cmdr couldn’t read which folders your panes had open, so they start at your home folder"
       },
-      "sources": {},
-      "note": "plan § Rows beyond the proposal: the decisions overturn “reviewed, no change”. Windows says “user folder”."
+      "sources": {
+        "windows": "decisions (Windows “user folder”)",
+        "other": "decisions (Linux keeps “home folder”)"
+      }
     },
     {
       "key": "fileExplorer.errorPane.goHome",
@@ -8631,46 +8658,53 @@
       "key": "askCmdr.tool.quit.doing",
       "file": "askCmdr.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Quitting Cmdr",
-        "windows": null,
-        "other": null
+        "windows": "Closing Cmdr",
+        "other": "Quitting Cmdr"
       },
       "register": "narration",
-      "sources": {},
-      "note": "plan § Exit vs close: narration, Windows “close”; Linux “quit”, equal to macOS, so a `{windows, other}` block. Windows: “Closing Cmdr”."
+      "sources": {
+        "windows": "plan § Copy resolution (narration: “Closing Cmdr”)",
+        "other": "decisions (Linux “quit” in both registers, equal to macOS)"
+      }
     },
     {
       "key": "main.quit.countdown",
       "file": "main.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "{seconds, plural, one {Quitting in {secondsText} second, so a restart or logout never waits on Cmdr.} other {Quitting in {secondsText} seconds, so a restart or logout never waits on Cmdr.}}",
-        "windows": null,
-        "other": null
+        "windows": "{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}",
+        "other": "{seconds, plural, one {Quitting in {secondsText} second, so a restart or logout never waits on Cmdr.} other {Quitting in {secondsText} seconds, so a restart or logout never waits on Cmdr.}}"
       },
       "register": "narration",
-      "sources": {},
-      "note": "plan § Exit vs close: narration, Windows “close”; Linux “quit”, equal to macOS, so a `{windows, other}` block. Windows: “Closing in …”."
+      "sources": {
+        "windows": "plan § Copy resolution (narration: “Closing in …”); written: Windows signs out, so “sign-out” for “logout”",
+        "other": "decisions (Linux “quit” in both registers, equal to macOS)"
+      },
+      "written": ["windows"]
     },
     {
       "key": "main.quit.countdownAria",
       "file": "main.json",
       "source": "catalog",
-      "mechanism": "none",
-      "status": "pending",
+      "mechanism": "select",
+      "status": "apply",
       "branches": {
         "macos": "Time until Cmdr quits on its own",
-        "windows": null,
-        "other": null
+        "windows": "Time until Cmdr closes on its own",
+        "other": "Time until Cmdr quits on its own"
       },
       "register": "narration",
-      "sources": {},
-      "note": "plan § Exit vs close: narration, Windows “close”; Linux “quit”, equal to macOS, so a `{windows, other}` block. Windows: “…until Cmdr closes on its own”."
+      "sources": {
+        "windows": "plan § Copy resolution (narration: “…until Cmdr closes on its own”)",
+        "other": "decisions (Linux “quit” in both registers, equal to macOS)"
+      }
     },
     {
       "key": "errors.git.permissionDenied.suggestion",
@@ -10703,6 +10737,304 @@
         "row": "milestone scan: “disk”, judged no change"
       },
       "note": "scan hit “disk”, no change: “disk usage” is how full the volume is, the same phrase on every OS (like “disk space”)."
+    },
+    {
+      "key": "onboarding.stepOptional.lede",
+      "file": "onboarding.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, click the button below. All of these are optional, and the defaults are picked for your benefit.",
+        "windows": "You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, select the button below. All of these are optional, and the defaults are picked for your benefit.",
+        "other": "You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, click the button below. All of these are optional, and the defaults are picked for your benefit."
+      },
+      "sources": {
+        "windows": "written: Windows instructions say “select” for “click” (style guide § Platform vocabulary)",
+        "other": "unchanged: Linux keeps “click”"
+      },
+      "written": ["windows"],
+      "whereInUi": "Onboarding optional-features step, the lede under the title."
+    },
+    {
+      "key": "onboarding.stepAi.missingKeyWarning",
+      "file": "onboarding.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "You’ve enabled AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Click “{nextLabel}” again to ignore this and go on.</strong>",
+        "windows": "You’ve turned on AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Select “{nextLabel}” again to ignore this and go on.</strong>",
+        "other": "You’ve enabled AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Click “{nextLabel}” again to ignore this and go on.</strong>"
+      },
+      "sources": {
+        "windows": "written: Windows instructions say “select” for “click” (style guide § Platform vocabulary); and “turned on” for “enabled”",
+        "other": "unchanged"
+      },
+      "written": ["windows"],
+      "whereInUi": "Onboarding AI step, the warning on the Next button when cloud AI has no API key."
+    },
+    {
+      "key": "onboarding.stepOptional.updates.desc",
+      "file": "onboarding.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you disable it, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).",
+        "windows": "If you turn this on, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you turn it off, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).",
+        "other": "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you disable it, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license)."
+      },
+      "sources": {
+        "windows": "written: Windows says “turn on” / “turn off” for “enable” / “disable” (style guide § Platform vocabulary)",
+        "other": "unchanged"
+      },
+      "written": ["windows"],
+      "whereInUi": "Onboarding optional-features step, the Automatic updates row’s info tip."
+    },
+    {
+      "key": "indexing.firstConnect.enable",
+      "file": "indexing.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "Enable indexing",
+        "windows": "Turn on indexing",
+        "other": "Enable indexing"
+      },
+      "sources": {
+        "windows": "written: Windows says “turn on” / “turn off” for “enable” / “disable” (style guide § Platform vocabulary)",
+        "other": "unchanged"
+      },
+      "written": ["windows"],
+      "whereInUi": "Toast when a drive is connected for the first time, the button that turns on indexing for it."
+    },
+    {
+      "key": "whatsNew.optOutToast",
+      "file": "whatsNew.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "Got it, no more update notes. Re-enable them anytime in Settings > Updates & privacy.",
+        "windows": "Got it, no more update notes. Turn them back on anytime in Settings > Updates & privacy.",
+        "other": "Got it, no more update notes. Re-enable them anytime in Settings > Updates & privacy."
+      },
+      "sources": {
+        "windows": "written: Windows says “turn on” / “turn off” for “enable” / “disable” (style guide § Platform vocabulary)",
+        "other": "unchanged"
+      },
+      "written": ["windows"],
+      "whereInUi": "Toast after opting out of the What’s new notes."
+    },
+    {
+      "key": "askCmdr.wake.needsApiKey",
+      "file": "askCmdr.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "AI features are on, but they need a provider to work. Click to set one up in settings.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “click”, judged no change"
+      },
+      "note": "scan hit “click”, no change: the hover tooltip of the Ask Cmdr wake indicator, which only a pointer sees (the same call as the other hover tooltips)."
+    },
+    {
+      "key": "multiRename.startingTooltip",
+      "file": "multiRename.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "The rename starts once every file’s tags are read. Click again to cancel.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “click”, judged no change"
+      },
+      "note": "scan hit “click”, no change: a hover tooltip on the Rename button, which only a pointer sees (the same call as the other hover tooltips)."
+    },
+    {
+      "key": "multiRename.placeholderHelp.mediaHint",
+      "file": "multiRename.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Click to pick from every field, each with its value on your files.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “click”, judged no change"
+      },
+      "note": "scan hit “click”, no change: the footnote of a placeholder’s hover tip, which only a pointer sees (the same call as the other hover tooltips)."
+    },
+    {
+      "key": "viewer.statusBar.hint.image",
+      "file": "viewer.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Click 100% / fit · Scroll zoom · Drag pan",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “click”, judged no change"
+      },
+      "note": "scan hit “click”, no change: it lists the image viewer’s mouse gestures (click, scroll, drag), which are the same on every OS."
+    },
+    {
+      "key": "onboarding.stepFda.revoked.ifIntentional",
+      "file": "onboarding.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "If that was intentional, click <deny>Deny</deny> and the app won’t bother you again.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan, judged no change"
+      },
+      "note": "macOS-only by reach: the Full Disk Access step renders only where `hasCapability('fullDiskAccess')` (`onboarding-state.svelte.ts` skips it, and `StepFda.svelte` renders nothing, elsewhere)."
+    },
+    {
+      "key": "onboarding.stepFda.pro.body",
+      "file": "onboarding.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "The app will access your entire disk without nagging you for permissions to each folder like Downloads, Documents, and Desktop.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan, judged no change"
+      },
+      "note": "macOS-only by reach: the Full Disk Access step renders only where `hasCapability('fullDiskAccess')` (`onboarding-state.svelte.ts` skips it, and `StepFda.svelte` renders nothing, elsewhere)."
+    },
+    {
+      "key": "onboarding.stepFda.step2.tip",
+      "file": "onboarding.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Is Cmdr not in the list? Click the “+” button at the bottom, and choose <strong>Cmdr</strong> from your <strong>Applications</strong> folder.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan, judged no change"
+      },
+      "note": "macOS-only by reach: the Full Disk Access step renders only where `hasCapability('fullDiskAccess')` (`onboarding-state.svelte.ts` skips it, and `StepFda.svelte` renders nothing, elsewhere)."
+    },
+    {
+      "key": "onboarding.stepFda.postAction.body",
+      "file": "onboarding.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "When you’re ready, click <restart>Restart Cmdr</restart> below. If you change your mind, click <deny>Deny</deny> above instead.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan, judged no change"
+      },
+      "note": "macOS-only by reach: the Full Disk Access step renders only where `hasCapability('fullDiskAccess')` (`onboarding-state.svelte.ts` skips it, and `StepFda.svelte` renders nothing, elsewhere)."
+    },
+    {
+      "key": "errorReporter.dialog.managedOff",
+      "file": "errorReporter.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Your organization turned off sending reports. You can still save one to disk and share it yourself.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: “save to disk” is the save-a-file idiom here (a save dialog follows), not a name for the PC’s storage, and its sibling `errorReporter.dialog.saveToDisk` stays as is."
+    },
+    {
+      "key": "errorReporter.dialog.saveToDiskManaged",
+      "file": "errorReporter.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "Save to disk",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: “save to disk” is the save-a-file idiom here (a save dialog follows), not a name for the PC’s storage, and its sibling `errorReporter.dialog.saveToDisk` stays as is."
+    },
+    {
+      "key": "viewer.reloadToast.grew",
+      "file": "viewer.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "File changed on disk. Reload?",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: “changed on disk” is the editor idiom on every OS for the file’s stored copy, which may sit on a share or a phone."
+    },
+    {
+      "key": "viewer.reloadToast.rotated",
+      "file": "viewer.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "File replaced on disk. Reload to see the new content.",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: “changed on disk” is the editor idiom on every OS for the file’s stored copy, which may sit on a share or a phone."
+    },
+    {
+      "key": "viewer.sessionOp.slow",
+      "file": "viewer.json",
+      "source": "catalog",
+      "mechanism": "none",
+      "status": "none",
+      "branches": {
+        "macos": "The disk is taking a while to answer. Try again in a moment?",
+        "windows": null,
+        "other": null
+      },
+      "sources": {
+        "row": "milestone scan: “disk”, judged no change"
+      },
+      "note": "scan hit “disk”, no change: the physical disk that holds the file (a local drive, a share, or a phone), the sense Windows keeps too; it doesn’t name the PC’s own storage."
     }
   ]
 }

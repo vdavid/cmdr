@@ -131,7 +131,7 @@
   "@search.coverage.line.failedRoots": {
     "sourceHash": "36c41ae"
   },
-  "search.coverage.line.denied": "{count, plural, =1 {macOS не дозволила Cmdr зазирнути в одну папку, тож у результатах немає нічого з неї.} one {macOS не дозволила Cmdr зазирнути в {countText} папку, тож у результатах немає нічого з них.} few {macOS не дозволила Cmdr зазирнути в {countText} папки, тож у результатах немає нічого з них.} many {macOS не дозволила Cmdr зазирнути в {countText} папок, тож у результатах немає нічого з них.} other {macOS не дозволила Cmdr зазирнути в {countText} папки, тож у результатах немає нічого з них.}}",
+  "search.coverage.line.denied": "{platform, select, macos {{count, plural, =1 {macOS не дозволила Cmdr зазирнути в одну папку, тож у результатах немає нічого з неї.} one {macOS не дозволила Cmdr зазирнути в {countText} папку, тож у результатах немає нічого з них.} few {macOS не дозволила Cmdr зазирнути в {countText} папки, тож у результатах немає нічого з них.} many {macOS не дозволила Cmdr зазирнути в {countText} папок, тож у результатах немає нічого з них.} other {macOS не дозволила Cmdr зазирнути в {countText} папки, тож у результатах немає нічого з них.}}} windows {{count, plural, one {Windows didn’t let Cmdr look inside one folder, so nothing from it is in the results.} other {Windows didn’t let Cmdr look inside {countText} folders, so nothing from them is in the results.}}} other {{count, plural, one {Cmdr didn’t have permission to look inside one folder, so nothing from it is in the results.} other {Cmdr didn’t have permission to look inside {countText} folders, so nothing from them is in the results.}}}}",
   "@search.coverage.line.denied": {
     "sourceHash": "c2b388f"
   },

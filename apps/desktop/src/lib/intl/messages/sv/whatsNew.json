@@ -39,7 +39,7 @@
   "@whatsNew.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "whatsNew.optOutToast": "Uppfattat, inga fler uppdateringsnoteringar. Slå på dem igen när du vill under Inställningar > Uppdateringar och integritet.",
+  "whatsNew.optOutToast": "{platform, select, windows {Got it, no more update notes. Turn them back on anytime in Settings > Updates & privacy.} other {Uppfattat, inga fler uppdateringsnoteringar. Slå på dem igen när du vill under Inställningar > Uppdateringar och integritet.}}",
   "@whatsNew.optOutToast": {
     "sourceHash": "368591b"
   }

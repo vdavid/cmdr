@@ -15,7 +15,7 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "2e3443b"
   },
-  "ai.cloudConsent.logsNote": "Si activas “Registrar llamadas al modelo de IA” en Configuración avanzada, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros de llamadas son locales y nunca se envían a ningún lado.",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {Si activas “Registrar llamadas al modelo de IA” en Configuración avanzada, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros de llamadas son locales y nunca se envían a ningún lado.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
   "@ai.cloudConsent.logsNote": {
     "sourceHash": "6512b49"
   },

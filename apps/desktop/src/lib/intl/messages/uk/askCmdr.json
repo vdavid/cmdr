@@ -1441,7 +1441,7 @@
   "@askCmdr.decision.running": {
     "sourceHash": "46c5413"
   },
-  "askCmdr.decision.interrupted": "Cmdr завершив роботу до того, як операцію було виконано",
+  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr closed before this finished} other {Cmdr завершив роботу до того, як операцію було виконано}}",
   "@askCmdr.decision.interrupted": {
     "sourceHash": "ece92cc"
   },
@@ -1453,7 +1453,7 @@
   "@askCmdr.decision.verbCopy": {
     "sourceHash": "20a184a"
   },
-  "askCmdr.decision.verbTrash": "переміщення в Смітник",
+  "askCmdr.decision.verbTrash": "{platform, select, windows {moving to the Recycle Bin} other {переміщення в Смітник}}",
   "@askCmdr.decision.verbTrash": {
     "sourceHash": "ea05c85"
   },
@@ -1801,15 +1801,15 @@
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "729d49f"
   },
-  "askCmdr.tool.quit.doing": "Завершення роботи Cmdr",
+  "askCmdr.tool.quit.doing": "{platform, select, windows {Closing Cmdr} other {Завершення роботи Cmdr}}",
   "@askCmdr.tool.quit.doing": {
     "sourceHash": "b26d1c8"
   },
-  "askCmdr.tool.quit.done": "Надіслано Cmdr запит на завершення роботи",
+  "askCmdr.tool.quit.done": "{platform, select, windows {Asked Cmdr to close} other {Надіслано Cmdr запит на завершення роботи}}",
   "@askCmdr.tool.quit.done": {
     "sourceHash": "b9083af"
   },
-  "askCmdr.tool.quit.tried": "Спроба завершити роботу Cmdr",
+  "askCmdr.tool.quit.tried": "{platform, select, windows {Tried to close Cmdr} other {Спроба завершити роботу Cmdr}}",
   "@askCmdr.tool.quit.tried": {
     "sourceHash": "ab34547"
   },

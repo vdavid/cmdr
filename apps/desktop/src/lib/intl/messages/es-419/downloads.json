@@ -43,7 +43,7 @@
   "@downloads.shortcutRow.invalidCombo": {
     "sourceHash": "0f41b13"
   },
-  "downloads.shortcutRow.addModifier": "Agrega un modificador (⌘, ⌃, ⌥ o ⇧)",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Agrega un modificador (⌘, ⌃, ⌥ o ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
   "@downloads.shortcutRow.addModifier": {
     "sourceHash": "1336fa6"
   },

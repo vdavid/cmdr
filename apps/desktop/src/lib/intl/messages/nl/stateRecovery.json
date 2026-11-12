@@ -27,7 +27,7 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "3f94010"
   },
-  "stateRecovery.appStatus.title": "Cmdr kon niet lezen welke mappen er in je panelen openstonden, dus beide panelen beginnen in je thuismap",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {Cmdr kon niet lezen welke mappen er in je panelen openstonden, dus beide panelen beginnen in je thuismap}}",
   "@stateRecovery.appStatus.title": {
     "sourceHash": "521f5eb"
   },
@@ -119,7 +119,7 @@
   "@stateRecovery.keptCopy": {
     "sourceHash": "634e87d"
   },
-  "stateRecovery.showInFinder": "Toon in Finder",
+  "stateRecovery.showInFinder": "{platform, select, macos {Toon in Finder} windows {Show in File Explorer} other {Show in file manager}}",
   "@stateRecovery.showInFinder": {
     "sourceHash": "c2a9c77"
   },

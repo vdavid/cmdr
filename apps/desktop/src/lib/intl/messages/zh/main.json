@@ -139,7 +139,7 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{count, plural, other {有 {countText} 项操作仍在进行，要退出吗？}}",
+  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, other {有 {countText} 项操作仍在进行，要退出吗？}}}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
@@ -147,11 +147,11 @@
   "@main.quit.body": {
     "sourceHash": "79a69f9"
   },
-  "main.quit.countdown": "{seconds, plural, other {将在 {secondsText} 秒后自动退出，这样系统重新启动或退出登录时就不用等 Cmdr。}}",
+  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, other {将在 {secondsText} 秒后自动退出，这样系统重新启动或退出登录时就不用等 Cmdr。}}}}",
   "@main.quit.countdown": {
     "sourceHash": "a389e0c"
   },
-  "main.quit.countdownAria": "Cmdr 自动退出前的剩余时间",
+  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Cmdr 自动退出前的剩余时间}}",
   "@main.quit.countdownAria": {
     "sourceHash": "6b0b5c2"
   },
@@ -159,7 +159,7 @@
   "@main.quit.keepWorking": {
     "sourceHash": "5ed03f2"
   },
-  "main.quit.quitNow": "立即退出",
+  "main.quit.quitNow": "{platform, select, windows {Exit now} other {立即退出}}",
   "@main.quit.quitNow": {
     "sourceHash": "c96bcc8"
   },
@@ -167,11 +167,11 @@
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "Cmdr 需要更新版本的 Safari",
+  "main.oldWebkit.title": "{platform, select, macos {Cmdr 需要更新版本的 Safari} other {Cmdr needs a newer WebKitGTK}}",
   "@main.oldWebkit.title": {
     "sourceHash": "03e502b"
   },
-  "main.oldWebkit.body": "Cmdr 的界面需要 Safari 15.4 或更高版本，而这台 Mac 上的版本更旧。打开“软件更新”，安装所有待处理的更新，通常就能解决。",
+  "main.oldWebkit.body": "{platform, select, macos {Cmdr 的界面需要 Safari 15.4 或更高版本，而这台 Mac 上的版本更旧。打开“软件更新”，安装所有待处理的更新，通常就能解决。} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
   "@main.oldWebkit.body": {
     "sourceHash": "a7112ec"
   },

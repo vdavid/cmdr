@@ -216,7 +216,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} windows {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, as a paragraph after the Ask Cmdr list: the assistant is never given the contents of these places, even if a prompt asks for them, but their file names may still reach the provider. Keep the whole list and that last sentence. Mail, Messages, and Notes are Apple app names. The apostrophe is U+2019.",
     "screenshot": "settings-ai-provider.png",
@@ -240,13 +240,13 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "Your Ask Cmdr chats stay on your Mac, in a local database you can open and read.",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Your Ask Cmdr chats stay on your Mac, in a local database you can open and read.} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "description": "Paragraph under the Ask Cmdr part of the Allow cloud AI fold: chat history is stored locally, never on the AI service's side by Cmdr. \"Ask Cmdr\" is a product name and stays as it is.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.logsNote": "If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your Mac. Those call logs stay local, never sent anywhere.",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your Mac. Those call logs stay local, never sent anywhere.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
   "@ai.cloudConsent.logsNote": {
     "description": "Shown under Settings > AI > Provider, as a smaller note near the end of the Allow cloud AI fold, about the optional local AI call log (the setting “Log AI model calls”, settings.advanced.logLlmCalls.label, quoted: match its label exactly): those logs are written to a local folder and never transmitted. It's a different thing from the app's own log, ai.cloudConsent.askCmdr.item.logs, so keep \"call logs\" distinct.",
     "screenshot": "settings-ai-provider.png",
@@ -906,7 +906,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.managed.localOnlyUnsupported": "Your organization allows only on-device AI, and this Mac can’t run it.",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Your organization allows only on-device AI, and this Mac can’t run it.} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
   "@ai.managed.localOnlyUnsupported": {
     "description": "Shown under the AI provider choice on a Mac that can't run the on-device AI model (it needs Apple silicon and macOS 14 or later) when the person's organization allows only on-device AI, so no AI is available at all. One calm sentence. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on this Mac, so the two names point at one thing.",
     "screenshot": "settings-ai-provider.png",

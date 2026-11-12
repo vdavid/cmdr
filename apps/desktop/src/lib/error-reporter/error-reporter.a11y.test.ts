@@ -19,8 +19,9 @@
  * store is what proves the toast can't reach the compose path.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
 import { createRawSnippet, mount, tick, type Component } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import AutoSendToastContent from './AutoSendToastContent.svelte'
 import BundleSavedToastContent from './BundleSavedToastContent.svelte'
 import ErrorReportDialog from './ErrorReportDialog.svelte'
@@ -238,13 +239,16 @@ describe('BundleSavedToastContent', () => {
     expect(target.textContent).toContain('/tmp/bundle-XYZ.zip')
   })
 
-  it('Reveal in Finder button calls showInFinder with the saved path', async () => {
+  it.each([
+    ['macos', 'Reveal in Finder'],
+    ['windows', 'Show in File Explorer'],
+    ['linux', 'Show in file manager'],
+  ] as const)('on %s, the “%s” button calls showInFinder with the saved path', async (platform, label) => {
+    onTestFinished(withPlatform(platform))
     const target = mountInto(BundleSavedToastContent, saved('/tmp/bundle-REV.zip'))
     await tick()
-    const revealButton = Array.from(target.querySelectorAll('button')).find(
-      (b) => b.textContent.trim() === 'Reveal in Finder',
-    )
-    if (!revealButton) throw new Error('Reveal in Finder button missing')
+    const revealButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === label)
+    if (!revealButton) throw new Error(`${label} button missing`)
     revealButton.click()
     expect(showInFinder).toHaveBeenCalledWith('/tmp/bundle-REV.zip')
   })

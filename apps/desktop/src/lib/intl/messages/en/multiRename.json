@@ -398,7 +398,7 @@
   "@multiRename.results.gone": {
     "description": "Shown when the edited names list can’t be read back (it was deleted or moved)."
   },
-  "multiRename.error.couldntWriteNames": "Couldn’t write the names list. Check that your startup disk has free space.",
+  "multiRename.error.couldntWriteNames": "{platform, select, macos {Couldn’t write the names list. Check that your startup disk has free space.} windows {Couldn’t write the names list. Check that your system drive has free space.} other {Couldn’t write the names list. Check that your system disk has free space.}}",
   "@multiRename.error.couldntWriteNames": {
     "description": "Shown when Results couldn’t create its text file in the temporary folder."
   },

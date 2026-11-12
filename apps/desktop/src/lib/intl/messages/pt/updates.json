@@ -112,7 +112,7 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "O Cmdr {available} já saiu, mas sua organização mantém este Mac na versão {ceiling} ou anterior.",
+  "updates.status.heldByPolicy": "{platform, select, macos {O Cmdr {available} já saiu, mas sua organização mantém este Mac na versão {ceiling} ou anterior.} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
   "@updates.status.heldByPolicy": {
     "sourceHash": "5c9b196"
   },

@@ -7,7 +7,7 @@
   "@crashReporter.dialog.title.report": {
     "sourceHash": "b939ee6"
   },
-  "crashReporter.dialog.body.ended": "Cmdr se cerró inesperadamente la última vez. Aquí tienes un reporte de fallos con detalles que pueden ayudar a solucionarlo.",
+  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this.} other {Cmdr se cerró inesperadamente la última vez. Aquí tienes un reporte de fallos con detalles que pueden ayudar a solucionarlo.}}",
   "@crashReporter.dialog.body.ended": {
     "sourceHash": "1dab601"
   },

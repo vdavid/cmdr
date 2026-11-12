@@ -39,7 +39,7 @@
   "@whatsNew.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "whatsNew.optOutToast": "明白了，不再显示更新说明。你随时可以在“设置 > 更新与隐私”中重新开启。",
+  "whatsNew.optOutToast": "{platform, select, windows {Got it, no more update notes. Turn them back on anytime in Settings > Updates & privacy.} other {明白了，不再显示更新说明。你随时可以在“设置 > 更新与隐私”中重新开启。}}",
   "@whatsNew.optOutToast": {
     "sourceHash": "368591b"
   }

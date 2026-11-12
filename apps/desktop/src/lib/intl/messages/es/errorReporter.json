@@ -172,7 +172,7 @@
   "@errorReporter.bundleSavedToast.dismiss": {
     "sourceHash": "48845bf"
   },
-  "errorReporter.bundleSavedToast.reveal": "Mostrar en el Finder",
+  "errorReporter.bundleSavedToast.reveal": "{platform, select, macos {Mostrar en el Finder} windows {Show in File Explorer} other {Show in file manager}}",
   "@errorReporter.bundleSavedToast.reveal": {
     "sourceHash": "cc84938"
   },

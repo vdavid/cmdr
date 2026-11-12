@@ -27,7 +27,7 @@
   "@stateRecovery.license.openSettings": {
     "description": "Button on the notice above that opens Cmdr's Settings on the License section. VERB phrase, short control label. Pop-up notice (toast) in the corner of Cmdr's main window."
   },
-  "stateRecovery.appStatus.title": "Cmdr couldn’t read which folders your panes had open, so they start at your home folder",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {Cmdr couldn’t read which folders your panes had open, so they start at your home folder}}",
   "@stateRecovery.appStatus.title": {
     "description": "Headline of a notice shown once at launch: the file remembering each pane's folders, tabs, and layout was damaged, so both panes open at the home folder with the default layout. \"Cmdr\" is the product name; a \"pane\" is one of the two side-by-side file lists. Sentence case, no full stop. Avoid the words \"error\" and \"failed\". Pop-up notice (toast) in the corner of Cmdr's main window."
   },
@@ -122,7 +122,7 @@
       "path": "the full path of the set-aside copy, like /Users/anna/Library/Application Support/com.veszelovszki.cmdr/settings.json.broken-2026-10-16T101500. Never translated."
     }
   },
-  "stateRecovery.showInFinder": "Show in Finder",
+  "stateRecovery.showInFinder": "{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}",
   "@stateRecovery.showInFinder": {
     "description": "Button on any of the notices above that opens a Finder window with the set-aside copy of the damaged file highlighted. VERB phrase (imperative). ❗ \"Finder\" is Apple's app name and stays verbatim as \"Finder\" in every language. Pop-up notice (toast) in the corner of Cmdr's main window."
   },

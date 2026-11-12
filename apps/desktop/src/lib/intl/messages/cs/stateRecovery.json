@@ -27,7 +27,7 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "3f94010"
   },
-  "stateRecovery.appStatus.title": "Cmdr nemohl přečíst, které složky měly panely otevřené, takže začínají v domovské složce",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {Cmdr nemohl přečíst, které složky měly panely otevřené, takže začínají v domovské složce}}",
   "@stateRecovery.appStatus.title": {
     "sourceHash": "521f5eb"
   },
@@ -119,7 +119,7 @@
   "@stateRecovery.keptCopy": {
     "sourceHash": "634e87d"
   },
-  "stateRecovery.showInFinder": "Zobrazit ve Finderu",
+  "stateRecovery.showInFinder": "{platform, select, macos {Zobrazit ve Finderu} windows {Show in File Explorer} other {Show in file manager}}",
   "@stateRecovery.showInFinder": {
     "sourceHash": "c2a9c77"
   },

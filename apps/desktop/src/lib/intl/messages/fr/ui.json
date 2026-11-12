@@ -205,7 +205,7 @@
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"
   },
-  "ui.toolAsk.quit.title": "Quitter Cmdr ?",
+  "ui.toolAsk.quit.title": "{platform, select, windows {Exit Cmdr?} other {Quitter Cmdr ?}}",
   "@ui.toolAsk.quit.title": {
     "sourceHash": "b1f6e98"
   },

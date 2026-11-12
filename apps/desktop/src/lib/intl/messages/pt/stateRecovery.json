@@ -27,7 +27,7 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "3f94010"
   },
-  "stateRecovery.appStatus.title": "O Cmdr não conseguiu ler quais pastas estavam abertas nos seus painéis, então os painéis abrem na sua pasta pessoal",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {O Cmdr não conseguiu ler quais pastas estavam abertas nos seus painéis, então os painéis abrem na sua pasta pessoal}}",
   "@stateRecovery.appStatus.title": {
     "sourceHash": "521f5eb"
   },
@@ -119,7 +119,7 @@
   "@stateRecovery.keptCopy": {
     "sourceHash": "634e87d"
   },
-  "stateRecovery.showInFinder": "Mostrar no Finder",
+  "stateRecovery.showInFinder": "{platform, select, macos {Mostrar no Finder} windows {Show in File Explorer} other {Show in file manager}}",
   "@stateRecovery.showInFinder": {
     "sourceHash": "c2a9c77"
   },

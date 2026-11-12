@@ -112,7 +112,7 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "Đã có Cmdr {available}, nhưng tổ chức của bạn giữ máy Mac này ở phiên bản {ceiling} hoặc cũ hơn.",
+  "updates.status.heldByPolicy": "{platform, select, macos {Đã có Cmdr {available}, nhưng tổ chức của bạn giữ máy Mac này ở phiên bản {ceiling} hoặc cũ hơn.} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
   "@updates.status.heldByPolicy": {
     "sourceHash": "5c9b196"
   },

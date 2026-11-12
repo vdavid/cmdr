@@ -323,7 +323,7 @@
   "@multiRename.results.gone": {
     "sourceHash": "8aa255a"
   },
-  "multiRename.error.couldntWriteNames": "Không thể ghi danh sách tên. Hãy kiểm tra xem đĩa khởi động của bạn còn dung lượng trống không.",
+  "multiRename.error.couldntWriteNames": "{platform, select, macos {Không thể ghi danh sách tên. Hãy kiểm tra xem đĩa khởi động của bạn còn dung lượng trống không.} windows {Couldn’t write the names list. Check that your system drive has free space.} other {Couldn’t write the names list. Check that your system disk has free space.}}",
   "@multiRename.error.couldntWriteNames": {
     "sourceHash": "bb5e415"
   },

@@ -323,7 +323,7 @@
   "@multiRename.results.gone": {
     "sourceHash": "8aa255a"
   },
-  "multiRename.error.couldntWriteNames": "无法写入名称列表。请确认你的启动磁盘还有剩余空间。",
+  "multiRename.error.couldntWriteNames": "{platform, select, macos {无法写入名称列表。请确认你的启动磁盘还有剩余空间。} windows {Couldn’t write the names list. Check that your system drive has free space.} other {Couldn’t write the names list. Check that your system disk has free space.}}",
   "@multiRename.error.couldntWriteNames": {
     "sourceHash": "bb5e415"
   },

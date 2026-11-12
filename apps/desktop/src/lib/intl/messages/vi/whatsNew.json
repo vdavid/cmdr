@@ -39,7 +39,7 @@
   "@whatsNew.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "whatsNew.optOutToast": "Đã rõ, sẽ không còn ghi chú cập nhật nữa. Bật lại bất cứ lúc nào trong Cài đặt > Cập nhật & quyền riêng tư.",
+  "whatsNew.optOutToast": "{platform, select, windows {Got it, no more update notes. Turn them back on anytime in Settings > Updates & privacy.} other {Đã rõ, sẽ không còn ghi chú cập nhật nữa. Bật lại bất cứ lúc nào trong Cài đặt > Cập nhật & quyền riêng tư.}}",
   "@whatsNew.optOutToast": {
     "sourceHash": "368591b"
   }

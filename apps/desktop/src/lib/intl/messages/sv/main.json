@@ -139,7 +139,7 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{count, plural, one {Avsluta medan en åtgärd pågår?} other {Avsluta medan {countText} åtgärder pågår?}}",
+  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, one {Avsluta medan en åtgärd pågår?} other {Avsluta medan {countText} åtgärder pågår?}}}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
@@ -147,11 +147,11 @@
   "@main.quit.body": {
     "sourceHash": "79a69f9"
   },
-  "main.quit.countdown": "{seconds, plural, one {Cmdr avslutas om {secondsText} sekund, så att en omstart eller utloggning aldrig behöver vänta.} other {Cmdr avslutas om {secondsText} sekunder, så att en omstart eller utloggning aldrig behöver vänta.}}",
+  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, one {Cmdr avslutas om {secondsText} sekund, så att en omstart eller utloggning aldrig behöver vänta.} other {Cmdr avslutas om {secondsText} sekunder, så att en omstart eller utloggning aldrig behöver vänta.}}}}",
   "@main.quit.countdown": {
     "sourceHash": "a389e0c"
   },
-  "main.quit.countdownAria": "Tid kvar tills Cmdr avslutas av sig själv",
+  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Tid kvar tills Cmdr avslutas av sig själv}}",
   "@main.quit.countdownAria": {
     "sourceHash": "6b0b5c2"
   },
@@ -159,7 +159,7 @@
   "@main.quit.keepWorking": {
     "sourceHash": "5ed03f2"
   },
-  "main.quit.quitNow": "Avsluta nu",
+  "main.quit.quitNow": "{platform, select, windows {Exit now} other {Avsluta nu}}",
   "@main.quit.quitNow": {
     "sourceHash": "c96bcc8"
   },
@@ -167,11 +167,11 @@
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "Cmdr behöver en nyare Safari",
+  "main.oldWebkit.title": "{platform, select, macos {Cmdr behöver en nyare Safari} other {Cmdr needs a newer WebKitGTK}}",
   "@main.oldWebkit.title": {
     "sourceHash": "03e502b"
   },
-  "main.oldWebkit.body": "Cmdrs gränssnitt behöver Safari 15.4 eller nyare, och den här Macen har en äldre version. Öppna Programuppdatering och installera allt som väntar. Det brukar lösa det.",
+  "main.oldWebkit.body": "{platform, select, macos {Cmdrs gränssnitt behöver Safari 15.4 eller nyare, och den här Macen har en äldre version. Öppna Programuppdatering och installera allt som väntar. Det brukar lösa det.} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
   "@main.oldWebkit.body": {
     "sourceHash": "a7112ec"
   },

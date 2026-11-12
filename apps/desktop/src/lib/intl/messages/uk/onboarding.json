@@ -303,7 +303,7 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "f95b4a9"
   },
-  "onboarding.stepAi.missingKeyWarning": "Ви ввімкнули ШІ, але не ввели ключ API. ШІ не працюватиме, і ви бачитимете застереження. Будь ласка, виправте це вище.\n\n<strong>Натисніть «{nextLabel}» ще раз, щоб не зважати на це й продовжити.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {You’ve turned on AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Select “{nextLabel}” again to ignore this and go on.</strong>} other {Ви ввімкнули ШІ, але не ввели ключ API. ШІ не працюватиме, і ви бачитимете застереження. Будь ласка, виправте це вище.\n\n<strong>Натисніть «{nextLabel}» ще раз, щоб не зважати на це й продовжити.</strong>}}",
   "@onboarding.stepAi.missingKeyWarning": {
     "sourceHash": "b942278"
   },
@@ -395,7 +395,7 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "06ce4eb"
   },
-  "onboarding.stepBeta.crashReportsNote": "Звіти про аварії теж увімкнено: якщо Cmdr аварійно завершить роботу, він надішле версію програми, вашу версію macOS і місце в коді, де все зупинилося.\nЖодних ваших файлів.\nВимкнути і те, і інше можна в Параметрах будь-коли.",
+  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Звіти про аварії теж увімкнено: якщо Cmdr аварійно завершить роботу, він надішле версію програми, вашу версію macOS і місце в коді, де все зупинилося.\nЖодних ваших файлів.\nВимкнути і те, і інше можна в Параметрах будь-коли.} windows {Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.} other {Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.}}",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
   },
@@ -403,7 +403,7 @@
   "@onboarding.stepBeta.analyticsManaged": {
     "sourceHash": "49484ee"
   },
-  "onboarding.stepBeta.crashReportsNoteAlone": "Звіти про аварії ввімкнено: якщо Cmdr аварійно завершить роботу, він надішле версію програми, вашу версію macOS і місце в коді, де все зупинилося.\nЖодних ваших файлів.\nВимкнути їх можна в Параметрах будь-коли.",
+  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Звіти про аварії ввімкнено: якщо Cmdr аварійно завершить роботу, він надішле версію програми, вашу версію macOS і місце в коді, де все зупинилося.\nЖодних ваших файлів.\nВимкнути їх можна в Параметрах будь-коли.} windows {Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.} other {Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.}}",
   "@onboarding.stepBeta.crashReportsNoteAlone": {
     "sourceHash": "5084dd0"
   },
@@ -427,11 +427,11 @@
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "5a1bca7"
   },
-  "onboarding.stepBeta.signup.unreachable": "Зараз не вдалося звʼязатися із сервером підписки, тож вас ще немає в списку розсилки.Вашу адресу збережено на цьому Mac: натисніть «Зберегти» ще раз за хвилину або будь-коли в Параметрах › Оновлення та приватність.",
+  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {Зараз не вдалося звʼязатися із сервером підписки, тож вас ще немає в списку розсилки.Вашу адресу збережено на цьому Mac: натисніть «Зберегти» ще раз за хвилину або будь-коли в Параметрах › Оновлення та приватність.} windows {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this PC: hit Save again in a minute, or any time from Settings › Updates & privacy.} other {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this computer: hit Save again in a minute, or any time from Settings › Updates & privacy.}}",
   "@onboarding.stepBeta.signup.unreachable": {
     "sourceHash": "e4d8f67"
   },
-  "onboarding.stepBeta.emailNote": "Залиште свою е‑адресу, і я зрідка писатиму вам із запитанням чи новиною.\nЕ‑адреса, яку ви тут вводите, зберігається лише на вашому Mac і ніколи не повʼязується зі статистикою використання: це навмисно дві окремі підсистеми.",
+  "onboarding.stepBeta.emailNote": "{platform, select, macos {Залиште свою е‑адресу, і я зрідка писатиму вам із запитанням чи новиною.\nЕ‑адреса, яку ви тут вводите, зберігається лише на вашому Mac і ніколи не повʼязується зі статистикою використання: це навмисно дві окремі підсистеми.} windows {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your PC and it’s never connected to your usage stats, the two are intentionally two separate subsystems.} other {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your computer and it’s never connected to your usage stats, the two are intentionally two separate subsystems.}}",
   "@onboarding.stepBeta.emailNote": {
     "sourceHash": "0a793b1"
   },
@@ -459,7 +459,7 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "Ви вирішили пройти детальне налаштування, тож ось кілька швидких рішень. Якщо вам не дуже важливо, натисніть кнопку нижче. Усе це необовʼязково, а типові значення вибрано вам на користь.",
+  "onboarding.stepOptional.lede": "{platform, select, windows {You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, select the button below. All of these are optional, and the defaults are picked for your benefit.} other {Ви вирішили пройти детальне налаштування, тож ось кілька швидких рішень. Якщо вам не дуже важливо, натисніть кнопку нижче. Усе це необовʼязково, а типові значення вибрано вам на користь.}}",
   "@onboarding.stepOptional.lede": {
     "sourceHash": "94c3a5a"
   },
@@ -475,11 +475,11 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Потрібен одноразовий дозвіл «Локальна мережа»",
+  "onboarding.stepOptional.networking.summary": "{platform, select, macos {Потрібен одноразовий дозвіл «Локальна мережа»} windows {Windows may ask to let Cmdr through its firewall} other {No permission needed}}",
   "@onboarding.stepOptional.networking.summary": {
     "sourceHash": "f49fbc6"
   },
-  "onboarding.stepOptional.networking.desc": "Коли це <em>увімкнено</em>, можна підʼєднуватися до серверів SMB: спільних папок у мережі компанії, домашнього NAS тощо.\nКоштує це лише одного: macOS покаже діалогове вікно з проханням дозволити «Локальна мережа», а також ще одне, щоб приймати вхідні підʼєднання.\nОбидва вікна нешкідливі, але якщо ви не знаєте, що це таке, вони можуть налякати чи роздратувати.",
+  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Коли це <em>увімкнено</em>, можна підʼєднуватися до серверів SMB: спільних папок у мережі компанії, домашнього NAS тощо.\nКоштує це лише одного: macOS покаже діалогове вікно з проханням дозволити «Локальна мережа», а також ще одне, щоб приймати вхідні підʼєднання.\nОбидва вікна нешкідливі, але якщо ви не знаєте, що це таке, вони можуть налякати чи роздратувати.} windows {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nWindows may ask once whether to let Cmdr through its firewall.} other {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.}}",
   "@onboarding.stepOptional.networking.desc": {
     "sourceHash": "d473c62"
   },
@@ -495,7 +495,7 @@
   "@onboarding.stepOptional.indexing.descIntro": {
     "sourceHash": "6b86a1f"
   },
-  "onboarding.stepOptional.indexing.benefit1": "Миттєвий пошук по всьому диску. Як Spotlight, тільки ще швидше.",
+  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {Миттєвий пошук по всьому диску. Як Spotlight, тільки ще швидше.} windows {Instant search of your whole drive. Think Windows Search, but much faster.} other {Instant search of your whole drive.}}",
   "@onboarding.stepOptional.indexing.benefit1": {
     "sourceHash": "5fa0e9f"
   },
@@ -515,7 +515,7 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Якщо це ввімкнути, Cmdr робить крихітний мережевий запит до центрального сервера ліцензій під час кожного запуску програми і ще раз на 24 години, і ви завжди отримуєте найновіші оновлення.\nЯкщо це вимкнути, у вас залишиться поточна версія, і Cmdr не робить жодних автоматичних мережевих запитів (окрім періодичних перевірок ліцензії, якщо у вас комерційна ліцензія).",
+  "onboarding.stepOptional.updates.desc": "{platform, select, windows {If you turn this on, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you turn it off, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).} other {Якщо це ввімкнути, Cmdr робить крихітний мережевий запит до центрального сервера ліцензій під час кожного запуску програми і ще раз на 24 години, і ви завжди отримуєте найновіші оновлення.\nЯкщо це вимкнути, у вас залишиться поточна версія, і Cmdr не робить жодних автоматичних мережевих запитів (окрім періодичних перевірок ліцензії, якщо у вас комерційна ліцензія).}}",
   "@onboarding.stepOptional.updates.desc": {
     "sourceHash": "e1a0582"
   },
@@ -523,11 +523,11 @@
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "Дає змогу підʼєднувати телефони Android тощо, вимикає системний обробник macOS",
+  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {Дає змогу підʼєднувати телефони Android тощо, вимикає системний обробник macOS} other {Lets you connect Android phones and similar devices}}",
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "Якщо це ввімкнути, Cmdr зможе <strong>підʼєднуватися до телефонів Android, Kindle, камер</strong>, деяких музичних плеєрів і будь-яких інших пристроїв, що підтримують протоколи MTP або PTP.\nКоштує це ось чого: macOS <em>теж</em> намагається підʼєднатися до них (і зазвичай безуспішно, тому й не вдається просто скопіювати фото з телефона Android через Finder), тож поки Cmdr працює, йому доводиться призупиняти цей процес macOS.\nКоли ви завершуєте Cmdr, усе чемно повертається як було.",
+  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Якщо це ввімкнути, Cmdr зможе <strong>підʼєднуватися до телефонів Android, Kindle, камер</strong>, деяких музичних плеєрів і будь-яких інших пристроїв, що підтримують протоколи MTP або PTP.\nКоштує це ось чого: macOS <em>теж</em> намагається підʼєднатися до них (і зазвичай безуспішно, тому й не вдається просто скопіювати фото з телефона Android через Finder), тож поки Cmdr працює, йому доводиться призупиняти цей процес macOS.\nКоли ви завершуєте Cmdr, усе чемно повертається як було.} windows {If you turn this on, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.} other {If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nYour desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first.}}",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "8a60e7f"
   },

@@ -360,6 +360,7 @@ describe('UpdatesSection under an organization’s policy', () => {
   })
 
   it('shows the ceiling sentence a check held back, with the button still live', async () => {
+    onTestFinished(withPlatform('macos'))
     managedPolicy.view = managedView({ updates: { kind: 'enabled', automaticChecks: true, ceiling: '0.52' } })
     realUpdateState.managed = { kind: 'heldByPolicy', available: '0.53.0', ceiling: '0.52' }
     const target = render()

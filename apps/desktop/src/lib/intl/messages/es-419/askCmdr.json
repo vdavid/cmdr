@@ -447,7 +447,7 @@
   "@askCmdr.sessions.wakeThread": {
     "sourceHash": "ef7c3be"
   },
-  "askCmdr.decision.verbTrash": "mover al basurero",
+  "askCmdr.decision.verbTrash": "{platform, select, windows {moving to the Recycle Bin} other {mover al basurero}}",
   "@askCmdr.decision.verbTrash": {
     "sourceHash": "1ea1d0e"
   },
@@ -727,11 +727,11 @@
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "39933ff"
   },
-  "askCmdr.tool.quit.done": "Se le pidió a Cmdr que se cierre",
+  "askCmdr.tool.quit.done": "{platform, select, windows {Asked Cmdr to close} other {Se le pidió a Cmdr que se cierre}}",
   "@askCmdr.tool.quit.done": {
     "sourceHash": "08a4428"
   },
-  "askCmdr.tool.quit.tried": "Se intentó salir de Cmdr",
+  "askCmdr.tool.quit.tried": "{platform, select, windows {Tried to close Cmdr} other {Se intentó salir de Cmdr}}",
   "@askCmdr.tool.quit.tried": {
     "sourceHash": "2b9e286"
   },

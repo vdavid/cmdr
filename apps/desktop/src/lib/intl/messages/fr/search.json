@@ -131,7 +131,7 @@
   "@search.coverage.line.failedRoots": {
     "sourceHash": "36c41ae"
   },
-  "search.coverage.line.denied": "{count, plural, one {macOS n’a pas laissé Cmdr regarder à l’intérieur d’un dossier, donc son contenu n’apparaît pas dans les résultats.} many {macOS n’a pas laissé Cmdr regarder à l’intérieur de {countText} dossiers, donc leur contenu n’apparaît pas dans les résultats.} other {macOS n’a pas laissé Cmdr regarder à l’intérieur de {countText} dossiers, donc leur contenu n’apparaît pas dans les résultats.}}",
+  "search.coverage.line.denied": "{platform, select, macos {{count, plural, one {macOS n’a pas laissé Cmdr regarder à l’intérieur d’un dossier, donc son contenu n’apparaît pas dans les résultats.} many {macOS n’a pas laissé Cmdr regarder à l’intérieur de {countText} dossiers, donc leur contenu n’apparaît pas dans les résultats.} other {macOS n’a pas laissé Cmdr regarder à l’intérieur de {countText} dossiers, donc leur contenu n’apparaît pas dans les résultats.}}} windows {{count, plural, one {Windows didn’t let Cmdr look inside one folder, so nothing from it is in the results.} other {Windows didn’t let Cmdr look inside {countText} folders, so nothing from them is in the results.}}} other {{count, plural, one {Cmdr didn’t have permission to look inside one folder, so nothing from it is in the results.} other {Cmdr didn’t have permission to look inside {countText} folders, so nothing from them is in the results.}}}}",
   "@search.coverage.line.denied": {
     "sourceHash": "c2b388f"
   },

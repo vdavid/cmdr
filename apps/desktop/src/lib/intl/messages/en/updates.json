@@ -195,7 +195,7 @@
     "description": "Status line after an update check, when the person's organization (their employer's IT team, through a device-management profile) has turned off updates for Cmdr, so no check ran. Shown in Settings and in the toast after the person picks \"Check for updates\" from the menu. Not an error: a calm statement of who decides.",
     "screenshot": "settings-updates-managed.png"
   },
-  "updates.status.heldByPolicy": "Cmdr {available} is out, but your organization keeps this Mac on {ceiling} or earlier.",
+  "updates.status.heldByPolicy": "{platform, select, macos {Cmdr {available} is out, but your organization keeps this Mac on {ceiling} or earlier.} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
   "@updates.status.heldByPolicy": {
     "description": "Status line after an update check that found a newer release which the person's organization (their employer's IT team, through a device-management profile) doesn't allow yet, because it limits Cmdr to a maximum version. Not an error. Version numbers are substituted, not translated.",
     "placeholders": {

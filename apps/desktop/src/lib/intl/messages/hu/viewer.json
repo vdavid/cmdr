@@ -79,7 +79,7 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Ez a fájl nyers nézete. Lehet, hogy inkább a tényleges <kindName>{category, select, image {képet} document {dokumentumot} other {{ext} formátumú fájlt}}</kindName> szeretnéd megnézni. Ehhez zárd be ezt az ablakot, és nyisd meg a Gyorsnézetet (<quickLookKey></quickLookKey>), vagy nyisd meg a fájlt a társított appban (<openKey></openKey>, vagy kattints duplán a fájlra).",
+  "viewer.binaryWarning.body": "{platform, select, macos {Ez a fájl nyers nézete. Lehet, hogy inkább a tényleges <kindName>{category, select, image {képet} document {dokumentumot} other {{ext} formátumú fájlt}}</kindName> szeretnéd megnézni. Ehhez zárd be ezt az ablakot, és nyisd meg a Gyorsnézetet (<quickLookKey></quickLookKey>), vagy nyisd meg a fájlt a társított appban (<openKey></openKey>, vagy kattints duplán a fájlra).} other {This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <openKey></openKey> (or double-click the file) to open it in the associated app.}}",
   "@viewer.binaryWarning.body": {
     "sourceHash": "fd5cfb7"
   },

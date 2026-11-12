@@ -172,7 +172,7 @@
   "@errorReporter.bundleSavedToast.dismiss": {
     "sourceHash": "48845bf"
   },
-  "errorReporter.bundleSavedToast.reveal": "在 Finder 中显示",
+  "errorReporter.bundleSavedToast.reveal": "{platform, select, macos {在 Finder 中显示} windows {Show in File Explorer} other {Show in file manager}}",
   "@errorReporter.bundleSavedToast.reveal": {
     "sourceHash": "cc84938"
   },

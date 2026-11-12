@@ -79,7 +79,7 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Здесь показаны необработанные данные файла. Возможно, вы хотите посмотреть <kindName>{category, select, image {изображение} document {документ} other {файл {ext}}}</kindName>. Для этого закройте окно и нажмите <quickLookKey></quickLookKey>, чтобы открыть Быстрый просмотр, или нажмите <openKey></openKey> (либо дважды нажмите на файл), чтобы открыть файл в связанном приложении.",
+  "viewer.binaryWarning.body": "{platform, select, macos {Здесь показаны необработанные данные файла. Возможно, вы хотите посмотреть <kindName>{category, select, image {изображение} document {документ} other {файл {ext}}}</kindName>. Для этого закройте окно и нажмите <quickLookKey></quickLookKey>, чтобы открыть Быстрый просмотр, или нажмите <openKey></openKey> (либо дважды нажмите на файл), чтобы открыть файл в связанном приложении.} other {This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <openKey></openKey> (or double-click the file) to open it in the associated app.}}",
   "@viewer.binaryWarning.body": {
     "sourceHash": "fd5cfb7"
   },

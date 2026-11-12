@@ -2328,7 +2328,7 @@
     "description": "A line in the Ask Cmdr chat rail recording what the person answered when the agent suggested doing something to a batch of their files. This second line follows an approved suggestion (askCmdr.decision.approved) whose operation has started and hasn't finished yet, which for a big copy can take minutes. When it finishes, this line is replaced in place by what the run actually did (askCmdr.decision.result). Short status, sentence case, ends with an ellipsis character (…), not three dots.",
     "screenshot": "ask-cmdr-rename-undo.png"
   },
-  "askCmdr.decision.interrupted": "Cmdr quit before this finished",
+  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr closed before this finished} other {Cmdr quit before this finished}}",
   "@askCmdr.decision.interrupted": {
     "description": "A line in the Ask Cmdr chat rail recording what the person answered when the agent suggested doing something to a batch of their files. This second line follows an approved suggestion (askCmdr.decision.approved) whose operation was still running when the app quit or crashed, so nobody knows how far it got. Shown from the next launch on, in place of the askCmdr.decision.result line a finished run gets. Cmdr is the app's name; keep it untranslated. Sentence case, no full stop, and no words like error or failed: it states what happened, calmly.",
     "screenshot": "ask-cmdr-decisions.png"
@@ -2343,7 +2343,7 @@
     "description": "The name of one action Ask Cmdr can suggest (copying files to another folder), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop.",
     "screenshot": "ask-cmdr-decisions.png"
   },
-  "askCmdr.decision.verbTrash": "trashing",
+  "askCmdr.decision.verbTrash": "{platform, select, windows {moving to the Recycle Bin} other {trashing}}",
   "@askCmdr.decision.verbTrash": {
     "description": "The name of one action Ask Cmdr can suggest (moving files to the system trash, where they can still be recovered), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop.",
     "screenshot": "ask-cmdr-decisions.png"
@@ -2858,19 +2858,19 @@
     "screenshot": "ask-cmdr-tools.png",
     "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
   },
-  "askCmdr.tool.quit.doing": "Quitting Cmdr",
+  "askCmdr.tool.quit.doing": "{platform, select, windows {Closing Cmdr} other {Quitting Cmdr}}",
   "@askCmdr.tool.quit.doing": {
     "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant quits the app. The past tense says “asked” because a running copy can hold the quit until the person answers. Pairs with askCmdr.tool.quit.done.",
     "screenshot": "ask-cmdr-tools.png",
     "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
   },
-  "askCmdr.tool.quit.done": "Asked Cmdr to quit",
+  "askCmdr.tool.quit.done": "{platform, select, windows {Asked Cmdr to close} other {Asked Cmdr to quit}}",
   "@askCmdr.tool.quit.done": {
     "description": "Past-tense label on the same tool line once that came back. Pairs with askCmdr.tool.quit.doing; askCmdr.tool.quit.tried replaces it when it didn’t work.",
     "screenshot": "ask-cmdr-tools.png",
     "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
   },
-  "askCmdr.tool.quit.tried": "Tried to quit Cmdr",
+  "askCmdr.tool.quit.tried": "{platform, select, windows {Tried to close Cmdr} other {Tried to quit Cmdr}}",
   "@askCmdr.tool.quit.tried": {
     "description": "Label on the same tool line when that did NOT work (a short reason follows it on the line). It must not claim it happened.",
     "screenshot": "ask-cmdr-tools.png",

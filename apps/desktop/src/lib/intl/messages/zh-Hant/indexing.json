@@ -29,7 +29,7 @@
   "@indexing.phase.priorityFolders": {
     "sourceHash": "09dd19d"
   },
-  "indexing.phase.home": "正在為你個人專屬資料夾的其餘部分建立索引",
+  "indexing.phase.home": "{platform, select, windows {Indexing the rest of your user folder} other {正在為你個人專屬資料夾的其餘部分建立索引}}",
   "@indexing.phase.home": {
     "sourceHash": "8c31671"
   },
@@ -209,7 +209,7 @@
   "@indexing.firstConnect.body": {
     "sourceHash": "56ec1e5"
   },
-  "indexing.firstConnect.enable": "啟用索引",
+  "indexing.firstConnect.enable": "{platform, select, windows {Turn on indexing} other {啟用索引}}",
   "@indexing.firstConnect.enable": {
     "sourceHash": "3dc7ddf"
   },

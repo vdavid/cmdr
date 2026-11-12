@@ -39,7 +39,7 @@
   "@whatsNew.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "whatsNew.optOutToast": "Понятно, списки изменений больше не будут показываться. Их можно снова включить в разделе «Настройки > Обновления и конфиденциальность».",
+  "whatsNew.optOutToast": "{platform, select, windows {Got it, no more update notes. Turn them back on anytime in Settings > Updates & privacy.} other {Понятно, списки изменений больше не будут показываться. Их можно снова включить в разделе «Настройки > Обновления и конфиденциальность».}}",
   "@whatsNew.optOutToast": {
     "sourceHash": "368591b"
   }

@@ -79,7 +79,7 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Toto je surové zobrazení souboru. Možná bude lepší zobrazit skutečný <kindName>{category, select, image {obrázek} document {dokument} other {soubor {ext}}}</kindName>. Zavřete toto okno a stiskněte <quickLookKey></quickLookKey>, čímž otevřete Rychlý náhled, nebo stiskněte <openKey></openKey> (případně na soubor dvakrát klikněte) a otevřete ho v přiřazené aplikaci.",
+  "viewer.binaryWarning.body": "{platform, select, macos {Toto je surové zobrazení souboru. Možná bude lepší zobrazit skutečný <kindName>{category, select, image {obrázek} document {dokument} other {soubor {ext}}}</kindName>. Zavřete toto okno a stiskněte <quickLookKey></quickLookKey>, čímž otevřete Rychlý náhled, nebo stiskněte <openKey></openKey> (případně na soubor dvakrát klikněte) a otevřete ho v přiřazené aplikaci.} other {This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <openKey></openKey> (or double-click the file) to open it in the associated app.}}",
   "@viewer.binaryWarning.body": {
     "sourceHash": "fd5cfb7"
   },

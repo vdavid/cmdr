@@ -93,9 +93,11 @@ test.describe('Managed AI policy (MDM)', () => {
     const note = await settings.evaluate<string>(
       `(document.getElementById('settings-ai-provider-managed') || {}).textContent.trim()`,
     )
+    // Each OS names the machine in its own words (`ai.managed.localOnlyUnsupported`).
+    const machine = process.platform === 'darwin' ? 'this Mac' : 'this computer'
     expect([
       'Your organization allows only on-device AI.',
-      'Your organization allows only on-device AI, and this Mac can’t run it.',
+      `Your organization allows only on-device AI, and ${machine} can’t run it.`,
     ]).toContain(note)
   })
 

@@ -303,7 +303,7 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "f95b4a9"
   },
-  "onboarding.stepAi.missingKeyWarning": "Você ativou a IA, mas não digitou uma chave de API. A IA não vai funcionar e você vai ver um aviso. Corrija isso acima.\n\n<strong>Clique em “{nextLabel}” de novo para ignorar e seguir em frente.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {You’ve turned on AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Select “{nextLabel}” again to ignore this and go on.</strong>} other {Você ativou a IA, mas não digitou uma chave de API. A IA não vai funcionar e você vai ver um aviso. Corrija isso acima.\n\n<strong>Clique em “{nextLabel}” de novo para ignorar e seguir em frente.</strong>}}",
   "@onboarding.stepAi.missingKeyWarning": {
     "sourceHash": "b942278"
   },
@@ -395,7 +395,7 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "06ce4eb"
   },
-  "onboarding.stepBeta.crashReportsNote": "Os relatórios de falha também estão ativados: se o Cmdr cair, ele envia a versão do app, a sua versão do macOS e o ponto do código onde parou.\nNunca os seus arquivos.\nVocê pode desativar os dois nos Ajustes quando quiser.",
+  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Os relatórios de falha também estão ativados: se o Cmdr cair, ele envia a versão do app, a sua versão do macOS e o ponto do código onde parou.\nNunca os seus arquivos.\nVocê pode desativar os dois nos Ajustes quando quiser.} windows {Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.} other {Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.}}",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
   },
@@ -403,7 +403,7 @@
   "@onboarding.stepBeta.analyticsManaged": {
     "sourceHash": "49484ee"
   },
-  "onboarding.stepBeta.crashReportsNoteAlone": "Os relatórios de falha estão ativados: se o Cmdr cair, ele envia a versão do app, a sua versão do macOS e o ponto do código onde parou.\nNunca os seus arquivos.\nVocê pode desativá-los nos Ajustes quando quiser.",
+  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Os relatórios de falha estão ativados: se o Cmdr cair, ele envia a versão do app, a sua versão do macOS e o ponto do código onde parou.\nNunca os seus arquivos.\nVocê pode desativá-los nos Ajustes quando quiser.} windows {Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.} other {Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.}}",
   "@onboarding.stepBeta.crashReportsNoteAlone": {
     "sourceHash": "5084dd0"
   },
@@ -427,11 +427,11 @@
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "5a1bca7"
   },
-  "onboarding.stepBeta.signup.unreachable": "Não deu para acessar o servidor de inscrição agora, então você ainda não está na lista. Seu endereço está salvo neste Mac: clique em Salvar de novo daqui a pouco, ou quando quiser em Ajustes › Atualizações e privacidade.",
+  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {Não deu para acessar o servidor de inscrição agora, então você ainda não está na lista. Seu endereço está salvo neste Mac: clique em Salvar de novo daqui a pouco, ou quando quiser em Ajustes › Atualizações e privacidade.} windows {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this PC: hit Save again in a minute, or any time from Settings › Updates & privacy.} other {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this computer: hit Save again in a minute, or any time from Settings › Updates & privacy.}}",
   "@onboarding.stepBeta.signup.unreachable": {
     "sourceHash": "e4d8f67"
   },
-  "onboarding.stepBeta.emailNote": "Deixe seu e-mail e eu entro em contato com alguma pergunta ou novidade de vez em quando.\nO endereço de e-mail que você digita aqui fica salvo só no seu Mac e nunca é ligado às suas estatísticas de uso; os dois são, de propósito, dois subsistemas separados.",
+  "onboarding.stepBeta.emailNote": "{platform, select, macos {Deixe seu e-mail e eu entro em contato com alguma pergunta ou novidade de vez em quando.\nO endereço de e-mail que você digita aqui fica salvo só no seu Mac e nunca é ligado às suas estatísticas de uso; os dois são, de propósito, dois subsistemas separados.} windows {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your PC and it’s never connected to your usage stats, the two are intentionally two separate subsystems.} other {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your computer and it’s never connected to your usage stats, the two are intentionally two separate subsystems.}}",
   "@onboarding.stepBeta.emailNote": {
     "sourceHash": "0a793b1"
   },
@@ -459,7 +459,7 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "Você optou por passar por uma configuração detalhada, então aqui estão algumas escolhas rápidas. Se você não se importa muito, clique no botão abaixo. Todas elas são opcionais, e os padrões foram escolhidos pensando em você.",
+  "onboarding.stepOptional.lede": "{platform, select, windows {You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, select the button below. All of these are optional, and the defaults are picked for your benefit.} other {Você optou por passar por uma configuração detalhada, então aqui estão algumas escolhas rápidas. Se você não se importa muito, clique no botão abaixo. Todas elas são opcionais, e os padrões foram escolhidos pensando em você.}}",
   "@onboarding.stepOptional.lede": {
     "sourceHash": "94c3a5a"
   },
@@ -475,11 +475,11 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Precisa aceitar a “Rede Local” uma vez",
+  "onboarding.stepOptional.networking.summary": "{platform, select, macos {Precisa aceitar a “Rede Local” uma vez} windows {Windows may ask to let Cmdr through its firewall} other {No permission needed}}",
   "@onboarding.stepOptional.networking.summary": {
     "sourceHash": "f49fbc6"
   },
-  "onboarding.stepOptional.networking.desc": "Ter isto <em>ativado</em> significa que você pode se conectar a servidores SMB como compartilhamentos de rede da empresa, um NAS doméstico e afins.\nO único custo é um diálogo de permissão do macOS que aparece pedindo para você permitir a “Rede Local” e outro para “Aceitar conexões de entrada”.\nOs dois diálogos são inofensivos, mas se você não sabe o que são, eles podem assustar ou incomodar.",
+  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Ter isto <em>ativado</em> significa que você pode se conectar a servidores SMB como compartilhamentos de rede da empresa, um NAS doméstico e afins.\nO único custo é um diálogo de permissão do macOS que aparece pedindo para você permitir a “Rede Local” e outro para “Aceitar conexões de entrada”.\nOs dois diálogos são inofensivos, mas se você não sabe o que são, eles podem assustar ou incomodar.} windows {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nWindows may ask once whether to let Cmdr through its firewall.} other {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.}}",
   "@onboarding.stepOptional.networking.desc": {
     "sourceHash": "d473c62"
   },
@@ -495,7 +495,7 @@
   "@onboarding.stepOptional.indexing.descIntro": {
     "sourceHash": "6b86a1f"
   },
-  "onboarding.stepOptional.indexing.benefit1": "Busca instantânea em todo o seu disco. Pense no Spotlight, mas ainda mais rápido.",
+  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {Busca instantânea em todo o seu disco. Pense no Spotlight, mas ainda mais rápido.} windows {Instant search of your whole drive. Think Windows Search, but much faster.} other {Instant search of your whole drive.}}",
   "@onboarding.stepOptional.indexing.benefit1": {
     "sourceHash": "5fa0e9f"
   },
@@ -515,7 +515,7 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Se você ativar isto, o Cmdr faz uma pequena solicitação de rede a um servidor de licenças central a cada início do app e uma vez a cada 24 horas, e você sempre recebe as últimas atualizações.\nSe você desativar isto, mantém sua versão atual, e o Cmdr não faz nenhuma solicitação de rede automática (exceto verificações periódicas de licença, se você tiver uma licença comercial).",
+  "onboarding.stepOptional.updates.desc": "{platform, select, windows {If you turn this on, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you turn it off, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).} other {Se você ativar isto, o Cmdr faz uma pequena solicitação de rede a um servidor de licenças central a cada início do app e uma vez a cada 24 horas, e você sempre recebe as últimas atualizações.\nSe você desativar isto, mantém sua versão atual, e o Cmdr não faz nenhuma solicitação de rede automática (exceto verificações periódicas de licença, se você tiver uma licença comercial).}}",
   "@onboarding.stepOptional.updates.desc": {
     "sourceHash": "e1a0582"
   },
@@ -523,11 +523,11 @@
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "Permite conectar celulares Android e afins, suprime o processo nativo do macOS",
+  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {Permite conectar celulares Android e afins, suprime o processo nativo do macOS} other {Lets you connect Android phones and similar devices}}",
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "Se você ativar isto, o Cmdr pode <strong>se conectar a celulares Android, Kindles, câmeras</strong>, alguns tocadores de música e qualquer outro dispositivo com suporte aos protocolos chamados MTP ou PTP.\nO custo é que o macOS <em>também</em> quer se conectar a eles (e geralmente falha, que é por que você não consegue simplesmente usar o Finder para copiar fotos de celulares Android), então o Cmdr precisa suprimir esse processo do macOS enquanto está em execução.\nQuando você encerra o Cmdr, isso é restaurado com cuidado.",
+  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Se você ativar isto, o Cmdr pode <strong>se conectar a celulares Android, Kindles, câmeras</strong>, alguns tocadores de música e qualquer outro dispositivo com suporte aos protocolos chamados MTP ou PTP.\nO custo é que o macOS <em>também</em> quer se conectar a eles (e geralmente falha, que é por que você não consegue simplesmente usar o Finder para copiar fotos de celulares Android), então o Cmdr precisa suprimir esse processo do macOS enquanto está em execução.\nQuando você encerra o Cmdr, isso é restaurado com cuidado.} windows {If you turn this on, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.} other {If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nYour desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first.}}",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "8a60e7f"
   },

@@ -27,7 +27,7 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "3f94010"
   },
-  "stateRecovery.appStatus.title": "A Cmdr nem tudta beolvasni, mely mappák voltak megnyitva a paneleidben, ezért a panelek a saját mappádban nyílnak meg",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {A Cmdr nem tudta beolvasni, mely mappák voltak megnyitva a paneleidben, ezért a panelek a saját mappádban nyílnak meg}}",
   "@stateRecovery.appStatus.title": {
     "sourceHash": "521f5eb"
   },
@@ -119,7 +119,7 @@
   "@stateRecovery.keptCopy": {
     "sourceHash": "634e87d"
   },
-  "stateRecovery.showInFinder": "Megjelenítés a Finderben",
+  "stateRecovery.showInFinder": "{platform, select, macos {Megjelenítés a Finderben} windows {Show in File Explorer} other {Show in file manager}}",
   "@stateRecovery.showInFinder": {
     "sourceHash": "c2a9c77"
   },

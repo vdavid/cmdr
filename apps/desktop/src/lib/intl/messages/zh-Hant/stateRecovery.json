@@ -27,7 +27,7 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "3f94010"
   },
-  "stateRecovery.appStatus.title": "Cmdr 無法讀取窗格之前開啟的資料夾，所以窗格改從你的個人專屬資料夾開始",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {Cmdr 無法讀取窗格之前開啟的資料夾，所以窗格改從你的個人專屬資料夾開始}}",
   "@stateRecovery.appStatus.title": {
     "sourceHash": "521f5eb"
   },
@@ -119,7 +119,7 @@
   "@stateRecovery.keptCopy": {
     "sourceHash": "634e87d"
   },
-  "stateRecovery.showInFinder": "在 Finder 中顯示",
+  "stateRecovery.showInFinder": "{platform, select, macos {在 Finder 中顯示} windows {Show in File Explorer} other {Show in file manager}}",
   "@stateRecovery.showInFinder": {
     "sourceHash": "c2a9c77"
   },

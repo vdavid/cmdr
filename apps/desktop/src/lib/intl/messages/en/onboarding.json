@@ -410,7 +410,7 @@
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
-  "onboarding.stepAi.missingKeyWarning": "You’ve enabled AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Click “{nextLabel}” again to ignore this and go on.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {You’ve turned on AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Select “{nextLabel}” again to ignore this and go on.</strong>} other {You’ve enabled AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Click “{nextLabel}” again to ignore this and go on.</strong>}}",
   "@onboarding.stepAi.missingKeyWarning": {
     "description": "Warning shown on the Next button on the AI step when the user picked a cloud provider but stored no API key. The press doesn't advance; the next one does. Matter-of-fact, not scolding. <strong> bolds the way out, which is the sentence the user acts on. {nextLabel} is that button's own label, supplied from onboarding.wizard.next so the two can't drift; keep the quotes around it. \"API key\" is a technical credential term. \"above\" points at the provider setup higher up the same page. The blank line is a real paragraph break in the tooltip; keep it.",
     "placeholders": {
@@ -525,7 +525,7 @@
     "description": "Small caption beside the analytics toggle explaining it defaults on during the beta. First-person (David). Keep \"ON\" emphasized in feel (it's the switch state). \"Beta\" is the release stage; \"Settings\" is the app's settings screen.",
     "screenshot": "onboarding-beta.png"
   },
-  "onboarding.stepBeta.crashReportsNote": "Crash reports are on too: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.",
+  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Crash reports are on too: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.} windows {Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.} other {Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.}}",
   "@onboarding.stepBeta.crashReportsNote": {
     "description": "Caption on the open-beta onboarding step, right after the usage-stats disclosure, telling a new user that crash reports are also on by default and what one carries. Transparent and calm. \"Cmdr\" is the product name; \"macOS\" is the operating system; \"Settings\" is the app's settings screen.",
     "screenshot": "onboarding-beta.png"
@@ -534,7 +534,7 @@
   "@onboarding.stepBeta.analyticsManaged": {
     "description": "Shown on the open-beta onboarding step in place of the 'Send usage stats' checkbox, when the person's organization (their employer's or school's IT team, through a device management profile) turned usage statistics off, so there's nothing to choose. Calm, one short sentence."
   },
-  "onboarding.stepBeta.crashReportsNoteAlone": "Crash reports are on: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.",
+  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Crash reports are on: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.} windows {Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.} other {Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.}}",
   "@onboarding.stepBeta.crashReportsNoteAlone": {
     "description": "Info tip on the open-beta onboarding step, beside the line saying the person's organization turned off usage stats: crash reports are still on by default, and this says what one carries. The same facts as the usual crash-reports caption, without referring back to usage stats. Transparent and calm. \"Cmdr\" is the product name; \"macOS\" is the operating system; \"Settings\" is the app's settings screen."
   },
@@ -560,11 +560,11 @@
   "@onboarding.stepBeta.signup.rejected": {
     "description": "Shown when the mailing list itself turned the address down, which almost always means a typo. Says what happened and exactly what to do. \"Save\" names the button beside the field, so match onboarding.stepBeta.checklist.emailSave. Soft, non-alarming tone (avoid the words \"error\" or \"failed\")."
   },
-  "onboarding.stepBeta.signup.unreachable": "Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
+  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.} windows {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this PC: hit Save again in a minute, or any time from Settings › Updates & privacy.} other {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this computer: hit Save again in a minute, or any time from Settings › Updates & privacy.}}",
   "@onboarding.stepBeta.signup.unreachable": {
     "description": "Shown when the signup request never got through (offline, server down). Transparent about what did and didn't happen, and offers two ways on. \"Save\" names the button beside the field, so match onboarding.stepBeta.checklist.emailSave. \"Settings › Updates & privacy\" is a path through the app's own Settings window; translate both names to match how they appear there. Soft, non-alarming tone (avoid the words \"error\" or \"failed\")."
   },
-  "onboarding.stepBeta.emailNote": "Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your Mac and it’s never connected to your usage stats, the two are intentionally two separate subsystems.",
+  "onboarding.stepBeta.emailNote": "{platform, select, macos {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your Mac and it’s never connected to your usage stats, the two are intentionally two separate subsystems.} windows {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your PC and it’s never connected to your usage stats, the two are intentionally two separate subsystems.} other {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your computer and it’s never connected to your usage stats, the two are intentionally two separate subsystems.}}",
   "@onboarding.stepBeta.emailNote": {
     "description": "Privacy note under the optional email field: David may reach out, and the email is stored locally and never linked to usage stats. First-person, reassuring. \"Mac\" is the device name and stays untranslated.",
     "screenshot": "onboarding-beta.png"
@@ -599,7 +599,7 @@
     "description": "Heading of the final optional-setup step, signaling onboarding is nearly done. Encouraging tone.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.lede": "You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, click the button below. All of these are optional, and the defaults are picked for your benefit.",
+  "onboarding.stepOptional.lede": "{platform, select, windows {You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, select the button below. All of these are optional, and the defaults are picked for your benefit.} other {You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, click the button below. All of these are optional, and the defaults are picked for your benefit.}}",
   "@onboarding.stepOptional.lede": {
     "description": "Intro paragraph for the optional-setup step: a few toggles with sensible defaults the user can ignore. Casual, low-pressure.",
     "screenshot": "onboarding-optional.png"
@@ -619,12 +619,12 @@
     "description": "Title of the networking toggle on the optional-setup step (controls connecting to SMB network shares).",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.networking.summary": "Needs accepting “Local Network” once",
+  "onboarding.stepOptional.networking.summary": "{platform, select, macos {Needs accepting “Local Network” once} windows {Windows may ask to let Cmdr through its firewall} other {No permission needed}}",
   "@onboarding.stepOptional.networking.summary": {
     "description": "Half-line summary under the networking toggle's title, naming its one cost. The full explanation sits behind the info glyph beside the title. “Local Network” is the name of the row in macOS's Privacy & Security settings, so use Apple's own label for your locale verbatim (the `LOCAL_NETWORK` key in SecurityPrivacyExtension.appex), not a paraphrase: it's what the user has to go find. Keep it to one short line.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.networking.desc": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow “Local Network”, and one for “Accepting incoming connections”.\nBoth dialogs are harmless, but if you don’t know what these are, they might be scary or annoying.",
+  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow “Local Network”, and one for “Accepting incoming connections”.\nBoth dialogs are harmless, but if you don’t know what these are, they might be scary or annoying.} windows {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nWindows may ask once whether to let Cmdr through its firewall.} other {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.}}",
   "@onboarding.stepOptional.networking.desc": {
     "description": "Long explanation of the networking toggle, shown in the tooltip behind its info glyph: enables SMB shares at the cost of two macOS permission prompts. <em> emphasizes \"on\". \"SMB\" is the file-sharing protocol; \"NAS\" is a network storage device; \"macOS\" is the operating system; all stay untranslated. “Local Network” is the name of the row in macOS's Privacy & Security settings, so use Apple's own label for your locale verbatim (the `LOCAL_NETWORK` key in SecurityPrivacyExtension.appex), not a paraphrase; it must match onboarding.stepOptional.networking.summary. “Accepting incoming connections” describes the firewall prompt rather than quoting a label, so translate it as prose. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-optional.png"
@@ -644,7 +644,7 @@
     "description": "Enthusiastic lead-in to the two benefits of drive indexing, followed by a numbered list.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.indexing.benefit1": "Instant search of your whole drive. Think Spotlight, but even faster.",
+  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {Instant search of your whole drive. Think Spotlight, but even faster.} windows {Instant search of your whole drive. Think Windows Search, but much faster.} other {Instant search of your whole drive.}}",
   "@onboarding.stepOptional.indexing.benefit1": {
     "description": "First benefit of drive indexing: instant full-drive search. \"Spotlight\" is the macOS built-in search feature, a brand name that stays untranslated.",
     "screenshot": "onboarding-optional.png"
@@ -672,7 +672,7 @@
     "description": "Half-line summary under the automatic-updates toggle's title, naming what it does and what it costs. The full explanation sits behind the info glyph beside the title. Keep it to one short line.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.updates.desc": "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you disable it, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).",
+  "onboarding.stepOptional.updates.desc": "{platform, select, windows {If you turn this on, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you turn it off, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).} other {If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you disable it, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).}}",
   "@onboarding.stepOptional.updates.desc": {
     "description": "The long automatic-updates explanation, shown in the tooltip behind the info glyph: the network requests it makes and the trade-off of disabling it. \"Cmdr\" is the product name. \"24 hours\" and \"commercial license\" are factual details. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-optional.png"
@@ -682,12 +682,12 @@
     "description": "Title of the MTP-devices toggle on the optional-setup step. \"MTP\" is the device-transfer protocol; \"Android\", \"Kindles\", and \"cameras\" are example device types. \"MTP\", \"Android\", and \"Kindle\" are brand/protocol names that stay untranslated.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.mtp.summary": "Lets you connect Android phones and the such, suppresses macOS native handler",
+  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {Lets you connect Android phones and the such, suppresses macOS native handler} other {Lets you connect Android phones and similar devices}}",
   "@onboarding.stepOptional.mtp.summary": {
     "description": "Half-line summary under the MTP toggle's title, naming what it enables and what it costs. The full explanation sits behind the info glyph beside the title. \"Android\" and \"macOS\" stay untranslated. \"and the such\" is a deliberately casual \"and similar devices\". Keep it to one short line.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.mtp.desc": "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nThe cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can’t just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it’s running.\nWhen you quit Cmdr, this is politely restored.",
+  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nThe cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can’t just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it’s running.\nWhen you quit Cmdr, this is politely restored.} windows {If you turn this on, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.} other {If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nYour desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first.}}",
   "@onboarding.stepOptional.mtp.desc": {
     "description": "The long MTP explanation, shown in the tooltip behind the info glyph: it lets the app talk to phones, e-readers, and cameras, at the cost of temporarily suppressing a conflicting macOS process, which is put back on quit. <strong> bolds the device list; <em> emphasizes \"also\". \"Cmdr\" is the product name; \"macOS\" is the operating system; \"Finder\" is the macOS file manager; \"Android\", \"Kindles\", \"MTP\", and \"PTP\" are device/protocol names; all stay untranslated. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-optional.png"

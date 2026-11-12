@@ -72,6 +72,10 @@ Rows where the code doesn't settle a platform yet, so that platform keeps the ma
   `cmdr-adb`'s `locate_adb_binary` searches what Windows has (`adb.exe`, the SDK under `%LOCALAPPDATA%`).
 - `settings.listing.showHiddenFiles.description`, Windows: "dotfiles (like .zshrc)" stays until the Windows listing
   backend decides its hidden-file rule (the hidden attribute, dotfiles, or both).
+- `ai.cloudConsent.askCmdr.protectedContents`, Windows: the macOS list ("your keychains", "Mail, Messages, Notes") stays
+  until `apps/desktop/src-tauri/src/tools/sensitive.rs:RULES` gains Windows entries (browser profiles under `AppData`,
+  Credential Manager's files). Today nothing on Windows is protected, so no honest Windows list exists yet; this blocks
+  shipping Ask Cmdr on Windows. Linux names only what `RULES` covers (no mail client).
 - The eject control's words, Windows and Linux: `menu.volume.eject`, `menu.volume.ejectBusy`,
   `fileExplorer.navigation.ejectVolumeAriaLabel`, `ejectingVolumeAriaLabel`, `ejectBusyTooltip`, and
   `fileExplorer.pane.ejectFailedToast` say "Eject" until their call sites tell a drive from a network share. One key

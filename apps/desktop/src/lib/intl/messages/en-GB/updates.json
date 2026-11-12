@@ -3,8 +3,8 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "Cmdr {available} is out, but your organisation keeps this Mac on {ceiling} or earlier.",
+  "updates.status.heldByPolicy": "{platform, select, macos {Cmdr {available} is out, but your organisation keeps this Mac on {ceiling} or earlier.} windows {Cmdr {available} is out, but your organisation keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organisation keeps this computer on {ceiling} or earlier.}}",
   "@updates.status.heldByPolicy": {
-    "sourceHash": "5c9b196"
+    "sourceHash": "49012ba"
   }
 }

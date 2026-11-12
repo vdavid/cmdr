@@ -139,7 +139,7 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{count, plural, one {Ein Vorgang läuft noch. Trotzdem beenden?} other {{countText} Vorgänge laufen noch. Trotzdem beenden?}}",
+  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, one {Ein Vorgang läuft noch. Trotzdem beenden?} other {{countText} Vorgänge laufen noch. Trotzdem beenden?}}}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
@@ -147,11 +147,11 @@
   "@main.quit.body": {
     "sourceHash": "79a69f9"
   },
-  "main.quit.countdown": "{seconds, plural, one {Cmdr beendet sich in {secondsText} Sekunde, damit ein Neustart oder eine Abmeldung nie darauf warten muss.} other {Cmdr beendet sich in {secondsText} Sekunden, damit ein Neustart oder eine Abmeldung nie darauf warten muss.}}",
+  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, one {Cmdr beendet sich in {secondsText} Sekunde, damit ein Neustart oder eine Abmeldung nie darauf warten muss.} other {Cmdr beendet sich in {secondsText} Sekunden, damit ein Neustart oder eine Abmeldung nie darauf warten muss.}}}}",
   "@main.quit.countdown": {
     "sourceHash": "a389e0c"
   },
-  "main.quit.countdownAria": "Zeit, bis sich Cmdr von selbst beendet",
+  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Zeit, bis sich Cmdr von selbst beendet}}",
   "@main.quit.countdownAria": {
     "sourceHash": "6b0b5c2"
   },
@@ -159,7 +159,7 @@
   "@main.quit.keepWorking": {
     "sourceHash": "5ed03f2"
   },
-  "main.quit.quitNow": "Jetzt beenden",
+  "main.quit.quitNow": "{platform, select, windows {Exit now} other {Jetzt beenden}}",
   "@main.quit.quitNow": {
     "sourceHash": "c96bcc8"
   },
@@ -167,11 +167,11 @@
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "Cmdr braucht eine neuere Safari-Version",
+  "main.oldWebkit.title": "{platform, select, macos {Cmdr braucht eine neuere Safari-Version} other {Cmdr needs a newer WebKitGTK}}",
   "@main.oldWebkit.title": {
     "sourceHash": "03e502b"
   },
-  "main.oldWebkit.body": "Die Oberfläche von Cmdr braucht Safari 15.4 oder neuer, und auf diesem Mac läuft eine ältere Version. Öffne Softwareupdate und installiere alles, was aussteht. Das sollte es lösen.",
+  "main.oldWebkit.body": "{platform, select, macos {Die Oberfläche von Cmdr braucht Safari 15.4 oder neuer, und auf diesem Mac läuft eine ältere Version. Öffne Softwareupdate und installiere alles, was aussteht. Das sollte es lösen.} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
   "@main.oldWebkit.body": {
     "sourceHash": "a7112ec"
   },

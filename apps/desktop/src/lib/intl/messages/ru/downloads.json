@@ -131,7 +131,7 @@
   "@downloads.shortcutRow.unavailable": {
     "sourceHash": "8882532"
   },
-  "downloads.shortcutRow.addModifier": "Добавьте модификатор (⌘, ⌃, ⌥ или ⇧)",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Добавьте модификатор (⌘, ⌃, ⌥ или ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
   "@downloads.shortcutRow.addModifier": {
     "sourceHash": "28a5ba2"
   },

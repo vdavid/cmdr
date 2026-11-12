@@ -79,7 +79,7 @@
   "@multiRename.placeholderHelp.rangeEditHint": {
     "sourceHash": "b39aa02"
   },
-  "multiRename.error.couldntWriteNames": "No se pudo escribir la lista de nombres. Comprueba que tu disco de arranque tiene espacio libre.",
+  "multiRename.error.couldntWriteNames": "{platform, select, macos {No se pudo escribir la lista de nombres. Comprueba que tu disco de arranque tiene espacio libre.} windows {Couldn’t write the names list. Check that your system drive has free space.} other {Couldn’t write the names list. Check that your system disk has free space.}}",
   "@multiRename.error.couldntWriteNames": {
     "sourceHash": "2057912"
   },

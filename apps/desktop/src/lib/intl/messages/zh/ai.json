@@ -139,7 +139,7 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "有些内容不管谁来要，都只留在本地：SSH 密钥、云服务和工具的凭证、你的钥匙串、浏览器数据、“邮件”、“信息”、“备忘录”、Cmdr 自己的数据，以及任何存有私钥的文件。它们的名称仍可能发送给你的提供方。",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {有些内容不管谁来要，都只留在本地：SSH 密钥、云服务和工具的凭证、你的钥匙串、浏览器数据、“邮件”、“信息”、“备忘录”、Cmdr 自己的数据，以及任何存有私钥的文件。它们的名称仍可能发送给你的提供方。} windows {有些内容不管谁来要，都只留在本地：SSH 密钥、云服务和工具的凭证、你的钥匙串、浏览器数据、“邮件”、“信息”、“备忘录”、Cmdr 自己的数据，以及任何存有私钥的文件。它们的名称仍可能发送给你的提供方。} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
@@ -155,11 +155,11 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "你的 Ask Cmdr 聊天记录留在你的 Mac 上，存放在一个你可以打开查看的本地数据库里。",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {你的 Ask Cmdr 聊天记录留在你的 Mac 上，存放在一个你可以打开查看的本地数据库里。} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "如果你在“高级”设置中开启“记录 AI 模型调用”，Cmdr 还会把每次请求和回复保存到你 Mac 上的一个文件夹里。这些调用日志只保存在本地，从不会发送到任何地方。",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {如果你在“高级”设置中开启“记录 AI 模型调用”，Cmdr 还会把每次请求和回复保存到你 Mac 上的一个文件夹里。这些调用日志只保存在本地，从不会发送到任何地方。} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
   "@ai.cloudConsent.logsNote": {
     "sourceHash": "0178d1c"
   },
@@ -561,7 +561,7 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "你的组织只允许使用本地 AI，而这台 Mac 无法运行它。",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {你的组织只允许使用本地 AI，而这台 Mac 无法运行它。} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
   "@ai.managed.localOnlyUnsupported": {
     "sourceHash": "b760ca4"
   },

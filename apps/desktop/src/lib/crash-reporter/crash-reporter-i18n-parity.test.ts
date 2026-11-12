@@ -102,3 +102,14 @@ describe('crash-reporter sent-toast copy parity (en)', () => {
     expect(sent).not.toContain('rash')
   })
 })
+
+describe('crash-reporter copy in each OS’s own words', () => {
+  it.each([
+    ['windows', 'Cmdr closed unexpectedly last time.', 'the app version, Windows version,'],
+    ['linux', 'Cmdr quit unexpectedly last time.', 'the app version, Linux distribution and version,'],
+  ] as const)('on %s, narrates the crash and names the OS version it sends', (platform, ended, sends) => {
+    withPlatform(platform)
+    expect(tString('crashReporter.dialog.body.ended')).toContain(ended)
+    expect(tString('crashReporter.dialog.privacyNote')).toContain(sends)
+  })
+})

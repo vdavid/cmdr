@@ -1440,7 +1440,7 @@
   "@askCmdr.decision.running": {
     "sourceHash": "46c5413"
   },
-  "askCmdr.decision.interrupted": "Cmdr 在這項操作完成前就結束了",
+  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr closed before this finished} other {Cmdr 在這項操作完成前就結束了}}",
   "@askCmdr.decision.interrupted": {
     "sourceHash": "ece92cc"
   },
@@ -1452,7 +1452,7 @@
   "@askCmdr.decision.verbCopy": {
     "sourceHash": "20a184a"
   },
-  "askCmdr.decision.verbTrash": "移到垃圾桶",
+  "askCmdr.decision.verbTrash": "{platform, select, windows {moving to the Recycle Bin} other {移到垃圾桶}}",
   "@askCmdr.decision.verbTrash": {
     "sourceHash": "ea05c85"
   },
@@ -1800,15 +1800,15 @@
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "729d49f"
   },
-  "askCmdr.tool.quit.doing": "正在結束 Cmdr",
+  "askCmdr.tool.quit.doing": "{platform, select, windows {Closing Cmdr} other {正在結束 Cmdr}}",
   "@askCmdr.tool.quit.doing": {
     "sourceHash": "b26d1c8"
   },
-  "askCmdr.tool.quit.done": "已要求 Cmdr 結束",
+  "askCmdr.tool.quit.done": "{platform, select, windows {Asked Cmdr to close} other {已要求 Cmdr 結束}}",
   "@askCmdr.tool.quit.done": {
     "sourceHash": "b9083af"
   },
-  "askCmdr.tool.quit.tried": "沒能結束 Cmdr",
+  "askCmdr.tool.quit.tried": "{platform, select, windows {Tried to close Cmdr} other {沒能結束 Cmdr}}",
   "@askCmdr.tool.quit.tried": {
     "sourceHash": "ab34547"
   },

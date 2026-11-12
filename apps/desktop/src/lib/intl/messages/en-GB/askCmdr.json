@@ -1,7 +1,7 @@
 {
-  "askCmdr.decision.verbTrash": "binning",
+  "askCmdr.decision.verbTrash": "{platform, select, windows {moving to the Recycle Bin} other {binning}}",
   "@askCmdr.decision.verbTrash": {
-    "sourceHash": "ea05c85"
+    "sourceHash": "2d13474"
   },
   "askCmdr.error.managedByOrganization": "Your organisation doesn’t allow this AI service. Your IT team can tell you which ones you can use.",
   "@askCmdr.error.managedByOrganization": {

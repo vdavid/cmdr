@@ -262,7 +262,7 @@
   "@ui.toolAsk.setSetting.emptyValue": {
     "description": "Stands in for a setting's value in the change-a-setting dialog when the value is empty, as in the row: Old value: nothing."
   },
-  "ui.toolAsk.quit.title": "Quit Cmdr?",
+  "ui.toolAsk.quit.title": "{platform, select, windows {Exit Cmdr?} other {Quit Cmdr?}}",
   "@ui.toolAsk.quit.title": {
     "description": "Title of a dialog asking whether an AI assistant may quit the app."
   },

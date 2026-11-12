@@ -5,9 +5,9 @@
  * frontend path from the click to the command.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
 import { mount, tick, unmount, flushSync } from 'svelte'
-import { withCapabilities } from '#lib/platform/test-platform.js'
+import { withCapabilities, withPlatform } from '#lib/platform/test-platform.js'
 import type { AiEffortOptions, AiModelLimits, ManagedAiRefusal, SettingLock } from '#lib/ipc/bindings.js'
 
 // A model known not to reason: no Effort picker. Hoisted with the stubs that use it.
@@ -296,14 +296,19 @@ describe("the organization's AI policy in Settings > AI > Provider", () => {
     )
   })
 
-  it("says nothing is left on a Mac that can't run on-device AI", async () => {
+  it.each([
+    ['macos', 'this Mac'],
+    ['windows', 'this PC'],
+    ['linux', 'this computer'],
+  ] as const)("on %s, says nothing is left on %s when it can't run on-device AI", async (platform, machine) => {
+    onTestFinished(withPlatform(platform))
     stubs.settings['ai.provider'] = 'off'
     stubs.localAiSupported = false
     stubs.locks.set('ai.provider', cloudRuledOut)
     const target = await mountSection()
 
     expect(target.querySelector('#settings-ai-provider-managed')?.textContent.trim()).toBe(
-      'Your organization allows only on-device AI, and this Mac can’t run it.',
+      `Your organization allows only on-device AI, and ${machine} can’t run it.`,
     )
   })
 

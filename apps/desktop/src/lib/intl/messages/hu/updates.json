@@ -112,7 +112,7 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "Megjelent a Cmdr {available}, de a szervezeted ezen a Macen legfeljebb ezt a verziót engedi: {ceiling}.",
+  "updates.status.heldByPolicy": "{platform, select, macos {Megjelent a Cmdr {available}, de a szervezeted ezen a Macen legfeljebb ezt a verziót engedi: {ceiling}.} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
   "@updates.status.heldByPolicy": {
     "sourceHash": "5c9b196"
   },

@@ -303,7 +303,7 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "f95b4a9"
   },
-  "onboarding.stepAi.missingKeyWarning": "你開啟了 AI，但還沒填 API 金鑰。AI 不會運作，而且你會看到一則警告。請在上面補上。\n\n<strong>再按一下「{nextLabel}」，就會忽略這件事繼續往下走。</strong>",
+  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {You’ve turned on AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Select “{nextLabel}” again to ignore this and go on.</strong>} other {你開啟了 AI，但還沒填 API 金鑰。AI 不會運作，而且你會看到一則警告。請在上面補上。\n\n<strong>再按一下「{nextLabel}」，就會忽略這件事繼續往下走。</strong>}}",
   "@onboarding.stepAi.missingKeyWarning": {
     "sourceHash": "b942278"
   },
@@ -395,7 +395,7 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "06ce4eb"
   },
-  "onboarding.stepBeta.crashReportsNote": "當機報告也是開著的：Cmdr 要是掛了，它會傳送 App 版本、你的 macOS 版本，還有程式碼停在哪裡。\n絕不會有你的檔案。\n這兩項你隨時都能在「設定」裡關掉。",
+  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {當機報告也是開著的：Cmdr 要是掛了，它會傳送 App 版本、你的 macOS 版本，還有程式碼停在哪裡。\n絕不會有你的檔案。\n這兩項你隨時都能在「設定」裡關掉。} windows {Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.} other {Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.}}",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
   },
@@ -403,7 +403,7 @@
   "@onboarding.stepBeta.analyticsManaged": {
     "sourceHash": "49484ee"
   },
-  "onboarding.stepBeta.crashReportsNoteAlone": "當機報告是開著的：Cmdr 要是掛了，它會傳送 App 版本、你的 macOS 版本，還有程式碼停在哪裡。\n絕不會有你的檔案。\n你隨時都能在「設定」裡把它關掉。",
+  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {當機報告是開著的：Cmdr 要是掛了，它會傳送 App 版本、你的 macOS 版本，還有程式碼停在哪裡。\n絕不會有你的檔案。\n你隨時都能在「設定」裡把它關掉。} windows {Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.} other {Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.}}",
   "@onboarding.stepBeta.crashReportsNoteAlone": {
     "sourceHash": "5084dd0"
   },
@@ -428,11 +428,11 @@
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "5a1bca7"
   },
-  "onboarding.stepBeta.signup.unreachable": "剛剛無法連上註冊伺服器，所以你還沒加到清單裡。你的地址已經存在這部 Mac 上了：過一分鐘再按一次「儲存」，或是隨時在「設定 › 更新與隱私」裡按。",
+  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {剛剛無法連上註冊伺服器，所以你還沒加到清單裡。你的地址已經存在這部 Mac 上了：過一分鐘再按一次「儲存」，或是隨時在「設定 › 更新與隱私」裡按。} windows {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this PC: hit Save again in a minute, or any time from Settings › Updates & privacy.} other {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this computer: hit Save again in a minute, or any time from Settings › Updates & privacy.}}",
   "@onboarding.stepBeta.signup.unreachable": {
     "sourceHash": "e4d8f67"
   },
-  "onboarding.stepBeta.emailNote": "留下你的電子郵件地址，我會偶爾來問個問題或報個近況。\n你在這裡填的地址只留在你的 Mac 上，絕不會和你的使用統計串在一起，這兩個是刻意分開的子系統。",
+  "onboarding.stepBeta.emailNote": "{platform, select, macos {留下你的電子郵件地址，我會偶爾來問個問題或報個近況。\n你在這裡填的地址只留在你的 Mac 上，絕不會和你的使用統計串在一起，這兩個是刻意分開的子系統。} windows {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your PC and it’s never connected to your usage stats, the two are intentionally two separate subsystems.} other {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your computer and it’s never connected to your usage stats, the two are intentionally two separate subsystems.}}",
   "@onboarding.stepBeta.emailNote": {
     "sourceHash": "0a793b1"
   },
@@ -460,7 +460,7 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "你選了走一遍詳細設定，所以這裡有幾個很快就能決定的選項。如果你沒那麼在意，按一下下方的按鈕就好。這些全都是可選的，預設值都是為你著想挑的。",
+  "onboarding.stepOptional.lede": "{platform, select, windows {You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, select the button below. All of these are optional, and the defaults are picked for your benefit.} other {你選了走一遍詳細設定，所以這裡有幾個很快就能決定的選項。如果你沒那麼在意，按一下下方的按鈕就好。這些全都是可選的，預設值都是為你著想挑的。}}",
   "@onboarding.stepOptional.lede": {
     "sourceHash": "94c3a5a"
   },
@@ -476,11 +476,11 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "需要允許一次「區域網路」取用",
+  "onboarding.stepOptional.networking.summary": "{platform, select, macos {需要允許一次「區域網路」取用} windows {Windows may ask to let Cmdr through its firewall} other {No permission needed}}",
   "@onboarding.stepOptional.networking.summary": {
     "sourceHash": "f49fbc6"
   },
-  "onboarding.stepOptional.networking.desc": "<em>開著</em>這一項，你就能連到 SMB 伺服器，像公司的網路共享資料夾、家裡的 NAS 之類的。\n唯一的代價是 macOS 會跳出一個權限對話框，請你允許「區域網路」取用，還有一個請你允許「接受傳入連線」。\n這兩個對話框都無害，但如果你不曉得它們是什麼，可能會覺得嚇人或煩人。",
+  "onboarding.stepOptional.networking.desc": "{platform, select, macos {<em>開著</em>這一項，你就能連到 SMB 伺服器，像公司的網路共享資料夾、家裡的 NAS 之類的。\n唯一的代價是 macOS 會跳出一個權限對話框，請你允許「區域網路」取用，還有一個請你允許「接受傳入連線」。\n這兩個對話框都無害，但如果你不曉得它們是什麼，可能會覺得嚇人或煩人。} windows {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nWindows may ask once whether to let Cmdr through its firewall.} other {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.}}",
   "@onboarding.stepOptional.networking.desc": {
     "sourceHash": "d473c62"
   },
@@ -496,7 +496,7 @@
   "@onboarding.stepOptional.indexing.descIntro": {
     "sourceHash": "6b86a1f"
   },
-  "onboarding.stepOptional.indexing.benefit1": "整個磁碟機的即時搜尋。想成 Spotlight，但還要更快。",
+  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {整個磁碟機的即時搜尋。想成 Spotlight，但還要更快。} windows {Instant search of your whole drive. Think Windows Search, but much faster.} other {Instant search of your whole drive.}}",
   "@onboarding.stepOptional.indexing.benefit1": {
     "sourceHash": "5fa0e9f"
   },
@@ -516,7 +516,7 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "開啟這一項，Cmdr 會在每次 App 啟動時、外加每 24 小時一次，向中央授權伺服器發一個很小的網路請求，這樣你總能拿到最新的更新。\n關掉的話，你會停在目前的版本，而且 Cmdr 完全不會自動發出任何網路請求（如果你有商業授權，定期的授權檢查除外）。",
+  "onboarding.stepOptional.updates.desc": "{platform, select, windows {If you turn this on, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you turn it off, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).} other {開啟這一項，Cmdr 會在每次 App 啟動時、外加每 24 小時一次，向中央授權伺服器發一個很小的網路請求，這樣你總能拿到最新的更新。\n關掉的話，你會停在目前的版本，而且 Cmdr 完全不會自動發出任何網路請求（如果你有商業授權，定期的授權檢查除外）。}}",
   "@onboarding.stepOptional.updates.desc": {
     "sourceHash": "e1a0582"
   },
@@ -524,11 +524,11 @@
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "能連 Android 手機之類的裝置，會壓下 macOS 內建的處理程序",
+  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {能連 Android 手機之類的裝置，會壓下 macOS 內建的處理程序} other {Lets you connect Android phones and similar devices}}",
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "開啟這一項，Cmdr 就能<strong>連到 Android 手機、Kindle、相機</strong>、一些音樂播放器，以及任何支援 MTP 或 PTP 通訊協定的裝置。\n代價是 macOS <em>也</em>想連這些裝置（而且通常連不成，這就是為什麼你沒辦法直接用 Finder 從 Android 手機複製照片），所以 Cmdr 執行的時候得把 macOS 的那個程序壓下去。\n你結束 Cmdr 時，它會被好好地還原回去。",
+  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {開啟這一項，Cmdr 就能<strong>連到 Android 手機、Kindle、相機</strong>、一些音樂播放器，以及任何支援 MTP 或 PTP 通訊協定的裝置。\n代價是 macOS <em>也</em>想連這些裝置（而且通常連不成，這就是為什麼你沒辦法直接用 Finder 從 Android 手機複製照片），所以 Cmdr 執行的時候得把 macOS 的那個程序壓下去。\n你結束 Cmdr 時，它會被好好地還原回去。} windows {If you turn this on, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.} other {If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nYour desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first.}}",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "8a60e7f"
   },

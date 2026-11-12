@@ -139,7 +139,7 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{count, plural, other {Thoát trong khi {countText} thao tác đang chạy?}}",
+  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, other {Thoát trong khi {countText} thao tác đang chạy?}}}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
@@ -147,11 +147,11 @@
   "@main.quit.body": {
     "sourceHash": "79a69f9"
   },
-  "main.quit.countdown": "{seconds, plural, other {Sẽ thoát sau {secondsText} giây, để việc khởi động lại máy hoặc đăng xuất không bao giờ phải chờ Cmdr.}}",
+  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, other {Sẽ thoát sau {secondsText} giây, để việc khởi động lại máy hoặc đăng xuất không bao giờ phải chờ Cmdr.}}}}",
   "@main.quit.countdown": {
     "sourceHash": "a389e0c"
   },
-  "main.quit.countdownAria": "Thời gian còn lại trước khi Cmdr tự thoát",
+  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Thời gian còn lại trước khi Cmdr tự thoát}}",
   "@main.quit.countdownAria": {
     "sourceHash": "6b0b5c2"
   },
@@ -159,7 +159,7 @@
   "@main.quit.keepWorking": {
     "sourceHash": "5ed03f2"
   },
-  "main.quit.quitNow": "Thoát ngay",
+  "main.quit.quitNow": "{platform, select, windows {Exit now} other {Thoát ngay}}",
   "@main.quit.quitNow": {
     "sourceHash": "c96bcc8"
   },
@@ -167,11 +167,11 @@
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "Cmdr cần phiên bản Safari mới hơn",
+  "main.oldWebkit.title": "{platform, select, macos {Cmdr cần phiên bản Safari mới hơn} other {Cmdr needs a newer WebKitGTK}}",
   "@main.oldWebkit.title": {
     "sourceHash": "03e502b"
   },
-  "main.oldWebkit.body": "Giao diện của Cmdr cần Safari 15.4 trở lên, còn máy Mac này đang dùng phiên bản cũ hơn. Hãy mở Cập nhật phần mềm và cài mọi bản cập nhật đang chờ. Như vậy thường là xong.",
+  "main.oldWebkit.body": "{platform, select, macos {Giao diện của Cmdr cần Safari 15.4 trở lên, còn máy Mac này đang dùng phiên bản cũ hơn. Hãy mở Cập nhật phần mềm và cài mọi bản cập nhật đang chờ. Như vậy thường là xong.} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
   "@main.oldWebkit.body": {
     "sourceHash": "a7112ec"
   },

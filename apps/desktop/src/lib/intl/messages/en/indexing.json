@@ -49,7 +49,7 @@
     "screenshot": "indexing-checklist.png",
     "screenshotNote": "The drive-indexing checklist, pictured here. Your string is the header it shows during one phase of a drive’s first index."
   },
-  "indexing.phase.home": "Indexing the rest of your home folder",
+  "indexing.phase.home": "{platform, select, windows {Indexing the rest of your user folder} other {Indexing the rest of your home folder}}",
   "@indexing.phase.home": {
     "description": "Header at the top of the drive-indexing checklist during the SECOND phase of a drive’s first index, once the folders from the first phase are done and Cmdr moves on to everything else in the user’s home folder. “The rest of” is load-bearing: it tells the reader the earlier folders are already finished. Short phrase, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png",
@@ -307,7 +307,7 @@
   "@indexing.firstConnect.body": {
     "description": "Body of the first-connect indexing notification, explaining what indexing the drive gives you and that it only runs while connected."
   },
-  "indexing.firstConnect.enable": "Enable indexing",
+  "indexing.firstConnect.enable": "{platform, select, windows {Turn on indexing} other {Enable indexing}}",
   "@indexing.firstConnect.enable": {
     "description": "Primary button in the first-connect notification. Turns on indexing for this drive and starts the scan."
   },

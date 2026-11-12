@@ -29,7 +29,7 @@
   "@indexing.phase.priorityFolders": {
     "sourceHash": "09dd19d"
   },
-  "indexing.phase.home": "Indexerar resten av din hemmapp",
+  "indexing.phase.home": "{platform, select, windows {Indexing the rest of your user folder} other {Indexerar resten av din hemmapp}}",
   "@indexing.phase.home": {
     "sourceHash": "8c31671"
   },
@@ -209,7 +209,7 @@
   "@indexing.firstConnect.body": {
     "sourceHash": "56ec1e5"
   },
-  "indexing.firstConnect.enable": "Aktivera indexering",
+  "indexing.firstConnect.enable": "{platform, select, windows {Turn on indexing} other {Aktivera indexering}}",
   "@indexing.firstConnect.enable": {
     "sourceHash": "3dc7ddf"
   },

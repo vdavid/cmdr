@@ -139,7 +139,7 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "Alguns conteúdos ficam em casa, não importa o que peçam: chaves SSH, credenciais de nuvem e de ferramentas, seus chaveiros, dados do navegador, Mail, Mensagens, Notas, os dados do próprio Cmdr e qualquer arquivo que contenha uma chave privada. Os nomes desses itens ainda podem chegar ao seu provedor.",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Alguns conteúdos ficam em casa, não importa o que peçam: chaves SSH, credenciais de nuvem e de ferramentas, seus chaveiros, dados do navegador, Mail, Mensagens, Notas, os dados do próprio Cmdr e qualquer arquivo que contenha uma chave privada. Os nomes desses itens ainda podem chegar ao seu provedor.} windows {Alguns conteúdos ficam em casa, não importa o que peçam: chaves SSH, credenciais de nuvem e de ferramentas, seus chaveiros, dados do navegador, Mail, Mensagens, Notas, os dados do próprio Cmdr e qualquer arquivo que contenha uma chave privada. Os nomes desses itens ainda podem chegar ao seu provedor.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
@@ -155,11 +155,11 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "Seus chats do Ask Cmdr ficam no seu Mac, em um banco de dados local que você pode abrir e ler.",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Seus chats do Ask Cmdr ficam no seu Mac, em um banco de dados local que você pode abrir e ler.} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Se você ativar “Registrar chamadas do modelo de IA” nos ajustes avançados, o Cmdr também salva cada solicitação e resposta em uma pasta no seu Mac. Esses registros de chamadas ficam locais e nunca são enviados a lugar nenhum.",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {Se você ativar “Registrar chamadas do modelo de IA” nos ajustes avançados, o Cmdr também salva cada solicitação e resposta em uma pasta no seu Mac. Esses registros de chamadas ficam locais e nunca são enviados a lugar nenhum.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
   "@ai.cloudConsent.logsNote": {
     "sourceHash": "0178d1c"
   },
@@ -560,7 +560,7 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "Sua organização só permite a IA no dispositivo, e este Mac não consegue rodá-la.",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Sua organização só permite a IA no dispositivo, e este Mac não consegue rodá-la.} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
   "@ai.managed.localOnlyUnsupported": {
     "sourceHash": "b760ca4"
   },

@@ -173,7 +173,7 @@
   "@errorReporter.bundleSavedToast.dismiss": {
     "sourceHash": "48845bf"
   },
-  "errorReporter.bundleSavedToast.reveal": "Visa i Finder",
+  "errorReporter.bundleSavedToast.reveal": "{platform, select, macos {Visa i Finder} windows {Show in File Explorer} other {Show in file manager}}",
   "@errorReporter.bundleSavedToast.reveal": {
     "sourceHash": "cc84938"
   },

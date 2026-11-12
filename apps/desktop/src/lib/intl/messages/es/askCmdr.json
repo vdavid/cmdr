@@ -1445,7 +1445,7 @@
   "@askCmdr.decision.running": {
     "sourceHash": "46c5413"
   },
-  "askCmdr.decision.interrupted": "Cmdr se cerró antes de que la operación terminara",
+  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr closed before this finished} other {Cmdr se cerró antes de que la operación terminara}}",
   "@askCmdr.decision.interrupted": {
     "sourceHash": "ece92cc"
   },
@@ -1457,7 +1457,7 @@
   "@askCmdr.decision.verbCopy": {
     "sourceHash": "20a184a"
   },
-  "askCmdr.decision.verbTrash": "mover a la papelera",
+  "askCmdr.decision.verbTrash": "{platform, select, windows {moving to the Recycle Bin} other {mover a la papelera}}",
   "@askCmdr.decision.verbTrash": {
     "sourceHash": "ea05c85"
   },
@@ -1805,15 +1805,15 @@
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "729d49f"
   },
-  "askCmdr.tool.quit.doing": "Saliendo de Cmdr",
+  "askCmdr.tool.quit.doing": "{platform, select, windows {Closing Cmdr} other {Saliendo de Cmdr}}",
   "@askCmdr.tool.quit.doing": {
     "sourceHash": "b26d1c8"
   },
-  "askCmdr.tool.quit.done": "Se ha pedido a Cmdr que se cierre",
+  "askCmdr.tool.quit.done": "{platform, select, windows {Asked Cmdr to close} other {Se ha pedido a Cmdr que se cierre}}",
   "@askCmdr.tool.quit.done": {
     "sourceHash": "b9083af"
   },
-  "askCmdr.tool.quit.tried": "Se ha intentado salir de Cmdr",
+  "askCmdr.tool.quit.tried": "{platform, select, windows {Tried to close Cmdr} other {Se ha intentado salir de Cmdr}}",
   "@askCmdr.tool.quit.tried": {
     "sourceHash": "ab34547"
   },

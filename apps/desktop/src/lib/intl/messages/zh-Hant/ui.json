@@ -203,7 +203,7 @@
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"
   },
-  "ui.toolAsk.quit.title": "結束 Cmdr？",
+  "ui.toolAsk.quit.title": "{platform, select, windows {Exit Cmdr?} other {結束 Cmdr？}}",
   "@ui.toolAsk.quit.title": {
     "sourceHash": "b1f6e98"
   },

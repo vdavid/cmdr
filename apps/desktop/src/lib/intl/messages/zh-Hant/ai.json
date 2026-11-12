@@ -139,7 +139,7 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "有些內容不管誰怎麼要求，都只會留在你的 Mac 上：SSH 金鑰、雲端和工具的登入資訊、你的鑰匙圈、瀏覽器資料、「郵件」、「訊息」、「備忘錄」、Cmdr 自己的資料，以及任何存有私密金鑰的檔案。它們的名稱仍然可能送到你的提供者那裡。",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {有些內容不管誰怎麼要求，都只會留在你的 Mac 上：SSH 金鑰、雲端和工具的登入資訊、你的鑰匙圈、瀏覽器資料、「郵件」、「訊息」、「備忘錄」、Cmdr 自己的資料，以及任何存有私密金鑰的檔案。它們的名稱仍然可能送到你的提供者那裡。} windows {有些內容不管誰怎麼要求，都只會留在你的 Mac 上：SSH 金鑰、雲端和工具的登入資訊、你的鑰匙圈、瀏覽器資料、「郵件」、「訊息」、「備忘錄」、Cmdr 自己的資料，以及任何存有私密金鑰的檔案。它們的名稱仍然可能送到你的提供者那裡。} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
     "sourceHash": "048633f"
   },
@@ -155,11 +155,11 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "你的 Ask Cmdr 對話會留在你的 Mac 上，存在一個你可以開啟來讀的本機資料庫裡。",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {你的 Ask Cmdr 對話會留在你的 Mac 上，存在一個你可以開啟來讀的本機資料庫裡。} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "如果你在「進階」設定裡開啟「記錄 AI 模型呼叫」，Cmdr 還會把每次的請求和回覆存到你 Mac 上的一個資料夾裡。這些呼叫記錄只留在本機，絕不會送到任何地方。",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {如果你在「進階」設定裡開啟「記錄 AI 模型呼叫」，Cmdr 還會把每次的請求和回覆存到你 Mac 上的一個資料夾裡。這些呼叫記錄只留在本機，絕不會送到任何地方。} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
   "@ai.cloudConsent.logsNote": {
     "sourceHash": "0178d1c"
   },
@@ -561,7 +561,7 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "你的組織只允許使用裝置端 AI，但這部 Mac 無法執行。",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {你的組織只允許使用裝置端 AI，但這部 Mac 無法執行。} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
   "@ai.managed.localOnlyUnsupported": {
     "sourceHash": "b760ca4"
   },

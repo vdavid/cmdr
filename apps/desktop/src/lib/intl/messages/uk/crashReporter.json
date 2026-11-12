@@ -7,7 +7,7 @@
   "@crashReporter.dialog.title.report": {
     "sourceHash": "d8b86d2"
   },
-  "crashReporter.dialog.body.ended": "Минулого разу Cmdr несподівано завершив роботу. Ось звіт про аварію з деталями, які допоможуть це виправити.",
+  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this.} other {Минулого разу Cmdr несподівано завершив роботу. Ось звіт про аварію з деталями, які допоможуть це виправити.}}",
   "@crashReporter.dialog.body.ended": {
     "sourceHash": "d67f8cb"
   },
@@ -19,7 +19,7 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "bed6934"
   },
-  "crashReporter.dialog.privacyNote": "Звіт містить версію програми, версію macOS і частину коду, у якій виникла проблема. Жодних назв файлів чи особистих даних.",
+  "crashReporter.dialog.privacyNote": "{platform, select, macos {Звіт містить версію програми, версію macOS і частину коду, у якій виникла проблема. Жодних назв файлів чи особистих даних.} windows {It includes the app version, Windows version, and which part of the code ran into the problem. No file names or personal data.} other {It includes the app version, Linux distribution and version, and which part of the code ran into the problem. No file names or personal data.}}",
   "@crashReporter.dialog.privacyNote": {
     "sourceHash": "c6875a7"
   },

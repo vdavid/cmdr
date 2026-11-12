@@ -161,7 +161,7 @@
   "@main.revealActivation.openSettings": {
     "description": "The only button on that notification. It opens Cmdr's Settings at the switch that controls this; it does NOT turn the option off on its own, which is deliberate. \"Settings\" is Cmdr's own settings window; use the word your locale's macOS apps use for an app's preferences. Keep it under about five words so the button fits."
   },
-  "main.quit.title": "{count, plural, one {Quit while an operation is running?} other {Quit while {countText} operations are running?}}",
+  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, one {Quit while an operation is running?} other {Quit while {countText} operations are running?}}}}",
   "@main.quit.title": {
     "description": "Title of the dialog that appears when the user quits Cmdr (⌘Q, the menu, or closing the main window) while copies, moves, deletes, or trash operations are still going. It asks whether to go ahead. \"Operation\" is the category word covering all of them, the same one the operation queue window uses; keep the two consistent in your language. Near-instant things like renaming never reach this dialog.",
     "placeholders": {
@@ -175,7 +175,7 @@
     "description": "Body text of the quit-while-running dialog, directly under the title. It reassures the user that quitting is safe: completed files are kept, nothing is undone, and anything caught mid-write is cleaned up rather than left looking complete. IMPORTANT: keep this number-neutral. One operation can be writing several files at once, and several operations can run at once, so the sentence must read correctly whether one file or many are interrupted — do NOT introduce a singular that commits to exactly one. Keep the reassuring, matter-of-fact tone; this is not a warning.",
     "screenshot": "quit-confirmation-one-copy.png"
   },
-  "main.quit.countdown": "{seconds, plural, one {Quitting in {secondsText} second, so a restart or logout never waits on Cmdr.} other {Quitting in {secondsText} seconds, so a restart or logout never waits on Cmdr.}}",
+  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, one {Quitting in {secondsText} second, so a restart or logout never waits on Cmdr.} other {Quitting in {secondsText} seconds, so a restart or logout never waits on Cmdr.}}}}",
   "@main.quit.countdown": {
     "description": "Live line under the body of the quit-while-running dialog, counting down out loud. It explains WHY Cmdr quits on its own instead of waiting forever: an app that holds up a system restart or logout is worse than one that stops. The number ticks down once a second and reaches zero, at which point Cmdr quits. \"Restart\" and \"logout\" are the operating system’s, not Cmdr’s.",
     "placeholders": {
@@ -184,7 +184,7 @@
     },
     "screenshot": "quit-confirmation-one-copy.png"
   },
-  "main.quit.countdownAria": "Time until Cmdr quits on its own",
+  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Time until Cmdr quits on its own}}",
   "@main.quit.countdownAria": {
     "description": "Screen-reader label for the countdown region of the quit-while-running dialog. The visible text spells out the seconds; this names what the number measures. Keep it short.",
     "screenshot": "quit-confirmation-one-copy.png"
@@ -194,7 +194,7 @@
     "description": "Button on the quit-while-running dialog that calls the quit off. It is NOT a \"remind me later\": the countdown is removed entirely and the operations carry on as if nothing happened. Avoid a word that suggests postponing. It sits left of the Quit button, which is the primary action.",
     "screenshot": "quit-confirmation-one-copy.png"
   },
-  "main.quit.quitNow": "Quit now",
+  "main.quit.quitNow": "{platform, select, windows {Exit now} other {Quit now}}",
   "@main.quit.quitNow": {
     "description": "Primary button on the quit-while-running dialog, confirming the quit. \"Now\" is doing real work here: the app quits either way when the countdown ends, and this button skips the wait. It is styled as the destructive choice.",
     "screenshot": "quit-confirmation-one-copy.png"
@@ -204,11 +204,11 @@
     "description": "Small heading above the list of operations in the quit-while-running dialog, naming what the rows below are. Each row shows what the operation is doing and the names it is working on, for example \"Copying · Holiday.mov → Backup\". Keep it to a couple of words.",
     "screenshot": "quit-confirmation-one-copy.png"
   },
-  "main.oldWebkit.title": "Cmdr needs a newer Safari",
+  "main.oldWebkit.title": "{platform, select, macos {Cmdr needs a newer Safari} other {Cmdr needs a newer WebKitGTK}}",
   "@main.oldWebkit.title": {
     "description": "Heading of the full-screen notice Cmdr shows instead of its interface when the Mac's WebKit is too old to run the app at all. It replaces the whole window, so this is the first and only thing the person sees. \"Cmdr\" is the product name and stays untranslated; \"Safari\" is Apple's browser and keeps whatever name Apple uses in the target language. Cmdr's interface is drawn by the system WebKit, which tracks the Safari version, so \"a newer Safari\" is literally what is needed. Keep it short: it is a heading."
   },
-  "main.oldWebkit.body": "Cmdr’s interface needs Safari 15.4 or newer, and this Mac has an older one. Open Software Update and install everything pending. That should sort it out.",
+  "main.oldWebkit.body": "{platform, select, macos {Cmdr’s interface needs Safari 15.4 or newer, and this Mac has an older one. Open Software Update and install everything pending. That should sort it out.} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
   "@main.oldWebkit.body": {
     "description": "Body of the notice under main.oldWebkit.title. It says what is missing and what to do about it. \"Software Update\" is the macOS system settings pane: use the name Apple uses for it in the target language, since the person has to find it. \"15.4\" is a Safari version number and stays as digits. \"Cmdr\" is the product name and stays untranslated. Tone is calm and practical, not an apology: this is fixable by installing pending macOS updates, and on most old Macs it is."
   },

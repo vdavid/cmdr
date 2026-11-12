@@ -131,7 +131,7 @@
   "@search.coverage.line.failedRoots": {
     "sourceHash": "36c41ae"
   },
-  "search.coverage.line.denied": "{count, plural, other {macOS không cho Cmdr xem bên trong {countText} thư mục, nên không có gì từ đó trong kết quả.}}",
+  "search.coverage.line.denied": "{platform, select, macos {{count, plural, other {macOS không cho Cmdr xem bên trong {countText} thư mục, nên không có gì từ đó trong kết quả.}}} windows {{count, plural, one {Windows didn’t let Cmdr look inside one folder, so nothing from it is in the results.} other {Windows didn’t let Cmdr look inside {countText} folders, so nothing from them is in the results.}}} other {{count, plural, one {Cmdr didn’t have permission to look inside one folder, so nothing from it is in the results.} other {Cmdr didn’t have permission to look inside {countText} folders, so nothing from them is in the results.}}}}",
   "@search.coverage.line.denied": {
     "sourceHash": "c2b388f"
   },

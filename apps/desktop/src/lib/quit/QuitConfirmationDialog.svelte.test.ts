@@ -5,8 +5,9 @@
 
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { mount, tick } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import QuitConfirmationDialog from './QuitConfirmationDialog.svelte'
 import type { OperationSnapshot } from '#lib/ipc/bindings.js'
 
@@ -113,6 +114,20 @@ describe('QuitConfirmationDialog', () => {
   it('opts into the topmost layer', async () => {
     const target = await renderDialog([operation('op-1', 'copy')], 15)
     expect(target.querySelector('.modal-overlay')?.classList.contains('topmost')).toBe(true)
+  })
+
+  // Windows names the action "Exit" and narrates "closing"; macOS and Linux say "quit" for both.
+  it.each([
+    ['macos', 'Quit while 2 operations are running?', 'Quitting in 12 seconds, so a restart or logout', 'Quit now'],
+    ['windows', 'Exit while 2 operations are running?', 'Closing in 12 seconds, so a restart or sign-out', 'Exit now'],
+    ['linux', 'Quit while 2 operations are running?', 'Quitting in 12 seconds, so a restart or logout', 'Quit now'],
+  ] as const)('on %s, says “%s”', async (platform, title, countdown, quitButton) => {
+    onTestFinished(withPlatform(platform))
+    const target = await renderDialog([operation('op-1', 'copy'), operation('op-2', 'move')], 12)
+    expect(target.textContent).toContain(title)
+    expect(target.textContent).toContain(countdown)
+    const buttons = [...target.querySelectorAll<HTMLButtonElement>('.modal-footer button')]
+    expect(buttons.map((b) => b.textContent.trim())).toEqual(['Keep working', quitButton])
   })
 })
 

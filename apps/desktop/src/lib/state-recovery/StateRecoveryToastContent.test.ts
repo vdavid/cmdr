@@ -6,6 +6,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import type { StateFile, StateRecovery } from '#lib/ipc/bindings.js'
+import type { Platform } from '#lib/platform/index.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 const { showInFinder, dismissToast, openSettingsWindow } = vi.hoisted(() => ({
   showInFinder: vi.fn(() => Promise.resolve()),
@@ -42,6 +44,8 @@ beforeEach(() => {
   document.body.innerHTML = ''
   vi.clearAllMocks()
 })
+// The copy below is macOS's; the per-OS words have their own describe at the end.
+beforeEach(() => withPlatform('macos'))
 
 describe('a recovered settings file', () => {
   it('says the consents are off, names the copy, and opens Updates & privacy', async () => {
@@ -126,4 +130,21 @@ describe('every other file', () => {
     click(target, 'Dismiss')
     expect(dismissToast).toHaveBeenCalledWith('toast-1')
   })
+})
+
+describe('each OS’s own words', () => {
+  const cases: [Platform, string, string][] = [
+    ['macos', 'Show in Finder', 'so they start at your home folder'],
+    ['windows', 'Show in File Explorer', 'so they start at your user folder'],
+    ['linux', 'Show in file manager', 'so they start at your home folder'],
+  ]
+  for (const [platform, reveal, startsAt] of cases) {
+    it(`names ${platform}’s file manager on the button and its home folder in the app-status headline`, async () => {
+      withPlatform(platform)
+      const target = await mountNotice({ file: 'app_status', keptCopy: KEPT })
+      expect(target.textContent).toContain(startsAt)
+      click(target, reveal)
+      expect(showInFinder).toHaveBeenCalledWith(KEPT)
+    })
+  }
 })

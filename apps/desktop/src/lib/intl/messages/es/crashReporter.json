@@ -7,7 +7,7 @@
   "@crashReporter.dialog.title.report": {
     "sourceHash": "d8b86d2"
   },
-  "crashReporter.dialog.body.ended": "Cmdr se cerró inesperadamente la última vez. Aquí tienes un informe de fallos con detalles que pueden ayudar a solucionarlo.",
+  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this.} other {Cmdr se cerró inesperadamente la última vez. Aquí tienes un informe de fallos con detalles que pueden ayudar a solucionarlo.}}",
   "@crashReporter.dialog.body.ended": {
     "sourceHash": "d67f8cb"
   },
@@ -19,7 +19,7 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "bed6934"
   },
-  "crashReporter.dialog.privacyNote": "Incluye la versión de la app, la versión de macOS y qué parte del código tuvo el problema. Ningún nombre de archivo ni datos personales.",
+  "crashReporter.dialog.privacyNote": "{platform, select, macos {Incluye la versión de la app, la versión de macOS y qué parte del código tuvo el problema. Ningún nombre de archivo ni datos personales.} windows {It includes the app version, Windows version, and which part of the code ran into the problem. No file names or personal data.} other {It includes the app version, Linux distribution and version, and which part of the code ran into the problem. No file names or personal data.}}",
   "@crashReporter.dialog.privacyNote": {
     "sourceHash": "c6875a7"
   },

@@ -79,7 +79,7 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Det här är råvyn av filen. Du vill nog hellre visa själva <kindName>{category, select, image {bilden} document {dokumentet} other {{ext}-filen}}</kindName>. Stäng då det här fönstret och tryck på <quickLookKey></quickLookKey> för att öppna Överblick, eller tryck på <openKey></openKey> (eller dubbelklicka på filen) för att öppna den i tillhörande app.",
+  "viewer.binaryWarning.body": "{platform, select, macos {Det här är råvyn av filen. Du vill nog hellre visa själva <kindName>{category, select, image {bilden} document {dokumentet} other {{ext}-filen}}</kindName>. Stäng då det här fönstret och tryck på <quickLookKey></quickLookKey> för att öppna Överblick, eller tryck på <openKey></openKey> (eller dubbelklicka på filen) för att öppna den i tillhörande app.} other {This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <openKey></openKey> (or double-click the file) to open it in the associated app.}}",
   "@viewer.binaryWarning.body": {
     "sourceHash": "fd5cfb7"
   },

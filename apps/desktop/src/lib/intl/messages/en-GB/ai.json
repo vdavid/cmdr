@@ -35,9 +35,9 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "Your organisation allows only on-device AI, and this Mac can’t run it.",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Your organisation allows only on-device AI, and this Mac can’t run it.} windows {Your organisation allows only on-device AI, and this PC can’t run it.} other {Your organisation allows only on-device AI, and this computer can’t run it.}}",
   "@ai.managed.localOnlyUnsupported": {
-    "sourceHash": "b760ca4"
+    "sourceHash": "b468f8f"
   },
   "ai.managed.serviceNotAllowed": "not allowed by your organisation",
   "@ai.managed.serviceNotAllowed": {

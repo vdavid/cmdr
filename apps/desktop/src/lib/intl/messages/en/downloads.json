@@ -218,7 +218,7 @@
     "description": "Warning status shown when macOS refuses the system-wide shortcut the user just recorded, most likely because another app already holds that key combination. The previous shortcut stays active and still shows on the row. 'combo' = key combination. Hedged ('may') on purpose: macOS doesn't say which app, or whether that's the reason. Avoid the words 'error' and 'failed'."
   },
 
-  "downloads.shortcutRow.addModifier": "Add a modifier (⌘, ⌃, ⌥, or ⇧)",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Add a modifier (⌘, ⌃, ⌥, or ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
   "@downloads.shortcutRow.addModifier": {
     "description": "Warning status prompting the user to include a modifier key, because a system-wide shortcut needs at least one. The glyphs in parentheses are the Command, Control, Option, and Shift keys; keep them as-is, don't translate them."
   },

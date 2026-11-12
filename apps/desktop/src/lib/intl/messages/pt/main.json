@@ -139,7 +139,7 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{count, plural, one {Encerrar com uma operação em andamento?} many {Encerrar com {countText} operações em andamento?} other {Encerrar com {countText} operações em andamento?}}",
+  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, one {Encerrar com uma operação em andamento?} many {Encerrar com {countText} operações em andamento?} other {Encerrar com {countText} operações em andamento?}}}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
@@ -147,11 +147,11 @@
   "@main.quit.body": {
     "sourceHash": "79a69f9"
   },
-  "main.quit.countdown": "{seconds, plural, one {Encerrando em {secondsText} segundo, para o Cmdr nunca atrasar uma reinicialização ou o encerramento da sessão.} many {Encerrando em {secondsText} segundos, para o Cmdr nunca atrasar uma reinicialização ou o encerramento da sessão.} other {Encerrando em {secondsText} segundos, para o Cmdr nunca atrasar uma reinicialização ou o encerramento da sessão.}}",
+  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, one {Encerrando em {secondsText} segundo, para o Cmdr nunca atrasar uma reinicialização ou o encerramento da sessão.} many {Encerrando em {secondsText} segundos, para o Cmdr nunca atrasar uma reinicialização ou o encerramento da sessão.} other {Encerrando em {secondsText} segundos, para o Cmdr nunca atrasar uma reinicialização ou o encerramento da sessão.}}}}",
   "@main.quit.countdown": {
     "sourceHash": "a389e0c"
   },
-  "main.quit.countdownAria": "Tempo até o Cmdr encerrar sozinho",
+  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Tempo até o Cmdr encerrar sozinho}}",
   "@main.quit.countdownAria": {
     "sourceHash": "6b0b5c2"
   },
@@ -159,7 +159,7 @@
   "@main.quit.keepWorking": {
     "sourceHash": "5ed03f2"
   },
-  "main.quit.quitNow": "Encerrar agora",
+  "main.quit.quitNow": "{platform, select, windows {Exit now} other {Encerrar agora}}",
   "@main.quit.quitNow": {
     "sourceHash": "c96bcc8"
   },
@@ -167,11 +167,11 @@
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "O Cmdr precisa de uma versão mais recente do Safari",
+  "main.oldWebkit.title": "{platform, select, macos {O Cmdr precisa de uma versão mais recente do Safari} other {Cmdr needs a newer WebKitGTK}}",
   "@main.oldWebkit.title": {
     "sourceHash": "03e502b"
   },
-  "main.oldWebkit.body": "A interface do Cmdr precisa do Safari 15.4 ou mais recente, e este Mac tem uma versão mais antiga. Abra Atualização de Software e instale tudo o que estiver pendente. Isso deve resolver.",
+  "main.oldWebkit.body": "{platform, select, macos {A interface do Cmdr precisa do Safari 15.4 ou mais recente, e este Mac tem uma versão mais antiga. Abra Atualização de Software e instale tudo o que estiver pendente. Isso deve resolver.} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
   "@main.oldWebkit.body": {
     "sourceHash": "a7112ec"
   },

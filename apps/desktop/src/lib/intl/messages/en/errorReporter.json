@@ -212,7 +212,7 @@
   "@errorReporter.bundleSavedToast.dismiss": {
     "description": "Button that dismisses the bundle-saved toast. Keep it short (a tight button)."
   },
-  "errorReporter.bundleSavedToast.reveal": "Reveal in Finder",
+  "errorReporter.bundleSavedToast.reveal": "{platform, select, macos {Reveal in Finder} windows {Show in File Explorer} other {Show in file manager}}",
   "@errorReporter.bundleSavedToast.reveal": {
     "description": "Button that opens the saved bundle's folder in the macOS file browser. \"Finder\" is the name of Apple's file browser (do not translate)."
   },

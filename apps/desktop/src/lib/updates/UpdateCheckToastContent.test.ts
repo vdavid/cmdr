@@ -5,8 +5,9 @@
  * string for each phase. The error case renders a "Send error report" link button.
  */
 
-import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
+import { afterEach, beforeEach, describe, it, expect, onTestFinished, vi } from 'vitest'
 import { mount, tick } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 const { openErrorReportForMock } = vi.hoisted(() => ({
   openErrorReportForMock: vi.fn(),
@@ -127,11 +128,18 @@ describe('UpdateCheckToastContent', () => {
     expect(target.querySelector('button')).toBeNull()
   })
 
-  it('says a newer release is out but the organization holds this Mac back', async () => {
+  it.each([
+    ['macos', 'this Mac'],
+    ['windows', 'this PC'],
+    ['linux', 'this computer'],
+  ] as const)('on %s, says a newer release is out but the organization holds %s back', async (platform, machine) => {
+    onTestFinished(withPlatform(platform))
     updateState.managed = { kind: 'heldByPolicy', available: '0.53.0', ceiling: '0.52' }
     _setUpdateStatusForTest('idle')
     const target = render()
     await tick()
-    expect(target.textContent).toContain('Cmdr 0.53.0 is out, but your organization keeps this Mac on 0.52 or earlier.')
+    expect(target.textContent).toContain(
+      `Cmdr 0.53.0 is out, but your organization keeps ${machine} on 0.52 or earlier.`,
+    )
   })
 })

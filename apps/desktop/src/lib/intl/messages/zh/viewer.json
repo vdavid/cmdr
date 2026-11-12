@@ -79,7 +79,7 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "这是文件的原始视图。你可能更想查看实际的<kindName>{category, select, image {图像} document {文稿} other { {ext} 文件}}</kindName>。要这样做，请关闭这个窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
+  "viewer.binaryWarning.body": "{platform, select, macos {这是文件的原始视图。你可能更想查看实际的<kindName>{category, select, image {图像} document {文稿} other { {ext} 文件}}</kindName>。要这样做，请关闭这个窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者按 <openKey></openKey>（或双击文件）用关联的 App 打开它。} other {This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <openKey></openKey> (or double-click the file) to open it in the associated app.}}",
   "@viewer.binaryWarning.body": {
     "sourceHash": "fd5cfb7"
   },

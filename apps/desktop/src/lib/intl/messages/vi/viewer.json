@@ -79,7 +79,7 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Đây là chế độ xem thô của tệp. Có lẽ bạn muốn xem chính <kindName>{category, select, image {hình ảnh} document {tài liệu} other {tệp {ext}}}</kindName> đó hơn. Để làm vậy, hãy đóng cửa sổ này và nhấn <quickLookKey></quickLookKey> để mở Xem nhanh, hoặc nhấn <openKey></openKey> (hoặc bấm đúp vào tệp) để mở tệp bằng ứng dụng liên kết.",
+  "viewer.binaryWarning.body": "{platform, select, macos {Đây là chế độ xem thô của tệp. Có lẽ bạn muốn xem chính <kindName>{category, select, image {hình ảnh} document {tài liệu} other {tệp {ext}}}</kindName> đó hơn. Để làm vậy, hãy đóng cửa sổ này và nhấn <quickLookKey></quickLookKey> để mở Xem nhanh, hoặc nhấn <openKey></openKey> (hoặc bấm đúp vào tệp) để mở tệp bằng ứng dụng liên kết.} other {This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <openKey></openKey> (or double-click the file) to open it in the associated app.}}",
   "@viewer.binaryWarning.body": {
     "sourceHash": "fd5cfb7"
   },

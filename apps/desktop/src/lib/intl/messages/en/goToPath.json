@@ -9,7 +9,7 @@
     "description": "Accessibility label (read by screen readers) for the path input in the \"Go to folder\" dialog.",
     "screenshot": "go-to-path.png"
   },
-  "goToPath.dialog.inputPlaceholder": "Type or paste a path, e.g. ~/Documents",
+  "goToPath.dialog.inputPlaceholder": "Type or paste a path, for example ~/Documents",
   "@goToPath.dialog.inputPlaceholder": {
     "description": "Placeholder in the \"Go to folder\" dialog's input. \"~/Documents\" is an example filesystem path; keep it literally as a sample.",
     "screenshot": "go-to-path.png"

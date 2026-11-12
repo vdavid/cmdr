@@ -303,7 +303,7 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "f95b4a9"
   },
-  "onboarding.stepAi.missingKeyWarning": "Вы включили ИИ, но не ввели API-ключ. ИИ не будет работать, и появится предупреждение. Исправьте это выше.\n\n<strong>Нажмите «{nextLabel}» снова, чтобы пропустить предупреждение и продолжить.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {You’ve turned on AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Select “{nextLabel}” again to ignore this and go on.</strong>} other {Вы включили ИИ, но не ввели API-ключ. ИИ не будет работать, и появится предупреждение. Исправьте это выше.\n\n<strong>Нажмите «{nextLabel}» снова, чтобы пропустить предупреждение и продолжить.</strong>}}",
   "@onboarding.stepAi.missingKeyWarning": {
     "sourceHash": "b942278"
   },
@@ -395,7 +395,7 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "06ce4eb"
   },
-  "onboarding.stepBeta.crashReportsNote": "Отчеты о сбоях тоже включены: при сбое Cmdr отправляет версию приложения, версию macOS и место, где остановился код.\nВаши файлы никогда не отправляются.\nОба параметра можно отключить в настройках в любой момент.",
+  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Отчеты о сбоях тоже включены: при сбое Cmdr отправляет версию приложения, версию macOS и место, где остановился код.\nВаши файлы никогда не отправляются.\nОба параметра можно отключить в настройках в любой момент.} windows {Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.} other {Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.}}",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
   },
@@ -403,7 +403,7 @@
   "@onboarding.stepBeta.analyticsManaged": {
     "sourceHash": "49484ee"
   },
-  "onboarding.stepBeta.crashReportsNoteAlone": "Отчеты о сбоях включены: при сбое Cmdr отправляет версию приложения, версию macOS и место, где остановился код.\nВаши файлы никогда не отправляются.\nОтчеты можно отключить в настройках в любой момент.",
+  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Отчеты о сбоях включены: при сбое Cmdr отправляет версию приложения, версию macOS и место, где остановился код.\nВаши файлы никогда не отправляются.\nОтчеты можно отключить в настройках в любой момент.} windows {Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.} other {Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.}}",
   "@onboarding.stepBeta.crashReportsNoteAlone": {
     "sourceHash": "5084dd0"
   },
@@ -427,11 +427,11 @@
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "5a1bca7"
   },
-  "onboarding.stepBeta.signup.unreachable": "Не удалось связаться с сервером подписки, поэтому вы пока не в списке. Адрес сохранен на этом Mac: снова нажмите «Сохранить» через минуту или позже в разделе «Настройки › Обновления и конфиденциальность».",
+  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {Не удалось связаться с сервером подписки, поэтому вы пока не в списке. Адрес сохранен на этом Mac: снова нажмите «Сохранить» через минуту или позже в разделе «Настройки › Обновления и конфиденциальность».} windows {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this PC: hit Save again in a minute, or any time from Settings › Updates & privacy.} other {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this computer: hit Save again in a minute, or any time from Settings › Updates & privacy.}}",
   "@onboarding.stepBeta.signup.unreachable": {
     "sourceHash": "e4d8f67"
   },
-  "onboarding.stepBeta.emailNote": "Оставьте адрес, и я изредка буду присылать вопросы или новости.\nУказанный адрес хранится только на вашем Mac и никогда не связан со статистикой использования: это намеренно две разные подсистемы.",
+  "onboarding.stepBeta.emailNote": "{platform, select, macos {Оставьте адрес, и я изредка буду присылать вопросы или новости.\nУказанный адрес хранится только на вашем Mac и никогда не связан со статистикой использования: это намеренно две разные подсистемы.} windows {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your PC and it’s never connected to your usage stats, the two are intentionally two separate subsystems.} other {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your computer and it’s never connected to your usage stats, the two are intentionally two separate subsystems.}}",
   "@onboarding.stepBeta.emailNote": {
     "sourceHash": "0a793b1"
   },
@@ -459,7 +459,7 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "Вы выбрали подробную настройку, поэтому осталось несколько быстрых решений. Если они не важны для вас, нажмите кнопку ниже. Все параметры необязательны, а значения по умолчанию подобраны для вашего удобства.",
+  "onboarding.stepOptional.lede": "{platform, select, windows {You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, select the button below. All of these are optional, and the defaults are picked for your benefit.} other {Вы выбрали подробную настройку, поэтому осталось несколько быстрых решений. Если они не важны для вас, нажмите кнопку ниже. Все параметры необязательны, а значения по умолчанию подобраны для вашего удобства.}}",
   "@onboarding.stepOptional.lede": {
     "sourceHash": "94c3a5a"
   },
@@ -475,11 +475,11 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Нужно один раз разрешить пункт «Локальная сеть»",
+  "onboarding.stepOptional.networking.summary": "{platform, select, macos {Нужно один раз разрешить пункт «Локальная сеть»} windows {Windows may ask to let Cmdr through its firewall} other {No permission needed}}",
   "@onboarding.stepOptional.networking.summary": {
     "sourceHash": "f49fbc6"
   },
-  "onboarding.stepOptional.networking.desc": "Когда этот параметр <em>включен</em>, можно подключаться к SMB-серверам: рабочим сетевым папкам, домашнему NAS и тому подобному.\nЕдинственная плата: macOS покажет диалоговое окно с запросом разрешения для пункта «Локальная сеть» и еще одно такое окно для входящих подключений.\nОба окна безобидны, но если не знать, что это такое, они могут напугать или раздражать.",
+  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Когда этот параметр <em>включен</em>, можно подключаться к SMB-серверам: рабочим сетевым папкам, домашнему NAS и тому подобному.\nЕдинственная плата: macOS покажет диалоговое окно с запросом разрешения для пункта «Локальная сеть» и еще одно такое окно для входящих подключений.\nОба окна безобидны, но если не знать, что это такое, они могут напугать или раздражать.} windows {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nWindows may ask once whether to let Cmdr through its firewall.} other {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.}}",
   "@onboarding.stepOptional.networking.desc": {
     "sourceHash": "d473c62"
   },
@@ -495,7 +495,7 @@
   "@onboarding.stepOptional.indexing.descIntro": {
     "sourceHash": "6b86a1f"
   },
-  "onboarding.stepOptional.indexing.benefit1": "Мгновенный поиск по всему диску. Как Spotlight, но еще быстрее.",
+  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {Мгновенный поиск по всему диску. Как Spotlight, но еще быстрее.} windows {Instant search of your whole drive. Think Windows Search, but much faster.} other {Instant search of your whole drive.}}",
   "@onboarding.stepOptional.indexing.benefit1": {
     "sourceHash": "5fa0e9f"
   },
@@ -515,7 +515,7 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Если включить этот параметр, Cmdr отправляет крошечный сетевой запрос центральному серверу лицензий при каждом запуске приложения и раз в 24 часа, и у вас всегда последние обновления.\nЕсли выключить, текущая версия сохранится, а Cmdr не будет делать автоматических сетевых запросов (кроме периодических проверок коммерческой лицензии, если она у вас есть).",
+  "onboarding.stepOptional.updates.desc": "{platform, select, windows {If you turn this on, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you turn it off, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).} other {Если включить этот параметр, Cmdr отправляет крошечный сетевой запрос центральному серверу лицензий при каждом запуске приложения и раз в 24 часа, и у вас всегда последние обновления.\nЕсли выключить, текущая версия сохранится, а Cmdr не будет делать автоматических сетевых запросов (кроме периодических проверок коммерческой лицензии, если она у вас есть).}}",
   "@onboarding.stepOptional.updates.desc": {
     "sourceHash": "e1a0582"
   },
@@ -523,11 +523,11 @@
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "Позволяет подключать телефоны Android и подобные устройства, приостанавливает обработчик macOS",
+  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {Позволяет подключать телефоны Android и подобные устройства, приостанавливает обработчик macOS} other {Lets you connect Android phones and similar devices}}",
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "Если включить этот параметр, Cmdr сможет <strong>подключаться к телефонам Android, Kindle, камерам</strong>, некоторым музыкальным плеерам и другим устройствам с протоколами MTP или PTP.\nПлата за это: macOS <em>тоже</em> пытается подключиться к ним (обычно безуспешно, поэтому Finder не позволяет просто скопировать фотографии с Android), и Cmdr приходится приостанавливать этот процесс macOS, пока Cmdr работает.\nПосле завершения Cmdr все аккуратно восстанавливается.",
+  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Если включить этот параметр, Cmdr сможет <strong>подключаться к телефонам Android, Kindle, камерам</strong>, некоторым музыкальным плеерам и другим устройствам с протоколами MTP или PTP.\nПлата за это: macOS <em>тоже</em> пытается подключиться к ним (обычно безуспешно, поэтому Finder не позволяет просто скопировать фотографии с Android), и Cmdr приходится приостанавливать этот процесс macOS, пока Cmdr работает.\nПосле завершения Cmdr все аккуратно восстанавливается.} windows {If you turn this on, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.} other {If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nYour desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first.}}",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "8a60e7f"
   },

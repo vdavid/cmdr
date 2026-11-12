@@ -7,7 +7,7 @@
   "@crashReporter.dialog.title.report": {
     "sourceHash": "d8b86d2"
   },
-  "crashReporter.dialog.body.ended": "Cmdr 上次意外結束了。這裡有一份當機報告，裡面的細節有助於修正這個問題。",
+  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this.} other {Cmdr 上次意外結束了。這裡有一份當機報告，裡面的細節有助於修正這個問題。}}",
   "@crashReporter.dialog.body.ended": {
     "sourceHash": "d67f8cb"
   },
@@ -19,7 +19,7 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "bed6934"
   },
-  "crashReporter.dialog.privacyNote": "內含 App 版本、macOS 版本，以及程式碼中遇到問題的部分。不含檔名或個人資料。",
+  "crashReporter.dialog.privacyNote": "{platform, select, macos {內含 App 版本、macOS 版本，以及程式碼中遇到問題的部分。不含檔名或個人資料。} windows {It includes the app version, Windows version, and which part of the code ran into the problem. No file names or personal data.} other {It includes the app version, Linux distribution and version, and which part of the code ran into the problem. No file names or personal data.}}",
   "@crashReporter.dialog.privacyNote": {
     "sourceHash": "c6875a7"
   },

@@ -131,7 +131,7 @@
   "@downloads.shortcutRow.unavailable": {
     "sourceHash": "8882532"
   },
-  "downloads.shortcutRow.addModifier": "Adj hozzá egy módosítóbillentyűt (⌘, ⌃, ⌥ vagy ⇧)",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Adj hozzá egy módosítóbillentyűt (⌘, ⌃, ⌥ vagy ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
   "@downloads.shortcutRow.addModifier": {
     "sourceHash": "28a5ba2"
   },

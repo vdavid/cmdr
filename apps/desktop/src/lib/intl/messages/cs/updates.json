@@ -112,7 +112,7 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "Vyšla verze Cmdr {available}, ale vaše organizace drží tento Mac na verzi {ceiling} nebo starší.",
+  "updates.status.heldByPolicy": "{platform, select, macos {Vyšla verze Cmdr {available}, ale vaše organizace drží tento Mac na verzi {ceiling} nebo starší.} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
   "@updates.status.heldByPolicy": {
     "sourceHash": "5c9b196"
   },

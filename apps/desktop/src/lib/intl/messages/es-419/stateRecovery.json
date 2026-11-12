@@ -27,7 +27,7 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "eabd4e6"
   },
-  "stateRecovery.appStatus.title": "Cmdr no pudo leer qué carpetas tenían abiertas tus paneles, así que se abren en tu carpeta de inicio",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {Cmdr no pudo leer qué carpetas tenían abiertas tus paneles, así que se abren en tu carpeta de inicio}}",
   "@stateRecovery.appStatus.title": {
     "sourceHash": "53260b0"
   },

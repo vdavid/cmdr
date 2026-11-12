@@ -55,7 +55,7 @@
     "description": "Button that closes the What's new dialog.",
     "screenshot": "whats-new.png"
   },
-  "whatsNew.optOutToast": "Got it, no more update notes. Re-enable them anytime in Settings > Updates & privacy.",
+  "whatsNew.optOutToast": "{platform, select, windows {Got it, no more update notes. Turn them back on anytime in Settings > Updates & privacy.} other {Got it, no more update notes. Re-enable them anytime in Settings > Updates & privacy.}}",
   "@whatsNew.optOutToast": {
     "description": "Confirmation toast after the user opts out of the post-update changelog popup, noting where to turn it back on. Settings > Updates & privacy is a navigation path; keep the menu/section names as shown."
   }
