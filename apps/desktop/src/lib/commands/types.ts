@@ -5,6 +5,7 @@
 import type { ViewMode } from '#lib/app-status-store.js'
 import type { BadgeStatus } from '#lib/feature-status.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
+import type { Capability } from '#lib/platform/index.js'
 import type { Initiator } from '#lib/tauri-commands/index.js'
 import type { CommandId } from './command-ids'
 import type { WhileDialogOpen } from './while-dialog-open'
@@ -266,6 +267,14 @@ export interface Command {
    * regardless. Omitted: always shown.
    */
   paletteCondition?: PaletteCondition
+  /**
+   * The OS feature this command drives (`hasCapability`, `#lib/platform`), for a command
+   * that does nothing where the OS lacks it (Get info, Quick Look, color tags). Where the
+   * capability is off, no surface lists the command (`listedCommands()`, the palette, the
+   * Keyboard shortcuts section, the help window, the MCP listing), and it gets no default
+   * key, so its combo stays free. Omitted: every OS has it.
+   */
+  needsCapability?: Capability
 }
 
 /** What a palette row's `paletteCondition` can ask. One member per question. */

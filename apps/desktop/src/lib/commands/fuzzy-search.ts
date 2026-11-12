@@ -8,7 +8,7 @@
 
 import { foldForSearch, fuzzySearch } from '#lib/utils/unicode-fuzzy.js'
 import type { Command, CommandMatch, PaletteCondition } from './types'
-import { commands, getPaletteCommands } from './command-registry'
+import { getPaletteCommands, listedCommands } from './command-registry'
 
 /**
  * Search commands with fuzzy matching.
@@ -50,17 +50,19 @@ export function searchCommands(
 }
 
 /**
- * Search the FULL command registry, including `showInPalette: false` entries.
+ * Search every command this OS offers (`listedCommands()`), including `showInPalette: false`
+ * entries.
  *
  * For surfaces whose result set is the whole registry: the shortcuts editor renders (and lets you
  * rebind) every command, so its search must cover the same set. An empty query returns everything
  * in registry order.
  */
 export function searchAllCommands(query: string): CommandMatch[] {
+  const listed = listedCommands()
   if (!query.trim()) {
-    return commands.map((command) => ({ command, matchedIndices: [] }))
+    return listed.map((command) => ({ command, matchedIndices: [] }))
   }
-  return fuzzyMatchCommands(commands, query)
+  return fuzzyMatchCommands(listed, query)
 }
 
 /** Runs uFuzzy over the given commands and maps hits back to `CommandMatch`es. */

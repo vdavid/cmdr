@@ -17,6 +17,7 @@ import {
 import { prefetchIcons, prefetchCustomFolderIcons } from '#lib/icon-cache.js'
 import { getUseAppIconsForDocuments } from '#lib/settings/reactive-settings.svelte.js'
 import { getSetting } from '#lib/settings/settings-store.js'
+import { hasCapability } from '#lib/platform/index.js'
 import { formatInteger } from '#lib/intl/number-format.js'
 import type { IconName } from '#lib/ui/icons/icon-map.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
@@ -324,8 +325,9 @@ export async function fetchVisibleRange(params: FetchRangeParams): Promise<Fetch
   // getxattr prefetch above. The backend defers the tag getxattr off the bulk
   // listing hot path, no-ops on non-local backends and already-correct ranges,
   // and emits a coalesced `directory-diff` only for rows that changed. Gated by
-  // the show-tags setting so it doesn't run when dots are hidden.
-  if (getSetting('listing.showTags')) {
+  // the show-tags setting so it doesn't run when dots are hidden, and by the OS
+  // having color tags at all, where the setting is hidden but keeps its default.
+  if (hasCapability('colorTags') && getSetting('listing.showTags')) {
     // Fire-and-forget; swallow rejections so a transient IPC failure (or a test
     // without the Tauri bridge) can't surface as an unhandled rejection.
     void enrichTags(listingId, paths).catch(() => {})

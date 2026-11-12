@@ -26,6 +26,7 @@
  * toast just educates.
  */
 
+import { hasCapability } from '#lib/platform/index.js'
 import { getSetting } from '#lib/settings/index.js'
 import { addToast, getToasts } from '#lib/ui/toast/index.js'
 
@@ -35,11 +36,12 @@ import { QUICK_LOOK_HINT_TOAST_ID } from './quick-look-hint-id'
 export { QUICK_LOOK_HINT_TOAST_ID }
 
 /**
- * Show the Quick Look hint toast unless (a) the user has permanently opted
- * out, or (b) the toast is already visible. Safe to call on every Space
- * press; the gates make repeated calls cheap.
+ * Show the Quick Look hint toast unless (a) this OS has no Quick Look, (b) the
+ * user has permanently opted out, or (c) the toast is already visible. Safe to
+ * call on every Space press; the gates make repeated calls cheap.
  */
 export function maybeShowQuickLookHint(): void {
+  if (!hasCapability('quickLook')) return
   if (getSetting('fileExplorer.suppressQuickLookHint')) return
   // If the toast is already on screen (any prior Space press in this session
   // that hasn't been dismissed), do nothing. We don't re-add or replace —

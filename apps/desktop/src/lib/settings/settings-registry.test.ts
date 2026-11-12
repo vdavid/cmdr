@@ -377,6 +377,26 @@ describe('buildSectionTree', () => {
     for (const s of imageIndexing) expect(s.needsCapability, s.id).toBe('imageIndexing')
   })
 
+  // A setting for an OS feature exists only where the OS has it: these rows describe a macOS
+  // surface, so Windows and Linux never list them (search, sidebar, sections, MCP).
+  it('gates each OS-feature setting on its capability', () => {
+    const expected: Record<string, string> = {
+      'fileExplorer.suppressQuickLookHint': 'quickLook',
+      'listing.showTags': 'colorTags',
+      'advanced.showSafeSaveFiles': 'safeSaveFiles',
+      'behavior.archiveEnter.bundle': 'appBundles',
+      'advanced.exitFullScreenOnEscape': 'fullScreen',
+      'advanced.exitFullScreenOnEscapeHintShown': 'fullScreen',
+      'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled': 'globalShortcuts',
+      'behavior.fileSystemWatching.globalGoToLatestShortcut.binding': 'globalShortcuts',
+      'behavior.fileSystemWatching.globalGoToLatestShortcut.acknowledged': 'globalShortcuts',
+      'ai.localContextSize': 'localAi',
+    }
+    for (const [id, capability] of Object.entries(expected)) {
+      expect(getSettingDefinition(id)?.needsCapability, id).toBe(capability)
+    }
+  })
+
   it('should build a tree from settings', () => {
     const tree = buildSectionTree()
     expect(Array.isArray(tree)).toBe(true)

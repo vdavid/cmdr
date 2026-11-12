@@ -1,7 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, onTestFinished } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import {
   commands,
+  commandOffered,
   getPaletteCommands,
+  listedCommands,
   updateLicenseCommandName,
   NATIVE_SHORTCUT_COMMAND_IDS,
   FIXED_KEY_COMMAND_IDS,
@@ -300,6 +303,51 @@ describe('conditional palette rows', () => {
   it('shows them where it can', () => {
     const ids = getPaletteCommands(() => true).map((c) => c.id)
     for (const id of shareLinkIds) expect(ids).toContain(id)
+  })
+})
+
+/**
+ * A command for an OS feature (Get info, Quick Look, color tags, …) exists only where the OS
+ * offers it: the palette, the Keyboard shortcuts section, the help window, and the MCP listing
+ * all skip it elsewhere, and it carries no default key there.
+ */
+describe('a capability-gated command', () => {
+  const byId = (id: CommandId) => commands.find((c) => c.id === id)
+
+  it('declares the capability its OS feature needs', () => {
+    expect(byId('file.getInfo')?.needsCapability).toBe('getInfo')
+    expect(byId('file.quickLook')?.needsCapability).toBe('quickLook')
+    expect(byId('file.openTerminalHere')?.needsCapability).toBe('openTerminalHere')
+    expect(byId('app.toggleCliCommand')?.needsCapability).toBe('cliCommand')
+    expect(byId('cloud.makeOffline')?.needsCapability).toBe('cloudFileActions')
+    expect(byId('tags.toggleRed')?.needsCapability).toBe('colorTags')
+  })
+
+  it('is listed nowhere where the OS lacks it', () => {
+    const listed = listedCommands().map((c) => c.id)
+    const palette = getPaletteCommands().map((c) => c.id)
+    for (const id of ['file.getInfo', 'file.quickLook'] as const) {
+      expect(listed).not.toContain(id)
+      expect(palette).not.toContain(id)
+      expect(commandOffered(byId(id) ?? {})).toBe(false)
+    }
+  })
+
+  it('is listed where the OS offers it', () => {
+    onTestFinished(withCapabilities('getInfo'))
+    expect(listedCommands().map((c) => c.id)).toContain('file.getInfo')
+    expect(getPaletteCommands().map((c) => c.id)).toContain('file.getInfo')
+    expect(listedCommands().map((c) => c.id)).not.toContain('file.quickLook')
+  })
+
+  it('carries no default key where the OS lacks it, so nothing claims ⌘I or ⇧Space for it', () => {
+    expect(byId('file.getInfo')?.shortcuts).toEqual([])
+    expect(byId('file.quickLook')?.shortcuts).toEqual([])
+  })
+
+  it('leaves every ungated command listed', () => {
+    const listed = new Set(listedCommands().map((c) => c.id))
+    for (const c of commands) if (c.needsCapability === undefined) expect(listed.has(c.id), c.id).toBe(true)
   })
 })
 

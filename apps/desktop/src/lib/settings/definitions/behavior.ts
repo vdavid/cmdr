@@ -401,6 +401,7 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     labelKey: 'settings.archives.bundle.label',
     descriptionKey: 'settings.archives.bundle.description',
     keywordsKey: 'settings.behavior.archiveEnter.bundle.keywords',
+    needsCapability: 'appBundles',
     type: 'enum',
     default: 'ask',
     component: 'toggle-group',
@@ -473,6 +474,7 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     descriptionKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description',
     cardKey: 'settings.fileSystemWatching.cardDownloads',
     keywordsKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.keywords',
+    needsCapability: 'globalShortcuts',
     type: 'boolean',
     default: true,
     component: 'switch',
@@ -488,6 +490,7 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     labelKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label',
     descriptionKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description',
     keywordsKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords',
+    needsCapability: 'globalShortcuts',
     type: 'string',
     default: '\u{2303}\u{2325}\u{2318}J', // ⌃⌥⌘J
     component: 'text-input',

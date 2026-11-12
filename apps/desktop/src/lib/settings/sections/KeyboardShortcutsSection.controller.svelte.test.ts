@@ -10,7 +10,7 @@
  * branches, with the store + registry mocked for determinism.
  */
 import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
-import { withPlatform } from '#lib/platform/test-platform.js'
+import { withCapabilities, withPlatform } from '#lib/platform/test-platform.js'
 
 // ── Mocked store + registry ──────────────────────────────────────────────────
 const effectiveShortcuts = new Map<string, string[]>()
@@ -60,12 +60,13 @@ vi.mock('#lib/shortcuts/index.js', async () => ({
   getConflictCount: () => 0,
 }))
 
-vi.mock('#lib/commands/command-registry.js', () => ({
-  commands: [
+vi.mock('#lib/commands/command-registry.js', () => {
+  const commands = [
     { id: 'app.about', name: 'About Cmdr', scope: 'App' },
     { id: 'file.copy', name: 'Copy', scope: 'Main window/File list' },
-  ],
-}))
+  ]
+  return { commands, listedCommands: () => commands }
+})
 
 vi.mock('#lib/commands/fuzzy-search.js', () => ({
   searchAllCommands: (q: string) =>
@@ -209,9 +210,15 @@ describe('filtering', () => {
   })
 
   it('shows the global go-to-latest row only when relevant', () => {
+    onTestFinished(withCapabilities('globalShortcuts'))
     const c = create()
     expect(c.showGlobalGoToLatestRow).toBe(true)
     c.activeFilter = 'modified'
+    expect(c.showGlobalGoToLatestRow).toBe(false)
+  })
+
+  it('hides the global go-to-latest row where no shortcut fires from other apps (Wayland)', () => {
+    const c = create()
     expect(c.showGlobalGoToLatestRow).toBe(false)
   })
 

@@ -93,6 +93,9 @@ mod tag_icons;
 mod tag_row;
 mod view_mode_items;
 
+#[cfg(test)]
+mod capability_rows_test;
+
 use std::collections::{HashMap, HashSet};
 
 // The bar as data, under the names the rest of this module has always used for it.

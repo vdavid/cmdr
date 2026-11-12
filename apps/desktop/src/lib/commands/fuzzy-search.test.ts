@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { searchAllCommands, searchCommands } from './fuzzy-search'
-import { commands } from './command-registry'
+import { listedCommands } from './command-registry'
 
 describe('searchCommands', () => {
   describe('empty query', () => {
@@ -196,9 +196,13 @@ describe('searchAllCommands', () => {
     expect(results.some((r) => r.command.id === 'app.about')).toBe(true)
   })
 
-  it('covers the full registry on an empty query (the set the shortcuts editor renders)', () => {
+  it('covers every command this OS offers on an empty query (the set the shortcuts editor renders)', () => {
     const results = searchAllCommands('')
-    expect(results.map((r) => r.command.id).sort()).toEqual(commands.map((c) => c.id).sort())
+    expect(results.map((r) => r.command.id).sort()).toEqual(
+      listedCommands()
+        .map((c) => c.id)
+        .sort(),
+    )
   })
 
   it('keeps matched indices within the visible name on keyword-only matches', () => {

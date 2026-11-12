@@ -12,7 +12,8 @@
  * bindings, the settings store) are mocked so the real `#lib/shortcuts` store
  * runs end-to-end against an in-memory disk, exactly like `shortcuts-store.test`.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { mount, unmount, flushSync, createRawSnippet } from 'svelte'
 
 // In-memory disk for the fake plugin-store (mirrors shortcuts-store.test.ts).
@@ -201,6 +202,7 @@ describe('KeyboardShortcutsSection scope cards', () => {
 
 describe('KeyboardShortcutsSection Global card', () => {
   it('renders the Global hotkey in its own card when shown, gated outside the card', () => {
+    onTestFinished(withCapabilities('globalShortcuts'))
     render()
     // With no filter, the Global card renders and holds the GlobalShortcutRow.
     expect(cardLabels()).toContain('Global')
@@ -208,6 +210,11 @@ describe('KeyboardShortcutsSection Global card', () => {
       (el) => el.textContent.trim() === 'Global',
     )
     expect(globalLabel?.closest('.section-card-wrap')?.querySelector('.section-card')).not.toBeNull()
+  })
+
+  it('has no Global card where no shortcut fires from other apps (a Wayland session)', () => {
+    render()
+    expect(cardLabels()).not.toContain('Global')
   })
 
   it('hides the Global card entirely when the filter excludes it (no empty Global card)', () => {

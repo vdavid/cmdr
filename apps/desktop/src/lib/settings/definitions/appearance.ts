@@ -468,6 +468,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
     cardKey: 'settings.appearance.card.namesAndIcons',
     keywordsKey: 'settings.listing.showTags.keywords',
     terms: ['finder'],
+    needsCapability: 'colorTags',
     type: 'boolean',
     default: true,
     component: 'switch',

@@ -22,6 +22,7 @@ import type { CoveredCount, MediaIndexVolumeState, ReclaimPreview } from '#lib/i
 import type { VolumeEnrichActivity } from '#lib/indexing/media-enrich-state.svelte.js'
 import type { VolumeInfo } from '#lib/file-explorer/types.js'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 
 /**
  * Every stub a block may need to re-point. Each `describe` sets what it cares
@@ -194,6 +195,9 @@ describe('ImageIndexingSection', () => {
     vi.useRealTimers()
     return target
   }
+
+  // The page exists only where there's an image engine, and its rows say so.
+  beforeEach(() => withCapabilities('imageIndexing'))
 
   beforeEach(() => {
     vi.useFakeTimers()

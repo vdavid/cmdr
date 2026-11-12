@@ -16,7 +16,8 @@
  * Axe coverage lives in `StepBeta.a11y.test.ts`.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished, type Mock } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { mount, tick, unmount, flushSync } from 'svelte'
 
 // `vi.mock` calls are hoisted above module-level `const`s, so any value a factory closes
@@ -286,7 +287,15 @@ describe('StepBeta', () => {
     expect(mounted.target.textContent).toContain('Settings › Updates & privacy')
   })
 
+  it('leaves the Homebrew note off the star row where Cmdr ships no Homebrew cask', async () => {
+    mounted = mountStep()
+    await waitForAsync()
+    expect(mounted.target.querySelector('a[href="https://github.com/getcmdr/cmdr"]')).not.toBeNull()
+    expect(mounted.target.textContent).not.toContain('brew install cmdr')
+  })
+
   it('renders the checklist: the two link rows, their reasons, and the email field', async () => {
+    onTestFinished(withCapabilities('homebrewCask'))
     mounted = mountStep()
     await waitForAsync()
     const star = mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/getcmdr/cmdr"]')

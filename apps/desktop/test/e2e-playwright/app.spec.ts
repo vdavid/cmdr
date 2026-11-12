@@ -320,12 +320,19 @@ test.describe('Keyboard navigation', () => {
     expect(cursorClass).not.toContain('is-selected')
     await expect.poll(announced, { timeout: waitBudget(3000) }).toBe('Nothing selected')
 
-    // First Space press fires the persistent Quick Look hint toast explaining
-    // "In Cmdr, Space selects the file under the cursor by default" (vs.
-    // Finder's Quick Look on Space). Asserting on it pins the hint as part
-    // of the contract for this binding — the toast is the documentation for
-    // the keyboard difference. Dismissed afterwards so the safety net is happy.
-    await expectAndDismissToast(tauriPage, 'Space')
+    // Where the OS has Quick Look, the first Space press fires the persistent
+    // Quick Look hint toast explaining "In Cmdr, Space selects the file under
+    // the cursor by default" (vs. Finder's Quick Look on Space). Asserting on
+    // it pins the hint as part of the contract for this binding — the toast is
+    // the documentation for the keyboard difference. Dismissed afterwards so
+    // the safety net is happy. Elsewhere ⇧Space previews nothing, so no hint.
+    const hasQuickLook = await tauriPage.evaluate<boolean>(`(window.__CMDR_CAPABILITIES__ || {}).quickLook === true`)
+    if (hasQuickLook) {
+      await expectAndDismissToast(tauriPage, 'Space')
+    } else {
+      const toastCount = await tauriPage.evaluate<number>(`document.querySelectorAll('.toast').length`)
+      expect(toastCount).toBe(0)
+    }
   })
 })
 

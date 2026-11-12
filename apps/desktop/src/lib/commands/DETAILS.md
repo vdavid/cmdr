@@ -170,6 +170,24 @@ maintained dynamic-label path that happens to track the same license state. Gene
 `nameKey` thunks and `displayName` just did, fixed nothing on that side. Keeping them separate is deliberate
 (`docs/specs/select-same-kind.md` § Not in scope); the duality is documented rather than merged.
 
+### OS-feature commands (`needsCapability`)
+
+A command that drives an OS feature (Get info, Quick Look, Open terminal here, the cloud-file actions, color tags, the
+`cmdr` terminal command) declares `needsCapability: '<capability>'` and is authored as if every OS had it
+(`showInPalette: true`, its real default keys). Where the capability is off:
+
+- No surface lists it: `listedCommands()` is the registry minus those, and the palette (`getPaletteCommands`), the
+  Keyboard shortcuts section and its search (`searchAllCommands`), the help window (`ShortcutsList.svelte`), and the MCP
+  settings resource's shortcuts all read it. Dispatch, conflict detection, and the id guards keep the whole `commands`
+  array.
+- It gets no default key (`resolveCommand`, at load, like the shortcuts store's defaults), so ⌘I or ⇧Space stays free
+  for a user binding.
+
+Why one declaration over `showInPalette: hasCapability(…)` plus a ternary on `shortcuts`: those hid the command from the
+palette only, so Linux's Keyboard shortcuts section listed "File properties" and "Preview" rows that did nothing. The
+menu bar's matching rows are `macos_only` in `crates/cmdr-menu/src/bar.rs`, kept in step per OS by
+`apps/desktop/src-tauri/src/menu/capability_rows_test.rs`.
+
 ## Adding a command (full steps)
 
 1. Add the id to `COMMAND_IDS` in `command-ids.ts`. Skipping this makes the registry entry a compile error (`Command.id`
@@ -220,10 +238,11 @@ matches on a short list). Folding is one code unit in, one out, so `info.ranges`
 `[start, end, start, end, …]` array with exclusive `end`, unpacked into per-char indices for `matchedIndices`. Pinned by
 `fuzzy-search.unicode.test.ts`.
 
-`searchAllCommands(query)` runs the same matcher over the FULL registry (including `showInPalette: false` entries), with
-no recents handling (empty query → everything in registry order). It exists for surfaces whose result set is the whole
-registry: the shortcuts editor renders and rebinds every command, so its name search (and the `getMatchingSections`
-sidebar highlight in settings-search) must cover the same set. The command palette itself stays on `searchCommands`.
+`searchAllCommands(query)` runs the same matcher over every command this OS offers (`listedCommands()`, including
+`showInPalette: false` entries), with no recents handling (empty query → everything in registry order). It exists for
+surfaces whose result set is the whole registry: the shortcuts editor renders and rebinds every command, so its name
+search (and the `getMatchingSections` sidebar highlight in settings-search) must cover the same set. The command palette
+itself stays on `searchCommands`.
 
 ## Unified dispatch
 

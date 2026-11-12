@@ -19,6 +19,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 
 const { getSettingMock, setSettingMock } = vi.hoisted(() => ({
   getSettingMock: vi.fn(),
@@ -80,6 +81,8 @@ beforeEach(() => {
   getSettingMock.mockReset()
   setSettingMock.mockReset()
   setDefaultSettings()
+  // The bundle row exists only where the OS has app bundles.
+  return withCapabilities('appBundles')
 })
 
 async function mountSection(searchQuery = ''): Promise<HTMLDivElement> {

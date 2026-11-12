@@ -11,7 +11,8 @@
  *      visibility is section-owned via `anyVisible`).
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, onTestFinished } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { mount, tick } from 'svelte'
 import NetworkSection from './NetworkSection.svelte'
 
@@ -71,6 +72,22 @@ describe('NetworkSection card groups', () => {
     expect(labels).toContain('Connection')
     expect(labels).not.toContain('Performance and timeouts')
     expect(target.querySelectorAll('.section-card')).toHaveLength(1)
+    target.remove()
+  })
+})
+
+describe('NetworkSection Local Network explainer', () => {
+  it('explains the Local Network permission where the OS asks for one', async () => {
+    onTestFinished(withCapabilities('localNetworkPermission'))
+    const target = await mountSection()
+    expect(target.querySelector('.local-network-info')).not.toBeNull()
+    target.remove()
+  })
+
+  it('leaves it out where the OS asks nothing, keeping the switch it sits under', async () => {
+    const target = await mountSection()
+    expect(target.querySelector('.local-network-info')).toBeNull()
+    expect(target.querySelector('label.setting-label[for="network.enabled"]')).not.toBeNull()
     target.remove()
   })
 })

@@ -40,13 +40,26 @@ backend says what exists, and a surface asks for exactly the thing it needs.
   compile until each OS has decided. The Linux arm's `imageIndexing` follows the `playwright-e2e` feature: the E2E build
   runs a fake image engine there (`cmdr-index`'s `media_index/scheduler/lifecycle.rs::platform_backends`), and nothing
   else does.
+- **Every arm answers on purpose, Windows included.** The macOS-only surfaces with no other OS behind them are
+  `localNetworkPermission` (a TCC prompt; Windows' firewall prompt is its own thing), `localAi` (the bundled
+  llama-server is the macOS ARM64 build; the backend's `is_local_ai_supported` narrows it on the machine, so an Intel
+  Mac still sees the option greyed out), `safeSaveFiles` (only NSDocument writes `.sb-` files), `appBundles` (no
+  LaunchServices elsewhere; `cmdr-fs`'s `folder_names_make_packages` is the backend's matching per-OS fact),
+  `fullScreen` (no way into full screen off macOS yet; flips on per OS with a native F11 entry), and `homebrewCask` (the
+  macOS distribution). `globalShortcuts` is `true` on macOS and Windows (`RegisterHotKey`) and, on Linux, only on an X11
+  session, read once at startup (`XDG_SESSION_TYPE`, else `WAYLAND_DISPLAY` unset): `global-hotkey` grabs keys through
+  X11 only, so on Wayland the grab fires only inside XWayland windows. The backend asks it too before registering the
+  hotkey (`downloads/runtime.rs`).
 - **Typed in TS from Rust**: `ipc.rs` exports the struct with `.typ::<PlatformCapabilities>()`, so `bindings.ts` carries
   it like any command's type, and `Capability` is `keyof` it. No IPC command returns it; the init script is the only
   channel.
-- **What asks**: the command registry (`showInPalette`, and a default binding only where its command exists), settings
-  (`needsCapability` on a definition or a searchable row drops it from the nav tree, search, and Advanced; the section
-  gates its own markup on the same capability), the nudges (`NUDGE_CAPABILITY` maps each offer to its own), Full Disk
-  Access everywhere it shows, the F9 terminal slot, the Services selection push, and the overlay title bar.
+- **What asks**: the command registry (`needsCapability` on a command: every listing surface skips it and it gets no
+  default key, `lib/commands/DETAILS.md` § "OS-feature commands"), settings (`needsCapability` on a definition or a
+  searchable row drops it from the nav tree, search, Advanced, the MCP settings resource, and every section's
+  `shouldShow`), the menu bar (`macos_only` rows, pinned to their capability per OS by
+  `apps/desktop/src-tauri/src/menu/capability_rows_test.rs`), the nudges (`NUDGE_CAPABILITY` maps each offer to its
+  own), Full Disk Access everywhere it shows, the F9 terminal slot, the Services selection push, and the overlay title
+  bar.
 - **What doesn't**: `isMacOS()` stays where the question really is the platform. Key glyphs and the combo grammar
   (`key-capture.ts`, the shortcut filter, the favorites tooltip), the default keymap's per-platform combos, copy that
   names macOS things (`*.mac` / `*.other` keys, Keychain vs keyring), the updater's macOS flow, and the old-macOS

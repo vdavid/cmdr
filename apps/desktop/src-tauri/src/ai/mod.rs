@@ -66,18 +66,19 @@ pub use translate_error::{AiTranslateError, AiTranslateErrorKind};
 
 use serde::{Deserialize, Serialize};
 
-/// Returns true if local AI features (llama-server) can run on this hardware.
+/// Returns true if local AI features (llama-server) can run on this machine.
 ///
-/// Requires Apple Silicon (M1+) because the bundled llama-server binary is ARM64-only, and
-/// on macOS, version 14 or later: the binary is built with `minos 14.0` (`vtool -show-build`
-/// on 0.57.0's bundle, 2026-10-29), so an older Mac would download the multi-GB model and
-/// then fail to start the server.
+/// Requires a build that ships a model runtime (`PlatformCapabilities::local_ai`: the bundled
+/// llama-server is the macOS ARM64 build, so macOS only), Apple Silicon (M1+), and macOS 14 or
+/// later: the binary is built with `minos 14.0` (`vtool -show-build` on 0.57.0's bundle,
+/// 2026-10-29), so an older Mac would download the multi-GB model and then fail to start the
+/// server.
 ///
 /// Only used to gate local-only operations (start_ai_server, start_ai_download).
 /// Provider-agnostic commands (get_ai_status, get_folder_suggestions, etc.) check
 /// the configured provider instead.
 pub fn is_local_ai_supported() -> bool {
-    cfg!(target_arch = "aarch64") && (!cfg!(target_os = "macos") || crate::platform::macos_at_least(14, 0))
+    crate::platform::capabilities().local_ai && cfg!(target_arch = "aarch64") && crate::platform::macos_at_least(14, 0)
 }
 
 /// Current state of the AI subsystem.
@@ -222,6 +223,23 @@ impl Default for AiState {
             dismissed_until: None,
             model_download_complete: false,
             partial_download_started: None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod local_ai_support_tests {
+    use super::is_local_ai_supported;
+
+    /// The bundled llama-server is the macOS ARM64 build, so no other OS (Linux ARM64 included)
+    /// may claim local AI, and the UI's `local_ai` capability and this gate never disagree.
+    #[test]
+    fn local_ai_needs_a_build_that_ships_the_runtime() {
+        if !crate::platform::capabilities().local_ai {
+            assert!(!is_local_ai_supported());
+        }
+        if is_local_ai_supported() {
+            assert_eq!((std::env::consts::OS, std::env::consts::ARCH), ("macos", "aarch64"));
         }
     }
 }

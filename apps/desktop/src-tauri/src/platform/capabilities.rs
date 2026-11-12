@@ -44,4 +44,21 @@ pub struct PlatformCapabilities {
     pub overlay_title_bar: bool,
     /// An image engine for OCR and tags, so the Image indexing settings exist.
     pub image_indexing: bool,
+    /// A Local Network permission the OS asks the user for (the explainer in Network settings).
+    pub local_network_permission: bool,
+    /// This build ships a local model runtime, so the Local AI option and its settings card exist.
+    /// The backend's `is_local_ai_supported` narrows it further on the running machine.
+    pub local_ai: bool,
+    /// The OS's document framework writes the `.sb-` safe-save files the listing filter knows (the
+    /// "Show safe-save files" setting).
+    pub safe_save_files: bool,
+    /// A folder named `X.app` is an app the OS opens (the archives settings' bundle row).
+    pub app_bundles: bool,
+    /// Cmdr offers a way into full screen, so the "Esc exits full screen" setting and its hint
+    /// exist.
+    pub full_screen: bool,
+    /// Cmdr ships as a Homebrew cask (the onboarding note asking for a star on the cask).
+    pub homebrew_cask: bool,
+    /// A system-wide shortcut works from any app (the global "go to latest download" shortcut).
+    pub global_shortcuts: bool,
 }

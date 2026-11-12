@@ -66,6 +66,12 @@ developer's own `⌃⌥⌘J` mid-suite, jumped a pane to Downloads, and raised t
 guard charged to `mcp-archive-password.spec.ts`. The setting is untouched; only the OS registration is skipped, so the
 row reads "not registered" in a test run.
 
+**Decision: the OS has to offer global shortcuts** (`PlatformCapabilities::global_shortcuts`, the same gate
+`should_register_shortcut` reads). **Why:** `global-hotkey` 0.8.0 registers on macOS, Windows (`RegisterHotKey`), and
+X11 only; on a Wayland session its X11 grab lands on XWayland and fires only while an XWayland window has focus, so the
+feature would look on and be dead. The frontend hides the toggle, the binding row, and the warning flag on the same
+capability.
+
 **Gotcha: ⌘ maps to `Super`, not `Meta`, in the accelerator string.** `binding_to_accelerator` (and its FE mirror
 `global-shortcut-binding.ts`) translate `⌘` to `Super`. The `global-hotkey` crate's parser accepts `COMMAND` / `CMD` /
 `SUPER` for the Cmd key but rejects `META` (it falls through to the key-code parser and errors with `UnsupportedKey`); a

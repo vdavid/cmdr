@@ -20,7 +20,8 @@
  * duplicated: command grouping in `keyboard-shortcuts-grouping`, conflict
  * classification in `keyboard-shortcuts-banner`.
  */
-import { commands } from '#lib/commands/command-registry.js'
+import { commands, listedCommands } from '#lib/commands/command-registry.js'
+import { hasCapability } from '#lib/platform/index.js'
 import { searchAllCommands } from '#lib/commands/fuzzy-search.js'
 import {
   getEffectiveShortcuts,
@@ -116,7 +117,7 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
   const filteredCommands = $derived.by(() => {
     dependOn(shortcutChangeCounter) // Trigger on shortcut changes
 
-    let cmds = [...commands]
+    let cmds = listedCommands()
 
     // Filter by name search. `searchAllCommands`, not `searchCommands`: this section
     // renders the full registry, so the search must cover the same set (palette-only
@@ -149,8 +150,10 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
   // The global go-to-latest hotkey is a bespoke row (its binding lives in
   // settings.json, not shortcuts.json — see `GlobalShortcutRow.svelte`). It
   // shows whenever there's no active filter, or the name filter matches its
-  // label. The key filter doesn't apply (we don't index its combo here).
+  // label. The key filter doesn't apply (we don't index its combo here). It needs an
+  // OS that fires a shortcut from any app (`globalShortcuts`: not a Wayland session).
   const showGlobalGoToLatestRow = $derived.by(() => {
+    if (!hasCapability('globalShortcuts')) return false
     if (activeFilter === 'modified' || activeFilter === 'conflicts') return false
     if (keySearchQuery.trim()) return false
     if (!nameSearchQuery.trim()) return true

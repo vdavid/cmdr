@@ -61,6 +61,7 @@ import { cancelClickToRename } from '../rename/rename-activation'
 import { dismissTransientToastsForPane } from '#lib/ui/toast/index.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { getSetting } from '#lib/settings/index.js'
+import { hasCapability } from '#lib/platform/index.js'
 import type { ListingDirectorySortMode } from '#lib/settings/index.js'
 import type { SortColumn, SortOrder } from '../types'
 import { basenameOf, type CanonicalPath, parentOf } from '#lib/path/canonical.js'
@@ -735,7 +736,8 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     // so scrolling shows dots instantly and a future sort/filter sees them.
     // Cancelable via `isStale`: stops on unmount, a newer load, or a listing
     // swap. The detached loop's logic lives in `tag-sweep.ts` (testable).
-    if (getSetting('listing.showTags') && deps.getCaps().hasBackendListing) {
+    // `colorTags` first: off macOS the setting is hidden but keeps its default.
+    if (hasCapability('colorTags') && getSetting('listing.showTags') && deps.getCaps().hasBackendListing) {
       const sweepGen = loadGeneration
       const sweepListingId = deps.getListingId()
       void sweepListingTags({

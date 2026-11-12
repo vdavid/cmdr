@@ -17,6 +17,7 @@
     import { getSettingLock } from '#lib/managed-policy/managed-policy.svelte.js'
     import { lockAllowsWrite } from '#lib/managed-policy/overlay.js'
     import { useSettingLock } from '../components/setting-lock.svelte'
+    import { hasCapability } from '#lib/platform/index.js'
 
     interface Props {
         searchQuery?: string
@@ -84,8 +85,11 @@
         await refreshStatus()
     }
 
-    // Derived state
-    const localAiSupported = $derived(status?.localAiSupported ?? true)
+    // Derived state. Local AI is an option only where this build ships a model runtime
+    // (`localAi`); there, the backend still says whether this machine can run it (an Intel Mac
+    // keeps the option, greyed out with the reason).
+    const offersLocalAi = hasCapability('localAi')
+    const localAiSupported = $derived(offersLocalAi && (status?.localAiSupported ?? true))
 
     const providerTooltips: Record<string, string> = {
         off: tString('settings.ai.tooltipOff'),
@@ -172,6 +176,7 @@
                         >
                             {tString('settings.ai.provider.opt.cloud')}
                         </button>
+                        {#if offersLocalAi}
                         <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke provider segmented row: options carry per-option tooltips and a disabled "local" state a plain RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                         <button
                             class="provider-option"
@@ -186,6 +191,7 @@
                         >
                             {tString('settings.ai.provider.opt.local')}
                         </button>
+                        {/if}
                     </div>
                 </SettingRow>
                 {#if managedNote}
@@ -209,7 +215,7 @@
         {/if}
 
         <!-- Local LLM section -->
-        {#if provider === 'local'}
+        {#if offersLocalAi && provider === 'local'}
             <AiLocalSection {searchQuery} {shouldShow} {status} />
         {/if}
     {/if}

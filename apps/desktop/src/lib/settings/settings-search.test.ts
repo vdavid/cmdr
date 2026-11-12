@@ -52,6 +52,35 @@ describe('a capability-gated setting', () => {
   })
 })
 
+/**
+ * A section's rows and card frames ask `shouldShow`, so a capability-gated setting hides from a
+ * hand-rendered section by declaring `needsCapability` alone, with or without a search query.
+ */
+describe('createShouldShow on a capability-gated setting', () => {
+  afterEach(() => {
+    withEveryCapability()
+    clearSearchIndex()
+  })
+
+  it('hides it where the OS does not offer it, query or not', () => {
+    withCapabilities()
+    clearSearchIndex()
+
+    expect(createShouldShow('')('behavior.textEditorApp')).toBe(false)
+    expect(createShouldShow('Sublime Text')('behavior.textEditorApp')).toBe(false)
+    expect(createShouldShow('')('listing.showHiddenFiles')).toBe(true)
+  })
+
+  it('shows it where the OS offers it', () => {
+    expect(createShouldShow('')('behavior.textEditorApp')).toBe(true)
+  })
+
+  it('leaves ids outside the registry to the query alone', () => {
+    withCapabilities()
+    expect(createShouldShow('')('row:indexing.indexSize')).toBe(true)
+  })
+})
+
 describe('searchSettings', () => {
   beforeEach(() => {
     clearSearchIndex()

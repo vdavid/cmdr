@@ -21,6 +21,20 @@ pub(crate) fn capabilities() -> PlatformCapabilities {
         cli_command: false,
         overlay_title_bar: false,
         image_indexing: false,
+        // Windows asks nothing for the local network; its firewall prompt is its own thing.
+        local_network_permission: false,
+        // The bundled model runtime is the macOS ARM64 build only.
+        local_ai: false,
+        // Only NSDocument writes the `.sb-` files the filter knows.
+        safe_save_files: false,
+        // No LaunchServices: a folder named `X.app` is a folder.
+        app_bundles: false,
+        // No way into full screen yet; flips on once a native F11 entry lands.
+        full_screen: false,
+        // The cask is the macOS distribution.
+        homebrew_cask: false,
+        // `RegisterHotKey` works for every app on the desktop.
+        global_shortcuts: true,
     }
 }
 

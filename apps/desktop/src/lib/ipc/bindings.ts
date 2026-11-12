@@ -15743,6 +15743,29 @@ export type PlatformCapabilities = {
   overlayTitleBar: boolean
   // An image engine for OCR and tags, so the Image indexing settings exist.
   imageIndexing: boolean
+  // A Local Network permission the OS asks the user for (the explainer in Network settings).
+  localNetworkPermission: boolean
+  /**
+   *  This build ships a local model runtime, so the Local AI option and its settings card exist.
+   *  The backend's `is_local_ai_supported` narrows it further on the running machine.
+   */
+  localAi: boolean
+  /**
+   *  The OS's document framework writes the `.sb-` safe-save files the listing filter knows (the
+   *  "Show safe-save files" setting).
+   */
+  safeSaveFiles: boolean
+  // A folder named `X.app` is an app the OS opens (the archives settings' bundle row).
+  appBundles: boolean
+  /**
+   *  Cmdr offers a way into full screen, so the "Esc exits full screen" setting and its hint
+   *  exist.
+   */
+  fullScreen: boolean
+  // Cmdr ships as a Homebrew cask (the onboarding note asking for a star on the cask).
+  homebrewCask: boolean
+  // A system-wide shortcut works from any app (the global "go to latest download" shortcut).
+  globalShortcuts: boolean
 }
 
 export type PrepareResult = {

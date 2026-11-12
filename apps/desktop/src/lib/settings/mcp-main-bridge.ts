@@ -10,12 +10,12 @@
  */
 
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { getSettingDefinition, settingsRegistry, validateSettingValue } from './settings-registry'
+import { getSettingDefinition, settingRendersHere, settingsRegistry, validateSettingValue } from './settings-registry'
 import { getSetting, setSetting, isModified } from './settings-store'
 import { MASKED, holdsMaskedPlaceholder, maskSecrets } from './setting-secret-mask'
 import type { SettingDefinition, SettingId, SettingsValues } from './types'
 import { getEffectiveShortcuts, getDefaultShortcuts, isShortcutModified } from '#lib/shortcuts/index.js'
-import { commands } from '#lib/commands/command-registry.js'
+import { listedCommands } from '#lib/commands/command-registry.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { getSettingLock, isSettingManaged } from '#lib/managed-policy/managed-policy.svelte.js'
 import { lockAllowsWrite } from '#lib/managed-policy/overlay.js'
@@ -49,7 +49,8 @@ function buildAllSettingsYaml(): string {
 
   // Group settings by top-level section
   const sectionMap = new Map<string, typeof settingsRegistry>()
-  for (const def of settingsRegistry) {
+  // A setting for a feature this OS lacks (`needsCapability`) renders nowhere, so it isn't offered.
+  for (const def of settingsRegistry.filter(settingRendersHere)) {
     const sectionKey = def.section.join(' > ')
     const existing = sectionMap.get(sectionKey) ?? []
     existing.push(def)
@@ -93,7 +94,7 @@ function buildAllSettingsYaml(): string {
   // Include shortcuts
   lines.push('')
   lines.push('shortcuts:')
-  for (const cmd of commands) {
+  for (const cmd of listedCommands()) {
     const shortcuts = getEffectiveShortcuts(cmd.id)
     const defaults = getDefaultShortcuts(cmd.id)
     const modified = isShortcutModified(cmd.id)

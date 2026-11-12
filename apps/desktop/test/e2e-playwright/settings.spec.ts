@@ -427,13 +427,14 @@ test.describe('Settings keyboard-shortcut deep link', () => {
 
   test('lands on Keyboard shortcuts with the target row scrolled into view', async ({ tauriPage }) => {
     const main = tauriPage as TauriPage
-    // `file.quickLook` is the Quick Look toast's deep-link target. Its scope is the
-    // compound `Main window/File list`, so this also guards that compound-scope rows
-    // render and are reachable (the section groups every command by scope; see
+    // `file.contextMenu` sits right after `file.quickLook`, the Quick Look toast's
+    // deep-link target, and unlike it exists on every OS. Its scope is the compound
+    // `Main window/File list`, so this also guards that compound-scope rows render
+    // and are reachable (the section groups every command by scope; see
     // `sections/CLAUDE.md` § "Every command groups by scope"). The row lives far
     // enough down the list to need a scroll, exercising the nested `.commands-list`
     // scroll path.
-    const targetAnchor = 'shortcut-file.quickLook'
+    const targetAnchor = 'shortcut-file.contextMenu'
     const section = JSON.stringify(['Keyboard shortcuts'])
     const url = `/settings?section=${encodeURIComponent(section)}&anchor=${encodeURIComponent(targetAnchor)}`
     const urlJson = JSON.stringify(url)

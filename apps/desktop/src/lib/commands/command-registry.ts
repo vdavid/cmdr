@@ -19,6 +19,7 @@ import type { Command, CommandSource, PaletteCondition } from './types'
 import type { CommandId } from './command-ids'
 import { BLOCKED_BY_DIALOGS, type WhileDialogOpen } from './while-dialog-open'
 import { tString } from '#lib/intl/messages.svelte.js'
+import { hasCapability } from '#lib/platform/index.js'
 import { appCommands } from './sources/app'
 import { mainWindowCommands } from './sources/main-window'
 import { fileListCommands } from './sources/file-list'
@@ -180,6 +181,9 @@ function resolveCommand(src: CommandSource): Command {
   const resolveName = (): string => tString(typeof nameKey === 'function' ? nameKey() : nameKey)
   const cmd = {
     ...rest,
+    // Default keys are read once, at load, like the shortcuts store's defaults: an OS
+    // without the feature leaves its combo free.
+    shortcuts: commandOffered(src) ? rest.shortcuts : [],
     get name(): string {
       return resolveName()
     },
@@ -207,9 +211,23 @@ export const commands: Command[] = commandSources.map(resolveCommand)
  * asking about the palette's whole vocabulary (pruning stale recents) wants.
  */
 export function getPaletteCommands(holds?: (condition: PaletteCondition) => boolean): Command[] {
-  return commands.filter(
+  return listedCommands().filter(
     (c) => c.showInPalette && (c.paletteCondition === undefined || holds === undefined || holds(c.paletteCondition)),
   )
+}
+
+/** Whether this OS offers what `command` drives (`Command.needsCapability`). */
+export function commandOffered(command: Pick<Command, 'needsCapability'>): boolean {
+  return command.needsCapability === undefined || hasCapability(command.needsCapability)
+}
+
+/**
+ * The commands that exist on this OS: every surface that lists commands (the palette, the
+ * Keyboard shortcuts section and its search, the help window, the MCP listing) reads these.
+ * Dispatch, conflict detection, and the id guards keep reading `commands`, the whole registry.
+ */
+export function listedCommands(): Command[] {
+  return commands.filter(commandOffered)
 }
 
 // Re-exported from `sources/app.ts`, where the flag it flips lives beside the

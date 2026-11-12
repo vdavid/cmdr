@@ -58,6 +58,13 @@ export const NO_CAPABILITIES: Readonly<PlatformCapabilities> = Object.freeze({
   cliCommand: false,
   overlayTitleBar: false,
   imageIndexing: false,
+  localNetworkPermission: false,
+  localAi: false,
+  safeSaveFiles: false,
+  appBundles: false,
+  fullScreen: false,
+  homebrewCask: false,
+  globalShortcuts: false,
 })
 
 /**

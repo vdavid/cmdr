@@ -22,6 +22,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 
 const { getSettingMock, setSettingMock, downloadsWatcherStatusMock, recheckGateMock, setGlobalGoToLatestShortcutMock } =
   vi.hoisted(() => ({
@@ -80,6 +81,9 @@ function setStatus(fdaPending: boolean, running = true): void {
     data: { running, downloadsDir: '/Users/me/Downloads', fdaPending },
   })
 }
+
+// The go-to-latest toggle exists only where a shortcut fires from other apps.
+beforeEach(() => withCapabilities('globalShortcuts'))
 
 beforeEach(() => {
   getSettingMock.mockReset()

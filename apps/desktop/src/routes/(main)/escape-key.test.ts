@@ -4,6 +4,7 @@
  * screen only when the setting says so, telling the user once.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 
 const windowMock = vi.hoisted(() => ({
   isFullscreen: vi.fn(() => Promise.resolve(true)),
@@ -82,7 +83,18 @@ describe('exitFullScreenOnEscape', () => {
     settingValues.set('advanced.exitFullScreenOnEscapeHintShown', false)
     windowMock.isFullscreen.mockResolvedValue(true)
     windowMock.setFullscreen.mockClear()
+    windowMock.isFullscreen.mockClear()
     addToast.mockClear()
+    return withCapabilities('fullScreen')
+  })
+
+  // Where Cmdr offers no way into full screen, the setting and its hint are hidden too.
+  it('does nothing where the OS has no full screen of Cmdr’s', async () => {
+    withCapabilities()
+    await exitFullScreenOnEscape()
+    expect(windowMock.isFullscreen).not.toHaveBeenCalled()
+    expect(windowMock.setFullscreen).not.toHaveBeenCalled()
+    expect(addToast).not.toHaveBeenCalled()
   })
 
   it('leaves full screen and shows the hint the first time only', async () => {

@@ -678,9 +678,13 @@ element and widen that signature — deliberately not done for an unused capabil
   missing capability leaves the sidebar: the Image indexing page off macOS (#943), whose `imageIndexing` the Linux E2E
   build answers yes for its fake engine. Both filters ask one predicate, `settingRendersHere` (`settings-registry.ts`),
   and `AdvancedSection` applies it to its rows (`behavior.textEditorHintSeen` and the other hint flags only one feature
-  raises). Beyond that it decides nothing about rendering: a hand-rendering section gates its own markup on the same
-  `hasCapability`. Hidden settings still enter search, so a capability-gated feature's hidden flags take it too. Pinned
-  by `settings-registry.test.ts`.
+  raises). `createShouldShow` asks it too, so a hand-rendering section's `shouldShow(id)` and `anyVisible` card frames
+  hide a gated setting by its definition alone, query or not; markup beside a setting (the Local Network explainer, the
+  Local AI option) gates on the same `hasCapability`. The MCP settings resource leaves such a setting out too
+  (`mcp-main-bridge.ts`). A hidden setting still reads its default through `getSetting`, so every reader of one whose
+  default turns something on asks the capability as well (`listing.showTags`'s tag fetches, the full-screen Escape).
+  Hidden settings still enter search, so a capability-gated feature's hidden flags take it too. Pinned by
+  `settings-registry.test.ts` (each OS-feature setting's capability) and `settings-search.test.ts`.
 
 ## OS-backed rows (a control whose value lives outside Cmdr)
 

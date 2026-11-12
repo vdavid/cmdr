@@ -11,12 +11,16 @@
     import { openLocalNetworkSettings } from '#lib/tauri-commands/index.js'
     import { systemStrings } from '#lib/system-strings.svelte.js'
     import { tString } from '#lib/intl/messages.svelte.js'
+    import { hasCapability } from '#lib/platform/index.js'
 
     interface Props {
         searchQuery: string
     }
 
     const { searchQuery }: Props = $props()
+
+    /** The OS asks the user before Cmdr may reach the local network (macOS's TCC permission). */
+    const asksLocalNetworkPermission = hasCapability('localNetworkPermission')
 
     const shouldShow = $derived(createShouldShow(searchQuery))
 
@@ -49,6 +53,7 @@
                     <SettingSwitch id="network.enabled" />
                 </SettingRow>
 
+                {#if asksLocalNetworkPermission}
                 <div class="local-network-info">
                     <h4>{localNetworkAccessLabel}</h4>
                     <p>
@@ -71,6 +76,7 @@
                         {tString('settings.network.permissionWithout')}
                     </p>
                 </div>
+                {/if}
             {/if}
 
             {#if shouldShow('network.directSmbConnection')}

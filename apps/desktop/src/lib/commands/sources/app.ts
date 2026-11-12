@@ -7,7 +7,6 @@ import type { CommandSource } from '../types'
 import type { CliCommandState } from '#lib/ipc/bindings.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import { getBadgeStatus } from '#lib/feature-status.js'
-import { hasCapability } from '#lib/platform/index.js'
 import { BLOCKED_BY_DIALOGS, runsOverDialogs } from '../while-dialog-open'
 
 // macOS owns these four outright via PredefinedMenuItems; they never reach the dispatch core, so
@@ -172,7 +171,8 @@ export const appCommands: CommandSource[] = [
     id: 'app.toggleCliCommand',
     nameKey: cliCommandNameKey,
     scope: 'App',
-    showInPalette: hasCapability('cliCommand'),
+    needsCapability: 'cliCommand',
+    showInPalette: true,
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.appToggleCliCommand.description',

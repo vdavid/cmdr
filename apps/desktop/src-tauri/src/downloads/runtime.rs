@@ -139,12 +139,19 @@ struct ShortcutGates {
     has_accelerator: bool,
     /// `test_mode::may_register_global_hotkeys`: false in an automated run.
     may_register_global_hotkeys: bool,
+    /// The OS lets a shortcut fire from any app (`PlatformCapabilities::global_shortcuts`):
+    /// false on a Wayland session, where the X11 grab fires only inside XWayland windows.
+    os_offers_global_shortcuts: bool,
 }
 
 /// Whether the hotkey should be registered right now. The setting stays as the
 /// user left it either way; only the OS registration follows this.
 fn should_register_shortcut(gates: ShortcutGates) -> bool {
-    gates.enabled && gates.fda_open && gates.has_accelerator && gates.may_register_global_hotkeys
+    gates.enabled
+        && gates.fda_open
+        && gates.has_accelerator
+        && gates.may_register_global_hotkeys
+        && gates.os_offers_global_shortcuts
 }
 
 /// Apply a Settings change (toggle + binding) to the live global-shortcut
@@ -163,6 +170,7 @@ pub fn apply_global_go_to_latest_shortcut(
         fda_open: !crate::fda_gate::is_fda_pending_runtime(),
         has_accelerator: accelerator.is_some(),
         may_register_global_hotkeys: crate::test_mode::may_register_global_hotkeys(),
+        os_offers_global_shortcuts: crate::platform::capabilities().global_shortcuts,
     });
 
     let mut guard = global_shortcut_manager(app);
@@ -319,7 +327,16 @@ mod tests {
             fda_open: true,
             has_accelerator: true,
             may_register_global_hotkeys: true,
+            os_offers_global_shortcuts: true,
         }
+    }
+
+    #[test]
+    fn the_hotkey_stays_off_where_the_os_has_no_global_shortcuts() {
+        assert!(!should_register_shortcut(ShortcutGates {
+            os_offers_global_shortcuts: false,
+            ..all_gates_open()
+        }));
     }
 
     #[test]

@@ -8,11 +8,11 @@ Centralized command registry and fuzzy search engine for the command palette.
   boundary guard.
 - **`types.ts`**: `Command`, `CommandMatch`, `CommandScope`, plus `CommandArgs` / `CommandDispatchArgs` (the dispatch
   arg-tuple shape).
-- **`command-registry.ts`**: the `commands` array, `getPaletteCommands()`, `updateLicenseCommandName()`, and the
-  `NATIVE_SHORTCUT_COMMAND_IDS` / `FIXED_KEY_COMMAND_IDS` lists. Registry DATA is in **`sources/*.ts`** (add commands
-  there, not inline).
+- **`command-registry.ts`**: the `commands` array, `listedCommands()` (minus `needsCapability` misses),
+  `getPaletteCommands()`, `updateLicenseCommandName()`, and the `NATIVE_SHORTCUT_COMMAND_IDS` / `FIXED_KEY_COMMAND_IDS`
+  lists. Registry DATA is in **`sources/*.ts`**.
 - **`sort-commands.ts`**: `SORT_BY_COMMANDS` (column → `sort.by*`).
-- **`fuzzy-search.ts`**: `searchCommands()` (palette set) + `searchAllCommands()` (full registry), via the shared
+- **`fuzzy-search.ts`**: `searchCommands()` (palette set) + `searchAllCommands()` (listed set), via the shared
   `#lib/utils/unicode-fuzzy.ts` engine (any script, accents optional).
 - Tests: `fuzzy-search.test.ts`, `command-registry.test.ts` (set-equality + palette pin), `command-types.test.ts`
   (arg-shape guards), `rust-command-id-drift.test.ts` (Rust ids ∈ `COMMAND_IDS`), `command-reachability.test.ts` (key,

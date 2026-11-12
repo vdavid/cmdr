@@ -234,11 +234,14 @@ pub const MENU_BAR: &[BarMenu] = &[
             // launch module behind it. Built enabled; `set_open_terminal_here_enabled` greys it out
             // while the focused pane sits somewhere a shell can't `cd` into.
             macos_only(item(OPEN_TERMINAL_HERE_ID, "menu.file.openTerminalHere", macos("F9"))),
-            item(GET_INFO_ID, "menu.file.getInfo", cmd_or_ctrl!("I")),
+            // Get info and Quick Look open macOS's own panels, so they're macOS only, like the
+            // `get_info` and `quick_look` capabilities (the app's `menu/capability_rows_test.rs`
+            // keeps the two in step).
+            macos_only(item(GET_INFO_ID, "menu.file.getInfo", cmd_or_ctrl!("I"))),
             // Shift+Space, not plain Space: AppKit consumes modifier accelerators before the webview
             // can, so the menu fires. Plain Space was dead, eaten by the webview's selection toggle
             // before AppKit's menu dispatcher saw it.
-            item(QUICK_LOOK_ID, "menu.file.quickLook", macos("Shift+Space")),
+            macos_only(item(QUICK_LOOK_ID, "menu.file.quickLook", macos("Shift+Space"))),
         ],
     ),
     menu(

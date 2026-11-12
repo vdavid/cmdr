@@ -1,7 +1,7 @@
 /**
  * Tests for file-list-utils.ts
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
 import {
   getSyncIconPath,
   createParentEntry,
@@ -46,7 +46,8 @@ vi.mock('#lib/settings/settings-store.js', () => ({
 }))
 vi.mock('../git/commit-count-fill', () => ({ requestPendingCommitCounts: vi.fn() }))
 
-import { getFileRange, getDirStatsBatch, enrichPackages } from '#lib/tauri-commands/index.js'
+import { getFileRange, getDirStatsBatch, enrichPackages, enrichTags } from '#lib/tauri-commands/index.js'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { requestPendingCommitCounts } from '../git/commit-count-fill'
 import { prefetchIcons } from '#lib/icon-cache.js'
 
@@ -369,6 +370,35 @@ describe('fetchVisibleRange', () => {
     })
 
     expect(onSyncStatusRequest).toHaveBeenCalledWith(['/dir/file1.txt'])
+  })
+
+  it('asks for the visible rows’ color tags where the OS has them and the setting shows them', async () => {
+    onTestFinished(withCapabilities('colorTags'))
+    vi.mocked(getFileRange).mockResolvedValue(mockEntries)
+    await fetchVisibleRange({
+      listingId: 'listing-1',
+      startItem: 10,
+      endItem: 20,
+      hasParent: false,
+      totalCount: 100,
+      includeHidden: false,
+      cachedRange: { start: 0, end: 5 },
+    })
+    expect(enrichTags).toHaveBeenCalledWith('listing-1', ['/dir/file1.txt'])
+  })
+
+  it('never asks for color tags where the OS has none, whatever the hidden setting holds', async () => {
+    vi.mocked(getFileRange).mockResolvedValue(mockEntries)
+    await fetchVisibleRange({
+      listingId: 'listing-1',
+      startItem: 10,
+      endItem: 20,
+      hasParent: false,
+      totalCount: 100,
+      includeHidden: false,
+      cachedRange: { start: 0, end: 5 },
+    })
+    expect(enrichTags).not.toHaveBeenCalled()
   })
 
   it('asks for the pending commit counts of the rows it fetched', async () => {

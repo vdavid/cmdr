@@ -40,6 +40,13 @@ const MAC_VISITOR_CAPABILITIES: Readonly<PlatformCapabilities> = Object.freeze({
   cliCommand: true,
   overlayTitleBar: true,
   imageIndexing: true,
+  localNetworkPermission: true,
+  localAi: true,
+  safeSaveFiles: true,
+  appBundles: true,
+  fullScreen: true,
+  homebrewCask: true,
+  globalShortcuts: true,
 })
 
 /** The demo's capabilities for a visitor on `platform`. Exported for its test. */

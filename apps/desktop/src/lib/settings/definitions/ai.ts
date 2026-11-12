@@ -119,6 +119,7 @@ export const aiSettings: SettingDefinitionSource[] = [
     labelKey: 'settings.ai.localContextSize.label',
     descriptionKey: 'settings.ai.localContextSize.description',
     keywordsKey: 'settings.ai.localContextSize.keywords',
+    needsCapability: 'localAi',
     type: 'enum',
     // 32,768 is the floor Ask Cmdr needs for one working turn
     // (`agent::chat::budget::MIN_LOCAL_CONTEXT_TOKENS`, which this default mirrors): the

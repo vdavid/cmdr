@@ -26,6 +26,7 @@
     import { TERMS_URL, TERMS_VERSION } from '#lib/legal/terms.js'
     import { getAppLogger } from '#lib/logging/logger.js'
     import { tString } from '#lib/intl/messages.svelte.js'
+    import { hasCapability } from '#lib/platform/index.js'
     import Trans from '#lib/intl/Trans.svelte'
     import { dependOn } from '#lib/utils/reactivity.js'
     import type { Snippet } from 'svelte'
@@ -74,6 +75,9 @@
 
     const log = getAppLogger('onboarding-beta')
     const onboardingState = getOnboardingState()
+
+    /** The star note says the stars get Cmdr into Homebrew, the macOS distribution. */
+    const shipsHomebrewCask = hasCapability('homebrewCask')
 
     const analyticsDef = getSettingDefinition('analytics.enabled') ?? { label: '', description: '' }
     /** The usage-stats row's tick IS the setting, on the same wiring `<SettingSwitch>` uses. */
@@ -380,7 +384,9 @@
                     rel="noopener noreferrer"
                     onclick={openAndTick(GITHUB_REPO_URL, 'star')}>{starLabel}</LinkButton
                 >
-                <span class="row-note"><Trans key="onboarding.stepBeta.checklist.starNote" snippets={{ code }} /></span>
+                {#if shipsHomebrewCask}
+                    <span class="row-note"><Trans key="onboarding.stepBeta.checklist.starNote" snippets={{ code }} /></span>
+                {/if}
             </span>
         </li>
 

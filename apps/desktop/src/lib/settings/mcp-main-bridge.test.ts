@@ -35,7 +35,10 @@ vi.mock('#lib/shortcuts/index.js', () => ({
   getDefaultShortcuts: vi.fn(() => []),
   isShortcutModified: () => false,
 }))
-vi.mock('#lib/commands/command-registry.js', () => ({ commands: [] }))
+vi.mock('#lib/commands/command-registry.js', () => {
+  const commands: unknown[] = []
+  return { commands, listedCommands: () => commands }
+})
 
 // The organization's policy, as `locked_settings` would name it.
 const managedLocks = vi.hoisted(() => new Map<string, unknown>())
@@ -47,6 +50,7 @@ vi.mock('#lib/logging/logger.js', () => ({
   getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), debug: vi.fn(), error: vi.fn() }),
 }))
 
+import { withCapabilities, withEveryCapability } from '#lib/platform/test-platform.js'
 import { cleanupMcpMainBridge, setupMcpMainBridge } from './mcp-main-bridge'
 import { getSettingDefinition, settingsRegistry } from './settings-registry'
 import { getSetting } from './settings-store'
@@ -161,6 +165,9 @@ describe('MCP set_setting', () => {
 })
 
 describe('MCP settings resource', () => {
+  // Every surface renders, so every registered setting has a row to check.
+  beforeEach(() => withEveryCapability())
+
   async function readAllSettings(): Promise<string> {
     const handler = handlers.get('mcp-get-all-settings')
     if (!handler) throw new Error('mcp-get-all-settings has no listener')
@@ -275,6 +282,13 @@ describe('MCP settings resource', () => {
     const yaml = await readAllSettings()
     vi.mocked(getSetting).mockReset()
     expect(yaml).not.toContain('\n  - id: forged')
+  })
+
+  it('leaves out a setting for a feature this OS lacks, which renders nowhere', async () => {
+    withCapabilities()
+    const yaml = await readAllSettings()
+    expect(yaml).not.toContain('  - id: listing.showTags\n')
+    expect(yaml).toContain('  - id: listing.showHiddenFiles\n')
   })
 
   it('tells a client which settings change with no question', async () => {

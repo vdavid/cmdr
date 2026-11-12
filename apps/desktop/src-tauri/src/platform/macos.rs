@@ -21,6 +21,13 @@ pub(crate) fn capabilities() -> PlatformCapabilities {
         cli_command: true,
         overlay_title_bar: true,
         image_indexing: true,
+        local_network_permission: true,
+        local_ai: true,
+        safe_save_files: true,
+        app_bundles: true,
+        full_screen: true,
+        homebrew_cask: true,
+        global_shortcuts: true,
     }
 }
 

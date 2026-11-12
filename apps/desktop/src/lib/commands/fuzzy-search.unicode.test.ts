@@ -11,7 +11,7 @@ vi.mock('./command-registry', () => {
     { id: 'app.about', name: '关于 Cmdr', displayName: '关于 Cmdr', showInPalette: true },
     { id: 'view.toggleTheme', name: 'Téma váltása', displayName: 'Téma váltása', showInPalette: true },
   ].map((c) => ({ ...c, scope: 'App', shortcuts: [] }))
-  return { commands: mockCommands, getPaletteCommands: () => mockCommands }
+  return { commands: mockCommands, getPaletteCommands: () => mockCommands, listedCommands: () => mockCommands }
 })
 
 import { searchAllCommands, searchCommands } from './fuzzy-search'

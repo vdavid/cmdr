@@ -29,7 +29,8 @@
  * Axe coverage lives in `StepAi.a11y.test.ts`.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import { mount, tick, unmount, flushSync } from 'svelte'
 import type { ConsentOutcome } from '#lib/ai/cloud-consent.svelte.js'
 import type { SettingLock } from '#lib/ipc/bindings.js'
@@ -294,6 +295,9 @@ describe('StepAi', () => {
     })
   })
 
+  // Most tests are about the Local option, which exists where the build ships a model runtime.
+  beforeEach(() => withCapabilities('localAi'))
+
   afterEach(async () => {
     if (mounted) {
       await unmount(mounted.instance)
@@ -310,6 +314,15 @@ describe('StepAi', () => {
     expect(mounted.target.textContent).toContain('Here is how you do common actions')
     expect(radioByValue(mounted.target, 'cloud')).not.toBeNull()
     expect(radioByValue(mounted.target, 'local')).not.toBeNull()
+    expect(radioByValue(mounted.target, 'off')).not.toBeNull()
+  })
+
+  it('offers no Local option where the build ships no local model runtime', async () => {
+    onTestFinished(withCapabilities())
+    mounted = mountStep()
+    await waitForAsync()
+    expect(radioByValue(mounted.target, 'local')).toBeNull()
+    expect(radioByValue(mounted.target, 'cloud')).not.toBeNull()
     expect(radioByValue(mounted.target, 'off')).not.toBeNull()
   })
 

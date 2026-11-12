@@ -7,6 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick, unmount, flushSync } from 'svelte'
+import { withCapabilities } from '#lib/platform/test-platform.js'
 import type { AiEffortOptions, AiModelLimits, ManagedAiRefusal, SettingLock } from '#lib/ipc/bindings.js'
 
 // A model known not to reason: no Effort picker. Hoisted with the stubs that use it.
@@ -164,6 +165,27 @@ beforeEach(() => {
   stubs.settings['ai.cloudProviderConfigs'] = '{}'
   stubs.settings['askCmdr.interactiveModel'] = ''
   stubs.modelLimits = { contextWindowTokens: null, maxOutputTokens: null, source: null, effort: NO_EFFORT }
+  // This build ships a local model runtime (macOS), so the Local option exists.
+  return withCapabilities('localAi')
+})
+
+describe('the Local option in Settings > AI > Provider', () => {
+  function providerOptions(target: HTMLElement): string[] {
+    return [...target.querySelectorAll('.provider-option')].map((b) => b.textContent.trim())
+  }
+
+  it('is offered where the build ships a local model runtime', async () => {
+    const target = await mountSection()
+    expect(providerOptions(target)).toEqual(['Off', 'Cloud AI', 'Local LLM'])
+  })
+
+  it('is gone where it ships none, with its settings card', async () => {
+    withCapabilities()
+    stubs.settings['ai.provider'] = 'local'
+    const target = await mountSection()
+    expect(providerOptions(target)).toEqual(['Off', 'Cloud AI'])
+    expect(target.querySelector('#ai\\.localContextSize')).toBeNull()
+  })
 })
 
 afterEach(() => {

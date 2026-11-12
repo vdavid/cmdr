@@ -45,6 +45,7 @@
     import { lockAllowsWrite } from '#lib/managed-policy/overlay.js'
     import { followPresetHostVerdicts } from '#lib/ai-provider-setup/preset-hosts.svelte.js'
     import { localAiErrorLogLevel, toLocalAiError } from '#lib/ai/local-ai-error.js'
+    import { hasCapability } from '#lib/platform/index.js'
     import type { Snippet } from 'svelte'
 
     /**
@@ -420,9 +421,15 @@
     // A service the organization refuses stays listed in the picker, disabled with the reason.
     const presetHosts = followPresetHostVerdicts()
 
+    // Local AI is an option only where this build ships a model runtime (`localAi`, macOS); an
+    // Intel Mac still lists it, greyed out with the reason (`localAiSupported`).
+    const offersLocalAi = hasCapability('localAi')
+
     const aiOptions = $derived([
         { value: 'off', label: tString('onboarding.stepAi.off.label') },
-        { value: 'local', label: tString('onboarding.stepAi.local.label'), disabled: !localAiSupported },
+        ...(offersLocalAi
+            ? [{ value: 'local', label: tString('onboarding.stepAi.local.label'), disabled: !localAiSupported }]
+            : []),
         { value: 'cloud', label: tString('onboarding.stepAi.cloud.label'), disabled: cloudRuledOut },
     ])
 

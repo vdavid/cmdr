@@ -20,6 +20,7 @@
  */
 
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { hasCapability } from '#lib/platform/index.js'
 import { getSetting, setSetting } from '#lib/settings/index.js'
 import { addToast } from '#lib/ui/toast/index.js'
 import { getAppLogger } from '#lib/logging/logger.js'
@@ -58,9 +59,11 @@ export function installEscapeStopClaims(): () => void {
 /**
  * Runs for an Escape nothing in the window used. Leaves full screen when the
  * setting allows it and the window is in full screen, and the first time that
- * happens, tells the user where the switch is.
+ * happens, tells the user where the switch is. Only where Cmdr offers full
+ * screen (`fullScreen`): elsewhere the setting is hidden, so it decides nothing.
  */
 export async function exitFullScreenOnEscape(): Promise<void> {
+  if (!hasCapability('fullScreen')) return
   if (!getSetting('advanced.exitFullScreenOnEscape')) return
   try {
     const appWindow = getCurrentWindow()

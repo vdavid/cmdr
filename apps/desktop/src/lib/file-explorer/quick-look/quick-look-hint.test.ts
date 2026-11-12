@@ -22,6 +22,8 @@ vi.mock('./QuickLookHintToastContent.svelte', () => ({
   default: { __toastContent: 'QuickLookHintToastContent' },
 }))
 
+import { withCapabilities } from '#lib/platform/test-platform.js'
+
 import { maybeShowQuickLookHint, QUICK_LOOK_HINT_TOAST_ID } from './quick-look-hint'
 import QuickLookHintToastContent from './QuickLookHintToastContent.svelte'
 
@@ -33,6 +35,15 @@ describe('maybeShowQuickLookHint', () => {
     // Defaults that match a freshly-installed app: not suppressed, no toasts on screen.
     getSettingMock.mockReturnValue(false)
     getToastsMock.mockReturnValue([])
+    return withCapabilities('quickLook')
+  })
+
+  it('never shows where the OS has no Quick Look, since ⇧Space previews nothing there', () => {
+    withCapabilities()
+
+    maybeShowQuickLookHint()
+
+    expect(addToastMock).not.toHaveBeenCalled()
   })
 
   it('shows the toast on first Space press', () => {

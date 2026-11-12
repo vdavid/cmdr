@@ -15,7 +15,7 @@
 <script lang="ts">
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import SectionCard from '#lib/ui/SectionCard.svelte'
-    import { commands } from '#lib/commands/command-registry.js'
+    import { listedCommands } from '#lib/commands/command-registry.js'
     import { getDefaultShortcuts, getEffectiveShortcuts, onShortcutChange, toDisplayShortcut } from '#lib/shortcuts/index.js'
     import { groupCommandsByScope } from '#lib/settings/sections/keyboard-shortcuts-grouping.js'
     import { tString } from '#lib/intl/messages.svelte.js'
@@ -40,7 +40,8 @@
 
     const groups = $derived.by(() => {
         dependOn(shortcutChangeCounter)
-        const visible = hideEmpty ? commands.filter((c) => getEffectiveShortcuts(c.id).length > 0) : commands
+        const listed = listedCommands()
+        const visible = hideEmpty ? listed.filter((c) => getEffectiveShortcuts(c.id).length > 0) : listed
         return groupCommandsByScope(visible)
     })
 </script>

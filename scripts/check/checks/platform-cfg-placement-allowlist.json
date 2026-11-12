@@ -4,9 +4,6 @@
     "apps/desktop/src-tauri/src/ai/extract.rs": {
       "outsideSeam": 2
     },
-    "apps/desktop/src-tauri/src/ai/mod.rs": {
-      "outsideSeam": 1
-    },
     "apps/desktop/src-tauri/src/ai/process.rs": {
       "negated": 4,
       "outsideSeam": 9

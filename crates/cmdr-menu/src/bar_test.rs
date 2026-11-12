@@ -181,8 +181,6 @@ menu menu.bar.file
   14 item multi_rename menu.file.multiRename [Ctrl+M] tracked
   15 separator
   16 item show_in_finder menu.file.showInFileManager [Alt+Ctrl+O] tracked
-  17 item get_info menu.file.getInfo [Ctrl+I] tracked
-  18 item quick_look menu.file.quickLook tracked
 menu menu.bar.edit
   0 item undo_trash menu.edit.undoTrash disabled tracked
   1 separator

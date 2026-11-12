@@ -7,7 +7,7 @@ import { foldForSearch, fuzzySearch, type FoldedText } from '#lib/utils/unicode-
 import { availableLocales, manifestMessage, tStringIn, uiCatalogLocale } from '#lib/intl/messages.svelte.js'
 import { localeDisplayName, localeEnglishName } from '#lib/intl/locale-display-names.js'
 import type { SearchableEntry, SettingSearchResult } from './types'
-import { settingRendersHere, settingsRegistry } from './settings-registry'
+import { getSettingDefinition, settingRendersHere, settingsRegistry } from './settings-registry'
 import { searchableRowEntries } from './sections/searchable-rows'
 import { sectionTitle } from './section-i18n'
 import { searchAllCommands } from '#lib/commands/fuzzy-search.js'
@@ -291,12 +291,18 @@ export function highlightMatches(text: string, matchedIndices: number[]): Array<
 
 /**
  * Create a `shouldShow` filter for a given search query.
- * Returns a function that checks whether a setting ID matches the query.
- * When the query is empty, all settings are shown.
+ * Returns a function that checks whether a setting ID renders here and matches the query.
+ * A registry setting whose `needsCapability` this OS doesn't offer never shows
+ * (`settingRendersHere`), so a section hides a gated row and its card frame by the
+ * definition alone. When the query is empty, every other id shows.
  */
 export function createShouldShow(searchQuery: string): (id: string) => boolean {
   const matchingIds = searchQuery.trim() ? getMatchingSettingIds(searchQuery) : null
-  return (id: string) => !matchingIds || matchingIds.has(id)
+  return (id: string) => {
+    const setting = getSettingDefinition(id)
+    if (setting !== undefined && !settingRendersHere(setting)) return false
+    return !matchingIds || matchingIds.has(id)
+  }
 }
 
 /**
