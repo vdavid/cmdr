@@ -521,6 +521,18 @@
     "description": "Button at the bottom of the Keyboard shortcuts section that restores every command's shortcuts to the shipped defaults.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "shortcuts.section.resetAllConfirm": "Reset all keyboard shortcuts to their defaults?",
+  "@shortcuts.section.resetAllConfirm": {
+    "description": "Question in the native confirmation dialog shown after the user clicks \"Reset all to defaults\" (shortcuts.section.resetAll) in the Keyboard shortcuts section. Confirming removes every shortcut the user changed. The dialog's other button is Cancel."
+  },
+  "shortcuts.section.resetAllConfirmTitle": "Reset keyboard shortcuts",
+  "@shortcuts.section.resetAllConfirmTitle": {
+    "description": "Title of the native confirmation dialog that asks shortcuts.section.resetAllConfirm. A short title in sentence case, naming the act."
+  },
+  "shortcuts.section.resetAllConfirmButton": "Reset",
+  "@shortcuts.section.resetAllConfirmButton": {
+    "description": "The confirming button of the native dialog that asks shortcuts.section.resetAllConfirm; pressing it resets every keyboard shortcut to its default. One verb naming the act, beside a Cancel button."
+  },
 
   "shortcuts.window.title": "Keyboard shortcuts",
   "@shortcuts.window.title": {

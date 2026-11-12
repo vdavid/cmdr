@@ -24,8 +24,8 @@ const resetAllShortcuts = vi.fn(() => Promise.resolve())
 const findConflictsForShortcut = vi.fn<
   (payload: { shortcut: string; scope: string; excludeCommandId: string }) => unknown[]
 >(() => [])
-const confirmDialog = vi.fn<(payload: { message: string; title: string }) => Promise<boolean>>(() =>
-  Promise.resolve(false),
+const confirmDialog = vi.fn<(payload: { message: string; title: string; confirmLabel?: string }) => Promise<boolean>>(
+  () => Promise.resolve(false),
 )
 
 vi.mock('#lib/shortcuts/index.js', async () => ({
@@ -90,10 +90,12 @@ vi.mock('#lib/commands/fuzzy-search.js', () => ({
 }))
 
 vi.mock('#lib/utils/confirm-dialog.js', () => ({
-  confirmDialog: (message: string, title: string) => confirmDialog({ message, title }),
+  confirmDialog: (message: string, title: string, confirmLabel?: string) =>
+    confirmDialog({ message, title, confirmLabel }),
 }))
 
 import { createKeyboardShortcutsController } from './KeyboardShortcutsSection.controller.svelte'
+import { tString } from '#lib/intl/messages.svelte.js'
 
 let dispose: (() => void) | undefined
 
@@ -414,5 +416,17 @@ describe('capture + conflict engine', () => {
     const c = create()
     await c.handleResetAll()
     expect(resetAllShortcuts).toHaveBeenCalledOnce()
+  })
+
+  it('asks in the catalog’s words, naming the act on its button', async () => {
+    confirmDialog.mockResolvedValueOnce(false)
+    const c = create()
+    await c.handleResetAll()
+    expect(confirmDialog).toHaveBeenLastCalledWith({
+      message: tString('shortcuts.section.resetAllConfirm'),
+      title: tString('shortcuts.section.resetAllConfirmTitle'),
+      confirmLabel: tString('shortcuts.section.resetAllConfirmButton'),
+    })
+    expect(resetAllShortcuts).not.toHaveBeenCalled()
   })
 })

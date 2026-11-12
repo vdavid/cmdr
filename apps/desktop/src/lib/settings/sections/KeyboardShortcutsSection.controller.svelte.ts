@@ -42,6 +42,7 @@ import {
   toDisplayModifiers,
 } from '#lib/shortcuts/index.js'
 import { confirmDialog } from '#lib/utils/confirm-dialog.js'
+import { tString } from '#lib/intl/messages.svelte.js'
 import { dependOn } from '#lib/utils/reactivity.js'
 import { groupCommandsByScope } from './keyboard-shortcuts-grouping'
 import {
@@ -338,7 +339,11 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
   }
 
   async function handleResetAll() {
-    const confirmed = await confirmDialog('Reset all keyboard shortcuts to their defaults?', 'Reset keyboard shortcuts')
+    const confirmed = await confirmDialog(
+      tString('shortcuts.section.resetAllConfirm'),
+      tString('shortcuts.section.resetAllConfirmTitle'),
+      tString('shortcuts.section.resetAllConfirmButton'),
+    )
     if (confirmed) {
       await resetAllShortcuts()
     }
