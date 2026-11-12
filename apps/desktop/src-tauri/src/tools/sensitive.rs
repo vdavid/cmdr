@@ -2,14 +2,16 @@
 //! callers: `inspect_file`, `image_facts`, `search_photos`, and `multi_rename`'s media
 //! fields. It blocks CONTENTS only: file names in these folders may still reach a provider.
 //!
-//! - [`classify`] is pure: path components against the rules below. It's the whole check
+//! - [`classify`] is pure: path components against the rules. It's the whole check
 //!   for a path with no realpath (a phone, a routed path, a stored index path).
 //! - [`path_gate`] adds Cmdr's real data dir and the path after following symlinks. It can
 //!   block on a hung mount, so it only runs where a deadline can abandon it (`inspect`'s
 //!   runner). [`path_gate_within`] brings its own deadline for callers without one.
 //! - [`refuse_private_key_text`] catches a key copied somewhere no path rule can see.
 //!
-//! Why each rule, and which call sites: `../DETAILS.md` § The sensitive-content gate.
+//! The rules are `sensitive/rules.rs`; where this OS moved its per-user dirs is
+//! `sensitive/platform/`. Why each rule, and which call sites: `DETAILS.md` § The
+//! sensitive-content gate.
 
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
@@ -22,6 +24,11 @@ use unicode_normalization::UnicodeNormalization;
 
 use crate::security_log::{self, ContentTool, ProtectedContent};
 
+mod platform;
+mod rules;
+
+use rules::{Dir, Moved};
+
 /// What a refused row tells the model, so it relays a refusal instead of retrying or
 /// guessing at a permission problem.
 pub(crate) const PROTECTED_NOTE: &str = "Cmdr doesn't hand this file's contents to AI tools. Tell the user; asking again won't change it. The file's name is fine to mention.";
@@ -30,11 +37,12 @@ pub(crate) const PROTECTED_NOTE: &str = "Cmdr doesn't hand this file's contents 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Protected {
-    /// SSH, GPG, cloud, and tool credentials, and the OS keychains.
+    /// SSH, GPG, cloud, and tool credentials, the OS credential stores, and password managers.
     Credentials,
     /// A browser's profile: cookies, saved passwords, history.
     BrowserData,
-    /// The Full Disk Access stores: Mail, Messages, and Notes.
+    /// Mail, messages, and notes: Apple's Mail, Messages, and Notes, and the mail clients
+    /// each OS has (Thunderbird, Outlook, Evolution, Geary, KMail).
     MessageStore,
     /// Cmdr's own data dir: tokens, databases, raw logs.
     CmdrData,
@@ -69,84 +77,22 @@ pub(crate) enum GateStop {
     TimedOut,
 }
 
-/// A run of folded path components that protects whatever sits at or under it.
-struct Rule {
-    parts: &'static [&'static str],
-    reason: Protected,
-}
-
-const fn rule(parts: &'static [&'static str], reason: Protected) -> Rule {
-    Rule { parts, reason }
-}
-
-/// Folded, matched anywhere in the path, so a NAS backup of a home folder counts.
-///
-/// ❌ Never a bare `notes`, `edge`, `arc`, `brave`, `chrome`, `safari`, or `firefox`: at any
-/// depth, case-folded, those would refuse `~/Documents/notes/*`. Browsers stay anchored.
-const RULES: &[Rule] = &[
-    rule(&[".ssh"], Protected::Credentials),
-    rule(&[".gnupg"], Protected::Credentials),
-    rule(&[".password-store"], Protected::Credentials),
-    rule(&[".aws"], Protected::Credentials),
-    rule(&[".azure"], Protected::Credentials),
-    rule(&[".kube"], Protected::Credentials),
-    rule(&[".config", "gcloud"], Protected::Credentials),
-    rule(&[".config", "gh"], Protected::Credentials),
-    rule(&[".docker", "config.json"], Protected::Credentials),
-    // Tokens in remote URLs.
-    rule(&[".git", "config"], Protected::Credentials),
-    rule(&[".cargo", "credentials.toml"], Protected::Credentials),
-    rule(&[".claude", ".credentials.json"], Protected::Credentials),
-    rule(&["sops", "age", "keys.txt"], Protected::Credentials),
-    rule(&["library", "keychains"], Protected::Credentials),
-    rule(&[".local", "share", "keyrings"], Protected::Credentials),
-    rule(&["library", "mail"], Protected::MessageStore),
-    rule(&["library", "messages"], Protected::MessageStore),
-    rule(
-        &["library", "group containers", "group.com.apple.notes"],
-        Protected::MessageStore,
-    ),
-    rule(&[".mozilla"], Protected::BrowserData),
-    rule(&["library", "cookies"], Protected::BrowserData),
-    rule(&["library", "safari"], Protected::BrowserData),
-    rule(
-        &["library", "application support", "google", "chrome"],
-        Protected::BrowserData,
-    ),
-    rule(&["library", "application support", "chromium"], Protected::BrowserData),
-    rule(
-        &["library", "application support", "bravesoftware"],
-        Protected::BrowserData,
-    ),
-    rule(
-        &["library", "application support", "microsoft edge"],
-        Protected::BrowserData,
-    ),
-    rule(&["library", "application support", "arc"], Protected::BrowserData),
-    rule(&["library", "application support", "firefox"], Protected::BrowserData),
-    rule(&[".config", "google-chrome"], Protected::BrowserData),
-    rule(&[".config", "chromium"], Protected::BrowserData),
-    rule(&[".config", "bravesoftware"], Protected::BrowserData),
-    rule(&[".config", "microsoft-edge"], Protected::BrowserData),
-];
-
-/// Folded, matched against the last component only: a `.env` FOLDER is a Python venv.
-const CREDENTIAL_FILE_NAMES: &[&str] = &[
-    ".netrc",
-    ".npmrc",
-    ".pypirc",
-    ".git-credentials",
-    ".pgpass",
-    ".vault-token",
-    "rclone.conf",
-];
-
 /// Any component starting with this is a Cmdr data dir: every instance, so a dev build can't
 /// read the prod `mcp.token`. A custom `CMDR_DATA_DIR` is [`path_gate`]'s job.
 const CMDR_COMPONENT_PREFIX: &str = "com.veszelovszki.cmdr";
 
+/// One component the way every OS's filesystem could mean it: NFC, lowercased, and in the
+/// spellings Win32 opens as the same name. `AppData.` and `AppData ` open `AppData`, and
+/// `id_rsa::$DATA` or `id_rsa:x` reads a stream of `id_rsa`. Folding them on every OS only
+/// over-refuses, and a Windows share reached from a Mac needs it.
 fn fold(component: &str) -> String {
-    component.nfc().collect::<String>().to_lowercase()
+    let folded = component.nfc().collect::<String>().to_lowercase();
+    let name = folded.split(':').next().unwrap_or_default();
+    let name = name.trim_end_matches(['.', ' ']);
+    match name.is_empty() {
+        true => folded,
+        false => name.to_string(),
+    }
 }
 
 /// A path's components, folded, with `.` gone and `..` applied. Splits on `\` as well as `/`:
@@ -165,22 +111,29 @@ fn folded_components(path: &str) -> Vec<String> {
     parts
 }
 
+fn folded_dirs(dirs: &[(Dir, PathBuf)]) -> Vec<Moved> {
+    dirs.iter()
+        .map(|(dir, path)| (*dir, folded_components(&path.to_string_lossy())))
+        .collect()
+}
+
+/// The per-user dirs this process's environment moved, read once: the environment doesn't
+/// change under a running app.
+static MOVED_DIRS: LazyLock<Vec<(Dir, PathBuf)>> = LazyLock::new(platform::moved_dirs);
+static MOVED: LazyLock<Vec<Moved>> = LazyLock::new(|| folded_dirs(&MOVED_DIRS));
+
 /// Which rule protects `path`, if any. Pure: no filesystem, so it can't see a symlink.
 pub(crate) fn classify(path: &str) -> Option<Protected> {
+    classify_on(path, &MOVED)
+}
+
+/// [`classify`] for a host that keeps its per-user dirs at `moved`.
+fn classify_on(path: &str, moved: &[Moved]) -> Option<Protected> {
     let parts = folded_components(path);
     if parts.iter().any(|part| part.starts_with(CMDR_COMPONENT_PREFIX)) {
         return Some(Protected::CmdrData);
     }
-    let hit = RULES.iter().find(|rule| {
-        parts
-            .windows(rule.parts.len())
-            .any(|run| run.iter().map(String::as_str).eq(rule.parts.iter().copied()))
-    });
-    if let Some(rule) = hit {
-        return Some(rule.reason);
-    }
-    let name = parts.last()?;
-    (name.starts_with(".env") || CREDENTIAL_FILE_NAMES.contains(&name.as_str())).then_some(Protected::Credentials)
+    rules::protecting(&parts, moved)
 }
 
 /// Whether `path` is `dir` or sits under it, comparing folded components.
@@ -210,7 +163,12 @@ pub(crate) fn path_gate(path: &str) -> Result<(), Protected> {
 }
 
 fn gate_against(path: &str, data_dir: Option<&Path>) -> Result<(), Protected> {
-    check_rules(path, data_dir)?;
+    gate_on(path, data_dir, &MOVED_DIRS)
+}
+
+/// The gate for a host whose data dir and moved per-user dirs are these.
+fn gate_on(path: &str, data_dir: Option<&Path>, moved: &[(Dir, PathBuf)]) -> Result<(), Protected> {
+    check_rules(path, data_dir, &folded_dirs(moved))?;
     // A phone, a server, or a routed scheme has no realpath: its components were the whole check.
     if crate::tools::is_virtual_path(path) || !Path::new(path).is_absolute() {
         return Ok(());
@@ -218,15 +176,20 @@ fn gate_against(path: &str, data_dir: Option<&Path>) -> Result<(), Protected> {
     let Some(real) = resolve_existing(Path::new(path)) else {
         return Ok(());
     };
-    check_rules(&real.to_string_lossy(), data_dir)?;
-    // The data dir resolved too: `/tmp` and `/var` are links on a Mac, so a resolved path never
-    // sits under the name a custom `CMDR_DATA_DIR` gives it.
+    let real = real.to_string_lossy();
+    check_rules(&real, data_dir, &folded_dirs(moved))?;
+    // The host's dirs resolved too: `/tmp` and `/var` are links on a Mac, so a resolved path
+    // never sits under the name a custom `CMDR_DATA_DIR` or `XDG_CONFIG_HOME` gives its dir.
     let real_data_dir = data_dir.and_then(resolve_existing);
-    check_rules(&real.to_string_lossy(), real_data_dir.as_deref())
+    let real_moved: Vec<(Dir, PathBuf)> = moved
+        .iter()
+        .filter_map(|(dir, path)| Some((*dir, resolve_existing(path)?)))
+        .collect();
+    check_rules(&real, real_data_dir.as_deref(), &folded_dirs(&real_moved))
 }
 
-fn check_rules(path: &str, data_dir: Option<&Path>) -> Result<(), Protected> {
-    if let Some(reason) = classify(path) {
+fn check_rules(path: &str, data_dir: Option<&Path>, moved: &[Moved]) -> Result<(), Protected> {
+    if let Some(reason) = classify_on(path, moved) {
         return Err(reason);
     }
     match data_dir {
@@ -274,6 +237,8 @@ pub(crate) fn refuse_private_key_text(text: &str) -> Result<(), Protected> {
     }
 }
 
+#[cfg(test)]
+mod locations_tests;
 #[cfg(test)]
 #[path = "sensitive_tests.rs"]
 mod tests;

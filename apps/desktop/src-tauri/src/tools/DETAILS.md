@@ -827,11 +827,32 @@ walks the serialized result and requires every leaf to be a string, a number, or
 prompt-injected file name could otherwise get `~/.ssh/id_rsa` or Cmdr's `mcp.token` read and sent to the provider. It
 blocks contents only: names in these folders may still flow. A new tool that yields contents goes through it.
 
-**The rules** live in `RULES` and `CREDENTIAL_FILE_NAMES`: case-folded, NFC-normalized component runs at any depth, so a
-NAS backup of a home folder counts. File names match the last component alone, since a `.env` FOLDER is a Python venv.
-Browsers stay anchored under `Library/Application Support` or `.config`, because a bare `Notes`, `Chrome`, or `Arc`,
-case-folded at any depth, would refuse `~/Documents/notes/*`. `com.veszelovszki.cmdr*` matches every instance's data dir,
-so a dev build can't read the prod `mcp.token`.
+**The rules** live in `sensitive/rules.rs` (`RULES` and `CREDENTIAL_FILE_NAMES`): case-folded, NFC-normalized component
+runs at any depth, so a NAS backup of a home folder counts. File names match the last component alone, since a `.env`
+FOLDER is a Python venv. `com.veszelovszki.cmdr*` matches every instance's data dir, so a dev build can't read the prod
+`mcp.token`. What they cover, per OS, with the evidence: § The protected locations.
+
+- **Every OS's rules run on every OS.** A Mac browsing a backup of a Windows profile must refuse
+  `AppData/Local/Google/Chrome` as Windows does, so there's no per-OS table to fall out of step, and nothing a Mac
+  protected can stop being protected elsewhere.
+- **An app stays anchored** under the per-user dir it lives in (`Dir`: `Library/Application Support`, `.config`,
+  `AppData/Roaming`, …) or under a parent only it uses (`.var/app/<id>`, `snap/<name>`). A bare `Notes`, `Chrome`,
+  `Mozilla`, or `Arc`, case-folded at any depth, would refuse `~/Documents/notes/*`.
+- **A family rule** (`family(…)`) also takes a longer name that continues with a space, `-`, `.`, or `_`: `chrome`
+  covers `Chrome Beta` and `Chrome SxS`, `google-chrome` covers `google-chrome-unstable`, and a package folder covers its
+  publisher suffix. It never takes a neighbor that only shares a prefix (`EdgeUpdate`, `.config/operator`).
+- **Folding is the same on every OS, and it's the strictest one.** Case folds everywhere, though a Linux disk tells
+  `.SSH` from `.ssh`: a share or an exFAT drive mounted there doesn't, and refusing the odd twin costs nothing. The
+  spellings Win32 opens as one name fold too: a trailing dot or space (`AppData.`), and a named stream (`id_rsa::$DATA`,
+  `id_rsa:x`). `.` drops, `..` pops, and `\` separates like `/`. An 8.3 short name (`BRAVES~1`) has no lexical answer;
+  `path_gate`'s realpath is what catches it.
+- **A per-user dir the host moved has no telling component.** `XDG_CONFIG_HOME=/data/cfg` puts `gh`'s token at
+  `/data/cfg/gh`, and a redirected `%APPDATA%` puts a Firefox profile on a file server under any name. The platform seam
+  `sensitive/platform/` answers where this OS's environment places them (the XDG variables on every OS, since
+  command-line tools follow them everywhere; `%APPDATA%` and `%LOCALAPPDATA%` on Windows), and a rule under that `Dir`
+  matches there as well. It reads the environment only, so `classify` stays free of the disk; `path_gate` resolves
+  those dirs too, for a dir that's a link. Windows' hidden compatibility junctions (`Application Data`,
+  `Local Settings/Application Data`) are spelled in `Dir::spellings`, so they hold without a realpath.
 
 **Three entry points, by what the caller can afford:**
 
@@ -883,6 +904,80 @@ the check, so "whole file" holds up to where it stopped, and nothing past that c
 
 **Refusals** are typed, never a false "not found", and reach the security log as tool and reason, with no path
 (`note_refusal`, coalesced per tool and reason: an injected turn can ask for a thousand files).
+
+### The protected locations
+
+What `RULES` covers, by the promise the consent screen makes (`ai.cloudConsent.askCmdr.protectedContents`, one branch
+per OS). The copy names categories; a new CATEGORY is a copy change, a new app inside one isn't. Paths are relative to
+a home folder unless they start with `%`. Checked on 2026-11-12, with the source in parentheses; a location marked "from memory" wasn't.
+
+- **SSH keys, and cloud and tool credentials** (`Credentials`), all OSes: `.ssh`, `.gnupg`, `.password-store`, `.aws`,
+  `.azure`, `.kube`, `.docker/config.json`, `.git/config`, `.cargo/credentials(.toml)`, `.claude/.credentials.json`,
+  `sops/age/keys.txt`, and the file names (`_netrc` and `pgpass.conf` are the Windows spellings, from memory) `.netrc`, `_netrc`, `.npmrc`, `.pypirc`, `.git-credentials`, `.pgpass`,
+  `pgpass.conf`, `.vault-token`, `rclone.conf`, `.env*`. Windows keeps three elsewhere: GnuPG in `%APPDATA%\gnupg`
+  (Gpg4win compendium § 22.1), gcloud in `%APPDATA%\gcloud` (a third-party write-up, blog.matrixpost.net), and `gh` in `%AppData%\GitHub CLI`
+  (`gh help environment`); `gh` and gcloud sit under `.config` on macOS and Linux.
+- **The OS credential store** (`Credentials`):
+  - macOS: `Library/Keychains` (present on macOS 27.0.1).
+  - Linux: `.local/share/keyrings` (GNOME Keyring) and `.local/share/kwalletd` (KWallet; ArchWiki "KDE Wallet").
+  - Windows: Credential Manager's files in `%APPDATA%\Microsoft\Credentials` and `%LOCALAPPDATA%\Microsoft\Credentials`,
+    and the DPAPI master keys that open them in `%APPDATA%\Microsoft\Protect` (Microsoft Q&A 6025889, which quotes all
+    three). `Microsoft\Vault` (both `AppData` folders, Web Credentials) and `%APPDATA%\Microsoft\Crypto` (the user's
+    private keys) ride along from memory, not re-verified: a wrong guess protects a folder that doesn't exist.
+- **Password managers** (`Credentials`), not named on the consent screen: Bitwarden's desktop and CLI data on all three
+  OSes, its Mac App Store container, Microsoft Store package, snap, and flatpak (bitwarden.com/help/data-storage), and
+  1Password's `Library/Group Containers/2BUA8C4S2C.com.1password` and `%LOCALAPPDATA%\1Password` (1Password support
+  "How to uninstall", and a third-party write-up for the Windows path); `.config/1Password` on Linux is from memory. A
+  KeePass database is a file the user keeps anywhere, so no rule can name it; it's encrypted, and `inspect_file` reads
+  it as binary.
+- **Browser data** (`BrowserData`):
+  - Chrome and Chromium, every channel: `Library/Application Support/Google/Chrome*` and `…/Chromium`,
+    `.config/google-chrome*` and `.config/chromium`, `%LOCALAPPDATA%\Google\Chrome*\User Data` and
+    `%LOCALAPPDATA%\Chromium`, plus the cache twins under `Library/Caches` and `.cache` (Chromium's "User Data Directory" doc,
+    which also says the profile follows `$XDG_CONFIG_HOME`).
+  - Firefox: `Library/Application Support/Firefox`, `.mozilla`, `%APPDATA%\Mozilla`, and the Microsoft Store package
+    `%LOCALAPPDATA%\Packages\Mozilla.Firefox_*` (Mozilla support "Profiles: where Firefox stores your … user data").
+    From Firefox 147 a new Linux profile sits at `.config/mozilla` with its cache at `.cache/mozilla` (147.0 release
+    notes: XDG Base Directory support).
+  - Edge (`Library/Application Support/Microsoft Edge*`, `.config/microsoft-edge*`,
+    `%LOCALAPPDATA%\Microsoft\Edge*`), Brave (`BraveSoftware` under the same three dirs), Vivaldi
+    (`Library/Application Support/Vivaldi`, `.config/vivaldi*`, `%LOCALAPPDATA%\Vivaldi`), and Opera
+    (`Library/Application Support/com.operasoftware.Opera*`, `.config/opera*`, `%APPDATA%\Opera Software` with its
+    cache under `%LOCALAPPDATA%`): third-party sources that agree with each other (Brave community 646708, arXiv
+    2504.17692 appendix A, ZDNET's Opera reset guide), and the macOS folders are present on macOS 27.0.1.
+  - Safari: `Library/Safari`, `Library/Cookies`, `Library/Containers/com.apple.Safari*`, and
+    `Library/Caches/com.apple.Safari*` (present on macOS 27.0.1). Arc: `Library/Application Support/Arc` (present), and
+    its Windows package `Packages\TheBrowserCompany.Arc_*` from memory.
+  - Flatpak and snap builds keep everything under one folder per app, so those are whole-folder rules: `.var/app/<id>`
+    for `com.google.Chrome(Dev)`, `org.chromium.Chromium`, `com.brave.Browser`, `com.microsoft.Edge`,
+    `org.mozilla.firefox`, `com.vivaldi.Vivaldi`, `com.opera.Opera` (each ID answers 200 on Flathub's appstream API),
+    and `snap/chromium` (Mozilla bug 1467094), `snap/firefox`, `snap/brave`.
+- **Mail, messages, and notes** (`MessageStore`):
+  - macOS: Apple's `Library/Mail`, `Library/Messages`, the Notes group container, and each app's sandbox container
+    (`com.apple.mail*`, `com.apple.MobileSMS*`, `com.apple.Notes*`; all present on macOS 27.0.1); Thunderbird's
+    `Library/Thunderbird`; Outlook's `Library/Group Containers/UBF8T346G9.Office/Outlook` (Microsoft Q&A 4736411).
+  - Linux: Thunderbird's `.thunderbird` (Mozilla support "Profiles: where Thunderbird stores …"), with its snap and
+    flatpak; Evolution's `.local/share/evolution`, `.config/evolution`, and `.cache/evolution` (Evolution help
+    `data-storage`); Geary's `.local/share/geary*` and `.config/geary*` (AUR `geary-git` notes); KMail's
+    `.local/share/local-mail*`, `.local/share/.local-mail*`, and `.local/share/akonadi` (KDE bug 282160).
+  - Windows: Thunderbird's `%APPDATA%\Thunderbird` (same Mozilla page); Outlook's `%LOCALAPPDATA%\Microsoft\Outlook`
+    and `Documents\Outlook Files` (Microsoft support "Open and find items in an Outlook Data File"), and
+    `%APPDATA%\Microsoft\Outlook`. New Outlook's `%LOCALAPPDATA%\Microsoft\Olk` is from memory.
+- **Cmdr's own data** (`CmdrData`) and **a private key in any file** (`PrivateKey`): see above and below.
+
+**Not protected, and why:**
+
+- **What only an administrator can read** (`/etc/shadow`, `/etc/NetworkManager/system-connections`, the Windows SAM
+  hive, `C:\ProgramData`): Cmdr runs as the user, so the OS already refuses. An SSH host key carries armor, which the
+  private-key check catches.
+- **Another app's own data folder** (a chat app, a notes app, a mail client not listed): no rule knows it. The promise
+  names browsers, the OS's stores, and mail, and a new app is a new rule here.
+- **A profile someone put elsewhere** (`chrome --user-data-dir=D:\x`, a Thunderbird profile moved through
+  `profiles.ini`): nothing in the path says what it is. Only the environment's own dirs are followed.
+- **Legacy Internet Explorer stores** (`%LOCALAPPDATA%\Microsoft\Windows\INetCookies`, `WebCache`): unverified, and no
+  supported Windows browses with them.
+- **A path through a Windows 8.3 short name on a volume Cmdr can't resolve** (a stored index path, a phone): the
+  realpath step is the only thing that expands one.
 
 ## One tool, both questions (`list_dir`)
 

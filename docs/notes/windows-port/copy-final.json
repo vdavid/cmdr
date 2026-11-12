@@ -6021,22 +6021,15 @@
       "status": "apply",
       "branches": {
         "macos": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
-        "windows": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
-        "other": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider."
+        "windows": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, Windows credentials, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.",
+        "other": "Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider."
       },
       "sources": {
-        "windows": "verdicts: open, and a blocker (no `AppData` rules in `sensitive.rs`)",
-        "other": "verdicts (rewritten to match `sensitive.rs:RULES`: no mail rule on Linux)"
+        "windows": "proposal, now true: `tools/sensitive/rules.rs` protects Credential Manager’s files and DPAPI keys, browser profiles, and Thunderbird and Outlook data under `AppData` (#1107)",
+        "other": "proposal, now true: `tools/sensitive/rules.rs` protects Thunderbird, Evolution, Geary, and KMail stores (#1107)"
       },
       "whereInUi": "Same consent panel, list of what never leaves.",
-      "openBranches": ["windows"],
-      "lintExceptions": [
-        {
-          "branch": "windows",
-          "reason": "open on Windows (`sensitive.rs` has no Windows rules yet, so the Windows list isn’t settled), so it keeps the macOS text until they land"
-        }
-      ],
-      "note": "No `CLOUD_AI_CONSENT_VERSION` bump: the Linux list names fewer kinds than before, nothing reaches the provider that didn’t."
+      "note": "No `CLOUD_AI_CONSENT_VERSION` bump: the Windows and Linux lists name more kinds that stay home, and nothing reaches the provider that didn’t. Each word maps to a category in `apps/desktop/src-tauri/src/tools/DETAILS.md` § The protected locations."
     },
     {
       "key": "ai.local.notInstalled",

@@ -82,10 +82,6 @@ Rows where the code doesn't settle a platform yet, so that platform keeps the ma
   `metadata/platform/windows.rs`, a stub) say which class a Windows copy reports there.
 - `settings.listing.showHiddenFiles.description`, Windows: "dotfiles (like .zshrc)" stays until the Windows listing
   backend decides its hidden-file rule (the hidden attribute, dotfiles, or both).
-- `ai.cloudConsent.askCmdr.protectedContents`, Windows: the macOS list ("your keychains", "Mail, Messages, Notes") stays
-  until `apps/desktop/src-tauri/src/tools/sensitive.rs:RULES` gains Windows entries (browser profiles under `AppData`,
-  Credential Manager's files). Today nothing on Windows is protected, so no honest Windows list exists yet; this blocks
-  shipping Ask Cmdr on Windows. Linux names only what `RULES` covers (no mail client).
 - `settings.advanced.oldMacosNoticeShown.label`, Windows and Linux: the hidden one-shot flag's label ("Old macOS notice
   shown") still lists in the MCP `cmdr://settings` resource. No capability states "this OS has a supported-version floor
   notice" (`startup-gates.ts` asks `isMacOS()`, which is right for the notice itself), and one hidden label doesn't earn
