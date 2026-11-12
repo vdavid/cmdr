@@ -66,25 +66,34 @@ fn extended_ioerr_codes_are_still_fatal_and_preserved() {
     );
 }
 
-/// cmdr-reports#105: an I/O error is the one fatal class that a nearly full disk
-/// can also produce, so it's told apart (extended codes included) for the
-/// free-space check in `IndexFailureSignal::note`. Corruption and the rest aren't.
+/// cmdr-reports#105, #109: an I/O error and a CANTOPEN are the fatal classes a
+/// nearly full disk can also produce, so they're told apart (extended codes
+/// included) for the free-space check in `IndexFailureSignal::note`. Corruption
+/// and the rest aren't.
 #[test]
-fn io_errors_are_told_apart_from_the_other_fatal_classes() {
+fn low_disk_space_suspects_are_told_apart_from_the_other_fatal_classes() {
     for code in [
         rusqlite::ffi::SQLITE_IOERR,
         rusqlite::ffi::SQLITE_IOERR_TRUNCATE,
         rusqlite::ffi::SQLITE_IOERR_WRITE,
+        rusqlite::ffi::SQLITE_CANTOPEN,
     ] {
-        assert!(sqlite_err(code).is_io_error(), "result code {code} is an I/O error");
+        assert!(
+            sqlite_err(code).could_be_low_disk_space(),
+            "result code {code} could be low disk space"
+        );
     }
     for code in [
         rusqlite::ffi::SQLITE_CORRUPT,
+        rusqlite::ffi::SQLITE_NOTADB,
         rusqlite::ffi::SQLITE_READONLY,
         rusqlite::ffi::SQLITE_FULL,
         rusqlite::ffi::SQLITE_BUSY,
     ] {
-        assert!(!sqlite_err(code).is_io_error(), "result code {code} isn't an I/O error");
+        assert!(
+            !sqlite_err(code).could_be_low_disk_space(),
+            "result code {code} isn't a low-disk-space suspect"
+        );
     }
 }
 

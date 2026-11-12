@@ -233,8 +233,9 @@ those off). `as_index_failure()` builds the typed `IndexFailure { code, extended
 resumes, logged at warn with no error report; so does `space_guard.rs` when the host says the disk is below the index's
 own free-space threshold (`advanced.indexPauseFreeSpacePercent`, separate from the low-disk-space warning's; the host
 answers on demand, `space_poller/low_space.rs`; `../lifecycle/DETAILS.md` § "Pausing for disk space"). An
-`SQLITE_IOERR*` (`is_io_error()`) while that same host answer is true pauses too, in `note`. Maintenance errors take
-their own door, `note_maintenance` (§ "Decision: a failed maintenance pass never stops the index").
+`SQLITE_IOERR*` or `SQLITE_CANTOPEN` (`could_be_low_disk_space()`) while that same host answer is true pauses too, in
+`note`. Maintenance errors take their own door, `note_maintenance` (§ "Decision: a failed maintenance pass never stops
+the index").
 
 **Detection lives here (`../failure.rs::IndexFailureSignal`).** A one-shot per-volume `Arc<IndexFailureSignal>` created
 in `IndexWriter::spawn_for`, cloned into the writer thread, exposed via `IndexWriter::failure_signal()`. Every

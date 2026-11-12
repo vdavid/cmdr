@@ -972,11 +972,12 @@ about the user's own environment. Three triggers, one path:
   (`space_poller`). The databases live in the cache dir on the boot volume, so that's the disk that matters for every
   volume, which is why `VolumeIndexStatus::holds_index_storage` exists: the badge words a paused external drive
   differently from a paused boot disk. This one stops the index before it takes the last free space rather than after.
-- **An `SQLITE_IOERR*` while that host answer is true** (`IndexFailureSignal::note`, cmdr-reports#105: a WAL truncate
-  failed `SQLITE_IOERR_TRUNCATE` at 0.2% free). On a disk that full an I/O error is the environment far more often than
-  a dying drive, and the guard asks only once a second, so an error can beat it. It doesn't hide a dying drive: once
-  space returns the volume restarts, and the same error with room to spare fails it. ❌ Only the I/O class: corruption
-  on a full disk still fails.
+- **An `SQLITE_IOERR*` or `SQLITE_CANTOPEN` while that host answer is true** (`IndexFailureSignal::note` via
+  `IndexStoreError::could_be_low_disk_space`; cmdr-reports#105: a WAL truncate failed `SQLITE_IOERR_TRUNCATE` at 0.2%
+  free; cmdr-reports#109: a write failed `SQLITE_CANTOPEN` at 0.3% free, where SQLite couldn't create a journal or temp
+  file). On a disk that full either is the environment far more often than a dying drive, and the guard asks only once a
+  second, so an error can beat it. It doesn't hide a dying drive: once space returns the volume restarts, and the same
+  error with room to spare fails it. ❌ Only those two classes: corruption on a full disk still fails.
 
 Each trips the writer's `IndexFailureSignal` as `IndexStop::OutOfSpace`: the writer exits (an open explicit chunk rolls
 back with the connection), the live loop stops on `is_tripped`, the replay stops at its next drain, and the signal logs

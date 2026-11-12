@@ -26,8 +26,8 @@
 //! it does for a dead DB, but the supervisor pauses the volume and restarts it once
 //! space returns (`state/space_pause.rs`), and the stop is logged at warn with no
 //! `IndexEvent::Error`: it's the environment, not a bug, so it must not auto-report
-//! (cmdr-reports#100 did). So does an `SQLITE_IOERR*` while the host says the disk
-//! is low (cmdr-reports#105).
+//! (cmdr-reports#100 did). So does an `SQLITE_IOERR*` or `SQLITE_CANTOPEN` while
+//! the host says the disk is low (cmdr-reports#105, #109).
 //!
 //! **Maintenance never stops the index on its own** ([`note_maintenance`](IndexFailureSignal::note_maintenance)):
 //! a failed checkpoint or vacuum logs, and the next tick retries. Only proven
@@ -140,9 +140,10 @@ impl IndexFailureSignal {
     /// Only ever called from an error branch, so the `context` format never runs on
     /// the hot success path.
     ///
-    /// An `SQLITE_IOERR*` while the host says the index's disk is below its
-    /// free-space threshold pauses instead of failing (cmdr-reports#105): on a disk
-    /// that full, an I/O error is the environment far more often than a dying drive.
+    /// An `SQLITE_IOERR*` or `SQLITE_CANTOPEN` while the host says the index's disk
+    /// is below its free-space threshold pauses instead of failing
+    /// (cmdr-reports#105, #109): on a disk that full, either is the environment far
+    /// more often than a dying drive.
     /// The pause doesn't hide a dying drive: once space returns the volume restarts,
     /// and the same error with room to spare fails it as usual.
     pub(crate) fn note(&self, err: &IndexStoreError, context: &str) -> bool {
@@ -151,7 +152,7 @@ impl IndexFailureSignal {
             self.trip_for_space(SpaceStop::DiskFull, context, err);
             return true;
         }
-        if err.is_io_error() && crate::indexing::host::policy::current().index_storage_low() {
+        if err.could_be_low_disk_space() && crate::indexing::host::policy::current().index_storage_low() {
             self.trip_for_space(SpaceStop::BelowThreshold, context, err);
             return true;
         }
@@ -365,8 +366,31 @@ mod tests {
         assert!(events.events().is_empty(), "the environment isn't an error report");
     }
 
-    /// The low-disk answer only excuses an I/O error: corruption on a nearly full
-    /// disk is still corruption.
+    /// cmdr-reports#109: a `mark_dirs_listed` write failed `SQLITE_CANTOPEN` at 0.3%
+    /// free, where SQLite couldn't create a journal or temp file. On a nearly full
+    /// disk it pauses like an I/O error.
+    #[test]
+    fn a_cantopen_on_a_nearly_full_disk_pauses_and_reports_nothing() {
+        let _host = host_with_storage_low(true);
+        let events = Arc::new(RecordingSink::new());
+        let signal = IndexFailureSignal::new(Arc::clone(&events) as Arc<dyn crate::EventSink>);
+
+        assert!(signal.note(&sqlite(rusqlite::ffi::SQLITE_CANTOPEN), "mark_dirs_listed"));
+        assert_eq!(signal.stop(), Some(IndexStop::OutOfSpace(SpaceStop::BelowThreshold)));
+        assert!(events.events().is_empty(), "the environment isn't an error report");
+    }
+
+    /// With room to spare, a CANTOPEN is no environment excuse: it fails as before.
+    #[test]
+    fn a_cantopen_with_room_to_spare_still_fails() {
+        let _host = host_with_storage_low(false);
+        let signal = IndexFailureSignal::new(crate::NoopEventSink::shared());
+        assert!(signal.note(&sqlite(rusqlite::ffi::SQLITE_CANTOPEN), "mark_dirs_listed"));
+        assert_eq!(signal.reason().map(|r| r.code), Some(rusqlite::ffi::SQLITE_CANTOPEN));
+    }
+
+    /// The low-disk answer only excuses an I/O or open error: corruption on a
+    /// nearly full disk is still corruption.
     #[test]
     fn corruption_on_a_nearly_full_disk_still_fails() {
         let _host = host_with_storage_low(true);

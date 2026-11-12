@@ -189,14 +189,20 @@ impl IndexStoreError {
         matches!(self.sqlite_code(), Some((rusqlite::ErrorCode::DiskFull, _)))
     }
 
-    /// Whether SQLite reported an I/O error (`SQLITE_IOERR*`, any extended code).
+    /// Whether this is a fatal error that a nearly full disk can also cause: an I/O
+    /// error (`SQLITE_IOERR*`, any extended code) or a file SQLite couldn't open
+    /// (`SQLITE_CANTOPEN`, which it also returns when it can't create a journal or
+    /// temp file).
     ///
     /// Fatal on its own, but on a disk that's nearly out of room it's far more
     /// likely the environment than a dying drive (cmdr-reports#105: a WAL truncate
-    /// failed `SQLITE_IOERR_TRUNCATE` at 0.2% free), so `IndexFailureSignal::note`
-    /// asks the host about free space before calling it a failure.
-    pub fn is_io_error(&self) -> bool {
-        matches!(self.sqlite_code(), Some((rusqlite::ErrorCode::SystemIoFailure, _)))
+    /// failed `SQLITE_IOERR_TRUNCATE` at 0.2% free; cmdr-reports#109: a write
+    /// failed `SQLITE_CANTOPEN` at 0.3% free), so `IndexFailureSignal::note` asks
+    /// the host about free space before calling it a failure. Corruption and the
+    /// rest aren't in it: a full disk doesn't break a B-tree.
+    pub fn could_be_low_disk_space(&self) -> bool {
+        use rusqlite::ErrorCode::{CannotOpen, SystemIoFailure};
+        matches!(self.sqlite_code(), Some((SystemIoFailure | CannotOpen, _)))
     }
 
     /// Whether this is TRANSIENT lock contention: another connection (or another
