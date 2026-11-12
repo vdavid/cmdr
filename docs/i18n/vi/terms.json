@@ -3772,5 +3772,17 @@
     "confidence": "high",
     "forms": "granted full disk access → cấp quyền truy cập toàn bộ đĩa (prose); turned it off → đã tắt quyền này",
     "sources": "macOS Finder (Không thể cấp quyền vào “%@”…); catalog (onboarding.stepFda.*)"
+  },
+  "revoke": {
+    "chosen": "thu hồi",
+    "forms": "a revoked certificate → chứng nhận đã bị thu hồi",
+    "confidence": "high",
+    "sources": "MS terminology revoke → thu hồi, revoked certificate → chứng chỉ bị thu hồi (certificate stays chứng nhận per macOS)"
+  },
+  "this-pc": {
+    "chosen": "PC này",
+    "accept": ["PC"],
+    "confidence": "tentative",
+    "sources": "MS terminology PC (the TBX has no “This PC”) → PC; Windows names This PC PC này"
   }
 }

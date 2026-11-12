@@ -194,7 +194,7 @@
   "@servers.refusal.certificateUntrusted": {
     "sourceHash": "b8f3b4a"
   },
-  "servers.refusal.certificateRejected": "This server’s certificate is revoked or damaged, so Cmdr won’t connect. Ask whoever runs the server to replace it.",
+  "servers.refusal.certificateRejected": "Het certificaat van deze server is ingetrokken of beschadigd, dus Cmdr maakt geen verbinding. Vraag wie de server beheert om het certificaat te vervangen.",
   "@servers.refusal.certificateRejected": {
     "sourceHash": "95c3159"
   },

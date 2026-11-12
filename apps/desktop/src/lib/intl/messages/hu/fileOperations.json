@@ -1353,7 +1353,7 @@
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
   },
-  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "fileOperations.validation.pathShareMissing": "Add meg a szerver után a megosztás nevét is, például \\\\szerver\\megosztás",
   "@fileOperations.validation.pathShareMissing": {
     "sourceHash": "53f173e"
   },

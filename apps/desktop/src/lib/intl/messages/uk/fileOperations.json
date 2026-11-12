@@ -1352,7 +1352,7 @@
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
   },
-  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "fileOperations.validation.pathShareMissing": "Додайте після назви сервера назву спільної папки, наприклад \\\\сервер\\папка",
   "@fileOperations.validation.pathShareMissing": {
     "sourceHash": "53f173e"
   },

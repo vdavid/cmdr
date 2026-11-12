@@ -4157,5 +4157,18 @@
     "forms": "the greyed menu marker: the base label word for word, then (bezet)",
     "sources": "catalog (menu.volume.ejectBusy, disconnectBusy, forgetServerBusy, forgetSavedPasswordBusy)",
     "accept": ["druk", "in gebruik"]
+  },
+  "revoke": {
+    "chosen": "intrekken",
+    "accept": ["ingetrokken", "intrek", "trek"],
+    "forms": "a revoked certificate → ingetrokken certificaat",
+    "confidence": "high",
+    "sources": "MS terminology revoke → intrekken, revoked certificate → ingetrokken certificaat"
+  },
+  "this-pc": {
+    "chosen": "deze pc",
+    "accept": ["pc"],
+    "confidence": "tentative",
+    "sources": "MS terminology PC (the TBX has no “This PC”) → pc (lowercase); Windows names This PC Deze pc"
   }
 }

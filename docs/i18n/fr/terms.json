@@ -4103,5 +4103,18 @@
     "forms": "column and option label → Inclure; Include {name} → Inclure {name}; status including by default → Inclus par défaut",
     "confidence": "high",
     "sources": "macOS AppKit NSSearchBar (Inclure les pièces jointes); catalog suggestedOps.columnInclude"
+  },
+  "revoke": {
+    "chosen": "révoquer",
+    "accept": ["révoqu", "révocation"],
+    "forms": "a revoked certificate → certificat révoqué",
+    "confidence": "high",
+    "sources": "MS terminology revoke → révoquer, revoked certificate → certificat révoqué, certificate revocation list → liste de révocation de certificats"
+  },
+  "this-pc": {
+    "chosen": "ce PC",
+    "accept": ["PC"],
+    "confidence": "tentative",
+    "sources": "MS terminology PC (the TBX has no “This PC”) → PC (m.); Windows names This PC Ce PC"
   }
 }

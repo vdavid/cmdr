@@ -1219,7 +1219,7 @@
   "@settings.ai.provider.opt.local": {
     "sourceHash": "6689271"
   },
-  "settings.ai.provider.localUnavailable": "{platform, select, windows {Your settings ask for “Local LLM”, which this PC can’t run, so AI is off.} other {Your settings ask for “Local LLM”, which this computer can’t run, so AI is off.}}",
+  "settings.ai.provider.localUnavailable": "{platform, select, windows {Je instellingen vragen om ‘Lokale LLM’, maar die kan deze pc niet draaien, dus AI staat uit.} other {Je instellingen vragen om ‘Lokale LLM’, maar die kan deze computer niet draaien, dus AI staat uit.}}",
   "@settings.ai.provider.localUnavailable": {
     "sourceHash": "5974157"
   },

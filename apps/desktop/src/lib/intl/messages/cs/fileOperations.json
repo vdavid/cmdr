@@ -1353,7 +1353,7 @@
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
   },
-  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "fileOperations.validation.pathShareMissing": "Za název serveru přidejte název sdílené složky, například \\\\server\\složka",
   "@fileOperations.validation.pathShareMissing": {
     "sourceHash": "53f173e"
   },

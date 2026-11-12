@@ -4915,5 +4915,12 @@
     "chosen": "спільне сховище",
     "confidence": "high",
     "sources": "AOSP frameworks/base core/res values-uk storage_internal (read 2026-10-30): Внутрішнє спільне сховище"
+  },
+  "this-pc": {
+    "chosen": "цей ПК",
+    "accept": ["ПК", "компʼютер"],
+    "forms": "цей ПК не може",
+    "confidence": "tentative",
+    "sources": "MS terminology PC (the TBX has no “This PC”) → ПК; Windows names This PC Цей ПК"
   }
 }

@@ -1356,7 +1356,7 @@
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
   },
-  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "fileOperations.validation.pathShareMissing": "Füge nach dem Server den Namen der Freigabe hinzu, etwa \\\\Server\\Freigabe",
   "@fileOperations.validation.pathShareMissing": {
     "sourceHash": "53f173e"
   },

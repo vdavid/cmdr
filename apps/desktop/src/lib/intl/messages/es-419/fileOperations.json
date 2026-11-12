@@ -326,5 +326,9 @@
   "fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": "Esto elimina los archivos y carpetas seleccionados que creó la operación. Cmdr omite todo aquello de lo que no está seguro, así que puede que quede alguno.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeletingSelected": {
     "sourceHash": "11ebc66"
+  },
+  "fileOperations.validation.pathShareMissing": "Agrega el nombre del recurso compartido después del servidor, como \\\\servidor\\recurso",
+  "@fileOperations.validation.pathShareMissing": {
+    "sourceHash": "8a4290e"
   }
 }

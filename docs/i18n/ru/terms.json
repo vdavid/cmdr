@@ -6299,5 +6299,17 @@
     "confidence": "high",
     "note": "Android's own word, over the storage ruling's «память телефона»; накопитель stays avoided for a drive.",
     "sources": "AOSP frameworks/base core/res values-ru storage_internal (read 2026-10-30): Внутренний общий накопитель"
+  },
+  "this-pc": {
+    "chosen": "этот компьютер",
+    "accept": ["компьютер"],
+    "avoid": [
+      {
+        "form": "ПК",
+        "why": "reads as jargon; Windows names This PC «Этот компьютер»"
+      }
+    ],
+    "confidence": "tentative",
+    "sources": "MS terminology PC (the TBX has no “This PC”) → персональный компьютер; Windows names This PC Этот компьютер; same noun as this-computer"
   }
 }

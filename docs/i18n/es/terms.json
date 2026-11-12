@@ -4015,5 +4015,18 @@
     "forms": "column and option label → Incluir; Include {name} → Incluir {name}; status including → se incluyen",
     "confidence": "high",
     "sources": "macOS AppKit NSSearchBar (Incluir archivos adjuntos); catalog suggestedOps.columnInclude"
+  },
+  "revoke": {
+    "chosen": "revocar",
+    "accept": ["revoc"],
+    "forms": "a revoked certificate → certificado revocado",
+    "confidence": "high",
+    "sources": "MS terminology revoke → revocar, revoked certificate → certificado revocado"
+  },
+  "this-pc": {
+    "chosen": "este PC",
+    "accept": ["PC"],
+    "confidence": "tentative",
+    "sources": "MS terminology PC (the TBX has no “This PC”); MS terminology restablecer tu PC (Windows says PC, masculine, in prose)"
   }
 }

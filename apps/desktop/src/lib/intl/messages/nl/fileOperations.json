@@ -1354,7 +1354,7 @@
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
   },
-  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "fileOperations.validation.pathShareMissing": "Voeg na de server de naam van de gedeelde map toe, zoals \\\\server\\share",
   "@fileOperations.validation.pathShareMissing": {
     "sourceHash": "53f173e"
   },

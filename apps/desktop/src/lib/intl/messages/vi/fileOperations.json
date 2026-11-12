@@ -1352,7 +1352,7 @@
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
   },
-  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "fileOperations.validation.pathShareMissing": "Thêm tên mục chia sẻ vào sau tên máy chủ, ví dụ \\\\server\\share",
   "@fileOperations.validation.pathShareMissing": {
     "sourceHash": "53f173e"
   },

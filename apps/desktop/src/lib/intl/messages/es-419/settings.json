@@ -514,5 +514,9 @@
   "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or select “Never show this again” in the notice) to stop these notices.} other {Cuando eliminas algo que otra app ya movió o eliminó, Cmdr lo da por hecho y muestra un aviso breve que lo indica. Desactiva esta opción (o haz clic en “No volver a mostrar” en el aviso) para dejar de ver estos avisos.}}",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
     "sourceHash": "e0f8c29"
+  },
+  "settings.ai.provider.localUnavailable": "{platform, select, windows {Tu configuración pide “LLM local”, que esta PC no puede ejecutar, así que la IA está desactivada.} other {Tu configuración pide “LLM local”, que esta computadora no puede ejecutar, así que la IA está desactivada.}}",
+  "@settings.ai.provider.localUnavailable": {
+    "sourceHash": "7613b01"
   }
 }

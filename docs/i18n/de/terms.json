@@ -4356,5 +4356,24 @@
     "forms": "column and option label → Einbeziehen; Include {name} → „{name}“ einbeziehen; status including → werden einbezogen",
     "confidence": "high",
     "sources": "macOS AppKit NSSearchBar (Anhänge einbeziehen); catalog suggestedOps.columnInclude"
+  },
+  "revoke": {
+    "chosen": "widerrufen",
+    "accept": ["widerruf"],
+    "forms": "a revoked certificate → Das Zertifikat wurde widerrufen",
+    "avoid": [
+      {
+        "form": "gesperrt",
+        "why": "MS TBX revoked certificate → gesperrtes Zertifikat, but gesperrt reads as locked"
+      }
+    ],
+    "confidence": "tentative",
+    "sources": "MS terminology revoke → widerrufen"
+  },
+  "this-pc": {
+    "chosen": "dieser PC",
+    "accept": ["PC"],
+    "confidence": "tentative",
+    "sources": "MS terminology PC (the TBX has no “This PC”) → PC (m.); Windows names This PC Dieser PC"
   }
 }

@@ -3922,5 +3922,11 @@
     "chosen": "den här datorn",
     "confidence": "high",
     "sources": "catalog (errors.mount.hostUnreachable, errors.mount.unsupportedProtocol)"
+  },
+  "this-pc": {
+    "chosen": "den här datorn",
+    "accept": ["dator"],
+    "confidence": "tentative",
+    "sources": "MS terminology PC (the TBX has no “This PC”) → PC; Windows names This PC Den här datorn; same noun as this-computer"
   }
 }

@@ -3820,5 +3820,18 @@
     "forms": "tool line → Trocando os painéis / Trocou os painéis; moving focus to the other pane is Trocando de painel",
     "confidence": "high",
     "sources": "catalog (menu.view.swapPanes, commands.paneSwap.label)"
+  },
+  "revoke": {
+    "chosen": "revogar",
+    "accept": ["revog"],
+    "forms": "a revoked certificate → certificado revogado",
+    "confidence": "high",
+    "sources": "MS terminology revoke → revogar, revoked certificate → certificado revogado"
+  },
+  "this-pc": {
+    "chosen": "este PC",
+    "accept": ["PC"],
+    "confidence": "tentative",
+    "sources": "MS terminology PC (the TBX has no “This PC”) → PC (m.)"
   }
 }

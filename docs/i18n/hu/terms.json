@@ -4303,7 +4303,12 @@
   "cold-storage": {
     "chosen": "offline tárolás",
     "forms": "the file-row state → Offline tárolásban; archived in cold storage → Archiválva, offline tárolásban",
-    "avoid": [{ "form": "Archivált", "why": "reads as the zip-archive or the archived-chat sense" }],
+    "avoid": [
+      {
+        "form": "Archivált",
+        "why": "reads as the zip-archive or the archived-chat sense"
+      }
+    ],
     "confidence": "high",
     "sources": "Microsoft terminology hu (cold storage → offline tárolás); catalog (fileExplorer.archivedFile.tooltip)"
   },
@@ -4358,5 +4363,19 @@
     "chosen": "ez a számítógép",
     "confidence": "high",
     "sources": "catalog (errors.mount.hostUnreachable, errors.mount.unsupportedProtocol)"
+  },
+  "revoke": {
+    "chosen": "visszavon",
+    "accept": ["visszavon"],
+    "forms": "a revoked certificate → visszavont tanúsítvány",
+    "confidence": "high",
+    "sources": "MS terminology revoke → visszavon, revoked certificate → visszavont tanúsítvány, CRL → visszavont tanúsítványok listája"
+  },
+  "this-pc": {
+    "chosen": "ez a gép",
+    "accept": ["gép", "számítógép"],
+    "forms": "ezen a gépen",
+    "confidence": "tentative",
+    "sources": "MS terminology PC (the TBX has no “This PC”) → PC; Windows names This PC Ez a gép"
   }
 }

@@ -191,7 +191,7 @@
   "@servers.refusal.certificateUntrusted": {
     "sourceHash": "b8f3b4a"
   },
-  "servers.refusal.certificateRejected": "This server’s certificate is revoked or damaged, so Cmdr won’t connect. Ask whoever runs the server to replace it.",
+  "servers.refusal.certificateRejected": "Chứng nhận của máy chủ này đã bị thu hồi hoặc bị hỏng, nên Cmdr sẽ không kết nối. Hãy nhờ người quản lý máy chủ thay thế chứng nhận.",
   "@servers.refusal.certificateRejected": {
     "sourceHash": "95c3159"
   },

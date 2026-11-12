@@ -1351,7 +1351,7 @@
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
   },
-  "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
+  "fileOperations.validation.pathShareMissing": "請在伺服器後面加上共享資料夾的名稱，例如 \\\\server\\share",
   "@fileOperations.validation.pathShareMissing": {
     "sourceHash": "53f173e"
   },

@@ -1214,7 +1214,7 @@
   "@settings.ai.provider.opt.local": {
     "sourceHash": "6689271"
   },
-  "settings.ai.provider.localUnavailable": "{platform, select, windows {Your settings ask for “Local LLM”, which this PC can’t run, so AI is off.} other {Your settings ask for “Local LLM”, which this computer can’t run, so AI is off.}}",
+  "settings.ai.provider.localUnavailable": "{platform, select, windows {Cài đặt của bạn chọn “LLM cục bộ”, nhưng PC này không chạy được, nên AI đang tắt.} other {Cài đặt của bạn chọn “LLM cục bộ”, nhưng máy tính này không chạy được, nên AI đang tắt.}}",
   "@settings.ai.provider.localUnavailable": {
     "sourceHash": "5974157"
   },

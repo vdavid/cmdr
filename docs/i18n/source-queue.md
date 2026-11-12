@@ -47,3 +47,9 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   catalog doesn't hold yet. (cs, de, es, fr, nl, pt, sv)
 - `errors.write.trashRefused.message.ownedByAnotherUser`: "their folder" can read as the other ACCOUNT's folder rather
   than the folder holding the items; "the folder holding them" (as in `message.folderNotWritable`) is clearer. (all)
+- `fileOperations.validation.pathShareMissing`: "keep … the words "server" and "share" as placeholders a person
+  recognizes" reads two ways; translators localized them (Windows' own `\\Server\Freigabe` style), CJK and vi kept
+  English. Say which. (all)
+- `ask` concept matched "Your settings ask for" (`settings.ai.provider.localUnavailable`), the request sense; added
+  `settings ask for` to its `notMatch`. A broader "ask for" exclusion needs a call, since prose "asks for your password"
+  sits in the concept. (all)

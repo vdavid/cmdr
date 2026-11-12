@@ -4654,5 +4654,19 @@
     "forms": "the greyed menu marker: base label + （使用中）",
     "sources": "catalog (menu.volume.ejectBusy, disconnectBusy, forgetServerBusy, forgetSavedPasswordBusy)",
     "accept": ["忙"]
+  },
+  "revoke": {
+    "chosen": "撤銷",
+    "accept": ["收回"],
+    "forms": "a revoked certificate → 憑證已被撤銷; taking back a permission the user granted → 收回 (onboarding.stepFda.alreadyGranted.body)",
+    "confidence": "high",
+    "sources": "MS terminology revoke → 撤銷, revoked certificate → 撤銷憑證, certificate revocation → 憑證撤銷"
+  },
+  "this-pc": {
+    "chosen": "這台電腦",
+    "accept": ["電腦"],
+    "note": "Windows TW names This PC 本機, but 本機 is the ruled form of local, so prose keeps 這台電腦",
+    "confidence": "tentative",
+    "sources": "MS terminology PC (the TBX has no “This PC”) → 個人電腦; prose 這台電腦, same as this-computer"
   }
 }

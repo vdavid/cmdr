@@ -4578,5 +4578,12 @@
     "forms": "column and option label → Zahrnout; Include {name} → Zahrnout {name}; status including → zahrnují se",
     "confidence": "high",
     "sources": "macOS AppKit NSSearchBar (Zahrnout přílohy); Thunar (Zahrnout podsložky); catalog suggestedOps.columnInclude"
+  },
+  "this-pc": {
+    "chosen": "tento počítač",
+    "accept": ["počítač"],
+    "forms": "m.: na tomto počítači",
+    "confidence": "tentative",
+    "sources": "MS terminology PC (the TBX has no “This PC”) → osobní počítač; Windows names This PC Tento počítač; same noun as this-computer"
   }
 }
