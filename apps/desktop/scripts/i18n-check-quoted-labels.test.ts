@@ -49,6 +49,38 @@ describe('mismatchedQuotes', () => {
   })
 })
 
+describe('platform blocks, compared per rendered OS', () => {
+  const enBlocks = {
+    'b.reveal':
+      '{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}',
+    'b.hint':
+      '{platform, select, macos {Pick “Show in Finder” to see it.} windows {Pick “Show in File Explorer” to see it.} other {Pick “Show in file manager” to see it.}}',
+  }
+
+  it('pairs each OS’s quote with the label that OS shows', () => {
+    expect(quotedLabelPairs(enBlocks)).toEqual([
+      { key: 'b.hint', label: 'Show in Finder', sources: ['b.reveal'], platforms: ['macos'] },
+      { key: 'b.hint', label: 'Show in File Explorer', sources: ['b.reveal'], platforms: ['windows'] },
+      { key: 'b.hint', label: 'Show in file manager', sources: ['b.reveal'], platforms: ['linux'] },
+    ])
+  })
+
+  it('judges a translated rendering, and skips an OS whose either half still carries its English', () => {
+    const de = {
+      'b.reveal':
+        '{platform, select, macos {Im Finder zeigen} windows {Show in File Explorer} other {Im Dateimanager zeigen}}',
+      'b.hint':
+        '{platform, select, macos {Wähle „Im Finder anzeigen“.} windows {Wähle „Im Explorer zeigen“.} other {Pick “Show in file manager” to see it.}}',
+    }
+    expect(mismatchedQuotes(quotedLabelPairs(enBlocks), de, enBlocks)).toEqual([
+      {
+        key: 'b.hint',
+        detail: 'quotes “Show in Finder”, but not its label here: “Im Finder zeigen” (b.reveal) on macos',
+      },
+    ])
+  })
+})
+
 describe('runQuotedLabelsCheck (fixture tree)', () => {
   let root: string
   const write = (path: string, data: unknown) => {

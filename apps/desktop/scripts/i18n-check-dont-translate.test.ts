@@ -38,6 +38,27 @@ describe('curated lists', () => {
   })
 })
 
+describe('droppedTokens: platform blocks', () => {
+  const en = '{platform, select, macos {Built for macOS} windows {Built for Windows} other {Built for Linux}}'
+
+  it('judges each translated branch against the English same branch, naming it', () => {
+    // Whole-value, `macOS` still appears (in `other`), so the drop from `macos` would pass unseen.
+    const de = '{platform, select, macos {Für Mac gebaut} windows {Für Windows gebaut} other {Für Linux und macOS}}'
+    expect(droppedTokens(en, de)).toEqual(['macOS (macos branch)'])
+  })
+
+  it('expects a brand only where the English branch has it', () => {
+    const de = '{platform, select, macos {Für macOS gebaut} windows {Für Windows gebaut} other {Für Linux gebaut}}'
+    expect(droppedTokens(en, de)).toEqual([])
+  })
+
+  it('skips a branch carried over in English, pending translation', () => {
+    const enToken = '{platform, select, macos {Open {system_settings}} other {Open {system_settings} now}}'
+    const de = '{platform, select, macos {Öffne {system_settings}} other {Open {system_settings} now}}'
+    expect(droppedTokens(enToken, de)).toEqual([])
+  })
+})
+
 describe('droppedTokens: pure detector', () => {
   it('clean when the locale keeps the brand word and the system token', () => {
     expect(droppedTokens('Open {system_settings} in macOS', 'Abrir {system_settings} en macOS')).toEqual([])

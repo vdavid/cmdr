@@ -32,7 +32,14 @@
  * point at a fixture (used by the tests).
  */
 
-import { BRAND_WORDS, SYSTEM_TOKENS, hasWholeWord, hasBrandPresent, isSearchKeywordsKey } from './i18n-catalog-lib.ts'
+import {
+  BRAND_WORDS,
+  SYSTEM_TOKENS,
+  hasWholeWord,
+  hasBrandPresent,
+  isSearchKeywordsKey,
+  judgedBranchPairs,
+} from './i18n-catalog-lib.ts'
 import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 import type { LocaleCheckOptions } from './i18n-locale-check-lib.ts'
 
@@ -45,12 +52,22 @@ export { BRAND_WORDS, SYSTEM_TOKENS }
  * but suffix-aware `hasBrandPresent` on the locale side (does the locale still carry
  * it, possibly inflected — "Cmdrben", "Cmdrs"?). So a genuine omission is still
  * flagged, but a brand that took a natural inflectional suffix is not a false drop.
- * System tokens are literal substrings on both sides. Exposed for unit tests.
+ * System tokens are literal substrings on both sides. A platform block is judged
+ * branch by branch (`judgedBranchPairs`): a token is expected only where the
+ * English same branch has it, a branch still carrying its English is skipped, and
+ * a drop names its branch. Exposed for unit tests.
  * @param englishValue the English value
  * @param localeValue the locale's value
- * @returns dropped tokens (sorted, deduped)
+ * @returns dropped tokens, in branch order, each branch's sorted and deduped
  */
 export function droppedTokens(englishValue: string, localeValue: string): string[] {
+  return judgedBranchPairs(englishValue, localeValue).flatMap(({ name, source, locale }) =>
+    droppedFromText(source, locale).map((token) => (name === null ? token : `${token} (${name} branch)`)),
+  )
+}
+
+/** `droppedTokens` for one plain pair of texts. */
+function droppedFromText(englishValue: string, localeValue: string): string[] {
   const dropped: string[] = []
   for (const word of BRAND_WORDS) {
     // Casings listed together (`git` / `Git`) are one brand: German capitalizes the noun, and that keeps it.

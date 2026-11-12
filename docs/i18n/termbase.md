@@ -142,6 +142,13 @@ fork table `apps/desktop/scripts/i18n-en-overlays.test.ts` mirrors.
   or a list of them. Each is the exact heading or a prefix only one heading starts with (`"Operation queue"` for
   `Operation queue: de hernoeming (…, 2026-08-08)`), so a heading can gain a date or a cited key without breaking the
   pointer. A prefix that fits several headings is an error: lengthen it.
+- `windows` / `other` (optional): per-OS forms, `{ chosen, accept?, proseAccept?, avoid?, note? }` (same field rules as
+  the ruling's own), for a concept a Windows or Linux UI names differently from macOS (Portuguese Windows says "Excluir"
+  where a macOS ruling may list it under `avoid`). The drift check judges a platform block's `windows` branch against
+  `windows` and its `other` branch (Linux, plus Windows where the block has no `windows` branch) against `other`, each
+  REPLACING the base forms for that branch; a branch whose OS has no forms, a `macos` branch, and a plain value all meet
+  the base ruling. `exceptions` and `decision` stay ruling-wide. The brief prints them beside the base form. Add them
+  only once a translated branch needs them; no locale carries any yet.
 - A concept this locale deliberately keeps English still gets an entry, with `chosen` = the English form.
 - A locale may omit concepts it has no ruling for; the brief then says "no ruling" for it.
 
@@ -303,6 +310,10 @@ about 2 s when most of the batch is stale (measured on sv, 2026-09-25).
   (`decisionsBytes`), and a file past its number warns. Local runs ratchet it down to the current size, record a
   locale's first `decisions.md` at its size, and drop one that's gone. Bump the number by hand when new decisions need
   room; distilling (editing an entry in place, deleting what's superseded) lowers it for good.
+- A platform block (`{platform, select, …}`) is judged branch by branch against the English same branch, with that OS's
+  forms (`windows` / `other` above). A branch still byte-identical to its English is pending translation (the stale
+  check's worklist), so it's skipped (`judgedBranchPairs` in `apps/desktop/scripts/i18n-catalog-lib.ts`); a finding
+  names its branch.
 - A locale without `terms.json` is skipped silently.
 - `--list` prints every drifting key even under the baseline: the cleanup view.
 
@@ -339,6 +350,10 @@ still apply.
   design as termbase drift. A locale not listed is strict; `node scripts/i18n-check-mechanics.ts --adopt <tag>` records
   a newly declared locale at its current count, once (it refuses a locale that already has a number), so a locale can
   declare its rules first and clean up after.
+- A platform block is scanned branch by branch (read whole, a raw block's brace-free body would read as a `{token}`). A
+  translating locale's branch still byte-identical to `en`'s same branch is pending translation and skipped, since it's
+  English typography by design; `en` and the English overlays scan every branch (`pendingTranslationOf` in
+  `apps/desktop/scripts/i18n-catalog-lib.ts`).
 - A locale without `mechanics.json` is skipped (not declared yet); an overlay without one inherits its base language's.
 - `--list` prints every finding even under the baseline.
 

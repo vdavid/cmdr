@@ -240,9 +240,20 @@ space after each comma). Never a block inside a sentence, never `{platform}` int
   needs a branch imports the same file by path (it's dependency-free for that); ❌ never a second splitter. The i18n
   checks read text through `platformBranches()` / `pairPlatformBranches()` in `scripts/i18n-catalog-lib.ts` (parity,
   plural, and coverage compare each locale branch with the source's same branch; word sweeps such as the overlay tests
-  read `visibleText()`; generators write a block back with `formatPlatformBranches()`), and
+  read `visibleText()`; generators write a block back with `formatPlatformBranches()`). The JUDGING checks
+  (dont-translate, termbase, mechanics, term consistency) skip a translating locale's branch that is still
+  byte-identical to English, since that is pending translation and stale's worklist (`judgedBranchPairs`,
+  `pendingTranslationOf`); the two that pair KEYS (aria containment, quoted labels) compare per rendered OS
+  (`pickPlatformBranch` for each of `RENDERED_PLATFORMS`), since a block key and a plain one share no branch names. The
+  termbase judges each branch against its OS's optional `windows` / `other` forms (`docs/i18n/termbase.md`). And
   `desktop-i18n-platform-select` enforces every rule above, plus each locale's branch set matching its source's, in
   every catalog including `en`.
+- **No OS test picks copy**: `cmdr/no-platform-copy-branch` (`apps/desktop/eslint-plugins/`) flags a ternary, `if`, or
+  `{#if}` testing `isMacOS()` / `getPlatform()` (or a name bound to one) whose arms resolve copy (`t`, `tString`,
+  `tStringIn`, `getMessage`, `<Trans>`, or a key-shaped string literal). Whether a surface exists is
+  `hasCapability()`'s, and stays legal. It's registered `off` until the remaining `.mac` / `.other` pairs collapse:
+  their nine call sites are all it flags today. It can't see a helper returning bare key SUFFIXES
+  (`transfer-error-messages.ts`'s `mac ? 'needsAdminMac' : …`); that one goes by hand.
 - **Tests**: `withPlatform('macos' | 'windows' | 'linux')` from `#lib/platform/test-platform` moves both the select and
   the split; Vitest's fallback is Linux, so an assertion on macOS text names macOS.
 

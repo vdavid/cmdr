@@ -83,6 +83,71 @@ describe('findDivergences: full translation', () => {
   })
 })
 
+describe('findDivergences: platform blocks', () => {
+  const source = cat({
+    'a.trash': 'Move to Trash',
+    'b.trash': '{platform, select, macos {Move to Trash} windows {Move to Recycle Bin} other {Delete}}',
+    'c.delete': 'Delete',
+  })
+
+  it('groups each branch with the keys sharing its English, and names the branch', () => {
+    const de = cat({
+      'a.trash': 'In den Papierkorb',
+      'b.trash': '{platform, select, macos {In den Papierkorb legen} windows {Move to Recycle Bin} other {Löschen}}',
+      'c.delete': 'Löschen',
+    })
+    expect(findDivergences(source, de, false, source.messages)).toEqual([
+      {
+        source: 'Move to Trash',
+        renderings: [
+          { value: 'In den Papierkorb', keys: ['a.trash'] },
+          { value: 'In den Papierkorb legen', keys: ['b.trash (macos)'] },
+        ],
+      },
+    ])
+  })
+
+  it('skips a branch still carrying its English, pending translation', () => {
+    const de = cat({
+      'a.trash': 'In den Papierkorb',
+      'b.trash': '{platform, select, macos {In den Papierkorb} windows {Move to Recycle Bin} other {Delete}}',
+      'c.delete': 'Löschen',
+    })
+    expect(findDivergences(source, de, false, source.messages)).toEqual([])
+  })
+
+  it('skips a translated overlay’s English branch too: pending is judged against en, not the overlay’s base', () => {
+    // es-419 over es, both mid-migration: es still carries English `other` branches, es-419 has translated one.
+    const english = {
+      ...source.messages,
+      'd.remove': '{platform, select, macos {Remove} other {Delete}}',
+    }
+    const es = cat({
+      'a.trash': 'Mover a la papelera',
+      'b.trash': '{platform, select, macos {Mover a la papelera} windows {Move to Recycle Bin} other {Delete}}',
+      'c.delete': 'Eliminar',
+      'd.remove': '{platform, select, macos {Quitar} other {Delete}}',
+    })
+    const es419 = cat({ 'd.remove': '{platform, select, macos {Sacar} other {Borrar}}' })
+    // Without the English reference, `b.trash`'s pending branch reads as a second name for "Delete".
+    expect(findDivergences(es, es419, true)).toHaveLength(1)
+    expect(findDivergences(es, es419, true, english)).toEqual([])
+  })
+
+  it('judges an overlay’s unforked branch: it IS what the overlay renders', () => {
+    const gb = cat({ 'c.delete': 'Remove' })
+    expect(findDivergences(source, gb, true)).toEqual([
+      {
+        source: 'Delete',
+        renderings: [
+          { value: 'Delete', keys: ['b.trash (other)'] },
+          { value: 'Remove', keys: ['c.delete'] },
+        ],
+      },
+    ])
+  })
+})
+
 describe('findDivergences: overlay', () => {
   // `source` is what the overlay renders on top of (en, layered). The two keys share one English value.
   const source = cat({ 'errors.noTrash': 'no Trash here', 'ops.noTrash': 'no Trash here' })

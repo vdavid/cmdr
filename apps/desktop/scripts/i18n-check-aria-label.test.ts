@@ -74,6 +74,36 @@ describe('checkLocale', () => {
   })
 })
 
+describe('checkLocale: platform blocks, compared per rendered OS', () => {
+  // The label is a block, its accessible name plain: branch names don't line up across the two keys,
+  // so the pair is judged on what each OS renders.
+  const source = cat({
+    show: '{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}',
+    showAria: '{platform, select, macos {Show {name} in Finder} other {Show {name} in file manager}}',
+  })
+
+  it('holds a pair only on the OSes where English holds it', () => {
+    expect(ariaPairs(source)).toEqual([{ labelKey: 'show', ariaKey: 'showAria', platforms: ['macos', 'linux'] }])
+  })
+
+  it('flags a translated rendering that lost its label, naming the OS', () => {
+    const de = cat({
+      show: '{platform, select, macos {Im Finder zeigen} windows {Show in File Explorer} other {Im Dateimanager zeigen}}',
+      showAria: '{platform, select, macos {{name} im Finder anzeigen} other {{name} im Dateimanager zeigen}}',
+    })
+    const out = checkLocale(source, de, false, source.messages)
+    expect(out.map(({ ariaKey, platform }) => [ariaKey, platform])).toEqual([['showAria', 'macos']])
+  })
+
+  it('skips an OS where either half still carries its English, pending translation', () => {
+    const de = cat({
+      show: '{platform, select, macos {Im Finder zeigen} windows {Show in File Explorer} other {Show in file manager}}',
+      showAria: '{platform, select, macos {{name} im Finder zeigen} other {{name} im Dateimanager zeigen}}',
+    })
+    expect(checkLocale(source, de, false, source.messages)).toEqual([])
+  })
+})
+
 describe('runAriaCheck: the pseudolocale', () => {
   // `gen-pseudolocale.ts` pads every string on its own (`Ṗáüšé⟦áé⟧`), so a short
   // label's padding never appears inside the longer accessible name, and en-XA

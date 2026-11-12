@@ -19,6 +19,10 @@
  *     half-cleaned locale reports one line rather than failing the build. A locale
  *     with no baseline is strict from its first `terms.json`.
  *
+ * A platform block is judged per branch: a branch still carrying its English is
+ * skipped (pending translation), and a ruling's optional `windows` / `other`
+ * forms replace its base forms for that branch (`formsForBranch`).
+ *
  * Settings search keyword lists (`isSearchKeywordsKey`) are outside the termbase:
  * never drift, and an `exceptions` entry naming one is a schema error.
  *
@@ -31,16 +35,27 @@
 
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { BASE_LOCALE, isSearchKeywordsKey, listLocales, loadCatalog, resolveLocaleSource } from './i18n-catalog-lib.ts'
+import type { PlatformSelectBranch } from '../src/lib/intl/platform-select.ts'
+import {
+  BASE_LOCALE,
+  isSearchKeywordsKey,
+  judgedBranchPairs,
+  listLocales,
+  loadCatalog,
+  resolveLocaleSource,
+} from './i18n-catalog-lib.ts'
 import { EXIT_CLEAN, EXIT_ERROR, EXIT_ISSUES } from './i18n-locale-check-lib.ts'
 import {
   CONFIDENCES,
+  OS_FORM_BRANCHES,
   compileConcepts,
+  formsForBranch,
   notMatchKey,
   conceptsPath,
   decisionsPath,
   duplicateKeyErrors,
   englishMatchText,
+  englishMatchTexts,
   isNameKey,
   loadTerms,
   localeValueCarriesTerm,
@@ -52,7 +67,7 @@ import {
   readTextIfPresent,
   termsPath,
 } from './i18n-termbase-lib.ts'
-import type { Concepts, Termbase } from './i18n-termbase-lib.ts'
+import type { Concepts, Term, Termbase } from './i18n-termbase-lib.ts'
 
 /** Exit code for a schema error: the Go wrapper maps it to a failing check. */
 export const EXIT_SCHEMA = 3
@@ -83,7 +98,9 @@ const TERM_FIELDS = new Set([
   'note',
   'exceptions',
   'decision',
+  ...OS_FORM_BRANCHES,
 ])
+const OS_FORM_FIELDS = new Set(['chosen', 'accept', 'proseAccept', 'avoid', 'note'])
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -217,8 +234,24 @@ export function validateTerms(args: ValidateTermsArgs): string[] {
       ...avoidErrors(at, term.avoid),
       ...exceptionErrors(at, term.exceptions, args.enKeys),
       ...decisionErrors(at, term.decision, args),
+      ...OS_FORM_BRANCHES.flatMap((branch) => osFormErrors(`${at}: ${branch}`, term[branch])),
     ]
   })
+}
+
+/** A ruling's optional per-OS forms (`windows`, `other`): an object with its own `chosen`, held to the base field rules. */
+function osFormErrors(at: string, forms: unknown): string[] {
+  if (forms === undefined) return []
+  if (!isRecord(forms)) return [`${at}: must be an object`]
+  const errors = unknownFieldErrors(at, forms, OS_FORM_FIELDS)
+  if (!isNonEmptyString(forms.chosen)) errors.push(`${at}: missing "chosen"`)
+  for (const field of ['accept', 'proseAccept'] as const) {
+    if (forms[field] !== undefined && !isStringList(forms[field])) {
+      errors.push(`${at}: "${field}" must be a list of strings`)
+    }
+  }
+  if (forms.note !== undefined && typeof forms.note !== 'string') errors.push(`${at}: "note" must be a string`)
+  return [...errors, ...avoidErrors(at, forms.avoid)]
 }
 
 /** A value for a message, whatever JSON handed us. */
@@ -286,11 +319,12 @@ function decisionErrors(at: string, decision: unknown, { tag, decisionHeadings }
   })
 }
 
-/** One shipped key that drifts from a ruling. */
+/** One shipped key (or one platform branch of it, named in `branch`) that drifts from a ruling. */
 export interface DriftFinding {
   key: string
   concept: string
   value: string
+  branch?: PlatformSelectBranch
 }
 
 /** The inputs `findDrift` compares. */
@@ -307,6 +341,11 @@ export interface FindDriftArgs {
  * value, that value carries none of the ruling's forms, and the key isn't one of
  * the ruling's `exceptions`. A missing key is the coverage check's business, and a
  * search keyword list (`isSearchKeywordsKey`) is free synonyms, never drift.
+ *
+ * A platform block is judged branch by branch (`judgedBranchPairs`): each
+ * translated branch against the English same branch, with its OS's forms when the
+ * ruling has them (`formsForBranch`), and a branch still carrying its English is
+ * skipped (pending translation, the stale check's job).
  */
 export function findDrift({ tag, terms, concepts, en, locale }: FindDriftArgs): DriftFinding[] {
   const ruled = Object.fromEntries(Object.keys(terms).flatMap((id) => (id in concepts ? [[id, concepts[id]]] : [])))
@@ -314,20 +353,46 @@ export function findDrift({ tag, terms, concepts, en, locale }: FindDriftArgs): 
   const findings: DriftFinding[] = []
   for (const key of Object.keys(en).sort()) {
     if (!(key in locale) || isSearchKeywordsKey(key)) continue
-    const text = englishMatchText(key, en[key])
-    for (const [id, hits] of matchers) {
-      if (!hits(text, key)) continue
-      const term = terms[id]
-      if (term.exceptions && key in term.exceptions) continue
-      // The schema half reports a missing `chosen`; drift can't be judged without one.
-      const chosen: unknown = term.chosen
-      if (!isNonEmptyString(chosen)) continue
-      const prose = term.proseAccept?.length && !isNameKey(key, en[key]) ? term.proseAccept : []
-      if (localeValueCarriesTerm(tag, locale[key], { chosen, accept: [...(term.accept ?? []), ...prose] })) continue
-      findings.push({ key, concept: id, value: locale[key] })
+    for (const { name, source, locale: value } of judgedBranchPairs(en[key], locale[key])) {
+      const text = englishMatchText(key, source)
+      for (const [id, hits] of matchers) {
+        if (!hits(text, key)) continue
+        const term = terms[id]
+        if (term.exceptions && key in term.exceptions) continue
+        if (carriesRuling({ tag, key, term, branch: name, source, value })) continue
+        findings.push(name === null ? { key, concept: id, value } : { key, concept: id, value, branch: name })
+      }
     }
   }
   return findings
+}
+
+/**
+ * Whether one branch's translation uses its ruling: the forms of the OS that
+ * reads it (`formsForBranch`), plus `proseAccept` when the English is prose. A
+ * ruling without a `chosen` counts as carried: the schema half reports it, and
+ * drift can't be judged without one.
+ */
+function carriesRuling({
+  tag,
+  key,
+  term,
+  branch,
+  source,
+  value,
+}: {
+  tag: string
+  key: string
+  term: Term
+  branch: PlatformSelectBranch | null
+  source: string
+  value: string
+}): boolean {
+  const forms = formsForBranch(term, branch)
+  const chosen: unknown = forms.chosen
+  if (!isNonEmptyString(chosen)) return true
+  const prose = forms.proseAccept?.length && !isNameKey(key, source) ? forms.proseAccept : []
+  return localeValueCarriesTerm(tag, value, { chosen, accept: [...(forms.accept ?? []), ...prose] })
 }
 
 /** One migrated locale's drift, and the count it may carry. */
@@ -368,7 +433,7 @@ function staleExceptionErrors(tag: string, terms: Termbase, concepts: Concepts, 
     const exceptions: unknown = term.exceptions
     if (!hits || !isRecord(exceptions)) continue
     for (const key of Object.keys(exceptions)) {
-      if (!(key in en) || hits(englishMatchText(key, en[key]), key)) continue
+      if (!(key in en) || englishMatchTexts(key, en[key]).some((text) => hits(text, key))) continue
       errors.push(
         `${tag}/terms.json: ${id}: exception "${key}" is stale: its English no longer matches the concept, so drop it`,
       )
@@ -474,8 +539,9 @@ export function loadBaseline(path: string = BASELINE_PATH): Baseline {
 }
 
 /** Renders one drift finding. */
-function driftLine({ key, concept, value }: DriftFinding): string {
-  return `  - ${key} (${concept}): ${JSON.stringify(value)}`
+function driftLine({ key, concept, value, branch }: DriftFinding): string {
+  const where = branch === undefined ? '' : `, ${branch} branch`
+  return `  - ${key} (${concept}${where}): ${JSON.stringify(value)}`
 }
 
 /**

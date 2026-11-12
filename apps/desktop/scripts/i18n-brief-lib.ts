@@ -63,9 +63,11 @@ import {
   decisionPointers,
   decisionsPath,
   englishMatchText,
+  englishMatchTexts,
   extractDigest,
   loadConceptsFor,
   loadTerms,
+  osFormsSummaries,
   parseDecisions,
   readTextIfPresent,
   resolveDocsRoot,
@@ -343,19 +345,21 @@ const BRANDS = new Set(BRAND_WORDS.map((word) => word.toLowerCase()))
  * words fewer than `MIN_TERM_FREQUENCY` keys use are left out.
  */
 function uncoveredWords(ctx: BriefContext, key: string): string[] {
-  const text = englishMatchText(key, ctx.en.messages[key])
   const content = new Set(contentWords(key, ctx.en.messages[key]))
-  const spans = Object.values(ctx.concepts).flatMap((concept) =>
-    Array.isArray(concept.match) ? coveredSpans(concept.match, text) : [],
-  )
   const out: string[] = []
-  for (const hit of text.matchAll(/\p{L}+/gu)) {
-    const word = hit[0].toLowerCase()
-    const end = hit.index + hit[0].length
-    if (!content.has(word) || out.includes(word) || isGenericWord(word) || BRANDS.has(word)) continue
-    if ((ctx.memory.df.get(word) ?? 0) < MIN_TERM_FREQUENCY) continue
-    if (spans.some(([from, to]) => from < end && hit.index < to)) continue
-    out.push(word)
+  // Per platform branch, so a whole-value (`=queue`) form covers the one branch it equals.
+  for (const text of englishMatchTexts(key, ctx.en.messages[key])) {
+    const spans = Object.values(ctx.concepts).flatMap((concept) =>
+      Array.isArray(concept.match) ? coveredSpans(concept.match, text) : [],
+    )
+    for (const hit of text.matchAll(/\p{L}+/gu)) {
+      const word = hit[0].toLowerCase()
+      const end = hit.index + hit[0].length
+      if (!content.has(word) || out.includes(word) || isGenericWord(word) || BRANDS.has(word)) continue
+      if ((ctx.memory.df.get(word) ?? 0) < MIN_TERM_FREQUENCY) continue
+      if (spans.some(([from, to]) => from < end && hit.index < to)) continue
+      out.push(word)
+    }
   }
   return out
 }
@@ -425,6 +429,7 @@ function rulingLine(ctx: BriefContext, tag: string, id: string): string {
   if (term.forms) parts.push(`forms: ${term.forms}`)
   if (term.avoid?.length) parts.push(`avoid: ${term.avoid.map((a) => `${a.form} (${a.why})`).join('; ')}`)
   if (term.note) parts.push(`note: ${term.note}`)
+  parts.push(...osFormsSummaries(term))
   // A blind run drops both: a batch key's exception names how it deviates, and
   // the decision it points at is withheld anyway.
   if (!ctx.opts.excludeTargetValues) {
@@ -451,9 +456,10 @@ function conceptsInPlay(ctx: BriefContext): ConceptsInPlay {
   const hitsBy = new Map<string, string[]>()
   const ruledKeys = ctx.opts.keys.filter((key) => !isSearchKeywordsKey(key))
   for (const key of ruledKeys) {
-    const text = englishMatchText(key, ctx.en.messages[key])
+    // Per platform branch, so a whole-value (`=queue`) form still meets the one branch it equals.
+    const texts = englishMatchTexts(key, ctx.en.messages[key])
     for (const [id, hit] of matchers) {
-      if (hit(text, key)) hitsBy.set(id, [...(hitsBy.get(id) ?? []), key])
+      if (texts.some((text) => hit(text, key))) hitsBy.set(id, [...(hitsBy.get(id) ?? []), key])
     }
   }
   const batchText = ruledKeys

@@ -16,7 +16,7 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { isRawKey, visibleLiterals } from './i18n-catalog-lib.ts'
+import { isRawKey, platformBranches, visibleLiterals } from './i18n-catalog-lib.ts'
 
 /** One recurring English concept, shared by every locale. */
 export interface Concept {
@@ -68,6 +68,65 @@ export interface Term {
   exceptions?: Record<string, string>
   /** one or more `decisions.md` headings, each exact or a unique prefix (`resolveDecision`) */
   decision?: string | string[]
+  /** the forms a platform block's `windows` branch is judged against, when Windows names the concept differently */
+  windows?: OsForms
+  /** the forms a platform block's `other` branch (Linux, and Windows where it has no branch) is judged against */
+  other?: OsForms
+}
+
+/**
+ * A ruling's forms for the text one OS reads. When present it REPLACES the base
+ * ruling's `chosen` / `accept` / `proseAccept` / `avoid` for that branch (a
+ * Windows "Excluir" is judged against Windows' forms, never the macOS ruling's
+ * avoid list); a branch with no OS forms falls back to the base ruling.
+ */
+export interface OsForms {
+  chosen: string
+  accept?: string[]
+  proseAccept?: string[]
+  avoid?: AvoidForm[]
+  note?: string
+}
+
+/** The ruling fields that may carry per-OS forms, keyed by the platform branch that reads them. */
+export const OS_FORM_BRANCHES: readonly ('windows' | 'other')[] = Object.freeze(['windows', 'other'])
+
+/** How a ruling's per-OS forms are named in the brief: the OS whose platform branch they judge. */
+const OS_FORM_LABEL: Readonly<Record<(typeof OS_FORM_BRANCHES)[number], string>> = {
+  windows: 'Windows',
+  other: 'Linux and other OSes',
+}
+
+/**
+ * A ruling's per-OS forms as the brief prints them, one `Windows: **taak**
+ * (accept: taken)` part per OS that has its own, beside the base ruling.
+ */
+export function osFormsSummaries(term: Term): string[] {
+  return OS_FORM_BRANCHES.flatMap((branch) => {
+    const forms = term[branch]
+    if (forms === undefined) return []
+    const extra = [
+      ...(forms.accept?.length ? [`accept: ${forms.accept.join(', ')}`] : []),
+      ...(forms.proseAccept?.length ? [`prose only: ${forms.proseAccept.join(', ')}`] : []),
+      ...(forms.avoid?.length ? [`avoid: ${forms.avoid.map((a) => `${a.form} (${a.why})`).join('; ')}`] : []),
+      ...(forms.note ? [`note: ${forms.note}`] : []),
+    ]
+    return [`${OS_FORM_LABEL[branch]}: **${forms.chosen}**${extra.length > 0 ? ` (${extra.join('; ')})` : ''}`]
+  })
+}
+
+/**
+ * The forms one branch is judged against: its OS's forms when the ruling has
+ * them, else the base ruling. A plain value and a `macos` branch read the base.
+ * @param term the locale's ruling
+ * @param branch the platform branch name, or `null` for a plain value
+ */
+export function formsForBranch(term: Term, branch: 'macos' | 'windows' | 'other' | null): OsForms {
+  if (branch === 'windows' || branch === 'other') {
+    const forms = term[branch]
+    if (forms !== undefined) return forms
+  }
+  return term
 }
 
 /** A term's `decision` pointers as a list, whichever shape the file uses. */
@@ -288,11 +347,26 @@ function wholeValueOf(text: string): string {
  * it English and it says nothing about the concept "hostname". File-system paths
  * and domains go for the same reason (`PATH_OR_DOMAIN`): `local` in
  * `/usr/local/bin` or `nas.local` names a folder or a host, never the concept "local".
+ *
+ * A platform block reads every branch, one per line (`englishMatchTexts`), so a
+ * raw block's bodies aren't stripped as `{token}`s. A `=form` (whole-value) match
+ * needs one branch at a time: use `englishMatchTexts` where that matters.
  */
 export function englishMatchText(key: string, value: string): string {
-  const literals = isRawKey(key) ? undefined : visibleLiterals(value)
-  const text = (literals ?? stripRawIdentifiers(value)).replace(/`[^`\n]*`/g, '').replace(PATH_OR_DOMAIN, '')
-  return isRawKey(key) ? text : text.replace(/''/g, "'")
+  return englishMatchTexts(key, value).join('\n')
+}
+
+/**
+ * `englishMatchText` per platform branch (`platformBranches`): one text for a
+ * plain value, one per branch for a block, so a concept is judged against the
+ * words one OS reads.
+ */
+export function englishMatchTexts(key: string, value: string): string[] {
+  return platformBranches(value).map(({ text: branch }) => {
+    const literals = isRawKey(key) ? undefined : visibleLiterals(branch)
+    const text = (literals ?? stripRawIdentifiers(branch)).replace(/`[^`\n]*`/g, '').replace(PATH_OR_DOMAIN, '')
+    return isRawKey(key) ? text : text.replace(/''/g, "'")
+  })
 }
 
 /**

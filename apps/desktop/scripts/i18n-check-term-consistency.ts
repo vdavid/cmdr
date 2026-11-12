@@ -22,6 +22,12 @@
  *    here even though each key on its own looks fine. That is the overlay failure
  *    mode, and it's worse than not forking at all.
  *
+ * A platform block (`{platform, select, …}`) joins one group per branch, its
+ * keys listed as `key (branch)`, so a `windows` branch meets every other key
+ * saying the same English. A translating locale's branch still showing its `en`
+ * text is pending translation (the stale check's) and sits out; an English
+ * overlay's unforked branch counts as what it renders (`pendingTranslationOf`).
+ *
  * ## Why the allowlist demands a REASON
  *
  * Plenty of same-English pairs SHOULD diverge, because English is doing two jobs
@@ -68,13 +74,19 @@ import { join } from 'node:path'
 import {
   BASE_LOCALE,
   isCheckedLocale,
+  branchReader,
+  carriesSourceOn,
   isRawKey,
   layerCatalogs,
   listLocales,
   loadCatalog,
+  pairPlatformBranches,
+  pendingTranslationOf,
+  platformBranches,
   resolveLocaleSource,
 } from './i18n-catalog-lib.ts'
 import type { Catalog } from './i18n-catalog-lib.ts'
+import type { PlatformSelectBranch } from '../src/lib/intl/platform-select.ts'
 import { EXIT_CLEAN, EXIT_ERROR, EXIT_ISSUES } from './i18n-locale-check-lib.ts'
 
 /** Where the accepted splits and the not-yet-triaged baselines live. */
@@ -188,18 +200,28 @@ export function agreementProblems(source: Catalog): string[] {
  * A key with `@key.agreesWith` groups only with keys that share both its English
  * AND its label, since agreeing with a different label is a different word.
  */
-function groupBySourceValue(source: Catalog): Map<string, { text: string; keys: string[] }> {
-  const groups = new Map<string, { text: string; keys: string[] }>()
+function groupBySourceValue(source: Catalog): Map<string, { text: string; members: Member[] }> {
+  const groups = new Map<string, { text: string; members: Member[] }>()
   for (const [key, value] of Object.entries(source.messages)) {
-    const normalized = normalizeForComparison(value, key)
-    if (normalized.length < 2) continue
-    const label = agreesWith(source, key)
-    const groupKey = label === undefined ? normalized : `${normalized}\u0000${label}`
-    const bucket = groups.get(groupKey)
-    if (bucket) bucket.keys.push(key)
-    else groups.set(groupKey, { text: normalized, keys: [key] })
+    // A platform block is one term per branch: its `windows` text groups with the other keys saying the same.
+    for (const { name, text } of platformBranches(value)) {
+      const normalized = normalizeForComparison(text, key)
+      if (normalized.length < 2) continue
+      const label = agreesWith(source, key)
+      const groupKey = label === undefined ? normalized : `${normalized}\u0000${label}`
+      const member = { key, branch: name }
+      const bucket = groups.get(groupKey)
+      if (bucket) bucket.members.push(member)
+      else groups.set(groupKey, { text: normalized, members: [member] })
+    }
   }
   return groups
+}
+
+/** One key, or one branch of a key's platform block, in a group of same-English terms. */
+interface Member {
+  key: string
+  branch: PlatformSelectBranch | null
 }
 
 /**
@@ -210,18 +232,23 @@ function groupBySourceValue(source: Catalog): Map<string, { text: string; keys: 
  * @param catalog the locale's own catalog
  * @param isOverlay whether the locale carries only its forked keys, in which case
  *   an absent key renders the source value rather than nothing
+ * @param english the English a branch may be pending translation against
+ *   (`pendingTranslationOf`): a branch rendering exactly its `en` same branch sits
+ *   out. Absent for an English overlay, which renders English by design.
  * @returns findings sorted by source value, each listing its renderings
  */
-export function findDivergences(source: Catalog, catalog: Catalog, isOverlay: boolean): DivergenceFinding[] {
+export function findDivergences(
+  source: Catalog,
+  catalog: Catalog,
+  isOverlay: boolean,
+  english?: Record<string, string>,
+): DivergenceFinding[] {
   const findings: DivergenceFinding[] = []
-  for (const { text: normalizedSource, keys } of groupBySourceValue(source).values()) {
-    if (keys.length < 2) continue
+  for (const { text: normalizedSource, members } of groupBySourceValue(source).values()) {
+    if (members.length < 2) continue
 
-    // What the user actually sees for each key: the locale's own value, or for an
-    // overlay the base value it falls through to. A full translation with a key
-    // genuinely missing is the coverage check's problem, not ours, so we skip it.
     const byRendering = new Map<string, string[]>()
-    for (const key of keys) {
+    for (const { key, branch } of members) {
       // What the locale renders: its own value, or for an overlay the source value
       // it falls through to. A full translation missing a key is the coverage
       // check's problem, not ours.
@@ -229,10 +256,20 @@ export function findDivergences(source: Catalog, catalog: Catalog, isOverlay: bo
       if (key in catalog.messages) effective = catalog.messages[key]
       else if (isOverlay && key in source.messages) effective = source.messages[key]
       else continue
-      const normalized = normalizeForComparison(effective, key)
+      const pair = pairPlatformBranches(source.messages[key], effective).find(({ name }) => name === branch)
+      if (pair === undefined) continue
+      // A branch still carrying its English is pending translation: the stale check's.
+      if (
+        branch !== null &&
+        english?.[key] !== undefined &&
+        carriesSourceOn(english[key], effective, branchReader(branch))
+      )
+        continue
+      const normalized = normalizeForComparison(pair.locale, key)
+      const label = branch === null ? key : `${key} (${branch})`
       const bucket = byRendering.get(normalized)
-      if (bucket) bucket.push(key)
-      else byRendering.set(normalized, [key])
+      if (bucket) bucket.push(label)
+      else byRendering.set(normalized, [label])
     }
 
     if (byRendering.size < 2) continue
@@ -317,7 +354,7 @@ export function inspectLocales({
     const source = isOverlay
       ? { messages: layerCatalogs(base, load(overrides)).messages, metadata: base.metadata }
       : base
-    const divergences = findDivergences(source, load(locale), isOverlay)
+    const divergences = findDivergences(source, load(locale), isOverlay, pendingTranslationOf(locale, base.messages))
 
     const entries = locale in allowlist.reviewed ? allowlist.reviewed[locale] : []
     const unallowed = divergences.filter((finding) => !isAllowed(finding.source, entries))

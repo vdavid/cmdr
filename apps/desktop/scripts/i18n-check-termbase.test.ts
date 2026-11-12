@@ -142,6 +142,32 @@ describe('validateTerms', () => {
     }
     expect(validateTerms({ ...base, terms })).toEqual([])
   })
+  it('accepts per-OS forms and holds each to the ruling’s own field rules', () => {
+    const ok = {
+      operation: {
+        chosen: 'bewerking',
+        confidence: 'high',
+        sources: 's',
+        windows: { chosen: 'taak', accept: ['taken'], avoid: [{ form: 'klus', why: 'too casual' }] },
+        other: { chosen: 'bewerking', proseAccept: ['klus'], note: 'GNOME says bewerking' },
+      },
+    }
+    expect(validateTerms({ ...base, terms: ok })).toEqual([])
+    const bad = {
+      operation: {
+        chosen: 'bewerking',
+        confidence: 'high',
+        sources: 's',
+        windows: { accept: 'taken', confidence: 'high' },
+        other: 'bewerking',
+      },
+    }
+    const text = validateTerms({ ...base, terms: bad }).join('\n')
+    expect(text).toMatch(/operation: windows: missing "chosen"/)
+    expect(text).toMatch(/operation: windows: "accept" must be a list of strings/)
+    expect(text).toMatch(/operation: windows: unknown field "confidence"/)
+    expect(text).toMatch(/operation: other: must be an object/)
+  })
   it('flags an unknown concept, missing required fields, a bad confidence, a dead exception key, and a missing decision', () => {
     const terms = {
       nope: { chosen: 'x', confidence: 'high', sources: 's' },
@@ -252,6 +278,33 @@ describe('findDrift', () => {
   it('skips a key in exceptions and a key the locale lacks', () => {
     const withException = { operation: { ...terms.operation, exceptions: { 'q.a': 'deliberate' } } }
     expect(findDrift({ tag: 'nl', terms: withException, concepts, en, locale: { 'q.c': 'Hoi' } })).toEqual([])
+  })
+})
+
+describe('findDrift: platform blocks', () => {
+  const blockConcepts: Concepts = { delete: { en: 'delete', match: ['delete', 'trash'], sense: 'remove a file' } }
+  const en = {
+    'q.del': '{platform, select, macos {Move to Trash} windows {Delete the file} other {Delete the file for good}}',
+  }
+  const ruling = { chosen: 'Mover para o Lixo', confidence: 'high' as const, sources: 's' }
+
+  it('judges each translated branch against its own OS’s form, falling back to the base ruling', () => {
+    const terms = { delete: { ...ruling, windows: { chosen: 'Excluir' } } }
+    const pt = {
+      'q.del': '{platform, select, macos {Mover para o Lixo} windows {Excluir o arquivo} other {Apagar de vez}}',
+    }
+    // `windows` passes on its Windows form; `other` has no form of its own, so it meets the base ruling and drifts.
+    expect(findDrift({ tag: 'pt', terms, concepts: blockConcepts, en, locale: pt })).toEqual([
+      { key: 'q.del', concept: 'delete', value: 'Apagar de vez', branch: 'other' },
+    ])
+  })
+
+  it('skips a branch still carrying its English, pending translation', () => {
+    const pt = {
+      'q.del':
+        '{platform, select, macos {Mover para o Lixo} windows {Delete the file} other {Delete the file for good}}',
+    }
+    expect(findDrift({ tag: 'pt', terms: { delete: ruling }, concepts: blockConcepts, en, locale: pt })).toEqual([])
   })
 })
 

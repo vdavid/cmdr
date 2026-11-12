@@ -21,6 +21,10 @@
  * can require a space next to an insert or target only unknown names. One finding
  * per key and rule, however many hits.
  *
+ * A platform block reads branch by branch, and a translating locale's branch still
+ * showing its `en` text is pending translation (the stale check's), so it isn't
+ * held to the locale's typography (`pendingTranslationOf`).
+ *
  * Findings are held to a per-locale COUNT baseline
  * (`i18n-mechanics-baseline.json`) that only ratchets down, the same design as the
  * termbase drift baseline. A locale not listed is strict from its first
@@ -34,7 +38,15 @@
 
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { listLocales, loadCatalog, resolveLocaleSource } from './i18n-catalog-lib.ts'
+import {
+  BASE_LOCALE,
+  judgedBranchPairs,
+  listLocales,
+  loadCatalog,
+  pendingTranslationOf,
+  platformBranches,
+  resolveLocaleSource,
+} from './i18n-catalog-lib.ts'
 import { EXIT_CLEAN, EXIT_ERROR, EXIT_ISSUES } from './i18n-locale-check-lib.ts'
 import {
   ELLIPSIS_GLYPHS,
@@ -191,22 +203,40 @@ function ellipsisRules({ glyph, spaceBefore }: Mechanics['ellipsis']): CompiledR
   ]
 }
 
-/** Every key of `messages` that breaks the declared typography, sorted by key. */
+/**
+ * The texts of a value the check reads: each platform branch on its own (a raw
+ * block read whole would take a brace-free body for a `{token}`), minus a branch
+ * still carrying its `english` same branch, which is pending translation (the
+ * stale check's) and written in English typography by design.
+ */
+function judgedTexts(key: string, value: string, english: Record<string, string> | undefined): string[] {
+  const source = english?.[key]
+  if (source === undefined) return platformBranches(value).map(({ text }) => text)
+  return judgedBranchPairs(source, value).map(({ locale }) => locale)
+}
+
+/**
+ * Every key of `messages` that breaks the declared typography, sorted by key.
+ * `english` is what a branch may be pending translation against
+ * (`pendingTranslationOf`): absent for `en` and its English overlays.
+ */
 export function findMechanicsIssues({
   tag,
   mechanics,
   messages,
+  english,
 }: {
   tag: string
   mechanics: Mechanics
   messages: Record<string, string>
+  english?: Record<string, string>
 }): MechanicsIssue[] {
   const { primary, nested } = mechanics.quotes
   const allowed = new Set([...primary, ...(nested ?? []), ...(mechanics.apostrophes ?? [])])
   const rules = compileRules(mechanics)
   const issues: MechanicsIssue[] = []
   for (const key of Object.keys(messages).sort()) {
-    const variants = scanValue(key, messages[key], tag)
+    const variants = judgedTexts(key, messages[key], english).flatMap((text) => scanValue(key, text, tag))
     const text = variants.map((variant) => variant.text).join('\n')
     const add = (kind: MechanicsKind, detail: string) => issues.push({ key, kind, detail })
     if (text.includes('"')) add('straight-quote', 'a straight " where the locale’s quotation marks belong')
@@ -267,14 +297,16 @@ export function inspectMechanics({
     }
     return validated.get(tag)
   }
+  let english: Record<string, string> | undefined
   for (const tag of available) {
     const source = resolveLocaleSource(tag, available)
     const mechanics = declared(tag) ?? (source.isOverlay ? declared(source.overrides) : undefined)
     if (mechanics === undefined) continue
     const messages = loadCatalog(tag, messagesRoot).messages
+    english ??= loadCatalog(BASE_LOCALE, messagesRoot).messages
     locales.push({
       locale: tag,
-      issues: findMechanicsIssues({ tag, mechanics, messages }),
+      issues: findMechanicsIssues({ tag, mechanics, messages, english: pendingTranslationOf(tag, english) }),
       baseline: baseline.findings[tag],
     })
   }

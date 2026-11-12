@@ -27,6 +27,12 @@
  * a pair English itself honours is held to the standard in every locale, which
  * means zero judgment and no allowlist.
  *
+ * A platform block (`{platform, select, …}`) on either key is compared per
+ * rendered OS: the label and the name each OS shows, which pairs correctly even
+ * when one key is a block and the other isn't. The English gate runs per OS too,
+ * and a translating locale's OS where either half still shows its English (a branch
+ * pending translation) is the stale check's, not this one's.
+ *
  * Comparison ignores case, `{placeholders}`, `<tag>` names, whitespace, and
  * punctuation in both scripts, and folds the ICU doubled apostrophe: none of
  * those is what a voice-control user pronounces.
@@ -40,23 +46,32 @@
  * point at a fixture (used by the tests).
  */
 
+import { pickPlatformBranch } from '../src/lib/intl/platform-select.ts'
 import {
   BASE_LOCALE,
+  RENDERED_PLATFORMS,
+  carriesSourceOn,
   isCheckedLocale,
   isRawKey,
   layerCatalogs,
   listLocales,
   loadCatalog,
+  pendingTranslationOf,
   resolveLocaleSource,
 } from './i18n-catalog-lib.ts'
-import type { Catalog } from './i18n-catalog-lib.ts'
+import type { Catalog, RenderedPlatform } from './i18n-catalog-lib.ts'
 import { EXIT_CLEAN, EXIT_ERROR, EXIT_ISSUES, withoutGeneratedLocales } from './i18n-locale-check-lib.ts'
 import type { LocaleCheckOptions } from './i18n-locale-check-lib.ts'
 
-/** A visible-label key and the accessible-name key that must contain it. */
+/**
+ * A visible-label key and the accessible-name key that must contain it.
+ * `platforms` is set only when English holds the pair on some OSes and not
+ * others (either key a platform block); absent, the pair holds on every OS.
+ */
 export interface AriaPair {
   labelKey: string
   ariaKey: string
+  platforms?: RenderedPlatform[]
 }
 
 /** Strips everything a voice-control user doesn't pronounce. */
@@ -99,8 +114,17 @@ export function ariaPairs(source: Catalog): AriaPair[] {
     if (!match || match[1].length === 0) continue
     const labelKey = match[1]
     if (!(labelKey in source.messages)) continue
-    if (!containsLabel(source.messages[ariaKey], source.messages[labelKey])) continue
-    pairs.push({ labelKey, ariaKey })
+    // Per rendered OS, never per branch name: either key may be a platform block while the other isn't.
+    const held = RENDERED_PLATFORMS.filter((platform) =>
+      containsLabel(
+        pickPlatformBranch(source.messages[ariaKey], platform),
+        pickPlatformBranch(source.messages[labelKey], platform),
+      ),
+    )
+    if (held.length === 0) continue
+    pairs.push(
+      held.length === RENDERED_PLATFORMS.length ? { labelKey, ariaKey } : { labelKey, ariaKey, platforms: held },
+    )
   }
   return pairs.sort((a, b) => a.ariaKey.localeCompare(b.ariaKey))
 }
@@ -115,27 +139,57 @@ function effectiveValue(source: Catalog, catalog: Catalog, key: string, isOverla
   return undefined
 }
 
-/** One locale's broken pair, with the two values that no longer line up. */
-export interface AriaFinding extends AriaPair {
+/**
+ * One locale's broken pair, with the two texts that no longer line up.
+ * `platform` names the OS whose rendering broke, when the two keys render
+ * differently per OS; absent, the values are plain and break everywhere.
+ */
+export interface AriaFinding {
+  labelKey: string
+  ariaKey: string
   label: string
   aria: string
+  platform?: RenderedPlatform
 }
 
 /**
- * Checks one locale's rendering of every real pair in `source`.
+ * Checks one locale's rendering of every real pair in `source`, on each OS
+ * the source holds it on. An OS where either half still renders its `en` text (a
+ * platform block's branch pending translation, `carriesSourceOn`) is skipped: the
+ * stale check owns it.
  *
  * @param source the catalog the locale is checked against
  * @param catalog the locale's own catalog
  * @param isOverlay whether an absent key falls through to the source value
+ * @param english the English a branch may be pending against (`pendingTranslationOf`);
+ *   absent for an English overlay, whose every rendering is judged
  */
-export function checkLocale(source: Catalog, catalog: Catalog, isOverlay = false): AriaFinding[] {
+export function checkLocale(
+  source: Catalog,
+  catalog: Catalog,
+  isOverlay = false,
+  english?: Record<string, string>,
+): AriaFinding[] {
   const findings: AriaFinding[] = []
-  for (const { labelKey, ariaKey } of ariaPairs(source)) {
+  for (const { labelKey, ariaKey, platforms = RENDERED_PLATFORMS } of ariaPairs(source)) {
     const label = effectiveValue(source, catalog, labelKey, isOverlay)
     const aria = effectiveValue(source, catalog, ariaKey, isOverlay)
     if (label === undefined || aria === undefined) continue
-    if (containsLabel(aria, label)) continue
-    findings.push({ labelKey, ariaKey, label, aria })
+    const pending = (key: string, value: string, platform: RenderedPlatform) =>
+      english?.[key] !== undefined && carriesSourceOn(english[key], value, platform)
+    const broken = new Map<string, AriaFinding>()
+    for (const platform of platforms) {
+      if (pending(labelKey, label, platform) || pending(ariaKey, aria, platform)) continue
+      const shownLabel = pickPlatformBranch(label, platform)
+      const shownAria = pickPlatformBranch(aria, platform)
+      if (containsLabel(shownAria, shownLabel)) continue
+      // A plain pair renders alike on every OS: one finding, unnamed.
+      const perOs = shownLabel !== label || shownAria !== aria
+      const finding = { labelKey, ariaKey, label: shownLabel, aria: shownAria, ...(perOs ? { platform } : {}) }
+      const id = JSON.stringify([shownLabel, shownAria])
+      if (!broken.has(id)) broken.set(id, finding)
+    }
+    findings.push(...broken.values())
   }
   return findings
 }
@@ -169,7 +223,8 @@ export function runAriaCheck({ messagesRoot, write, only }: LocaleCheckOptions =
   for (const locale of locales) {
     const { overrides, isOverlay } = resolveLocaleSource(locale, available)
     const source = isOverlay ? layerCatalogs(load(BASE_LOCALE), load(overrides)) : load(BASE_LOCALE)
-    const findings = checkLocale(source, load(locale), isOverlay)
+    const english = pendingTranslationOf(locale, load(BASE_LOCALE).messages)
+    const findings = checkLocale(source, load(locale), isOverlay, english)
     if (findings.length === 0) {
       out(`${locale}: clean.`)
       continue
@@ -177,8 +232,9 @@ export function runAriaCheck({ messagesRoot, write, only }: LocaleCheckOptions =
     total += findings.length
     const noun = findings.length === 1 ? 'name that no longer contains its' : 'names that no longer contain their'
     out(`${locale}: ${String(findings.length)} accessible ${noun} visible label`)
-    for (const { labelKey, ariaKey, label, aria } of findings) {
-      out(`  - ${ariaKey} → ${JSON.stringify(aria)} doesn't contain ${labelKey} = ${JSON.stringify(label)}`)
+    for (const { labelKey, ariaKey, label, aria, platform } of findings) {
+      const on = platform === undefined ? '' : ` (on ${platform})`
+      out(`  - ${ariaKey}${on} → ${JSON.stringify(aria)} doesn't contain ${labelKey} = ${JSON.stringify(label)}`)
     }
   }
 

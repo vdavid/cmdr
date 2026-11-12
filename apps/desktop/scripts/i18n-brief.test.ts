@@ -174,6 +174,7 @@ describe('buildBrief (fixture tree)', () => {
       'queue.reveal': '{platform, select, macos {Show {name} in Finder} other {Show {name} in the file manager}}',
       'errors.queue.revealHint':
         '{platform, select, macos {Open {system_settings} and allow it.} other {Check the folder permissions.}}',
+      'errors.queue.undoHint': '{platform, select, macos {Undo the operation from the Edit menu.} other {Try again.}}',
     })
     write(join(messagesRoot, 'en', 'settings.json'), {
       'settings.queue.keywords': 'operation, offline, jobs',
@@ -228,6 +229,7 @@ describe('buildBrief (fixture tree)', () => {
         sources: 'macOS',
         exceptions: { 'queue.row.label': 'names transfers, not operations' },
         decision: 'Operation queue (`queue.title`)',
+        windows: { chosen: 'taak', accept: ['taken'] },
       },
     })
     write(
@@ -270,6 +272,16 @@ describe('buildBrief (fixture tree)', () => {
     expect(notes).toEqual(['  - {name}', '  - {system_settings}'])
     expect(text).not.toContain('{platform}')
     expect(text.match(/Per-OS value: translate each branch/g)?.length).toBe(2)
+  })
+
+  it('finds a concept in a raw block’s branch, where a whole-value strip would delete every body', () => {
+    const text = renderBrief(buildBrief({ ...opts, keys: ['errors.queue.undoHint'] }))
+    expect(text).toContain('The file work Cmdr performs.')
+  })
+
+  it('prints a ruling’s per-OS forms beside its base form', () => {
+    const text = renderBrief(buildBrief(opts))
+    expect(text).toMatch(/nl: \*\*bewerking\*\*.* · Windows: \*\*taak\*\* \(accept: taken\)/)
   })
 
   it('lists the terms in play with their distinct neighbors, and none that are not', () => {

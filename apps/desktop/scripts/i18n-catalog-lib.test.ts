@@ -35,6 +35,10 @@ import {
   layerCatalogs,
   platformBranches,
   pairPlatformBranches,
+  judgedBranchPairs,
+  carriesSourceOn,
+  pendingTranslationOf,
+  RENDERED_PLATFORMS,
   formatPlatformBranches,
   visibleText,
 } from './i18n-catalog-lib.ts'
@@ -359,6 +363,55 @@ describe('pairPlatformBranches', () => {
       { name: 'windows', source: 'O', locale: 'w' },
       { name: 'other', source: 'O', locale: 'o' },
     ])
+  })
+})
+
+describe('judgedBranchPairs', () => {
+  it('keeps a plain pair, even when the locale equals the source (identity is coverage’s question)', () => {
+    expect(judgedBranchPairs('Finder', 'Finder')).toEqual([{ name: null, source: 'Finder', locale: 'Finder' }])
+  })
+
+  it('drops a branch the locale carries over byte-identical from the source, keeps a translated one', () => {
+    expect(
+      judgedBranchPairs(
+        '{platform, select, macos {Move to Trash} windows {Move to Recycle Bin} other {Move to trash}}',
+        '{platform, select, macos {In den Papierkorb} windows {Move to Recycle Bin} other {Move to trash}}',
+      ),
+    ).toEqual([{ name: 'macos', source: 'Move to Trash', locale: 'In den Papierkorb' }])
+  })
+
+  it('judges what each OS reads when the branch sets differ', () => {
+    expect(judgedBranchPairs('{platform, select, windows {W} other {O}}', 'O')).toEqual([
+      { name: 'windows', source: 'W', locale: 'O' },
+    ])
+  })
+})
+
+describe('pendingTranslationOf', () => {
+  const english = { 'a.b': 'Hello' }
+  it('is the English for a locale that translates, a translated overlay included', () => {
+    expect(pendingTranslationOf('de', english)).toBe(english)
+    expect(pendingTranslationOf('es-419', english)).toBe(english)
+  })
+  it('is nothing for English itself and its overlays, whose branches are English by design', () => {
+    expect(pendingTranslationOf('en', english)).toBeUndefined()
+    expect(pendingTranslationOf('en-GB', english)).toBeUndefined()
+  })
+})
+
+describe('carriesSourceOn', () => {
+  const en = '{platform, select, macos {Finder} other {file manager}}'
+  it('is true where a block key still renders its English on that OS', () => {
+    const de = '{platform, select, macos {Finder} other {file manager}}'
+    expect(carriesSourceOn(en, de, 'linux')).toBe(true)
+    expect(carriesSourceOn(en, '{platform, select, macos {Finder} other {Dateimanager}}', 'linux')).toBe(false)
+    expect(carriesSourceOn(en, '{platform, select, macos {Finder} other {Dateimanager}}', 'macos')).toBe(true)
+  })
+  it('is never true for a plain source: an identical whole value is coverage’s question', () => {
+    expect(carriesSourceOn('Finder', 'Finder', 'macos')).toBe(false)
+  })
+  it('covers every OS a reader runs', () => {
+    expect(RENDERED_PLATFORMS).toEqual(['macos', 'windows', 'linux'])
   })
 })
 

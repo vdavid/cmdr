@@ -29,7 +29,9 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { pickPlatformBranch } from '../src/lib/intl/platform-select.ts'
 import {
+  RENDERED_PLATFORMS,
   loadCatalog,
   isRawKey,
   isSearchKeywordsKey,
@@ -341,32 +343,58 @@ describe('every overlay value stays renderable where base en is', () => {
   })
 
   it('keeps every aria name containing the visible label it names (WCAG 2.5.3)', () => {
-    // If a label forks and its aria sibling doesn't, a voice-control user says the
-    // British words on screen and nothing matches. Pairs are discovered, not listed:
-    // any aria value that contains a sibling's value verbatim in base en must still
-    // contain it after the overlay resolves.
-    const broken: string[] = []
-    const family = (key: string): string => key.split('.').slice(0, 2).join('.')
-    const ariaKeys = Object.keys(en.messages).filter((k) => /aria/i.test(k))
-    const labelKeys = Object.entries(en.messages).filter(([k, v]) => !/aria/i.test(k) && v.length >= 4)
+    expect([
+      ...brokenAriaNames('en-GB', en.messages, gb.messages),
+      ...brokenAriaNames('en-AU', en.messages, au.messages),
+    ]).toEqual([])
+  })
 
-    for (const ariaKey of ariaKeys) {
-      for (const [labelKey, labelValue] of labelKeys) {
-        if (family(labelKey) !== family(ariaKey)) continue
-        if (!en.messages[ariaKey].includes(labelValue)) continue
-        for (const [tag, cat] of [
-          ['en-GB', gb],
-          ['en-AU', au],
-        ] as const) {
-          const aria = cat.messages[ariaKey] ?? en.messages[ariaKey]
-          const label = cat.messages[labelKey] ?? labelValue
-          if (!aria.includes(label)) broken.push(`${tag}: ${ariaKey} no longer contains ${labelKey} ("${label}")`)
-        }
-      }
+  it('compares aria names per rendered OS, so a label that is a platform block still pairs', () => {
+    const base = {
+      'a.b.show': '{platform, select, macos {Show in Finder} other {Show in folder}}',
+      'a.b.showAria': 'Show in folder for this row',
     }
-    expect(broken).toEqual([])
+    // en holds the pair where `other` renders (Windows and Linux); the overlay forks that branch and not the aria.
+    const overlay = { 'a.b.show': '{platform, select, macos {Show in Finder} other {Show in the folder}}' }
+    expect(brokenAriaNames('en-GB', base, overlay)).toEqual([
+      'en-GB: a.b.showAria no longer contains a.b.show on windows ("Show in the folder")',
+      'en-GB: a.b.showAria no longer contains a.b.show on linux ("Show in the folder")',
+    ])
   })
 })
+
+/**
+ * Every aria name an overlay broke. If a label forks and its aria sibling doesn't, a
+ * voice-control user says the British words on screen and nothing matches. Pairs are
+ * discovered, not listed: any aria value that contains a sibling's value verbatim in
+ * base en must still contain it after the overlay resolves. Compared per rendered OS
+ * (`pickPlatformBranch`), never per branch name: either key may be a platform block
+ * while the other isn't.
+ */
+function brokenAriaNames(tag: string, base: Record<string, string>, overlay: Record<string, string>): string[] {
+  const broken: string[] = []
+  const family = (key: string): string => key.split('.').slice(0, 2).join('.')
+  const ariaKeys = Object.keys(base).filter((k) => /aria/i.test(k))
+  const labelKeys = Object.keys(base).filter((k) => !/aria/i.test(k))
+  for (const ariaKey of ariaKeys) {
+    for (const labelKey of labelKeys) {
+      if (family(labelKey) !== family(ariaKey)) continue
+      for (const platform of RENDERED_PLATFORMS) {
+        const labelValue = pickPlatformBranch(base[labelKey], platform)
+        if (labelValue.length < 4 || !pickPlatformBranch(base[ariaKey], platform).includes(labelValue)) continue
+        const ariaValue = overlay[ariaKey] ?? base[ariaKey]
+        const labelResolved = overlay[labelKey] ?? base[labelKey]
+        const aria = pickPlatformBranch(ariaValue, platform)
+        const label = pickPlatformBranch(labelResolved, platform)
+        if (aria.includes(label)) continue
+        const on = aria === ariaValue && label === labelResolved ? '' : ` on ${platform}`
+        const line = `${tag}: ${ariaKey} no longer contains ${labelKey}${on} ("${label}")`
+        if (!broken.includes(line)) broken.push(line)
+      }
+    }
+  }
+  return broken
+}
 
 describe('the rulings the catalogs are supposed to encode', () => {
   // The rulings govern COPY. Search-keyword lists are never shown and keep the American form as a synonym beside the

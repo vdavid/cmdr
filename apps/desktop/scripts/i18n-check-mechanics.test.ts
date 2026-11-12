@@ -76,6 +76,26 @@ describe('validateMechanics', () => {
   })
 })
 
+describe('findMechanicsIssues: platform blocks', () => {
+  const english = {
+    'errors.x': '{platform, select, macos {Open “{name}” in Finder} other {Loading the folder…}}',
+  }
+  const strict: Mechanics = { quotes: { primary: ['«', '»'] }, ellipsis: { glyph: '…' } }
+
+  it('reads a raw block’s branch bodies, where a whole-value read would take a brace-free one for a {token}', () => {
+    const fr = { 'errors.x': '{platform, select, macos {Ouvrir «{name}» dans le Finder} other {Chargement...}}' }
+    expect(findMechanicsIssues({ tag: 'fr', mechanics: strict, messages: fr, english })).toEqual([
+      { key: 'errors.x', kind: 'ellipsis', detail: 'three dots where … belongs' },
+    ])
+  })
+
+  it('skips a branch still carrying its English, pending translation, and judges it without that reference', () => {
+    const fr = { 'errors.x': '{platform, select, macos {Open “{name}” in Finder} other {Chargement…}}' }
+    expect(findMechanicsIssues({ tag: 'fr', mechanics: strict, messages: fr, english })).toEqual([])
+    expect(kinds('fr', fr, strict)).toEqual(['errors.x:quote-mark'])
+  })
+})
+
 describe('findMechanicsIssues', () => {
   it('flags straight double quotes, three dots, and quote marks outside the declared pairs', () => {
     expect(

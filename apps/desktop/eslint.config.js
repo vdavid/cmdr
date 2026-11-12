@@ -53,6 +53,7 @@ import noRawWaitBudget from './eslint-plugins/no-raw-wait-budget.js'
 import noUnrenderedLogFields from './eslint-plugins/no-unrendered-log-fields.js'
 import noStringifiedLogValues from './eslint-plugins/no-stringified-log-values.js'
 import webkitFloorDom from './eslint-plugins/webkit-floor-dom.js'
+import noPlatformCopyBranch from './eslint-plugins/no-platform-copy-branch.js'
 
 /* global process */
 const noTypecheck = process.env.ESLINT_NO_TYPECHECK === '1'
@@ -350,11 +351,16 @@ export default tseslint.config(
           'no-unrendered-log-fields': noUnrenderedLogFields,
           'no-stringified-log-values': noStringifiedLogValues,
           'webkit-floor-dom': webkitFloorDom,
+          'no-platform-copy-branch': noPlatformCopyBranch,
         },
       },
     },
     rules: {
       'cmdr/no-error-string-match': 'error',
+      // An OS test (`isMacOS()`, `getPlatform()`) choosing copy is banned: per-OS wording is one
+      // `{platform, select, …}` catalog value. Off until the remaining `.mac` / `.other` key pairs
+      // collapse into blocks; their call sites are what it would flag today.
+      'cmdr/no-platform-copy-branch': 'off',
       // A callback type with two or more confusable positional parameters (same type, or an
       // unresolved generic) is banned: use a single named object payload instead. Both a
       // dropped-parameter mismatch and a swapped-argument mismatch have shipped as real bugs.

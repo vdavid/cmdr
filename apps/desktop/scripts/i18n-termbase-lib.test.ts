@@ -9,6 +9,7 @@ import {
   compileMatch,
   conceptsInText,
   englishMatchText,
+  englishMatchTexts,
   extractDigest,
   isNameKey,
   parseDecisions,
@@ -77,6 +78,22 @@ describe('englishMatchText', () => {
   })
   it('unescapes the doubled ICU apostrophe', () => {
     expect(englishMatchText('a.b', "Couldn''t copy")).toBe("Couldn't copy")
+  })
+  it('reads every branch of a raw platform block, where a whole-value strip would delete them all', () => {
+    const text = englishMatchText('errors.x', '{platform, select, macos {Move it to the Trash} other {Delete it}}')
+    expect(text).toContain('Trash')
+    expect(text).toContain('Delete')
+  })
+})
+
+describe('englishMatchTexts', () => {
+  it('is one text per platform branch, each read as a plain value', () => {
+    expect(
+      englishMatchTexts('errors.x', '{platform, select, macos {Open {system_settings}} other {Open Settings}}'),
+    ).toEqual(['Open ', 'Open Settings'])
+  })
+  it('is the value’s one text when it isn’t a block', () => {
+    expect(englishMatchTexts('a.b', "Couldn''t copy")).toEqual(["Couldn't copy"])
   })
   it('drops file-system paths and domains, whose words are names rather than copy', () => {
     const text = englishMatchText(
