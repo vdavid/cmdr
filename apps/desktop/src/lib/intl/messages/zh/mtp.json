@@ -55,11 +55,11 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "在 macOS 上，系统守护进程 <code>ptpcamerad</code> 会自动占用 Android 设备。要绕过这一点，请在终端中运行以下命令（使用 Cmdr 期间让它保持运行）：",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {在 macOS 上，系统守护进程 <code>ptpcamerad</code> 会自动占用 Android 设备。要绕过这一点，请在终端中运行以下命令（使用 Cmdr 期间让它保持运行）：} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
   "@mtp.ptpcameradDialog.explanation": {
     "sourceHash": "65b6ee3"
   },
-  "mtp.ptpcameradDialog.helpText": "这条命令运行期间会一直停止 ptpcamerad。完成后在终端里按 <key>Ctrl+C</key> 停止它。",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {这条命令运行期间会一直停止 ptpcamerad。完成后在终端里按 <key>Ctrl+C</key> 停止它。} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
   "@mtp.ptpcameradDialog.helpText": {
     "sourceHash": "85b5060"
   },

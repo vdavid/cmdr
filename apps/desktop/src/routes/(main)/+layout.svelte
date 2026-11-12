@@ -91,7 +91,7 @@
     let showCrashReportDialog = $state(false)
     let pendingCrashReport = $state<CrashReport | null>(null)
 
-    // State for ptpcamerad dialog (macOS)
+    // State for the device-in-use dialog (ptpcamerad on macOS; each OS reads its own cause)
     let showPtpcameradDialog = $state(false)
     /** The one sign-in sheet's current request, or `null` when nothing is asking. */
     const signInRequest = $derived(currentSignInRequest())

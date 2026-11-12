@@ -56,11 +56,11 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "В macOS системная служба <code>ptpcamerad</code> автоматически занимает устройства Android. Чтобы обойти это, выполните следующую команду в Терминале и не закрывайте ее, пока пользуетесь Cmdr:",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {В macOS системная служба <code>ptpcamerad</code> автоматически занимает устройства Android. Чтобы обойти это, выполните следующую команду в Терминале и не закрывайте ее, пока пользуетесь Cmdr:} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
   "@mtp.ptpcameradDialog.explanation": {
     "sourceHash": "65b6ee3"
   },
-  "mtp.ptpcameradDialog.helpText": "Пока эта команда работает, она постоянно останавливает ptpcamerad. Когда закончите, нажмите <key>Ctrl+C</key> в Терминале, чтобы остановить ее.",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Пока эта команда работает, она постоянно останавливает ptpcamerad. Когда закончите, нажмите <key>Ctrl+C</key> в Терминале, чтобы остановить ее.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
   "@mtp.ptpcameradDialog.helpText": {
     "sourceHash": "85b5060"
   },

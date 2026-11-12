@@ -56,11 +56,11 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "Trên macOS, daemon hệ thống <code>ptpcamerad</code> tự động chiếm các thiết bị Android. Để khắc phục, hãy chạy lệnh sau trong Terminal (giữ cho nó chạy trong khi dùng Cmdr):",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {Trên macOS, daemon hệ thống <code>ptpcamerad</code> tự động chiếm các thiết bị Android. Để khắc phục, hãy chạy lệnh sau trong Terminal (giữ cho nó chạy trong khi dùng Cmdr):} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
   "@mtp.ptpcameradDialog.explanation": {
     "sourceHash": "65b6ee3"
   },
-  "mtp.ptpcameradDialog.helpText": "Lệnh này liên tục dừng ptpcamerad trong khi chạy. Nhấn <key>Ctrl+C</key> trong Terminal để dừng nó khi xong.",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Lệnh này liên tục dừng ptpcamerad trong khi chạy. Nhấn <key>Ctrl+C</key> trong Terminal để dừng nó khi xong.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
   "@mtp.ptpcameradDialog.helpText": {
     "sourceHash": "85b5060"
   },

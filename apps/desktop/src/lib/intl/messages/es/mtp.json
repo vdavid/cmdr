@@ -55,11 +55,11 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "En macOS, el daemon del sistema <code>ptpcamerad</code> reclama automáticamente los dispositivos Android. Para solucionarlo, ejecuta el siguiente comando en Terminal (mantenlo en ejecución mientras usas Cmdr):",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {En macOS, el daemon del sistema <code>ptpcamerad</code> reclama automáticamente los dispositivos Android. Para solucionarlo, ejecuta el siguiente comando en Terminal (mantenlo en ejecución mientras usas Cmdr):} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
   "@mtp.ptpcameradDialog.explanation": {
     "sourceHash": "65b6ee3"
   },
-  "mtp.ptpcameradDialog.helpText": "Este comando detiene ptpcamerad de forma continua mientras se ejecuta. Pulsa <key>Ctrl+C</key> en Terminal para detenerlo cuando termines.",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Este comando detiene ptpcamerad de forma continua mientras se ejecuta. Pulsa <key>Ctrl+C</key> en Terminal para detenerlo cuando termines.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
   "@mtp.ptpcameradDialog.helpText": {
     "sourceHash": "85b5060"
   },

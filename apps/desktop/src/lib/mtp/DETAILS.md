@@ -31,13 +31,24 @@ device-only volume id never reaches a pane. The events each have one consumer:
   The toast renders the line only for a non-empty text.
 - `onMtpDeviceDisconnected`: `pane/mtp-disconnect-watch.svelte.ts`, which moves a pane off a storage that left.
 - `onMtpExclusiveAccessError` / `onMtpPermissionError`: the root layout, which opens the matching manual-fix dialog
-  (ptpcamerad on macOS, udev rules on Linux) and retries the connect after it.
+  (device in use on any OS, udev rules on Linux) and retries the connect after it.
 
-## ptpcamerad (macOS)
+## Device in use
 
-On macOS the `ptpcamerad` daemon auto-claims MTP/PTP devices. The backend handles this; when it can't get exclusive
-access it emits an exclusive-access error carrying the blocking process. `PtpcameradDialog.svelte` is the manual
-fallback: it shows a Terminal command the user can run to free the device.
+The backend emits an exclusive-access error when another process holds the USB device (`mtp-rs` reads macOS'
+`kIOReturnExclusiveAccess` and Linux' `EBUSY` as the same thing), on every OS. `PtpcameradDialog.svelte` answers it, and
+what it says is per OS, through platform blocks in `mtp.ptpcameradDialog.explanation` and `.helpText`:
+
+- **macOS**: the `ptpcamerad` daemon auto-claims MTP/PTP devices. The backend suppresses it before connecting, so this
+  is the manual fallback: the dialog names the blocking process and shows a Terminal command that frees the device.
+- **Linux**: the holder is the desktop's own MTP mount (GVFS on GNOME, KIO on KDE), which claims a phone on plug-in. The
+  dialog says to unmount the phone in the file manager. No process name (the backend sends none) and no command.
+- **Windows**: WPD shares the device, so nobody has seen this refusal there; the branch is a plain "another app holds
+  it, close it" so a Windows user never reads about a macOS daemon.
+
+The command box renders only for a non-empty `getPtpcameradWorkaroundCommand()`, which the backend answers with `''` off
+macOS. The dialog asks no platform question. The component and key names keep "ptpcamerad" because the frozen macOS copy
+is keyed by them (`../intl/DETAILS.md` § "The frozen macOS copy").
 
 ## udev rules (Linux)
 
@@ -65,7 +76,7 @@ because pinpointing the changed directory would need extra MTP round-trips.
 
 MTP copy lives in the `mtp.*` catalog (`#lib/intl/messages/en/mtp.json`), resolved via `tString()` / `t()` / `<Trans>`;
 `cmdr/no-raw-user-facing-string` is enforced on `lib/mtp/`. The two manual-fix dialogs use `<Trans>` for sentences with
-inline components: `PtpcameradDialog` wraps the blocking-process name (`<process>`), the `ptpcamerad` token (`<code>`),
-and a `<ShortcutChip key="Ctrl+C">` (`<key>`); the chip/`<code>` snippets are declared at markup top level (NOT inside
-`<ModalDialog>`, or Svelte treats them as the dialog's named props). Runtime rules:
+inline components: `PtpcameradDialog` wraps the blocking-process name (`<processName>`), and in its macOS branches the
+`ptpcamerad` token (`<code>`) and a `<ShortcutChip key="Ctrl+C">` (`<key>`); the chip/`<code>` snippets are declared at
+markup top level (NOT inside `<ModalDialog>`, or Svelte treats them as the dialog's named props). Runtime rules:
 [`#lib/intl/CLAUDE.md`](../intl/CLAUDE.md).

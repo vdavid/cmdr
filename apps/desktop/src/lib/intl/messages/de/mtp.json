@@ -56,11 +56,11 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "Unter macOS beansprucht der Systemdienst <code>ptpcamerad</code> automatisch Android-Geräte. Um das zu umgehen, führe den folgenden Befehl im Terminal aus (lass ihn laufen, während du Cmdr verwendest):",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {Unter macOS beansprucht der Systemdienst <code>ptpcamerad</code> automatisch Android-Geräte. Um das zu umgehen, führe den folgenden Befehl im Terminal aus (lass ihn laufen, während du Cmdr verwendest):} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
   "@mtp.ptpcameradDialog.explanation": {
     "sourceHash": "65b6ee3"
   },
-  "mtp.ptpcameradDialog.helpText": "Dieser Befehl stoppt ptpcamerad fortlaufend, solange er läuft. Drücke <key>Ctrl+C</key> im Terminal, um ihn zu beenden, wenn du fertig bist.",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Dieser Befehl stoppt ptpcamerad fortlaufend, solange er läuft. Drücke <key>Ctrl+C</key> im Terminal, um ihn zu beenden, wenn du fertig bist.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
   "@mtp.ptpcameradDialog.helpText": {
     "sourceHash": "85b5060"
   },

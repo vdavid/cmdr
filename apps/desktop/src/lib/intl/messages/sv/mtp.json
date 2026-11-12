@@ -56,11 +56,11 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "På macOS tar systemdaemonen <code>ptpcamerad</code> automatiskt över Android-enheter. För att kringgå det här kör du följande kommando i Terminal (låt det fortsätta köra medan du använder Cmdr):",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {På macOS tar systemdaemonen <code>ptpcamerad</code> automatiskt över Android-enheter. För att kringgå det här kör du följande kommando i Terminal (låt det fortsätta köra medan du använder Cmdr):} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
   "@mtp.ptpcameradDialog.explanation": {
     "sourceHash": "65b6ee3"
   },
-  "mtp.ptpcameradDialog.helpText": "Det här kommandot stoppar ptpcamerad löpande medan det körs. Tryck på <key>Ctrl+C</key> i Terminal för att stoppa det när du är klar.",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Det här kommandot stoppar ptpcamerad löpande medan det körs. Tryck på <key>Ctrl+C</key> i Terminal för att stoppa det när du är klar.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
   "@mtp.ptpcameradDialog.helpText": {
     "sourceHash": "85b5060"
   },

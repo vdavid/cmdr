@@ -7,7 +7,7 @@
   "@mtp.connectedToast.ok": {
     "sourceHash": "640d676"
   },
-  "mtp.ptpcameradDialog.helpText": "Este comando detiene ptpcamerad de forma continua mientras se ejecuta. Presiona <key>Ctrl+C</key> en Terminal para detenerlo cuando termines.",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Este comando detiene ptpcamerad de forma continua mientras se ejecuta. Presiona <key>Ctrl+C</key> en Terminal para detenerlo cuando termines.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
   "@mtp.ptpcameradDialog.helpText": {
     "sourceHash": "07da7a3"
   }

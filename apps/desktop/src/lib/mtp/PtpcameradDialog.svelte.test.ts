@@ -7,8 +7,10 @@
  * handler instead of the process name.
  */
 
-import { describe, it, expect, vi } from 'vitest'
-import { mount, unmount, flushSync } from 'svelte'
+import { describe, it, expect, vi, onTestFinished } from 'vitest'
+import { mount, unmount, flushSync, tick } from 'svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
+import { getPtpcameradWorkaroundCommand } from '#lib/tauri-commands/index.js'
 import PtpcameradDialog from './PtpcameradDialog.svelte'
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
@@ -53,5 +55,51 @@ describe('PtpcameradDialog', () => {
 
     void unmount(component)
     target.remove()
+  })
+})
+
+/**
+ * The dialog opens on any exclusive-access refusal, and `ptpcamerad` exists only
+ * on macOS: the backend hands every other OS an empty command. So each OS reads
+ * its own cause and its own way out, and only macOS gets a command to copy.
+ */
+describe('PtpcameradDialog, per OS', () => {
+  async function bodyOn(platform: 'macos' | 'windows' | 'linux', command: string) {
+    onTestFinished(withPlatform(platform))
+    vi.mocked(getPtpcameradWorkaroundCommand).mockResolvedValueOnce(command)
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(PtpcameradDialog, { target, props: { onClose: () => {}, onRetry: () => {} } })
+    await vi.waitFor(() => {
+      expect(getPtpcameradWorkaroundCommand).toHaveBeenCalled()
+    })
+    await tick()
+    flushSync()
+    onTestFinished(() => {
+      void unmount(component)
+      target.remove()
+    })
+    return target
+  }
+
+  it('offers the workaround command on macOS', async () => {
+    const body = await bodyOn('macos', 'while true; do pkill -9 ptpcamerad; sleep 1; done')
+    expect(body.querySelector('.explanation')?.textContent).toContain('ptpcamerad')
+    expect(body.querySelector('.command-wrapper')).not.toBeNull()
+    expect(body.querySelector('.help-text')?.textContent).toContain('Ctrl+C')
+  })
+
+  it.each(['linux', 'windows'] as const)('names no macOS daemon and shows no command box on %s', async (platform) => {
+    const body = await bodyOn(platform, '')
+    expect(body.textContent).not.toContain('ptpcamerad')
+    expect(body.textContent).not.toContain('macOS')
+    expect(body.textContent).not.toContain('Terminal')
+    expect(body.querySelector('.command-wrapper')).toBeNull()
+    expect(body.querySelector('.help-text')?.textContent).toContain('then retry')
+  })
+
+  it('says how to free the phone on Linux', async () => {
+    const body = await bodyOn('linux', '')
+    expect(body.querySelector('.help-text')?.textContent).toBe('Unmount the phone in your file manager, then retry.')
   })
 })

@@ -64,11 +64,12 @@
             <Trans key="mtp.ptpcameradDialog.explanation" snippets={{ code: codeTag }} />
         </p>
 
-        <div class="command-wrapper">
-            {#if workaroundCommand}
+        <!-- Only macOS has a command: the backend answers '' elsewhere, and each OS's copy says what to do. -->
+        {#if workaroundCommand}
+            <div class="command-wrapper">
                 <CopyBox text={workaroundCommand} />
-            {/if}
-        </div>
+            </div>
+        {/if}
 
         <p class="help-text">
             <Trans key="mtp.ptpcameradDialog.helpText" snippets={{ key: ctrlCChip }} />

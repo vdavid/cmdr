@@ -6,7 +6,9 @@ auto-connects devices on USB hotplug and owns all connection orchestration.
 ## Module map
 
 - `mtp-path-utils.ts`: parse/construct MTP paths
-- `PtpcameradDialog.svelte` (macOS) and `MtpPermissionDialog.svelte` (Linux): manual-fix dialogs with a copyable command
+- `PtpcameradDialog.svelte`: the "another process holds the device" dialog, on every OS. Only macOS reads about
+  `ptpcamerad` and gets a command to copy; Linux and Windows read their own cause (`DETAILS.md` § Device in use).
+- `MtpPermissionDialog.svelte` (Linux): the udev-rules dialog, with a copyable command
 - `MtpConnectedToastContent.svelte`: sticky toast shown on connect
 
 ## Gotchas

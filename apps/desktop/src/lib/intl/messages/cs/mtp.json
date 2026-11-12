@@ -56,11 +56,11 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "V macOS si zařízení s Androidem automaticky zabírá systémový proces <code>ptpcamerad</code>. Obejdete to tak, že v Terminálu spustíte následující příkaz (nechte ho běžet, dokud používáte Cmdr):",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {V macOS si zařízení s Androidem automaticky zabírá systémový proces <code>ptpcamerad</code>. Obejdete to tak, že v Terminálu spustíte následující příkaz (nechte ho běžet, dokud používáte Cmdr):} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
   "@mtp.ptpcameradDialog.explanation": {
     "sourceHash": "65b6ee3"
   },
-  "mtp.ptpcameradDialog.helpText": "Tento příkaz po celou dobu běhu průběžně zastavuje ptpcamerad. Až bude hotovo, zastavte ho v Terminálu klávesami <key>Ctrl+C</key>.",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Tento příkaz po celou dobu běhu průběžně zastavuje ptpcamerad. Až bude hotovo, zastavte ho v Terminálu klávesami <key>Ctrl+C</key>.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
   "@mtp.ptpcameradDialog.helpText": {
     "sourceHash": "85b5060"
   },
