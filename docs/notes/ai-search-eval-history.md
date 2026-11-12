@@ -18,7 +18,7 @@ drops flags ~10%), MCP timeouts from missing `namePattern`.
 ### v2 (R6+): LLM classifies, Rust computes
 
 The LLM receives a compact classification prompt (~600 chars) and returns key-value lines with enum tokens:
-`keywords: rymd`, `type: documents`, `time: recent`. Rust then deterministically maps these to regex patterns, timestamp
+`keywords: acme`, `type: documents`, `time: recent`. Rust then deterministically maps these to regex patterns, timestamp
 ranges, byte thresholds, and scope paths. No JSON generation, no regex generation, no date math by the LLM. No two-pass
 refinement: single pass only.
 
@@ -56,7 +56,7 @@ Each round lists pipeline, query count, reliability, and the key changes made af
 
 Issues found:
 
-- `invoice.*rymd|rymd.*invoice`: over-constrained, should be `*rymd*`
+- `invoice.*acme|acme.*invoice`: over-constrained, should be `*acme*`
 - "screenshots from this week": didn't know macOS `Screenshot YYYY-MM-DD` naming
 - "documents older than a year": 886K results, no file extension filter
 - "big videos I can delete": `{a,b}` brace expansion not supported in our glob engine, 0 results
@@ -79,7 +79,7 @@ over-narrowed to `note*.md`).
 
 New regressions from compaction:
 
-- rymd invoices: refinement generated `(?=...)` lookahead (regex error)
+- acme invoices: refinement generated `(?=...)` lookahead (regex error)
 - node_modules: lost name filter entirely, returned Spotlight dirs
 - empty folders: lost `maxSize: 0` trick (224K hits)
 - recent downloads: lost `~/Downloads` scope (51K hits)
@@ -172,7 +172,7 @@ inference, markdown type). Cloud model handles all of these correctly.
 
 | #   | Query                            | R5-cloud (v1) | R6-cloud (v2) | R6-local (v2) | R7-local (v2) | v2 interpreted pattern                                                        | Notes                                                                                           |
 | --- | -------------------------------- | ------------- | ------------- | ------------- | ------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| 1   | rymd invoices                    | Good          | Good          | Good          | Great (92)    | `(?i)rymd.*\.(pdf\|doc\|docx\|txt\|odt\|xls\|xlsx)$`                          | keywords: rymd / type: documents / time: recent. Correct merge                                  |
+| 1   | acme invoices                    | Good          | Good          | Good          | Great (92)    | `(?i)acme.*\.(pdf\|doc\|docx\|txt\|odt\|xls\|xlsx)$`                          | keywords: acme / type: documents / time: recent. Correct merge                                  |
 | 2   | screenshots this week            | Good          | Good          | Good          | Good (0)      | `(?i)^Screenshot.*\.(png\|jpg\|heic)$` + time_after: Monday                   | type: screenshots / time: this_week. 0 is real (CleanShot not Screenshot)                       |
 | 3   | node_modules space               | Bad           | Good          | Good          | Okay (768)    | `*node_modules*` glob, is_dir=true, min_size=100MB                            | R7: regressed. Keywords `(node_modules\|folders\|taking)`, lost `folders: yes` + `size: large`  |
 | 4   | python script yesterday          | Good          | Good          | Good          | Okay (77K)    | `(?i)\.py$` + time range                                                      | R7: improved from Bad. `type: python` correct but no `time: yesterday`                          |
@@ -310,7 +310,7 @@ Rules:
 - For content/semantic queries ("photos of my cat"), set type + add a note
 
 Examples:
-"recent invoices, I mark them rymd" → keywords: rymd / type: documents / time: recent
+"recent invoices, I mark them acme" → keywords: acme / type: documents / time: recent
 "大きな動画を削除したい" → type: videos / size: large / note: can't determine safe to delete
 "node_modules folders taking up space" → keywords: node_modules / folders: yes / size: large
 "screenshots from this week" → type: screenshots / time: this_week

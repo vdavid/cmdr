@@ -208,7 +208,7 @@ mod tests {
     #[test]
     fn build_full_query() {
         let parsed = ParsedLlmResponse {
-            keywords: Some("rymd".to_string()),
+            keywords: Some("acme".to_string()),
             type_field: Some("documents".to_string()),
             time: Some("recent".to_string()),
             size: Some("large".to_string()),
@@ -216,7 +216,7 @@ mod tests {
             exclude: Some("node_modules .git".to_string()),
             folders: Some("no".to_string()),
             note: None,
-            label: Some("Recent rymd docs".to_string()),
+            label: Some("Recent acme docs".to_string()),
         };
         let query = build_search_query(&parsed);
         assert!(query.name_pattern.is_some());

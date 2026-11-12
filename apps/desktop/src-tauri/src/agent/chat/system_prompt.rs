@@ -636,7 +636,7 @@ mod tests {
     }
 
     /// Without the naming rule the model files `Invoice-DOF2FXWT-0005.pdf` as-is into a folder
-    /// whose every file reads `YYYY-MM-DD Vendor amount Rymd-sent.pdf`; without the status-word
+    /// whose every file reads `YYYY-MM-DD Vendor amount Acme-sent.pdf`; without the status-word
     /// rule it files an invoice the user hasn't forwarded yet out of their inbox.
     #[test]
     fn prompt_matches_destination_naming_and_asks_about_status_words() {

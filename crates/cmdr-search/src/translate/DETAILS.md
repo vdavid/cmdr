@@ -27,7 +27,7 @@ just returns `is_directory: Option<bool>`.
 ## Decisions
 
 - **Key-value line output, not JSON.** JSON generation is the #1 failure mode for small LLMs (≈13% parse failure on 2B
-  models). Lines like `keywords: rymd\ntype: documents\ntime: recent` are trivial for the model to produce and for
+  models). Lines like `keywords: acme\ntype: documents\ntime: recent` are trivial for the model to produce and for
   `split_once(':')` to parse. A malformed line drops one field, not the whole response.
 - **LLM picks enum tokens, Rust computes values.** Even 2B models reliably map "last week" → `last_week` across
   languages, but asking them to emit "1717372800" or `^.*\.(pdf|doc)$` fails ~60% of the time. Separating classification

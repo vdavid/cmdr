@@ -25,7 +25,7 @@ The IPC entry point `translate_selection_query` (in `crate::commands::selection`
 - **Key-value response, not JSON.** JSON generation is the #1 failure mode for smaller LLMs. Key-value lines are
   trivially produced and parsed; missing lines are individually skippable; one malformed line never voids the rest.
 - **Folder sample is part of the prompt.** Intent often references filename conventions the model can't infer cold
-  ("every rymd file", "everything I named `Final-*`"); the sample grounds the pattern in real filenames. The frontend
+  ("every acme file", "everything I named `Final-*`"); the sample grounds the pattern in real filenames. The frontend
   sampler typically passes ≤240 names; `MAX_SAMPLE` is the defensive backstop.
 - **Validation is loose by design.** The frontend matcher re-validates (a malformed regex throws at compile time and the
   dialog surfaces the caveat). The parser's job is structural, not semantic.
@@ -48,7 +48,7 @@ intents:
 | "png and jpg images" | mixed image + text extensions | pattern mentions png and jpg/jpeg |
 | "files bigger than 5 MB" | mixed sizes | `size_min` ∈ [4 MB, 10 MB], pattern present |
 | "backups from last week" | `*-backup-*` plus noise | `modified_after` set |
-| "every rymd file" | `rymd-*.pdf` plus noise | pattern matches the keyword |
+| "every acme file" | `acme-*.pdf` plus noise | pattern matches the keyword |
 | "final drafts I haven't shared" | `Final-*` files | pattern OR caveat present (no half-built query) |
 
 Run with:

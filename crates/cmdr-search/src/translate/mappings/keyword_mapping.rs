@@ -232,8 +232,8 @@ mod tests {
 
     #[test]
     fn keywords_single_word_glob() {
-        let (pattern, pt) = keywords_to_pattern("rymd").unwrap();
-        assert_eq!(pattern, "*rymd*");
+        let (pattern, pt) = keywords_to_pattern("acme").unwrap();
+        assert_eq!(pattern, "*acme*");
         assert_eq!(pt, PatternType::Glob);
     }
 
@@ -278,13 +278,13 @@ mod tests {
 
     #[test]
     fn merge_keywords_and_type() {
-        let kw = keywords_to_pattern("rymd");
+        let kw = keywords_to_pattern("acme");
         let tf = type_to_filter("documents");
         let (pattern, pt) = merge_keyword_and_type(kw, tf.as_ref());
         assert_eq!(pt, PatternType::Regex);
         let pattern = pattern.unwrap();
         // Should contain keyword and extension pattern
-        assert!(pattern.contains("rymd"));
+        assert!(pattern.contains("acme"));
         assert!(pattern.contains("pdf"));
         // Verify it compiles
         let re = regex::RegexBuilder::new(&pattern)
@@ -293,9 +293,9 @@ mod tests {
         assert!(re.is_ok(), "merged pattern should compile: {pattern}");
         // Test matching
         let re = re.unwrap();
-        assert!(re.is_match("rymd.pdf"));
-        assert!(re.is_match("rymd_invoice.docx"));
-        assert!(!re.is_match("rymd.rs")); // wrong extension
+        assert!(re.is_match("acme.pdf"));
+        assert!(re.is_match("acme_invoice.docx"));
+        assert!(!re.is_match("acme.rs")); // wrong extension
     }
 
     #[test]
@@ -378,13 +378,13 @@ mod tests {
 
     #[test]
     fn merge_nonredundant_keyword_preserved() {
-        // "rymd" keyword + documents type → merged pattern
-        let kw = keywords_to_pattern("rymd");
+        // "acme" keyword + documents type → merged pattern
+        let kw = keywords_to_pattern("acme");
         let tf = type_to_filter("documents");
         let (pattern, _) = merge_keyword_and_type(kw, tf.as_ref());
         let pattern = pattern.unwrap();
         assert!(
-            pattern.contains("rymd"),
+            pattern.contains("acme"),
             "non-redundant keyword should be preserved: {pattern}"
         );
     }

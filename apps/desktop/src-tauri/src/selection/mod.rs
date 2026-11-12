@@ -8,7 +8,7 @@
 //!   same atomic-write story, narrower entry schema).
 //! - `ai/`: AI prompt + parser + query builder for natural-language → glob/regex.
 //!   The model receives a sample of the focused folder's filenames so it can infer a
-//!   pattern from intent like "all testföretag files".
+//!   pattern from intent like "all acme files".
 //!
 //! See `apps/desktop/src-tauri/src/selection/CLAUDE.md` for the why behind the split
 //! and the design tradeoffs.

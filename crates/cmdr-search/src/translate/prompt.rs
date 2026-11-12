@@ -43,7 +43,7 @@ Copy the user's unit: \"MB\" → mb, \"MiB\" → mib.
 folders (\"node_modules folders\", \"empty directories\") or only files (\"the pdf files\"). When in doubt, omit it.
 
 Examples:
-\"recent invoices, I mark them rymd\" → keywords: rymd / type: documents / time: recent / label: Recent rymd invoices
+\"recent invoices, I mark them acme\" → keywords: acme / type: documents / time: recent / label: Recent acme invoices
 \"\u{5927}\u{304d}\u{306a}\u{52d5}\u{753b}\u{3092}\u{524a}\u{9664}\u{3057}\u{305f}\u{3044}\" → type: videos / size: large / note: can't determine safe to delete / label: Large videos
 \"node_modules folders taking up space\" → keywords: node_modules / folders: yes / size: large / label: Large node_modules folders
 \"screenshots from this week\" → type: screenshots / time: this_week / label: Screenshots from this week

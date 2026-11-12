@@ -50,9 +50,10 @@ lets the restore sweep them away, because putting them in the pristine tree woul
 spec's `left/`.
 
 `restic-fixtures/backup-repo/` is a real restic repo (format v2, password `hunter2`, one snapshot of `readme.txt` and
-`docs/notes.txt`, made with the restic 0.19.1 CLI, 2026-10-20). git drops its empty `locks/` and `data/<xx>/` folders,
-which restic doesn't need to read. `restic-browsing.spec.ts` copies it to a uniquely named folder under the fixture root
-per test, because the app remembers a repo's password by its path.
+`docs/notes.txt`, made with the restic 0.19.1 CLI in its Linux container, so the key and snapshot carry `root`,
+`test-host`, and `e2e` and no real names). git drops its empty `locks/` and `data/<xx>/` folders, which restic doesn't
+need to read. `restic-browsing.spec.ts` copies it to a uniquely named folder under the fixture root per test, because
+the app remembers a repo's password by its path.
 
 ## Finding the SMB fixture's mount
 

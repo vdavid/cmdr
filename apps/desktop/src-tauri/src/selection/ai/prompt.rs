@@ -9,7 +9,7 @@
 //! call. Key-value is also cheaper to parse and read in logs.
 //!
 //! Why a folder sample at all: the user's intent often references filename
-//! conventions the model can't infer cold ("all rymd files", "everything I named
+//! conventions the model can't infer cold ("all acme files", "everything I named
 //! `Final-*`"). The sample grounds the pattern in what's actually in the folder.
 //!
 //! ## Eval log
@@ -75,7 +75,7 @@ Examples (sample lines elided for brevity):
 \"empty files\" \u{2192} pattern: * / kind: glob / type: file / size_min: 0 / size_max: 0 / label: Empty files
 \"backups from last week\" \u{2192} pattern: *backup* / kind: glob / modified_after: {WEEK_AGO} / label: Recent backups
 \"final drafts I haven't shared\" \u{2192} pattern: *final* / kind: glob / note: can't tell shared status / label: Final drafts
-\"every rymd file\" \u{2192} pattern: *rymd* / kind: glob / label: Rymd files
+\"every acme file\" \u{2192} pattern: *acme* / kind: glob / label: Acme files
 \"files matching IMG_2024\" \u{2192} pattern: IMG_2024* / kind: glob / label: IMG_2024 files
 
 Sample of the folder's filenames:

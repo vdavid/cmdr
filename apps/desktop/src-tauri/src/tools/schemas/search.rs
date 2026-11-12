@@ -88,7 +88,7 @@ pub fn ai_search_schema() -> Value {
         "properties": {
             "query": {
                 "type": "string",
-                "description": "Natural language search query (for example, \"recent invoices marked rymd\")"
+                "description": "Natural language search query (for example, \"recent invoices marked acme\")"
             },
             "scope": {
                 "type": "string",

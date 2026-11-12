@@ -123,20 +123,17 @@ async fn eval_backups_from_last_week_returns_date_filter() {
 
 #[tokio::test]
 #[ignore = "real API call: set OPENAI_API_KEY to run"]
-async fn eval_testföretag_files_returns_substring_glob() {
+async fn eval_acme_files_returns_substring_glob() {
     let sample = [
-        "testföretag-invoice-001.pdf",
-        "testföretag-invoice-002.pdf",
+        "acme-invoice-001.pdf",
+        "acme-invoice-002.pdf",
         "report.docx",
         "screenshot.png",
     ];
-    let r = translate("every testföretag file", &sample).await;
+    let r = translate("every acme file", &sample).await;
     assert!(r.pattern.is_some());
     let pattern = r.pattern.as_deref().unwrap().to_lowercase();
-    assert!(
-        pattern.contains("testföretag"),
-        "pattern {pattern:?} should match the keyword"
-    );
+    assert!(pattern.contains("acme"), "pattern {pattern:?} should match the keyword");
 }
 
 #[tokio::test]

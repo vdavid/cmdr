@@ -193,7 +193,7 @@ mod tests {
     #[test]
     fn parse_well_formed_response() {
         let response = "\
-keywords: rymd
+keywords: acme
 type: documents
 time: recent
 size: large
@@ -202,7 +202,7 @@ exclude: node_modules .git
 folders: no
 note: can't determine content";
         let parsed = parse_llm_response(response);
-        assert_eq!(parsed.keywords.as_deref(), Some("rymd"));
+        assert_eq!(parsed.keywords.as_deref(), Some("acme"));
         assert_eq!(parsed.type_field.as_deref(), Some("documents"));
         assert_eq!(parsed.time.as_deref(), Some("recent"));
         assert_eq!(parsed.size.as_deref(), Some("large"));
@@ -252,9 +252,9 @@ note: can't determine content";
 
     #[test]
     fn parse_extra_whitespace_and_mixed_case_keys() {
-        let response = "  Keywords :  rymd stuff  \n  TYPE : photos  ";
+        let response = "  Keywords :  acme stuff  \n  TYPE : photos  ";
         let parsed = parse_llm_response(response);
-        assert_eq!(parsed.keywords.as_deref(), Some("rymd stuff"));
+        assert_eq!(parsed.keywords.as_deref(), Some("acme stuff"));
         assert_eq!(parsed.type_field.as_deref(), Some("photos"));
     }
 

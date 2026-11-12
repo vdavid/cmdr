@@ -14,24 +14,19 @@ the observability work has to beat. The test for any instrumentation we add is: 
 questions below?_ (Answer, for the record: no. What finally answered them was `nettop` showing zero bytes in **and out**
 on a live wedge, next to a log still emitting fresh requests.)
 
-Environment: Cmdr 0.36.2 (prod, `/Applications/Cmdr.app`), macOS 26.5.2, Apple silicon. Source
-`~/Library/CloudStorage/Dropbox/Apps/SMSBackupRestore` (volume `root`, Dropbox File Provider domain, 764 files, none
-dataless). Destination `/Volumes/naspi/saves/2026-07-31 SMS Backup & Restore save` on share `naspi`
-(`smb-192-168-1-111-445-naspi`, `smbConnectionState: direct`). Operation `a8df2e93-be03-40b7-82b4-d72a65e39498`.
+Environment: Cmdr 0.36.2 (prod, `/Applications/Cmdr.app`), macOS 26.5.2, Apple silicon. Source a Dropbox app folder of
+phone backups (volume `root`, Dropbox File Provider domain, 764 files, none dataless). Destination a new folder on a
+QNAP SMB share (`smbConnectionState: direct`). Operation `a8df2e93-be03-40b7-82b4-d72a65e39498`.
 
-## Files here
+## Evidence
 
-- `transfer-and-smb.log` - the curated subset (851 lines): `write_operations`, the SMB backend, `smb2::client`, and
-  `op_manager`. Read this one first.
-- `cmdr.log.slice.gz` - everything the prod log holds for the whole run window (00:09-00:33, 11,286 lines), so nothing
-  is lost to the 50 MB rotation.
-- `sample-1-00-13.txt.gz`, `sample-2-00-17.txt.gz` - `sample 72874` of the wedged app, ~4 minutes apart. The pair is
-  what proves the wedged threads are stuck rather than churning.
-- `sample-dropbox-fileprovider.txt.gz` - `sample` of `DropboxFileProvider.appex` (pid 78509) during the wedge.
+The raw evidence (a curated 851-line log subset, the full 11,286-line prod log slice for 00:09-00:33, two `sample`
+captures of the wedged app about four minutes apart, and one of `DropboxFileProvider.appex`) isn't kept in the repo;
+this write-up carries the findings. The sample pair is what proved the wedged threads were stuck and not churning.
 
 ## Timeline
 
-All times 2026-07-31, from `transfer-and-smb.log`.
+All times 2026-07-31, from the curated log subset.
 
 - `00:10:57.987` copy admitted, `concurrency=8 (src=8, dst=10)`, `path=concurrent`.
 - `00:10:58.039` the first 8 sources stream. All 8 land by ~`00:10:59.11` (~50 MB/s, healthy).
