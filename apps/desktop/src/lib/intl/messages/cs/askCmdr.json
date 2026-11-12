@@ -1425,11 +1425,11 @@
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
   },
-  "askCmdr.decision.rejected": "Odmítli jste: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}",
+  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {You turned down moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You turned down {verbName} {countText} {count, plural, one {item} other {items}}}}} other {Odmítli jste: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}}}",
   "@askCmdr.decision.rejected": {
     "sourceHash": "19d12c1"
   },
-  "askCmdr.decision.approved": "Schválili jste: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}",
+  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {You approved moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You approved {verbName} {countText} {count, plural, one {item} other {items}}}}} other {Schválili jste: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}}}",
   "@askCmdr.decision.approved": {
     "sourceHash": "aa911e6"
   },
@@ -1453,7 +1453,7 @@
   "@askCmdr.decision.verbCopy": {
     "sourceHash": "20a184a"
   },
-  "askCmdr.decision.verbTrash": "{platform, select, windows {moving to the Recycle Bin} other {přesun do koše}}",
+  "askCmdr.decision.verbTrash": "přesun do koše",
   "@askCmdr.decision.verbTrash": {
     "sourceHash": "ea05c85"
   },

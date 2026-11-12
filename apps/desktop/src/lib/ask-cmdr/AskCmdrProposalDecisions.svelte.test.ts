@@ -11,10 +11,11 @@
  * so the result line always renders, zeros included.
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount, tick } from 'svelte'
 import AskCmdrProposalDecisions from './AskCmdrProposalDecisions.svelte'
 import type { ProposalDecision } from '#lib/tauri-commands/index.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 function decision(overrides: Partial<ProposalDecision> = {}): ProposalDecision {
   return {
@@ -40,6 +41,47 @@ describe('AskCmdrProposalDecisions', () => {
 
     expect(target.textContent).toContain('You turned down trashing 12 items')
     expect(target.textContent).toContain('/Users/dana/Downloads/*.dmg')
+  })
+
+  /** Windows names the place, and English needs it after the count ("moving 3 items to the
+   *  Recycle Bin"), so the trash line is a whole sentence of its own there, never a verb slot. */
+  describe.each([
+    {
+      platform: 'macos' as const,
+      rejected: 'You turned down trashing 12 items',
+      approved: 'You approved trashing 1 item',
+    },
+    {
+      platform: 'windows' as const,
+      rejected: 'You turned down moving 12 items to the Recycle Bin',
+      approved: 'You approved moving 1 item to the Recycle Bin',
+    },
+    {
+      platform: 'linux' as const,
+      rejected: 'You turned down trashing 12 items',
+      approved: 'You approved trashing 1 item',
+    },
+  ])('a trash suggestion on $platform', ({ platform, rejected, approved }) => {
+    beforeEach(() => withPlatform(platform))
+
+    it('reads as one natural sentence', async () => {
+      const target = render([
+        decision(),
+        decision({ ops: 1, outcome: { kind: 'ran', done: 1, skipped: 0, failed: 0 } }),
+      ])
+      await tick()
+
+      expect(target.textContent).toContain(rejected)
+      expect(target.textContent).toContain(approved)
+    })
+
+    it('keeps every other verb in the shared sentence', async () => {
+      const target = render([decision({ verb: 'move', ops: 3 })])
+      await tick()
+
+      expect(target.textContent).toContain('You turned down moving 3 items')
+      expect(target.textContent).not.toContain('Recycle Bin')
+    })
   })
 
   it('names the verb the user actually answered about', async () => {

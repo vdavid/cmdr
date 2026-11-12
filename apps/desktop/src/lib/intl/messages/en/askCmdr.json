@@ -2293,23 +2293,25 @@
   "@askCmdr.wakeToast.openThread": {
     "description": "The quieter, link-shaped second action on that pop-up notice, beside the main Review button. It opens the chat Ask Cmdr had with itself, where its reasoning is. The point of the wording is the difference between the two: Review shows WHAT it wants to do, this one shows WHY it wants to. Short, and sentence case, no full stop."
   },
-  "askCmdr.decision.rejected": "You turned down {verbName} {countText} {count, plural, one {item} other {items}}",
+  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {You turned down moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You turned down {verbName} {countText} {count, plural, one {item} other {items}}}}} other {You turned down {verbName} {countText} {count, plural, one {item} other {items}}}}",
   "@askCmdr.decision.rejected": {
-    "description": "A line in the Ask Cmdr chat rail recording what the person answered when the agent suggested doing something to a batch of their files. It appears in the thread the suggestion came from, and the file path or pattern it refers to is shown beside it rather than inside this sentence. This is the wording for a suggestion the person said no to in the review. Sentence case, no full stop. Address the person directly, in the informal register this app uses throughout.",
+    "description": "A line in the Ask Cmdr chat rail recording what the person answered when the agent suggested doing something to a batch of their files. It appears in the thread the suggestion came from, and the file path or pattern it refers to is shown beside it rather than inside this sentence. This is the wording for a suggestion the person said no to in the review. The windows branch is what Windows shows: there a trash suggestion gets a whole sentence of its own, naming Windows’ own word for the Recycle Bin after the count, and every other action shares the verbName sentence. The other branch is macOS and Linux, where the trash action is one more verbName. Sentence case, no full stop. Address the person directly, in the informal register this app uses throughout.",
     "placeholders": {
       "countText": "How many files or folders the suggestion covered, already formatted with thousands separators, like 1,234.",
       "count": "The same count as a raw integer, used only to pick the singular or plural word.",
-      "verbName": "The action the agent suggested, already translated, from the askCmdr.decision.verb* keys: for English, one of moving, copying, trashing, deleting, renaming, compressing, extracting."
+      "verbName": "The action the agent suggested, already translated, from the askCmdr.decision.verb* keys: for English, one of moving, copying, trashing, deleting, renaming, compressing, extracting.",
+      "verb": "Which action it was, as a fixed code word (move, copy, trash, delete, rename, compress, extract), used only to pick a branch. Never shown; keep the trash and other branch names as they are."
     },
     "screenshot": "ask-cmdr-decisions.png"
   },
-  "askCmdr.decision.approved": "You approved {verbName} {countText} {count, plural, one {item} other {items}}",
+  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {You approved moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You approved {verbName} {countText} {count, plural, one {item} other {items}}}}} other {You approved {verbName} {countText} {count, plural, one {item} other {items}}}}",
   "@askCmdr.decision.approved": {
-    "description": "A line in the Ask Cmdr chat rail recording what the person answered when the agent suggested doing something to a batch of their files. It appears in the thread the suggestion came from, and the file path or pattern it refers to is shown beside it rather than inside this sentence. This is the wording for a suggestion the person approved; the next line says where the run is or what it actually did: askCmdr.decision.running while it runs, askCmdr.decision.result once it finished, or askCmdr.decision.interrupted when the app quit first. Sentence case, no full stop. Address the person directly, in the informal register this app uses throughout.",
+    "description": "A line in the Ask Cmdr chat rail recording what the person answered when the agent suggested doing something to a batch of their files. It appears in the thread the suggestion came from, and the file path or pattern it refers to is shown beside it rather than inside this sentence. This is the wording for a suggestion the person approved. The windows branch is what Windows shows: there a trash suggestion gets a whole sentence of its own, naming Windows’ own word for the Recycle Bin after the count, and every other action shares the verbName sentence. The other branch is macOS and Linux, where the trash action is one more verbName. The next line says where the run is or what it actually did: askCmdr.decision.running while it runs, askCmdr.decision.result once it finished, or askCmdr.decision.interrupted when the app quit first. Sentence case, no full stop. Address the person directly, in the informal register this app uses throughout.",
     "placeholders": {
       "countText": "How many files or folders the suggestion covered, already formatted with thousands separators, like 1,234.",
       "count": "The same count as a raw integer, used only to pick the singular or plural word.",
-      "verbName": "The action the agent suggested, already translated, from the askCmdr.decision.verb* keys: for English, one of moving, copying, trashing, deleting, renaming, compressing, extracting."
+      "verbName": "The action the agent suggested, already translated, from the askCmdr.decision.verb* keys: for English, one of moving, copying, trashing, deleting, renaming, compressing, extracting.",
+      "verb": "Which action it was, as a fixed code word (move, copy, trash, delete, rename, compress, extract), used only to pick a branch. Never shown; keep the trash and other branch names as they are."
     },
     "screenshot": "ask-cmdr-rename-undo.png"
   },
@@ -2343,9 +2345,9 @@
     "description": "The name of one action Ask Cmdr can suggest (copying files to another folder), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop.",
     "screenshot": "ask-cmdr-decisions.png"
   },
-  "askCmdr.decision.verbTrash": "{platform, select, windows {moving to the Recycle Bin} other {trashing}}",
+  "askCmdr.decision.verbTrash": "trashing",
   "@askCmdr.decision.verbTrash": {
-    "description": "The name of one action Ask Cmdr can suggest (moving files to the system trash, where they can still be recovered), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop.",
+    "description": "The name of one action Ask Cmdr can suggest (moving files to the system trash, where they can still be recovered), dropped into the askCmdr.decision.rejected and askCmdr.decision.approved sentences as their verbName placeholder. Only macOS and Linux show it (Windows words its trash sentence whole), so use your language’s macOS Trash word. Translate it in whatever form those two sentences need in your language (English uses the -ing form); the two sentences and these seven names are translated together. Lowercase, no full stop.",
     "screenshot": "ask-cmdr-decisions.png"
   },
   "askCmdr.decision.verbDelete": "deleting",

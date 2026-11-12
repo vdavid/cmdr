@@ -39,7 +39,9 @@
     }
 
     /** The headline: what was asked for, over how much, and what the person said. A server
-     *  suggestion has no files, so its headline names no count. */
+     *  suggestion has no files, so its headline names no count. `verb` goes along with the
+     *  translated name so a branch can own a whole sentence where a slot can't fit: Windows says
+     *  "moving 3 items to the Recycle Bin", the place after the count. */
     function headline(decision: ProposalDecision): string {
         const rejected = decision.outcome.kind === 'rejected'
         if (decision.verb === 'addServer' || decision.verb === 'editServer') {
@@ -48,6 +50,7 @@
         }
         const key = rejected ? 'askCmdr.decision.rejected' : 'askCmdr.decision.approved'
         return tString(key, {
+            verb: decision.verb,
             verbName: tString(VERB_KEYS[decision.verb]),
             countText: formatInteger(decision.ops),
             count: decision.ops,

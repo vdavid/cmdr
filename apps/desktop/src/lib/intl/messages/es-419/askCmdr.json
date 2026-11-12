@@ -447,7 +447,7 @@
   "@askCmdr.sessions.wakeThread": {
     "sourceHash": "ef7c3be"
   },
-  "askCmdr.decision.verbTrash": "{platform, select, windows {moving to the Recycle Bin} other {mover al basurero}}",
+  "askCmdr.decision.verbTrash": "mover al basurero",
   "@askCmdr.decision.verbTrash": {
     "sourceHash": "1ea1d0e"
   },

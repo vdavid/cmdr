@@ -6207,16 +6207,54 @@
       "status": "apply",
       "branches": {
         "macos": "trashing",
-        "windows": "moving to the Recycle Bin",
+        "windows": "trashing",
         "other": "trashing"
       },
       "register": "sentence",
       "sources": {
-        "windows": "plan § Copy resolution (every other trash row is a sentence: the proposal’s Windows text)",
+        "windows": "plan § Copy resolution (sentence register): Windows never reads this name; its trash sentence is whole in askCmdr.decision.approved / rejected",
         "other": "proposal"
       },
       "whereInUi": "Ask Cmdr proposal card, the verb in “Approved trashing…”.",
-      "note": "It fills {verbName} in “You approved {verbName} {countText} items”, so Windows reads “You approved moving to the Recycle Bin 3 items”: the slot comes before the count. Flagged for the English review."
+      "note": "A name slotted before the count can’t say “to the Recycle Bin” after it, so on Windows askCmdr.decision.approved and askCmdr.decision.rejected own the whole trash sentence ({verb, select, trash {…}}) and never read this key. It stays one plain value."
+    },
+    {
+      "key": "askCmdr.decision.rejected",
+      "file": "askCmdr.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "You turned down {verbName} {countText} {count, plural, one {item} other {items}}",
+        "windows": "{verb, select, trash {You turned down moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You turned down {verbName} {countText} {count, plural, one {item} other {items}}}}",
+        "other": "You turned down {verbName} {countText} {count, plural, one {item} other {items}}"
+      },
+      "register": "sentence",
+      "sources": {
+        "windows": "plan § Copy resolution (the sentence register names the Recycle Bin), written so the place follows the count",
+        "other": "unchanged"
+      },
+      "written": ["windows"],
+      "whereInUi": "Ask Cmdr chat rail, the line recording a suggestion the person turned down."
+    },
+    {
+      "key": "askCmdr.decision.approved",
+      "file": "askCmdr.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "You approved {verbName} {countText} {count, plural, one {item} other {items}}",
+        "windows": "{verb, select, trash {You approved moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You approved {verbName} {countText} {count, plural, one {item} other {items}}}}",
+        "other": "You approved {verbName} {countText} {count, plural, one {item} other {items}}"
+      },
+      "register": "sentence",
+      "sources": {
+        "windows": "plan § Copy resolution (the sentence register names the Recycle Bin), written so the place follows the count",
+        "other": "unchanged"
+      },
+      "written": ["windows"],
+      "whereInUi": "Ask Cmdr chat rail, the line recording a suggestion the person approved."
     },
     {
       "key": "askCmdr.tool.tag.doing",
