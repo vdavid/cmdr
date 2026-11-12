@@ -9,7 +9,7 @@
   },
   "mtp.connectedToast.body": "{platform, select, macos {Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable MTP support in settings.} windows {} other {To use this device in another app, disable MTP support in settings.}}",
   "@mtp.connectedToast.body": {
-    "description": "Body of the device-connected toast on macOS, explaining that Cmdr paused the system camera daemon and how to release the device. ptpcamerad is a macOS system process name; keep it literal. MTP is a device-transfer protocol acronym; keep it.",
+    "description": "Body of the device-connected toast. The macos branch explains that Cmdr paused the system camera daemon and how to release the device; the other branch (Linux) only says how to release it. The windows branch is empty on purpose (Windows shares the device with File Explorer, so the toast has no body line there): keep it empty. ptpcamerad is a macOS system process name; keep it literal. MTP is a device-transfer protocol acronym; keep it. The screenshot shows the macOS wording.",
     "screenshot": "mtp-connected-toast.png"
   },
   "mtp.connectedToast.dontShowAgain": "Don’t show again",

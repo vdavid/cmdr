@@ -6,17 +6,17 @@
   },
   "settings.appearance.language.description": "{platform, select, macos {Choose the language Cmdr uses. “System default” follows your Mac’s language.} windows {Choose the language Cmdr uses. “System default” follows your Windows display language.} other {Choose the language Cmdr uses. “System default” follows your system’s language.}}",
   "@settings.appearance.language.description": {
-    "description": "Help text under the language picker in Settings > Appearance. \"Cmdr\" is the product name; do not translate it. “System default” must match the wording of the settings.appearance.language.opt.system option below.",
+    "description": "Help text under the language picker in Settings > Appearance. \"Cmdr\" is the product name; do not translate it. “System default” must match the wording of the settings.appearance.language.opt.system option below. The screenshot shows the macOS wording.",
     "screenshot": "settings-appearance.png"
   },
   "settings.appearance.language.opt.system": "System default",
   "@settings.appearance.language.opt.system": {
-    "description": "Language-picker option: follow the Mac's system language instead of forcing a specific one. The other options in this picker are each language's own name (auto-generated, not translated here). This is the only translatable option label. Shown when following the Mac lands on English or when the Mac has no answer; otherwise the settings.appearance.language.opt.systemWithLanguage variant below is shown instead, so keep the two openings identical.",
+    "description": "Language-picker option: follow the system language instead of forcing a specific one. The other options in this picker are each language's own name (auto-generated, not translated here). This is the only translatable option label. Shown when following the system lands on English or when the system has no answer; otherwise the settings.appearance.language.opt.systemWithLanguage variant below is shown instead, so keep the two openings identical.",
     "screenshot": "settings-appearance.png"
   },
   "settings.appearance.language.opt.systemWithLanguage": "System default ({language})",
   "@settings.appearance.language.opt.systemWithLanguage": {
-    "description": "The same language-picker option as settings.appearance.language.opt.system, naming the language that following the Mac currently lands on: \"System default (Svenska)\". Shown in the Settings picker and in the compact language control in the onboarding wizard's header. Word order is yours: put the language name wherever it reads best, and use your language's own bracketing convention. Keep the opening words identical to settings.appearance.language.opt.system, since the two labels swap places in the same row.",
+    "description": "The same language-picker option as settings.appearance.language.opt.system, naming the language that following the system currently lands on: \"System default (Svenska)\". Shown in the Settings picker and in the compact language control in the onboarding wizard's header. Word order is yours: put the language name wherever it reads best, and use your language's own bracketing convention. Keep the opening words identical to settings.appearance.language.opt.system, since the two labels swap places in the same row.",
     "placeholders": {
       "language": "the resolved language's name in that language's own words, never translated (for example \"Svenska\", \"Magyar\", \"Deutsch\"). Capitalized already."
     },
@@ -49,7 +49,7 @@
   },
   "settings.theme.mode.opt.system": "System",
   "@settings.theme.mode.opt.system": {
-    "description": "Theme-mode option: follow the macOS system appearance. The UI renders a monitor icon before this label; the label itself is text-only. Short toggle-button label, keep it brief.",
+    "description": "Theme-mode option: follow the system appearance (light or dark). The UI renders a monitor icon before this label; the label itself is text-only. Short toggle-button label, keep it brief.",
     "screenshot": "settings-appearance.png"
   },
   "settings.theme.mode.keywords": "theme, dark, light, mode, appearance, color",
@@ -63,11 +63,11 @@
   },
   "settings.appearance.appColor.description": "{platform, select, macos {To change your system theme color, go to System Settings > Appearance.} windows {To change your system accent color, go to Settings > Personalization > Colors.} other {To change your system accent color, go to your system appearance settings.}}",
   "@settings.appearance.appColor.description": {
-    "description": "Help text for the app-color setting, feeding search only (the visible help is a clickable link built in the section component). Tells the user where in macOS to change the system theme color. \"System Settings\" and \"Appearance\" are macOS UI names; on a translated Mac use that OS's localized names for them."
+    "description": "Help text for the app-color setting, feeding search only (the visible help is a clickable link built in the section component). Tells the user where to change the system color. The macOS branch names System Settings > Appearance (use your language's macOS names for them), the Windows branch Settings > Personalization > Colors (use your language's Windows names), and the Linux branch names no app."
   },
   "settings.appearance.appColor.opt.system": "System theme color",
   "@settings.appearance.appColor.opt.system": {
-    "description": "App-color option: use the color macOS is set to (System Settings > Appearance accent color). Radio-button label.",
+    "description": "App-color option: use the accent color the system is set to. Radio-button label.",
     "screenshot": "settings-appearance.png"
   },
   "settings.appearance.appColor.opt.cmdrGold": "Cmdr gold",
@@ -77,7 +77,7 @@
   },
   "settings.appearance.appColor.keywords": "color, accent, theme, gold, system, brand",
   "@settings.appearance.appColor.keywords": {
-    "description": "Search keywords for the “App color” setting (settings.appearance.appColor.label) in Settings > Appearance > Colors and formats. What it does: picks Cmdr’s accent color (highlights, selection, buttons): Cmdr’s own gold, or the accent color set in macOS. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+    "description": "Search keywords for the “App color” setting (settings.appearance.appColor.label) in Settings > Appearance > Colors and formats. What it does: picks Cmdr’s accent color (highlights, selection, buttons): Cmdr’s own gold, or the accent color set in the system. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.appearance.sizeColors.label": "Size colors",
   "@settings.appearance.sizeColors.label": {
@@ -149,7 +149,7 @@
   },
   "settings.appearance.dateTimeFormat.opt.system": "System default",
   "@settings.appearance.dateTimeFormat.opt.system": {
-    "description": "Date/time format option: use the macOS system date and time format. Radio-button label.",
+    "description": "Date/time format option: use the system date and time format. Radio-button label.",
     "screenshot": "settings-appearance.png",
     "screenshotNote": "Settings > Appearance, pictured here. Your string is one of the date and time format choices, or the example shown under one of them."
   },
@@ -264,7 +264,7 @@
   },
   "settings.appearance.textSize.description": "{platform, select, macos {Scales text and UI throughout the app. Compounds with the macOS Accessibility text size, where 100% means “exactly the system size”.} other {Scales text and UI throughout the app.}}",
   "@settings.appearance.textSize.description": {
-    "description": "Help text for the text-size slider. Notes it multiplies with the macOS Accessibility text-size setting, so 100% equals the current system size. \"100%\" is a literal value; keep the percent sign.",
+    "description": "Help text for the text-size slider. The macOS branch notes it multiplies with the macOS Accessibility text-size setting, so 100% equals the current system size; the other branch (Windows and Linux) is the first sentence alone. \"100%\" is a literal value; keep the percent sign. The screenshot shows the macOS wording.",
     "screenshot": "settings-appearance-zoom.png"
   },
   "settings.appearance.textSize.keywords": "text, size, font, larger, smaller, accessibility, zoom, scale",
@@ -426,7 +426,7 @@
   },
   "settings.listing.showHiddenFiles.description": "{platform, select, macos {Show dotfiles (like .zshrc) and items the system marks as hidden. Applies to both panes.} windows {Show dotfiles (like .zshrc) and items the system marks as hidden. Applies to both panes.} other {Show dotfiles (like .bashrc) and items the system marks as hidden. Applies to both panes.}}",
   "@settings.listing.showHiddenFiles.description": {
-    "description": "Help text for the show-hidden-files toggle. \".zshrc\" is a literal example filename; keep it. \"panes\" are Cmdr's two side-by-side file lists; translate consistently with the pane wording elsewhere.",
+    "description": "Help text for the show-hidden-files toggle. \".zshrc\" is a literal example filename; keep it. \"panes\" are Cmdr's two side-by-side file lists; translate consistently with the pane wording elsewhere. The screenshot shows the macOS wording.",
     "screenshot": "settings-appearance-listing.png"
   },
   "settings.listing.showHiddenFiles.keywords": "hidden, dotfile, dotfiles, invisible, system, show",
@@ -491,7 +491,7 @@
   },
   "settings.listing.directorySortMode.label": "Sort folders",
   "@settings.listing.directorySortMode.label": {
-    "description": "Label for the picker controlling how folders sort among themselves while \"Show folders first\" is on. In Settings > Appearance > Listing, right below \"Show folders first\". Use the word your macOS Finder uses for \"folder\".",
+    "description": "Label for the picker controlling how folders sort among themselves while \"Show folders first\" is on. In Settings > Appearance > Listing, right below \"Show folders first\". Use your language's standard word for \"folder\", the one the OS's own file manager shows.",
     "screenshot": "settings-appearance-listing.png"
   },
   "settings.listing.directorySortMode.description": "How folders are sorted when changing the sort column.",
@@ -637,12 +637,12 @@
   },
   "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Skip confirmation for copy, move, and trash}}",
   "@settings.fileOperations.skipConfirmation.label": {
-    "description": "Settings switch label. When on, Copy, Move, and Move to Trash start right away without their confirmation dialog. \"trash\" is the macOS Trash (use the OS's localized name for it).",
+    "description": "Settings switch label. When on, Copy, Move, and Move to Trash start right away without their confirmation dialog. The other branch (macOS and Linux) says \"trash\", the OS's trash (use that OS's localized name for it); the Windows branch says \"delete\", Windows' name for the F8 action. The screenshot shows the macOS wording.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.skipConfirmation.description": "{platform, select, windows {F5 and F6 copy and move into the other pane right away, and F8 moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {F5 and F6 copy and move into the other pane right away, and F8 moves to the trash without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.}}",
   "@settings.fileOperations.skipConfirmation.description": {
-    "description": "Help text under the skip-confirmation switch. \"F5\", \"F6\", and \"F8\" are keyboard keys (Copy, Move, Delete); keep them. \"A bit risky\" is a gentle, friendly caution, not an alarm: keep the tone light. \"the other pane\" = the second file list of the two-pane window. \"trash\" is the macOS Trash (use the OS's localized name).",
+    "description": "Help text under the skip-confirmation switch. \"F5\", \"F6\", and \"F8\" are keyboard keys (Copy, Move, Delete); keep them. \"A bit risky\" is a gentle, friendly caution, not an alarm: keep the tone light. \"the other pane\" = the second file list of the two-pane window. The Windows branch names the Recycle Bin (use your language's Windows name for it); the other branch (macOS and Linux) says \"the trash\" (use that OS's localized name). The screenshot shows the macOS wording.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {confirm, confirmation, dialog, ask, copy, move, trash, delete, skip, clicks}}",
@@ -1289,12 +1289,12 @@
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "description": "Downloads-notification option: use macOS system notifications. \"macOS\" is a brand name; keep it. Short toggle-button label.",
+    "description": "Downloads-notification option: use the system's own notifications, named after the OS. \"macOS\" and \"Windows\" are brand names; keep them. The Linux branch says \"System\". Short toggle-button label. The screenshot shows the macOS wording.",
     "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Both",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
-    "description": "Downloads-notification option: use both in-app and macOS notifications. Short toggle-button label.",
+    "description": "Downloads-notification option: use both in-app and system notifications. Short toggle-button label.",
     "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.neither": "Neither",
@@ -1372,7 +1372,7 @@
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {How to warn you when your startup disk runs low on free space.} windows {How to warn you when your system drive runs low on free space.} other {How to warn you when your system disk runs low on free space.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
-    "description": "Help text for the low-disk-space setting. \"startup disk\" is the macOS term for the boot drive; use the OS's localized term.",
+    "description": "Help text for the low-disk-space setting. Each branch names the boot drive in its own OS's term: \"startup disk\" on macOS, \"system drive\" on Windows, \"system disk\" on Linux; use that OS's localized term. The screenshot shows the macOS wording.",
     "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "In-app",
@@ -1382,7 +1382,7 @@
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "description": "Low-disk-space option: use a macOS system notification. \"macOS\" is a brand name; keep it. Short toggle-button label.",
+    "description": "Low-disk-space option: use a system notification, named after the OS. \"macOS\" and \"Windows\" are brand names; keep them. The Linux branch says \"System\". Short toggle-button label. The screenshot shows the macOS wording.",
     "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Off",
@@ -1401,7 +1401,7 @@
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Warn when free space drops below this percent of your startup disk.} windows {Warn when free space drops below this percent of your system drive.} other {Warn when free space drops below this percent of your system disk.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
-    "description": "Help text for the low-disk-space threshold. \"startup disk\" is the macOS boot-drive term; use the OS's localized term.",
+    "description": "Help text for the low-disk-space threshold. Each branch names the boot drive in its own OS's term: \"startup disk\" on macOS, \"system drive\" on Windows, \"system disk\" on Linux; use that OS's localized term. The screenshot shows the macOS wording.",
     "screenshot": "settings-behavior-notifications.png"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "disk, space, threshold, percent, low, free, warning",
@@ -1415,7 +1415,7 @@
   },
   "settings.search.autoApply.description": "{platform, select, windows {Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or select the run button to search.} other {Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or click the run button to search.}}",
   "@settings.search.autoApply.description": {
-    "description": "Help text for the auto-apply-searches toggle. \"regex\" = regular-expression search; keep the term or use the locale's standard equivalent. \"AI\" = artificial intelligence. \"Enter\" is the keyboard key name; use the locale's key name. \"1 second\" is a literal delay.",
+    "description": "Help text for the auto-apply-searches toggle. \"regex\" = regular-expression search; keep the term or use the locale's standard equivalent. \"AI\" = artificial intelligence. \"Enter\" is the keyboard key name; use the locale's key name. \"1 second\" is a literal delay. The screenshot shows the macOS wording.",
     "screenshot": "settings-behavior-search.png"
   },
   "settings.search.autoApply.keywords": "search, auto, apply, live, debounce, filename, instant",
@@ -1525,7 +1525,7 @@
   },
   "settings.network.enabled.description": "{platform, select, macos {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, but won’t ask macOS for Local Network access.} windows {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, and Windows won’t ask to let Cmdr through the firewall.} other {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares.}}",
   "@settings.network.enabled.description": {
-    "description": "Help text for the enable-networking toggle. \"SMB\" is a protocol name (keep it); \"Cmdr\" is the product name (keep it); \"macOS\" is a brand name (keep it). \"Local Network\" is the macOS permission name; use the OS's localized name. \"mounted shares\" = network folders already attached to the system.",
+    "description": "Help text for the enable-networking toggle. \"SMB\" is a protocol name (keep it); \"Cmdr\" is the product name (keep it); \"macOS\" and \"Windows\" are brand names (keep them). The macOS branch's \"Local Network\" is the macOS permission name: use your language's macOS name for it. The Windows branch is about the Windows firewall prompt instead, and the Linux branch has neither. \"mounted shares\" = network folders already attached to the system. The screenshot shows the macOS wording.",
     "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.enabled.keywords": "network, enable, enabled, discovery, local, permission",
@@ -1551,7 +1551,7 @@
   },
   "settings.network.directSmbConnection.description": "{platform, select, macos {When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for Finder and other apps.} windows {When this is on, Cmdr establishes a direct connection to SMB shares for faster file operations. The system connection stays for File Explorer and other apps.} other {When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for your file manager and other apps.}}",
   "@settings.network.directSmbConnection.description": {
-    "description": "Help text for the direct-SMB toggle. \"Cmdr\" is the product name and \"SMB\" a protocol name (keep both); \"Finder\" is the macOS file-manager name; use the OS's localized name. \"mount\" = the system-attached network share.",
+    "description": "Help text for the direct-SMB toggle. \"Cmdr\" is the product name and \"SMB\" a protocol name (keep both); Each branch names its OS's file manager: \"Finder\" on macOS (as your language's macOS shows it), \"File Explorer\" on Windows (Windows' name in your language), and \"your file manager\" on Linux. \"mount\" = the system-attached network share. The screenshot shows the macOS wording.",
     "screenshot": "settings-file-systems-smb.png"
   },
   "settings.network.directSmbConnection.keywords": "direct, fast, connection, network, performance",
@@ -1564,7 +1564,7 @@
   },
   "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your Mac connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.} windows {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your PC connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.} other {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your computer connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.}}",
   "@settings.network.requireSmbEncryption.description": {
-    "description": "Help text for the \"Always require SMB encryption\" toggle. \"Its connections\" means the direct connections Cmdr makes. \"One your Mac connected to without encryption\" is a share macOS itself mounted (for example from Finder) over an unencrypted connection: Cmdr won't browse it while this is on. \"Guest connections\" are the ones made without signing in to an account. The last sentence: a direct connection Cmdr already has open keeps going until it next reconnects. \"Cmdr\" is the product name and \"SMB\" a protocol name; keep both."
+    "description": "Help text for the \"Always require SMB encryption\" toggle. \"Its connections\" means the direct connections Cmdr makes. \"One your Mac connected to without encryption\" (your PC on Windows, your computer on Linux) is a share the system itself mounted (for example from its file manager) over an unencrypted connection: Cmdr won't browse it while this is on. \"Guest connections\" are the ones made without signing in to an account. The last sentence: a direct connection Cmdr already has open keeps going until it next reconnects. \"Cmdr\" is the product name and \"SMB\" a protocol name; keep both."
   },
   "settings.network.requireSmbEncryption.keywords": "encrypt, encrypted, encryption, security, privacy, secure",
   "@settings.network.requireSmbEncryption.keywords": {
@@ -1717,7 +1717,7 @@
   },
   "settings.fileOperations.adbBinaryPath.keywords": "path, binary, location",
   "@settings.fileOperations.adbBinaryPath.keywords": {
-    "description": "Search keywords for the “Location of adb” setting (settings.fileOperations.adbBinaryPath.label) in Settings > File systems > Android (ADB). What it does: where on this Mac the Android adb command is, if Cmdr can’t find it by itself. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+    "description": "Search keywords for the “Location of adb” setting (settings.fileOperations.adbBinaryPath.label) in Settings > File systems > Android (ADB). What it does: where on this computer the Android adb command is, if Cmdr can’t find it by itself. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.fileOperations.mtpConnectionWarning.label": "Warn when a device connects",
   "@settings.fileOperations.mtpConnectionWarning.label": {
@@ -1896,7 +1896,7 @@
   },
   "settings.analytics.enabled.description": "{platform, select, windows {Please turn this on to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats.} other {Please enable this to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats.}}",
   "@settings.analytics.enabled.description": {
-    "description": "Help text for the usage-stats toggle, written in a reassuring privacy-first voice. It asks the user to leave the toggle on, then says what the stats are tied to and what is never sent. \"open beta\" = the public testing phase. \"random id\" = a randomly generated identifier stored on the user's Mac, not linked to their identity; keep it plain rather than reaching for a technical term like \"pseudonymous\". \"Cmdr\" is the product name; keep it. \"prompts\" = AI prompts.",
+    "description": "Help text for the usage-stats toggle, written in a reassuring privacy-first voice. It asks the user to leave the toggle on, then says what the stats are tied to and what is never sent. \"open beta\" = the public testing phase. \"random id\" = a randomly generated identifier stored on the user's computer, not linked to their identity; keep it plain rather than reaching for a technical term like \"pseudonymous\". \"Cmdr\" is the product name; keep it. \"prompts\" = AI prompts. The screenshot shows the macOS wording.",
     "screenshot": "settings-updates.png"
   },
   "settings.analytics.enabled.keywords": "analytics, usage, stats, privacy, telemetry, beta, tracking, opt-out",
@@ -1924,7 +1924,7 @@
   },
   "settings.updates.crashReports.description": "{platform, select, macos {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, macOS version, and where in the code the problem happened. Never file names or personal data.} windows {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Windows version, and where in the code the problem happened. Never file names or personal data.} other {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Linux distribution and version, and where in the code the problem happened. Never file names or personal data.}}",
   "@settings.updates.crashReports.description": {
-    "description": "Help text for the crash-reports toggle, in a privacy-reassuring voice. The setting covers BOTH cases that send a report: Cmdr going down with a crash, and a problem in a background task the app kept running through. So the first sentence must not scope it to the app quitting, the same split as crashReporter.dialog.body.ended vs .keptRunning. \"a report\" rather than \"a crash report\" for the same reason. \"Cmdr\" is the product name and \"macOS\" a brand name; keep both.",
+    "description": "Help text for the crash-reports toggle, in a privacy-reassuring voice. The setting covers BOTH cases that send a report: Cmdr going down with a crash, and a problem in a background task the app kept running through. So the first sentence must not scope it to the app quitting, the same split as crashReporter.dialog.body.ended vs .keptRunning. \"a report\" rather than \"a crash report\" for the same reason. \"Cmdr\" is the product name, and \"macOS\" and \"Windows\" are brand names; keep them. The Linux branch names the distribution and its version. The screenshot shows the macOS wording.",
     "screenshot": "settings-updates.png"
   },
   "settings.updates.crashReports.keywords": "crash, report, privacy, telemetry, bug, error",
@@ -1938,7 +1938,7 @@
   },
   "settings.updates.errorReports.description": "Send a small log snippet to the developer when an error occurs. Helps fix bugs faster. Off by default. You can always send a manual report from the Help menu.",
   "@settings.updates.errorReports.description": {
-    "description": "Help text for the error-reports toggle. \"log snippet\" = a short excerpt of the diagnostic log. \"Help menu\" is the macOS app menu name; use the OS's localized menu name.",
+    "description": "Help text for the error-reports toggle. \"log snippet\" = a short excerpt of the diagnostic log. \"Help menu\" is the menu bar's Help menu; use your language's standard name for it.",
     "screenshot": "settings-updates.png"
   },
   "settings.updates.errorReports.keywords": "error, report, auto, send, privacy, telemetry, bug, log, snippet, diagnostics",
@@ -2035,7 +2035,7 @@
   },
   "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {Cmdr pauses drive indexing when free space on your startup disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} windows {Cmdr pauses drive indexing when free space on your system drive drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} other {Cmdr pauses drive indexing when free space on your system disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.}}",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "description": "Help text for the index pause threshold (Settings > Advanced). \"Cmdr\" is the product name (keep it). \"drive indexing\" is Cmdr's background scan that computes folder sizes; use the same term as the other indexing settings. \"startup disk\" is the macOS boot-drive term; use the OS's localized term. \"one point\" means one percentage point (5% → 6%). “Low disk space warning” quotes the label of the separate setting under Behavior > Notifications (settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label); use that label's translation exactly, in your language's quote marks."
+    "description": "Help text for the index pause threshold (Settings > Advanced). \"Cmdr\" is the product name (keep it). \"drive indexing\" is Cmdr's background scan that computes folder sizes; use the same term as the other indexing settings. Each branch names the boot drive in its own OS's term: \"startup disk\" on macOS, \"system drive\" on Windows, \"system disk\" on Linux; use that OS's localized term. \"one point\" means one percentage point (5% → 6%). “Low disk space warning” quotes the label of the separate setting under Behavior > Notifications (settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label); use that label's translation exactly, in your language's quote marks."
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "disk, space, full, free, index, indexing, pause, storage, threshold, percent, low",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
@@ -2048,7 +2048,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "{platform, select, macos {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that ⇧Space (Quick Look) or Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.} windows {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or select “Never show this warning again” in the banner) to suppress the warning for good.} other {F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.}}",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "description": "Help text for the suppress-binary-warning toggle. \"F3\", \"⇧Space\" (Shift-Space), and \"Enter\" are keyboard keys/glyphs; keep the glyphs and use the locale's key names. \"Cmdr\" is the product name (keep it); \"Quick Look\" is the macOS preview feature name (use the OS's localized name). \"UTF-8\" and \"PDF\" are standard names; keep them. The quoted “Never show this warning again” must match the file viewer's actual banner button copy; translate it consistently with that button.",
+    "description": "Help text for the suppress-binary-warning toggle. \"F3\", \"⇧Space\" (Shift-Space), and \"Enter\" are keyboard keys/glyphs; keep the glyphs and use the locale's key names. \"Cmdr\" is the product name (keep it); \"Quick Look\" is the macOS preview feature name, in the macOS branch only (use your language's macOS name for it). \"UTF-8\" and \"PDF\" are standard names; keep them. The quoted “Never show this warning again” must match the file viewer's actual banner button copy; translate it consistently with that button. The screenshot shows the macOS wording.",
     "screenshot": "settings-advanced.png"
   },
   "settings.fileViewer.suppressBinaryWarning.keywords": "viewer, binary, image, raw, warning, banner, quick look",
@@ -2102,7 +2102,7 @@
   },
   "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or select “Never show this again” in the notice) to stop these notices.} other {When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or click “Never show this again” in the notice) to stop these notices.}}",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "description": "Help text for the already-gone notice switch. The quoted “Never show this again” must match the toast button (fileOperations.alreadyGone.neverShowAgain); translate it the same way. “Notice” is the small toast that appears for a few seconds.",
+    "description": "Help text for the already-gone notice switch. The quoted “Never show this again” must match the toast button (fileOperations.alreadyGone.neverShowAgain); translate it the same way. “Notice” is the small toast that appears for a few seconds. The screenshot shows the macOS wording.",
     "screenshot": "settings-advanced.png"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "missing, vanished, moved, deleted, gone, toast, notification",
@@ -2196,7 +2196,7 @@
   },
   "settings.fileExplorer.typeToJump.mode.description": "Jump moves the cursor to the best match. Filter shows only the files and folders whose names contain what you type, like Total Commander’s quick filter; Delete (⌫) edits it and Esc clears it.",
   "@settings.fileExplorer.typeToJump.mode.description": {
-    "description": "Help text for the type-in-pane mode setting. \"Total Commander\" is a product name (keep as-is). \"quick filter\" is Total Commander's name for the feature. Delete (⌫) and Esc are Mac key names: use the name macOS gives each key in your language (VoiceOver's key names), and keep the ⌫ glyph. The option names Jump and Filter must match the badge prefixes fileExplorer.typeToJump.prefix and fileExplorer.quickFilter.prefix.",
+    "description": "Help text for the type-in-pane mode setting. \"Total Commander\" is a product name (keep as-is). \"quick filter\" is Total Commander's name for the feature. Delete (⌫) and Esc are key names: use your language's standard name for each key (on macOS, VoiceOver's key names), and keep the ⌫ glyph. The option names Jump and Filter must match the badge prefixes fileExplorer.typeToJump.prefix and fileExplorer.quickFilter.prefix.",
     "screenshot": "settings-appearance-listing.png"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Jump",
@@ -2304,7 +2304,7 @@
   },
   "settings.advanced.logLlmCalls.description": "{platform, select, macos {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your Mac and include the file names and paths Cmdr sends to your provider.} windows {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your PC and include the file names and paths Cmdr sends to your provider.} other {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your computer and include the file names and paths Cmdr sends to your provider.}}",
   "@settings.advanced.logLlmCalls.description": {
-    "description": "Help text for the log-AI-model-calls toggle (advanced). \"llm-logs\" is a literal folder name, keep it exactly. \"Cmdr\" is the app name, keep it. \"provider\" = the AI provider the user chose (OpenAI, Anthropic, etc.). The point is that logging is local-only and never transmitted.",
+    "description": "Help text for the log-AI-model-calls toggle (advanced). \"llm-logs\" is a literal folder name, keep it exactly. \"Cmdr\" is the app name, keep it. \"provider\" = the AI provider the user chose (OpenAI, Anthropic, etc.). The point is that logging is local-only and never transmitted. The screenshot shows the macOS wording.",
     "screenshot": "settings-advanced.png"
   },
   "settings.advanced.logLlmCalls.keywords": "ai, log, debug, request, response, prompt",
@@ -2318,7 +2318,7 @@
   },
   "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {Timeout for resolving network services via Bonjour.} other {Timeout for resolving network services found on your local network (mDNS).}}",
   "@settings.advanced.serviceResolveTimeout.description": {
-    "description": "Help text for the service-resolve-timeout setting (advanced). \"Bonjour\" is Apple's network service-discovery technology name; keep it. \"resolving\" = looking up the address of a discovered service.",
+    "description": "Help text for the service-resolve-timeout setting (advanced). The macOS branch names \"Bonjour\", Apple's network service-discovery technology name; keep it. The other branch names \"mDNS\", the standard behind it; keep that too. \"resolving\" = looking up the address of a discovered service. The screenshot shows the macOS wording.",
     "screenshot": "settings-advanced.png"
   },
   "settings.advanced.serviceResolveTimeout.keywords": "resolve, timeout, service discovery, network discovery, lookup, local network, wait",
@@ -3082,7 +3082,7 @@
   },
   "settings.section.servers": "Servers (SFTP, WebDAV)",
   "@settings.section.servers": {
-    "description": "Settings subsection title under File systems: the page listing the SSH host keys this Mac trusts. \"SFTP\" and \"WebDAV\" are protocol names; keep both as-is, parentheses included. Sidebar and page heading.",
+    "description": "Settings subsection title under File systems: the page listing the SSH host keys this computer trusts. \"SFTP\" and \"WebDAV\" are protocol names; keep both as-is, parentheses included. Sidebar and page heading.",
     "screenshot": "settings-appearance.png"
   },
   "settings.section.adb": "Android (ADB)",
@@ -3234,7 +3234,7 @@
   },
   "settings.summary.notifications": "Downloads notifications, the global go-to-latest-download shortcut, and low-disk-space warnings.",
   "@settings.summary.notifications": {
-    "description": "One-line summary shown under the \"Notifications\" subsection heading. \"Downloads\" is the macOS folder name (use the OS’s localized name).",
+    "description": "One-line summary shown under the \"Notifications\" subsection heading. \"Downloads\" is the Downloads folder’s name (use the name the OS gives it in your language).",
     "screenshot": "settings-summary-behavior.png"
   },
   "settings.summary.search": "Live-applied filename and regex searches, and the recent-searches cap.",
@@ -3340,12 +3340,12 @@
   },
   "settings.managed.rowNote": "Your organization manages this setting.",
   "@settings.managed.rowNote": {
-    "description": "A note under a setting the person can't change because their organization's IT department set it through device management (MDM, a configuration profile). Shown with an info icon under a greyed-out switch. Plain and calm, not alarming; 'organization' means the employer or school that manages the Mac.",
+    "description": "A note under a setting the person can't change because their organization's IT department set it through device management (MDM, a configuration profile). Shown with an info icon under a greyed-out switch. Plain and calm, not alarming; 'organization' means the employer or school that manages the computer.",
     "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.sectionNote": "Your organization manages some of these settings.",
   "@settings.managed.sectionNote": {
-    "description": "A line at the top of a settings page (for example Updates & privacy, or AI) when the person's organization locked one or more of the settings below it through device management (MDM). Screen-reader users hear it before reaching the disabled controls. 'Organization' means the employer or school that manages the Mac.",
+    "description": "A line at the top of a settings page (for example Updates & privacy, or AI) when the person's organization locked one or more of the settings below it through device management (MDM). Screen-reader users hear it before reaching the disabled controls. 'Organization' means the employer or school that manages the computer.",
     "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.title": "Managed by your organization",
@@ -3360,7 +3360,7 @@
   },
   "settings.managed.summary.usageStatsOff": "Off",
   "@settings.managed.summary.usageStatsOff": {
-    "description": "Value beside the row label 'Usage stats' (the anonymous usage statistics Cmdr can send) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's macOS Settings shows for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
+    "description": "Value beside the row label 'Usage stats' (the anonymous usage statistics Cmdr can send) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's OS settings show for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
     "agreesWith": "settings.managed.summary.usageStats",
     "screenshot": "settings-updates-managed.png"
   },
@@ -3371,13 +3371,13 @@
   },
   "settings.managed.summary.reportsOff": "Off",
   "@settings.managed.summary.reportsOff": {
-    "description": "Value beside the row label 'Crash and error reports' (the crash and error reports Cmdr can send to its developer) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's macOS Settings shows for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
+    "description": "Value beside the row label 'Crash and error reports' (the crash and error reports Cmdr can send to its developer) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's OS settings show for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
     "agreesWith": "settings.managed.summary.reports",
     "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.securityLog": "Security events",
   "@settings.managed.summary.securityLog": {
-    "description": "Row label in the 'Managed by your organization' card: the local security event log (a file on the Mac noting security-relevant changes and refusals). The value beside it says what the organization set. Short, sentence case.",
+    "description": "Row label in the 'Managed by your organization' card: the local security event log (a file on the computer noting security-relevant changes and refusals). The value beside it says what the organization set. Short, sentence case.",
     "screenshot": "settings-updates.png",
     "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
   },
@@ -3408,7 +3408,7 @@
   },
   "settings.managed.summary.updatesOff": "Off",
   "@settings.managed.summary.updatesOff": {
-    "description": "Value beside the row label 'Updates' (Cmdr's own app updates, switched off entirely) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's macOS Settings shows for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
+    "description": "Value beside the row label 'Updates' (Cmdr's own app updates, switched off entirely) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's OS settings show for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
     "agreesWith": "settings.managed.summary.updates",
     "screenshot": "settings-updates-managed.png"
   },
@@ -3419,7 +3419,7 @@
   },
   "settings.managed.summary.aiOff": "Off",
   "@settings.managed.summary.aiOff": {
-    "description": "Value beside the row label 'AI' (Cmdr's AI features, switched off entirely) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's macOS Settings shows for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
+    "description": "Value beside the row label 'AI' (Cmdr's AI features, switched off entirely) in the 'Managed by your organization' card (Settings > Updates & privacy). The organization turned this off. Each row has its own 'Off' key so the word can agree in gender and number with that row's label: use the form your language's OS settings show for a switched-off feature, agreeing with the label where your grammar asks for it. One or two words.",
     "agreesWith": "settings.managed.summary.ai",
     "screenshot": "settings-updates.png",
     "screenshotNote": "Settings > Updates & privacy, pictured here with no policy. Your string is on a card at the top of this section, or under a locked row, while an organization manages this Mac’s Cmdr."
@@ -3450,7 +3450,7 @@
   },
   "settings.managed.summary.onDeviceOnly": "On-device only",
   "@settings.managed.summary.onDeviceOnly": {
-    "description": "Value beside 'AI' in the 'Managed by your organization' card: the organization allows only the AI model that runs on this Mac, so nothing goes to a cloud AI service. Short. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on this Mac, so the two names point at one thing.",
+    "description": "Value beside 'AI' in the 'Managed by your organization' card: the organization allows only the AI model that runs on this computer, so nothing goes to a cloud AI service. Short. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on this computer, so the two names point at one thing.",
     "screenshot": "settings-updates-managed.png"
   },
   "settings.managed.summary.cloudHostsOnly": "Cloud AI only through {hosts}",
@@ -3486,17 +3486,17 @@
   },
   "settings.appearance.themeColorSwatchAria": "{platform, select, macos {Open System Settings to change the system theme color} windows {Open Windows Settings to change the system accent color} other {Open your system settings to change the system accent color}}",
   "@settings.appearance.themeColorSwatchAria": {
-    "description": "aria-label for the disabled color swatch that points users to macOS for the system theme color. \"System Settings\" is the macOS app name; use the OS's localized name.",
+    "description": "aria-label for the disabled color swatch that points users to the system settings for the system color. Each branch names its OS's settings app: \"System Settings\" on macOS and \"Windows Settings\" on Windows (use each OS's localized name); the Linux branch names none. The screenshot shows the macOS wording.",
     "screenshot": "settings-appearance.png"
   },
   "settings.appearance.appColorHintPrefix": "{platform, select, macos {To change your system theme color, go to} other {To change your system accent color, go to}}",
   "@settings.appearance.appColorHintPrefix": {
-    "description": "First part of the app-color hint sentence, immediately followed by a clickable link (the System Settings path). End it so it flows into the link without a trailing space issue. Shown in Settings > Appearance.",
+    "description": "First part of the app-color hint sentence, immediately followed by a clickable link (the System Settings path). End it so it flows into the link without a trailing space issue. Shown in Settings > Appearance. The screenshot shows the macOS wording.",
     "screenshot": "settings-appearance.png"
   },
   "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {your system appearance settings}}",
   "@settings.appearance.appColorHintLink": {
-    "description": "macOS variant of the app-color hint link text: a System Settings navigation path. The \"> \" arrow joins path steps; keep it. Both placeholders are OS-localized macOS labels injected at runtime, so do not translate the placeholder names.",
+    "description": "The app-color hint link text: the path to the system color setting. The macOS branch is the System Settings path, and both its placeholders are macOS labels the OS supplies already localized, so do not translate the placeholder names. The Windows branch spells out Windows' own path (use your language's Windows names for Settings, Personalization, and Colors), and the Linux branch names no app. The \"> \" arrow joins path steps; keep it. The screenshot shows the macOS wording.",
     "placeholders": {
       "systemSettings": "the OS-localized name of the macOS \"System Settings\" app",
       "appearance": "the OS-localized name of the macOS \"Appearance\" settings pane"
@@ -3642,12 +3642,12 @@
   },
   "settings.fileSystemWatching.cardDownloads": "Downloads",
   "@settings.fileSystemWatching.cardDownloads": {
-    "description": "Heading of the Downloads card in Settings > Behavior > File system watching. The card groups two Downloads-folder features: new-download notifications and the go-to-latest-download global shortcut. \"Downloads\" is the macOS folder name; use the OS's localized folder name.",
+    "description": "Heading of the Downloads card in Settings > Behavior > File system watching. The card groups two Downloads-folder features: new-download notifications and the go-to-latest-download global shortcut. \"Downloads\" is the Downloads folder's name; use the name the OS gives it in your language.",
     "screenshot": "settings-behavior-notifications.png"
   },
   "settings.notifications.cardOnScreen": "On-screen notifications",
   "@settings.notifications.cardOnScreen": {
-    "description": "Heading of the card in Settings > Behavior > Notifications about the notifications Cmdr shows inside its own window (the small message boxes at the top right, like \"Moved 3 files to the trash\"), as opposed to macOS's own notifications.",
+    "description": "Heading of the card in Settings > Behavior > Notifications about the notifications Cmdr shows inside its own window (the small message boxes at the top right, like \"Moved 3 files to the trash\"), as opposed to the system's own notifications.",
     "screenshot": "settings-behavior-notifications.png"
   },
   "settings.fileSystemWatching.cardLowDiskSpace": "Low disk space",
@@ -3778,17 +3778,17 @@
   },
   "settings.updates.card.securityEvents": "Security events",
   "@settings.updates.card.securityEvents": {
-    "description": "Heading of the security events card (the switch for the local security event log and its 'Show in Finder' button) in Settings > Updates & privacy. Sentence case.",
+    "description": "Heading of the security events card (the switch for the local security event log and its button that shows the log file in the file manager, 'Show in Finder' on macOS) in Settings > Updates & privacy. Sentence case.",
     "screenshot": "settings-updates.png"
   },
   "settings.securityLog.enabled.label": "Record security events",
   "@settings.securityLog.enabled.label": {
-    "description": "Label for the switch that turns the local security event log on or off. The log is a small file on the person's Mac listing security-relevant changes and refusals. In Settings > Updates & privacy.",
+    "description": "Label for the switch that turns the local security event log on or off. The log is a small file on the person's computer listing security-relevant changes and refusals. In Settings > Updates & privacy.",
     "screenshot": "settings-updates.png"
   },
   "settings.securityLog.enabled.description": "{platform, select, macos {Keep a small file on this Mac that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your Mac.} windows {Keep a small file on this PC that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your PC.} other {Keep a small file on this computer that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your computer.}}",
   "@settings.securityLog.enabled.description": {
-    "description": "Help text under the 'Record security events' switch. 'MCP server' is a technical feature name (Model Context Protocol): keep it untranslated. 'turned away' = refused access. Reassures that the file stays local and holds nothing private.",
+    "description": "Help text under the 'Record security events' switch. 'MCP server' is a technical feature name (Model Context Protocol): keep it untranslated. 'turned away' = refused access. Reassures that the file stays local and holds nothing private. The screenshot shows the macOS wording.",
     "screenshot": "settings-updates.png"
   },
   "settings.securityLog.enabled.keywords": "security, log, audit, record, events, access, privacy",
@@ -3797,12 +3797,12 @@
   },
   "settings.securityLog.showInFinder": "{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}",
   "@settings.securityLog.showInFinder": {
-    "description": "Button under the 'Record security events' switch that opens Finder at the security event log file (or its folder when there's no file yet). 'Finder' is the macOS file manager: use the name macOS shows in your language.",
+    "description": "Button under the 'Record security events' switch that opens the file manager at the security event log file (or its folder when there's no file yet). Each branch names its OS's file manager: 'Finder' on macOS (the name your language's macOS shows), 'File Explorer' on Windows (Windows' name in your language), and a generic file manager on Linux. The screenshot shows the macOS wording.",
     "screenshot": "settings-updates.png"
   },
   "settings.updates.showSecurityLog.keywords": "security, log, audit, events, file, open, reveal, show, folder, location",
   "@settings.updates.showSecurityLog.keywords": {
-    "description": "Search keywords for the “Show in Finder” row (settings.securityLog.showInFinder) in Settings > Updates & privacy. What it does: a button that shows the security log file in Finder. Never shown. Search already matches its label, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+    "description": "Search keywords for the “Show in Finder” row (settings.securityLog.showInFinder) in Settings > Updates & privacy. What it does: a button that shows the security log file in the file manager (Finder on macOS, File Explorer on Windows). Never shown. Search already matches its label, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.fileSystemWatching.globalShortcutHint": "Change the shortcut under “Keyboard shortcuts → Go to latest download”.",
   "@settings.fileSystemWatching.globalShortcutHint": {
@@ -3883,7 +3883,7 @@
   },
   "settings.updates.emailPrivacyNote": "{platform, select, macos {Stored only on your Mac. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.} windows {Stored only on your PC. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.} other {Stored only on your computer. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.}}",
   "@settings.updates.emailPrivacyNote": {
-    "description": "Privacy note under the beta-email field, reassuring the user about how the email is stored and used. \"Mac\" is the Apple computer brand name; keep it. \"stats\" = statistics.",
+    "description": "Privacy note under the beta-email field, reassuring the user about how the email is stored and used. The macOS branch's \"Mac\" is the Apple computer brand name; keep it. The Windows branch says \"PC\" and the Linux branch \"computer\". \"stats\" = statistics. The screenshot shows the macOS wording.",
     "screenshot": "settings-updates.png"
   },
   "settings.logging.openLogFile": "Open log file",
@@ -4071,7 +4071,7 @@
   },
   "settings.window.title": "Settings",
   "@settings.window.title": {
-    "description": "Name of Cmdr's own Settings window: the operating-system window title (shown in the window list and the Window menu) and the window's screen-reader-only page heading. A NOUN, the name of the window. This is the word the rest of the app uses whenever it points the user at Cmdr's preferences (\"Edit shortcuts in Settings\"), so match whatever a Mac app's own preferences window is called in your language. It is NOT macOS's System Settings app, which has its own localized name Cmdr reads from the OS.",
+    "description": "Name of Cmdr's own Settings window: the operating-system window title (shown in the window list and the Window menu) and the window's screen-reader-only page heading. A NOUN, the name of the window. This is the word the rest of the app uses whenever it points the user at Cmdr's preferences (\"Edit shortcuts in Settings\"), so match whatever an app's own preferences window is called in your language. It is NOT the operating system's own settings app (System Settings on macOS, Settings on Windows), which has its own localized name.",
     "screenshot": "settings-appearance.png"
   },
   "settings.window.loading": "Loading settings…",
@@ -4080,7 +4080,7 @@
   },
   "settings.servers.card.trustedHostKeys": "Trusted host keys",
   "@settings.servers.card.trustedHostKeys": {
-    "description": "Title of the first card on Settings > File systems > Servers: the list of SSH server keys this Mac has accepted. A host key is what a server proves its identity with, and \"trusted\" means the user said yes to it once. Three or four words."
+    "description": "Title of the first card on Settings > File systems > Servers: the list of SSH server keys this computer has accepted. A host key is what a server proves its identity with, and \"trusted\" means the user said yes to it once. Three or four words."
   },
   "settings.network.trustedHostKeys.keywords": "host key, fingerprint, trust, trusted, known hosts, server, forget",
   "@settings.network.trustedHostKeys.keywords": {
@@ -4088,7 +4088,7 @@
   },
   "settings.servers.card.trustedCertificates": "Trusted certificates",
   "@settings.servers.card.trustedCertificates": {
-    "description": "Title of the second card on Settings > File systems > Servers: the HTTPS certificates of WebDAV servers (usually a home NAS that made its own certificate) the user told Cmdr to trust although macOS doesn't. Two or three words."
+    "description": "Title of the second card on Settings > File systems > Servers: the HTTPS certificates of WebDAV servers (usually a home NAS that made its own certificate) the user told Cmdr to trust although the system doesn't. Two or three words."
   },
   "settings.network.trustedCertificates.keywords": "certificate, self-signed, fingerprint, trust, trusted, NAS, server, forget",
   "@settings.network.trustedCertificates.keywords": {
@@ -4096,7 +4096,7 @@
   },
   "settings.servers.trustedCertificates.description": "{platform, select, macos {When macOS doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.} windows {When Windows doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.} other {When your system doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.}}",
   "@settings.servers.trustedCertificates.description": {
-    "description": "Help text under the \"Trusted certificates\" card title. A certificate is what an HTTPS server proves its identity with; a home NAS often makes its own, which macOS doesn't trust. \"Cmdr\" is the app name and \"macOS\" the operating system; keep both."
+    "description": "Help text under the \"Trusted certificates\" card title. A certificate is what an HTTPS server proves its identity with; a home NAS often makes its own, which the system doesn't trust. \"Cmdr\" is the app name, and \"macOS\" and \"Windows\" are operating systems; keep them. The Linux branch says \"your system\"."
   },
   "settings.servers.trustedCertificates.empty": "{platform, select, macos {Nothing trusted yet. When you connect to a WebDAV server macOS doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.} windows {Nothing trusted yet. When you connect to a WebDAV server Windows doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.} other {Nothing trusted yet. When you connect to a WebDAV server your system doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.}}",
   "@settings.servers.trustedCertificates.empty": {
@@ -4104,7 +4104,7 @@
   },
   "settings.servers.trustedCertificates.confirmTitle": "Forget this certificate?",
   "@settings.servers.trustedCertificates.confirmTitle": {
-    "description": "Title of the confirmation asked before a trusted certificate is forgotten. A short question. Shown in a native macOS alert, so keep it to a few words."
+    "description": "Title of the confirmation asked before a trusted certificate is forgotten. A short question. Shown in a native system alert, so keep it to a few words."
   },
   "settings.servers.trustedCertificates.confirm": "The next time you connect to {host}, Cmdr will show you its certificate’s fingerprint and ask whether to trust it.",
   "@settings.servers.trustedCertificates.confirm": {
@@ -4131,7 +4131,7 @@
   },
   "settings.servers.trustedHostKeys.confirmTitle": "Forget this key?",
   "@settings.servers.trustedHostKeys.confirmTitle": {
-    "description": "Title of the confirmation asked before a host key is forgotten. A short question. Shown in a native macOS alert, so keep it to a few words."
+    "description": "Title of the confirmation asked before a host key is forgotten. A short question. Shown in a native system alert, so keep it to a few words."
   },
   "settings.servers.trustedHostKeys.confirm": "The next time you connect to {host}, Cmdr will show you its key fingerprint and ask whether to trust it.",
   "@settings.servers.trustedHostKeys.confirm": {
@@ -4142,7 +4142,7 @@
   },
   "settings.adb.status.label": "Status",
   "@settings.adb.status.label": {
-    "description": "Row label on Settings > File systems > Android (ADB), naming the row that says whether the \"adb\" command was found on this Mac. NOUN, one word."
+    "description": "Row label on Settings > File systems > Android (ADB), naming the row that says whether the \"adb\" command was found on this computer. NOUN, one word."
   },
   "settings.adb.status.foundAt": "Found at {path}",
   "@settings.adb.status.foundAt": {
@@ -4153,7 +4153,7 @@
   },
   "settings.adb.status.notFound": "Not found",
   "@settings.adb.status.notFound": {
-    "description": "The status value when the \"adb\" command is nowhere on this Mac. Factual, not alarming: the install line right below it says what to do. Two words at most."
+    "description": "The status value when the \"adb\" command is nowhere on this computer. Factual, not alarming: the install line right below it says what to do. Two words at most."
   },
   "settings.adb.status.watching": "Watching for phones.",
   "@settings.adb.status.watching": {
@@ -4181,11 +4181,11 @@
   },
   "settings.adb.browse": "Browse…",
   "@settings.adb.browse": {
-    "description": "VERB (imperative), the button that opens a file picker for choosing the \"adb\" command by hand. The trailing … is the single character U+2026 and means \"this opens something\"; keep it. Match the word macOS uses for the same kind of button in this language."
+    "description": "VERB (imperative), the button that opens a file picker for choosing the \"adb\" command by hand. The trailing … is the single character U+2026 and means \"this opens something\"; keep it. Match your language's standard word for that kind of button."
   },
   "settings.adb.pickerTitle": "Choose the adb command",
   "@settings.adb.pickerTitle": {
-    "description": "Title of the macOS file picker opened by that button. \"adb\" is a command name; keep it lowercase and as-is. VERB phrase, imperative."
+    "description": "Title of the system file picker opened by that button. \"adb\" is a command name; keep it lowercase and as-is. VERB phrase, imperative."
   },
   "settings.fileExplorer.quickFilterIntroSeen.label": "Suppress the quick filter explainer",
   "@settings.fileExplorer.quickFilterIntroSeen.label": {
@@ -4201,12 +4201,12 @@
   },
   "settings.dataWipe.card": "{platform, select, macos {Your data on this Mac} windows {Your data on this PC} other {Your data on this computer}}",
   "@settings.dataWipe.card": {
-    "description": "Heading of a card in Settings > Updates & privacy that holds the button deleting everything Cmdr has stored on this computer. Sentence case.",
+    "description": "Heading of a card in Settings > Updates & privacy that holds the button deleting everything Cmdr has stored on this computer. Sentence case. The screenshot shows the macOS wording.",
     "screenshot": "settings-updates.png"
   },
   "settings.dataWipe.description": "{platform, select, macos {Delete everything Cmdr keeps on this Mac: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.} windows {Delete everything Cmdr keeps on this PC: settings, saved passwords, histories, indexes, and downloaded models. Cmdr closes afterwards.} other {Delete everything Cmdr keeps on this computer: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.}}",
   "@settings.dataWipe.description": {
-    "description": "Explanation under that heading, beside the delete button. It describes what the button does; it isn’t an instruction to the user, so a descriptive form (“Deletes everything…”) is fine. \"Cmdr\" is the app's name; don't translate it.",
+    "description": "Explanation under that heading, beside the delete button. It describes what the button does; it isn’t an instruction to the user, so a descriptive form (“Deletes everything…”) is fine. \"Cmdr\" is the app's name; don't translate it. The screenshot shows the macOS wording.",
     "screenshot": "settings-updates.png"
   },
   "settings.dataWipe.button": "Delete all Cmdr data",
@@ -4216,7 +4216,7 @@
   },
   "settings.updates.deleteAllData.keywords": "delete, erase, remove, wipe, reset, uninstall, privacy, data, forget, gdpr",
   "@settings.updates.deleteAllData.keywords": {
-    "description": "Search keywords for the “Delete all Cmdr data” row (settings.dataWipe.button) in Settings > Updates & privacy. What it does: a button that deletes everything Cmdr stores on this Mac. Never shown. Search already matches its label, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+    "description": "Search keywords for the “Delete all Cmdr data” row (settings.dataWipe.button) in Settings > Updates & privacy. What it does: a button that deletes everything Cmdr stores on this computer. Never shown. Search already matches its label, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
   "settings.dataWipe.title": "{platform, select, macos {Delete all Cmdr data on this Mac?} windows {Delete all Cmdr data on this PC?} other {Delete all Cmdr data on this computer?}}",
   "@settings.dataWipe.title": {
@@ -4302,7 +4302,7 @@
   },
   "settings.dataWipe.confirm": "{platform, select, windows {Delete all and exit} other {Delete all and quit}}",
   "@settings.dataWipe.confirm": {
-    "description": "Destructive button that deletes all the app's data and then quits the app. VERB phrase, sentence case."
+    "description": "Destructive button that deletes all the app's data and then quits the app. VERB phrase, sentence case. The Windows branch says \"exit\", Windows' name for the action."
   },
   "settings.dataWipe.deleting": "Deleting…",
   "@settings.dataWipe.deleting": {
@@ -4330,7 +4330,7 @@
   },
   "settings.dataWipe.doneMessage": "{platform, select, macos {Everything Cmdr kept on this Mac is gone. To remove the app as well, move it to the Trash after Cmdr quits.} windows {Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps > Installed apps after Cmdr closes.} other {Everything Cmdr kept on this computer is gone. To remove the app as well, uninstall it the way you installed it after Cmdr quits.}}",
   "@settings.dataWipe.doneMessage": {
-    "description": "Body after everything was deleted. \"the Trash\" is the macOS Trash; use macOS's own name for it in your language."
+    "description": "Body after everything was deleted. Each branch says how its OS removes an app: the macOS branch names the Trash (use your language's macOS name for it), the Windows branch Settings > Apps > Installed apps (use your language's Windows names) and says Cmdr \"closes\", and the Linux branch points at the way it was installed."
   },
   "settings.dataWipe.partialTitle": "Cmdr deleted most of its data",
   "@settings.dataWipe.partialTitle": {
@@ -4338,11 +4338,11 @@
   },
   "settings.dataWipe.partialMessage": "A few things couldn’t be deleted. To finish, remove these yourself:",
   "@settings.dataWipe.partialMessage": {
-    "description": "Line introducing the list of what's left: folder and file paths the user can delete in Finder, or keychain items."
+    "description": "Line introducing the list of what's left: folder and file paths the user can delete in their file manager, or saved passwords in the system's password store (the Keychain on macOS)."
   },
   "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, one {One item in Keychain Access named “{itemName}”} other {{countText} items in Keychain Access named “{itemName}”}}} windows {{count, plural, one {One item in Credential Manager named “{itemName}”} other {{countText} items in Credential Manager named “{itemName}”}}} other {{count, plural, one {One item in your keyring named “{itemName}”} other {{countText} items in your keyring named “{itemName}”}}}}",
   "@settings.dataWipe.leftover.secretItems": {
-    "description": "Item in the list of what's left: saved passwords or keys in the macOS Keychain Access app that couldn't be deleted. \"Keychain Access\" is the name of a macOS app; use its name in your language's macOS. \"Item\" here is one keychain entry, not a file: use the word your language's Keychain Access uses for one entry (its \"keychain item\").",
+    "description": "Item in the list of what's left: saved passwords or keys in the system's password store that couldn't be deleted. Each branch names its OS's store: Keychain Access on macOS (its name in your language's macOS), Credential Manager on Windows (Windows' name in your language), and the keyring on Linux. \"Item\" here is one saved entry, not a file: use the word that store uses for one entry in your language (Keychain Access calls it a \"keychain item\").",
     "placeholders": {
       "count": "how many items are left, a number used only to choose the plural form",
       "countText": "the same number, already formatted for the locale",
@@ -4351,14 +4351,14 @@
   },
   "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {Any items in Keychain Access named “{itemName}”} windows {Any items in Credential Manager named “{itemName}”} other {Any items in your keyring named “{itemName}”}}",
   "@settings.dataWipe.leftover.secretsUnreadable": {
-    "description": "Item in the list of what's left when Cmdr couldn't check its keychain items: the user should look for them in the macOS Keychain Access app. \"Items\" are keychain entries, not files: use the word your language's Keychain Access uses for one entry (its \"keychain item\").",
+    "description": "Item in the list of what's left when Cmdr couldn't check its keychain items: the user should look for them in the system's password store. Each branch names its OS's store: Keychain Access on macOS (its name in your language's macOS), Credential Manager on Windows (Windows' name in your language), and the keyring on Linux. \"Items\" are saved entries, not files: use the word that store uses for one entry in your language (Keychain Access calls it a \"keychain item\").",
     "placeholders": {
       "itemName": "the name the items appear under in Keychain Access (for example “Cmdr”); never translated"
     }
   },
   "settings.dataWipe.quit": "{platform, select, windows {Exit Cmdr} other {Quit Cmdr}}",
   "@settings.dataWipe.quit": {
-    "description": "The only button after the delete finished: quits the app. VERB phrase, sentence case. \"Cmdr\" is the app's name."
+    "description": "The only button after the delete finished: quits the app. VERB phrase, sentence case. The Windows branch says \"Exit\", Windows' name for the action. \"Cmdr\" is the app's name."
   },
   "settings.askCmdr.forgetMemory.keywords": "forget, memory, erase, delete, remembers, privacy",
   "@settings.askCmdr.forgetMemory.keywords": {

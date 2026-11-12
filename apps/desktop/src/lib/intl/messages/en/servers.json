@@ -157,7 +157,7 @@
   },
   "servers.hub.discoveryOffLink": "Turn it on in Settings",
   "@servers.hub.discoveryOffLink": {
-    "description": "Link beside the discovery-off line; it opens Settings at the switch that turns local network discovery back on. VERB phrase, imperative. \"Settings\" is the app’s own Settings window; use the word your language’s macOS uses for it."
+    "description": "Link beside the discovery-off line; it opens Settings at the switch that turns local network discovery back on. VERB phrase, imperative. \"Settings\" is the app’s own Settings window; use the word the rest of the app uses for it (settings.window.title)."
   },
   "servers.hub.nfsHint": "NFS servers don’t announce themselves, so they don’t show up here.",
   "@servers.hub.nfsHint": {
@@ -176,7 +176,7 @@
   },
   "servers.hub.emptyMessage": "{platform, select, macos {Add one below, or turn on a Mac or NAS on your network and Cmdr will find it.} windows {Add one below, or turn on a PC or NAS on your network and Cmdr will find it.} other {Add one below, or turn on a computer or NAS on your network and Cmdr will find it.}}",
   "@servers.hub.emptyMessage": {
-    "description": "One line under the empty-state heading in the servers hub. \"NAS\" is a network storage box; keep the abbreviation if your language uses it, otherwise say the equivalent. \"below\" points at the \"Add server…\" row at the bottom of the list.",
+    "description": "One line under the empty-state heading in the servers hub. \"NAS\" is a network storage box; keep the abbreviation if your language uses it, otherwise say the equivalent. \"below\" points at the \"Add server…\" row at the bottom of the list. The screenshot shows the macOS wording.",
     "screenshot": "servers-hub.png"
   },
   "servers.hub.rowCount": "{count, plural, one {{countText} server} other {{countText} servers}}",
@@ -260,7 +260,7 @@
   },
   "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS doesn’t trust this server’s certificate. Add it in Keychain Access, then try again.} windows {Windows doesn’t trust this server’s certificate. Add it to your trusted certificates in “Manage user certificates”, then try again.} other {This server’s certificate isn’t trusted on this computer. Add it to your system’s trusted certificates, then try again.}}",
   "@servers.refusal.certificateUntrusted": {
-    "description": "Shown in the pane when a WebDAV server’s TLS certificate isn’t trusted by the operating system. \"Keychain Access\" is the macOS app name, which the OS ships translated; use the name your language’s macOS uses.",
+    "description": "Shown in the pane when a WebDAV server’s TLS certificate isn’t trusted by the operating system. In the macOS branch, \"Keychain Access\" is the macOS app name, which the OS ships translated: use the name your language’s macOS uses. The Windows branch quotes “Manage user certificates”, the Windows certificate tool’s name: use the name Windows shows in your language. The Linux branch names no app. The screenshot shows the macOS wording.",
     "screenshot": "server-sign-in-refused-local-network.png",
     "screenshotNote": "The server sheet, pictured here turning down a connection with a different message. Your string is a line like that one, under a field or above the sheet’s buttons."
   },
@@ -312,7 +312,7 @@
   },
   "servers.refusal.certificateUnapproved": "Cmdr hasn’t trusted the certificate for {host} yet.",
   "@servers.refusal.certificateUnapproved": {
-    "description": "Shown in the pane when a WebDAV server (often a home NAS) uses an HTTPS certificate macOS doesn’t trust, and the person hasn’t told Cmdr to trust it yet. Opening the server again shows the certificate’s fingerprint to check and trust. \"Certificate\" is the server’s HTTPS security certificate.",
+    "description": "Shown in the pane when a WebDAV server (often a home NAS) uses an HTTPS certificate the system doesn’t trust, and the person hasn’t told Cmdr to trust it yet. Opening the server again shows the certificate’s fingerprint to check and trust. \"Certificate\" is the server’s HTTPS security certificate.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
     },
@@ -321,7 +321,7 @@
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr hasn’t trusted the key for {host} yet.",
   "@servers.refusal.hostKeyUntrusted": {
-    "description": "Shown in the pane when an SSH server presents a host key this Mac hasn’t approved. \"Key\" is the server’s SSH host key, the fingerprint a person checks before trusting the server.",
+    "description": "Shown in the pane when an SSH server presents a host key this computer hasn’t approved. \"Key\" is the server’s SSH host key, the fingerprint a person checks before trusting the server.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
     },
@@ -330,7 +330,7 @@
   },
   "servers.refusal.hostKeyRevoked": "{platform, select, macos {The key for {host} is marked as compromised in your SSH settings on this Mac. Cmdr won’t connect to it.} windows {The key for {host} is marked as compromised in your SSH settings on this PC. Cmdr won’t connect to it.} other {The key for {host} is marked as compromised in your SSH settings on this computer. Cmdr won’t connect to it.}}",
   "@servers.refusal.hostKeyRevoked": {
-    "description": "Shown in the pane when the server’s SSH host key is listed as revoked in the user’s own known_hosts file. This one is deliberately final: there is no button that can safely undo it. \"SSH\" is a protocol name; don’t translate it.",
+    "description": "Shown in the pane when the server’s SSH host key is listed as revoked in the user’s own known_hosts file. This one is deliberately final: there is no button that can safely undo it. \"SSH\" is a protocol name; don’t translate it. The screenshot shows the macOS wording.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
     },
@@ -381,13 +381,13 @@
   },
   "servers.refusal.secretNotStored": "{platform, select, macos {Cmdr couldn’t store this password in your Keychain. Try again, or turn off “Remember in Keychain” to sign in without storing it.} windows {Cmdr couldn’t save this password. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this password in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
   "@servers.refusal.secretNotStored": {
-    "description": "Shown under the password field of the sign-in sheet when the user turned on “Remember in Keychain” and the system’s password store refused to keep the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. Cmdr hasn’t tried to sign in yet, and nothing else changed. “Remember in Keychain” must match the servers.sheet.remember checkbox label word for word, inside the quotation marks your language uses. “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses.",
+    "description": "Shown under the password field of the sign-in sheet when the user turned on the remember checkbox (servers.sheet.remember) and the system’s password store refused to keep the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. Cmdr hasn’t tried to sign in yet, and nothing else changed. Each branch quotes its own branch of the servers.sheet.remember label word for word (“Remember in Keychain”, “Remember password”, “Remember in keyring”), inside the quotation marks your language uses. The macOS branch names the Keychain (use the name your language’s macOS uses), and the Linux branch the keyring; the Windows branch names no store. The screenshot shows the macOS wording.",
     "screenshot": "server-sign-in-refused-local-network.png",
     "screenshotNote": "The server sheet, pictured here turning down a connection with a different message. Your string is a line like that one, under a field or above the sheet’s buttons."
   },
   "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {Cmdr saved your changes but couldn’t update the password in your Keychain. Save again to try once more.} windows {Cmdr saved your changes but couldn’t update the saved password. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the password in your keyring. Save again to try once more.}}",
   "@servers.refusal.savedSecretNotUpdated": {
-    "description": "Shown under the password field of the edit server sheet when the server’s other settings were saved, but the system’s password store refused to keep or remove the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. ❗ The other changes DID save, so don’t word it as if nothing was saved. Pressing Save again is safe and only retries the password. “Save” is the sheet’s button (servers.sheet.save). “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses.",
+    "description": "Shown under the password field of the edit server sheet when the server’s other settings were saved, but the system’s password store refused to keep or remove the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. ❗ The other changes DID save, so don’t word it as if nothing was saved. Pressing Save again is safe and only retries the password. “Save” is the sheet’s button (servers.sheet.save). The macOS branch names the Keychain (use the name your language’s macOS uses), and the Linux branch the keyring; the Windows branch names no store. The screenshot shows the macOS wording.",
     "screenshot": "server-sign-in-refused-local-network.png",
     "screenshotNote": "The server sheet, pictured here turning down a connection with a different message. Your string is a line like that one, under a field or above the sheet’s buttons."
   },
@@ -411,13 +411,13 @@
   },
   "servers.refusal.s3SecretNotStored": "{platform, select, macos {Cmdr couldn’t store this secret access key in your Keychain. Try again, or turn off “Remember in Keychain” to sign in without storing it.} windows {Cmdr couldn’t save this secret access key. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this secret access key in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
   "@servers.refusal.s3SecretNotStored": {
-    "description": "The S3 twin of servers.refusal.secretNotStored: the user turned on “Remember in Keychain” and the system’s password store refused to keep the key (Deny on the system prompt, a locked keychain, or no store). Nothing else changed. “Remember in Keychain” must match the servers.sheet.remember label word for word. “Keychain” is Apple’s name; use the name your language’s macOS uses.",
+    "description": "The S3 twin of servers.refusal.secretNotStored: the user turned on the remember checkbox and the system’s password store refused to keep the key (Deny on the system prompt, a locked keychain, or no store). Nothing else changed. Each branch quotes its own branch of the servers.sheet.remember label word for word. The macOS branch names the Keychain (use the name your language’s macOS uses), and the Linux branch the keyring; the Windows branch names no store. The screenshot shows the macOS wording.",
     "screenshot": "server-sign-in-refused-local-network.png",
     "screenshotNote": "The server sheet, pictured here turning down a connection with a different message. Your string is a line like that one, under a field or above the sheet’s buttons."
   },
   "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {Cmdr saved your changes but couldn’t update the secret access key in your Keychain. Save again to try once more.} windows {Cmdr saved your changes but couldn’t update the saved secret access key. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the secret access key in your keyring. Save again to try once more.}}",
   "@servers.refusal.s3SavedSecretNotUpdated": {
-    "description": "The S3 twin of servers.refusal.savedSecretNotUpdated: the edit DID save, and only writing the secret access key to the system’s password store didn’t. Pressing Save again is safe. “Save” is servers.sheet.save. “Keychain” is Apple’s name; use the name your language’s macOS uses.",
+    "description": "The S3 twin of servers.refusal.savedSecretNotUpdated: the edit DID save, and only writing the secret access key to the system’s password store didn’t. Pressing Save again is safe. “Save” is servers.sheet.save. The macOS branch names the Keychain (use the name your language’s macOS uses), and the Linux branch the keyring; the Windows branch names no store. The screenshot shows the macOS wording.",
     "screenshot": "server-sign-in-refused-local-network.png",
     "screenshotNote": "The server sheet, pictured here turning down a connection with a different message. Your string is a line like that one, under a field or above the sheet’s buttons."
   },
@@ -458,7 +458,7 @@
   },
   "servers.refusal.clockSkewed": "{platform, select, macos {This Mac’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in System Settings, then try again.} windows {This PC’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Turn on “Set time automatically” in Settings > Time & language > Date & time, then try again.} other {This computer’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in your system settings, then try again.}}",
   "@servers.refusal.clockSkewed": {
-    "description": "Shown when an S3 server refused the request because this Mac’s clock is too far off: S3 signatures carry a timestamp. “System Settings” is the macOS app name; use the name your language’s macOS uses.",
+    "description": "Shown when an S3 server refused the request because this computer’s clock is too far off: S3 signatures carry a timestamp. The macOS branch names System Settings (use the name your language’s macOS uses); the Windows branch quotes Windows’ own setting and its path (“Set time automatically”, Settings > Time & language > Date & time: use the names Windows shows in your language); the Linux branch names no app. Each branch names the machine as its OS does: this Mac, this PC, this computer. The screenshot shows the macOS wording.",
     "screenshot": "server-sign-in-refused-local-network.png",
     "screenshotNote": "The server sheet, pictured here turning down a connection with a different message. Your string is a line like that one, under a field or above the sheet’s buttons."
   },
@@ -479,7 +479,7 @@
   },
   "servers.refusal.exportRefused": "{platform, select, macos {{host} doesn’t let this Mac open that export. Check which computers the export allows in the server’s NFS settings.} windows {{host} doesn’t let this PC open that export. Check which devices the export allows in the server’s NFS settings.} other {{host} doesn’t let this computer open that export. Check which computers the export allows in the server’s NFS settings.}}",
   "@servers.refusal.exportRefused": {
-    "description": "Under the Export field when the NFS server refused this Mac the export: its list of allowed computers or its rules leave this Mac out. The fix is on the server, in its NFS sharing settings.",
+    "description": "Under the Export field when the NFS server refused this computer the export: its list of allowed computers or its rules leave this computer out. Each branch names the machine as its OS does: this Mac, this PC, this computer. The fix is on the server, in its NFS sharing settings. The screenshot shows the macOS wording.",
     "placeholders": {
       "host": "the NFS server’s hostname or address, like \"nas.local\""
     },
@@ -527,13 +527,13 @@
   },
   "servers.refusal.secretNotMoved": "{platform, select, macos {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Check that your Keychain is unlocked, then save again.} windows {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Check that your keyring is unlocked, then save again.}}",
   "@servers.refusal.secretNotMoved": {
-    "description": "Under the password field of the edit server sheet, when the user changed a saved server's address and Cmdr couldn't copy its stored password to the new address (the user clicked Deny on the system prompt, the keychain is locked, or no password store is available). ❗ NOTHING was saved, not even the other changes, so don't word it as if anything was. Saving again is safe. “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses.",
+    "description": "Under the password field of the edit server sheet, when the user changed a saved server's address and Cmdr couldn't copy its stored password to the new address (the user clicked Deny on the system prompt, the keychain is locked, or no password store is available). ❗ NOTHING was saved, not even the other changes, so don't word it as if anything was. Saving again is safe. The macOS branch names the Keychain (use the name your language’s macOS uses), and the Linux branch the keyring; the Windows branch names no store. The screenshot shows the macOS wording.",
     "screenshot": "server-sign-in-refused-local-network.png",
     "screenshotNote": "The server sheet, pictured here turning down a connection with a different message. Your string is a line like that one, under a field or above the sheet’s buttons."
   },
   "servers.refusal.s3SecretNotMoved": "{platform, select, macos {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your Keychain is unlocked, then save again.} windows {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your keyring is unlocked, then save again.}}",
   "@servers.refusal.s3SecretNotMoved": {
-    "description": "The S3 twin of servers.refusal.secretNotMoved: under the secret access key field of the edit sheet for an S3 account, when the user changed the account's endpoint and Cmdr couldn't copy its stored secret access key to the new endpoint. ❗ NOTHING was saved. Saving again is safe. “Secret access key” is the S3 term; use the same words as servers.sheet.secretAccessKey. “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses.",
+    "description": "The S3 twin of servers.refusal.secretNotMoved: under the secret access key field of the edit sheet for an S3 account, when the user changed the account's endpoint and Cmdr couldn't copy its stored secret access key to the new endpoint. ❗ NOTHING was saved. Saving again is safe. “Secret access key” is the S3 term; use the same words as servers.sheet.secretAccessKey. The macOS branch names the Keychain (use the name your language’s macOS uses), and the Linux branch the keyring; the Windows branch names no store. The screenshot shows the macOS wording.",
     "screenshot": "server-sign-in-refused-local-network.png",
     "screenshotNote": "The server sheet, pictured here turning down a connection with a different message. Your string is a line like that one, under a field or above the sheet’s buttons."
   },
@@ -551,7 +551,7 @@
   },
   "servers.refusal.shareMounted": "{platform, select, macos {The share {name} is still mounted from the old address. Eject it, then save again.} windows {The share {name} is still connected from the old address. Disconnect it, then save again.} other {The share {name} is still mounted from the old address. Unmount it, then save again.}}",
   "@servers.refusal.shareMounted": {
-    "description": "Under the Address field of the edit server sheet, when the user changed a saved SMB server's address while one of its shares (shared folders) is still mounted (connected as a disk) from the OLD address. Cmdr won't disconnect it on its own, since other apps may be using it, so nothing was saved. The user ejects the share (the same “Eject” as on the sidebar and in Finder), then presses Save again.",
+    "description": "Under the Address field of the edit server sheet, when the user changed a saved SMB server's address while one of its shares (shared folders) is still mounted (connected as a disk) from the OLD address. Cmdr won't disconnect it on its own, since other apps may be using it, so nothing was saved. The user detaches the share, then presses Save again: the macOS branch says “Eject” (the same verb as the sidebar’s and Finder’s), the Windows branch “Disconnect” (Windows’ word for a network drive), and the Linux branch “Unmount”. The screenshot shows the macOS wording.",
     "placeholders": {
       "name": "the share's name, like \"Photos\" or \"public\""
     },
@@ -560,7 +560,7 @@
   },
   "servers.refusal.shareEjectRefused": "{platform, select, macos {Cmdr couldn’t eject {name}, so nothing was saved. {reason}} windows {Cmdr couldn’t disconnect {name}, so nothing was saved. {reason}} other {Cmdr couldn’t unmount {name}, so nothing was saved. {reason}}}",
   "@servers.refusal.shareEjectRefused": {
-    "description": "Under the Address field of the edit server sheet, after the user pressed Eject and save (servers.sheet.ejectAndSave) on a saved SMB server whose shares (shared folders) were still mounted from its OLD address: one share couldn't be ejected, usually because an app still has files open there, so the new address wasn't saved. Shares ejected before it stay ejected. {reason} is a whole sentence from the eject messages (errors.eject.*), like “Preview still has files open there. Close them, then try again.”; put it where a second sentence reads naturally in your language.",
+    "description": "Under the Address field of the edit server sheet, after the user pressed Eject and save (servers.sheet.ejectAndSave) on a saved SMB server whose shares (shared folders) were still mounted from its OLD address: one share couldn't be ejected, usually because an app still has files open there, so the new address wasn't saved. Shares ejected before it stay ejected. {reason} is a whole sentence from the eject messages (errors.eject.*), like “Preview still has files open there. Close them, then try again.”; put it where a second sentence reads naturally in your language. The screenshot shows the macOS wording.",
     "placeholders": {
       "name": "the share's name, like \"Photos\" or \"public\"",
       "reason": "one or two full sentences from errors.eject.*, saying why the eject didn't happen and what to do"
@@ -611,7 +611,7 @@
   },
   "servers.sheet.ejectAndSave": "{platform, select, macos {Eject and save} windows {Disconnect and save} other {Unmount and save}}",
   "@servers.sheet.ejectAndSave": {
-    "description": "Small button under the address in the edit server sheet, shown only when the user changed a saved SMB server's address and one of its shares (shared folders) is still mounted from the OLD address (servers.refusal.shareMounted). Pressing it ejects those shares, then saves the new address. VERB phrase; “Eject” is the same verb as the sidebar's and Finder's Eject."
+    "description": "Small button under the address in the edit server sheet, shown only when the user changed a saved SMB server's address and one of its shares (shared folders) is still mounted from the OLD address (servers.refusal.shareMounted). Pressing it detaches those shares, then saves the new address. VERB phrase. The macOS branch says “Eject”, the same verb as the sidebar's and Finder's Eject; the Windows branch “Disconnect”, Windows' word for a network drive; the Linux branch “Unmount”."
   },
   "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {Cmdr ejects every share still mounted from the old address, then saves the new one.} windows {Cmdr disconnects every share still connected from the old address, then saves the new one.} other {Cmdr unmounts every share still mounted from the old address, then saves the new one.}}",
   "@servers.sheet.ejectAndSaveHelp": {
@@ -739,7 +739,7 @@
   },
   "servers.sheet.nfsExportsNone": "{platform, select, macos {{host} lists no exports for this Mac. Type the export’s path if you know it.} windows {{host} lists no exports for this PC. Type the export’s path if you know it.} other {{host} lists no exports for this computer. Type the export’s path if you know it.}}",
   "@servers.sheet.nfsExportsNone": {
-    "description": "Under the Export field in the NFS add form when the server answered but listed no exports (shared folders) this Mac may use. Typing one by hand can still work.",
+    "description": "Under the Export field in the NFS add form when the server answered but listed no exports (shared folders) this computer may use. Each branch names the machine as its OS does: this Mac, this PC, this computer. Typing one by hand can still work.",
     "placeholders": {
       "host": "the NFS server’s hostname or address, like \"nas.local\""
     }
@@ -795,7 +795,7 @@
   },
   "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {Your IDs on this Mac. Change them if the files on the server belong to someone else.} windows {The user and group IDs Cmdr sends to the server. Change them if the files on the server belong to someone else.} other {Your IDs on this computer. Change them if the files on the server belong to someone else.}}",
   "@servers.sheet.nfsIdentityThisMac": {
-    "description": "One line under the user ID and group ID fields in the NFS add form, when Cmdr filled them in with the user’s own IDs on this Mac because it couldn’t tell who owns the files on the server."
+    "description": "One line under the user ID and group ID fields in the NFS add form, when Cmdr filled them in with the user’s own IDs on this computer because it couldn’t tell who owns the files on the server."
   },
   "servers.sheet.nfsUidZeroWarning": "Most servers give user ID 0 no rights.",
   "@servers.sheet.nfsUidZeroWarning": {
@@ -832,7 +832,7 @@
   },
   "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Saved in Keychain. Leave empty to keep it.} windows {Saved. Leave empty to keep it.} other {Saved in your keyring. Leave empty to keep it.}}",
   "@servers.sheet.secretKeptPlaceholder": {
-    "description": "Placeholder inside the empty Password field (or the Secret access key field, for S3 storage) of the Edit server sheet, when Cmdr already has that secret stored in the macOS Keychain. Cmdr never shows a stored secret, so the field is always empty; this says one is saved, and that leaving the field empty and pressing Save keeps it. “It” is the password or the key, whichever the field is for. “Keychain” is the macOS feature name; use the name your language’s macOS uses (same as in servers.sheet.remember). Short: it has to fit inside a text field."
+    "description": "Placeholder inside the empty Password field (or the Secret access key field, for S3 storage) of the Edit server sheet, when Cmdr already has that secret stored in the system’s password store. Cmdr never shows a stored secret, so the field is always empty; this says one is saved, and that leaving the field empty and pressing Save keeps it. “It” is the password or the key, whichever the field is for. The macOS branch names the Keychain (use the name your language’s macOS uses, same as in servers.sheet.remember), and the Linux branch your keyring; the Windows branch names no store. Short: it has to fit inside a text field."
   },
   "servers.sheet.smbUsernamePlaceholder": "Optional",
   "@servers.sheet.smbUsernamePlaceholder": {
@@ -850,7 +850,7 @@
   },
   "servers.sheet.remember": "{platform, select, macos {Remember in Keychain} windows {Remember password} other {Remember in keyring}}",
   "@servers.sheet.remember": {
-    "description": "Checkbox that stores the secret in the macOS Keychain: a password, or an S3 secret access key, so keep the wording protocol-neutral. “Keychain” is the macOS feature name, which the OS ships translated; use the name your language's macOS uses.",
+    "description": "Checkbox that stores the secret in the system's password store: a password, or an S3 secret access key, so keep the wording protocol-neutral. The macOS branch names the Keychain, which the OS ships translated (use the name your language's macOS uses); the Windows branch says only “Remember password”, as Windows sign-in dialogs do; the Linux branch names the keyring. The screenshot shows the macOS wording.",
     "screenshot": "network-sign-in-sheet.png"
   },
   "servers.sheet.connectionModeLegend": "How to connect",
@@ -1090,7 +1090,7 @@
   },
   "servers.sheet.needsStoredSecret": "{platform, select, macos {Reconnecting on its own needs a remembered password. Turn on “Remember in Keychain” and sign in once.} windows {Reconnecting on its own needs a saved password. Turn on “Remember password” and sign in once.} other {Reconnecting on its own needs a remembered password. Turn on “Remember in keyring” and sign in once.}}",
   "@servers.sheet.needsStoredSecret": {
-    "description": "Shown in the edit sheet when “Reconnect automatically” is on but nothing is stored, so it can never actually run. Says what to do about it.",
+    "description": "Shown in the edit sheet when “Reconnect automatically” is on but nothing is stored, so it can never actually run. Says what to do about it. The screenshot shows the macOS wording.",
     "screenshot": "server-sign-in-edit.png"
   },
   "servers.sheet.tryNextcloudAddress": "Try the Nextcloud address",
@@ -1145,7 +1145,7 @@
   },
   "servers.certificate.firstContactTitle": "{platform, select, macos {macOS doesn’t know the certificate for {host}} windows {Windows doesn’t know the certificate for {host}} other {The certificate for {host} is new to this computer}}",
   "@servers.certificate.firstContactTitle": {
-    "description": "Heading of the step where the user decides whether to trust a WebDAV server’s HTTPS certificate that macOS doesn’t trust, usually a home NAS (Synology, QNAP) that made its own certificate. Routine, not alarming. \"macOS\" is the operating system’s name.",
+    "description": "Heading of the step where the user decides whether to trust a WebDAV server’s HTTPS certificate that the system doesn’t trust, usually a home NAS (Synology, QNAP) that made its own certificate. Routine, not alarming. \"macOS\" and \"Windows\" are the operating systems’ names; the Linux branch names none. The screenshot shows the macOS wording.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
     },
@@ -1230,7 +1230,7 @@
   },
   "servers.paneState.hostKeyChanged": "Cmdr won’t connect to {name}",
   "@servers.paneState.hostKeyChanged": {
-    "description": "Heading of the pane view shown when an SSH server presents a different identity key than the one this Mac trusts. Serious: it can mean someone is in the middle. “Cmdr” is the product name.",
+    "description": "Heading of the pane view shown when an SSH server presents a different identity key than the one this computer trusts. Serious: it can mean someone is in the middle. “Cmdr” is the product name.",
     "placeholders": {
       "name": "the server’s display name, like “Naspolya”"
     },

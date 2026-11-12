@@ -6,12 +6,12 @@
   },
   "selection.dialog.title.remove": "Deselect files",
   "@selection.dialog.title.remove": {
-    "description": "Title at the top of the dialog that REMOVES matching files from the pane's selection, opened from the Select menu (\"Deselect files…\") or its shortcut. Same dialog as \"Select files\", in its removing mode; keep the two recognizably the same phrase apart from the verb. Use the same word your macOS Finder's Edit menu uses for undoing a selection, so the dialog agrees with the menu item that opened it. A terse heading, so keep it short.",
+    "description": "Title at the top of the dialog that REMOVES matching files from the pane's selection, opened from the Select menu (\"Deselect files…\") or its shortcut. Same dialog as \"Select files\", in its removing mode; keep the two recognizably the same phrase apart from the verb. Use your language's standard word for undoing a selection, the one an Edit menu shows, so the dialog agrees with the menu item that opened it. A terse heading, so keep it short.",
     "screenshot": "selection-remove-mixed-folder.png"
   },
   "selection.runHint": "Press Enter to filter",
   "@selection.runHint": {
-    "description": "Subtle hint at the right edge of the Select / Deselect dialog's query field, shown while the typed pattern hasn't run yet. Tells the user the list of matches is filtered when they press Enter. \"Enter\" is the name of the Return/Enter key: use whatever your macOS keyboard calls that key. Sits in a narrow strip beside the field, so keep it short.",
+    "description": "Subtle hint at the right edge of the Select / Deselect dialog's query field, shown while the typed pattern hasn't run yet. Tells the user the list of matches is filtered when they press Enter. \"Enter\" is the name of the Return/Enter key: use whatever your language calls that key on a keyboard. Sits in a narrow strip beside the field, so keep it short.",
     "screenshot": "select-dialog.png"
   },
   "selection.action.select.label": "Select these files",

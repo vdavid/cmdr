@@ -200,7 +200,7 @@
   },
   "ai.cloudConsent.askCmdr.item.logs": "Cmdr’s recent log lines, with names, paths, addresses, and anything that looks like a key swapped for placeholders first. A few plain details stay, like file extensions and common folder names such as Documents",
   "@ai.cloudConsent.askCmdr.item.logs": {
-    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends: the assistant can read the app's own recent log, redacted first. “Documents” is an example of a common folder name: use the name your language's macOS gives that folder. Keep both facts: identifying details become placeholders, and a few plain details stay. Sentence case, no final period. The apostrophe is U+2019.",
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends: the assistant can read the app's own recent log, redacted first. “Documents” is an example of a common folder name: use the standard name your language’s OS gives that folder. Keep both facts: identifying details become placeholders, and a few plain details stay. Sentence case, no final period. The apostrophe is U+2019.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -218,7 +218,7 @@
   },
   "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} windows {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keychains, browser data, Mail, Messages, Notes, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
-    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, as a paragraph after the Ask Cmdr list: the assistant is never given the contents of these places, even if a prompt asks for them, but their file names may still reach the provider. Keep the whole list and that last sentence. Mail, Messages, and Notes are Apple app names. The apostrophe is U+2019.",
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, as a paragraph after the Ask Cmdr list: the assistant is never given the contents of these places, even if a prompt asks for them, but their file names may still reach the provider. Keep the whole list and that last sentence. Mail, Messages, and Notes are Apple app names, and “keychains” are the macOS password stores; the Linux branch names keyrings instead and no Apple apps, and the Windows branch reads like the macOS one for now. The apostrophe is U+2019. The screenshot shows the macOS wording.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -242,13 +242,13 @@
   },
   "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Your Ask Cmdr chats stay on your Mac, in a local database you can open and read.} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
-    "description": "Paragraph under the Ask Cmdr part of the Allow cloud AI fold: chat history is stored locally, never on the AI service's side by Cmdr. \"Ask Cmdr\" is a product name and stays as it is.",
+    "description": "Paragraph under the Ask Cmdr part of the Allow cloud AI fold: chat history is stored locally, never on the AI service's side by Cmdr. \"Ask Cmdr\" is a product name and stays as it is. The screenshot shows the macOS wording.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
   "ai.cloudConsent.logsNote": "{platform, select, macos {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your Mac. Those call logs stay local, never sent anywhere.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
   "@ai.cloudConsent.logsNote": {
-    "description": "Shown under Settings > AI > Provider, as a smaller note near the end of the Allow cloud AI fold, about the optional local AI call log (the setting “Log AI model calls”, settings.advanced.logLlmCalls.label, quoted: match its label exactly): those logs are written to a local folder and never transmitted. It's a different thing from the app's own log, ai.cloudConsent.askCmdr.item.logs, so keep \"call logs\" distinct.",
+    "description": "Shown under Settings > AI > Provider, as a smaller note near the end of the Allow cloud AI fold, about the optional local AI call log (the setting “Log AI model calls”, settings.advanced.logLlmCalls.label, quoted: match its label exactly): those logs are written to a local folder and never transmitted. It's a different thing from the app's own log, ai.cloudConsent.askCmdr.item.logs, so keep \"call logs\" distinct. The screenshot shows the macOS wording.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -846,7 +846,7 @@
   },
   "ai.secretError.title": "{platform, select, macos {{op, select, save {Couldn’t save your API key: macOS Keychain denied access} other {Couldn’t read your saved API key: macOS Keychain denied access}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {Couldn’t save your API key: your system keyring denied access} other {Couldn’t read your saved API key: your system keyring denied access}}}}",
   "@ai.secretError.title": {
-    "description": "Title of an error shown in the cloud-AI provider settings (Settings > AI cloud, and the onboarding cloud-provider step) when saving or reading the API key fails because the macOS Keychain refused access. \"macOS Keychain\" and \"Keychain\" are the proper name of the Apple credential store; keep them as Apple names them in your language (Apple ships a localized Keychain Access app, so use that localized name). Write each branch as a complete, natural sentence in your language rather than a shared prefix plus a clause.",
+    "description": "Title of an error shown in the cloud-AI provider settings (Settings > AI cloud, and the onboarding cloud-provider step) when saving or reading the API key fails because the system’s password store refused access: the macOS Keychain, Credential Manager on Windows, or the keyring on Linux, one per branch. Name each store as its OS does in your language: in the macOS branch, \"macOS Keychain\" and \"Keychain\" are the proper name of the Apple credential store, so keep them as Apple names them (Apple ships a localized Keychain Access app); in the Windows branch, use Microsoft’s name for Credential Manager. Write each branch as a complete, natural sentence in your language rather than a shared prefix plus a clause. The screenshot shows the macOS wording.",
     "placeholders": {
       "op": "which action failed: \"save\" when storing a new key, anything else when reading the stored key"
     },
@@ -855,7 +855,7 @@
   },
   "ai.secretError.body": "{platform, select, macos {{op, select, save {Open Keychain Access and check the “Cmdr” entry, or delete it and try saving again.} other {Open Keychain Access, find the “Cmdr” entry, grant access, or delete it and re-enter your key.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Unlock your keyring (Passwords / Keyrings app) and try again.}}",
   "@ai.secretError.body": {
-    "description": "Guidance shown below the macOS-Keychain-denied error in the cloud-AI provider settings, telling the user how to fix it via Apple’s Keychain Access app. \"Keychain Access\" is the proper name of the macOS app (Apple ships it localized; use that localized name). “Cmdr” is the app name (a Keychain entry label) and must NOT be translated. Write each branch as a natural full sentence.",
+    "description": "Guidance shown below the password-store-denied error in the cloud-AI provider settings, telling the user how to fix it: in Apple’s Keychain Access app in the macOS branch, in Credential Manager’s “Windows Credentials” section in the Windows branch, and by unlocking the keyring in the Linux branch. Use each OS’s own localized name for its app and section: Apple ships Keychain Access localized, and Microsoft localizes Credential Manager and Windows Credentials. “Cmdr” is the app name (the stored entry’s label) and must NOT be translated. Write each branch as a natural full sentence. The screenshot shows the macOS wording.",
     "placeholders": {
       "op": "which action failed: \"save\" when storing a new key, anything else when reading the stored key"
     },
@@ -873,19 +873,19 @@
   },
   "ai.secretError.genericBody": "{platform, select, macos {Check that your Keychain is available, then try again. If it persists, restart the app.} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {Check that your system keyring is available, then try again. If it persists, restart the app.}}",
   "@ai.secretError.genericBody": {
-    "description": "Guidance shown below the fall-back save/read error, suggesting the user verify their OS credential store (keyring) is available and restart the app if the problem continues. \"keyring\" is the generic term for the system credential store; use whatever your platform calls it.",
+    "description": "Guidance shown below the fall-back save/read error, suggesting the user verify their OS credential store (keyring) is available and restart the app if the problem continues. \"keyring\" is the generic term for the system credential store; use whatever your platform calls it. The screenshot shows the macOS wording.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
   "ai.secretError.removeTitle": "Couldn’t remove your saved API key.",
   "@ai.secretError.removeTitle": {
-    "description": "Title of an error shown in the cloud-AI provider settings (Settings > AI cloud, and the onboarding cloud-provider step) when the user clicked \"Remove key\" and the OS credential store (macOS Keychain, or the system keyring elsewhere) refused to delete the stored API key. The key is still saved.",
+    "description": "Title of an error shown in the cloud-AI provider settings (Settings > AI cloud, and the onboarding cloud-provider step) when the user clicked \"Remove key\" and the OS credential store (the Keychain on macOS, Credential Manager on Windows, the keyring on Linux) refused to delete the stored API key. The key is still saved.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
   "ai.secretError.removeBody": "{platform, select, macos {Open Keychain Access, find the “Cmdr” entry, and delete it there.} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {Unlock your keyring (Passwords / Keyrings app) and try again.}}",
   "@ai.secretError.removeBody": {
-    "description": "Guidance shown below the remove-key error on macOS when the Keychain denied access, telling the user to delete the stored key by hand in Apple’s Keychain Access app. \"Keychain Access\" is the proper name of the macOS app (Apple ships it localized; use that localized name). “Cmdr” is the app name (a Keychain entry label) and must NOT be translated.",
+    "description": "Guidance shown below the remove-key error when the system’s password store denied access, telling the user to delete the stored key by hand: in Apple’s Keychain Access app in the macOS branch, in Credential Manager’s “Windows Credentials” section in the Windows branch, and by unlocking the keyring in the Linux branch. Use each OS’s own localized name for its app and section: Apple ships Keychain Access localized, and Microsoft localizes Credential Manager and Windows Credentials. “Cmdr” is the app name (the stored entry’s label) and must NOT be translated. The screenshot shows the macOS wording.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
@@ -897,7 +897,7 @@
   },
   "ai.managed.cloudAiOff": "Your organization allows only on-device AI.",
   "@ai.managed.cloudAiOff": {
-    "description": "Shown wherever cloud AI is unavailable because the person's organization (their IT team, through a device management profile) allows only the AI model that runs on this Mac: under the AI provider choice, in onboarding, and in toasts. \"On-device\" means running on this computer, with nothing sent away. One calm sentence. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on this Mac, so the two names point at one thing.",
+    "description": "Shown wherever cloud AI is unavailable because the person's organization (their IT team, through a device management profile) allows only the AI model that runs on the computer itself: under the AI provider choice, in onboarding, and in toasts. \"On-device\" means running on this computer, with nothing sent away. One calm sentence. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on the computer itself, so the two names point at one thing.",
     "screenshot": "settings-ai-provider-managed.png"
   },
   "ai.managed.hostNotAllowed": "Your organization doesn’t allow this AI service. Your IT team can tell you which ones you can use.",
@@ -908,7 +908,7 @@
   },
   "ai.managed.localOnlyUnsupported": "{platform, select, macos {Your organization allows only on-device AI, and this Mac can’t run it.} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
   "@ai.managed.localOnlyUnsupported": {
-    "description": "Shown under the AI provider choice on a Mac that can't run the on-device AI model (it needs Apple silicon and macOS 14 or later) when the person's organization allows only on-device AI, so no AI is available at all. One calm sentence. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on this Mac, so the two names point at one thing.",
+    "description": "Shown under the AI provider choice on a computer that can't run the on-device AI model (on a Mac it needs Apple silicon and macOS 14 or later; Windows and Linux can't run it yet) when the person's organization allows only on-device AI, so no AI is available at all. One calm sentence. “On-device AI” is the AI that the provider option “Local LLM” (settings.ai.provider.opt.local) runs: the same model on the computer itself, so the two names point at one thing. Each branch names the machine as its OS does: this Mac, this PC, this computer. The screenshot shows the macOS wording.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },

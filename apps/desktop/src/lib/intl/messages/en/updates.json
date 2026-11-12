@@ -99,7 +99,7 @@
   },
   "updates.unwritable.adminHeadline": "Cmdr {version} is out, but Cmdr can’t install it itself",
   "@updates.unwritable.adminHeadline": {
-    "description": "Bold first line of a warning toast that stays until dismissed. A newer Cmdr is out, but this Mac's copy of the app belongs to another account (typically installed by an administrator or a company's IT tools), so Cmdr can't update itself. Shown to people who ARE administrators of this Mac, so they can fix it themselves. Not an error: a calm statement. \"Cmdr\" is the product name, never translated.",
+    "description": "Bold first line of a warning toast that stays until dismissed. A newer Cmdr is out, but this computer's copy of the app belongs to another account (typically installed by an administrator or a company's IT tools), so Cmdr can't update itself. Shown to people who ARE administrators of this computer, so they can fix it themselves. Not an error: a calm statement. \"Cmdr\" is the product name, never translated.",
     "placeholders": {
       "version": "the newer version that is out (for example 0.54.0)"
     },
@@ -117,7 +117,7 @@
   },
   "updates.unwritable.standardHeadline": "Cmdr {version} is out",
   "@updates.unwritable.standardHeadline": {
-    "description": "Bold first line of a warning toast that stays until dismissed. A newer Cmdr is out, but the person's account can't update the app on this Mac (typically a work Mac where the company's IT team installs software, and the person isn't an administrator). \"Cmdr\" is the product name, never translated.",
+    "description": "Bold first line of a warning toast that stays until dismissed. A newer Cmdr is out, but the person's account can't update the app on this computer (typically a work computer where the company's IT team installs software, and the person isn't an administrator). \"Cmdr\" is the product name, never translated.",
     "placeholders": {
       "version": "the newer version that is out (for example 0.54.0)"
     },
@@ -197,7 +197,7 @@
   },
   "updates.status.heldByPolicy": "{platform, select, macos {Cmdr {available} is out, but your organization keeps this Mac on {ceiling} or earlier.} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
   "@updates.status.heldByPolicy": {
-    "description": "Status line after an update check that found a newer release which the person's organization (their employer's IT team, through a device-management profile) doesn't allow yet, because it limits Cmdr to a maximum version. Not an error. Version numbers are substituted, not translated.",
+    "description": "Status line after an update check that found a newer release which the person's organization (their employer's IT team, through a device-management profile) doesn't allow yet, because it limits Cmdr to a maximum version. Not an error. Version numbers are substituted, not translated. The screenshot shows the macOS wording.",
     "placeholders": {
       "available": "the newer version that is out (for example 0.53.0)",
       "ceiling": "the highest version the organization allows, as the IT team wrote it (for example 0.52 or 0.52.3)"

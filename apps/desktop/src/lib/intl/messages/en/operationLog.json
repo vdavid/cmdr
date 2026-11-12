@@ -247,7 +247,7 @@
   },
   "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {From {from} to the Trash}}",
   "@operationLog.route.fromToTrash": {
-    "description": "Line under the Operation log’s detail header for a move to the trash: where the items were. from is a folder path, never translated. Use the name macOS gives the Trash in your language.",
+    "description": "Line under the Operation log’s detail header for a move to the trash: where the items were. from is a folder path, never translated. In each branch, name that OS’s trash the way it does: the Trash on macOS and Linux, the Recycle Bin on Windows.",
     "placeholders": {
       "from": {}
     }
@@ -351,7 +351,7 @@
   },
   "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {Moved {countText} item to the trash} other {Moved {countText} items to the trash}}}}",
   "@operationLog.summary.trash": {
-    "description": "One-line summary of a trash operation (moving items to the system trash/recycle bin). count is the number of items; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch.",
+    "description": "One-line summary of a trash operation (moving items to the system trash/recycle bin). count is the number of items; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch. The screenshot shows the macOS wording.",
     "placeholders": {
       "count": {},
       "countText": {}
@@ -498,7 +498,7 @@
   },
   "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {Cmdr quit before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.}}",
   "@operationLog.rollback.interruptedNotice": {
-    "description": "Shown under the Operation log’s detail header for an operation that Cmdr (or the Mac) stopped mid-way, for example in a crash, so it never finished. Two facts: Cmdr’s record of it may be incomplete, and a rollback can only undo what was recorded. Calm and factual; it isn’t the person’s fault. Avoid the words error, failed, and crash."
+    "description": "Shown under the Operation log’s detail header for an operation that Cmdr (or the computer) stopped mid-way, for example in a crash, so it never finished. Two facts: Cmdr’s record of it may be incomplete, and a rollback can only undo what was recorded. Calm and factual; it isn’t the person’s fault. Avoid the words error, failed, and crash. The windows branch says Cmdr \"closed\", the word Windows uses when an app stops; macOS and Linux say \"quit\"."
   },
   "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} item is back the way it was.} other {{countText} items are back the way they were.}}",
   "@operationLog.rollback.partialRolledBack": {

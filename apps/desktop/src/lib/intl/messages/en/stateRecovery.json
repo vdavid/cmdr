@@ -29,7 +29,7 @@
   },
   "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {Cmdr couldn’t read which folders your panes had open, so they start at your home folder}}",
   "@stateRecovery.appStatus.title": {
-    "description": "Headline of a notice shown once at launch: the file remembering each pane's folders, tabs, and layout was damaged, so both panes open at the home folder with the default layout. \"Cmdr\" is the product name; a \"pane\" is one of the two side-by-side file lists. Sentence case, no full stop. Avoid the words \"error\" and \"failed\". Pop-up notice (toast) in the corner of Cmdr's main window."
+    "description": "Headline of a notice shown once at launch: the file remembering each pane's folders, tabs, and layout was damaged, so both panes open at the home folder (the Windows branch says “user folder”, Windows’ name for it) with the default layout. \"Cmdr\" is the product name; a \"pane\" is one of the two side-by-side file lists. Sentence case, no full stop. Avoid the words \"error\" and \"failed\". Pop-up notice (toast) in the corner of Cmdr's main window."
   },
   "stateRecovery.operationLog.title": "Cmdr couldn’t read your operation log, so the log starts fresh",
   "@stateRecovery.operationLog.title": {
@@ -101,7 +101,7 @@
   },
   "stateRecovery.webdavCertificates.title": "Cmdr couldn’t read all the server certificates you trusted, so it may ask about some of them again",
   "@stateRecovery.webdavCertificates.title": {
-    "description": "Headline of a notice shown once: Cmdr remembers which WebDAV servers’ HTTPS certificates the person chose to trust although macOS didn’t (usually a home NAS that made its own certificate), and that file couldn’t be read, either the whole file or only some entries in it. So for some or all of those servers, Cmdr will show the trust question again. \"Cmdr\" is the product name. Sentence case, no full stop. Avoid the words \"error\" and \"failed\". Pop-up notice (toast) in the corner of Cmdr's main window."
+    "description": "Headline of a notice shown once: Cmdr remembers which WebDAV servers’ HTTPS certificates the person chose to trust although the system didn’t (usually a home NAS that made its own certificate), and that file couldn’t be read, either the whole file or only some entries in it. So for some or all of those servers, Cmdr will show the trust question again. \"Cmdr\" is the product name. Sentence case, no full stop. Avoid the words \"error\" and \"failed\". Pop-up notice (toast) in the corner of Cmdr's main window."
   },
   "stateRecovery.localAi.title": "Cmdr couldn’t read its local AI setup, so it may offer to set it up again",
   "@stateRecovery.localAi.title": {
@@ -124,7 +124,7 @@
   },
   "stateRecovery.showInFinder": "{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}",
   "@stateRecovery.showInFinder": {
-    "description": "Button on any of the notices above that opens a Finder window with the set-aside copy of the damaged file highlighted. VERB phrase (imperative). ❗ \"Finder\" is Apple's app name and stays verbatim as \"Finder\" in every language. Pop-up notice (toast) in the corner of Cmdr's main window."
+    "description": "Button on any of the notices above that opens the file manager with the set-aside copy of the damaged file highlighted. VERB phrase (imperative). ❗ In the macOS branch, \"Finder\" is Apple's app name and stays verbatim as \"Finder\" in every language; the Windows branch names File Explorer (use Microsoft's name for it in your language), and the Linux branch says \"file manager\". Pop-up notice (toast) in the corner of Cmdr's main window."
   },
   "stateRecovery.dismiss": "Dismiss",
   "@stateRecovery.dismiss": {

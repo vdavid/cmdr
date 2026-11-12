@@ -1,7 +1,7 @@
 {
   "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Quit Cmdr}}",
   "@commands.appQuit.label": {
-    "description": "Command name for quitting the app. Appears in the macOS app menu and the keyboard-shortcuts list. \"Cmdr\" is the brand name, do not translate it.",
+    "description": "Command name for quitting the app. Appears in the macOS app menu and the keyboard-shortcuts list. The Windows branch says Exit, Windows' name for the action; the other branch is Quit on macOS and Linux. \"Cmdr\" is the brand name, do not translate it. The screenshot shows the macOS wording.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.appHide.label": "Hide Cmdr",
@@ -185,7 +185,7 @@
   },
   "commands.navGoToPath.label": "Go to folder…",
   "@commands.navGoToPath.label": {
-    "description": "Command name that opens a dialog to jump to a typed path. Matches Finder's Go > Go to Folder… on purpose; use the wording macOS Finder uses in this language. The trailing ellipsis (…) signals it opens a dialog; keep it.",
+    "description": "Command name that opens a dialog to jump to a typed path. Matches Finder's Go > Go to Folder… on purpose; word it exactly like the menu item menu.go.goToPath, in your language's standard phrasing for that item. The trailing ellipsis (…) signals it opens a dialog; keep it.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.navGoToPath.description": "Jumps the focused pane to a typed, pasted, or recent path.",
@@ -372,7 +372,7 @@
   },
   "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Undo move to trash}}",
   "@commands.editUndoTrash.label": {
-    "description": "Command name that puts back the files the user most recently moved to the trash in Cmdr, the same thing the Undo button on the \"Moved 3 files to trash\" notification does. Appears in the command palette, the keyboard shortcuts settings, and the Edit menu. \"Move to trash\" is the action's name, as in macOS's own \"Move to Trash\".",
+    "description": "Command name that puts back the files the user most recently moved to the trash in Cmdr, the same thing the Undo button on the \"Moved 3 files to trash\" notification does. Appears in the command palette, the keyboard shortcuts settings, and the Edit menu. In the macOS and Linux branch, \"Move to trash\" is the action's name, as in macOS's own \"Move to Trash\"; the Windows branch says Delete, the action's name in File Explorer. The screenshot shows the macOS wording.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Undo move to trash of “{name}”}}",
@@ -554,7 +554,7 @@
   },
   "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Go to home folder}}",
   "@commands.navGoHome.label": {
-    "description": "Command name that opens the home folder in the active pane. Appears in the command palette, the Go menu, and on the button that gets users out of an error screen. \"Home folder\" means the per-user folder the operating system gives each account (~), not a website home page. Distinct from \"Go to first file\", which only moves the cursor within the current folder.",
+    "description": "Command name that opens the home folder in the active pane. Appears in the command palette, the Go menu, and on the button that gets users out of an error screen. \"Home folder\" means the per-user folder the operating system gives each account (~), not a website home page; the Windows branch calls it the user folder, the name Windows gives it. Distinct from \"Go to first file\", which only moves the cursor within the current folder. The screenshot shows the macOS wording.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.errorPaneToggleTechnicalDetails.label": "Show technical details",
@@ -977,7 +977,7 @@
   },
   "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Go to trash}}",
   "@commands.fileGoToTrash.label": {
-    "description": "Command name that opens the trash folder in the file pane, so the user can look at what they have thrown away. Appears in the command palette. \"Trash\" is the macOS Trash, so use whatever your platform calls the recoverable wastebasket. VERB phrase.",
+    "description": "Command name that opens the trash folder in the file pane, so the user can look at what they have thrown away. Appears in the command palette. Each branch names its own OS's trash: the Trash on macOS and Linux, the Recycle Bin on Windows (in the name Windows gives it in your language). VERB phrase. The screenshot shows the macOS wording.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Opens the trash of the drive you’re browsing}}",
@@ -991,7 +991,7 @@
   },
   "commands.fileShowInFileManager.label": "{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}",
   "@commands.fileShowInFileManager.label": {
-    "description": "Command name (macOS) that reveals the selected file in Finder, the macOS file manager. \"Finder\" is the macOS app name; do not translate it. Appears in the command palette. Paired with commands.fileShowInFinder.other.label for other platforms.",
+    "description": "Command name that reveals the selected file in the OS's file manager. Each branch names its own: \"Finder\" is the macOS app name and stays verbatim in the macOS branch; the Windows branch names File Explorer, in the name Microsoft gives it in your language; the Linux branch says file manager, generically. Appears in the command palette. The screenshot shows the macOS wording.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.fileOpenTerminalHere.label": "Open terminal here",
@@ -1022,12 +1022,12 @@
   },
   "commands.fileGetInfo.label": "{platform, select, macos {Get info} windows {Properties} other {File properties}}",
   "@commands.fileGetInfo.label": {
-    "description": "Command name (macOS) that opens the file's info panel. \"Get info\" matches the macOS Finder term; reuse the localized macOS wording for that menu item. Appears in the command palette. Paired with commands.fileGetInfo.other.label for other platforms.",
+    "description": "Command name (macOS) that opens the file's info panel. The macOS branch \"Get info\" matches the macOS Finder term; reuse the localized macOS wording for that menu item. The Windows branch names Windows' own Properties dialog, and the Linux branch the file's properties, generically. Appears in the command palette. The screenshot shows the macOS wording.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.fileQuickLook.label": "{platform, select, macos {Quick look} other {Preview}}",
   "@commands.fileQuickLook.label": {
-    "description": "Command name (macOS) that previews the selected file with Quick Look. \"Quick Look\" is the macOS feature name; reuse the localized macOS wording. Appears in the command palette. Paired with commands.fileQuickLook.other.label for other platforms.",
+    "description": "Command name (macOS) that previews the selected file with Quick Look. In the macOS branch, \"Quick Look\" is the macOS feature name; reuse the localized macOS wording. The other branch (Windows and Linux) is a generic preview. Appears in the command palette. The screenshot shows the macOS wording.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.fileContextMenu.label": "Open context menu",
@@ -1086,12 +1086,12 @@
   },
   "commands.resticForgetPassword.label": "Forget backup password",
   "@commands.resticForgetPassword.label": {
-    "description": "Command name that removes a restic backup’s saved password from the macOS Keychain and locks the backup again, so opening it asks for the password. Acts on the backup the user is browsing, or whose snapshots folder is under the cursor. \"backup\" = a restic backup repository, a folder of encrypted backups. VERB phrase, imperative. Appears in the command palette.",
+    "description": "Command name that removes a restic backup’s saved password from the system’s password store (the Keychain on macOS, Credential Manager on Windows, the keyring on Linux) and locks the backup again, so opening it asks for the password. Acts on the backup the user is browsing, or whose snapshots folder is under the cursor. \"backup\" = a restic backup repository, a folder of encrypted backups. VERB phrase, imperative. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.resticForgetPassword.description": "{platform, select, macos {Removes the saved password of the restic backup you’re in from Keychain, and locks the backup again} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
   "@commands.resticForgetPassword.description": {
-    "description": "Longer help text for the \"Forget backup password\" command, shown as a secondary line in the command palette. Use the name macOS uses for its password store in your language (Apple calls it \"Keychain\"). Keep \"restic\" as is: it’s the name of the backup tool."
+    "description": "Longer help text for the \"Forget backup password\" command, shown as a secondary line in the command palette. Each branch names its own OS's password store: the Keychain in the macOS branch (in the name Apple gives it in your language), Credential Manager in the Windows branch (Microsoft's name for it), and the keyring in the Linux branch. Keep \"restic\" as is: it’s the name of the backup tool."
   },
   "commands.fileCopyShareLink.label": "Copy share link (seven days)",
   "@commands.fileCopyShareLink.label": {
@@ -1318,7 +1318,7 @@
   },
   "commands.serversForgetSecret.label": "Forget saved password",
   "@commands.serversForgetSecret.label": {
-    "description": "Command name that removes the server’s remembered password from the Keychain, keeping the server itself saved. VERB phrase, imperative. Appears in the command palette.",
+    "description": "Command name that removes the server’s remembered password from the system’s password store (the Keychain on macOS, Credential Manager on Windows, the keyring on Linux), keeping the server itself saved. VERB phrase, imperative. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.serversEdit.label": "Edit server…",

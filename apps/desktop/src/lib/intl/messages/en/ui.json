@@ -190,7 +190,7 @@
   },
   "ui.confirmDialog.cancel": "Cancel",
   "@ui.confirmDialog.cancel": {
-    "description": "The cancelling button of a native confirmation alert that carries a checkbox (Forget server's \"Also forget the saved password\"). Use the word your language's macOS uses on a Cancel button."
+    "description": "The cancelling button of a native confirmation alert that carries a checkbox (Forget server's \"Also forget the saved password\"). Use your language's standard word on a Cancel button, the one the OS's own dialogs show."
   },
   "ui.startedElsewhere.agent": "Ask Cmdr started this.",
   "@ui.startedElsewhere.agent": {
@@ -226,7 +226,7 @@
   },
   "ui.toolAsk.openFile.bodyUnknownApp": "This opens {name}, and Cmdr can’t tell which app that uses.",
   "@ui.toolAsk.openFile.bodyUnknownApp": {
-    "description": "The same body when macOS names no default app for the file.",
+    "description": "The same body when the system names no default app for the file.",
     "placeholders": {
       "name": "the file's name"
     }
@@ -264,7 +264,7 @@
   },
   "ui.toolAsk.quit.title": "{platform, select, windows {Exit Cmdr?} other {Quit Cmdr?}}",
   "@ui.toolAsk.quit.title": {
-    "description": "Title of a dialog asking whether an AI assistant may quit the app."
+    "description": "Title of a dialog asking whether an AI assistant may quit the app. The Windows branch says \"Exit\", Windows' name for the action."
   },
   "ui.toolAsk.quit.body": "This closes Cmdr. If anything’s still running, you get to decide about that first.",
   "@ui.toolAsk.quit.body": {

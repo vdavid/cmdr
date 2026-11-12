@@ -11,7 +11,7 @@
   },
   "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this.} other {Cmdr quit unexpectedly last time. Here’s a crash report with details that can help fix this.}}",
   "@crashReporter.dialog.body.ended": {
-    "description": "Main explanation in the crash-report dialog, shown on the next launch when Cmdr went down with the crash it is reporting. Reassuring and matter-of-fact. \"Cmdr\" is the product name (do not translate).",
+    "description": "Main explanation in the crash-report dialog, shown on the next launch when Cmdr went down with the crash it is reporting. Reassuring and matter-of-fact. \"Cmdr\" is the product name (do not translate). The screenshot shows the macOS wording.",
     "screenshot": "crash-report-panic.png"
   },
   "crashReporter.dialog.body.keptRunning": "Cmdr ran into a problem in the background last time and kept running. Here’s a report with details that can help fix this.",
@@ -26,7 +26,7 @@
   },
   "crashReporter.dialog.privacyNote": "{platform, select, macos {It includes the app version, macOS version, and which part of the code ran into the problem. No file names or personal data.} windows {It includes the app version, Windows version, and which part of the code ran into the problem. No file names or personal data.} other {It includes the app version, Linux distribution and version, and which part of the code ran into the problem. No file names or personal data.}}",
   "@crashReporter.dialog.privacyNote": {
-    "description": "Privacy reassurance in the crash-report dialog, listing what the report contains and confirming it has no personal data. One string for all three cases of the dialog, so it says the code \"ran into the problem\" rather than \"crashed\": that stays true whether Cmdr went down or carried on. Don't reintroduce a crash word. \"macOS\" is Apple's OS name (do not translate).",
+    "description": "Privacy reassurance in the crash-report dialog, listing what the report contains and confirming it has no personal data. One string for all three cases of the dialog, so it says the code \"ran into the problem\" rather than \"crashed\": that stays true whether Cmdr went down or carried on. Don't reintroduce a crash word. \"macOS\" and \"Windows\" are OS names (do not translate); the Linux branch names the distribution and its version. The screenshot shows the macOS wording.",
     "screenshot": "crash-report-panic.png"
   },
   "crashReporter.dialog.reportIdLabel": "Report ID:",

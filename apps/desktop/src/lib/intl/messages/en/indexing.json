@@ -51,7 +51,7 @@
   },
   "indexing.phase.home": "{platform, select, windows {Indexing the rest of your user folder} other {Indexing the rest of your home folder}}",
   "@indexing.phase.home": {
-    "description": "Header at the top of the drive-indexing checklist during the SECOND phase of a drive’s first index, once the folders from the first phase are done and Cmdr moves on to everything else in the user’s home folder. “The rest of” is load-bearing: it tells the reader the earlier folders are already finished. Short phrase, sentence case, no trailing period.",
+    "description": "Header at the top of the drive-indexing checklist during the SECOND phase of a drive’s first index, once the folders from the first phase are done and Cmdr moves on to everything else in the user’s home folder (the Windows branch says “user folder”, Windows’ name for the same folder under C:\\Users: use the word your language’s Windows uses for it). “The rest of” is load-bearing: it tells the reader the earlier folders are already finished. Short phrase, sentence case, no trailing period. The screenshot shows the macOS wording.",
     "screenshot": "indexing-checklist.png",
     "screenshotNote": "The drive-indexing checklist, pictured here. Your string is the header it shows during one phase of a drive’s first index."
   },
@@ -259,7 +259,7 @@
   },
   "indexing.rescan.journalGap": "The system’s file change log doesn’t go back far enough. Running a fresh scan to rebuild the index.",
   "@indexing.rescan.journalGap": {
-    "description": "Info toast explaining why Cmdr is rescanning: the macOS file-change journal no longer covers the gap since last run. Calm and explanatory."
+    "description": "Info toast explaining why Cmdr is rescanning: the OS's file-change journal no longer covers the gap since last run. Calm and explanatory."
   },
   "indexing.rescan.replayOverflow": "A lot of file changes happened since last run. Running a fresh scan instead of replaying them one by one.",
   "@indexing.rescan.replayOverflow": {

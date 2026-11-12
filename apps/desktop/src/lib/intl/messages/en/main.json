@@ -1,15 +1,15 @@
 {
   "main.instanceLock.alertTitle": "Cmdr is already running",
   "@main.instanceLock.alertTitle": {
-    "description": "⚠️ RAW string, NOT ICU: apostrophes stay single here and any {token} is replaced literally. Title of the native macOS alert shown when someone opens a second Cmdr while one is already running, which the app refuses because two copies writing the same settings, logs, and indexes would damage them. It is drawn by the operating system BEFORE any Cmdr window exists, so it is the very first thing that user sees. \"Cmdr\" is the product name and must stay verbatim. It states a fact rather than blaming anyone; the reason and the way out are in main.instanceLock.alertBody."
+    "description": "⚠️ RAW string, NOT ICU: apostrophes stay single here and any {token} is replaced literally. Title of the native system alert shown when someone opens a second Cmdr while one is already running, which the app refuses because two copies writing the same settings, logs, and indexes would damage them. It is drawn by the operating system BEFORE any Cmdr window exists, so it is the very first thing that user sees. \"Cmdr\" is the product name and must stay verbatim. It states a fact rather than blaming anyone; the reason and the way out are in main.instanceLock.alertBody."
   },
   "main.instanceLock.alertBody": "Only one Cmdr can run at a time, so your settings, logs, and indexes stay intact. This copy will close now. Switch to the Cmdr that’s already open.",
   "@main.instanceLock.alertBody": {
-    "description": "⚠️ RAW string, NOT ICU: apostrophes stay single here and any {token} is replaced literally. Body of the native macOS alert under main.instanceLock.alertTitle, drawn before any Cmdr window exists. Three short sentences: why only one Cmdr may run (so the user's settings, logs, and indexes stay intact; \"indexes\" are Cmdr's search and folder-size databases), that this second copy closes itself now, and the way out: switch to the Cmdr window that is already open. Reassuring, not alarming: nothing is wrong and no data was lost. \"Cmdr\" is the product name and must stay verbatim. The alert has a single OK button, so this text is the whole explanation."
+    "description": "⚠️ RAW string, NOT ICU: apostrophes stay single here and any {token} is replaced literally. Body of the native system alert under main.instanceLock.alertTitle, drawn before any Cmdr window exists. Three short sentences: why only one Cmdr may run (so the user's settings, logs, and indexes stay intact; \"indexes\" are Cmdr's search and folder-size databases), that this second copy closes itself now, and the way out: switch to the Cmdr window that is already open. Reassuring, not alarming: nothing is wrong and no data was lost. \"Cmdr\" is the product name and must stay verbatim. The alert has a single OK button, so this text is the whole explanation."
   },
   "main.upgradeNudge": "{platform, select, macos {We’ve added new onboarding options. Open Cmdr > Onboarding… to review them.} other {We’ve added new onboarding options. Open the command palette and run Onboarding… to review them.}}",
   "@main.upgradeNudge": {
-    "description": "Info toast (macOS) shown once to existing users after an update, pointing them at the new onboarding options. \"Cmdr > Onboarding…\" is a menu path the user follows; \"Cmdr\" is the brand name and \"Onboarding…\" is the menu item label (keep its trailing ellipsis). Paired with main.upgradeNudge.other for non-macOS."
+    "description": "Info toast shown once to existing users after an update, pointing them at the new onboarding options. The macOS branch names a menu path, \"Cmdr > Onboarding…\": \"Cmdr\" is the brand name and \"Onboarding…\" is the menu item label (keep its trailing ellipsis). The other branch (Windows and Linux, which have no app menu) sends them to the command palette, where the same command is called \"Onboarding…\"."
   },
   "main.dockPinNudge.title": "Keep Cmdr in your Dock?",
   "@main.dockPinNudge.title": {
@@ -163,7 +163,7 @@
   },
   "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, one {Quit while an operation is running?} other {Quit while {countText} operations are running?}}}}",
   "@main.quit.title": {
-    "description": "Title of the dialog that appears when the user quits Cmdr (⌘Q, the menu, or closing the main window) while copies, moves, deletes, or trash operations are still going. It asks whether to go ahead. \"Operation\" is the category word covering all of them, the same one the operation queue window uses; keep the two consistent in your language. Near-instant things like renaming never reach this dialog.",
+    "description": "Title of the dialog that appears when the user quits Cmdr (⌘Q, the menu, or closing the main window) while copies, moves, deletes, or trash operations are still going. It asks whether to go ahead. The Windows branch says “Exit”, the name of the action; macOS and Linux say “Quit”. \"Operation\" is the category word covering all of them, the same one the operation queue window uses; keep the two consistent in your language. Near-instant things like renaming never reach this dialog. The screenshot shows the macOS wording.",
     "placeholders": {
       "count": "how many operations are still running (drives the singular/plural form)",
       "countText": "the same count, already formatted with the locale’s digit grouping (for example 1,024)"
@@ -177,7 +177,7 @@
   },
   "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, one {Quitting in {secondsText} second, so a restart or logout never waits on Cmdr.} other {Quitting in {secondsText} seconds, so a restart or logout never waits on Cmdr.}}}}",
   "@main.quit.countdown": {
-    "description": "Live line under the body of the quit-while-running dialog, counting down out loud. It explains WHY Cmdr quits on its own instead of waiting forever: an app that holds up a system restart or logout is worse than one that stops. The number ticks down once a second and reaches zero, at which point Cmdr quits. \"Restart\" and \"logout\" are the operating system’s, not Cmdr’s.",
+    "description": "Live line under the body of the quit-while-running dialog, counting down out loud. It explains WHY Cmdr quits on its own instead of waiting forever: an app that holds up a system restart or logout is worse than one that stops. The number ticks down once a second and reaches zero, at which point Cmdr quits. The Windows branch says Cmdr “closes”, the word Windows uses when an app is the subject; macOS and Linux say “quits”. \"Restart\" and \"logout\" (Windows: \"sign-out\") are the operating system’s, not Cmdr’s. The screenshot shows the macOS wording.",
     "placeholders": {
       "seconds": "how many seconds are left (drives the singular/plural form)",
       "secondsText": "the same number of seconds, already formatted for display"
@@ -186,7 +186,7 @@
   },
   "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Time until Cmdr quits on its own}}",
   "@main.quit.countdownAria": {
-    "description": "Screen-reader label for the countdown region of the quit-while-running dialog. The visible text spells out the seconds; this names what the number measures. Keep it short.",
+    "description": "Screen-reader label for the countdown region of the quit-while-running dialog. The visible text spells out the seconds; this names what the number measures. The Windows branch says “closes”, macOS and Linux “quits”, as in main.quit.countdown. Keep it short. The screenshot shows the macOS wording.",
     "screenshot": "quit-confirmation-one-copy.png"
   },
   "main.quit.keepWorking": "Keep working",
@@ -196,7 +196,7 @@
   },
   "main.quit.quitNow": "{platform, select, windows {Exit now} other {Quit now}}",
   "@main.quit.quitNow": {
-    "description": "Primary button on the quit-while-running dialog, confirming the quit. \"Now\" is doing real work here: the app quits either way when the countdown ends, and this button skips the wait. It is styled as the destructive choice.",
+    "description": "Primary button on the quit-while-running dialog, confirming the quit. \"Now\" is doing real work here: the app quits either way when the countdown ends, and this button skips the wait. It is styled as the destructive choice. The Windows branch says “Exit”, the name of the action; macOS and Linux say “Quit”. The screenshot shows the macOS wording.",
     "screenshot": "quit-confirmation-one-copy.png"
   },
   "main.quit.operationsHeading": "Still running",
@@ -206,11 +206,11 @@
   },
   "main.oldWebkit.title": "{platform, select, macos {Cmdr needs a newer Safari} other {Cmdr needs a newer WebKitGTK}}",
   "@main.oldWebkit.title": {
-    "description": "Heading of the full-screen notice Cmdr shows instead of its interface when the Mac's WebKit is too old to run the app at all. It replaces the whole window, so this is the first and only thing the person sees. \"Cmdr\" is the product name and stays untranslated; \"Safari\" is Apple's browser and keeps whatever name Apple uses in the target language. Cmdr's interface is drawn by the system WebKit, which tracks the Safari version, so \"a newer Safari\" is literally what is needed. Keep it short: it is a heading."
+    "description": "Heading of the full-screen notice Cmdr shows instead of its interface when the system's WebKit is too old to run the app at all. It replaces the whole window, so this is the first and only thing the person sees. \"Cmdr\" is the product name and stays untranslated. In the macOS branch, \"Safari\" is Apple's browser and keeps whatever name Apple uses in the target language: Cmdr's interface is drawn by the system WebKit, which tracks the Safari version, so \"a newer Safari\" is literally what is needed. The other branch (Linux, the only other OS this screen can appear on) names WebKitGTK, a project name kept in English. Keep it short: it is a heading."
   },
   "main.oldWebkit.body": "{platform, select, macos {Cmdr’s interface needs Safari 15.4 or newer, and this Mac has an older one. Open Software Update and install everything pending. That should sort it out.} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
   "@main.oldWebkit.body": {
-    "description": "Body of the notice under main.oldWebkit.title. It says what is missing and what to do about it. \"Software Update\" is the macOS system settings pane: use the name Apple uses for it in the target language, since the person has to find it. \"15.4\" is a Safari version number and stays as digits. \"Cmdr\" is the product name and stays untranslated. Tone is calm and practical, not an apology: this is fixable by installing pending macOS updates, and on most old Macs it is."
+    "description": "Body of the notice under main.oldWebkit.title. It says what is missing and what to do about it. In the macOS branch, \"Software Update\" is the macOS system settings pane: use the name Apple uses for it in the target language, since the person has to find it, and \"15.4\" is a Safari version number that stays as digits. The other branch (Linux) names WebKitGTK, a project name kept in English, and sends the person to their system's own updates. \"Cmdr\" is the product name and stays untranslated. Tone is calm and practical, not an apology: this is fixable by installing pending system updates, and on most old systems it is."
   },
   "main.oldMacos.title": "Cmdr on macOS {version}",
   "@main.oldMacos.title": {

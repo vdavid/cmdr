@@ -1,7 +1,7 @@
 {
   "goToPath.dialog.title": "Go to folder",
   "@goToPath.dialog.title": {
-    "description": "Title of the \"Go to folder\" dialog (opened with Command-G), which jumps a pane to a typed filesystem location. Matches Finder's Go to Folder dialog on purpose; use the wording Finder uses in this language. Where Finder words its Go menu item and its dialog title differently, use the menu item’s wording, so the dialog and Cmdr’s own menu item match.",
+    "description": "Title of the \"Go to folder\" dialog (opened with Command-G), which jumps a pane to a typed filesystem location. Matches Finder's Go to Folder dialog on purpose; use your language's standard wording for it, the one the OS's own file manager shows. Where the file manager words its menu item and its dialog title differently, use the menu item’s wording, so the dialog and Cmdr’s own menu item match.",
     "screenshot": "go-to-path.png"
   },
   "goToPath.dialog.inputAriaLabel": "Path to go to",
@@ -33,7 +33,7 @@
   },
   "goToPath.dialog.confirm": "Go",
   "@goToPath.dialog.confirm": {
-    "description": "Primary button in the \"Go to folder\" dialog that navigates to the typed path. A short button label in your language's usual button form, matching the button Finder itself shows in its own Go to Folder dialog (Finder's English one says \"Go\"). The dialog's title already says \"Go to folder\", so the button doesn't need to repeat the whole phrase.",
+    "description": "Primary button in the \"Go to folder\" dialog that navigates to the typed path. A short button label in your language's usual button form, matching the button a file manager's own Go to Folder dialog shows in your language (Finder's English one says \"Go\"). The dialog's title already says \"Go to folder\", so the button doesn't need to repeat the whole phrase.",
     "screenshot": "go-to-path.png"
   },
   "goToPath.dialog.ancestorHint": "This path doesn’t exist. The closest place to go is {dir}.",

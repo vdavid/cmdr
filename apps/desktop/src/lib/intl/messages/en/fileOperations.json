@@ -23,7 +23,7 @@
   },
   "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {This volume doesn’t support trash.}}",
   "@fileOperations.delete.noTrashWarningStrong": {
-    "description": "Bold lead of a warning banner in the delete dialog, shown on volumes (FAT32, SMB, etc.) that have no trash. Followed by fileOperations.delete.noTrashWarningRest in the same sentence.",
+    "description": "Bold lead of a warning banner in the delete dialog, shown on volumes (FAT32, SMB, etc.) that have no trash. Followed by fileOperations.delete.noTrashWarningRest in the same sentence. The screenshot shows the macOS wording.",
     "screenshot": "delete-confirmation-no-trash-support.png"
   },
   "fileOperations.delete.noTrashWarningRest": "Files will be permanently deleted.",
@@ -33,25 +33,25 @@
   },
   "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.} other {Some of your selection is online-only. Moving those to the Trash would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.}}",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "description": "Warning banner in the delete dialog, shown when the person pressed the \"move to trash\" key over a selection where SOME items are online-only and the rest aren't. Online-only means the file lives in a cloud-storage folder (Dropbox, Google Drive, OneDrive, …) and the provider has evicted its contents to its own servers, leaving a placeholder on the Mac; \"online-only\" is Apple's Finder term, so prefer your platform's own existing wording for it. Four facts, all of which matter: (1) the Trash lives on the Mac, so putting an online-only file there would download it from the cloud service first; (2) because one gesture can't be half a trash and half a delete, Cmdr offers to delete the WHOLE selection permanently; (3) there will be NO copies in the macOS Trash afterwards, though the cloud service keeps its own deleted-files history (Dropbox keeps 30 days) to restore from — don't soften this into \"it goes to the trash anyway\", it does not; (4) two ways out, both real in Cmdr: make the files available offline (the provider's own download action, in Cmdr's right-click menu — don't name that menu item, its label comes from the provider), or deselect the online-only files (Cmdr badges them in the file pane). <strong> bolds \"download them first\" and \"delete\". “Delete” in quotes is the confirm button's own label: use the same word you translated fileOperations.delete.confirmDelete to. \"Click\" is deliberate even though Enter works too. \"Trash\" is the macOS Trash the Finder uses; the lowercase \"their own trash\" is the cloud service's, not Apple's.",
+    "description": "Warning banner in the delete dialog, shown when the person pressed the \"move to trash\" key over a selection where SOME items are online-only and the rest aren't. Online-only means the file lives in a cloud-storage folder (Dropbox, Google Drive, OneDrive, …) and the provider has evicted its contents to its own servers, leaving a placeholder on this computer; in each branch, use that OS’s own existing wording for \"online-only\". Four facts, all of which matter: (1) the trash lives on this computer, so putting an online-only file there would download it from the cloud service first; (2) because one gesture can't be half a trash and half a delete, Cmdr offers to delete the WHOLE selection permanently; (3) there will be NO copies in the trash afterwards, though the cloud service keeps its own deleted-files history (Dropbox keeps 30 days) to restore from — don't soften this into \"it goes to the trash anyway\", it does not; (4) two ways out, both real in Cmdr: make the files available offline (the provider's own download action, in Cmdr's right-click menu — don't name that menu item, its label comes from the provider), or deselect the online-only files (Cmdr badges them in the file pane). <strong> bolds \"download them first\" and \"delete\". “Delete” (Windows: “Delete permanently”) in quotes is the confirm button's own label: use the same words you translated that branch of fileOperations.delete.confirmDelete to. \"Click\" is deliberate even though Enter works too (the windows branch says \"Select\", Windows’ own word). In each branch, name that OS’s trash the way it does: the Trash on macOS and Linux, the Recycle Bin on Windows. The cloud service’s own deleted-files history (\"their own trash\", \"deleted files\" on Windows) is the provider’s, not the OS’s. The screenshot shows the macOS wording.",
     "screenshot": "delete-confirm.png",
     "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
   "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and make these files available offline first.} other {Everything you selected is online-only. Moving it to the Trash would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and make these files available offline first.}}",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "description": "The same warning banner as fileOperations.delete.cloudOnlineOnlyMixedWarning (read its description for every term and fact), for the case where EVERY selected item is online-only. Keep the two in one voice; they differ in two places only: this one says the whole selection is online-only, and it offers just one way out, since \"deselect the online-only files\" would leave nothing selected.",
+    "description": "The same warning banner as fileOperations.delete.cloudOnlineOnlyMixedWarning (read its description for every term and fact), for the case where EVERY selected item is online-only. Keep the two in one voice; they differ in two places only: this one says the whole selection is online-only, and it offers just one way out, since \"deselect the online-only files\" would leave nothing selected. The screenshot shows the macOS wording.",
     "screenshot": "delete-confirm.png",
     "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
   "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Your selection turned out to hold online-only content, so the button below now offers Delete permanently. Read the note above, then press it again if that’s OK.} other {Your selection turned out to hold online-only content, so the button below now offers Delete. Read the note above, then press it again if that’s OK.}}",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
-    "description": "Line that appears just above the confirm button in the delete dialog, after a press that Cmdr deliberately didn't act on. The person pressed \"Move to trash\", and while Cmdr was still counting a selected folder it found online-only content inside, which turns the whole thing into a permanent delete. Rather than run the one operation nothing can undo off a press that meant something else, the dialog stays open, changes its warning and its button, and says this. Tone: matter-of-fact, no apology, no blame. \"Delete\" names the confirm button's own label: use the same word you translated fileOperations.delete.confirmDelete to. \"The note above\" is the warning banner at the top of the same dialog. \"Online-only\" is Apple's Finder term for a file whose contents the cloud service has evicted to its servers.",
+    "description": "Line that appears just above the confirm button in the delete dialog, after a press that Cmdr deliberately didn't act on. The person pressed the move-to-trash button (\"Move to trash\", or \"Delete\" on Windows), and while Cmdr was still counting a selected folder it found online-only content inside, which turns the whole thing into a permanent delete. Rather than run the one operation nothing can undo off a press that meant something else, the dialog stays open, changes its warning and its button, and says this. Tone: matter-of-fact, no apology, no blame. \"Delete\" (Windows: \"Delete permanently\") names the confirm button's own label: use the same words you translated that branch of fileOperations.delete.confirmDelete to. \"The note above\" is the warning banner at the top of the same dialog. \"Online-only\" is a file whose contents the cloud service has evicted to its servers: in each branch, use that OS’s own word for it. The screenshot shows the macOS wording.",
     "screenshot": "delete-confirm.png",
     "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
   "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {There’s no Recycle Bin inside an archive.} other {There’s no trash inside an archive.}}",
   "@fileOperations.delete.archiveWarningStrong": {
-    "description": "Bold lead of a warning banner in the delete dialog, shown when deleting items from inside a zip archive (Cmdr browses zips like folders). Followed by fileOperations.delete.archiveWarningRest in the same sentence. \"archive\" = a zip file.",
+    "description": "Bold lead of a warning banner in the delete dialog, shown when deleting items from inside a zip archive (Cmdr browses zips like folders). Followed by fileOperations.delete.archiveWarningRest in the same sentence. \"archive\" = a zip file. The screenshot shows the macOS wording.",
     "screenshot": "delete-confirm.png",
     "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
@@ -67,7 +67,7 @@
   },
   "fileOperations.trash.goToTrashAction": "{platform, select, windows {Go to Recycle Bin} other {Go to trash}}",
   "@fileOperations.trash.goToTrashAction": {
-    "description": "Button on the toast that appears right after files are moved to the trash. Pressing it opens the trash folder in the file pane, with the cursor on the item that was just moved there. \"Trash\" is the macOS Trash, so use whatever your platform calls the recoverable wastebasket. Short control label; the toast is narrow, so keep it to one or two words."
+    "description": "Button on the toast that appears right after files are moved to the trash. Pressing it opens the trash folder in the file pane, with the cursor on the item that was just moved there. In each branch, name that OS’s trash the way it does: the Trash on macOS and Linux, the Recycle Bin on Windows (with no article, like File Explorer’s \"Empty Recycle Bin\"). Short control label; the toast is narrow, so keep it to one or two words."
   },
   "fileOperations.trash.undoing": "Putting them back…",
   "@fileOperations.trash.undoing": {
@@ -75,7 +75,7 @@
   },
   "fileOperations.trash.undone": "Put back {countText} {count, plural, one {file} other {files}}.",
   "@fileOperations.trash.undone": {
-    "description": "Result toast when an undo put every trashed item back where it came from. This is Finder's \"Put Back\": the items come back OUT of the Trash to their old folder, a different action from putting a file's old NAME back (askCmdr.renameUndo.undone), so use the verb your language uses for restoring from the Trash. Sentence case.",
+    "description": "Result toast when an undo put every trashed item back where it came from. This is restoring from the trash (Finder’s \"Put Back\", the Recycle Bin’s \"Restore\"): the items come back OUT of the trash to their old folder, a different action from putting a file's old NAME back (askCmdr.renameUndo.undone), so use the verb your language uses for restoring from the trash. Sentence case.",
     "placeholders": {
       "countText": "how many items came back, formatted for display (e.g. 1,234)",
       "count": "the same number (drives the singular/plural form of the noun)"
@@ -83,7 +83,7 @@
   },
   "fileOperations.trash.undonePartial": "{platform, select, windows {Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Recycle Bin.} other {Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the trash.}}",
   "@fileOperations.trash.undonePartial": {
-    "description": "Result toast when an undo could only put SOME items back. Cmdr never overwrites while undoing, so an item whose old spot is taken again, or that changed since, is deliberately left where it is. Say this as a considered choice, not as something going wrong. Sentence case. “Put back” is restoring from the Trash; use the same verb as fileOperations.trash.undone.",
+    "description": "Result toast when an undo could only put SOME items back. Cmdr never overwrites while undoing, so an item whose old spot is taken again, or that changed since, is deliberately left where it is. Say this as a considered choice, not as something going wrong. Sentence case. “Put back” is restoring from the trash; use the same verb as fileOperations.trash.undone. In each branch, name that OS’s trash the way it does: the Trash on macOS and Linux, the Recycle Bin on Windows.",
     "placeholders": {
       "restoredText": "how many items came back, formatted for display (e.g. 1,234)",
       "restored": "the same number (drives the singular/plural form of the noun)",
@@ -116,7 +116,7 @@
   },
   "fileOperations.delete.trashSwitch": "{platform, select, windows {Move to the Recycle Bin} other {Move to trash}}",
   "@fileOperations.delete.trashSwitch": {
-    "description": "Switch in the delete dialog, on by default. On moves items to the system trash (recoverable); off deletes them for good. Control label.",
+    "description": "Switch in the delete dialog, on by default. On moves items to the system trash (recoverable); off deletes them for good. Control label. The windows branch names the Recycle Bin, Windows’ own name for it, since a switch reading \"Delete\" would mean deleting on or off. The screenshot shows the macOS wording.",
     "screenshot": "delete-confirm.png"
   },
   "fileOperations.delete.overflowMore": "… and {countText} more {count, plural, one {item} other {items}}",
@@ -147,12 +147,12 @@
   },
   "fileOperations.delete.confirmDelete": "{platform, select, windows {Delete permanently} other {Delete}}",
   "@fileOperations.delete.confirmDelete": {
-    "description": "Primary (destructive) confirm button in the delete dialog when the 'Move to trash' switch is off. Short control label.",
+    "description": "Primary (destructive) confirm button in the delete dialog when the 'Move to trash' switch is off. Short control label. The windows branch says \"Delete permanently\", since the trash button reads \"Delete\" there. The screenshot shows the macOS wording.",
     "screenshot": "trash-confirm.png"
   },
   "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Delete} other {Move to trash}}",
   "@fileOperations.delete.confirmMoveToTrash": {
-    "description": "Primary confirm button in the delete dialog when the trash option is selected. Control label.",
+    "description": "Primary confirm button in the delete dialog when the trash option is selected. Control label. The windows branch says \"Delete\", the action’s name in File Explorer; the dialog’s sentences name the Recycle Bin. The screenshot shows the macOS wording.",
     "screenshot": "delete-confirm.png"
   },
   "fileOperations.delete.titleCursorFile": "Delete 1 file under cursor",
@@ -639,14 +639,14 @@
   },
   "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to the Recycle Bin}}} other {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to trash}}}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
-    "description": "Transfer/delete dialog title verb alone, used when there is nothing to count. 'Move to trash' is the trash variant. Matches the operation chosen.",
+    "description": "Transfer/delete dialog title verb alone, used when there is nothing to count. 'Move to trash' is the trash variant (on Windows, \"Move to the Recycle Bin\", Windows’ own name for it). Matches the operation chosen.",
     "placeholders": {
       "verb": "the operation: copy, move, delete, or trash"
     }
   },
   "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Copy {phrase}} move {Move {phrase}} compress {Compress {phrase}} delete {Delete {phrase}} other {Move {phrase} to the Recycle Bin}}} other {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to trash}} {phrase}}}",
   "@fileOperations.transferDialog.titleWithCounts": {
-    "description": "Transfer/delete dialog title combining the operation verb with a counts phrase, e.g. 'Copy 2 files and 3 folders'. {phrase} is already built.",
+    "description": "Transfer/delete dialog title combining the operation verb with a counts phrase, e.g. 'Copy 2 files and 3 folders'. {phrase} is already built. The screenshot shows the macOS wording.",
     "placeholders": {
       "verb": "the operation: copy, move, delete, or trash",
       "phrase": "the pre-rendered counts phrase, e.g. '2 files and 3 folders'"
@@ -750,7 +750,7 @@
   },
   "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Counting items to move to the Recycle Bin…} other {Counting items to trash…}}",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "description": "Progress-dialog title while counting items before moving them to trash. Keep the trailing ellipsis.",
+    "description": "Progress-dialog title while counting items before moving them to trash. Keep the trailing ellipsis. The screenshot shows the macOS wording.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
@@ -838,7 +838,7 @@
   },
   "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to the Recycle Bin canceled} other {Canceled}}} other {{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to trash canceled} other {Canceled}}}}",
   "@fileOperations.transferProgress.canceledAlertTitle": {
-    "description": "Title of the small alert that appears over the progress dialog once an operation the user canceled has fully stopped. It has one OK button, which closes both.",
+    "description": "Title of the small alert that appears over the progress dialog once an operation the user canceled has fully stopped. It has one OK button, which closes both. The screenshot shows the macOS wording.",
     "placeholders": {
       "type": "the operation that was canceled: copy, move, compress, delete, or trash"
     },
@@ -847,7 +847,7 @@
   },
   "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to the Recycle Bin. The files it moved so far stay in the Recycle Bin, and the rest are where they were.} other {You’ve canceled this operation.}}} other {{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to trash. The files it moved so far stay in the trash, and the rest are where they were.} other {You’ve canceled this operation.}}}}",
   "@fileOperations.transferProgress.canceledAlertMessage": {
-    "description": "Body of the alert that appears over the progress dialog once an operation the user canceled has fully stopped. Says what happened to the files already handled, so the user knows nothing was undone.",
+    "description": "Body of the alert that appears over the progress dialog once an operation the user canceled has fully stopped. Says what happened to the files already handled, so the user knows nothing was undone. The screenshot shows the macOS wording.",
     "placeholders": {
       "type": "the operation that was canceled: copy, move, compress, delete, or trash"
     },
@@ -1007,7 +1007,7 @@
   },
   "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Recycle Bin} one {Moved {countText} file to the Recycle Bin} other {Moved {countText} files to the Recycle Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}} other {{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the trash} one {Moved {countText} file to the trash} other {Moved {countText} files to the trash}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}}}",
   "@fileOperations.transferProgress.titleDone": {
-    "description": "Title of the progress dialog once the operation has finished, shown only when the person turned on 'Keep the progress window open when a file operation finishes' in Settings. Past tense: it says what the operation did. The count leaves out files that were skipped (they get their own line below). 'Nothing copied' and its siblings are for when every file was skipped. 'the trash' is the macOS Trash (use the OS's localized name).",
+    "description": "Title of the progress dialog once the operation has finished, shown only when the person turned on 'Keep the progress window open when a file operation finishes' in Settings. Past tense: it says what the operation did. The count leaves out files that were skipped (they get their own line below). 'Nothing copied' and its siblings are for when every file was skipped. In each branch, name that OS’s trash the way it does: the Trash on macOS and Linux, the Recycle Bin on Windows. The screenshot shows the macOS wording.",
     "placeholders": {
       "type": "the operation: copy, move, delete, trash (move to trash), or compress",
       "count": "how many files it copied, moved, deleted, or compressed (drives the singular/plural form)",
@@ -1081,7 +1081,7 @@
   },
   "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Recycle Bin}}…} other {{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to trash}}…}}",
   "@fileOperations.transferProgress.titleActive": {
-    "description": "Progress-dialog title during the operation itself, in the -ing form of the verb. 'Moving to trash' is the trash variant. Keep the trailing ellipsis.",
+    "description": "Progress-dialog title during the operation itself, in the -ing form of the verb. 'Moving to trash' is the trash variant. Keep the trailing ellipsis. The screenshot shows the macOS wording.",
     "placeholders": {
       "gerund": "the operation: copy, move, delete, or trash"
     },
@@ -1118,7 +1118,7 @@
   },
   "fileOperations.transferProgress.stageCompressingStep": "Step {step, number} of {total, number}: Compressing",
   "@fileOperations.transferProgress.stageCompressingStep": {
-    "description": "Phase label while Cmdr compresses the selected files into a zip on this Mac as the FIRST of two steps, because the destination (a network share or phone) can't receive the zip as it's being made; step two uploads it. A determinate source-byte progress bar is visible. Same wording as stageCompressing, plus the step. It appears in the progress dialog, operation queue row, and background operation chip. {step} is the current step number and {total} is how many steps there are; today always 1 or 2 of 2. Keep the \"Step {step} of {total}:\" framing so the two steps read as one sequence.",
+    "description": "Phase label while Cmdr compresses the selected files into a zip on this computer as the FIRST of two steps, because the destination (a network share or phone) can't receive the zip as it's being made; step two uploads it. A determinate source-byte progress bar is visible. Same wording as stageCompressing, plus the step. It appears in the progress dialog, operation queue row, and background operation chip. {step} is the current step number and {total} is how many steps there are; today always 1 or 2 of 2. Keep the \"Step {step} of {total}:\" framing so the two steps read as one sequence.",
     "placeholders": {
       "step": "the current step number (1)",
       "total": "the number of steps (2)"
@@ -1128,7 +1128,7 @@
   },
   "fileOperations.transferProgress.stageFinishingCompressionStep": "Step {step, number} of {total, number}: Finishing compression…",
   "@fileOperations.transferProgress.stageFinishingCompressionStep": {
-    "description": "Indeterminate phase label at the end of step one of two: every source byte is compressed and Cmdr closes and checks the zip it made on this Mac before uploading it in step two. Shown beside a spinner, never a percentage or ETA. Same wording as stageFinishingCompression, plus the step; keep the trailing ellipsis. It appears in the progress dialog, operation queue row, and background operation chip. {step} is the current step number and {total} is how many steps there are; today always 1 or 2 of 2. Keep the \"Step {step} of {total}:\" framing so the two steps read as one sequence.",
+    "description": "Indeterminate phase label at the end of step one of two: every source byte is compressed and Cmdr closes and checks the zip it made on this computer before uploading it in step two. Shown beside a spinner, never a percentage or ETA. Same wording as stageFinishingCompression, plus the step; keep the trailing ellipsis. It appears in the progress dialog, operation queue row, and background operation chip. {step} is the current step number and {total} is how many steps there are; today always 1 or 2 of 2. Keep the \"Step {step} of {total}:\" framing so the two steps read as one sequence.",
     "placeholders": {
       "step": "the current step number (1)",
       "total": "the number of steps (2)"
@@ -1138,7 +1138,7 @@
   },
   "fileOperations.transferProgress.stageTransferringArchiveStep": "Step {step, number} of {total, number}: Transferring archive",
   "@fileOperations.transferProgress.stageTransferringArchiveStep": {
-    "description": "Phase label for step two of two: Cmdr uploads the zip it made on this Mac in step one to a network share or phone. A determinate progress bar over the zip's size is visible. Same wording as stageTransferringArchive, plus the step. It appears in the progress dialog, operation queue row, and background operation chip. {step} is the current step number and {total} is how many steps there are; today always 1 or 2 of 2. Keep the \"Step {step} of {total}:\" framing so the two steps read as one sequence.",
+    "description": "Phase label for step two of two: Cmdr uploads the zip it made on this computer in step one to a network share or phone. A determinate progress bar over the zip's size is visible. Same wording as stageTransferringArchive, plus the step. It appears in the progress dialog, operation queue row, and background operation chip. {step} is the current step number and {total} is how many steps there are; today always 1 or 2 of 2. Keep the \"Step {step} of {total}:\" framing so the two steps read as one sequence.",
     "placeholders": {
       "step": "the current step number (2)",
       "total": "the number of steps (2)"
@@ -1313,7 +1313,7 @@
   },
   "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to the Recycle Bin was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to trash was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}}}",
   "@fileOperations.sourcesGone.message": {
-    "description": "Body of the fileOperations.sourcesGone.title prompt. Says how many of the files and folders the queued operation was started with are no longer there, out of how many in total. \"Queued\" means the user started it while another operation was running, so it waited its turn; keep the same idea as the operation queue window. Each operation kind is a whole sentence so every language can phrase it naturally. \"Items\" covers both files and folders. A list of the missing names follows below it.",
+    "description": "Body of the fileOperations.sourcesGone.title prompt. Says how many of the files and folders the queued operation was started with are no longer there, out of how many in total. \"Queued\" means the user started it while another operation was running, so it waited its turn; keep the same idea as the operation queue window. Each operation kind is a whole sentence so every language can phrase it naturally. \"Items\" covers both files and folders. A list of the missing names follows below it. The screenshot shows the macOS wording.",
     "placeholders": {
       "type": "the kind of operation that was waiting: copy, move, delete (permanent), trash (move to trash), or something else",
       "goneText": "how many items are gone, ready to drop into the sentence (for example 4)",
@@ -1333,7 +1333,7 @@
   },
   "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest permanently} trash {Delete the rest} other {Do the rest}}} other {{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest} trash {Move the rest to trash} other {Do the rest}}}}",
   "@fileOperations.sourcesGone.continue": {
-    "description": "Main button of the fileOperations.sourcesGone.title prompt. Goes ahead with the operation using only the files and folders that are still there; the missing ones are skipped. Its neighbour is a plain Cancel, which ends the operation without doing anything. Short button label; a verb phrase.",
+    "description": "Main button of the fileOperations.sourcesGone.title prompt. Goes ahead with the operation using only the files and folders that are still there; the missing ones are skipped. Its neighbour is a plain Cancel, which ends the operation without doing anything. Short button label; a verb phrase. The screenshot shows the macOS wording.",
     "placeholders": {
       "type": "the kind of operation that was waiting: copy, move, delete (permanent), trash (move to trash), or something else"
     },
@@ -1357,7 +1357,7 @@
   },
   "fileOperations.alreadyGone.one": "“{name}” was already gone. Another app probably moved or deleted it.",
   "@fileOperations.alreadyGone.one": {
-    "description": "Informational toast after the user deleted or moved to trash one file or folder that turned out to be gone already: another app (a sync client, a download manager, the Finder) moved or deleted it before Cmdr got to it, while the file list still showed it. Cmdr treats that as done, and the list refreshes. Nothing went wrong and nothing was lost, so it must not read as a failure or a warning. Disappears on its own after a few seconds. Never use the words “error” or “failed”.",
+    "description": "Informational toast after the user deleted or moved to trash one file or folder that turned out to be gone already: another app (a sync client, a download manager, the system’s file manager) moved or deleted it before Cmdr got to it, while the file list still showed it. Cmdr treats that as done, and the list refreshes. Nothing went wrong and nothing was lost, so it must not read as a failure or a warning. Disappears on its own after a few seconds. Never use the words “error” or “failed”.",
     "placeholders": {
       "name": "the file or folder’s name, for example song.m4a"
     }
@@ -2031,7 +2031,7 @@
   },
   "fileOperations.resticPassword.retryTitle": "That didn’t work",
   "@fileOperations.resticPassword.retryTitle": {
-    "description": "Title of the backup-password dialog when the password just entered (or the one saved in the Keychain) didn’t open the backup, so the user is asked again. Friendly and light, not scolding. Avoid the words \"error\" and \"failed\". Short heading.",
+    "description": "Title of the backup-password dialog when the password just entered (or the one saved in the system’s password store) didn’t open the backup, so the user is asked again. Friendly and light, not scolding. Avoid the words \"error\" and \"failed\". Short heading.",
     "screenshot": "archive-password-repo-wrong-attempt.png"
   },
   "fileOperations.resticPassword.message": "<repo>{name}</repo> is a restic backup. Enter its password to browse its snapshots.",
@@ -2057,7 +2057,7 @@
   },
   "fileOperations.resticPassword.remember": "{platform, select, macos {Remember in Keychain} windows {Remember password} other {Remember in keyring}}",
   "@fileOperations.resticPassword.remember": {
-    "description": "Checkbox label in the backup-password dialog, checked by default. When checked, Cmdr saves the password in the macOS Keychain so it doesn’t ask again next time. Use the name macOS uses for its password store in your language (Apple calls it \"Keychain\" / \"Keychain Access\").",
+    "description": "Checkbox label in the backup-password dialog, checked by default. When checked, Cmdr saves the password in the system’s password store so it doesn’t ask again next time. Each branch uses that OS’s own words in your language: the Keychain on macOS, \"Remember password\" on Windows (its checkboxes don’t name Credential Manager), the keyring on Linux. The screenshot shows the macOS wording.",
     "screenshot": "archive-password-repo-first-attempt.png"
   },
   "fileOperations.resticPassword.checking": "Checking the password…",

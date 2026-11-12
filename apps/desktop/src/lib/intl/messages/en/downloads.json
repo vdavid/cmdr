@@ -35,7 +35,7 @@
 
   "downloads.toast.globalHint": "In <em>any</em> app (global shortcut), press <chip>{key}</chip>",
   "@downloads.toast.globalHint": {
-    "description": "Tip in the download toast teaching the system-wide (global) shortcut that jumps to the latest download from any app. <em> emphasizes 'any'; <chip> wraps the shortcut key as a styled key cap (don't translate the key glyphs). 'global shortcut' is the macOS term for a system-wide hotkey.",
+    "description": "Tip in the download toast teaching the system-wide (global) shortcut that jumps to the latest download from any app. <em> emphasizes 'any'; <chip> wraps the shortcut key as a styled key cap (don't translate the key glyphs). 'global shortcut' is the usual term for a system-wide hotkey.",
     "placeholders": {
       "key": "the shortcut keys to show in the chip (e.g. ⌃⌥⌘J) (always key glyphs, never a word, so it reads as a key name in the sentence)"
     },
@@ -100,7 +100,7 @@
 
   "downloads.notification.title": "Downloaded {fileName}",
   "@downloads.notification.title": {
-    "description": "Title of the macOS system notification when Cmdr detects a new download, e.g. 'Downloaded report.pdf'.",
+    "description": "Title of the system notification when Cmdr detects a new download, e.g. 'Downloaded report.pdf'.",
     "placeholders": {
       "fileName": "the downloaded file's name (e.g. report.pdf)"
     }
@@ -108,7 +108,7 @@
 
   "downloads.notification.titleMultiple": "Downloaded {count, plural, one {{countText} file} other {{countText} files}}",
   "@downloads.notification.titleMultiple": {
-    "description": "Title of the macOS system notification when several downloads land at once and Cmdr sends one notification for the batch, e.g. 'Downloaded 3 files'. Only used for two or more; a single download uses downloads.notification.title with the file's name.",
+    "description": "Title of the system notification when several downloads land at once and Cmdr sends one notification for the batch, e.g. 'Downloaded 3 files'. Only used for two or more; a single download uses downloads.notification.title with the file's name.",
     "placeholders": {
       "count": "how many downloads landed together (drives the singular/plural form)",
       "countText": "the same number, already formatted for the locale (e.g. 3)"
@@ -117,7 +117,7 @@
 
   "downloads.notification.mostRecent": "Most recent: {fileName}",
   "@downloads.notification.mostRecent": {
-    "description": "Body of the macOS system notification when several downloads land at once, naming the newest of them under the 'Downloaded 3 files' title.",
+    "description": "Body of the system notification when several downloads land at once, naming the newest of them under the 'Downloaded 3 files' title.",
     "placeholders": {
       "fileName": "the newest downloaded file's name (e.g. report.pdf)"
     }
@@ -200,12 +200,12 @@
 
   "downloads.shortcutRow.registered": "Registered",
   "@downloads.shortcutRow.registered": {
-    "description": "Status shown briefly after the system-wide shortcut was successfully claimed from macOS. A short confirmation."
+    "description": "Status shown briefly after the system-wide shortcut was successfully claimed from the system. A short confirmation."
   },
 
   "downloads.shortcutRow.notRegistered": "Not registered",
   "@downloads.shortcutRow.notRegistered": {
-    "description": "Status shown when the system-wide shortcut was saved but macOS did not actually claim the hotkey, or when registering it went wrong inside Cmdr. A short status phrase."
+    "description": "Status shown when the system-wide shortcut was saved but the system did not actually claim the hotkey, or when registering it went wrong inside Cmdr. A short status phrase."
   },
 
   "downloads.shortcutRow.invalidCombo": "Couldn’t register: invalid combo",
@@ -215,7 +215,7 @@
 
   "downloads.shortcutRow.unavailable": "Another app may be using that combo",
   "@downloads.shortcutRow.unavailable": {
-    "description": "Warning status shown when macOS refuses the system-wide shortcut the user just recorded, most likely because another app already holds that key combination. The previous shortcut stays active and still shows on the row. 'combo' = key combination. Hedged ('may') on purpose: macOS doesn't say which app, or whether that's the reason. Avoid the words 'error' and 'failed'."
+    "description": "Warning status shown when the system refuses the system-wide shortcut the user just recorded, most likely because another app already holds that key combination. The previous shortcut stays active and still shows on the row. 'combo' = key combination. Hedged ('may') on purpose: the system doesn't say which app, or whether that's the reason. Avoid the words 'error' and 'failed'."
   },
 
   "downloads.shortcutRow.addModifier": "{platform, select, macos {Add a modifier (⌘, ⌃, ⌥, or ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",

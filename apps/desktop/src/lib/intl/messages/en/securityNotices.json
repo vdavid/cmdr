@@ -48,7 +48,7 @@
   },
   "securityNotices.smbDirectSignatureRefused.title": "Cmdr didn’t connect directly to {name}",
   "@securityNotices.smbDirectSignatureRefused.title": {
-    "description": "Headline of a warning notice: Cmdr tried to set up its own fast, direct connection (fileExplorer.navigation.connectDirectly) to a network share (SMB) that macOS had already connected, and the server's sign-in reply didn't carry its signature, so Cmdr didn't trust it and didn't connect. The share keeps working through the slower system connection. \"Cmdr\" is the product name. Sentence case, no full stop. Pop-up notice (toast) in the corner of Cmdr's main window.",
+    "description": "Headline of a warning notice: Cmdr tried to set up its own fast, direct connection (fileExplorer.navigation.connectDirectly) to a network share (SMB) that the system had already connected, and the server's sign-in reply didn't carry its signature, so Cmdr didn't trust it and didn't connect. The share keeps working through the slower system connection. \"Cmdr\" is the product name. Sentence case, no full stop. Pop-up notice (toast) in the corner of Cmdr's main window.",
     "placeholders": {
       "name": "the share's name as Cmdr's volume list shows it, like “photos”"
     }
@@ -59,7 +59,7 @@
   },
   "securityNotices.smbDirectSignatureRefused.body": "The sign-in reply didn’t carry the server’s signature, so Cmdr didn’t trust it. A flaky network device can cause this, and so can someone tampering with traffic between you and the server. The share stays on the system connection. If this keeps happening, check your network.",
   "@securityNotices.smbDirectSignatureRefused.body": {
-    "description": "Body of that notice: what Cmdr refused, the innocent cause (a misbehaving router or network device) beside the serious one (someone tampering with traffic), that the share still works through the slower macOS connection (“system connection”, the same term as fileExplorer.pane.directConnectionUnexpectedToast), and what to do. There's no Reconnect button on this notice, only Dismiss. Calm, not alarming. “Signature” is the server's proof that a reply really comes from it, the same word as in securityNotices.smbSignatureRefused.body. Plain text. Pop-up notice (toast) in the corner of Cmdr's main window."
+    "description": "Body of that notice: what Cmdr refused, the innocent cause (a misbehaving router or network device) beside the serious one (someone tampering with traffic), that the share still works through the slower system connection (“system connection”, the same term as fileExplorer.pane.directConnectionUnexpectedToast), and what to do. There's no Reconnect button on this notice, only Dismiss. Calm, not alarming. “Signature” is the server's proof that a reply really comes from it, the same word as in securityNotices.smbSignatureRefused.body. Plain text. Pop-up notice (toast) in the corner of Cmdr's main window."
   },
   "securityNotices.updateNotGenuine.title": "Cmdr didn’t install this update: it isn’t a genuine Cmdr release",
   "@securityNotices.updateNotGenuine.title": {

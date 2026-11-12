@@ -1,7 +1,7 @@
 {
   "transfer.trash": "{platform, select, windows {Moved {countText} {count, plural, one {file} other {files}} to the Recycle Bin} other {Moved {countText} {count, plural, one {file} other {files}} to trash}}",
   "@transfer.trash": {
-    "description": "Brief status toast shown right after the user sends files to the macOS Trash (the F8 shortcut). Confirms the move succeeded. \"trash\" here means the macOS Trash, so translate it to whatever your platform calls the recoverable wastebasket.",
+    "description": "Brief status toast shown right after the user sends files to the trash (the F8 shortcut). Confirms the move succeeded. \"trash\" in the other branch (macOS and Linux) is the system trash: use your language's settled term for it. The Windows branch names the Recycle Bin, Windows' own name for it. The screenshot shows the macOS wording.",
     "placeholders": {
       "countText": "number of files moved to trash, ready to drop into the sentence (e.g. 1,234)",
       "count": "the same number of files (decides whether the noun is singular or plural)"
@@ -195,7 +195,7 @@
   },
   "transfer.metadataClass.creationDates": "creation dates",
   "@transfer.metadataClass.creationDates": {
-    "description": "One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“…, so they stayed behind: {classes}.”), so write it as a lowercase plural noun phrase that reads in a list after a colon. This one: the date a file or folder was first created (Finder’s “Date Created”).",
+    "description": "One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“…, so they stayed behind: {classes}.”), so write it as a lowercase plural noun phrase that reads in a list after a colon. This one: the date a file or folder was first created (the file manager’s “Date Created” column).",
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
@@ -213,7 +213,7 @@
   },
   "transfer.metadataClass.extendedAttributes": "{platform, select, macos {Finder tags} windows {Finder tags} other {Extended attributes}}",
   "@transfer.metadataClass.extendedAttributes": {
-    "description": "One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“…, so they stayed behind: {classes}.”), so write it as a lowercase plural noun phrase that reads in a list after a colon. This one: Finder’s colored tags, and with them comments, custom icons, and similar extra information apps attach to a file. “Finder” is the macOS app’s name: don’t translate it.",
+    "description": "One kind of file information a copy couldn’t carry to its destination, as it appears inside the list in transfer.metadataLeftBehind (“…, so they stayed behind: {classes}.”), so write it as a lowercase plural noun phrase that reads in a list after a colon. This one: Finder’s colored tags, and with them comments, custom icons, and similar extra information apps attach to a file. “Finder” is the macOS app’s name: don’t translate it. The Linux branch names extended attributes, the generic file system term for that information. The screenshot shows the macOS wording.",
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
