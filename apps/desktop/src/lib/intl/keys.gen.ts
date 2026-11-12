@@ -5299,6 +5299,7 @@ export type MessageKey =
   | 'settings.window.title'
   | 'shortcuts.conflict.bareKey'
   | 'shortcuts.conflict.fixedKey'
+  | 'shortcuts.conflict.opensMenuBarMenu'
   | 'shortcuts.conflict.reservedByMacOs'
   | 'shortcuts.conflict.shiftLetter'
   | 'shortcuts.conflict.systemShortcut'

@@ -207,6 +207,17 @@
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} opens the {menu} menu in Cmdr’s menu bar, so it won’t reach this command unless a dialog is open.",
+  "@shortcuts.conflict.opensMenuBarMenu": {
+    "description": "Soft warning on Linux when the user assigns Alt plus a letter that a menu bar title underlines (pressing it opens that menu) to a command that runs outside dialogs, so the menu takes the key first. They can still keep it with a \"Use anyway\" button, since the key works while a dialog is open. Shown on Linux only. Same register as the other \"usually taken\" warnings. \"Cmdr\" is the product name; do not translate it.",
+    "placeholders": {
+      "combo": "the key combination the user pressed, as Linux key names (e.g. Alt+F)",
+      "menu": "the menu bar title the key opens, already in your language (e.g. File)"
+    },
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
+
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
     "description": "Name of the macOS Spotlight search feature, shown inside a shortcut-conflict warning. Reuse the localized macOS name for Spotlight.",

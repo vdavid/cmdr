@@ -222,6 +222,7 @@ export {
   showChildWindow,
   updateMenuAccelerator,
   setUiLanguage,
+  getMenuBarTitleMnemonics,
 } from './app-state'
 export type { PaneFileEntry, PaneState, McpTabInfo, RequestedSort, SelectedRows, ServicesSelection } from './app-state'
 

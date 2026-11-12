@@ -8,7 +8,7 @@
 //!   command map (glob-re-exported here), `MENU_BAR` and its vocabulary (reachable here as
 //!   `menu_bar` / `menu_spec`), the enabled-state fold, and what a click asks for.
 //!   `menu_bar_builder.rs` builds it for the running platform (`build_menu`), `mnemonics.rs`
-//!   allocates the Linux underline letters, and `mnemonic_mask.rs` turns them off while a modal
+//!   allocates the Linux underline letters, and `mnemonic_mask/` turns them off while a modal
 //!   surface owns a window's keyboard.
 //! - Every context menu is data too, in `cmdr_menu::context` (rows, ids, labels, enabled state,
 //!   accelerator sources, and what a pick asks for). `context_rows.rs` builds any of them
@@ -141,7 +141,7 @@ pub use file_context_menu::build_context_menu;
 pub(crate) use item_states::{apply_menu_item_states, set_menu_context};
 #[cfg(target_os = "macos")]
 pub(crate) use item_states::{note_viewer_search_focus, swap_to_main_menu, swap_to_viewer_menu};
-pub use menu_bar_builder::build_menu;
+pub use menu_bar_builder::{BarTitleMnemonic, bar_title_mnemonics, build_menu};
 pub use menu_handlers::handle_menu_event;
 pub(crate) use menu_handlers::native_edit_selector_for_viewer_page;
 #[cfg(target_os = "macos")]

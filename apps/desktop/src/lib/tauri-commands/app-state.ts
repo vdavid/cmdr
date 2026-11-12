@@ -3,6 +3,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import {
   commands,
+  type BarTitleMnemonic,
   type ChildWindowRect,
   type PaneFileEntry,
   type PaneState,
@@ -107,6 +108,15 @@ export async function setCommandsRefusedOverDialog(commandIds: string[]): Promis
  */
 export async function setMenuMnemonicsSuspended(suspended: boolean): Promise<void> {
   await commands.setMenuMnemonicsSuspended(suspended)
+}
+
+/**
+ * The menu bar titles' mnemonics in the active language (`{ letter: 'f', menu: 'File' }`): on Linux
+ * GTK opens that menu on `Alt+<letter>` before the page sees the key, unless a modal surface holds
+ * the window's mnemonics off. Empty where the bar has none (macOS).
+ */
+export async function getMenuBarTitleMnemonics(): Promise<BarTitleMnemonic[]> {
+  return commands.getMenuBarTitleMnemonics()
 }
 
 /**

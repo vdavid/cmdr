@@ -551,6 +551,7 @@ macro_rules! ipc_command_manifest {
                     crate::main_window_visibility::set_main_window_visible,
                     crate::commands::menu_state::update_sort_menu,
                     crate::commands::menu_state::set_menu_mnemonics_suspended,
+                    crate::commands::menu_state::get_menu_bar_title_mnemonics,
                 ]
                 dispatch_only: [
                     // Generic over `R: tauri::Runtime`, which `collect_functions!` can't take.

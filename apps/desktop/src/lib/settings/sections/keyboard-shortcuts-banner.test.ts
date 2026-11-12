@@ -5,8 +5,10 @@ import { BLOCKED_BY_DIALOGS } from '#lib/commands/while-dialog-open.js'
 import { sameOnAll } from '#lib/commands/platform-shortcuts.js'
 import {
   classifyConflict,
+  classifyMenuBarMnemonic,
   classifySystemShortcut,
   fixedKeyMessage,
+  menuBarMnemonicMessage,
   reservedByMacOsMessage,
   systemShortcutMessage,
 } from './keyboard-shortcuts-banner'
@@ -173,5 +175,51 @@ describe('systemShortcutMessage', () => {
     expect(systemShortcutMessage('Ctrl+Alt+D', { os: 'linux', desktops: ['Ubuntu'] })).toBe(
       'On Ubuntu, the desktop usually takes Ctrl+Alt+D for itself, so it may never reach Cmdr. You can free it up in your desktop’s keyboard settings.',
     )
+  })
+})
+
+/**
+ * On Linux GTK opens a bar menu on its title's `Alt+<letter>` before the page sees the key, except
+ * while a modal surface holds the window's mnemonics off, so a binding there is dead outside one.
+ */
+describe('classifyMenuBarMnemonic', () => {
+  const ENGLISH = [
+    { letter: 'f', menu: 'File' },
+    { letter: 'g', menu: 'Go' },
+  ]
+
+  it('warns on Linux for a title letter on a command outside a modal surface', () => {
+    onTestFinished(withPlatform('linux'))
+    expect(classifyMenuBarMnemonic('Alt+F', 'Main window/File list', ENGLISH)).toEqual({
+      kind: 'menuBarMnemonic',
+      menu: 'File',
+    })
+    expect(classifyMenuBarMnemonic('Alt+G', 'Operation queue window', ENGLISH)).toEqual({
+      kind: 'menuBarMnemonic',
+      menu: 'Go',
+    })
+  })
+
+  it('stays quiet for a modal surface, another letter, or another chord', () => {
+    onTestFinished(withPlatform('linux'))
+    expect(classifyMenuBarMnemonic('Alt+F', 'Main window/Search dialog', ENGLISH)).toBeNull()
+    expect(classifyMenuBarMnemonic('Alt+F', 'Command palette', ENGLISH)).toBeNull()
+    expect(classifyMenuBarMnemonic('Alt+Q', 'Main window/File list', ENGLISH)).toBeNull()
+    expect(classifyMenuBarMnemonic('Ctrl+Alt+F', 'Main window/File list', ENGLISH)).toBeNull()
+    expect(classifyMenuBarMnemonic('Alt+Shift+F', 'Main window/File list', ENGLISH)).toBeNull()
+  })
+
+  it('stays quiet off Linux, whose bars take no Alt+<letter> before the page', () => {
+    for (const platform of ['macos', 'windows'] as const) {
+      const undo = withPlatform(platform)
+      expect(classifyMenuBarMnemonic('Alt+F', 'Main window/File list', ENGLISH)).toBeNull()
+      undo()
+    }
+  })
+
+  it('names the key and the menu', () => {
+    const message = menuBarMnemonicMessage('Alt+F', 'File')
+    expect(message).toContain('Alt+F')
+    expect(message).toContain('File')
   })
 })

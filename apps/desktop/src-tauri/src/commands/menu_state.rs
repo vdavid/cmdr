@@ -325,11 +325,20 @@ pub fn set_commands_refused_over_dialog<R: Runtime>(app: AppHandle<R>, command_i
 
 /// Turns the CALLING window's menu-bar mnemonics off (`true`) or back to `Alt+<letter>` (`false`),
 /// so a modal surface gets every `Alt+<letter>` keydown that GTK would otherwise take for a bar
-/// title (`menu/mnemonic_mask.rs`). The main window's writer is `routes/(main)/menu-dialog-gate.svelte.ts`
+/// title (`menu/mnemonic_mask/`). The main window's writer is `routes/(main)/menu-dialog-gate.svelte.ts`
 /// (dialogs, overlays, the palette); Settings' is its shortcut recorder and key filter. A no-op
 /// where the bar has no mnemonics (macOS, Windows).
 #[tauri::command]
 #[specta::specta]
 pub fn set_menu_mnemonics_suspended(window: tauri::Window, suspended: bool) {
     crate::menu::set_window_mnemonics_suspended(&window, suspended);
+}
+
+/// The menu bar titles' mnemonics in the active language (`Alt+F` opens File in English), for
+/// Settings' warning when a user records one for a command outside a modal surface: there GTK
+/// takes the key before the page. Empty where the bar has none (macOS).
+#[tauri::command]
+#[specta::specta]
+pub fn get_menu_bar_title_mnemonics() -> Vec<crate::menu::BarTitleMnemonic> {
+    crate::menu::bar_title_mnemonics(cmdr_menu::spec::Platform::current())
 }

@@ -29,6 +29,11 @@ impl Mnemonics {
         Self::default()
     }
 
+    /// The lowercased letters handed out so far, in the order they were.
+    pub(crate) fn taken(&self) -> &[char] {
+        &self.taken
+    }
+
     /// `label` with a mnemonic marker if this platform uses them, unchanged
     /// otherwise.
     pub(crate) fn assign(&mut self, label: &str) -> String {
@@ -36,6 +41,15 @@ impl Mnemonics {
             return label.to_string();
         }
         self.mark(label)
+    }
+
+    /// [`Self::assign`] for a named platform rather than the host, so a Mac test can pin what the
+    /// Linux bar underlines.
+    pub(crate) fn assign_for(&mut self, label: &str, platform: cmdr_menu::spec::Platform) -> String {
+        match platform {
+            cmdr_menu::spec::Platform::MacOs => label.to_string(),
+            cmdr_menu::spec::Platform::Windows | cmdr_menu::spec::Platform::Linux => self.mark(label),
+        }
     }
 
     /// `label` with `&` inserted before the first letter still free in this

@@ -306,10 +306,13 @@ sections compose).
 - **`keyboard-shortcuts-grouping.ts`**: Pure scope→group logic for `KeyboardShortcutsSection` (one titled group per
   `CommandScope`, fixed order). Tested by the set-equality regression guard
 - **`keyboard-shortcuts-banner.ts`**: Pure conflict-banner classification for `KeyboardShortcutsSection`
-  (`classifyConflict` → native vs fixed vs normal, `classifySystemShortcut` → soft "usually taken by the OS" warning
-  with "Use anyway"; `reservedByMacOsMessage` / `fixedKeyMessage` / `systemShortcutMessage` / `typingConflictMessage`).
-  Native beats fixed beats normal in mixed sets; system checked only when no in-app conflict; a combo typing takes first
-  is refused before any of them (`lib/shortcuts/DETAILS.md` § Combos typing takes first). Unit-tested
+  (`classifyConflict` → native vs fixed vs normal, `classifyMenuBarMnemonic` → Linux's soft "opens the File menu"
+  warning for a bar title's `Alt+<letter>` on a command outside a modal surface, read per language from
+  `getMenuBarTitleMnemonics` as each edit starts, `classifySystemShortcut` → soft "usually taken by the OS" warning with
+  "Use anyway"; `reservedByMacOsMessage` / `fixedKeyMessage` / `menuBarMnemonicMessage` / `systemShortcutMessage` /
+  `typingConflictMessage`). Native beats fixed beats normal in mixed sets; the mnemonic and system warnings are checked
+  only when no in-app conflict, mnemonic first; a combo typing takes first is refused before any of them
+  (`lib/shortcuts/DETAILS.md` § Combos typing takes first). Unit-tested
 - **`system-reserved-keys.ts`**: What each OS takes before Cmdr sees it, one table per platform, keyed by canonical
   combos: macOS features, Windows features, and on Linux every listed desktop (GNOME, KDE Plasma, Xfce, Cinnamon,
   Ubuntu) that binds the combo, since Cmdr can't ask which desktop runs until task 59 (then `systemReservation` narrows

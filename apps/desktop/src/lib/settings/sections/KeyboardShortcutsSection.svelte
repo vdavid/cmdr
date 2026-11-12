@@ -20,6 +20,7 @@
         fixedKeyMessage,
         reservedByMacOsMessage,
         systemShortcutMessage,
+        menuBarMnemonicMessage,
         typingConflictMessage,
     } from './keyboard-shortcuts-banner'
     import { shortcutAnchorId } from '#lib/settings/settings-window.js'
@@ -212,6 +213,20 @@
                      but the user may have freed it — warn and let them decide. -->
                 <span class="warning-text">
                     {systemShortcutMessage(toDisplayShortcut(conflictWarning.shortcut), conflict.reservation)}
+                </span>
+                <div class="warning-actions">
+                    <Button variant="secondary" size="mini" onclick={controller.handleKeepBoth}
+                        >{tString('shortcuts.section.useAnyway')}</Button
+                    >
+                    <Button variant="secondary" size="mini" onclick={controller.cancelEdit}
+                        >{tString('shortcuts.section.cancel')}</Button
+                    >
+                </div>
+            {:else if conflict.kind === 'menuBarMnemonic'}
+                <!-- Linux: a bar title's Alt+<letter> opens that menu outside a dialog, but the key
+                     still works inside one, so warn and let them decide. -->
+                <span class="warning-text">
+                    {menuBarMnemonicMessage(toDisplayShortcut(conflictWarning.shortcut), conflict.menu)}
                 </span>
                 <div class="warning-actions">
                     <Button variant="secondary" size="mini" onclick={controller.handleKeepBoth}

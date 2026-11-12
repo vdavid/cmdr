@@ -4785,12 +4785,18 @@ export const commands = {
   /**
    *  Turns the CALLING window's menu-bar mnemonics off (`true`) or back to `Alt+<letter>` (`false`),
    *  so a modal surface gets every `Alt+<letter>` keydown that GTK would otherwise take for a bar
-   *  title (`menu/mnemonic_mask.rs`). The main window's writer is `routes/(main)/menu-dialog-gate.svelte.ts`
+   *  title (`menu/mnemonic_mask/`). The main window's writer is `routes/(main)/menu-dialog-gate.svelte.ts`
    *  (dialogs, overlays, the palette); Settings' is its shortcut recorder and key filter. A no-op
    *  where the bar has no mnemonics (macOS, Windows).
    */
   setMenuMnemonicsSuspended: (suspended: boolean) =>
     __TAURI_INVOKE<void>('set_menu_mnemonics_suspended', { suspended }),
+  /**
+   *  The menu bar titles' mnemonics in the active language (`Alt+F` opens File in English), for
+   *  Settings' warning when a user records one for a command outside a modal surface: there GTK
+   *  takes the key before the page. Empty where the bar has none (macOS).
+   */
+  getMenuBarTitleMnemonics: () => __TAURI_INVOKE<BarTitleMnemonic[]>('get_menu_bar_title_mnemonics'),
   /**
    *  Enables or disables MTP support at runtime.
    *
@@ -7479,6 +7485,14 @@ export type BackfillProgress = {
   done: number
   // Rows the op holds.
   total: number
+}
+
+// A bar title's mnemonic: GTK opens the `menu` menu on `Alt+<letter>`.
+export type BarTitleMnemonic = {
+  // Lowercased, as GTK matches it.
+  letter: string
+  // The menu's title in the active language, without its marker.
+  menu: string
 }
 
 /**

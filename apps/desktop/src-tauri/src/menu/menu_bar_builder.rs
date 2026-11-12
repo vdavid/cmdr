@@ -48,14 +48,58 @@ pub fn build_menu<R: Runtime>(
         sort_submenu: None,
     };
     let menu = Menu::new(app)?;
-    // The bar's own titles share one mnemonic allocator, and each submenu gets its own.
-    let mut titles = Mnemonics::new();
-    for bar_menu in MENU_BAR.iter().filter(|bar_menu| bar_menu.is_on(platform)) {
-        let title = builder.label(bar_menu.submenu.title, &mut titles);
+    let (titles, _) = bar_titles(platform);
+    for (bar_menu, title) in MENU_BAR.iter().filter(|bar_menu| bar_menu.is_on(platform)).zip(titles) {
         let submenu = builder.submenu(&bar_menu.submenu, &title)?;
         menu.append(&submenu)?;
     }
     Ok(builder.into_menu_items(menu))
+}
+
+/// A bar title's mnemonic: GTK opens the `menu` menu on `Alt+<letter>`.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type)]
+pub struct BarTitleMnemonic {
+    /// Lowercased, as GTK matches it.
+    pub letter: String,
+    /// The menu's title in the active language, without its marker.
+    pub menu: String,
+}
+
+/// The bar's top-level titles on `platform` in the active language, each with its mnemonic marker
+/// where the platform uses them, plus the mnemonics handed out. One allocator for the whole bar
+/// (each submenu gets its own), and the one place both the builder and
+/// [`bar_title_mnemonics`] take the titles from, so the two can't disagree.
+fn bar_titles(platform: Platform) -> (Vec<String>, Vec<BarTitleMnemonic>) {
+    let mut mnemonics = Mnemonics::new();
+    let mut titles = Vec::new();
+    let mut handed_out = Vec::new();
+    for bar_menu in MENU_BAR.iter().filter(|bar_menu| bar_menu.is_on(platform)) {
+        let text = title_text(bar_menu.submenu.title);
+        let before = mnemonics.taken().len();
+        titles.push(mnemonics.assign_for(&text, platform));
+        if let Some(&letter) = mnemonics.taken().get(before) {
+            handed_out.push(BarTitleMnemonic {
+                letter: letter.to_string(),
+                menu: text,
+            });
+        }
+    }
+    (titles, handed_out)
+}
+
+/// The bar titles' mnemonics on `platform`, in the active language: the `Alt+<letter>` keys GTK
+/// takes before the page while the window's mask is off (`mnemonic_mask/`). Empty where the bar
+/// has none (macOS).
+pub fn bar_title_mnemonics(platform: Platform) -> Vec<BarTitleMnemonic> {
+    bar_titles(platform).1
+}
+
+/// A bar title's text in the active language. Titles never carry the License label, the one whose
+/// key depends on the license state.
+fn title_text(label: Label) -> String {
+    label
+        .catalog_key(false)
+        .map_or_else(|| APP_MENU_TITLE.to_string(), menu_t)
 }
 
 /// The build's inputs, plus the handles it collects on the way for [`MenuItems`].
@@ -244,5 +288,27 @@ fn predefined<R: Runtime>(app: &AppHandle<R>, kind: Predefined, label: &str) -> 
         Predefined::Redo => PredefinedMenuItem::redo(app, text),
         Predefined::Minimize => PredefinedMenuItem::minimize(app, text),
         Predefined::Maximize => PredefinedMenuItem::maximize(app, text),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The English bar's titles, which the Linux lane's real-X mnemonic spec presses.
+    #[test]
+    fn the_linux_bar_titles_each_hand_out_their_initial_in_english() {
+        let letters: Vec<String> = bar_title_mnemonics(Platform::Linux)
+            .into_iter()
+            .map(|mnemonic| mnemonic.letter)
+            .collect();
+        assert_eq!(letters, ["f", "e", "s", "v", "g", "t", "h"]);
+        let file = &bar_title_mnemonics(Platform::Linux)[0];
+        assert_eq!(file.menu, "File");
+    }
+
+    #[test]
+    fn the_macos_bar_titles_hand_out_none() {
+        assert_eq!(bar_title_mnemonics(Platform::MacOs), []);
     }
 }

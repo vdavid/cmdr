@@ -15,7 +15,9 @@
  *   (Remove-from-other / Keep-both / Cancel).
  */
 import { ownedByAppMenu } from '#lib/commands/command-registry.js'
-import type { Command } from '#lib/commands/types.js'
+import type { Command, CommandScope } from '#lib/commands/types.js'
+import type { BarTitleMnemonic } from '#lib/ipc/bindings.js'
+import { getPlatform } from '#lib/platform/index.js'
 import { formatConjunctionList } from '#lib/intl/list-format.js'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { systemReservation, type SystemReservation } from './system-reserved-keys'
@@ -44,7 +46,13 @@ export interface NormalConflict {
 /** A refusal, not a clash: typing takes the key first (`typingRefusal`), so a binding would never fire. */
 export type TypingConflict = { kind: 'shiftLetter' } | { kind: 'bareKey' }
 
-export type ConflictKind = NativeConflict | FixedConflict | SystemConflict | NormalConflict | TypingConflict
+export type ConflictKind =
+  | NativeConflict
+  | FixedConflict
+  | SystemConflict
+  | MenuBarMnemonicConflict
+  | NormalConflict
+  | TypingConflict
 
 /**
  * Classify a non-empty conflict set. A native command anywhere in the set makes
@@ -121,4 +129,51 @@ export function systemShortcutMessage(combo: string, reservation: SystemReservat
         desktops: formatConjunctionList(reservation.desktops),
       })
   }
+}
+
+/** A menu bar title's mnemonic: on Linux GTK opens `menu` on this `Alt+<letter>` before Cmdr sees it. */
+export interface MenuBarMnemonicConflict {
+  kind: 'menuBarMnemonic'
+  /** The menu's title in the UI language (drives the banner copy). */
+  menu: string
+}
+
+/**
+ * The scopes whose keys only run while a modal surface holds the window's mnemonics off (the main
+ * window's dialog gate: a dialog, an explorer overlay, the palette), or in a window whose bar has
+ * none (the viewer's). Anything else wears a live bar: the panes, the Ask Cmdr rail, the operation
+ * queue and About windows.
+ */
+const MNEMONICS_OFF_SCOPES: ReadonlySet<CommandScope> = new Set<CommandScope>([
+  'Main window/Search dialog',
+  'Main window/Multi-rename',
+  'Main window/Operation log',
+  'Main window/Volume chooser',
+  'Main window/Favorites menu',
+  'Command palette',
+  'Onboarding',
+  'Viewer window',
+])
+
+/**
+ * On Linux, a recorded `Alt+<letter>` that a bar title underlines in the UI language
+ * (`mnemonics`, from `getMenuBarTitleMnemonics`) opens that menu instead, for a command whose
+ * scope wears a live bar. Soft, like the other reserved-key warnings: the key still works while a
+ * dialog is up.
+ */
+export function classifyMenuBarMnemonic(
+  combo: string,
+  scope: CommandScope,
+  mnemonics: readonly BarTitleMnemonic[],
+): MenuBarMnemonicConflict | null {
+  if (getPlatform() !== 'linux' || MNEMONICS_OFF_SCOPES.has(scope)) return null
+  const letter = /^Alt\+(.)$/u.exec(combo)?.[1]?.toLowerCase()
+  if (letter === undefined) return null
+  const mnemonic = mnemonics.find((candidate) => candidate.letter === letter)
+  return mnemonic ? { kind: 'menuBarMnemonic', menu: mnemonic.menu } : null
+}
+
+/** The banner copy for a bar-title mnemonic, like `Alt+F opens the File menu in Cmdr’s menu bar, …`. */
+export function menuBarMnemonicMessage(combo: string, menu: string): string {
+  return tString('shortcuts.conflict.opensMenuBarMenu', { combo, menu })
 }

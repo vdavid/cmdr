@@ -192,6 +192,9 @@ so both answer without touching anything.
   recorder, its key filter, and the global go-to-latest recorder hold the mask while they listen
   (`apps/desktop/src/lib/shortcuts/menu-mnemonics-capture.svelte.ts`, claims counted per window; a fresh load there pushes
   the mnemonics back on once, since a reload mid-capture resets the count but not the window's mask).
+- **A key the user records outside a modal surface stays the bar's**: Settings warns when a recorded `Alt+<letter>` is a
+  title mnemonic in the UI language (`get_menu_bar_title_mnemonics`, from the same `bar_titles` the builder labels the
+  titles with, so the two can't disagree) and the command's scope wears a live bar.
 
 ## Key concepts
 
