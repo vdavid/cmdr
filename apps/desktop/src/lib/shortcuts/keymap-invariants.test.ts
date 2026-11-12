@@ -7,6 +7,8 @@
 
 import { describe, it, expect } from 'vitest'
 import { commands } from '#lib/commands/command-registry.js'
+import { PLATFORMS } from '#lib/commands/platform-shortcuts.js'
+import { scopesOverlap } from './scope-hierarchy'
 
 const OFF_MAC_PLATFORMS = ['windows', 'linux'] as const
 
@@ -47,6 +49,26 @@ describe.each(OFF_MAC_PLATFORMS)('default keys on %s', (platform) => {
 
   it('hold no Super key, which the desktop and Windows itself own', () => {
     expect(rawDefaults(platform).filter((line) => line.split(': ')[1].includes('Super+'))).toEqual([])
+  })
+})
+
+/**
+ * `registry-conflicts.test.ts` checks what a user on each OS gets, so a command that OS can't offer
+ * yet holds no key there and can't clash. Its raw keys still can, unseen until its capability flips
+ * on: this checks them all, every command on every OS, with no capability taken into account.
+ */
+describe.each(PLATFORMS)('raw default keys on %s', (platform) => {
+  it('never put one combo on two commands in overlapping scopes', () => {
+    const clashes: string[] = []
+    commands.forEach((a, i) => {
+      for (const b of commands.slice(i + 1)) {
+        if (!scopesOverlap(a.scope, b.scope)) continue
+        for (const combo of a.shortcuts[platform]) {
+          if (b.shortcuts[platform].includes(combo)) clashes.push(`${combo}: ${a.id} vs ${b.id}`)
+        }
+      }
+    })
+    expect(clashes).toEqual([])
   })
 })
 

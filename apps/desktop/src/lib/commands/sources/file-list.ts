@@ -472,7 +472,9 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'getInfo',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘I'),
+    // Off macOS it's a Properties dialog's key, `Alt+Enter` (Explorer and the Linux file
+    // managers); `Ctrl+I` is Switch pane's there.
+    shortcuts: { macos: ['⌘I'], windows: ['Alt+Enter'], linux: ['Alt+Enter'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
