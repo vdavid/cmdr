@@ -1,6 +1,7 @@
 ---
 import DownloadButton from './DownloadButton.astro'
 import HeroLiveDemo from './HeroLiveDemo.astro'
+import NamePronunciation from './NamePronunciation.astro'
 
 const currentYear = new Date().getFullYear()
 ---
@@ -14,20 +15,16 @@ const currentYear = new Date().getFullYear()
         <div class="hero-pool hero-pool--cool" aria-hidden="true"></div>
 
         <div class="hero-content relative z-10 lg:max-w-[40%]">
-            <!-- Open-beta eyebrow - Step 1 -->
-            <a
-                href="/features"
-                class="animate-blur-in stagger-1 mb-5 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-sm font-medium text-accent-text transition-colors hover:bg-accent/20"
-            >
-                Now in open beta
-                <span aria-hidden="true">&rarr;</span>
-            </a>
-
             <!-- Headline - Steps 2 & 3 -->
-            <h1 class="mb-6 text-3xl/tight font-bold tracking-tight min-[1400px]:text-5xl md:text-4xl">
+            <h1 class="mb-2 text-3xl/tight font-bold tracking-tight min-[1400px]:text-5xl md:text-4xl">
                 <span class="animate-blur-in stagger-2 inline-block">Finally, a file manager</span>
                 <span class="animate-blur-in stagger-3 gradient-text inline-block">from {currentYear}!</span>
             </h1>
+
+            <!-- How to say the name. `-ms-2` cancels the button's own padding so its text lines up. -->
+            <div class="animate-blur-in stagger-3 -ms-2 mb-5">
+                <NamePronunciation />
+            </div>
 
             <!-- Subheadline - Step 4: a lead line, the two "plus" points as a real list, then the
                  closer. The list owns the indent and the line breaks, so the copy survives being

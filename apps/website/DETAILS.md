@@ -295,6 +295,23 @@ All pages support both light and dark mode. Users can override their system pref
 **Decision/Why**: The dual-selector pattern (media query + `data-theme` attribute) ensures the site works correctly
 without JS (falls back to system preference) while supporting explicit overrides via the toggle.
 
+## Name pronunciation
+
+The hero says how to pronounce "Cmdr" right under the headline (`NamePronunciation.astro`): a dictionary-style line,
+"Cmdr /kəˈmændər/", whose dropped letters hop in to spell "Commander" once on load, on hover or focus, and on a click,
+which also plays David saying the word.
+
+- **Both spellings on purpose**: the phonetic one signals "this is a pronunciation", the spelled-out word is what most
+  people can read. Screen readers get one sentence from the button's `aria-label`; the visuals are `aria-hidden`.
+- **The sound is a recording, never browser speech**: `speechSynthesis` sounds different on every device and is silent
+  where no voice is installed. `public/audio/commander.mp3` (mono, about 12 KB) is fetched on the first click only.
+- **Re-recording it**: capture with macOS's own recorder (`AVAudioRecorder`); ffmpeg's `avfoundation` input dropped
+  audio chunks about every 0.1 s (verified on macOS 27.0, ffmpeg from Homebrew, 2026-11-12, by spectrogram). Then cut to
+  the word, `highpass=f=85`, `afftdn`, short fades, gain to a −2 dB peak, and encode with `libmp3lame -q:a 3`.
+- **The speaker pulse ends on a beat boundary** (`animationiteration`), and its keyframes name only the peak, so it
+  comes to rest at whatever the icon rests at (plain or the hover tilt) with no snap.
+- **Reduced motion**: nothing animates, so the word stays spelled out.
+
 ## Product clips
 
 The landing page leads with short screen recordings of the app (`Showcase.astro`, order and pitch from issue #693):

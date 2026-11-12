@@ -53,6 +53,7 @@ import ToggleLeft from '~icons/lucide/toggle-left'
 import Undo2 from '~icons/lucide/undo-2'
 import Usb from '~icons/lucide/usb'
 import UserRound from '~icons/lucide/user-round'
+import Volume2 from '~icons/lucide/volume-2'
 import Zap from '~icons/lucide/zap'
 
 export const ICONS = {
@@ -102,6 +103,7 @@ export const ICONS = {
   'undo-2': Undo2,
   usb: Usb,
   'user-round': UserRound,
+  'volume-2': Volume2,
   zap: Zap,
 } as const
 

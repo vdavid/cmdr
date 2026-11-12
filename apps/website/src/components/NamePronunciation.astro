@@ -1,0 +1,177 @@
+---
+// How to say "Cmdr": a small dictionary entry that acts itself out. At rest it reads
+// "Cmdr /kəˈmændər/"; the missing letters hop in to spell "Commander" once on load, again on hover
+// or focus, and on a click, which also plays David saying it (`public/audio/commander.mp3`, fetched on that first click).
+//
+// The phonetic spelling signals "this is a pronunciation"; the spelled-out word is what most people
+// can actually read. Screen readers get one plain sentence from the `aria-label`.
+import Icon from './icons/Icon.astro'
+
+// The name's own letters stay put; `extra` ones are the letters "Cmdr" drops.
+const letters = [
+    { char: 'C', extra: false },
+    { char: 'o', extra: true },
+    { char: 'm', extra: false },
+    { char: 'm', extra: true },
+    { char: 'a', extra: true },
+    { char: 'n', extra: true },
+    { char: 'd', extra: false },
+    { char: 'e', extra: true },
+    { char: 'r', extra: false },
+]
+let extraIndex = 0
+---
+
+<button
+    type="button"
+    class="say-name inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-sm text-text-tertiary transition-colors hover:bg-accent/10"
+    aria-label="Cmdr is pronounced “commander”. Hear it."
+    data-say-name="/audio/commander.mp3"
+>
+    <Icon name="volume-2" size={16} class="say-name-icon" />
+    <span class="say-name-word text-base font-semibold text-text-primary" aria-hidden="true"
+        >{
+            letters.map((letter) =>
+                letter.extra ? (
+                    <span class="say-name-extra" style={`--i: ${extraIndex++}`}>
+                        {letter.char}
+                    </span>
+                ) : (
+                    <span>{letter.char}</span>
+                ),
+            )
+        }</span
+    >
+    <span class="say-name-ipa" aria-hidden="true">/kəˈmændər/</span>
+</button>
+
+<script>
+    // How long the load-time demo waits for the hero's blur-in, then holds the spelled-out word.
+    const autoplayDelayMs = 1500
+    const holdMs = 2600
+
+    for (const button of document.querySelectorAll<HTMLButtonElement>('[data-say-name]')) {
+        let closeTimer: ReturnType<typeof setTimeout> | undefined
+        // Created on the first click, so the recording costs nothing until someone asks for it.
+        let audio: HTMLAudioElement | undefined
+
+        const open = () => {
+            clearTimeout(closeTimer)
+            button.classList.add('is-open')
+        }
+        const closeSoon = (delayMs: number) => {
+            clearTimeout(closeTimer)
+            closeTimer = setTimeout(() => {
+                button.classList.remove('is-open', 'is-speaking')
+            }, delayMs)
+        }
+        // Lets the pulse finish its current beat, so the icon comes to rest and never snaps back
+        // mid-swing. With no animation running (reduced motion), `closeSoon` clears the class.
+        const stopPulse = () => {
+            const drop = () => {
+                // A second click may have restarted the sound since; that play ends its own pulse.
+                if (audio && !audio.paused) return
+                button.classList.remove('is-speaking')
+            }
+            button.querySelector('.say-name-icon')?.addEventListener('animationiteration', drop, { once: true })
+        }
+
+        button.addEventListener('click', () => {
+            open()
+            audio ??= new Audio(button.dataset.sayName)
+            audio.currentTime = 0
+            button.classList.add('is-speaking')
+            audio.onended = () => {
+                // The speaker pulses only while there is sound; the word lingers a little longer.
+                stopPulse()
+                closeSoon(holdMs / 2)
+            }
+            // A blocked or missing recording still gets the spelled-out word, then closes.
+            audio.play().catch(() => {
+                stopPulse()
+                closeSoon(holdMs)
+            })
+        })
+
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            setTimeout(() => {
+                open()
+                closeSoon(holdMs)
+            }, autoplayDelayMs)
+        }
+    }
+</script>
+
+<style>
+    .say-name :global(.say-name-icon) {
+        /* Beats `.icon`'s default gold, which is too pale on the light theme. */
+        color: var(--color-accent-text);
+        transition: transform 200ms ease;
+    }
+
+    .say-name:hover :global(.say-name-icon),
+    .say-name:focus-visible :global(.say-name-icon) {
+        transform: scale(1.15) rotate(-8deg);
+    }
+
+    .say-name.is-speaking :global(.say-name-icon) {
+        animation: say-name-pulse 560ms ease-in-out infinite;
+    }
+
+    .say-name-word {
+        display: inline-flex;
+        align-items: baseline;
+    }
+
+    /* A dropped letter takes no room until the word opens, then hops in with a small overshoot,
+       one after another. */
+    .say-name-extra {
+        display: inline-block;
+        max-width: 0;
+        color: var(--color-accent-text);
+        opacity: 0;
+        transform: translateY(0.5em) scale(0.4) rotate(-20deg);
+        transition:
+            max-width 320ms cubic-bezier(0.34, 1.56, 0.64, 1),
+            transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
+            opacity 200ms ease;
+    }
+
+    .say-name.is-open .say-name-extra,
+    .say-name:hover .say-name-extra,
+    .say-name:focus-visible .say-name-extra {
+        max-width: 1em;
+        opacity: 1;
+        transform: none;
+        transition-delay: calc(var(--i) * 70ms);
+    }
+
+    .say-name-ipa {
+        font-style: italic;
+        letter-spacing: 0.02em;
+    }
+
+    /* Only the peak is named: each beat starts and ends at whatever the icon rests at (plain, or the
+       hover tilt), so stopping on a beat boundary is seamless. */
+    @keyframes say-name-pulse {
+        50% {
+            transform: scale(1.3) rotate(-10deg);
+        }
+    }
+
+    /* No motion: show the spelled-out word all the time, since nothing will act it out. */
+    @media (prefers-reduced-motion: reduce) {
+        .say-name-extra {
+            max-width: 1em;
+            opacity: 1;
+            transform: none;
+            transition: none;
+        }
+
+        .say-name :global(.say-name-icon),
+        .say-name.is-speaking :global(.say-name-icon) {
+            animation: none;
+            transition: none;
+        }
+    }
+</style>
