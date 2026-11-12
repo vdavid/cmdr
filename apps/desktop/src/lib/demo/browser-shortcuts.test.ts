@@ -137,13 +137,28 @@ describe.each(['windows', 'linux'] as const)('the %s arm', (platform) => {
     }
   })
 
-  it('leaves every command that holds no such combo to the registry', () => {
+  it('remaps every rebindable command that holds such a combo', () => {
     const seeded = new Set(Object.keys(browserSafeShortcuts(platform)))
     const withheld = BROWSER_WITHHELD[platform]
     const missed = commands
+      .filter((c) => c.fixedKey !== true)
       .filter((c) => defaultShortcuts(c.id, platform).some((combo) => withheld.has(combo)))
       .filter((c) => !seeded.has(c.id))
       .map((c) => c.id)
     expect(missed).toEqual([])
+  })
+
+  // The store drops a customization of a fixed-key command on load (`seedCustomShortcut`), so a
+  // seed there would be a silent no-op: the map leaves them out, and these keep a key the browser
+  // keeps. Their dialog answers it for itself, so the key is dead in the demo and its hint lies.
+  it('seeds no fixed-key command, and names the ones left on a key the browser keeps', () => {
+    const map = browserSafeShortcuts(platform) as Record<string, string[] | undefined>
+    expect(commands.filter((c) => c.fixedKey === true && c.id in map).map((c) => c.id)).toEqual([])
+    const withheld = BROWSER_WITHHELD[platform]
+    const stuck = commands
+      .filter((c) => c.fixedKey === true)
+      .filter((c) => defaultShortcuts(c.id, platform).some((combo) => withheld.has(combo)))
+      .map((c) => c.id)
+    expect(stuck).toEqual(['search.newQuery'])
   })
 })

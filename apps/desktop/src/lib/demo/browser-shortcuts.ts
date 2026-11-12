@@ -62,11 +62,16 @@ export const BROWSER_WITHHELD: Readonly<Record<'windows' | 'linux', ReadonlySet<
   linux: CHROMIUM_RESERVED_ON_WINDOWS_AND_LINUX,
 }
 
-/** The registry's defaults on `platform`, minus what the browser keeps, for every command that holds one. */
+/**
+ * The registry's defaults on `platform`, minus what the browser keeps, for every rebindable command
+ * that holds one. A fixed-key command can't be seeded (the store drops its customization on load),
+ * so the search dialog's `Ctrl+N` (new query) stays, dead in a browser that keeps it.
+ */
 function withoutWithheld(platform: 'windows' | 'linux'): BrowserSafeMap {
   const withheld = BROWSER_WITHHELD[platform]
   const map: BrowserSafeMap = {}
-  for (const { id } of commands) {
+  for (const { id, fixedKey } of commands) {
+    if (fixedKey === true) continue
     const defaults = defaultShortcuts(id, platform)
     if (defaults.some((combo) => withheld.has(combo))) map[id] = defaults.filter((combo) => !withheld.has(combo))
   }

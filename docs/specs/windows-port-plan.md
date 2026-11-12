@@ -438,6 +438,12 @@ Each lands behind a seam from Phases 1–5, verified on the Windows lane (task 5
         `Alt+F` / `Alt+E` / `Alt+G`).
       - The download toast's hotkey animation: its PC key caps read `Ctrl`, `Fn`, `Win`, and `Alt` where a Windows
         laptop has them.
+      - With a text field focused, a menu CLICK on a file-moving command (File > Delete, Edit > Move here) does nothing,
+        because the menu event can't say whether a key or a click sent it (`routes/(main)/text-field-gate.ts`). If Win32
+        (or task 63's model) can tell the two apart, let the click run.
+      - The browser demo for a Windows or Linux visitor: the search dialog's new query keeps `Ctrl+N`, which Chromium
+        keeps from the page, because a fixed-key command can't be seeded (`lib/demo/browser-shortcuts.ts`). It needs a
+        demo-only key once task 63 decides the demo's bar.
 
 56. [S] Windows. MTP via `mtp-rs`'s WPD backend (D2): Windows device arrival and removal for phones, the 5–6-minute
     driver stall shown as a "the phone is busy" state with a timeout (a dropped future is safe, later calls queue behind
