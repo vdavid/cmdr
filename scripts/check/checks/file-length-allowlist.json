@@ -121,10 +121,6 @@
       "lines": 811,
       "reason": "TODO: the status bar is its own widget: move its markup (the `.status-bar` block with the live run's progress strip, stop button, and the throttled `aria-live` span), its `statusText` / `announcement` derivations, and its `.status-bar*` styles into `QueryStatusBar.svelte`, about 120 lines out. `QueryResults` keeps the state gates, the `ColumnList` and its cells, and the combobox accessors (`isListShown`, `cursorOptionId`)."
     },
-    "apps/desktop/src/lib/servers/SignInSheet.svelte.test.ts": {
-      "lines": 1216,
-      "reason": "TODO: move the `SignInSheet: edit mode` describe (about 310 lines, from its `SAVED` / `KNOWN_SFTP` fixtures to the per-OS password-store case) into `SignInSheet.edit.svelte.test.ts`, the way the SMB edit and certificate cases already live in `SignInSheet.smb.svelte.test.ts` and `SignInSheet.certificate.svelte.test.ts`; it carries the mocks and `renderSheet` / `flush` / `buttonSaying` helpers those siblings do. Bumped for the per-OS password-store case (Windows' “Remember password”, Linux's keyring)."
-    },
     "apps/desktop/src/lib/servers/SignInSheet.svelte": {
       "lines": 1049,
       "reason": "TODO: split it, because most of its lines are script and the markup is small. (Bumped for SMB's Eject and save, which joined the edit save path below as `ejectAndSave` / `settleSmbSave` / `cancel`.) The round machinery (`run`, `applyOutcome`, `refuse`, `focusField`, the refusal and hint state, `refusalSubject`) is pure state with no markup dependency beyond the field refs, and belongs in a `sign-in-sheet-rounds.svelte.ts` the component drives, the pattern `sign-in-sheet-state.svelte.ts` already sets beside it. Edit mode's save path (`save`, `saveTarget`, `saveS3Account`, `saveSmbHost`, `ejectAndSave`, `settleSmbSave`, `writeRememberFlip`, `writeTypedSecret`, `s3EditScope` / `storeId`) is the second seam: it reads the form and the opened-with flags and writes through `saved-server-io.ts`, so it fits a `sign-in-sheet-edit.ts` beside it. The sheet then sits near 500 lines."
