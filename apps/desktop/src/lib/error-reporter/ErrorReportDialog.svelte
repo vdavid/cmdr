@@ -44,6 +44,7 @@
     import { getAppLogger } from '#lib/logging/logger.js'
     import { t, tString } from '#lib/intl/messages.svelte.js'
     import { getManagedPolicyView } from '#lib/managed-policy/managed-policy.svelte.js'
+    import { holdsOnlyPrimaryModifier } from '#lib/shortcuts/primary-modifier.js'
 
     const log = getAppLogger('errorReportDialog')
 
@@ -251,15 +252,16 @@
     }
 
     /**
-     * Exactly ⌘/⌃Enter, no extra modifiers: ⌥⌘Enter and ⇧⌘Enter are different combos
-     * and must not send a report on their way somewhere else.
+     * Exactly the primary modifier plus Enter (⌘Enter on macOS, Ctrl+Enter on Windows and
+     * Linux), no extra modifiers: ⌥⌘Enter and ⇧⌘Enter are different combos and must not
+     * send a report on their way somewhere else.
      */
     function isSendCombo(event: KeyboardEvent): boolean {
-        return (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key === 'Enter'
+        return holdsOnlyPrimaryModifier(event) && event.key === 'Enter'
     }
 
     function handleKeydown(event: KeyboardEvent) {
-        // Cmd/Ctrl+Enter sends. Plain Enter is consumed by the textarea.
+        // ⌘Enter (macOS) or Ctrl+Enter sends. Plain Enter is consumed by the textarea.
         if (isSendCombo(event) && canSend) {
             event.preventDefault()
             void handleSend()

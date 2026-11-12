@@ -1,6 +1,7 @@
 <script lang="ts">
     import Icon from '#lib/ui/Icon.svelte'
     import TextInput from '#lib/ui/TextInput.svelte'
+    import { holdsOnlyPrimaryModifier } from '#lib/shortcuts/primary-modifier.js'
     import { buildSectionTree, type SettingsSection } from '#lib/settings/index.js'
     import { SPECIAL_SETTINGS_SECTIONS } from '#lib/settings/settings-section-lookup.js'
     import { sectionHasMatches } from '#lib/settings/settings-search.js'
@@ -226,8 +227,8 @@
         } else if (event.key === 'ArrowUp') {
             event.preventDefault()
             navigateSections('up')
-        } else if (event.key === 'a' && (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey) {
-            // Cmd/Ctrl+A doesn't reach the input by default because the
+        } else if (event.key === 'a' && holdsOnlyPrimaryModifier(event)) {
+            // ⌘A (macOS) or Ctrl+A doesn’t reach the input by default because the
             // settings window's Edit menu doesn't bind a Select-All item to
             // it (the app uses a custom menu, not the macOS-standard Edit
             // menu). Select the input's text manually so the user gets the

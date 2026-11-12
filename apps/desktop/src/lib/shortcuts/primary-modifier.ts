@@ -15,3 +15,12 @@ export type ModifierFlags = Pick<KeyboardEvent, 'metaKey' | 'ctrlKey'>
 export function holdsPrimaryModifier(event: ModifierFlags): boolean {
   return isMacOS() ? event.metaKey : event.ctrlKey
 }
+
+/**
+ * True when the event holds the platform's primary modifier and no other: not Alt, not Shift, and
+ * not the other of ⌘ / Ctrl. For an "exactly ⌘Enter / Ctrl+Enter" key that has no registry command.
+ */
+export function holdsOnlyPrimaryModifier(event: ModifierFlags & Pick<KeyboardEvent, 'altKey' | 'shiftKey'>): boolean {
+  if (event.altKey || event.shiftKey) return false
+  return isMacOS() ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey
+}

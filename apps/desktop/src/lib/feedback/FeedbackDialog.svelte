@@ -25,6 +25,7 @@
     import { closeFeedbackDialog } from './feedback-flow.svelte'
     import { getAppLogger } from '#lib/logging/logger.js'
     import { GITHUB_ISSUES_URL, BOOK_A_CALL_URL } from '#lib/beta-links.js'
+    import { holdsOnlyPrimaryModifier } from '#lib/shortcuts/primary-modifier.js'
 
     const log = getAppLogger('feedbackDialog')
 
@@ -123,15 +124,16 @@
     })
 
     /**
-     * Exactly ⌘/⌃Enter, no extra modifiers: ⌥⌘Enter and ⇧⌘Enter are different combos
-     * and must not send feedback on their way somewhere else.
+     * Exactly the primary modifier plus Enter (⌘Enter on macOS, Ctrl+Enter on Windows and
+     * Linux), no extra modifiers: ⌥⌘Enter and ⇧⌘Enter are different combos and must not
+     * send feedback on their way somewhere else.
      */
     function isSendCombo(event: KeyboardEvent): boolean {
-        return (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key === 'Enter'
+        return holdsOnlyPrimaryModifier(event) && event.key === 'Enter'
     }
 
     function handleKeydown(event: KeyboardEvent) {
-        // Cmd/Ctrl+Enter sends. Plain Enter is consumed by the textarea.
+        // ⌘Enter (macOS) or Ctrl+Enter sends. Plain Enter is consumed by the textarea.
         if (isSendCombo(event)) {
             event.preventDefault()
             void handleSend()
