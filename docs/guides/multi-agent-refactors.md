@@ -40,6 +40,11 @@ Lead's guardrails, learned the hard way:
 - **Parallel agents that edit code each get their own worktree** with `isolation: "worktree"`: the harness's
   `WorktreeCreate` hook makes it warm through `new-worktree.sh`, and the agent is pinned there. It can't join an
   existing worktree, and nothing removes it for you: the lead does, once its branch has landed.
+- **A worktree-isolated agent runs `git` as plain, separate commands from its own worktree.** Claude Code itself (not a
+  hook of ours) refuses a `git` it can't prove stays inside the worktree: one inside `<(...)`, a loop, or after a `cd`
+  to a path computed at runtime ("names git in a form too complex to verify", seen 2026-11-12). Nothing here can relax
+  it, so split the command up; to read another branch, name it (`git show <branch>:<path>`) from the agent's own
+  worktree.
 
 ## Fan-out sweeps (parallel research or generation over a list)
 
