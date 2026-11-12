@@ -120,6 +120,18 @@ pub struct DeviceBarriers {
     interval: Duration,
     owed: Mutex<Owed>,
     issued: AtomicU64,
+    /// The time the passes and lone barriers took: [`Self::time_spent`].
+    spent: Mutex<Spent>,
+}
+
+/// Barrier time as the union of every running pass, so two threads' passes
+/// that overlap count their shared stretch once.
+struct Spent {
+    /// Time in finished stretches.
+    done: Duration,
+    /// How many passes run now, and since when one has been running.
+    running: u32,
+    since: Option<crate::rt::Instant>,
 }
 
 struct Owed {
@@ -147,6 +159,7 @@ impl std::fmt::Debug for DeviceBarriers {
         f.debug_struct("DeviceBarriers")
             .field("interval", &self.interval)
             .field("issued", &self.barriers_issued())
+            .field("time_spent", &self.time_spent())
             .finish_non_exhaustive()
     }
 }
@@ -171,6 +184,11 @@ impl DeviceBarriers {
                 last_pass: crate::rt::now(),
             }),
             issued: AtomicU64::new(0),
+            spent: Mutex::new(Spent {
+                done: Duration::ZERO,
+                running: 0,
+                since: None,
+            }),
         }
     }
 
@@ -199,7 +217,7 @@ impl DeviceBarriers {
                         "barrier: couldn't keep a handle on {}, so it gets its own barrier: {e}",
                         LogPrivate::file_path(path)
                     );
-                    self.issue(file, path)
+                    self.timed(|| self.issue(file, path))
                         .unwrap_or_else(|failure| log_interval_failure(&failure));
                 }
             }
@@ -225,7 +243,7 @@ impl DeviceBarriers {
     /// device still owed one. Tries every device before answering the first
     /// failure. Nothing owed is nothing to do.
     pub fn flush(&self) -> Result<(), BarrierFailure> {
-        self.pass()
+        self.timed(|| self.pass())
     }
 
     /// How many barriers this tracker issued, for the closing log line and the
@@ -235,12 +253,51 @@ impl DeviceBarriers {
         self.issued.load(Ordering::Relaxed)
     }
 
+    /// How long this tracker has spent in passes (directory syncs and barriers)
+    /// and lone barriers, in total, a running one included up to now.
+    /// Monotonic. The ETA reads it so a barrier a big file happened to pay
+    /// isn't learned as a cost of every file (`cmdr-operations`' `eta.rs`);
+    /// counting the running pass live is what keeps a barrier that spans two
+    /// progress emits from being taken out of the second one whole.
+    #[must_use]
+    pub fn time_spent(&self) -> Duration {
+        let spent = self.spent.lock_ignore_poison();
+        spent.done + spent.since.map_or(Duration::ZERO, crate::rt::since)
+    }
+
+    /// Runs `f`, counting the time it runs toward [`Self::time_spent`].
+    fn timed<R>(&self, f: impl FnOnce() -> R) -> R {
+        /// Ends the stretch on drop, so a pass that unwinds can't leave the
+        /// clock running.
+        struct Running<'a>(&'a Mutex<Spent>);
+        impl Drop for Running<'_> {
+            fn drop(&mut self) {
+                let mut spent = self.0.lock_ignore_poison();
+                spent.running = spent.running.saturating_sub(1);
+                if spent.running == 0
+                    && let Some(since) = spent.since.take()
+                {
+                    spent.done += crate::rt::since(since);
+                }
+            }
+        }
+        {
+            let mut spent = self.spent.lock_ignore_poison();
+            if spent.running == 0 {
+                spent.since = Some(crate::rt::now());
+            }
+            spent.running += 1;
+        }
+        let _running = Running(&self.spent);
+        f()
+    }
+
     fn pass_if_due(&self) {
         let due = {
             let owed = self.owed.lock_ignore_poison();
             crate::rt::since(owed.last_pass) >= self.interval
         };
-        if due && let Err(failure) = self.pass() {
+        if due && let Err(failure) = self.timed(|| self.pass()) {
             log_interval_failure(&failure);
         }
     }

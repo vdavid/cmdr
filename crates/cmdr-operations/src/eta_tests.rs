@@ -21,6 +21,7 @@ impl EtaEstimator {
         self.update(EtaSample {
             now,
             human_wait_total: Duration::ZERO,
+            barrier_total: Duration::ZERO,
             // The in-flight reversal's direction: the cases here that reach
             // `RollingBack` all model a cancel draining the bar it filled.
             reversal_bar: ReversalBar::Drains,
@@ -436,6 +437,7 @@ fn steady_copy_across_a_five_minute_wait(human_wait: bool) -> EtaStats {
         est.update(EtaSample {
             now: at(start, i * 1000),
             human_wait_total: Duration::ZERO,
+            barrier_total: Duration::ZERO,
             reversal_bar: ReversalBar::Drains,
             phase: WriteOperationPhase::Copying,
             bytes_done: i * 100_000_000,
@@ -456,6 +458,7 @@ fn steady_copy_across_a_five_minute_wait(human_wait: bool) -> EtaStats {
     est.update(EtaSample {
         now: at(start, 5_000 + PARK_MS + 1_000),
         human_wait_total: waited,
+        barrier_total: Duration::ZERO,
         reversal_bar: ReversalBar::Drains,
         phase: WriteOperationPhase::Copying,
         bytes_done: 600_000_000,
@@ -517,6 +520,7 @@ fn the_warm_up_gate_measures_working_time_not_wall_time() {
     est.update(EtaSample {
         now: at(start, 0),
         human_wait_total: Duration::ZERO,
+        barrier_total: Duration::ZERO,
         reversal_bar: ReversalBar::Drains,
         phase: WriteOperationPhase::Copying,
         bytes_done: 0,
@@ -527,6 +531,7 @@ fn the_warm_up_gate_measures_working_time_not_wall_time() {
     let stats = est.update(EtaSample {
         now: at(start, 10_200),
         human_wait_total: Duration::from_secs(10),
+        barrier_total: Duration::ZERO,
         reversal_bar: ReversalBar::Drains,
         phase: WriteOperationPhase::Copying,
         bytes_done: 2_000_000,
@@ -686,6 +691,7 @@ fn a_reversal_whose_bar_fills_measures_remaining_toward_the_total() {
     let filling = |now: Instant, bytes_done: u64, files_done: usize| EtaSample {
         now,
         human_wait_total: Duration::ZERO,
+        barrier_total: Duration::ZERO,
         reversal_bar: ReversalBar::Fills,
         phase: WriteOperationPhase::RollingBack,
         bytes_done,
@@ -747,31 +753,34 @@ fn the_file_count_takes_over_only_after_leading_for_three_seconds_of_work() {
     );
 }
 
+/// The hysteresis on its own, fed weights every 500 ms of working time: the
+/// file count leads twice as heavy for `lead_ms`, then the two run neck and
+/// neck (within [`AXIS_LEAD`]) again.
+fn axes_with_a_files_lead(lead_ms: u64) -> Vec<ProgressAxis> {
+    let mut settled = SettledAxis::new(ProgressAxis::Bytes);
+    (0..=16u64)
+        .map(|step| {
+            let ms = step * 500;
+            let files = if (1_000..1_000 + lead_ms).contains(&ms) {
+                20.0
+            } else {
+                10.5
+            };
+            settled.weigh(Some(10.0), Some(files), Duration::from_millis(ms))
+        })
+        .collect()
+}
+
 #[test]
 fn a_lead_that_ends_before_three_seconds_never_flips_the_axis() {
-    let start = Instant::now();
-    let mut est = EtaEstimator::new();
-    let mut axes = Vec::new();
-    // Bytes and files move in step (10 % of each per second), then files stall
-    // for two seconds while bytes keep going, then catch up again.
-    let mut files = 0usize;
-    for step in 0..=16u64 {
-        let ms = step * 500;
-        let bytes = ms * 100;
-        if !(2_000..4_000).contains(&ms) {
-            files = (ms / 50) as usize;
-        }
-        let stats = est.update_at(
-            at(start, ms),
-            WriteOperationPhase::Copying,
-            bytes,
-            1_000_000,
-            files,
-            200,
-        );
-        axes.push((ms, stats.bottleneck));
-    }
-    assert!(axes.iter().all(|(_, axis)| *axis == ProgressAxis::Bytes), "{axes:?}");
+    let axes = axes_with_a_files_lead(2_500);
+    assert!(axes.iter().all(|axis| *axis == ProgressAxis::Bytes), "{axes:?}");
+}
+
+#[test]
+fn a_lead_held_three_seconds_flips_the_axis_and_neck_and_neck_keeps_it() {
+    let axes = axes_with_a_files_lead(3_500);
+    assert_eq!(axes.last(), Some(&ProgressAxis::Files), "{axes:?}");
 }
 
 #[test]

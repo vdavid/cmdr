@@ -63,10 +63,11 @@ the next section.
   rename or an unlink. § "`metadata`: what a copy keeps, and when it goes on".
 - `durable/`: making written files durable without a device barrier per file. `sync_to_drive` / `sync_dir_to_drive` hand
   an item to its drive (a plain `fsync` on macOS), `DeviceBarriers` owes each written device one `F_FULLFSYNC` on an
-  interval and at the close (`flush`), and `sync_file_data` is the full flush for a writer of one file (with the `fsync`
-  fallback a Samba mount needs). The OS split is `src/durable/platform/` (one sync reaches the platter on Linux,
-  Windows, and wasm, so the barrier is nothing there). The rule and its measurements:
-  `crates/cmdr-operations/src/transfer/DETAILS.md` § Durability.
+  interval and at the close (`flush`) and counts the time its passes take (`time_spent`, which the write ETA leaves out
+  of its learned costs: `crates/cmdr-operations/DETAILS.md` § "ETA + throughput"), and `sync_file_data` is the full
+  flush for a writer of one file (with the `fsync` fallback a Samba mount needs). The OS split is
+  `src/durable/platform/` (one sync reaches the platter on Linux, Windows, and wasm, so the barrier is nothing there).
+  The rule and its measurements: `crates/cmdr-operations/src/transfer/DETAILS.md` § Durability.
 - `deadline/`: the timeouts and budgets every blocking wait goes through (`Deadline`, `BlockingBudget`, the detaching
   `timeout_detached_*` / `race_detached` helpers, `TimedOut`, `DeadlineError`), shared by the app's IPC commands and the
   subsystems under them. Must-knows in `src/deadline/CLAUDE.md`.

@@ -2,8 +2,10 @@
 //! file costs a fixed overhead plus its bytes at a fixed speed, and, like the
 //! engine (`cmdr_fs::durable::DeviceBarriers`), a file whose sync lands 2 s or
 //! more after the last device barrier pays the next one before it counts as
-//! done. Each test drives the estimator at the 200 ms emit cadence and compares
-//! `eta_seconds` with the time the simulation really has left.
+//! done, and reports the barrier time so far, a running barrier included
+//! (`DeviceBarriers::time_spent`). Each test drives the estimator at the 200 ms
+//! emit cadence and compares `eta_seconds` with the time the simulation really
+//! has left, and `bottleneck` with the axis the remaining time goes to.
 
 use super::*;
 
@@ -21,6 +23,9 @@ struct Workload {
     sizes: Vec<u64>,
     secs_per_file: f64,
     bytes_per_second: f64,
+    barrier_secs: f64,
+    /// When each barrier ends: each takes the `barrier_secs` before it.
+    barrier_ends: Vec<f64>,
     /// When each file starts and completes, and the bytes of every file
     /// before it.
     starts: Vec<f64>,
@@ -33,6 +38,7 @@ impl Workload {
         let mut starts = Vec::with_capacity(sizes.len());
         let mut ends = Vec::with_capacity(sizes.len());
         let mut bytes_before = Vec::with_capacity(sizes.len());
+        let mut barrier_ends = Vec::new();
         let (mut clock, mut bytes, mut last_barrier) = (0.0, 0u64, 0.0);
         for &size in &sizes {
             starts.push(clock);
@@ -41,6 +47,7 @@ impl Workload {
             if clock - last_barrier >= BARRIER_EVERY_SECS {
                 clock += barrier_secs;
                 last_barrier = clock;
+                barrier_ends.push(clock);
             }
             ends.push(clock);
             bytes += size;
@@ -49,6 +56,8 @@ impl Workload {
             sizes,
             secs_per_file,
             bytes_per_second,
+            barrier_secs,
+            barrier_ends,
             starts,
             ends,
             bytes_before,
@@ -68,6 +77,17 @@ impl Workload {
         let streaming = (at - self.starts[files_done] - self.secs_per_file).max(0.0);
         let partial = ((streaming * self.bytes_per_second) as u64).min(size);
         (self.bytes_before[files_done] + partial, files_done)
+    }
+
+    /// The barrier time the engine has counted at a second into the run, a
+    /// running barrier up to that second included.
+    fn barrier_time_at(&self, at: f64) -> Duration {
+        let ended = self.barrier_ends.partition_point(|&end| end <= at);
+        let running = self
+            .barrier_ends
+            .get(ended)
+            .map_or(0.0, |&end| (at - (end - self.barrier_secs)).max(0.0));
+        Duration::from_secs_f64(ended as f64 * self.barrier_secs + running)
     }
 
     fn finish(&self) -> f64 {
@@ -97,6 +117,7 @@ fn drive(workload: &Workload, until_secs: f64) -> Vec<Reading> {
             let stats = est.update(EtaSample {
                 now: start + Duration::from_millis(step * 200),
                 human_wait_total: Duration::ZERO,
+                barrier_total: workload.barrier_time_at(at),
                 phase: WriteOperationPhase::Copying,
                 reversal_bar: ReversalBar::Drains,
                 bytes_done,
@@ -169,6 +190,16 @@ fn a_run_of_tiny_files_estimates_from_the_files_left() {
     );
     assert_tracks(&readings, 115.0, 175.0, 0.1);
     assert_steady(&readings, 130.0, 175.0, 0.04);
+    // The folder bars follow the file count racing ahead, ❌ not the bytes
+    // still ahead over a collapsed byte rate (#1149).
+    assert_axis(&readings, 115.0, 175.0, ProgressAxis::Files);
+}
+
+/// Every reading in `[from, to)` reports `axis` as the bottleneck.
+fn assert_axis(readings: &[Reading], from: f64, to: f64, axis: ProgressAxis) {
+    for r in readings.iter().filter(|r| (from..to).contains(&r.at)) {
+        assert_eq!(r.stats.bottleneck, axis, "at {:.1} s", r.at);
+    }
 }
 
 /// Same run with no big files first, so nothing has measured what a byte
@@ -177,45 +208,40 @@ fn a_run_of_tiny_files_estimates_from_the_files_left() {
 fn a_run_of_tiny_files_from_the_start_estimates_from_the_files_left() {
     let readings = drive(&tiny_files_then_big(0), 60.0);
     assert_tracks(&readings, 15.0, 60.0, 0.1);
+    assert_axis(&readings, 15.0, 60.0, ProgressAxis::Files);
 }
 
 /// Big files stream at the device's speed: the estimate is the bytes left
-/// over the byte rate, as it always was, barrier and all.
+/// over the byte rate, as it always was, barrier and all, and the bars fill
+/// by bytes, not in four jumps of a file each.
 #[test]
 fn big_files_estimate_from_the_bytes_left() {
     let workload = Workload::new(vec![2_000_000_000; 4], 0.005, 100_000_000.0, SPINNING_DISK_BARRIER);
     let readings = drive(&workload, 80.0);
     assert_tracks(&readings, 5.0, 80.0, 0.05);
     assert_steady(&readings, 10.0, 80.0, 0.03);
+    assert_axis(&readings, 1.0, 80.0, ProgressAxis::Bytes);
 }
 
 /// Big files first, then a tail of small ones. During the big files the file
 /// count alone (2,000 files left at one per 2 s) said over an hour on about a
 /// minute of work; each half of the remaining work needs its own price.
 ///
-/// One known overshoot, pinned so it stays bounded: a big file takes longer
-/// than the barrier interval, so every one of them pays a barrier, and the
-/// counters can't tell that from a per-file cost. Until the small files arrive
-/// and re-measure it, each one left is priced a barrier too high.
+/// A big file takes longer than the barrier interval, so every one of them
+/// pays a barrier. Learned as a per-file cost, that priced each small file
+/// still ahead a barrier too high: +96 % on a disk image, +435 % on a spinning
+/// disk (#1149). The barrier time stays out of what the costs learn.
 #[test]
 fn big_files_then_small_ones_price_each_half_of_the_work() {
-    const SMALL_FILES: usize = 2_000;
-    let mut sizes = vec![100_000_000; 20];
-    sizes.extend(std::iter::repeat_n(4_000, SMALL_FILES));
-    let workload = Workload::new(sizes, 0.01, 50_000_000.0, DISK_IMAGE_BARRIER);
-    let readings = drive(&workload, 60.0);
-    let big_phase = readings.iter().filter(|r| (5.0..40.0).contains(&r.at));
-    for r in big_phase {
-        let eta = f64::from(r.stats.eta_seconds.expect("warmed up"));
-        let ceiling = (r.truth + SMALL_FILES as f64 * DISK_IMAGE_BARRIER) * 1.15 + 1.0;
-        assert!(
-            (r.truth * 0.85..=ceiling).contains(&eta),
-            "at {:.1} s the estimate said {eta} s, the truth is {:.0} s",
-            r.at,
-            r.truth,
-        );
+    for barrier in [DISK_IMAGE_BARRIER, SPINNING_DISK_BARRIER] {
+        let mut sizes = vec![100_000_000; 20];
+        sizes.extend(std::iter::repeat_n(4_000, 2_000));
+        let workload = Workload::new(sizes, 0.01, 50_000_000.0, barrier);
+        let readings = drive(&workload, 60.0);
+        assert_tracks(&readings, 5.0, 40.0, 0.1);
+        assert_tracks(&readings, 42.0, 60.0, 0.1);
+        assert_axis(&readings, 42.0, 60.0, ProgressAxis::Files);
     }
-    assert_tracks(&readings, 42.0, 60.0, 0.15);
 }
 
 /// Big and small files interleaved: the estimate lands between the two axes.

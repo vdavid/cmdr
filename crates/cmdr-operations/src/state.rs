@@ -676,6 +676,9 @@ impl WriteOperationState {
             // The seconds a person spent deciding are not the transfer's,
             // so the rate window doesn't get to count them.
             human_wait_total: self.human_wait.total_at(now),
+            // The local engine's barriers. A volume write's run inside its
+            // destination volume and don't show here (`eta.rs` module doc).
+            barrier_total: self.barriers.time_spent(),
             phase: event.phase,
             reversal_bar: self.reversal_bar(),
             bytes_done: event.bytes_done.saturating_sub(skipped_bytes),

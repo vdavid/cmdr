@@ -488,11 +488,22 @@ minutes of work deep in a folder of 1 kB files, with 1.5 GB of bigger files ahea
 - **A sample spans at least `MIN_FILES_WINDOW`**, so an off-cadence completion microseconds after the last emit doesn't
   read as a free file, and a stretch that moved nothing (a device barrier, a stall) is dropped: the rates already count
   it as slowness.
-- **Known limit:** a file longer than the 2 s barrier interval (`cmdr_fs::durable::BARRIER_INTERVAL`) pays a barrier
-  each, indistinguishable from a per-file cost in the counters, so during big files the small files still ahead are
-  priced one barrier high each until they start (12 ms on a disk image: +24 s on a 2,000-file tail).
+- **Device barriers stay out of what the costs learn.** A file longer than the 2 s barrier interval
+  (`cmdr_fs::durable::BARRIER_INTERVAL`) pays a barrier each, which the counters alone read as a per-file cost: during
+  big files, every small file still ahead was priced a barrier high (big-then-small overshot +96% on a disk image, +435%
+  on a spinning disk; #1149). `DeviceBarriers::time_spent` counts the time its passes take (a running one live, so a
+  barrier spanning two emits isn't taken out of the second whole), each `EtaSample` carries it as `barrier_total`, and
+  the cost model learns from the working time minus it. The rates keep it, since barriers are real slowness, and the
+  work-per-second side of the ETA prices the barriers still ahead at the pace they've been coming; no separate term was
+  needed (both shapes now land within 6.5%).
+- **Only the local engine's barriers show** (`WriteOperationState::barriers`). A volume write onto `LocalPosixVolume`
+  (MTP, SMB, or USB into a local disk) barriers on the VOLUME's tracker, shared by every operation writing there, so its
+  time can't be charged to one op and still reads as per-file cost. The fix would be `write_from_stream` answering the
+  barrier time its own call paid (on `StreamWritten`); worth it only if an import's tail estimates high, since those
+  backends' per-file overhead dwarfs a 12–62 ms barrier.
 - Pinned against a simulated device with known costs and the engine's barrier rule in `eta_workload_tests.rs` (the
-  reported tiny-file shape, big files, big-then-small, interleaved), the old `max` failing all five.
+  reported tiny-file shape, big files, big-then-small on both barrier costs, interleaved), the old `max` failing all
+  five.
 
 **EWMA, not blended overall:** `α = 1 - exp(-Δt / τ)` with `τ = 3 s` (see `EWMA_TAU_SECS`). Pure exponential decay, no
 "overall average" anchor. If the network drops mid-operation, the EWMA converges to the new rate within a few τ instead
@@ -542,12 +553,17 @@ burst the whole reported speed. Remaining work is identical either way (`done` a
 changes the rate and never the ETA's numerator. Every skip site calls `state.note_skipped(files, bytes)`; the list and
 the throttling that goes with it: `src/transfer/DETAILS.md` § "Skipped work moves the bars, and stays out of the rate".
 
-**The bottleneck axis:** `EtaStats::bottleneck` (and `WriteProgressEvent::bottleneck`) names the axis whose ETA decides,
-with hysteresis: the other axis takes over only after its ETA has led by more than 10% (`AXIS_LEAD`) for 3 s of working
-time (`AXIS_HOLD`). `Bytes` while warming up, `Files` from the start for an operation that moves no bytes (a rename
-move). Every folder bar in the transfer tree fills along it, so one answer serves every surface; a lead that comes and
-goes inside the hold would redraw them all. Pinned in `eta_tests.rs` (`the_file_count_takes_over_only_after_*`,
-`a_lead_that_ends_before_*`).
+**The bottleneck axis:** `EtaStats::bottleneck` (and `WriteProgressEvent::bottleneck`) names the axis holding the larger
+share of the remaining work at the learned costs (`costed_shares`: `b · bytes_left` against `a · files_left`), the same
+prices the estimate uses, so a folder bar fills as the time goes. The per-axis ETAs weigh in only when the costs price
+the work left at nothing. Comparing those ETAs was the old rule, and deep in a run of tiny files it picked bytes (the
+bytes ahead over a byte rate collapsed to kB/s read as hours): the bars crawled while the file count raced (#1149). It
+also put a copy of four 2 GB files on files for two-thirds of the run, filling in quarters. Hysteresis (`SettledAxis`):
+the other axis takes over only after its weight has led by more than 10% (`AXIS_LEAD`) for 3 s of working time
+(`AXIS_HOLD`). `Bytes` while warming up, `Files` from the start for an operation that moves no bytes (a rename move).
+Every folder bar in the transfer tree fills along it, so one answer serves every surface; a lead that comes and goes
+inside the hold would redraw them all. Pinned in `eta_tests.rs` (`the_file_count_takes_over_only_after_*`, `a_lead_*`)
+and per shape in `eta_workload_tests.rs` (`assert_axis`).
 
 **Phase transitions reset:** `update()` reseeds on every `phase` change. Without this, the counters' reset (scanning →
 copying both restart from 0) would feed a negative delta into the EWMA. Rollback is treated as a forward phase toward

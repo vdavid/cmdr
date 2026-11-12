@@ -17,11 +17,28 @@
 //! per half, each part of the remaining work costs what it really does. The
 //! `max` stays as the fallback for when the costs can't speak (`costed_eta`).
 //!
-//! Known limit: a file that takes longer than the device-barrier interval
-//! (2 s, `cmdr_fs::durable::BARRIER_INTERVAL`) pays a barrier each, which the
-//! counters can't tell from a per-file cost, so during a run of big files the
-//! small files still ahead are priced one barrier too high each, until they
-//! start and re-measure it. Pinned in `eta_workload_tests.rs`.
+//! ## Device barriers stay out of the costs
+//!
+//! A file that takes longer than the barrier interval (2 s,
+//! `cmdr_fs::durable::BARRIER_INTERVAL`) pays a barrier each, which the
+//! counters alone can't tell from a per-file cost: learned as one, it priced
+//! every small file still ahead a barrier too high (#1149). So each sample
+//! carries the operation's barrier time so far ([`EtaSample::barrier_total`],
+//! a running barrier counted live), and the cost model learns from the working
+//! time minus it. The rates keep it: barriers are real slowness, and the work
+//! the rates say gets done per second already prices the barriers still ahead
+//! at the pace they've been coming. Only the local engine's barriers show
+//! here; a volume write's (`LocalPosixVolume`) run inside the volume, shared
+//! across operations, and still read as per-file cost (DETAILS § "ETA +
+//! throughput").
+//!
+//! ## The bottleneck weighs the same costs
+//!
+//! The folder bars fill along [`EtaStats::bottleneck`]: the axis holding the
+//! larger share of the remaining work at the learned costs, so a bar fills as
+//! the time goes. Comparing each axis's own ETA instead picked bytes deep in a
+//! run of tiny files (the bytes ahead over a collapsed byte rate read as
+//! hours), and the bars crawled while the file count raced.
 //!
 //! ## Adaptivity
 //!
@@ -99,8 +116,8 @@ const MIN_ELAPSED_FOR_ETA: Duration = Duration::from_millis(800);
 /// the last one folds into the next window instead of dividing by nothing.
 const MIN_FILES_WINDOW: Duration = Duration::from_millis(150);
 
-/// How far the other axis's ETA must lead the bottleneck's before it counts as
-/// leading: 10 %, so two axes running neck and neck don't trade places.
+/// How far the other axis's weight must lead the bottleneck's before it counts
+/// as leading: 10 %, so two axes running neck and neck don't trade places.
 const AXIS_LEAD: f64 = 1.10;
 
 /// How long, in WORKING time, the other axis must keep leading before it takes
@@ -131,9 +148,9 @@ pub struct EtaStats {
     /// Seconds remaining. `None` while the estimator is warming up or when both
     /// rates are zero (operation stalled: no point lying about the ETA).
     pub eta_seconds: Option<u32>,
-    /// The axis whose own ETA (remaining over its rate) is the longer one,
-    /// which the folder bars fill along. Held steady: the other one
-    /// takes over only after leading by more than [`AXIS_LEAD`] for
+    /// The axis holding the larger share of the remaining work at the learned
+    /// costs, which the folder bars fill along (module doc). Held steady: the
+    /// other one takes over only after leading by more than [`AXIS_LEAD`] for
     /// [`AXIS_HOLD`] of working time. `Bytes` while warming up, `Files` for an
     /// operation that moves no bytes at all (a rename move).
     pub bottleneck: ProgressAxis,
@@ -159,6 +176,11 @@ pub struct EtaSample {
     /// (`super::human_wait::HumanWaitClock`). Monotonic; the estimator
     /// subtracts what accrued since the last sample from the elapsed wall time.
     pub human_wait_total: Duration,
+    /// How long this operation's device barriers have taken, in total
+    /// (`cmdr_fs::durable::DeviceBarriers::time_spent`). Monotonic. Unlike a
+    /// human wait it stays in the rates (a barrier IS the transfer being
+    /// slower), and leaves only the cost model's samples: see the module doc.
+    pub barrier_total: Duration,
     pub phase: WriteOperationPhase,
     /// Which way this operation's `RollingBack` frames run. Meaningless in any
     /// other phase, and read only there.
@@ -183,6 +205,9 @@ struct PhaseState {
     /// The human-wait reading at `last_t`, so the next sample can tell working
     /// time from time somebody spent deciding.
     last_human_wait: Duration,
+    /// The barrier reading at `last_t`, so the next sample can leave the
+    /// barrier time since out of what the cost model learns.
+    last_barrier: Duration,
     /// Working time seen in this phase: wall time minus every human wait. What
     /// the warm-up gate measures, so a copy paused 10 s into its first 200 ms of
     /// work doesn't come back claiming to be warmed up.
@@ -203,11 +228,50 @@ struct PhaseState {
     /// What a file costs against what a byte costs, learned over this phase:
     /// the weights that combine the two rates into one estimate.
     costs: CostModel,
-    /// The bottleneck as last reported.
+    /// The bottleneck as last reported, with its hysteresis.
+    axis: SettledAxis,
+}
+
+/// The bottleneck, held steady: the other axis takes over only after its
+/// weight has led by more than [`AXIS_LEAD`] for [`AXIS_HOLD`] of working
+/// time. An axis with no weight can't lead or be led.
+#[derive(Debug)]
+struct SettledAxis {
     axis: ProgressAxis,
-    /// When (in `working_elapsed`) the other axis started leading, while it
-    /// still does.
+    /// When (in working time) the other axis started leading, while it still
+    /// does.
     challenger_since: Option<Duration>,
+}
+
+impl SettledAxis {
+    fn new(axis: ProgressAxis) -> Self {
+        Self {
+            axis,
+            challenger_since: None,
+        }
+    }
+
+    /// Weighs the two axes at `now` (working time) and answers the bottleneck.
+    fn weigh(&mut self, bytes_weight: Option<f64>, files_weight: Option<f64>, now: Duration) -> ProgressAxis {
+        let (current, other) = match self.axis {
+            ProgressAxis::Bytes => (bytes_weight, files_weight),
+            ProgressAxis::Files => (files_weight, bytes_weight),
+        };
+        let other_leads = matches!((other, current), (Some(other), Some(current)) if other > current * AXIS_LEAD);
+        if !other_leads {
+            self.challenger_since = None;
+            return self.axis;
+        }
+        let since = *self.challenger_since.get_or_insert(now);
+        if now.saturating_sub(since) >= AXIS_HOLD {
+            self.axis = match self.axis {
+                ProgressAxis::Bytes => ProgressAxis::Files,
+                ProgressAxis::Files => ProgressAxis::Bytes,
+            };
+            self.challenger_since = None;
+        }
+        self.axis
+    }
 }
 
 /// Per-operation estimator. Constructed once when the operation starts; updated
@@ -230,6 +294,7 @@ impl EtaEstimator {
         let EtaSample {
             now,
             human_wait_total,
+            barrier_total,
             phase,
             reversal_bar,
             bytes_done,
@@ -253,6 +318,7 @@ impl EtaEstimator {
                 counters_drain,
                 last_t: now,
                 last_human_wait: human_wait_total,
+                last_barrier: barrier_total,
                 working_elapsed: Duration::ZERO,
                 last_bytes: bytes_done,
                 last_files: files_done,
@@ -263,8 +329,7 @@ impl EtaEstimator {
                 files_measured: false,
                 samples: 0,
                 costs: CostModel::new(),
-                axis,
-                challenger_since: None,
+                axis: SettledAxis::new(axis),
             });
             return EtaStats {
                 bottleneck: axis,
@@ -290,6 +355,7 @@ impl EtaEstimator {
             // the ETA on screen stays where the last real measurement left it.
             state.last_t = now;
             state.last_human_wait = human_wait_total;
+            state.last_barrier = barrier_total;
             state.last_bytes = bytes_done;
             state.last_files = files_done;
             state.files_window_count = files_done;
@@ -302,9 +368,15 @@ impl EtaEstimator {
         let delta_bytes = toward_target(counters_drain, state.last_bytes, bytes_done) as f64;
         let delta_files = toward_target(counters_drain, state.last_files as u64, files_done as u64);
         let completed_now = delta_files > 0;
-        state
-            .costs
-            .observe(delta_files as f64, delta_bytes, dt, MIN_FILES_WINDOW.as_secs_f64());
+        // A barrier a file paid on the way to done is the device's, on a clock
+        // of its own: left in, it reads as a cost of every file (module doc).
+        let barrier_secs = barrier_total.saturating_sub(state.last_barrier).as_secs_f64();
+        state.costs.observe(
+            delta_files as f64,
+            delta_bytes,
+            dt - barrier_secs.min(dt),
+            MIN_FILES_WINDOW.as_secs_f64(),
+        );
 
         let inst_bytes_rate = delta_bytes / dt;
 
@@ -319,6 +391,7 @@ impl EtaEstimator {
 
         state.last_t = now;
         state.last_human_wait = human_wait_total;
+        state.last_barrier = barrier_total;
         state.working_elapsed += Duration::from_secs_f64(dt);
 
         // The files window closes only on a completion. Between completions
@@ -408,13 +481,23 @@ fn compute_stats(
         .or_else(|| eta_from_axes(eta_bytes, eta_files));
         combined.map(|seconds| whole_seconds(seconds, remaining_bytes > 0 || remaining_files > 0))
     };
-    settle_axis(state, warmed_up, eta_bytes, eta_files, bytes_total, files_total);
+    // The bars fill along whatever the remaining work's time goes to, at the
+    // estimate's own prices; the per-axis ETAs weigh in only when the costs
+    // can't speak.
+    let bottleneck = if !warmed_up || (bytes_total == 0 && files_total > 0) {
+        state.axis = SettledAxis::new(starting_axis(bytes_total, files_total));
+        state.axis.axis
+    } else {
+        let (bytes_weight, files_weight) =
+            costed_shares(&state.costs, remaining_bytes, remaining_files).unwrap_or((eta_bytes, eta_files));
+        state.axis.weigh(bytes_weight, files_weight, state.working_elapsed)
+    };
 
     EtaStats {
         bytes_per_second,
         files_per_second,
         eta_seconds,
-        bottleneck: state.axis,
+        bottleneck,
     }
 }
 
@@ -425,41 +508,6 @@ fn starting_axis(bytes_total: u64, files_total: usize) -> ProgressAxis {
         ProgressAxis::Files
     } else {
         ProgressAxis::Bytes
-    }
-}
-
-/// Moves the bottleneck to the other axis once that one's ETA has led by more
-/// than [`AXIS_LEAD`] for [`AXIS_HOLD`] of working time. An axis with no rate
-/// yet can't lead or be led: nothing says how long it takes.
-fn settle_axis(
-    state: &mut PhaseState,
-    warmed_up: bool,
-    eta_bytes: Option<f64>,
-    eta_files: Option<f64>,
-    bytes_total: u64,
-    files_total: usize,
-) {
-    if !warmed_up || (bytes_total == 0 && files_total > 0) {
-        state.axis = starting_axis(bytes_total, files_total);
-        state.challenger_since = None;
-        return;
-    }
-    let (current, other) = match state.axis {
-        ProgressAxis::Bytes => (eta_bytes, eta_files),
-        ProgressAxis::Files => (eta_files, eta_bytes),
-    };
-    let other_leads = matches!((other, current), (Some(other), Some(current)) if other > current * AXIS_LEAD);
-    if !other_leads {
-        state.challenger_since = None;
-        return;
-    }
-    let since = *state.challenger_since.get_or_insert(state.working_elapsed);
-    if state.working_elapsed.saturating_sub(since) >= AXIS_HOLD {
-        state.axis = match state.axis {
-            ProgressAxis::Bytes => ProgressAxis::Files,
-            ProgressAxis::Files => ProgressAxis::Bytes,
-        };
-        state.challenger_since = None;
     }
 }
 
@@ -498,6 +546,22 @@ fn costed_eta(
     let work_left = per_file * remaining_files as f64 + per_byte * remaining_bytes as f64;
     let work_per_second = per_file * files_rate.max(0.0) + per_byte * bytes_rate.max(0.0);
     (work_left > 0.0 && work_per_second > 0.0).then(|| work_left / work_per_second)
+}
+
+/// The remaining work split by axis at the learned costs, in seconds of work:
+/// `(b · bytes_left, a · files_left)`. What the bottleneck weighs, ❌ never the
+/// per-axis ETAs where the costs can speak: deep in a run of tiny files, the
+/// bytes still ahead over a byte rate collapsed to kilobytes a second read as
+/// hours, and the bars crawled along bytes while the file count raced (#1149).
+/// `None` when the costs price the work left at nothing.
+fn costed_shares(
+    costs: &CostModel,
+    remaining_bytes: u64,
+    remaining_files: usize,
+) -> Option<(Option<f64>, Option<f64>)> {
+    let bytes_share = costs.secs_per_byte() * remaining_bytes as f64;
+    let files_share = costs.secs_per_file() * remaining_files as f64;
+    (bytes_share + files_share > 0.0).then_some((Some(bytes_share), Some(files_share)))
 }
 
 /// The fallback when the costed estimate can't speak: the longer of the two

@@ -42,6 +42,21 @@ fn many_files_on_one_device_cost_one_closing_barrier() {
     );
 }
 
+/// The time the passes took accrues when they run, and only then: the ETA
+/// leaves exactly that time out of what it learns a file costs (#1149).
+#[test]
+fn time_spent_counts_the_passes_only() {
+    let dir = TestDir::new("durable-time-spent");
+    let barriers = DeviceBarriers::with_interval(Duration::MAX);
+    write_and_note(&barriers, &dir, 20);
+    assert_eq!(barriers.time_spent(), Duration::ZERO, "noting a file runs no pass");
+
+    barriers.flush().unwrap();
+    let after_close = barriers.time_spent();
+    assert!(after_close > Duration::ZERO, "the closing pass took some time");
+    assert!(barriers.time_spent() >= after_close, "monotonic");
+}
+
 /// The interval pass: with it always due, every note barriers its device, and
 /// the close then owes nothing.
 #[test]
