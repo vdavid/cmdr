@@ -36,7 +36,7 @@ import {
 import {
   clickButtonByText,
   ensureAppReady,
-  expectAndDismissToast,
+  expectAndDismissQuickLookHint,
   getFixtureRoot,
   pollUntil,
   moveCursorToFile,
@@ -164,10 +164,10 @@ test.describe('MTP cancel: settle gate keeps "Canceling…" until BE quiets down
           .toBeTruthy()
       }
 
-      // The Space presses above fire the persistent Quick Look hint toast.
+      // The Space presses above fire the persistent Quick Look hint toast (macOS only).
       // Dismiss it before continuing so the safety net's leak check at end of
       // test doesn't trip on this side-effect toast.
-      await expectAndDismissToast(tauriPage, 'Space')
+      await expectAndDismissQuickLookHint(tauriPage)
 
       // Open the delete confirmation, confirm.
       await pressKey(tauriPage, 'F8')

@@ -39,6 +39,7 @@ import {
 } from '../e2e-shared/mcp-client.js'
 import {
   ensureAppReady,
+  expectAndDismissQuickLookHint,
   expectAndDismissToast,
   getFixtureRoot,
   moveCursorToFile,
@@ -158,10 +159,10 @@ test.describe('MTP delete reuses scan preview (no double scan)', () => {
           .toBeTruthy()
       }
 
-      // The first Space press fires the persistent Quick Look hint toast.
+      // The first Space press fires the persistent Quick Look hint toast (macOS only).
       // Dismiss it before continuing so it doesn't sit through the delete
       // and trip the safety-net leak guard at end-of-test.
-      await expectAndDismissToast(tauriPage, 'Space')
+      await expectAndDismissQuickLookHint(tauriPage)
 
       // Press F8 to open the delete confirmation dialog (MTP volumes force
       // a permanent delete because they don't support trash).

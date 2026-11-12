@@ -1201,8 +1201,9 @@ Toasts auto-dismiss after 4 seconds if `dismissal: 'transient'` (the default), o
 - **Test triggers a toast as a documented side effect** (e.g. F5 copy fires "Copy complete: copied 1 file."): same
   pattern. Use a stable prefix like `'Copy complete'` so the assertion survives small wording tweaks.
 - **Persistent toasts (AI download, update-ready, Quick Look hint)**: must be dismissed; assert on a stable fragment of
-  the message. The Quick Look hint that fires on first Space press, for example, is asserted with
-  `expectAndDismissToast(tauriPage, 'Space')` in `app.spec.ts`.
+  the message. The Quick Look hint fires on the first plain Space press only where the OS has Quick Look (macOS), so a
+  spec that presses Space settles it with `expectAndDismissQuickLookHint(tauriPage)`: it asserts and dismisses the hint
+  there, and asserts it stayed away on Linux. ❌ Never `expectAndDismissToast(tauriPage, 'Space')` outside that helper.
 - **Toasts nothing in the test triggered**: a device announcing itself fires on ITS schedule, not the test's, so the
   toast can land after whatever staged that area already cleaned up, and strand the run on something no step asked for.
   The virtual MTP device's connect toast does exactly this to the i18n capture run, which is why `i18n-capture.spec.ts`

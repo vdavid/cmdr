@@ -40,7 +40,7 @@ import {
   dismissOverlay,
   dispatchMenuCommand,
   ensureAppReady,
-  expectAndDismissToast,
+  expectAndDismissQuickLookHint,
   getFixtureRoot,
   pollUntil,
   moveCursorToFile,
@@ -158,10 +158,10 @@ test.describe('MTP copy pre-flight reuses watcher-backed listing', () => {
         .toBeTruthy()
     }
 
-    // The first Space press fires the persistent Quick Look hint toast.
+    // The first Space press fires the persistent Quick Look hint toast (macOS only).
     // Dismiss it before continuing so it doesn't sit through the rest of the
     // test and trip the safety-net leak guard.
-    await expectAndDismissToast(tauriPage, 'Space')
+    await expectAndDismissQuickLookHint(tauriPage)
 
     // Open the transfer-confirmation dialog via the same command path F5 hits
     // in production. `dispatchMenuCommand` is unaffected by DOM focus drift.

@@ -36,6 +36,7 @@ import {
 import {
   dismissOverlay,
   ensureAppReady,
+  expectAndDismissQuickLookHint,
   expectAndDismissToast,
   fileExistsInPane,
   focusPane,
@@ -434,12 +435,12 @@ test.describe('MTP file operations', () => {
       )
       .toBeTruthy()
 
-    // The first Space press fires the persistent Quick Look hint toast (Cmdr's
+    // The first Space press fires the persistent Quick Look hint toast (macOS only) (Cmdr's
     // Finder-convert reminder). Both Space presses share one toast because
     // the hint dedupes by id while it's already on screen. Dismiss the hint
     // before the delete so the safety net doesn't conflate it with the
     // Delete-complete toast we expect below.
-    await expectAndDismissToast(tauriPage, 'Space')
+    await expectAndDismissQuickLookHint(tauriPage)
 
     // Delete via MCP, standing in for the person who confirms
     await mcpConfirmedDelete('left')

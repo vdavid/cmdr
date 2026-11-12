@@ -448,6 +448,32 @@ export async function expectAndDismissToast(
     .toBeTruthy()
 }
 
+/**
+ * Settles the Space-key Quick Look hint after a spec pressed plain Space, on
+ * whichever OS the suite runs: where the OS has Quick Look (macOS), the first
+ * Space press fires the persistent hint, so assert and dismiss it; elsewhere
+ * ⇧Space previews nothing and the app shows no hint, so assert it stayed away.
+ *
+ * Call it AFTER the selection the Space press made is visible: the hint is
+ * added in the same key handler, so by then it's either up or never coming.
+ */
+export async function expectAndDismissQuickLookHint(tauriPage: PageLike): Promise<void> {
+  const hasQuickLook = await tauriPage.evaluate<boolean>(`(window.__CMDR_CAPABILITIES__ || {}).quickLook === true`)
+  if (hasQuickLook) {
+    await expectAndDismissToast(tauriPage, 'Space')
+    return
+  }
+  const hintToasts = await tauriPage.evaluate<number>(`(function(){
+        var toasts = document.querySelectorAll('.toast');
+        var count = 0;
+        for (var i = 0; i < toasts.length; i++) {
+            if ((toasts[i].textContent || '').indexOf('Space') !== -1) count++;
+        }
+        return count;
+    })()`)
+  expect(hintToasts, 'an OS without Quick Look shows no Space-key hint').toBe(0)
+}
+
 // ── Transfer-dialog counters ─────────────────────────────────────────────────
 
 /**

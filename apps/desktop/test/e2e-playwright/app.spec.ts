@@ -15,6 +15,7 @@ import {
   dismissOverlay,
   ensureAppReady,
   ensureExplorerFocused,
+  expectAndDismissQuickLookHint,
   expectAndDismissToast,
   findFileIndex,
   focusPane,
@@ -326,13 +327,7 @@ test.describe('Keyboard navigation', () => {
     // it pins the hint as part of the contract for this binding — the toast is
     // the documentation for the keyboard difference. Dismissed afterwards so
     // the safety net is happy. Elsewhere ⇧Space previews nothing, so no hint.
-    const hasQuickLook = await tauriPage.evaluate<boolean>(`(window.__CMDR_CAPABILITIES__ || {}).quickLook === true`)
-    if (hasQuickLook) {
-      await expectAndDismissToast(tauriPage, 'Space')
-    } else {
-      const toastCount = await tauriPage.evaluate<number>(`document.querySelectorAll('.toast').length`)
-      expect(toastCount).toBe(0)
-    }
+    await expectAndDismissQuickLookHint(tauriPage)
   })
 })
 
