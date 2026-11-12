@@ -5,8 +5,9 @@
 //! (`flush_created_destinations`), while one that only moved directory ENTRIES
 //! flushes the directories themselves (`flush_touched_directories`). Both
 //! announce the `Flushing` phase first, and both end with the operation's
-//! closing device barrier (`state.barriers`, `cmdr_fs::durable::DeviceBarriers`):
-//! every sync before it is a plain `fsync`, so one barrier covers them all.
+//! closing pass (`state.barriers`, `cmdr_fs::durable::DeviceBarriers`), which
+//! syncs the written files still waiting and then barriers: every sync before
+//! the barrier is a plain `fsync`, so one barrier covers them all.
 
 use cmdr_fs::durable::DeviceBarriers;
 use cmdr_fs::log_error::{ErrorLogText, ErrorText, LogError, write_plain};
@@ -52,22 +53,25 @@ impl ErrorLogText for FlushFailure {
 /// `fsync`s every directory that gained an entry, then runs the operation's
 /// closing device barrier. Blocks until it's done.
 ///
-/// - **File data.** `already_synced` holds the files the copy strategy already
-///   handed to the drive (chunked copy's inline `sync_to_drive`, noted in
-///   `state.barriers`) or for which a flush is moot (APFS clonefile / reflink,
-///   which share copy-on-write extents with the source). Their data sync is
-///   skipped. A symlink has no data of its own.
+/// - **File data.** `data_covered` holds the files whose sync `state.barriers`
+///   carries (chunked copy's `note_written`: synced inline on a network mount,
+///   or waiting for the pass, which `state.barriers.flush()` below runs) or for
+///   which a flush is moot (APFS clonefile / reflink, which share copy-on-write
+///   extents with the source). This loop skips them. A symlink has no data of
+///   its own.
 /// - **Directory entries.** A synced file is still only reachable once the entry
 ///   naming it is on disk, and FAT/exFAT keep no journal to replay a lost one.
 ///   So the parent of every created file AND of every created directory is
-///   fsynced, each distinct directory once, whatever `already_synced` says. A
+///   fsynced, each distinct directory once, whatever `data_covered` says. A
 ///   directory that only received a `mkdir` is covered by its parent's fsync.
-/// - **The barrier.** On macOS every sync above is a plain `fsync`, which stops
-///   at the drive's cache, so the pass ends with `state.barriers.flush()`: one
-///   `F_FULLFSYNC` per device the operation wrote to (nothing on Linux, whose
-///   `fdatasync` already flushed). A barrier the drive refuses is a failure,
-///   named after the first directory that gained an entry: the user's own
-///   destination, never a temp name.
+/// - **The closing pass.** On macOS every sync above is a plain `fsync`, which
+///   stops at the drive's cache, so the pass ends with `state.barriers.flush()`:
+///   it syncs the written files still waiting, then runs one `F_FULLFSYNC` per
+///   device the operation wrote to (nothing on Linux, whose `fdatasync` already
+///   flushed). A file sync it (or an earlier interval pass) couldn't confirm, or
+///   a barrier the drive refuses, is a failure, named after the first directory
+///   that gained an entry: the user's own destination, never a temp name. The
+///   log names the file.
 ///
 /// Every path is tried even after a failure, so the output ends as durable as it
 /// can, and the first failure is the answer. A move deletes its sources only on
@@ -87,7 +91,7 @@ pub(super) fn flush_created_destinations(
     bytes_total: u64,
     created_files: &[PathBuf],
     created_dirs: &[PathBuf],
-    already_synced: &HashSet<PathBuf>,
+    data_covered: &HashSet<PathBuf>,
 ) -> Result<(), FlushFailure> {
     emit_flushing_phase(
         events,
@@ -108,7 +112,7 @@ pub(super) fn flush_created_destinations(
         });
     };
 
-    for file in created_files.iter().filter(|file| !already_synced.contains(*file)) {
+    for file in created_files.iter().filter(|file| !data_covered.contains(*file)) {
         if let Err(e) = sync_file_data(file, &state.barriers) {
             log::warn!(
                 target: "write_durability",
@@ -148,14 +152,15 @@ pub(super) fn flush_created_destinations(
         }
     }
 
-    // The closing barrier, after every sync above: one per device, covering
-    // what the copy handed over file by file too.
+    // The closing pass, after every sync above: the written files still
+    // waiting, then one barrier per device, covering what the copy handed over
+    // file by file too.
     if let Err(failure) = state.barriers.flush() {
         log::warn!(
             target: "write_durability",
-            "flush: the drive didn't confirm the closing barrier (issued through {}): {}",
+            "flush: the drive didn't confirm the closing pass (at {}): {}",
             LogPrivate::path(&failure.path),
-            // allowed-log-private: an errno from `fcntl` on an open fd, which names no path
+            // allowed-log-private: an errno from `fsync` or `fcntl` on an open fd, which names no path
             failure.error
         );
         let named = dirs.first().map_or(failure.path.as_path(), PathBuf::as_path);

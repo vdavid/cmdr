@@ -61,13 +61,16 @@ the next section.
   its retirement, re-exported from it.
 - `metadata/`: what a copy puts on the item it wrote beyond the bytes, and clearing what makes Cmdr's own items refuse a
   rename or an unlink. § "`metadata`: what a copy keeps, and when it goes on".
-- `durable/`: making written files durable without a device barrier per file. `sync_to_drive` / `sync_dir_to_drive` hand
-  an item to its drive (a plain `fsync` on macOS), `DeviceBarriers` owes each written device one `F_FULLFSYNC` on an
-  interval and at the close (`flush`) and counts the time its passes take (`time_spent`, which the write ETA leaves out
-  of its learned costs: `crates/cmdr-operations/DETAILS.md` § "ETA + throughput"), and `sync_file_data` is the full
-  flush for a writer of one file (with the `fsync` fallback a Samba mount needs). The OS split is
-  `src/durable/platform/` (one sync reaches the platter on Linux, Windows, and wasm, so the barrier is nothing there).
-  The rule and its measurements: `crates/cmdr-operations/src/transfer/DETAILS.md` § Durability.
+- `durable/`: making written files durable without a sync or a device barrier per file. `sync_to_drive` /
+  `sync_dir_to_drive` hand an item to its drive (a plain `fsync` on macOS), `DeviceBarriers` runs a pass on an interval
+  and at the close (`flush`) that syncs the files written since the last one (`note_written`, on a local volume on
+  macOS; by name, with a whole-volume `fsync_volume_np` only as the fallback for a name it can't find) and owes each
+  written device one `F_FULLFSYNC`, keeps a sync it couldn't confirm for the next `flush` to answer, and counts the time
+  its barriers take (`time_spent`, which the write ETA leaves out of its learned costs; the file syncs stay in:
+  `crates/cmdr-operations/DETAILS.md` § "ETA + throughput"), and `sync_file_data` is the full flush for a writer of one
+  file (with the `fsync` fallback a Samba mount needs). The OS split is `src/durable/platform/` (one sync reaches the
+  platter on Linux, Windows, and wasm, so the barrier is nothing there). The rule and its measurements:
+  `crates/cmdr-operations/src/transfer/DETAILS.md` § Durability.
 - `deadline/`: the timeouts and budgets every blocking wait goes through (`Deadline`, `BlockingBudget`, the detaching
   `timeout_detached_*` / `race_detached` helpers, `TimedOut`, `DeadlineError`), shared by the app's IPC commands and the
   subsystems under them. Must-knows in `src/deadline/CLAUDE.md`.

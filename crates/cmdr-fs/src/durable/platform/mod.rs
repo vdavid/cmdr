@@ -19,6 +19,8 @@ const _: fn(&File) -> io::Result<()> = sync_to_drive;
 const _: fn(&File) -> io::Result<()> = sync_dir_to_drive;
 const _: fn(&File) -> io::Result<()> = device_barrier;
 const _: bool = NEEDS_DEVICE_BARRIER;
+const _: fn(&File) -> bool = defers_data_sync;
+const _: fn(&File) -> io::Result<()> = sync_volume;
 
 /// One file's data, all the way to the platter: the full sync for a writer of
 /// one file.
@@ -37,3 +39,11 @@ pub(super) use imp::device_barrier;
 /// Whether [`sync_to_drive`] stops short of the drive's cache, so a barrier is
 /// owed after it.
 pub(super) use imp::NEEDS_DEVICE_BARRIER;
+
+/// Whether a written file's [`sync_to_drive`] can wait for the next pass: only
+/// where a barrier follows it anyway, and only on a local volume.
+pub(super) use imp::defers_data_sync;
+
+/// Every write on the volume holding `file` handed to its drive, waited for.
+/// Reports no write error (macOS discards it): a catch-all, never the answer.
+pub(super) use imp::sync_volume;

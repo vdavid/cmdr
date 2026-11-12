@@ -108,23 +108,26 @@ pub(crate) fn chunked_copy_with_metadata(
         progress_callback,
     )?;
 
-    // Hand the file's bytes to the drive before signalling success: a plain
-    // `fsync`, and the operation's barriers owe its device one `F_FULLFSYNC`,
-    // run on an interval and by the closing flush before `write-complete`
-    // (`durability::flush_created_destinations`). A barrier per file was the
-    // whole cost of a many-small-file copy (#1145).
+    // The file has its bytes: the operation's barriers sync it. On a local
+    // disk that waits for the next pass (every 2 s, and the closing flush
+    // before `write-complete`), which syncs everything written since the last
+    // one and then barriers: a sync per file was most of what a many-small-file
+    // copy still cost (#1145). The landing tells the barriers its final name
+    // (`overwrite::stage_and_land_file`), and syncs it first when it replaces.
     //
-    // ❗ Before the dates, not after: on a macOS SMB mount, writes still
-    // buffered when the dates go on reach the server at the handle's real
-    // close (the landing rename), and the server stamps that close's time as
-    // the mtime (verified against the Docker Samba share, macOS 27.0,
-    // 2026-10-11: a time-set before the flush read back the rename's time).
-    // A plain `fsync` there is what the old `F_FULLFSYNC` fell back to.
-    cmdr_fs::durable::sync_to_drive(&dst_file).map_err(|e| WriteOperationError::WriteError {
-        path: dest.display().to_string(),
-        message: format!("Couldn't flush destination to disk: {}", e).into(),
-    })?;
-    state.barriers.note_synced(&dst_file, dest);
+    // ❗ Before the dates, not after: on a network mount `note_written` syncs
+    // here, and there it must. Writes still buffered when the dates go on
+    // reach the server at the handle's real close (the landing rename), and
+    // the server stamps that close's time as the mtime (verified against the
+    // Docker Samba share, macOS 27.0, 2026-10-11: a time-set before the flush
+    // read back the rename's time).
+    state
+        .barriers
+        .note_written(&dst_file, dest)
+        .map_err(|e| WriteOperationError::WriteError {
+            path: dest.display().to_string(),
+            message: format!("Couldn't flush destination to disk: {}", e).into(),
+        })?;
 
     // Best effort: a refused class is logged and the copy stands (invariant 1).
     let carried = CarriedMetadata::of_local_file(&src_file, &src_meta);

@@ -92,8 +92,10 @@ pub(super) struct Landed {
 /// Steps:
 /// 1. Run `write_bytes` against `dest.cmdr-tmp-{uuid}` (a sibling, so the
 ///    landing rename stays same-directory and therefore atomic).
-/// 2. `replacing` only: rename the existing entry to `dest.cmdr-temp-{uuid}`
-///    (the aside).
+/// 2. `replacing` only: hand the temp's bytes to the drive
+///    (`DeviceBarriers::hand_over`; a new file's sync waits for the barrier
+///    pass), then rename the existing entry to `dest.cmdr-temp-{uuid}` (the
+///    aside).
 /// 3. Rename the temp onto `dest`. Without `replacing` this refuses to clobber
 ///    an entry that appeared underneath us ([`rename_no_replace`]), keeping the
 ///    `O_EXCL`-shaped guarantee a direct create used to give. A refusal the temp
@@ -164,6 +166,19 @@ where
             return Err(e.on_item_instead(temp_path, dest));
         }
     };
+
+    // Replacing only: the bytes reach the drive BEFORE the user's file steps
+    // aside. A new file's sync waits for the operation's next barrier pass,
+    // but renaming unsynced bytes over the user's file means an OS crash can
+    // leave neither version. Every strategy's temp, a clone's too (cheap: its
+    // extents are the source's), so none can skip it.
+    if replacing && let Err(e) = state.barriers.hand_over(temp_path) {
+        discard_temp(state, &temp_record);
+        return Err(WriteOperationError::WriteError {
+            path: dest.display().to_string(),
+            message: format!("Couldn't flush destination to disk: {e}").into(),
+        });
+    }
 
     // Step 2: move the existing entry out of the way (overwrite only).
     //
@@ -264,8 +279,10 @@ where
             },
         });
     }
-    // The temp is gone (it IS `dest` now), so it stops being a partial.
+    // The temp is gone (it IS `dest` now), so it stops being a partial, and
+    // its pending sync follows it to the final name.
     in_flight_temps::retire(state, &temp_record);
+    state.barriers.note_renamed(temp_path, dest);
 
     // Step 4: Delete the renamed-aside original (non-critical, ignore errors).
     // Use remove_dir_all for directory asides (file-over-folder overwrite).
@@ -377,6 +394,8 @@ fn land_temp_clearing_blockers(
 /// still sitting on the drive in the user's hand. That record stays, and joins
 /// the pending set, so plugging the drive back in this same session sweeps it.
 fn discard_temp(state: &Arc<WriteOperationState>, temp: &TrackedRecord) {
+    // A temp thrown away owes no sync.
+    state.barriers.forget(temp.absolute());
     let settled = match fs::remove_file(temp.absolute()) {
         Ok(()) => true,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => !destination_has_left(state),

@@ -274,6 +274,13 @@ impl LocalPosixVolume {
         self.barriers.barriers_issued()
     }
 
+    /// This volume's barriers, so a test can see which files they synced and
+    /// script a sync to fail (`DeviceBarriers::script_syncs`).
+    #[cfg(any(test, feature = "testing"))]
+    pub fn barriers(&self) -> &cmdr_fs::durable::DeviceBarriers {
+        &self.barriers
+    }
+
     /// This volume with its barrier pass every `interval` instead of
     /// [`cmdr_fs::durable::BARRIER_INTERVAL`], so a test can leave only the
     /// closing one (`Duration::MAX`).
@@ -720,6 +727,7 @@ impl Volume for LocalPosixVolume {
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let from_abs = self.resolve(from);
         let to_abs = self.resolve(to);
+        let barriers = Arc::clone(&self.barriers);
         Box::pin(async move {
             spawn_blocking(move || {
                 if !force && from_abs != to_abs {
@@ -728,6 +736,9 @@ impl Volume for LocalPosixVolume {
                 } else {
                     std::fs::rename(&from_abs, &to_abs).map_err(|e| rename_volume_error(&e, &from_abs, &to_abs))?;
                 }
+                // A sync failure noted under the temp's name follows it, so
+                // the flush names the file the user sees.
+                barriers.note_renamed(&from_abs, &to_abs);
                 Ok(())
             })
             .await

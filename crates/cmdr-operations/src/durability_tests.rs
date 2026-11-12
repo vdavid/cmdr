@@ -54,7 +54,7 @@ fn landed_tree() -> Landed {
     }
 }
 
-fn flush(files: &[PathBuf], dirs: &[PathBuf], already_synced: &HashSet<PathBuf>) -> Result<(), FlushFailure> {
+fn flush(files: &[PathBuf], dirs: &[PathBuf], data_covered: &HashSet<PathBuf>) -> Result<(), FlushFailure> {
     let events = CollectorEventSink::new();
     let state = Arc::new(TestOperations::new().new_operation_state(Duration::from_millis(200)));
     flush_created_destinations(
@@ -68,7 +68,7 @@ fn flush(files: &[PathBuf], dirs: &[PathBuf], already_synced: &HashSet<PathBuf>)
         0,
         files,
         dirs,
-        already_synced,
+        data_covered,
     )
 }
 
@@ -101,7 +101,7 @@ fn fail_at(target: PathBuf, errno: i32) -> impl FnMut(&Path) -> Option<io::Resul
 /// fsynced, each exactly once however many files it holds, and an empty leaf
 /// directory (`inner`) costs nothing of its own: its parent's fsync covers it.
 #[test]
-fn every_directory_that_gained_an_entry_is_fsynced_once_even_when_file_data_was_already_synced() {
+fn every_directory_that_gained_an_entry_is_fsynced_once_even_when_file_data_was_data_covered() {
     let landed = landed_tree();
     let log = test_hook::record(|_| None);
 
@@ -111,7 +111,7 @@ fn every_directory_that_gained_an_entry_is_fsynced_once_even_when_file_data_was_
     assert_eq!(
         sorted(log.dirs()),
         dirs_that_gained_entries(&landed.dest),
-        "one fsync per directory that gained an entry, whatever `already_synced` says"
+        "one fsync per directory that gained an entry, whatever `data_covered` says"
     );
 }
 
@@ -418,4 +418,56 @@ fn every_errno_keeps_its_directory_fsync_answer() {
         );
     }
     assert!(!refuses_directory_fsync(&io::Error::other("no OS code")));
+}
+
+/// A chunked copy's files wait for the closing pass for their sync, so a write
+/// problem only that sync reveals surfaces here, after every file counted and
+/// landed. The flush answers it named after the user's own destination (the
+/// log names the file), which is what keeps a move's sources and marks a copy
+/// unconfirmed.
+#[cfg(target_os = "macos")]
+#[test]
+fn a_written_file_the_closing_pass_cant_confirm_fails_the_flush() {
+    let landed = landed_tree();
+    let _log = test_hook::record(|_| None);
+    let state = Arc::new(TestOperations::new().new_operation_state(Duration::from_millis(200)));
+    let failing = landed.files[3].clone();
+    for file in &landed.files {
+        let handle = fs::File::open(file).expect("open a landed file");
+        state
+            .barriers
+            .note_written(&handle, file)
+            .expect("a local volume defers");
+    }
+    let target = failing.clone();
+    state
+        .barriers
+        .script_syncs(move |path| (path == target).then(|| io::Error::from_raw_os_error(libc::EIO)));
+
+    let result = flush_created_destinations(
+        &CollectorEventSink::new(),
+        "op-durability-late",
+        WriteOperationType::Copy,
+        &state,
+        landed.files.len(),
+        landed.files.len(),
+        0,
+        0,
+        &landed.files,
+        &landed.dirs,
+        &landed.files.iter().cloned().collect(),
+    );
+
+    assert_eq!(
+        result,
+        Err(FlushFailure {
+            path: landed.dest.clone(),
+            errno: Some(libc::EIO),
+        })
+    );
+    assert_eq!(
+        sorted(state.barriers.synced_paths()),
+        sorted(landed.files.clone()),
+        "every written file got its sync, the failing one included"
+    );
 }

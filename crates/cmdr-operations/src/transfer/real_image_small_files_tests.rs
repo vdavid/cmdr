@@ -1,5 +1,7 @@
-//! A many-small-file copy onto a real second volume pays a device barrier on an
-//! interval and once at the end, never one per file (#1145).
+//! A many-small-file copy onto a real second volume pays a sync pass and a
+//! device barrier on an interval and once at the end, never one per file
+//! (#1145), and a sync that pass can't confirm keeps a move's sources and marks
+//! a copy unconfirmed.
 //!
 //! A child of `real_image`, so `pnpm check disk-images` (whose filter names
 //! `transfer::real_image::`) runs it. `#[ignore]`d like its parent. The elapsed
@@ -23,21 +25,39 @@ use crate::host::testing::pane_order_host;
 use crate::testing::TestOperations;
 use crate::types::{VolumeCopyConfig, WriteOperationConfig};
 
+/// How many files of what size, in how many folders.
+#[derive(Debug, Clone, Copy)]
+struct Shape {
+    files: usize,
+    size: usize,
+    folders: usize,
+}
+
 /// Enough files that a per-file barrier dominates (about 4 ms each on an
 /// internal SSD), few enough to write in seconds.
-const FILE_COUNT: usize = 3_000;
-const FILE_SIZE: usize = 4 * 1024;
-const FOLDERS: usize = 10;
+const SMALL: Shape = Shape {
+    files: 3_000,
+    size: 4 * 1024,
+    folders: 10,
+};
 
-/// A Mac-side tree of [`FILE_COUNT`] small files in [`FOLDERS`] folders.
-fn small_file_tree(label: &str) -> (TestDir, PathBuf) {
+/// A run long enough to span several barrier intervals that still fits the
+/// fixture image (about 64 MB free on APFS).
+const LARGER: Shape = Shape {
+    files: 10_000,
+    size: 4 * 1024,
+    folders: 20,
+};
+
+/// A Mac-side tree of `shape` small files.
+fn small_file_tree(label: &str, shape: Shape) -> (TestDir, PathBuf) {
     let dir = TestDir::new(label);
     let root = dir.join("tree");
-    for folder in 0..FOLDERS {
+    for folder in 0..shape.folders {
         let sub = root.join(format!("folder-{folder}"));
         std::fs::create_dir_all(&sub).expect("create a source folder");
-        for i in 0..FILE_COUNT / FOLDERS {
-            std::fs::write(sub.join(format!("file-{i:04}.txt")), vec![b'x'; FILE_SIZE]).expect("write a source file");
+        for i in 0..shape.files / shape.folders {
+            std::fs::write(sub.join(format!("file-{i:05}.txt")), vec![b'x'; shape.size]).expect("write a source file");
         }
     }
     (dir, root)
@@ -60,10 +80,10 @@ fn count_files(root: &Path) -> usize {
     clippy::print_stderr,
     reason = "a measurement prints its numbers, which `DETAILS.md` § Durability quotes"
 )]
-fn local_copy_onto(spec: ImageSpec) {
+fn local_copy_onto(spec: ImageSpec, shape: Shape) {
     let engine = TestOperations::new();
     let session = DiskImageSession::acquire();
-    let (_source_dir, source) = small_file_tree("small-files-local");
+    let (_source_dir, source) = small_file_tree("small-files-local", shape);
     let image = DiskImage::attach(&session, spec).expect("attach an image");
     let volume = image.volumes()[0].clone();
     let state = Arc::new(engine.new_operation_state(Duration::from_millis(200)));
@@ -81,39 +101,49 @@ fn local_copy_onto(spec: ImageSpec) {
     .expect("the copy completes");
     let elapsed = started.elapsed();
 
-    assert_eq!(count_files(&volume.mount_point.join("tree")), FILE_COUNT);
+    assert_eq!(count_files(&volume.mount_point.join("tree")), shape.files);
     let complete = events.complete.lock().expect("the event log isn't poisoned");
     assert!(complete[0].durability_unconfirmed.is_none());
     let barriers = state.barriers.barriers_issued();
-    // allowed-pluralize-noun: FILE_COUNT is a 3,000 constant, and the barrier count is a test's printout
-    eprintln!("local copy, {FILE_COUNT} x {FILE_SIZE} B onto {spec:?}: {elapsed:?}, {barriers} barriers");
-    assert_barriers_per_interval(barriers, elapsed);
+    // allowed-pluralize-noun: a test's printout of constants
+    eprintln!("local copy, {shape:?} onto {spec:?}: {elapsed:?}, {barriers} barriers");
+    assert_barriers_per_interval(barriers, elapsed, shape);
 }
 
 #[test]
 #[ignore = "attaches a real APFS disk image via hdiutil; run with --run-ignored"]
 fn a_local_small_file_copy_onto_apfs_barriers_per_interval_not_per_file() {
-    local_copy_onto(ImageSpec::Apfs);
+    local_copy_onto(ImageSpec::Apfs, SMALL);
 }
 
 #[test]
 #[ignore = "attaches a real HFS+ disk image via hdiutil; run with --run-ignored"]
 fn a_local_small_file_copy_onto_hfs_barriers_per_interval_not_per_file() {
-    local_copy_onto(ImageSpec::Hfs);
+    local_copy_onto(ImageSpec::Hfs, SMALL);
+}
+
+#[test]
+#[ignore = "attaches a real APFS disk image via hdiutil; run with --run-ignored"]
+fn a_larger_local_small_file_copy_onto_apfs_barriers_per_interval_not_per_file() {
+    local_copy_onto(ImageSpec::Apfs, LARGER);
+}
+
+#[test]
+#[ignore = "attaches a real HFS+ disk image via hdiutil; run with --run-ignored"]
+fn a_larger_local_small_file_copy_onto_hfs_barriers_per_interval_not_per_file() {
+    local_copy_onto(ImageSpec::Hfs, LARGER);
 }
 
 /// The volume engine (`write_from_stream` per file, `Volume::flush_writes` at
 /// the end), from the Mac's disk onto an image volume.
-#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-#[ignore = "attaches a real APFS disk image via hdiutil; run with --run-ignored"]
 #[allow(
     clippy::print_stderr,
     reason = "a measurement prints its numbers, which `DETAILS.md` § Durability quotes"
 )]
-async fn a_volume_small_file_copy_onto_another_volume_barriers_per_interval_not_per_file() {
+async fn volume_copy_onto(shape: Shape) {
     let engine = TestOperations::new();
     let session = DiskImageSession::acquire();
-    let (source_dir, source) = small_file_tree("small-files-volume");
+    let (source_dir, source) = small_file_tree("small-files-volume", shape);
     let image = DiskImage::attach(&session, ImageSpec::Apfs).expect("attach an image");
     let volume = image.volumes()[0].clone();
     let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
@@ -145,21 +175,121 @@ async fn a_volume_small_file_copy_onto_another_volume_barriers_per_interval_not_
     .expect("the copy completes");
     let elapsed = started.elapsed();
 
-    assert_eq!(count_files(&volume.mount_point.join("tree")), FILE_COUNT);
+    assert_eq!(count_files(&volume.mount_point.join("tree")), shape.files);
     drop(source);
     let barriers = dest_local.barriers_issued();
-    // allowed-pluralize-noun: FILE_COUNT is a 3,000 constant, and the barrier count is a test's printout
-    eprintln!("volume copy, {FILE_COUNT} x {FILE_SIZE} B onto APFS image: {elapsed:?}, {barriers} barriers");
-    assert_barriers_per_interval(barriers, elapsed);
+    // allowed-pluralize-noun: a test's printout of constants
+    eprintln!("volume copy, {shape:?} onto APFS image: {elapsed:?}, {barriers} barriers");
+    assert_barriers_per_interval(barriers, elapsed, shape);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "attaches a real APFS disk image via hdiutil; run with --run-ignored"]
+async fn a_volume_small_file_copy_onto_another_volume_barriers_per_interval_not_per_file() {
+    volume_copy_onto(SMALL).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "attaches a real APFS disk image via hdiutil; run with --run-ignored"]
+async fn a_larger_volume_small_file_copy_onto_another_volume_barriers_per_interval_not_per_file() {
+    volume_copy_onto(LARGER).await;
+}
+
+/// A small tree copied (or moved) by the local engine onto an HFS+ image with
+/// one file's sync scripted to fail at the pass, after it counted and landed.
+fn local_transfer_with_one_unconfirmed_sync(
+    move_it: bool,
+) -> (
+    TestDir,
+    PathBuf,
+    Result<(), crate::types::WriteOperationError>,
+    CollectorEventSink,
+) {
+    let engine = TestOperations::new();
+    let session = DiskImageSession::acquire();
+    let shape = Shape {
+        files: 40,
+        size: 4 * 1024,
+        folders: 2,
+    };
+    let (source_dir, source) = small_file_tree("small-files-unconfirmed", shape);
+    let image = DiskImage::attach(&session, ImageSpec::Hfs).expect("attach an image");
+    let volume = image.volumes()[0].clone();
+    let state = Arc::new(engine.new_operation_state(Duration::from_millis(200)));
+    state.barriers.script_syncs(|path| {
+        path.ends_with("folder-1/file-00007.txt")
+            .then(|| std::io::Error::from_raw_os_error(libc::EIO))
+    });
+    let events = CollectorEventSink::new();
+    let sources = [source.clone()];
+    let config = WriteOperationConfig::default();
+    let result = if move_it {
+        super::super::move_op::move_files_with_progress_inner(
+            &events,
+            "op-unconfirmed-move",
+            &state,
+            &sources,
+            &volume.mount_point,
+            &config,
+        )
+    } else {
+        copy_files_with_progress_inner(
+            &events,
+            "op-unconfirmed-copy",
+            &state,
+            &sources,
+            &volume.mount_point,
+            &config,
+        )
+    };
+    assert!(
+        state
+            .barriers
+            .synced_paths()
+            .iter()
+            .any(|path| path.ends_with("folder-1/file-00007.txt")),
+        "the failing file's sync ran"
+    );
+    assert_eq!(
+        count_files(&volume.mount_point.join("tree")),
+        shape.files,
+        "every copy landed"
+    );
+    (source_dir, source, result, events)
+}
+
+/// The move: a sync the pass couldn't confirm keeps EVERY source, typed.
+#[test]
+#[ignore = "attaches a real HFS+ disk image via hdiutil; run with --run-ignored"]
+fn a_local_move_whose_pass_cant_confirm_a_file_keeps_every_source() {
+    let (_dir, source, result, _events) = local_transfer_with_one_unconfirmed_sync(true);
+    let error = result.expect_err("an unconfirmed sync stops the move");
+    assert!(
+        matches!(error, crate::types::WriteOperationError::MoveNotConfirmed { .. }),
+        "{:?}",
+        error
+    );
+    assert_eq!(count_files(&source), 40, "every original stays");
+}
+
+/// The copy: it deletes nothing, so it completes, saying its output isn't
+/// confirmed durable.
+#[test]
+#[ignore = "attaches a real HFS+ disk image via hdiutil; run with --run-ignored"]
+fn a_local_copy_whose_pass_cant_confirm_a_file_completes_unconfirmed() {
+    let (_dir, _source, result, events) = local_transfer_with_one_unconfirmed_sync(false);
+    result.expect("a copy's flush failure doesn't stop it");
+    let complete = events.complete.lock().expect("the event log isn't poisoned");
+    assert!(complete[0].durability_unconfirmed.is_some());
 }
 
 /// At least the closing barrier, and no more than one per elapsed interval
 /// plus the close: thousands of files, a handful of barriers.
-fn assert_barriers_per_interval(issued: u64, elapsed: Duration) {
+fn assert_barriers_per_interval(issued: u64, elapsed: Duration, shape: Shape) {
     let intervals = (elapsed.as_secs_f64() / cmdr_fs::durable::BARRIER_INTERVAL.as_secs_f64()).ceil() as u64;
     assert!(
         (1..=intervals + 1).contains(&issued),
-        // allowed-pluralize-noun: a test's panic message, and FILE_COUNT is a 3,000 constant
-        "{issued} barriers over {elapsed:?} for {FILE_COUNT} files: one per interval plus the close"
+        // allowed-pluralize-noun: a test's panic message about constants
+        "{issued} barriers over {elapsed:?} for {shape:?}: one per interval plus the close"
     );
 }

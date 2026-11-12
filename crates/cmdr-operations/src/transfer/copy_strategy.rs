@@ -118,23 +118,24 @@ fn is_apfs(path: &Path) -> bool {
 // Strategy selection
 // ============================================================================
 
-/// Outcome of a single-file copy: bytes written, whether the destination's data
-/// is already with its drive, and the rename-blocking metadata a
-/// [`PostLanding::HandBack`] caller still owes the file.
+/// Outcome of a single-file copy: bytes written, whether something other than
+/// the end-of-op pass already answers for the destination's data, and the
+/// rename-blocking metadata a [`PostLanding::HandBack`] caller still owes the
+/// file.
 ///
-/// `data_synced` is `true` when the strategy either synced the file itself
-/// (chunked copy's inline `sync_to_drive`, which the operation's closing barrier
-/// covers) or when a flush is moot because the data
-/// shares copy-on-write extents with the source (APFS clonefile / btrfs-XFS
-/// reflink). The caller skips those in the end-of-op data sync so a long
-/// chunked batch isn't fsynced twice. `false` means the bytes may still live
-/// only in the page cache (Linux `copy_file_range` without reflink, the
-/// `std::fs::copy` fallback), so the caller must flush the destination before
-/// reporting completion.
+/// `data_covered` is `true` when the operation's barriers carry the file's sync
+/// (chunked copy's `DeviceBarriers::note_written`: synced inline on a network
+/// mount, or waiting for the next pass, which the closing flush runs) or when a
+/// flush is moot because the data shares copy-on-write extents with the source
+/// (APFS clonefile / btrfs-XFS reflink). The caller skips those in the
+/// end-of-op data sync so a long chunked batch isn't synced twice. `false`
+/// means the bytes may still live only in the page cache (Linux
+/// `copy_file_range` without reflink, the `std::fs::copy` fallback), so the
+/// caller must flush the destination before reporting completion.
 #[derive(Debug)]
 pub(super) struct StrategyCopyOutcome {
     pub bytes: u64,
-    pub data_synced: bool,
+    pub data_covered: bool,
     /// Empty unless the caller asked for [`PostLanding::HandBack`] and the file
     /// has an ACL or flags that would refuse its next rename.
     pub handed_back: LandedMetadata,
@@ -251,19 +252,20 @@ pub(super) fn copy_file_using(
             // Clonefile shares CoW extents with the source: flushing is moot.
             Ok(StrategyCopyOutcome {
                 bytes: landed.bytes,
-                data_synced: true,
+                data_covered: true,
                 handed_back: landed.handed_back,
             })
         }
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         LocalCopyStrategy::Chunked => {
-            // Chunked copy hands the file to its drive itself before returning.
+            // Chunked copy notes the file in the operation's barriers, which
+            // sync it (inline on a network mount, else at the next pass).
             let landed = stage_and_land_file(state, dest, needs_safe_overwrite, post_landing, |target| {
                 chunked_copy_with_metadata(source, target, state, progress_callback)
             })?;
             Ok(StrategyCopyOutcome {
                 bytes: landed.bytes,
-                data_synced: true,
+                data_covered: true,
                 handed_back: landed.handed_back,
             })
         }
@@ -281,7 +283,7 @@ pub(super) fn copy_file_using(
             })?;
             Ok(StrategyCopyOutcome {
                 bytes: landed.bytes,
-                data_synced: false,
+                data_covered: false,
                 handed_back: landed.handed_back,
             })
         }
@@ -294,7 +296,7 @@ pub(super) fn copy_file_using(
             })?;
             Ok(StrategyCopyOutcome {
                 bytes: landed.bytes,
-                data_synced: false,
+                data_covered: false,
                 handed_back: landed.handed_back,
             })
         }
@@ -498,10 +500,27 @@ mod tests {
                 None,
             )
             .unwrap();
-            assert!(outcome.data_synced, "the chunked arm syncs each file itself");
+            assert!(
+                outcome.data_covered,
+                "the chunked arm's files are the barriers' to sync"
+            );
             landed.push(dst);
         }
         assert_eq!(state.barriers.barriers_issued(), 0, "no barrier while copying");
+        let synced_while_copying = state.barriers.synced_paths();
+        if cfg!(target_os = "macos") {
+            assert_eq!(
+                synced_while_copying,
+                Vec::<std::path::PathBuf>::new(),
+                "a new file costs no sync of its own"
+            );
+        } else {
+            assert_eq!(
+                synced_while_copying.len(),
+                FILES,
+                "Linux's `fdatasync` per file is its barrier"
+            );
+        }
 
         let flushed = flush_created_destinations(
             &CollectorEventSink::new(),
@@ -525,6 +544,83 @@ mod tests {
             // allowed-pluralize-noun: FILES is a 100 constant, never 1
             "{FILES} files on one device cost one closing barrier"
         );
+        if cfg!(target_os = "macos") {
+            let mut synced = state.barriers.synced_paths();
+            synced.sort();
+            landed.sort();
+            assert_eq!(
+                synced, landed,
+                "the closing pass syncs each file once, by its final name"
+            );
+        }
+    }
+
+    /// A landing that REPLACES the user's file hands its bytes to the drive
+    /// before the rename: a new file's sync can wait for the pass, but renaming
+    /// unsynced bytes over the user's file means an OS crash can leave neither
+    /// version. The temp's name exists only before the landing, so a sync under
+    /// it is a sync before it.
+    #[test]
+    fn a_chunked_copy_that_replaces_a_file_syncs_before_its_landing() {
+        let engine = TestOperations::new();
+        let temp_dir = create_temp_dir("replace-sync");
+        let (src, dst) = (temp_dir.join("new.txt"), temp_dir.join("theirs.txt"));
+        fs::write(&src, b"new bytes").unwrap();
+        fs::write(&dst, b"the user's bytes").unwrap();
+        let mut state = engine.new_operation_state(Duration::from_millis(50));
+        state.barriers = cmdr_fs::durable::DeviceBarriers::with_interval(Duration::MAX);
+        let state = Arc::new(state);
+
+        copy_file_using(
+            LocalCopyStrategy::Chunked,
+            &state,
+            &src,
+            Announced::assumed(&dst),
+            true,
+            PostLanding::Apply,
+            None,
+        )
+        .unwrap();
+
+        let synced = state.barriers.synced_paths();
+        let before_landing: Vec<&std::path::PathBuf> = synced.iter().filter(|path| **path != dst).collect();
+        assert_eq!(before_landing.len(), 1, "one sync under the temp's name: {synced:?}");
+        assert_eq!(
+            before_landing[0].parent(),
+            dst.parent(),
+            "the temp is the landing's sibling"
+        );
+        assert!(!synced.contains(&dst), "nothing left for the pass to sync: {synced:?}");
+        assert_eq!(fs::read(&dst).unwrap(), b"new bytes");
+    }
+
+    /// The same for the clone arm, whose temp shares the source's extents: the
+    /// sync before a replacing landing is cheap there, and no arm skips it.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn a_cloned_copy_that_replaces_a_file_syncs_before_its_landing() {
+        let engine = TestOperations::new();
+        let temp_dir = create_temp_dir("replace-sync-clone");
+        let (src, dst) = (temp_dir.join("new.txt"), temp_dir.join("theirs.txt"));
+        fs::write(&src, b"new bytes").unwrap();
+        fs::write(&dst, b"the user's bytes").unwrap();
+        let state = running_state(&engine);
+
+        copy_file_using(
+            LocalCopyStrategy::AppleClone,
+            &state,
+            &src,
+            Announced::assumed(&dst),
+            true,
+            PostLanding::Apply,
+            None,
+        )
+        .unwrap();
+
+        let synced = state.barriers.synced_paths();
+        assert_eq!(synced.len(), 1, "{synced:?}");
+        assert_ne!(synced[0], dst, "synced under the temp's name, before the landing");
+        assert_eq!(fs::read(&dst).unwrap(), b"new bytes");
     }
 
     #[test]

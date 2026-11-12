@@ -1,8 +1,10 @@
 //! The estimate against a simulated device whose true costs are known: every
 //! file costs a fixed overhead plus its bytes at a fixed speed, and, like the
-//! engine (`cmdr_fs::durable::DeviceBarriers`), a file whose sync lands 2 s or
-//! more after the last device barrier pays the next one before it counts as
-//! done, and reports the barrier time so far, a running barrier included
+//! engine (`cmdr_fs::durable::DeviceBarriers`), a file whose note lands 2 s or
+//! more after the last pass pays the next one before it counts as done: the
+//! sync of every file written since the last pass (where those wait for it),
+//! then the device barrier. The simulation reports the barrier time so far, a
+//! running barrier included, and leaves the syncs out, as the engine does
 //! (`DeviceBarriers::time_spent`). Each test drives the estimator at the 200 ms
 //! emit cadence and compares `eta_seconds` with the time the simulation really
 //! has left, and `bottleneck` with the axis the remaining time goes to.
@@ -18,14 +20,16 @@ const SPINNING_DISK_BARRIER: f64 = 0.062;
 const DISK_IMAGE_BARRIER: f64 = 0.012;
 
 /// Every file costs `secs_per_file`, then streams its bytes at
-/// `bytes_per_second`, then pays the barrier when one is due.
+/// `bytes_per_second`, then pays the pass when one is due: `barrier_secs`
+/// plus `pass_secs_per_file` for each file the pass syncs.
 struct Workload {
     sizes: Vec<u64>,
     secs_per_file: f64,
     bytes_per_second: f64,
-    barrier_secs: f64,
-    /// When each barrier ends: each takes the `barrier_secs` before it.
-    barrier_ends: Vec<f64>,
+    /// When each pass's barrier starts and ends: the stretch the engine counts
+    /// in `time_spent`. The syncs before it are each file's own cost, which
+    /// the cost model has to see.
+    barriers: Vec<(f64, f64)>,
     /// When each file starts and completes, and the bytes of every file
     /// before it.
     starts: Vec<f64>,
@@ -34,20 +38,37 @@ struct Workload {
 }
 
 impl Workload {
+    /// Each file's sync is part of its own cost: a pass is the barrier alone.
     fn new(sizes: Vec<u64>, secs_per_file: f64, bytes_per_second: f64, barrier_secs: f64) -> Self {
+        Self::batched(sizes, secs_per_file, bytes_per_second, barrier_secs, 0.0)
+    }
+
+    /// Each file's sync waits for the pass, which pays `pass_secs_per_file`
+    /// for each file written since the last one (a local disk on macOS).
+    fn batched(
+        sizes: Vec<u64>,
+        secs_per_file: f64,
+        bytes_per_second: f64,
+        barrier_secs: f64,
+        pass_secs_per_file: f64,
+    ) -> Self {
         let mut starts = Vec::with_capacity(sizes.len());
         let mut ends = Vec::with_capacity(sizes.len());
         let mut bytes_before = Vec::with_capacity(sizes.len());
-        let mut barrier_ends = Vec::new();
-        let (mut clock, mut bytes, mut last_barrier) = (0.0, 0u64, 0.0);
+        let mut barriers = Vec::new();
+        let (mut clock, mut bytes, mut last_pass, mut waiting) = (0.0, 0u64, 0.0, 0usize);
         for &size in &sizes {
             starts.push(clock);
             bytes_before.push(bytes);
             clock += secs_per_file + size as f64 / bytes_per_second;
-            if clock - last_barrier >= BARRIER_EVERY_SECS {
+            waiting += 1;
+            if clock - last_pass >= BARRIER_EVERY_SECS {
+                clock += waiting as f64 * pass_secs_per_file;
+                let barrier_start = clock;
                 clock += barrier_secs;
-                last_barrier = clock;
-                barrier_ends.push(clock);
+                barriers.push((barrier_start, clock));
+                last_pass = clock;
+                waiting = 0;
             }
             ends.push(clock);
             bytes += size;
@@ -56,8 +77,7 @@ impl Workload {
             sizes,
             secs_per_file,
             bytes_per_second,
-            barrier_secs,
-            barrier_ends,
+            barriers,
             starts,
             ends,
             bytes_before,
@@ -82,12 +102,13 @@ impl Workload {
     /// The barrier time the engine has counted at a second into the run, a
     /// running barrier up to that second included.
     fn barrier_time_at(&self, at: f64) -> Duration {
-        let ended = self.barrier_ends.partition_point(|&end| end <= at);
-        let running = self
-            .barrier_ends
-            .get(ended)
-            .map_or(0.0, |&end| (at - (end - self.barrier_secs)).max(0.0));
-        Duration::from_secs_f64(ended as f64 * self.barrier_secs + running)
+        let secs: f64 = self
+            .barriers
+            .iter()
+            .take_while(|(start, _)| *start < at)
+            .map(|(start, end)| end.min(at) - start)
+            .sum();
+        Duration::from_secs_f64(secs)
     }
 
     fn finish(&self) -> f64 {
@@ -253,4 +274,45 @@ fn interleaved_big_and_small_files_land_in_between() {
     let workload = Workload::new(sizes, 0.01, 50_000_000.0, DISK_IMAGE_BARRIER);
     let readings = drive(&workload, 80.0);
     assert_tracks(&readings, 10.0, 80.0, 0.15);
+}
+
+/// The tiny-file run with each file's sync waiting for the pass (a local disk
+/// on macOS): 5 of a file's 62.5 ms paid there, a guess for a spinning disk,
+/// which nobody has measured yet. The pass's syncs stay OUT of `time_spent`:
+/// they're each file's own cost, which the cost model has to see. Counted as
+/// barrier time, this simulation priced the files left at half their cost
+/// when the syncs were most of it (50 of 62.5 ms), and the next test's big
+/// half 16 % short.
+///
+/// The trade it pins: the syncs arrive as one lump every 2 s, so the predicted
+/// finish wobbles more than with a sync per file, up to ~10 % of the time left
+/// here against the 4 % above.
+#[test]
+fn a_run_of_tiny_files_whose_syncs_wait_for_the_pass_estimates_from_the_files_left() {
+    let mut sizes = vec![8_000_000; 300];
+    sizes.extend(std::iter::repeat_n(1_000, 12_000));
+    sizes.extend([500_000_000; 3]);
+    let workload = Workload::batched(sizes, 0.0575, 30_000_000.0, SPINNING_DISK_BARRIER, 0.005);
+    let readings = drive(&workload, 175.0);
+    assert_tracks(&readings, 115.0, 175.0, 0.1);
+    assert_steady(&readings, 130.0, 175.0, 0.1);
+    assert_axis(&readings, 115.0, 175.0, ProgressAxis::Files);
+}
+
+/// Big files then small ones, with the small files' syncs (4 of their 10 ms)
+/// waiting for the pass. The big half prices as before. The small half's syncs
+/// show up only once its first pass has run, and then in lumps, so its
+/// estimate runs up to ~30 % short of the 10 % a sync per file holds: the
+/// cost of batching on a workload where the syncs are a large share.
+#[test]
+fn big_files_then_small_ones_with_batched_syncs_price_each_half_of_the_work() {
+    for barrier in [DISK_IMAGE_BARRIER, SPINNING_DISK_BARRIER] {
+        let mut sizes = vec![100_000_000; 20];
+        sizes.extend(std::iter::repeat_n(4_000, 2_000));
+        let workload = Workload::batched(sizes, 0.006, 50_000_000.0, barrier, 0.004);
+        let readings = drive(&workload, 60.0);
+        assert_tracks(&readings, 5.0, 40.0, 0.1);
+        assert_tracks(&readings, 45.0, 60.0, 0.3);
+        assert_axis(&readings, 42.0, 60.0, ProgressAxis::Files);
+    }
 }

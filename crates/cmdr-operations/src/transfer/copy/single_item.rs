@@ -258,11 +258,11 @@ pub(in crate::transfer) fn copy_single_item(
     // asking again. The person answered for the folder, not for the one child
     // that happened to reach the clash first. Empty in the common case.
     skipped_subtrees: &mut HashSet<PathBuf>,
-    // Destinations the copy strategy already handed to their drive (chunked copy's
-    // inline `sync_to_drive`, which `state.barriers` covers) or for which a flush is moot (APFS clonefile /
-    // reflink). The end-of-op flush pass skips these so a long chunked batch
-    // isn't fsynced twice. See `durability::flush_created_destinations`.
-    already_synced: &mut HashSet<PathBuf>,
+    // Destinations whose sync `state.barriers` carries (chunked copy's
+    // `note_written`) or for which a flush is moot (APFS clonefile / reflink).
+    // The end-of-op flush pass skips these so a long chunked batch isn't
+    // synced twice. See `durability::flush_created_destinations`.
+    data_covered: &mut HashSet<PathBuf>,
     // `Some` when the caller renames what lands here AGAIN (a cross-FS move's
     // staging tree): each file's rename-blocking set (ACL, Locked) goes in here
     // under the path it landed at, for the caller to apply once it's in its
@@ -753,8 +753,8 @@ pub(in crate::transfer) fn copy_single_item(
         // pass skips it. Strategies that leave bytes in the page cache
         // (Linux `copy_file_range`, the std fallback) are NOT recorded, so the
         // pass `fdatasync`s them before we report complete.
-        if outcome.data_synced {
-            already_synced.insert(actual_dest.clone());
+        if outcome.data_covered {
+            data_covered.insert(actual_dest.clone());
         }
 
         // Final accounting credits the full write weight (the file's size).

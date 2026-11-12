@@ -55,12 +55,18 @@ per pass however many files it gained (it used to be one per file). The caller o
 write done or deletes a source: the volume copy, the cross-volume move (before each sweep), archive move-out, fresh
 compress, the remote archive upload, and the drag-out fulfillment all run it. The tracker lives on the volume, so two
 operations writing through one volume share it, which only adds coverage: a barrier for one op covers the other's
-earlier files, and each still runs its own close. The per-file sync and the directory syncs are best-effort on error (a
-failure logs under `target: "write_durability"`); the closing barrier is what answers, and its refusal is an `IoError`
-naming the item it went through. Non-local backends keep the default `Ok`: durability there is the device's or server's
-concern once it answered. The rule and its measurements: `crates/cmdr-operations/src/transfer/DETAILS.md` § Durability.
-Pinned by `local_posix_durability_test.rs` (content through the finish path, and no barrier until `flush_writes`, then
-one). Unknown-length writes take the same path.
+earlier files, and each still runs its own close. A per-file sync that refuses doesn't fail its write (the bytes are
+written); it waits in the tracker (`DeviceBarriers::note_unconfirmed`), and the next `flush_writes` answers it, so a
+move keeps its source. It used to be logged and nothing else, which on Linux or a network mount, where no barrier
+follows, let a move delete sources over it. The directory syncs stay best-effort (logged under
+`target: "write_durability"`), and a refused barrier is an `IoError` naming the item it went through. Shared tracker,
+shared answers: a refused sync answers whichever operation flushes next (`streams.rs::flush_writes_impl`). The sync
+stays per file here, unlike the local engine's, which waits for the pass: this engine's copies run concurrently and
+overlap their syncs, and a pass that took them over measured slower. Non-local backends keep the default `Ok`:
+durability there is the device's or server's concern once it answered. The rule and its measurements:
+`crates/cmdr-operations/src/transfer/DETAILS.md` § Durability. Pinned by `local_posix_durability_test.rs` (content
+through the finish path, no barrier until `flush_writes` and then one, and a refused sync failing the flush).
+Unknown-length writes take the same path.
 
 **Decision**: `LocalPosixVolume` overrides `is_directory` and `entry_kind` with a bare `lstat` **Why**: `get_metadata`
 also stats a link's target and looks up owner names, none of which answers "what is at this path". Both answers see a

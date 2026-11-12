@@ -159,11 +159,11 @@ pub(super) fn move_with_staging(
     // Those files, which the walk below counts as done like any other.
     let mut locked_skipped_files = 0usize;
     // Durability bookkeeping. The Phase-2 copy records each file's STAGING dest
-    // in `transaction.created_files` (and in `already_synced` when the strategy
-    // already synced its data) and each directory it makes in
+    // in `transaction.created_files` (and in `data_covered` when the
+    // operation's barriers carry its sync) and each directory it makes in
     // `transaction.created_dirs`. Phase 3 moves the staged tree out, so before
     // the flush every one of them is mapped to where it landed (`landed_at`).
-    let mut already_synced: HashSet<PathBuf> = HashSet::new();
+    let mut data_covered: HashSet<PathBuf> = HashSet::new();
     // The ACL and Locked flag of each staged file that has one, keyed by STAGED
     // path. Either would refuse Phase 3's rename (and a failed move's staging
     // cleanup), so they go on only once Phase 3 has put the item in its final
@@ -265,7 +265,7 @@ pub(super) fn move_with_staging(
                 &mut created_dirs,
                 &mut dir_remap,
                 &mut skipped_subtrees,
-                &mut already_synced,
+                &mut data_covered,
                 Some(&mut deferred_landed),
                 &row,
             )?;
@@ -376,6 +376,13 @@ pub(super) fn move_with_staging(
     // name: their children landed, they didn't, so the user's folder keeps its
     // own metadata.
     let mut merged_staged: HashSet<PathBuf> = HashSet::new();
+
+    // Every staged file still waiting for its sync gets it now, under its
+    // staged name: Phase 3's renames move whole subtrees the barriers never
+    // hear about, and a merge's Overwrite lands a staged file over the user's,
+    // which must never rename unsynced bytes. A failure here is the closing
+    // flush's answer (`MoveNotConfirmed`, every source kept).
+    state.barriers.hand_over_written();
 
     // Phase 3: Atomic rename from staging to final destination
     let rename_result: Result<(), WriteOperationError> = (|| {
@@ -605,7 +612,7 @@ pub(super) fn move_with_staging(
         .iter()
         .filter_map(|p| landed_at(p))
         .collect();
-    let final_already_synced: HashSet<PathBuf> = already_synced.iter().filter_map(|p| landed_at(p)).collect();
+    let final_data_covered: HashSet<PathBuf> = data_covered.iter().filter_map(|p| landed_at(p)).collect();
     let final_created_dirs: Vec<PathBuf> = transaction.created_dirs.iter().filter_map(|p| landed_at(p)).collect();
     // Journal the destination directories this move created, under the paths they
     // LIVE at — the same staging→final rebase the leaf rows already got, since
@@ -630,7 +637,7 @@ pub(super) fn move_with_staging(
         scan_result.total_bytes,
         &final_dests,
         &final_created_dirs,
-        &final_already_synced,
+        &final_data_covered,
     ) {
         log::warn!(
             target: "write_durability",
