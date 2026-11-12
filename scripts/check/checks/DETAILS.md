@@ -1891,6 +1891,20 @@ placeholder, no marker, so cargo sees a missing watched file and reruns the buil
 normal run never hits it, because host `clippy` runs the script on the Mac first and populates the real files. Running
 the Linux lanes by name in a fresh worktree does; `cd apps/desktop && go run scripts/download-llama-server.go` fixes it.
 
+**Gotcha: without the worktree's git dir, the container's cargo watches gitignored files, and the doc build re-documents
+`cmdr` after every `tauri-build` run.** A worktree's `.git` is a file naming a dir in the main clone, outside the
+`/repo` bind mount, so cargo can't open the repo and lists each path package's files by walking it. A rustdoc unit gives
+cargo no dep-info, so its fingerprint is the newest mtime in that listing, and the listing then includes the gitignored
+`apps/desktop/src-tauri/gen/schemas/`, which `tauri-build` rewrites with different content per feature set (doc runs
+`--all-features`; clippy and the tests run the default). Every lane run that reran `cmdr`'s build script (a fresh
+worktree, a dependency change) made the next doc build re-document `cmdr` and its bin: 30–85 s, logged as
+`fingerprint dirty … /Doc/… PrecalculatedComponentsChanged { … (gen/schemas/capabilities.json) }`. So the container
+mounts the repo's common git dir read-only at its host path (`gitDirMountArgs`), and cargo lists exactly what the host
+lists. Verified 2026-11-12, cargo 1.99.1: `cargo package -p cmdr --list` in the container named `gen/schemas/*` without
+the mount and matched the host's listing with it; clippy → doc → tests → clippy → doc re-documented 2 units on the last
+doc without the mount and 0 with it. Host lanes never had it (their cargo reads the repo, and gitignored files aren't
+listed), and clippy and the tests never had it either (rustc's dep-info names only the files it read).
+
 Timings, 2026-09-30, OrbStack on 16 cores, host load 5–13 (shared machine):
 
 - **Cold** (fresh volumes): clippy 2m7s including the image build, tests 3m28s. The lane's September median before the

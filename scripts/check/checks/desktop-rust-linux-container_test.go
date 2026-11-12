@@ -195,3 +195,42 @@ func TestLinuxContainerRunArgsMountBothCaches(t *testing.T) {
 		}
 	}
 }
+
+// A linked worktree's `.git` file points outside the `/repo` bind mount; without that dir
+// in the container, cargo lists a package's files by walking it, gitignored build outputs
+// included, and the doc build re-documents `cmdr` after every `tauri-build` run
+// (`gitDirMountArgs`). The mount has to be the repo's COMMON dir (objects, refs) at its
+// host path, read-only; the main clone, whose `.git` is inside the mount, needs none.
+func TestLinuxContainerMountsAWorktreesGitDir(t *testing.T) {
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mainClone := filepath.Join(root, "main")
+	worktree := filepath.Join(root, "wt")
+	if err := os.Mkdir(mainClone, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	runGitIn(t, mainClone, "init", "-q", "-b", "main")
+	if err := os.WriteFile(filepath.Join(mainClone, "a.txt"), []byte("a\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGitIn(t, mainClone, "add", ".")
+	runGitIn(t, mainClone, "commit", "-qm", "init")
+	runGitIn(t, mainClone, "worktree", "add", "-q", worktree, "-b", "wt")
+
+	common := filepath.Join(mainClone, ".git")
+	if got, want := strings.Join(gitDirMountArgs(worktree), " "), "-v "+common+":"+common+":ro"; got != want {
+		t.Errorf("worktree mount = %q, want %q", got, want)
+	}
+	if got := gitDirMountArgs(mainClone); len(got) != 0 {
+		t.Errorf("the main clone needs no mount, got %v", got)
+	}
+	if got := gitDirMountArgs(t.TempDir()); len(got) != 0 {
+		t.Errorf("a dir outside any repo needs no mount, got %v", got)
+	}
+	runArgs := strings.Join(linuxContainer{TargetVolume: "v"}.runArgs(worktree), " ")
+	if !strings.Contains(runArgs, common+":"+common+":ro") {
+		t.Errorf("the lanes' container must carry the git dir mount, got %s", runArgs)
+	}
+}

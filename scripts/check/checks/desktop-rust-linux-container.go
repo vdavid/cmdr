@@ -184,7 +184,7 @@ func (c linuxContainer) buildNote() string {
 // the workspace root (and its Cargo.lock, and `.config/nextest.toml`, where the contention
 // profiles live).
 func (c linuxContainer) runArgs(rootDir string) []string {
-	return []string{
+	args := []string{
 		"-v", rootDir + ":/repo",
 		"-v", c.TargetVolume + ":" + linuxContainerTargetDir,
 		"-v", linuxCargoHomeVolume + ":" + linuxContainerCargoHome,
@@ -192,6 +192,67 @@ func (c linuxContainer) runArgs(rootDir string) []string {
 		"-e", "CARGO_TARGET_DIR=" + linuxContainerTargetDir,
 		"-e", "CARGO_HOME=" + linuxContainerCargoHome,
 	}
+	return append(args, gitDirMountArgs(rootDir)...)
+}
+
+// gitDirMountArgs mounts a linked worktree's git dir into the container, read-only, at its
+// host path, so cargo there sees the same repo the host does.
+//
+// A worktree's `.git` is a FILE naming a dir in the main clone (`gitdir: /…/.git/worktrees/x`),
+// outside the `/repo` bind mount. Without it, cargo can't open the repo, and lists a path
+// package's files by walking the dir, gitignored build outputs included. That listing is
+// what a rustdoc unit's fingerprint watches (its newest mtime, since rustdoc gives cargo no
+// dep-info), so every `tauri-build` run that rewrote the gitignored
+// `apps/desktop/src-tauri/gen/schemas/` (each feature set writes different content:
+// `cargo doc --all-features` one, clippy and the tests the default) made the next doc
+// build re-document `cmdr`, 35–85 s each time. Measured 2026-11-12, cargo 1.99.1:
+// `fingerprint dirty … /Doc/… PrecalculatedComponentsChanged { … (gen/schemas/capabilities.json) }`,
+// and `cargo package --list` in the container listed `gen/schemas/*` without the mount and
+// matched the host's listing (none) with it.
+//
+// The main clone's `.git` is a dir inside `/repo` already, so it needs nothing. A `.git`
+// this can't read gets nothing too: cargo falls back to walking, which costs re-docs, never
+// correctness.
+func gitDirMountArgs(rootDir string) []string {
+	dirs := linkedGitDirs(rootDir)
+	args := make([]string, 0, 2*len(dirs))
+	for _, d := range dirs {
+		args = append(args, "-v", d+":"+d+":ro")
+	}
+	return args
+}
+
+// linkedGitDirs is what a linked worktree's `.git` file points at: the repo's common dir
+// (objects, refs, config), plus the worktree's own git dir when it lives outside that.
+func linkedGitDirs(rootDir string) []string {
+	data, err := os.ReadFile(filepath.Join(rootDir, ".git"))
+	if err != nil {
+		return nil // a dir (the main clone), or no repo at all
+	}
+	gitDir, ok := strings.CutPrefix(strings.TrimSpace(string(data)), "gitdir:")
+	if !ok {
+		return nil
+	}
+	gitDir = strings.TrimSpace(gitDir)
+	if !filepath.IsAbs(gitDir) {
+		gitDir = filepath.Join(rootDir, gitDir)
+	}
+	gitDir = filepath.Clean(gitDir)
+	common := gitDir
+	if rel, err := os.ReadFile(filepath.Join(gitDir, "commondir")); err == nil {
+		common = strings.TrimSpace(string(rel))
+		if !filepath.IsAbs(common) {
+			common = filepath.Join(gitDir, common)
+		}
+		common = filepath.Clean(common)
+	}
+	if _, err := os.Stat(common); err != nil {
+		return nil
+	}
+	if gitDir == common || strings.HasPrefix(gitDir, common+string(filepath.Separator)) {
+		return []string{common}
+	}
+	return []string{common, gitDir}
 }
 
 // prepareLinuxContainer makes sure the image and the cache volumes exist.
