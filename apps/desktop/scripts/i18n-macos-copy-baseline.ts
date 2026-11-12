@@ -32,8 +32,8 @@ const README =
   'Frozen macOS copy: the resolved value a Mac reader of each locale saw for every platform-copy key, before any value held a platform block. Written by scripts/i18n-macos-copy-baseline.ts (first write, then --add-missing, which never rewrites an entry); held by src/lib/intl/macos-copy-unchanged.test.ts. Never edit or regenerate it to make that test pass.'
 
 /**
- * Keys the platform-copy work turns into blocks that the proposal's `strings` never
- * listed (`docs/specs/platform-copy-plan.md` § "Copy resolution"): the overturned
+ * Keys the platform-copy work turned into blocks that the proposal's `strings` never
+ * listed (each has its row in `docs/notes/windows-port/copy-final.json`): the overturned
  * `reviewedNoChange` rows (Windows "user folder", "recycle bin" keyword), the Quit
  * narration keys, the four permanent-delete siblings (`sourcesGone.continue` is
  * already a proposal row), the unscanned `{system_settings}` value, and the

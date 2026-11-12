@@ -10,8 +10,8 @@
  * ❌ Never edit or regenerate the baseline to make this pass: a red here means a
  * catalog edit changed what a Mac shows.
  *
- * The comparison (`macosCopyDrift`) lives beside the baseline reader, so the copy
- * migration script proves its output with the same code before it writes.
+ * The comparison (`macosCopyDrift`) lives beside the baseline reader, in
+ * `scripts/i18n-macos-copy-baseline-lib.ts`.
  *
  * Allowed differences, and only these:
  *  - `ACCEPTED_ENGLISH_CHANGES`: two English values David changed on purpose. Only

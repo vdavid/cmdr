@@ -22,7 +22,7 @@ launch boundary and the llama-server fetch.
 - **`precompress-demo.ts`**: the demo's `.br` files; **`demo-sample-docs/`**: its sample PDFs' sources
   (`src/lib/demo/DETAILS.md`)
 - **`i18n-*.ts`**: catalog lib, locale checks, generators, key sync, `pnpm i18n:brief`, termbase/mechanics checks
-  (`docs/i18n/termbase.md`). `*platform-copy*.ts`: per-OS copy (`src/lib/intl/DETAILS.md`)
+  (`docs/i18n/termbase.md`), per-OS blocks (`src/lib/intl/DETAILS.md`)
 - **`gen-analytics-defaults.ts`** (+ `-lib.ts`): the per-version settings-defaults manifest the dashboard resolves
   absent config keys against (`pnpm analytics:defaults`, guarded by `settings-defaults`); DETAILS § "The defaults
   manifest"

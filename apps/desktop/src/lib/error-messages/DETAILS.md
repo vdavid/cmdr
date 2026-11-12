@@ -108,14 +108,14 @@ An error that reads differently per OS is one whole-value `{platform, select, ma
 never ask the OS. The mechanism is `../intl/DETAILS.md` § Platform variants; the words per OS are `docs/style-guide.md`
 § "Platform vocabulary".
 
-- **Add or change a branch through `docs/notes/windows-port/copy-final.json`** and
-  `apps/desktop/scripts/apply-platform-copy.ts`, ❌ never by hand in a catalog: the script carries every locale's
-  translation into the branch it was made from and proves macOS text unmoved.
+- **Add or change a branch in `en`'s `errors.json`**, then translate as for any string. A new branch, or a plain value
+  turning into a block, restructures every locale in the same commit: `../intl/DETAILS.md` § "Changing a per-OS string".
 - **Tokens are per branch.** `{system_settings}`, `{privacy_and_security}`, and friends name macOS panes, so they appear
   in a `macos` branch only; Windows writes the Settings path out ("Settings > Network & internet") and Linux says "your
   system’s network settings". `{path}` / `{osMessage}` stay in every branch, and `esc(...)` still escapes them in all.
 - **An errno one OS never produces keeps the macOS text in that branch** (`authRequiredEneedauth` on Linux,
-  `attributeNotFound` on Windows), with a `lintExceptions` reason in `copy-final.json`.
+  `attributeNotFound` on Windows); where that text names a macOS thing, the branch is an `EXCEPTIONS` entry in
+  `apps/desktop/scripts/i18n-platform-vocabulary.test.ts`, with the reason.
 - **Then update the sibling golden** for each OS whose rendering moved: hand-edit those values only.
 - **A test asserting a branch** sets the OS with `withPlatform` (`#lib/platform/test-platform.js`): Vitest runs as Linux
   by default, so a test pinning macOS text says `withPlatform('macos')`.

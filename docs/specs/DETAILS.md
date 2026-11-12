@@ -14,9 +14,6 @@ Read this before adding, wiping, or reorganizing a spec.
 
 ## The specs
 
-- `platform-copy-plan.md`: **Cmdr's copy speaks macOS on every OS.** One whole-value platform select per string,
-  `platform` injected into ICU and split for the raw families, checks that learn the block, then the catalog migration
-  by script with macOS text pinned byte-identical. Issue: [#1103](https://github.com/getcmdr/cmdr/issues/1103).
 - `oplog-tree-plan.md`: **The Operation log shows a flat, capped list and can only undo a whole operation.** A
   master–detail dialog over a backend-owned, windowed item tree with checkboxes, partial rollback through the real
   engine, full keyboard, and a writer-maintained summary so two 2M-item operations stay fast. Issue:

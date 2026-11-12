@@ -50,6 +50,10 @@ backend says what exists, and a surface asks for exactly the thing it needs.
   session, read once at startup (`XDG_SESSION_TYPE`, else `WAYLAND_DISPLAY` unset): `global-hotkey` grabs keys through
   X11 only, so on Wayland the grab fires only inside XWayland windows. The backend asks it too before registering the
   hotkey (`downloads/runtime.rs`).
+- **Decision/Why: `homebrewCask` is a capability, though it's a distribution fact.** It fits "named after the UI that
+  asks" poorly and will want siblings (winget, Flathub) once those channels exist; the alternative was one
+  `distribution_note` line shown everywhere, with a branch per OS. Kept as a capability because only macOS has a channel
+  to star today; revisit when a second channel lands.
 - **`processDiagnostics` is the one flag no UI asks.** It decides whether the `memory_diagnostics` and `cpu_diagnostics`
   tools exist on this OS (`apps/desktop/src-tauri/src/tools/DETAILS.md` § The table), and it's here so every arm answers
   it. `colorTags` gates the `tag` tool the same way.

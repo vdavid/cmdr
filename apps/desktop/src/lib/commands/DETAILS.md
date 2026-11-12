@@ -190,6 +190,11 @@ palette only, so Linux's Keyboard shortcuts section listed "File properties" and
 menu bar's matching rows are `macos_only` in `crates/cmdr-menu/src/bar.rs`, kept in step per OS by
 `apps/desktop/src-tauri/src/menu/capability_rows_test.rs`.
 
+**Decision/Why: a gated command's label keeps its per-OS block.** With `needsCapability`, nothing shows "File
+properties" or "Preview" off macOS today, so `commands.fileGetInfo.label` and `commands.fileQuickLook.label` could be
+plain macOS values. They stay blocks: Windows has a native Properties dialog, so `getInfo` may turn on there, and the
+branch is ready when it does.
+
 ## Adding a command (full steps)
 
 1. Add the id to `COMMAND_IDS` in `command-ids.ts`. Skipping this makes the registry entry a compile error (`Command.id`

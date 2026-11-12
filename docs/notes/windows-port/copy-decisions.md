@@ -75,19 +75,34 @@ Windows, Linux, and macOS are each first-class, and a few extra lines of per-OS 
 
 ## Open rows
 
-Rows where the code doesn't settle a platform yet, so that platform keeps the macOS text (`openBranches` in
-`copy-final.json`, or the row's `note` where no branch can be written yet). Each reopens when the named code lands.
+Rows where the code doesn't settle a platform yet, so that platform keeps the macOS text. Each entry names what it waits
+on; when that lands, write the branch in the `en` catalog (`apps/desktop/src/lib/intl/DETAILS.md` § "Changing a per-OS
+string") and drop the entry here.
 
-- `transfer.metadataClass.extendedAttributes`, Windows: "Finder tags" stays until the Windows metadata bodies (`cmdr-fs`
-  `metadata/platform/windows.rs`, a stub) say which class a Windows copy reports there.
-- `settings.listing.showHiddenFiles.description`, Windows: "dotfiles (like .zshrc)" stays until the Windows listing
-  backend decides its hidden-file rule (the hidden attribute, dotfiles, or both).
-- `settings.advanced.oldMacosNoticeShown.label`, Windows and Linux: the hidden one-shot flag's label ("Old macOS notice
-  shown") still lists in the MCP `cmdr://settings` resource. No capability states "this OS has a supported-version floor
-  notice" (`startup-gates.ts` asks `isMacOS()`, which is right for the notice itself), and one hidden label doesn't earn
-  a new one. It closes when Windows gets its own old-version notice and the flag is renamed for both.
-- `main.oldWebkit.body`, Windows: no `windows` branch, so Windows would read the Linux text ("a newer WebKitGTK").
-  Unreachable today: the guard blocks an old WebKit, and Windows runs on the evergreen WebView2. Write the branch if the
-  boot guard ever gains a WebView2 floor.
-- `settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description`, Windows and Linux (X11):
-  "Requires Full Disk Access." stays with the key glyphs until #1102 passes the combo as a placeholder (the row's note).
+- **Waits on #1126** (task 35, `LocalWindowsVolume`):
+  - `transfer.metadataClass.extendedAttributes`, Windows: "Finder tags" stays until the Windows metadata bodies
+    (`cmdr-fs` `metadata/platform/windows.rs`, a stub) say which class a Windows copy reports there.
+  - `settings.listing.showHiddenFiles.description`, Windows: "dotfiles (like .zshrc)" stays until the Windows listing
+    backend decides its hidden-file rule (the hidden attribute, dotfiles, or both).
+- **Waits on #1102** (task 26, the per-platform keymap), which passes each combo as a placeholder in its own OS's
+  glyphs:
+  - The eight plain values with literal macOS key glyphs: `fileExplorer.clipboard.empty`, `queryUi.empty.tip`,
+    `queryUi.empty.tipAi`, `settings.fileOperations.pasteClipboardAsFile.description`,
+    `settings.fileExplorer.tabs.closedTabHistorySize.description`, `viewer.copyDialog.confirmBody`,
+    `viewer.copyDialog.refuseBody`, and
+    `settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description` (which also keeps "Requires Full
+    Disk Access." on Windows and Linux X11).
+  - `shortcuts.conflict.reservedByMacOs`, `shortcuts.section.macOsTooltip`, and `shortcuts.section.macOsBadge`: which
+    combos the OS reserves off macOS is the keymap's answer.
+- **Waits on task 59** (the Linux `desktop` value): GNOME and KDE wording (KDE Wallet Manager, the Plasma shortcut path,
+  GNOME's "Preferences"). Until then every Linux branch speaks desktop-neutral words ("your keyring", "your file
+  manager").
+- **Waits on no scheduled work**:
+  - `settings.advanced.oldMacosNoticeShown.label`, Windows and Linux: the hidden one-shot flag's label ("Old macOS
+    notice shown") still lists in the MCP `cmdr://settings` resource. No capability states "this OS has a
+    supported-version floor notice" (`startup-gates.ts` asks `isMacOS()`, which is right for the notice itself), and one
+    hidden label doesn't earn a new one. It closes when Windows gets its own old-version notice and the flag is renamed
+    for both.
+  - `main.oldWebkit.body`, Windows: no `windows` branch, so Windows would read the Linux text ("a newer WebKitGTK").
+    Unreachable today: the guard blocks an old WebKit, and Windows runs on the evergreen WebView2. Write the branch if
+    the boot guard ever gains a WebView2 floor.

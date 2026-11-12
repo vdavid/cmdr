@@ -280,19 +280,12 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     `cmdr/no-platform-copy-branch` keeps `isMacOS()` off copy, and macOS-only surfaces are capability-gated instead of
     reworded. The resolved English, one row per key, is `docs/notes/windows-port/copy-final.json` (299 rows applied in
     `en`, the 13 full locales, and the three overlays; macOS text unmoved in every language apart from the two accepted
-    English changes). Left: the rows still open per `docs/notes/windows-port/copy-decisions.md` § Open rows (each
-    waiting on the code its entry names), the rows waiting on #1102 (the eight values with literal key glyphs,
-    `shortcuts.conflict.reservedByMacOs`, `shortcuts.section.macOsTooltip` / `.macOsBadge`, and the global go-to-latest
-    description), and GNOME/KDE wording, which waits for task 59's Linux desktop value.
+    English changes). David reviewed the English (2026-11-12). Left: the rows in
+    `docs/notes/windows-port/copy-decisions.md` § Open rows, each naming what it waits on (#1126, #1102, task 59).
 28. [L] Win. Translate task 27's changed strings into the 13 languages (translator agents, per
-    `docs/guides/i18n-translation.md`). Needs 27, and starts only after David has reviewed task 27's English: a
-    translation of English he then changes is a wasted round.
-    - **His review edits go through the apply script**: change the row in `docs/notes/windows-port/copy-final.json`,
-      then `apps/desktop/scripts/apply-platform-copy.ts`, so every locale's branches follow
-      (`apps/desktop/src/lib/intl/DETAILS.md` § "Migrating copy to platform blocks"). Once they're applied, task 28
-      starts by deleting the script with its lib, lint, rows, and tests, and updates that section and the docs naming
-      them (`error-messages/DETAILS.md` § Platform branches, `apps/desktop/scripts/CLAUDE.md`, `copy-final.json`'s
-      `readme`).
+    `docs/guides/i18n-translation.md`). Needs 27, whose English David reviewed on 2026-11-12. A per-OS string that
+    changes from here on is edited in `en` directly (`apps/desktop/src/lib/intl/DETAILS.md` § "Changing a per-OS
+    string").
     - **The worklist** is `desktop-i18n-stale`: every migrated key is stale in each full locale and in the `es-419`
       forks (`en-GB` / `en-AU` are restamped English already). Its `macos` branch holds the existing translation; each
       branch whose English changed holds that English. Restamp a key only once every branch is translated.
@@ -303,9 +296,10 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     - **`macos-copy-unchanged.test.ts`** and its baseline
       (`apps/desktop/src/lib/intl/__fixtures__/macos-copy-baseline.json`, with
       `apps/desktop/scripts/i18n-macos-copy-baseline*.ts` and the `copy-proposal.json` it reads) stay through this task,
-      since they keep translator agents off the `macos` branches; delete them at its end. A translator who finds a WRONG
-      `macos` translation fixes it with an entry in `ACCEPTED_TRANSLATION_CHANGES` (locale, key, new text, reason) in
-      `i18n-macos-copy-baseline-lib.ts`, never by touching the baseline: the rule is
+      since they keep translator agents off the `macos` branches; delete them at its end, plus `copy-proposal.json` if
+      the generator is still its only code reader (the notes beside it cite it as evidence, so repoint those). A
+      translator who finds a WRONG `macos` translation fixes it with an entry in `ACCEPTED_TRANSLATION_CHANGES` (locale,
+      key, new text, reason) in `i18n-macos-copy-baseline-lib.ts`, never by touching the baseline: the rule is
       `docs/i18n/translator-instructions.md` (Per-OS values). Review those entries before the test is deleted.
     - **Releases are blocked until it's done**: `scripts/release.sh` runs `i18n-stale` strict, so every stale key fails
       the release.
