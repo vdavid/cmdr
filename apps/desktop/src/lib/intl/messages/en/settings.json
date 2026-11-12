@@ -2235,9 +2235,9 @@
     "description": "Settings > Appearance > Listing label for the choice of what typing letters in a file pane does: jump the cursor to a matching file, or filter the list down to matching files.",
     "screenshot": "settings-appearance-listing.png"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "Jump moves the cursor to the best match. Filter shows only the files and folders whose names contain what you type, like Total Commander’s quick filter; Delete (⌫) edits it and Esc clears it.",
+  "settings.fileExplorer.typeToJump.mode.description": "{platform, select, macos {Jump moves the cursor to the best match. Filter shows only the files and folders whose names contain what you type, like Total Commander’s quick filter; Delete (⌫) edits it and Esc clears it.} other {Jump moves the cursor to the best match. Filter shows only the files and folders whose names contain what you type, like Total Commander’s quick filter; Backspace edits it and Esc clears it.}}",
   "@settings.fileExplorer.typeToJump.mode.description": {
-    "description": "Help text for the type-in-pane mode setting. \"Total Commander\" is a product name (keep as-is). \"quick filter\" is Total Commander's name for the feature. Delete (⌫) and Esc are key names: use your language's standard name for each key (on macOS, VoiceOver's key names), and keep the ⌫ glyph. The option names Jump and Filter must match the badge prefixes fileExplorer.typeToJump.prefix and fileExplorer.quickFilter.prefix.",
+    "description": "Help text for the type-in-pane mode setting. \"Total Commander\" is a product name (keep as-is). \"quick filter\" is Total Commander's name for the feature. Delete (⌫), Backspace, and Esc are key names: use your language's standard name for each key (on macOS, VoiceOver's key names), and keep the ⌫ glyph. One key, named per OS: a Mac keyboard prints Delete (⌫) where a PC keyboard prints Backspace. The option names Jump and Filter must match the badge prefixes fileExplorer.typeToJump.prefix and fileExplorer.quickFilter.prefix.",
     "screenshot": "settings-appearance-listing.png"
   },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Jump",

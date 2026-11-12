@@ -1856,10 +1856,6 @@
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "‘Ga naar’ zet de cursor op de beste overeenkomst. ‘Filter’ toont alleen de bestanden en mappen waarvan de naam bevat wat je typt, zoals het snelfilter van Total Commander; Delete (⌫) past het aan en Escape wist het.",
-  "@settings.fileExplorer.typeToJump.mode.description": {
-    "sourceHash": "e142e97"
-  },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Ga naar",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
     "sourceHash": "9ee0ca3"

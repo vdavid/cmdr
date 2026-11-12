@@ -1854,10 +1854,6 @@
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "“Saltar” mueve el cursor a la mejor coincidencia. “Filtrar” muestra solo los archivos y carpetas cuyo nombre contiene lo que escribes, como el filtro rápido de Total Commander; la tecla Suprimir (⌫) lo edita y Esc lo borra.",
-  "@settings.fileExplorer.typeToJump.mode.description": {
-    "sourceHash": "e142e97"
-  },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Saltar",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
     "sourceHash": "9ee0ca3"

@@ -1855,10 +1855,6 @@
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "”Hoppa” flyttar markören till den bästa träffen. ”Filtrera” visar bara de filer och mappar vars namn innehåller det du skriver, som snabbfiltret i Total Commander. Backsteg (⌫) ändrar filtret och Escape rensar det.",
-  "@settings.fileExplorer.typeToJump.mode.description": {
-    "sourceHash": "e142e97"
-  },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Hoppa",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
     "sourceHash": "9ee0ca3"

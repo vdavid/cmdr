@@ -1856,10 +1856,6 @@
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "„Springen“ setzt den Cursor auf den besten Treffer. „Filtern“ zeigt nur die Dateien und Ordner an, deren Namen enthalten, was du tippst, wie der Schnellfilter von Total Commander. Mit der Löschtaste (⌫) änderst du ihn, mit der esc-Taste löschst du ihn.",
-  "@settings.fileExplorer.typeToJump.mode.description": {
-    "sourceHash": "e142e97"
-  },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Springen",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
     "sourceHash": "9ee0ca3"

@@ -1859,10 +1859,6 @@
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "« Aller à » place le curseur sur la meilleure correspondance. « Filtrer » n’affiche que les fichiers et dossiers dont le nom contient ce que vous tapez, comme le filtre rapide de Total Commander ; la touche Supprimer (⌫) le modifie et Échap l’efface.",
-  "@settings.fileExplorer.typeToJump.mode.description": {
-    "sourceHash": "e142e97"
-  },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Aller à",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
     "sourceHash": "9ee0ca3"

@@ -1852,10 +1852,6 @@
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "“跳转”会把光标移到最佳匹配项上。“筛选”只显示名称中包含你所输入内容的文件和文件夹，类似 Total Commander 的快速筛选。按 Delete（⌫）键可修改，按 Esc 键可清除。",
-  "@settings.fileExplorer.typeToJump.mode.description": {
-    "sourceHash": "e142e97"
-  },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "跳转",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
     "sourceHash": "9ee0ca3"

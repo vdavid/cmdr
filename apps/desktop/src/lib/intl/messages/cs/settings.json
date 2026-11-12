@@ -1851,10 +1851,6 @@
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "Skok přesune kurzor na nejlepší shodu. Filtr zobrazí jen soubory a složky, jejichž názvy obsahují to, co píšete, podobně jako rychlý filtr v programu Total Commander; klávesou Delete (⌫) ho upravíte a klávesou Esc vymažete.",
-  "@settings.fileExplorer.typeToJump.mode.description": {
-    "sourceHash": "e142e97"
-  },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Skok",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
     "sourceHash": "9ee0ca3"

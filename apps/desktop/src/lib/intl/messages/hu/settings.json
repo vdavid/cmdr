@@ -1853,10 +1853,6 @@
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "Az Ugrás mód a legjobb találatra viszi a kurzort. A Szűrés mód csak azokat a fájlokat és mappákat mutatja, amelyek nevében szerepel, amit beírsz, mint a Total Commander gyorsszűrője. A Delete (⌫) billentyűvel módosíthatod, az Escape billentyűvel törölheted.",
-  "@settings.fileExplorer.typeToJump.mode.description": {
-    "sourceHash": "e142e97"
-  },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Ugrás",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
     "sourceHash": "9ee0ca3"

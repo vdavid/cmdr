@@ -1852,10 +1852,6 @@
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "「跳至」會把游標移到最符合的項目上。「篩選」只顯示名稱包含你輸入內容的檔案和資料夾，就像 Total Commander 的快速篩選。按 Delete（⌫）鍵可修改，按 Esc 鍵可清除。",
-  "@settings.fileExplorer.typeToJump.mode.description": {
-    "sourceHash": "e142e97"
-  },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "跳至",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
     "sourceHash": "9ee0ca3"

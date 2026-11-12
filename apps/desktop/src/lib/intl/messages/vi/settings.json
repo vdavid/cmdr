@@ -1850,10 +1850,6 @@
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "“Nhảy tới” đưa con trỏ tới kết quả khớp nhất. “Lọc” chỉ hiển thị các tệp và thư mục có tên chứa nội dung bạn gõ, giống bộ lọc nhanh của Total Commander. Nhấn phím Delete (⌫) để sửa và Escape để xóa bộ lọc.",
-  "@settings.fileExplorer.typeToJump.mode.description": {
-    "sourceHash": "e142e97"
-  },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Nhảy tới",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
     "sourceHash": "9ee0ca3"

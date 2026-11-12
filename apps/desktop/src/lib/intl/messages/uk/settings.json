@@ -1850,10 +1850,6 @@
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "«Перехід» переміщує курсор до найкращого збігу. «Фільтр» показує лише файли й папки, назви яких містять введене, як швидкий фільтр у Total Commander; клавішею Delete (⌫) його можна редагувати, а Esc його очищує.",
-  "@settings.fileExplorer.typeToJump.mode.description": {
-    "sourceHash": "e142e97"
-  },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Перехід",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
     "sourceHash": "9ee0ca3"

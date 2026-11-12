@@ -1850,10 +1850,6 @@
   "@settings.fileExplorer.typeToJump.mode.label": {
     "sourceHash": "4ee8ef5"
   },
-  "settings.fileExplorer.typeToJump.mode.description": "«Переход» ставит курсор на лучшее совпадение. «Фильтр» показывает только файлы и папки, в именах которых есть введенный текст, как быстрый фильтр в Total Commander; клавиша Delete (⌫) меняет текст фильтра, а Escape очищает его.",
-  "@settings.fileExplorer.typeToJump.mode.description": {
-    "sourceHash": "e142e97"
-  },
   "settings.fileExplorer.typeToJump.mode.opt.jump": "Переход",
   "@settings.fileExplorer.typeToJump.mode.opt.jump": {
     "sourceHash": "9ee0ca3"
