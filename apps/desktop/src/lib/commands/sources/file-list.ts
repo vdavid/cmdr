@@ -4,7 +4,7 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
-import { cmdOrCtrl, concatShortcuts, sameOnAll } from '../platform-shortcuts'
+import { cmdOrCtrl, sameOnAll } from '../platform-shortcuts'
 import { getBadgeStatus } from '#lib/feature-status.js'
 import { sameKindCommandLabel } from '#lib/file-explorer/pane/same-kind-target.svelte.js'
 import { trashUndoCommandLabel } from '#lib/file-operations/delete/trash-undo.js'
@@ -39,7 +39,7 @@ export const fileListCommands: CommandSource[] = [
     showInPalette: true,
     // `Enter` and `⌘↓` are display entries; FilePane handles both keys directly in
     // `handleKeyDown` (mirroring `⌘↑` = parent), the palette/MCP path uses the handler.
-    shortcuts: concatShortcuts(sameOnAll('Enter'), cmdOrCtrl('⌘↓')),
+    shortcuts: { macos: ['Enter', '⌘↓'], windows: ['Enter', 'Ctrl+PageDown'], linux: ['Enter', 'Ctrl+PageDown'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -47,7 +47,11 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navParent.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: concatShortcuts(sameOnAll('Backspace'), cmdOrCtrl('⌘↑')),
+    shortcuts: {
+      macos: ['Backspace', '⌘↑'],
+      windows: ['Backspace', 'Alt+↑', 'Ctrl+PageUp'],
+      linux: ['Backspace', 'Alt+↑', 'Ctrl+PageUp'],
+    },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -55,7 +59,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navHome.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: sameOnAll('⌥↑', 'Home'),
+    shortcuts: { macos: ['⌥↑', 'Home'], windows: ['Home'], linux: ['Home'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -63,7 +67,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navEnd.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: sameOnAll('⌥↓', 'End'),
+    shortcuts: { macos: ['⌥↓', 'End'], windows: ['End'], linux: ['End'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -87,7 +91,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navBack.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘['),
+    shortcuts: { macos: ['⌘[', '⌥←'], windows: ['Alt+←'], linux: ['Alt+←'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -95,7 +99,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navForward.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘]'),
+    shortcuts: { macos: ['⌘]', '⌥→'], windows: ['Alt+→'], linux: ['Alt+→'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -104,7 +108,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.navGoToRoot.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘/'),
+    shortcuts: { macos: ['⌘/'], windows: ['Ctrl+\\', 'Ctrl+<', 'Ctrl+/'], linux: ['Ctrl+\\', 'Ctrl+<', 'Ctrl+/'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -121,15 +125,17 @@ export const fileListCommands: CommandSource[] = [
   },
   {
     // ErrorPane owns this key outright: it registers a CAPTURE-phase document
-    // listener while an error screen is showing, so ⌘D reaches the disclosure even
-    // when the user has bound ⌘D to something else. Fixed for exactly that reason
+    // listener while an error screen is showing, so its key reaches the disclosure even
+    // when the user has bound it to something else. Off macOS it's `Ctrl+Shift+D`
+    // (`Ctrl+D` is Show favorites there), which a dev build's debug window also uses: the
+    // claim stops that one only while an error screen has focus. Fixed for exactly that reason
     // — a rebind here would be a no-op illusion, and releasing the key would break
     // the "Technical details ⌘D" hint the screen advertises.
     id: 'errorPane.toggleTechnicalDetails',
     nameKey: 'commands.errorPaneToggleTechnicalDetails.label',
     scope: 'Main window/Error screen',
     showInPalette: false,
-    shortcuts: cmdOrCtrl('⌘D'),
+    shortcuts: { macos: ['⌘D'], windows: ['Ctrl+Shift+D'], linux: ['Ctrl+Shift+D'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
@@ -247,14 +253,15 @@ export const fileListCommands: CommandSource[] = [
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
-    // ⌘D is Finder's Duplicate. The error screen's ⌘D (a capture-phase listener,
-    // `fixedKey` above) shows INSTEAD of the file list and shadows this one there
-    // on purpose, which `scope-hierarchy.ts` documents as a non-conflict.
+    // ⌘D is Finder's Duplicate; Windows and Linux take Total Commander's "copy in the same
+    // directory", `Shift+F5`, leaving `Ctrl+D` to Show favorites. On macOS the error screen's ⌘D
+    // (a capture-phase listener, `fixedKey` above) shows INSTEAD of the file list and shadows this
+    // one there on purpose, which `scope-hierarchy.ts` documents as a non-conflict.
     id: 'file.duplicate',
     nameKey: 'commands.fileDuplicate.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘D'),
+    shortcuts: { macos: ['⌘D'], windows: ['Shift+F5'], linux: ['Shift+F5'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileDuplicate.description',
   },
@@ -263,7 +270,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileCompress.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: sameOnAll('⌥F5'),
+    shortcuts: { macos: ['⌥F5'], windows: ['Alt+F5'], linux: ['Alt+F5', 'Alt+Shift+P'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
 
@@ -302,7 +309,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.editPasteAsMove.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘⌥V'),
+    shortcuts: { macos: ['⌘⌥V'], windows: ['Ctrl+Shift+V'], linux: ['Ctrl+Shift+V'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.editPasteAsMove.description',
   },
@@ -332,7 +339,7 @@ export const fileListCommands: CommandSource[] = [
     // and Windows users reach for it. The menu accelerator stays `F8` (first
     // shortcut); the other two dispatch purely via the document keydown handler,
     // which leaves them to a focused text field.
-    shortcuts: concatShortcuts(sameOnAll('F8'), cmdOrCtrl('⌘Backspace'), sameOnAll('Delete')),
+    shortcuts: { macos: ['F8', '⌘Backspace', 'Delete'], windows: ['F8', 'Delete'], linux: ['F8', 'Delete'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -342,7 +349,11 @@ export const fileListCommands: CommandSource[] = [
     showInPalette: true,
     // Each delete-to-trash key with Shift, Total Commander's way (`⇧F8`, `⇧Delete`),
     // plus Finder's "Delete Immediately" (`⌥⌘⌫`). The menu accelerator stays `⇧F8`.
-    shortcuts: concatShortcuts(sameOnAll('⇧F8', '⇧Delete'), cmdOrCtrl('⌘⌥Backspace')),
+    shortcuts: {
+      macos: ['⇧F8', '⇧Delete', '⌘⌥Backspace'],
+      windows: ['Shift+F8', 'Shift+Delete'],
+      linux: ['Shift+F8', 'Shift+Delete'],
+    },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -379,7 +390,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileShowInFileManager.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘⌥O'),
+    shortcuts: { macos: ['⌘⌥O'], windows: ['Ctrl+Shift+E'], linux: ['Ctrl+Shift+E'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -393,7 +404,7 @@ export const fileListCommands: CommandSource[] = [
     scope: 'Main window/File list',
     needsCapability: 'openTerminalHere',
     showInPalette: true,
-    shortcuts: concatShortcuts(sameOnAll('F9'), cmdOrCtrl('⌘⌥T')),
+    shortcuts: { macos: ['F9', '⌘⌥T'], windows: ['F9'], linux: ['F9'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileOpenTerminalHere.description',
     keywords: ['terminal', 'shell', 'console', 'cd', 'iterm', 'ghostty', 'warp'],
@@ -403,7 +414,7 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileCopyPath.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘⌥C'),
+    shortcuts: { macos: ['⌘⌥C'], windows: ['Ctrl+Shift+C'], linux: ['Ctrl+Shift+C'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -484,7 +495,7 @@ export const fileListCommands: CommandSource[] = [
     // Finder's own combo for the same thing. `⌃` is nearly unused here (only
     // `⌃Tab` / `⌃⇧Tab`), and `#lib/context-menu-ownership.ts` listens for the DOM
     // `contextmenu` event rather than a keydown, so nothing else wants it.
-    shortcuts: { macos: ['⌃Enter'], windows: ['Ctrl+Enter'], linux: ['Ctrl+Enter'] },
+    shortcuts: { macos: ['⌃Enter'], windows: ['Shift+F10', 'Ctrl+Enter'], linux: ['Shift+F10', 'Ctrl+Enter'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileContextMenu.description',
   },

@@ -206,13 +206,13 @@ Example: `⌘N` in `Main window/File list` and `⌘N` in `Main window` conflict 
 `Main window/Brief mode` and `←` in `Main window/Full mode` do NOT, because Brief and Full are siblings.
 
 `registry-conflicts.test.ts` walks the WHOLE shipped default set through `getAllConflicts`, once per platform, and
-demands the result match that platform's `allowedConflicts` list (empty on macOS; off macOS it holds the one `Ctrl+D`
-clash the keymap work removes). Without it the detector only ever ran against what a user typed into Settings, so a new
-registry entry could silently shadow an existing binding for everyone (the dispatch map keeps one winner per combo, so
-the loser just stops working, with no warning anywhere). A deliberate "keep both" clash is legal — it goes in
-`allowedConflicts` with its reason, and a second test fails on a stale entry so the list can't rot. Each platform runs
-under `withCapabilitiesPossibleOn(platform)`, so the gated commands that OS can offer take part. It also asserts the
-detector can still find a claimed combo, so a broken import or a scope typo can't turn the whole check vacuous.
+demands the result match that platform's `allowedConflicts` list (empty on all three). Without it the detector only ever
+ran against what a user typed into Settings, so a new registry entry could silently shadow an existing binding for
+everyone (the dispatch map keeps one winner per combo, so the loser just stops working, with no warning anywhere). A
+deliberate "keep both" clash is legal — it goes in `allowedConflicts` with its reason, and a second test fails on a
+stale entry so the list can't rot. Each platform runs under `withCapabilitiesPossibleOn(platform)`, so the gated
+commands that OS can offer take part. It also asserts the detector can still find a claimed combo, so a broken import or
+a scope typo can't turn the whole check vacuous.
 
 ### Key capture (`key-capture.ts`)
 
@@ -507,6 +507,12 @@ separation is load-bearing.
 
 Default shortcuts live in `command-registry.ts` and are baked into the app. Storing them in `shortcuts.json` would
 duplicate data and make defaults harder to change. Only customizations are stored, keeping the file small and clear.
+
+What a changed default means for a saved customization: a customized command stores its WHOLE list, so it keeps that
+list and gains nothing (a macOS user who rebound `nav.back` doesn't get its added `⌥←`; intended, since they chose their
+keys). A combo a user bound to ANOTHER command that a default now also claims is a conflict like any other: Settings
+shows it, and the dispatch map's rule picks the winner (most specific scope, then registry order), not "the user's
+binding first".
 
 ### Why scope hierarchy?
 

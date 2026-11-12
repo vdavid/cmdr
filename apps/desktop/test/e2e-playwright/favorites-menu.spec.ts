@@ -19,8 +19,6 @@
 import { waitBudget } from './wait-budget.js'
 import { test, expect } from './fixtures.js'
 import {
-  CTRL_OR_META,
-  dispatchMenuCommand,
   ensureAppReady,
   escapeOverlayUntilGone,
   getFixtureRoot,
@@ -29,6 +27,7 @@ import {
 } from './helpers.js'
 import { ensureMcpClient, mcpCall, mcpNavToPath, mcpReadResource } from '../e2e-shared/mcp-client.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
+import { defaultKey } from './helpers/registry-keys.js'
 
 type PageLike = TauriPage | BrowserPageAdapter
 
@@ -48,17 +47,9 @@ async function readFavorites(): Promise<{ id: string; name: string; path: string
   return rows
 }
 
-/**
- * Opens the favorites menu the way a person does.
- *
- * ❗ ⌃D only on macOS. Off macOS, Show favorites' default is `Ctrl+D`, so
- * on Linux it's Duplicate's combo too and the more specific scope wins it — pressing
- * it here would copy a fixture file and fail the dirty-tree guard. The command dispatch is
- * the same path ⌃D reaches, so Linux takes that half and macOS proves the key.
- */
+/** Opens the favorites menu the way a person does: Show favorites' key (⌃D on macOS, `Ctrl+D` elsewhere). */
 async function openFavoritesMenu(tauriPage: PageLike): Promise<void> {
-  if (CTRL_OR_META === 'Meta') await pressKey(tauriPage, 'Control+d')
-  else await dispatchMenuCommand(tauriPage, 'favorites.open')
+  await pressKey(tauriPage, defaultKey('favorites.open'))
   await tauriPage.waitForSelector(`${MENU} [data-accelerator="1"]`, 5000)
 }
 

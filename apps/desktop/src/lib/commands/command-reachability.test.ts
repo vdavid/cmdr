@@ -15,6 +15,7 @@ import { commandOffered, commands } from './command-registry'
 import { mcpCommands } from './sources/mcp'
 import { PLATFORMS } from './platform-shortcuts'
 import type { CommandId } from './command-ids'
+import type { Platform } from '#lib/platform/index.js'
 
 const MCP_ONLY_REASON =
   'MCP-only: carries a per-pane payload for an MCP tool, and the focused-pane commands are the keyboard path.'
@@ -29,11 +30,23 @@ const KEYBOARD_PATH_NOT_NEEDED: Partial<Record<CommandId, string>> = {
   'sort.set': MCP_ONLY_REASON,
 }
 
+const APP_MENU_ONLY =
+  "macOS's app menu runs it (AppKit owns the key); Windows and Linux have no app menu, so it binds no key there \
+(`docs/notes/windows-port/keymap-decisions.md`) and has no row or handler yet."
+
+/** Per-OS additions to `KEYBOARD_PATH_NOT_NEEDED`, for a command that has a keyboard path on one OS only. */
+const KEYBOARD_PATH_NOT_NEEDED_ON: Record<Platform, Partial<Record<CommandId, string>>> = {
+  macos: {},
+  windows: { 'app.quit': APP_MENU_ONLY, 'app.hide': APP_MENU_ONLY, 'app.hideOthers': APP_MENU_ONLY },
+  linux: { 'app.quit': APP_MENU_ONLY, 'app.hide': APP_MENU_ONLY, 'app.hideOthers': APP_MENU_ONLY },
+}
+
 const hasNoKeyboardPath = (c: (typeof commands)[number]): boolean =>
   getDefaultShortcuts(c.id).length === 0 && !c.showInPalette
 
 describe.each(PLATFORMS)('keyboard reachability on %s', (platform) => {
   const undos: (() => void)[] = []
+  const notNeeded = { ...KEYBOARD_PATH_NOT_NEEDED, ...KEYBOARD_PATH_NOT_NEEDED_ON[platform] }
 
   beforeAll(() => {
     undos.push(withPlatform(platform), withCapabilitiesPossibleOn(platform))
@@ -48,7 +61,7 @@ describe.each(PLATFORMS)('keyboard reachability on %s', (platform) => {
       .filter(commandOffered)
       .filter(hasNoKeyboardPath)
       .map((c) => c.id)
-      .filter((id) => !(id in KEYBOARD_PATH_NOT_NEEDED))
+      .filter((id) => !(id in notNeeded))
     expect(
       unreachable,
       'Give these a default shortcut, set `showInPalette: true`, or add a reason to KEYBOARD_PATH_NOT_NEEDED',
@@ -58,7 +71,7 @@ describe.each(PLATFORMS)('keyboard reachability on %s', (platform) => {
   it('keeps the exemption list tight: every exempt command really has no key and no palette row', () => {
     const exemptButReachable = commands
       .filter(commandOffered)
-      .filter((c) => c.id in KEYBOARD_PATH_NOT_NEEDED && !hasNoKeyboardPath(c))
+      .filter((c) => c.id in notNeeded && !hasNoKeyboardPath(c))
       .map((c) => c.id)
     expect(exemptButReachable, 'Drop these from KEYBOARD_PATH_NOT_NEEDED').toEqual([])
   })

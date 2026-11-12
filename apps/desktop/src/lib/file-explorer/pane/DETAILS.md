@@ -2112,11 +2112,11 @@ and `sameKindIndices(target, entries)` asks a listing snapshot which rows match.
 
 ## Pane divider from the keyboard
 
-`pane.moveDividerLeft` / `pane.moveDividerRight` (`⌃⌥←` / `⌃⌥→` on macOS; Ctrl+Alt+Shift+←/→ elsewhere, since `⌃` and
-`⌘` both map to Ctrl there and Ctrl+Alt+←/→ are the tab keys) and `pane.resetDivider` (no default key; the divider's
-double-click) move the split from the keyboard and the palette. The divider isn't a Tab stop: `Tab` switches panes.
-`pane-split.ts` holds the rules (`stepSplit`, pure, time injected) and the drag's 25–75% clamp, so `PaneResizer.svelte`
-and the keys can't disagree.
+`pane.moveDividerLeft` / `pane.moveDividerRight` (`⌃⌥←` / `⌃⌥→` on macOS; `Alt+Shift+←/→` on Windows and Linux, Midnight
+Commander's split keys, since `Ctrl+Alt+←/→` are Windows's tab keys and a workspace switch on GNOME, Xfce, and Cinnamon)
+and `pane.resetDivider` (no default key; the divider's double-click) move the split from the keyboard and the palette.
+The divider isn't a Tab stop: `Tab` switches panes. `pane-split.ts` holds the rules (`stepSplit`, pure, time injected)
+and the drag's 25–75% clamp, so `PaneResizer.svelte` and the keys can't disagree.
 
 **Decision**: the divider's pointer target (`PaneResizer.svelte`) has two shapes: an 8px strip along its whole height,
 reaching right, and a 24-by-24 pad at its foot, centered on the line. **Why**: WCAG 2.5.8 counts a target that holds a

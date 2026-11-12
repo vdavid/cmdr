@@ -263,7 +263,7 @@
             else presetsControl?.openSave()
             return true
         }
-        // The option keys: ⌘⌥ plus a letter flips a checkbox or opens Letter case.
+        // The option keys (a letter with ⌘⌥, Alt off macOS) flip a checkbox or open Letter case.
         const optionKey = optionKeyOf(e)
         if (optionKey !== null) {
             claimKey(e)

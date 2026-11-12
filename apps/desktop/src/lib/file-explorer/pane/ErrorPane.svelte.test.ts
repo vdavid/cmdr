@@ -10,6 +10,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import ErrorPane from './ErrorPane.svelte'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import type { FriendlyError } from '../types'
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
@@ -140,5 +141,40 @@ describe('ErrorPane Send error report…', () => {
       reason: 'networkDown',
       title: 'Something went wrong',
     })
+  })
+})
+
+/**
+ * The details key is the error screen's while one is focused, even where the same chord means
+ * something else: off macOS it's `Ctrl+Shift+D`, which a dev build also uses for the debug window.
+ * The pane claims it in a capture-phase listener, so the document's bubble-phase dispatcher (which
+ * would open the debug window) never sees it. With no error screen up, the chord is the
+ * dispatcher's (`routes/(main)/global-keydown.test.ts`).
+ */
+describe.each([
+  ['macos', { key: 'd', metaKey: true }],
+  ['windows', { key: 'D', ctrlKey: true, shiftKey: true }],
+  ['linux', { key: 'D', ctrlKey: true, shiftKey: true }],
+] as const)('the technical details key on %s', (platform, init) => {
+  it('toggles the details and never reaches the document dispatcher', async () => {
+    const undoPlatform = withPlatform(platform)
+    const dispatcher = vi.fn()
+    document.addEventListener('keydown', dispatcher)
+    try {
+      const target = mountPane({ friendly: { ...base, category: 'transient', retryHint: true }, isFocused: true })
+      await tick()
+      const details = target.querySelector<HTMLDetailsElement>('details.technical-details')
+      expect(details?.open).toBe(false)
+
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { ...init, bubbles: true }))
+      await tick()
+
+      expect(details?.open).toBe(true)
+      expect(dispatcher).not.toHaveBeenCalled()
+      target.remove()
+    } finally {
+      document.removeEventListener('keydown', dispatcher)
+      undoPlatform()
+    }
   })
 })

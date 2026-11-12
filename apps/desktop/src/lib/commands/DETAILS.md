@@ -233,8 +233,11 @@ registry"). So a moved key that has a menu row moves three things in one change:
 
 The other per-platform keymap tests take one of two inputs. What a user on that OS gets (conflicts in
 `../shortcuts/registry-conflicts.test.ts`, `command-reachability.test.ts`) runs under the per-OS capability fixture.
-What the data says (`../shortcuts/shortcut-vocabulary.test.ts`) walks every command's raw arm, capability ignored, so a
-gated command's keys are checked before its capability flips on.
+What the data says (`../shortcuts/shortcut-vocabulary.test.ts`, and `../shortcuts/keymap-invariants.test.ts`: no Windows
+or Linux default is `Ctrl+Alt+<letter>`, which AltGr layouts type with, or holds `Super`, and a Linux command whose
+first key a desktop takes has a second one no desktop takes) walks every command's raw arm, capability ignored, so a
+gated command's keys are checked before its capability flips on. The keys themselves are
+`docs/notes/windows-port/keymap-decisions.md`'s; a change to one starts there.
 
 ## Adding a command (full steps)
 

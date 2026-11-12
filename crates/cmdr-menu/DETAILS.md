@@ -67,8 +67,11 @@ would move registry data into Rust and lose the deliberate per-platform omission
 - `EXCEPTIONS` lists each row that differs on purpose with its reason: macOS's bare F-keys, Tab, and Shift+Space (the
   bar registers them, while the floor keeps a REBIND to a bare key display-only), the keys GTK takes on Linux, rows
   whose first default can't be an accelerator so the bar shows the second (`⌘+`, `Backspace`), Select same kind's
-  deliberate display-only `⌥⇧=`, and Duplicate's off-macOS `Ctrl+D` while it clashes with Show favorites. An exception
-  that stops differing, or names a row the bar no longer builds, fails `every_exception_still_differs`.
+  deliberate display-only `⌥⇧=`, Move here's off-macOS `Ctrl+Shift+V` (a text field's paste as plain text, which a bar
+  accelerator would take before the page, so keydown dispatch runs it and leaves it to a focused field), and Windows's
+  view-mode rows, which register Linux's `Ctrl+1` / `Ctrl+2` where Windows puts TC's `Ctrl+F2` / `Ctrl+F1` first (the
+  bar leaves F-key chords to keydown dispatch). An exception that stops differing, or names a row the bar no longer
+  builds, fails `every_exception_still_differs`.
 
 ## Accelerators
 

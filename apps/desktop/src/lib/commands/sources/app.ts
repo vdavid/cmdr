@@ -4,7 +4,7 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
-import { cmdOrCtrl, sameOnAll } from '../platform-shortcuts'
+import { cmdOrCtrl, macOnly, sameOnAll } from '../platform-shortcuts'
 import type { CliCommandState } from '#lib/ipc/bindings.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
 import { getBadgeStatus } from '#lib/feature-status.js'
@@ -74,7 +74,8 @@ export const appCommands: CommandSource[] = [
     nameKey: 'commands.appQuit.label',
     scope: 'App',
     showInPalette: false,
-    shortcuts: cmdOrCtrl('⌘Q'),
+    // Windows and Linux bind nothing: `Alt+F4` closes the window through the quit gate there.
+    shortcuts: macOnly('⌘Q'),
     whileDialogOpen: NATIVE_MENU_BAR_ITEM,
     nativeShortcut: true,
   },
@@ -83,7 +84,7 @@ export const appCommands: CommandSource[] = [
     nameKey: 'commands.appHide.label',
     scope: 'App',
     showInPalette: false,
-    shortcuts: cmdOrCtrl('⌘H'),
+    shortcuts: macOnly('⌘H'),
     whileDialogOpen: NATIVE_MENU_BAR_ITEM,
     nativeShortcut: true,
   },
@@ -92,7 +93,7 @@ export const appCommands: CommandSource[] = [
     nameKey: 'commands.appHideOthers.label',
     scope: 'App',
     showInPalette: false,
-    shortcuts: cmdOrCtrl('⌥⌘H'),
+    shortcuts: macOnly('⌥⌘H'),
     whileDialogOpen: NATIVE_MENU_BAR_ITEM,
     nativeShortcut: true,
   },
@@ -208,7 +209,7 @@ export const appCommands: CommandSource[] = [
     nameKey: 'commands.queueShow.label',
     scope: 'App',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘⌥Q'),
+    shortcuts: { macos: ['⌘⌥Q'], windows: ['Ctrl+Shift+Q'], linux: ['Ctrl+Shift+Q'] },
     whileDialogOpen: OPENS_OWN_WINDOW_STEERING,
     descriptionKey: 'commands.queueShow.description',
   },
@@ -257,7 +258,7 @@ export const appCommands: CommandSource[] = [
     nameKey: 'commands.logOperationLog.label',
     scope: 'App',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘⌥L'),
+    shortcuts: { macos: ['⌘⌥L'], windows: ['Ctrl+Shift+L'], linux: ['Ctrl+Shift+L'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.logOperationLog.description',
   },
@@ -280,7 +281,7 @@ export const appCommands: CommandSource[] = [
     nameKey: 'commands.askCmdrToggle.label',
     scope: 'App',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘⌥A'),
+    shortcuts: { macos: ['⌘⌥A'], windows: ['Ctrl+Shift+K'], linux: ['Ctrl+Shift+K'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.askCmdrToggle.description',
     status: getBadgeStatus('ask-cmdr'),

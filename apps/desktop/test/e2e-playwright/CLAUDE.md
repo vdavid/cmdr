@@ -1,7 +1,9 @@
 # Playwright E2E tests (tauri-playwright)
 
 Playwright in Tauri mode: commands inject into the real webview over a Unix socket. The same specs run on macOS and
-Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcoded ⌘.
+Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcoded ⌘. A COMMAND's key comes from
+`defaultKey(commandId)` (`helpers/registry-keys.ts`, the registry's keymap snapshot): the OSes' keymaps differ by more
+than the modifier.
 
 ## Must-knows
 

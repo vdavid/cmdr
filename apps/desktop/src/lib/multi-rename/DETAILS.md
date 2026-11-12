@@ -192,8 +192,13 @@
   Unicode (P for precomposed, the form it renames to), Match case, First match only, Include extension, Regular
   expression, and Replace whole name; ⌘⌥X (`multiRename.insertField`, X as in EXIF) opens or closes the field picker.
   Fixed-key registry commands in `Main window/Multi-rename` (`sources/multi-rename.ts`), so Settings and the Help window
-  list them and `registry-conflicts.test.ts` guards the defaults. The sheet's keydown asks `optionKeyOf` →
-  `eventMatchesCommand` (⌘⌥X through `SHEET_COMMANDS`) and claims the key.
+  list them and `registry-conflicts.test.ts` guards the defaults. On Windows and Linux the same letters take `Alt` alone
+  (`Alt+U`, `Alt+G`, …, `Alt+Z`): `Ctrl+Alt+<letter>` is AltGr there, which types `@`, `&`, or `[` on Hungarian, German,
+  Czech, and Polish layouts (`docs/notes/windows-port/keymap-decisions.md`). On Linux the GTK bar's title mnemonics
+  would take `Alt+F`, `Alt+E`, and `Alt+G` first; the sheet registers with the dialog gate, which masks them while it's
+  up (`src-tauri/src/menu/DETAILS.md` § "A modal surface"), and `menu-mnemonic-mask.spec.ts` presses all 11 with real X
+  key events. The sheet's keydown asks `optionKeyOf` → `eventMatchesCommand` (⌘⌥X through `SHEET_COMMANDS`) and claims
+  the key.
   - ⌥ composes a character in `key` (`®`, `ƒ`, `∑`, or `Dead`), so the match runs on the key position:
     `physicalKeyCombo` names a letter by `code` while ⌘ / ⌃ is held (`lib/shortcuts/DETAILS.md` § Key capture). Verified
     in unit and component tests with US-layout events; a real keypress in the running app isn't verified (the MCP driver

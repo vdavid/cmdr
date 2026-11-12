@@ -13,7 +13,8 @@
 
 import { waitBudget } from './wait-budget.js'
 import { test, expect } from './fixtures.js'
-import { dispatchMenuCommand, dismissOverlay, ensureAppReady, CTRL_OR_META } from './helpers.js'
+import { dispatchMenuCommand, dismissOverlay, ensureAppReady } from './helpers.js'
+import { defaultKeyInit } from './helpers/registry-keys.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 /** The dialog is open once its body element is in the DOM. */
@@ -28,15 +29,10 @@ function betaBadgeShown(page: TauriPage): Promise<boolean> {
   )
 }
 
-/** Dispatches the default ⌘⌥L keydown (Ctrl+Alt+L on Linux), matching the
- *  platform-format shortcut string the dispatch map holds. */
+/** Dispatches the operation log's default key on this OS (⌘⌥L on macOS, Ctrl+Shift+L elsewhere). */
 function pressOperationLogShortcut(page: TauriPage): Promise<void> {
-  return page.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'l', code: 'KeyL',
-        ctrlKey: ${String(CTRL_OR_META === 'Control')},
-        metaKey: ${String(CTRL_OR_META === 'Meta')},
-        altKey: true, bubbles: true
-    }))`)
+  const init = JSON.stringify({ ...defaultKeyInit('log.operationLog'), bubbles: true })
+  return page.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', ${init}))`)
 }
 
 test.describe('Operation log dialog', () => {

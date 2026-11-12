@@ -1,6 +1,6 @@
 /**
- * The Multi-rename sheet's option keys: ⌘⌥ plus a letter flips one checkbox (or opens the
- * Letter case menu). Each is a fixed-key registry command in the `Main window/Multi-rename`
+ * The Multi-rename sheet's option keys: a letter with ⌘⌥ on macOS, or with Alt on Windows and
+ * Linux, flips one checkbox (or opens the Letter case menu). Each is a fixed-key registry command in the `Main window/Multi-rename`
  * scope, so the sheet asks the registry rather than testing key flags, and Settings and the
  * Help window list them. The registry's matcher reads ⌥-composed keys by their physical key,
  * so they work while a text field has focus.

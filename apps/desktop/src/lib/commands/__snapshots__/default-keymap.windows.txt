@@ -1,6 +1,6 @@
-app.quit	Ctrl+Q
-app.hide	Ctrl+H
-app.hideOthers	Ctrl+Alt+H
+app.quit	
+app.hide	
+app.hideOthers	
 app.showAll	
 app.about	
 app.acknowledgements	
@@ -11,14 +11,14 @@ app.checkForUpdates
 cmdr.openOnboarding	
 help.openShortcuts	
 help.accessibility	
-queue.show	Ctrl+Alt+Q
+queue.show	Ctrl+Shift+Q
 help.viewDebugLog	
 help.sendErrorReport	
 help.whatsNew	
 feedback.send	
-log.operationLog	Ctrl+Alt+L
+log.operationLog	Ctrl+Shift+L
 suggestedOps.show	
-askCmdr.toggle	Ctrl+Alt+A
+askCmdr.toggle	Ctrl+Shift+K
 search.open	Ctrl+F, Alt+F7
 nav.goToPath	Ctrl+G, Ctrl+Shift+G
 favorites.add	
@@ -26,8 +26,8 @@ favorites.open	Ctrl+D
 downloads.goToLatest	Ctrl+J
 view.showHidden	Ctrl+Shift+.
 view.calculateFolderSizes	Alt+Shift+Enter
-view.briefMode	Ctrl+2
-view.fullMode	Ctrl+1
+view.briefMode	Ctrl+F1, Ctrl+2
+view.fullMode	Ctrl+F2, Ctrl+1
 view.setMode	
 view.zoom.set75	
 view.zoom.set100	Ctrl+0
@@ -45,9 +45,9 @@ sort.ascending
 sort.descending	
 sort.toggleOrder	
 sort.set	
-pane.switch	Tab
+pane.switch	Tab, Ctrl+I
 pane.swap	Ctrl+U
-pane.clone	Ctrl+Shift+C
+pane.clone	Ctrl+Shift+M
 pane.focusControls	Ctrl+Shift+F5
 app.focusNotifications	Ctrl+Shift+F6
 pane.leftVolumeChooser	Alt+F1
@@ -55,8 +55,8 @@ pane.rightVolumeChooser	Alt+F2
 pane.copyPathLeftToRight	Ctrl+→
 pane.copyPathRightToLeft	Ctrl+←
 pane.refresh	Ctrl+R
-pane.moveDividerLeft	Ctrl+Alt+Shift+←
-pane.moveDividerRight	Ctrl+Alt+Shift+→
+pane.moveDividerLeft	Alt+Shift+←
+pane.moveDividerRight	Alt+Shift+→
 pane.resetDivider	
 tab.new	Ctrl+T
 tab.close	Ctrl+W
@@ -65,8 +65,8 @@ tab.next	Ctrl+Tab, Ctrl+Alt+→
 tab.prev	Ctrl+Shift+Tab, Ctrl+Alt+←
 tab.togglePin	
 tab.closeOthers	
-tab.moveLeft	Ctrl+Shift+←
-tab.moveRight	Ctrl+Shift+→
+tab.moveLeft	Ctrl+Shift+PageUp
+tab.moveRight	Ctrl+Shift+PageDown
 tab.moveToOtherPane	
 askCmdr.newChat	Ctrl+N
 askCmdr.find	Ctrl+F
@@ -74,17 +74,17 @@ askCmdr.findNext	Ctrl+G, Enter
 askCmdr.findPrevious	Ctrl+Shift+G, Shift+Enter
 nav.up	↑
 nav.down	↓
-nav.open	Enter, Ctrl+↓
-nav.parent	Backspace, Ctrl+↑
-nav.home	Alt+↑, Home
-nav.end	Alt+↓, End
+nav.open	Enter, Ctrl+PageDown
+nav.parent	Backspace, Alt+↑, Ctrl+PageUp
+nav.home	Home
+nav.end	End
 nav.pageUp	PageUp
 nav.pageDown	PageDown
-nav.back	Ctrl+[
-nav.forward	Ctrl+]
-nav.goToRoot	Ctrl+/
+nav.back	Alt+←
+nav.forward	Alt+→
+nav.goToRoot	Ctrl+\, Ctrl+<, Ctrl+/
 nav.goHome	Ctrl+Shift+H
-errorPane.toggleTechnicalDetails	Ctrl+D
+errorPane.toggleTechnicalDetails	Ctrl+Shift+D
 nav.left	←
 nav.right	→
 nav.firstInFull	←
@@ -96,26 +96,26 @@ file.view	F3
 file.edit	F4
 file.copy	F5
 file.move	F6
-file.duplicate	Ctrl+D
+file.duplicate	Shift+F5
 file.compress	Alt+F5
 edit.copy	Ctrl+C
 edit.cut	Ctrl+X
 edit.paste	Ctrl+V
-edit.pasteAsMove	Ctrl+Alt+V
+edit.pasteAsMove	Ctrl+Shift+V
 file.newFolder	F7
 file.newFile	Shift+F4
-file.delete	F8, Ctrl+Backspace, Delete
-file.deletePermanently	Shift+F8, Shift+Delete, Ctrl+Alt+Backspace
+file.delete	F8, Delete
+file.deletePermanently	Shift+F8, Shift+Delete
 edit.undoTrash	
 file.goToTrash	
-file.showInFinder	Ctrl+Alt+O
-file.copyPath	Ctrl+Alt+C
+file.showInFinder	Ctrl+Shift+E
+file.copyPath	Ctrl+Shift+C
 file.copyCurrentDirectoryPath	
 file.copyFilename	
 file.copyShareLink	
 file.copyShareLinkOneDay	
 file.copyShareLinkOneHour	
-file.contextMenu	Ctrl+Enter
+file.contextMenu	Shift+F10, Ctrl+Enter
 restic.forgetPassword	
 selection.toggle	Space
 selection.toggleAndDown	Insert
@@ -130,17 +130,17 @@ selection.selectFiles	+
 selection.deselectFiles	-
 multiRename.openPresets	F2
 multiRename.savePreset	Ctrl+S
-multiRename.letterCase	Ctrl+Alt+U
-multiRename.removeDiacritics	Ctrl+Alt+N
-multiRename.greekToLatin	Ctrl+Alt+G
-multiRename.normalizeUnicode	Ctrl+Alt+P
-multiRename.matchCase	Ctrl+Alt+I
-multiRename.firstMatchOnly	Ctrl+Alt+F
-multiRename.includeExtension	Ctrl+Alt+E
-multiRename.regex	Ctrl+Alt+R
-multiRename.replaceWholeName	Ctrl+Alt+W
-multiRename.insertField	Ctrl+Alt+X
-multiRename.undoRename	Ctrl+Alt+Z
+multiRename.letterCase	Alt+U
+multiRename.removeDiacritics	Alt+N
+multiRename.greekToLatin	Alt+G
+multiRename.normalizeUnicode	Alt+P
+multiRename.matchCase	Alt+I
+multiRename.firstMatchOnly	Alt+F
+multiRename.includeExtension	Alt+E
+multiRename.regex	Alt+R
+multiRename.replaceWholeName	Alt+W
+multiRename.insertField	Alt+X
+multiRename.undoRename	Alt+Z
 multiRename.results	Alt+Enter
 multiRename.fieldHistory	↓
 multiRename.moveRowUp	Shift+↑, Alt+↑
@@ -154,7 +154,7 @@ operationLog.deselectAll	Ctrl+Shift+A
 operationLog.rollBack	Ctrl+Enter
 network.selectHost	Enter
 network.refresh	
-share.back	Backspace, Escape, Ctrl+↑
+share.back	Backspace, Escape, Alt+↑
 share.selectShare	Enter
 servers.show	
 servers.togglePin	
@@ -204,8 +204,8 @@ viewer.viewAsHex	3
 viewer.zoomIn	+, =
 viewer.zoomOut	-
 viewer.toggleImageZoom	Enter, Space
-viewer.goBack	Ctrl+[
-viewer.goForward	Ctrl+]
+viewer.goBack	Alt+←
+viewer.goForward	Alt+→
 palette.up	↑
 palette.down	↓
 palette.execute	Enter

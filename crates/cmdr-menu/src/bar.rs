@@ -69,16 +69,17 @@ const fn sort_check(id: &'static str, key: &'static str, accelerator: Accelerato
     check(id, key, accelerator, CheckRole::Sort(role))
 }
 
-/// "Copy path", matching Finder's "Copy as Pathname". Must stay in sync with the `file.copyPath`
-/// default in `src/lib/commands/sources/file-list.ts` (`⌘⌥C`), which is what the frontend
-/// dispatcher listens for. The file context menu uses it too.
-pub const COPY_PATH_ACCELERATOR: Accelerator = cmd_or_ctrl!("Alt+C");
+/// "Copy path", matching Finder's "Copy as Pathname" on macOS and Explorer's "Copy as path"
+/// elsewhere. Must stay in sync with the `file.copyPath` default in
+/// `src/lib/commands/sources/file-list.ts`, which is what the frontend dispatcher listens for. The
+/// file context menu uses it too.
+pub const COPY_PATH_ACCELERATOR: Accelerator = split("Cmd+Alt+C", "Ctrl+Shift+C", "Ctrl+Shift+C");
 
 /// "Show in Finder" / "Show in File Explorer" / "Show in file manager", here and in the file
 /// context menu. One key: its catalog value names each OS's file manager, and the host picks the
 /// words, so this crate never chooses text by `Platform`.
 pub const SHOW_IN_FILE_MANAGER_KEY: &str = "menu.file.showInFileManager";
-pub const SHOW_IN_FILE_MANAGER_ACCELERATOR: Accelerator = split("Alt+Cmd+O", "Alt+Ctrl+O", "Alt+Ctrl+O");
+pub const SHOW_IN_FILE_MANAGER_ACCELERATOR: Accelerator = split("Alt+Cmd+O", "Ctrl+Shift+E", "Ctrl+Shift+E");
 
 /// The display-only shortcut `MENU_BAR` gives `menu_id` on `platform`, if any.
 ///
@@ -262,11 +263,10 @@ pub const MENU_BAR: &[BarMenu] = &[
             item(EDIT_CUT_ID, "menu.edit.cut", cmd_or_ctrl!("X")),
             item(EDIT_COPY_ID, "menu.edit.copy", cmd_or_ctrl!("C")),
             item(EDIT_PASTE_ID, "menu.edit.paste", cmd_or_ctrl!("V")),
-            item(
-                EDIT_PASTE_MOVE_ID,
-                "menu.edit.moveHere",
-                split("Alt+Cmd+V", "Ctrl+Alt+V", "Ctrl+Alt+V"),
-            ),
+            // `Ctrl+Shift+V` is a text field's paste as plain text on Windows and Linux, and a bar
+            // accelerator fires before the page, so there keydown dispatch runs it, which leaves it
+            // to a focused field.
+            item(EDIT_PASTE_MOVE_ID, "menu.edit.moveHere", macos("Alt+Cmd+V")),
             SEPARATOR,
             item(COPY_PATH_ID, "menu.edit.copyPath", COPY_PATH_ACCELERATOR),
             item(COPY_FILENAME_ID, "menu.edit.copyFilename", NONE),
@@ -441,7 +441,11 @@ pub const MENU_BAR: &[BarMenu] = &[
             // Tab conflicts with GTK's own keyboard navigation, so Linux leaves it to JS dispatch.
             item(SWITCH_PANE_ID, "menu.view.switchPane", macos("Tab")),
             item(SWAP_PANES_ID, "menu.view.swapPanes", cmd_or_ctrl!("U")),
-            item(CLONE_PANE_ID, "menu.view.clonePane", cmd_or_ctrl!("Shift+C")),
+            item(
+                CLONE_PANE_ID,
+                "menu.view.clonePane",
+                split("Cmd+Shift+C", "Ctrl+Shift+M", "Ctrl+Shift+M"),
+            ),
             item(
                 CALCULATE_FOLDER_SIZES_ID,
                 "menu.view.calculateFolderSizes",
@@ -453,25 +457,45 @@ pub const MENU_BAR: &[BarMenu] = &[
             // `log.operationLog`, `suggestedOps.show`, `askCmdr.toggle`), so these are the defaults.
             // The queue sits next to the log so the present-tense and past-tense views of the same
             // work read as a pair.
-            item(QUEUE_SHOW_ID, "menu.view.operationQueue", cmd_or_ctrl!("Alt+Q")),
+            item(
+                QUEUE_SHOW_ID,
+                "menu.view.operationQueue",
+                split("Cmd+Alt+Q", "Ctrl+Shift+Q", "Ctrl+Shift+Q"),
+            ),
             // ⌥⌘O, the first choice, is taken by Show in Finder.
-            item(OPERATION_LOG_ID, "menu.view.operationLog", cmd_or_ctrl!("Alt+L")),
+            item(
+                OPERATION_LOG_ID,
+                "menu.view.operationLog",
+                split("Cmd+Alt+L", "Ctrl+Shift+L", "Ctrl+Shift+L"),
+            ),
             // No default: the status-corner indicator is the everyday way in, and a suggestion waits
             // indefinitely, so this isn't a key anyone reaches for mid-task. A user who wants one
             // binds it.
             item(SUGGESTED_OPS_ID, "menu.view.suggestedOps", NONE),
-            item(ASK_CMDR_ID, "menu.view.askCmdr", cmd_or_ctrl!("Alt+A")),
+            item(
+                ASK_CMDR_ID,
+                "menu.view.askCmdr",
+                split("Cmd+Alt+A", "Ctrl+Shift+K", "Ctrl+Shift+K"),
+            ),
         ],
     ),
     menu(
         GO_MENU_ID,
         "menu.bar.go",
         &[
-            item(GO_BACK_ID, "menu.go.back", cmd_or_ctrl!("[")),
-            item(GO_FORWARD_ID, "menu.go.forward", cmd_or_ctrl!("]")),
+            item(GO_BACK_ID, "menu.go.back", split("Cmd+[", "Alt+Left", "Alt+Left")),
+            item(
+                GO_FORWARD_ID,
+                "menu.go.forward",
+                split("Cmd+]", "Alt+Right", "Alt+Right"),
+            ),
             SEPARATOR,
-            item(GO_PARENT_ID, "menu.go.parentFolder", cmd_or_ctrl!("Up")),
-            item(GO_ROOT_ID, "menu.go.rootFolder", cmd_or_ctrl!("/")),
+            item(
+                GO_PARENT_ID,
+                "menu.go.parentFolder",
+                split("Cmd+Up", "Alt+Up", "Alt+Up"),
+            ),
+            item(GO_ROOT_ID, "menu.go.rootFolder", split("Cmd+/", "Ctrl+\\", "Ctrl+\\")),
             // Shift+Cmd+H, not Cmd+H: AppKit owns Cmd+H for Hide Cmdr and swallows it before the
             // webview ever sees a keydown.
             item(GO_HOME_ID, "menu.go.home", cmd_or_ctrl!("Shift+H")),

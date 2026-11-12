@@ -12,8 +12,8 @@ use std::collections::{BTreeSet, HashMap};
 use super::every_entry;
 use crate::accelerators::to_accelerator;
 use crate::ids::{
-    COMPARE_DIRECTORIES_ID, EDIT_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID,
-    FILE_DUPLICATE_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GO_PARENT_ID,
+    COMPARE_DIRECTORIES_ID, EDIT_ID, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
+    FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GO_PARENT_ID,
     OPEN_TERMINAL_HERE_ID, QUICK_LOOK_ID, RENAME_ID, SELECT_SAME_KIND_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID,
     VIEW_MODE_FULL_LEFT_ID, VIEW_ZOOM_IN_ID, VIEW_ZOOM_OUT_ID, menu_id_to_command,
 };
@@ -29,6 +29,7 @@ struct Exception {
 }
 
 const MACOS: &[Platform] = &[Platform::MacOs];
+const WINDOWS: &[Platform] = &[Platform::Windows];
 const WINDOWS_AND_LINUX: &[Platform] = &[Platform::Windows, Platform::Linux];
 const EVERY_PLATFORM: &[Platform] = &Platform::ALL;
 
@@ -44,6 +45,11 @@ const GTK_TAKES_IT: &str = "GTK takes this key before the webview, so keydown di
 
 /// The registry's first key can't be registered (bare, or a key muda has no `Code` for), so the
 /// bar registers the command's second default.
+/// The Windows bar registers the Linux bar's key where the two keymaps differ only in order, so its
+/// F-key chords stay with keydown dispatch, as Linux's do.
+const WINDOWS_FOLLOWS_LINUX: &str = "the first key there is an F-key chord, which the bar leaves to keydown dispatch; the Windows \
+                                     bar registers Linux's first key (a default on Windows too) until its menu model is decided";
+
 const SECOND_KEY: &str = "the first default can't be a bar accelerator, so the bar registers the second";
 
 const EXCEPTIONS: &[Exception] = &[
@@ -140,11 +146,23 @@ const EXCEPTIONS: &[Exception] = &[
         reason: "`⌥⇧=` clears the floor, but the default stays display-only so `⌥+` stays free for typing \
                  (`menu/DETAILS.md` § \"Display-only accelerators\")",
     },
+    // Windows's first view-mode keys are TC's `Ctrl+F2` / `Ctrl+F1`; Linux puts `Ctrl+1` / `Ctrl+2`
+    // first, because KDE and Xfce take `Ctrl+F1` / `Ctrl+F2`.
+    Exception {
+        platforms: WINDOWS,
+        menu_id: VIEW_MODE_FULL_LEFT_ID,
+        reason: WINDOWS_FOLLOWS_LINUX,
+    },
+    Exception {
+        platforms: WINDOWS,
+        menu_id: VIEW_MODE_BRIEF_LEFT_ID,
+        reason: WINDOWS_FOLLOWS_LINUX,
+    },
     Exception {
         platforms: WINDOWS_AND_LINUX,
-        menu_id: FILE_DUPLICATE_ID,
-        reason: "`Ctrl+D` is also Show favorites' there, the registry's known clash, and one chord can't sit on \
-                 two rows; it goes when the clash does",
+        menu_id: EDIT_PASTE_MOVE_ID,
+        reason: "`Ctrl+Shift+V` is a text field's paste as plain text, and a bar accelerator fires before the \
+                 page, so keydown dispatch runs it, which leaves it to a focused field",
     },
 ];
 

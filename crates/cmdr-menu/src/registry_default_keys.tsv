@@ -83,8 +83,8 @@ macos	tab.reopen	⌘⇧T
 macos	tab.next	⌃Tab
 macos	tab.prev	⌃⇧Tab
 macos	tab.closeOthers	
-windows	view.fullMode	Ctrl+1
-windows	view.briefMode	Ctrl+2
+windows	view.fullMode	Ctrl+F2
+windows	view.briefMode	Ctrl+F1
 windows	view.zoom.set75	
 windows	view.zoom.set100	Ctrl+0
 windows	view.zoom.set125	
@@ -98,19 +98,19 @@ windows	cmdr.openOnboarding
 windows	help.whatsNew	
 windows	help.viewDebugLog	
 windows	help.accessibility	
-windows	queue.show	Ctrl+Alt+Q
-windows	log.operationLog	Ctrl+Alt+L
+windows	queue.show	Ctrl+Shift+Q
+windows	log.operationLog	Ctrl+Shift+L
 windows	suggestedOps.show	
-windows	askCmdr.toggle	Ctrl+Alt+A
+windows	askCmdr.toggle	Ctrl+Shift+K
 windows	edit.cut	Ctrl+X
 windows	edit.copy	Ctrl+C
 windows	edit.paste	Ctrl+V
-windows	edit.pasteAsMove	Ctrl+Alt+V
+windows	edit.pasteAsMove	Ctrl+Shift+V
 windows	file.view	F3
 windows	file.edit	F4
 windows	file.copy	F5
 windows	file.move	F6
-windows	file.duplicate	Ctrl+D
+windows	file.duplicate	Shift+F5
 windows	file.compress	Alt+F5
 windows	file.newFolder	F7
 windows	file.newFile	Shift+F4
@@ -118,8 +118,8 @@ windows	file.delete	F8
 windows	file.deletePermanently	Shift+F8
 windows	file.rename	F2
 windows	file.multiRename	Ctrl+M
-windows	file.showInFinder	Ctrl+Alt+O
-windows	file.copyPath	Ctrl+Alt+C
+windows	file.showInFinder	Ctrl+Shift+E
+windows	file.copyPath	Ctrl+Shift+C
 windows	file.copyFilename	
 windows	edit.undoTrash	
 windows	file.copyShareLink	
@@ -134,17 +134,17 @@ windows	selection.selectFiles	+
 windows	selection.deselectFiles	-
 windows	pane.switch	Tab
 windows	pane.swap	Ctrl+U
-windows	pane.clone	Ctrl+Shift+C
+windows	pane.clone	Ctrl+Shift+M
 windows	view.calculateFolderSizes	Alt+Shift+Enter
 windows	search.open	Ctrl+F
 windows	sort.byName	Ctrl+3
 windows	sort.byExtension	Ctrl+4
 windows	sort.byModified	Ctrl+5
 windows	sort.bySize	Ctrl+6
-windows	nav.back	Ctrl+[
-windows	nav.forward	Ctrl+]
+windows	nav.back	Alt+←
+windows	nav.forward	Alt+→
 windows	nav.parent	Backspace
-windows	nav.goToRoot	Ctrl+/
+windows	nav.goToRoot	Ctrl+\
 windows	nav.goHome	Ctrl+Shift+H
 windows	nav.goToPath	Ctrl+G
 windows	downloads.goToLatest	Ctrl+J
@@ -173,19 +173,19 @@ linux	cmdr.openOnboarding
 linux	help.whatsNew	
 linux	help.viewDebugLog	
 linux	help.accessibility	
-linux	queue.show	Ctrl+Alt+Q
-linux	log.operationLog	Ctrl+Alt+L
+linux	queue.show	Ctrl+Shift+Q
+linux	log.operationLog	Ctrl+Shift+L
 linux	suggestedOps.show	
-linux	askCmdr.toggle	Ctrl+Alt+A
+linux	askCmdr.toggle	Ctrl+Shift+K
 linux	edit.cut	Ctrl+X
 linux	edit.copy	Ctrl+C
 linux	edit.paste	Ctrl+V
-linux	edit.pasteAsMove	Ctrl+Alt+V
+linux	edit.pasteAsMove	Ctrl+Shift+V
 linux	file.view	F3
 linux	file.edit	F4
 linux	file.copy	F5
 linux	file.move	F6
-linux	file.duplicate	Ctrl+D
+linux	file.duplicate	Shift+F5
 linux	file.compress	Alt+F5
 linux	file.newFolder	F7
 linux	file.newFile	Shift+F4
@@ -193,8 +193,8 @@ linux	file.delete	F8
 linux	file.deletePermanently	Shift+F8
 linux	file.rename	F2
 linux	file.multiRename	Ctrl+M
-linux	file.showInFinder	Ctrl+Alt+O
-linux	file.copyPath	Ctrl+Alt+C
+linux	file.showInFinder	Ctrl+Shift+E
+linux	file.copyPath	Ctrl+Shift+C
 linux	file.copyFilename	
 linux	edit.undoTrash	
 linux	file.copyShareLink	
@@ -209,17 +209,17 @@ linux	selection.selectFiles	+
 linux	selection.deselectFiles	-
 linux	pane.switch	Tab
 linux	pane.swap	Ctrl+U
-linux	pane.clone	Ctrl+Shift+C
+linux	pane.clone	Ctrl+Shift+M
 linux	view.calculateFolderSizes	Alt+Shift+Enter
 linux	search.open	Ctrl+F
 linux	sort.byName	Ctrl+3
 linux	sort.byExtension	Ctrl+4
 linux	sort.byModified	Ctrl+5
 linux	sort.bySize	Ctrl+6
-linux	nav.back	Ctrl+[
-linux	nav.forward	Ctrl+]
+linux	nav.back	Alt+←
+linux	nav.forward	Alt+→
 linux	nav.parent	Backspace
-linux	nav.goToRoot	Ctrl+/
+linux	nav.goToRoot	Ctrl+\
 linux	nav.goHome	Ctrl+Shift+H
 linux	nav.goToPath	Ctrl+G
 linux	downloads.goToLatest	Ctrl+J

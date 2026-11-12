@@ -113,7 +113,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewBriefMode.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘2'),
+    shortcuts: { macos: ['⌘2'], windows: ['Ctrl+F1', 'Ctrl+2'], linux: ['Ctrl+2', 'Ctrl+F1'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -121,7 +121,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.viewFullMode.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘1'),
+    shortcuts: { macos: ['⌘1'], windows: ['Ctrl+F2', 'Ctrl+1'], linux: ['Ctrl+1', 'Ctrl+F2'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -289,7 +289,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneSwitch.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: sameOnAll('Tab'),
+    shortcuts: { macos: ['Tab'], windows: ['Tab', 'Ctrl+I'], linux: ['Tab', 'Ctrl+I'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -307,7 +307,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneClone.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: cmdOrCtrl('⌘⇧C'),
+    shortcuts: { macos: ['⌘⇧C'], windows: ['Ctrl+Shift+M'], linux: ['Ctrl+Shift+M'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.paneClone.description',
   },
@@ -341,7 +341,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneLeftVolumeChooser.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: sameOnAll('⌥F1'),
+    shortcuts: { macos: ['⌥F1'], windows: ['Alt+F1'], linux: ['Alt+F1', 'Ctrl+Shift+F1', 'Alt+1'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -349,7 +349,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneRightVolumeChooser.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: sameOnAll('⌥F2'),
+    shortcuts: { macos: ['⌥F2'], windows: ['Alt+F2'], linux: ['Alt+F2', 'Ctrl+Shift+F2', 'Alt+2'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -390,7 +390,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneMoveDividerLeft.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: { macos: ['⌃⌥←'], windows: ['Ctrl+Alt+Shift+←'], linux: ['Ctrl+Alt+Shift+←'] },
+    shortcuts: { macos: ['⌃⌥←'], windows: ['Alt+Shift+←'], linux: ['Alt+Shift+←'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -398,7 +398,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.paneMoveDividerRight.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: { macos: ['⌃⌥→'], windows: ['Ctrl+Alt+Shift+→'], linux: ['Ctrl+Alt+Shift+→'] },
+    shortcuts: { macos: ['⌃⌥→'], windows: ['Alt+Shift+→'], linux: ['Alt+Shift+→'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -446,7 +446,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabNext.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: { macos: ['⌃Tab', '⌘⌥→'], windows: ['Ctrl+Tab', 'Ctrl+Alt+→'], linux: ['Ctrl+Tab', 'Ctrl+Alt+→'] },
+    shortcuts: { macos: ['⌃Tab', '⌘⌥→'], windows: ['Ctrl+Tab', 'Ctrl+Alt+→'], linux: ['Ctrl+Tab'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -457,7 +457,7 @@ export const mainWindowCommands: CommandSource[] = [
     shortcuts: {
       macos: ['⌃⇧Tab', '⌘⌥←'],
       windows: ['Ctrl+Shift+Tab', 'Ctrl+Alt+←'],
-      linux: ['Ctrl+Shift+Tab', 'Ctrl+Alt+←'],
+      linux: ['Ctrl+Shift+Tab'],
     },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
@@ -484,7 +484,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabMoveLeft.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: { macos: ['⌘⌃⇧←'], windows: ['Ctrl+Shift+←'], linux: ['Ctrl+Shift+←'] },
+    shortcuts: { macos: ['⌘⌃⇧←'], windows: ['Ctrl+Shift+PageUp'], linux: ['Ctrl+Shift+PageUp'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -492,7 +492,7 @@ export const mainWindowCommands: CommandSource[] = [
     nameKey: 'commands.tabMoveRight.label',
     scope: 'Main window',
     showInPalette: true,
-    shortcuts: { macos: ['⌘⌃⇧→'], windows: ['Ctrl+Shift+→'], linux: ['Ctrl+Shift+→'] },
+    shortcuts: { macos: ['⌘⌃⇧→'], windows: ['Ctrl+Shift+PageDown'], linux: ['Ctrl+Shift+PageDown'] },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {

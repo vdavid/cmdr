@@ -38,6 +38,7 @@ import {
 } from './helpers.js'
 
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
+import { defaultKey } from './helpers/registry-keys.js'
 
 type PageLike = TauriPage | BrowserPageAdapter
 
@@ -86,14 +87,11 @@ test.describe('Open with the default app', () => {
     await dismissAllToasts(tauriPage)
   })
 
-  test('⌘↓ hands each file to its default app exactly once', async ({ tauriPage }) => {
-    // macOS only, and this one can't take `CTRL_OR_META`: the combo vocabulary is
-    // per-platform (`formatKeyCombo`), so on Linux a Ctrl press formats as `Ctrl+↓`
-    // and matches nothing, while `nav.open` keeps its macOS default of `⌘↓`.
-    test.skip(process.platform !== 'darwin', 'The ⌘ half of `nav.open` is a macOS combo.')
-
-    await openFileWith(tauriPage, 'file-a.txt', 'Meta+ArrowDown')
-    await openFileWith(tauriPage, 'file-b.txt', 'Meta+ArrowDown')
+  test("Open's second key hands each file to its default app exactly once", async ({ tauriPage }) => {
+    // `nav.open`'s second default: ⌘↓ on macOS, Total Commander's `Ctrl+PageDown` elsewhere.
+    const openKey = defaultKey('nav.open', 1)
+    await openFileWith(tauriPage, 'file-a.txt', openKey)
+    await openFileWith(tauriPage, 'file-b.txt', openKey)
 
     expect(await getOpenedPaths(tauriPage)).toEqual([
       `${getFixtureRoot()}/left/file-a.txt`,

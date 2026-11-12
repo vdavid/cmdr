@@ -1,7 +1,7 @@
 /**
  * Tests for keyboard-shortcuts.ts
  */
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach, onTestFinished } from 'vitest'
 import { handleNavigationShortcut, type NavigationContext } from './keyboard-shortcuts'
 import { resetShortcut, setShortcut, removeShortcut } from '#lib/shortcuts/shortcuts-store.js'
 import { withPlatform } from '#lib/platform/test-platform.js'
@@ -18,6 +18,11 @@ function createKeyboardEvent(
   return new KeyboardEvent('keydown', { key, ...options })
 }
 
+/** Go to first file's first default key: ⌥↑ on macOS, Home on Windows and Linux. */
+function firstHomeKey(platform: 'macos' | 'windows' | 'linux'): KeyboardEvent {
+  return platform === 'macos' ? createKeyboardEvent('ArrowUp', { altKey: true }) : createKeyboardEvent('Home')
+}
+
 /**
  * The keys come from the registry (`nav.home`, `nav.end`, `nav.pageUp`, `nav.pageDown`), so a
  * rebind moves them in every list that uses this: both file views, the places browser, and the
@@ -32,14 +37,26 @@ describe.each(['macos', 'windows', 'linux'] as const)('a rebind of the navigatio
     resetShortcut('nav.pageDown')
   })
 
-  it('moves Go to first file: a removed key stops working, and the new one jumps', () => {
-    removeShortcut('nav.home', 0) // ⌥↑ / Alt+↑ goes; Home stays.
-    expect(handleNavigationShortcut(createKeyboardEvent('ArrowUp', { altKey: true }), context)).toBeNull()
-    expect(handleNavigationShortcut(createKeyboardEvent('Home'), context)).toEqual({
+  it('moves Go to first file: a replaced key stops working, and the new one jumps', () => {
+    setShortcut('nav.home', 0, 'F18')
+    expect(handleNavigationShortcut(firstHomeKey(platform), context)).toBeNull()
+    expect(handleNavigationShortcut(createKeyboardEvent('F18'), context)).toEqual({
       newIndex: 0,
       handled: true,
       overflow: true,
     })
+  })
+
+  it('removes a key: a removed one stops working, the rest still jump', () => {
+    removeShortcut('nav.home', 0)
+    expect(handleNavigationShortcut(firstHomeKey(platform), context)).toBeNull()
+    if (platform === 'macos') {
+      expect(handleNavigationShortcut(createKeyboardEvent('Home'), context)).toEqual({
+        newIndex: 0,
+        handled: true,
+        overflow: true,
+      })
+    }
   })
 
   it('moves Page down to the new key, Shift still extending', () => {
@@ -53,6 +70,16 @@ describe.each(['macos', 'windows', 'linux'] as const)('a rebind of the navigatio
   })
 })
 
+/** Off macOS, `Alt+↑` is Go to parent (Explorer's key) and `Alt+↓` is unbound, so neither jumps in a list. */
+describe.each(['windows', 'linux'] as const)('Alt+arrows on %s', (platform) => {
+  beforeEach(() => withPlatform(platform))
+
+  it.each(['ArrowUp', 'ArrowDown'])('leave the cursor alone: Alt+%s', (key) => {
+    const event = createKeyboardEvent(key, { altKey: true })
+    expect(handleNavigationShortcut(event, { currentIndex: 50, totalCount: 100 })).toBeNull()
+  })
+})
+
 describe('handleNavigationShortcut', () => {
   describe('Home shortcut', () => {
     const context: NavigationContext = {
@@ -60,7 +87,9 @@ describe('handleNavigationShortcut', () => {
       totalCount: 100,
     }
 
-    it('handles Option+ArrowUp as Home (always overflow)', () => {
+    it('handles Option+ArrowUp as Home on macOS (always overflow)', () => {
+      const undo = withPlatform('macos')
+      onTestFinished(undo)
       const event = createKeyboardEvent('ArrowUp', { altKey: true })
       const result = handleNavigationShortcut(event, context)
       expect(result).toEqual({ newIndex: 0, handled: true, overflow: true })
@@ -85,7 +114,9 @@ describe('handleNavigationShortcut', () => {
       totalCount: 100,
     }
 
-    it('handles Option+ArrowDown as End (always overflow)', () => {
+    it('handles Option+ArrowDown as End on macOS (always overflow)', () => {
+      const undo = withPlatform('macos')
+      onTestFinished(undo)
       const event = createKeyboardEvent('ArrowDown', { altKey: true })
       const result = handleNavigationShortcut(event, context)
       expect(result).toEqual({ newIndex: 99, handled: true, overflow: true })

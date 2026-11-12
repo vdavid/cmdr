@@ -180,16 +180,16 @@ menu menu.bar.file
   13 item rename menu.file.rename tracked
   14 item multi_rename menu.file.multiRename [Ctrl+M] tracked
   15 separator
-  16 item show_in_finder menu.file.showInFileManager [Alt+Ctrl+O] tracked
+  16 item show_in_finder menu.file.showInFileManager [Ctrl+Shift+E] tracked
 menu menu.bar.edit
   0 item undo_trash menu.edit.undoTrash disabled tracked
   1 separator
   2 item edit_cut menu.edit.cut [Ctrl+X] tracked
   3 item edit_copy menu.edit.copy [Ctrl+C] tracked
   4 item edit_paste menu.edit.paste [Ctrl+V] tracked
-  5 item edit_paste_move menu.edit.moveHere [Ctrl+Alt+V] tracked
+  5 item edit_paste_move menu.edit.moveHere tracked
   6 separator
-  7 item copy_path menu.edit.copyPath [Ctrl+Alt+C] tracked
+  7 item copy_path menu.edit.copyPath [Ctrl+Shift+C] tracked
   8 item copy_filename menu.edit.copyFilename tracked
   9 separator
   10 item search_files menu.edit.searchFiles [Ctrl+F] tracked
@@ -238,20 +238,20 @@ menu menu.bar.view
   6 separator
   7 item switch_pane menu.view.switchPane tracked
   8 item swap_panes menu.view.swapPanes [Ctrl+U] tracked
-  9 item clone_pane menu.view.clonePane [Ctrl+Shift+C] tracked
+  9 item clone_pane menu.view.clonePane [Ctrl+Shift+M] tracked
   10 item calculate_folder_sizes menu.view.calculateFolderSizes [Alt+Shift+Enter] tracked
   11 separator
   12 item command_palette menu.view.commandPalette [Ctrl+Shift+P] tracked
-  13 item queue_show menu.view.operationQueue [Ctrl+Alt+Q] tracked
-  14 item operation_log menu.view.operationLog [Ctrl+Alt+L] tracked
+  13 item queue_show menu.view.operationQueue [Ctrl+Shift+Q] tracked
+  14 item operation_log menu.view.operationLog [Ctrl+Shift+L] tracked
   15 item suggested_ops menu.view.suggestedOps tracked
-  16 item ask_cmdr menu.view.askCmdr [Ctrl+Alt+A] tracked
+  16 item ask_cmdr menu.view.askCmdr [Ctrl+Shift+K] tracked
 menu menu.bar.go
-  0 item go_back menu.go.back [Ctrl+[] tracked
-  1 item go_forward menu.go.forward [Ctrl+]] tracked
+  0 item go_back menu.go.back [Alt+Left] tracked
+  1 item go_forward menu.go.forward [Alt+Right] tracked
   2 separator
-  3 item go_parent menu.go.parentFolder [Ctrl+Up] tracked
-  4 item go_root menu.go.rootFolder [Ctrl+/] tracked
+  3 item go_parent menu.go.parentFolder [Alt+Up] tracked
+  4 item go_root menu.go.rootFolder [Ctrl+\\] tracked
   5 item go_home menu.go.home [Ctrl+Shift+H] tracked
   6 separator
   7 item go_to_path menu.go.goToPath [Ctrl+G] tracked
@@ -304,16 +304,16 @@ menu menu.bar.file
   13 item rename menu.file.rename tracked
   14 item multi_rename menu.file.multiRename [Ctrl+M] tracked
   15 separator
-  16 item show_in_finder menu.file.showInFileManager [Alt+Ctrl+O] tracked
+  16 item show_in_finder menu.file.showInFileManager [Ctrl+Shift+E] tracked
 menu menu.bar.edit
   0 item undo_trash menu.edit.undoTrash disabled tracked
   1 separator
   2 item edit_cut menu.edit.cut [Ctrl+X] tracked
   3 item edit_copy menu.edit.copy [Ctrl+C] tracked
   4 item edit_paste menu.edit.paste [Ctrl+V] tracked
-  5 item edit_paste_move menu.edit.moveHere [Ctrl+Alt+V] tracked
+  5 item edit_paste_move menu.edit.moveHere tracked
   6 separator
-  7 item copy_path menu.edit.copyPath [Ctrl+Alt+C] tracked
+  7 item copy_path menu.edit.copyPath [Ctrl+Shift+C] tracked
   8 item copy_filename menu.edit.copyFilename tracked
   9 separator
   10 item search_files menu.edit.searchFiles [Ctrl+F] tracked
@@ -362,20 +362,20 @@ menu menu.bar.view
   6 separator
   7 item switch_pane menu.view.switchPane tracked
   8 item swap_panes menu.view.swapPanes [Ctrl+U] tracked
-  9 item clone_pane menu.view.clonePane [Ctrl+Shift+C] tracked
+  9 item clone_pane menu.view.clonePane [Ctrl+Shift+M] tracked
   10 item calculate_folder_sizes menu.view.calculateFolderSizes [Alt+Shift+Enter] tracked
   11 separator
   12 item command_palette menu.view.commandPalette [Ctrl+Shift+P] tracked
-  13 item queue_show menu.view.operationQueue [Ctrl+Alt+Q] tracked
-  14 item operation_log menu.view.operationLog [Ctrl+Alt+L] tracked
+  13 item queue_show menu.view.operationQueue [Ctrl+Shift+Q] tracked
+  14 item operation_log menu.view.operationLog [Ctrl+Shift+L] tracked
   15 item suggested_ops menu.view.suggestedOps tracked
-  16 item ask_cmdr menu.view.askCmdr [Ctrl+Alt+A] tracked
+  16 item ask_cmdr menu.view.askCmdr [Ctrl+Shift+K] tracked
 menu menu.bar.go
-  0 item go_back menu.go.back [Ctrl+[] tracked
-  1 item go_forward menu.go.forward [Ctrl+]] tracked
+  0 item go_back menu.go.back [Alt+Left] tracked
+  1 item go_forward menu.go.forward [Alt+Right] tracked
   2 separator
-  3 item go_parent menu.go.parentFolder [Ctrl+Up] tracked
-  4 item go_root menu.go.rootFolder [Ctrl+/] tracked
+  3 item go_parent menu.go.parentFolder [Alt+Up] tracked
+  4 item go_root menu.go.rootFolder [Ctrl+\\] tracked
   5 item go_home menu.go.home [Ctrl+Shift+H] tracked
   6 separator
   7 item go_to_path menu.go.goToPath [Ctrl+G] tracked

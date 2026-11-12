@@ -12,7 +12,8 @@
  * Runs against the REAL registry and shortcut store (no mocks), so a rebound
  * default would surface here rather than silently passing.
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi, onTestFinished } from 'vitest'
+import { resetShortcut, setShortcut } from '#lib/shortcuts/shortcuts-store.js'
 import { keydownWithAltGraph } from '#lib/shortcuts/test-key-events.js'
 import { resolveGlobalKeyAction, unclaimedDispatchWarning } from './global-keydown'
 import { claimKey } from '#lib/shortcuts/claim-key.js'
@@ -360,7 +361,12 @@ describe('resolveGlobalKeyAction', () => {
         expect(resolveGlobalKeyAction(windowsAltGr(hungarianStar), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
       })
 
-      it('still runs Ctrl+Alt+Q pressed on a US layout, which has no AltGr', () => {
+      it("still runs a user's Ctrl+Alt+Q pressed on a US layout, which has no AltGr", () => {
+        // No Windows default is Ctrl+Alt+<letter>, but a user may bind one.
+        setShortcut('queue.show', 0, 'Ctrl+Alt+Q')
+        onTestFinished(() => {
+          resetShortcut('queue.show')
+        })
         const usCtrlAltQ = key({ key: 'q', code: 'KeyQ', ctrlKey: true, altKey: true })
         expect(resolveGlobalKeyAction(usCtrlAltQ, NOTHING_OPEN)).toEqual({ kind: 'dispatch', commandId: 'queue.show' })
       })

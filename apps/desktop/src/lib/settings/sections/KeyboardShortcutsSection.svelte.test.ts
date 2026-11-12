@@ -13,7 +13,7 @@
  * runs end-to-end against an in-memory disk, exactly like `shortcuts-store.test`.
  */
 import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
-import { withCapabilities } from '#lib/platform/test-platform.js'
+import { withCapabilities, withPlatform } from '#lib/platform/test-platform.js'
 import { mount, unmount, flushSync, createRawSnippet } from 'svelte'
 
 // In-memory disk for the fake plugin-store (mirrors shortcuts-store.test.ts).
@@ -392,6 +392,8 @@ describe('KeyboardShortcutsSection fixed-key rows', () => {
 })
 
 describe('KeyboardShortcutsSection native macOS rows', () => {
+  beforeEach(() => withPlatform('macos'))
+
   it('renders a native row read-only: a macOS badge, no editable pill, no +/×/reset', () => {
     render()
     const hideRow = row(HIDE)
@@ -421,10 +423,9 @@ describe('KeyboardShortcutsSection native macOS rows', () => {
 
   it('capturing a native combo (⌘H) on another command shows the reserved-by-macOS banner with only Cancel', async () => {
     render()
-    // Capture Ctrl+H on the add slot of file.copy. In the test (non-macOS) env
-    // app.hide's ⌘H default resolves to Ctrl+H, so this conflicts with the native.
+    // Capture ⌘H on the add slot of file.copy: app.hide's own key on macOS.
     clickAddShortcut(COPY)
-    pressKey({ key: 'h', ctrlKey: true })
+    pressKey({ key: 'h', metaKey: true })
     await flushSave()
 
     const banner = target.querySelector('.conflict-warning')

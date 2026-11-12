@@ -30,9 +30,9 @@ import {
   ensureAppReady,
   expectArrowDownMovesCursorIn,
   openSettingsWindowViaProd,
-  CTRL_OR_META,
 } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
+import { defaultKeyInit } from './helpers/registry-keys.js'
 
 /** The BETA stability badge is present in the open rail's header. */
 function betaBadgeShown(page: TauriPage): Promise<boolean> {
@@ -53,14 +53,10 @@ function paneFocused(page: TauriPage): Promise<boolean> {
   )
 }
 
-/** Dispatches the default ⌘⌥A keydown (Ctrl+Alt+A on Linux). */
+/** Dispatches Ask Cmdr's default key on this OS (⌘⌥A on macOS, Ctrl+Shift+K elsewhere). */
 function pressToggleShortcut(page: TauriPage): Promise<void> {
-  return page.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'a', code: 'KeyA',
-        ctrlKey: ${String(CTRL_OR_META === 'Control')},
-        metaKey: ${String(CTRL_OR_META === 'Meta')},
-        altKey: true, bubbles: true
-    }))`)
+  const init = JSON.stringify({ ...defaultKeyInit('askCmdr.toggle'), bubbles: true })
+  return page.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', ${init}))`)
 }
 
 /** The Ask Cmdr switch in Settings > AI > Ask Cmdr: its hidden input carries the label. */

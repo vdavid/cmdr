@@ -21,7 +21,7 @@ The ⌃M sheet over `crates/cmdr-multi-rename` (the engine and its rules), hoste
   `placeholder-help.ts`, `SearchOptionChips.svelte` / `search-option-help.ts`: tooltips and chips; `rename-examples.ts`
   renders the examples.
 - `last-run.svelte.ts` the last run, which Undo rename (⌘⌥Z) rolls back. Outlives the sheet.
-- `option-keys.ts` the ⌘⌥ option keys (`TOGGLE_COMMANDS`) and the whole-name toggles in pipeline order. Pure.
+- `option-keys.ts` the option keys (`TOGGLE_COMMANDS`) and the whole-name toggles in pipeline order. Pure.
 
 ## Must-knows
 

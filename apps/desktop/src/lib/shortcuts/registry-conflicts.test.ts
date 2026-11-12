@@ -32,24 +32,14 @@ interface AllowedConflict {
 }
 
 /**
- * Show favorites' `⌃D`, Duplicate's `⌘D`, and the error screen's `⌘D` details toggle are all
- * `Ctrl+D` off macOS. The detector reports one line per combo, naming every claimant.
- */
-const CTRL_D_OFF_MACOS: AllowedConflict = {
-  shortcut: 'Ctrl+D',
-  commandIds: ['errorPane.toggleTechnicalDetails', 'favorites.open', 'file.duplicate'],
-  why: 'Moves in the keymap work (#1102), which gives Windows and Linux their own keys.',
-}
-
-/**
  * Clashes we've decided to keep, per platform, each with the reason it's safe. Adding a line
  * here is a deliberate product decision, not a way to quiet the test: every entry means one of
  * the commands loses the combo at runtime.
  */
 const allowedConflicts: Record<Platform, AllowedConflict[]> = {
   macos: [],
-  windows: [CTRL_D_OFF_MACOS],
-  linux: [CTRL_D_OFF_MACOS],
+  windows: [],
+  linux: [],
 }
 
 /** `{ shortcut, commandIds }` rendered as a stable, greppable line. */

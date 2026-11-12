@@ -3,7 +3,7 @@
  * already lives in.
  *
  * Paste ends a single-item duplicate in the inline rename editor. The Duplicate
- * command (⌘D, the menu, the palette) asks nothing. F5 takes the new filename in
+ * command (its key, the menu, the palette) asks nothing. F5 takes the new filename in
  * its target field and blocks copying onto the source itself. See
  * `src/lib/file-operations/transfer/DETAILS.md` § "Single-item destinations".
  *
@@ -19,6 +19,7 @@ import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { ensureMcpClient, mcpCall, mcpNavToPath } from '../e2e-shared/mcp-client.js'
 import { waitForConflictCheck } from './conflict-helpers.js'
+import { defaultKey } from './helpers/registry-keys.js'
 import {
   clickButtonByText,
   dispatchMenuCommand,
@@ -52,7 +53,7 @@ test.describe('Duplicate in place', () => {
     // supported on this platform", so ⌘C never reaches a pasteboard on Linux.
     // The E2E clipboard fake replaces the pasteboard INSIDE that macOS
     // implementation, so it doesn't make the commands exist elsewhere. Nothing
-    // about duplicating is macOS-only: ⌘D, the Duplicate command, and F5 all
+    // about duplicating is macOS-only: its key, the Duplicate command, and F5 all
     // cover the same backend path on both platforms.
     test.skip(process.platform !== 'darwin', 'Clipboard file operations are implemented on macOS only.')
 
@@ -99,14 +100,16 @@ test.describe('Duplicate in place', () => {
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a (1).txt'))).toBe(true)
   })
 
-  test('⌘D duplicates the cursor item where it stands, with no dialog and no editor', async ({ tauriPage }) => {
+  test("Duplicate's key duplicates the cursor item where it stands, with no dialog and no editor", async ({
+    tauriPage,
+  }) => {
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
     const found = await moveCursorToFile(tauriPage, 'file-a.txt')
     expect(found).toBe(true)
 
-    await pressKey(tauriPage, `${CTRL_OR_META}+d`)
+    await pressKey(tauriPage, defaultKey('file.duplicate'))
 
     await expect
       .poll(() => fs.existsSync(path.join(fixtureRoot, 'left', 'file-a (1).txt')), { timeout: waitBudget(8000) })
@@ -125,7 +128,7 @@ test.describe('Duplicate in place', () => {
     await expectAndDismissToast(tauriPage, 'Copied 1 file.')
 
     // Duplicate asks nothing: no destination to pick, and no name to type. Unlike
-    // paste and F5, it must not leave the rename editor open: a second ⌘D has to
+    // paste and F5, it must not leave the rename editor open: a second press has to
     // stamp out another copy rather than land in a text field.
     // NOT polled: "the editor never opened" is an absence, and a poll for absence
     // passes on its first read anyway.
@@ -136,7 +139,7 @@ test.describe('Duplicate in place', () => {
     // row sorts BEFORE its source (a space beats a dot), so where the cursor lands
     // after the refresh is the pane's business, not this test's.
     expect(await moveCursorToFile(tauriPage, 'file-a.txt')).toBe(true)
-    await pressKey(tauriPage, `${CTRL_OR_META}+d`)
+    await pressKey(tauriPage, defaultKey('file.duplicate'))
     await expect
       .poll(() => fs.existsSync(path.join(fixtureRoot, 'left', 'file-a (2).txt')), { timeout: waitBudget(8000) })
       .toBeTruthy()

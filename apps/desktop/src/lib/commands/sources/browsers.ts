@@ -4,7 +4,7 @@
  * registry and resolved into `Command`s.
  */
 import type { CommandSource } from '../types'
-import { cmdOrCtrl, concatShortcuts, sameOnAll } from '../platform-shortcuts'
+import { cmdOrCtrl, sameOnAll } from '../platform-shortcuts'
 import { BLOCKED_BY_DIALOGS } from '../while-dialog-open'
 
 export const browsersCommands: CommandSource[] = [
@@ -42,7 +42,11 @@ export const browsersCommands: CommandSource[] = [
     showInPalette: true,
     // `⌘↑` mirrors the file list's `⌘↑` = parent; PlacesBrowser handles all three
     // keys (`handleBackToHostKey`). Display-only — `fixedKey` handling is in-component.
-    shortcuts: concatShortcuts(sameOnAll('Backspace', 'Escape'), cmdOrCtrl('⌘↑')),
+    shortcuts: {
+      macos: ['Backspace', 'Escape', '⌘↑'],
+      windows: ['Backspace', 'Escape', 'Alt+↑'],
+      linux: ['Backspace', 'Escape', 'Alt+↑'],
+    },
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },

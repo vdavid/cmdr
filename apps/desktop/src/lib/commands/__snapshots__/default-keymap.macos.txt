@@ -81,8 +81,8 @@ nav.home	⌥↑, Home
 nav.end	⌥↓, End
 nav.pageUp	PageUp
 nav.pageDown	PageDown
-nav.back	⌘[
-nav.forward	⌘]
+nav.back	⌘[, ⌥←
+nav.forward	⌘], ⌥→
 nav.goToRoot	⌘/
 nav.goHome	⌘⇧H
 errorPane.toggleTechnicalDetails	⌘D
@@ -220,8 +220,8 @@ viewer.viewAsHex	3
 viewer.zoomIn	+, =
 viewer.zoomOut	-
 viewer.toggleImageZoom	Enter, Space
-viewer.goBack	⌘[
-viewer.goForward	⌘]
+viewer.goBack	⌘[, ⌥←
+viewer.goForward	⌘], ⌥→
 palette.up	↑
 palette.down	↓
 palette.execute	Enter
