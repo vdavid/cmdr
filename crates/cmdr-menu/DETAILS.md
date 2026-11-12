@@ -57,21 +57,23 @@ snapshot diff.
 **Decision**: the bar keeps its own accelerators (a reviewed snapshot, buildable standalone for the demo), and
 `bar_parity_test.rs` ties them to the frontend registry: on each platform, every row with a command
 (`menu_id_to_command`, plus the left pane's view-mode pair, which holds the active pane's keys at build) registers
-exactly what `to_accelerator(first default key, platform)` would, compared as modifier set plus key. **Why**: the bar is
-a second copy of the default keys, and nothing else noticed when the two drifted; generating the bar from the registry
-would move registry data into Rust and lose the deliberate per-platform omissions.
+exactly what a push of its first default key would (`rebound_row_key`, the door `update_menu_accelerator` takes),
+compared as modifier set plus key. **Why**: the bar is a second copy of the default keys, and nothing else noticed when
+the two drifted; generating the bar from the registry would move registry data into Rust and lose the deliberate
+per-platform omissions.
 
 - The registry side is `src/registry_default_keys.tsv` (`platform`, command id, first default key, one line per
   `menuCommands` entry the OS offers under its capability fixture). The frontend's `lib/commands/default-keymap.test.ts`
   writes it with `toMatchFileSnapshot`, so a stale file fails there; the Svelte lane's inputs include it.
-- `EXCEPTIONS` lists each row that differs on purpose with its reason: macOS's bare F-keys, Tab, and Shift+Space (the
-  bar registers them, while the floor keeps a REBIND to a bare key display-only), the keys GTK takes on Linux, rows
-  whose first default can't be an accelerator so the bar shows the second (`⌘+`, `Backspace`), Select same kind's
-  deliberate display-only `⌥⇧=`, Move here's off-macOS `Ctrl+Shift+V` (a text field's paste as plain text, which a bar
-  accelerator would take before the page, so keydown dispatch runs it and leaves it to a focused field), and Windows's
-  view-mode rows, which register Linux's `Ctrl+1` / `Ctrl+2` where Windows puts TC's `Ctrl+F2` / `Ctrl+F1` first (the
-  bar leaves F-key chords to keydown dispatch). An exception that stops differing, or names a row the bar no longer
-  builds, fails `every_exception_still_differs`.
+- `EXCEPTIONS` lists each row that differs on purpose with its reason: the keys GTK takes on Linux, rows whose first
+  default can't be an accelerator so the bar shows the second (`⌘+`, `Backspace`), Move here's off-macOS `Ctrl+Shift+V`
+  (a text field's paste as plain text, which a bar accelerator would take before the page, so keydown dispatch runs it
+  and leaves it to a focused field), and Windows's view-mode rows, which register Linux's `Ctrl+1` / `Ctrl+2` where
+  Windows puts TC's `Ctrl+F2` / `Ctrl+F1` first (the bar leaves F-key chords to keydown dispatch). An exception that
+  stops differing, or names a row the bar no longer builds, fails `every_exception_still_differs`.
+- macOS's bare F-keys, `Tab`, and `Shift+Space`, and Select same kind's display-only `⌥⇧=`, need no exception: a push of
+  a row's own key comes back as the bar built it (`rebound_row_key`; `apps/desktop/src-tauri/src/menu/DETAILS.md` §
+  "Display-only accelerators").
 
 ## Accelerators
 

@@ -6,7 +6,7 @@ use tauri::{AppHandle, Manager};
 use crate::file_system::{set_direct_smb_enabled, set_smb_concurrency, update_debounce_ms};
 use crate::ignore_poison::IgnorePoison;
 use crate::menu::{
-    MenuState, command_id_to_menu_id, frontend_shortcut_to_accelerator, rebuild_view_mode_items,
+    MenuState, command_id_to_menu_id, frontend_shortcut_to_accelerator, rebound_bar_key, rebuild_view_mode_items,
     update_menu_item_accelerator,
 };
 use crate::network::mdns_discovery::update_resolve_timeout;
@@ -328,30 +328,18 @@ pub async fn set_show_virtual_git_portal(enabled: bool) {
 pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str) -> Result<(), String> {
     let menu_state = app.state::<MenuState<tauri::Wry>>();
 
-    // Convert frontend shortcut format to Tauri accelerator format. A combo carrying no
-    // ⌘ / ⌃ / ⌥ can't be registered without swallowing the key app-wide, so it comes back
-    // `None` and the menu only DISPLAYS it instead. The two are exclusive, so the item never
-    // shows one shortcut while firing on another.
-    let accelerator = frontend_shortcut_to_accelerator(shortcut);
-    // The frontend's own spelling, ❌ not the Tauri one: this is drawn, never parsed, and
-    // `⇧8` is what AppKit would print for a real accelerator where `Shift+8` is not.
-    let display = match (&accelerator, shortcut.is_empty()) {
-        (None, false) => Some(shortcut.to_string()),
-        _ => None,
-    };
-
     match command_id {
         // View mode CheckMenuItems are per-pane and the accelerator only attaches to the
         // active pane's pair. Cache the new accel in MenuState and rebuild: the rebuild
         // re-reads cached accels and active-pane state in one shot.
         "view.fullMode" => {
-            *menu_state.view_mode_full_accel.lock_ignore_poison() = accelerator;
+            *menu_state.view_mode_full_accel.lock_ignore_poison() = frontend_shortcut_to_accelerator(shortcut);
             rebuild_view_mode_items(&app, &menu_state)
                 .map_err(|e| format!("Failed to update Full view accelerator: {e}"))?;
             Ok(())
         }
         "view.briefMode" => {
-            *menu_state.view_mode_brief_accel.lock_ignore_poison() = accelerator;
+            *menu_state.view_mode_brief_accel.lock_ignore_poison() = frontend_shortcut_to_accelerator(shortcut);
             rebuild_view_mode_items(&app, &menu_state)
                 .map_err(|e| format!("Failed to update Brief view accelerator: {e}"))?;
             Ok(())
@@ -359,12 +347,23 @@ pub fn update_menu_accelerator(app: AppHandle, command_id: &str, shortcut: &str)
         // All other commands: use the generic HashMap-based update
         _ => {
             if let Some(menu_id) = command_id_to_menu_id(command_id) {
-                update_menu_item_accelerator(&app, &menu_state, menu_id, accelerator.as_deref(), display.as_deref())
-                    .map_err(|e| format!("Failed to update {command_id} accelerator: {e}"))?;
+                // Registered or only DISPLAYED, never both, so the item can't show one shortcut
+                // while firing on another. The row's own key comes back as the bar builds it;
+                // any other combo with no ⌘ / ⌃ / ⌥ only displays, since registering it would
+                // swallow the key app-wide (`cmdr_menu::bar::rebound_row_key`).
+                let key = rebound_bar_key(menu_id, shortcut);
+                update_menu_item_accelerator(
+                    &app,
+                    &menu_state,
+                    menu_id,
+                    key.accelerator.as_deref(),
+                    key.display.as_deref(),
+                )
+                .map_err(|e| format!("Failed to update {command_id} accelerator: {e}"))?;
                 menu_state
                     .display_accelerators
                     .lock_ignore_poison()
-                    .insert(menu_id.to_string(), display);
+                    .insert(menu_id.to_string(), key.display);
                 // The update replaced the item with a fresh one, and a fresh NSMenuItem carries
                 // neither an image nor an attributed title.
                 // Without these two, rebinding a shortcut silently strips that item's SF Symbol

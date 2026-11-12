@@ -362,10 +362,10 @@ field in the app. So the file pane's keydown handler owns the keys and the menu 
 
 "Select all of the same kind" is a fourth row on the same path for a different reason. `⌥⇧=` WOULD clear the floor, and
 `frontend_shortcut_to_accelerator` really does answer `Some("Alt+Shift+Equal")` for it — but David wants `⌥+` free for
-typing, so the row is built with `displayed_item`, which pairs the glyph with `NONE` by construction. Nothing pushes a
-default binding through `update_menu_accelerator` (only CUSTOM shortcuts are re-pushed, `shortcuts-store.ts`), so the
-default stays display-only; a user who deliberately rebinds the command to a ⌥ combo gets a real accelerator, which is
-what "a rebind stays honest" means below.
+typing, so the row is built with `displayed_item`, which pairs the glyph with `NONE` by construction. A push of the
+row's own key (a reset, a rebind back, or the key coming free from a user binding's shadow) keeps it display-only,
+because `update_menu_accelerator` hands every push to `cmdr_menu::bar::rebound_row_key` (the next paragraphs); a user who deliberately rebinds the command to another ⌥ combo gets a real accelerator, which is what "a rebind
+stays honest" means below.
 
 ❌ **No display rule prettifies the glyph** (`⌥⇧=` → `⌥+`). An ⌥ combo is a key position, so the menu shows the physical
 combo: that is true on every layout, and David types on a custom mixed English/Hungarian one where the "friendly"
@@ -376,7 +376,17 @@ The numpad spelling is the command's SECOND default (`['⌥⇧=', '⌥+']`), not
 **The modifier floor** is where that rule lives. `frontend_shortcut_to_accelerator` answers `None` for any combo
 without one of the three (Shift alone doesn't clear it, since `⇧8` IS `*`), so a bare key can't reach a menu item by
 accident — including through a rebind in Settings > Keyboard shortcuts, which is how one used to. The unfloored
-conversion is `cmdr_menu::accelerators::to_menu_text`, and it belongs to popups alone (above).
+conversion is `cmdr_menu::accelerators::to_menu_text`, and it belongs to popups alone (above), with one exception below.
+
+**A push of a row's own key comes back as the bar built it.** macOS's bar registers its F-keys, `Tab`, and
+`Shift+Space` bare by design (they type no character, and GTK isn't in the way there), so the floor alone made a rebind
+of Copy away from `F5` and back, or a reset to it, a display-only item where the default had a real one.
+`cmdr_menu::bar::rebound_row_key` (the generic `update_menu_accelerator` path, via `rebound_bar_key`) first compares the
+pushed combo, as a chord through `to_menu_text`, with the row's own `MENU_BAR` key: equal to its registered accelerator
+→ that accelerator; equal to its display-only glyph → that glyph, display-only. Anything else takes the floored
+`to_accelerator`. So the floor still guards every key the row wasn't built with (`F5` pushed onto Move only shows), and
+`bar_parity_test.rs` checks the bar through this same door, which is why macOS's bare-key rows need no exception there.
+The view-mode pair keeps its own path (`rebuild_view_mode_items`).
 
 **The second refusal is a key muda can't name** (`is_codeable_key`). muda parses an accelerator into a `Code`, a
 PHYSICAL key, so every shifted character falls in a hole: `+`, `*`, `(`, `_` have no `Code` of their own, only the

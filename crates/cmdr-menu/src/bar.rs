@@ -36,6 +36,7 @@
 //! the Windows key. `same_on_all` and `split` refuse one at compile time, and `bar_test.rs` pins
 //! it.
 
+use crate::accelerators::{same_chord, to_accelerator, to_menu_text};
 use crate::ids::{
     ABOUT_ID, ACKNOWLEDGEMENTS_ID, APP_MENU_ID, ASK_CMDR_ID, CALCULATE_FOLDER_SIZES_ID, CHANGELOG_ID,
     CHECK_FOR_UPDATES_ID, CLI_INSTALL_ID, CLONE_PANE_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID,
@@ -129,6 +130,53 @@ pub fn every_entry(platform: Platform) -> Vec<&'static EntryKind> {
         walk(&bar_menu.submenu, platform, &mut out);
     }
     out
+}
+
+/// What a row registers and what it only shows, after the frontend pushes a shortcut onto it.
+/// Exclusive by construction of [`rebound_row_key`]: a row never shows one key while firing on
+/// another.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RowKey {
+    pub accelerator: Option<String>,
+    pub display: Option<String>,
+}
+
+/// What `menu_id`'s row registers and shows on `platform` once the frontend pushes `shortcut`
+/// (its rebind door, `update_menu_accelerator`).
+///
+/// A shortcut that IS the row's built key comes back exactly as `MENU_BAR` builds it: macOS's
+/// bar registers `F5`, `Tab`, and `Shift+Space` bare by design, and Select same kind shows `⌥⇧=`
+/// without registering it, so a rebind back to one of those (or a reset, or a key freed from a
+/// user binding's shadow) must not turn into something else. Any other key goes through
+/// [`to_accelerator`]: registered past the modifier floor, else display-only.
+pub fn rebound_row_key(menu_id: &str, shortcut: &str, platform: Platform) -> RowKey {
+    // `to_menu_text` is the unfloored spelling, so a bare `F5` can be compared at all.
+    if let Some(pushed) = to_menu_text(shortcut, platform) {
+        if let Some(built) = spec_accelerator(menu_id, platform)
+            && same_chord(built, &pushed)
+        {
+            return RowKey {
+                accelerator: Some(built.to_string()),
+                display: None,
+            };
+        }
+        if let Some(shown) = spec_display_accelerator(menu_id, platform)
+            && to_menu_text(shown, platform).is_some_and(|shown_text| same_chord(&shown_text, &pushed))
+        {
+            return RowKey {
+                accelerator: None,
+                display: Some(shown.to_string()),
+            };
+        }
+    }
+    let accelerator = to_accelerator(shortcut, platform);
+    // The frontend's own spelling, ❌ not the Tauri one: this is drawn, never parsed, and `⇧8` is
+    // what AppKit would print for a real accelerator where `Shift+8` is not.
+    let display = match (&accelerator, shortcut.is_empty()) {
+        (None, false) => Some(shortcut.to_string()),
+        _ => None,
+    };
+    RowKey { accelerator, display }
 }
 
 /// Every accelerator `platform`'s bar registers, with the ID of the item it sits on.

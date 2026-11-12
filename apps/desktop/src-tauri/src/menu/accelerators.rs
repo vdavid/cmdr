@@ -23,6 +23,14 @@ pub fn frontend_shortcut_to_accelerator(shortcut: &str) -> Option<String> {
     cmdr_menu::accelerators::to_accelerator(shortcut, Platform::current())
 }
 
+/// What `menu_id`'s bar row registers and shows here once the frontend pushes `shortcut`: the row
+/// exactly as `MENU_BAR` builds it when `shortcut` is its own key (so macOS's bare `F5` stays
+/// registered through a rebind back to it), else the floored conversion.
+/// `cmdr_menu::bar::rebound_row_key`.
+pub fn rebound_bar_key(menu_id: &str, shortcut: &str) -> cmdr_menu::bar::RowKey {
+    cmdr_menu::bar::rebound_row_key(menu_id, shortcut, Platform::current())
+}
+
 /// Update the accelerator for any menu item tracked in the items HashMap.
 /// Removes the old item, creates a new one with the same ID/label/enabled state
 /// but a new accelerator, and reinserts at the same position.

@@ -1,21 +1,20 @@
 //! Ties the bar to the frontend's registry: on each platform, every row with a command registers
 //! the accelerator a rebind to that command's first default key would register
-//! (`to_accelerator`, the same door `update_menu_accelerator` takes), or sits on [`EXCEPTIONS`]
+//! (`rebound_row_key`, the same door `update_menu_accelerator` takes), or sits on [`EXCEPTIONS`]
 //! with its reason.
 //!
 //! The registry side is `registry_default_keys.tsv`, which the frontend's
 //! `lib/commands/default-keymap.test.ts` writes under each OS's capability fixture and checks
 //! for staleness, so a key moved on either side fails one of the two tests.
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 
-use super::every_entry;
-use crate::accelerators::to_accelerator;
+use super::{RowKey, every_entry, rebound_row_key};
+use crate::accelerators::same_chord;
 use crate::ids::{
-    COMPARE_DIRECTORIES_ID, EDIT_ID, EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
-    FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GO_PARENT_ID,
-    OPEN_TERMINAL_HERE_ID, QUICK_LOOK_ID, RENAME_ID, SELECT_SAME_KIND_ID, SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID,
-    VIEW_MODE_FULL_LEFT_ID, VIEW_ZOOM_IN_ID, VIEW_ZOOM_OUT_ID, menu_id_to_command,
+    EDIT_PASTE_MOVE_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_MOVE_ID, GO_PARENT_ID, QUICK_LOOK_ID, SELECT_SAME_KIND_ID,
+    SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_ZOOM_IN_ID, VIEW_ZOOM_OUT_ID,
+    menu_id_to_command,
 };
 use crate::spec::{EntryKind, Platform};
 
@@ -33,12 +32,6 @@ const WINDOWS: &[Platform] = &[Platform::Windows];
 const WINDOWS_AND_LINUX: &[Platform] = &[Platform::Windows, Platform::Linux];
 const EVERY_PLATFORM: &[Platform] = &Platform::ALL;
 
-/// macOS's bar registers its F-keys, Tab, and Shift+Space bare, where a rebind to a bare key only
-/// shows it: `to_accelerator`'s modifier floor guards the REBIND door (`menu/DETAILS.md` §
-/// "Display-only accelerators"), and the bar's own rows are reviewed in `bar_test.rs`.
-const MACOS_BARE_KEY: &str =
-    "macOS registers this bare key itself; the modifier floor keeps only a rebind to one display-only";
-
 /// GTK takes the F-keys (and these two zoom chords) before the webview, so the Linux bar leaves
 /// them to the frontend's keydown dispatch (`menu/DETAILS.md` § "Platform differences").
 const GTK_TAKES_IT: &str = "GTK takes this key before the webview, so keydown dispatch runs it; Windows follows Linux until its menu model is decided";
@@ -53,71 +46,6 @@ const WINDOWS_FOLLOWS_LINUX: &str = "the first key there is an F-key chord, whic
 const SECOND_KEY: &str = "the first default can't be a bar accelerator, so the bar registers the second";
 
 const EXCEPTIONS: &[Exception] = &[
-    Exception {
-        platforms: MACOS,
-        menu_id: FILE_VIEW_ID,
-        reason: MACOS_BARE_KEY,
-    },
-    Exception {
-        platforms: MACOS,
-        menu_id: EDIT_ID,
-        reason: MACOS_BARE_KEY,
-    },
-    Exception {
-        platforms: MACOS,
-        menu_id: FILE_COPY_ID,
-        reason: MACOS_BARE_KEY,
-    },
-    Exception {
-        platforms: MACOS,
-        menu_id: FILE_MOVE_ID,
-        reason: MACOS_BARE_KEY,
-    },
-    Exception {
-        platforms: MACOS,
-        menu_id: FILE_NEW_FOLDER_ID,
-        reason: MACOS_BARE_KEY,
-    },
-    Exception {
-        platforms: MACOS,
-        menu_id: FILE_NEW_FILE_ID,
-        reason: MACOS_BARE_KEY,
-    },
-    Exception {
-        platforms: MACOS,
-        menu_id: FILE_DELETE_ID,
-        reason: MACOS_BARE_KEY,
-    },
-    Exception {
-        platforms: MACOS,
-        menu_id: FILE_DELETE_PERMANENTLY_ID,
-        reason: MACOS_BARE_KEY,
-    },
-    Exception {
-        platforms: MACOS,
-        menu_id: RENAME_ID,
-        reason: MACOS_BARE_KEY,
-    },
-    Exception {
-        platforms: MACOS,
-        menu_id: OPEN_TERMINAL_HERE_ID,
-        reason: MACOS_BARE_KEY,
-    },
-    Exception {
-        platforms: MACOS,
-        menu_id: QUICK_LOOK_ID,
-        reason: MACOS_BARE_KEY,
-    },
-    Exception {
-        platforms: MACOS,
-        menu_id: COMPARE_DIRECTORIES_ID,
-        reason: MACOS_BARE_KEY,
-    },
-    Exception {
-        platforms: MACOS,
-        menu_id: SWITCH_PANE_ID,
-        reason: MACOS_BARE_KEY,
-    },
     Exception {
         platforms: WINDOWS_AND_LINUX,
         menu_id: FILE_COMPRESS_ID,
@@ -139,12 +67,6 @@ const EXCEPTIONS: &[Exception] = &[
         platforms: EVERY_PLATFORM,
         menu_id: GO_PARENT_ID,
         reason: SECOND_KEY,
-    },
-    Exception {
-        platforms: EVERY_PLATFORM,
-        menu_id: SELECT_SAME_KIND_ID,
-        reason: "`⌥⇧=` clears the floor, but the default stays display-only so `⌥+` stays free for typing \
-                 (`menu/DETAILS.md` § \"Display-only accelerators\")",
     },
     // Windows's first view-mode keys are TC's `Ctrl+F2` / `Ctrl+F1`; Linux puts `Ctrl+1` / `Ctrl+2`
     // first, because KDE and Xfce take `Ctrl+F1` / `Ctrl+F2`.
@@ -194,43 +116,13 @@ fn registry_keys() -> HashMap<(&'static str, &'static str), &'static str> {
         .collect()
 }
 
-/// An accelerator as the chord it binds: its modifiers as a set, plus its key. `Alt+Cmd+O` and
-/// `Cmd+Alt+O` are one chord, and so are `Cmd+Equal` and `Cmd+=`.
-fn chord(accelerator: &str) -> (BTreeSet<&'static str>, String) {
-    let mut modifiers = BTreeSet::new();
-    let mut key = String::new();
-    let tokens: Vec<&str> = accelerator.split('+').collect();
-    for (position, token) in tokens.iter().enumerate() {
-        let modifier = match token.to_ascii_uppercase().as_str() {
-            "CMD" | "COMMAND" | "SUPER" | "META" => Some("meta"),
-            "CTRL" | "CONTROL" => Some("ctrl"),
-            "ALT" | "OPTION" => Some("alt"),
-            "SHIFT" => Some("shift"),
-            _ => None,
-        };
-        match modifier {
-            Some(modifier) if position + 1 < tokens.len() => {
-                modifiers.insert(modifier);
-            }
-            // `Cmd++`: the split's last two tokens are empty, and the key was a `+`.
-            _ if token.is_empty() => key = "+".to_string(),
-            _ => {
-                key = match token.to_ascii_uppercase().as_str() {
-                    "EQUAL" => "=".to_string(),
-                    "MINUS" => "-".to_string(),
-                    other => other.to_string(),
-                }
-            }
-        }
-    }
-    (modifiers, key)
-}
-
 /// What the row registers against what the registry's first key would, as chords, or `None`
 /// where they agree.
 fn mismatch(built: Option<&str>, expected: Option<&str>) -> Option<String> {
-    if built.map(chord) == expected.map(chord) {
-        return None;
+    match (built, expected) {
+        (None, None) => return None,
+        (Some(built), Some(expected)) if same_chord(built, expected) => return None,
+        _ => {}
     }
     Some(format!(
         "the bar registers {}, the registry's first default key registers {}",
@@ -252,7 +144,11 @@ fn rows(platform: Platform) -> Vec<(&'static str, Option<&'static str>, Option<S
             };
             let command_id = row_command(menu_id)?;
             let combo = keys.get(&(platform.wire(), command_id)).copied().unwrap_or("");
-            Some((menu_id, accelerator, to_accelerator(combo, platform)))
+            Some((
+                menu_id,
+                accelerator,
+                rebound_row_key(menu_id, combo, platform).accelerator,
+            ))
         })
         .collect()
 }
@@ -323,10 +219,64 @@ fn the_registry_file_names_every_platform() {
     }
 }
 
+fn registered(accelerator: &str) -> RowKey {
+    RowKey {
+        accelerator: Some(accelerator.to_string()),
+        display: None,
+    }
+}
+
+fn shown(shortcut: &str) -> RowKey {
+    RowKey {
+        accelerator: None,
+        display: Some(shortcut.to_string()),
+    }
+}
+
+/// A rebind back to the key macOS's bar registers bare (or a reset to it) registers it the way the
+/// bar does, where the modifier floor used to leave it display-only.
 #[test]
-fn a_chord_is_its_modifier_set_and_key() {
-    assert_eq!(chord("Alt+Cmd+O"), chord("Cmd+Alt+O"));
-    assert_eq!(chord("Cmd+Equal"), chord("Cmd+="));
-    assert_eq!(chord("Cmd++"), (BTreeSet::from(["meta"]), "+".to_string()));
-    assert_ne!(chord("Ctrl+D"), chord("Cmd+D"));
+fn a_rebind_back_to_a_rows_own_bare_key_registers_it_as_the_bar_does() {
+    let mac = Platform::MacOs;
+    assert_eq!(rebound_row_key(FILE_COPY_ID, "F5", mac), registered("F5"));
+    assert_eq!(rebound_row_key(SWITCH_PANE_ID, "Tab", mac), registered("Tab"));
+    assert_eq!(rebound_row_key(QUICK_LOOK_ID, "⇧Space", mac), registered("Shift+Space"));
+}
+
+/// The floor still guards every other bare key: one that isn't this row's built key only shows.
+#[test]
+fn a_bare_key_the_row_was_not_built_with_stays_display_only() {
+    let mac = Platform::MacOs;
+    assert_eq!(rebound_row_key(FILE_MOVE_ID, "F5", mac), shown("F5"));
+    assert_eq!(rebound_row_key(FILE_COPY_ID, "F9", mac), shown("F9"));
+    // Off macOS the bar leaves F5 to keydown dispatch, so a rebind to it only shows there too.
+    assert_eq!(rebound_row_key(FILE_COPY_ID, "F5", Platform::Linux), shown("F5"));
+}
+
+/// Select same kind is built display-only on purpose (`⌥+` stays free for typing), so a push of
+/// that key keeps it display-only, on every platform's spelling of it.
+#[test]
+fn a_push_of_a_display_only_rows_own_key_stays_display_only() {
+    assert_eq!(
+        rebound_row_key(SELECT_SAME_KIND_ID, "⌥⇧=", Platform::MacOs),
+        shown("⌥⇧=")
+    );
+    assert_eq!(
+        rebound_row_key(SELECT_SAME_KIND_ID, "Alt+Shift+=", Platform::Linux),
+        shown("⌥⇧=")
+    );
+    // A different ⌥ chord is a deliberate rebind, and gets a real accelerator.
+    assert_eq!(
+        rebound_row_key(SELECT_SAME_KIND_ID, "⌥⇧A", Platform::MacOs),
+        registered("Alt+Shift+A")
+    );
+}
+
+#[test]
+fn an_empty_push_clears_the_row() {
+    let cleared = RowKey {
+        accelerator: None,
+        display: None,
+    };
+    assert_eq!(rebound_row_key(FILE_COPY_ID, "", Platform::MacOs), cleared);
 }

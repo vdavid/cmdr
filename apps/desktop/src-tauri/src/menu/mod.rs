@@ -118,7 +118,7 @@ use tauri::{
 // Re-export the public API consumed from outside the menu module.
 // All menu item ID constants and the ID ↔ command-registry mapping functions live in
 // `cmdr_menu::ids`; the glob keeps every existing `crate::menu::…` / `super::…` import path valid.
-pub use accelerators::{frontend_shortcut_to_accelerator, update_menu_item_accelerator};
+pub use accelerators::{frontend_shortcut_to_accelerator, rebound_bar_key, update_menu_item_accelerator};
 pub use cmdr_menu::context::ContextMenuShortcuts;
 pub use cmdr_menu::context::image_index::ImageIndexMenuState;
 pub use cmdr_menu::context::popups::QueueRowMenuEntry;

@@ -16,6 +16,8 @@
 //! on, and parses what they emit with muda. [`glyphs`] goes back the other way, for a host that
 //! draws the bar itself (the browser demo).
 
+use std::collections::BTreeSet;
+
 use crate::spec::Platform;
 
 /// Convert a frontend shortcut (`⌘2` on macOS, `Ctrl+2` on Windows and Linux) to the text a menu
@@ -100,6 +102,43 @@ pub fn glyphs(accelerator: &str) -> String {
         None => out.push_str(&key.to_uppercase()),
     }
     out
+}
+
+/// Whether two Tauri accelerators bind one chord: the same modifier set and key, whatever the
+/// order or spelling (`Alt+Cmd+O` is `Cmd+Alt+O`, `Cmd+Equal` is `Cmd+=`).
+pub fn same_chord(a: &str, b: &str) -> bool {
+    chord(a) == chord(b)
+}
+
+/// An accelerator as the chord it binds: its modifiers as a set, plus its key.
+fn chord(accelerator: &str) -> (BTreeSet<&'static str>, String) {
+    let mut modifiers = BTreeSet::new();
+    let mut key = String::new();
+    let tokens: Vec<&str> = accelerator.split('+').collect();
+    for (position, token) in tokens.iter().enumerate() {
+        let modifier = match token.to_ascii_uppercase().as_str() {
+            "CMD" | "COMMAND" | "SUPER" | "META" => Some("meta"),
+            "CTRL" | "CONTROL" => Some("ctrl"),
+            "ALT" | "OPTION" => Some("alt"),
+            "SHIFT" => Some("shift"),
+            _ => None,
+        };
+        match modifier {
+            Some(modifier) if position + 1 < tokens.len() => {
+                modifiers.insert(modifier);
+            }
+            // `Cmd++`: the split's last two tokens are empty, and the key was a `+`.
+            _ if token.is_empty() => key = "+".to_string(),
+            _ => {
+                key = match token.to_ascii_uppercase().as_str() {
+                    "EQUAL" => "=".to_string(),
+                    "MINUS" => "-".to_string(),
+                    other => other.to_string(),
+                }
+            }
+        }
+    }
+    (modifiers, key)
 }
 
 /// The punctuation muda names a physical key for, verbatim from `parse_named_code`
@@ -484,6 +523,16 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn a_chord_is_its_modifier_set_and_key() {
+        assert!(same_chord("Alt+Cmd+O", "Cmd+Alt+O"));
+        assert!(same_chord("Cmd+Equal", "Cmd+="));
+        assert!(same_chord("Cmd++", "Command++"));
+        assert!(!same_chord("Cmd++", "Cmd+="));
+        assert!(!same_chord("Ctrl+D", "Cmd+D"));
+        assert!(same_chord("F5", "f5"));
     }
 
     #[test]

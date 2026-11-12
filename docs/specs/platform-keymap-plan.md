@@ -844,7 +844,8 @@ Sequential, one agent each, in this worktree. Each ends green and committed.
     Settings lists the six new fixed-key rows; the palette gains Full screen; Move here (`edit.pasteAsMove`, `⌥⌘V`)
     moves nothing while a text field has focus, from any road (it moved files from the quick filter or the path bar,
     since the menu accelerator fires before the field); a key the user bound to one command beats another command's
-    default on it (item 20). Anything else that moves on macOS is a regression.
+    default on it (item 20); a rebind or reset to a bar row's own key comes back as the bar built it (item 21). Anything
+    else that moves on macOS is a regression.
 19. On Linux, while any main-window dialog, overlay, or the palette is up, the main window's bar mnemonics are off and
     every `Alt+<letter>` default reaches the page; after the last one closes, they're back. A real-X-event spec in the
     Linux lane proves it.
@@ -854,3 +855,7 @@ Sequential, one agent each, in this worktree. Each ends green and committed.
     later takes a user's key. Two user bindings or two defaults keep scope depth, then registry order. Fixed-key and
     macOS-native defaults are never shadowed. One implementation, `lib/shortcuts/binding-priority.ts`, pinned by
     `shortcut-dispatch.test.ts` and `shortcuts-store.test.ts`.
+21. A push onto a bar row (`update_menu_accelerator`) of the row's own `MENU_BAR` key behaves exactly like the built
+    row: registered where the bar registers it (macOS's bare `F5`, `Tab`, `Shift+Space`), display-only where the bar
+    only shows it (Select same kind's `⌥⇧=`). Every other combo takes the modifier floor. One door,
+    `cmdr_menu::bar::rebound_row_key`, which `bar_parity_test.rs` checks the bar through, with no bare-key exceptions.
