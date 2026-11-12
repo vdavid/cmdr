@@ -202,19 +202,44 @@ Verified by reading each desktop's default bindings in source on 2026-11-12:
   `Alt+F8` resize, `Alt+F10`, `Alt+Space`, `Alt+Tab`, `Alt+Escape`, `Ctrl+Alt+←/→/↑/↓` workspaces,
   `Ctrl+Alt+Shift+arrows`, `Ctrl+Alt+F1`–`F12` (Wayland VT switch), `Ctrl+Alt+Tab`, `Ctrl+Alt+Escape`,
   `Ctrl+Alt+Delete`, `Ctrl+Alt+Shift+R`, and Super combos. Free: `Alt+F1` (empty since GNOME 41), every `Ctrl+F`-key.
+- GNOME, read again on 2026-11-12 for the window-manager keys: `Alt+Shift+Tab`, ``Alt+` `` and `Alt+Shift+~` (the key
+  above Tab, by position; spelled as a US layout records it), `Ctrl+Alt+Shift+Tab`, `Alt+Shift+F6`, `Alt+Shift+Escape`,
+  `Ctrl+Alt+Shift+Escape` (`gsettings-desktop-schemas` `schemas/org.gnome.desktop.wm.keybindings.gschema.xml.in` at
+  `258dfe9871`); `Print`, `Alt+Print`, `Shift+Print` screenshots, and `Ctrl+Alt+Shift+R` recording (`gnome-shell`
+  `data/org.gnome.shell.gschema.xml.in` at `6b8a634282`). `Ctrl+Alt+F1`–`F12` is in `mutter`
+  `data/org.gnome.mutter.wayland.gschema.xml.in` (`c36bb37a79`), so Wayland only. Free: `Ctrl+Print`.
 - Ubuntu on top (`ubuntu-settings` gsettings override, gnome-settings-daemon terminal patch): `Ctrl+Alt+T` terminal,
-  `Ctrl+Alt+D` show desktop, `Ctrl+Alt+keypad` window placement.
+  `Ctrl+Alt+D` show desktop, `Ctrl+Alt+keypad` window placement. Unverified for the window-manager keys above: the
+  override files sit on Launchpad, which refused an anonymous read on 2026-11-12, so the table assumes Ubuntu keeps
+  every GNOME default.
 - KDE Plasma 6 (`kwin` `d9573792e2`, `plasma-workspace` `2d24c1c29e`, `kscreenlocker` `44b77eadbc`): `Alt+F1` launcher,
   `Alt+F2`/`Alt+Space` KRunner, `Alt+Shift+F2`, `Alt+F3` window menu, `Alt+F4`, `Ctrl+F1`–`F4` desktops, `Ctrl+F7`,
   `Ctrl+F9`, `Ctrl+F10`, `Ctrl+F12`, `Ctrl+Alt+Delete`, `Ctrl+Alt+T` (Konsole), and Meta combos. No `Ctrl+Alt+arrows`,
-  no `Ctrl+Alt+L`.
+  no `Ctrl+Alt+L`. Also `Alt+Tab`, `Alt+Shift+Tab`, ``Alt+` ``, and `Alt+~` (`Alt+Shift+~` on a US layout), set in
+  `TabBox::key` (`kwin` `src/tabbox/tabbox.cpp` at `9e63d97ede`, lines 333–338), and `Print` / `Shift+Print` (Spectacle,
+  `spectacle` `src/SpectacleCore.cpp` at `354595addf`, lines 701–708; its `Alt+Print` and `Ctrl+Print` need Meta). Not
+  KDE defaults, all Meta-based: `Ctrl+Escape` (`plasma-systemmonitor` `67c3872603`), `Ctrl+Alt+Escape` (Kill window is
+  `Meta+Ctrl+Esc`, `kwin` `src/useractions.cpp` at `15575a5c35`), `Ctrl+Alt+arrows` (`src/virtualdesktops.cpp` at
+  `e381db7900`). Unverified: `Ctrl+Alt+F1`–`F12` on Wayland (KWin switches on `XF86Switch_VT_*`, `src/input.cpp` at
+  `a2a7855509`, but the XKB map behind it wasn't readable).
 - Xfce (`libxfce4ui` mirror `73db502864`, `xfce4-keyboard-shortcuts.xml`): `Alt+F1`, `Alt+F2`, `Alt+F3`, `Alt+F4`,
   `Alt+F6`–`Alt+F12`, `Ctrl+F1`–`Ctrl+F12` workspaces, `Ctrl+Alt+arrows`, `Ctrl+Alt+Shift+←/→/↑`, `Ctrl+Alt+Home/End`,
   `Ctrl+Alt+keypad`, `Ctrl+Alt+T`, `Ctrl+Alt+F` (Thunar), `Ctrl+Alt+Delete`, `Ctrl+Alt+Escape`, `Ctrl+Escape`,
-  `Ctrl+Shift+Escape`, `Alt+Insert`, `Alt+Delete`, `Alt+Shift+PageUp/PageDown`, `Alt+Space`. Free: `Alt+F5`.
+  `Ctrl+Shift+Escape`, `Alt+Insert`, `Alt+Delete`, `Alt+Shift+PageUp/PageDown`, `Alt+Space`. Free: `Alt+F5`. Also (the
+  same file at `0320f03b8f`): `Alt+Tab` / `Alt+Shift+Tab` window cycling, `Print`, `Alt+Print`, `Shift+Print`
+  (screenshooter), and, in the 4.20 releases (the file at `c6640844d3`), `Ctrl+Alt+L` lock and `Ctrl+Alt+D` show
+  desktop, which `0320f03b8f` (2026-05-02, the 4.21 development line) moves to Super. The bare arrows and `Escape` there
+  act only inside xfwm4's move, resize, and cycle, so they aren't listed.
 - Cinnamon (`cinnamon-desktop` `4f797bcfc9`): `Alt+F1` expo, `Alt+F2`, `Alt+F4`, `Alt+F5`, `Alt+F7`, `Alt+F8`,
   `Alt+F10`, `Alt+Space`, `Ctrl+Alt+arrows`, `Ctrl+Alt+Shift+arrows`, `Ctrl+Alt+L` lock, `Ctrl+Alt+T`, `Ctrl+Alt+End`,
-  `Ctrl+Alt+Escape`, `Ctrl+Alt+Delete`, `Ctrl+Alt+Tab`, `Ctrl+Alt+Shift+R`.
+  `Ctrl+Alt+Escape`, `Ctrl+Alt+Delete`, `Ctrl+Alt+Tab`, `Ctrl+Alt+Shift+R`. Also `Alt+Tab`, `Alt+Shift+Tab`, ``Alt+` ``,
+  `Alt+Shift+~`, `Ctrl+Alt+Shift+Tab` (`schemas/org.cinnamon.desktop.keybindings.wm.gschema.xml.in` at `110609f9c1`);
+  `Print`, `Alt+Print`, `Shift+Print`, `Ctrl+Print`, `Ctrl+Alt+Print`, `Ctrl+Shift+Print` screenshots
+  (`schemas/org.cinnamon.desktop.keybindings.media-keys.gschema.xml.in` at `096d728f89`, which re-confirms the
+  `Ctrl+Alt+` keys above); and `Ctrl+Alt+F1`–`F12` in a Wayland session (`linuxmint/muffin`
+  `data/org.cinnamon.muffin.wayland.gschema.xml.in` at `e603d4afa3`).
+- The table spells `Print` as `PrintScreen`, the `event.key` a keypress carries. On X11 the X server itself likely takes
+  `Ctrl+Alt+F1`–`F12` on every desktop; that's unread, so only the desktops whose own schema binds them list them.
 - Input methods: IBus (`ibus` `7d228eafa9`) takes `Ctrl+Shift+U` (Unicode entry) in every release and its emoji key
   moved from `Ctrl+Shift+E` (1.5.20–1.5.25) to `Ctrl+.`/`Ctrl+;` (1.5.26–1.5.27) to `Super+.`/`Super+;` (1.5.28 on).
   GTK's own input context also starts Unicode entry on `Ctrl+Shift+U`. Cmdr's floor is Ubuntu 22.04 (IBus 1.5.26),

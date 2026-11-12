@@ -69,6 +69,16 @@ const fKeys = (prefix: string, from: number, to: number): string[] =>
   Array.from({ length: to - from + 1 }, (_, i) => `${prefix}F${String(from + i)}`)
 const arrows = (prefix: string, keys = ['↑', '↓', '←', '→']): string[] => keys.map((key) => prefix + key)
 
+/**
+ * Switch between one app's windows: `Alt+Above_Tab` and its reverse, a key bound by POSITION (the
+ * key above Tab). Spelled as a US layout records it (`` ` `` and, with Shift, `~`); another layout
+ * types another character there, so the warning reaches US-layout users only.
+ */
+const ABOVE_TAB = ['Alt+`', 'Alt+Shift+~']
+
+/** `Print` itself (screenshot), and with Alt (a window) and Shift (an area or the screen). */
+const SCREENSHOT_KEYS = ['PrintScreen', 'Alt+PrintScreen', 'Shift+PrintScreen']
+
 /** GNOME's defaults (gsettings-desktop-schemas, gnome-shell, mutter, gnome-settings-daemon). Super combos aside. */
 const GNOME_KEYS: readonly string[] = [
   'Alt+F2',
@@ -79,21 +89,28 @@ const GNOME_KEYS: readonly string[] = [
   'Alt+F8',
   'Alt+F10',
   'Alt+Space',
+  'Alt+Shift+F6',
   'Alt+Tab',
+  'Alt+Shift+Tab',
+  ...ABOVE_TAB,
   'Alt+Escape',
+  'Alt+Shift+Escape',
   ...arrows('Ctrl+Alt+'),
   ...arrows('Ctrl+Alt+Shift+'),
   ...fKeys('Ctrl+Alt+', 1, 12),
   'Ctrl+Alt+Tab',
+  'Ctrl+Alt+Shift+Tab',
   'Ctrl+Alt+Escape',
+  'Ctrl+Alt+Shift+Escape',
   'Ctrl+Alt+Delete',
   'Ctrl+Alt+Shift+R',
+  ...SCREENSHOT_KEYS,
 ]
 
 /** Each listed desktop's defaults that an app could otherwise bind. */
 const LINUX_DESKTOP_KEYS: Readonly<Record<LinuxDesktop, readonly string[]>> = {
   GNOME: GNOME_KEYS,
-  // KDE Plasma 6 (kwin, plasma-workspace, kscreenlocker). Meta combos aside.
+  // KDE Plasma 6 (kwin, plasma-workspace, kscreenlocker, konsole, spectacle). Meta combos aside.
   'KDE Plasma': [
     'Alt+F1',
     'Alt+F2',
@@ -101,6 +118,11 @@ const LINUX_DESKTOP_KEYS: Readonly<Record<LinuxDesktop, readonly string[]>> = {
     'Alt+F3',
     'Alt+F4',
     'Alt+Space',
+    'Alt+Tab',
+    'Alt+Shift+Tab',
+    ...ABOVE_TAB,
+    'PrintScreen',
+    'Shift+PrintScreen',
     ...fKeys('Ctrl+', 1, 4),
     'Ctrl+F7',
     'Ctrl+F9',
@@ -109,12 +131,19 @@ const LINUX_DESKTOP_KEYS: Readonly<Record<LinuxDesktop, readonly string[]>> = {
     'Ctrl+Alt+Delete',
     'Ctrl+Alt+T',
   ],
-  // Xfce (libxfce4ui's xfce4-keyboard-shortcuts.xml). The keypad placement keys aside.
+  // Xfce 4.20 (libxfce4ui's xfce4-keyboard-shortcuts.xml). The keypad placement keys aside, and the
+  // bare arrows and Escape it lists, which act only inside xfwm4's own move, resize, and cycle.
   Xfce: [
     'Alt+F1',
     'Alt+F2',
     'Alt+F3',
     'Alt+F4',
+    'Alt+Tab',
+    'Alt+Shift+Tab',
+    ...SCREENSHOT_KEYS,
+    // Lock and show desktop; the 4.21 development line moves both to Super.
+    'Ctrl+Alt+L',
+    'Ctrl+Alt+D',
     ...fKeys('Alt+', 6, 12),
     ...fKeys('Ctrl+', 1, 12),
     ...arrows('Ctrl+Alt+'),
@@ -133,7 +162,7 @@ const LINUX_DESKTOP_KEYS: Readonly<Record<LinuxDesktop, readonly string[]>> = {
     'Alt+Shift+PageDown',
     'Alt+Space',
   ],
-  // Cinnamon (cinnamon-desktop).
+  // Cinnamon (cinnamon-desktop, muffin).
   Cinnamon: [
     'Alt+F1',
     'Alt+F2',
@@ -143,15 +172,25 @@ const LINUX_DESKTOP_KEYS: Readonly<Record<LinuxDesktop, readonly string[]>> = {
     'Alt+F8',
     'Alt+F10',
     'Alt+Space',
+    'Alt+Tab',
+    'Alt+Shift+Tab',
+    ...ABOVE_TAB,
     ...arrows('Ctrl+Alt+'),
     ...arrows('Ctrl+Alt+Shift+'),
+    ...fKeys('Ctrl+Alt+', 1, 12),
     'Ctrl+Alt+L',
     'Ctrl+Alt+T',
     'Ctrl+Alt+End',
     'Ctrl+Alt+Escape',
     'Ctrl+Alt+Delete',
     'Ctrl+Alt+Tab',
+    'Ctrl+Alt+Shift+Tab',
     'Ctrl+Alt+Shift+R',
+    ...SCREENSHOT_KEYS,
+    // The same three, to the clipboard.
+    'Ctrl+PrintScreen',
+    'Ctrl+Alt+PrintScreen',
+    'Ctrl+Shift+PrintScreen',
   ],
   // Ubuntu is GNOME plus its own (the ubuntu-settings override, the terminal patch). Keypad keys aside.
   Ubuntu: [...GNOME_KEYS, 'Ctrl+Alt+T', 'Ctrl+Alt+D'],

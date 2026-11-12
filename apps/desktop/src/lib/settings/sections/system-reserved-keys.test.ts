@@ -25,7 +25,20 @@ describe('systemReservation', () => {
     expect(systemReservation('Ctrl+F3', 'linux')).toEqual({ os: 'linux', desktops: ['KDE Plasma', 'Xfce'] })
     // Ubuntu is GNOME plus its own keys, so it takes everything GNOME does.
     expect(systemReservation('Alt+F5', 'linux')).toEqual({ os: 'linux', desktops: ['GNOME', 'Cinnamon', 'Ubuntu'] })
-    expect(systemReservation('Ctrl+Alt+D', 'linux')).toEqual({ os: 'linux', desktops: ['Ubuntu'] })
+    expect(systemReservation('Ctrl+Alt+D', 'linux')).toEqual({ os: 'linux', desktops: ['Xfce', 'Ubuntu'] })
+  })
+
+  // Every listed desktop's window switcher and screenshot key, read in each one's own source.
+  it('names every desktop for the window manager keys they all bind', () => {
+    for (const combo of ['Alt+Tab', 'Alt+Shift+Tab', 'PrintScreen', 'Shift+PrintScreen', 'Alt+F4', 'Alt+Space']) {
+      expect(systemReservation(combo, 'linux')).toEqual({ os: 'linux', desktops: [...LINUX_DESKTOPS] })
+    }
+    expect(systemReservation('Alt+`', 'linux')).toEqual({
+      os: 'linux',
+      desktops: ['GNOME', 'KDE Plasma', 'Cinnamon', 'Ubuntu'],
+    })
+    expect(systemReservation('Ctrl+Alt+L', 'linux')).toEqual({ os: 'linux', desktops: ['Xfce', 'Cinnamon'] })
+    expect(systemReservation('Ctrl+PrintScreen', 'linux')).toEqual({ os: 'linux', desktops: ['Cinnamon'] })
   })
 
   it('leaves a key no listed desktop takes alone', () => {
