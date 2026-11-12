@@ -388,7 +388,7 @@
   "@menu.go.rootFolder": {
     "sourceHash": "6d92528"
   },
-  "menu.go.home": "Домівка",
+  "menu.go.home": "{platform, select, windows {User folder} other {Домівка}}",
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },

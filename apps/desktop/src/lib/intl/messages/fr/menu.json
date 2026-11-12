@@ -391,7 +391,7 @@
   "@menu.go.rootFolder": {
     "sourceHash": "6d92528"
   },
-  "menu.go.home": "Départ",
+  "menu.go.home": "{platform, select, windows {User folder} other {Départ}}",
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },

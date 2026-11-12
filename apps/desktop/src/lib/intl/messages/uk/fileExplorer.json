@@ -476,7 +476,7 @@
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "bde1b3c"
   },
-  "fileExplorer.network.browser.removeHostConfirm": "Забути сервер «{hostName}»? Cmdr більше не показуватиме цей сервер і збережені на ньому спільні папки. Нічого не буде відмонтовано.",
+  "fileExplorer.network.browser.removeHostConfirm": "{platform, select, windows {Forget {hostName}? Cmdr stops listing it and the shares saved under it. Nothing gets disconnected.} other {Забути сервер «{hostName}»? Cmdr більше не показуватиме цей сервер і збережені на ньому спільні папки. Нічого не буде відмонтовано.}}",
   "@fileExplorer.network.browser.removeHostConfirm": {
     "sourceHash": "25262e0"
   },

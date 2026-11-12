@@ -403,7 +403,7 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee39dd8"
   },
-  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {这个文件系统可能不支持 Cmdr 需要的元数据。换一个宗卷试试这项操作，或先把文件拷贝到你 Mac 的内置驱动器上。} windows {这个文件系统可能不支持 Cmdr 需要的元数据。换一个宗卷试试这项操作，或先把文件拷贝到你 Mac 的内置驱动器上。} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {这个文件系统可能不支持 Cmdr 需要的元数据。换一个宗卷试试这项操作，或先把文件拷贝到你 Mac 的内置驱动器上。} windows {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your PC’s internal drive first.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
   "@errors.listing.attributeNotFound.suggestion": {
     "sourceHash": "463ee44"
   },

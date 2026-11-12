@@ -475,7 +475,7 @@
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "bde1b3c"
   },
-  "fileExplorer.network.browser.removeHostConfirm": "要忘記 {hostName} 嗎？Cmdr 不會再列出這部主機，以及儲存在它底下的共享資料夾。不會卸除任何東西。",
+  "fileExplorer.network.browser.removeHostConfirm": "{platform, select, windows {Forget {hostName}? Cmdr stops listing it and the shares saved under it. Nothing gets disconnected.} other {要忘記 {hostName} 嗎？Cmdr 不會再列出這部主機，以及儲存在它底下的共享資料夾。不會卸除任何東西。}}",
   "@fileExplorer.network.browser.removeHostConfirm": {
     "sourceHash": "25262e0"
   },

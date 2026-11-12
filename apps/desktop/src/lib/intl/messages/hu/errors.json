@@ -403,7 +403,7 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee39dd8"
   },
-  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Lehet, hogy ez a fájlrendszer nem támogatja a Cmdrnek szükséges metaadatokat. Próbáld a műveletet másik köteten, vagy előbb másold a fájlt a Mac belső meghajtójára.} windows {Lehet, hogy ez a fájlrendszer nem támogatja a Cmdrnek szükséges metaadatokat. Próbáld a műveletet másik köteten, vagy előbb másold a fájlt a Mac belső meghajtójára.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Lehet, hogy ez a fájlrendszer nem támogatja a Cmdrnek szükséges metaadatokat. Próbáld a műveletet másik köteten, vagy előbb másold a fájlt a Mac belső meghajtójára.} windows {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your PC’s internal drive first.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
   "@errors.listing.attributeNotFound.suggestion": {
     "sourceHash": "463ee44"
   },

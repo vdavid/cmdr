@@ -476,7 +476,7 @@
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "bde1b3c"
   },
-  "fileExplorer.network.browser.removeHostConfirm": "Zapomenout hostitele {hostName}? Cmdr přestane vypisovat tohoto hostitele i sdílené složky uložené pod ním. Nic připojeného se neodpojí.",
+  "fileExplorer.network.browser.removeHostConfirm": "{platform, select, windows {Forget {hostName}? Cmdr stops listing it and the shares saved under it. Nothing gets disconnected.} other {Zapomenout hostitele {hostName}? Cmdr přestane vypisovat tohoto hostitele i sdílené složky uložené pod ním. Nic připojeného se neodpojí.}}",
   "@fileExplorer.network.browser.removeHostConfirm": {
     "sourceHash": "25262e0"
   },

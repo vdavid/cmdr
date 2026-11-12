@@ -479,7 +479,7 @@
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "bde1b3c"
   },
-  "fileExplorer.network.browser.removeHostConfirm": "{hostName} vergeten? Cmdr haalt de server en de gedeelde mappen die daaronder zijn opgeslagen uit de lijst. Cmdr koppelt niets los.",
+  "fileExplorer.network.browser.removeHostConfirm": "{platform, select, windows {Forget {hostName}? Cmdr stops listing it and the shares saved under it. Nothing gets disconnected.} other {{hostName} vergeten? Cmdr haalt de server en de gedeelde mappen die daaronder zijn opgeslagen uit de lijst. Cmdr koppelt niets los.}}",
   "@fileExplorer.network.browser.removeHostConfirm": {
     "sourceHash": "25262e0"
   },

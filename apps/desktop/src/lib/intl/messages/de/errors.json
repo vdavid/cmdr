@@ -403,7 +403,7 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee39dd8"
   },
-  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Dieses Dateisystem unterstützt vielleicht die Metadaten nicht, die Cmdr braucht. Versuche den Vorgang auf einem anderen Volume oder kopiere die Datei zuerst auf die interne Festplatte deines Macs.} windows {Dieses Dateisystem unterstützt vielleicht die Metadaten nicht, die Cmdr braucht. Versuche den Vorgang auf einem anderen Volume oder kopiere die Datei zuerst auf die interne Festplatte deines Macs.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Dieses Dateisystem unterstützt vielleicht die Metadaten nicht, die Cmdr braucht. Versuche den Vorgang auf einem anderen Volume oder kopiere die Datei zuerst auf die interne Festplatte deines Macs.} windows {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your PC’s internal drive first.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
   "@errors.listing.attributeNotFound.suggestion": {
     "sourceHash": "463ee44"
   },

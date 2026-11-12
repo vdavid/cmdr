@@ -600,20 +600,15 @@
       "status": "apply",
       "branches": {
         "macos": "This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your Mac’s internal drive first.",
-        "windows": "This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your Mac’s internal drive first.",
+        "windows": "This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your PC’s internal drive first.",
         "other": "This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first."
       },
+      "written": ["windows"],
       "sources": {
-        "windows": "copy-row-verdicts.md § Errors only macOS produces today: Windows has no xattrs, so it keeps the macOS text",
+        "windows": "decisions (“your PC”). Windows has no ENODATA today (no extended attributes), but a branch a Windows reader could ever meet never names a Mac",
         "other": "proposal"
       },
-      "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when an extended attribute is missing (ENOATTR).",
-      "lintExceptions": [
-        {
-          "branch": "windows",
-          "reason": "unreachable on Windows (no ENODATA there: Windows has no extended attributes), so it keeps the macOS text"
-        }
-      ]
+      "whereInUi": "File pane error view: the pane's file list is replaced by an error card when a folder can't be opened; the “Here’s what to try” list under the explanation, when an extended attribute is missing (ENOATTR)."
     },
     {
       "key": "errors.listing.diskReadProblem.suggestion",
@@ -8532,6 +8527,40 @@
         "windows": "decisions § Glossary: “user folder” on Windows",
         "other": "same as macOS"
       }
+    },
+    {
+      "key": "menu.go.home",
+      "file": "menu.json",
+      "source": "rust",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "Home",
+        "windows": "User folder",
+        "other": "Home"
+      },
+      "sources": {
+        "windows": "decisions (Windows “user folder” everywhere: File Explorer’s “Home” is the quick-access landing page)",
+        "other": "same as macOS"
+      },
+      "whereInUi": "Menu bar > Go > Home."
+    },
+    {
+      "key": "fileExplorer.network.browser.removeHostConfirm",
+      "file": "fileExplorer.json",
+      "source": "catalog",
+      "mechanism": "select",
+      "status": "apply",
+      "branches": {
+        "macos": "Forget {hostName}? Cmdr stops listing it and the shares saved under it. Nothing gets unmounted.",
+        "windows": "Forget {hostName}? Cmdr stops listing it and the shares saved under it. Nothing gets disconnected.",
+        "other": "Forget {hostName}? Cmdr stops listing it and the shares saved under it. Nothing gets unmounted."
+      },
+      "sources": {
+        "windows": "plan § Copy resolution (Windows “disconnect” for a network share)",
+        "other": "same as macOS"
+      },
+      "whereInUi": "Servers list: the confirmation before forgetting a server added by hand."
     },
     {
       "key": "commands.navGoHome.label",

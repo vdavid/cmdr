@@ -396,9 +396,9 @@
   "@menu.go.rootFolder": {
     "description": "NOUN phrase naming a destination: the topmost folder of the disk, server, phone, or archive the pane shows, \"/\" on the Mac's main disk (⌘/). Sits between \"Parent folder\" and \"Home\". \"Root\" is the top of a folder tree, nothing to do with plants or admin rights. Short label."
   },
-  "menu.go.home": "Home",
+  "menu.go.home": "{platform, select, windows {User folder} other {Home}}",
   "@menu.go.home": {
-    "description": "NOUN naming a destination: the user's own home folder, the one holding Documents and Downloads (⇧⌘H). Use your language's standard word for the home folder as a file manager's navigation names it (Finder's Go > Home). Very short label."
+    "description": "NOUN naming a destination: the user's own home folder, the one holding Documents and Downloads (⇧⌘H). In the macOS and Linux branch, use your language's standard word for the home folder as a file manager's navigation names it (Finder's Go > Home). The Windows branch says \"User folder\", since \"Home\" in File Explorer is a different place (the quick-access landing page): use the term your language's Windows gives the per-user folder. Very short label."
   },
   "menu.go.goToPath": "Go to folder…",
   "@menu.go.goToPath": {

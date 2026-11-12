@@ -389,7 +389,7 @@
   "@menu.go.rootFolder": {
     "sourceHash": "6d92528"
   },
-  "menu.go.home": "Hem",
+  "menu.go.home": "{platform, select, windows {User folder} other {Hem}}",
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },

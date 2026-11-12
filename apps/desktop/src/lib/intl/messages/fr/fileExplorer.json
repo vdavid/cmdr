@@ -477,7 +477,7 @@
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "bde1b3c"
   },
-  "fileExplorer.network.browser.removeHostConfirm": "Oublier {hostName} ? Cmdr n’affiche plus ce serveur ni ses partages enregistrés. Rien n’est démonté.",
+  "fileExplorer.network.browser.removeHostConfirm": "{platform, select, windows {Forget {hostName}? Cmdr stops listing it and the shares saved under it. Nothing gets disconnected.} other {Oublier {hostName} ? Cmdr n’affiche plus ce serveur ni ses partages enregistrés. Rien n’est démonté.}}",
   "@fileExplorer.network.browser.removeHostConfirm": {
     "sourceHash": "25262e0"
   },

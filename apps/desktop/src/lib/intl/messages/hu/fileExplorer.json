@@ -476,7 +476,7 @@
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "bde1b3c"
   },
-  "fileExplorer.network.browser.removeHostConfirm": "Elfelejted ezt a gépet: {hostName}? A Cmdr leveszi a listáról a hozzá mentett megosztásokkal együtt. Semmit nem csatol le.",
+  "fileExplorer.network.browser.removeHostConfirm": "{platform, select, windows {Forget {hostName}? Cmdr stops listing it and the shares saved under it. Nothing gets disconnected.} other {Elfelejted ezt a gépet: {hostName}? A Cmdr leveszi a listáról a hozzá mentett megosztásokkal együtt. Semmit nem csatol le.}}",
   "@fileExplorer.network.browser.removeHostConfirm": {
     "sourceHash": "25262e0"
   },

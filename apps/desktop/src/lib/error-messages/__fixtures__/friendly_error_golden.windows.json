@@ -404,7 +404,7 @@
     "category": "needs_action",
     "explanation": "Cmdr tried to read a file attribute (extra metadata like tags or permissions) that doesn’t exist on this item. This can happen when the file system doesn’t support extended attributes, or when the attribute was removed.",
     "retryHint": false,
-    "suggestion": "This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your Mac’s internal drive first.",
+    "suggestion": "This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your PC’s internal drive first.",
     "title": "Attribute not found"
   },
   "errno:9999": {
