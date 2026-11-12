@@ -7,8 +7,11 @@
  */
 import { readClipboardText } from '#lib/tauri-commands/index.js'
 import { isTextInputFocused } from '#lib/utils/text-input-focus.js'
+import { getAppLogger } from '#lib/logging/logger.js'
 import { detached } from './detached'
 import type { CommandHandlerRecord } from './types'
+
+const log = getAppLogger('user-action')
 
 export const clipboardHandlers = {
   'edit.copy': ({ explorerRef }) => {
@@ -54,7 +57,13 @@ export const clipboardHandlers = {
   },
 
   'edit.pasteAsMove': ({ explorerRef }) => {
-    // Option+Cmd+V is not a text shortcut, so no activeElement check needed
+    // It moves FILES, so never while a text field has focus, whichever road it came by: the macOS
+    // menu's ⌥⌘V accelerator fires before the field sees the key, and off macOS its `Ctrl+Shift+V`
+    // is the field's own paste as plain text. There's no text twin to run instead.
+    if (isTextInputFocused()) {
+      log.debug('Skipped Move here: a text field has focus')
+      return
+    }
     detached(explorerRef?.pasteFromClipboard(true))
   },
 } satisfies Partial<CommandHandlerRecord>

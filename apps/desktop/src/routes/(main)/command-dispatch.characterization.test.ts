@@ -209,6 +209,7 @@ import CopiedPathToastContent from '#lib/file-explorer/CopiedPathToastContent.sv
 // above stays LOCAL to each test file — vitest hoists mocks per file, so they
 // can't move into the imported harness (see the harness header).
 import { DISPATCHABLE_IDS, EXEMPT_IDS, makeCtx, makeExplorerSpy } from './command-dispatch.test-harness'
+import { withPlatform } from '#lib/platform/test-platform.js'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -727,6 +728,32 @@ describe('characterization — activeElement input branches', () => {
     const explorer = makeExplorerSpy()
     await handleCommandExecute('edit.paste', makeCtx(explorer))
     expect(explorer.pasteFromClipboard).toHaveBeenCalledExactlyOnceWith(false)
+  })
+
+  // Move here moves FILES, so it never runs while a text field has focus, whichever road it came
+  // by: on macOS the menu's ⌥⌘V accelerator fires before the field sees the key, and off macOS its
+  // `Ctrl+Shift+V` is the field's own paste as plain text.
+  describe.each(['macos', 'windows', 'linux'] as const)('edit.pasteAsMove on %s', (platform) => {
+    it.each(['menu', 'keyboard', 'palette'] as const)(
+      'moves nothing from the %s road while a text field has focus',
+      async (source) => {
+        const undoPlatform = withPlatform(platform)
+        const { cleanup } = focusInput('input')
+        const explorer = makeExplorerSpy()
+        await handleCommandExecute('edit.pasteAsMove', { ...makeCtx(explorer), source })
+        expect(explorer.pasteFromClipboard).not.toHaveBeenCalled()
+        cleanup()
+        undoPlatform()
+      },
+    )
+
+    it('moves the clipboard files here with nothing focused', async () => {
+      const undoPlatform = withPlatform(platform)
+      const explorer = makeExplorerSpy()
+      await handleCommandExecute('edit.pasteAsMove', makeCtx(explorer))
+      expect(explorer.pasteFromClipboard).toHaveBeenCalledExactlyOnceWith(true)
+      undoPlatform()
+    })
   })
 })
 

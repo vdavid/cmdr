@@ -7,7 +7,7 @@
  * native-menu `view-mode-changed` event's path onto the bus. The routes file has
  * no coverage gate, so this is a behavioral guard, not a coverage filler.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, onTestFinished } from 'vitest'
 
 // `getAppLogger('user-action')` runs at module top-level in command-dispatch,
 // and the dispatch preamble fires `record_breadcrumb` via `invoke`. Mock both so
@@ -296,18 +296,20 @@ describe('handleCommandExecute — blockedByCapabilities (search-results / netwo
     input.remove()
   })
 
-  it('still blocks edit.pasteAsMove from a focused text input (its handler always drives the pane)', async () => {
+  it('neither moves nor toasts on edit.pasteAsMove from a focused text input (it moves nothing there)', async () => {
     getVolumeId.mockReturnValue('search-results')
     const input = document.createElement('input')
     document.body.appendChild(input)
     input.focus()
+    onTestFinished(() => {
+      input.remove()
+    })
     const g = makeGuardCtx()
 
     await handleCommandExecute('edit.pasteAsMove', g.ctx)
 
     expect(g.pasteFromClipboard).not.toHaveBeenCalled()
-    expect(addToast).toHaveBeenCalledExactlyOnceWith(searchResultsNotAFolderToast(), { level: 'info' })
-    input.remove()
+    expect(addToast).not.toHaveBeenCalled()
   })
 
   it('does NOT toast on a network pane and falls through to the explorer (PR3 byte-identical silence)', async () => {

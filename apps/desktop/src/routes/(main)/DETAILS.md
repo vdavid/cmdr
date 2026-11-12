@@ -519,6 +519,10 @@ dispatch path can't rely on the keydown bail.
 - **⌘A (`selection.selectAll`).** Intercepted as a menu accelerator before the webview. The handler routes to
   `active.select()` when a `<input>` / `<textarea>` is focused, otherwise delegates to
   `explorerRef.handleSelectionAction({ action: 'selectAll' })`. The keydown bail doesn't help; the menu fires first.
+- **⌥⌘V (`edit.pasteAsMove`) moves nothing while a text field has focus**, from any road. It has no text twin, so its
+  handler just returns: before that check, ⌥⌘V in the quick filter or the path bar moved the clipboard's files, because
+  the Edit > Move here accelerator fired before the field. Off macOS its `Ctrl+Shift+V` is the field's paste as plain
+  text, which the native text keys leave to the field and the bar doesn't register.
 - **The text-editing family while a dialog is open.** `edit.cut` / `edit.copy` / `edit.paste` / `selection.selectAll`
   declare `IN_TEXT_INPUTS_ONLY`, so the dialog gate (§ The dialog gate) lets them through with focus in a text input,
   from every road, and refuses them otherwise. Their handlers branch on `isTextInputFocused()` and edit the text.

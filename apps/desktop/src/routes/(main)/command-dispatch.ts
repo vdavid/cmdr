@@ -63,8 +63,9 @@ function activeTextRegion(): Element | null {
  *
  * ⌘V into a focused text input is exempt: that's a TEXT op (the handler inserts
  * into the input and never touches the destination), so a snapshot pane behind a
- * dialog must not stop the user pasting into its field. `edit.pasteAsMove` gets
- * no such exemption — its handler always drives the pane.
+ * dialog must not stop the user pasting into its field. `edit.pasteAsMove` is
+ * exempt there too, for the other reason: with a text field focused its handler
+ * moves nothing, so a "not a folder" toast would answer a move nobody made.
  *
  * The toast fires ONLY for the `search-results` kind (PR3 byte-identical
  * behavior). A `network`-kind pane shares the same `false` destination caps, but
@@ -84,7 +85,7 @@ function activeTextRegion(): Element | null {
  */
 function blockedByCapabilities(commandId: CommandId, explorer: ExplorerAPI | undefined): boolean {
   if (!explorer) return false
-  if (commandId === 'edit.paste' && isTextInputFocused()) return false
+  if ((commandId === 'edit.paste' || commandId === 'edit.pasteAsMove') && isTextInputFocused()) return false
 
   const caps = capabilitiesForPane(getFocusedPaneVolumeId(), getFocusedPanePath())
   // The snapshot pane is the only kind whose destination-op block produces the
