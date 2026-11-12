@@ -42,6 +42,9 @@ Evidence (macOS 27.0.1, 2026-11-13):
 - Probe apps differing only in the claim, opened with `sandbox-exec -p '(version 1)(allow default)' /usr/bin/open -a`:
   no claim fails with -10820 for a folder, a `.txt`, and a file of unknown type; `public.item` at rank `None` opens all
   three; `public.folder` alone opens only the folder. The same no-claim probe opens fine from outside a sandbox.
+- A bundled debug build carrying the claim, opened the same sandboxed way: a folder and an unknown-type file each
+  logged `Finder reveal: 1 path(s) to show`, where the installed 0.60.0 answered -10820. `NSWorkspace` neither offered
+  that build for a folder, a `.txt`, or the unknown-type file, nor changed their default apps.
 
 **Decision: `public.item`, rank `None`.** A reveal carries the item itself, which can be a file of any type (a
 single-file archive, a sandboxed app's "Show in Finder"), so `public.folder` isn't enough. `None` means Cmdr is never
