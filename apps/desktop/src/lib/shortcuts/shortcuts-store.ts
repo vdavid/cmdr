@@ -275,10 +275,11 @@ function seedCustomShortcut(commandId: string, shortcuts: unknown): void {
 /**
  * Commands that have corresponding native menu items with accelerators.
  *
- * Exported so tests can verify the list matches the items the platform menu builders register
- * in `src-tauri/src/menu/{macos,linux}.rs`. Any command listed here without a matching menu
- * item silently drops the `updateMenuAccelerator` call on the Rust side (no-op lookup), and
- * any menu item not listed here misses out on accelerator sync from custom shortcuts.
+ * Exported so tests can verify the list matches the menu bar's command rows
+ * (`crates/cmdr-menu/src/ids.rs`, checked by `rust-command-id-drift.test.ts`). Any command
+ * listed here without a matching menu item silently drops the `updateMenuAccelerator` call on
+ * the Rust side (no-op lookup), and any menu item not listed here misses out on accelerator
+ * sync from custom shortcuts.
  */
 export const menuCommands = [
   // View modes (CheckMenuItems, special handling in Rust)

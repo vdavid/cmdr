@@ -794,7 +794,7 @@ export const DELEGATE_ROWS: DelegateRow[] = [
     },
   },
 
-  // --- Edit (pasteAsMove: no activeElement check) ---
+  // --- Edit (pasteAsMove, with no text field focused) ---
   {
     id: 'edit.pasteAsMove',
     expect: (e) => {

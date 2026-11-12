@@ -101,7 +101,7 @@ export async function setCommandsRefusedOverDialog(commandIds: string[]): Promis
 
 /**
  * Turns the calling window's menu-bar mnemonics off (`true`) or back on (`false`), so a modal surface
- * gets the `Alt+<letter>` keys GTK would take for a bar title on Linux (`menu/mnemonic_mask.rs`). A
+ * gets the `Alt+<letter>` keys GTK would take for a bar title on Linux (`menu/mnemonic_mask/`). A
  * no-op where the bar has no mnemonics. Writers: the main window's dialog gate
  * (`routes/(main)/menu-dialog-gate.svelte.ts`) and Settings' shortcut capture.
  */

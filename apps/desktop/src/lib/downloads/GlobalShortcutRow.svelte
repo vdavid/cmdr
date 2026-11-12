@@ -21,8 +21,9 @@
      * Recording: the macOS WebView can capture the combo as a normal keydown
      * (we `preventDefault`). Global shortcuts always need at least one
      * modifier, so a bare key is rejected. The captured combo is stored in the
-     * macOS-symbol form (`'⌃⌥⌘J'`) like the rest of Cmdr; `toAccelerator`
-     * translates it for the plugin at the IPC boundary.
+     * OS's own spelling (`'⌃⌥⌘J'` on macOS, `'Ctrl+Alt+Super+J'` elsewhere), like
+     * the rest of Cmdr's combos; `toAccelerator` translates it for the plugin at
+     * the IPC boundary.
      */
     import { onMount } from 'svelte'
     import { setGlobalGoToLatestShortcut } from '#lib/tauri-commands/index.js'

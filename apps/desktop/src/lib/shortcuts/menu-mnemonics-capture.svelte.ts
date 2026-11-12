@@ -2,7 +2,7 @@
  * Keeps the window's menu-bar mnemonics off while a shortcut recorder listens, so the recorder can
  * capture `Alt+F`. On Linux every window without a menu of its own wears the main bar (Tauri hands
  * it the app-wide menu), Settings included, and GTK takes a bar title's `Alt+<letter>` before the
- * page sees the keydown (`src-tauri/src/menu/mnemonic_mask.rs`). A no-op elsewhere.
+ * page sees the keydown (`src-tauri/src/menu/mnemonic_mask/`). A no-op elsewhere.
  *
  * The main window doesn't use this: its dialog gate (`routes/(main)/menu-dialog-gate.svelte.ts`) is
  * that window's one writer. Within a window the claims count, so two recorders can't hand the
