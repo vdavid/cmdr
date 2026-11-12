@@ -25,7 +25,9 @@
 //! binary (#1019): every share on every server stays slow until the person
 //! switches Cmdr off and on, and nothing else tells them so. [`effective_notice`]
 //! promotes that one case, and the event says `after_update` so the notice can
-//! name the update as the likely cause.
+//! name the update as the likely cause. Only where the OS has that permission
+//! ([`update_explains_a_block`]): on Linux and Windows a blocked dial is a firewall
+//! whichever launch it is, and the frontend words it so.
 
 use crate::ignore_poison::IgnorePoison;
 use crate::network::NetworkHost;
@@ -95,6 +97,14 @@ fn effective_notice(notice: FallbackNotice, reason: UpgradeFailure, first_run_af
     } else {
         notice
     }
+}
+
+/// Whether this launch being the first after an update explains a blocked dial: only
+/// where the OS has a Local Network permission to leave pinned to the replaced binary
+/// (macOS, #1019). Elsewhere a block right after an update is a firewall like any
+/// other day, so nothing is promoted and no notice names the update.
+fn update_explains_a_block(first_run_after_update: bool, has_local_network_permission: bool) -> bool {
+    first_run_after_update && has_local_network_permission
 }
 
 /// A server the user was told is on the slow path, and the share the notice named.
@@ -169,7 +179,10 @@ pub(crate) fn announce_os_mount_fallback(
     reason: UpgradeFailure,
     notice: FallbackNotice,
 ) {
-    let after_update = crate::after_update::is_first_run_after_update();
+    let after_update = update_explains_a_block(
+        crate::after_update::is_first_run_after_update(),
+        crate::platform::capabilities().local_network_permission,
+    );
     let notice = effective_notice(notice, reason, after_update);
     let hosts = crate::network::fresh_discovered_hosts();
     if !OS_MOUNT_NOTICES

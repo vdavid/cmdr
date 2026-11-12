@@ -11,15 +11,18 @@
      * worth pressing again once the server or the password is fixed, and
      * `connectDirectly` has already said why it didn't work.
      *
-     * When this Mac is what blocked the connection (`blockedServer`), the notice
-     * says what to switch and leads with the button to it; the retry stays beside
-     * it, because the switch works at once (ERR-XGS9X).
+     * When this machine is what blocked the connection (`blockedServer`), the notice
+     * says what to check. On macOS that's the Local Network permission, so it leads
+     * with the button to it; the retry stays beside it, because the switch works at
+     * once (ERR-XGS9X). Other OSes have no such permission: the sentence names the
+     * firewall and the retry is the one button.
      */
     import type { Snippet } from 'svelte'
     import Button from '#lib/ui/Button.svelte'
     import ToastActions from '#lib/ui/toast/ToastActions.svelte'
     import Trans from '#lib/intl/Trans.svelte'
     import { tString } from '#lib/intl/messages.svelte.js'
+    import { hasCapability } from '#lib/platform/index.js'
     import { dismissToast } from '#lib/ui/toast/index.js'
     import { openLocalNetworkSettings } from '#lib/tauri-commands/index.js'
     import { connectDirectly } from './direct-connect'
@@ -74,6 +77,12 @@
         encryptionRequired: 'fileExplorer.network.osMountFallback.encryptionRequired',
     }
 
+    // The way to the switch exists only where the OS has a Local Network permission (macOS).
+    // Elsewhere the sentence names the firewall, and the retry is the one action.
+    const offersLocalNetworkSettings = $derived(
+        blockedServer !== undefined && hasCapability('localNetworkPermission'),
+    )
+
     let connecting = $state(false)
 
     async function retry(): Promise<void> {
@@ -112,13 +121,13 @@
     </span>
     {#if retryable}
         <ToastActions>
-            {#if blockedServer !== undefined}
+            {#if offersLocalNetworkSettings}
                 <Button variant="primary" size="mini" onclick={() => void openLocalNetworkSettings()}>
                     {openLocalNetworkSettingsLabel()}
                 </Button>
             {/if}
             <Button
-                variant={blockedServer !== undefined ? 'secondary' : 'primary'}
+                variant={offersLocalNetworkSettings ? 'secondary' : 'primary'}
                 size="mini"
                 disabled={connecting}
                 onclick={() => void retry()}

@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import type { UpgradeFailure } from '#lib/ipc/bindings.js'
 import { systemStrings } from '#lib/system-strings.svelte.js'
 import {
@@ -46,10 +47,24 @@ describe('directConnectionUnavailableMessage', () => {
     // ERR-XGS9X: the Local Network permission looked on and wasn't, and switching
     // it off and on was the fix. The name is the OS-localized one, so it matches
     // what's on screen in System Settings.
+    onTestFinished(withPlatform('macos'))
     const message = directConnectionUnavailableMessage('blockedByThisMac', 'Mars')
     expect(message).toContain(systemStrings.localNetwork)
     expect(message).toContain('firewall')
     expect(openLocalNetworkSettingsLabel()).toContain(systemStrings.localNetwork)
+  })
+
+  it.each([
+    ['linux', 'this computer'],
+    ['windows', 'this PC'],
+  ] as const)('points a connection the machine blocked at the firewall on %s', (platform, machine) => {
+    // No Local Network permission exists there, so a firewall is the cause left.
+    onTestFinished(withPlatform(platform))
+    const message = directConnectionUnavailableMessage('blockedByThisMac', 'Mars')
+    expect(message).toContain(machine)
+    expect(message).toContain('firewall')
+    expect(message).not.toContain(systemStrings.localNetwork)
+    expect(message).not.toContain('Mac')
   })
 
   it('names the update, the server, and the switch when this Mac blocked the first dial after an update', () => {

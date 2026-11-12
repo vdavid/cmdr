@@ -14103,8 +14103,9 @@ export type MtpDisconnectReason =
 
 /**
  *  Emitted when opening a device fails because another process holds exclusive
- *  access (typically `ptpcamerad` on macOS). The frontend shows the workaround
- *  dialog with `blocking_process` (the claiming process name, from `ioreg`).
+ *  access: `ptpcamerad` on macOS, the desktop's own MTP mount on Linux. The
+ *  frontend's device-in-use dialog says what frees it on this OS, with
+ *  `blocking_process` (the claiming process name, from `ioreg`; macOS only).
  */
 export type MtpExclusiveAccessError = {
   deviceId: string
@@ -19612,7 +19613,7 @@ export type SmbFellBackToOsMount = {
    *  `BlockedByThisMac` on the first launch after an update, when the cause is
    *  almost always macOS's Local Network permission still pinned to the old
    *  binary (#1019), so the notice names the update and the switch. `false`
-   *  for every other reason.
+   *  for every other reason, and always on an OS without that permission.
    */
   afterUpdate: boolean
 }
@@ -21620,10 +21621,12 @@ export type UpgradeFailure =
   // It answered and then something we can't act on went wrong.
   | 'unexpected'
   /**
-   *  Something on this Mac refused Cmdr's own route to a server the Mac itself
-   *  can reach: the macOS Local Network permission (stuck on in ERR-XGS9X, fixed
-   *  by switching it off and on), or a firewall app. Read by [`Self::of_dial`],
-   *  ❌ never from the errno alone.
+   *  Something on this machine refused Cmdr's own route to a server the machine
+   *  itself can reach. On macOS: the Local Network permission (stuck on in
+   *  ERR-XGS9X, fixed by switching it off and on), or a firewall app. On Linux
+   *  and Windows, which have no such permission: a firewall rule. The evidence
+   *  is the same on every OS, so the variant is too, and the frontend words the
+   *  cause per OS. Read by [`Self::of_dial`], ❌ never from the errno alone.
    */
   | 'blockedByThisMac'
   /**

@@ -140,7 +140,7 @@
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
   },
-  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Valami ezen a Macen megakadályozza, hogy a Cmdr közvetlenül kapcsolódjon ehhez: {server}, ezért ez a megosztás a rendszerkapcsolaton marad. Próbáld ki- és bekapcsolni a Cmdrt itt: {localNetwork}, vagy nézd meg a tűzfal-alkalmazásodat.",
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "{platform, select, macos {Valami ezen a Macen megakadályozza, hogy a Cmdr közvetlenül kapcsolódjon ehhez: {server}, ezért ez a megosztás a rendszerkapcsolaton marad. Próbáld ki- és bekapcsolni a Cmdrt itt: {localNetwork}, vagy nézd meg a tűzfal-alkalmazásodat.} windows {Something on this PC is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.} other {Something on this computer is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.}}",
   "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
     "sourceHash": "74f758e"
   },

@@ -140,7 +140,7 @@
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
   },
-  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Något på den här Macen hindrar Cmdr från att ansluta direkt till {server}, så den här delade mappen ligger kvar på systemanslutningen. Prova att stänga av och slå på Cmdr igen under {localNetwork} eller kolla din brandväggsapp.",
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "{platform, select, macos {Något på den här Macen hindrar Cmdr från att ansluta direkt till {server}, så den här delade mappen ligger kvar på systemanslutningen. Prova att stänga av och slå på Cmdr igen under {localNetwork} eller kolla din brandväggsapp.} windows {Something on this PC is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.} other {Something on this computer is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.}}",
   "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
     "sourceHash": "74f758e"
   },

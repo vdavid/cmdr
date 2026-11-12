@@ -211,19 +211,19 @@
       "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111"
     }
   },
-  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Something on this Mac is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Try switching Cmdr off and on under {localNetwork}, or check your firewall app.",
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "{platform, select, macos {Something on this Mac is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Try switching Cmdr off and on under {localNetwork}, or check your firewall app.} windows {Something on this PC is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.} other {Something on this computer is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.}}",
   "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
-    "description": "Toast and notification body shown when Cmdr's own faster connection to a network share was refused by something on the user's Mac, while macOS's own connection to the same server works. The usual cause is the macOS Local Network privacy permission for Cmdr being stuck (it shows as on, and switching it off and on fixes it), or a firewall app. Reassures the user that the share still works, just not at the faster speed. A button below it opens that permission's page in System Settings (\"openLocalNetworkSettings\"). \"Cmdr\" is the product name; \"firewall app\" means third-party firewall software such as Little Snitch or LuLu.",
+    "description": "Toast and notification body shown when Cmdr's own faster connection to a network share was refused by something on the user's own machine, while the system's own connection to the same server works. Reassures the user that the share still works, just not at the faster speed. The macos branch: the usual cause is the macOS Local Network privacy permission for Cmdr being stuck (it shows as on, and switching it off and on fixes it), or a firewall app; a button below it opens that permission's page in System Settings (\"openLocalNetworkSettings\"); \"firewall app\" means third-party firewall software such as Little Snitch or LuLu. The windows and other (Linux) branches: those systems have no such permission, so the cause left is a firewall, and there's no button. \"Cmdr\" is the product name.",
     "placeholders": {
       "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111",
-      "localNetwork": "the OS-localized macOS \"Local Network\" permission name, as System Settings shows it under Privacy & Security, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
+      "localNetwork": "macos branch only: the OS-localized macOS \"Local Network\" permission name, as System Settings shows it under Privacy & Security, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
     },
     "screenshot": "toast-transfer-complete.png",
-    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Connect directly says there when something on this Mac refused the connection, with a button that opens System Settings."
+    "screenshotNote": "This shows a different toast in the same corner of the window; your string is what Connect directly says there when something on this machine refused the connection (on macOS, with a button that opens System Settings)."
   },
   "fileExplorer.pane.directConnectionBlockedAfterUpdateToast": "Cmdr updated, and macOS sometimes keeps blocking its direct connection to {server} afterwards. Switch Cmdr off and on under {localNetwork} to fix it. Until then, this share stays on the slower system connection.",
   "@fileExplorer.pane.directConnectionBlockedAfterUpdateToast": {
-    "description": "Notice shown on the first launch after Cmdr updated itself, when Cmdr's own faster connection to a network share was refused by the user's Mac while macOS's own connection to the same server works. The known cause: macOS keeps Cmdr's Local Network privacy permission tied to the old version, so it shows as on but doesn't apply; switching it off and on in System Settings fixes it at once. A button below it opens that permission's page (\"openLocalNetworkSettings\"), and another retries the connection. Reassures the user that the share still works, just slower. \"Cmdr\" is the product name.",
+    "description": "macOS only. Notice shown on the first launch after Cmdr updated itself, when Cmdr's own faster connection to a network share was refused by the user's Mac while macOS's own connection to the same server works. The known cause: macOS keeps Cmdr's Local Network privacy permission tied to the old version, so it shows as on but doesn't apply; switching it off and on in System Settings fixes it at once. A button below it opens that permission's page (\"openLocalNetworkSettings\"), and another retries the connection. Reassures the user that the share still works, just slower. \"Cmdr\" is the product name.",
     "placeholders": {
       "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111",
       "localNetwork": "the OS-localized macOS \"Local Network\" permission name, as System Settings shows it under Privacy & Security, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
@@ -231,7 +231,7 @@
   },
   "fileExplorer.pane.openLocalNetworkSettings": "Open {localNetwork} settings",
   "@fileExplorer.pane.openLocalNetworkSettings": {
-    "description": "Button in the toast about something on this Mac keeping Cmdr from connecting to a server (\"directConnectionBlockedByThisMacToast\"). Pressing it opens macOS System Settings at Privacy & Security > Local Network, where the user can switch Cmdr's permission off and on.",
+    "description": "macOS only. Button in the toast about something on this Mac keeping Cmdr from connecting to a server (\"directConnectionBlockedByThisMacToast\"). Pressing it opens macOS System Settings at Privacy & Security > Local Network, where the user can switch Cmdr's permission off and on.",
     "placeholders": {
       "localNetwork": "the OS-localized macOS \"Local Network\" permission name, as System Settings shows it, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
     }

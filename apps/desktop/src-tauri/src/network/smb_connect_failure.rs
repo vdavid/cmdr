@@ -141,10 +141,12 @@ pub enum UpgradeFailure {
     ShareNotOnServer,
     /// It answered and then something we can't act on went wrong.
     Unexpected,
-    /// Something on this Mac refused Cmdr's own route to a server the Mac itself
-    /// can reach: the macOS Local Network permission (stuck on in ERR-XGS9X, fixed
-    /// by switching it off and on), or a firewall app. Read by [`Self::of_dial`],
-    /// ❌ never from the errno alone.
+    /// Something on this machine refused Cmdr's own route to a server the machine
+    /// itself can reach. On macOS: the Local Network permission (stuck on in
+    /// ERR-XGS9X, fixed by switching it off and on), or a firewall app. On Linux
+    /// and Windows, which have no such permission: a firewall rule. The evidence
+    /// is the same on every OS, so the variant is too, and the frontend words the
+    /// cause per OS. Read by [`Self::of_dial`], ❌ never from the errno alone.
     BlockedByThisMac,
     /// The share is a DFS namespace on another server, and nobody has allowed
     /// signing in there, so Cmdr didn't. Repeating can't help: it stays on the

@@ -140,7 +140,7 @@
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
   },
-  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Щось на цьому Mac не дає Cmdr підʼєднатися до сервера «{server}» напряму, тому ця спільна папка залишається на системному підʼєднанні. Спробуйте вимкнути й знову ввімкнути Cmdr у розділі «{localNetwork}» або перевірте свою програму-брандмауер.",
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "{platform, select, macos {Щось на цьому Mac не дає Cmdr підʼєднатися до сервера «{server}» напряму, тому ця спільна папка залишається на системному підʼєднанні. Спробуйте вимкнути й знову ввімкнути Cmdr у розділі «{localNetwork}» або перевірте свою програму-брандмауер.} windows {Something on this PC is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.} other {Something on this computer is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.}}",
   "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
     "sourceHash": "74f758e"
   },

@@ -475,6 +475,13 @@ becomes `directConnectionBlockedAfterUpdateToast`, which names the update as the
 the same answer through `LocalNetworkBlockedToastContent.svelte` (sentence plus the settings button), raised by
 `announceNoUpgrade` instead of a plain string toast, so the sign-in sheet's rounds get it too.
 
+That is the macOS shape. The backend reads the same evidence on Linux and Windows, where no Local Network permission
+exists and the cause left is a firewall, so `directConnectionBlockedByThisMacToast` is a platform block ("this PC" /
+"this computer", "Check your firewall settings."), and both components render the settings button only under
+`hasCapability('localNetworkPermission')`. Without it the notice's retry is the primary button and the "Connect
+directly" toast carries only the report offer. `afterUpdate` never arrives there (the backend sets it only where the
+permission exists), so `directConnectionBlockedAfterUpdateToast` and `openLocalNetworkSettings` stay macOS text.
+
 **Dismissal watches the volume list, not the button.** A share can reach a direct session five ways: this notice's
 button, the chip's yellow dot, the switcher's direct-connection switch or its "Connect directly now" fix, and the pane's
 credential form after a working password. All of them end in `register_replacing_predecessor`, which broadcasts the

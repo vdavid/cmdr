@@ -46,8 +46,9 @@ pub struct MtpStorageRemoved {
 }
 
 /// Emitted when opening a device fails because another process holds exclusive
-/// access (typically `ptpcamerad` on macOS). The frontend shows the workaround
-/// dialog with `blocking_process` (the claiming process name, from `ioreg`).
+/// access: `ptpcamerad` on macOS, the desktop's own MTP mount on Linux. The
+/// frontend's device-in-use dialog says what frees it on this OS, with
+/// `blocking_process` (the claiming process name, from `ioreg`; macOS only).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
 pub struct MtpExclusiveAccessError {

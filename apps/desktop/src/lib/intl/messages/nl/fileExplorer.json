@@ -140,7 +140,7 @@
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
   },
-  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Iets op deze Mac verhindert dat Cmdr direct verbinding maakt met {server}, dus deze gedeelde map blijft op de systeemverbinding. Probeer Cmdr onder {localNetwork} uit en weer aan te zetten, of controleer je firewallapp.",
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "{platform, select, macos {Iets op deze Mac verhindert dat Cmdr direct verbinding maakt met {server}, dus deze gedeelde map blijft op de systeemverbinding. Probeer Cmdr onder {localNetwork} uit en weer aan te zetten, of controleer je firewallapp.} windows {Something on this PC is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.} other {Something on this computer is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.}}",
   "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
     "sourceHash": "74f758e"
   },

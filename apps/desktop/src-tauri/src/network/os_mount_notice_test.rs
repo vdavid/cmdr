@@ -192,6 +192,18 @@ fn only_a_blocked_dial_right_after_an_update_overrides_the_caller() {
     );
 }
 
+/// The update only explains a block where the OS has a Local Network permission to
+/// leave pinned to the old binary (macOS). Elsewhere a blocked dial right after an
+/// update is a firewall like any other day, so no quiet caller speaks up and no
+/// notice blames the update for it.
+#[test]
+fn an_update_explains_a_block_only_where_the_os_has_a_local_network_permission() {
+    assert!(update_explains_a_block(true, true));
+    assert!(!update_explains_a_block(true, false), "no permission to be stuck");
+    assert!(!update_explains_a_block(false, true), "an ordinary launch");
+    assert!(!update_explains_a_block(false, false));
+}
+
 /// Nor does a quiet caller disturb a notice that's already up: it doesn't re-file
 /// the server under its own share, so only the share the notice named frees it.
 #[test]

@@ -139,7 +139,7 @@
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
   },
-  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "這部 Mac 上有東西讓 Cmdr 無法直接連上 {server}，所以這個共享資料夾會繼續使用系統連線。試試在「{localNetwork}」裡把 Cmdr 關掉再開啟，或檢查一下你的防火牆 App。",
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "{platform, select, macos {這部 Mac 上有東西讓 Cmdr 無法直接連上 {server}，所以這個共享資料夾會繼續使用系統連線。試試在「{localNetwork}」裡把 Cmdr 關掉再開啟，或檢查一下你的防火牆 App。} windows {Something on this PC is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.} other {Something on this computer is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.}}",
   "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
     "sourceHash": "74f758e"
   },

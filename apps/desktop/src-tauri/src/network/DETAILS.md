@@ -786,7 +786,10 @@ launch after an update re-announces the bundle, which fixes it; when a dial is s
 `os_mount_notice::effective_notice` turns even the launch sweep's `StayQuiet` into `Announce`, and the event's
 `after_update` makes the notice name the update and the switch. Only on that launch: a fresh install's first dial is
 refused the same way while macOS's prompt is still up, so `crate::after_update` tells an update from a first install
-(its version stamp, else an update check on record).
+(its version stamp, else an update check on record). And only where the OS has the permission
+(`os_mount_notice::update_explains_a_block` asks `PlatformCapabilities::local_network_permission`): `of_dial` reads the
+same evidence on Linux and Windows, where the blocker is a firewall whichever launch it is, so nothing is promoted and
+`after_update` stays `false` there.
 
 **The Add server probe only hints.** `check_reachability` has no mount to compare against, so a server that's off looks
 the same: it answers `AddServerError::Unreachable` as always, with `hint: LocalNetworkPermission` when the kernel refused

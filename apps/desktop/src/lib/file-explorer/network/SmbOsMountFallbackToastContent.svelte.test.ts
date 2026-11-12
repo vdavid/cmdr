@@ -3,7 +3,8 @@
  * runs the ONE shared upgrade flow, and the notice retires itself exactly when it
  * has nothing left to say.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, onTestFinished } from 'vitest'
+import { withCapabilities, withPlatform } from '#lib/platform/test-platform.js'
 import { mount, flushSync } from 'svelte'
 import type { DirectConnectOutcome } from './direct-connect'
 
@@ -111,6 +112,8 @@ describe('SmbOsMountFallbackToastContent', () => {
   it('says what to switch when this Mac is what blocked the connection, and still offers the retry', async () => {
     // ERR-XGS9X: switching the Local Network permission off and on fixed it at
     // once, so the retry is worth keeping right beside the way to that switch.
+    onTestFinished(withPlatform('macos'))
+    onTestFinished(withCapabilities('localNetworkPermission'))
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(SmbOsMountFallbackToastContent, {
@@ -138,6 +141,31 @@ describe('SmbOsMountFallbackToastContent', () => {
     await vi.waitFor(() => {
       expect(connectDirectly).toHaveBeenCalledWith({ volumeId: 'smb-sven', shareName: 'Sven' })
     })
+  })
+
+  it('names the firewall and offers only the retry where the OS has no Local Network permission', () => {
+    // Linux (the test default) and Windows: the machine can still block the route,
+    // but there's no permission to switch and no pane to open.
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SmbOsMountFallbackToastContent, {
+      target,
+      props: {
+        toastId: 'smb-os-mount:smb-sven',
+        volumeId: 'smb-sven',
+        share: 'Sven',
+        retryable: true,
+        blockedServer: 'Mars',
+      },
+    })
+    flushSync()
+
+    expect(target.textContent).toContain('Mars')
+    expect(target.textContent).toContain('firewall')
+    expect(target.textContent).not.toContain('this Mac')
+    expect(target.textContent).not.toContain(systemStrings.localNetwork)
+    expect(target.querySelectorAll('button')).toHaveLength(1)
+    expect(openLocalNetworkSettings).not.toHaveBeenCalled()
   })
 
   it('ignores a second press while the first attempt is still running', () => {
