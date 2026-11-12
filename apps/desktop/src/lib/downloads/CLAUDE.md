@@ -44,9 +44,9 @@ when they're off, never throws), `'both'` → both, `'neither'` → no-op. We DO
 - **Pane reuse**: all jump entry points reveal through `revealFileInBestPane` / `navigateToDirInBestPane`
   (`file-explorer/navigation/navigate-and-select.ts`), NOT `navigateToFileInPane`, so an already-open Downloads view
   isn't duplicated. "Go to path" (⌘G) deliberately does NOT reuse panes.
-- **Global hotkey binding mapping**: `global-shortcut-binding.ts` translates the stored macOS-symbol form (`'⌃⌥⌘J'`) to
-  the plugin accelerator (`'Control+Alt+Super+J'`). ⌘ maps to `Super` (global-hotkey rejects `Meta`). Registration
-  lifecycle is backend; the FE owns the trigger handler.
+- **Global hotkey binding mapping**: stored in the OS's own spelling (default per OS:
+  `getDefaultGlobalGoToLatestBinding`); `global-shortcut-binding.ts` maps either to `'Control+Alt+Super+J'`. ⌘ → `Super`
+  (global-hotkey rejects `Meta`). Registration lifecycle is backend; the FE owns the trigger handler.
 - **`setGlobalGoToLatestBinding` resets `acknowledged` to `false`** so a rebound combo gets its own first-trigger warn
   toast. It's the single chokepoint: don't write `binding` through plain `setSetting`, that bypasses the reset.
 - **The global binding's persistent home is `settings.json`** (key

@@ -52,7 +52,12 @@ Each entry is authored as a `SettingDefinitionSource` (in `types.ts`) carrying:
 - `section`: Path in settings tree (e.g., `['Appearance', 'Colors and formats']`) — stays English (see i18n below)
 - `labelKey` / `descriptionKey`: i18n message KEYS, not English (see i18n below)
 - `type`: boolean, number, string, enum, duration
-- `default`: Default value
+- `default`: Default value, or `platformDefault({ macos, windows, linux })` (`platform-default.ts`) where each OS
+  defaults differently, each arm in that OS's own form (today only the global go-to-latest hotkey's binding).
+  `getDefaultValue` picks the running OS's arm on every call; ❌ never read `definition.default` directly, which returns
+  the wrapper. The analytics defaults manifest parses literal defaults only (`scripts/gen-analytics-defaults-lib.ts`),
+  so a `platformDefault` on a key that reaches the heartbeat's config shape fails that parse; the manifest has no OS
+  axis to hold one.
 - `constraints`: Type-specific validation (min/max, enum options, etc.); enum options carry `labelKey` (or a literal
   `label` for non-copy values like brand names and numerals)
 - `component`: UI hint (switch, select, slider, etc.). Advanced is the one auto-rendered section: it renders boolean,

@@ -4,6 +4,7 @@
  */
 
 import type { EnumOption, SettingDefinitionSource } from '../types'
+import { platformDefault } from '../platform-default'
 import { formatRoundSize } from '#lib/units/byte-size.js'
 
 /**
@@ -503,7 +504,10 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     keywordsKey: 'settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.keywords',
     needsCapability: 'globalShortcuts',
     type: 'string',
-    default: '\u{2303}\u{2325}\u{2318}J', // ⌃⌥⌘J
+    // Each OS's own spelling of the same physical chord (Control, Option or Alt, Command or the
+    // Windows / Super key, J). Windows and Linux keep the macOS chord until they get their own
+    // key; the Rust startup read mirrors these (`downloads::runtime::DEFAULT_BINDINGS`).
+    default: platformDefault({ macos: '⌃⌥⌘J', windows: 'Ctrl+Alt+Super+J', linux: 'Ctrl+Alt+Super+J' }),
     component: 'text-input',
     hidden: true,
   },

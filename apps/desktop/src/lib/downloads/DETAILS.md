@@ -29,7 +29,8 @@ mechanics, deep-link wiring, and the smoke-test guide.
 - **`global-shortcut-bridge.svelte.ts`**: one `global-shortcut-fired` subscription; calls `goToLatestDownload` plus, on
   the first un-acknowledged trigger, the warn toast.
 - **`GlobalShortcutWarnToastContent.svelte`**: first-trigger persistent warn toast for ⌃⌥⌘J.
-- **`global-shortcut-binding.ts`**: macOS-symbol binding → plugin accelerator (`⌘` → `Super`).
+- **`global-shortcut-binding.ts`**: the stored binding (either OS spelling) → plugin accelerator (`⌘` / `Super` →
+  `Super`), plus `ANIMATED_GLOBAL_GO_TO_LATEST_BINDING`, the one chord the animation draws.
 - **`global-shortcut-setting.ts`**: getters/setters for `behavior.fileSystemWatching.globalGoToLatestShortcut.*`.
   `setGlobalGoToLatestBinding` resets `acknowledged` to `false`.
 - **`global-shortcut-description.ts`**: pure builder for the on/off toggle's helper text, tracking the live binding.
@@ -53,9 +54,9 @@ Two states, toggled by a chevron button:
 - **Collapsed**: same title, one compact summary (`Jump with ⌘J in-app, ⌃⌥⌘J globally.`, dynamic on which shortcuts are
   set, keys as literal `ShortcutChip`s, from the pure `buildShortcutSummary`), and a down-chevron.
 
-`GlobalShortcutAnimation` renders ONLY when `globalBinding === DEFAULT_GLOBAL_GO_TO_LATEST_BINDING`: the SVG lights up
-the literal default key caps, so a remapped combo would animate the wrong keys. A remapped combo therefore keeps the
-text chip and drops the animation.
+`GlobalShortcutAnimation` renders ONLY when `globalBinding === ANIMATED_GLOBAL_GO_TO_LATEST_BINDING` (`⌃⌥⌘J`): the SVG
+lights up the Mac's literal key caps, so a remapped combo, or Windows' and Linux's spelling of the same chord, would
+animate keys the user doesn't read on their keyboard. Those keep the text chip and drop the animation.
 
 The action button row is identical in both states. The bridge passes `getDownloadsToastCollapsed()` as
 `initialCollapsed`; the component holds the live toggle in local `$state` (seeded from it), and the chevron's `onclick`
@@ -136,10 +137,11 @@ so notifications from a dev build are attributed to Terminal, not Cmdr. Test thi
 
 ## Global go-to-latest hotkey
 
-Default `⌃⌥⌘J`. The on/off switch lives under Behavior > Notifications > Go to latest download (a plain `Switch`, its
-description references the live binding via `global-shortcut-description.ts`); the combo is edited under Keyboard
-shortcuts via `GlobalShortcutRow.svelte`. Both surfaces call `set_global_go_to_latest_shortcut(enabled, binding)` for
-live-apply.
+Default `⌃⌥⌘J` on macOS and the same chord spelled `Ctrl+Alt+Super+J` on Windows and Linux (the setting's
+`platformDefault`; Rust's startup read mirrors it as `downloads::runtime::DEFAULT_BINDINGS`). The on/off switch lives
+under Behavior > Notifications > Go to latest download (a plain `Switch`, its description references the live binding
+via `global-shortcut-description.ts`); the combo is edited under Keyboard shortcuts via `GlobalShortcutRow.svelte`. Both
+surfaces call `set_global_go_to_latest_shortcut(enabled, binding)` for live-apply.
 
 **First-trigger warn toast**: persistent, level `warn`. Fires only when the hotkey triggered AND
 `acknowledged === false`. The bridge flips `acknowledged = true` BEFORE opening the toast so back-to-back presses don't

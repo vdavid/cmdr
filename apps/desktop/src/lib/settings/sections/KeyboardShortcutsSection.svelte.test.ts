@@ -57,6 +57,7 @@ vi.mock('#lib/ipc/bindings.js', () => ({
 // GlobalShortcutRow (rendered at the bottom of the section) reads settings.
 vi.mock('#lib/settings/index.js', () => ({
   getSetting: vi.fn(() => undefined),
+  getDefaultValue: vi.fn(() => undefined),
   onSpecificSettingChange: vi.fn(() => () => {}),
 }))
 

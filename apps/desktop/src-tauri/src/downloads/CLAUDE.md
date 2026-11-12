@@ -40,8 +40,8 @@ Full lifecycle, scope rationale, and v1 limits: `DETAILS.md`.
 - **Don't `tokio::spawn` from the notify callback.** The `notify-debouncer-full` callback runs on notify-rs's internal
   thread with no Tokio runtime; `tokio::spawn` panics ("no reactor running"). All the work is synchronous and cheap, so
   it stays inline. If async is ever needed, use `tauri::async_runtime::spawn`.
-- **Global go-to-latest hotkey default is `⌃⌥⌘J`.** `⌘` maps to `Super`, NOT `Meta`, in the accelerator string
-  (`binding_to_accelerator` and the FE mirror `global-shortcut-binding.ts`). The `global-hotkey` crate accepts
+- **The hotkey's default is one chord, spelled per OS** (`DEFAULT_BINDINGS`). `⌘` / `Super` map to `Super`, NOT
+  `Meta` (`binding_to_accelerator`, FE mirror `global-shortcut-binding.ts`). The `global-hotkey` crate accepts
   `COMMAND`/`CMD`/`SUPER` but rejects `META` (errors `UnsupportedKey`). Keep both adapters on `Super`. The plugin uses
   Carbon's `RegisterEventHotKey`, so no Accessibility / Input Monitoring TCC grant is needed.
 - **The hotkey handler raises the main window** (`unminimize` + `show` + `set_focus`) before emitting

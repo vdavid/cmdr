@@ -26,7 +26,7 @@
         setDownloadsNotificationsMode,
         openSettingsToDownloadsNotifications,
     } from './notifications-mode'
-    import { DEFAULT_GLOBAL_GO_TO_LATEST_BINDING } from './global-shortcut-binding'
+    import { ANIMATED_GLOBAL_GO_TO_LATEST_BINDING } from './global-shortcut-binding'
     import { setDownloadsToastCollapsed } from './downloads-toast-collapsed'
     import { buildShortcutSummary } from './download-toast-shortcuts'
     import GlobalShortcutAnimation from './GlobalShortcutAnimation.svelte'
@@ -105,7 +105,7 @@
      * the literal ⌃⌥⌘J keys, so a remapped binding would teach the wrong keys —
      * we keep the text chip (it tracks the snapshot) but drop the animation.
      */
-    const showShortcutAnimation = $derived(globalBinding === DEFAULT_GLOBAL_GO_TO_LATEST_BINDING)
+    const showShortcutAnimation = $derived(globalBinding === ANIMATED_GLOBAL_GO_TO_LATEST_BINDING)
 
     /** Nullable in-app / global keys for the collapsed summary line. */
     const summary = $derived(buildShortcutSummary(inAppBound, globalBinding))

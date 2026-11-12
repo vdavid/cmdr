@@ -26,7 +26,8 @@ import type {
 import { SettingValidationError } from './types'
 import { tString } from '#lib/intl/messages.svelte.js'
 import { getFirstShortcutReactive } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
-import { hasCapability } from '#lib/platform/index.js'
+import { getPlatform, hasCapability } from '#lib/platform/index.js'
+import { resolveDefault } from './platform-default'
 import { appearanceSettings } from './definitions/appearance'
 import { behaviorSettings } from './definitions/behavior'
 import { indexingSettings } from './definitions/indexing'
@@ -159,12 +160,13 @@ export function getAdvancedSettings(): SettingDefinition[] {
 }
 
 /**
- * Get the default value for a setting.
+ * Get the default value for a setting, on this platform (a `platformDefault` resolves to the
+ * running OS's arm on every call).
  */
 export function getDefaultValue<K extends SettingId>(id: K): SettingsValues[K] {
   const def = registryMap.get(id)
   if (!def) throw new Error(`Unknown setting: ${id}`)
-  return def.default as SettingsValues[K]
+  return resolveDefault(def.default, getPlatform()) as SettingsValues[K]
 }
 
 // ============================================================================

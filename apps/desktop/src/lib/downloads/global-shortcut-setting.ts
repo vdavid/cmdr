@@ -12,7 +12,7 @@
  * we reset `acknowledged` whenever the binding changes. Centralizing this in
  * one place keeps the Settings UI and tests from drifting.
  */
-import { getSetting, setSetting } from '#lib/settings/index.js'
+import { getDefaultValue, getSetting, setSetting } from '#lib/settings/index.js'
 
 const ENABLED_KEY = 'behavior.fileSystemWatching.globalGoToLatestShortcut.enabled'
 const BINDING_KEY = 'behavior.fileSystemWatching.globalGoToLatestShortcut.binding'
@@ -30,6 +30,11 @@ export function getGlobalGoToLatestEnabled(): boolean {
 
 export function getGlobalGoToLatestBinding(): string {
   return getSetting(BINDING_KEY)
+}
+
+/** This OS's default binding, in its own spelling (`⌃⌥⌘J` on macOS, `Ctrl+Alt+Super+J` elsewhere). */
+export function getDefaultGlobalGoToLatestBinding(): string {
+  return getDefaultValue(BINDING_KEY)
 }
 
 export function setGlobalGoToLatestEnabled(value: boolean): void {

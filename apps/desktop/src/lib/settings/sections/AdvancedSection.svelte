@@ -1,6 +1,7 @@
 <script lang="ts">
     import {
         getAdvancedSettings,
+        getDefaultValue,
         settingRendersHere,
         getSetting,
         setSetting,
@@ -91,12 +92,13 @@
     /** A setting's default as the row shows it: a duration in words, a choice by its option's
      * label (never the stored token), anything else as it is. */
     function defaultText(setting: (typeof allAdvancedSettings)[number]): string {
-        if (setting.type === 'duration') return formatDurationSetting(Number(setting.default))
+        const value = getDefaultValue(setting.id)
+        if (setting.type === 'duration') return formatDurationSetting(Number(value))
         if (setting.type === 'enum') {
-            const option = setting.constraints?.options?.find((candidate) => candidate.value === setting.default)
+            const option = setting.constraints?.options?.find((candidate) => candidate.value === value)
             if (option) return option.label
         }
-        return String(setting.default)
+        return String(value)
     }
 
     function handleReset(id: SettingId) {

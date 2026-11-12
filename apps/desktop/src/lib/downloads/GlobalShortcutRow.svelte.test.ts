@@ -22,6 +22,7 @@ const { getSettingMock, setSettingMock, setGlobalGoToLatestShortcutMock } = vi.h
 vi.mock('#lib/settings/index.js', () => ({
   getSetting: getSettingMock,
   setSetting: setSettingMock,
+  getDefaultValue: () => '⌃⌥⌘J',
   onSpecificSettingChange: vi.fn(() => () => {}),
 }))
 
@@ -106,6 +107,27 @@ describe('GlobalShortcutRow', () => {
     // Live-apply IPC fired.
     expect(setGlobalGoToLatestShortcutMock).toHaveBeenCalled()
     target.remove()
+  })
+
+  // Regression anchor: the adapter read only macOS glyphs, so every Linux and Windows combo
+  // ("Ctrl+Alt+K") read as modifier-less and the recorder refused it.
+  it('records a combo in the Linux spelling and registers it', async () => {
+    const restore = withPlatform('linux')
+    const target = mountRow()
+    target.querySelector<HTMLButtonElement>('.shortcut-pill')?.click()
+    await tick()
+
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'k', code: 'KeyK', ctrlKey: true, altKey: true, bubbles: true }),
+    )
+    await tick()
+    await Promise.resolve()
+    await tick()
+
+    expect(setGlobalGoToLatestShortcutMock.mock.calls[0]?.[1]).toBe('Ctrl+Alt+K')
+    expect(setSettingMock).toHaveBeenCalledWith(BINDING_KEY, 'Ctrl+Alt+K')
+    target.remove()
+    restore()
   })
 
   it('a combo another app holds keeps the old one: nothing saved, old combo shown, reason in plain words', async () => {

@@ -264,7 +264,7 @@ async function pushSettingsDefaultsToBackend(): Promise<void> {
   try {
     const defaults: Record<string, SettingValue> = {}
     for (const def of settingsRegistry) {
-      const value = def.default
+      const value = getDefaultValue(def.id)
       // SettingValue is untagged on the wire: boolean | number | string.
       // Values of other types (arrays, objects) are silently skipped; the Rust
       // side has hardcoded fallbacks and the lookup_* helpers only support these three.

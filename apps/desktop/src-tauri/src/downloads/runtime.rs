@@ -23,6 +23,7 @@ use tauri::AppHandle;
 use super::global_shortcut::{GlobalShortcutManager, RegistrationError, RegistrationStatus, TauriRegistrar};
 use super::watcher::DEFAULT_IGNORE_TTL;
 use super::{DownloadsWatcher, WatcherError, desired_running};
+use cmdr_menu::spec::PerPlatform;
 
 /// Process-global handle. `None` when the watcher isn't running.
 static RUNTIME: Mutex<Option<DownloadsWatcher>> = Mutex::new(None);
@@ -93,34 +94,59 @@ pub fn refresh_runtime(app: &AppHandle) -> Result<(), WatcherError> {
     Ok(())
 }
 
-/// Translate the user-facing macOS-symbol binding (`'⌃⌥⌘J'`, what we store
-/// in settings) into the accelerator string the Tauri global-shortcut
-/// plugin understands (`'Control+Alt+Super+J'`). Returns `None` for empty or
+/// The binding a fresh install runs with, per OS, each in its own spelling: the same physical
+/// chord everywhere for now. Mirrors the registry's `platformDefault` for
+/// `behavior.fileSystemWatching.globalGoToLatestShortcut.binding` (`settings/definitions/behavior.ts`),
+/// which a missing settings key falls back to before any window loads. Data, so no `cfg`:
+/// [`default_binding`] picks this build's arm.
+pub const DEFAULT_BINDINGS: PerPlatform<&str> = PerPlatform {
+    macos: "\u{2303}\u{2325}\u{2318}J", // ⌃⌥⌘J
+    windows: "Ctrl+Alt+Super+J",
+    linux: "Ctrl+Alt+Super+J",
+};
+
+/// This OS's default binding ([`DEFAULT_BINDINGS`]).
+pub fn default_binding() -> &'static str {
+    DEFAULT_BINDINGS.current()
+}
+
+/// Each spelling's modifier token → its accelerator name: macOS glyphs, then the words Windows
+/// and Linux write.
+const MODIFIER_TOKENS: [(&str, &str); 8] = [
+    ("\u{2303}", "Control"), // ⌃
+    ("\u{2325}", "Alt"),     // ⌥
+    ("\u{21E7}", "Shift"),   // ⇧
+    ("\u{2318}", "Super"),   // ⌘
+    ("Ctrl+", "Control"),
+    ("Alt+", "Alt"),
+    ("Shift+", "Shift"),
+    ("Super+", "Super"),
+];
+
+/// Translate the stored binding (the canonical combo the recorder writes on this OS: `'⌃⌥⌘J'`
+/// on macOS, `'Ctrl+Alt+Super+J'` on Windows and Linux) into the accelerator string the Tauri
+/// global-shortcut plugin understands (`'Control+Alt+Super+J'`). Returns `None` for empty or
 /// modifier-only input — global shortcuts always need a non-modifier key.
 ///
-/// Mirrors `apps/desktop/src/lib/downloads/global-shortcut-binding.ts`. The
-/// two sides should stay in sync; the FE adapter is unit-tested.
+/// Mirrors `apps/desktop/src/lib/downloads/global-shortcut-binding.ts`; both are unit-tested.
 pub fn binding_to_accelerator(binding: &str) -> Option<String> {
-    if binding.is_empty() {
-        return None;
-    }
     let mut modifiers: Vec<&'static str> = Vec::new();
-    let mut chars = binding.chars().peekable();
-    while let Some(&c) = chars.peek() {
-        let name = match c {
-            '\u{2303}' => "Control", // ⌃
-            '\u{2325}' => "Alt",     // ⌥
-            '\u{21E7}' => "Shift",   // ⇧
-            '\u{2318}' => "Super",   // ⌘
-            _ => break,
-        };
-        if !modifiers.contains(&name) {
-            modifiers.push(name);
+    let mut rest = binding;
+    // A token never eats the last character, so a key that looks like a token's tail stays the key.
+    while let Some((token, name)) = MODIFIER_TOKENS
+        .iter()
+        .find(|(token, _)| rest.starts_with(token) && rest.len() > token.len())
+    {
+        if !modifiers.contains(name) {
+            modifiers.push(*name);
         }
-        chars.next();
+        rest = &rest[token.len()..];
     }
-    let key: String = chars.collect::<String>().trim().to_string();
-    if key.is_empty() || modifiers.is_empty() {
+    let key = rest.trim();
+    let modifier_only = MODIFIER_TOKENS
+        .iter()
+        .any(|(token, _)| token.trim_end_matches('+') == key);
+    if key.is_empty() || modifier_only || modifiers.is_empty() {
         return None;
     }
     let mut out = modifiers.join("+");
@@ -210,8 +236,8 @@ pub fn apply_global_go_to_latest_shortcut(
 /// last-known `enabled` and `binding` from the Settings file via the
 /// existing settings loader.
 pub fn refresh_global_go_to_latest_shortcut(app: &AppHandle) {
-    let (enabled, binding) = crate::settings::early_load_global_go_to_latest_shortcut()
-        .unwrap_or((true, String::from("\u{2303}\u{2325}\u{2318}J")));
+    let (enabled, binding) =
+        crate::settings::early_load_global_go_to_latest_shortcut().unwrap_or((true, String::from(default_binding())));
     if !cache_changed_and_update(&LAST_APPLIED_SHORTCUT, enabled, &binding) {
         // Cmd-Tab back from another app is the headline trigger; settings on
         // disk haven't moved since the previous refresh, so skip the plugin
@@ -328,6 +354,41 @@ mod tests {
             has_accelerator: true,
             may_register_global_hotkeys: true,
             os_offers_global_shortcuts: true,
+        }
+    }
+
+    #[test]
+    fn both_spellings_of_a_binding_become_the_same_accelerator() {
+        assert_eq!(
+            binding_to_accelerator("\u{2303}\u{2325}\u{2318}J").as_deref(),
+            Some("Control+Alt+Super+J")
+        );
+        assert_eq!(
+            binding_to_accelerator("Ctrl+Alt+Super+J").as_deref(),
+            Some("Control+Alt+Super+J")
+        );
+        assert_eq!(
+            binding_to_accelerator("Ctrl+Shift+k").as_deref(),
+            Some("Control+Shift+K")
+        );
+        assert_eq!(binding_to_accelerator("Ctrl++").as_deref(), Some("Control++"));
+    }
+
+    #[test]
+    fn a_binding_without_a_modifier_or_a_key_registers_nothing() {
+        for binding in ["", "J", "\u{2318}\u{21E7}", "Ctrl+Alt", "Ctrl+"] {
+            assert_eq!(binding_to_accelerator(binding), None, "{binding}");
+        }
+    }
+
+    #[test]
+    fn the_default_binding_registers_the_same_chord_on_every_os() {
+        for platform in cmdr_menu::spec::Platform::ALL {
+            assert_eq!(
+                binding_to_accelerator(DEFAULT_BINDINGS.on(platform)).as_deref(),
+                Some("Control+Alt+Super+J"),
+                "{platform:?}"
+            );
         }
     }
 

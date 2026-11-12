@@ -565,8 +565,8 @@ pub fn early_load_verbose_logging() -> Option<bool> {
 /// pair from disk before the AppHandle is wired up. Used by the focus-event
 /// global-shortcut refresh hook in `downloads::runtime`. Returns `None` when
 /// the settings file is missing OR the user hasn't customized either key (in
-/// which case the registry defaults apply — `enabled = true`,
-/// `binding = "⌃⌥⌘J"`).
+/// which case the registry defaults apply — `enabled = true`, and this OS's
+/// `downloads::runtime::DEFAULT_BINDINGS`).
 pub fn early_load_global_go_to_latest_shortcut() -> Option<(bool, String)> {
     let data_dir = crate::config::standalone_app_data_dir()?;
     let settings_path = data_dir.join("settings.json");
@@ -585,7 +585,7 @@ pub fn early_load_global_go_to_latest_shortcut() -> Option<(bool, String)> {
         .get("behavior.fileSystemWatching.globalGoToLatestShortcut.binding")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string())
-        .unwrap_or_else(|| String::from("\u{2303}\u{2325}\u{2318}J"));
+        .unwrap_or_else(|| String::from(crate::downloads::runtime::default_binding()));
     Some((enabled, binding))
 }
 

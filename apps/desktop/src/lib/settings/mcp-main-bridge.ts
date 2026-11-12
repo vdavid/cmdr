@@ -10,7 +10,13 @@
  */
 
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { getSettingDefinition, settingRendersHere, settingsRegistry, validateSettingWrite } from './settings-registry'
+import {
+  getDefaultValue,
+  getSettingDefinition,
+  settingRendersHere,
+  settingsRegistry,
+  validateSettingWrite,
+} from './settings-registry'
 import { getSetting, setSetting, isModified } from './settings-store'
 import { MASKED, holdsMaskedPlaceholder, maskSecrets } from './setting-secret-mask'
 import type { SettingDefinition, SettingId, SettingsValues } from './types'
@@ -67,7 +73,8 @@ function buildAllSettingsYaml(): string {
       const sensitive = isSensitive(def)
 
       const displayValue = sensitive ? maskValue(def, value) : value
-      const displayDefault = sensitive ? maskValue(def, def.default) : def.default
+      const defaultValue = getDefaultValue(id)
+      const displayDefault = sensitive ? maskValue(def, defaultValue) : defaultValue
 
       lines.push(`  - id: ${def.id}`)
       lines.push(`    label: ${JSON.stringify(def.label)}`)

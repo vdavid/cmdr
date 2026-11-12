@@ -31,12 +31,13 @@
     import { formatKeyCombo, isModifierKey, toDisplayShortcut } from '#lib/shortcuts/index.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import {
+        getDefaultGlobalGoToLatestBinding,
         getGlobalGoToLatestBinding,
         setGlobalGoToLatestBinding,
         GLOBAL_GO_TO_LATEST_BINDING_KEY,
         GLOBAL_GO_TO_LATEST_ENABLED_KEY,
     } from './global-shortcut-setting'
-    import { toAccelerator, DEFAULT_GLOBAL_GO_TO_LATEST_BINDING } from './global-shortcut-binding'
+    import { toAccelerator } from './global-shortcut-binding'
     import { getSetting, onSpecificSettingChange } from '#lib/settings/index.js'
     import { tString } from '#lib/intl/messages.svelte.js'
     import Trans from '#lib/intl/Trans.svelte'
@@ -55,7 +56,7 @@
      */
     let statusIsWarn = $state(false)
 
-    const isModified = $derived(binding !== DEFAULT_GLOBAL_GO_TO_LATEST_BINDING)
+    const isModified = $derived(binding !== getDefaultGlobalGoToLatestBinding())
 
     // On Linux the window's menu bar would take an `Alt+<letter>` combo before this sees it.
     suspendMenuMnemonicsWhile(() => editing)
@@ -113,7 +114,7 @@
 
     function handleReset(): void {
         cancelEditing()
-        void applyBinding(DEFAULT_GLOBAL_GO_TO_LATEST_BINDING)
+        void applyBinding(getDefaultGlobalGoToLatestBinding())
     }
 
     function handleKeyCapture(event: KeyboardEvent): void {
