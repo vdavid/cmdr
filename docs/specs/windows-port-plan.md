@@ -280,11 +280,10 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     `cmdr/no-platform-copy-branch` keeps `isMacOS()` off copy, and macOS-only surfaces are capability-gated instead of
     reworded. The resolved English, one row per key, is `docs/notes/windows-port/copy-final.json` (299 rows applied in
     `en`, the 13 full locales, and the three overlays; macOS text unmoved in every language apart from the two accepted
-    English changes). Left: the rows still open per `docs/notes/windows-port/copy-decisions.md` § Open rows (six Windows
-    branches and the eject control's six keys, each waiting on its Windows code), the rows waiting on #1102 (the eight
-    values with literal key glyphs, `shortcuts.conflict.reservedByMacOs`, `shortcuts.section.macOsTooltip` /
-    `.macOsBadge`, and the global go-to-latest description), and GNOME/KDE wording, which waits for task 59's Linux
-    desktop value.
+    English changes). Left: the rows still open per `docs/notes/windows-port/copy-decisions.md` § Open rows (each
+    waiting on the code its entry names), the rows waiting on #1102 (the eight values with literal key glyphs,
+    `shortcuts.conflict.reservedByMacOs`, `shortcuts.section.macOsTooltip` / `.macOsBadge`, and the global go-to-latest
+    description), and GNOME/KDE wording, which waits for task 59's Linux desktop value.
 28. [L] Win. Translate task 27's changed strings into the 13 languages (translator agents, per
     `docs/guides/i18n-translation.md`). Needs 27, and starts only after David has reviewed task 27's English: a
     translation of English he then changes is a wasted round.

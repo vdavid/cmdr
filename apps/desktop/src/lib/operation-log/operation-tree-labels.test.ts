@@ -5,9 +5,10 @@
  * (no "error", no "failed", nothing that blames the person).
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import type { OpKind, SkipReason, UnexpandableReason } from '#lib/ipc/bindings.js'
 import { tString } from '#lib/intl/messages.svelte.js'
+import { withPlatform } from '#lib/platform/test-platform.js'
 import {
   folderSizeText,
   operationRoute,
@@ -139,6 +140,17 @@ describe('operationRoute', () => {
     expect(operationRoute('trash', '/Users/me/Downloads', null)).toBe('From /Users/me/Downloads to the Trash')
     expect(operationRoute('delete', '/tmp/x', null)).toBe('From /tmp/x')
     expect(operationRoute('rename', '/tmp/x', null)).toBe('In /tmp/x')
+  })
+
+  it('spells every route path the way Windows shows it', () => {
+    onTestFinished(withPlatform('windows'))
+    expect(operationRoute('copy', 'D:/Backup', 'C:/Users/ada/Documents')).toBe(
+      'From C:\\Users\\ada\\Documents to D:\\Backup',
+    )
+    expect(operationRoute('move', 'D:/Backup', null)).toBe('To D:\\Backup')
+    expect(operationRoute('trash', 'C:/Users/ada/Downloads', null)).toMatch(/^From C:\\Users\\ada\\Downloads /)
+    expect(operationRoute('delete', 'C:/tmp/x', null)).toBe('From C:\\tmp\\x')
+    expect(operationRoute('rename', 'C:/tmp/x', null)).toBe('In C:\\tmp\\x')
   })
 
   it('names no route for a forest of volumes', () => {
