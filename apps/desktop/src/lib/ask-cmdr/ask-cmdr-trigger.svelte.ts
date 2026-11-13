@@ -120,6 +120,22 @@ export function openNewChat(): void {
   requestComposerFocus()
 }
 
+/**
+ * A new chat about `refs`, with `draft` in the prompt box, unsent ("Continue in Ask Cmdr" on the
+ * Tell me about this card): like {@link openNewChat}, then the items staged and the draft set.
+ * ❌ Nothing is sent: the person's send is the egress moment, and the rail's gates stay the
+ * only door. ❗ `draft` is a fixed string, ❌ never one built from a file's facts or an AI's
+ * words (see `composerDraft`).
+ */
+export function openNewChatWith(refs: AttachmentRef[], draft: string): void {
+  newChat()
+  askCmdrState.freshChat = true
+  addAttachments(refs)
+  askCmdrState.composerDraft = draft
+  if (!askCmdrState.open) void openRail()
+  requestComposerFocus()
+}
+
 /** The New chat shortcut as the tooltip shows it (`⌘N` by default, or the user's rebind), or
  * `undefined` when it's unbound. Reactive, so a rebind shows live. */
 export function newChatShortcutText(): string | undefined {

@@ -24,6 +24,8 @@ vi.mock('#lib/about-this/about-this-state.svelte.js', () => ({
   },
 }))
 vi.mock('#lib/tauri-commands/index.js', () => tauri)
+const { openNewChatWith } = vi.hoisted(() => ({ openNewChatWith: vi.fn() }))
+vi.mock('#lib/ask-cmdr/ask-cmdr-trigger.svelte.js', () => ({ openNewChatWith }))
 vi.mock('#lib/file-explorer/pane/focused-pane-reads.js', () => ({ getFocusedPaneVolumeId: () => 'root' }))
 vi.mock('#lib/file-explorer/navigation/navigate-and-select.js', () => ({
   resolveLocationOrToast: (path: string) => Promise.resolve({ volumeId: 'root', path }),
@@ -66,6 +68,15 @@ describe('the card’s actions', () => {
     const pane = explorer()
     await press({ type: 'moveToTrash' }, pane)
     expect(pane.openDeleteDialog).toHaveBeenCalledWith({ permanent: false, initiator: 'user', cursorPath: PATH })
+  })
+
+  it('Continue in Ask Cmdr opens a new chat with the item attached and the fixed draft, quoting nothing', async () => {
+    const pane = explorer()
+    await press({ type: 'continueInAskCmdr' }, pane)
+    expect(openNewChatWith).toHaveBeenCalledWith([{ path: PATH, kind: 'file' }], 'Tell me more about this.')
+    // Nothing of the pane is touched: the rail takes focus.
+    expect(pane.navigate).not.toHaveBeenCalled()
+    expect(pane.openDeleteDialog).not.toHaveBeenCalled()
   })
 
   it('Delete on a volume with no trash goes through the same dialog, permanent', async () => {

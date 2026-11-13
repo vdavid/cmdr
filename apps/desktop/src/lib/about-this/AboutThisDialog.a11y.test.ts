@@ -16,6 +16,7 @@ import AboutDigest from './AboutDigest.svelte'
 import AboutAppData from './AboutAppData.svelte'
 import AboutPlaceList from './AboutPlaceList.svelte'
 import AboutActions from './AboutActions.svelte'
+import AboutVerdict from './AboutVerdict.svelte'
 import { aboutThisFixtures } from '#lib/dialog-gallery/fixtures/about-this.js'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
 
@@ -161,6 +162,14 @@ describe('the card’s parts on their own', () => {
   it('the removal list with its More button', async () => {
     const removal = aboutThisFixtures['more-consequences']?.derived?.removal ?? null
     await expectNoA11yViolations(mountInto(AboutRemoval, { removal, settled: true }))
+  })
+
+  it('the AI take, writing, stopped, and refused for consent', async () => {
+    for (const id of ['verdict-streaming', 'verdict-stopped', 'verdict-no-consent']) {
+      const verdict = aboutThisFixtures[id]?.verdict
+      if (!verdict) throw new Error(`no verdict on ${id}`)
+      await expectNoA11yViolations(mountInto(AboutVerdict, { verdict, onStop: () => {} }))
+    }
   })
 })
 

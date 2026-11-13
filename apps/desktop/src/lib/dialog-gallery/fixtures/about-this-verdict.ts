@@ -6,7 +6,7 @@
  * Every verdict here is made up, and written the way the prompt asks (two or three plain sentences, no green light).
  */
 
-import type { AboutEvent, ManagedAiRefusal, VerdictProblem } from '#lib/ipc/bindings.js'
+import type { AboutEvent, Actions, ManagedAiRefusal, VerdictProblem } from '#lib/ipc/bindings.js'
 import type { AboutCardData } from '#lib/about-this/about-card.js'
 import { card, type Stream } from './about-this-stream'
 
@@ -49,8 +49,31 @@ export interface VerdictBases {
   document: { name: string; path: string; stream: Stream }
 }
 
+/**
+ * `stream` as it lands with Ask Cmdr on: "Continue in Ask Cmdr" after the facts' own next steps, before removal, as
+ * `cmdr_about::actions` orders it. On the disk image the three shown are full, so it heads "More".
+ */
+function withAskCmdr(stream: Stream): Stream {
+  const ask = (actions: Actions): Actions => {
+    const all = [...actions.shown, ...actions.more]
+    const at = all.findIndex((action) => action.type === 'moveToTrash' || action.type === 'delete')
+    all.splice(at === -1 ? all.length : at, 0, { type: 'continueInAskCmdr' })
+    return { shown: all.slice(0, actions.shown.length), more: all.slice(actions.shown.length) }
+  }
+  return {
+    ...stream,
+    facts: stream.facts.map((landing) => ({
+      ...landing,
+      derived: { ...landing.derived, actions: ask(landing.derived.actions) },
+    })),
+  }
+}
+
 export function aboutThisVerdictFixtures(bases: VerdictBases): Record<string, AboutCardData> {
-  const { name, path, downloaded, filling, document } = bases
+  const { name, path, document } = bases
+  // A take needs a provider, and these cards show one with Ask Cmdr on too.
+  const downloaded = withAskCmdr(bases.downloaded)
+  const filling = withAskCmdr(bases.filling)
   const on = (stream: Stream, after: Update[]): AboutCardData => card(name, path, stream, after)
   return {
     'verdict-waiting': on(filling, [planned]),

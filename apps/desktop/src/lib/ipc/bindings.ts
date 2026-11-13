@@ -6530,6 +6530,15 @@ export type AboutAction =
       // The folder: raw, ❌ never shown.
       path: string
     }
+  /**
+   *  Opens Ask Cmdr with the item attached and a fixed, unsent question in
+   *  the composer, so the person can ask more. ❌ The draft never quotes the
+   *  card's facts or its AI take: a user turn is the most trusted text the
+   *  agent reads, and a take steered by a hostile name must not arrive there
+   *  as the person's own words. The agent reads the facts itself, as a tool
+   *  result (`about_item`).
+   */
+  | { type: 'continueInAskCmdr' }
   // Moves the item to the Trash, through the delete dialog.
   | { type: 'moveToTrash' }
   /**

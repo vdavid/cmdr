@@ -388,11 +388,13 @@ pub(crate) fn action_caps(way: Way, volume: &dyn Volume, path: &str, home: Optio
             file_manager: true,
             removal: removal(),
             app_folder: home.and_then(|home| OwnerQuestion::app_folder_above(path, home)),
+            ask_cmdr: false,
         },
         Way::OsMountedShare => ActionCaps {
             file_manager: true,
             removal: removal(),
             app_folder: None,
+            ask_cmdr: false,
         },
         Way::Server | Way::Device => ActionCaps {
             removal: removal(),

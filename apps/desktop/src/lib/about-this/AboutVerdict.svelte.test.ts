@@ -196,8 +196,12 @@ describe('the rest of the card, with and without a take', () => {
         { type: 'verdictEnd', ending: { kind: 'done' }, cost: null },
       ]),
     )
-    const refused = await outsideTheTake(fixture('verdict-no-consent'))
     expect(reassuring).toEqual(plain)
-    expect(refused).toEqual(plain)
+    // The same card with Ask Cmdr on: refused, finished, or drawing nothing, the rest reads the same.
+    const refused = await outsideTheTake(fixture('verdict-no-consent'))
+    const done = await outsideTheTake(fixture('verdict-done'))
+    const none = await outsideTheTake(fixture('verdict-local-off'))
+    expect(done).toEqual(refused)
+    expect(none).toEqual(refused)
   })
 })

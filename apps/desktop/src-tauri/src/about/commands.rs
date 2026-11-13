@@ -38,14 +38,22 @@ impl AboutSink for ChannelSink {
 /// `send` still succeeds after the webview's handler is gone (`ai/CLAUDE.md`).
 #[tauri::command]
 pub async fn about_start(app: AppHandle, request: AboutRequest, on_event: Channel<AboutEvent>) {
-    start(request, on_event, move || verdict::gate::resolve_for_card(&app));
+    let switch_app = app.clone();
+    start(
+        request,
+        on_event,
+        move || verdict::gate::resolve_for_card(&app),
+        move || crate::settings::load_ask_cmdr_switch(&switch_app) == crate::settings::AskCmdrSwitch::On,
+    );
 }
 
-/// [`about_start`] with the verdict's gate injected, so a test runs it without an app.
+/// [`about_start`] with the verdict's gate and Ask Cmdr's switch injected, so a test
+/// runs it without an app.
 pub(super) fn start(
     request: AboutRequest,
     on_event: Channel<AboutEvent>,
     gate: impl FnOnce() -> verdict::Decision + Send + 'static,
+    ask_cmdr_on: impl FnOnce() -> bool + Send + 'static,
 ) {
     let Some(registered) = REGISTRY.register(&request.request_id) else {
         // The card closed before this start arrived.
@@ -62,11 +70,15 @@ pub(super) fn start(
         // placing, so its answer is ready on the card's first frame. It reads
         // `settings.json` and `main.db`, so off the executor.
         let decision = tokio::task::spawn_blocking(gate);
+        // Whether the footer offers "Continue in Ask Cmdr": read fresh per card, like the
+        // send gate does, beside the verdict's gate.
+        let ask_cmdr = tokio::task::spawn_blocking(ask_cmdr_on);
         tokio::select! {
             () = token.cancelled() => {}
             placed = gather_for(&request, Started::ByPerson) => match placed {
-                Ok(placed) => {
+                Ok(mut placed) => {
                     let decision = decision.await.unwrap_or(Err(VerdictUnavailable::NotReady));
+                    placed.gathered.actions.ask_cmdr = ask_cmdr.await.unwrap_or(false);
                     let verdict = VerdictRun {
                         request_id: request.request_id.clone(),
                         volume_id: placed.location.volume_id.clone(),

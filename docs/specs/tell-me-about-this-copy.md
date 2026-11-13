@@ -819,6 +819,16 @@ button, and on a typical download it's the one behind "More".
     Support > Slack). Opens that folder, where the app keeps the rest of its data.
 - `aboutThis.action.appFolderUnnamed`: Go to the app’s data
   - Where: The same button, when Cmdr can't name the app the folder belongs to (it isn't installed).
+- `aboutThis.action.continueInAskCmdr`: Continue in Ask Cmdr
+  - Where: Button (or a "More" row) in the footer, only while Ask Cmdr is on, after the item's own next steps and before
+    removal. Closes the card and opens a new Ask Cmdr chat with the item attached and the draft below, unsent. On a
+    typical download it heads "More".
+- `aboutThis.action.continueInAskCmdrTooltip`: Opens a new Ask Cmdr chat about this item. Nothing is sent until you send
+  it.
+  - Where: Its tooltip.
+- `aboutThis.continueInAskCmdr.draft`: Tell me more about this.
+  - Where: The words typed into Ask Cmdr's message box, unsent, in the person's voice. Always this sentence: it never
+    quotes the card's facts or its AI take.
 - `aboutThis.action.trash`: Move to trash… (Windows: Move to the Recycle Bin…)
   - Where: Button in the footer of the card. Closes the card and opens Cmdr's usual delete dialog for this one item,
     which asks before anything moves. The ellipsis says a question follows.

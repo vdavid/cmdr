@@ -246,8 +246,8 @@ reaches it.
 
 - **Order**: a file or package: open, show in the file manager, the download page, the owning app, the app's data
   folder. A folder: show, owner, app folder. An app: show, the download page. A symlink: show, owner, app folder. An
-  archive's entry: the archive's download page only. Removal (`MoveToTrash`, or `Delete` on a volume with no Trash)
-  always last.
+  archive's entry: the archive's download page only. Then `ContinueInAskCmdr`, every target, only while the host says
+  Ask Cmdr is on (`ActionCaps::ask_cmdr`). Removal (`MoveToTrash`, or `Delete` on a volume with no Trash) always last.
 - **Decision: removal is never first, and alone it sits behind "More"** (a phone's file: nothing but Delete). Why: the
   first button is where a hurried press lands, and the deterministic removal row above it is what the person should read
   first. It goes through the app's delete dialog, which asks.

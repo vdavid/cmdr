@@ -138,6 +138,11 @@ interface AskCmdrState {
   /** Bumped to ask the composer to take focus (a new chat, the sessions panel closing). A
    * counter so the same request twice still lands; the composer also focuses on mount. */
   composerFocusRequest: number
+  /** Text for the composer to take as its draft, unsent, the next time it's mounted (then
+   * cleared). Set only by {@link openNewChatWith}, with a fixed string: ❌ never text from a
+   * file, a tool, or a model, since what the person sends is the most trusted text the agent
+   * reads. */
+  composerDraft: string | null
 }
 
 export const RAIL_MIN_WIDTH = 280
@@ -163,6 +168,7 @@ export const askCmdrState = $state<AskCmdrState>({
   spendPausedMicros: null,
   deniedNames: [],
   composerFocusRequest: 0,
+  composerDraft: null,
 })
 
 /**

@@ -16,6 +16,7 @@ import { getFocusedPaneVolumeId } from '#lib/file-explorer/pane/focused-pane-rea
 import { lastName, parentOrRoot } from '#lib/path/grammar.js'
 import { getAppLogger } from '#lib/logging/logger.js'
 import { openExternalUrl, showInFinder } from '#lib/tauri-commands/index.js'
+import { tString } from '#lib/intl/messages.svelte.js'
 import type { ExplorerAPI } from '../explorer-api'
 import { detached } from './detached'
 
@@ -108,6 +109,17 @@ async function act(explorer: ExplorerAPI | undefined, action: AboutAction, subje
     case 'goToAppFolder':
       goTo(explorer, subject.volumeId ?? '', { path: action.path, isFolder: true }, 'resolve')
       return
+    case 'continueInAskCmdr': {
+      // A new chat with the item attached by path and kind, and a FIXED draft, unsent. ❌ The draft never quotes the
+      // card's facts or its AI take: the agent reads the facts itself, as a tool result (`about_item`). Loaded on the
+      // press: the rail's trigger slice pulls in the whole explorer state, which the opener doesn't otherwise need.
+      const { openNewChatWith } = await import('#lib/ask-cmdr/ask-cmdr-trigger.svelte.js')
+      openNewChatWith(
+        [{ path: subject.path, kind: subject.isDirectory ? 'folder' : 'file' }],
+        tString('aboutThis.continueInAskCmdr.draft'),
+      )
+      return
+    }
     case 'moveToTrash':
     case 'delete':
       // The pane's own delete flow, for the cursor row alone and only while it's this item: it asks first, and the

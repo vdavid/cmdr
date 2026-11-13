@@ -164,6 +164,7 @@ async fn a_downloaded_disk_image_streams_the_plan_then_each_fact_then_settles() 
         file_manager: true,
         removal: Some(RemoveBy::Trash),
         app_folder: None,
+        ask_cmdr: false,
     };
     let recorder = gather(
         Gathered {
@@ -505,6 +506,7 @@ async fn a_cancel_that_beats_its_start_makes_the_start_send_nothing() {
         },
         channel,
         || panic!("a start its cancel beat asks no gate"),
+        || panic!("a start its cancel beat reads no switch"),
     );
     assert_eq!(sent.load(std::sync::atomic::Ordering::SeqCst), 0);
 }

@@ -30,8 +30,9 @@ use crate::text::ItemText;
 /// "Show TextEdit"); four pushed it past it.
 pub(crate) const SHOWN_ACTIONS: usize = 3;
 
-/// What the item's volume lets the card's actions do, filled by the host per
-/// way of reaching the item before any job runs.
+/// What the card's actions can do: what the item's volume allows, filled by the
+/// host per way of reaching the item before any job runs, and whether the
+/// person has Ask Cmdr on.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActionCaps {
     /// The OS's file manager can show the item: its path is one the OS sees,
@@ -45,6 +46,9 @@ pub struct ActionCaps {
     /// ([`crate::owner::OwnerQuestion::app_folder_above`]), raw. `None`: none
     /// does.
     pub app_folder: Option<String>,
+    /// Ask Cmdr is on, so the card can hand the item to it
+    /// ([`AboutAction::ContinueInAskCmdr`]).
+    pub ask_cmdr: bool,
 }
 
 impl ActionCaps {
@@ -54,6 +58,7 @@ impl ActionCaps {
             file_manager: false,
             removal: None,
             app_folder: None,
+            ask_cmdr: false,
         }
     }
 }
@@ -104,6 +109,13 @@ pub enum AboutAction {
         /// The folder: raw, ❌ never shown.
         path: String,
     },
+    /// Opens Ask Cmdr with the item attached and a fixed, unsent question in
+    /// the composer, so the person can ask more. ❌ The draft never quotes the
+    /// card's facts or its AI take: a user turn is the most trusted text the
+    /// agent reads, and a take steered by a hostile name must not arrive there
+    /// as the person's own words. The agent reads the facts itself, as a tool
+    /// result (`about_item`).
+    ContinueInAskCmdr,
     /// Moves the item to the Trash, through the delete dialog.
     MoveToTrash,
     /// Deletes the item for good on a volume with no Trash, through the delete
@@ -134,18 +146,20 @@ pub fn actions(card: &AboutCard, caps: &ActionCaps) -> Actions {
         path,
     });
     let reveal = caps.file_manager.then_some(AboutAction::ShowInFileManager);
+    let ask = caps.ask_cmdr.then_some(AboutAction::ContinueInAskCmdr);
     let removal = caps.removal.map(|by| match by {
         RemoveBy::Trash => AboutAction::MoveToTrash,
         RemoveBy::Delete => AboutAction::Delete,
     });
 
-    // Per target, most likely next step first. Removal is always last.
+    // Per target, most likely next step first, then asking Ask Cmdr about it.
+    // Removal is always last.
     let order = match card.target {
-        AboutTarget::File | AboutTarget::Package => [open, reveal, download, owner, folder],
-        AboutTarget::Folder => [reveal, owner, folder, None, None],
-        AboutTarget::AppBundle => [reveal, download, None, None, None],
-        AboutTarget::Symlink => [reveal, owner, folder, None, None],
-        AboutTarget::ArchiveEntry => [download, None, None, None, None],
+        AboutTarget::File | AboutTarget::Package => [open, reveal, download, owner, folder, ask],
+        AboutTarget::Folder => [reveal, owner, folder, ask, None, None],
+        AboutTarget::AppBundle => [reveal, download, ask, None, None, None],
+        AboutTarget::Symlink => [reveal, owner, folder, ask, None, None],
+        AboutTarget::ArchiveEntry => [download, ask, None, None, None, None],
     };
     let mut all: Vec<AboutAction> = order.into_iter().flatten().collect();
     let before_removal = all.len();

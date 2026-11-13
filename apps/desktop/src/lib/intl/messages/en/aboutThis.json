@@ -1359,5 +1359,17 @@
   "aboutThis.verdict.aiOffHint": "AI is off, so there’s no AI take.",
   "@aboutThis.verdict.aiOffHint": {
     "description": "Quiet hint in the footer of the \"Tell me about this\" card when AI is turned off in Settings: the card shows only Cmdr's own facts. A link beside it opens Settings > AI. The \"AI take\" is two or three sentences an AI model writes about the item from the facts the card lists, shown in its own block, set apart from the facts, right above \"What removing it means\"."
+  },
+  "aboutThis.action.continueInAskCmdr": "Continue in Ask Cmdr",
+  "@aboutThis.action.continueInAskCmdr": {
+    "description": "Button (or a row behind \"More\") in the footer of the \"Tell me about this\" card, shown while Ask Cmdr is on. Closes the card and opens Ask Cmdr, the app's AI chat panel, on a new chat with this item attached and a short question typed in but not sent. \"Ask Cmdr\" is the feature's name and stays verbatim. Short control label."
+  },
+  "aboutThis.action.continueInAskCmdrTooltip": "Opens a new Ask Cmdr chat about this item. Nothing is sent until you send it.",
+  "@aboutThis.action.continueInAskCmdrTooltip": {
+    "description": "Tooltip on the \"Continue in Ask Cmdr\" button of the \"Tell me about this\" card. \"Ask Cmdr\" is the feature's name and stays verbatim."
+  },
+  "aboutThis.continueInAskCmdr.draft": "Tell me more about this.",
+  "@aboutThis.continueInAskCmdr.draft": {
+    "description": "The question \"Continue in Ask Cmdr\" on the \"Tell me about this\" card types into Ask Cmdr's message box, unsent, with the item attached. The person can edit it before sending. Written as the person speaking to the assistant, in their own voice. Always this same sentence: it never quotes anything from the card."
   }
 }

@@ -21,6 +21,8 @@ export function actionLabel(action: AboutAction): string {
       return action.app === null
         ? tString('aboutThis.action.appFolderUnnamed')
         : tString('aboutThis.action.appFolder', { app: action.app })
+    case 'continueInAskCmdr':
+      return tString('aboutThis.action.continueInAskCmdr')
     case 'moveToTrash':
       return tString('aboutThis.action.trash')
     case 'delete':
@@ -38,6 +40,8 @@ export function actionTooltip(action: AboutAction): string | null {
       return tString('aboutThis.action.downloadPageTooltip', { host: action.host })
     case 'openWithDefaultApp':
       return tString('aboutThis.action.openTooltip', { app: action.app })
+    case 'continueInAskCmdr':
+      return tString('aboutThis.action.continueInAskCmdrTooltip')
     default:
       return null
   }

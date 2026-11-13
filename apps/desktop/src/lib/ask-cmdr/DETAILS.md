@@ -607,6 +607,12 @@ registry lives below `commands/` rather than inside the chat command.
   the payload paths (genuine local absolute). Kinds are resolved backend-side (`ask_cmdr_resolve_attachments`) from
   known pane state, defaulting to file. The Tauri APIs load lazily and swallow failures, so the composer still mounts
   outside a Tauri webview (unit tests).
+- **A new chat handed an item from elsewhere** (`openNewChatWith(refs, draft)`, the "Tell me about this" card's
+  "Continue in Ask Cmdr"): `openNewChat`'s fresh chat, the refs staged, and `draft` in `askCmdrState.composerDraft`,
+  which the composer takes once into its text (unsent) and clears. ❌ Nothing is sent: the person's send is the egress
+  moment. ❌ The draft is a FIXED catalog string, never text from a file, a tool, or a model: a user turn is the most
+  trusted text the agent reads, so a card's facts or its AI take must never arrive there as the person's words. The
+  agent reads the item's facts itself, through `about_item`, as a tool result.
 - Chips render the escaped basename (`attachmentBasename`) as plain `{text}` — filesystem names are
   attacker-controllable on a network share, so never `{@html}` (see the shared XSS-boundary rule).
 

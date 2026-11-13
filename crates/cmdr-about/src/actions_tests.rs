@@ -11,6 +11,7 @@ fn everywhere() -> ActionCaps {
         file_manager: true,
         removal: Some(RemoveBy::Trash),
         app_folder: None,
+        ask_cmdr: false,
     }
 }
 
@@ -119,6 +120,7 @@ fn removal_is_never_first_and_alone_it_waits_behind_more() {
         file_manager: false,
         removal: Some(RemoveBy::Delete),
         app_folder: None,
+        ask_cmdr: false,
     };
     let alone = actions(&card, &caps);
     assert!(alone.shown.is_empty());
@@ -249,4 +251,31 @@ fn the_same_facts_give_the_same_actions() {
         actions(&file_with(facts()), &everywhere()),
         actions(&file_with(facts()), &everywhere())
     );
+}
+
+#[test]
+fn ask_cmdr_comes_after_the_facts_own_next_steps_and_before_removal_only_when_it_is_on() {
+    let on = ActionCaps {
+        ask_cmdr: true,
+        ..everywhere()
+    };
+    let document = all(&actions(&file_with(vec![default_app("TextEdit")]), &on));
+    assert_eq!(
+        document,
+        [
+            A::OpenWithDefaultApp { app: text("TextEdit") },
+            A::ShowInFileManager,
+            A::ContinueInAskCmdr,
+            A::MoveToTrash
+        ]
+    );
+    let mut folder = card(AboutTarget::Folder, None, &local());
+    land_no_records(&mut folder);
+    assert_eq!(
+        all(&actions(&folder, &on)),
+        [A::ShowInFileManager, A::ContinueInAskCmdr, A::MoveToTrash]
+    );
+
+    // Off: the same facts, no Ask Cmdr.
+    assert!(!all(&actions(&file_with(vec![default_app("TextEdit")]), &everywhere())).contains(&A::ContinueInAskCmdr));
 }

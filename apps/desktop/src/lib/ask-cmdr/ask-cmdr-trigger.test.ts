@@ -70,6 +70,7 @@ import {
   newChatShortcutText,
   noteSlotSettingChanged,
   openNewChat,
+  openNewChatWith,
   openRail,
   ensureThreadLoaded,
   RAIL_MAX_WIDTH,
@@ -707,6 +708,25 @@ describe('openRail bootstrap + newChat + hydrate', () => {
     expect(askCmdrState.conversationId).toBeNull()
     expect(askCmdrState.composerFocusRequest).toBe(focusBefore + 1)
     expect(growWindowMock).not.toHaveBeenCalled()
+  })
+
+  it('openNewChatWith starts a fresh chat with the items staged and the draft unsent', async () => {
+    askCmdrState.conversationId = 5
+    askCmdrState.attachments = [{ path: '/old', kind: 'file' }]
+    listMock.mockResolvedValue([conversationRow(9)])
+    const focusBefore = askCmdrState.composerFocusRequest
+    openNewChatWith([{ path: '/Users/test_user_1/a.dmg', kind: 'file' }], 'Tell me more about this.')
+    await vi.waitFor(() => {
+      expect(askCmdrState.open).toBe(true)
+    })
+    expect(askCmdrState.conversationId).toBeNull()
+    expect(askCmdrState.attachments).toEqual([{ path: '/Users/test_user_1/a.dmg', kind: 'file' }])
+    expect(askCmdrState.composerDraft).toBe('Tell me more about this.')
+    expect(askCmdrState.composerFocusRequest).toBe(focusBefore + 1)
+    // Nothing is sent, and the last thread isn't loaded over the new chat.
+    expect(askCmdrState.messages).toHaveLength(0)
+    expect(listMock).not.toHaveBeenCalled()
+    askCmdrState.composerDraft = null
   })
 
   it('names the New chat shortcut for its tooltip, in the platform display form', () => {

@@ -5,6 +5,8 @@
 export type MessageKey =
   | 'aboutThis.action.appFolder'
   | 'aboutThis.action.appFolderUnnamed'
+  | 'aboutThis.action.continueInAskCmdr'
+  | 'aboutThis.action.continueInAskCmdrTooltip'
   | 'aboutThis.action.delete'
   | 'aboutThis.action.downloadPage'
   | 'aboutThis.action.downloadPageTooltip'
@@ -39,6 +41,7 @@ export type MessageKey =
   | 'aboutThis.contents.notLoaded'
   | 'aboutThis.contents.summary'
   | 'aboutThis.contents.unchanged'
+  | 'aboutThis.continueInAskCmdr.draft'
   | 'aboutThis.dialog.close'
   | 'aboutThis.dialog.lookingUp'
   | 'aboutThis.dialog.title'

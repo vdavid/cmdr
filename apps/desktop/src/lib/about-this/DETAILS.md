@@ -129,7 +129,13 @@ buttons, the rest in a house `Menu` under "More". Which actions, their order, an
   download page is `openExternalUrl` with the address Rust re-parsed; the owning app and the app's data folder are a
   `navigate()` (resolved to their volume first: an app is on the boot disk); Move to trash and Delete are
   `openDeleteDialog({ cursorPath })`, which reads the cursor row alone (❌ never the selection) and opens nothing when
-  that row isn't the item any more.
+  that row isn't the item any more. Continue in Ask Cmdr is `openNewChatWith([{ path, kind }], draft)`: a new chat with
+  the item attached and the FIXED draft "Tell me more about this.", unsent (`../ask-cmdr/DETAILS.md` § Attachments by
+  reference). ❌ The draft never quotes a fact or the AI take; the agent reads the facts through `about_item`.
+- **Continue in Ask Cmdr shows only while Ask Cmdr is on** (plan D5): the host reads `askCmdr.enabled` fresh per card
+  (`settings::load_ask_cmdr_switch`, beside the verdict's gate) into `ActionCaps::ask_cmdr`, and Rust places it after
+  the facts' own next steps, before removal. It doesn't depend on the AI take: Local, AI off, and a refused take give
+  the same footer.
 - **Keyboard**: Tab from the body reaches each action, then "More", then Close. ❌ No action takes focus on open, and
   removal is never the first button (Rust). Single-key accelerators are a review item, not built.
 - **Decision: the 40 rem default width** fits three labels, "More", and Close on one line. **Decision: the labels are
