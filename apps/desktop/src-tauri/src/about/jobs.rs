@@ -17,6 +17,7 @@ use cmdr_about::text::ItemText;
 
 use cmdr_about::owner::OwnerQuestion;
 
+use super::digest::{app_data_fact, folder_digest_fact};
 use super::git::git_fact;
 use super::history::{History, cmdr_operation};
 use super::index::{IndexPlace, importance_fact, recursive_size_fact};
@@ -40,10 +41,8 @@ fn now_secs() -> u64 {
         .map_or(0, |since| since.as_secs())
 }
 
-/// The rows this host gathers. The rest of the vocabulary (a folder's digest, an
-/// app's data in the Library) comes from the index too, and the plan leaves those
-/// rows out until their jobs exist.
-pub(crate) const GATHERED: [FactKind; 12] = [
+/// The rows this host gathers: every kind in the vocabulary.
+pub(crate) const GATHERED: [FactKind; 14] = [
     FactKind::Identity,
     FactKind::RealType,
     FactKind::Bundle,
@@ -56,6 +55,8 @@ pub(crate) const GATHERED: [FactKind; 12] = [
     FactKind::Owner,
     FactKind::Git,
     FactKind::RecursiveSize,
+    FactKind::FolderDigest,
+    FactKind::AppData,
 ];
 
 /// Where a local card's stores and lookups come from, decided before the plan. A
@@ -65,8 +66,12 @@ pub(crate) const GATHERED: [FactKind; 12] = [
 pub(crate) struct Sources {
     /// Cmdr's own operation log. `None`: no history row.
     pub(crate) history: Option<History>,
-    /// Where the item sits in the drive index. `None`: no size or importance row.
+    /// Where the item sits in the drive index. `None`: no size, importance,
+    /// digest, or app-data row.
     pub(crate) index: Option<IndexPlace>,
+    /// The person's home folder, whose Library an app's data is looked for in.
+    /// `None` (a sandboxed test runner): no app-data row.
+    pub(crate) home: Option<String>,
     /// What the item's path says about its owner.
     pub(crate) owner: OwnerQuestion,
     /// Where the owner row's lookups come from.
@@ -81,6 +86,7 @@ impl Sources {
         Self {
             history: None,
             index: None,
+            home: None,
             owner: OwnerQuestion::Nothing,
             apps: AppSource::of_the_os(),
         }
@@ -174,7 +180,31 @@ fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources) -> Option
                 AboutFact::Importance(importance_fact(&place, now_secs()))
             })
         }
-        FactKind::Identity | FactKind::FolderDigest | FactKind::AppData => return None,
+        FactKind::FolderDigest => {
+            let place = sources.index.clone()?;
+            Box::new(move || {
+                note_activity("read the index's folder listing", "folderDigest");
+                AboutFact::FolderDigest(folder_digest_fact(&place, now_secs()))
+            })
+        }
+        FactKind::AppData => {
+            let home = sources.home.clone()?;
+            Box::new(move || {
+                note_activity("read the index's Library listings", "appData");
+                // The app's own id, from its `Info.plist`: the bundle row reads the
+                // same small file, and the two jobs don't wait on each other.
+                let bundle_id = bundle_of(Path::new(&path), target)
+                    .known()
+                    .and_then(|bundle| bundle.bundle_id.clone());
+                let index_id = crate::index_host::index().volume_id_for_path(&home);
+                AboutFact::AppData(app_data_fact(
+                    bundle_id.as_ref().map(ItemText::as_str),
+                    &home,
+                    &index_id,
+                ))
+            })
+        }
+        FactKind::Identity => return None,
     };
     Some(job)
 }

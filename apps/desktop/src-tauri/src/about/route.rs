@@ -89,7 +89,10 @@ pub(crate) async fn gather_for(request: &AboutRequest) -> Result<Gathered, About
                     data_dir: crate::config::standalone_app_data_dir(),
                 }),
                 // No home folder (a sandboxed test runner) names no Library places.
-                owner: home.map_or(OwnerQuestion::Nothing, |home| OwnerQuestion::of(&path, &home)),
+                owner: home
+                    .as_deref()
+                    .map_or(OwnerQuestion::Nothing, |home| OwnerQuestion::of(&path, home)),
+                home,
                 apps: AppSource::of_the_os(),
             };
             Ok(local_gathered(&path, probed, volume_name, platform::os_caps(), sources))
@@ -166,7 +169,8 @@ pub(crate) fn local_gathered(
         GATHERED.contains(&kind)
             && match kind {
                 FactKind::CmdrOperation => sources.history.is_some(),
-                FactKind::RecursiveSize => sources.index.is_some(),
+                FactKind::RecursiveSize | FactKind::FolderDigest => sources.index.is_some(),
+                FactKind::AppData => sources.index.is_some() && sources.home.is_some(),
                 FactKind::Importance => sources.index.as_ref().is_some_and(IndexPlace::scores),
                 _ => true,
             }

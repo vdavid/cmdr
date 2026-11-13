@@ -258,21 +258,17 @@ fn removing_an_app_says_what_it_leaves_in_the_library_or_that_cmdr_cant_tell() {
         }]
     );
 
-    let data = AppData {
-        folders: vec![LibraryFolder {
+    let data = AppData::of(
+        vec![LibraryFolder {
             name: text("com.example.tool"),
             path: "/Users/jane/Library/Application Support/com.example.tool".to_owned(),
             place: OwnerPlace::ApplicationSupport,
             size: Fact::Known(total(2_300_000_000, SizeCoverage::Exact)),
         }],
-    };
-    land(&mut app, AboutFact::AppData(Fact::Known(data.clone())));
-    assert_eq!(
-        all(&app),
-        [R::RemovesApp {
-            data_left: Fact::Known(data)
-        }]
+        Vec::new(),
     );
+    land(&mut app, AboutFact::AppData(data.clone()));
+    assert_eq!(all(&app), [R::RemovesApp { data_left: data }]);
 
     land(&mut app, AboutFact::AppData(Fact::unknown(UnknownWhy::NotIndexed)));
     assert_eq!(

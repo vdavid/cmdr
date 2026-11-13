@@ -67,10 +67,9 @@ David's consent. So the card's first commit, in one go:
 
 ## Jobs and budgets
 
-`jobs::GATHERED` is what this host answers: identity (from the probe), real type, bundle, signature, download, Cmdr's
-own history, last opened, default app, importance, the owner, git, and a folder's whole size. A folder's digest and an
-app's Library data are trimmed from the plan until their jobs exist, and so is any row whose store isn't there
-(`jobs::Sources`: no operation log, no index place). Each row has `ROW_BUDGET` (1 s)
+`jobs::GATHERED` is every kind: identity (from the probe), real type, bundle, signature, download, Cmdr's own history,
+last opened, default app, importance, the owner, git, a folder's whole size, its digest, and an app's Library data. A
+row whose store isn't there is trimmed from the plan (`jobs::Sources`: no operation log, no index place, no home). Each row has `ROW_BUDGET` (1 s)
 from the start of the gathering; a row still out then lands `Unknown(TimedOut)` and its job's late answer is dropped.
 The `about_facts` pool (4 target, 12 max workers) bounds how many threads a dead mount can strand.
 
@@ -183,6 +182,24 @@ test's fixed answers); the rules are in `crates/cmdr-about/DETAILS.md` § The ow
   `location::store_path::to_store_path`. A score's band is `ImportanceBand::of_score`, `stale` when it predates the
   volume's latest recompute, the top three positive signals as tokens, and the visit count from the stored signals; a
   floored folder is `Floored` with its floor reason; unscored is `Unknown(NotIndexed)`.
+
+## A folder's digest and an app's data
+
+`digest.rs`, the index and the search arena only. ❌ No walk, `stat`, or listing of the disk: a 2 TB folder answers as
+fast as an empty one, and a container is never opened. Rules in `crates/cmdr-about/DETAILS.md` § A folder's digest.
+
+- **Children**: `Index::list_children` (`None` for a folder nothing listed is `NotIndexed`: rows under it are a lower
+  bound, not its contents), then one `dir_stats_batch` for the folder children, each size's flags verbatim and
+  `updating` from the walked roots. The class asks the parent's listing for project files, once, only for a name that
+  needs one.
+- **Largest files and the untouched share**: a size-sorted search of the folder's files through
+  `search::run_if_loaded`, which answers ONLY when the volume's arena is already in memory (a load is seconds and
+  hundreds of MB). No arena, or the folder not in it, is `NotIndexed`. System-folder excludes are off, or a
+  `node_modules` card would hide its own files. The share sums the largest 1,000 untouched files and says "at least"
+  past them or when the person's excludes hid some.
+- **An app's data**: the bundle id from the app's own `Info.plist`, then each `APP_DATA_PLACES` folder of the home's
+  index (`Index::volume_id_for_path(home)`), filtered by `app_data_place`, sized by one `dir_stats_batch`. A place the
+  index hasn't listed is named in `not_looked_in`.
 
 ## Tests
 

@@ -7123,10 +7123,22 @@ export type AmendResult = {
  */
 export type AppData = {
   /**
-   *  Each folder found, biggest first. Empty is a real answer: the index holds
-   *  none.
+   *  Each folder found, biggest first. Empty is a real answer for the places
+   *  the index answered: it holds none there.
    */
   folders: LibraryFolder[]
+  /**
+   *  The places the index couldn't answer for (it hasn't listed them), so a
+   *  folder there may be missing. Empty: every place was looked in.
+   */
+  notLookedIn: OwnerPlace[]
+  // The folders' bytes together.
+  totalBytes: number
+  /**
+   *  Whether the real total may be bigger: a place went unlooked, or a
+   *  folder's size is a lower bound or unknown.
+   */
+  totalIsLowerBound: boolean
 }
 
 /**
@@ -7926,6 +7938,11 @@ export type ByteShare = {
   bytes: number
   // The bytes it's a share of.
   of: number
+  /**
+   *  Whether the share may be bigger: Cmdr counted the largest of the files in
+   *  it, not all of them. Said in the same words as the share ("at least").
+   */
+  atLeast: boolean
 }
 
 /**
@@ -10716,7 +10733,7 @@ export type FocusFileViewer = {
   path: string | null
 }
 
-// What kind of folder its name and place make it.
+// What kind of folder its name and its neighbors make it.
 export type FolderClass =
   // Nothing special.
   | 'plain'
@@ -21044,6 +21061,12 @@ export type StapledTicket =
    *  where Cmdr doesn't read. ❌ Never worded as either answer.
    */
   | 'notRead'
+  /**
+   *  No ticket belongs on this kind of signature: Apple's own software and the
+   *  Mac App Store's aren't notarized, and unsigned or ad hoc code can't be.
+   *  Nothing to say ([`Signature::read`] decides it).
+   */
+  | 'doesNotApply'
 
 // Who started a Cmdr operation.
 export type StartedBy =

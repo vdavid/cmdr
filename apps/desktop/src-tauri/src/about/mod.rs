@@ -5,6 +5,7 @@
 //! signature) and streams the card over a channel. Docs: `CLAUDE.md`, `DETAILS.md`.
 
 pub(crate) mod commands;
+mod digest;
 mod event;
 mod git;
 mod history;

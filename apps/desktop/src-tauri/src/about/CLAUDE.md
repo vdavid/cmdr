@@ -10,7 +10,8 @@ the vocabulary and every rule; this module reads raw inputs and hands them there
   `session.rs` (plan, grace, late answers, budgets), `pool.rs` (`about_facts`).
 - `platform/`: per-OS seam for xattrs, Spotlight, default app, code signature, `stat` extras.
 - `history.rs`: Cmdr's own history, one read of the operation log. `git.rs`: the repo, branch, and status.
-  `index.rs`: a folder's size and importance, from the index. `owner.rs`: the owner row's lookups.
+  `index.rs`: a folder's size and importance, from the index. `digest.rs`: What's inside and an app's Library data.
+  `owner.rs`: the owner row's lookups.
 
 ## Must-knows
 
@@ -29,6 +30,8 @@ the vocabulary and every rule; this module reads raw inputs and hands them there
 - ❗ **xattrs are read capped** (`read_capped`: size first, refuse past 64 KB). An online-only file plans no byte read.
 - ❌ **Git's status list holds CHANGED entries only**: absent is `NotInStatus`, ❌ never "clean". The walk has its own
   budget inside the row (`STATUS_BUDGET`); the root and branch stand without it.
+- ❌ **What's inside and an app's data read the index and an ALREADY loaded search arena only**
+  (`search::run_if_loaded`): no walk, no disk listing, never an arena load from a card. Not there is `NotIndexed`.
 - ❌ **The owner row never opens a container and never counts another volume's app as installed**: the app scan is
   cached (rebuilt on `open_with`'s app-change generation), ❌ never per card.
 - ❗ **A signer is named from code requirements, never a certificate name**; the executable check has its own budget

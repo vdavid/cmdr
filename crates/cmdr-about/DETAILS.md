@@ -179,6 +179,30 @@ Resolving an id, in order:
 calls a helper app under `/Library/Application Support` "not installed". The host keeps the scan to the app folders and
 filters `app_with_id` to this disk outside the Trash (`apps/desktop/src-tauri/src/about/DETAILS.md` § The owner).
 
+## A folder's digest and an app's Library data
+
+`digest.rs`. The host hands over index rows; every rule about them is here, and nothing here reads anything.
+
+- **`FolderDigest::of`**: the `SHOWN_CHILDREN` (8) biggest direct children, a known size before an unknown one, ties by
+  name so two reads never swap rows; the same cut for the largest files; the kind mix over every child, by name alone
+  (`ChildKind::of_name`, no byte read across thousands of children), most common first.
+- **`FolderClass::of(name, beside)`**: a telling name (`node_modules`, `.git`, `__pycache__`, `.next`, `DerivedData`)
+  classes a folder wherever it sits. **Decision: a name a person also gives their own folders (`build`, `target`,
+  `dist`, `out`, `venv`, `Pods`) counts only beside its tool's project file** (`Cargo.toml` beside `target`,
+  `package.json` beside `dist`). Why: `RebuildableOutput` says "a build tool makes it again", and said about someone's
+  own `build` folder of drafts it invites deleting their work. `beside` is asked only for those names.
+- **`ByteShare::unchanged`**: the share of the folder's bytes in files untouched for `UNCHANGED_FOR_SECS` (a year). Over
+  a lower-bound total it's `Unknown(NotIndexed)`: the untouched bytes may sit in the part nobody listed. It's `at_least`
+  when the host counted only the largest untouched files, and it never exceeds the total.
+- **`app_data_place`**: the owner rule run the other way. A Library child counts as the app's only when its NAME names
+  the app's id or one of its own (`<id>.<extension>`), in `APP_DATA_PLACES` (Application Support, Containers, Group
+  Containers, Caches, HTTPStorages, Saved Application State, Logs). ❌ Never a folder named by name alone
+  (`Application Support/Slack`): what removing the app leaves is counted, not guessed. A vendor's shared group
+  (`<TEAM>.com.vendor`) isn't counted for one of its apps.
+- **`AppData::of`**: biggest first, the total, and `total_is_lower_bound` when a place went unlooked or a folder's size
+  is partial or unknown (an unknown size never counts as zero). No place looked in at all is `Unknown(NotIndexed)`, ❌
+  never "no data".
+
 ## Headline
 
 `headline(&AboutCard)` returns `what` (by target; for a file, the sniffed family when the bytes disagree with the name,
@@ -219,7 +243,7 @@ and two workflow filters to stay honest.
 
 ## The public surface is capped
 
-11 root promises (one module per concern), 11 public modules, 120 items in them
+11 root promises (one module per concern), 11 public modules, 128 items in them
 (`scripts/check/checks/index-crate-isolation-ceilings.go`). The items are the wire types the card's events and the
 model's projection carry, and the handful of functions a host calls: `plan`, `AboutCard`, `download_fact`,
 `xdg_download_fact`, `usage_fact`, `redact_for_egress`, `real_type`, `consequences`, `headline`, `start_with`,
@@ -256,3 +280,16 @@ Raised 119 → 120:
 - **`Signature::read`**: which signatures a notarization ticket is news on (Developer ID and unrecognized ones: Apple's
   own software and the Mac App Store's aren't notarized, unsigned or ad hoc code can't be) is a rule a person could
   argue, so the host builds every signature through it and the card words `DoesNotApply` as nothing.
+
+Raised 120 → 128 by a folder's digest and an app's Library data, each a rule a person could argue that would otherwise
+live in the host:
+
+- **`FolderDigest::of`**: which children lead (a known size before an unknown one, then by name) and how many show.
+- **`FolderClass::of`**: which names make a folder dependencies, build output, a cache, or version control, and which
+  count only beside their tool's project file.
+- **`ByteShare::unchanged`**: when an untouched share is honest (never over a lower-bound total) and when it's "at
+  least".
+- **`AppData::of`**: when an app's data is "at least" and when Cmdr can't tell at all.
+- **`app_data_place` and `APP_DATA_PLACES`**: which Library folders are an app's, the owner rule run the other way.
+- **`SHOWN_CHILDREN` and `UNCHANGED_FOR_SECS`**: how many the digest names and what "untouched" means, so the host asks
+  the search core for exactly that. `ChildKind::of_name` stays inside the crate: only the digest reads it.

@@ -158,7 +158,7 @@ fn kind_of(matcher: MatcherType, format: &str) -> SniffedKind {
 }
 
 /// The family an extension claims, or `None` when Cmdr has no claim for it.
-fn claimed_kind(extension: &str) -> Option<SniffedKind> {
+pub(crate) fn claimed_kind(extension: &str) -> Option<SniffedKind> {
     let kind = match extension {
         "dmg" => SniffedKind::DiskImage,
         "pkg" | "mpkg" => SniffedKind::InstallerPackage,

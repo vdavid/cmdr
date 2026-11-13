@@ -402,7 +402,7 @@ fn is_reverse_dns(text: &str) -> bool {
 
 /// Whether `id` is `app_id` or one of its own (`<app_id>.<more>`: an extension, a
 /// helper), ignoring ASCII case as LaunchServices does.
-fn belongs_to(id: &str, app_id: &str) -> bool {
+pub(crate) fn belongs_to(id: &str, app_id: &str) -> bool {
     let Some(head) = id.get(..app_id.len()) else {
         return false;
     };
