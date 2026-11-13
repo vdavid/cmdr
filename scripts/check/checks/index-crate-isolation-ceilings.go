@@ -760,11 +760,16 @@ var surfaceGuardedCrates = []struct {
 		//
 		// 139 → 140 (2026-11-13): `RecursiveSize::into_fact`, which reads a lower
 		// bound with nothing counted as not indexed, argued in that section.
+		//
+		// 12 → 13 modules and root promises, 140 → 146 items (2026-11-13, the
+		// egress line): the `model` module (`ModelCard`, `AboutCard::for_model`,
+		// `ProtectedReason`, `Speak`, `SpokenSize`, `AboutDisclosure`), the one
+		// projection of a card for a model, argued in that section.
 		Name: "cmdr-about",
 		Ceilings: surfaceCeilings{
-			RootPromises:   12,
-			PublicModules:  12,
-			SubsystemItems: 140,
+			RootPromises:   13,
+			PublicModules:  13,
+			SubsystemItems: 146,
 		},
 	},
 }

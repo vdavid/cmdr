@@ -12,7 +12,7 @@ the vocabulary and every rule; this module reads raw inputs and hands them there
 - `platform/`: per-OS seam for xattrs, Spotlight, default app, code signature, `stat` extras.
 - `history.rs`: Cmdr's own history, one read of the operation log. `git.rs`: the repo, branch, and status.
   `index.rs`: a folder's size and importance, from the index. `digest.rs`: What's inside and an app's Library data.
-  `owner.rs`: the owner row's lookups.
+  `owner.rs`: the owner row's lookups. `model.rs`: what a model reads.
 
 ## Must-knows
 
@@ -34,6 +34,7 @@ the vocabulary and every rule; this module reads raw inputs and hands them there
 - ❌ **Cmdr's history credits only the node the log recorded landing** (`landed_at` matches inode + birth time): a
   file saved over since is `NodeChangedSince`, ❌ never the operation. It reads the database, never the disk.
 - ❌ **Log a fact's kind and outcome, never its value** (URL, sender, path): logs ride error reports.
+- ❌ **A card reaches a model via `model::for_model` alone.**
 - ❗ **xattrs are read capped** (`read_capped`: size first, refuse past 64 KB). An online-only file plans no byte read.
 - ❌ **Git's status list holds CHANGED entries only**: absent is `NotInStatus`, ❌ never "clean". The walk has its own
   budget inside the row (`STATUS_BUDGET`); the root and branch stand without it.

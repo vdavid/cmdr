@@ -288,8 +288,8 @@ shipping a new binary. Mechanism, the rotation caveat, and the test that guards 
 
 AI features deliberately send user data OFF the Mac, to the cloud AI service the user configured, with their own API
 key: folder name suggestions (the folder path and up to 100 names), search in plain words (the typed query), select by
-description (the prompt and up to 240 names), MCP `ai_search` (direct mode only, so dev and test builds), and Ask Cmdr
-(detailed below). Local AI sends nothing.
+description (the prompt and up to 240 names), MCP `ai_search` (direct mode only, so dev and test builds), "Tell me about
+this" (its card's facts, below), and Ask Cmdr (detailed below). Local AI sends nothing.
 
 - **One consent, enforced in the backend, fail-closed.** Nothing reaches a cloud service until the user turns on "Allow
   cloud AI". Every LLM backend comes from `ai::manager::resolve_backend(app)`, which checks
@@ -302,6 +302,21 @@ description (the prompt and up to 240 names), MCP `ai_search` (direct mode only,
 - **An organization's policy comes before consent.** `resolve_backend` asks the managed policy first (AI off, on-device
   only, or a cloud host list), the LLM client re-asks before every request and at every redirect hop, and no consent the
   user gives can override it. Canonical: `apps/desktop/src-tauri/src/managed_policy/DETAILS.md`.
+- **"Tell me about this" sends one projection of its card, and nothing else.** The card's AI take and Ask Cmdr's lookup
+  of the same facts both go through `AboutCard::for_model` (`crates/cmdr-about/src/model.rs`), reached from the app only
+  through `about::model::for_model`, which answers the sensitive gate for the path. What it carries: the item's name,
+  path, sizes, dates, other names, and a link's target; what its first bytes say it is; an app's id, name, and version
+  and its signer and team id; where it was recorded as downloaded from as the site's HOST only (a link's path and query
+  hold document ids, share tokens, and signed keys), when, and by which app, and for a Mail attachment, an AirDrop, a
+  `data:` or `file:` address only its kind; when it was last opened and how often, and the default app; the Cmdr copy or
+  move that put it there with its source path and drive or server name; its git repo, branch, and status; the owning app
+  or installer and how Cmdr knows; a folder's importance, visits, biggest children, largest files (names and sizes,
+  never their paths), and unchanged share; an app's Library folders by name and size; and the removal row derived from
+  all that. Every string the item wrote passed `model_text`. A path whose contents the gate protects leaves its name,
+  path, size, dates, and owner, with every other row `protected`. The card's AI take may also send a short look inside a
+  file through `inspect_file`'s core and its gate, minus a photo's location. Each kind has its own line in the
+  disclosure, and a test maps every field the projection can emit to one: canonical `crates/cmdr-about/DETAILS.md` § The
+  model's projection.
 
 Ask Cmdr is the widest of these, so the rest of this section is its detail. Ask Cmdr also has its own on/off switch
 (`askCmdr.enabled`); that's a feature switch, not consent.

@@ -16,16 +16,17 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 4052 / 5785 keys have a screenshot (70%):** 2204 direct (38%) and 1848 representative (32%). 1539 remain
-uncoupled, and 194 are native surfaces a webview capture cannot reach.
+**Total: 4068 / 6049 keys have a screenshot (67%):** 2204 direct (36%) and 1864 representative (31%). 1786 remain
+uncoupled, and 195 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
 | --------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
+| aboutThis       |      0 |              0 |       245 |      0 |   245 |    0% |
 | adb             |      3 |              0 |        19 |      0 |    22 |   14% |
-| ai              |      1 |            142 |         0 |      0 |   143 |  100% |
+| ai              |      1 |            158 |         0 |      0 |   159 |  100% |
 | askCmdr         |    192 |            298 |        47 |      0 |   537 |   91% |
 | commandPalette  |      3 |              2 |         2 |      0 |     7 |   71% |
-| commands        |    246 |              5 |        84 |      0 |   335 |   75% |
+| commands        |    246 |              5 |        86 |      0 |   337 |   74% |
 | common          |      8 |              1 |        10 |      0 |    19 |   47% |
 | crashReporter   |     12 |             11 |         0 |      0 |    23 |  100% |
 | downloads       |     10 |              5 |        21 |      0 |    36 |   42% |
@@ -39,7 +40,7 @@ uncoupled, and 194 are native surfaces a webview capture cannot reach.
 | licensing       |     49 |             35 |        25 |      0 |   109 |   77% |
 | lowDiskSpace    |      0 |              0 |         5 |      0 |     5 |    0% |
 | main            |      7 |              0 |        57 |      2 |    66 |   11% |
-| menu            |      5 |              0 |         0 |    192 |   197 |    3% |
+| menu            |      5 |              0 |         0 |    193 |   198 |    3% |
 | mtp             |     18 |              3 |         0 |      0 |    21 |  100% |
 | multiRename     |     90 |              0 |       141 |      0 |   231 |   39% |
 | notifications   |      0 |              0 |         1 |      0 |     1 |    0% |

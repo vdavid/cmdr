@@ -829,3 +829,49 @@ button, and on a typical download it's the one behind "More".
   - Where: Button in the footer of the card that opens a short menu with the rest of its actions.
 - `aboutThis.action.moreMenu`: More actions
   - Where: Screen-reader name of the menu the "More" button opens.
+
+### What cloud AI gets (the consent disclosure, `ai.json`)
+
+In the "What Cmdr sends" fold under Settings > AI > Provider and in onboarding's AI step. Changing any of these is a
+`CLOUD_AI_CONSENT_VERSION` bump, which makes every cloud user allow cloud AI again.
+
+- `ai.cloudConsent.aboutThis.title`: <b>Tell me about this</b>, each time you open its card on a file or folder, with no
+  further question:
+  - Where: Heads the nested list below, beside "New folder name suggestions" and above Ask Cmdr's list.
+- `ai.cloudConsent.aboutThis.item.identity`: The item’s name, path, size, and dates, how many other names point to it,
+  and where a link points
+- `ai.cloudConsent.aboutThis.item.realType`: What kind of file its first bytes say it is
+- `ai.cloudConsent.aboutThis.item.download`: The website it was recorded as downloaded from (the site’s name only, never
+  the full link), when, and the app that downloaded it. For a Mail attachment or an AirDrop, only that it was one, never
+  who sent it
+- `ai.cloudConsent.aboutThis.item.appAndSigner`: For an app or a program, its name, id, and version, and the name and
+  team id of whoever signed it
+- `ai.cloudConsent.aboutThis.item.use`: When you last opened it, how many times, and which app opens it
+- `ai.cloudConsent.aboutThis.item.cmdrHistory`: Where Cmdr copied, moved, or extracted it from, including that path and
+  the drive or server name
+- `ai.cloudConsent.aboutThis.item.git`: Its git repository’s folder, branch, and status, or for a file from git’s
+  history, the commit, branch, or tag it’s from
+- `ai.cloudConsent.aboutThis.item.owner`: The app or installer it belongs to, and how Cmdr knows
+- `ai.cloudConsent.aboutThis.item.importance`: For a folder, how much it matters by Cmdr’s ranking, and how often you
+  open it in Cmdr
+- `ai.cloudConsent.aboutThis.item.inside`: For a folder, the names and sizes of the biggest things in it and of its
+  largest files, what kinds of files it holds, and how much of it hasn’t changed in a year
+- `ai.cloudConsent.aboutThis.item.appData`: For an app, the names and sizes of the folders it keeps in your Library (off
+  macOS: "…the data folders it keeps")
+- `ai.cloudConsent.aboutThis.item.removal`: What removing it would mean, as Cmdr works it out from the facts above
+- `ai.cloudConsent.aboutThis.item.contentsStayHome`: For an item whose contents stay home (listed under Ask Cmdr below),
+  only its name, path, size, dates, and the app it belongs to
+- `ai.cloudConsent.aboutThis.lookInside`: A short look inside a file: some text, a PDF’s first page and title, the list
+  of files in an archive, or a photo’s camera details without its location
+  - Where: The last line of the list: only the card's AI take reads inside a file.
+- `ai.cloudConsent.askCmdr.item.aboutThis`: When Cmdr looks up what a file or folder is, the same facts Tell me about
+  this sends, without the look inside
+  - Where: In Ask Cmdr's list, after the attachments line: the agent's lookup tool.
+
+Open questions on these:
+
+1. **A list, not the plan's one long sentence**: one line per kind, so a test can tie every field Cmdr sends to its
+   line. Fine, or too long a list for a fold people should read?
+2. **Nothing tells a cloud user why "Allow cloud AI" turned itself off** after this bump: the switch just reads off,
+   with the fold open. A one-line "What Cmdr sends changed since you allowed it on {date}" above the switch (the status
+   already knows the old version and date)? Not built.

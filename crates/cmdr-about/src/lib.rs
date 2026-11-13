@@ -14,8 +14,9 @@
 //! Where an item came from, what it really is, who owns it, how it's used, and
 //! what removing it costs. This crate owns the vocabulary ([`fact`], [`payload`],
 //! [`owner`], [`digest`]), the pure rules ([`provenance`], [`sniff`], [`removal`],
-//! [`headline`], [`card::plan`]), and the engine that gathers answers off the
-//! caller's thread ([`gather`]). The host only reads raw inputs (an xattr's
+//! [`headline`], [`card::plan`]), the one projection of a card for a model
+//! ([`model`]), and the engine that gathers answers off the caller's thread
+//! ([`gather`]). The host only reads raw inputs (an xattr's
 //! bytes, a file's first kilobytes, a database row) and hands them here.
 //!
 //! No fact depends on a model, and nothing here reaches for an app: no `tauri`,
@@ -38,6 +39,7 @@ pub mod fact;
 pub mod fuzzing;
 pub mod gather;
 pub mod headline;
+pub mod model;
 pub mod owner;
 pub mod payload;
 pub mod provenance;

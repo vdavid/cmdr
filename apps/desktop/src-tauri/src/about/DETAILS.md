@@ -281,6 +281,16 @@ What the card answers there, verified in the Linux E2E container (`about-this.sp
 - **The owner's Linux arms**: `~/.config`, `~/.local/share`, `~/.cache` children named after a desktop entry read as
   probably that app's; `~/.var/app/<id>` and `~/snap/<name>` by id.
 
+## What a model gets
+
+`model.rs::for_model(card, path)` is the app's only way to a card's model projection (`crates/cmdr-about/DETAILS.md` §
+The model's projection holds every rule): it answers `tools::sensitive::classify` for the path and passes the app's
+own size and date words (`human_size`, `format_local_date`). The agent tool and the verdict call it; ❌ neither calls
+`AboutCard::for_model` itself, so neither can skip the gate. `classify` reads the path as given: a path reached
+through a symlink into a protected folder isn't caught there (the contents gate's realpath check, `path_gate`, blocks
+and so needs a deadline). Its tests: a credentials path leaves name-level facts, and numbers read as other tool results
+word them.
+
 ## Tests
 
 `through_tests.rs` runs a card reached through its volume end to end: the `Way` table, a scripted share whose every

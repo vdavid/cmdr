@@ -24,7 +24,9 @@ render the switch and say why a feature is quiet.
   lists what every feature sends. The fold follows the switch: open while off, because people read it while deciding;
   folded when the switch turns on, so the locked setup below it comes into view (onboarding's Cloud column is where it
   was pushed off-screen); the user can reopen it any time (`AiCloudConsentToggle.test.ts`). The copy is versioned: a
-  material change to `ai.cloudConsent.*` needs a `CLOUD_AI_CONSENT_VERSION` bump in the backend.
+  material change to `ai.cloudConsent.*` needs a `CLOUD_AI_CONSENT_VERSION` bump in the backend. "Tell me about this"
+  renders its lines from `about-this-disclosure.ts`, a `Record` over the backend's `AboutDisclosure` token, so a new
+  kind of fact its projection sends fails the typecheck until it has a line.
 - **Only the user's click grants consent.** `acceptCloudConsent` may be imported by `AiCloudConsentToggle.svelte` alone
   (the one switch Settings and onboarding share); `cloud-consent-call-sites.test.ts` scans `src/` and fails on any other
   importer. MCP can't reach the record at all (it lives in `main.db`, behind commands no MCP tool calls).

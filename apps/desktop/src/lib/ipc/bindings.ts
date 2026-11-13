@@ -6493,7 +6493,7 @@ export type AboutAction =
       type: 'openDownloadPage'
       /**
        *  The site's host, lowercased, punycode when not plain ASCII: what the
-       *  button shows before the press.
+       *  button's tooltip names before the press.
        */
       host: string
       /**
@@ -6531,6 +6531,53 @@ export type AboutAction =
    *  dialog.
    */
   | { type: 'delete' }
+
+/**
+ *  One kind of thing the projection carries, as the cloud AI disclosure names
+ *  it. Each has its own line in the consent copy, keyed by this token.
+ */
+export type AboutDisclosure =
+  // Its name, path, kind, sizes, and dates, other names, and a link's target.
+  | 'identity'
+  // What its first bytes say it is.
+  | 'realType'
+  /**
+   *  The site it was recorded as downloaded from (host only), when, and the
+   *  downloading app.
+   */
+  | 'download'
+  // An app's name, id, and version, and who signed it.
+  | 'appAndSigner'
+  // When it was last opened, how often, and which app opens it.
+  | 'use'
+  /**
+   *  The Cmdr operation that put it here, with its source path and the drive
+   *  or server name.
+   */
+  | 'cmdrHistory'
+  /**
+   *  The git repo, branch, and status, or the commit or branch a snapshot is
+   *  from.
+   */
+  | 'git'
+  // The app or installer it belongs to, and how Cmdr knows.
+  | 'owner'
+  /**
+   *  How much a folder matters by Cmdr's ranking, and how often Cmdr visited
+   *  it.
+   */
+  | 'importance'
+  /**
+   *  A folder's biggest children and largest files by name and size, its mix
+   *  of kinds, and how much sat unchanged for a year.
+   */
+  | 'inside'
+  // An app's folders in the Library, by name and size.
+  | 'appData'
+  // What removing it would mean, worked out from the facts above.
+  | 'removal'
+  // That its contents stay home, and so only name-level facts leave.
+  | 'contentsStayHome'
 
 /**
  *  One message on a card's channel. Every one carries its request's id, so the

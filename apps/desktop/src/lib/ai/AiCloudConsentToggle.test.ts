@@ -30,6 +30,7 @@ vi.mock('./cloud-consent.svelte', () => ({
 }))
 
 import AiCloudConsentToggle from './AiCloudConsentToggle.svelte'
+import { ABOUT_THIS_DISCLOSURE } from './about-this-disclosure'
 
 async function settle(): Promise<void> {
   for (let i = 0; i < 5; i++) await tick()
@@ -112,6 +113,34 @@ describe("the switch under the organization's policy", () => {
     const note = target.querySelector('.consent-managed')
     expect(note?.textContent).toBe('Your organization allows only on-device AI.')
     expect(input?.getAttribute('aria-describedby')).toBe(note?.id)
+    target.remove()
+  })
+})
+
+describe('what "Tell me about this" sends', () => {
+  it('lists every kind the card leaves with, plus the look inside, in both surfaces', async () => {
+    for (const anchor of [true, false]) {
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      mount(AiCloudConsentToggle, { target, props: { anchor } })
+      await settle()
+      const section = target.querySelector('[data-test="cloud-consent-about-this"]')
+      expect(section?.querySelector('strong')?.textContent).toBe('Tell me about this')
+      const lines = Array.from(section?.querySelectorAll('ul > li') ?? [], (li) => li.textContent)
+      expect(lines).toHaveLength(Object.keys(ABOUT_THIS_DISCLOSURE).length + 1)
+      expect(lines).toContain(
+        'The website it was recorded as downloaded from (the site’s name only, never the full link), when, and the app that downloaded it. For a Mail attachment or an AirDrop, only that it was one, never who sent it',
+      )
+      expect(lines.at(-1)).toContain('without its location')
+      target.remove()
+    }
+  })
+
+  it('names the same facts under Ask Cmdr, without the look inside', async () => {
+    const { target } = await mountToggle()
+    expect(target.textContent).toContain(
+      'When Cmdr looks up what a file or folder is, the same facts Tell me about this sends, without the look inside',
+    )
     target.remove()
   })
 })

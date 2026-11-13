@@ -144,6 +144,96 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
+  "ai.cloudConsent.aboutThis.title": "<b>Tell me about this</b>, each time you open its card on a file or folder, with no further question:",
+  "@ai.cloudConsent.aboutThis.title": {
+    "description": "List item in the Allow cloud AI fold introducing the nested list of what the \"Tell me about this\" card sends when AI writes its short take (the ai.cloudConsent.aboutThis.* keys). \"Tell me about this\" is the command's name (commands.fileTellMeAbout.label): use the same words, and keep the <b></b> tags around it. It says WHEN: every time the card opens, nothing asks first. Ends with a colon.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.identity": "The item’s name, path, size, and dates, how many other names point to it, and where a link points",
+  "@ai.cloudConsent.aboutThis.item.identity": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. The item's own basics. \"Other names\" are hard links; \"where a link points\" is a symbolic link's target. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.realType": "What kind of file its first bytes say it is",
+  "@ai.cloudConsent.aboutThis.item.realType": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Cmdr reads the start of the file to tell its real format (a program named like a photo shows up). Only the kind leaves, never the bytes. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.download": "The website it was recorded as downloaded from (the site’s name only, never the full link), when, and the app that downloaded it. For a Mail attachment or an AirDrop, only that it was one, never who sent it",
+  "@ai.cloudConsent.aboutThis.item.download": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. What the system recorded about a download. Keep both promises: only the site's name (for example github.com), never the whole address; and for Mail or AirDrop, no sender. Mail and AirDrop are Apple product names. No period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.appAndSigner": "For an app or a program, its name, id, and version, and the name and team id of whoever signed it",
+  "@ai.cloudConsent.aboutThis.item.appAndSigner": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Facts an app bundle or program says about itself, and its code signature. \"Team id\" is Apple's developer team identifier; keep it as a plain term. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.use": "When you last opened it, how many times, and which app opens it",
+  "@ai.cloudConsent.aboutThis.item.use": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Usage history the system keeps (on a Mac, Spotlight's record), plus the default app. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Where Cmdr copied, moved, or extracted it from, including that path and the drive or server name",
+  "@ai.cloudConsent.aboutThis.item.cmdrHistory": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Cmdr's own record of the copy, move, or extract that put the item there: the source path and the name of the drive or server (for example a NAS's name). Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.git": "Its git repository’s folder, branch, and status, or for a file from git’s history, the commit, branch, or tag it’s from",
+  "@ai.cloudConsent.aboutThis.item.git": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. git is a program's name; keep it lowercase. \"Status\" is whether the file changed since the last commit. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.owner": "The app or installer it belongs to, and how Cmdr knows",
+  "@ai.cloudConsent.aboutThis.item.owner": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. The app or installer package Cmdr thinks owns the item, with how sure it is (from the folder's name, an installer's record, and so on). Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.importance": "For a folder, how much it matters by Cmdr’s ranking, and how often you open it in Cmdr",
+  "@ai.cloudConsent.aboutThis.item.importance": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Cmdr ranks folders by how much they seem to matter; this also sends how many times Cmdr opened the folder. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.inside": "For a folder, the names and sizes of the biggest things in it and of its largest files, what kinds of files it holds, and how much of it hasn’t changed in a year",
+  "@ai.cloudConsent.aboutThis.item.inside": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. What a folder holds, by name and size, never the files' contents. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {For an app, the names and sizes of the folders it keeps in your Library} other {For an app, the names and sizes of the data folders it keeps}}",
+  "@ai.cloudConsent.aboutThis.item.appData": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. The data an app keeps outside itself, which stays behind when the app is removed. On a Mac, \"Library\" is the user's Library folder; use the name macOS gives it in your language. Translate each branch of the select. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.removal": "What removing it would mean, as Cmdr works it out from the facts above",
+  "@ai.cloudConsent.aboutThis.item.removal": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Cmdr's own summary of what deleting the item would cost, derived from the other facts in this list. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.item.contentsStayHome": "For an item whose contents stay home (listed under Ask Cmdr below), only its name, path, size, dates, and the app it belongs to",
+  "@ai.cloudConsent.aboutThis.item.contentsStayHome": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. The promise for protected items (keys, browser data, mail, and the rest, listed in the Ask Cmdr part below): for those, nothing else in this list leaves. \"Ask Cmdr\" is the assistant's product name. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.aboutThis.lookInside": "A short look inside a file: some text, a PDF’s first page and title, the list of files in an archive, or a photo’s camera details without its location",
+  "@ai.cloudConsent.aboutThis.lookInside": {
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. Only the card's AI take reads inside a file, a small part of it. Keep \"without its location\": a photo's GPS position never leaves. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
   "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, when you chat or when Cmdr starts a conversation on its own:",
   "@ai.cloudConsent.askCmdr.title": {
     "description": "List item in the Allow cloud AI fold introducing the nested list of what the Ask Cmdr assistant sends (the ai.cloudConsent.askCmdr.item.* keys). \"Ask Cmdr\" is the assistant's product name and stays as it is; keep the <b></b> tags around it. Ends with a colon.",
@@ -183,6 +273,12 @@
   "ai.cloudConsent.askCmdr.item.attachments": "Any file or folder you attach to a question, by its name and path only",
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "description": "Now shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends: files or folders the user attaches to a question are sent by reference (name and path), never their contents. Sentence case, no period.",
+    "screenshot": "settings-ai-provider.png",
+    "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
+  },
+  "ai.cloudConsent.askCmdr.item.aboutThis": "When Cmdr looks up what a file or folder is, the same facts Tell me about this sends, without the look inside",
+  "@ai.cloudConsent.askCmdr.item.aboutThis": {
+    "description": "Shown under Settings > AI > Provider, in the Allow cloud AI fold, in the nested list of what the Ask Cmdr assistant sends. The assistant can look up the same facts as the \"Tell me about this\" card (the list above it, ai.cloudConsent.aboutThis.*), but never reads inside the file for it. \"Tell me about this\" is the command's name (commands.fileTellMeAbout.label): use the same words. Sentence case, no period.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },

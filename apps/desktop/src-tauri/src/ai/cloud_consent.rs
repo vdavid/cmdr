@@ -27,7 +27,11 @@ const LOG_TARGET: &str = "ai::cloud_consent";
 /// whenever the `ai.cloudConsent.*` copy changes materially**, so a stale acceptance no longer
 /// counts and users re-consent to the new wording. The copy lives in the frontend catalog; this
 /// integer is its machine-checkable version, recorded in `main.db`.
-pub const CLOUD_AI_CONSENT_VERSION: u32 = 2;
+///
+/// 3: "Tell me about this" (the card's AI take, and Ask Cmdr's lookup of the same facts), whose
+/// projection (`cmdr_about::model`) carries download sites, signers, owning apps, git status, and
+/// Cmdr's own copy history, which version 2 never named.
+pub const CLOUD_AI_CONSENT_VERSION: u32 = 3;
 
 /// Whether a "no" to cloud AI is still waiting to reach `main.db`.
 ///
@@ -384,6 +388,20 @@ mod tests {
             !has_current_cloud_consent(&conn, RevokePending::No, &no_policy()),
             "a stale copy version ⇒ gate closed"
         );
+    }
+
+    /// Version 2 never named what "Tell me about this" sends (download sites,
+    /// signers, owning apps, git status, a look inside), so everyone who accepted
+    /// it asks again.
+    #[test]
+    fn a_consent_from_before_tell_me_about_this_is_stale() {
+        let conn = migrated_conn();
+        store::set_cloud_ai_consent(&conn, 2, 1_780_000_000).expect("set");
+        assert!(!has_current_cloud_consent(&conn, RevokePending::No, &no_policy()));
+        let status = status_from(&conn, RevokePending::No, &no_policy()).expect("status");
+        assert!(!status.accepted);
+        assert_eq!(status.accepted_version, Some(2), "the old record stays for the audit");
+        assert_eq!(status.current_version, 3);
     }
 
     #[test]

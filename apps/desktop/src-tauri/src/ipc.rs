@@ -1024,6 +1024,10 @@ pub fn builder() -> Builder<tauri::Wry> {
         // What `about_start` streams over its channel, which specta can't describe from the
         // command: exported so the card's state slice types every event.
         .typ::<crate::about::AboutEvent>()
+        // The kinds the card's model projection carries, one line of the cloud AI
+        // consent copy each: exported so the disclosure is a `Record` over them,
+        // and a new kind fails the typecheck until it has words.
+        .typ::<cmdr_about::model::AboutDisclosure>()
         // Typed events. Each registered struct derives `tauri_specta::Event`;
         // its kebab-cased name is the wire event name and its TS type + a typed
         // `events.<name>.listen(...)` helper are generated into `bindings.ts`.

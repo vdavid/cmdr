@@ -9,10 +9,11 @@ these facts and decides none of them.
 Modules import downward only, which is what keeps `module-cycles` green:
 
 - `text` (no imports) → `fact` → `payload`, `owner`, `provenance`, `sniff` → `digest` → `card` → `removal`, `headline`,
-  `actions`.
+  `actions` → `model`.
 - `gather` imports nothing from the crate: it's generic over the job key and the answer.
 - `removal::consequences`, `headline::headline`, and `actions::actions` are free functions over `&AboutCard`, never
-  methods on it, because `card` must not import the modules that read it.
+  methods in `card.rs`, because `card` must not import the modules that read it. `for_model` is a method, but declared
+  in `model.rs` (an inherent `impl` in another module of the crate), for the same reason.
 
 ## Coverage: `Fact<T>`
 
@@ -268,6 +269,42 @@ reaches it.
   sits strictly inside, so a file deep in `Application Support/Slack` offers "Go to Slack's data". The folder itself
   gets none (it's already there).
 
+## The model's projection
+
+`AboutCard::for_model(path, protected, speak)` (`model.rs`) is everything a model may read about an item: the verdict's
+prompt and the agent tool's result both go through it, and the app's one caller is `about::model::for_model`, which
+answers the sensitive gate and the words. Each row keeps its coverage (`{ "state": "unknown", "value": "timedOut" }`);
+the card's prominence stays home. Numbers carry `*Human` twins with any uncertainty inside the string (`≥ 2.3 GB` over a
+lower bound), as every tool result does (`apps/desktop/src-tauri/src/tools/DETAILS.md` § Numbers arrive already spoken).
+The removal row comes along, derived from the projected card, so a model restates Cmdr's consequences instead of
+inventing its own.
+
+- **Kept**: the target, the path (through `model_text`) and every `ItemText` as is: name, sizes, dates, hard links, a
+  link's target; the real type (Cmdr's tokens plus the extension); bundle id, name, version; signer with team, ticket,
+  and whether the executable was checked; download time and app, and the archive a record is from; Cmdr's operation with
+  its source path and volume name; last opened and use count; the default app; importance band, staleness, the scorer's
+  reasons, and visits; the owner claim and its how; git root, branch, status; a folder's size, class, children and
+  largest files by name and size, kind mix, unchanged share; an app's Library folders by name, place, and size; a portal
+  entry's snapshot.
+- **Redacted**: each download source to `redact_for_egress` (a host, or a kind with no text).
+- **Dropped**: every raw `path` kept for navigating (an owner's app bundle, a digest child, a largest file, a Library
+  folder: the largest files' paths would map a folder's whole subtree), and the prominence.
+- **A protected path** (`protected: Some`): identity, the owner claim (read from the path), and a folder's whole size
+  stay; every other planned row answers `Unknown(Protected)`, and the removal row is derived from that trimmed card, so
+  it can't carry the download host the row dropped. `contentsStayHome` names the reason.
+
+How a silent widening is made impossible (each one a compile error, not a review):
+
+- Every payload is destructured with no `..`, so a new field on a fact must be kept, redacted, or dropped here.
+- The output types are this module's own; payload types ride along only when they're tokens, and `tokens_are_fieldless`
+  casts each to `u8`, which compiles only for an enum with no data. `EgressSource` is the one exception: it IS the
+  redaction.
+- `every_field_that_leaves_names_its_disclosure_item` destructures `ModelCard` with no `..` and maps every field to an
+  `AboutDisclosure`, and every token to some field. The consent copy is a `Record<AboutDisclosure, MessageKey>`
+  (`apps/desktop/src/lib/ai/about-this-disclosure.ts`), so a new token fails the frontend's typecheck until it has a
+  line, and a new line is a `CLOUD_AI_CONSENT_VERSION` bump (`apps/desktop/src-tauri/src/ai/DETAILS.md` § Cloud AI
+  consent).
+
 ## The gathering engine
 
 The shape of `apps/desktop/src-tauri/src/menu/context_menu_facts.rs`, generic: jobs are `(key, FnOnce() -> answer)`, the
@@ -298,12 +335,12 @@ and two workflow filters to stay honest.
 
 ## The public surface is capped
 
-11 root promises (one module per concern), 11 public modules, 132 items in them
-(`scripts/check/checks/index-crate-isolation-ceilings.go`). The items are the wire types the card's events and the
-model's projection carry, and the handful of functions a host calls: `plan`, `AboutCard`, `download_fact`,
+One root promise per concern, each a public module, and the items in them, all capped
+(`scripts/check/checks/index-crate-isolation-ceilings.go`, which holds the current numbers). The items are the wire
+types the card's events carry and the handful of functions a host calls: `plan`, `AboutCard`, `download_fact`,
 `xdg_download_fact`, `usage_fact`, `redact_for_egress`, `real_type`, `consequences`, `headline`, `start_with`,
-`model_text`. The decoders' pieces (`parse_quarantine`, `decode_where_froms`, `classify_sources`, `sniff`) are
-`pub(crate)`: a host gets whole facts, never half-decoded records.
+`model_text`, `for_model`. The decoders' pieces (`parse_quarantine`, `decode_where_froms`, `classify_sources`, `sniff`)
+are `pub(crate)`: a host gets whole facts, never half-decoded records.
 
 A new public item is a new thing every surface of the card can say (the dialog, the agent tool, the model's projection,
 the consent copy that lists what leaves). Argue it here before raising the ceiling.
@@ -375,3 +412,15 @@ Raised 139 → 140:
 - **`RecursiveSize::into_fact`**: when a folder's size is worth stating. A lower bound with nothing counted (no file,
   folder, or byte) is the index not having listed it yet, so it's `NotIndexed`; stated, it read "at least 0 bytes in 0
   files and 0 folders", which on an empty folder is wrong (QA screenshots, 2026-11-13).
+
+Raised 12 → 13 modules and root promises, 140 → 146 items, by the egress line (§ The model's projection):
+
+- **The `model` module: `ModelCard` and `AboutCard::for_model`**: what may leave the machine about an item is the rule a
+  person would argue hardest, and both senders must share it, so it's one function here, beside the facts it reads.
+  `ModelCard` has private fields: a host can serialize it and do nothing else with it.
+- **`ProtectedReason`**: the app's sensitive-gate answer in this crate's words (the gate itself is the app's), so the
+  name-level-only rule lives here with the projection it trims.
+- **`Speak` and `SpokenSize`**: the host's size and date words, so a number reads the same as in every other tool result
+  and the crate needs no zone or unit table. A struct, not two positional flags that mean opposite things.
+- **`AboutDisclosure`**: a wire token per consent line, exported to `bindings.ts` so the frontend's disclosure is a
+  `Record` over it.

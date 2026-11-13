@@ -1065,8 +1065,7 @@
   },
   "commands.fileTellMeAbout.label": "Tell me about this",
   "@commands.fileTellMeAbout.label": {
-    "description": "Command name that opens Cmdr's own card about the file or folder under the cursor: where it came from, what it really is, what it belongs to, how it's used, and what removing it would mean. A friendly, conversational request, as if asking a person. Appears in the command palette, the File menu, and the right-click menu, right below Get info.",
-    "screenshot": "settings-keyboard-shortcuts.png"
+    "description": "Command name that opens Cmdr's own card about the file or folder under the cursor: where it came from, what it really is, what it belongs to, how it's used, and what removing it would mean. A friendly, conversational request, as if asking a person. Appears in the command palette, the File menu, and the right-click menu, right below Get info."
   },
   "commands.fileTellMeAbout.description": "Shows where the item came from, what it is, and what removing it would mean",
   "@commands.fileTellMeAbout.description": {

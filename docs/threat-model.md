@@ -131,7 +131,10 @@ risk.
 
 - **Entry points**: listings (file names), the file viewer, Quick Look, `inspect_file` (text, PDF, archive listings,
   EXIF), archive browse and extract (zip, tar, 7z), image dimension and EXIF reads, the media index (ImageIO decode,
-  Vision OCR and tags), the git status columns and the `.git` portal, and the drive indexer walking everything.
+  Vision OCR and tags), the git status columns and the `.git` portal, the drive indexer walking everything, and the
+  "Tell me about this" card's reads: the download-record xattrs (`com.apple.quarantine`, the `kMDItemWhereFroms` binary
+  plist, Linux's `user.xdg.*`), a file's first and last bytes for its real type, a bundle's `Info.plist`, and a code
+  signature's blob. Anyone can write the first three: a zip's `__MACOSX` entries and a USB disk carry them.
 - **Threats**: memory-safety bugs in parsers (tampering, elevation); path traversal or symlink tricks writing outside
   the target folder on extract or copy; decompression bombs and pathological inputs (denial of service); terminal or log
   injection through control characters in names; repository content that makes a git tool run code.
@@ -151,9 +154,15 @@ risk.
   - **Size caps before allocating**: the xz dictionary an archive asks for is capped, and a PDF page whose `Parent`
     chain loops reads as unparseable instead of recursing (`crates/cmdr-archive/src/read/DETAILS.md` § Resource caps,
     `apps/desktop/src-tauri/src/tools/DETAILS.md`).
-  - **Fuzzing**: fuzz targets cover archive names and indexes, PDF, image headers, and the S3, WebDAV, NFS, and ADB wire
-    parsers, on demand (`pnpm check fuzz`) and in the slow CI lane nightly (`fuzz/DETAILS.md`, which also lists the
-    findings and the one open upstream issue).
+  - **The card's decoders** cap their input before parsing (an xattr over 64 KB, more than 16 sources, an `Info.plist`
+    over 1 MB are refused), parse in Rust (`plist`, `url`, `infer`), and treat every string they yield as the item's
+    claim: sanitized (no control or bidi characters, length-capped), shown as text, worded as recorded, and never
+    "verified" (`crates/cmdr-about/DETAILS.md`). The signature is read through the Security framework on a bounded pool
+    thread, and its one check covers the main executable only (`apps/desktop/src-tauri/src/about/DETAILS.md` § The code
+    signature).
+  - **Fuzzing**: fuzz targets cover archive names and indexes, PDF, image headers, the card's quarantine and WhereFroms
+    decoders, and the S3, WebDAV, NFS, and ADB wire parsers, on demand (`pnpm check fuzz`) and in the slow CI lane
+    nightly (`fuzz/DETAILS.md`, which also lists the findings and the one open upstream issue).
 - **Residual risk**:
   - **Parsers run in Cmdr's process, unsandboxed, with Full Disk Access.** A memory-safety bug in a native dependency or
     Apple framework (ImageIO is a classic target) reached through a downloaded file would run with the user's full file
@@ -312,8 +321,9 @@ risk.
 ### 8. Cloud AI providers and prompt injection
 
 - **Entry points**: the user's configured provider and base URL; every untrusted string that reaches the model (file
-  names, `inspect_file` text, PDF pages, archive entry names, EXIF, OCR text); the model's replies, tool calls, and
-  memory writes.
+  names, `inspect_file` text, PDF pages, archive entry names, EXIF, OCR text, and a "Tell me about this" card's facts: a
+  download host and the downloading app's name, an `Info.plist`'s name, id, and version, a signer's name and team id, a
+  branch name, a folder's child names); the model's replies, tool calls, and memory writes.
 - **Threats**: data sent to a third party (disclosure); a key harvested by a malicious base URL; injected instructions
   steering the agent to start or propose harmful operations, to read and send sensitive content, or to plant persistent
   instructions in its memory.
@@ -322,7 +332,9 @@ risk.
   the user started, but a person finishes anything sensitive through a dialog that arms before a keystroke counts, a
   typed question, or a proposal, and no tool answers for them; a turn Cmdr started only reads and proposes; one gate
   refuses sensitive paths and private keys; the memory folder is jailed, capped, and fenced in the prompt; no tool
-  returns raw file bytes (`docs/security.md` § Cloud AI egress, § AI API keys).
+  returns raw file bytes; a card's facts leave through one projection that keeps a download's host only, drops every raw
+  path, sanitizes every string the item wrote, and for a protected path keeps name-level facts only (`docs/security.md`
+  § Cloud AI egress, § AI API keys).
 - **Residual risk**:
   - **Prompt injection is mitigated, not solved.** Injected text can make the agent read more than the user meant (and
     so send it to the provider), start or propose a harmful operation (which a person still has to confirm), or save a

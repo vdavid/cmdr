@@ -11,6 +11,7 @@ mod git;
 mod history;
 mod index;
 mod jobs;
+mod model;
 mod owner;
 mod platform;
 mod pool;
