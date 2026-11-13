@@ -116,18 +116,21 @@ fn a_status_git_doesnt_list_is_never_read_as_clean() {
     assert_eq!(all(&unlisted), [R::UserDocument]);
 }
 
+/// Git ignoring something says only that git can't bring it back. A project
+/// ignores its `data/` and its secrets as readily as its build output, so an
+/// ignored item is never called rebuildable on that alone.
 #[test]
-fn an_ignored_folder_is_rebuildable_and_an_ignored_file_isnt() {
+fn an_ignored_item_is_one_git_cant_restore_and_never_rebuildable_on_that_alone() {
     let folder = settled_folder(vec![git(Fact::Known(GitStatus::Ignored))]);
-    assert_eq!(
-        all(&folder),
-        [R::RebuildableOutput {
-            by: Rebuilder::IgnoredByGit
-        }]
-    );
-    // A project ignores its secrets too, and nothing recreates those.
+    assert_eq!(all(&folder), [R::IgnoredByGit]);
     let file = settled_file(vec![git(Fact::Known(GitStatus::Ignored))]);
-    assert_eq!(all(&file), [R::UserDocument]);
+    assert_eq!(all(&file), [R::IgnoredByGit]);
+}
+
+#[test]
+fn an_ignored_cache_says_only_that_it_is_regenerated() {
+    let cache = settled_folder(vec![digest(FolderClass::Cache), git(Fact::Known(GitStatus::Ignored))]);
+    assert_eq!(all(&cache), [R::RegeneratedCache { app: None }]);
 }
 
 // ── Folder classes ──────────────────────────────────────────────────────────
@@ -369,6 +372,7 @@ fn no_consequence_is_a_green_light() {
     let every = [
         R::UncommittedWork,
         R::UntrackedNotInGit,
+        R::IgnoredByGit,
         R::UserDocument,
         R::RemovesApp {
             data_left: Fact::Pending,

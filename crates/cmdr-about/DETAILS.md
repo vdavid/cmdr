@@ -116,10 +116,11 @@ and `OsCaps`, all known before any job. It returns the sections in display order
 and `rank` follows it; the card shows the top two.
 
 - **Git**: `Tracked(Modified)` → `UncommittedWork`; `Untracked` → `UntrackedNotInGit`; `Tracked(Clean)` →
-  `GitCanRestore`. `Ignored` on a FOLDER → `RebuildableOutput { IgnoredByGit }`; on a file it says nothing, since a
-  project ignores its secrets too.
+  `GitCanRestore`; `Ignored` → `IgnoredByGit`, file or folder alike, which says only that git can't bring it back.
+  **Decision: an ignored item is never "rebuildable" on that alone.** A project ignores its `data/` and its secrets as
+  readily as its build output, so "a tool can recreate this" would be a guess dressed as a fact.
 - **Folder class**: `Dependencies` → `RebuildableOutput { PackageManager }`, `BuildOutput` → `{ BuildTool }`, `Cache` →
-  `RegeneratedCache`. The class wins over the ignored-by-git line, so there's one rebuildable line.
+  `RegeneratedCache`. Any of the three says more than "git ignores it", so it replaces the `IgnoredByGit` line.
 - **Owner**: an uninstalled app's folder is `LeftoverOfUninstalledApp` even under `Caches` (nothing regenerates it); an
   installed app's `Caches` folder is `RegeneratedCache { app }`; its other data is `AppData` with a `Certainty`; a
   receipt or Homebrew is `InstalledBy`.

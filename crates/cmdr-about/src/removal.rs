@@ -29,6 +29,10 @@ pub enum RemovalConsequence {
     UncommittedWork,
     /// It's in a repo and git doesn't track it, so git can't bring it back.
     UntrackedNotInGit,
+    /// Git ignores it, so git can't bring it back. ❌ Never read as "a tool can
+    /// recreate this": a project ignores its `data/` and its secrets as readily as
+    /// its build output.
+    IgnoredByGit,
     /// Nothing Cmdr knows of made it or can recreate it.
     UserDocument,
     /// It's an app; removing it leaves its data in the Library.
@@ -93,18 +97,19 @@ impl RemovalConsequence {
         match self {
             RemovalConsequence::UncommittedWork => 0,
             RemovalConsequence::UntrackedNotInGit => 1,
-            RemovalConsequence::UserDocument => 2,
-            RemovalConsequence::RemovesApp { .. } => 3,
-            RemovalConsequence::AppData { .. } => 4,
-            RemovalConsequence::InstalledBy { .. } => 5,
-            RemovalConsequence::LeftoverOfUninstalledApp { .. } => 6,
-            RemovalConsequence::RecordedDownload { .. } => 7,
-            RemovalConsequence::GitCanRestore => 8,
-            RemovalConsequence::RebuildableOutput { .. } => 9,
-            RemovalConsequence::RegeneratedCache { .. } => 10,
-            RemovalConsequence::OtherNamesRemain { .. } => 11,
-            RemovalConsequence::LinkOnly => 12,
-            RemovalConsequence::CantTell => 13,
+            RemovalConsequence::IgnoredByGit => 2,
+            RemovalConsequence::UserDocument => 3,
+            RemovalConsequence::RemovesApp { .. } => 4,
+            RemovalConsequence::AppData { .. } => 5,
+            RemovalConsequence::InstalledBy { .. } => 6,
+            RemovalConsequence::LeftoverOfUninstalledApp { .. } => 7,
+            RemovalConsequence::RecordedDownload { .. } => 8,
+            RemovalConsequence::GitCanRestore => 9,
+            RemovalConsequence::RebuildableOutput { .. } => 10,
+            RemovalConsequence::RegeneratedCache { .. } => 11,
+            RemovalConsequence::OtherNamesRemain { .. } => 12,
+            RemovalConsequence::LinkOnly => 13,
+            RemovalConsequence::CantTell => 14,
         }
     }
 }
@@ -137,9 +142,6 @@ pub enum Rebuilder {
     PackageManager,
     /// A build tool (build output).
     BuildTool,
-    /// Unnamed: git ignores the folder, which is what a project does with output
-    /// a tool makes.
-    IgnoredByGit,
 }
 
 /// The removal row: the consequences the card shows, and the rest behind "More".
@@ -227,15 +229,15 @@ pub fn consequences(card: &AboutCard) -> Removal {
         Some(FolderClass::BuildOutput) => found.push(RemovalConsequence::RebuildableOutput {
             by: Rebuilder::BuildTool,
         }),
-        // An ignored FILE says nothing of the kind: a project ignores its secrets too.
-        Some(FolderClass::Plain) | None
-            if git_status == Some(GitStatus::Ignored) && card.target == AboutTarget::Folder =>
-        {
-            found.push(RemovalConsequence::RebuildableOutput {
-                by: Rebuilder::IgnoredByGit,
-            });
-        }
         Some(FolderClass::Cache | FolderClass::Plain | FolderClass::VersionControl) | None => {}
+    }
+    // A class Cmdr knows says more than "git ignores it", so it's the one line.
+    let class_says_more = matches!(
+        class,
+        Some(FolderClass::Dependencies | FolderClass::BuildOutput | FolderClass::Cache)
+    );
+    if git_status == Some(GitStatus::Ignored) && !class_says_more {
+        found.push(RemovalConsequence::IgnoredByGit);
     }
     if owned_cache || class == Some(FolderClass::Cache) {
         found.push(RemovalConsequence::RegeneratedCache { app: cache_owner });
