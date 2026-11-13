@@ -76,6 +76,16 @@ pub(crate) struct Timing {
     pub(crate) volume_budget: Duration,
 }
 
+impl Timing {
+    /// The budgets every card runs on, opened by a person or asked for by the
+    /// agent.
+    pub(crate) const CARD: Timing = Timing {
+        grace: GRACE,
+        row_budget: super::jobs::ROW_BUDGET,
+        volume_budget: super::route::VOLUME_BUDGET,
+    };
+}
+
 /// The card as it's being filled, shared with the late route.
 struct Session {
     state: Mutex<State>,

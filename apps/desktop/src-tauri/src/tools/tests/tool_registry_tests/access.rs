@@ -51,8 +51,9 @@ const EXPECTED_SESSION_TOOL_NAMES: &[&str] = &["connect_volume", "upgrade_smb_to
 
 /// Tools that read inside files, or image-derived text. Hand-authored, because this class is what
 /// keeps an outside client from reading through Cmdr's Full Disk Access (direct mode only), and a
-/// content tool classified `Read` would slip past that with no other signal.
-const EXPECTED_READ_CONTENTS_TOOL_NAMES: &[&str] = &["inspect_file", "image_facts", "search_photos"];
+/// content tool classified `Read` would slip past that with no other signal. `about_item` reads no
+/// contents, but what only that access reaches (download records, last opened) about any path.
+const EXPECTED_READ_CONTENTS_TOOL_NAMES: &[&str] = &["inspect_file", "image_facts", "search_photos", "about_item"];
 
 /// Tools that open a dialog or editor a person confirms. Hand-authored, because a handler that
 /// starts the operation anyway would quietly break the rule.

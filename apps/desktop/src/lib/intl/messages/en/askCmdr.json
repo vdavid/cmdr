@@ -121,6 +121,36 @@
     "screenshot": "ask-cmdr-tools.png",
     "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
   },
+  "askCmdr.tool.aboutItem.doing": "Looking up what an item is",
+  "@askCmdr.tool.aboutItem.doing": {
+    "description": "Present-tense status for the assistant looking up Cmdr’s facts about one file or folder: what it is, where it came from, what app owns it, and what removing it would mean (the same facts as the Tell me about this card). “Item” is a file or a folder. Shown when the line can’t name the item.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.aboutItem.done": "Looked up what an item is",
+  "@askCmdr.tool.aboutItem.done": {
+    "description": "Past-tense label after the assistant looked up Cmdr’s facts about one file or folder (what it is, where it came from, what owns it). Pairs with askCmdr.tool.aboutItem.doing.",
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.aboutItem.place.doing": "Looking up what <place>{name}</place> is",
+  "@askCmdr.tool.aboutItem.place.doing": {
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant looks up Cmdr’s facts about one file or folder: what it is, where it came from, what app owns it, and what removing it would mean. {name} is the item’s name; the <place> tag links it. Pairs with askCmdr.tool.aboutItem.place.done. The tag may wrap the name alone: put a type noun (“folder”, “file”, “photo”, “note”) outside it where your language needs one for case, gender, or elision.",
+    "placeholders": {
+      "name": "The last part of the path, for example Downloads."
+    },
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
+  "askCmdr.tool.aboutItem.place.done": "Looked up what <place>{name}</place> is",
+  "@askCmdr.tool.aboutItem.place.done": {
+    "description": "Past-tense label on the same tool line once the assistant has Cmdr’s facts about the file or folder. {name} is the item’s name; the <place> tag links it. Pairs with askCmdr.tool.aboutItem.place.doing. The tag may wrap the name alone: put a type noun (“folder”, “file”, “photo”, “note”) outside it where your language needs one for case, gender, or elision.",
+    "placeholders": {
+      "name": "The last part of the path, for example Downloads."
+    },
+    "screenshot": "ask-cmdr-tools.png",
+    "screenshotNote": "An Ask Cmdr tool line, one of the rows pictured here: what the assistant is doing or did, the note after it saying how that went, or the preview it opens. This shows other tools, so yours has its own words in the same place."
+  },
   "askCmdr.tool.listVolumes.doing": "Checking your drives",
   "@askCmdr.tool.listVolumes.doing": {
     "description": "Present-tense status for the assistant listing the user's drives and their index freshness.",

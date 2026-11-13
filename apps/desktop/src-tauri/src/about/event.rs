@@ -21,9 +21,10 @@ pub(crate) struct AboutRequest {
     /// reaches through its volume reads this (a share, a server, a phone, an
     /// archive, git's history): that plan goes out before the volume answers, so a
     /// volume that stopped answering still gets a card at once. A local item is
-    /// planned from its own `lstat`.
+    /// planned from its own `lstat`. `None` (the agent's lookup, which has no
+    /// pane): the drive index's answer.
     #[serde(default)]
-    pub is_directory: bool,
+    pub is_directory: Option<bool>,
 }
 
 /// One message on a card's channel. Every one carries its request's id, so the

@@ -25,12 +25,15 @@ use super::event::{AboutRequest, AboutUnavailable};
 use super::history::History;
 use super::index::IndexPlace;
 use super::jobs::{GATHERED, Sources, local_jobs};
+use super::model::GateReach;
 use super::owner::AppSource;
 use super::platform;
 use super::probe::{Probe, probe, sits_on_a_local_disk};
 use super::session::{Gathered, PROBE_BUDGET, Watch};
 use super::through::{self, ArchiveRecord, Asked, DownloadFrom, STUCK, SnapshotPath, Through};
 use crate::file_system::volume::manager::{get_volume_manager, path_routes_over_its_parent};
+use crate::location::Location;
+use crate::location::miss::{LocationMissResult, MissToken, volume_not_connected};
 use crate::location::resolve::{LocationInput, LocationMiss, ResolvedLocation, VolumeFacts, resolve};
 use crate::location::store_path::to_store_path;
 use crate::tools::resources::volumes::VolumeKind;
@@ -122,32 +125,140 @@ pub(crate) fn caps_for(way: Way, name: ItemText, index_covers: bool, xattrs: boo
     }
 }
 
+/// Who started what the card answers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Started {
+    /// A person: the card itself, or the agent on a turn the user started.
+    ByPerson,
+    /// Cmdr on its own (a wake, a follow-up): ❌ nothing asks a network or device
+    /// volume, since a background `stat` can wake a sleeping NAS nobody asked
+    /// about. Those rows answer `RefusedInBackground`; the databases still answer.
+    ByCmdr,
+}
+
+/// A card ready to gather, and where its item is.
+pub(crate) struct Placed {
+    pub(crate) gathered: Gathered,
+    /// The resolver's place for the item (tilde expanded, rebased).
+    pub(crate) location: Location,
+    pub(crate) asking: Asking,
+}
+
+/// Whether the card asks the item's volume.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Asking {
+    /// As every card does: through its own calls, under its budgets.
+    TheVolume,
+    /// Not at all: Cmdr started this and the volume isn't a local disk, so every
+    /// row that would ask it answers `RefusedInBackground`.
+    RefusedInBackground,
+}
+
+impl Asking {
+    /// How far the sensitive gate may follow the path before a model reads the
+    /// card: only as far as the card itself reaches.
+    pub(crate) fn gate_reach(self) -> GateReach {
+        match self {
+            Asking::TheVolume => GateReach::FollowLinks,
+            Asking::RefusedInBackground => GateReach::NamesOnly,
+        }
+    }
+}
+
+/// Why there's no card: the card's reason, and the same miss in a tool's words.
+#[derive(Debug)]
+pub(crate) struct NoCard {
+    pub(crate) why: AboutUnavailable,
+    pub(crate) miss: Box<LocationMissResult>,
+}
+
+impl NoCard {
+    fn unplaced(miss: LocationMiss) -> Self {
+        let why = match &miss {
+            LocationMiss::UnknownVolume { .. } => AboutUnavailable::UnknownVolume,
+            LocationMiss::PathOutsideVolume { .. } => AboutUnavailable::PathOutsideVolume,
+            LocationMiss::NoVolumeAtPath { .. } => AboutUnavailable::NoVolumeAtPath,
+        };
+        Self {
+            why,
+            miss: Box::new(miss.into()),
+        }
+    }
+
+    fn not_connected(facts: &VolumeFacts, resolved: &ResolvedLocation) -> Self {
+        Self {
+            why: AboutUnavailable::NoVolumeAtPath,
+            miss: Box::new(volume_not_connected(facts, resolved)),
+        }
+    }
+
+    /// The item couldn't be described where the resolver placed it.
+    fn on(location: &Location, why: AboutUnavailable) -> Self {
+        let (token, detail) = match why {
+            AboutUnavailable::NotFound => (
+                MissToken::NotFound,
+                "Nothing is at this path. Check the name with list_dir.",
+            ),
+            AboutUnavailable::PermissionDenied => (
+                MissToken::PermissionDenied,
+                "The folder's permissions refuse Cmdr a look at this item. Tell the user.",
+            ),
+            // An I/O error that isn't permissions leaves a model the same next
+            // move as a drive that didn't answer.
+            AboutUnavailable::Unreachable | AboutUnavailable::Unreadable => (
+                MissToken::Unreachable,
+                "The drive didn't describe this item. Tell the user Cmdr couldn't read it just now.",
+            ),
+            AboutUnavailable::UnknownVolume
+            | AboutUnavailable::PathOutsideVolume
+            | AboutUnavailable::NoVolumeAtPath => (
+                MissToken::NoVolumeAtPath,
+                "Nothing is mounted at this path right now. Call list_volumes to see what's connected.",
+            ),
+        };
+        Self {
+            why,
+            miss: Box::new(LocationMissResult::on(location, token, detail.to_string())),
+        }
+    }
+}
+
 /// Resolves `request` and decides the card's plan and jobs.
-pub(crate) async fn gather_for(request: &AboutRequest) -> Result<Gathered, AboutUnavailable> {
+pub(crate) async fn gather_for(request: &AboutRequest, started: Started) -> Result<Placed, NoCard> {
     let facts = VolumeFacts::now().await;
     let input = LocationInput {
         // A search result is a real file: place its bare path.
         volume_id: request.volume_id.clone().filter(|id| id != SEARCH_RESULTS_VOLUME),
         path: request.path.clone(),
     };
-    let resolved = resolve(&facts, &input).map_err(|miss| match miss {
-        LocationMiss::UnknownVolume { .. } => AboutUnavailable::UnknownVolume,
-        LocationMiss::PathOutsideVolume { .. } => AboutUnavailable::PathOutsideVolume,
-        LocationMiss::NoVolumeAtPath { .. } => AboutUnavailable::NoVolumeAtPath,
-    })?;
-    let path = resolved.location.path.clone();
-    let drive = get_volume_manager().get(&resolved.location.volume_id);
+    let resolved = resolve(&facts, &input).map_err(NoCard::unplaced)?;
+    let location = resolved.location.clone();
+    let path = location.path.clone();
+    let drive = get_volume_manager().get(&location.volume_id);
     let os_visible = drive.as_ref().is_some_and(|volume| volume.paths_are_os_visible());
     let drive_way = reach(resolved.kind, resolved.live && drive.is_some(), os_visible);
     let Some(drive) = drive.filter(|_| drive_way != Way::Offline) else {
-        return Err(AboutUnavailable::NoVolumeAtPath);
+        return Err(NoCard::not_connected(&facts, &resolved));
     };
     let runtime = tokio::runtime::Handle::current();
     let asked_drive = Asked {
         volume: Arc::clone(&drive),
-        stuck_id: resolved.location.volume_id.clone(),
+        stuck_id: location.volume_id.clone(),
         runtime,
     };
+    let placed = |gathered: Gathered, asking: Asking| Placed {
+        gathered,
+        location: location.clone(),
+        asking,
+    };
+
+    // Before the route's confirm, which reads the drive.
+    if started == Started::ByCmdr && drive_way != Way::Local {
+        let is_directory = is_directory(request, &resolved).await;
+        let gathered = through_gathered(drive_way, is_directory, &resolved, asked_drive, None)
+            .answered_without_the_volume(UnknownWhy::RefusedInBackground);
+        return Ok(placed(gathered, Asking::RefusedInBackground));
+    }
 
     // A path into an archive or git's history is a route's view, whatever drive
     // holds it. The lexical gate costs nothing; the route confirms on the pool.
@@ -158,26 +269,43 @@ pub(crate) async fn gather_for(request: &AboutRequest) -> Result<Gathered, About
                     volume,
                     ..asked_drive.clone()
                 };
-                return Ok(through_gathered(
+                let is_directory = is_directory(request, &resolved).await;
+                let gathered = through_gathered(
                     view_of(routed),
-                    request,
+                    is_directory,
                     &resolved,
                     view,
                     Some((drive_way, &asked_drive)),
-                ));
+                );
+                // A backup's repository can live on a server.
+                if started == Started::ByCmdr && reads_a_backup(routed) {
+                    let gathered = gathered.answered_without_the_volume(UnknownWhy::RefusedInBackground);
+                    return Ok(placed(gathered, Asking::RefusedInBackground));
+                }
+                return Ok(placed(gathered, Asking::TheVolume));
             }
             Routed::Passthrough => {}
-            Routed::NoAnswer if drive_way == Way::Local => return Err(AboutUnavailable::Unreachable),
+            Routed::NoAnswer if drive_way == Way::Local => {
+                return Err(NoCard::on(&location, AboutUnavailable::Unreachable));
+            }
             Routed::NoAnswer => {
-                return Ok(through_gathered(drive_way, request, &resolved, asked_drive.clone(), None).silenced());
+                let is_directory = is_directory(request, &resolved).await;
+                let gathered =
+                    through_gathered(drive_way, is_directory, &resolved, asked_drive.clone(), None).silenced();
+                return Ok(placed(gathered, Asking::TheVolume));
             }
         }
     }
 
     let actions = action_caps(drive_way, drive.as_ref(), &path, home_folder().as_deref());
     let gathered = match drive_way {
-        Way::Local => local_card(&resolved, path).await?,
-        _ => through_gathered(drive_way, request, &resolved, asked_drive, None),
+        Way::Local => local_card(&resolved, path)
+            .await
+            .map_err(|why| NoCard::on(&location, why))?,
+        _ => {
+            let is_directory = is_directory(request, &resolved).await;
+            through_gathered(drive_way, is_directory, &resolved, asked_drive, None)
+        }
     };
     // A volume already known not to answer gets no actions: a reveal or a delete
     // dialog there would wait as long as it does.
@@ -187,7 +315,34 @@ pub(crate) async fn gather_for(request: &AboutRequest) -> Result<Gathered, About
         .as_ref()
         .is_some_and(|note| note.limit == VolumeLimit::Unreachable);
     let actions = if silent { ActionCaps::none() } else { actions };
-    Ok(Gathered { actions, ..gathered })
+    Ok(placed(Gathered { actions, ..gathered }, Asking::TheVolume))
+}
+
+/// Whether a route's view reads a backup repository, which may sit on a server.
+fn reads_a_backup(routed: RoutedKind) -> bool {
+    match routed {
+        RoutedKind::Restic | RoutedKind::ArchiveInSnapshot => true,
+        RoutedKind::Archive | RoutedKind::GitPortal => false,
+    }
+}
+
+/// Whether an item reached through its volume is a folder, for the plan that goes
+/// out before the volume answers: the pane's word when a pane asked, else the
+/// drive index's (a folder it holds has stats), from its database only. Unknown
+/// to both reads as a file.
+async fn is_directory(request: &AboutRequest, resolved: &ResolvedLocation) -> bool {
+    if let Some(is_directory) = request.is_directory {
+        return is_directory;
+    }
+    let index_id = resolved.index.volume_id.clone();
+    let path = resolved.location.path.clone();
+    tokio::task::spawn_blocking(move || {
+        crate::index_host::index()
+            .dir_stats(&index_id, &path)
+            .is_ok_and(|stats| stats.is_some())
+    })
+    .await
+    .unwrap_or(false)
 }
 
 /// The person's home folder, which names the Library places the owner row and
@@ -389,11 +544,12 @@ pub(crate) fn hinted_target(name: &str, is_directory: bool) -> AboutTarget {
 }
 
 /// The plan and jobs for an item reached `way`, through `asked`'s own calls.
-/// `drive`: for a view, how the drive under it is reached and asked (an archive's
-/// own download record lives there).
+/// `is_directory`: what the pane (or the index) says the item is. `drive`: for a
+/// view, how the drive under it is reached and asked (an archive's own download
+/// record lives there).
 pub(crate) fn through_gathered(
     way: Way,
-    request: &AboutRequest,
+    is_directory: bool,
     resolved: &ResolvedLocation,
     asked: Asked,
     drive: Option<(Way, &Asked)>,
@@ -423,7 +579,7 @@ pub(crate) fn through_gathered(
         index_covers,
         asked.volume.supports_xattrs(),
     );
-    through_plan(way, &name, request.is_directory, &caps, through)
+    through_plan(way, &name, is_directory, &caps, through)
 }
 
 /// [`through_gathered`] past resolving: the plan from the hint, then a job per
@@ -473,21 +629,25 @@ impl Gathered {
     /// The card for a volume already known not to answer: every row that would
     /// ask it lands `VolumeStoppedAnswering` at once and the note says so; rows
     /// the index answers still run.
-    pub(crate) fn silenced(mut self) -> Self {
-        let silent: Vec<FactKind> = self
+    pub(crate) fn silenced(self) -> Self {
+        let mut gathered = self.answered_without_the_volume(UnknownWhy::VolumeStoppedAnswering);
+        if let Some(note) = &mut gathered.plan.volume_note {
+            note.limit = VolumeLimit::Unreachable;
+        }
+        gathered
+    }
+
+    /// Every row that would ask the volume lands `why` at once, ❌ with no call to
+    /// it; the rows the index answers still run.
+    pub(crate) fn answered_without_the_volume(mut self, why: UnknownWhy) -> Self {
+        let unasked: Vec<FactKind> = self
             .plan
             .kinds()
             .into_iter()
             .filter(|kind| through::asks_the_volume(*kind))
             .collect();
-        self.jobs.retain(|(kind, _)| !silent.contains(kind));
-        self.ready = silent
-            .into_iter()
-            .map(|kind| AboutFact::unknown(kind, UnknownWhy::VolumeStoppedAnswering))
-            .collect();
-        if let Some(note) = &mut self.plan.volume_note {
-            note.limit = VolumeLimit::Unreachable;
-        }
+        self.jobs.retain(|(kind, _)| !unasked.contains(kind));
+        self.ready = unasked.into_iter().map(|kind| AboutFact::unknown(kind, why)).collect();
         self
     }
 }

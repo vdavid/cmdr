@@ -501,7 +501,7 @@ async fn a_cancel_that_beats_its_start_makes_the_start_send_nothing() {
             request_id,
             path: file.to_string_lossy().into_owned(),
             volume_id: None,
-            is_directory: false,
+            is_directory: Some(false),
         },
         channel,
     )

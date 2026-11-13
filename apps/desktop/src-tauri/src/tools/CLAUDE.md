@@ -9,7 +9,7 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
   `ToolId`, and the dispatch. `params.rs`: the schema gate. `schemas/`: per-tool `json!` blocks. `error_codes.rs`: JSON-RPC codes.
 - `actions/`: the handlers shared with outside clients, with the ack contract. `actions/CLAUDE.md`.
 - `resources/`: the read-only `cmdr://` views. `resources/CLAUDE.md`.
-- `read/`: the agent's reads (`state`, `pane_listing`, `listing`, `importance`, `volumes`, `inspect/`).
+- `read/`: the agent's reads (`state`, `listing`, `importance`, `volumes`, `inspect/`, `about`, …).
 - `propose/`, `suggestions/`: staged plans. `propose/CLAUDE.md`, `suggestions/CLAUDE.md`.
 - `memory.rs`: the agent's notes; every rule lives in `../agent/memory/`. `quiet.rs`: `nothing_to_suggest`, a
   pure signal. `connect.rs`: `connect_volume`. `meta.rs`: the tool-search pair. `sensitive.rs`: the content gate. `policy.rs`: `admit`, `Caller`, `ToolCtx`, and
@@ -45,8 +45,8 @@ transport for outside clients; `../agent/` is the in-process runtime, with the g
   declared property needs a `type`, or llama-server refuses the request. `DETAILS.md` § Lazy loading.
 - **Every result voices its coverage**: a typed field, never a wrong zero.
 - **A proposal claiming file CONTENTS must prove it** through `ImageFactsLedger`. `propose/DETAILS.md`.
-- **Read handlers never touch a live filesystem, except `inspect_file` and `list_dir`'s live read**, bounded. Anything
-  yielding contents passes `sensitive.rs`. A new content KIND is a copy change plus a `CLOUD_AI_CONSENT_VERSION` bump.
+- **Only `inspect_file`, `list_dir`'s live read, and `about_item` read a live filesystem**, bounded. Contents pass
+  `sensitive.rs`. A new content KIND is a copy change plus a `CLOUD_AI_CONSENT_VERSION` bump.
 - **New tool** = table entry + handler and schema + its class's `EXPECTED_*_TOOL_NAMES` + a rail label + the wire fixture.
   `DETAILS.md` § Adding a tool.
 

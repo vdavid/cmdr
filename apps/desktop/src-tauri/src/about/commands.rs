@@ -6,10 +6,9 @@ use std::sync::Arc;
 use tauri::ipc::Channel;
 
 use super::event::{AboutEvent, AboutRequest, AboutUpdate};
-use super::jobs::ROW_BUDGET;
 use super::registry::REGISTRY;
-use super::route::{VOLUME_BUDGET, gather_for};
-use super::session::{AboutSink, GRACE, Submit, Timing, run};
+use super::route::{Started, gather_for};
+use super::session::{AboutSink, Submit, Timing, run};
 
 /// A card's channel, stamping each update with its request id.
 struct ChannelSink {
@@ -48,17 +47,13 @@ pub async fn about_start(request: AboutRequest, on_event: Channel<AboutEvent>) {
         let token = registered.token.clone();
         tokio::select! {
             () = token.cancelled() => {}
-            gathered = gather_for(&request) => match gathered {
-                Ok(gathered) => {
+            placed = gather_for(&request, Started::ByPerson) => match placed {
+                Ok(placed) => {
                     let submit: Submit = Arc::new(super::pool::submit);
-                    let timing = Timing {
-                        grace: GRACE,
-                        row_budget: ROW_BUDGET,
-                        volume_budget: VOLUME_BUDGET,
-                    };
-                    run(gathered, sink, token, submit, timing).await;
+                    run(placed.gathered, sink, token, submit, Timing::CARD).await;
                 }
-                Err(why) => {
+                Err(no_card) => {
+                    let why = no_card.why;
                     log::debug!(target: "about", "card unavailable: {why:?}");
                     let _ = sink.send(AboutUpdate::Unavailable { why });
                 }

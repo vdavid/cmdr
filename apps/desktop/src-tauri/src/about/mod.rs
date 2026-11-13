@@ -11,6 +11,7 @@ mod git;
 mod history;
 mod index;
 mod jobs;
+pub(crate) mod lookup;
 mod model;
 mod owner;
 mod platform;
@@ -27,6 +28,13 @@ mod tests;
 mod through_tests;
 
 pub use event::AboutEvent;
+pub(crate) use route::Started;
+
+/// A card's projection for a test outside this module, through the one door.
+#[cfg(test)]
+pub(crate) fn model_for_test(card: &cmdr_about::card::AboutCard, path: &str) -> cmdr_about::model::ModelCard {
+    model::for_model(card, path, model::gate(path, model::GateReach::NamesOnly))
+}
 
 /// Stops every card's gathering: the app is quitting.
 pub(crate) fn cancel_all() {

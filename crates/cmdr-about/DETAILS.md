@@ -291,7 +291,8 @@ inventing its own.
   folder: the largest files' paths would map a folder's whole subtree), and the prominence.
 - **A protected path** (`protected: Some`): identity, the owner claim (read from the path), and a folder's whole size
   stay; every other planned row answers `Unknown(Protected)`, and the removal row is derived from that trimmed card, so
-  it can't carry the download host the row dropped. `contentsStayHome` names the reason.
+  it can't carry the download host the row dropped. `contentsStayHome` names the reason; `unresolved` is the host's gate
+  failing closed (it couldn't follow the path's links in time).
 
 How a silent widening is made impossible (each one a compile error, not a review):
 

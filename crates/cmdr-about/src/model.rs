@@ -51,6 +51,8 @@ pub enum ProtectedReason {
     CmdrData,
     /// The file's text holds a private key.
     PrivateKey,
+    /// The host's gate couldn't follow the path's links in time: it fails closed.
+    Unresolved,
 }
 
 /// A size for a model to read out, with what makes it uncertain.

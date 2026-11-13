@@ -2000,6 +2000,30 @@
       }
     },
     {
+      "name": "about_item",
+      "description": "Call when the user asks what an item is, where it came from, what app or installer owns it, or what removing it would cost. Cmdr's own facts about ONE file or folder (its Tell me about this card): the real type, the download site as recorded, the signer, Cmdr's copy history, last opened, the owner, git status, a folder's biggest contents, and what removing it means. Each row says if Cmdr knows it, and howCmdrKnows says where it comes from: repeat an item's own claims as claims. Never reads inside a file (inspect_file does).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Absolute or ~-relative file or folder."
+          },
+          "volumeId": {
+            "type": "string",
+            "description": "From list_volumes or a result's location; omit for a path on a connected volume."
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
       "name": "list_suggestions",
       "description": "List the operations Ask Cmdr already proposed, as sweeps and groups with op COUNTS, never the ops. Default status pending: what still waits on the user.",
       "inputSchema": {

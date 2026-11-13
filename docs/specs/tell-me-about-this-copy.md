@@ -830,6 +830,20 @@ button, and on a typical download it's the one behind "More".
 - `aboutThis.action.moreMenu`: More actions
   - Where: Screen-reader name of the menu the "More" button opens.
 
+### Ask Cmdr's tool line (`askCmdr.json`)
+
+The rail's line while the agent looks an item up with `about_item`, the same facts as the card.
+
+- `askCmdr.tool.aboutItem.place.doing`: Looking up what <place>{name}</place> is
+  - Where: Present-tense tool line in the Ask Cmdr rail while the lookup runs. {name} is the item's name, linked to open
+    it in a pane.
+- `askCmdr.tool.aboutItem.place.done`: Looked up what <place>{name}</place> is
+  - Where: The same line once the lookup is done.
+- `askCmdr.tool.aboutItem.doing`: Looking up what an item is
+  - Where: The same line when it can't name the item.
+- `askCmdr.tool.aboutItem.done`: Looked up what an item is
+  - Where: Its past tense.
+
 ### What cloud AI gets (the consent disclosure, `ai.json`)
 
 In the "What Cmdr sends" fold under Settings > AI > Provider and in onboarding's AI step. Changing any of these is a

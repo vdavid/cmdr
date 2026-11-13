@@ -162,6 +162,12 @@ pub(crate) fn path_gate(path: &str) -> Result<(), Protected> {
     gate_against(path, crate::config::standalone_app_data_dir().as_deref())
 }
 
+/// [`path_gate`] on the path as given, following no link: the rules plus Cmdr's real data dir.
+/// Pure, for a caller that may not touch the volume (a DB-only read on a turn Cmdr started).
+pub(crate) fn names_gate(path: &str) -> Result<(), Protected> {
+    check_rules(path, crate::config::standalone_app_data_dir().as_deref(), &MOVED)
+}
+
 fn gate_against(path: &str, data_dir: Option<&Path>) -> Result<(), Protected> {
     gate_on(path, data_dir, &MOVED_DIRS)
 }

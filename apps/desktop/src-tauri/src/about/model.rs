@@ -2,26 +2,84 @@
 //! projection (`AboutCard::for_model`).
 //!
 //! Both senders (the agent tool and the verdict) call [`for_model`] here, never
-//! the crate's method: this is where the path's sensitive-content answer and the
-//! app's own size and date words go in, so neither sender can forget the gate or
-//! word a number its own way.
+//! the crate's method, and [`for_model`] takes only a [`Gate`] that [`gate`]
+//! answered: this is where the sensitive-content gate and the app's own size and
+//! date words go in, so neither sender can skip the gate or word a number its own
+//! way.
+
+use std::time::Duration;
 
 use cmdr_about::card::AboutCard;
 use cmdr_about::model::{ModelCard, ProtectedReason, Speak, SpokenSize};
 
-use crate::tools::sensitive::{self, Protected};
+use crate::tools::sensitive::{self, GateStop, Protected};
 
-/// What may leave the machine about the item at `path`. Sync and pure: the
-/// sensitive gate's `classify` reads path components only.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the agent tool and the verdict are its callers, and neither exists yet"
-    )
-)]
-pub(crate) fn for_model(card: &AboutCard, path: &str) -> ModelCard {
-    card.for_model(path, sensitive::classify(path).map(reason), &AppWords)
+/// How far the gate may follow a path before it answers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum GateReach {
+    /// `inspect_file`'s own check (`sensitive::path_gate`): the rules on the path
+    /// as given and again after following its symlinks, so `~/link-to-ssh/key`
+    /// is caught. It can touch the item's volume, so only where the card asks the
+    /// volume anyway.
+    FollowLinks,
+    /// The rules and Cmdr's data dir on the path as given, with no call to the
+    /// volume (`sensitive::names_gate`): a card Cmdr asked for on its own, whose
+    /// rows that read the volume answer `RefusedInBackground`. What's left comes
+    /// from the drive index, which stores the paths it walked, so the path as given
+    /// is the path those rows describe (the precedent `image_facts` sets).
+    NamesOnly,
+}
+
+/// The sensitive gate's answer for one item. Only [`gate`] makes one, so a
+/// projection can't be built on a path nobody checked.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Gate(Option<ProtectedReason>);
+
+impl Gate {
+    /// Why the item's contents stay home, if they do.
+    pub(crate) fn protected(self) -> Option<ProtectedReason> {
+        self.0
+    }
+}
+
+/// Checks `path` for a model. Blocking with [`GateReach::FollowLinks`] (a
+/// realpath on the item's volume): run it where a deadline can abandon it, as
+/// [`gate_within`] does.
+pub(crate) fn gate(path: &str, reach: GateReach) -> Gate {
+    let answer = match reach {
+        GateReach::FollowLinks => sensitive::path_gate(path),
+        GateReach::NamesOnly => sensitive::names_gate(path),
+    };
+    Gate(answer.err().map(reason))
+}
+
+/// [`gate`] under a deadline, failing closed: a resolve still out at `budget` (a
+/// hung mount) answers [`ProtectedReason::Unresolved`], so the model gets
+/// name-level facts only. The resolve runs on a thread of its own
+/// (`sensitive::path_gate_within`), ❌ never the about pool: queued behind the
+/// card's own slow jobs, it would time out on a healthy disk.
+pub(crate) async fn gate_within(path: &str, reach: GateReach, budget: Duration) -> Gate {
+    match reach {
+        GateReach::NamesOnly => gate(path, reach),
+        GateReach::FollowLinks => {
+            let owned = path.to_string();
+            let answer = tokio::task::spawn_blocking(move || sensitive::path_gate_within(&owned, budget)).await;
+            gate_of(answer.unwrap_or(Err(GateStop::TimedOut)))
+        }
+    }
+}
+
+fn gate_of(answer: Result<(), GateStop>) -> Gate {
+    match answer {
+        Ok(()) => Gate(None),
+        Err(GateStop::Protected(protected)) => Gate(Some(reason(protected))),
+        Err(GateStop::TimedOut) => Gate(Some(ProtectedReason::Unresolved)),
+    }
+}
+
+/// What may leave the machine about the item at `path`, as `gated` allows.
+pub(crate) fn for_model(card: &AboutCard, path: &str, gated: Gate) -> ModelCard {
+    card.for_model(path, gated.protected(), &AppWords)
 }
 
 fn reason(protected: Protected) -> ProtectedReason {
@@ -55,6 +113,7 @@ mod tests {
     use cmdr_about::text::ItemText;
 
     use super::*;
+    use crate::test_support::TestDir;
 
     fn card() -> AboutCard {
         AboutCard {
@@ -85,27 +144,72 @@ mod tests {
         }
     }
 
+    fn leaving(path: &str, reach: GateReach) -> serde_json::Value {
+        serde_json::to_value(for_model(&card(), path, gate(path, reach))).expect("serializes")
+    }
+
     /// The host answers the gate itself, so a sender can't hand a credentials
     /// folder's item to a model with its recorded facts.
     #[test]
     fn a_path_the_gate_protects_leaves_name_level_facts_only() {
-        let leaving = serde_json::to_value(for_model(&card(), "/Users/jane/.ssh/id_ed25519")).expect("serializes");
-        assert_eq!(leaving["contentsStayHome"], "credentials");
-        assert_eq!(
-            leaving["realType"],
-            serde_json::json!({ "state": "unknown", "value": "protected" })
-        );
-        assert_eq!(leaving["identity"]["value"]["name"], "id_ed25519");
+        for reach in [GateReach::FollowLinks, GateReach::NamesOnly] {
+            let leaving = leaving("/Users/jane/.ssh/id_ed25519", reach);
+            assert_eq!(leaving["contentsStayHome"], "credentials");
+            assert_eq!(
+                leaving["realType"],
+                serde_json::json!({ "state": "unknown", "value": "protected" })
+            );
+            assert_eq!(leaving["identity"]["value"]["name"], "id_ed25519");
 
-        let open = serde_json::to_value(for_model(&card(), "/Users/jane/Documents/id_ed25519")).expect("serializes");
-        assert!(open.get("contentsStayHome").is_none());
-        assert_eq!(open["realType"], serde_json::json!({ "state": "pending" }));
+            let open = self::leaving("/Users/jane/Documents/id_ed25519", reach);
+            assert!(open.get("contentsStayHome").is_none());
+            assert_eq!(open["realType"], serde_json::json!({ "state": "pending" }));
+        }
     }
 
-    /// Sizes and dates read as every other tool result words them.
+    /// `inspect_file`'s gate follows a link; so does this one, so a symlink into
+    /// `.ssh` reads as the folder it leads to.
+    #[cfg(unix)]
+    #[test]
+    fn a_link_into_a_protected_folder_is_protected_once_followed() {
+        let dir = TestDir::new("about-model-link");
+        let keys = dir.as_ref().join(".ssh");
+        std::fs::create_dir(&keys).expect("make the folder");
+        std::fs::write(keys.join("id_ed25519"), "x").expect("write the key");
+        let link = dir.as_ref().join("keys");
+        std::os::unix::fs::symlink(&keys, &link).expect("link to it");
+        let through_link = link.join("id_ed25519").to_string_lossy().into_owned();
+
+        assert_eq!(
+            gate(&through_link, GateReach::FollowLinks).protected(),
+            Some(ProtectedReason::Credentials)
+        );
+        // Reading the names alone can't see a link, by design: that reach is only
+        // for rows the drive index answers.
+        assert_eq!(gate(&through_link, GateReach::NamesOnly).protected(), None);
+    }
+
+    /// A gate that can't finish fails closed.
+    #[tokio::test]
+    async fn a_gate_that_cant_finish_treats_the_item_as_protected() {
+        assert_eq!(
+            gate_of(Err(GateStop::TimedOut)).protected(),
+            Some(ProtectedReason::Unresolved)
+        );
+        assert_eq!(gate_of(Ok(())).protected(), None);
+        let gated = gate_within(
+            "/Users/jane/.ssh/id_ed25519",
+            GateReach::FollowLinks,
+            Duration::from_secs(5),
+        )
+        .await;
+        assert_eq!(gated.protected(), Some(ProtectedReason::Credentials));
+    }
+
+    /// Sizes and dates read as other tool results word them.
     #[test]
     fn numbers_arrive_in_the_apps_own_words() {
-        let leaving = serde_json::to_value(for_model(&card(), "/Users/jane/Documents/id_ed25519")).expect("serializes");
+        let leaving = leaving("/Users/jane/Documents/id_ed25519", GateReach::NamesOnly);
         let identity = &leaving["identity"]["value"];
         assert_eq!(
             identity["logicalSizeHuman"],

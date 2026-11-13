@@ -50,7 +50,8 @@ David's consent. So the card's first commit, in one go:
 
 ## Routing
 
-`route::gather_for` resolves through `crate::location::resolve` (a miss is `unavailable`; a search-results pane's
+`route::gather_for(request, started)` resolves through `crate::location::resolve` (a miss is `unavailable`, kept whole
+as `NoCard::miss` for the agent's lookup; a search-results pane's
 volume id is dropped first, since its rows are real files on whatever drive holds them), then picks a `route::Way` by
 the volume's kind, whether it's live, and whether its paths are the OS's own (`Volume::paths_are_os_visible`: what
 tells a share macOS mounted from one Cmdr dials). A path the lexical gate (`path_routes_over_its_parent`) lets through
@@ -283,13 +284,48 @@ What the card answers there, verified in the Linux E2E container (`about-this.sp
 
 ## What a model gets
 
-`model.rs::for_model(card, path)` is the app's only way to a card's model projection (`crates/cmdr-about/DETAILS.md` §
-The model's projection holds every rule): it answers `tools::sensitive::classify` for the path and passes the app's
+`model.rs::for_model(card, path, gate)` is the app's only way to a card's model projection
+(`crates/cmdr-about/DETAILS.md` § The model's projection holds every rule): it passes the gate's answer and the app's
 own size and date words (`human_size`, `format_local_date`). The agent tool and the verdict call it; ❌ neither calls
-`AboutCard::for_model` itself, so neither can skip the gate. `classify` reads the path as given: a path reached
-through a symlink into a protected folder isn't caught there (the contents gate's realpath check, `path_gate`, blocks
-and so needs a deadline). Its tests: a credentials path leaves name-level facts, and numbers read as other tool results
-word them.
+`AboutCard::for_model` itself, so neither can skip the gate.
+
+- **The gate is a type**: `Gate` is made only by `model::gate` / `gate_within`, so a projection can't be built on a
+  path nobody checked.
+- **At least as strict as `inspect_file`**: `GateReach::FollowLinks` is `sensitive::path_gate_within` (the rules on
+  the path, then on its realpath, so `~/keys/id_ed25519` with `keys → .ssh` is protected), on its own thread under
+  `PROBE_BUDGET`, ❌ never the about pool: queued behind the card's own slow jobs (Spotlight, receipts), it timed out on
+  a healthy disk in tests. Past the budget it fails closed: `ProtectedReason::Unresolved`, name-level facts only.
+- **`GateReach::NamesOnly`** (`sensitive::names_gate`, no realpath) only for a card that asked the volume nothing
+  (`route::Asking::RefusedInBackground`): every row left comes from the drive index, which stores the paths it walked,
+  so the path as given is what they describe. `Asking::gate_reach` ties the two, so a card that reads the volume always
+  follows links.
+
+Its tests: a credentials path and a link into one leave name-level facts, a gate that can't finish fails closed, and
+numbers read as other tool results word them.
+
+## The agent's lookup
+
+`lookup.rs::look_up(path, volume_id, started, cancel)` backs `about_item`. ❌ No second gathering path: it calls
+`route::gather_for` and `session::run` with the card's `Timing::CARD` and pool, through a `Kept` sink that rebuilds the
+card from the stream instead of sending it, and runs `model::gate_within` beside it.
+
+- **Registered like a card** (`about-item-<uuid>` in `REGISTRY`), so quitting stops it.
+- **`LOOKUP_DEADLINE` (5 s)** is past every card budget (`PROBE_BUDGET`, then `ROW_BUDGET` or `VOLUME_BUDGET`), so by
+  then the session has settled each row, `TimedOut` included. A row still out is one whose job never answered: it
+  stays `pending` and is named in `still_out`, ❌ never dropped or waited on. Then the token trips, so late answers drop.
+- **The turn's Stop** ends it at once (`biased` select: a stop that's in wins over an answer that's ready) as the
+  location contract's `cancelled` miss; any place that can't be described is that contract's miss too
+  (`route::NoCard::miss`).
+- **`Started`** comes from the caller: a wake or a follow-up is `ByCmdr`, so `gather_for` asks no network or device
+  volume and no backup view (a restic repository can sit on a server): those rows answer `RefusedInBackground`, the
+  index rows still run. A local disk answers in full. The decision sits before the route's confirm, which reads the
+  drive.
+- **No pane, so no `isDirectory`**: an item reached through its volume is planned from the drive index's answer
+  (`route::is_directory`, `dir_stats` on a blocking thread); one the index doesn't hold plans as a file.
+
+Tests: `lookup.rs` (a row still out at the deadline is named and `pending`; a stop ends it), and the tool through the
+real gate in `apps/desktop/src-tauri/src/tools/tests/about_item_tests.rs` (facts on a user turn, `directModeOff`, the direct read logged by tool,
+a wake making zero calls to a share Cmdr dials, a protected path and a link into one).
 
 ## Tests
 

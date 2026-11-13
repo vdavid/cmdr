@@ -711,6 +711,16 @@ mcp_tools! {
         load: Load::Deferred,
         run: app_params crate::tools::read::importance::execute_folder_importance
     },
+    "about_item" => {
+        id: AboutItem,
+        brief: "What a file or folder is, where it came from, what owns it, what removing it costs.",
+        desc: "Call when the user asks what an item is, where it came from, what app or installer owns it, or what removing it would cost. Cmdr's own facts about ONE file or folder (its Tell me about this card): the real type, the download site as recorded, the signer, Cmdr's copy history, last opened, the owner, git status, a folder's biggest contents, and what removing it means. Each row says if Cmdr knows it, and howCmdrKnows says where it comes from: repeat an item's own claims as claims. Never reads inside a file (inspect_file does).",
+        schema: crate::tools::read::about::about_item_schema(),
+        subject: SubjectSpec::Path("path"),
+        access: Access::ReadContents,
+        load: Load::Deferred,
+        run: ctx_params crate::tools::read::about::execute_about_item
+    },
     "list_suggestions" => {
         id: ListSuggestions,
         brief: "List what Ask Cmdr already proposed, as sweeps and groups with counts.",
