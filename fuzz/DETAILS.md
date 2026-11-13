@@ -2,7 +2,7 @@
 
 ## Why this crate looks the way it does
 
-- **One shared crate, not a `fuzz/` per crate.** Ten targets across five crates plus three app decoders share one
+- **One shared crate, not a `fuzz/` per crate.** 11 targets across six crates plus three app decoders share one
   instrumented build (one `target/`, one lock, one CI cache). Per-crate dirs would build the common dependency graph
   (tokio, quick-xml, the codecs) once per crate.
 - **Outside the workspace** (`[workspace]` in its own `Cargo.toml`): the sanitizer build needs nightly flags no other
@@ -46,6 +46,11 @@
   app contains its panics.
 - `image_headers`: the `image` dimensions read and EXIF shaping, which the app does NOT contain, so a panic counts.
   Crash-only: only third-party decoders run, with no Cmdr line for a property's mutant to change.
+- `about_provenance`: the download record's decoders (`com.apple.quarantine`, `kMDItemWhereFroms`,
+  `user.xdg.origin.url`) over the raw bytes, then over a binary plist written from the input's lines. Asserts every
+  string that reaches a card row is free of control and bidirectional characters and within its cap, a kept address is
+  within its cap, a host is a DNS name and nothing else (which is all that leaves the machine), a record yields at most
+  16 sources, and a well-formed record reads back as the strings it holds.
 
 ## Running and reproducing
 
@@ -53,7 +58,7 @@
   `cargo +<nightly> fuzz run -O -a <target> corpus/<target> seeds/<target> -- -max_total_time=120 -timeout=20`, plus
   `target/large-seeds/<target>` and the target's `-max_len` where it has them (the lane unpacks the first and passes the
   second). `./scripts/check/check --print-nightly` prints the nightly.
-- **CI's long run** (`slow-checks.yml`, nightly): 20 minutes per target, about 200 minutes in all, under a 300-minute
+- **CI's long run** (`slow-checks.yml`, nightly): 20 minutes per target, about 220 minutes in all, under a 300-minute
   job timeout. The grown corpus is cached run to run; a target's corpus past 32 MiB (`fuzzCorpusBudget`) is minimized
   with `cargo fuzz cmin` after its run, so the cache stays far below GitHub's 10 GB ceiling.
 - A finding lands in `artifacts/<target>/` (CI uploads it as `fuzz-artifacts`). Reproduce with

@@ -1,0 +1,67 @@
+{
+  "mutants": [
+    {
+      "property": "fuzz:about_provenance",
+      "why": "control characters survive sanitizing, so a downloading app's name can break a card row or a prompt line",
+      "file": "crates/cmdr-about/src/text.rs",
+      "find": "    c.is_control()",
+      "replace": "    false",
+      "input": "fuzz/seeds/about_provenance/quarantine-control-in-agent.txt",
+      "expect": "an item's text carries a control or bidirectional character"
+    },
+    {
+      "property": "fuzz:about_provenance",
+      "why": "the length cap is off, so an attacker-written string of any size reaches a card row and the model",
+      "file": "crates/cmdr-about/src/text.rs",
+      "find": "    if plain.len() <= MAX_ITEM_TEXT_CHARS {",
+      "replace": "    if plain.len() <= usize::MAX {",
+      "input": "fuzz/seeds/about_provenance/quarantine-long-agent.txt",
+      "expect": "an item's text is over its cap"
+    },
+    {
+      "property": "fuzz:about_provenance",
+      "why": "the host length cap is eight times too high, so two kilobytes of attacker text leave as a host name",
+      "file": "crates/cmdr-about/src/provenance.rs",
+      "find": "        && host.len() <= MAX_HOST_CHARS",
+      "replace": "        && host.len() <= MAX_HOST_CHARS * 8",
+      "input": "fuzz/seeds/about_provenance/long-host.txt",
+      "expect": "a host is longer than a DNS name"
+    },
+    {
+      "property": "fuzz:about_provenance",
+      "why": "a host with characters no DNS name has passes for a site, so instructions can ride in it",
+      "file": "crates/cmdr-about/src/provenance.rs",
+      "find": "            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'-' | b'_' | b'.'))",
+      "replace": "            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'-' | b'_' | b'.' | b'+'))",
+      "input": "fuzz/seeds/about_provenance/odd-host.txt",
+      "expect": "a host carries more than a host name"
+    },
+    {
+      "property": "fuzz:about_provenance",
+      "why": "the kept address's cap is eight times too high, so a huge link is held for the card's copy and open",
+      "file": "crates/cmdr-about/src/provenance.rs",
+      "find": "                    .filter(|url| url.chars().count() <= MAX_URL_CHARS)",
+      "replace": "                    .filter(|url| url.chars().count() <= MAX_URL_CHARS * 8)",
+      "input": "fuzz/seeds/about_provenance/long-address.txt",
+      "expect": "a kept address is over its cap"
+    },
+    {
+      "property": "fuzz:about_provenance",
+      "why": "the entry cap is off by one, so a record yields more sources than the card and the projection bound",
+      "file": "crates/cmdr-about/src/provenance.rs",
+      "find": "        if !text.is_empty() && sources.len() < MAX_SOURCES {",
+      "replace": "        if !text.is_empty() && sources.len() <= MAX_SOURCES {",
+      "input": "fuzz/seeds/about_provenance/twenty-sources.txt",
+      "expect": "more sources than the cap"
+    },
+    {
+      "property": "fuzz:about_provenance",
+      "why": "a recorded source is trimmed on the way in, so the card shows a string the OS never recorded",
+      "file": "crates/cmdr-about/src/provenance.rs",
+      "find": "            sources.push(text);",
+      "replace": "            sources.push(text.trim().to_owned());",
+      "input": "fuzz/seeds/about_provenance/padded-line.txt",
+      "expect": "a source read back as another string"
+    }
+  ]
+}
