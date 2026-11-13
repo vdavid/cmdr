@@ -30,10 +30,14 @@ export function workDirLines(
 /**
  * The note on a key whose macOS text a Mac already reads (the frozen copy baseline): which targets hold it, that the
  * text stays, and the one reviewed way to fix a wrong one. Per-OS keys get it too, beside their per-OS note.
+ * @param compact the short form for every frozen key after a brief's first: still on every key (translators
+ *   missed a rule stated once), minus the how-to the first key's note already gave
  */
-export function frozenMacosNote(tags: readonly string[], perOs: boolean): string | undefined {
+export function frozenMacosNote(tags: readonly string[], perOs: boolean, compact = false): string | undefined {
   if (tags.length === 0) return undefined
   const what = perOs ? 'the branch macOS reads' : 'this whole value (macOS reads it)'
+  if (compact)
+    return `Frozen macOS text (${tags.join(', ')}): keep ${what} byte for byte, or change it the way the first frozen key's note says.`
   return `Frozen macOS text (${tags.join(', ')}): keep ${what} byte for byte. If it's wrong (a mistranslation, an outdated term) or its English was reworded so it no longer fits, give the new value with \`"@<key>": { "macosChangeReason": "…" }\` in your values file, and \`pnpm i18n:apply\` records it for this catalog (an overlay such as es-419 records its own); without the reason it refuses the change. If the text still fits, \`{ "keep": true }\` stamps it unchanged.`
 }
 

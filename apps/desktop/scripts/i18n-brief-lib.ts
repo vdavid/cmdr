@@ -381,33 +381,75 @@ function digestSection(ctx: BriefContext): BriefSection {
   return { name: 'digest', text: blocks.join('\n\n') }
 }
 
-/** One line per distinct older English the targets translated from: the word diff to today's. */
+/**
+ * One line per distinct older English the targets translated from: the word diff to today's. An English that only
+ * became a per-OS block, its old text living on word for word as a branch, gets a sentence saying so: its diff would
+ * repeat the whole value (10% of each brief in the first per-OS batches).
+ */
 function changeLines(previous: Record<string, string> | undefined, current: string): string[] {
   const byEnglish = new Map<string, string[]>()
   for (const [tag, english] of Object.entries(previous ?? {}))
     byEnglish.set(english, [...(byEnglish.get(english) ?? []), tag])
-  return [...byEnglish].map(
-    ([english, tags]) => `  - English changed since ${tags.join(', ')} translated it: ${wordDiff(english, current)}`,
-  )
+  const branches = platformBranches(current)
+  return [...byEnglish].map(([english, tags]) => {
+    const kept = branches.filter(({ name, text }) => name !== null && text === english).map(({ name }) => name)
+    const change =
+      kept.length > 0
+        ? `it became a per-OS block, and ${kept.map((name) => `\`${String(name)}\``).join(' and ')} ${kept.length > 1 ? 'are' : 'is'} the old text, word for word`
+        : wordDiff(english, current)
+    return `  - English changed since ${tags.join(', ')} translated it: ${change}`
+  })
 }
 
 /** What a search keyword key gets in place of "No concept yet": the termbase doesn't govern it. */
 const KEYWORDS_NOTE =
   'Search keywords: hidden synonyms, outside the termbase (no ruling, avoid-list, or pile mining applies; see the Search keywords instruction).'
 
+/**
+ * A target's current value as the keys section shows it. A per-OS block whose branches line up with the English
+ * ones shows only the branches that differ from English, and names the ones still in English: printing those in
+ * full would repeat the English right above (a tenth of a per-OS batch's brief).
+ */
+function currentValueText(english: string, current: string): string {
+  const source = platformBranches(english)
+  const target = platformBranches(current)
+  const sameShape =
+    source[0].name !== null &&
+    source.length === target.length &&
+    source.every(({ name }, index) => target[index].name === name)
+  if (!sameShape) return visibleJson(current)
+  const pending = target.filter(({ text }, index) => text === source[index].text)
+  if (pending.length === 0) return visibleJson(current)
+  const done = target.filter(({ text }, index) => text !== source[index].text)
+  const names = (branches: typeof target) => branches.map(({ name }) => `\`${String(name)}\``).join(' and ')
+  const still = `${names(pending)} still in English (as above)`
+  if (done.length === 0) return still
+  return `${done.map(({ name, text }) => `\`${String(name)}\` ${visibleJson(text)}`).join('; ')}; ${still}`
+}
+
 function keysSection(ctx: BriefContext): BriefSection {
   const lines = [`## Keys (${String(ctx.opts.keys.length)})`, '']
+  // The per-OS and frozen-text notes say everything once, on the first key that carries each, and
+  // stay on every later key in a one-line form.
+  let perOsExplained = false
+  let frozenExplained = false
   for (const key of ctx.opts.keys) {
     const value = ctx.en.messages[key]
     const metadata = key in ctx.en.metadata ? ctx.en.metadata[key] : undefined
     lines.push(`- \`${key}\`: ${visibleJson(value)}`)
     lines.push(...changeLines(ctx.opts.previousEnglish?.[key], value))
     if (typeof metadata?.description === 'string') lines.push(`  - Note: ${metadata.description}`)
-    const perOs = perOsNote(value)
-    if (perOs !== undefined) lines.push(`  - ${perOs}`)
+    const perOs = perOsNote(value, perOsExplained)
+    if (perOs !== undefined) {
+      lines.push(`  - ${perOs}`)
+      perOsExplained = true
+    }
     const frozenTags = ctx.opts.langs.filter((tag) => ctx.opts.frozenMacos?.[tag]?.has(key))
-    const frozen = frozenMacosNote(frozenTags, perOs !== undefined)
-    if (frozen !== undefined) lines.push(`  - ${frozen}`)
+    const frozen = frozenMacosNote(frozenTags, perOs !== undefined, frozenExplained)
+    if (frozen !== undefined) {
+      lines.push(`  - ${frozen}`)
+      frozenExplained = true
+    }
     const notes = placeholderNotes(key, value, metadata)
     if (notes.length > 0) lines.push(`  - ${notes.join(' · ')}`)
     if (isSearchKeywordsKey(key)) lines.push(`  - ${KEYWORDS_NOTE}`)
@@ -418,7 +460,7 @@ function keysSection(ctx: BriefContext): BriefSection {
     if (ctx.opts.excludeTargetValues) continue
     for (const tag of ctx.opts.langs) {
       const current = ctx.targets.get(tag)?.[key]
-      if (current !== undefined) lines.push(`  - ${tag} now: ${visibleJson(current)}`)
+      if (current !== undefined) lines.push(`  - ${tag} now: ${currentValueText(value, current)}`)
     }
   }
   return { name: 'keys', text: lines.join('\n') }

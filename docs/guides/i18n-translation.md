@@ -458,6 +458,10 @@ in the same queue: the lead reads it after each wave, since two translators writ
 `pnpm i18n:term` (a word's senses and rulings), `pnpm i18n:pile` (the reference pile), and `pnpm i18n:check-locale`
 (check). The instructions forbid homemade catalog- or termbase-writing scripts.
 
+**Translators run on Opus** (`model: 'opus'` on each translator agent), whatever model the lead runs on: a fan-out is
+dozens of runs reading 100k-token briefs, and the top-tier model costs far more there for no better translation (David,
+2026-11-13).
+
 Pick the shape by batch size. Sizes are `--stats` on the migrated `nl` termbase, 2026-09-24.
 
 - **A real batch** (a feature's strings, a review pass): one agent per language, each handed

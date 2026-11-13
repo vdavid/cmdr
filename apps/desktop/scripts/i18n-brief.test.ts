@@ -187,6 +187,7 @@ describe('buildBrief (fixture tree)', () => {
       'queue.row.label': '{count, plural, one {# overdracht} other {# overdrachten}} naar {folder}',
       'queue.empty': 'Niets in de wachtrij',
       'queue.undo': 'Maak de bewerking ongedaan',
+      'queue.trash': '{platform, select, windows {Delete} other {Verplaats naar prullenmand}}',
     })
     write(join(messagesRoot, 'nl-BE', 'queue.json'), { 'queue.title': 'Wachtrij van bewerkingen' })
     write(join(messagesRoot, 'es', 'queue.json'), { 'queue.empty': 'Nada en la cola' })
@@ -289,15 +290,48 @@ describe('buildBrief (fixture tree)', () => {
     const notes = text.split('\n').filter((line) => line.startsWith('  - {'))
     expect(notes).toEqual(['  - {name}', '  - {system_settings}'])
     expect(text).not.toContain('{platform}')
-    expect(
-      text.match(/`macos` is macOS \(pile: `macOS\/`\), and macOS reads it, so a translation already there stays/g)
-        ?.length,
-    ).toBe(2)
-    expect(
-      text.match(
-        /`other` is Windows and Linux \(pile: `microsoft-terminology\/`, `microsoft-style-guides\/`; `gnome-nautilus\/`/g,
-      )?.length,
-    ).toBe(2)
+  })
+
+  it('explains per-OS values and frozen macOS text in full on the first key, and in one line on every later one', () => {
+    const keys =
+      buildBrief({
+        ...opts,
+        keys: ['queue.reveal', 'errors.queue.revealHint'],
+        frozenMacos: { nl: new Set(['queue.reveal', 'errors.queue.revealHint']) },
+      }).sections.find((section) => section.name === 'keys')?.text ?? ''
+    const [first, second] = keys.split('\n- `errors.queue.revealHint`')
+    expect(first).toContain(
+      '`macos` is macOS (pile: `macOS/`), and macOS reads it, so a translation already there stays',
+    )
+    expect(first).toContain(
+      '`other` is Windows and Linux (pile: `microsoft-terminology/`, `microsoft-style-guides/`; `gnome-nautilus/`',
+    )
+    expect(first).toContain('macosChangeReason')
+    expect(second).toContain('  - Per-OS value: `macos` is macOS (macOS reads it: keep); `other` is Windows and Linux.')
+    expect(second).toContain(
+      "  - Frozen macOS text (nl): keep the branch macOS reads byte for byte, or change it the way the first frozen key's note says.",
+    )
+    expect(second).not.toContain('pile:')
+    expect(second).not.toContain('macosChangeReason')
+  })
+
+  it('shows only the translated branches of a half-done per-OS value, and names the ones still in English', () => {
+    const keys =
+      buildBrief({ ...opts, keys: ['queue.trash'] }).sections.find((section) => section.name === 'keys')?.text ?? ''
+    expect(keys).toContain('  - nl now: `other` "Verplaats naar prullenmand"; `windows` still in English (as above)')
+  })
+
+  it('says an English that only became a per-OS block kept its old text as a branch, where a diff would repeat it all', () => {
+    const keys =
+      buildBrief({
+        ...opts,
+        keys: ['queue.trash'],
+        previousEnglish: { 'queue.trash': { nl: 'Move to trash' } },
+      }).sections.find((section) => section.name === 'keys')?.text ?? ''
+    expect(keys).toContain(
+      '  - English changed since nl translated it: it became a per-OS block, and `other` is the old text, word for word',
+    )
+    expect(keys).not.toContain('{+')
   })
 
   it('names which OS reads each branch a block has, so a Mac reading `other` keeps its translation there', () => {
