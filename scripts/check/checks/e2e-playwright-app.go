@@ -198,6 +198,11 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 		// assert send-and-render with no provider. It MUST live on the APP process env:
 		// resolve_agent_llm runs in the app, not the Playwright runner.
 		"CMDR_E2E_ASK_CMDR_FAKE=1",
+		// Hold the "Tell me about this" card's fake AI take mid-stream: 150 ms before each
+		// delta and 4 s before the last, so about-this-verdict.spec.ts can press Stop on a
+		// take that's still writing. Only that fake reads it, and only a card with an AI
+		// provider on asks it (every other spec keeps `ai.provider` off).
+		"CMDR_E2E_ABOUT_VERDICT_PACE=150,4000",
 		// Pause a search's cover walk before each directory read, so a spec can watch
 		// results arrive and a snapshot pane grow mid-walk instead of racing ground
 		// that finishes in milliseconds (search-live + search-walk-handoff). Cover

@@ -93,7 +93,7 @@
         flex-direction: column;
         gap: var(--spacing-xxs);
         padding: var(--spacing-sm) var(--spacing-md);
-        border: 1px solid var(--color-border-subtle);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         background: var(--color-bg-secondary);
     }

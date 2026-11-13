@@ -107,8 +107,9 @@ for the placement).
   no key, the local server not running, the organization's policy through `managedAiRefusalMessage`, too many in a
   minute) and which draw nothing (`aiOff`, `turnedOff`, `localOff`). **Decision: `localOff` draws nothing**: it's every
   Local user's default until the eval says the local model's takes are good (plan D4), and a line on every card would be
-  noise. AI off gets one quiet hint in the footer, under the actions ("AI is off…" plus a link to Settings > AI), never
-  in the body.
+  noise. AI off gets one quiet hint in the footer, on a row of its own under the buttons (`ModalDialog`'s `footerNote`:
+  "AI is off…" plus a link to Settings > AI), never in the body. **Decision: a row of its own**: as a second line of
+  `footerLeading` it pushed Close off the buttons' line (QA screenshots, 2026-11-13).
 - ❌ **No one-click allow**: the consent hint's link opens Settings > AI at the Allow cloud AI switch, where the whole
   disclosure is read (`openCloudConsentSettings('about-this-card')`). A card that's open when consent arrives doesn't
   start a call by itself (nothing re-asks); the next open does.
@@ -179,3 +180,7 @@ tooltip with the full text); the row puts its Copy button at the end of the line
   reassuring take, a refused one, and none.
 - `apps/desktop/test/e2e-playwright/about-this.spec.ts`: shortcut, palette, and menu, a download record the spec writes
   (host shown, full address not), the type row, a folder's size row, Escape giving focus back to the pane.
+- `apps/desktop/test/e2e-playwright/about-this-verdict.spec.ts` (the E2E fake, held mid-stream by
+  `CMDR_E2E_ABOUT_VERDICT_PACE`, `docs/testing.md`): a streamed take above the removal row with its given-line, Stop
+  keeping the partial text and the card, a reopen reusing a finished take, Escape closing mid-stream, AI off drawing
+  only the footer hint, and "Continue in Ask Cmdr" opening a new chat with the item and the fixed draft, unsent.

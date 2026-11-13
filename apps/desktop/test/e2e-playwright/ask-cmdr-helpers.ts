@@ -1,11 +1,16 @@
 /**
  * Driving the Ask Cmdr rail from a spec: opening it past its gates, and telling when a turn is over.
- * `ask-cmdr.spec.ts` and `ask-cmdr-capability.spec.ts` share these.
+ * `ask-cmdr.spec.ts`, `ask-cmdr-capability.spec.ts`, and `about-this-verdict.spec.ts` share these.
  */
 
 import { waitBudget } from './wait-budget.js'
 import { expect } from './fixtures.js'
-import { dispatchMenuCommand, waitForAskCmdrOnInBackend } from './helpers.js'
+import {
+  closeScopedWindow,
+  dispatchMenuCommand,
+  openSettingsWindowViaProd,
+  waitForAskCmdrOnInBackend,
+} from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 /** The rail is open once its root element is in the DOM. */
@@ -90,4 +95,42 @@ export async function typeAndSend(page: TauriPage, text: string): Promise<void> 
     ta.dispatchEvent(new Event('input', { bubbles: true }));
     ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   })()`)
+}
+
+/** The Ask Cmdr switch in Settings > AI > Ask Cmdr: its hidden input carries the label. */
+const ASK_CMDR_SWITCH = 'input[aria-label="Ask Cmdr"]'
+
+/** The switch's state as Ark draws it (`checked` / `unchecked`), or `missing`. */
+function askCmdrSwitchStateJs(): string {
+  return `(function() {
+    var input = document.querySelector('${ASK_CMDR_SWITCH}');
+    if (!input) return 'missing';
+    var root = input.closest('[data-scope="switch"][data-part="root"]');
+    var control = root ? root.querySelector('.switch-control') : null;
+    return (control || input).getAttribute('data-state') || 'unknown';
+  })()`
+}
+
+/** Sets Ask Cmdr's switch through the Settings window, the way a user does, and closes it. */
+export async function setAskCmdrEnabledInSettings(main: TauriPage, on: boolean): Promise<void> {
+  const settings = await openSettingsWindowViaProd(main)
+  try {
+    await settings.waitForSelector('.settings-sidebar', waitBudget(3000))
+    await settings.evaluate(`(function() {
+      var items = document.querySelectorAll('.section-item');
+      for (var i = 0; i < items.length; i++) {
+        if ((items[i].textContent || '').trim() === 'Ask Cmdr') { items[i].click(); return; }
+      }
+    })()`)
+    await settings.waitForSelector(ASK_CMDR_SWITCH, waitBudget(3000))
+    const wanted = on ? 'checked' : 'unchecked'
+    if ((await settings.evaluate<string>(askCmdrSwitchStateJs())) !== wanted) {
+      await settings.evaluate(`document.querySelector('${ASK_CMDR_SWITCH}')?.click()`)
+    }
+    await expect
+      .poll(() => settings.evaluate<string>(askCmdrSwitchStateJs()), { timeout: waitBudget(3000) })
+      .toBe(wanted)
+  } finally {
+    await closeScopedWindow(main, settings, 'settings')
+  }
 }

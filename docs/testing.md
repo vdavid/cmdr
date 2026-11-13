@@ -930,6 +930,11 @@ E2E test hooks split along two axes:
   (`search-walk-handoff.spec.ts`). Background scans are never throttled. Read in
   `crates/cmdr-index/src/indexing/scanner/mod.rs` (`cover_walk_throttle`) rather than `crate::test_mode`, because the
   index crate can't reach the app; it's cached in a `LazyLock`, so an unset var costs one deref per walk.
+- **`CMDR_E2E_ABOUT_VERDICT_PACE`** (`<ms>[,<hold ms>]`, read only by the "Tell me about this" AI take's fake, which
+  itself needs `CMDR_E2E_ASK_CMDR_FAKE`): a wait before each delta and a hold before the last, so a take holds still
+  mid-stream. Both E2E lanes set `150,4000` on the app, so `about-this-verdict.spec.ts` presses Stop on a take that's
+  still writing; every other spec keeps `ai.provider` off, so nothing else asks the fake. Read per call. Mechanism:
+  `apps/desktop/src-tauri/src/about/DETAILS.md` § The E2E fake.
 - **`CMDR_MANAGED_PREFS_FILE`** (debug and `playwright-e2e` builds only, never a plain release): a plist that replaces
   the organization's managed preferences (MDM policy). The macOS lane points every shard at `managed-prefs.plist` in its
   data dir, which doesn't exist (no policy) until `managed-policy.spec.ts` writes it; the app watches the file and

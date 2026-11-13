@@ -117,7 +117,16 @@
     })
 </script>
 
+<!-- With AI off: one quiet line under the footer's buttons saying where to turn it on. -->
+{#snippet aiOffNote()}
+    <p class="ai-off">
+        {tString('aboutThis.verdict.aiOffHint')}
+        <LinkButton onclick={openProviderSettings}>{tString('aboutThis.verdict.unavailable.openAiSettings')}</LinkButton>
+    </p>
+{/snippet}
+
 <ModalDialog
+    footerNote={aiOff ? aiOffNote : undefined}
     titleId="about-this-title"
     dialogId="tell-me-about-this"
     resizable
@@ -183,15 +192,7 @@
     <p class="sr-only" aria-live="polite">{verdictAnnouncement}</p>
 
     {#snippet footerLeading()}
-        <div class="footer-leading">
-            <AboutActions actions={card.unavailable ? null : (card.derived?.actions ?? null)} {onAct} />
-            {#if aiOff}
-                <p class="ai-off">
-                    {tString('aboutThis.verdict.aiOffHint')}
-                    <LinkButton onclick={openProviderSettings}>{tString('aboutThis.verdict.unavailable.openAiSettings')}</LinkButton>
-                </p>
-            {/if}
-        </div>
+        <AboutActions actions={card.unavailable ? null : (card.derived?.actions ?? null)} {onAct} />
     {/snippet}
     {#snippet footer()}
         <Button variant="secondary" onclick={onClose}>{t('aboutThis.dialog.close')}</Button>
@@ -256,13 +257,6 @@
     .quiet {
         margin: 0;
         color: var(--color-text-tertiary);
-    }
-
-    .footer-leading {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs);
-        min-width: 0;
     }
 
     .ai-off {

@@ -22,15 +22,10 @@ import {
   offGateShown,
   openRailViaMenu,
   railOpen,
+  setAskCmdrEnabledInSettings,
   typeAndSend,
 } from './ask-cmdr-helpers.js'
-import {
-  closeScopedWindow,
-  dispatchMenuCommand,
-  ensureAppReady,
-  expectArrowDownMovesCursorIn,
-  openSettingsWindowViaProd,
-} from './helpers.js'
+import { dispatchMenuCommand, ensureAppReady, expectArrowDownMovesCursorIn } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 import { defaultKeyInit } from './helpers/registry-keys.js'
 
@@ -57,44 +52,6 @@ function paneFocused(page: TauriPage): Promise<boolean> {
 function pressToggleShortcut(page: TauriPage): Promise<void> {
   const init = JSON.stringify({ ...defaultKeyInit('askCmdr.toggle'), bubbles: true })
   return page.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', ${init}))`)
-}
-
-/** The Ask Cmdr switch in Settings > AI > Ask Cmdr: its hidden input carries the label. */
-const ASK_CMDR_SWITCH = 'input[aria-label="Ask Cmdr"]'
-
-/** The switch's state as Ark draws it (`checked` / `unchecked`), or `missing`. */
-function askCmdrSwitchStateJs(): string {
-  return `(function() {
-    var input = document.querySelector('${ASK_CMDR_SWITCH}');
-    if (!input) return 'missing';
-    var root = input.closest('[data-scope="switch"][data-part="root"]');
-    var control = root ? root.querySelector('.switch-control') : null;
-    return (control || input).getAttribute('data-state') || 'unknown';
-  })()`
-}
-
-/** Sets Ask Cmdr's switch through the Settings window, the way a user does, and closes it. */
-async function setAskCmdrEnabledInSettings(main: TauriPage, on: boolean): Promise<void> {
-  const settings = await openSettingsWindowViaProd(main)
-  try {
-    await settings.waitForSelector('.settings-sidebar', waitBudget(3000))
-    await settings.evaluate(`(function() {
-      var items = document.querySelectorAll('.section-item');
-      for (var i = 0; i < items.length; i++) {
-        if ((items[i].textContent || '').trim() === 'Ask Cmdr') { items[i].click(); return; }
-      }
-    })()`)
-    await settings.waitForSelector(ASK_CMDR_SWITCH, waitBudget(3000))
-    const wanted = on ? 'checked' : 'unchecked'
-    if ((await settings.evaluate<string>(askCmdrSwitchStateJs())) !== wanted) {
-      await settings.evaluate(`document.querySelector('${ASK_CMDR_SWITCH}')?.click()`)
-    }
-    await expect
-      .poll(() => settings.evaluate<string>(askCmdrSwitchStateJs()), { timeout: waitBudget(3000) })
-      .toBe(wanted)
-  } finally {
-    await closeScopedWindow(main, settings, 'settings')
-  }
 }
 
 /** Count of completed fake assistant replies currently in the thread. */
