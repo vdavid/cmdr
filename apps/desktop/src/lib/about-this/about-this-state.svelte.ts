@@ -12,7 +12,7 @@
  */
 
 import { startAbout, type AboutRequestHandle } from '#lib/tauri-commands/index.js'
-import { applyAboutEvent, emptyCard, type AboutCardData, type AboutSubject } from './about-card'
+import { applyAboutEvent, emptyCard, type AboutCardData, type AboutGoTarget, type AboutSubject } from './about-card'
 
 /** The context menu's grace (`menu/context_menu_facts.rs` `GRACE`): what answers inside it is there on frame one. */
 export const GRACE_MS = 100
@@ -30,6 +30,8 @@ interface AboutThisState {
 export const aboutThisState: AboutThisState = $state({ card: null, shown: false })
 
 let running: AboutRequestHandle | null = null
+/** Where the open card's rows take the pane: the opener's, since only it knows the pane. */
+let goTo: ((target: AboutGoTarget) => void) | null = null
 let graceOver = false
 let timers: ReturnType<typeof setTimeout>[] = []
 
@@ -45,9 +47,13 @@ function showIfReady(): void {
   if (card.unavailable !== null || card.settled || (graceOver && card.plan !== null)) aboutThisState.shown = true
 }
 
-/** Opens the card for `subject`, closing any card already up. */
-export function openAboutThis(subject: AboutSubject): void {
+/**
+ * Opens the card for `subject`, closing any card already up. `onGoTo` takes the pane to a place a row names (a
+ * folder's child, an app's Library folder).
+ */
+export function openAboutThis(subject: AboutSubject, onGoTo: ((target: AboutGoTarget) => void) | null = null): void {
   closeAboutThis()
+  goTo = onGoTo
   const handle = startAbout(subject.path, subject.volumeId, (event) => {
     const card = aboutThisState.card
     if (!card) return
@@ -69,10 +75,18 @@ export function openAboutThis(subject: AboutSubject): void {
   )
 }
 
+/** Closes the card, then takes the pane to `target` (Enter on a row that names a place). */
+export function goToFromCard(target: AboutGoTarget): void {
+  const go = goTo
+  closeAboutThis()
+  go?.(target)
+}
+
 /** Closes the card and stops its gathering. A no-op with no card up. */
 export function closeAboutThis(): void {
   if (running) void running.cancel()
   running = null
+  goTo = null
   clearTimers()
   graceOver = false
   aboutThisState.card = null

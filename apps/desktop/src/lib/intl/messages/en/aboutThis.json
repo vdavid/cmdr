@@ -153,6 +153,18 @@
   "@aboutThis.label.appData": {
     "description": "Row label on the \"Tell me about this\" card for an app, left of the folders in the user's Library folder that are named after the app and stay behind if the app is removed. \"Library\" is the macOS folder of that name."
   },
+  "aboutThis.label.biggest": "Biggest inside",
+  "@aboutThis.label.biggest": {
+    "description": "Row label on the \"Tell me about this\" card for a folder, left of the largest items sitting directly in it (files and folders), biggest first."
+  },
+  "aboutThis.label.largestFiles": "Largest files",
+  "@aboutThis.label.largestFiles": {
+    "description": "Row label on the \"Tell me about this\" card for a folder, left of the largest files anywhere inside it, at any depth."
+  },
+  "aboutThis.label.unchanged": "Untouched",
+  "@aboutThis.label.unchanged": {
+    "description": "Row label on the \"Tell me about this\" card for a folder, left of how much of it hasn't changed in a year. Short: one or two words."
+  },
   "aboutThis.unknown.noRecord": "Nothing on record",
   "@aboutThis.unknown.noRecord": {
     "description": "Muted one-line answer on a \"Tell me about this\" card row when nothing recorded this fact. Ordinary, not a warning. It doesn't say \"never\": no record isn't the same as it never happened. No closing period."
@@ -173,9 +185,9 @@
   "@aboutThis.unknown.libraryNameMatchesNoApp": {
     "description": "Answer on the \"Belongs to\" row of the \"Tell me about this\" card for a folder in the macOS Library folder that is named like an app, when no installed app has that name. It doesn't claim the folder is left over."
   },
-  "aboutThis.unknown.notIndexed": "Cmdr’s drive index doesn’t cover this yet.",
+  "aboutThis.unknown.notIndexed": "Not indexed yet",
   "@aboutThis.unknown.notIndexed": {
-    "description": "Answer on a \"Tell me about this\" card row (a folder's size or importance) when Cmdr's drive index hasn't scanned the place yet."
+    "description": "Muted answer on a \"Tell me about this\" card row (a folder's size, what's inside, its importance, an app's data) when Cmdr's drive index hasn't scanned the place yet, or indexing is off. Also the one muted line of a section whose every row has that answer. An ordinary state, not a problem. Short, no closing period."
   },
   "aboutThis.unknown.timedOut": "Cmdr didn’t get an answer in time.",
   "@aboutThis.unknown.timedOut": {
@@ -760,7 +772,7 @@
   },
   "aboutThis.git.repo": "In <repo></repo>{hasBranch, select, yes {, on {branch}} other {, with no branch checked out}}",
   "@aboutThis.git.repo": {
-    "description": "Answer on the Git row of the \"Tell me about this\" card: the repository the item sits in, and its checked-out branch. <repo></repo> becomes the repository's folder. No closing period.",
+    "description": "Answer on the Git row of the \"Tell me about this\" card: the repository the item sits in, and its checked-out branch. <repo></repo> becomes the name of the repository's folder, like \"cmdr\" (its full path shows in a tooltip). No closing period.",
     "placeholders": {
       "branch": { "description": "The branch's name, for example \"main\"." },
       "hasBranch": { "description": "\"yes\" when a branch is checked out." }
@@ -809,21 +821,196 @@
   "@aboutThis.folderSize.symlinks": {
     "description": "Muted second line on a folder's Size row of the \"Tell me about this\" card when the folder holds symbolic links, whose targets the size leaves out. No closing period."
   },
-  "aboutThis.contents.count": "{count, plural, =0 {Empty} one {One item} other {{countText} items}}",
-  "@aboutThis.contents.count": {
-    "description": "Answer on the Contents row of the \"Tell me about this\" card for a folder: how many items sit directly in it. No closing period.",
+  "aboutThis.contents.summary": "{count, plural, =0 {Empty} one {One item} other {{countText} items: {kinds}}}",
+  "@aboutThis.contents.summary": {
+    "description": "Answer on the Contents row of the \"Tell me about this\" card for a folder: how many items sit directly in it and what kinds they are. No closing period.",
     "placeholders": {
-      "count": { "description": "How many items, as a number." },
+      "count": { "description": "How many, as a number." },
+      "countText": { "description": "The same number, already formatted." },
+      "kinds": {
+        "description": "A list joined with commas and \"and\", for example \"5 folders, 4 images, and 3 documents\"."
+      }
+    }
+  },
+  "aboutThis.childKind.folder": "{count, plural, one {{countText} folder} other {{countText} folders}}",
+  "@aboutThis.childKind.folder": {
+    "description": "One part of the list on the Contents row of the \"Tell me about this\" card: how many items directly in the folder are folders. Lowercase, joins a list like \"5 folders, 4 images, and 3 documents\".",
+    "placeholders": {
+      "count": { "description": "How many, as a number." },
       "countText": { "description": "The same number, already formatted." }
     }
   },
-  "aboutThis.appData.count": "{count, plural, =0 {None that Cmdr’s index knows of} one {One folder} other {{countText} folders}}",
-  "@aboutThis.appData.count": {
-    "description": "Answer on the \"Its data in your Library\" row of the \"Tell me about this\" card for an app: how many folders in the Library are named after it. No closing period.",
+  "aboutThis.childKind.image": "{count, plural, one {{countText} image} other {{countText} images}}",
+  "@aboutThis.childKind.image": {
+    "description": "One part of the list on the Contents row of the \"Tell me about this\" card: how many items directly in the folder are images. Lowercase, joins a list like \"5 folders, 4 images, and 3 documents\".",
     "placeholders": {
-      "count": { "description": "How many folders, as a number." },
+      "count": { "description": "How many, as a number." },
       "countText": { "description": "The same number, already formatted." }
     }
+  },
+  "aboutThis.childKind.video": "{count, plural, one {{countText} video} other {{countText} videos}}",
+  "@aboutThis.childKind.video": {
+    "description": "One part of the list on the Contents row of the \"Tell me about this\" card: how many items directly in the folder are videos. Lowercase, joins a list like \"5 folders, 4 images, and 3 documents\".",
+    "placeholders": {
+      "count": { "description": "How many, as a number." },
+      "countText": { "description": "The same number, already formatted." }
+    }
+  },
+  "aboutThis.childKind.audio": "{count, plural, one {{countText} sound file} other {{countText} sound files}}",
+  "@aboutThis.childKind.audio": {
+    "description": "One part of the list on the Contents row of the \"Tell me about this\" card: how many items directly in the folder are sound files. Lowercase, joins a list like \"5 folders, 4 images, and 3 documents\".",
+    "placeholders": {
+      "count": { "description": "How many, as a number." },
+      "countText": { "description": "The same number, already formatted." }
+    }
+  },
+  "aboutThis.childKind.document": "{count, plural, one {{countText} document} other {{countText} documents}}",
+  "@aboutThis.childKind.document": {
+    "description": "One part of the list on the Contents row of the \"Tell me about this\" card: how many items directly in the folder are documents. Lowercase, joins a list like \"5 folders, 4 images, and 3 documents\".",
+    "placeholders": {
+      "count": { "description": "How many, as a number." },
+      "countText": { "description": "The same number, already formatted." }
+    }
+  },
+  "aboutThis.childKind.archive": "{count, plural, one {{countText} archive or disk image} other {{countText} archives or disk images}}",
+  "@aboutThis.childKind.archive": {
+    "description": "One part of the list on the Contents row of the \"Tell me about this\" card: how many items directly in the folder are archives or disk images. Lowercase, joins a list like \"5 folders, 4 images, and 3 documents\".",
+    "placeholders": {
+      "count": { "description": "How many, as a number." },
+      "countText": { "description": "The same number, already formatted." }
+    }
+  },
+  "aboutThis.childKind.code": "{count, plural, one {{countText} code file} other {{countText} code files}}",
+  "@aboutThis.childKind.code": {
+    "description": "One part of the list on the Contents row of the \"Tell me about this\" card: how many items directly in the folder are code files. Lowercase, joins a list like \"5 folders, 4 images, and 3 documents\".",
+    "placeholders": {
+      "count": { "description": "How many, as a number." },
+      "countText": { "description": "The same number, already formatted." }
+    }
+  },
+  "aboutThis.childKind.app": "{count, plural, one {{countText} app or program} other {{countText} apps or programs}}",
+  "@aboutThis.childKind.app": {
+    "description": "One part of the list on the Contents row of the \"Tell me about this\" card: how many items directly in the folder are apps or programs. Lowercase, joins a list like \"5 folders, 4 images, and 3 documents\".",
+    "placeholders": {
+      "count": { "description": "How many, as a number." },
+      "countText": { "description": "The same number, already formatted." }
+    }
+  },
+  "aboutThis.childKind.other": "{count, plural, one {{countText} other file} other {{countText} other files}}",
+  "@aboutThis.childKind.other": {
+    "description": "One part of the list on the Contents row of the \"Tell me about this\" card: how many items directly in the folder are other files. Lowercase, joins a list like \"5 folders, 4 images, and 3 documents\".",
+    "placeholders": {
+      "count": { "description": "How many, as a number." },
+      "countText": { "description": "The same number, already formatted." }
+    }
+  },
+  "aboutThis.folderClass.dependencies": "Installed packages a package manager put here",
+  "@aboutThis.folderClass.dependencies": {
+    "description": "Muted line on the Contents row of the \"Tell me about this\" card, saying the folder is installed packages (like node_modules). Cmdr knows it from the folder's name and the project file beside it. No closing period."
+  },
+  "aboutThis.folderClass.buildOutput": "Output a build tool wrote",
+  "@aboutThis.folderClass.buildOutput": {
+    "description": "Muted line on the Contents row of the \"Tell me about this\" card, saying the folder is a build tool's output (like a Rust project's target folder). Cmdr knows it from the folder's name and the project file beside it. No closing period."
+  },
+  "aboutThis.folderClass.cache": "A cache",
+  "@aboutThis.folderClass.cache": {
+    "description": "Muted line on the Contents row of the \"Tell me about this\" card, saying the folder is a cache that whatever wrote it writes again. Cmdr knows it from the folder's name and the project file beside it. No closing period."
+  },
+  "aboutThis.folderClass.versionControl": "A repository’s history and settings",
+  "@aboutThis.folderClass.versionControl": {
+    "description": "Muted line on the Contents row of the \"Tell me about this\" card, saying the folder is version-control data (like a .git folder). Cmdr knows it from the folder's name and the project file beside it. No closing period."
+  },
+  "aboutThis.contents.atLeastSize": "at least <size></size>",
+  "@aboutThis.contents.atLeastSize": {
+    "description": "A size on the \"Tell me about this\" card that may be larger, because Cmdr's index hasn't listed all of the folder yet. <size></size> becomes the size, like \"2.1 GB\"."
+  },
+  "aboutThis.contents.noSize": "Not sized yet",
+  "@aboutThis.contents.noSize": {
+    "description": "Stands in for the size of one folder in a list on the \"Tell me about this\" card when Cmdr's index has no size for it yet. Short, no closing period."
+  },
+  "aboutThis.contents.inFolder": "in {path}",
+  "@aboutThis.contents.inFolder": {
+    "description": "Muted text after a file's name in the \"Largest files\" list of the \"Tell me about this\" card: the folder it sits in, inside the folder the card is about. No closing period.",
+    "placeholders": {
+      "path": { "description": "The folder, relative to the folder the card is about, like \"photos/2024\"." }
+    }
+  },
+  "aboutThis.contents.goTo": "Go to {name}",
+  "@aboutThis.contents.goTo": {
+    "description": "Tooltip on one entry in a list on the \"Tell me about this\" card: pressing it closes the card and shows that file or folder in the file list.",
+    "placeholders": {
+      "name": { "description": "The file or folder name." }
+    }
+  },
+  "aboutThis.contents.notLoaded": "Cmdr lists these once Search has loaded this drive",
+  "@aboutThis.contents.notLoaded": {
+    "description": "Muted line on the \"Largest files\" row of the \"Tell me about this\" card for a folder, when Cmdr's search index for this drive isn't in memory yet (it loads when someone uses Search). No closing period."
+  },
+  "aboutThis.contents.unchanged": "{atLeast, select, yes {At least {percent} of it hasn’t changed in a year (<size></size>)} other {{percent} of it hasn’t changed in a year (<size></size>)}}",
+  "@aboutThis.contents.unchanged": {
+    "description": "Answer on the \"Untouched\" row of the \"Tell me about this\" card for a folder: the share of its bytes in files nobody changed in the last year. \"At least\" when Cmdr counted only the largest of them. <size></size> becomes the bytes, like \"1.2 GB\". No closing period.",
+    "placeholders": {
+      "atLeast": { "description": "\"yes\" when the share may be larger." },
+      "percent": { "description": "The share, already formatted, like \"38%\"." }
+    }
+  },
+  "aboutThis.appData.summary": "{count, plural, =0 {None that Cmdr’s index knows of} one {{atLeast, select, yes {At least <size></size> in one folder} other {<size></size> in one folder}}} other {{atLeast, select, yes {At least <size></size> in {countText} folders} other {<size></size> in {countText} folders}}}}",
+  "@aboutThis.appData.summary": {
+    "description": "Answer on the \"Its data in your Library\" row of the \"Tell me about this\" card for an app: how much data sits in the Library folders named after the app, which stay behind if the app is removed. \"At least\" when Cmdr's index hasn't listed some of it. <size></size> becomes the total, like \"2.3 GB\". No closing period.",
+    "placeholders": {
+      "count": { "description": "How many, as a number." },
+      "countText": { "description": "The same number, already formatted." },
+      "atLeast": { "description": "\"yes\" when the total may be larger." }
+    }
+  },
+  "aboutThis.appData.notLookedIn": "Cmdr’s index hasn’t listed {places} yet, so there may be more",
+  "@aboutThis.appData.notLookedIn": {
+    "description": "Muted line on the \"Its data in your Library\" row of the \"Tell me about this\" card: Library folders Cmdr's index hasn't read yet, so some of the app's data may be missing from the list. No closing period.",
+    "placeholders": {
+      "places": {
+        "description": "A list of Library folder names joined with commas and \"and\", like \"Caches and Logs\"."
+      }
+    }
+  },
+  "aboutThis.ownerPlace.caches": "Caches",
+  "@aboutThis.ownerPlace.caches": {
+    "description": "The Library folder an app's data sits in, shown muted beside it in the \"Its data in your Library\" list of the \"Tell me about this\" card. The folder's real name inside the macOS Library folder; keep it as the system names it."
+  },
+  "aboutThis.ownerPlace.containers": "Containers",
+  "@aboutThis.ownerPlace.containers": {
+    "description": "The Library folder an app's data sits in, shown muted beside it in the \"Its data in your Library\" list of the \"Tell me about this\" card. The folder's real name inside the macOS Library folder; keep it as the system names it."
+  },
+  "aboutThis.ownerPlace.groupContainers": "Group Containers",
+  "@aboutThis.ownerPlace.groupContainers": {
+    "description": "The Library folder an app's data sits in, shown muted beside it in the \"Its data in your Library\" list of the \"Tell me about this\" card. The folder's real name inside the macOS Library folder; keep it as the system names it."
+  },
+  "aboutThis.ownerPlace.applicationSupport": "Application Support",
+  "@aboutThis.ownerPlace.applicationSupport": {
+    "description": "The Library folder an app's data sits in, shown muted beside it in the \"Its data in your Library\" list of the \"Tell me about this\" card. The folder's real name inside the macOS Library folder; keep it as the system names it."
+  },
+  "aboutThis.ownerPlace.applicationScripts": "Application Scripts",
+  "@aboutThis.ownerPlace.applicationScripts": {
+    "description": "The Library folder an app's data sits in, shown muted beside it in the \"Its data in your Library\" list of the \"Tell me about this\" card. The folder's real name inside the macOS Library folder; keep it as the system names it."
+  },
+  "aboutThis.ownerPlace.preferences": "Preferences",
+  "@aboutThis.ownerPlace.preferences": {
+    "description": "The Library folder an app's data sits in, shown muted beside it in the \"Its data in your Library\" list of the \"Tell me about this\" card. The folder's real name inside the macOS Library folder; keep it as the system names it."
+  },
+  "aboutThis.ownerPlace.savedState": "Saved Application State",
+  "@aboutThis.ownerPlace.savedState": {
+    "description": "The Library folder an app's data sits in, shown muted beside it in the \"Its data in your Library\" list of the \"Tell me about this\" card. The folder's real name inside the macOS Library folder; keep it as the system names it."
+  },
+  "aboutThis.ownerPlace.logs": "Logs",
+  "@aboutThis.ownerPlace.logs": {
+    "description": "The Library folder an app's data sits in, shown muted beside it in the \"Its data in your Library\" list of the \"Tell me about this\" card. The folder's real name inside the macOS Library folder; keep it as the system names it."
+  },
+  "aboutThis.ownerPlace.webData": "HTTPStorages",
+  "@aboutThis.ownerPlace.webData": {
+    "description": "The Library folder an app's data sits in, shown muted beside it in the \"Its data in your Library\" list of the \"Tell me about this\" card. The folder's real name inside the macOS Library folder; keep it as the system names it."
+  },
+  "aboutThis.ownerPlace.sandboxHome": "App home",
+  "@aboutThis.ownerPlace.sandboxHome": {
+    "description": "The Library folder an app's data sits in, shown muted beside it in the \"Its data in your Library\" list of the \"Tell me about this\" card. A sandboxed Linux app's own home folder (~/.var/app or ~/snap)."
   },
   "aboutThis.removal.uncommittedWork": "It has changes no commit holds, so git can’t bring those back.",
   "@aboutThis.removal.uncommittedWork": {
@@ -845,12 +1032,13 @@
   "@aboutThis.removal.removesApp": {
     "description": "One line under \"What removing it means\" for an app, when Cmdr doesn't know (yet) which of its folders in the user's Library would stay behind. \"Library\" is the macOS folder of that name."
   },
-  "aboutThis.removal.removesAppDataLeft": "{count, plural, =0 {This removes the app. Cmdr’s index knows of none of its data in your Library.} one {This removes the app. Its data in your Library stays: <size></size> in one folder.} other {This removes the app. Its data in your Library stays: <size></size> in {countText} folders.}}",
+  "aboutThis.removal.removesAppDataLeft": "{count, plural, =0 {This removes the app. Cmdr’s index knows of none of its data in your Library.} one {{atLeast, select, yes {This removes the app. Its data in your Library stays: at least <size></size> in one folder.} other {This removes the app. Its data in your Library stays: <size></size> in one folder.}}} other {{atLeast, select, yes {This removes the app. Its data in your Library stays: at least <size></size> in {countText} folders.} other {This removes the app. Its data in your Library stays: <size></size> in {countText} folders.}}}}",
   "@aboutThis.removal.removesAppDataLeft": {
-    "description": "One line under \"What removing it means\" for an app: how much of the app's data in the user's Library would stay behind. <size></size> becomes the total size.",
+    "description": "One line under \"What removing it means\" for an app: how much of the app's data in the user's Library would stay behind. <size></size> becomes the total size. \"At least\" when Cmdr's index hasn't listed some of it.",
     "placeholders": {
-      "count": { "description": "How many folders, as a number." },
-      "countText": { "description": "The same number, already formatted." }
+      "count": { "description": "How many, as a number." },
+      "countText": { "description": "The same number, already formatted." },
+      "atLeast": { "description": "\"yes\" when the total may be larger." }
     }
   },
   "aboutThis.removal.appData": "{certainty, select, probable {It’s probably {app}’s data, and {app} may lose what it keeps here.} other {It’s {app}’s data, and {app} may lose what it keeps here.}}",

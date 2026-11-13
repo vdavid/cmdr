@@ -20,7 +20,12 @@
     import Icon from '#lib/ui/Icon.svelte'
     import AboutAbsence from './AboutAbsence.svelte'
     import AboutPath from './AboutPath.svelte'
-    import { copiedPath } from '#lib/utils/display-path.js'
+    import AboutDigest from './AboutDigest.svelte'
+    import AboutAppData from './AboutAppData.svelte'
+    import type { AboutGoTarget } from './about-card'
+    import { copiedPath, displayPath } from '#lib/utils/display-path.js'
+    import { lastName } from '#lib/path/grammar.js'
+    import { tooltip } from '#lib/tooltip/tooltip.js'
     import { showsOnDisk, type RowView } from './about-card-view'
     import { KIND_LABEL, ROW_LABEL, importanceFloorKey, importanceReasonKey } from './about-words'
 
@@ -32,9 +37,13 @@
          * lands into space already there; at the settle the reservations go, with the section collapse.
          */
         settled: boolean
+        /** The card's item, so What's inside can say where under it a deep file sits. */
+        subjectPath: string
+        /** Takes the pane to a place a row names, closing the card. */
+        onGoTo: (target: AboutGoTarget) => void
     }
 
-    const { row, target, settled }: Props = $props()
+    const { row, target, settled, subjectPath, onGoTo }: Props = $props()
 
     /** Lines a row's usual answer takes, reserved while the card fills. */
     const RESERVED_LINES: Partial<Record<RowView['kind'], number>> = {
@@ -44,6 +53,10 @@
         owner: 2,
         git: 2,
         importance: 2,
+        // A folder's digest and an app's data are lists; they land inside the grace on a local disk, and the rest of
+        // their height goes at the settle with every other reservation.
+        folderDigest: 4,
+        appData: 3,
     }
     const reserved = $derived(settled ? 1 : (RESERVED_LINES[row.kind] ?? 1))
     const state = $derived(row.fact?.fact ?? ({ state: 'pending' } as const))
@@ -134,8 +147,16 @@
             </dd>
         </div>
     {/if}
+{:else if row.fact?.kind === 'folderDigest' && row.fact.fact.state === 'known'}
+    <!-- What's inside draws its own rows: the count, the biggest children, the largest files, the untouched share. -->
+    <AboutDigest digest={row.fact.fact.value} folderPath={subjectPath} {onGoTo} />
 {:else}
-    <div class="row" aria-busy={pending} class:reserve-two={reserved === 2} data-row-kind={row.kind}>
+    <div
+        class="row"
+        aria-busy={pending}
+        style:min-height={reserved > 1 ? `calc(${String(reserved)} * var(--font-line-height-normal) * 1em)` : null}
+        data-row-kind={row.kind}
+    >
         <dt>{t(ROW_LABEL[row.kind])}</dt>
         <dd>
             {#if pending}
@@ -335,7 +356,11 @@
                 {/if}
             {:else if row.fact?.kind === 'git' && row.fact.fact.state === 'known'}
                 {@const git = row.fact.fact.value}
-                {#snippet repo(_content: Snippet)}<AboutPath path={git.repoRoot} />{/snippet}
+                <!-- The repo by its folder's name ("In cmdr, on main"), the whole path in its tooltip and behind Copy:
+                     a long root cut mid-sentence broke the line around it. -->
+                {#snippet repo(_content: Snippet)}<span use:tooltip={displayPath(git.repoRoot)}
+                        >{lastName(git.repoRoot)}</span
+                    >{/snippet}
                 <span class="line with-copy">
                     <span class="line-text"
                         ><Trans
@@ -383,12 +408,8 @@
                     <span class="line quiet">{t('aboutThis.folderSize.stale')}</span>
                 {/if}
                 {#if size.hasSymlinks}<span class="line quiet">{t('aboutThis.folderSize.symlinks')}</span>{/if}
-            {:else if row.fact?.kind === 'folderDigest' && row.fact.fact.state === 'known'}
-                {@const count = row.fact.fact.value.directChildren}
-                {t('aboutThis.contents.count', { count, countText: formatInteger(count) })}
             {:else if row.fact?.kind === 'appData' && row.fact.fact.state === 'known'}
-                {@const count = row.fact.fact.value.folders.length}
-                {t('aboutThis.appData.count', { count, countText: formatInteger(count) })}
+                <AboutAppData data={row.fact.fact.value} {onGoTo} />
             {/if}
         </dd>
     </div>
@@ -399,10 +420,6 @@
         display: grid;
         grid-template-columns: 8.5rem minmax(0, 1fr);
         column-gap: var(--spacing-md);
-    }
-
-    .row.reserve-two {
-        min-height: calc(2 * var(--font-line-height-normal) * 1em);
     }
 
     dt {

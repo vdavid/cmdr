@@ -8,88 +8,10 @@
  * Raw data on purpose: this module is dev-only. Every host, name, and path is made up (❌ no real download tokens).
  */
 
-import type {
-  AboutEvent,
-  AboutFact,
-  AboutPlan,
-  Derived,
-  Fact,
-  Headline,
-  PlannedSection,
-  RemovalConsequence,
-  UnknownWhy,
-} from '#lib/ipc/bindings.js'
-import { applyAboutEvent, emptyCard, type AboutCardData } from '#lib/about-this/about-card.js'
-
-const REQUEST = 'gallery'
-
-/** Seconds since the epoch for a calendar day, at noon UTC. */
-function day(iso: string): number {
-  return Math.floor(Date.parse(`${iso}T12:00:00Z`) / 1000)
-}
-
-function routine(why: UnknownWhy): Fact<never> {
-  return { state: 'unknown', value: { why, prominence: 'routine' } }
-}
-function notable(why: UnknownWhy): Fact<never> {
-  return { state: 'unknown', value: { why, prominence: 'notable' } }
-}
-
-function derived(headline: Headline, shown: RemovalConsequence[], more: RemovalConsequence[] = []): Derived {
-  return { headline, removal: { shown, more } }
-}
-
-interface Stream {
-  plan: AboutPlan
-  /** The headline and removal as they stand with every row pending. */
-  first: Derived
-  /** Each landing, with what the headline and removal say after it. */
-  facts: { fact: AboutFact; derived: Derived }[]
-  settled: boolean
-}
-
-function card(name: string, path: string, stream: Stream): AboutCardData {
-  const events: AboutEvent[] = [
-    { requestId: REQUEST, update: { type: 'planned', plan: stream.plan, derived: stream.first } },
-    ...stream.facts.map((landing): AboutEvent => ({
-      requestId: REQUEST,
-      update: { type: 'fact', fact: landing.fact, derived: landing.derived },
-    })),
-  ]
-  if (stream.settled) events.push({ requestId: REQUEST, update: { type: 'factsSettled' } })
-  return events.reduce(applyAboutEvent, emptyCard(REQUEST, { path, volumeId: 'root', name, iconId: null }))
-}
-
-function plan(
-  target: AboutPlan['target'],
-  sections: PlannedSection[],
-  volumeNote: AboutPlan['volumeNote'] = null,
-): AboutPlan {
-  return { target, sections: [...sections, { section: 'removal', kinds: [] }], volumeNote }
-}
-
-function identity(
-  name: string,
-  size: number | null,
-  modified: string,
-  extra: { hardLinks?: number; symlinkTarget?: string } = {},
-): AboutFact {
-  return {
-    kind: 'identity',
-    fact: {
-      state: 'known',
-      value: {
-        name,
-        logicalSize: size,
-        physicalSize: size === null ? null : Math.ceil(size / 4096) * 4096,
-        created: day(modified) - 86_400 * 3,
-        modified: day(modified),
-        hardLinks: extra.hardLinks ?? 1,
-        symlinkTarget: extra.symlinkTarget ?? null,
-      },
-    },
-  }
-}
+import type { Headline } from '#lib/ipc/bindings.js'
+import { emptyCard, type AboutCardData } from '#lib/about-this/about-card.js'
+import { REQUEST, card, day, derived, identity, notable, plan, routine, type Stream } from './about-this-stream'
+import { aboutThisFolderFixtures } from './about-this-folders'
 
 // ── A downloaded disk image: every origin fact known ───────────────────────────
 
@@ -237,139 +159,6 @@ const stillFilling: Stream = {
   settled: false,
 }
 
-// ── A folder in a repo: size, importance, git ──────────────────────────────────
-
-const FOLDER = 'website'
-const folderHeadline: Headline = {
-  what: { type: 'folder' },
-  size: { bytes: 48_211_904, atLeast: true },
-  lead: { template: 'plain' },
-}
-const folderRemoval = derived(folderHeadline, [{ type: 'uncommittedWork' }])
-
-const folder: Stream = {
-  plan: plan('folder', [
-    { section: 'nature', kinds: ['identity', 'recursiveSize'] },
-    { section: 'origin', kinds: ['cmdrOperation'] },
-    { section: 'use', kinds: ['importance'] },
-    { section: 'context', kinds: ['git'] },
-  ]),
-  first: derived({ ...folderHeadline, size: null }, [{ type: 'cantTell' }]),
-  facts: [
-    { fact: identity(FOLDER, null, '2026-11-10'), derived: folderRemoval },
-    {
-      fact: {
-        kind: 'recursiveSize',
-        fact: {
-          state: 'known',
-          value: {
-            logical: 48_211_904,
-            physical: 52_428_800,
-            files: 1_284,
-            folders: 211,
-            coverage: 'lowerBound',
-            updating: false,
-            hasSymlinks: true,
-          },
-        },
-      },
-      derived: folderRemoval,
-    },
-    { fact: { kind: 'cmdrOperation', fact: routine('noRecord') }, derived: folderRemoval },
-    {
-      fact: {
-        kind: 'importance',
-        fact: {
-          state: 'known',
-          value: {
-            band: 'high',
-            stale: false,
-            reasons: ['projectMarker', 'mtimeRecency', 'visitActivity'],
-            visits: 37,
-          },
-        },
-      },
-      derived: folderRemoval,
-    },
-    {
-      fact: {
-        kind: 'git',
-        fact: {
-          state: 'known',
-          value: {
-            repoRoot: '/Users/test_user_1/projects/website',
-            branch: 'main',
-            status: { state: 'known', value: { type: 'tracked', state: 'modified' } },
-          },
-        },
-      },
-      derived: folderRemoval,
-    },
-  ],
-  settled: true,
-}
-
-// ── An app: bundle, signature with a stapled ticket ────────────────────────────
-
-const APP = 'Tessera.app'
-const appHeadline: Headline = {
-  what: { type: 'app', version: '2.4.1' },
-  size: null,
-  lead: { template: 'lastOpened', at: day('2026-11-12') },
-}
-const appRemoval = derived(appHeadline, [{ type: 'removesApp', dataLeft: routine('volumeCantTell') }])
-
-const app: Stream = {
-  plan: plan('appBundle', [
-    { section: 'nature', kinds: ['identity', 'bundle', 'signature'] },
-    { section: 'origin', kinds: ['download', 'cmdrOperation'] },
-    { section: 'use', kinds: ['lastOpened'] },
-  ]),
-  first: derived({ ...appHeadline, lead: { template: 'plain' } }, [
-    { type: 'removesApp', dataLeft: { state: 'pending' } },
-  ]),
-  facts: [
-    { fact: identity(APP, null, '2026-03-02'), derived: appRemoval },
-    {
-      fact: {
-        kind: 'bundle',
-        fact: { state: 'known', value: { bundleId: 'example.tessera.mac', displayName: 'Tessera', version: '2.4.1' } },
-      },
-      derived: appRemoval,
-    },
-    {
-      fact: {
-        kind: 'signature',
-        fact: {
-          state: 'known',
-          value: {
-            signer: { type: 'developerId', team: 'T3SS3RA001', org: 'Tessera Labs AB' },
-            ticket: 'present',
-            checked: { type: 'executableMatches' },
-          },
-        },
-      },
-      derived: appRemoval,
-    },
-    {
-      fact: {
-        kind: 'download',
-        fact: {
-          state: 'known',
-          value: { sources: routine('noRecord'), downloadedAt: day('2026-03-02'), downloadedBy: 'Chrome' },
-        },
-      },
-      derived: appRemoval,
-    },
-    { fact: { kind: 'cmdrOperation', fact: routine('noRecord') }, derived: appRemoval },
-    {
-      fact: { kind: 'lastOpened', fact: { state: 'known', value: { lastOpened: day('2026-11-12'), useCount: null } } },
-      derived: appRemoval,
-    },
-  ],
-  settled: true,
-}
-
 // ── A program named like a photo ───────────────────────────────────────────────
 
 const LIAR = 'holiday-photo.jpg'
@@ -471,7 +260,7 @@ const notableA: Stream = {
   first: derived(libraryHeadline, [{ type: 'cantTell' }]),
   facts: [
     { fact: identity('Google', null, '2026-08-14'), derived: libraryRemoval },
-    { fact: { kind: 'recursiveSize', fact: notable('notIndexed') }, derived: libraryRemoval },
+    { fact: { kind: 'recursiveSize', fact: routine('notIndexed') }, derived: libraryRemoval },
     { fact: { kind: 'download', fact: notable('timedOut') }, derived: libraryRemoval },
     { fact: { kind: 'cmdrOperation', fact: notable('nodeChangedSince') }, derived: libraryRemoval },
     { fact: { kind: 'lastOpened', fact: notable('permissionDenied') }, derived: libraryRemoval },
@@ -606,8 +395,7 @@ export const aboutThisFixtures: Record<string, AboutCardData | undefined> = {
   downloaded: card(DMG, `/Users/test_user_1/Downloads/${DMG}`, downloaded),
   'plain-document': card(DOC, `/Users/test_user_1/Documents/${DOC}`, plainDocument),
   'still-filling': card(DOC, `/Users/test_user_1/Documents/${DOC}`, stillFilling),
-  folder: card(FOLDER, '/Users/test_user_1/projects/website', folder),
-  app: card(APP, `/Applications/${APP}`, app),
+  ...aboutThisFolderFixtures,
   mismatch: card(LIAR, `/Users/test_user_1/Desktop/${LIAR}`, mismatch),
   'notable-a': card('Google', '/Users/test_user_1/Library/Application Support/Google', notableA),
   'notable-b': card('Tessera Helper', '/Users/test_user_1/Library/Application Support/Tessera Helper', notableB),

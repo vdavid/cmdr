@@ -6,7 +6,7 @@
  * come from the plan. The one layout decision is the collapse, which reads only that typed prominence.
  */
 
-import type { AboutFact, FactKind, Identity, Section } from '#lib/ipc/bindings.js'
+import type { AboutFact, FactKind, Identity, Section, UnknownWhy } from '#lib/ipc/bindings.js'
 import type { AboutCardData } from './about-card'
 
 /** One planned row: its answer, or `null` while it's pending. */
@@ -24,6 +24,18 @@ export interface SectionView {
    * so the one layout change happens at the end, never mid-stream.
    */
   collapsed: boolean
+  /**
+   * The one reason every row of a collapsed section shares, when it isn't "no record" (a folder the index hasn't
+   * reached: "Not indexed yet"), so the line says that rather than "Nothing on record". `null`: the generic line.
+   */
+  collapsedWhy: UnknownWhy | null
+}
+
+/** The reason every row shares, when all of them are unknowns for the same one other than `noRecord`. */
+function sharedWhy(rows: RowView[]): UnknownWhy | null {
+  const whys = new Set(rows.map((row) => (row.fact?.fact.state === 'unknown' ? row.fact.fact.value.why : null)))
+  const [only] = [...whys]
+  return whys.size === 1 && only !== null && only !== 'noRecord' ? only : null
 }
 
 /** Whether a row's answer is an ordinary absence: a Routine unknown, or a question with no answer here. */
@@ -41,11 +53,8 @@ export function sectionsOf(card: AboutCardData): SectionView[] {
   for (const planned of card.plan.sections) {
     if (planned.section === 'removal') continue
     const rows = planned.kinds.map((kind) => ({ kind, fact: card.facts[kind] ?? null }))
-    views.push({
-      section: planned.section,
-      rows,
-      collapsed: card.settled && rows.length > 0 && rows.every((row) => isQuietAbsence(row.fact)),
-    })
+    const collapsed = card.settled && rows.length > 0 && rows.every((row) => isQuietAbsence(row.fact))
+    views.push({ section: planned.section, rows, collapsed, collapsedWhy: collapsed ? sharedWhy(rows) : null })
   }
   return views
 }

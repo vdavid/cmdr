@@ -201,12 +201,21 @@ test.describe('Tell me about this', () => {
     await dismissOverlay(tauriPage)
   })
 
-  test('a folder’s card has its size row', async ({ tauriPage }) => {
+  test('a folder’s card leads with what’s inside and has its size row', async ({ tauriPage }) => {
     await openFixtureDir(tauriPage)
     expect(await moveCursorToFile(tauriPage, FOLDER)).toBe(true)
     await pressKey(tauriPage, defaultKey('file.tellMeAbout'))
     await waitForSettledCard(tauriPage)
-    // Indexed or not, the row is there and says something: a size, or why the index can't tell yet.
+    expect(
+      await tauriPage.evaluate<string | null>(
+        `document.querySelector('${CARD} [data-section]')?.getAttribute('data-section') ?? null`,
+      ),
+    ).toBe('contents')
+    // Indexed or not, each row is there and says something: what's inside and a size, or why the index can't tell
+    // yet. The folder holds a file, so it's never called empty.
+    const inside = await rowText(tauriPage, 'folderDigest')
+    expect(inside).not.toBe('')
+    expect(inside).not.toContain('Empty')
     expect(await rowText(tauriPage, 'recursiveSize')).not.toBe('')
     // A folder's own entry size is never its size: the Size row is the index's, not identity's.
     expect(await tauriPage.count(`${CARD} [data-row-kind="size"]`)).toBe(0)

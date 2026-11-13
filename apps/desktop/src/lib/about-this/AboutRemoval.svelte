@@ -24,14 +24,6 @@
     const uid = $props.id()
     const listId = `about-removal-${uid}`
 
-    /** An app's Library data that stays, totalled over the folders whose size is known. */
-    function dataLeftBytes(consequence: RemovalConsequence & { type: 'removesApp' }): number {
-        if (consequence.dataLeft.state !== 'known') return 0
-        return consequence.dataLeft.value.folders.reduce(
-            (sum, folder) => sum + (folder.size.state === 'known' ? folder.size.value.logical : 0),
-            0,
-        )
-    }
 </script>
 
 {#snippet line(consequence: RemovalConsequence)}
@@ -42,10 +34,14 @@
         {:else if consequence.type === 'userDocument'}{t('aboutThis.removal.userDocument')}
         {:else if consequence.type === 'removesApp'}
             {#if consequence.dataLeft.state === 'known'}
-                {@const count = consequence.dataLeft.value.folders.length}
-                {@const bytes = dataLeftBytes(consequence)}
-                {#snippet size(_content: Snippet)}<Size {bytes} />{/snippet}
-                <Trans key="aboutThis.removal.removesAppDataLeft" params={{ count, countText: formatInteger(count) }} snippets={{ size }} />
+                {@const data = consequence.dataLeft.value}
+                {@const count = data.folders.length}
+                {#snippet size(_content: Snippet)}<Size bytes={data.totalBytes} />{/snippet}
+                <Trans
+                    key="aboutThis.removal.removesAppDataLeft"
+                    params={{ count, countText: formatInteger(count), atLeast: data.totalIsLowerBound ? 'yes' : 'no' }}
+                    snippets={{ size }}
+                />
             {:else}
                 {t('aboutThis.removal.removesApp')}
             {/if}

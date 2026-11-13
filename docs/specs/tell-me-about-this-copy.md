@@ -15,6 +15,10 @@ Open questions for the review:
 4. **Signer wording**: "Signed by Tessera Labs AB (team T3SS3RA001)" only when the program matched its signature,
    "Carries a signature from …" otherwise. Never "verified".
 5. **Removal lines**: two shown, the rest behind "N more". Right number?
+6. **What's inside lists eight** biggest children and up to eight largest files, so a big folder's card scrolls before
+   "What removing it means". Fewer (five)?
+7. **"Not ranked"** replaced "Low by design" for a folder Cmdr's ranking leaves out (caches, `node_modules`, app data in
+   the Library, temp folders), so "low" never reads as "this doesn't matter". Right words?
 
 ## Strings
 
@@ -131,6 +135,15 @@ Open questions for the review:
 - `aboutThis.label.appData`: Its data in your Library
   - Where: Row label on the "Tell me about this" card for an app, left of the folders in the user's Library folder that
     are named after the app and stay behind if the app is removed. "Library" is the macOS folder of that name.
+- `aboutThis.label.biggest`: Biggest inside
+  - Where: Row label on the "Tell me about this" card for a folder, left of the largest items sitting directly in it
+    (files and folders), biggest first.
+- `aboutThis.label.largestFiles`: Largest files
+  - Where: Row label on the "Tell me about this" card for a folder, left of the largest files anywhere inside it, at any
+    depth.
+- `aboutThis.label.unchanged`: Untouched
+  - Where: Row label on the "Tell me about this" card for a folder, left of how much of it hasn't changed in a year.
+    Short: one or two words.
 - `aboutThis.unknown.noRecord`: Nothing on record
   - Where: Muted one-line answer on a "Tell me about this" card row when nothing recorded this fact. Ordinary, not a
     warning. It doesn't say "never": no record isn't the same as it never happened. No closing period.
@@ -146,9 +159,10 @@ Open questions for the review:
 - `aboutThis.unknown.libraryNameMatchesNoApp`: No installed app has this folder’s name.
   - Where: Answer on the "Belongs to" row of the "Tell me about this" card for a folder in the macOS Library folder that
     is named like an app, when no installed app has that name. It doesn't claim the folder is left over.
-- `aboutThis.unknown.notIndexed`: Cmdr’s drive index doesn’t cover this yet.
-  - Where: Answer on a "Tell me about this" card row (a folder's size or importance) when Cmdr's drive index hasn't
-    scanned the place yet.
+- `aboutThis.unknown.notIndexed`: Not indexed yet
+  - Where: Muted answer on a "Tell me about this" card row (a folder's size, what's inside, its importance, an app's
+    data) when Cmdr's drive index hasn't scanned the place yet, or indexing is off. Also the one muted line of a section
+    whose every row has that answer. An ordinary state, not a problem. Short, no closing period.
 - `aboutThis.unknown.timedOut`: Cmdr didn’t get an answer in time.
   - Where: Answer on a "Tell me about this" card row when looking up that one fact took too long (about a second) and
     Cmdr stopped waiting.
@@ -508,7 +522,8 @@ Open questions for the review:
     vendor folder like "Google" or "Microsoft").
 - `aboutThis.git.repo`: In <repo></repo>{hasBranch, select, yes {, on {branch}} other {, with no branch checked out}}
   - Where: Answer on the Git row of the "Tell me about this" card: the repository the item sits in, and its checked-out
-    branch. <repo></repo> becomes the repository's folder. No closing period.
+    branch. <repo></repo> becomes the name of the repository's folder, like "cmdr" (its full path shows in a tooltip).
+    No closing period.
 - `aboutThis.git.copyRepo`: Copy the repository’s path
   - Where: Accessible name and hover hint of the copy button beside the repository's folder on the Git row. It copies
     the full path.
@@ -539,13 +554,109 @@ Open questions for the review:
 - `aboutThis.folderSize.symlinks`: Links to other places aren’t counted
   - Where: Muted second line on a folder's Size row of the "Tell me about this" card when the folder holds symbolic
     links, whose targets the size leaves out. No closing period.
-- `aboutThis.contents.count`: {count, plural, =0 {Empty} one {One item} other {{countText} items}}
-  - Where: Answer on the Contents row of the "Tell me about this" card for a folder: how many items sit directly in it.
-    No closing period.
-- `aboutThis.appData.count`: {count, plural, =0 {None that Cmdr’s index knows of} one {One folder}
-  other {{countText} folders}}
-  - Where: Answer on the "Its data in your Library" row of the "Tell me about this" card for an app: how many folders in
-    the Library are named after it. No closing period.
+- `aboutThis.contents.summary`: {count, plural, =0 {Empty} one {One item} other {{countText} items: {kinds}}}
+  - Where: Answer on the Contents row of the "Tell me about this" card for a folder: how many items sit directly in it
+    and what kinds they are. No closing period.
+- `aboutThis.childKind.folder`: {count, plural, one {{countText} folder} other {{countText} folders}}
+  - Where: One part of the list on the Contents row of the "Tell me about this" card: how many items directly in the
+    folder are folders. Lowercase, joins a list like "5 folders, 4 images, and 3 documents".
+- `aboutThis.childKind.image`: {count, plural, one {{countText} image} other {{countText} images}}
+  - Where: One part of the list on the Contents row of the "Tell me about this" card: how many items directly in the
+    folder are images. Lowercase, joins a list like "5 folders, 4 images, and 3 documents".
+- `aboutThis.childKind.video`: {count, plural, one {{countText} video} other {{countText} videos}}
+  - Where: One part of the list on the Contents row of the "Tell me about this" card: how many items directly in the
+    folder are videos. Lowercase, joins a list like "5 folders, 4 images, and 3 documents".
+- `aboutThis.childKind.audio`: {count, plural, one {{countText} sound file} other {{countText} sound files}}
+  - Where: One part of the list on the Contents row of the "Tell me about this" card: how many items directly in the
+    folder are sound files. Lowercase, joins a list like "5 folders, 4 images, and 3 documents".
+- `aboutThis.childKind.document`: {count, plural, one {{countText} document} other {{countText} documents}}
+  - Where: One part of the list on the Contents row of the "Tell me about this" card: how many items directly in the
+    folder are documents. Lowercase, joins a list like "5 folders, 4 images, and 3 documents".
+- `aboutThis.childKind.archive`: {count, plural,
+  one {{countText} archive or disk image} other {{countText} archives or disk images}}
+  - Where: One part of the list on the Contents row of the "Tell me about this" card: how many items directly in the
+    folder are archives or disk images. Lowercase, joins a list like "5 folders, 4 images, and 3 documents".
+- `aboutThis.childKind.code`: {count, plural, one {{countText} code file} other {{countText} code files}}
+  - Where: One part of the list on the Contents row of the "Tell me about this" card: how many items directly in the
+    folder are code files. Lowercase, joins a list like "5 folders, 4 images, and 3 documents".
+- `aboutThis.childKind.app`: {count, plural, one {{countText} app or program} other {{countText} apps or programs}}
+  - Where: One part of the list on the Contents row of the "Tell me about this" card: how many items directly in the
+    folder are apps or programs. Lowercase, joins a list like "5 folders, 4 images, and 3 documents".
+- `aboutThis.childKind.other`: {count, plural, one {{countText} other file} other {{countText} other files}}
+  - Where: One part of the list on the Contents row of the "Tell me about this" card: how many items directly in the
+    folder are other files. Lowercase, joins a list like "5 folders, 4 images, and 3 documents".
+- `aboutThis.folderClass.dependencies`: Installed packages a package manager put here
+  - Where: Muted line on the Contents row of the "Tell me about this" card, saying the folder is installed packages
+    (like node_modules). Cmdr knows it from the folder's name and the project file beside it. No closing period.
+- `aboutThis.folderClass.buildOutput`: Output a build tool wrote
+  - Where: Muted line on the Contents row of the "Tell me about this" card, saying the folder is a build tool's output
+    (like a Rust project's target folder). Cmdr knows it from the folder's name and the project file beside it. No
+    closing period.
+- `aboutThis.folderClass.cache`: A cache
+  - Where: Muted line on the Contents row of the "Tell me about this" card, saying the folder is a cache that whatever
+    wrote it writes again. Cmdr knows it from the folder's name and the project file beside it. No closing period.
+- `aboutThis.folderClass.versionControl`: A repository’s history and settings
+  - Where: Muted line on the Contents row of the "Tell me about this" card, saying the folder is version-control data
+    (like a .git folder). Cmdr knows it from the folder's name and the project file beside it. No closing period.
+- `aboutThis.contents.atLeastSize`: at least <size></size>
+  - Where: A size on the "Tell me about this" card that may be larger, because Cmdr's index hasn't listed all of the
+    folder yet. <size></size> becomes the size, like "2.1 GB".
+- `aboutThis.contents.noSize`: Not sized yet
+  - Where: Stands in for the size of one folder in a list on the "Tell me about this" card when Cmdr's index has no size
+    for it yet. Short, no closing period.
+- `aboutThis.contents.inFolder`: in {path}
+  - Where: Muted text after a file's name in the "Largest files" list of the "Tell me about this" card: the folder it
+    sits in, inside the folder the card is about. No closing period.
+- `aboutThis.contents.goTo`: Go to {name}
+  - Where: Tooltip on one entry in a list on the "Tell me about this" card: pressing it closes the card and shows that
+    file or folder in the file list.
+- `aboutThis.contents.notLoaded`: Cmdr lists these once Search has loaded this drive
+  - Where: Muted line on the "Largest files" row of the "Tell me about this" card for a folder, when Cmdr's search index
+    for this drive isn't in memory yet (it loads when someone uses Search). No closing period.
+- `aboutThis.contents.unchanged`: {atLeast, select, yes {At least {percent} of it hasn’t changed in a year
+  (<size></size>)} other {{percent} of it hasn’t changed in a year (<size></size>)}}
+  - Where: Answer on the "Untouched" row of the "Tell me about this" card for a folder: the share of its bytes in files
+    nobody changed in the last year. "At least" when Cmdr counted only the largest of them. <size></size> becomes the
+    bytes, like "1.2 GB". No closing period.
+- `aboutThis.appData.summary`: {count, plural, =0 {None that Cmdr’s index knows of}
+  one {{atLeast, select, yes {At least <size></size> in one folder} other {<size></size> in one folder}}}
+  other {{atLeast, select, yes {At least <size></size> in {countText} folders} other {<size></size> in {countText} folders}}}}
+  - Where: Answer on the "Its data in your Library" row of the "Tell me about this" card for an app: how much data sits
+    in the Library folders named after the app, which stay behind if the app is removed. "At least" when Cmdr's index
+    hasn't listed some of it. <size></size> becomes the total, like "2.3 GB". No closing period.
+- `aboutThis.appData.notLookedIn`: Cmdr’s index hasn’t listed {places} yet, so there may be more
+  - Where: Muted line on the "Its data in your Library" row of the "Tell me about this" card: Library folders Cmdr's
+    index hasn't read yet, so some of the app's data may be missing from the list. No closing period.
+- `aboutThis.ownerPlace.caches`: Caches
+  - Where: The Library folder an app's data sits in, shown muted beside it in the "Its data in your Library" list of the
+    "Tell me about this" card. The folder's real name inside the macOS Library folder; keep it as the system names it.
+- `aboutThis.ownerPlace.containers`: Containers
+  - Where: The Library folder an app's data sits in, shown muted beside it in the "Its data in your Library" list of the
+    "Tell me about this" card. The folder's real name inside the macOS Library folder; keep it as the system names it.
+- `aboutThis.ownerPlace.groupContainers`: Group Containers
+  - Where: The Library folder an app's data sits in, shown muted beside it in the "Its data in your Library" list of the
+    "Tell me about this" card. The folder's real name inside the macOS Library folder; keep it as the system names it.
+- `aboutThis.ownerPlace.applicationSupport`: Application Support
+  - Where: The Library folder an app's data sits in, shown muted beside it in the "Its data in your Library" list of the
+    "Tell me about this" card. The folder's real name inside the macOS Library folder; keep it as the system names it.
+- `aboutThis.ownerPlace.applicationScripts`: Application Scripts
+  - Where: The Library folder an app's data sits in, shown muted beside it in the "Its data in your Library" list of the
+    "Tell me about this" card. The folder's real name inside the macOS Library folder; keep it as the system names it.
+- `aboutThis.ownerPlace.preferences`: Preferences
+  - Where: The Library folder an app's data sits in, shown muted beside it in the "Its data in your Library" list of the
+    "Tell me about this" card. The folder's real name inside the macOS Library folder; keep it as the system names it.
+- `aboutThis.ownerPlace.savedState`: Saved Application State
+  - Where: The Library folder an app's data sits in, shown muted beside it in the "Its data in your Library" list of the
+    "Tell me about this" card. The folder's real name inside the macOS Library folder; keep it as the system names it.
+- `aboutThis.ownerPlace.logs`: Logs
+  - Where: The Library folder an app's data sits in, shown muted beside it in the "Its data in your Library" list of the
+    "Tell me about this" card. The folder's real name inside the macOS Library folder; keep it as the system names it.
+- `aboutThis.ownerPlace.webData`: HTTPStorages
+  - Where: The Library folder an app's data sits in, shown muted beside it in the "Its data in your Library" list of the
+    "Tell me about this" card. The folder's real name inside the macOS Library folder; keep it as the system names it.
+- `aboutThis.ownerPlace.sandboxHome`: App home
+  - Where: The Library folder an app's data sits in, shown muted beside it in the "Its data in your Library" list of the
+    "Tell me about this" card. A sandboxed Linux app's own home folder (~/.var/app or ~/snap).
 - `aboutThis.removal.uncommittedWork`: It has changes no commit holds, so git can’t bring those back.
   - Where: One line under "What removing it means" on the "Tell me about this" card: the item has uncommitted changes in
     git. A consequence, never advice.
@@ -562,10 +673,11 @@ Open questions for the review:
   - Where: One line under "What removing it means" for an app, when Cmdr doesn't know (yet) which of its folders in the
     user's Library would stay behind. "Library" is the macOS folder of that name.
 - `aboutThis.removal.removesAppDataLeft`: {count, plural, =0 {This removes the app. Cmdr’s index knows of none of its
-  data in your Library.} one {This removes the app. Its data in your Library stays: <size></size> in one folder.} other
-  {This removes the app. Its data in your Library stays: <size></size> in {countText} folders.}}
+  data in your Library.}
+  one {{atLeast, select, yes {This removes the app. Its data in your Library stays: at least <size></size> in one folder.} other {This removes the app. Its data in your Library stays: <size></size> in one folder.}}}
+  other {{atLeast, select, yes {This removes the app. Its data in your Library stays: at least <size></size> in {countText} folders.} other {This removes the app. Its data in your Library stays: <size></size> in {countText} folders.}}}}
   - Where: One line under "What removing it means" for an app: how much of the app's data in the user's Library would
-    stay behind. <size></size> becomes the total size.
+    stay behind. <size></size> becomes the total size. "At least" when Cmdr's index hasn't listed some of it.
 - `aboutThis.removal.appData`: {certainty, select, probable {It’s probably {app}’s data, and {app} may lose what it
   keeps here.} other {It’s {app}’s data, and {app} may lose what it keeps here.}}
   - Where: One line under "What removing it means": the item holds an installed app's data, and that app may lose

@@ -34,6 +34,19 @@ it later). `ModalDialog` with `resizable` and `growDownward`, 34 rem wide, at mo
   target.
 - **A floored importance** reads "Not ranked" with Cmdr's reason as Cmdr's choice ("Cmdr doesn't rank hidden, system, or
   temporary folders"), ❌ never "Low": on a folder of app data that would read as "this doesn't matter".
+- **What's inside** (`AboutDigest`, a folder's first section) draws its own `<dl>` rows: Contents (the count and kind
+  mix, plus the folder's class when its name gives one), Biggest inside, Largest files (anywhere below, each with where
+  it sits), and Untouched (the share unchanged for a year). An empty folder is the one "Empty" line. A Largest files
+  that's `NotIndexed` reads "Cmdr lists these once Search has loaded this drive": the search arena isn't in memory, and
+  the card never loads it. Untouched shows only beside answered Largest files, which come from the same search.
+- **An app's Library data** (`AboutAppData`): the total ("at least" when the crate says so), each folder with its
+  Library place first (every folder carries the same id, so the place is what tells them apart), and the places the
+  index hasn't listed. The removal row's total is the crate's `totalBytes`, ❌ never a sum the card does.
+- **Places go to the pane**: each `AboutPlaceList` row is a button; Enter or a click calls `onGoTo`, which
+  `goToFromCard` turns into close-then-navigate (a folder opens, a file shows in its folder with the cursor on it, via
+  `file.tellMeAbout`'s handler). The name keeps its room and the muted "in …" gives way first.
+- **A collapsed section names a shared reason**: when every row is the same unknown other than `noRecord`, the line is
+  that reason's words ("Not indexed yet"), else "Nothing on record" (`SectionView.collapsedWhy`).
 - **Rows are `<dl>` groups**: a label column (8.5 rem) and the answer. Identity draws its own lines (Size for a file,
   Modified, Created, Other names past one hard link, Points to for a link); a folder's size is the `recursiveSize` row,
   never its own entry size. The size on disk joins the size only when it differs by at least 1 MB and 10%
@@ -65,8 +78,11 @@ tooltip with the full text); the row puts its Copy button at the end of the line
 - `about-this-state.svelte.test.ts`: the reducer (out-of-order facts, a fact outside the plan, before the plan, after
   the settle, unavailable), the live slice (cancel on close, a late event after close, a reopen elsewhere never showing
   the first item's facts), and the grace.
-- `about-card-view.test.ts`: section order, the collapse only at the settle and never over a Notable reason, and the
-  calm-card budget: the gallery's plain document has more known rows than unknown ones.
+- `about-card-view.test.ts`: section order, the collapse only at the settle and never over a Notable reason, the shared
+  reason of a collapsed section, the calm-card budget (the gallery's plain document has more known rows than unknown
+  ones), and that no fixture sets a fallback removal line beside a real one.
+- `AboutDigest.svelte.test.ts`: What's inside on a big folder, `node_modules`, an empty and an unlisted folder, an app's
+  Library data, and that each place row hands `onGoTo` the right target.
 - `AboutThisDialog.a11y.test.ts`: axe over the gallery's cards and each part, the `<dl>`, `aria-busy`, body focus, and
   the single announcement.
 - `apps/desktop/test/e2e-playwright/about-this.spec.ts`: shortcut, palette, and menu, a download record the spec writes

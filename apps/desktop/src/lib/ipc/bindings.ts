@@ -8121,6 +8121,16 @@ export type ChildWindowRect = {
   height: number
 }
 
+// What sits directly in a folder.
+export type Children = {
+  // How many entries. Zero is a real answer: the folder is empty.
+  count: number
+  // The biggest, biggest first.
+  biggest: SizedChild[]
+  // Their kinds, most common first.
+  kindMix: KindCount[]
+}
+
 /**
  *  Why a chunk holds the rows it holds.
  *
@@ -10766,23 +10776,20 @@ export type FolderCoverage = {
 // A folder's contents at a glance.
 export type FolderDigest = {
   /**
-   *  How many entries sit directly in the folder. Zero is a real answer: the
-   *  folder is empty.
+   *  What kind of folder its name and neighbors make it. Known even when the
+   *  index has nothing on the folder: `node_modules` is installed packages
+   *  before anything lists it.
    */
-  directChildren: number
-  // The biggest direct children, biggest first.
-  biggestChildren: SizedChild[]
+  class: FolderClass
+  // What sits directly in it. Unknown when the index hasn't listed it.
+  children: Fact<Children>
   /**
    *  The largest files anywhere under the folder, largest first. Unknown when
    *  the search arena isn't loaded.
    */
   largestFiles: Fact<SizedChild[]>
-  // The kinds of the direct children, most common first.
-  kindMix: KindCount[]
   // The share of the folder's bytes that haven't changed in a year.
   unchangedForAYear: Fact<ByteShare>
-  // What kind of folder its name and place make it.
-  class: FolderClass
 }
 
 // How a count ended. A request that joined a running count gets that count's outcome.
@@ -22607,7 +22614,12 @@ export type UnknownWhy =
   | 'volumeCantTell'
   // A Library folder named like an app, and no installed app has that name.
   | 'libraryNameMatchesNoApp'
-  // The drive index doesn't cover the path.
+  /**
+   *  The drive index doesn't cover the path: indexing is off, or it hasn't
+   *  reached the place yet. Routine: nothing went wrong, and on a folder it's
+   *  the same cause behind the size, what's inside, and the importance, so a
+   *  warning per row would be a wall of the same sentence.
+   */
   | 'notIndexed'
   // The answer didn't arrive inside its budget.
   | 'timedOut'

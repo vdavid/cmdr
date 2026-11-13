@@ -19,11 +19,15 @@ Modules import downward only, which is what keeps `module-cycles` green:
   `{ "state": "unknown", "value": { "why": "noRecord", "prominence": "routine" } }`.
 - **`Unknown` is built only from an `UnknownWhy`** (`Fact::unknown`), so the prominence on the wire is always the one
   the rule gives. Routine: `NoRecord`, `NotInStatus`, `NoInstalledAppMatches`, `VolumeCantTell` (the card's volume note
-  says that one once). Everything else is Notable. `only_ordinary_absences_are_routine` pins the list.
+  says that one once), and `NotIndexed`. Everything else is Notable.
+- **Decision: `NotIndexed` is Routine.** Indexing off or not there yet is nothing going wrong, and on a folder it's one
+  cause behind its size, what's inside, and its importance: Notable, it drew three warning sentences on every folder of
+  an unindexed drive (screenshots, 2026-11-13). `only_ordinary_absences_are_routine` pins the list.
 - **Decision: a nested `Fact` inside a payload** where one part can be unknown while the rest is known:
   `GitContext::status` (the root and branch are cheap, the status can be a whole-worktree walk that times out),
-  `Download::sources` (a quarantine record without a readable source list), `FolderDigest::largest_files`, and each
-  child's size. Why: the alternative is a kind per sub-answer, which splits one job and one row in two.
+  `Download::sources` (a quarantine record without a readable source list), `FolderDigest::children` and
+  `largest_files`, and each child's size. Why: the alternative is a kind per sub-answer, which splits one job and one
+  row in two.
 - **`NoInstalledAppMatches` versus `LibraryNameMatchesNoApp`**: the same lookup result, Routine outside the Library
   (nobody expects an owner there) and Notable inside it (a folder in `Application Support` that no installed app answers
   to is what the person came to ask about). Two variants, so the rule needs no path.
@@ -183,9 +187,13 @@ filters `app_with_id` to this disk outside the Trash (`apps/desktop/src-tauri/sr
 
 `digest.rs`. The host hands over index rows; every rule about them is here, and nothing here reads anything.
 
-- **`FolderDigest::of`**: the `SHOWN_CHILDREN` (8) biggest direct children, a known size before an unknown one, ties by
-  name so two reads never swap rows; the same cut for the largest files; the kind mix over every child, by name alone
-  (`ChildKind::of_name`, no byte read across thousands of children), most common first.
+- **`FolderDigest::of`**: the class always, then `children` (`Children`: count, biggest, kind mix) as a nested `Fact`.
+  **Decision: the class never waits on the index.** It comes from the name, so an unindexed `node_modules` still reads
+  as installed packages and its removal row says a package manager can fetch it again; with the class inside an unknown
+  digest it said "Nothing Cmdr knows of made this" (seen on a real `node_modules`, 2026-11-13). The `SHOWN_CHILDREN` (8)
+  biggest direct children, a known size before an unknown one, ties by name so two reads never swap rows; the same cut
+  for the largest files; the kind mix over every child, by name alone (`ChildKind::of_name`, no byte read across
+  thousands of children), most common first.
 - **`FolderClass::of(name, beside)`**: a telling name (`node_modules`, `.git`, `__pycache__`, `.next`, `DerivedData`)
   classes a folder wherever it sits. **Decision: a name a person also gives their own folders (`build`, `target`,
   `dist`, `out`, `venv`, `Pods`) counts only beside its tool's project file** (`Cargo.toml` beside `target`,
@@ -243,7 +251,7 @@ and two workflow filters to stay honest.
 
 ## The public surface is capped
 
-11 root promises (one module per concern), 11 public modules, 128 items in them
+11 root promises (one module per concern), 11 public modules, 129 items in them
 (`scripts/check/checks/index-crate-isolation-ceilings.go`). The items are the wire types the card's events and the
 model's projection carry, and the handful of functions a host calls: `plan`, `AboutCard`, `download_fact`,
 `xdg_download_fact`, `usage_fact`, `redact_for_egress`, `real_type`, `consequences`, `headline`, `start_with`,
@@ -281,8 +289,11 @@ Raised 119 → 120:
   own software and the Mac App Store's aren't notarized, unsigned or ad hoc code can't be) is a rule a person could
   argue, so the host builds every signature through it and the card words `DoesNotApply` as nothing.
 
-Raised 120 → 128 by a folder's digest and an app's Library data, each a rule a person could argue that would otherwise
-live in the host:
+Raised 120 → 129 by a folder's digest and an app's Library data, each a rule a person could argue that would otherwise
+live in the host, plus one wire type:
+
+- **`Children`**: what the index listed directly inside, as its own nested `Fact`, so the class stands when the listing
+  doesn't (`node_modules` the index never reached is still installed packages, and its removal row says so).
 
 - **`FolderDigest::of`**: which children lead (a known size before an unknown one, then by name) and how many show.
 - **`FolderClass::of`**: which names make a folder dependencies, build output, a cache, or version control, and which

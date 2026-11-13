@@ -25,6 +25,15 @@ export interface AboutSubject {
   iconId: string | null
 }
 
+/**
+ * A place the card can take the pane: a folder it names (a child, an app's Library folder), or a file, shown in its
+ * folder with the cursor on it. Opened by Enter on that row, which closes the card.
+ */
+export interface AboutGoTarget {
+  path: string
+  isFolder: boolean
+}
+
 /** One card, from its open to whatever has landed so far. */
 export interface AboutCardData {
   /** The request every event for this card carries; anything else is dropped. */

@@ -134,11 +134,9 @@ pub(crate) fn total(bytes: u64, coverage: SizeCoverage) -> RecursiveSize {
 
 pub(crate) fn digest(class: FolderClass) -> AboutFact {
     AboutFact::FolderDigest(Fact::Known(FolderDigest {
-        direct_children: 3,
-        biggest_children: Vec::new(),
-        largest_files: Fact::unknown(UnknownWhy::NotIndexed),
-        kind_mix: Vec::new(),
-        unchanged_for_a_year: Fact::unknown(UnknownWhy::NotIndexed),
         class,
+        children: Fact::unknown(UnknownWhy::NotIndexed),
+        largest_files: Fact::unknown(UnknownWhy::NotIndexed),
+        unchanged_for_a_year: Fact::unknown(UnknownWhy::NotIndexed),
     }))
 }

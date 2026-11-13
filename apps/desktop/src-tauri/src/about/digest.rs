@@ -34,29 +34,40 @@ fn child_path(parent: &str, name: &str) -> String {
 }
 
 /// What the folder at `place` holds, from the index.
+///
+/// Always `Known`: the folder's class comes from its name, so `node_modules` is
+/// installed packages even where the index hasn't listed it, and only the parts
+/// that need the index say they can't tell.
 pub(crate) fn folder_digest_fact(place: &IndexPlace, now_secs: u64) -> Fact<FolderDigest> {
-    let rows = match index().list_children(&place.index_id, &place.path) {
-        Ok(Some(rows)) => rows,
-        Ok(None) => return Fact::unknown(UnknownWhy::NotIndexed),
-        Err(error) => {
-            log::warn!(target: "about", "couldn't list a folder's children from the index: {error}");
-            return Fact::unknown(UnknownWhy::Unparseable);
-        }
-    };
-    let walked = walked_roots(&place.index_id);
-    let children = sized_children(&place.index_id, &place.path, &rows, &walked);
     let name = Path::new(&place.path)
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_default();
     let class = FolderClass::of(&name, &beside(&place.index_id, &place.path));
-    let unchanged = if rows.is_empty() {
-        // An empty folder has nothing to be untouched; the card says it's empty.
-        Fact::unknown(UnknownWhy::NoRecord)
-    } else {
-        unchanged_share(place, now_secs)
+    let rows = match index().list_children(&place.index_id, &place.path) {
+        Ok(Some(rows)) => Ok(rows),
+        Ok(None) => Err(UnknownWhy::NotIndexed),
+        Err(error) => {
+            log::warn!(target: "about", "couldn't list a folder's children from the index: {error}");
+            Err(UnknownWhy::Unparseable)
+        }
     };
-    Fact::Known(FolderDigest::of(children, largest_files(place), unchanged, class))
+    let (children, largest, unchanged) = match rows {
+        Ok(rows) => {
+            let walked = walked_roots(&place.index_id);
+            let unchanged = if rows.is_empty() {
+                // An empty folder has nothing to be untouched; the card says it's empty.
+                Fact::unknown(UnknownWhy::NoRecord)
+            } else {
+                unchanged_share(place, now_secs)
+            };
+            let children = sized_children(&place.index_id, &place.path, &rows, &walked);
+            (Fact::Known(children), largest_files(place), unchanged)
+        }
+        // Nothing listed it, so the arena can't hold it either.
+        Err(why) => (Fact::unknown(why), Fact::unknown(why), Fact::unknown(why)),
+    };
+    Fact::Known(FolderDigest::of(children, largest, unchanged, class))
 }
 
 /// The roots a walk is rewriting right now, for each size's "still moving".

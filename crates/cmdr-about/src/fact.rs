@@ -112,7 +112,10 @@ pub enum UnknownWhy {
     VolumeCantTell,
     /// A Library folder named like an app, and no installed app has that name.
     LibraryNameMatchesNoApp,
-    /// The drive index doesn't cover the path.
+    /// The drive index doesn't cover the path: indexing is off, or it hasn't
+    /// reached the place yet. Routine: nothing went wrong, and on a folder it's
+    /// the same cause behind the size, what's inside, and the importance, so a
+    /// warning per row would be a wall of the same sentence.
     NotIndexed,
     /// The answer didn't arrive inside its budget.
     TimedOut,
@@ -140,9 +143,9 @@ impl UnknownWhy {
             UnknownWhy::NoRecord
             | UnknownWhy::NotInStatus
             | UnknownWhy::NoInstalledAppMatches
-            | UnknownWhy::VolumeCantTell => Prominence::Routine,
+            | UnknownWhy::VolumeCantTell
+            | UnknownWhy::NotIndexed => Prominence::Routine,
             UnknownWhy::LibraryNameMatchesNoApp
-            | UnknownWhy::NotIndexed
             | UnknownWhy::TimedOut
             | UnknownWhy::Unreachable
             | UnknownWhy::PermissionDenied
@@ -280,6 +283,7 @@ mod tests {
                 UnknownWhy::NotInStatus,
                 UnknownWhy::NoInstalledAppMatches,
                 UnknownWhy::VolumeCantTell,
+                UnknownWhy::NotIndexed,
             ]
         );
     }

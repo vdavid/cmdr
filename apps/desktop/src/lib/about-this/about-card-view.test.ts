@@ -11,7 +11,7 @@ function fixture(id: string) {
 describe('sectionsOf', () => {
   it('keeps the plan’s order and leaves the removal section to its own block', () => {
     const sections = sectionsOf(fixture('folder')).map((view) => view.section)
-    expect(sections).toEqual(['nature', 'origin', 'use', 'context'])
+    expect(sections).toEqual(['contents', 'nature', 'context', 'use', 'origin'])
   })
 
   it('collapses a section whose rows all settled as ordinary absences, and only once settled', () => {
@@ -21,6 +21,18 @@ describe('sectionsOf', () => {
 
     const filling = sectionsOf({ ...fixture('plain-document'), settled: false })
     expect(filling.every((view) => !view.collapsed)).toBe(true)
+  })
+
+  it('names the reason a collapsed section shares, and says "nothing on record" for no record', () => {
+    const unlisted = sectionsOf(fixture('not-indexed-folder'))
+    expect(unlisted.find((view) => view.section === 'use')).toMatchObject({
+      collapsed: true,
+      collapsedWhy: 'notIndexed',
+    })
+    // What's inside never collapses: its class stands whatever the index knows.
+    expect(unlisted.find((view) => view.section === 'contents')?.collapsed).toBe(false)
+    expect(unlisted.find((view) => view.section === 'origin')).toMatchObject({ collapsed: true, collapsedWhy: null })
+    expect(sectionsOf(fixture('plain-document')).find((view) => view.section === 'origin')?.collapsedWhy).toBeNull()
   })
 
   it('never collapses a section holding a Notable unknown', () => {

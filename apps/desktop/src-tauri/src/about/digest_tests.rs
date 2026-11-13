@@ -103,11 +103,12 @@ fn a_folder_names_its_biggest_children_with_the_indexs_coverage() {
     fx.size(half_walked, 1_000_000, false);
 
     let Fact::Known(digest) = folder_digest_fact(&place(&format!("{ROOT}/project")), NOW) else {
-        panic!("the index lists the folder");
+        panic!("the digest always answers");
     };
-    assert_eq!(digest.direct_children, 6);
+    let children = digest.children.known().expect("the index lists the folder");
+    assert_eq!(children.count, 6);
     assert_eq!(
-        names(&digest.biggest_children),
+        names(&children.biggest),
         [
             "media",
             "movie.mov",
@@ -117,7 +118,7 @@ fn a_folder_names_its_biggest_children_with_the_indexs_coverage() {
             "never-sized"
         ]
     );
-    let half = &digest.biggest_children[2];
+    let half = &children.biggest[2];
     assert!(half.is_folder);
     assert_eq!(half.path, format!("{ROOT}/project/half-walked"));
     assert_eq!(
@@ -125,7 +126,7 @@ fn a_folder_names_its_biggest_children_with_the_indexs_coverage() {
         Some(SizeCoverage::LowerBound),
         "a partly walked child's size is a lower bound, verbatim"
     );
-    assert_eq!(digest.biggest_children[5].size, Fact::unknown(UnknownWhy::NotIndexed));
+    assert_eq!(children.biggest[5].size, Fact::unknown(UnknownWhy::NotIndexed));
     // No arena in memory: the card says the index can't tell yet, never "no files".
     assert_eq!(digest.largest_files, Fact::unknown(UnknownWhy::NotIndexed));
     assert_eq!(digest.unchanged_for_a_year, Fact::unknown(UnknownWhy::NotIndexed));
@@ -144,16 +145,24 @@ fn an_empty_folder_is_known_and_empty_and_an_unlisted_one_is_not_indexed() {
     fx.listed(&[ROOT_ID, empty]);
 
     let Fact::Known(digest) = folder_digest_fact(&place(&format!("{ROOT}/empty")), NOW) else {
-        panic!("an empty listed folder is a known answer");
+        panic!("the digest always answers");
     };
-    assert_eq!(digest.direct_children, 0);
-    assert!(digest.biggest_children.is_empty());
+    let children = digest
+        .children
+        .known()
+        .expect("an empty listed folder is a known answer");
+    assert_eq!(children.count, 0);
+    assert!(children.biggest.is_empty());
 
+    let Fact::Known(unlisted) = folder_digest_fact(&place(&format!("{ROOT}/unlisted")), NOW) else {
+        panic!("the digest always answers");
+    };
     assert_eq!(
-        folder_digest_fact(&place(&format!("{ROOT}/unlisted")), NOW),
+        unlisted.children,
         Fact::unknown(UnknownWhy::NotIndexed),
         "rows under a folder nothing listed are a lower bound, not its contents"
     );
+    assert_eq!(unlisted.largest_files, Fact::unknown(UnknownWhy::NotIndexed));
 }
 
 #[test]
@@ -168,6 +177,8 @@ fn node_modules_and_a_rust_target_are_classed_from_the_index() {
     let docs = fx.dir(ROOT_ID, "docs");
     let build = fx.dir(docs, "build");
     fx.file(app, "Cargo.toml", 100);
+    let stray = fx.dir(ROOT_ID, "stray");
+    fx.dir(stray, "node_modules");
     fx.listed(&[ROOT_ID, app, modules, target, docs, build]);
 
     let class = |path: &str| {
@@ -177,6 +188,8 @@ fn node_modules_and_a_rust_target_are_classed_from_the_index() {
     };
     assert_eq!(class("app/node_modules"), Some(FolderClass::Dependencies));
     assert_eq!(class("app/target"), Some(FolderClass::BuildOutput));
+    // Its name says it even where nothing listed the folder or its parent.
+    assert_eq!(class("stray/node_modules"), Some(FolderClass::Dependencies));
     // A `build` folder with no project file beside it is the person's own.
     assert_eq!(class("docs/build"), Some(FolderClass::Plain));
 }

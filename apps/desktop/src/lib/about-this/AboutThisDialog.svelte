@@ -19,16 +19,18 @@
     import AboutHeadline from './AboutHeadline.svelte'
     import AboutRemoval from './AboutRemoval.svelte'
     import AboutRow from './AboutRow.svelte'
-    import type { AboutCardData } from './about-card'
+    import type { AboutCardData, AboutGoTarget } from './about-card'
     import { sectionsOf } from './about-card-view'
-    import { SECTION_TITLE, UNAVAILABLE, VOLUME_NOTE } from './about-words'
+    import { SECTION_TITLE, UNAVAILABLE, UNKNOWN_WHY, VOLUME_NOTE } from './about-words'
 
     interface Props {
         card: AboutCardData
         onClose: () => void
+        /** Enter on a row that names a place (a folder's child, an app's Library folder): close, then go there. */
+        onGoTo: (target: AboutGoTarget) => void
     }
 
-    const { card, onClose }: Props = $props()
+    const { card, onClose, onGoTo }: Props = $props()
 
     const TARGET_ICON: Record<AboutTarget, IconName> = {
         file: 'file',
@@ -104,11 +106,11 @@
                 <section class="section" aria-labelledby="about-section-{view.section}" data-section={view.section}>
                     <h3 id="about-section-{view.section}">{t(SECTION_TITLE[view.section])}</h3>
                     {#if view.collapsed}
-                        <p class="quiet">{t('aboutThis.section.nothingOnRecord')}</p>
+                        <p class="quiet">{t(view.collapsedWhy ? UNKNOWN_WHY[view.collapsedWhy] : 'aboutThis.section.nothingOnRecord')}</p>
                     {:else}
                         <dl>
                             {#each view.rows as row (row.kind)}
-                                <AboutRow {row} {target} settled={card.settled} />
+                                <AboutRow {row} {target} settled={card.settled} subjectPath={card.subject.path} {onGoTo} />
                             {/each}
                         </dl>
                     {/if}

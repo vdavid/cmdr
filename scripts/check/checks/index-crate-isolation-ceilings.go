@@ -745,15 +745,15 @@ var surfaceGuardedCrates = []struct {
 		// 119 → 120 (2026-11-13): `Signature::read`, which settles when a
 		// notarization ticket is news, argued in that section.
 		//
-		// 120 → 128 (2026-11-13, a folder's digest and an app's Library data):
-		// `FolderDigest::of`, `FolderClass::of`, `ByteShare::unchanged`,
+		// 120 → 129 (2026-11-13, a folder's digest and an app's Library data):
+		// `Children`, `FolderDigest::of`, `FolderClass::of`, `ByteShare::unchanged`,
 		// `AppData::of`, `app_data_place`, `APP_DATA_PLACES`, `SHOWN_CHILDREN`,
 		// and `UNCHANGED_FOR_SECS`, argued in that section.
 		Name: "cmdr-about",
 		Ceilings: surfaceCeilings{
 			RootPromises:   11,
 			PublicModules:  11,
-			SubsystemItems: 128,
+			SubsystemItems: 129,
 		},
 	},
 }

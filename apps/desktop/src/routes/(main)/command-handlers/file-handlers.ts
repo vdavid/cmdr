@@ -27,6 +27,7 @@ import { pathInsideArchive } from '#lib/file-explorer/pane/archive-paths.js'
 import { openInEditorOrExplain } from '#lib/file-explorer/pane/editor-open.js'
 import { openGetInfoOrExplain } from '#lib/file-explorer/pane/get-info-open.js'
 import { openAboutThis } from '#lib/about-this/about-this-state.svelte.js'
+import { lastName, parentOrRoot } from '#lib/path/grammar.js'
 import { resolveTerminalFolder } from '#lib/open-terminal/terminal-target.js'
 import { getShowVirtualGitPortal } from '#lib/settings/reactive-settings.svelte.js'
 import { openTerminalHereForFolder } from '#lib/open-terminal/open-terminal-here.js'
@@ -365,11 +366,19 @@ export const fileHandlers = {
   // The card is about the cursor entry, as Get info is, whatever the selection holds.
   'file.tellMeAbout': (hctx) =>
     withEntryUnderCursor(hctx, (entry) => {
-      openAboutThis({
-        path: entry.path,
-        volumeId: getFocusedPaneVolumeId(),
-        name: entry.filename,
-        iconId: entry.iconId,
+      const volumeId = getFocusedPaneVolumeId()
+      openAboutThis({ path: entry.path, volumeId, name: entry.filename, iconId: entry.iconId }, (target) => {
+        // A row of the card names a place on the item's own volume: a folder opens, a file shows in its folder
+        // with the cursor on it.
+        const explorer = hctx.explorerRef
+        if (!explorer) return
+        const path = target.isFolder ? target.path : parentOrRoot(target.path)
+        explorer.navigate({
+          pane: explorer.getFocusedPane(),
+          to: { goTo: { volumeId, path } },
+          source: 'user',
+          ...(target.isFolder ? {} : { selectName: lastName(target.path) }),
+        })
       })
     }),
 

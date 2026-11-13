@@ -25,39 +25,54 @@ pub const SHOWN_CHILDREN: usize = 8;
 pub const UNCHANGED_FOR_SECS: i64 = 365 * 24 * 60 * 60;
 
 impl FolderDigest {
-    /// The digest from the folder's direct children as the index lists them, and
-    /// the parts the host read beside them.
+    /// The digest from the folder's direct children as the index lists them (or
+    /// why it can't), and the parts the host read beside them.
     ///
     /// Keeps the [`SHOWN_CHILDREN`] biggest children (a known size before an
     /// unknown one, then by name, so the order never flickers between two
-    /// reads), and counts the kinds over every child.
+    /// reads), and counts the kinds over every child. The class stands whatever
+    /// the index knows: it comes from the folder's name.
     pub fn of(
-        children: Vec<SizedChild>,
+        children: Fact<Vec<SizedChild>>,
         largest_files: Fact<Vec<SizedChild>>,
         unchanged_for_a_year: Fact<ByteShare>,
         class: FolderClass,
     ) -> Self {
-        let direct_children = children.len() as u64;
-        let mut counts: Vec<KindCount> = Vec::new();
-        for child in &children {
-            let kind = ChildKind::of_name(child.name.as_str(), child.is_folder);
-            match counts.iter_mut().find(|count| count.kind == kind) {
-                Some(count) => count.count += 1,
-                None => counts.push(KindCount { kind, count: 1 }),
-            }
-        }
-        counts.sort_by(|a, b| b.count.cmp(&a.count).then(a.kind.cmp(&b.kind)));
+        let children = match children {
+            Fact::Known(children) => Fact::Known(Children::of(children)),
+            Fact::Unknown(unknown) => Fact::unknown(unknown.why()),
+            Fact::NotApplicable(why) => Fact::NotApplicable(why),
+            Fact::Pending => Fact::Pending,
+        };
         let largest_files = match largest_files {
             Fact::Known(files) => Fact::Known(biggest(files)),
             other => other,
         };
         Self {
-            direct_children,
-            biggest_children: biggest(children),
+            children,
             largest_files,
-            kind_mix: counts,
             unchanged_for_a_year,
             class,
+        }
+    }
+}
+
+impl Children {
+    fn of(children: Vec<SizedChild>) -> Self {
+        let count = children.len() as u64;
+        let mut kinds: Vec<KindCount> = Vec::new();
+        for child in &children {
+            let kind = ChildKind::of_name(child.name.as_str(), child.is_folder);
+            match kinds.iter_mut().find(|known| known.kind == kind) {
+                Some(known) => known.count += 1,
+                None => kinds.push(KindCount { kind, count: 1 }),
+            }
+        }
+        kinds.sort_by(|a, b| b.count.cmp(&a.count).then(a.kind.cmp(&b.kind)));
+        Self {
+            count,
+            biggest: biggest(children),
+            kind_mix: kinds,
         }
     }
 }
@@ -83,20 +98,29 @@ fn by_size(a: &Fact<RecursiveSize>, b: &Fact<RecursiveSize>) -> Ordering {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FolderDigest {
-    /// How many entries sit directly in the folder. Zero is a real answer: the
-    /// folder is empty.
-    pub direct_children: u64,
-    /// The biggest direct children, biggest first.
-    pub biggest_children: Vec<SizedChild>,
+    /// What kind of folder its name and neighbors make it. Known even when the
+    /// index has nothing on the folder: `node_modules` is installed packages
+    /// before anything lists it.
+    pub class: FolderClass,
+    /// What sits directly in it. Unknown when the index hasn't listed it.
+    pub children: Fact<Children>,
     /// The largest files anywhere under the folder, largest first. Unknown when
     /// the search arena isn't loaded.
     pub largest_files: Fact<Vec<SizedChild>>,
-    /// The kinds of the direct children, most common first.
-    pub kind_mix: Vec<KindCount>,
     /// The share of the folder's bytes that haven't changed in a year.
     pub unchanged_for_a_year: Fact<ByteShare>,
-    /// What kind of folder its name and place make it.
-    pub class: FolderClass,
+}
+
+/// What sits directly in a folder.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct Children {
+    /// How many entries. Zero is a real answer: the folder is empty.
+    pub count: u64,
+    /// The biggest, biggest first.
+    pub biggest: Vec<SizedChild>,
+    /// Their kinds, most common first.
+    pub kind_mix: Vec<KindCount>,
 }
 
 /// One child with its size.

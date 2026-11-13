@@ -9,7 +9,9 @@ directory only renders.
 - `about-card.ts`: the card's data and `applyAboutEvent`, the one reducer (pure, shared with the gallery).
 - `about-this-state.svelte.ts`: the open card (`openAboutThis` / `closeAboutThis`) and its first-frame grace.
 - `AboutThisDialog.svelte` (the frame), `AboutHeadline`, `AboutRow` (one planned row), `AboutAbsence` (an unknown's
-  line), `AboutPath`, `AboutRemoval`. `about-card-view.ts`: sections, the collapse. `about-words.ts`: enum → key.
+  line), `AboutPath`, `AboutRemoval`. `AboutDigest` (What's inside), `AboutAppData` (an app's Library data), and
+  `AboutPlaceList` (their rows, each taking the pane there). `about-card-view.ts`: sections, the collapse.
+  `about-words.ts`: enum → key.
 
 ## Must-knows
 
@@ -24,6 +26,8 @@ directory only renders.
 - ❌ **Item strings are text nodes**: never `{@html}`, never a link built from them. Self-reported facts read "recorded"
   / "carries a signature from"; only a matched executable reads "signed by", and nothing reads "verified".
 - ❌ **No removal line says it's safe**: `AboutRemoval` words exactly the variant it gets.
+- ❗ **A row that names a place goes there through `onGoTo`**, which the opener supplies
+  (`openAboutThis(subject, onGoTo)`): the card closes, then the pane navigates. ❌ The card never navigates by itself.
 - The gallery renders the shipping dialog from recorded event streams (`lib/dialog-gallery/fixtures/about-this.ts`).
 
 Design, layout decisions, and the copy list: `DETAILS.md`.

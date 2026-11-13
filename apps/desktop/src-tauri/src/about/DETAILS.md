@@ -188,6 +188,8 @@ test's fixed answers); the rules are in `crates/cmdr-about/DETAILS.md` § The ow
 `digest.rs`, the index and the search arena only. ❌ No walk, `stat`, or listing of the disk: a 2 TB folder answers as
 fast as an empty one, and a container is never opened. Rules in `crates/cmdr-about/DETAILS.md` § A folder's digest.
 
+- **The digest always answers**: the class comes from the folder's name first, and only `children`, the largest files,
+  and the untouched share say `NotIndexed` where the index hasn't listed the folder.
 - **Children**: `Index::list_children` (`None` for a folder nothing listed is `NotIndexed`: rows under it are a lower
   bound, not its contents), then one `dir_stats_batch` for the folder children, each size's flags verbatim and
   `updating` from the walked roots. The class asks the parent's listing for project files, once, only for a name that
@@ -212,6 +214,8 @@ the same file saved over afterwards reads `NodeChangedSince`. `history/tests.rs`
 not knowing over a scratch journal. Through the session too: a fixture home's `Application Support/com.eltima.cmd1`
 reads Commander One installed, `Slack` probably Slack, `Google` ambiguous (a fake app list, ❌ never the real
 `~/Library`); a plain document plans no owner or git row; a modified repo file streams `Tracked(Modified)` on `main`.
-`git_tests.rs` pins what the status list proves over a real repo, and a walk past its budget; `owner_tests.rs`,
+`digest_tests.rs` reads a drive index the test writes: coverage flags carried, an unlisted folder `NotIndexed` with
+its class kept, an empty one known and empty, `node_modules` and a Rust `target` classed, an app's Library folders found
+by id while a name-only vendor folder and another app's cache stay out. `git_tests.rs` pins what the status list proves over a real repo, and a walk past its budget; `owner_tests.rs`,
 `index.rs`, and `platform/macos/apps.rs` the lookups and mappings. `registry.rs` tests the tombstone and run ownership; `signature.rs` tests Apple's tools, a plain file, and
 a tampered copy of `/bin/ls`.

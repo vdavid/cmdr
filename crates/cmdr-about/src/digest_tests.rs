@@ -18,6 +18,10 @@ fn names(children: &[SizedChild]) -> Vec<&str> {
     children.iter().map(|child| child.name.as_str()).collect()
 }
 
+fn listed(digest: &FolderDigest) -> &Children {
+    digest.children.known().expect("the index listed the folder")
+}
+
 fn no_files() -> Fact<Vec<SizedChild>> {
     Fact::unknown(UnknownWhy::NotIndexed)
 }
@@ -35,34 +39,39 @@ fn the_biggest_children_lead_and_one_with_no_size_comes_last() {
         .collect();
     children.push(child("unsized", true, None));
     children.push(child("huge", true, Some(5_000_000)));
-    let digest = FolderDigest::of(children, no_files(), no_share(), FolderClass::Plain);
+    let digest = FolderDigest::of(Fact::Known(children), no_files(), no_share(), FolderClass::Plain);
 
-    assert_eq!(digest.direct_children, 12);
-    assert_eq!(digest.biggest_children.len(), SHOWN_CHILDREN);
+    assert_eq!(listed(&digest).count, 12);
+    assert_eq!(listed(&digest).biggest.len(), SHOWN_CHILDREN);
     assert_eq!(
-        names(&digest.biggest_children)[..3],
+        names(&listed(&digest).biggest)[..3],
         ["huge", "file-9.txt", "file-8.txt"]
     );
-    assert!(!names(&digest.biggest_children).contains(&"unsized"));
+    assert!(!names(&listed(&digest).biggest).contains(&"unsized"));
 }
 
 #[test]
 fn an_unsized_child_still_shows_when_there_is_room() {
     let digest = FolderDigest::of(
-        vec![child("a", true, None), child("b.txt", false, Some(10))],
+        Fact::Known(vec![child("a", true, None), child("b.txt", false, Some(10))]),
         no_files(),
         no_share(),
         FolderClass::Plain,
     );
-    assert_eq!(names(&digest.biggest_children), ["b.txt", "a"]);
+    assert_eq!(names(&listed(&digest).biggest), ["b.txt", "a"]);
 }
 
 #[test]
 fn an_empty_folder_says_so_with_zero_children() {
-    let digest = FolderDigest::of(Vec::new(), Fact::Known(Vec::new()), no_share(), FolderClass::Plain);
-    assert_eq!(digest.direct_children, 0);
-    assert!(digest.biggest_children.is_empty());
-    assert!(digest.kind_mix.is_empty());
+    let digest = FolderDigest::of(
+        Fact::Known(Vec::new()),
+        Fact::Known(Vec::new()),
+        no_share(),
+        FolderClass::Plain,
+    );
+    assert_eq!(listed(&digest).count, 0);
+    assert!(listed(&digest).biggest.is_empty());
+    assert!(listed(&digest).kind_mix.is_empty());
 }
 
 #[test]
@@ -70,12 +79,17 @@ fn the_largest_files_keep_their_coverage_and_are_cut_to_the_shown_few() {
     let files: Vec<SizedChild> = (0..12)
         .map(|n| child(&format!("deep-{n}.mov"), false, Some(n * 10)))
         .collect();
-    let digest = FolderDigest::of(Vec::new(), Fact::Known(files), no_share(), FolderClass::Plain);
+    let digest = FolderDigest::of(
+        Fact::Known(Vec::new()),
+        Fact::Known(files),
+        no_share(),
+        FolderClass::Plain,
+    );
     let largest = digest.largest_files.known().expect("known");
     assert_eq!(largest.len(), SHOWN_CHILDREN);
     assert_eq!(largest[0].name.as_str(), "deep-11.mov");
 
-    let unloaded = FolderDigest::of(Vec::new(), no_files(), no_share(), FolderClass::Plain);
+    let unloaded = FolderDigest::of(Fact::Known(Vec::new()), no_files(), no_share(), FolderClass::Plain);
     assert_eq!(unloaded.largest_files, Fact::unknown(UnknownWhy::NotIndexed));
 }
 
@@ -89,9 +103,9 @@ fn the_kind_mix_counts_every_child_most_common_first() {
         child("src", true, None),
         child("main.rs", false, Some(1)),
     ];
-    let digest = FolderDigest::of(children, no_files(), no_share(), FolderClass::Plain);
+    let digest = FolderDigest::of(Fact::Known(children), no_files(), no_share(), FolderClass::Plain);
     assert_eq!(
-        digest.kind_mix,
+        listed(&digest).kind_mix,
         [
             KindCount {
                 kind: ChildKind::Image,
@@ -134,6 +148,22 @@ fn a_childs_kind_comes_from_its_name_alone() {
     for (name, is_folder, kind) in cases {
         assert_eq!(ChildKind::of_name(name, is_folder), kind, "{name}");
     }
+}
+
+#[test]
+fn an_unlisted_folder_keeps_its_class_and_says_why_its_children_are_unknown() {
+    let digest = FolderDigest::of(
+        Fact::unknown(UnknownWhy::NotIndexed),
+        no_files(),
+        no_share(),
+        FolderClass::Dependencies,
+    );
+    assert_eq!(digest.children, Fact::unknown(UnknownWhy::NotIndexed));
+    assert_eq!(
+        digest.class,
+        FolderClass::Dependencies,
+        "the name says it whatever the index knows"
+    );
 }
 
 // ── The folder's class ──────────────────────────────────────────────────────

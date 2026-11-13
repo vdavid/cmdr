@@ -5,8 +5,11 @@
 
 import type {
   AboutUnavailable,
+  ChildKind,
   FactKind,
+  FolderClass,
   NotApplicableWhy,
+  OwnerPlace,
   Section,
   SniffedKind,
   UnknownWhy,
@@ -123,6 +126,39 @@ const IMPORTANCE_REASON: Record<string, MessageKey | undefined> = {
 /** The words for one importance reason token. */
 export function importanceReasonKey(token: string): MessageKey {
   return IMPORTANCE_REASON[token] ?? 'aboutThis.importance.reason.other'
+}
+
+export const CHILD_KIND: Record<ChildKind, MessageKey> = {
+  folder: 'aboutThis.childKind.folder',
+  image: 'aboutThis.childKind.image',
+  video: 'aboutThis.childKind.video',
+  audio: 'aboutThis.childKind.audio',
+  document: 'aboutThis.childKind.document',
+  archive: 'aboutThis.childKind.archive',
+  code: 'aboutThis.childKind.code',
+  app: 'aboutThis.childKind.app',
+  other: 'aboutThis.childKind.other',
+}
+
+/** A folder's class, worded; a plain folder says nothing about it. */
+export const FOLDER_CLASS: Record<Exclude<FolderClass, 'plain'>, MessageKey> = {
+  dependencies: 'aboutThis.folderClass.dependencies',
+  buildOutput: 'aboutThis.folderClass.buildOutput',
+  cache: 'aboutThis.folderClass.cache',
+  versionControl: 'aboutThis.folderClass.versionControl',
+}
+
+export const OWNER_PLACE: Record<OwnerPlace, MessageKey> = {
+  caches: 'aboutThis.ownerPlace.caches',
+  containers: 'aboutThis.ownerPlace.containers',
+  groupContainers: 'aboutThis.ownerPlace.groupContainers',
+  applicationSupport: 'aboutThis.ownerPlace.applicationSupport',
+  applicationScripts: 'aboutThis.ownerPlace.applicationScripts',
+  preferences: 'aboutThis.ownerPlace.preferences',
+  savedState: 'aboutThis.ownerPlace.savedState',
+  logs: 'aboutThis.ownerPlace.logs',
+  webData: 'aboutThis.ownerPlace.webData',
+  sandboxHome: 'aboutThis.ownerPlace.sandboxHome',
 }
 
 /** Why the ranking leaves a folder out, by the scorer's floor token, said as Cmdr's choice. */

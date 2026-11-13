@@ -33,19 +33,27 @@ async function render(id: string): Promise<HTMLElement> {
   if (!card) throw new Error(`no fixture ${id}`)
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mounted = mount(AboutThisDialog, { target, props: { card, onClose: () => {} } })
+  mounted = mount(AboutThisDialog, { target, props: { card, onClose: () => {}, onGoTo: () => {} } })
   flushSync()
   await tick()
   return target
 }
 
 describe('AboutThisDialog a11y', () => {
-  it.each(['downloaded', 'still-filling', 'notable-a', 'remote', 'unavailable', 'app', 'folder'])(
-    'has no violations: %s',
-    async (id) => {
-      await expectNoA11yViolations(await render(id))
-    },
-  )
+  it.each([
+    'downloaded',
+    'still-filling',
+    'notable-a',
+    'remote',
+    'unavailable',
+    'app',
+    'folder',
+    'node-modules',
+    'empty-folder',
+    'not-indexed-folder',
+  ])('has no violations: %s', async (id) => {
+    await expectNoA11yViolations(await render(id))
+  })
 
   it('lists each section’s rows as a description list, marks pending rows busy, and focuses the body', async () => {
     const target = await render('still-filling')
