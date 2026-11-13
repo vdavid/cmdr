@@ -7,14 +7,24 @@
  * from disk, so it guards any hand edit of an `en` block, the way a per-OS string
  * changes (`src/lib/intl/DETAILS.md` § Platform variants).
  *
- * Only blocks are read: a plain value shows the same text on every OS, and the
- * ones still in macOS words are `docs/notes/windows-port/copy-decisions.md` §
- * Open rows. A branch that keeps a macOS word on purpose goes in `EXCEPTIONS`,
+ * Only blocks are read for words: a plain value shows the same text on every OS,
+ * and the ones still in macOS words are `docs/notes/windows-port/copy-decisions.md`
+ * § Open rows. A branch that keeps a macOS word on purpose goes in `EXCEPTIONS`,
  * with the reason.
+ *
+ * Key glyphs are stricter: ⌘, ⌥, ⌃, and ⇧ also never appear in a plain value
+ * (`macKeyGlyphsInPlainValue`). A key in a sentence is a `ShortcutChip` tag or a
+ * `{combo}` param fed by `shortcutAsText`, which spell it per OS and follow a
+ * rebind; a typed glyph shows a Mac key to Windows and Linux users and goes stale
+ * the moment the user rebinds. A sentence that names the glyphs themselves keeps
+ * them in a `macos` branch.
  */
 
 import { describe, expect, it } from 'vitest'
 import { SYSTEM_TOKENS, loadCatalog, platformBranches, visibleText } from './i18n-catalog-lib.ts'
+
+/** The macOS modifier glyphs. Off macOS the same keys are words (Ctrl, Alt, Shift, Win or Super). */
+const MAC_KEY_GLYPH = /[⌘⌥⌃⇧]/u
 
 /** One word rule: what it's called in a report, and what it matches in visible text. */
 interface WordRule {
@@ -31,7 +41,7 @@ const MACOS_WORDS: readonly WordRule[] = [
   { rule: 'macOS word “Spotlight”', pattern: /\bSpotlight\b/ },
   { rule: 'macOS word “Keychain”', pattern: /\bKeychain\b/ },
   { rule: 'macOS word “Dock”', pattern: /\bDock\b/ },
-  { rule: 'macOS key glyph (⌘, ⌥, or ⌃)', pattern: /[⌘⌥⌃]/ },
+  { rule: 'macOS key glyph (⌘, ⌥, ⌃, or ⇧)', pattern: MAC_KEY_GLYPH },
 ]
 
 const WINDOWS_WRONG_WORDS: readonly WordRule[] = [
@@ -71,6 +81,27 @@ function wrongOsWords(key: string, value: string): string[] {
   return hits
 }
 
+/** `[key]` when a plain (block-less) `value` shows a macOS key glyph to every OS, else `[]`. */
+function macKeyGlyphsInPlainValue(key: string, value: string): string[] {
+  return platformBranches(value).some(({ name, text }) => name === null && MAC_KEY_GLYPH.test(visibleText(key, text)))
+    ? [key]
+    : []
+}
+
+describe('macKeyGlyphsInPlainValue', () => {
+  it('flags a typed macOS key glyph in a plain value', () => {
+    expect(macKeyGlyphsInPlainValue('a.b', 'Copy files first with ⌘C.')).toEqual(['a.b'])
+    expect(macKeyGlyphsInPlainValue('a.b', 'Press ⇧Space for Quick Look.')).toEqual(['a.b'])
+  })
+
+  it('leaves a key cap tag, a combo param, and a platform block alone', () => {
+    expect(macKeyGlyphsInPlainValue('a.b', 'Copy files first with <key></key>.')).toEqual([])
+    expect(macKeyGlyphsInPlainValue('a.b', 'Copy files first with {combo}.')).toEqual([])
+    const block = '{platform, select, macos {Add a modifier (⌘ or ⇧)} other {Add a modifier (Ctrl or Shift)}}'
+    expect(macKeyGlyphsInPlainValue('a.b', block)).toEqual([])
+  })
+})
+
 describe('wrongOsWords', () => {
   it('flags a macOS word in a Windows branch and a Windows word in a Linux one', () => {
     const value = '{platform, select, macos {Show in Finder} windows {Show in Finder} other {Move to the Recycle Bin}}'
@@ -101,6 +132,11 @@ describe('the en catalog', () => {
       .flatMap(([key, value]) => wrongOsWords(key, value))
       .filter((hit) => !Object.hasOwn(EXCEPTIONS, hit.slice(0, hit.indexOf(':'))))
     expect(hits).toEqual([])
+  })
+
+  it('types no macOS key glyph into a plain value', () => {
+    const { messages } = loadCatalog('en')
+    expect(Object.entries(messages).flatMap(([key, value]) => macKeyGlyphsInPlainValue(key, value))).toEqual([])
   })
 
   it('names only live branches in its exceptions', () => {

@@ -55,7 +55,7 @@ describe('EmptyFolderState', () => {
     setShortcut('view.showHidden', 0, '⌘⇧.')
     expect(paragraphs(1)()).toEqual([
       'There’s one hidden item in this folder.',
-      'To see hidden items, press ⌘⇧. or choose “View > Show hidden files”.',
+      'To see hidden items, press ⇧⌘. or choose “View > Show hidden files”.',
     ])
   })
 
@@ -63,7 +63,7 @@ describe('EmptyFolderState', () => {
     setShortcut('view.showHidden', 0, '⌘⇧.')
     paragraphs(2)
     const keyCaps = Array.from(document.querySelectorAll('.empty-folder-state kbd'), (k) => k.textContent)
-    expect(keyCaps).toEqual(['⌘⇧.'])
+    expect(keyCaps).toEqual(['⇧⌘.'])
   })
 
   it('counts several hidden items, with thousands separators', () => {
