@@ -249,6 +249,20 @@ fast as an empty one, and a container is never opened. Rules in `crates/cmdr-abo
   index (`Index::volume_id_for_path(home)`), filtered by `app_data_place`, sized by one `dir_stats_batch`. A place the
   index hasn't listed is named in `not_looked_in`.
 
+## Linux
+
+What the card answers there, verified in the Linux E2E container (`about-this.spec.ts`, Ubuntu 26.04 arm64,
+2026-11-13):
+
+- **The download record** from `user.xdg.origin.url` / `user.xdg.referrer.url` (`platform/linux.rs`).
+- **No signature row**: `OsCaps::code_signing` is off, so the plan leaves it out (❌ never drawn as "not applicable").
+- **No default-app row**: Cmdr's Linux path only launches through `xdg-open` (`file_system/default_app.rs`) and asks
+  nothing about which app that is, so `OsCaps::default_app` is off. A `xdg-mime query default` lookup would be a
+  subprocess per card under a deadline; not built.
+- **No last-opened or receipt rows**: no Spotlight, no receipts.
+- **The owner's Linux arms**: `~/.config`, `~/.local/share`, `~/.cache` children named after a desktop entry read as
+  probably that app's; `~/.var/app/<id>` and `~/snap/<name>` by id.
+
 ## Tests
 
 `through_tests.rs` runs a card reached through its volume end to end: the `Way` table, a scripted share whose every

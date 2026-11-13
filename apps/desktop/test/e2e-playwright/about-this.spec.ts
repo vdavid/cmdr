@@ -9,12 +9,18 @@
  * and page addresses) plus `com.apple.quarantine`; Linux gets `user.xdg.origin.url`. Every host is
  * made up (❌ no real download tokens).
  *
+ * Off macOS: an executable's card has no signature row at all (Linux has no code signing, so the plan leaves it out),
+ * and a `~/.config` folder named after a desktop entry the test installs reads as probably that app's. The Linux
+ * container's fixture dir takes `user.*` xattrs through the Perl `setxattr` below, and `Ctrl+Shift+Enter` opens the
+ * card there (verified in `scripts/e2e-linux.sh`, Ubuntu 26.04 arm64, 2026-11-13).
+ *
  * The native context row itself is AppKit/GTK, which Playwright can't click; it emits the same
  * `execute-command` the File menu row does (`cmdr-menu`'s `menu_id_to_command`, pinned in Rust), so
  * the menu path here covers both.
  */
 
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { execFileSync } from 'child_process'
 import { waitBudget } from './wait-budget.js'
@@ -34,9 +40,15 @@ import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 type PageLike = TauriPage | BrowserPageAdapter
 
 const CARD = '[data-dialog-id="tell-me-about-this"]'
+/** `CROSS_SOURCE_DEDUP_WINDOW_MS` in `routes/(main)/dispatch-dedup.ts`. */
+const CROSS_SOURCE_WINDOW_MS = 300
 const DIR = 'about-this'
 const FILE = 'chart.png'
 const FOLDER = 'reports'
+const TOOL = 'tool.sh'
+/** A desktop entry the Linux owner test installs for the person, and the `~/.config` folder named after it. */
+const DESKTOP_ID = 'cmdr-about-fixture'
+const DESKTOP_NAME = 'About Fixture'
 const HOST = 'downloads.about-this.example'
 const FILE_URL = `https://${HOST}/files/chart.png`
 const PAGE_URL = 'https://about-this.example/charts'
@@ -126,15 +138,29 @@ function buildFixture(): void {
   fs.writeFileSync(path.join(fixtureDir(), FOLDER, 'q1.txt'), 'first quarter\n')
   fs.writeFileSync(path.join(fixtureDir(), FILE), PNG)
   writeDownloadRecord(path.join(fixtureDir(), FILE))
+  fs.writeFileSync(path.join(fixtureDir(), TOOL), '#!/bin/sh\necho hi\n', { mode: 0o755 })
 }
 
-async function openFixtureDir(tauriPage: PageLike): Promise<void> {
+/** The person's own desktop entry and the app's folder under `~/.config`, as an installed Linux app leaves them. */
+function linuxAppFixture(): { entry: string; config: string } {
+  const home = os.homedir()
+  return {
+    entry: path.join(home, '.local/share/applications', `${DESKTOP_ID}.desktop`),
+    config: path.join(home, '.config', DESKTOP_ID),
+  }
+}
+
+async function openDir(tauriPage: PageLike, dir: string, name: string): Promise<void> {
   await ensureAppReady(tauriPage)
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
       event: 'mcp-nav-to-path',
-      payload: { pane: 'left', path: ${JSON.stringify(fixtureDir())} }
+      payload: { pane: 'left', path: ${JSON.stringify(dir)} }
   })`)
-  expect(await moveCursorToFile(tauriPage, FILE)).toBe(true)
+  expect(await moveCursorToFile(tauriPage, name)).toBe(true)
+}
+
+async function openFixtureDir(tauriPage: PageLike): Promise<void> {
+  await openDir(tauriPage, fixtureDir(), FILE)
 }
 
 /** Waits for the card and for its facts to settle. */
@@ -195,15 +221,22 @@ test.describe('Tell me about this', () => {
 
   test('opens from the File menu and context menu row, both of which dispatch the command', async ({ tauriPage }) => {
     await openFixtureDir(tauriPage)
+    const dispatchedAt = Date.now()
     await dispatchMenuCommand(tauriPage, 'file.tellMeAbout')
     await waitForSettledCard(tauriPage)
     expect(await rowText(tauriPage, 'realType')).toContain('Image')
     await dismissOverlay(tauriPage)
+    // The app drops a keypress of the same command arriving within 300 ms of a menu fire as that fire's double
+    // (`routes/(main)/dispatch-dedup.ts`), which is right for a person and swallowed the next test's shortcut here.
+    await expect
+      .poll(() => Date.now() - dispatchedAt > CROSS_SOURCE_WINDOW_MS, { timeout: waitBudget(2000) })
+      .toBeTruthy()
   })
 
   test('a folder’s card leads with what’s inside and has its size row', async ({ tauriPage }) => {
-    await openFixtureDir(tauriPage)
-    expect(await moveCursorToFile(tauriPage, FOLDER)).toBe(true)
+    // Straight onto the folder: a second cursor move right before the key raced it on Linux (the key landed with no
+    // dispatch).
+    await openDir(tauriPage, fixtureDir(), FOLDER)
     await pressKey(tauriPage, defaultKey('file.tellMeAbout'))
     await waitForSettledCard(tauriPage)
     expect(
@@ -220,5 +253,36 @@ test.describe('Tell me about this', () => {
     // A folder's own entry size is never its size: the Size row is the index's, not identity's.
     expect(await tauriPage.count(`${CARD} [data-row-kind="size"]`)).toBe(0)
     await dismissOverlay(tauriPage)
+  })
+
+  // Linux has no code signing: the row isn't drawn at all, ❌ never drawn as "not applicable". macOS reads one even
+  // off a script (unsigned), which is what keeps this assertion meaningful on both.
+  test('an executable has a signature row only where the OS signs code', async ({ tauriPage }) => {
+    await openDir(tauriPage, fixtureDir(), TOOL)
+    await pressKey(tauriPage, defaultKey('file.tellMeAbout'))
+    await waitForSettledCard(tauriPage)
+    const rows = await tauriPage.count(`${CARD} [data-row-kind="signature"]`)
+    expect(rows).toBe(process.platform === 'darwin' ? 1 : 0)
+    await dismissOverlay(tauriPage)
+  })
+
+  test('on Linux, a ~/.config folder named after a desktop entry probably belongs to that app', async ({
+    tauriPage,
+  }) => {
+    test.skip(process.platform !== 'linux', 'desktop entries are the Linux owner arm')
+    const { entry, config } = linuxAppFixture()
+    fs.mkdirSync(path.dirname(entry), { recursive: true })
+    fs.writeFileSync(entry, `[Desktop Entry]\nType=Application\nName=${DESKTOP_NAME}\nExec=true\n`)
+    fs.mkdirSync(config, { recursive: true })
+    try {
+      await openDir(tauriPage, path.dirname(config), DESKTOP_ID)
+      await pressKey(tauriPage, defaultKey('file.tellMeAbout'))
+      await waitForSettledCard(tauriPage)
+      expect(await rowText(tauriPage, 'owner')).toContain(DESKTOP_NAME)
+      await dismissOverlay(tauriPage)
+    } finally {
+      fs.rmSync(config, { recursive: true, force: true })
+      fs.rmSync(entry, { force: true })
+    }
   })
 })
