@@ -61,10 +61,13 @@ it later). `ModalDialog` with `resizable` and `growDownward`, 34 rem wide, at mo
   never its own entry size. The size on disk joins the size only when it differs by at least 1 MB and 10%
   (`showsOnDisk`): every small file takes a few KB more for block rounding, which isn't news.
 - **No movement**: the headline, the removal list, and rows whose usual answer takes two lines (download, Cmdr's
-  history, signature, owner, git, importance) reserve two lines until `factsSettled`. At the settle the reservations go
-  and an all-routine section collapses to its heading plus "Nothing on record", in the same frame. **Decision**: the
-  headline's second line goes too, since a one-line headline over a blank line read as a gap on every plain card.
-  Pending rows are a static bar (no shimmer at all, so `prefers-reduced-motion` has nothing to stop).
+  history, signature, owner, git, importance) reserve two lines until `factsSettled`. What's inside reserves its whole
+  section (`CONTENTS_RESERVED_LINES`, 19: the summary, eight biggest, eight largest, the untouched share), pending or
+  landed, because its searches scan the whole arena and land after the first frame on a big drive (host DETAILS § A
+  folder's digest). At the settle the reservations go and an all-routine section collapses to its heading plus "Nothing
+  on record", in the same frame. **Decision**: the headline's second line goes too, since a one-line headline over a
+  blank line read as a gap on every plain card. Pending rows are a static bar (no shimmer at all, so
+  `prefers-reduced-motion` has nothing to stop).
 - **Prominence is the wire's**: `AboutAbsence` draws a Routine unknown (or a not-applicable) as one muted line and a
   Notable one as a sentence with a quiet mark. A row-specific absence word (`ROW_UNKNOWN`) wins over the generic one.
 - **The verdict slot** is an empty `[data-verdict-slot]` div right above the removal section, `display: none` while

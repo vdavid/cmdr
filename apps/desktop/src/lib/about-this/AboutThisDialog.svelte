@@ -53,6 +53,13 @@
         return getCachedCustomFolderIcon(path) ?? (iconId !== null ? getCachedIcon(iconId) : undefined)
     })
     const sections = $derived(sectionsOf(card))
+
+    /**
+     * Lines What's inside can take: its summary (two), the biggest children and the largest files (eight each,
+     * `cmdr_about::digest::SHOWN_CHILDREN`), and the untouched share. Held until the facts settle, so a digest landing
+     * after the first frame (its searches scan the whole arena: hundreds of ms on a big drive) moves nothing below.
+     */
+    const CONTENTS_RESERVED_LINES = 19
     const name = $derived.by(() => {
         const identity = card.facts.identity
         return identity?.kind === 'identity' && identity.fact.state === 'known' ? identity.fact.value.name : card.subject.name
@@ -108,7 +115,11 @@
                     {#if view.collapsed}
                         <p class="quiet">{t(view.collapsedWhy ? UNKNOWN_WHY[view.collapsedWhy] : 'aboutThis.section.nothingOnRecord')}</p>
                     {:else}
-                        <dl>
+                        <dl
+                            style:min-height={view.section === 'contents' && !card.settled
+                                ? `calc(${String(CONTENTS_RESERVED_LINES)} * var(--font-line-height-normal) * 1em)`
+                                : null}
+                        >
                             {#each view.rows as row (row.kind)}
                                 <AboutRow {row} {target} settled={card.settled} subjectPath={card.subject.path} {onGoTo} />
                             {/each}

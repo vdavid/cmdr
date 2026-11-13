@@ -82,6 +82,36 @@ describe("What's inside", () => {
     expect(contents.querySelector('button')).toBeNull()
   })
 
+  // Its two searches scan the whole arena, so on a big drive it lands after the first frame: the section holds the
+  // digest's whole height until the facts settle, and lets it go then, with every other reservation.
+  it('holds its whole height while the card fills, and only then', async () => {
+    const folder = aboutThisFixtures.folder
+    if (!folder) throw new Error('no folder fixture')
+    const filling = { ...folder, settled: false, facts: { ...folder.facts, folderDigest: undefined } }
+    let mountedCard = mount(AboutThisDialog, {
+      target: document.body.appendChild(document.createElement('div')),
+      props: { card: filling, onClose: () => {}, onGoTo: () => {} },
+    })
+    flushSync()
+    await tick()
+    const reserved = document.querySelector<HTMLElement>('[data-section="contents"] dl')?.style.minHeight
+    expect(reserved).toContain('19')
+    void unmount(mountedCard)
+    document.body.innerHTML = ''
+    const landed = { ...folder, settled: false }
+    mountedCard = mount(AboutThisDialog, {
+      target: document.body.appendChild(document.createElement('div')),
+      props: { card: landed, onClose: () => {}, onGoTo: () => {} },
+    })
+    flushSync()
+    await tick()
+    expect(document.querySelector<HTMLElement>('[data-section="contents"] dl')?.style.minHeight).toBe(reserved)
+    void unmount(mountedCard)
+    document.body.innerHTML = ''
+    const settled = section(await render('folder'), 'contents').querySelector<HTMLElement>('dl')
+    expect(settled?.style.minHeight).toBe('')
+  })
+
   it('says a folder the index hasn’t listed is not indexed, never empty', async () => {
     const contents = text(section(await render('not-indexed-folder'), 'contents'))
     expect(contents).not.toContain('Empty')

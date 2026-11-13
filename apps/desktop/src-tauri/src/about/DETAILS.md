@@ -233,6 +233,13 @@ fast as an empty one, and a container is never opened. Rules in `crates/cmdr-abo
   bound, not its contents), then one `dir_stats_batch` for the folder children, each size's flags verbatim and
   `updating` from the walked roots. The class asks the parent's listing for project files, once, only for a name that
   needs one.
+- **The two searches run on pool jobs of their own, beside the listing, under `SEARCH_BUDGET` (800 ms) inside the row's
+  1 s**: each scans the whole arena whatever the folder's size. Measured with `apps/desktop/src-tauri/src/search/bench_card.rs` (release build,
+  macOS 27.0.1, a real 8,028,071-row `index-root.db`, 2026-11-13, a loaded machine): the largest files 400–860 ms
+  (home, a projects folder, `~/Library`, `/Applications` alike), the untouched ones 50–100 ms. So on a big drive the
+  digest lands after the 100 ms grace (the card reserves the section's whole height, frontend DETAILS § Layout), and on
+  a busy machine the largest files can say `TimedOut` while the listing stands. A scoped scan that skips rows outside
+  the folder would make it instant; that's a search-engine change, not the card's.
 - **Largest files and the untouched share**: a size-sorted search of the folder's files through
   `search::run_if_loaded`, which answers ONLY when the volume's arena is already in memory (a load is seconds and
   hundreds of MB). No arena, or the folder not in it, is `NotIndexed`. System-folder excludes are off, or a

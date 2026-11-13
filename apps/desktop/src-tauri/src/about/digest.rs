@@ -8,6 +8,8 @@
 use std::cell::OnceCell;
 use std::collections::HashSet;
 use std::path::Path;
+use std::sync::mpsc;
+use std::time::{Duration, Instant};
 
 use cmdr_about::digest::{
     APP_DATA_PLACES, AppData, ByteShare, FolderClass, FolderDigest, LibraryFolder, SHOWN_CHILDREN, SizedChild,
@@ -20,6 +22,7 @@ use cmdr_index::IndexStatusResponse;
 use cmdr_index::store::{DirStats, EntryRow};
 
 use super::index::{IndexPlace, recursive_size_fact, recursive_size_of};
+use crate::file_system::framework_pool::note_activity;
 use crate::index_host::index;
 use crate::search::{PatternType, SearchQuery, SearchResult, SearchSort, run_if_loaded};
 
@@ -54,20 +57,72 @@ pub(crate) fn folder_digest_fact(place: &IndexPlace, now_secs: u64) -> Fact<Fold
     };
     let (children, largest, unchanged) = match rows {
         Ok(rows) => {
-            let walked = walked_roots(&place.index_id);
+            // The two searches scan the whole arena (hundreds of ms on a big one), so
+            // they run beside the listing, on jobs of their own, under one budget.
+            let ends = Instant::now() + SEARCH_BUDGET;
+            let largest = on_its_own_job(ends, "largest", {
+                let place = place.clone();
+                move || largest_files(&place)
+            });
             let unchanged = if rows.is_empty() {
                 // An empty folder has nothing to be untouched; the card says it's empty.
-                Fact::unknown(UnknownWhy::NoRecord)
+                None
             } else {
-                unchanged_share(place, now_secs)
+                let place = place.clone();
+                Some(on_its_own_job(ends, "untouched", move || {
+                    unchanged_share(&place, now_secs)
+                }))
             };
-            let children = sized_children(&place.index_id, &place.path, &rows, &walked);
-            (Fact::Known(children), largest_files(place), unchanged)
+            let children = sized_children(&place.index_id, &place.path, &rows, &walked_roots(&place.index_id));
+            let unchanged = unchanged.map_or_else(|| Fact::unknown(UnknownWhy::NoRecord), Waiting::answer);
+            (Fact::Known(children), largest.answer(), unchanged)
         }
         // Nothing listed it, so the arena can't hold it either.
         Err(why) => (Fact::unknown(why), Fact::unknown(why), Fact::unknown(why)),
     };
     Fact::Known(FolderDigest::of(children, largest, unchanged, class))
+}
+
+/// How long the digest waits for its two searches, inside the row's own budget
+/// (`jobs::ROW_BUDGET`, 1 s): past it the listing stands and the search's part says
+/// it timed out. Each scans the whole arena whatever the folder's size: 400–860 ms
+/// for the largest files on an 8,028,071-row arena, 50–100 ms for the untouched ones
+/// (macOS 27.0.1, release build, `search::bench_card` on a real `index-root.db`,
+/// 2026-11-13), so a big drive's card fills them in after its first frame.
+const SEARCH_BUDGET: Duration = Duration::from_millis(800);
+
+/// A search running on its own pool job, and when the digest stops waiting for it.
+struct Waiting<T> {
+    answer: mpsc::Receiver<Fact<T>>,
+    ends: Instant,
+}
+
+impl<T> Waiting<T> {
+    /// The search's answer, or `TimedOut` once its budget ends.
+    fn answer(self) -> Fact<T> {
+        match self
+            .answer
+            .recv_timeout(self.ends.saturating_duration_since(Instant::now()))
+        {
+            Ok(fact) => fact,
+            Err(mpsc::RecvTimeoutError::Timeout) => Fact::unknown(UnknownWhy::TimedOut),
+            // The search panicked: no answer is coming.
+            Err(mpsc::RecvTimeoutError::Disconnected) => Fact::unknown(UnknownWhy::Unparseable),
+        }
+    }
+}
+
+fn on_its_own_job<T: Send + 'static>(
+    ends: Instant,
+    which: &'static str,
+    search: impl FnOnce() -> Fact<T> + Send + 'static,
+) -> Waiting<T> {
+    let (answer, waiting) = mpsc::sync_channel(1);
+    super::pool::submit(Box::new(move || {
+        note_activity("search the arena", which);
+        let _ = answer.send(search());
+    }));
+    Waiting { answer: waiting, ends }
 }
 
 /// The roots a walk is rewriting right now, for each size's "still moving".

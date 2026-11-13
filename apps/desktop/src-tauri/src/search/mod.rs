@@ -10,6 +10,8 @@ pub mod ai;
 #[cfg(test)]
 mod bench;
 #[cfg(test)]
+mod bench_card;
+#[cfg(test)]
 mod diagnostics_tests;
 pub(crate) mod execute;
 pub mod history;

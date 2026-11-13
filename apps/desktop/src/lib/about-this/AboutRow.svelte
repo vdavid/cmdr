@@ -54,9 +54,8 @@
         owner: 2,
         git: 2,
         importance: 2,
-        // A folder's digest and an app's data are lists; they land inside the grace on a local disk, and the rest of
-        // their height goes at the settle with every other reservation.
-        folderDigest: 4,
+        // An app's data is a list that lands inside the grace on a local disk; the rest of its height goes at the
+        // settle with every other reservation. What's inside reserves its whole section (`AboutThisDialog`).
         appData: 3,
     }
     const reserved = $derived(settled ? 1 : (RESERVED_LINES[row.kind] ?? 1))
