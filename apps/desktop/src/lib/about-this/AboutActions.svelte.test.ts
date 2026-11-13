@@ -29,7 +29,10 @@ async function render(id: string, onAct: (action: AboutAction) => void = () => {
   if (!card) throw new Error(`no fixture ${id}`)
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mounted = mount(AboutThisDialog, { target, props: { card, onClose: () => {}, onGoTo: () => {}, onAct } })
+  mounted = mount(AboutThisDialog, {
+    target,
+    props: { card, onClose: () => {}, onGoTo: () => {}, onAct, onStopVerdict: () => {} },
+  })
   flushSync()
   await tick()
   return target

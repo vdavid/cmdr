@@ -830,6 +830,67 @@ button, and on a typical download it's the one behind "More".
 - `aboutThis.action.moreMenu`: More actions
   - Where: Screen-reader name of the menu the "More" button opens.
 
+### The AI take on the card
+
+Its own block right above "What removing it means", set apart from the fact rows by a quiet surface, shown only when the
+card gets a take. When it gets none, one quiet line in the same place says why (or nothing, for AI turned off by the
+person or the local model's default). AI off entirely: no block, one quiet hint in the footer.
+
+- `aboutThis.verdict.label`: AI wrote this
+  - Where: The block's heading, so a model's sentence never passes for one of Cmdr's facts.
+- `aboutThis.verdict.writing`: Writing a short take…
+  - Where: Quiet placeholder in the block before any text arrives.
+- `aboutThis.verdict.stop`: Stop
+  - Where: Button at the block's top right while the AI writes. Stops the take alone; the card stays.
+- `aboutThis.verdict.stopTooltip`: Stops the AI take. The facts and what it wrote so far stay.
+  - Where: The Stop button's tooltip.
+- `aboutThis.verdict.stopped`: Stopped
+  - Where: Quiet mark after the text of a take stopped before its end.
+- `aboutThis.verdict.fromEarlier`: From earlier
+  - Where: Quiet tag beside the heading when the take was written earlier this session for the same, unchanged item.
+- `aboutThis.verdict.announcement`: AI wrote this: {text}
+  - Where: Read once by screen readers when the take is complete. Not on screen.
+- `aboutThis.verdict.given.none`: From the facts above. Cmdr didn’t look inside.
+  - Where: The line under the heading, from the moment the request goes out: what the AI was given.
+- `aboutThis.verdict.given.firstLines`: From the facts above and its first lines.
+- `aboutThis.verdict.given.firstPage`: From the facts above and the first page.
+- `aboutThis.verdict.given.entryNames`: From the facts above and the names of the first files inside.
+- `aboutThis.verdict.given.cameraDetails`: From the facts above and the photo’s camera details, without its location.
+- `aboutThis.verdict.given.protected`: From the facts above. This is somewhere Cmdr keeps contents private, so it didn’t
+  look inside.
+- `aboutThis.verdict.problem.authFailed`: Your AI provider didn’t accept the key.
+  - Where: Quiet line in the block when the take couldn't be written (this one and the six below).
+- `aboutThis.verdict.problem.rateLimited`: Your AI provider’s limit is reached for now.
+- `aboutThis.verdict.problem.unreachable`: Cmdr couldn’t reach your AI provider.
+- `aboutThis.verdict.problem.overloaded`: Your AI provider is busy right now.
+- `aboutThis.verdict.problem.managed`: Your IT team’s policy stopped this on its way out.
+- `aboutThis.verdict.problem.noAnswer`: The AI didn’t write anything this time.
+- `aboutThis.verdict.problem.other`: Your AI provider couldn’t answer this time.
+- `aboutThis.verdict.unavailable.noCloudConsent`: Cloud AI needs your OK before Cmdr can write a short AI take here.
+  - Where: In place of the block, with "Open AI settings" beside it, which opens Settings at the full disclosure. ❌ No
+    one-click allow on the card.
+- `aboutThis.verdict.unavailable.notConfigured`: Add your AI provider’s key in Settings for a short AI take here.
+- `aboutThis.verdict.unavailable.notReady`: The local AI model isn’t running, so there’s no AI take this time.
+- `aboutThis.verdict.unavailable.tooManyRequests`: That’s a lot of AI takes in a minute. Try again in a moment.
+- `aboutThis.verdict.unavailable.openAiSettings`: Open AI settings
+  - Where: The link beside the consent, no-key, and AI-off hints.
+- `aboutThis.verdict.aiOffHint`: AI is off, so there’s no AI take.
+  - Where: Quiet line in the footer, under the actions, with "Open AI settings" beside it. Only when AI is off entirely.
+- The organization's refusal reuses `ai.managed.aiOff` / `ai.managed.cloudAiOff` / `ai.managed.hostNotAllowed`, as the
+  other AI surfaces do.
+
+Open questions on these:
+
+1. **"AI wrote this"** as the label, or "AI take" (the setting's word)?
+2. **The cost isn't shown** (the backend sends it with each finished take, about $0.0002 on a small cloud model). A
+   quiet "about $0.0002" after the text, a tooltip on the label, or nothing?
+3. **The Stop button has no shortcut**: it's a Tab stop in the card, and Esc closes the card (which stops the take too).
+   A dedicated chord would be a new command. Wanted?
+4. **The local model draws nothing** while it writes no take (plan D4's default): no line on every Local card. A quiet
+   "The on-device model doesn't write a take yet" instead?
+5. **The AI-off hint** sits in the footer under the actions, on every card while AI is off. Too much? It could show only
+   on the first few cards.
+
 ### The AI take's setting (`settings.json`)
 
 A switch in Settings > AI > Provider, below the provider's own setup, shown only while a provider is on. Default on.
@@ -837,15 +898,15 @@ A switch in Settings > AI > Provider, below the provider's own setup, shown only
 - `settings.aboutThis.aiVerdict.label`: AI take in “Tell me about this”
   - Where: The switch's label.
 - `settings.aboutThis.aiVerdict.description`: When you open the card, AI writes two or three sentences from the facts it
-  shows. With cloud AI, the card's facts and a short look inside the file go to your provider each time.
+  shows. With cloud AI, the card’s facts and a short look inside the file go to your provider each time.
   - Where: Under the label.
 - `settings.aboutThis.aiVerdict.keywords`: explain, verdict, summary, file info, what is this, describe
   - Where: Never shown: extra words Settings search matches.
 
 Open questions on these:
 
-1. **"AI take"** is the working name for the verdict everywhere (setting, the block's label to come). Right word, or "AI
-   summary", "AI note"?
+1. **"AI take"** is the working name for the verdict everywhere (the setting, the card's hints; the block itself says
+   "AI wrote this"). Right word, or "AI summary", "AI note"?
 2. **The switch says nothing about the local model**, which writes no take yet (plan D4) whatever the switch says. A
    line for Local ("The on-device model doesn't write one yet"), or leave it until the eval decides?
 

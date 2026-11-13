@@ -1,4 +1,4 @@
-// "Tell me about this": the card's stream and its cancel.
+// "Tell me about this": the card's stream, its cancel, and its verdict's stop.
 
 import { Channel, invoke } from '@tauri-apps/api/core'
 import { commands, type AboutEvent } from '#lib/ipc/bindings.js'
@@ -7,13 +7,19 @@ import { commands, type AboutEvent } from '#lib/ipc/bindings.js'
 export interface AboutRequestHandle {
   /** The id every event of this request carries. */
   requestId: string
-  /** Stops the gathering. Idempotent, and safe before `about_start` has resolved. */
+  /** Stops the gathering and the verdict. Idempotent, and safe before `about_start` has resolved. */
   cancel: () => Promise<void>
+  /**
+   * Stops the verdict alone: the card stays, and the text so far stands with a `stopped` ending. Idempotent, and a
+   * no-op with no verdict in flight.
+   */
+  stopVerdict: () => Promise<void>
 }
 
 /**
  * Starts gathering the card for `path`, calling `onEvent` with each event as it lands: `planned` first (or
- * `unavailable` alone), then one `fact` per row in any order, then `factsSettled`.
+ * `unavailable` alone), then one `fact` per row in any order, then `factsSettled`, with the verdict's events
+ * interleaved after `planned`.
  *
  * ❗ Stop it with the returned `cancel`, ❌ never by dropping the channel: a Tauri `Channel`'s `send` succeeds after
  * the handler is gone, so the backend can't see an abandoned card. The id is minted here, so a cancel that races
@@ -38,5 +44,12 @@ export function startAbout(
       // Idempotent: the run may already be gone.
     }
   }
-  return { requestId, cancel }
+  const stopVerdict = async (): Promise<void> => {
+    try {
+      await commands.aboutStopVerdict(requestId)
+    } catch {
+      // Idempotent: the verdict may already have ended.
+    }
+  }
+  return { requestId, cancel, stopVerdict }
 }

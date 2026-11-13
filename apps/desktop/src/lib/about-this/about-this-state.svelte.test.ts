@@ -5,18 +5,29 @@ import {
   actFromCard,
   openAboutThis,
   closeAboutThis,
+  stopAboutVerdict,
   GRACE_MS,
   SHOW_ANYWAY_MS,
 } from './about-this-state.svelte'
 import { applyAboutEvent, emptyCard } from './about-card'
 
 const { started } = vi.hoisted(() => ({
-  started: [] as { requestId: string; onEvent: (event: AboutEvent) => void; cancel: ReturnType<typeof vi.fn> }[],
+  started: [] as {
+    requestId: string
+    onEvent: (event: AboutEvent) => void
+    cancel: ReturnType<typeof vi.fn>
+    stopVerdict: ReturnType<typeof vi.fn>
+  }[],
 }))
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   startAbout: (_item: unknown, onEvent: (event: AboutEvent) => void) => {
-    const handle = { requestId: `req-${String(started.length + 1)}`, onEvent, cancel: vi.fn(() => Promise.resolve()) }
+    const handle = {
+      requestId: `req-${String(started.length + 1)}`,
+      onEvent,
+      cancel: vi.fn(() => Promise.resolve()),
+      stopVerdict: vi.fn(() => Promise.resolve()),
+    }
     started.push(handle)
     return handle
   },
@@ -64,6 +75,9 @@ function planned(requestId: string): AboutEvent {
 function fact(requestId: string, f: AboutFact): AboutEvent {
   return { requestId, update: { type: 'fact', fact: f, derived } }
 }
+function noVerdict(requestId: string): AboutEvent {
+  return { requestId, update: { type: 'verdictUnavailable', why: { kind: 'aiOff' } } }
+}
 function settled(requestId: string): AboutEvent {
   return { requestId, update: { type: 'factsSettled' } }
 }
@@ -83,19 +97,17 @@ describe('applyAboutEvent', () => {
     expect(card.settled).toBe(true)
   })
 
-  it('leaves the card as it is on every verdict event', () => {
-    const card = applyAboutEvent(emptyCard('r', subject), planned('r'))
-    const updates: AboutEvent['update'][] = [
-      { type: 'verdictPlanned' },
-      { type: 'verdictUnavailable', why: { kind: 'noCloudConsent' } },
-      { type: 'verdictGiven', contents: 'firstLines' },
-      { type: 'verdictDelta', text: 'Some words.' },
-      { type: 'verdictEnd', ending: { kind: 'done' }, cost: null },
-      { type: 'verdictFromEarlier', contents: 'none', text: 'Earlier words.' },
-    ]
-    for (const update of updates) {
-      expect(applyAboutEvent(card, { requestId: 'r', update })).toBe(card)
-    }
+  it('folds the verdict in after the plan, and past the settle, without touching the facts', () => {
+    const before = applyAboutEvent(emptyCard('r', subject), { requestId: 'r', update: { type: 'verdictPlanned' } })
+    expect(before.verdict).toBeNull()
+    let card = applyAboutEvent(emptyCard('r', subject), planned('r'))
+    card = applyAboutEvent(card, settled('r'))
+    const facts = card.facts
+    card = applyAboutEvent(card, { requestId: 'r', update: { type: 'verdictPlanned' } })
+    card = applyAboutEvent(card, { requestId: 'r', update: { type: 'verdictDelta', text: 'Words.' } })
+    expect(card.verdict).toMatchObject({ status: 'planned', text: 'Words.' })
+    expect(card.facts).toBe(facts)
+    expect(applyAboutEvent(card, { requestId: 'other', update: { type: 'verdictDelta', text: 'x' } })).toBe(card)
   })
 
   it('ignores a fact outside the plan', () => {
@@ -151,8 +163,24 @@ describe('the open card', () => {
       openAboutThis(subject)
       const [run] = started
       run.onEvent(planned(run.requestId))
+      run.onEvent(noVerdict(run.requestId))
       expect(aboutThisState.shown).toBe(false)
       vi.advanceTimersByTime(GRACE_MS)
+      expect(aboutThisState.shown).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('waits for the verdict’s answer as well as the plan, so its place is settled on the first frame', () => {
+    vi.useFakeTimers()
+    try {
+      openAboutThis(subject)
+      const [run] = started
+      vi.advanceTimersByTime(GRACE_MS)
+      run.onEvent(planned(run.requestId))
+      expect(aboutThisState.shown).toBe(false)
+      run.onEvent({ requestId: run.requestId, update: { type: 'verdictPlanned' } })
       expect(aboutThisState.shown).toBe(true)
     } finally {
       vi.useRealTimers()
@@ -167,6 +195,7 @@ describe('the open card', () => {
       expect(aboutThisState.shown).toBe(false)
       const [run] = started
       run.onEvent(planned(run.requestId))
+      run.onEvent(noVerdict(run.requestId))
       expect(aboutThisState.shown).toBe(true)
 
       openAboutThis({ ...subject, path: '/tmp/slow' })
@@ -200,6 +229,34 @@ describe('the open card', () => {
     second.onEvent(planned(second.requestId))
     expect(aboutThisState.card?.subject.name).toBe('b.txt')
     expect(aboutThisState.card?.plan).toEqual(plan)
+  })
+
+  it('stops the verdict alone and keeps the card, and a close stops both', () => {
+    openAboutThis(subject)
+    const [run] = started
+    run.onEvent(planned(run.requestId))
+    run.onEvent({ requestId: run.requestId, update: { type: 'verdictPlanned' } })
+    run.onEvent({ requestId: run.requestId, update: { type: 'verdictDelta', text: 'Half a ' } })
+    stopAboutVerdict()
+    expect(run.stopVerdict).toHaveBeenCalledOnce()
+    expect(run.cancel).not.toHaveBeenCalled()
+    run.onEvent({ requestId: run.requestId, update: { type: 'verdictEnd', ending: { kind: 'stopped' }, cost: null } })
+    expect(aboutThisState.card?.verdict).toMatchObject({ text: 'Half a ', ending: { kind: 'stopped' } })
+    closeAboutThis()
+    expect(run.cancel).toHaveBeenCalledOnce()
+    stopAboutVerdict()
+    expect(run.stopVerdict).toHaveBeenCalledOnce()
+  })
+
+  it('never starts a verdict by itself: a card refused for consent stays refused until the next open', () => {
+    openAboutThis(subject)
+    const [run] = started
+    run.onEvent(planned(run.requestId))
+    run.onEvent({ requestId: run.requestId, update: { type: 'verdictUnavailable', why: { kind: 'noCloudConsent' } } })
+    // Consent arriving while it's open is a settings change the card doesn't listen to: no second request.
+    run.onEvent({ requestId: run.requestId, update: { type: 'verdictPlanned' } })
+    expect(started).toHaveLength(1)
+    expect(aboutThisState.card?.verdict).toEqual({ status: 'unavailable', why: { kind: 'noCloudConsent' } })
   })
 
   it('closes the card before an action runs, so focus lands where the action went', async () => {

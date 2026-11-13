@@ -1,7 +1,7 @@
 <!--
   The "Tell me about this" card: a resizable dialog that renders one `AboutCardData` as it fills. Top to bottom: the
-  title, the headline (two lines reserved), the volume note, the evidence sections in the plan's order, an empty slot
-  for the verdict, What removing it means, and a footer that stays put while the body scrolls.
+  title, the headline (two lines reserved), the volume note, the evidence sections in the plan's order, the AI take's
+  block (only once it's planned), What removing it means, and a footer that stays put while the body scrolls.
 
   Pure rendering: the live slice and the gallery both hand it a card built by `applyAboutEvent`. Closing is the
   host's (`onClose`), which cancels the request.
@@ -9,7 +9,7 @@
 <script lang="ts">
     import { onMount } from 'svelte'
     import type { AboutAction, AboutTarget } from '#lib/ipc/bindings.js'
-    import { t } from '#lib/intl/messages.svelte.js'
+    import { t, tString } from '#lib/intl/messages.svelte.js'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
     import Button from '#lib/ui/Button.svelte'
     import Icon from '#lib/ui/Icon.svelte'
@@ -20,6 +20,11 @@
     import AboutHeadline from './AboutHeadline.svelte'
     import AboutRemoval from './AboutRemoval.svelte'
     import AboutRow from './AboutRow.svelte'
+    import AboutVerdict from './AboutVerdict.svelte'
+    import { unavailableShowsALine, type AboutVerdict as AboutVerdictData } from './about-verdict'
+    import LinkButton from '#lib/ui/LinkButton.svelte'
+    import { openSettingsWindow } from '#lib/settings/settings-window.js'
+    import { getAppLogger } from '#lib/logging/logger.js'
     import type { AboutCardData, AboutGoTarget } from './about-card'
     import { sectionsOf } from './about-card-view'
     import { SECTION_TITLE, UNAVAILABLE, UNKNOWN_WHY, VOLUME_NOTE } from './about-words'
@@ -31,9 +36,13 @@
         onGoTo: (target: AboutGoTarget) => void
         /** A footer action: close, then do it. */
         onAct: (action: AboutAction) => void
+        /** The AI take's Stop: stops it alone, and the card stays. */
+        onStopVerdict: () => void
     }
 
-    const { card, onClose, onGoTo, onAct }: Props = $props()
+    const { card, onClose, onGoTo, onAct, onStopVerdict }: Props = $props()
+
+    const log = getAppLogger('aboutThis')
 
     const TARGET_ICON: Record<AboutTarget, IconName> = {
         file: 'file',
@@ -75,6 +84,32 @@
     $effect(() => {
         if (card.settled && !card.unavailable) announcement = body?.querySelector('[data-headline]')?.textContent.trim() ?? ''
     })
+
+    /**
+     * The AI take, said once, politely, when it ends (or arrives whole from earlier). ❌ No live region over the
+     * stream: it would read every delta.
+     */
+    let verdictAnnouncement = $state('')
+    $effect(() => {
+        const verdict = card.verdict
+        if (verdict?.status === 'planned' && verdict.ending !== null && verdict.text.trim() !== '') {
+            verdictAnnouncement = tString('aboutThis.verdict.announcement', { text: verdict.text })
+        }
+    })
+
+    /** Whether the AI take draws in the body: a planned one always, an unavailable one only when it has a line. */
+    function inBody(verdict: AboutVerdictData): boolean {
+        return verdict.status === 'planned' || unavailableShowsALine(verdict.why)
+    }
+
+    /** With AI off, the card gets no AI take and says where to turn it on, quietly, in the footer. */
+    const aiOff = $derived(card.verdict?.status === 'unavailable' && card.verdict.why.kind === 'aiOff')
+
+    function openProviderSettings(): void {
+        openSettingsWindow('about-this-card', ['AI', 'Provider']).catch((e: unknown) => {
+            log.warn('opening the AI settings failed: {error}', { error: e })
+        })
+    }
 
     onMount(() => {
         // The body, so the arrow keys and Page Up/Down scroll the card from the first keystroke.
@@ -131,8 +166,10 @@
                 </section>
             {/each}
 
-            <!-- The verdict's place: right above What removing it means, empty and zero-height until a verdict is planned. -->
-            <div class="verdict-slot" data-verdict-slot></div>
+            <!-- The AI take's place: right above What removing it means, and nothing at all without one. -->
+            {#if card.verdict && inBody(card.verdict)}
+                <div data-verdict-slot><AboutVerdict verdict={card.verdict} onStop={onStopVerdict} /></div>
+            {/if}
 
             {#if card.plan}
                 <section class="section" aria-labelledby="about-section-removal">
@@ -143,9 +180,18 @@
         {/if}
     </div>
     <p class="sr-only" aria-live="polite">{announcement}</p>
+    <p class="sr-only" aria-live="polite">{verdictAnnouncement}</p>
 
     {#snippet footerLeading()}
-        <AboutActions actions={card.unavailable ? null : (card.derived?.actions ?? null)} {onAct} />
+        <div class="footer-leading">
+            <AboutActions actions={card.unavailable ? null : (card.derived?.actions ?? null)} {onAct} />
+            {#if aiOff}
+                <p class="ai-off">
+                    {tString('aboutThis.verdict.aiOffHint')}
+                    <LinkButton onclick={openProviderSettings}>{tString('aboutThis.verdict.unavailable.openAiSettings')}</LinkButton>
+                </p>
+            {/if}
+        </div>
     {/snippet}
     {#snippet footer()}
         <Button variant="secondary" onclick={onClose}>{t('aboutThis.dialog.close')}</Button>
@@ -212,7 +258,16 @@
         color: var(--color-text-tertiary);
     }
 
-    .verdict-slot:empty {
-        display: none;
+    .footer-leading {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        min-width: 0;
+    }
+
+    .ai-off {
+        margin: 0;
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
     }
 </style>

@@ -28,7 +28,10 @@ async function render(id: string, onGoTo: (target: AboutGoTarget) => void = () =
   if (!card) throw new Error(`no fixture ${id}`)
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mounted = mount(AboutThisDialog, { target, props: { card, onClose: () => {}, onGoTo, onAct: () => {} } })
+  mounted = mount(AboutThisDialog, {
+    target,
+    props: { card, onClose: () => {}, onGoTo, onAct: () => {}, onStopVerdict: () => {} },
+  })
   flushSync()
   await tick()
   return target
@@ -90,7 +93,7 @@ describe("What's inside", () => {
     const filling = { ...folder, settled: false, facts: { ...folder.facts, folderDigest: undefined } }
     let mountedCard = mount(AboutThisDialog, {
       target: document.body.appendChild(document.createElement('div')),
-      props: { card: filling, onClose: () => {}, onGoTo: () => {}, onAct: () => {} },
+      props: { card: filling, onClose: () => {}, onGoTo: () => {}, onAct: () => {}, onStopVerdict: () => {} },
     })
     flushSync()
     await tick()
@@ -101,7 +104,7 @@ describe("What's inside", () => {
     const landed = { ...folder, settled: false }
     mountedCard = mount(AboutThisDialog, {
       target: document.body.appendChild(document.createElement('div')),
-      props: { card: landed, onClose: () => {}, onGoTo: () => {}, onAct: () => {} },
+      props: { card: landed, onClose: () => {}, onGoTo: () => {}, onAct: () => {}, onStopVerdict: () => {} },
     })
     flushSync()
     await tick()

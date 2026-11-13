@@ -1254,5 +1254,110 @@
   "aboutThis.removal.inGitHistory": "This is git’s record of it at that point in history, not a file on the disk, so there’s nothing to remove here.",
   "@aboutThis.removal.inGitHistory": {
     "description": "The line under \"What removing it means\" on the \"Tell me about this\" card for a file inside git's history view (a past version kept by git). A fact, never advice."
+  },
+  "aboutThis.verdict.label": "AI wrote this",
+  "@aboutThis.verdict.label": {
+    "description": "Heading of the AI take's block on the \"Tell me about this\" card. The \"AI take\" is two or three sentences an AI model writes about the item from the facts the card lists, shown in its own block, set apart from the facts, right above \"What removing it means\". It says plainly that the text below was written by an AI, not by Cmdr, so nobody mistakes it for one of Cmdr's own facts. Short label, sentence case."
+  },
+  "aboutThis.verdict.writing": "Writing a short take…",
+  "@aboutThis.verdict.writing": {
+    "description": "Quiet placeholder in the AI take's block on the \"Tell me about this\" card while the AI hasn't written anything yet (the facts may still be landing, or the request is on its way). The \"AI take\" is two or three sentences an AI model writes about the item from the facts the card lists, shown in its own block, set apart from the facts, right above \"What removing it means\". Ends with an ellipsis."
+  },
+  "aboutThis.verdict.stop": "Stop",
+  "@aboutThis.verdict.stop": {
+    "description": "Button in the AI take's block on the \"Tell me about this\" card, shown while the AI is writing. Stops the AI take alone; the card and its facts stay, and the text written so far stays too. Short control label."
+  },
+  "aboutThis.verdict.stopTooltip": "Stops the AI take. The facts and what it wrote so far stay.",
+  "@aboutThis.verdict.stopTooltip": {
+    "description": "Tooltip on the Stop button of the AI take on the \"Tell me about this\" card."
+  },
+  "aboutThis.verdict.stopped": "Stopped",
+  "@aboutThis.verdict.stopped": {
+    "description": "Quiet mark after the text of the AI take on the \"Tell me about this\" card when the person stopped it (or cloud AI was turned off) before the AI finished. The text so far stays. One word."
+  },
+  "aboutThis.verdict.fromEarlier": "From earlier",
+  "@aboutThis.verdict.fromEarlier": {
+    "description": "Quiet tag beside the AI take's heading on the \"Tell me about this\" card when the take was written earlier in this session for the same, unchanged item, so Cmdr showed it again without asking the AI. Short."
+  },
+  "aboutThis.verdict.announcement": "AI wrote this: {text}",
+  "@aboutThis.verdict.announcement": {
+    "description": "Read aloud once by screen readers when the AI take on the \"Tell me about this\" card is complete. Not shown on screen.",
+    "placeholders": { "text": { "description": "The AI's two or three sentences, as written." } }
+  },
+  "aboutThis.verdict.given.none": "From the facts above. Cmdr didn’t look inside.",
+  "@aboutThis.verdict.given.none": {
+    "description": "Line under the AI take's heading on the \"Tell me about this\" card, shown from the moment the request goes out, saying what the AI was given: only the facts the card lists, nothing from inside the item (a folder, an item on a server, or a file whose contents gave nothing to read)."
+  },
+  "aboutThis.verdict.given.firstLines": "From the facts above and its first lines.",
+  "@aboutThis.verdict.given.firstLines": {
+    "description": "Line under the AI take's heading on the \"Tell me about this\" card, shown from the moment the request goes out, saying what the AI was given: the facts the card lists plus the first few lines of the text file."
+  },
+  "aboutThis.verdict.given.firstPage": "From the facts above and the first page.",
+  "@aboutThis.verdict.given.firstPage": {
+    "description": "Line under the AI take's heading on the \"Tell me about this\" card, shown from the moment the request goes out, saying what the AI was given: the facts the card lists plus the PDF's title and first page."
+  },
+  "aboutThis.verdict.given.entryNames": "From the facts above and the names of the first files inside.",
+  "@aboutThis.verdict.given.entryNames": {
+    "description": "Line under the AI take's heading on the \"Tell me about this\" card, shown from the moment the request goes out, saying what the AI was given: the facts the card lists plus the names of the first files inside the archive (a zip, for example). Not their contents."
+  },
+  "aboutThis.verdict.given.cameraDetails": "From the facts above and the photo’s camera details, without its location.",
+  "@aboutThis.verdict.given.cameraDetails": {
+    "description": "Line under the AI take's heading on the \"Tell me about this\" card, shown from the moment the request goes out, saying what the AI was given: the facts the card lists plus the photo's camera make, model, lens, and date. The photo's location is never sent."
+  },
+  "aboutThis.verdict.given.protected": "From the facts above. This is somewhere Cmdr keeps contents private, so it didn’t look inside.",
+  "@aboutThis.verdict.given.protected": {
+    "description": "Line under the AI take's heading on the \"Tell me about this\" card, shown from the moment the request goes out, for an item in a place whose contents Cmdr never sends to an AI (passwords and keys, a browser profile, mail): only its name-level facts went."
+  },
+  "aboutThis.verdict.problem.authFailed": "Your AI provider didn’t accept the key.",
+  "@aboutThis.verdict.problem.authFailed": {
+    "description": "Quiet line in the AI take's block on the \"Tell me about this\" card when the AI provider refused the API key, so there's no take this time. Never uses the words \"error\" or \"failed\"."
+  },
+  "aboutThis.verdict.problem.rateLimited": "Your AI provider’s limit is reached for now.",
+  "@aboutThis.verdict.problem.rateLimited": {
+    "description": "Quiet line in the AI take's block on the \"Tell me about this\" card when the AI provider turned the request away for a rate limit or a used-up quota. Never uses the words \"error\" or \"failed\"."
+  },
+  "aboutThis.verdict.problem.unreachable": "Cmdr couldn’t reach your AI provider.",
+  "@aboutThis.verdict.problem.unreachable": {
+    "description": "Quiet line in the AI take's block on the \"Tell me about this\" card when the AI provider didn't answer (offline, or it timed out). Never uses the words \"error\" or \"failed\"."
+  },
+  "aboutThis.verdict.problem.overloaded": "Your AI provider is busy right now.",
+  "@aboutThis.verdict.problem.overloaded": {
+    "description": "Quiet line in the AI take's block on the \"Tell me about this\" card when the AI provider said it's overloaded. Never uses the words \"error\" or \"failed\"."
+  },
+  "aboutThis.verdict.problem.managed": "Your IT team’s policy stopped this on its way out.",
+  "@aboutThis.verdict.problem.managed": {
+    "description": "Quiet line in the AI take's block on the \"Tell me about this\" card when the organization's device policy (set by an IT team) refused the request before it left the Mac. Never uses the words \"error\" or \"failed\"."
+  },
+  "aboutThis.verdict.problem.noAnswer": "The AI didn’t write anything this time.",
+  "@aboutThis.verdict.problem.noAnswer": {
+    "description": "Quiet line in the AI take's block on the \"Tell me about this\" card when the AI's answer came back empty. Never uses the words \"error\" or \"failed\"."
+  },
+  "aboutThis.verdict.problem.other": "Your AI provider couldn’t answer this time.",
+  "@aboutThis.verdict.problem.other": {
+    "description": "Quiet line in the AI take's block on the \"Tell me about this\" card when the AI provider answered with a problem Cmdr has no specific words for. Never uses the words \"error\" or \"failed\"."
+  },
+  "aboutThis.verdict.unavailable.noCloudConsent": "Cloud AI needs your OK before Cmdr can write a short AI take here.",
+  "@aboutThis.verdict.unavailable.noCloudConsent": {
+    "description": "One quiet line on the \"Tell me about this\" card, in place of the AI take, when cloud AI is picked but not allowed (or was allowed under older wording of what it sends, so it needs allowing again). A link beside it opens Settings at the full list of what cloud AI gets; the card never allows it in one click."
+  },
+  "aboutThis.verdict.unavailable.notConfigured": "Add your AI provider’s key in Settings for a short AI take here.",
+  "@aboutThis.verdict.unavailable.notConfigured": {
+    "description": "One quiet line on the \"Tell me about this\" card, in place of the AI take, when a cloud AI provider is picked but has no key or address set up. A link beside it opens Settings > AI."
+  },
+  "aboutThis.verdict.unavailable.notReady": "The local AI model isn’t running, so there’s no AI take this time.",
+  "@aboutThis.verdict.unavailable.notReady": {
+    "description": "One quiet line on the \"Tell me about this\" card, in place of the AI take, when the on-device AI model's server isn't running. The card never starts it."
+  },
+  "aboutThis.verdict.unavailable.tooManyRequests": "That’s a lot of AI takes in a minute. Try again in a moment.",
+  "@aboutThis.verdict.unavailable.tooManyRequests": {
+    "description": "One quiet line on the \"Tell me about this\" card, in place of the AI take, when many cards were opened within a minute and Cmdr held back to keep the cost down."
+  },
+  "aboutThis.verdict.unavailable.openAiSettings": "Open AI settings",
+  "@aboutThis.verdict.unavailable.openAiSettings": {
+    "description": "Link beside a hint about the AI take on the \"Tell me about this\" card (cloud AI needs allowing, no key set up, or AI is off). Opens Settings > AI. Short link text."
+  },
+  "aboutThis.verdict.aiOffHint": "AI is off, so there’s no AI take.",
+  "@aboutThis.verdict.aiOffHint": {
+    "description": "Quiet hint in the footer of the \"Tell me about this\" card when AI is turned off in Settings: the card shows only Cmdr's own facts. A link beside it opens Settings > AI. The \"AI take\" is two or three sentences an AI model writes about the item from the facts the card lists, shown in its own block, set apart from the facts, right above \"What removing it means\"."
   }
 }

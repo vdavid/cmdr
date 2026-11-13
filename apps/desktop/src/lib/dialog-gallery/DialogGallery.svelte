@@ -364,7 +364,13 @@
     {#if plan?.kind === 'alert'}
         <AlertDialog {...plan.props} onClose={closeGalleryDialog} />
     {:else if plan?.kind === 'tell-me-about-this'}
-        <AboutThisDialog card={plan.card} onClose={closeGalleryDialog} onGoTo={closeGalleryDialog} onAct={closeGalleryDialog} />
+        <AboutThisDialog
+            card={plan.card}
+            onClose={closeGalleryDialog}
+            onGoTo={closeGalleryDialog}
+            onAct={closeGalleryDialog}
+            onStopVerdict={() => {}}
+        />
     {:else if plan?.kind === 'about'}
         <AboutWindow onClose={closeGalleryDialog} />
     {:else if plan?.kind === 'acknowledgements'}

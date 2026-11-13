@@ -54,7 +54,11 @@ export interface Stream {
   settled: boolean
 }
 
-export function card(name: string, path: string, stream: Stream): AboutCardData {
+/**
+ * The card a stream renders. `after` are more updates folded in after it: the verdict's events, which follow the plan
+ * and may run past the facts' settle.
+ */
+export function card(name: string, path: string, stream: Stream, after: AboutEvent['update'][] = []): AboutCardData {
   const events: AboutEvent[] = [
     { requestId: REQUEST, update: { type: 'planned', plan: stream.plan, derived: stream.first } },
     ...(stream.stopped
@@ -66,6 +70,7 @@ export function card(name: string, path: string, stream: Stream): AboutCardData 
     })),
   ]
   if (stream.settled) events.push({ requestId: REQUEST, update: { type: 'factsSettled' } })
+  for (const update of after) events.push({ requestId: REQUEST, update })
   return events.reduce(
     applyAboutEvent,
     emptyCard(REQUEST, { path, volumeId: 'root', name, iconId: null, isDirectory: false }),

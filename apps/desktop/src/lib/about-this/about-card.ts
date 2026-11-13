@@ -9,6 +9,7 @@
  */
 
 import type { AboutEvent, AboutFact, AboutPlan, AboutUnavailable, Derived, FactKind } from '#lib/ipc/bindings.js'
+import { applyVerdictUpdate, isVerdictUpdate, type AboutVerdict, type VerdictUpdate } from './about-verdict'
 
 /** What the card asks about, as the pane held it when the card opened. */
 export interface AboutSubject {
@@ -54,11 +55,16 @@ export interface AboutCardData {
   settled: boolean
   /** Why the card can't be gathered at all, instead of everything above. */
   unavailable: AboutUnavailable | null
+  /**
+   * The AI take: `null` until the backend says whether there is one (right after `planned`). ❌ Nothing on the card
+   * but its own block reads it.
+   */
+  verdict: AboutVerdict | null
 }
 
 /** A card that has asked and heard nothing yet. */
 export function emptyCard(requestId: string, subject: AboutSubject): AboutCardData {
-  return { requestId, subject, plan: null, facts: {}, derived: null, settled: false, unavailable: null }
+  return { requestId, subject, plan: null, facts: {}, derived: null, settled: false, unavailable: null, verdict: null }
 }
 
 /** Whether `kind` is one of the plan's rows. */
@@ -78,43 +84,21 @@ function volumeStopped(card: AboutCardData): AboutCardData {
  * render.
  *
  * Drops, on purpose: an event for another request (a card closed and reopened on another item must never show the
- * first item's facts), a fact before the plan or outside it, anything after `factsSettled` or `unavailable`, and a
- * second plan.
+ * first item's facts), a fact before the plan or outside it, a fact after `factsSettled`, anything after
+ * `unavailable`, a second plan, and a verdict event before the plan. The verdict's own rules: `about-verdict.ts`.
  */
 export function applyAboutEvent(card: AboutCardData, event: AboutEvent): AboutCardData {
   if (event.requestId !== card.requestId || card.unavailable !== null) return card
-  // The card doesn't draw a verdict block yet, so the verdict's events change nothing.
-  if (isVerdictUpdate(event.update)) return card
+  if (isVerdictUpdate(event.update)) {
+    // The verdict follows the plan and may run past the facts' settle.
+    if (card.plan === null) return card
+    const verdict = applyVerdictUpdate(card.verdict, event.update)
+    return verdict === card.verdict ? card : { ...card, verdict }
+  }
   return applyFactUpdate(card, event.update)
 }
 
-type AboutUpdate = AboutEvent['update']
-type VerdictUpdate = Extract<
-  AboutUpdate,
-  {
-    type:
-      | 'verdictPlanned'
-      | 'verdictUnavailable'
-      | 'verdictGiven'
-      | 'verdictDelta'
-      | 'verdictEnd'
-      | 'verdictFromEarlier'
-  }
->
-type FactUpdate = Exclude<AboutUpdate, VerdictUpdate>
-
-const VERDICT_UPDATES: ReadonlySet<AboutUpdate['type']> = new Set<VerdictUpdate['type']>([
-  'verdictPlanned',
-  'verdictUnavailable',
-  'verdictGiven',
-  'verdictDelta',
-  'verdictEnd',
-  'verdictFromEarlier',
-])
-
-function isVerdictUpdate(update: AboutUpdate): update is VerdictUpdate {
-  return VERDICT_UPDATES.has(update.type)
-}
+type FactUpdate = Exclude<AboutEvent['update'], VerdictUpdate>
 
 function applyFactUpdate(card: AboutCardData, update: FactUpdate): AboutCardData {
   switch (update.type) {

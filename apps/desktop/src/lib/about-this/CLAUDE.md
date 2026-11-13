@@ -7,6 +7,7 @@ directory only renders.
 ## Module map
 
 - `about-card.ts`: the card's data and `applyAboutEvent`, the one reducer (pure, shared with the gallery).
+  `about-verdict.ts`: the AI take's data and its part of the reducer; `AboutVerdict.svelte` draws it.
 - `about-this-state.svelte.ts`: the open card (`openAboutThis` / `closeAboutThis`) and its first-frame grace.
 - `AboutThisDialog.svelte` (the frame), `AboutHeadline`, `AboutRow` (one planned row), `AboutAbsence` (an unknown's
   line), `AboutPath`, `AboutRemoval`. `AboutDigest` (What's inside), `AboutAppData` (an app's Library data), and
@@ -26,6 +27,11 @@ directory only renders.
 - ❌ **Item strings are text nodes**: never `{@html}`, never a link built from them. Self-reported facts read "recorded"
   / "carries a signature from"; only a matched executable reads "signed by", and nothing reads "verified".
 - ❌ **No removal line says it's safe**: `AboutRemoval` words exactly the variant it gets.
+- ❌ **The AI take is untrusted text**: one text node (`pre-wrap`), ❌ never Markdown, `{@html}`, or a link, and nothing
+  else reads it: rows, removal, actions, and focus are the same with and without it (`AboutVerdict.svelte.test.ts`). Its
+  block exists only after `verdictPlanned`, reserves its lines, and grows downward only. ❌ No live region over the
+  stream; one announcement at its end.
+- ❌ **The card never grants cloud consent**: the `noCloudConsent` hint opens Settings at the disclosure.
 - ❗ **A row or footer action goes through the opener's hooks** (`openAboutThis(subject, { goTo, act })`, built in
   `apps/desktop/src/routes/(main)/command-handlers/about-this-opener.ts`): the card closes FIRST, then the pane
   navigates, the delete dialog opens, or Finder shows it. ❌ The card never navigates, opens, or deletes by itself.

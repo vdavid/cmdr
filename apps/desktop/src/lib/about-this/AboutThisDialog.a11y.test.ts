@@ -1,7 +1,7 @@
 /**
  * Tier 3 a11y tests for `AboutThisDialog.svelte` over the gallery's fixture cards: a full card, one still filling
  * (pending rows), one with every Notable reason, a remote card with its volume note, a share that stopped answering,
- * an archive's entry, a snapshot from git's history, and an unavailable one. Then each part on its own.
+ * an archive's entry, a snapshot from git's history, an unavailable one, and the AI take's states. Then each part on its own.
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -38,7 +38,10 @@ async function render(id: string): Promise<HTMLElement> {
   if (!card) throw new Error(`no fixture ${id}`)
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mounted = mount(AboutThisDialog, { target, props: { card, onClose: () => {}, onGoTo: () => {}, onAct: () => {} } })
+  mounted = mount(AboutThisDialog, {
+    target,
+    props: { card, onClose: () => {}, onGoTo: () => {}, onAct: () => {}, onStopVerdict: () => {} },
+  })
   flushSync()
   await tick()
   return target
@@ -58,6 +61,13 @@ describe('AboutThisDialog a11y', () => {
     'not-indexed-folder',
     'stopped-answering',
     'archive-entry',
+    'verdict-waiting',
+    'verdict-streaming',
+    'verdict-done',
+    'verdict-stopped',
+    'verdict-no-consent',
+    'verdict-managed',
+    'verdict-ai-off',
     'git-snapshot',
   ])('has no violations: %s', async (id) => {
     await expectNoA11yViolations(await render(id))
@@ -72,9 +82,11 @@ describe('AboutThisDialog a11y', () => {
 
   it('announces the headline once, when the facts settle, and never per fact', async () => {
     const target = await render('plain-document')
-    const live = target.querySelectorAll('[aria-live]')
-    expect(live).toHaveLength(1)
-    expect(live[0].textContent).toContain('Document')
+    // Two quiet regions: the headline's, and the AI take's (empty: this card has none). Nothing else is live.
+    const live = [...target.querySelectorAll('[aria-live]')].map((region) => region.textContent.trim())
+    expect(live).toHaveLength(2)
+    expect(live[0]).toContain('Document')
+    expect(live[1]).toBe('')
   })
 })
 

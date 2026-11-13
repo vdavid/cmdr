@@ -13,6 +13,8 @@ import type {
   Section,
   SniffedKind,
   UnknownWhy,
+  VerdictContents,
+  VerdictProblem,
   VolumeLimit,
 } from '#lib/ipc/bindings.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
@@ -182,4 +184,25 @@ const IMPORTANCE_FLOOR: Record<string, MessageKey | undefined> = {
 /** The sentence for one floor token. A token the scorer adds later reads as the general one. */
 export function importanceFloorKey(token: string): MessageKey {
   return IMPORTANCE_FLOOR[token] ?? 'aboutThis.importance.floor.other'
+}
+
+/** The AI take's line saying what it was given beside the facts, shown from the moment the call goes out. */
+export const VERDICT_GIVEN: Record<VerdictContents, MessageKey> = {
+  none: 'aboutThis.verdict.given.none',
+  firstLines: 'aboutThis.verdict.given.firstLines',
+  firstPage: 'aboutThis.verdict.given.firstPage',
+  entryNames: 'aboutThis.verdict.given.entryNames',
+  cameraDetails: 'aboutThis.verdict.given.cameraDetails',
+  protected: 'aboutThis.verdict.given.protected',
+}
+
+/** Why the AI couldn't write its take, by the provider's typed answer. */
+export const VERDICT_PROBLEM: Record<VerdictProblem, MessageKey> = {
+  authFailed: 'aboutThis.verdict.problem.authFailed',
+  rateLimited: 'aboutThis.verdict.problem.rateLimited',
+  unreachable: 'aboutThis.verdict.problem.unreachable',
+  overloaded: 'aboutThis.verdict.problem.overloaded',
+  managed: 'aboutThis.verdict.problem.managed',
+  noAnswer: 'aboutThis.verdict.problem.noAnswer',
+  other: 'aboutThis.verdict.problem.other',
 }

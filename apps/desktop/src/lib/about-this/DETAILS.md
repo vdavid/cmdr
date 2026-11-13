@@ -14,12 +14,14 @@ id. Each `AboutEvent` folds in through `applyAboutEvent`:
 - `volumeStoppedAnswering` turns the plan's volume note into its "stopped answering" words, in the slot the note already
   had (a card reached through its volume always plans one), so nothing moves. The rows that were waiting land right
   after as Routine one-liners ("No answer from the drive").
-- `factsSettled` and `unavailable` end the stream; nothing after them lands.
+- `factsSettled` ends the facts and `unavailable` the whole card; no fact lands after either. The verdict's events
+  (`about-verdict.ts`) need the plan and may run past the settle.
 - An event whose `requestId` isn't the card's is dropped, so a reopen on another item never shows the first item's
   facts. `openAboutThis` closes (and cancels) any card already up before it starts the next.
 
 **Decision: the dialog appears after the grace, not on the keypress.** `aboutThisState.shown` turns on once the plan is
-in and `GRACE_MS` (100 ms, the context menu's grace) has passed, or the facts settled, or the card is unavailable, with
+and the verdict's answer (`verdictPlanned` or `verdictUnavailable`, which the backend sends right after the plan) are in
+and `GRACE_MS` (100 ms, the context menu's grace) has passed, or the facts settled, or the card is unavailable, with
 `SHOW_ANYWAY_MS` (1.5 s) as the cap. Why: drawing on the keypress would open an empty frame and then grow it when the
 plan lands, and most rows answer inside the grace, so the first frame is already the card at its size.
 
@@ -71,12 +73,47 @@ scrolling.
   `prefers-reduced-motion` has nothing to stop).
 - **Prominence is the wire's**: `AboutAbsence` draws a Routine unknown (or a not-applicable) as one muted line and a
   Notable one as a sentence with a quiet mark. A row-specific absence word (`ROW_UNKNOWN`) wins over the generic one.
-- **The verdict slot** is an empty `[data-verdict-slot]` div right above the removal section, `display: none` while
-  empty, so it takes no height until a verdict block fills it.
+- **The AI take's slot** (`[data-verdict-slot]`) sits right above the removal section and exists only when the take
+  draws something (§ The AI take), so a card without one is exactly the card without AI.
 - **Focus**: the card's body (`.card`, `tabindex=0`) takes focus on mount so the arrow keys and Page Up/Down scroll it;
   Tab then reaches each copy button and the footer. `ModalDialog` restores focus to the pane on close.
 - **a11y**: pending rows carry `aria-busy`; one polite live region reads the headline's text once, at `factsSettled`; ❌
   no live region per fact.
+
+## The AI take
+
+`AboutVerdict.svelte`, fed by `about-verdict.ts` from the backend's verdict events (host DETAILS § The verdict, plan D19
+for the placement).
+
+- **Its own block, never a row's look**: a quiet surface and border, the sparkles glyph, and the heading "AI wrote
+  this", so a model's sentence can't pass for one of Cmdr's facts. It's a labeled `<section>` (a region), outside every
+  `<dl>`.
+- **The text is one text node** under `white-space: pre-wrap`, ❌ never `renderAssistantMarkdown` or `{@html}`: plain
+  text is the one rendering a model can't turn into a link, an image, or a heading that imitates a row. The template
+  keeps that paragraph on one line, since `pre-wrap` would show any whitespace between its tags.
+- **Phases** (`verdictPhase`): waiting ("Writing a short take…", and a Stop button), streaming (the text, Stop), done,
+  stopped (the text so far plus a quiet "Stopped"), from earlier (a tag beside the heading), failed (the provider's
+  answer as a quiet line after any text: `noAnswer`, `unreachable`, …).
+- **The given-line** ("From the facts above and the first page") has its own reserved line under the heading and fills
+  at `verdictGiven`, before any text, so the person sees what's leaving while it leaves.
+- **No movement**: the heading row holds the Stop button's height after it goes, the given-line one line, and the text
+  three lines, from the first frame; the text may grow past three while it streams, downward only, and that's the one
+  growth the card allows. End marks sit inline after the text. Nothing animates (no caret, no fade).
+- **Stop** calls `stopAboutVerdict` (`about_stop_verdict`): the take alone stops, the card stays, and the backend's
+  `stopped` keeps the text. Esc closes the card, which stops both. **Decision: no Stop shortcut**: it's a Tab stop in
+  the card, and a chord would be a new command and scope (a review item).
+- **Unavailable**: `unavailableShowsALine` says which reasons draw one quiet line in the slot (cloud AI needs allowing,
+  no key, the local server not running, the organization's policy through `managedAiRefusalMessage`, too many in a
+  minute) and which draw nothing (`aiOff`, `turnedOff`, `localOff`). **Decision: `localOff` draws nothing**: it's every
+  Local user's default until the eval says the local model's takes are good (plan D4), and a line on every card would be
+  noise. AI off gets one quiet hint in the footer, under the actions ("AI is off…" plus a link to Settings > AI), never
+  in the body.
+- ❌ **No one-click allow**: the consent hint's link opens Settings > AI at the Allow cloud AI switch, where the whole
+  disclosure is read (`openCloudConsentSettings('about-this-card')`). A card that's open when consent arrives doesn't
+  start a call by itself (nothing re-asks); the next open does.
+- **a11y**: no live region over the stream; a second polite region beside the headline's says "AI wrote this: …" once,
+  when the take ends with text (or arrives whole from earlier).
+- **The cost** rides `verdictEnd` into the card's data and isn't shown (a review item).
 
 ## The footer's actions
 
@@ -128,5 +165,10 @@ tooltip with the full text); the row puts its Copy button at the end of the line
   Library data, and that each place row hands `onGoTo` the right target.
 - `AboutThisDialog.a11y.test.ts`: axe over the gallery's cards and each part, the `<dl>`, `aria-busy`, body focus, and
   the single announcement.
+- `about-verdict.test.ts`: the verdict's reducer (each phase, the given-line before any text, what's dropped out of
+  order) and which unavailable reasons draw a line. `AboutVerdict.svelte.test.ts`: a hostile take renders literally
+  (`<img onerror>`, a Markdown link), the label and the given-line, Stop, every unavailable reason, the consent hint
+  opening Settings with no allow, one announcement at the end, and the same rows, removal, actions, and focus with a
+  reassuring take, a refused one, and none.
 - `apps/desktop/test/e2e-playwright/about-this.spec.ts`: shortcut, palette, and menu, a download record the spec writes
   (host shown, full address not), the type row, a folder's size row, Escape giving focus back to the pane.

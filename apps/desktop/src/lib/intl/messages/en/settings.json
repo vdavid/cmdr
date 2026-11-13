@@ -1538,7 +1538,7 @@
   "@settings.aboutThis.aiVerdict.label": {
     "description": "Label for the switch that lets AI write a short take on the “Tell me about this” card (the card that explains what a file or folder is). Settings > AI > Provider. Keep “Tell me about this” as the app's own name for that command."
   },
-  "settings.aboutThis.aiVerdict.description": "When you open the card, AI writes two or three sentences from the facts it shows. With cloud AI, the card's facts and a short look inside the file go to your provider each time.",
+  "settings.aboutThis.aiVerdict.description": "When you open the card, AI writes two or three sentences from the facts it shows. With cloud AI, the card’s facts and a short look inside the file go to your provider each time.",
   "@settings.aboutThis.aiVerdict.description": {
     "description": "Help text under the “AI take in Tell me about this” switch. Says what the AI writes and, for cloud AI, what leaves the machine and when (every time the card opens). “a short look inside the file” means a few lines of text, a PDF's first page, an archive's file list, or a photo's camera details."
   },

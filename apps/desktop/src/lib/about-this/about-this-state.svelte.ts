@@ -6,9 +6,11 @@
  * takes the card down. Opening on another item while a card is up closes the first one first, so its late events land
  * nowhere.
  *
- * ❗ The card shows on its first frame after the grace, the way the context menu does: once the plan is in and
- * `GRACE_MS` has passed (or the facts settled, or the card is unavailable), so the rows that answer at once are
- * already there and the dialog opens at its size. `SHOW_ANYWAY_MS` caps the wait for a plan that's slow to come.
+ * ❗ The card shows on its first frame after the grace, the way the context menu does: once the plan and the verdict's
+ * answer (planned or not, which the backend sends right after the plan) are in and `GRACE_MS` has passed (or the facts
+ * settled, or the card is unavailable), so the rows that answer at once are already there and the dialog opens at its
+ * size, with the verdict's place reserved or not from the first frame. `SHOW_ANYWAY_MS` caps the wait for a plan
+ * that's slow to come.
  */
 
 import { tick } from 'svelte'
@@ -57,7 +59,8 @@ function clearTimers(): void {
 function showIfReady(): void {
   const card = aboutThisState.card
   if (!card || aboutThisState.shown) return
-  if (card.unavailable !== null || card.settled || (graceOver && card.plan !== null)) aboutThisState.shown = true
+  const placed = card.plan !== null && card.verdict !== null
+  if (card.unavailable !== null || card.settled || (graceOver && placed)) aboutThisState.shown = true
 }
 
 /** Opens the card for `subject`, closing any card already up. `openerHooks` do what its rows and actions ask. */
@@ -110,7 +113,15 @@ export function actFromCard(action: AboutAction): void {
   })
 }
 
-/** Closes the card and stops its gathering. A no-op with no card up. */
+/**
+ * Stops the card's verdict alone (its Stop button): the card stays open, and the text so far stands once the backend
+ * answers `stopped`. A no-op with no card up or no verdict in flight.
+ */
+export function stopAboutVerdict(): void {
+  if (running) void running.stopVerdict()
+}
+
+/** Closes the card and stops its gathering and its verdict. A no-op with no card up. */
 export function closeAboutThis(): void {
   if (running) void running.cancel()
   running = null

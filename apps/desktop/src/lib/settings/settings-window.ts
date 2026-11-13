@@ -128,6 +128,8 @@ export type SettingsSurface =
   | 'security-notice-toast'
   /** The notice that Cmdr had to start `settings.json` fresh, deep-linking to Updates & privacy. */
   | 'state-recovery-toast'
+  /** The "Tell me about this" card's AI-take hints (cloud AI needs allowing, no key, AI off), deep-linking to AI > Provider. */
+  | 'about-this-card'
 
 /**
  * Opens the settings window, or focuses it if already open. When `section` is provided,

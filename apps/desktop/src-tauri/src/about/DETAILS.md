@@ -33,13 +33,9 @@ returns without gathering. A second start under a live id cancels the first. `RE
 returning it would only echo it. Whether the item is a file, folder, app, or link comes from the probe's `lstat` (or
 the volume's metadata), never from what the pane believed.
 
-## Wiring `about_stop_verdict` (first step for the verdict block)
-
-`about_start` is registered dispatch-only (raw invoke, a `Channel`), `about_cancel` typed. `about_stop_verdict` is built
-and tested but NOT registered: `desktop-ipc-unused` refuses a typed command with no caller. The verdict block's first
-commit, in one go: add `crate::about::commands::about_stop_verdict` to the `cfg(all())` `typed` list in `ipc.rs` beside
-`about_cancel`, drop its `#[cfg_attr(not(test), expect(dead_code, …))]`, `pnpm bindings:regen`, and call
-`commands.aboutStopVerdict(requestId)` from a wrapper in `apps/desktop/src/lib/tauri-commands/about.ts`.
+`about_start` is registered dispatch-only (raw invoke: a `Channel` specta can't describe); `about_cancel` and
+`about_stop_verdict` are typed, and `apps/desktop/src/lib/tauri-commands/about.ts` wraps all three (the card's handle:
+`cancel`, `stopVerdict`).
 
 ## Routing
 

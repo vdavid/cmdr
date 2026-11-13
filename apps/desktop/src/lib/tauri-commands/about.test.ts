@@ -7,9 +7,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AboutEvent } from '#lib/ipc/bindings.js'
 import { startAbout } from './about'
 
-const { invoked, aboutCancel, channels } = vi.hoisted(() => ({
+const { invoked, aboutCancel, aboutStopVerdict, channels } = vi.hoisted(() => ({
   invoked: [] as { command: string; args: Record<string, unknown> }[],
   aboutCancel: vi.fn<(id: string) => Promise<null>>(),
+  aboutStopVerdict: vi.fn<(id: string) => Promise<null>>(),
   channels: [] as { onmessage: ((event: unknown) => void) | null }[],
 }))
 
@@ -27,7 +28,7 @@ vi.mock('@tauri-apps/api/core', () => ({
     return invokeResult
   },
 }))
-vi.mock('#lib/ipc/bindings.js', () => ({ commands: { aboutCancel } }))
+vi.mock('#lib/ipc/bindings.js', () => ({ commands: { aboutCancel, aboutStopVerdict } }))
 
 const item = { path: '/Users/test_user_1/Downloads/Tool.dmg', volumeId: 'root', isDirectory: false }
 
@@ -36,6 +37,7 @@ describe('startAbout', () => {
     invoked.length = 0
     channels.length = 0
     aboutCancel.mockReset()
+    aboutStopVerdict.mockReset()
     invokeResult = Promise.resolve()
   })
 
@@ -50,6 +52,17 @@ describe('startAbout', () => {
     aboutCancel.mockResolvedValue(null)
     await handle.cancel()
     expect(aboutCancel).toHaveBeenCalledWith(handle.requestId)
+  })
+
+  it('stops the verdict alone under the same id, and shrugs off one that already ended', async () => {
+    const handle = startAbout(item, () => {})
+    aboutStopVerdict.mockResolvedValue(null)
+    await handle.stopVerdict()
+    expect(aboutStopVerdict).toHaveBeenCalledWith(handle.requestId)
+    expect(aboutCancel).not.toHaveBeenCalled()
+
+    aboutStopVerdict.mockRejectedValue(new Error('no verdict in flight'))
+    await expect(handle.stopVerdict()).resolves.toBeUndefined()
   })
 
   it('hands each event to the caller as it lands', () => {

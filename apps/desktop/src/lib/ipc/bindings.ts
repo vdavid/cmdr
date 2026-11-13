@@ -3169,6 +3169,11 @@ export const commands = {
    */
   aboutCancel: (requestId: string) => __TAURI_INVOKE<void>('about_cancel', { requestId }),
   /**
+   *  Stops the card's verdict alone and leaves the card open: its facts are done, and
+   *  the text so far stands with a `stopped` ending.
+   */
+  aboutStopVerdict: (requestId: string) => __TAURI_INVOKE<void>('about_stop_verdict', { requestId }),
+  /**
    *  Tell the cloud gates that a held "no" (`ai.cloudConsentRevokePending`) was just set or let go
    *  of. No value crosses: the gates read `settings.json` themselves, so the frontend calls this
    *  right after saving it. A newly held "no" stops in-flight calls exactly like a revoke.

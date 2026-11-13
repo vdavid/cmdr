@@ -123,8 +123,8 @@ commands, and notable non-obvious placements.
   `crates/cmdr-nfs/DETAILS.md`.
 - **`about.ts`**: "Tell me about this": `startAbout(path, volumeId, onEvent)` mints the request id, opens a
   `Channel<AboutEvent>`, and raw-invokes `about_start` (a channel specta can't describe); the handle's `cancel` calls
-  the typed `aboutCancel`. ❌ Never stop a card by dropping the channel. The card's state slice is the one caller
-  (`../about-this/CLAUDE.md`).
+  the typed `aboutCancel`, and its `stopVerdict` the typed `aboutStopVerdict` (the verdict alone; the card stays). ❌
+  Never stop a card by dropping the channel. The card's state slice is the one caller (`../about-this/CLAUDE.md`).
 - **`licensing.ts`**: license status, activation, expiry, server validation.
 - **`settings.ts`**: port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands.
   `cloudAiHostVerdicts(baseUrls)` answers each URL with the policy's own `ManagedAiRefusal | null` (local, no request).
@@ -233,7 +233,7 @@ commands, and notable non-obvious placements.
 - WebDAV servers → `webdav.ts`.
 - S3 accounts → `s3.ts`.
 - NFS servers → `nfs.ts`.
-- "Tell me about this" (the card's stream and cancel) → `about.ts`.
+- "Tell me about this" (the card's stream, its cancel, and the verdict's stop) → `about.ts`.
 - Licensing → `licensing.ts`.
 - Settings/AI → `settings.ts`.
 - Clipboard file operations (copy/cut/paste files via system clipboard) → `clipboard-files.ts`.

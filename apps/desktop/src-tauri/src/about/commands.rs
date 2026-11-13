@@ -111,13 +111,6 @@ pub fn about_cancel(request_id: String) {
 /// the text so far stands with a `stopped` ending.
 #[tauri::command]
 #[specta::specta]
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "registered with the verdict block's first caller, which `desktop-ipc-unused` requires"
-    )
-)]
 pub fn about_stop_verdict(request_id: String) {
     if !verdict::limits::LIMITS.stop(&request_id) {
         log::debug!(target: "about", "no verdict in flight for that card to stop");

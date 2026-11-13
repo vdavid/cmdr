@@ -13,6 +13,7 @@ import { emptyCard, type AboutCardData } from '#lib/about-this/about-card.js'
 import { REQUEST, card, day, derived, identity, notable, plan, routine, type Stream } from './about-this-stream'
 import { aboutThisFolderFixtures } from './about-this-folders'
 import { aboutThisDegradedFixtures } from './about-this-degraded'
+import { aboutThisVerdictFixtures } from './about-this-verdict'
 
 // ── A downloaded disk image: every origin fact known ───────────────────────────
 
@@ -421,6 +422,13 @@ export const aboutThisFixtures: Record<string, AboutCardData | undefined> = {
   'notable-b': card('Tessera Helper', '/Users/test_user_1/Library/Application Support/Tessera Helper', notableB),
   remote: card(REMOTE, '/Volumes/Testnas/photos/IMG_2041.HEIC', remote),
   'more-consequences': card(LINKED, '/Users/test_user_1/notes/notes.md', hardLinked),
+  ...aboutThisVerdictFixtures({
+    name: DMG,
+    path: `/Users/test_user_1/Downloads/${DMG}`,
+    downloaded,
+    filling: { ...downloaded, facts: downloaded.facts.slice(0, 3), settled: false },
+    document: { name: DOC, path: `/Users/test_user_1/Documents/${DOC}`, stream: plainDocument },
+  }),
   unavailable: {
     ...emptyCard(REQUEST, {
       path: '/Volumes/Gone/old.txt',
