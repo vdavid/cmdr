@@ -57,8 +57,11 @@ describe('visitorCapabilities', () => {
 
   // With `appMenu`, Quit and the Hide trio are the bar's app-menu rows, so no visitor gets a
   // Quit palette row whose IPC has no backend (`command-registry.test.ts` pins that consequence).
-  it('shows everyone else no OS-backed surface but the app menu the demo’s macOS bar draws', () => {
-    expect(visitorCapabilities('windows')).toEqual({ ...NO_CAPABILITIES, appMenu: true })
-    expect(visitorCapabilities('linux')).toEqual({ ...NO_CAPABILITIES, appMenu: true })
+  // With `overlayTitleBar`, each page keeps its title line under the traffic lights the demo draws
+  // on every window, so the lights never cover a page's own controls (the queue's "Pause all").
+  it('shows everyone else no OS-backed surface but the two the demo’s macOS chrome draws', () => {
+    const chrome = { ...NO_CAPABILITIES, appMenu: true, overlayTitleBar: true }
+    expect(visitorCapabilities('windows')).toEqual(chrome)
+    expect(visitorCapabilities('linux')).toEqual(chrome)
   })
 })

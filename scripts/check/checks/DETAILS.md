@@ -2620,13 +2620,13 @@ doubles as production code.
   runner's input fingerprint is what keeps it off unrelated runs)
 - **Website / Astro**: astro-sync, eslint, typecheck, build, html-validate, dead-links (every internal `href`/`src` in
   the built `dist/` resolves to a file, and every `#fragment` to an `id` on its page; external URLs skipped),
-  bundle-size (warn-only), e2e (every spec but the full browser demo suite), demo-e2e (CI-only: that suite, against a
-  demo built from the same sources; `apps/website/DETAILS.md` § Browser demo), trust-sources (runs
-  `scripts/trust-review` `validate`: every trust-page `<h2 id>` has an entry in `trust-sources.json` and every pattern
-  matches a tracked file; `docs/guides/trust-page-review.md`). `astro-sync` generates Astro's gitignored `types.d.ts`
-  and `website-eslint` depends on it: the type-aware rules read `astro:content` through it, and on an unsynced tree
-  every blog-post field is `any`, so the `no-unsafe-*` rules bury the run in ~90 false positives. `website-eslint`
-  refuses to run when the file is missing rather than report those.
+  bundle-size (warn-only), e2e (every spec but the full browser demo suite), demo-e2e (CI-only: that suite, once as a
+  Windows visitor and once as a Mac one, against a demo built from the same sources; `apps/website/DETAILS.md` § Browser
+  demo), trust-sources (runs `scripts/trust-review` `validate`: every trust-page `<h2 id>` has an entry in
+  `trust-sources.json` and every pattern matches a tracked file; `docs/guides/trust-page-review.md`). `astro-sync`
+  generates Astro's gitignored `types.d.ts` and `website-eslint` depends on it: the type-aware rules read
+  `astro:content` through it, and on an unsynced tree every blog-post field is `any`, so the `no-unsafe-*` rules bury
+  the run in ~90 false positives. `website-eslint` refuses to run when the file is missing rather than report those.
 - **Website / Docker**: docker-build
 - **API server / TS**: oxfmt, worker-types, eslint, typecheck, tests. `api-server-worker-types` runs `wrangler types`,
   which writes the gitignored `worker-configuration.d.ts` (Worker runtime globals at the Worker's `compatibility_date`,

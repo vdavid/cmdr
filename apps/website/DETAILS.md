@@ -475,20 +475,22 @@ embeds it (below), and `/demo/` is a page of its own too, in the sitemap and `ll
 - **Tests: a smoke on every land, the full suite against a demo of the same sources.** Both run against `dist/` like
   every website E2E (so without nginx's headers; the CSP is verified by hand as above), skip locally when `dist/demo/`
   isn't built, and fail in CI when it's missing. Locally they need Playwright's Chromium
-  (`pnpm exec playwright install chromium` here, once). Two Playwright projects split them (`playwright.config.ts`):
+  (`pnpm exec playwright install chromium` here, once). Playwright projects split them (`playwright.config.ts`):
   - `e2e/demo-smoke.spec.ts` (boots without a page error, is indexable with its description and canonical link, is the
     sitemap's only `/demo/` URL, lists the home folder) is in the `chromium` project with every other spec, so
     `website-e2e` runs it in the website lane against the RELEASED demo. It asks only what every release's demo answers;
     the page's `<head>` and the sitemap come from the site's own build (`demoPageHead`), never the image, so those
     asserts track `main`. The deep routes' `noindex` is an nginx header, so `website-docker-build` probes it instead.
   - `e2e/demo.spec.ts` is everything else (⌘F, file operations, the queue and the operation log, Multi-Rename, drops, a
-    full disk via `/demo/?free=1000`, touch), the `demo` project with the smoke, run by `website-demo-e2e` (CI-only)
-    against a demo built from the same sources: in the release pipeline's `demo` job before it publishes (a failure
-    blocks the release), and in the nightly full run's website `demo-suite` job (a failure reaches the CI health
-    digest). **Why**: the land path tests the released image, which predates `main`'s frontend, so a test of a new demo
-    feature failed every land run until the next release (land run 42134174874, 2026-11-06, two Multi-Rename cells).
-    Both jobs prepare through `.github/actions/website-demo-suite`. Locally: `pnpm build:demo`,
-    `CMDR_WEBSITE_DEMO=1 pnpm build` here, then `pnpm check website-demo-e2e`.
+    full disk via `/demo/?free=1000`, touch), the `demo` and `demo-mac` projects with the smoke (a Windows visitor and a
+    Mac one: the demo answers each with their own OS's keys and copy, so the spec asks `visitorOf` in
+    `e2e/demo-support.ts` which to press and expect), run by `website-demo-e2e` (CI-only) against a demo built from the
+    same sources: in the release pipeline's `demo` job before it publishes (a failure blocks the release), and in the
+    nightly full run's website `demo-suite` job (a failure reaches the CI health digest). **Why**: the land path tests
+    the released image, which predates `main`'s frontend, so a test of a new demo feature failed every land run until
+    the next release (land run 42134174874, 2026-11-06, two Multi-Rename cells). Both jobs prepare through
+    `.github/actions/website-demo-suite`. Locally: `pnpm build:demo`, `CMDR_WEBSITE_DEMO=1 pnpm build` here, then
+    `pnpm check website-demo-e2e`.
 - **Other dist checks skip `dist/demo/`**: `.htmlvalidateignore` (the desktop's `app.html` conventions differ) and
   `website-dead-links` (Vite hashes its own asset names, so the `?v=` rule doesn't apply). A build without the demo (no
   `CMDR_WEBSITE_DEMO=1`) can't judge links INTO `/demo/` either, like the hero's, so `website-dead-links` skips those

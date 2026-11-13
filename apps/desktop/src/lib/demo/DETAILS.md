@@ -155,10 +155,17 @@ every window. The demo keeps that shape, so secondary windows share its state, a
   visitor's hands; ⌘ on a PC keyboard is the Windows key, which the browser and the OS keep. The demo is the one place
   that reads the user agent for this: a page has no other signal, and app code never does.
 - Capabilities follow the platform (`visitorCapabilities`): a Mac visitor gets the Mac app's, everyone else none, except
-  `appMenu`. Decision: every visitor gets `appMenu: true`. Why: the demo always draws the macOS bar, whose app menu owns
-  Quit, Hide, Hide others, and Show all as OS rows, so a Windows or Linux visitor would otherwise get a Quit palette
-  command whose `quit_app` has no backend. It flips to `false` off macOS once the demo's bar follows the visitor's OS
-  (task 63 of `docs/specs/windows-port-plan.md`).
+  the two the demo's own macOS chrome stands behind. Both flip to `false` off macOS once the demo's chrome follows the
+  visitor's OS (task 63 of `docs/specs/windows-port-plan.md`).
+  - Decision: every visitor gets `appMenu: true`. Why: the demo always draws the macOS bar, whose app menu owns Quit,
+    Hide, Hide others, and Show all as OS rows, so a Windows or Linux visitor would otherwise get a Quit palette command
+    whose `quit_app` has no backend.
+  - Decision: every visitor gets `overlayTitleBar: true`. Why: the demo always draws the traffic lights over each
+    window's top left corner (§ Traffic lights), and a page keeps its title line under them only with this capability.
+    Without it, a Windows or Linux visitor's queue started its toolbar under the lights, which took the clicks meant for
+    "Pause all" (the website suite's queue cell caught it, 2026-11-13).
+- The website's full demo suite runs once per visitor OS (`apps/website/playwright.config.ts`: `demo` is a Windows
+  visitor, `demo-mac` a Mac one), since keys and copy differ between them.
 
 ## The menu bar
 

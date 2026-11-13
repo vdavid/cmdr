@@ -18,10 +18,13 @@ export default defineConfig({
     baseURL: 'http://localhost:18473',
     trace: 'on-first-retry',
   },
-  // Two suites, one per project (the `website-e2e` and `website-demo-e2e` checks each pick theirs):
-  // `chromium` is every spec but the full browser demo suite, so it passes against an older released
-  // demo; `demo` is that suite plus its smoke, for a demo built from the same sources. Running with no
-  // `--project` runs both, the smoke twice. `e2e/demo-support.ts` says where each runs.
+  // Two suites (the `website-e2e` and `website-demo-e2e` checks each pick theirs): `chromium` is
+  // every spec but the full browser demo suite, so it passes against an older released demo; `demo`
+  // and `demo-mac` are that suite plus its smoke, for a demo built from the same sources. The demo
+  // answers for the visitor's own OS, read off the user agent, so its keys and copy differ per
+  // visitor: `demo` is a Windows visitor (Desktop Chrome's user agent), `demo-mac` a Mac one.
+  // Running with no `--project` runs all three, the smoke three times. `e2e/demo-support.ts` says
+  // where each runs.
   projects: [
     {
       name: 'chromium',
@@ -32,6 +35,14 @@ export default defineConfig({
       name: 'demo',
       testMatch: ['**/demo-smoke.spec.ts', '**/demo.spec.ts'],
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'demo-mac',
+      testMatch: ['**/demo-smoke.spec.ts', '**/demo.spec.ts'],
+      use: {
+        ...devices['Desktop Chrome'],
+        userAgent: devices['Desktop Chrome'].userAgent.replace(/\([^)]*\)/, '(Macintosh; Intel Mac OS X 10_15_7)'),
+      },
     },
   ],
   webServer: {

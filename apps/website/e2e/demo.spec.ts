@@ -1,7 +1,8 @@
 import { test, expect, type Locator, type Page } from '@playwright/test'
-import { collectPageErrors, skipWithoutDemo } from './demo-support.js'
+import { collectPageErrors, skipWithoutDemo, visitorOf } from './demo-support.js'
 
-// The full demo suite: the `demo` Playwright project, run against a demo built from the same sources
+// The full demo suite: the `demo` and `demo-mac` Playwright projects (a Windows visitor and a Mac
+// one; `visitorOf` says which keys and words each gets), run against a demo built from the same sources
 // (the release pipeline's `demo` job, the nightly CI run), never the website lane's released image.
 // Where each suite runs: `demo-support.ts`. Boot, indexing, and the first listing: `demo-smoke.spec.ts`.
 skipWithoutDemo()
@@ -15,10 +16,10 @@ test.describe('Browser demo', () => {
     const pane = page.locator('.file-pane').first()
     await expect(pane.locator('.file-entry').nth(1)).toBeVisible({ timeout: 30_000 })
     const dialog = page.getByRole('dialog')
-    // The demo reads ⌘ as Ctrl off a Mac, and focus takes a moment to land on a pane after boot.
-    let attempt = 0
+    // Focus takes a moment to land on a pane after boot.
+    const { mod } = await visitorOf(page)
     await expect(async () => {
-      if (!(await dialog.isVisible())) await page.keyboard.press(attempt++ % 2 ? 'Control+f' : 'Meta+f')
+      if (!(await dialog.isVisible())) await page.keyboard.press(`${mod}+f`)
       await expect(dialog).toBeVisible({ timeout: 1_000 })
     }).toPass({ timeout: 10_000 })
 
@@ -48,15 +49,11 @@ test.describe('Browser demo', () => {
 
     /**
      * Presses `key` until `opened` shows. Right after a dialog closes, focus takes a moment to land
-     * back on a pane, and a key pressed before that goes nowhere, as in the app. A `⌘` shortcut
-     * tries Meta and then Control: the demo reads ⌘ as Ctrl off a Mac, and the emulated device
-     * isn't one, while the host running the browser may be.
+     * back on a pane, and a key pressed before that goes nowhere, as in the app.
      */
     async function pressUntil(page: Page, key: string, opened: Locator) {
-      const keys = key.startsWith('Meta+') ? [key, key.replace('Meta+', 'Control+')] : [key]
-      let attempt = 0
       await expect(async () => {
-        if (!(await opened.isVisible())) await page.keyboard.press(keys[attempt++ % keys.length])
+        if (!(await opened.isVisible())) await page.keyboard.press(key)
         await expect(opened).toBeVisible({ timeout: 1_000 })
       }).toPass({ timeout: 10_000 })
     }
@@ -113,7 +110,7 @@ test.describe('Browser demo', () => {
       // F8 on Work: no Trash on this volume, so the app's permanent-delete confirm.
       // Folders sort first, so with `journal` gone the last row is `Work`.
       await page.keyboard.press('End')
-      await pressUntil(page, 'F8', page.getByText('This volume doesn’t support trash.'))
+      await pressUntil(page, 'F8', page.getByText((await visitorOf(page)).noTrashWarning))
       await page.keyboard.press('Enter')
       await expect(row(left(page), 'Work')).toHaveCount(0)
 
@@ -174,7 +171,7 @@ test.describe('Browser demo', () => {
       await page.keyboard.press('F5')
       await confirmTransfer(page, 'Copy')
       await expect(row(right(page), 'notes')).toBeVisible()
-      await pressUntil(page, 'Meta+Alt+l', page.getByText('Operation log', { exact: true }))
+      await pressUntil(page, (await visitorOf(page)).operationLogKey, page.getByText('Operation log', { exact: true }))
       await page.getByRole('button', { name: 'Roll back', exact: true }).click()
       const confirm = page.locator('[role=dialog], [role=alertdialog]').filter({ hasText: 'Roll this operation back?' })
       await confirm.getByRole('button', { name: 'Roll back', exact: true }).click()
@@ -224,7 +221,7 @@ test.describe('Browser demo', () => {
       await expect(row(left(page), 'Annual report_01')).toBeVisible()
       await expect(row(left(page), 'Budget 2026_02')).toBeVisible()
 
-      await pressUntil(page, 'Meta+Alt+l', page.getByText('Operation log', { exact: true }))
+      await pressUntil(page, (await visitorOf(page)).operationLogKey, page.getByText('Operation log', { exact: true }))
       await page.getByRole('button', { name: 'Roll back', exact: true }).first().click()
       const confirm = page.locator('[role=dialog], [role=alertdialog]').filter({ hasText: 'Roll this operation back?' })
       await confirm.getByRole('button', { name: 'Roll back', exact: true }).click()
@@ -334,7 +331,7 @@ test.describe('Browser demo', () => {
       // Make room: F8 on `Cmdr.dmg` (38 MB) in Downloads, the first file there.
       await page.keyboard.press('Tab')
       await page.keyboard.press('ArrowDown')
-      await pressUntil(page, 'F8', page.getByText('This volume doesn’t support trash.'))
+      await pressUntil(page, 'F8', page.getByText((await visitorOf(page)).noTrashWarning))
       await page.keyboard.press('Enter')
       await expect(row(right(page), 'Cmdr')).toHaveCount(0)
 

@@ -13,17 +13,18 @@ import (
 // holds only the browser demo's smoke. The website lane runs it against the RELEASED demo image,
 // which can predate `main`'s frontend (`apps/website/e2e/demo-support.ts`).
 func RunWebsiteE2E(ctx *CheckContext) (CheckResult, error) {
-	return runWebsitePlaywright(ctx, "chromium", false)
+	return runWebsitePlaywright(ctx, []string{"chromium"}, false)
 }
 
-// RunWebsiteDemoE2E runs the full browser demo suite (the `demo` project: the smoke plus
-// `demo.spec.ts`) against the site's `dist/demo/`, which must exist: the release pipeline's `demo`
-// job and the nightly CI run build the demo from the same sources first.
+// RunWebsiteDemoE2E runs the full browser demo suite (the smoke plus `demo.spec.ts`) against the
+// site's `dist/demo/`, which must exist: the release pipeline's `demo` job and the nightly CI run
+// build the demo from the same sources first. Two projects, one per visitor OS: the demo answers a
+// Windows visitor (`demo`) and a Mac one (`demo-mac`) with their own OS's keys and copy.
 func RunWebsiteDemoE2E(ctx *CheckContext) (CheckResult, error) {
-	return runWebsitePlaywright(ctx, "demo", true)
+	return runWebsitePlaywright(ctx, []string{"demo", "demo-mac"}, true)
 }
 
-func runWebsitePlaywright(ctx *CheckContext, project string, needsDemo bool) (CheckResult, error) {
+func runWebsitePlaywright(ctx *CheckContext, projects []string, needsDemo bool) (CheckResult, error) {
 	websiteDir := filepath.Join(ctx.RootDir, "apps", "website")
 
 	// Without a built site, `serve` answers 404 on every path, which Playwright never counts as ready:
@@ -39,7 +40,11 @@ func runWebsitePlaywright(ctx *CheckContext, project string, needsDemo bool) (Ch
 		}
 	}
 
-	cmd := exec.Command("pnpm", "exec", "playwright", "test", "--project="+project, "--reporter=list")
+	args := []string{"exec", "playwright", "test", "--reporter=list"}
+	for _, project := range projects {
+		args = append(args, "--project="+project)
+	}
+	cmd := exec.Command("pnpm", args...)
 	cmd.Dir = websiteDir
 	output, err := RunCommand(cmd, true)
 	if err != nil {

@@ -53,13 +53,21 @@ const MAC_VISITOR_CAPABILITIES: Readonly<PlatformCapabilities> = Object.freeze({
 })
 
 /**
- * What every other visitor gets: no OS-backed surface, except the app menu. The demo always
- * draws the macOS bar (`crates/cmdr-listing-wasm/src/menu.rs`), whose app menu owns Quit, Hide,
- * Hide others, and Show all as OS rows, so for every visitor those are the bar's and Quit isn't a
- * palette command whose IPC has no backend. This flips to `false` off macOS once the demo's bar
- * follows the visitor's OS (task 63 of `docs/specs/windows-port-plan.md`).
+ * What every other visitor gets: no OS-backed surface, except the two the demo's own macOS chrome
+ * stands behind. Both flip to `false` off macOS once the demo's chrome follows the visitor's OS
+ * (task 63 of `docs/specs/windows-port-plan.md`).
+ * - `appMenu`: the demo always draws the macOS bar (`crates/cmdr-listing-wasm/src/menu.rs`), whose
+ *   app menu owns Quit, Hide, Hide others, and Show all as OS rows, so for every visitor those are
+ *   the bar's and Quit isn't a palette command whose IPC has no backend.
+ * - `overlayTitleBar`: the demo always draws the macOS traffic lights over each window's top left
+ *   corner (`traffic-lights.ts`), so every page keeps its title line under them. Without it the
+ *   queue's toolbar started under the lights, which took the clicks meant for "Pause all".
  */
-const OTHER_VISITOR_CAPABILITIES: Readonly<PlatformCapabilities> = Object.freeze({ ...NO_CAPABILITIES, appMenu: true })
+const OTHER_VISITOR_CAPABILITIES: Readonly<PlatformCapabilities> = Object.freeze({
+  ...NO_CAPABILITIES,
+  appMenu: true,
+  overlayTitleBar: true,
+})
 
 /** The demo's capabilities for a visitor on `platform`. Exported for its test. */
 export function visitorCapabilities(platform: Platform): Readonly<PlatformCapabilities> {
