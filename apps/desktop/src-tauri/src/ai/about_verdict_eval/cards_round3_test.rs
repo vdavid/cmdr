@@ -1,6 +1,6 @@
 //! Third-round cards, written after the shipping prompt's third draft was fixed, so none
 //! of them shaped it. Two jobs: a larger ordinary set with a look inside, so whether the
-//! look earns its egress rests on more than six cards (plan D3, D18); and cards aimed at
+//! look earns its egress rests on more than six cards; and cards aimed at
 //! what round three still got wrong on Sonnet (a format named from the extension while the
 //! real type is unknown, an origin guessed from a default name, a name's claim misread)
 //! and at the minimizer that broke every class before (a name claiming to be a backup).

@@ -9,6 +9,7 @@ directory only renders.
 - `about-card.ts`: the card's data and `applyAboutEvent`, the one reducer (pure, shared with the gallery).
   `about-verdict.ts`: the AI take's data and its part of the reducer; `AboutVerdict.svelte` draws it.
 - `about-this-state.svelte.ts`: the open card (`openAboutThis` / `closeAboutThis`) and its first-frame grace.
+  `about-analytics.ts`: the `tell_me_about_used` event, fired once at each card's close, tokens only.
 - `AboutThisDialog.svelte` (the frame), `AboutHeadline`, `AboutRow` (one planned row), `AboutAbsence` (an unknown's
   line), `AboutPath`, `AboutRemoval`. `AboutDigest` (What's inside), `AboutAppData` (an app's Library data), and
   `AboutPlaceList` (their rows, each taking the pane there). `AboutActions` + `about-actions.ts`: the footer's actions

@@ -333,8 +333,20 @@ a wake making zero calls to a share Cmdr dials, a protected path and a link into
 ## The verdict
 
 `verdict/`. Two or three plain sentences a model writes from the card's projection and a small look inside the file,
-streamed on the card's own channel beside the facts. The prompt and its safety reasoning: plan D3, D4, D8, D13, D17,
-D18 (`docs/specs/tell-me-about-this-plan.md`, until the wipe).
+streamed on the card's own channel beside the facts. The decisions it rests on, each pending David's last word:
+
+- **It starts by itself** when AI is on, with `aboutThis.aiVerdict` to turn it off (on by default). The eval measured
+  it fast and cheap on Sonnet (2.0 s p50, about $0.003) and saying something the rows don't in 96% of takes; a button
+  instead is one setting default plus an action.
+- **`ai.provider` plus cloud consent gate it, not Ask Cmdr's switch**, as folder suggestions are; "Continue in Ask Cmdr"
+  is the only part that needs Ask Cmdr on.
+- **Its own slot, `AgentSlot::AboutThis`**, takes the `ai/` provider's configured model and skips
+  `askCmdr.interactiveModel`, so a big chat model never writes a two-sentence take at its price.
+- **It looks inside the file on every automatic take, on Cloud too**, and says so in the disclosure ("each time you
+  open it") and on the block (`verdictGiven`, before the call). The person asked about this very file, and the
+  sensitive gate and the setting both apply. The stricter alternative (facts only, the look on a second press) is one
+  step in the order below; the eval measured it at 94% (Sonnet) against 100% adding something true.
+- **No model words removal, and Local writes no take**: below, with the eval's numbers.
 
 ### Its events
 
@@ -351,7 +363,8 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
 
 1. **The gate** (`gate::resolve_for_card`, on a blocking thread beside the card's placing): `ai.provider` off →
    `aiOff`; `aboutThis.aiVerdict` false → `turnedOff` (`settings::load_about_this_ai_verdict`, absent = on); Local →
-   `localOff` while `VERDICT_ON_LOCAL` is false (D4: flipping it is that one constant); then
+   `localOff` while `VERDICT_ON_LOCAL` is false (the bundled 3B model failed the eval; flipping it is that one
+   constant); then
    `resolve_agent_llm(app, AgentSlot::AboutThis)`, whose refusals map to `noCloudConsent`, `managed { refusal }`,
    `notConfigured`, or `notReady` (a local server that isn't running: a verdict never starts it or a download). Then
    the model the slot named, against the eval's table (`gate::writes_verdicts`): only a model in `PASSED_THE_EVAL`, on
@@ -373,12 +386,12 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
    local disk whose bytes are there (`session::ItemReach::bytes_readable`, set by the route), ONE `inspect_path` call
    on its own thread under `PEEK_BUDGET` (2 s), cut by `peek::shape` to 40 lines / 2,000 characters, a PDF's title and
    first page, 20 archive names, or a photo's make, model, lens, and date. ❌ `Peek::CameraDetails` has no field for
-   GPS, so the location can't leave (D8). A folder (its digest is the look), an item reached through its volume, or an
+   GPS, so the location can't leave (it adds nothing to "what is this file"). A folder (its digest is the look), an item reached through its volume, or an
    online-only file gets none. A protected path gets none and logs the refusal by tool and reason
    (`ContentTool::AboutVerdict`), ❌ never by path.
 5. **The prompt** (`prompt.rs`): the system prompt is one of two static files in `agent/prompts/` (`about_verdict.md`
    with the removal sentence, `about_verdict_no_removal.md` without), picked per model class by
-   `PromptVariant::for_provider`. **Decision: no class words removal** (D17 (b)): asked to, every Claude class the eval
+   `PromptVariant::for_provider`. **Decision: no class words removal**: the removal sentence is Cmdr's own row. Asked to write it, every Claude class the eval
    measured gave green lights ("removing it would lose only the download record"), and without it Sonnet and Opus held
    the bar. A class that later passes with it flips back there. The user message
    is the language line, a header saying everything below is data written by whoever made the item, and ONE fence

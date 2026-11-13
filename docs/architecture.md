@@ -108,6 +108,8 @@ All under `apps/desktop/src/lib/`.
 - `text-editor/`: which app F4 opens files in: reads the stored choice, launches through `openInEditor`, falls back to
   the system default with a toast when that app is gone, and points at the setting once with a hint. The Settings row is
   `apps/desktop/src/lib/settings/sections/TextEditorSelect.svelte`. See `apps/desktop/src/lib/text-editor/CLAUDE.md`
+- `about-this/`: the "Tell me about this" card (⌘⇧I, Ctrl+Shift+Enter elsewhere): renders the streamed plan, facts,
+  removal row, footer actions, and AI take, with no rule of its own. See `apps/desktop/src/lib/about-this/CLAUDE.md`
 - `go-to-path/`: "Go to folder" (⌘G) dialog + handler: thin presenter over backend `resolve_go_to_path`, recents mirror
 - `query-ui/`: Shared filter-and-act-on primitives for Search and Selection: `QueryBar`, `ModeChips`, `QueryResults`,
   recent-items, `createQueryFilterState()`
@@ -197,6 +199,10 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/text_editor.rs`: which app F4 opens a file in: the text editors LaunchServices lists, the stored choice
   (the system default, a bundle id, or a picked `.app`), and the fallback when that app is gone. Rationale: the module's
   own docs
+- `about/`: the host behind "Tell me about this": routes a card by volume, runs one budgeted job per planned row on its
+  own pool, streams the plan, each fact, and the AI take over one channel, and serves the agent's `about_item` through
+  the one model projection. `verdict/` is the AI take (gate, peek, fence, limits). See
+  `apps/desktop/src-tauri/src/about/CLAUDE.md`
 - `file_viewer/`: the app's host for the file viewer (its seams, `cmdr-media://`, "Open with", the pull-to-temp); the
   core (three backends, search, Markdown, media tokens) is `crates/cmdr-viewer`
 - `network/`: SMB's app-side half: mDNS discovery, share listing (smb2 + smbutil/smbclient fallback), mounting,
@@ -483,7 +489,8 @@ numbers their audits landed on. The vendored fork is an ordinary member.
   `crates/cmdr-recents/CLAUDE.md`
 - `crates/cmdr-about/`: the fact card behind "Tell me about this": the coverage vocabulary (`Fact`, typed unknowns), the
   pure rules (download-record decoding and its egress redaction, magic-byte type, which rows a card has, what removal
-  costs, the headline), and the grace-then-late gathering engine. No host yet. See `crates/cmdr-about/CLAUDE.md`
+  costs, the headline, the footer's actions), the one model projection (`for_model`), and the grace-then-late gathering
+  engine. Its host is the app's `about/`. See `crates/cmdr-about/CLAUDE.md`
 - `crates/cmdr-menu/`: the menu bar as data: both platforms' rows, the item ids and their commands, the enabled-state
   fold, and what a click asks for. The desktop's `menu/` builds native menus from it; the browser demo draws the macOS
   bar from it through `cmdr-listing-wasm`. See `crates/cmdr-menu/CLAUDE.md`

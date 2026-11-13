@@ -64,9 +64,10 @@ impl Class {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) enum Variant {
-    /// D17 (a): what it is, who owns it, what removing it would cost.
+    /// `about_verdict.md`: what it is, who owns it, what removing it would cost.
     With,
-    /// D17 (b): what it is and who owns it; removal is Cmdr's row alone.
+    /// `about_verdict_no_removal.md` (ships): what it is and who owns it; removal is
+    /// Cmdr's row alone.
     Without,
 }
 
@@ -149,7 +150,7 @@ pub(super) fn plan_jobs(cards: &[EvalCard], classes: &[Class], variants: &[Varia
                     }
                 }
                 // The usefulness arm: the same ordinary card without its look inside, so
-                // whether the look earns its egress rests on a number (plan D18).
+                // whether the look earns its egress rests on a number.
                 if card.peek.is_some() && card.group == Group::Ordinary {
                     push("en", false, RUNS_WITHOUT_PEEK);
                 }
