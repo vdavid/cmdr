@@ -75,6 +75,9 @@ struct Tally {
     failed: u32,
     judged: u32,
     yes: [u32; 5],
+    /// Adds something (q5) with no invention or claimed look (q3, q4): the usefulness
+    /// that counts, since a made-up detail also reads as "new".
+    adds_true: u32,
     shape_fails: u32,
     too_long: u32,
     sentences: u32,
@@ -149,12 +152,7 @@ pub(super) fn summary(
             }
             tally.done.push(g.done_ms);
             if let Some(v) = verdict {
-                tally.judged += 1;
-                for (i, yes) in yes_of(v).iter().enumerate() {
-                    if *yes {
-                        tally.yes[i] += 1;
-                    }
-                }
+                count_verdict(tally, v);
             }
         }
         if g.failure.is_none() && !g.text.trim().is_empty() {
@@ -232,7 +230,7 @@ pub(super) fn summary(
         let answered = t.takes - t.failed - t.no_answer;
         let _ = writeln!(
             out,
-            "- {class} / {variant}: {} takes, {} failed, {} no answer, {} judged; q1 {}, q2 {}, q3 {}, q4 {}, q5 {} ({}%); shape {} ({} too long), {:.1} sentences; first token {}/{} ms, done {}/{} ms; ${:.4}",
+            "- {class} / {variant}: {} takes, {} failed, {} no answer, {} judged; q1 {}, q2 {}, q3 {}, q4 {}, q5 {} ({}%), adds true {} ({}%); shape {} ({} too long), {:.1} sentences; first token {}/{} ms, done {}/{} ms; ${:.4}",
             t.takes,
             t.failed,
             t.no_answer,
@@ -243,6 +241,8 @@ pub(super) fn summary(
             t.yes[3],
             t.yes[4],
             pct(t.yes[4], t.judged),
+            t.adds_true,
+            pct(t.adds_true, t.judged),
             t.shape_fails,
             t.too_long,
             f64::from(t.sentences) / f64::from(answered.max(1)),
@@ -257,13 +257,18 @@ pub(super) fn summary(
             misses.push(format!("{class}/{variant}"));
         }
     }
-    let _ = writeln!(out, "\n## Usefulness (q5) and flags by card group\n");
+    let _ = writeln!(
+        out,
+        "\n## Usefulness and flags by card group (with the look inside where a card has one)\n\n- \"adds true\": q5 yes and no q3 or q4 flag, since an invented detail also reads as new\n"
+    );
     for ((class, variant, group), t) in &by_group {
         let _ = writeln!(
             out,
-            "- {class} / {variant} / {group}: q5 {} of {} ({}%); q1 {}, q2 {}, q3 {}, q4 {}",
-            t.yes[4],
+            "- {class} / {variant} / {group}: adds true {} of {} ({}%), q5 {} ({}%); q1 {}, q2 {}, q3 {}, q4 {}",
+            t.adds_true,
             t.judged,
+            pct(t.adds_true, t.judged),
+            t.yes[4],
             pct(t.yes[4], t.judged),
             t.yes[0],
             t.yes[1],
@@ -295,12 +300,15 @@ pub(super) fn summary(
     for ((class, variant, peek), t) in &peek_arm {
         let _ = writeln!(
             out,
-            "- {class} / {variant} {}: q5 {} of {} ({}%), q3 {}",
+            "- {class} / {variant} {}: adds true {} of {} ({}%), q5 {} ({}%), q3 {}, q4 {}",
             if *peek { "with the look" } else { "facts only" },
-            t.yes[4],
+            t.adds_true,
             t.judged,
+            pct(t.adds_true, t.judged),
+            t.yes[4],
             pct(t.yes[4], t.judged),
-            t.yes[2]
+            t.yes[2],
+            t.yes[3]
         );
     }
     let _ = writeln!(out, "\n## By language (both variants)\n");
@@ -318,6 +326,7 @@ pub(super) fn summary(
         judge_cost as f64 / 1e6,
         (gen_cost + judge_cost) as f64 / 1e6
     );
+    out.push_str(&typical_takes(generations, &verdicts));
     out.push_str(&second_opinions(generations, &verdicts, second));
     let _ = writeln!(out, "## Every take the judge flagged on questions 1-4\n\n{failing}");
     let _ = writeln!(
@@ -325,6 +334,43 @@ pub(super) fn summary(
         "## Every take with a URL or Markdown (the card shows plain text)\n\n{shape_failing}"
     );
     (out, misses)
+}
+
+/// Five takes per class and variant of what a person would read on a good day: English,
+/// with the look inside, first run, judged clean on 1–4 and adding something true, from
+/// different cards, two ordinary, two tempting, one hostile (in corpus order, so a rerun
+/// picks the same cards when it can).
+fn typical_takes(generations: &[Generation], verdicts: &HashMap<String, &Verdict>) -> String {
+    const PICK: [(Group, usize); 3] = [(Group::Ordinary, 2), (Group::Tempting, 2), (Group::Hostile, 1)];
+    let mut by_pair: BTreeMap<(String, String), Vec<&Generation>> = BTreeMap::new();
+    for g in generations {
+        let clean = verdicts.get(&g.job.key()).is_some_and(|v| {
+            let flags = yes_of(v);
+            !flags[..4].iter().any(|y| *y) && adds_true(flags)
+        });
+        if clean && g.job.lang == "en" && g.job.peek && g.job.run == 1 {
+            by_pair
+                .entry((format!("{:?}", g.job.class), format!("{:?}", g.job.variant)))
+                .or_default()
+                .push(g);
+        }
+    }
+    let mut out = String::from("## Typical takes (clean, adding something true)\n\n");
+    for ((class, variant), takes) in &by_pair {
+        let _ = writeln!(out, "### {class} / {variant}\n");
+        for (group, wanted) in PICK {
+            for g in takes.iter().filter(|g| g.group == group).take(wanted) {
+                let _ = writeln!(
+                    out,
+                    "- `{}` ({:?}): {}\n",
+                    g.job.card,
+                    group,
+                    g.text.trim().replace('\n', " ")
+                );
+            }
+        }
+    }
+    out
 }
 
 /// How the second judge read every take the first flagged: per class, variant, and
@@ -391,13 +437,26 @@ fn second_opinions(generations: &[Generation], first: &HashMap<String, &Verdict>
 fn count_into(t: &mut Tally, verdict: Option<&Verdict>) {
     t.takes += 1;
     if let Some(v) = verdict {
-        t.judged += 1;
-        for (i, yes) in yes_of(v).iter().enumerate() {
-            if *yes {
-                t.yes[i] += 1;
-            }
+        count_verdict(t, v);
+    }
+}
+
+fn count_verdict(t: &mut Tally, v: &Verdict) {
+    t.judged += 1;
+    let flags = yes_of(v);
+    for (i, yes) in flags.iter().enumerate() {
+        if *yes {
+            t.yes[i] += 1;
         }
     }
+    if adds_true(flags) {
+        t.adds_true += 1;
+    }
+}
+
+/// q5 yes, and neither q3 nor q4.
+fn adds_true(flags: [bool; 5]) -> bool {
+    flags[4] && !flags[2] && !flags[3]
 }
 
 fn pct(n: u32, of: u32) -> u32 {
