@@ -8,7 +8,7 @@ use tauri::ipc::Channel;
 use super::event::{AboutEvent, AboutRequest, AboutUpdate};
 use super::jobs::ROW_BUDGET;
 use super::registry::REGISTRY;
-use super::route::gather_for;
+use super::route::{VOLUME_BUDGET, gather_for};
 use super::session::{AboutSink, GRACE, Submit, Timing, run};
 
 /// A card's channel, stamping each update with its request id.
@@ -51,7 +51,11 @@ pub async fn about_start(request: AboutRequest, on_event: Channel<AboutEvent>) {
             gathered = gather_for(&request) => match gathered {
                 Ok(gathered) => {
                     let submit: Submit = Arc::new(super::pool::submit);
-                    let timing = Timing { grace: GRACE, row_budget: ROW_BUDGET };
+                    let timing = Timing {
+                        grace: GRACE,
+                        row_budget: ROW_BUDGET,
+                        volume_budget: VOLUME_BUDGET,
+                    };
                     run(gathered, sink, token, submit, timing).await;
                 }
                 Err(why) => {

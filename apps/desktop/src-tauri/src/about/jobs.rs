@@ -42,7 +42,7 @@ fn now_secs() -> u64 {
 }
 
 /// The rows this host gathers: every kind in the vocabulary.
-pub(crate) const GATHERED: [FactKind; 14] = [
+pub(crate) const GATHERED: [FactKind; 15] = [
     FactKind::Identity,
     FactKind::RealType,
     FactKind::Bundle,
@@ -57,6 +57,7 @@ pub(crate) const GATHERED: [FactKind; 14] = [
     FactKind::RecursiveSize,
     FactKind::FolderDigest,
     FactKind::AppData,
+    FactKind::GitSnapshot,
 ];
 
 /// Where a local card's stores and lookups come from, decided before the plan. A
@@ -204,7 +205,9 @@ fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources) -> Option
                 ))
             })
         }
-        FactKind::Identity => return None,
+        // The probe answered identity; a snapshot from git's history is never a
+        // local item (the route sends it through the portal).
+        FactKind::Identity | FactKind::GitSnapshot => return None,
     };
     Some(job)
 }

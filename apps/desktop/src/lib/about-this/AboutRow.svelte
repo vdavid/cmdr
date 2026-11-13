@@ -27,7 +27,7 @@
     import { lastName } from '#lib/path/grammar.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { showsOnDisk, type RowView } from './about-card-view'
-    import { KIND_LABEL, ROW_LABEL, importanceFloorKey, importanceReasonKey } from './about-words'
+    import { KIND_LABEL, ROW_LABEL, importanceFloorKey, importanceReasonKey, shortCommitId } from './about-words'
 
     interface Props {
         row: RowView
@@ -48,6 +48,7 @@
     /** Lines a row's usual answer takes, reserved while the card fills. */
     const RESERVED_LINES: Partial<Record<RowView['kind'], number>> = {
         download: 2,
+        gitSnapshot: 2,
         cmdrOperation: 2,
         signature: 2,
         owner: 2,
@@ -171,7 +172,20 @@
                 {@const sources = download.sources.state === 'known' ? download.sources.value : []}
                 {@const web = webSources(sources)}
                 {@const other = sources.find((s) => s.type !== 'web')}
-                {#if web}
+                {#if download.archive}
+                    <!-- An entry carries no record of its own: the row names its archive, then the archive's record. -->
+                    <span class="line">{t('aboutThis.download.insideArchive', { archive: download.archive })}</span>
+                    {#if download.sources.state !== 'known' && by === null && at === null}
+                        <span class="line"><AboutAbsence kind="download" unknown={download.sources.state === 'unknown'
+                                ? download.sources.value
+                                : { why: 'volumeCantTell', prominence: 'routine' }} /></span>
+                    {:else}
+                        <span class="line quiet">{t('aboutThis.download.archiveRecord')}</span>
+                    {/if}
+                {/if}
+                {#if download.archive && download.sources.state !== 'known' && by === null && at === null}
+                    <!-- Said above. -->
+                {:else if web}
                     <span class="line">
                         {#if web.first.site.type === 'domain'}
                             <Trans
@@ -212,6 +226,25 @@
                     {#if download.sources.state === 'unknown' && download.sources.value.prominence === 'notable'}
                         <span class="line"><AboutAbsence kind="download" unknown={download.sources.value} /></span>
                     {/if}
+                {/if}
+            {:else if row.fact?.kind === 'gitSnapshot' && row.fact.fact.state === 'known'}
+                {@const snapshot = row.fact.fact.value}
+                {@const name = snapshot.kind === 'commit' ? shortCommitId(snapshot.name) : snapshot.name}
+                {#snippet repo(_content: Snippet)}<span use:tooltip={displayPath(snapshot.repoRoot)}
+                        >{lastName(snapshot.repoRoot)}</span
+                    >{/snippet}
+                <span class="line with-copy">
+                    <span class="line-text"
+                        ><Trans key="aboutThis.gitSnapshot.from" params={{ kind: snapshot.kind, name }} snippets={{ repo }} /></span
+                    >{#if snapshot.kind === 'commit'}<CopyButton
+                            text={snapshot.name}
+                            label={tString('aboutThis.gitSnapshot.copyCommit')}
+                        />{/if}
+                </span>
+                {#if snapshot.lastChanged !== null}
+                    {@const changed = snapshot.lastChanged}
+                    {#snippet changedDate(_content: Snippet)}<DateLabel modifiedAt={changed} />{/snippet}
+                    <span class="line quiet"><Trans key="aboutThis.gitSnapshot.lastChanged" snippets={{ date: changedDate }} /></span>
                 {/if}
             {:else if row.fact?.kind === 'cmdrOperation' && row.fact.fact.state === 'known'}
                 {@const op = row.fact.fact.value}

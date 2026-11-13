@@ -6516,6 +6516,8 @@ export type AboutFact =
   | { kind: 'folderDigest'; fact: Fact<FolderDigest> }
   // What an app leaves in the Library.
   | { kind: 'appData'; fact: Fact<AppData> }
+  // The git history a portal entry is a snapshot from.
+  | { kind: 'gitSnapshot'; fact: Fact<GitSnapshot> }
 
 // Which rows the card has, decided before any job runs.
 export type AboutPlan = {
@@ -6591,6 +6593,12 @@ export type AboutUpdate =
       // What the headline and the removal row say now that it landed.
       derived: Derived
     }
+  /**
+   *  The item's volume stopped answering: the card's volume note says so from
+   *  now on, and every row still waiting lands `volumeStoppedAnswering` right
+   *  after. At most once, before `factsSettled`.
+   */
+  | { type: 'volumeStoppedAnswering' }
   // Every planned row has its answer. Nothing more about facts follows.
   | { type: 'factsSettled' }
   // The card can't be gathered at all.
@@ -9582,6 +9590,12 @@ export type Download = {
    *  names none.
    */
   downloadedBy: ItemText | null
+  /**
+   *  The archive the item sits in, by name, when this record is that archive's:
+   *  an entry inside one carries no record of its own. `None`: the record is the
+   *  item's own.
+   */
+  archive: ItemText | null
 }
 
 /**
@@ -10331,6 +10345,8 @@ export type FactKind =
   | 'folderDigest'
   // An app's folders in the Library, which removing the app leaves behind.
   | 'appData'
+  // The git history a `.git` portal entry is a snapshot from.
+  | 'gitSnapshot'
 
 // Whether a pick of a favorite gets there, and if not, why. One decision site: `favorites/reach.rs`.
 export type FavoriteReach =
@@ -11093,6 +11109,30 @@ export type GitEntryMeta =
     }
 
 /**
+ *  Where in git's history a `.git` portal entry is a snapshot from: what the path
+ *  names (a branch, tag, commit, or stash entry) and when a commit last changed
+ *  the entry there.
+ *
+ *  No author: naming one needs a per-entry read `cmdr-git` doesn't offer.
+ */
+export type GitSnapshot = {
+  // The repo whose history holds it.
+  repoRoot: ItemText
+  // Which part of the history the path names.
+  kind: SnapshotKind
+  /**
+   *  The branch, tag, or stash entry's name, or a commit's full id (the card
+   *  shortens it).
+   */
+  name: ItemText
+  /**
+   *  When a commit last changed it, by the portal's date. `None`: the portal
+   *  gave no date.
+   */
+  lastChanged: number | null
+}
+
+/**
  *  Typed `git-state-changed` Tauri event. Carries the repo root and a fresh
  *  `RepoInfo` snapshot. The `…Payload` suffix wouldn't kebab-case to the existing
  *  wire string, so the name is pinned via `event_name`.
@@ -11275,6 +11315,20 @@ export type Headline = {
 
 // The strongest origin or use fact. The variant is the template key.
 export type HeadlineLead =
+  // It sits inside an archive: for an entry, where it comes from.
+  | {
+      template: 'insideArchive'
+      // The archive's name.
+      archive: ItemText
+    }
+  // It's git's record of an item at a point in the repo's history.
+  | {
+      template: 'fromGitHistory'
+      // Which part of the history.
+      kind: SnapshotKind
+      // The branch, tag, or stash entry's name, or a commit's full id.
+      name: ItemText
+    }
   // The OS recorded it as downloaded from a site.
   | {
       template: 'downloadedFrom'
@@ -17423,6 +17477,12 @@ export type Removal = {
 export type RemovalConsequence =
   // It holds changes no commit has.
   | { type: 'uncommittedWork' }
+  /**
+   *  It's a repository's own data (`.git`): its whole history. Removing it
+   *  leaves the files but drops every commit that isn't pushed somewhere else,
+   *  and Cmdr can't tell what's pushed.
+   */
+  | { type: 'holdsRepoHistory' }
   // It's in a repo and git doesn't track it, so git can't bring it back.
   | { type: 'untrackedNotInGit' }
   /**
@@ -17502,6 +17562,12 @@ export type RemovalConsequence =
     }
   // It's a link: removing it leaves what it points at.
   | { type: 'linkOnly' }
+  /**
+   *  It's git's record of an item at a point in the repo's history (a `.git`
+   *  portal entry), not a file on the disk: there's nothing to remove from
+   *  here, and the working files are their own items.
+   */
+  | { type: 'inGitHistory' }
   // Cmdr can't tell what depends on this.
   | { type: 'cantTell' }
 
@@ -20739,6 +20805,17 @@ export type SmbVolumeRef = {
   disconnected: boolean
 }
 
+// Which part of git's history a portal path names.
+export type SnapshotKind =
+  // A branch's latest commit.
+  | 'branch'
+  // A tag's commit.
+  | 'tag'
+  // One commit.
+  | 'commit'
+  // A stash entry.
+  | 'stash'
+
 // What a file's bytes are.
 export type Sniffed = {
   // The family of formats.
@@ -22625,6 +22702,14 @@ export type UnknownWhy =
   | 'timedOut'
   // The volume stopped answering.
   | 'unreachable'
+  /**
+   *  The item's volume stopped answering while the card was gathering. Routine:
+   *  the card's volume note says so once, at the top, so a sentence per row
+   *  would repeat it.
+   */
+  | 'volumeStoppedAnswering'
+  // Nothing is at the path any more: it moved or went since the pane listed it.
+  | 'notFound'
   // The OS refused the read.
   | 'permissionDenied'
   // The path is one Cmdr doesn't read into.

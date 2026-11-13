@@ -31,6 +31,10 @@ pub(crate) fn download(_path: &str) -> Fact<Download> {
     Fact::unknown(UnknownWhy::NoRecord)
 }
 
+pub(crate) fn download_record(_read: super::ReadXattr<'_>) -> Fact<Download> {
+    Fact::unknown(UnknownWhy::NoRecord)
+}
+
 pub(crate) fn last_opened(_path: &str) -> Fact<Usage> {
     Fact::unknown(UnknownWhy::NoRecord)
 }

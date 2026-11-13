@@ -27,6 +27,10 @@ const SHOWN: usize = 2;
 pub enum RemovalConsequence {
     /// It holds changes no commit has.
     UncommittedWork,
+    /// It's a repository's own data (`.git`): its whole history. Removing it
+    /// leaves the files but drops every commit that isn't pushed somewhere else,
+    /// and Cmdr can't tell what's pushed.
+    HoldsRepoHistory,
     /// It's in a repo and git doesn't track it, so git can't bring it back.
     UntrackedNotInGit,
     /// Git ignores it, so git can't bring it back. ❌ Never read as "a tool can
@@ -86,6 +90,10 @@ pub enum RemovalConsequence {
     },
     /// It's a link: removing it leaves what it points at.
     LinkOnly,
+    /// It's git's record of an item at a point in the repo's history (a `.git`
+    /// portal entry), not a file on the disk: there's nothing to remove from
+    /// here, and the working files are their own items.
+    InGitHistory,
     /// Cmdr can't tell what depends on this.
     CantTell,
 }
@@ -96,20 +104,22 @@ impl RemovalConsequence {
     fn rank(&self) -> u8 {
         match self {
             RemovalConsequence::UncommittedWork => 0,
-            RemovalConsequence::UntrackedNotInGit => 1,
-            RemovalConsequence::IgnoredByGit => 2,
-            RemovalConsequence::UserDocument => 3,
-            RemovalConsequence::RemovesApp { .. } => 4,
-            RemovalConsequence::AppData { .. } => 5,
-            RemovalConsequence::InstalledBy { .. } => 6,
-            RemovalConsequence::LeftoverOfUninstalledApp { .. } => 7,
-            RemovalConsequence::RecordedDownload { .. } => 8,
-            RemovalConsequence::GitCanRestore => 9,
-            RemovalConsequence::RebuildableOutput { .. } => 10,
-            RemovalConsequence::RegeneratedCache { .. } => 11,
-            RemovalConsequence::OtherNamesRemain { .. } => 12,
-            RemovalConsequence::LinkOnly => 13,
-            RemovalConsequence::CantTell => 14,
+            RemovalConsequence::HoldsRepoHistory => 1,
+            RemovalConsequence::UntrackedNotInGit => 2,
+            RemovalConsequence::IgnoredByGit => 3,
+            RemovalConsequence::UserDocument => 4,
+            RemovalConsequence::RemovesApp { .. } => 5,
+            RemovalConsequence::AppData { .. } => 6,
+            RemovalConsequence::InstalledBy { .. } => 7,
+            RemovalConsequence::LeftoverOfUninstalledApp { .. } => 8,
+            RemovalConsequence::RecordedDownload { .. } => 9,
+            RemovalConsequence::GitCanRestore => 10,
+            RemovalConsequence::RebuildableOutput { .. } => 11,
+            RemovalConsequence::RegeneratedCache { .. } => 12,
+            RemovalConsequence::OtherNamesRemain { .. } => 13,
+            RemovalConsequence::LinkOnly => 14,
+            RemovalConsequence::InGitHistory => 15,
+            RemovalConsequence::CantTell => 16,
         }
     }
 }
@@ -160,6 +170,15 @@ pub struct Removal {
 /// no evidence either way the answer is [`RemovalConsequence::CantTell`].
 pub fn consequences(card: &AboutCard) -> Removal {
     let mut found: Vec<RemovalConsequence> = Vec::new();
+
+    // A snapshot from git's history is no file on the disk: nothing else about
+    // removal applies to it.
+    if card.git_snapshot.is_some() {
+        return Removal {
+            shown: vec![RemovalConsequence::InGitHistory],
+            more: Vec::new(),
+        };
+    }
 
     let git_status = known(&card.git).and_then(|git| git.status.known().copied());
     match git_status {
@@ -229,7 +248,8 @@ pub fn consequences(card: &AboutCard) -> Removal {
         Some(FolderClass::BuildOutput) => found.push(RemovalConsequence::RebuildableOutput {
             by: Rebuilder::BuildTool,
         }),
-        Some(FolderClass::Cache | FolderClass::Plain | FolderClass::VersionControl) | None => {}
+        Some(FolderClass::VersionControl) => found.push(RemovalConsequence::HoldsRepoHistory),
+        Some(FolderClass::Cache | FolderClass::Plain) | None => {}
     }
     // A class Cmdr knows says more than "git ignores it", so it's the one line.
     let class_says_more = matches!(
@@ -243,7 +263,12 @@ pub fn consequences(card: &AboutCard) -> Removal {
         found.push(RemovalConsequence::RegeneratedCache { app: cache_owner });
     }
 
-    if let Some(host) = known(&card.download).and_then(|download| recorded_host(download.sources.known()?)) {
+    // An archive's entry carries the ARCHIVE's record: the site gave out the zip,
+    // and nothing says it still has this one file in it.
+    if let Some(host) = known(&card.download)
+        .filter(|download| download.archive.is_none())
+        .and_then(|download| recorded_host(download.sources.known()?))
+    {
         found.push(RemovalConsequence::RecordedDownload { host });
     }
 
@@ -287,7 +312,11 @@ fn settled_quietly<T>(fact: &Fact<T>) -> bool {
     match fact {
         Fact::Known(_) | Fact::NotApplicable(_) => true,
         Fact::Unknown(unknown) => {
-            unknown.prominence() == Prominence::Routine && unknown.why() != UnknownWhy::VolumeCantTell
+            unknown.prominence() == Prominence::Routine
+                && !matches!(
+                    unknown.why(),
+                    UnknownWhy::VolumeCantTell | UnknownWhy::VolumeStoppedAnswering
+                )
         }
         Fact::Pending => false,
     }

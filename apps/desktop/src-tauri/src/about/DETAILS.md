@@ -12,6 +12,9 @@ The app side of "Tell me about this" (#1104). The vocabulary, the plan, and ever
   `jobs::GATHERED`, so the card reserves every row from frame one.
 - `fact { fact, derived }`: one per row, in any order. The probe's identity lands right after `planned`; the jobs that
   answer inside `session::GRACE` (100 ms, the context menu's) land next; later ones land one by one.
+- `volumeStoppedAnswering`: at most once, for a card reached through its volume whose identity call (the health check)
+  didn't answer within `VOLUME_BUDGET`. The card's volume note switches to "stopped answering" in the slot it already
+  had, and every row still waiting lands `Unknown(VolumeStoppedAnswering)` (Routine) right after.
 - `factsSettled`: once, when every planned row has its answer. Nothing about facts follows.
 - `unavailable { why }`: instead of all of the above, when the path can't be placed or described
   (`AboutUnavailable`).
@@ -47,23 +50,59 @@ David's consent. So the card's first commit, in one go:
 
 ## Routing
 
-`route::gather_for` resolves through `crate::location::resolve` (a miss is `unavailable`), then `route::reach`:
+`route::gather_for` resolves through `crate::location::resolve` (a miss is `unavailable`; a search-results pane's
+volume id is dropped first, since its rows are real files on whatever drive holds them), then picks a `route::Way` by
+the volume's kind, whether it's live, and whether its paths are the OS's own (`Volume::paths_are_os_visible`: what
+tells a share macOS mounted from one Cmdr dials). A path the lexical gate (`path_routes_over_its_parent`) lets through
+asks the volume manager which view serves it, on the about pool under `PROBE_BUDGET` (a route's confirm can stat the
+drive): an archive, git's history, or a backup snapshot.
 
-- **`Local`** (a live `VolumeKind::Local`): `probe` on the about pool under `PROBE_BUDGET` (1.5 s; past it,
-  `Unreachable`). The probe is one `lstat`, a mount-table read, for a dotted folder one `NSURLIsPackageKey` lookup,
-  and on a local disk the look for a repo around the item (`git::repo_around`, through the app's repo cache), so the
-  plan knows whether it has a git row.
+The table (`route::caps_for`, pinned by `through_tests.rs::each_way_asks_only_what_it_can_answer`):
+
+- **`Local`** (a live local disk): every row, below.
+- **`OsMountedShare`** (Finder's SMB, an OS NFS or WebDAV mount): identity through `get_metadata`, the download record
+  through `read_xattr_many` (capped as a local read is), and the index rows (size, What's inside, importance) when a
+  live index holds the share. No Spotlight, signature, byte read, owner, git, or operation log: each would be a slow
+  read over the network, or a walk.
+- **`Server`** (SMB, SFTP, WebDAV, S3, NFS that Cmdr dials): identity, and the index rows.
+- **`Device`** (MTP, ADB): identity only.
+- **`Archive`**: identity from the archive's own listing, and the download row naming the archive with ITS record
+  (read here when the archive sits on a local disk, through the share's xattrs on an OS-mounted share, else "Cmdr can't
+  tell"). No note: the row says where it comes from.
+- **`GitHistory`** (`.git/branches|tags|commits|stash/…`): identity and the snapshot row from the portal volume. The
+  branch's or tag's name is the shortest run of path components the portal answers for (`feature/foo` holds a slash);
+  no author, which needs a per-entry `cmdr-git` read its capped surface doesn't have.
+- **`Snapshot`** (a restic view): identity only.
+- **`Offline`**: `unavailable { noVolumeAtPath }`.
+
+### A volume that stops answering
+
+**Decision: a card reached through its volume is planned from the pane, before the volume is asked anything.** The
+request carries the pane's `isDirectory`, and `route::hinted_target` reads it with the name's package suffix. Why: a
+plan that waits for `get_metadata` waits as long as a dead NAS does (minutes), and the card's first frame waits with
+it. The identity row is then the health check (`session::Watch::TheVolume`): still out at `VOLUME_BUDGET` (2 s), the
+session sends `volumeStoppedAnswering` and lands every waiting row `VolumeStoppedAnswering`, under one lock so an
+identity landing at the last moment is never followed by "stopped". The index rows answer from their databases either
+way. A view's rows (`Watch::EachRow`) time out one by one instead: they read one file or repo, and a slow one is slow by
+itself.
+
+**Every volume call runs to its end on an about-pool thread** (`through::Asked::ask`, `Handle::block_on`), ❌ never
+awaited on the executor or dropped by a bare timeout: an abandoned MTP transaction wedges the phone
+(`crates/cmdr-fs/src/deadline/CLAUDE.md`). `through::Stuck` counts each volume's calls from start to real return;
+with `MAX_STUCK_PER_VOLUME` (2) out, the next card asks that volume nothing (`Gathered::silenced`): its rows land at
+once and the note says it stopped. That bounds a dead share to two stranded pool threads, however often the card opens.
+
+### A local item
+
+- **`Local`**: `probe` on the about pool under `PROBE_BUDGET` (1.5 s; past it, `Unreachable`). The probe is one `lstat`,
+  a mount-table read, for a dotted folder one `NSURLIsPackageKey` lookup, and on a local disk the look for a repo around
+  the item (`git::repo_around`, through the app's repo cache), so the plan knows whether it has a git row.
   - The route also asks `OwnerQuestion::of(path, home)` (pure, no IO), so the plan knows whether it has an owner row,
     and places the item in the index (`index::IndexPlace`: the index id, which isn't always the volume's, and the
     importance store's path for it).
   - The mount table must call the item's mount a local disk (`mount_is_local_disk`). A path whose parent chain reaches a
     share through a symlink resolves to the boot volume and isn't local: it answers identity only.
-  - A path inside an archive (`lstat` fails, `confirm_archive_boundary` holds) is an `ArchiveEntry` with identity
-    `Unknown(VolumeCantTell)` until the archive arm reads its listing.
   - `SF_DATALESS` (an evicted cloud file) sets `contents_local: false`, so the plan has no real-type or signature row.
-- **`ThroughTheVolume`** (every other kind, and a local volume that isn't registered): `Volume::get_metadata` under
-  `REMOTE_BUDGET` (2 s). `VolumeCaps::identity_only` gives the card its volume note. A symlink reads as what the
-  volume resolved it to, since no remote metadata carries a link target.
 
 ## Jobs and budgets
 
@@ -204,6 +243,12 @@ fast as an empty one, and a container is never opened. Rules in `crates/cmdr-abo
   index hasn't listed is named in `not_looked_in`.
 
 ## Tests
+
+`through_tests.rs` runs a card reached through its volume end to end: the `Way` table, a scripted share whose every
+call waits (the card plans at once, says it stopped once, settles inside the budget, and the next card asks it nothing),
+a healthy `InMemoryVolume` share's identity and xattrs, an item gone since the listing, an archive's entry naming its
+archive with the archive's record, and a file in a slashed branch's snapshot over a real portal (the category words
+pinned against `GitPortal::category_rows`).
 
 `tests.rs` runs the session with plain threads and a recording sink: a Chrome-shaped download (xattrs written by the
 test) streams `planned`, each fact, and `factsSettled`; a plain file's download row is `Unknown(NoRecord)`; a cancel

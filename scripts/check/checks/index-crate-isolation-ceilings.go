@@ -749,11 +749,14 @@ var surfaceGuardedCrates = []struct {
 		// `Children`, `FolderDigest::of`, `FolderClass::of`, `ByteShare::unchanged`,
 		// `AppData::of`, `app_data_place`, `APP_DATA_PLACES`, `SHOWN_CHILDREN`,
 		// and `UNCHANGED_FOR_SECS`, argued in that section.
+		//
+		// 129 → 132 (2026-11-13, items reached through their volume): `GitSnapshot`,
+		// `SnapshotKind`, and `Download::of_archive`, argued in that section.
 		Name: "cmdr-about",
 		Ceilings: surfaceCeilings{
 			RootPromises:   11,
 			PublicModules:  11,
-			SubsystemItems: 129,
+			SubsystemItems: 132,
 		},
 	},
 }

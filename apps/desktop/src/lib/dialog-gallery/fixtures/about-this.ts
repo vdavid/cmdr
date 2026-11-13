@@ -12,6 +12,7 @@ import type { Headline } from '#lib/ipc/bindings.js'
 import { emptyCard, type AboutCardData } from '#lib/about-this/about-card.js'
 import { REQUEST, card, day, derived, identity, notable, plan, routine, type Stream } from './about-this-stream'
 import { aboutThisFolderFixtures } from './about-this-folders'
+import { aboutThisDegradedFixtures } from './about-this-degraded'
 
 // ── A downloaded disk image: every origin fact known ───────────────────────────
 
@@ -55,6 +56,7 @@ const downloaded: Stream = {
             },
             downloadedAt: day('2026-03-02'),
             downloadedBy: 'Chrome',
+            archive: null,
           },
         },
       },
@@ -187,6 +189,7 @@ const mismatch: Stream = {
             sources: { state: 'known', value: [{ type: 'airDrop', sender: 'Test Phone' }] },
             downloadedAt: day('2026-11-01'),
             downloadedBy: 'sharingd',
+            archive: null,
           },
         },
       },
@@ -353,6 +356,7 @@ const hardLinked: Stream = {
             },
             downloadedAt: day('2026-11-11'),
             downloadedBy: 'Safari',
+            archive: null,
           },
         },
       },
@@ -396,13 +400,20 @@ export const aboutThisFixtures: Record<string, AboutCardData | undefined> = {
   'plain-document': card(DOC, `/Users/test_user_1/Documents/${DOC}`, plainDocument),
   'still-filling': card(DOC, `/Users/test_user_1/Documents/${DOC}`, stillFilling),
   ...aboutThisFolderFixtures,
+  ...aboutThisDegradedFixtures,
   mismatch: card(LIAR, `/Users/test_user_1/Desktop/${LIAR}`, mismatch),
   'notable-a': card('Google', '/Users/test_user_1/Library/Application Support/Google', notableA),
   'notable-b': card('Tessera Helper', '/Users/test_user_1/Library/Application Support/Tessera Helper', notableB),
   remote: card(REMOTE, '/Volumes/Testnas/photos/IMG_2041.HEIC', remote),
   'more-consequences': card(LINKED, '/Users/test_user_1/notes/notes.md', hardLinked),
   unavailable: {
-    ...emptyCard(REQUEST, { path: '/Volumes/Gone/old.txt', volumeId: 'gone', name: 'old.txt', iconId: null }),
+    ...emptyCard(REQUEST, {
+      path: '/Volumes/Gone/old.txt',
+      volumeId: 'gone',
+      name: 'old.txt',
+      iconId: null,
+      isDirectory: false,
+    }),
     unavailable: 'notFound',
     settled: true,
   },

@@ -40,19 +40,27 @@ export interface Stream {
   first: Derived
   /** Each landing, with what the headline and removal say after it. */
   facts: { fact: AboutFact; derived: Derived }[]
+  /** The volume stopped answering right after the plan, before any row landed. */
+  stopped?: boolean
   settled: boolean
 }
 
 export function card(name: string, path: string, stream: Stream): AboutCardData {
   const events: AboutEvent[] = [
     { requestId: REQUEST, update: { type: 'planned', plan: stream.plan, derived: stream.first } },
+    ...(stream.stopped
+      ? [{ requestId: REQUEST, update: { type: 'volumeStoppedAnswering' } } satisfies AboutEvent]
+      : []),
     ...stream.facts.map((landing): AboutEvent => ({
       requestId: REQUEST,
       update: { type: 'fact', fact: landing.fact, derived: landing.derived },
     })),
   ]
   if (stream.settled) events.push({ requestId: REQUEST, update: { type: 'factsSettled' } })
-  return events.reduce(applyAboutEvent, emptyCard(REQUEST, { path, volumeId: 'root', name, iconId: null }))
+  return events.reduce(
+    applyAboutEvent,
+    emptyCard(REQUEST, { path, volumeId: 'root', name, iconId: null, isDirectory: false }),
+  )
 }
 
 export function plan(

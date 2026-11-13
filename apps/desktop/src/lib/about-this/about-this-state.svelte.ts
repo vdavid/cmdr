@@ -54,7 +54,7 @@ function showIfReady(): void {
 export function openAboutThis(subject: AboutSubject, onGoTo: ((target: AboutGoTarget) => void) | null = null): void {
   closeAboutThis()
   goTo = onGoTo
-  const handle = startAbout(subject.path, subject.volumeId, (event) => {
+  const handle = startAbout(subject, (event) => {
     const card = aboutThisState.card
     if (!card) return
     const next = applyAboutEvent(card, event)

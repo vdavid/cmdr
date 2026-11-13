@@ -19,6 +19,10 @@ mod imp;
 #[cfg(unix)]
 mod unix;
 
+/// Reads one xattr by name for [`download_record`], as the decoders take it: `None`
+/// for no record, and past the cap a buffer one byte over it.
+pub(crate) type ReadXattr<'a> = &'a mut dyn FnMut(&str) -> Option<Vec<u8>>;
+
 /// What `stat` says beyond the portable fields.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct StatExtras {
@@ -35,6 +39,7 @@ pub(crate) struct StatExtras {
 const _: fn() -> OsCaps = os_caps;
 const _: fn(&std::fs::Metadata) -> StatExtras = stat_extras;
 const _: fn(&str) -> Fact<Download> = download;
+const _: fn(ReadXattr<'_>) -> Fact<Download> = download_record;
 const _: fn(&str) -> Fact<Usage> = last_opened;
 const _: fn(&str) -> Fact<AppRef> = default_app;
 const _: fn(&str, AboutTarget, Option<&str>) -> Fact<Signature> = signature;
@@ -53,6 +58,11 @@ pub(crate) use imp::stat_extras;
 /// capped, ❌ never whole (an attacker sizes it). An item with none answers
 /// `Unknown(NoRecord)`.
 pub(crate) use imp::download;
+
+/// [`download`] from xattrs some other reader fetches: `read` answers one xattr
+/// by name, as the decoders take it (`None` for no record, past the cap a buffer
+/// one byte over it). For an item a volume reads through its own calls.
+pub(crate) use imp::download_record;
 
 /// When the item was last opened and how often, from the OS's use history.
 /// Nothing recorded is `Unknown(NoRecord)`, ❌ never "never opened".

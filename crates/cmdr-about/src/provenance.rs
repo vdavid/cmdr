@@ -45,6 +45,10 @@ pub struct Download {
     /// The app that downloaded it, from the quarantine record. `None`: the record
     /// names none.
     pub downloaded_by: Option<ItemText>,
+    /// The archive the item sits in, by name, when this record is that archive's:
+    /// an entry inside one carries no record of its own. `None`: the record is the
+    /// item's own.
+    pub archive: Option<ItemText>,
 }
 
 /// The Cmdr operation that put the item where it is, from Cmdr's own log.
@@ -453,7 +457,36 @@ fn download_from(
         sources,
         downloaded_at,
         downloaded_by,
+        archive: None,
     })
+}
+
+impl Download {
+    /// The download row of an entry inside the archive named `archive`: the
+    /// archive's own record, marked as the archive's. An entry carries no record of
+    /// its own, so the row always says which archive it's in, and a record the
+    /// archive doesn't have (or Cmdr can't read) is the sources' answer.
+    pub fn of_archive(archive: ItemText, record: Fact<Download>) -> Fact<Download> {
+        let record = match record {
+            Fact::Known(download) => download,
+            Fact::Unknown(unknown) => Download {
+                sources: Fact::Unknown(unknown),
+                downloaded_at: None,
+                downloaded_by: None,
+                archive: None,
+            },
+            Fact::NotApplicable(_) | Fact::Pending => Download {
+                sources: Fact::unknown(UnknownWhy::VolumeCantTell),
+                downloaded_at: None,
+                downloaded_by: None,
+                archive: None,
+            },
+        };
+        Fact::Known(Download {
+            archive: Some(archive),
+            ..record
+        })
+    }
 }
 
 #[cfg(test)]

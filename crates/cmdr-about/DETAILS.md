@@ -115,9 +115,15 @@ and `OsCaps`, all known before any job. It returns the sections in display order
   host's look before the plan found a repo around the item (`PlanInput::in_a_repo`). Why: a document in `~/Documents`
   outside every repo would otherwise draw two rows that can only say "nothing", which is the wall of unknowns the card
   must not be.
-- **An archive entry** has no owner, repo, or operation of its own; its download row is the archive's.
+- **An archive entry** has no owner, repo, or operation of its own; its download row is the archive's
+  (`Download::of_archive`: always `Known`, naming the archive, with the archive's record or why there's none).
+- **A `.git` portal entry** (`PlanInput::git_snapshot`) is git's record, not a file on the disk: its `GitSnapshot` row
+  leads Origin, and no row of the disk's (download, Cmdr operation, owner, git status) is planned, whatever the caps.
+- **A view has no note**: an archive's entry and a portal entry are views into one file or repo, so their own row says
+  where they come from and no "On <volume>, Cmdr can see…" line appears.
 - **The note**: none when the volume answers everything, `IdentityOnly` when it answers nothing more, `SomeFacts` in
-  between. `Unreachable` is the host's to set when its health check runs out.
+  between. `Unreachable` is the host's to set when its health check runs out; every row that was waiting then lands
+  `VolumeStoppedAnswering`, which is Routine for the same reason `VolumeCantTell` is: the note says it once.
 
 ## Removal
 
@@ -135,12 +141,18 @@ and `rank` follows it; the card shows the top two.
   receipt or Homebrew is `InstalledBy`.
 - **An app bundle** always answers `RemovesApp { data_left }`, carrying the app-data fact as it stands (pending, known,
   or why Cmdr can't tell).
-- **A download** with a site → `RecordedDownload { host }`. A numeric address names no place to look again.
+- **A download** with a site → `RecordedDownload { host }`. A numeric address names no place to look again. ❌ Never for
+  an archive's entry: the record is the archive's, and nothing says the site still offers that one file.
+- **A repository's own data** (`FolderClass::VersionControl`, `.git`) → `HoldsRepoHistory`, ranked right after
+  `UncommittedWork`: removing it leaves the files but drops every commit not pushed elsewhere, and Cmdr can't tell
+  what's pushed. Said of `.svn` too, where it overstates the loss (svn's history is on the server): the line never
+  understates one.
+- **A `.git` portal entry** → `InGitHistory` alone: it's git's record, so no other consequence applies.
 - **A symlink** → `LinkOnly`; **more than one hard link** → `OtherNamesRemain`. Without these the fallback would call a
   link the person's own irreplaceable document.
 - **The fallback**: `UserDocument` only when the evidence rows the plan has (owner, git, download) all settled with an
   answer or a Routine absence; `CantTell` while one is pending, failed for a Notable reason, answered `VolumeCantTell`,
-  or when the plan has none of them, and always for an archive entry.
+  or when the plan has none of them, and always for an archive entry. `VolumeStoppedAnswering` is no evidence either.
 
 ## The owner
 
@@ -217,9 +229,11 @@ filters `app_with_id` to this disk outside the Trash (`apps/desktop/src-tauri/sr
 else the extension's claim), `size` (a folder's from the index, `at_least` on a lower bound; a folder's own entry size
 is never used), and `lead`, whose variant is the template key.
 
-Lead priority: a recorded download site, a Cmdr operation, Mail or AirDrop (never naming the person), an owning app or
-that the app is gone, a downloading app alone, last opened, `Plain`. It never carries a removal consequence. A plain
-document's headline is kind, size, and last opened, from identity and use alone.
+Lead priority: a portal entry's snapshot (`FromGitHistory`), an archive's entry's archive (`InsideArchive`: the
+archive's download site is the row's to tell, never the entry's lead), a recorded download site, a Cmdr operation, Mail
+or AirDrop (never naming the person), an owning app or that the app is gone, a downloading app alone, last opened,
+`Plain`. It never carries a removal consequence. A plain document's headline is kind, size, and last opened, from
+identity and use alone.
 
 ## The gathering engine
 
@@ -251,7 +265,7 @@ and two workflow filters to stay honest.
 
 ## The public surface is capped
 
-11 root promises (one module per concern), 11 public modules, 129 items in them
+11 root promises (one module per concern), 11 public modules, 132 items in them
 (`scripts/check/checks/index-crate-isolation-ceilings.go`). The items are the wire types the card's events and the
 model's projection carry, and the handful of functions a host calls: `plan`, `AboutCard`, `download_fact`,
 `xdg_download_fact`, `usage_fact`, `redact_for_egress`, `real_type`, `consequences`, `headline`, `start_with`,
@@ -304,3 +318,11 @@ live in the host, plus one wire type:
 - **`app_data_place` and `APP_DATA_PLACES`**: which Library folders are an app's, the owner rule run the other way.
 - **`SHOWN_CHILDREN` and `UNCHANGED_FOR_SECS`**: how many the digest names and what "untouched" means, so the host asks
   the search core for exactly that. `ChildKind::of_name` stays inside the crate: only the digest reads it.
+
+Raised 129 → 132 by items Cmdr reaches through their volume:
+
+- **`GitSnapshot` and `SnapshotKind`**: a wire type, the row of a `.git` portal entry (which branch, tag, commit, or
+  stash entry the path names, and when a commit last changed it). Without it a file in `.git/commits/<id>/` read as a
+  plain file on the disk, and its removal row as the person's own document.
+- **`Download::of_archive`**: an archive's entry always names its archive, with the archive's record or why there's
+  none. Whether an entry's row may say "nothing recorded" or must name the archive is a rule a person could argue.

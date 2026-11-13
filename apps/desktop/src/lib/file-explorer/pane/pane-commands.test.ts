@@ -310,7 +310,11 @@ describe('getFileAndPathUnderCursor', () => {
   it("answers the entry's own path (a snapshot pane's rows carry real paths)", async () => {
     const ref = buildPaneRef({ filenameUnderCursor: 'test.md', pathUnderCursor: '/real/dir/test.md' })
     const cmds = create(buildAccess({ paneRefs: { left: ref }, paths: { left: 'search-results://sr-1' } }))
-    expect(await cmds.getFileAndPathUnderCursor()).toEqual({ path: '/real/dir/test.md', filename: 'test.md' })
+    expect(await cmds.getFileAndPathUnderCursor()).toEqual({
+      path: '/real/dir/test.md',
+      filename: 'test.md',
+      isDirectory: false,
+    })
   })
 
   // Regression: a quick filter put CLAUDE.md on the row `backups` had held, and

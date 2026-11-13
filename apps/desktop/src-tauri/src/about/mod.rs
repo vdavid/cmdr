@@ -18,9 +18,12 @@ mod probe;
 mod registry;
 mod route;
 mod session;
+mod through;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod through_tests;
 
 pub use event::AboutEvent;
 

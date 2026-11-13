@@ -46,13 +46,31 @@ pub(crate) struct Gathered {
     /// Answered before any job ran (the probe's identity).
     pub(crate) ready: Vec<AboutFact>,
     pub(crate) jobs: Vec<(FactKind, Job<AboutFact>)>,
+    /// What a row still out at the budget means.
+    pub(crate) reach: Watch,
+}
+
+/// What a row still out at its budget means, by how the card reaches the item.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Watch {
+    /// The OS answers each row itself: one still out timed out, alone.
+    EachRow,
+    /// Every row asks the item's volume, and the identity row is its own
+    /// metadata call, the card's health check. Still out at the volume budget:
+    /// the volume stopped answering, so the card says so once and every row still
+    /// waiting lands `VolumeStoppedAnswering`.
+    TheVolume,
 }
 
 /// How long the card waits, injectable so a test can run on milliseconds.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Timing {
     pub(crate) grace: Duration,
+    /// A local row's budget ([`Watch::EachRow`]).
     pub(crate) row_budget: Duration,
+    /// How long a volume has to answer before the card says it stopped
+    /// ([`Watch::TheVolume`]).
+    pub(crate) volume_budget: Duration,
 }
 
 /// The card as it's being filled, shared with the late route.
@@ -102,6 +120,10 @@ impl Session {
     /// Gives every row still out `Unknown(why)`.
     fn settle_rest(&self, why: UnknownWhy) {
         let mut state = self.state.lock_ignore_poison();
+        self.settle_rest_locked(&mut state, why);
+    }
+
+    fn settle_rest_locked(&self, state: &mut State, why: UnknownWhy) {
         if state.done || self.cancel.is_cancelled() {
             return;
         }
@@ -112,7 +134,27 @@ impl Session {
             let derived = derive(&state.card);
             self.send(AboutUpdate::Fact { fact, derived });
         }
-        self.settle_if_complete(&mut state);
+        self.settle_if_complete(state);
+    }
+
+    /// The budget ran out with rows still out. Through the volume with no
+    /// identity yet, the volume stopped answering: the card says so once, then
+    /// every row still waiting says the same quietly. Otherwise each row timed
+    /// out. One lock for the whole decision, so an identity landing at the last
+    /// moment is never followed by "the volume stopped".
+    fn at_budget(&self, reach: Watch) {
+        let mut state = self.state.lock_ignore_poison();
+        if state.done || self.cancel.is_cancelled() {
+            return;
+        }
+        let volume_silent = reach == Watch::TheVolume && state.card.pending().contains(&FactKind::Identity);
+        if volume_silent {
+            log::debug!(target: "about", "the item's volume didn't answer within its budget");
+            self.send(AboutUpdate::VolumeStoppedAnswering);
+            self.settle_rest_locked(&mut state, UnknownWhy::VolumeStoppedAnswering);
+        } else {
+            self.settle_rest_locked(&mut state, UnknownWhy::TimedOut);
+        }
     }
 
     fn settle_if_complete(&self, state: &mut State) {
@@ -166,6 +208,7 @@ fn outcome_of(fact: &AboutFact) -> String {
         AboutFact::RecursiveSize(fact) => state(fact),
         AboutFact::FolderDigest(fact) => state(fact),
         AboutFact::AppData(fact) => state(fact),
+        AboutFact::GitSnapshot(fact) => state(fact),
     }
 }
 
@@ -178,7 +221,12 @@ pub(crate) async fn run(
     submit: Submit,
     timing: Timing,
 ) {
-    let Gathered { plan, ready, jobs } = gathered;
+    let Gathered {
+        plan,
+        ready,
+        jobs,
+        reach,
+    } = gathered;
     let card = AboutCard::new(&plan);
     let session = Arc::new(Session {
         state: Mutex::new(State {
@@ -228,7 +276,11 @@ pub(crate) async fn run(
         session.land(fact);
     }
 
-    let budget_ends = started + timing.row_budget;
+    let budget_ends = started
+        + match reach {
+            Watch::EachRow => timing.row_budget,
+            Watch::TheVolume => timing.volume_budget,
+        };
     loop {
         if session.is_done() {
             break;
@@ -240,7 +292,7 @@ pub(crate) async fn run(
                 return;
             }
             () = tokio::time::sleep_until(budget_ends) => {
-                session.settle_rest(UnknownWhy::TimedOut);
+                session.at_budget(reach);
             }
             () = session.settled.notified() => {}
         }

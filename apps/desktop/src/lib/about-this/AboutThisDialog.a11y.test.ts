@@ -1,6 +1,7 @@
 /**
  * Tier 3 a11y tests for `AboutThisDialog.svelte` over the gallery's fixture cards: a full card, one still filling
- * (pending rows), one with every Notable reason, a remote card with its volume note, and an unavailable one.
+ * (pending rows), one with every Notable reason, a remote card with its volume note, a share that stopped answering,
+ * an archive's entry, a snapshot from git's history, and an unavailable one. Then each part on its own.
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -11,6 +12,9 @@ import AboutAbsence from './AboutAbsence.svelte'
 import AboutPath from './AboutPath.svelte'
 import AboutHeadline from './AboutHeadline.svelte'
 import AboutRemoval from './AboutRemoval.svelte'
+import AboutDigest from './AboutDigest.svelte'
+import AboutAppData from './AboutAppData.svelte'
+import AboutPlaceList from './AboutPlaceList.svelte'
 import { aboutThisFixtures } from '#lib/dialog-gallery/fixtures/about-this.js'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
 
@@ -51,6 +55,9 @@ describe('AboutThisDialog a11y', () => {
     'node-modules',
     'empty-folder',
     'not-indexed-folder',
+    'stopped-answering',
+    'archive-entry',
+    'git-snapshot',
   ])('has no violations: %s', async (id) => {
     await expectNoA11yViolations(await render(id))
   })
@@ -106,8 +113,57 @@ describe('the card’s parts on their own', () => {
     await expectNoA11yViolations(mountInto(AboutHeadline, { headline, settled: true }))
   })
 
+  it('What’s inside, an app’s Library data, and a list of places', async () => {
+    const digest = aboutThisFixtures.folder?.facts.folderDigest
+    if (digest?.kind !== 'folderDigest' || digest.fact.state !== 'known')
+      throw new Error('the folder fixture has a digest')
+    await expectNoA11yViolations(
+      mountInto(
+        AboutDigest,
+        { digest: digest.fact.value, folderPath: '/Users/test_user_1/website', onGoTo: () => {} },
+        'dl',
+      ),
+    )
+    const data = aboutThisFixtures.app?.facts.appData
+    if (data?.kind !== 'appData' || data.fact.state !== 'known') throw new Error('the app fixture has its data')
+    await expectNoA11yViolations(mountInto(AboutAppData, { data: data.fact.value, onGoTo: () => {} }))
+    const items = [
+      {
+        name: 'media',
+        path: '/a/media',
+        isFolder: true,
+        size: { state: 'unknown', value: { why: 'notIndexed', prominence: 'routine' } },
+        detail: null,
+      },
+    ]
+    await expectNoA11yViolations(mountInto(AboutPlaceList, { items, onGoTo: () => {} }))
+  })
+
   it('the removal list with its More button', async () => {
     const removal = aboutThisFixtures['more-consequences']?.derived?.removal ?? null
     await expectNoA11yViolations(mountInto(AboutRemoval, { removal, settled: true }))
+  })
+})
+
+describe('what a card reached through its volume says', () => {
+  it('a share that stopped answering says so once, at the top, and each row quietly', async () => {
+    const target = await render('stopped-answering')
+    expect(target.textContent).toContain('Naspolya stopped answering')
+    expect(target.textContent?.split('stopped answering').length).toBe(2)
+    expect(target.textContent).toContain('No answer from the drive')
+  })
+
+  it('a file inside a zip names the archive, then the archive’s record', async () => {
+    const target = await render('archive-entry')
+    expect(target.textContent).toContain('Inside the archive “Holiday photos.zip”.')
+    expect(target.textContent).toContain('recorded about the archive')
+    expect(target.textContent).toContain('photos.example')
+  })
+
+  it('a file in git’s history names the commit, short, and says there’s nothing to remove', async () => {
+    const target = await render('git-snapshot')
+    expect(target.textContent).toContain('As commit 1a2b3c4 has it in')
+    expect(target.textContent).not.toContain('1a2b3c4d5e6f')
+    expect(target.textContent).toContain('git’s record of it')
   })
 })

@@ -401,7 +401,12 @@ const app: Stream = {
         kind: 'download',
         fact: {
           state: 'known',
-          value: { sources: routine('noRecord'), downloadedAt: day('2026-03-02'), downloadedBy: 'Chrome' },
+          value: {
+            sources: routine('noRecord'),
+            downloadedAt: day('2026-03-02'),
+            downloadedBy: 'Chrome',
+            archive: null,
+          },
         },
       },
       derived: appRemoval,

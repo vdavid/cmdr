@@ -326,3 +326,60 @@ fn the_template_key_rides_on_the_lead() {
         })
     );
 }
+
+/// An entry names its archive, never the site the archive came from as its own.
+#[test]
+fn an_archive_entry_reads_as_inside_its_archive() {
+    let archive = crate::card::VolumeCaps {
+        download_record: true,
+        ..crate::card::VolumeCaps::identity_only(text("Photos.zip"))
+    };
+    let mut entry = card(ArchiveEntry, Some("jpg"), &archive);
+    land(&mut entry, identity("a.jpg", 1_000));
+    let AboutFact::Download(record) = chrome_download("https://example.com/Photos.zip") else {
+        unreachable!("chrome_download is a download")
+    };
+    land(
+        &mut entry,
+        AboutFact::Download(crate::provenance::Download::of_archive(text("Photos.zip"), record)),
+    );
+    assert_eq!(
+        headline(&entry).lead,
+        HeadlineLead::InsideArchive {
+            archive: text("Photos.zip")
+        }
+    );
+}
+
+/// A portal entry says which part of the history it's from.
+#[test]
+fn a_snapshot_reads_as_from_its_history() {
+    let mut snapshot = AboutCard::new(&crate::card::plan(crate::card::PlanInput {
+        target: File,
+        extension: Some("rs"),
+        is_executable: false,
+        contents_local: false,
+        caps: &crate::card::VolumeCaps::identity_only(text("cmdr")),
+        os: &crate::test_support::macos(),
+        owner: &crate::owner::OwnerQuestion::Nothing,
+        in_a_repo: false,
+        git_snapshot: true,
+    }));
+    assert_eq!(headline(&snapshot).lead, HeadlineLead::Plain);
+    land(
+        &mut snapshot,
+        AboutFact::GitSnapshot(Fact::Known(crate::payload::GitSnapshot {
+            repo_root: text("/Users/me/cmdr"),
+            kind: SnapshotKind::Commit,
+            name: text("0123456789abcdef0123456789abcdef01234567"),
+            last_changed: Some(1_759_400_000),
+        })),
+    );
+    assert_eq!(
+        headline(&snapshot).lead,
+        HeadlineLead::FromGitHistory {
+            kind: SnapshotKind::Commit,
+            name: text("0123456789abcdef0123456789abcdef01234567"),
+        }
+    );
+}

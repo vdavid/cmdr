@@ -16,6 +16,13 @@ pub(crate) struct AboutRequest {
     pub path: String,
     /// The pane's volume. `None`: the resolver places the bare path.
     pub volume_id: Option<String>,
+    /// Whether the pane listed it as a folder. ❗ Only the plan of an item Cmdr
+    /// reaches through its volume reads this (a share, a server, a phone, an
+    /// archive, git's history): that plan goes out before the volume answers, so a
+    /// volume that stopped answering still gets a card at once. A local item is
+    /// planned from its own `lstat`.
+    #[serde(default)]
+    pub is_directory: bool,
 }
 
 /// One message on a card's channel. Every one carries its request's id, so the
@@ -51,6 +58,10 @@ pub enum AboutUpdate {
         /// What the headline and the removal row say now that it landed.
         derived: Derived,
     },
+    /// The item's volume stopped answering: the card's volume note says so from
+    /// now on, and every row still waiting lands `volumeStoppedAnswering` right
+    /// after. At most once, before `factsSettled`.
+    VolumeStoppedAnswering,
     /// Every planned row has its answer. Nothing more about facts follows.
     FactsSettled,
     /// The card can't be gathered at all.

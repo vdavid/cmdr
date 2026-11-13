@@ -83,9 +83,12 @@ impl XattrSyscalls for Darwin {
 }
 
 pub(crate) fn download(path: &str) -> Fact<Download> {
-    let where_froms = read_capped::<Darwin>(path, "com.apple.metadata:kMDItemWhereFroms", MAX_XATTR_BYTES)
-        .for_decoder(MAX_XATTR_BYTES);
-    let quarantine = read_capped::<Darwin>(path, "com.apple.quarantine", MAX_XATTR_BYTES).for_decoder(MAX_XATTR_BYTES);
+    download_record(&mut |name| read_capped::<Darwin>(path, name, MAX_XATTR_BYTES).for_decoder(MAX_XATTR_BYTES))
+}
+
+pub(crate) fn download_record(read: super::ReadXattr<'_>) -> Fact<Download> {
+    let where_froms = read("com.apple.metadata:kMDItemWhereFroms");
+    let quarantine = read("com.apple.quarantine");
     download_fact(where_froms.as_deref(), quarantine.as_deref())
 }
 

@@ -20,15 +20,15 @@ export interface AboutRequestHandle {
  * ahead of the start still lands (the backend keeps it as a tombstone).
  */
 export function startAbout(
-  path: string,
-  volumeId: string | null,
+  item: { path: string; volumeId: string | null; isDirectory: boolean },
   onEvent: (event: AboutEvent) => void,
 ): AboutRequestHandle {
+  const { path, volumeId, isDirectory } = item
   const requestId = crypto.randomUUID()
   const channel = new Channel<AboutEvent>()
   channel.onmessage = onEvent
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- streaming Channel<T> not specta-friendly yet; tracked for follow-up
-  invoke('about_start', { request: { requestId, path, volumeId }, onEvent: channel }).catch(() => {
+  invoke('about_start', { request: { requestId, path, volumeId, isDirectory }, onEvent: channel }).catch(() => {
     // The command returns nothing; a webview teardown can reject the promise, which changes nothing here.
   })
   const cancel = async (): Promise<void> => {

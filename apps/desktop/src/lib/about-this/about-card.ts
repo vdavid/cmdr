@@ -19,6 +19,11 @@ export interface AboutSubject {
   /** The pane's name for it, shown in the title from the first frame. */
   name: string
   /**
+   * Whether the pane listed it as a folder. The backend plans an item it reaches through its volume (a share, a
+   * phone, an archive, git's history) from this, so a share that stopped answering still gets its card at once.
+   */
+  isDirectory: boolean
+  /**
    * The pane's icon id for it (`FileEntry.iconId`), so the title shows the icon the pane shows (an app's own icon for
    * an app). The pane already fetched it, so the card reads the icon cache and never fetches. `null`: a glyph.
    */
@@ -83,6 +88,12 @@ export function applyAboutEvent(card: AboutCardData, event: AboutEvent): AboutCa
         facts: { ...card.facts, [update.fact.kind]: update.fact },
         derived: update.derived,
       }
+    }
+    case 'volumeStoppedAnswering': {
+      // The note's slot is the plan's own, there from the first frame: only its words change.
+      const note = card.plan?.volumeNote
+      if (card.plan === null || card.settled || !note || note.limit === 'unreachable') return card
+      return { ...card, plan: { ...card.plan, volumeNote: { ...note, limit: 'unreachable' } } }
     }
     case 'factsSettled':
       if (card.plan === null || card.settled) return card

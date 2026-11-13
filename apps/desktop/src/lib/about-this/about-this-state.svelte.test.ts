@@ -8,7 +8,7 @@ const { started } = vi.hoisted(() => ({
 }))
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
-  startAbout: (_path: string, _volumeId: string | null, onEvent: (event: AboutEvent) => void) => {
+  startAbout: (_item: unknown, onEvent: (event: AboutEvent) => void) => {
     const handle = { requestId: `req-${String(started.length + 1)}`, onEvent, cancel: vi.fn(() => Promise.resolve()) }
     started.push(handle)
     return handle
@@ -60,7 +60,7 @@ function settled(requestId: string): AboutEvent {
   return { requestId, update: { type: 'factsSettled' } }
 }
 
-const subject = { path: '/tmp/a.txt', volumeId: 'root', name: 'a.txt', iconId: null }
+const subject = { path: '/tmp/a.txt', volumeId: 'root', name: 'a.txt', iconId: null, isDirectory: false }
 
 describe('applyAboutEvent', () => {
   it('takes facts in any order once the plan is in', () => {
@@ -177,5 +177,29 @@ describe('the open card', () => {
     second.onEvent(planned(second.requestId))
     expect(aboutThisState.card?.subject.name).toBe('b.txt')
     expect(aboutThisState.card?.plan).toEqual(plan)
+  })
+})
+
+describe('a volume that stopped answering', () => {
+  const onShare: AboutPlan = { ...plan, volumeNote: { volume: 'Naspolya', limit: 'someFacts' } }
+
+  it('turns the note into its stopped words and keeps every row', () => {
+    let card = applyAboutEvent(emptyCard('r', subject), {
+      requestId: 'r',
+      update: { type: 'planned', plan: onShare, derived },
+    })
+    card = applyAboutEvent(card, { requestId: 'r', update: { type: 'volumeStoppedAnswering' } })
+    expect(card.plan?.volumeNote).toEqual({ volume: 'Naspolya', limit: 'unreachable' })
+    expect(card.plan?.sections).toEqual(onShare.sections)
+  })
+
+  it('changes nothing before the plan, after the settle, or for another card', () => {
+    const stopped: AboutEvent = { requestId: 'r', update: { type: 'volumeStoppedAnswering' } }
+    const empty = emptyCard('r', subject)
+    expect(applyAboutEvent(empty, stopped)).toBe(empty)
+    let card = applyAboutEvent(empty, { requestId: 'r', update: { type: 'planned', plan: onShare, derived } })
+    expect(applyAboutEvent(card, { ...stopped, requestId: 'other' })).toBe(card)
+    card = applyAboutEvent(card, settled('r'))
+    expect(applyAboutEvent(card, stopped)).toBe(card)
   })
 })

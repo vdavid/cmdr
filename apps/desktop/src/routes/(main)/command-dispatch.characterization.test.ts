@@ -480,11 +480,14 @@ describe('characterization — entry-under-cursor arms', () => {
     expect(getInfo).toHaveBeenCalledExactlyOnceWith(ENTRY.path)
   })
 
-  it('file.tellMeAbout → startAbout(path, focused volume), about the cursor entry', async () => {
+  it('file.tellMeAbout → startAbout(path, focused volume, folder flag), about the cursor entry', async () => {
     const explorer = makeExplorerSpy()
-    explorer.getFileAndPathUnderCursor.mockReturnValue(ENTRY)
+    explorer.getFileAndPathUnderCursor.mockReturnValue({ ...ENTRY, isDirectory: true })
     await handleCommandExecute('file.tellMeAbout', makeCtx(explorer))
-    expect(m.startAbout).toHaveBeenCalledExactlyOnceWith(ENTRY.path, m.getVolumeId(), expect.any(Function))
+    expect(m.startAbout).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ path: ENTRY.path, volumeId: m.getVolumeId(), isDirectory: true }),
+      expect.any(Function),
+    )
   })
 
   it('file.copyCurrentDirectoryPath → copyToClipboard(focused pane path) + the copied-path toast', async () => {

@@ -342,7 +342,30 @@ fn a_download_reads_its_sources_time_and_app() {
             }]),
             downloaded_at: Some(0x6af6_442f),
             downloaded_by: Some(ItemText::new("Chrome")),
+            archive: None,
         })
+    );
+}
+
+/// An entry inside a zip says which archive it's in, with the archive's record
+/// when there is one and its absence when there isn't: never nothing.
+#[test]
+fn an_archive_entry_carries_the_archives_record_and_its_name() {
+    let record = download_fact(None, Some(b"0083;6af6442f;Safari;"));
+    let entry = Download::of_archive(ItemText::new("Photos.zip"), record);
+    let entry = entry.known().expect("an entry always names its archive");
+    assert_eq!(entry.archive, Some(ItemText::new("Photos.zip")));
+    assert_eq!(entry.downloaded_by, Some(ItemText::new("Safari")));
+
+    let none = Download::of_archive(ItemText::new("Photos.zip"), Fact::unknown(UnknownWhy::NoRecord));
+    let none = none.known().expect("an entry always names its archive");
+    assert_eq!(none.sources, Fact::unknown(UnknownWhy::NoRecord));
+    assert_eq!(none.downloaded_at, None);
+
+    let unasked = Download::of_archive(ItemText::new("Photos.zip"), Fact::Pending);
+    assert_eq!(
+        unasked.known().map(|download| download.sources.clone()),
+        Some(Fact::unknown(UnknownWhy::VolumeCantTell))
     );
 }
 

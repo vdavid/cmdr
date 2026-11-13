@@ -116,7 +116,12 @@ export interface ExplorerAPI {
    * Async because it RE-READS the row: the displayed cursor entry is one IPC behind
    * a cursor move or a row change, and a command that acts on the row can't be.
    */
-  getFileAndPathUnderCursor: () => Promise<{ path: string; filename: string; iconId: string } | null>
+  getFileAndPathUnderCursor: () => Promise<{
+    path: string
+    filename: string
+    iconId: string
+    isDirectory: boolean
+  } | null>
   /**
    * The path the "copy path" command copies: the cursor entry's path, or the pane's
    * own directory when the cursor sits on `..`. Null when no row is under the cursor.

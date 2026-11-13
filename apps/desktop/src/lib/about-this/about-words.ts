@@ -41,6 +41,7 @@ export const ROW_LABEL: Record<Exclude<FactKind, 'identity'>, MessageKey> = {
   recursiveSize: 'aboutThis.label.size',
   folderDigest: 'aboutThis.label.contents',
   appData: 'aboutThis.label.appData',
+  gitSnapshot: 'aboutThis.label.gitSnapshot',
 }
 
 export const UNKNOWN_WHY: Record<UnknownWhy, MessageKey> = {
@@ -52,6 +53,8 @@ export const UNKNOWN_WHY: Record<UnknownWhy, MessageKey> = {
   notIndexed: 'aboutThis.unknown.notIndexed',
   timedOut: 'aboutThis.unknown.timedOut',
   unreachable: 'aboutThis.unknown.unreachable',
+  volumeStoppedAnswering: 'aboutThis.unknown.volumeStoppedAnswering',
+  notFound: 'aboutThis.unknown.notFound',
   permissionDenied: 'aboutThis.unknown.permissionDenied',
   protected: 'aboutThis.unknown.protected',
   nodeChangedSince: 'aboutThis.unknown.nodeChangedSince',
@@ -66,6 +69,14 @@ export const ROW_UNKNOWN: Partial<Record<FactKind, Partial<Record<UnknownWhy, Me
   cmdrOperation: { noRecord: 'aboutThis.cmdrOperation.noRecord' },
   lastOpened: { noRecord: 'aboutThis.lastOpened.noRecord' },
   owner: { noRecord: 'aboutThis.owner.noReceipt', ambiguous: 'aboutThis.owner.ambiguous' },
+}
+
+/**
+ * A commit id as the file list shows it: the first seven characters (`SHORT_ID_LENGTH` in
+ * `file-explorer/views/full-list-utils.ts`). The whole id rides behind Copy.
+ */
+export function shortCommitId(id: string): string {
+  return id.slice(0, 7)
 }
 
 export const NOT_APPLICABLE_WHY: Record<NotApplicableWhy, MessageKey> = {

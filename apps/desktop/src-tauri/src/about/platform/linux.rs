@@ -60,8 +60,12 @@ impl XattrSyscalls for Linux {
 }
 
 pub(crate) fn download(path: &str) -> Fact<Download> {
-    let origin = read_capped::<Linux>(path, "user.xdg.origin.url", MAX_XATTR_BYTES).for_decoder(MAX_XATTR_BYTES);
-    let referrer = read_capped::<Linux>(path, "user.xdg.referrer.url", MAX_XATTR_BYTES).for_decoder(MAX_XATTR_BYTES);
+    download_record(&mut |name| read_capped::<Linux>(path, name, MAX_XATTR_BYTES).for_decoder(MAX_XATTR_BYTES))
+}
+
+pub(crate) fn download_record(read: super::ReadXattr<'_>) -> Fact<Download> {
+    let origin = read("user.xdg.origin.url");
+    let referrer = read("user.xdg.referrer.url");
     xdg_download_fact(origin.as_deref(), referrer.as_deref())
 }
 

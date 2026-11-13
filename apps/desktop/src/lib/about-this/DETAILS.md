@@ -11,6 +11,9 @@ id. Each `AboutEvent` folds in through `applyAboutEvent`:
 
 - `planned` sets the rows (once). Facts before it, or for a kind it doesn't list, are dropped.
 - `fact` sets one row and replaces `derived` (the headline and removal row as the backend recomputed them).
+- `volumeStoppedAnswering` turns the plan's volume note into its "stopped answering" words, in the slot the note already
+  had (a card reached through its volume always plans one), so nothing moves. The rows that were waiting land right
+  after as Routine one-liners ("No answer from the drive").
 - `factsSettled` and `unavailable` end the stream; nothing after them lands.
 - An event whose `requestId` isn't the card's is dropped, so a reopen on another item never shows the first item's
   facts. `openAboutThis` closes (and cancels) any card already up before it starts the next.
@@ -47,6 +50,12 @@ it later). `ModalDialog` with `resizable` and `growDownward`, 34 rem wide, at mo
   `file.tellMeAbout`'s handler). The name keeps its room and the muted "in …" gives way first.
 - **A collapsed section names a shared reason**: when every row is the same unknown other than `noRecord`, the line is
   that reason's words ("Not indexed yet"), else "Nothing on record" (`SectionView.collapsedWhy`).
+- **An archive's entry**: the download row's first line names the archive ("Inside the archive “Photos.zip”."), then
+  either the archive's own record under "What macOS recorded about the archive:" or the usual absence. The headline says
+  "inside Photos.zip", never the archive's site.
+- **A file in git's history** (`gitSnapshot`, Origin's first row): which branch, tag, commit (seven characters, the file
+  list's `SHORT_ID_LENGTH`, the full id behind Copy), or stash entry, the repo by its folder's name, and when a commit
+  last changed it.
 - **Rows are `<dl>` groups**: a label column (8.5 rem) and the answer. Identity draws its own lines (Size for a file,
   Modified, Created, Other names past one hard link, Points to for a link); a folder's size is the `recursiveSize` row,
   never its own entry size. The size on disk joins the size only when it differs by at least 1 MB and 10%

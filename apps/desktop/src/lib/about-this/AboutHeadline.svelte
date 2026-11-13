@@ -9,7 +9,7 @@
     import Trans from '#lib/intl/Trans.svelte'
     import Size from '#lib/ui/Size.svelte'
     import DateLabel from '#lib/ui/DateLabel.svelte'
-    import { KIND_LABEL } from './about-words'
+    import { KIND_LABEL, shortCommitId } from './about-words'
 
     interface Props {
         headline: Headline | null
@@ -54,7 +54,15 @@
         {@const lead = headline.lead}
         {@const bytes = headline.size?.bytes ?? null}
         {#snippet size(_content: Snippet)}<Size {bytes} />{/snippet}
-        {#if lead.template === 'downloadedFrom'}
+        {#if lead.template === 'insideArchive'}
+            <Trans key="aboutThis.headline.insideArchive" params={{ ...base, archive: lead.archive }} snippets={{ size }} />
+        {:else if lead.template === 'fromGitHistory'}
+            <Trans
+                key="aboutThis.headline.fromGitHistory"
+                params={{ ...base, kind: lead.kind, name: lead.kind === 'commit' ? shortCommitId(lead.name) : lead.name }}
+                snippets={{ size }}
+            />
+        {:else if lead.template === 'downloadedFrom'}
             {@const at = lead.at}
             {#snippet date(_content: Snippet)}<DateLabel modifiedAt={at} />{/snippet}
             <Trans

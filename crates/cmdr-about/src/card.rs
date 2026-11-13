@@ -10,7 +10,7 @@ use serde::Serialize;
 use crate::digest::{AppData, FolderDigest};
 use crate::fact::{AboutTarget, Fact, FactKind, UnknownWhy};
 use crate::owner::{OwnerClaim, OwnerQuestion};
-use crate::payload::{AppRef, Bundle, GitContext, Identity, Importance, RecursiveSize, Signature, Usage};
+use crate::payload::{AppRef, Bundle, GitContext, GitSnapshot, Identity, Importance, RecursiveSize, Signature, Usage};
 use crate::provenance::{CmdrOperation, Download};
 use crate::sniff::RealType;
 use crate::text::ItemText;
@@ -47,6 +47,8 @@ pub enum AboutFact {
     FolderDigest(Fact<FolderDigest>),
     /// What an app leaves in the Library.
     AppData(Fact<AppData>),
+    /// The git history a portal entry is a snapshot from.
+    GitSnapshot(Fact<GitSnapshot>),
 }
 
 impl AboutFact {
@@ -67,6 +69,7 @@ impl AboutFact {
             AboutFact::RecursiveSize(_) => FactKind::RecursiveSize,
             AboutFact::FolderDigest(_) => FactKind::FolderDigest,
             AboutFact::AppData(_) => FactKind::AppData,
+            AboutFact::GitSnapshot(_) => FactKind::GitSnapshot,
         }
     }
 
@@ -88,6 +91,7 @@ impl AboutFact {
             FactKind::RecursiveSize => AboutFact::RecursiveSize(Fact::unknown(why)),
             FactKind::FolderDigest => AboutFact::FolderDigest(Fact::unknown(why)),
             FactKind::AppData => AboutFact::AppData(Fact::unknown(why)),
+            FactKind::GitSnapshot => AboutFact::GitSnapshot(Fact::unknown(why)),
         }
     }
 }
@@ -189,6 +193,10 @@ pub struct PlanInput<'a> {
     /// Whether a git repo sits around it, from the host's look before the plan. An
     /// item outside every repo has no git row.
     pub in_a_repo: bool,
+    /// Whether the path is a `.git` portal entry: a snapshot from the repo's
+    /// history, not a file on the disk. It has a snapshot row and nothing of the
+    /// disk's (no download record, owner, or Cmdr operation of its own).
+    pub git_snapshot: bool,
 }
 
 /// A section of the card.
@@ -306,6 +314,7 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
         os,
         owner,
         in_a_repo,
+        git_snapshot,
     } = input;
     let owner_can_answer = match owner {
         OwnerQuestion::Nothing => false,
@@ -329,16 +338,17 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
         FactKind::Signature => signable && caps.system && os.code_signing && contents_local,
         // A symlink carries no record of its own, and an archive's entry answers with
         // the archive's.
-        FactKind::Download => target != Symlink && caps.download_record,
-        FactKind::CmdrOperation => target != ArchiveEntry && caps.operation_log,
+        FactKind::Download => target != Symlink && !git_snapshot && caps.download_record,
+        FactKind::CmdrOperation => target != ArchiveEntry && !git_snapshot && caps.operation_log,
         FactKind::LastOpened => matches!(target, File | AppBundle | Package) && caps.system && os.use_history,
         FactKind::DefaultApp => matches!(target, File | Package) && caps.system && os.default_app,
         FactKind::Importance => target == Folder && caps.index,
-        FactKind::Owner => target != ArchiveEntry && caps.system && owner_can_answer,
-        FactKind::Git => target != ArchiveEntry && caps.git && in_a_repo,
+        FactKind::Owner => target != ArchiveEntry && !git_snapshot && caps.system && owner_can_answer,
+        FactKind::Git => target != ArchiveEntry && !git_snapshot && caps.git && in_a_repo,
         FactKind::RecursiveSize => is_folder_like && caps.index,
         FactKind::FolderDigest => target == Folder && caps.index,
         FactKind::AppData => target == AppBundle && caps.index && caps.system,
+        FactKind::GitSnapshot => git_snapshot,
     };
 
     // A folder leads with what's inside, an app with what it is, a file with where it
@@ -378,7 +388,11 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
         .filter(|planned| planned.section == Section::Removal || !planned.kinds.is_empty())
         .collect();
 
-    let volume_note = if caps.answers_everything() {
+    // An archive's entry and a snapshot from git's history are views into one
+    // file or repo, not volumes: their own row says where they come from, and a
+    // note about what "the volume" answers would only confuse that.
+    let is_a_view = target == ArchiveEntry || git_snapshot;
+    let volume_note = if caps.answers_everything() || is_a_view {
         None
     } else {
         Some(VolumeNote {
@@ -400,7 +414,7 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
 /// A section's rows, top to bottom. Every kind sits in exactly one section.
 fn rows_of(section: Section) -> &'static [FactKind] {
     match section {
-        Section::Origin => &[FactKind::Download, FactKind::CmdrOperation],
+        Section::Origin => &[FactKind::GitSnapshot, FactKind::Download, FactKind::CmdrOperation],
         Section::Nature => &[
             FactKind::Identity,
             FactKind::RealType,
@@ -452,6 +466,8 @@ pub struct AboutCard {
     pub folder_digest: Option<Fact<FolderDigest>>,
     /// What an app leaves in the Library.
     pub app_data: Option<Fact<AppData>>,
+    /// The git history a portal entry is a snapshot from.
+    pub git_snapshot: Option<Fact<GitSnapshot>>,
 }
 
 impl AboutCard {
@@ -476,6 +492,7 @@ impl AboutCard {
             recursive_size: slot(plan, FactKind::RecursiveSize),
             folder_digest: slot(plan, FactKind::FolderDigest),
             app_data: slot(plan, FactKind::AppData),
+            git_snapshot: slot(plan, FactKind::GitSnapshot),
         }
     }
 
@@ -506,6 +523,7 @@ impl AboutCard {
             AboutFact::RecursiveSize(fact) => put(&mut self.recursive_size, fact),
             AboutFact::FolderDigest(fact) => put(&mut self.folder_digest, fact),
             AboutFact::AppData(fact) => put(&mut self.app_data, fact),
+            AboutFact::GitSnapshot(fact) => put(&mut self.git_snapshot, fact),
         }
     }
 
@@ -529,6 +547,7 @@ impl AboutCard {
             (FactKind::RecursiveSize, waits(&self.recursive_size)),
             (FactKind::FolderDigest, waits(&self.folder_digest)),
             (FactKind::AppData, waits(&self.app_data)),
+            (FactKind::GitSnapshot, waits(&self.git_snapshot)),
         ];
         waiting
             .into_iter()

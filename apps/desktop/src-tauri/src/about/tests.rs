@@ -15,16 +15,16 @@ use tokio_util::sync::CancellationToken;
 use super::event::AboutUpdate;
 use super::jobs::Sources;
 use super::probe::{Probe, probe};
-use super::route::{Reach, local_gathered, reach, remote_gathered};
+use super::route::{Way, local_gathered, reach};
 use super::session::{AboutSink, Gathered, Submit, Timing, run};
 use crate::test_support::{TestDir, wait_until};
 use crate::tools::resources::volumes::VolumeKind;
 
 /// Far longer than any step here takes.
-const LONG: Duration = Duration::from_secs(10);
+pub(super) const LONG: Duration = Duration::from_secs(10);
 
 #[derive(Default)]
-struct Recorder(Mutex<Vec<AboutUpdate>>);
+pub(super) struct Recorder(Mutex<Vec<AboutUpdate>>);
 
 impl AboutSink for Recorder {
     fn send(&self, update: AboutUpdate) -> bool {
@@ -37,11 +37,11 @@ impl AboutSink for Recorder {
 }
 
 impl Recorder {
-    fn updates(&self) -> Vec<AboutUpdate> {
+    pub(super) fn updates(&self) -> Vec<AboutUpdate> {
         self.0.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 
-    fn facts(&self) -> Vec<AboutFact> {
+    pub(super) fn facts(&self) -> Vec<AboutFact> {
         self.updates()
             .into_iter()
             .filter_map(|update| match update {
@@ -52,7 +52,7 @@ impl Recorder {
     }
 }
 
-fn on_threads() -> Submit {
+pub(super) fn on_threads() -> Submit {
     Arc::new(|task: Task| {
         std::thread::spawn(task);
     })
@@ -62,6 +62,7 @@ fn quick() -> Timing {
     Timing {
         grace: Duration::from_millis(100),
         row_budget: LONG,
+        volume_budget: LONG,
     }
 }
 
@@ -80,7 +81,7 @@ fn kinds(facts: &[AboutFact]) -> Vec<FactKind> {
     kinds
 }
 
-async fn gather(gathered: Gathered, timing: Timing) -> Arc<Recorder> {
+pub(super) async fn gather(gathered: Gathered, timing: Timing) -> Arc<Recorder> {
     let recorder = Arc::new(Recorder::default());
     let sink: Arc<dyn AboutSink> = Arc::clone(&recorder) as Arc<dyn AboutSink>;
     run(gathered, sink, CancellationToken::new(), on_threads(), timing).await;
@@ -88,14 +89,21 @@ async fn gather(gathered: Gathered, timing: Timing) -> Arc<Recorder> {
 }
 
 /// Every stream opens with the plan and closes with `factsSettled`, and every
-/// fact in between has a row in that plan, exactly once.
-fn assert_well_formed(updates: &[AboutUpdate]) {
+/// fact in between has a row in that plan, exactly once. A volume that stopped
+/// answering says so once, among them.
+pub(super) fn assert_well_formed(updates: &[AboutUpdate]) {
     let Some(AboutUpdate::Planned { plan, .. }) = updates.first() else {
         panic!("the first event is the plan: {updates:?}");
     };
     assert!(matches!(updates.last(), Some(AboutUpdate::FactsSettled)), "{updates:?}");
     let mut seen = Vec::new();
+    let mut stopped = 0;
     for update in &updates[1..updates.len() - 1] {
+        if matches!(update, AboutUpdate::VolumeStoppedAnswering) {
+            stopped += 1;
+            assert_eq!(stopped, 1, "a volume stops answering once: {updates:?}");
+            continue;
+        }
         let AboutUpdate::Fact { fact, .. } = update else {
             panic!("only facts sit between the plan and the end: {update:?}");
         };
@@ -273,40 +281,29 @@ fn a_symlink_is_about_the_link_and_reads_nothing_through_it() {
 
 // ── Routing ─────────────────────────────────────────────────────────────────
 
+/// Which way each volume kind is reached: only a live local disk reads locally,
+/// and a share the OS mounted is told from one Cmdr dials by whether its paths
+/// are the OS's own, never by its path.
 #[test]
-fn only_a_live_local_volume_is_read_locally() {
-    assert_eq!(reach(VolumeKind::Local, true), Reach::Local);
-    assert_eq!(reach(VolumeKind::Local, false), Reach::ThroughTheVolume);
+fn each_volume_kind_is_reached_its_own_way() {
+    assert_eq!(reach(VolumeKind::Local, true, true), Way::Local);
+    assert_eq!(reach(VolumeKind::Smb, true, true), Way::OsMountedShare);
+    assert_eq!(reach(VolumeKind::Network, true, true), Way::OsMountedShare);
     for kind in [
         VolumeKind::Smb,
         VolumeKind::Sftp,
         VolumeKind::Webdav,
         VolumeKind::S3,
-        VolumeKind::Mtp,
-        VolumeKind::Adb,
         VolumeKind::Network,
-        VolumeKind::Virtual,
     ] {
-        assert_eq!(reach(kind, true), Reach::ThroughTheVolume, "{kind:?}");
+        assert_eq!(reach(kind, true, false), Way::Server, "{kind:?}");
     }
-}
-
-#[test]
-fn an_item_on_a_share_answers_identity_alone_and_runs_no_local_job() {
-    let mut entry = cmdr_fs::entry::FileEntry::new(
-        "report.pdf".to_string(),
-        "/Volumes/naspi/report.pdf".to_string(),
-        false,
-        false,
-    );
-    entry.size = Some(2_048);
-    let gathered = remote_gathered(&entry, ItemText::new("naspi"));
-    assert!(gathered.jobs.is_empty());
-    assert_eq!(gathered.plan.kinds(), [FactKind::Identity]);
-    assert!(
-        gathered.plan.volume_note.is_some(),
-        "the card says once what the volume can't answer"
-    );
+    for kind in [VolumeKind::Mtp, VolumeKind::Adb, VolumeKind::Virtual] {
+        assert_eq!(reach(kind, true, false), Way::Device, "{kind:?}");
+    }
+    for kind in [VolumeKind::Local, VolumeKind::Smb, VolumeKind::Mtp] {
+        assert_eq!(reach(kind, false, true), Way::Offline, "{kind:?}");
+    }
 }
 
 /// A path whose volume said local, reached through a symlink into a share: the
@@ -438,6 +435,7 @@ async fn a_row_past_its_budget_lands_as_timed_out_and_its_late_answer_drops() {
     let timing = Timing {
         grace: Duration::from_millis(10),
         row_budget: Duration::from_millis(50),
+        volume_budget: LONG,
     };
     let recorder = gather(gathered, timing).await;
     started.recv_timeout(LONG).expect("the slow job started");
@@ -471,6 +469,7 @@ async fn a_cancel_that_beats_its_start_makes_the_start_send_nothing() {
             request_id,
             path: file.to_string_lossy().into_owned(),
             volume_id: None,
+            is_directory: false,
         },
         channel,
     )

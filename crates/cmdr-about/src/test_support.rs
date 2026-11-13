@@ -54,6 +54,7 @@ pub(crate) fn card(target: AboutTarget, extension: Option<&str>, caps: &VolumeCa
         os: &macos(),
         owner: &OwnerQuestion::Receipt,
         in_a_repo: true,
+        git_snapshot: false,
     }))
 }
 

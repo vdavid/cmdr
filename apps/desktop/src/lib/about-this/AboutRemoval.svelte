@@ -29,6 +29,7 @@
 {#snippet line(consequence: RemovalConsequence)}
     <li>
         {#if consequence.type === 'uncommittedWork'}{t('aboutThis.removal.uncommittedWork')}
+        {:else if consequence.type === 'holdsRepoHistory'}{t('aboutThis.removal.holdsRepoHistory')}
         {:else if consequence.type === 'untrackedNotInGit'}{t('aboutThis.removal.untrackedNotInGit')}
         {:else if consequence.type === 'ignoredByGit'}{t('aboutThis.removal.ignoredByGit')}
         {:else if consequence.type === 'userDocument'}{t('aboutThis.removal.userDocument')}
@@ -71,6 +72,7 @@
                 countText: formatInteger(consequence.others),
             })}
         {:else if consequence.type === 'linkOnly'}{t('aboutThis.removal.linkOnly')}
+        {:else if consequence.type === 'inGitHistory'}{t('aboutThis.removal.inGitHistory')}
         {:else}{t('aboutThis.removal.cantTell')}{/if}
     </li>
 {/snippet}

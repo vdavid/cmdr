@@ -15,6 +15,7 @@ fn plan_of(target: AboutTarget, extension: Option<&str>, caps: &VolumeCaps) -> A
         os: &macos(),
         owner: &OwnerQuestion::Receipt,
         in_a_repo: true,
+        git_snapshot: false,
     })
 }
 
@@ -154,7 +155,7 @@ fn a_mounted_share_answers_what_reads_and_cmdrs_own_stores_can() {
 #[test]
 fn a_phone_answers_identity_and_says_so_once() {
     let phone = phone();
-    for target in [File, Folder, AppBundle, Package, Symlink, ArchiveEntry] {
+    for target in [File, Folder, AppBundle, Package, Symlink] {
         let plan = plan_of(target, Some("dmg"), &phone);
         assert_eq!(
             sections(&plan),
@@ -195,6 +196,55 @@ fn an_archive_entry_answers_identity_and_the_archives_own_download_record() {
             (Section::Removal, vec![]),
         ]
     );
+    // The download row says which archive it's in, so no note says what "the
+    // volume" answers.
+    assert_eq!(plan_of(ArchiveEntry, Some("jpg"), &archive).volume_note, None);
+    assert_eq!(plan_of(ArchiveEntry, Some("jpg"), &phone()).volume_note, None);
+}
+
+fn snapshot_plan(target: AboutTarget, caps: &VolumeCaps) -> AboutPlan {
+    plan(PlanInput {
+        target,
+        extension: Some("rs"),
+        is_executable: false,
+        contents_local: false,
+        caps,
+        os: &macos(),
+        owner: &OwnerQuestion::Receipt,
+        in_a_repo: true,
+        git_snapshot: true,
+    })
+}
+
+/// A file in `.git/commits/<id>/` is git's record of it, not a file on the disk:
+/// its snapshot row leads, with nothing the disk would answer and no note.
+#[test]
+fn a_git_snapshot_entry_leads_with_its_snapshot_and_nothing_of_the_disks() {
+    let snapshot = VolumeCaps::identity_only(text("cmdr"));
+    for target in [File, Folder] {
+        let plan = snapshot_plan(target, &snapshot);
+        let expected = if target == Folder {
+            vec![
+                (Section::Nature, vec![K::Identity]),
+                (Section::Origin, vec![K::GitSnapshot]),
+                (Section::Removal, vec![]),
+            ]
+        } else {
+            vec![
+                (Section::Origin, vec![K::GitSnapshot]),
+                (Section::Nature, vec![K::Identity]),
+                (Section::Removal, vec![]),
+            ]
+        };
+        assert_eq!(sections(&plan), expected, "{target:?}");
+        assert_eq!(plan.volume_note, None);
+    }
+    // Whatever the host claims the volume answers, no row of the disk's appears.
+    let plan = snapshot_plan(File, &local());
+    for kind in [K::Download, K::CmdrOperation, K::Owner, K::Git] {
+        assert!(!plan.has(kind), "{kind:?}");
+    }
+    assert!(!plan_of(File, Some("rs"), &local()).has(K::GitSnapshot));
 }
 
 // ── The signature row ───────────────────────────────────────────────────────
@@ -211,6 +261,7 @@ fn a_signature_is_planned_only_for_what_can_carry_one() {
             os: &macos(),
             owner: &OwnerQuestion::Receipt,
             in_a_repo: true,
+            git_snapshot: false,
         })
         .has(K::Signature)
     };
@@ -254,6 +305,7 @@ fn an_os_without_use_history_or_signing_plans_neither_row_and_adds_no_note() {
         os: &linux,
         owner: &OwnerQuestion::Receipt,
         in_a_repo: true,
+        git_snapshot: false,
     });
     assert!(!plan.has(K::LastOpened));
     assert!(!plan.has(K::Signature));
@@ -275,6 +327,7 @@ fn an_online_only_file_plans_no_row_that_reads_its_bytes() {
         os: &macos(),
         owner: &OwnerQuestion::Receipt,
         in_a_repo: true,
+        git_snapshot: false,
     });
     assert!(!plan.has(K::RealType));
     assert!(!plan.has(K::Signature));
@@ -307,6 +360,7 @@ fn context_plan(owner: &OwnerQuestion, in_a_repo: bool, os: &OsCaps) -> AboutPla
         os,
         owner,
         in_a_repo,
+        git_snapshot: false,
     })
 }
 
@@ -356,6 +410,7 @@ fn every_plan() -> Vec<AboutPlan> {
                     os: &macos(),
                     owner: &OwnerQuestion::Receipt,
                     in_a_repo: true,
+                    git_snapshot: false,
                 }));
             }
         }

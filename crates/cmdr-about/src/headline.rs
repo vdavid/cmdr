@@ -11,7 +11,7 @@ use serde::Serialize;
 use crate::card::AboutCard;
 use crate::fact::{AboutTarget, Fact};
 use crate::owner::{Certainty, InstalledApp, OwnerClaim};
-use crate::payload::SizeCoverage;
+use crate::payload::{SizeCoverage, SnapshotKind};
 use crate::provenance::{LandedBy, WebSite, WhereFrom};
 use crate::sniff::{SniffedKind, TypeAgreement};
 use crate::text::ItemText;
@@ -72,6 +72,18 @@ pub struct HeadlineSize {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(tag = "template", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum HeadlineLead {
+    /// It sits inside an archive: for an entry, where it comes from.
+    InsideArchive {
+        /// The archive's name.
+        archive: ItemText,
+    },
+    /// It's git's record of an item at a point in the repo's history.
+    FromGitHistory {
+        /// Which part of the history.
+        kind: SnapshotKind,
+        /// The branch, tag, or stash entry's name, or a commit's full id.
+        name: ItemText,
+    },
     /// The OS recorded it as downloaded from a site.
     DownloadedFrom {
         /// The site's host name.
@@ -186,6 +198,17 @@ fn size(card: &AboutCard) -> Option<HeadlineSize> {
 }
 
 fn lead(card: &AboutCard) -> HeadlineLead {
+    if let Some(snapshot) = known(&card.git_snapshot) {
+        return HeadlineLead::FromGitHistory {
+            kind: snapshot.kind,
+            name: snapshot.name.clone(),
+        };
+    }
+    // An entry's download record is its archive's: the archive is the origin to
+    // name, and the site it came from is the row's to tell.
+    if let Some(archive) = known(&card.download).and_then(|download| download.archive.clone()) {
+        return HeadlineLead::InsideArchive { archive };
+    }
     let download = known(&card.download);
     let sources = download.and_then(|download| download.sources.known());
     let at = download.and_then(|download| download.downloaded_at);

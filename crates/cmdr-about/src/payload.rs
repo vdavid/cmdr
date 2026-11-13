@@ -261,6 +261,40 @@ pub struct GitContext {
     pub status: Fact<GitStatus>,
 }
 
+/// Where in git's history a `.git` portal entry is a snapshot from: what the path
+/// names (a branch, tag, commit, or stash entry) and when a commit last changed
+/// the entry there.
+///
+/// No author: naming one needs a per-entry read `cmdr-git` doesn't offer.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct GitSnapshot {
+    /// The repo whose history holds it.
+    pub repo_root: ItemText,
+    /// Which part of the history the path names.
+    pub kind: SnapshotKind,
+    /// The branch, tag, or stash entry's name, or a commit's full id (the card
+    /// shortens it).
+    pub name: ItemText,
+    /// When a commit last changed it, by the portal's date. `None`: the portal
+    /// gave no date.
+    pub last_changed: Option<i64>,
+}
+
+/// Which part of git's history a portal path names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum SnapshotKind {
+    /// A branch's latest commit.
+    Branch,
+    /// A tag's commit.
+    Tag,
+    /// One commit.
+    Commit,
+    /// A stash entry.
+    Stash,
+}
+
 /// An item's status in its repo.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(tag = "type", content = "state", rename_all = "camelCase")]

@@ -121,6 +121,12 @@ pub enum UnknownWhy {
     TimedOut,
     /// The volume stopped answering.
     Unreachable,
+    /// The item's volume stopped answering while the card was gathering. Routine:
+    /// the card's volume note says so once, at the top, so a sentence per row
+    /// would repeat it.
+    VolumeStoppedAnswering,
+    /// Nothing is at the path any more: it moved or went since the pane listed it.
+    NotFound,
     /// The OS refused the read.
     PermissionDenied,
     /// The path is one Cmdr doesn't read into.
@@ -144,10 +150,12 @@ impl UnknownWhy {
             | UnknownWhy::NotInStatus
             | UnknownWhy::NoInstalledAppMatches
             | UnknownWhy::VolumeCantTell
+            | UnknownWhy::VolumeStoppedAnswering
             | UnknownWhy::NotIndexed => Prominence::Routine,
             UnknownWhy::LibraryNameMatchesNoApp
             | UnknownWhy::TimedOut
             | UnknownWhy::Unreachable
+            | UnknownWhy::NotFound
             | UnknownWhy::PermissionDenied
             | UnknownWhy::Protected
             | UnknownWhy::NodeChangedSince
@@ -207,11 +215,13 @@ pub enum FactKind {
     FolderDigest,
     /// An app's folders in the Library, which removing the app leaves behind.
     AppData,
+    /// The git history a `.git` portal entry is a snapshot from.
+    GitSnapshot,
 }
 
 impl FactKind {
     /// Every kind, in declaration order.
-    pub const ALL: [FactKind; 14] = [
+    pub const ALL: [FactKind; 15] = [
         FactKind::Identity,
         FactKind::RealType,
         FactKind::Bundle,
@@ -226,6 +236,7 @@ impl FactKind {
         FactKind::RecursiveSize,
         FactKind::FolderDigest,
         FactKind::AppData,
+        FactKind::GitSnapshot,
     ];
 }
 
@@ -251,7 +262,7 @@ pub enum AboutTarget {
 mod tests {
     use super::*;
 
-    const ALL_WHYS: [UnknownWhy; 14] = [
+    const ALL_WHYS: [UnknownWhy; 16] = [
         UnknownWhy::NoRecord,
         UnknownWhy::NotInStatus,
         UnknownWhy::NoInstalledAppMatches,
@@ -260,6 +271,8 @@ mod tests {
         UnknownWhy::NotIndexed,
         UnknownWhy::TimedOut,
         UnknownWhy::Unreachable,
+        UnknownWhy::VolumeStoppedAnswering,
+        UnknownWhy::NotFound,
         UnknownWhy::PermissionDenied,
         UnknownWhy::Protected,
         UnknownWhy::NodeChangedSince,
@@ -284,6 +297,7 @@ mod tests {
                 UnknownWhy::NoInstalledAppMatches,
                 UnknownWhy::VolumeCantTell,
                 UnknownWhy::NotIndexed,
+                UnknownWhy::VolumeStoppedAnswering,
             ]
         );
     }

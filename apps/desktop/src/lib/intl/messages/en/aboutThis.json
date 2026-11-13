@@ -1119,5 +1119,76 @@
   "aboutThis.removal.less": "Show fewer",
   "@aboutThis.removal.less": {
     "description": "Button under \"What removing it means\" that hides the extra consequences again. No closing period."
+  },
+  "aboutThis.label.gitSnapshot": "Git history",
+  "@aboutThis.label.gitSnapshot": {
+    "description": "Row label on the \"Tell me about this\" card for an item inside git's history view (a file as it was in a branch, tag, commit, or stash entry), not a file on the disk. Short, sentence case."
+  },
+  "aboutThis.unknown.volumeStoppedAnswering": "No answer from the drive",
+  "@aboutThis.unknown.volumeStoppedAnswering": {
+    "description": "Muted one-line answer on a \"Tell me about this\" card row when the item's drive or server stopped answering while the card was gathering. A note at the top of the card already says so in a full sentence, so this stays short. No closing period."
+  },
+  "aboutThis.unknown.notFound": "It isn’t there anymore.",
+  "@aboutThis.unknown.notFound": {
+    "description": "Answer on a \"Tell me about this\" card row when the item moved or was removed after the file list showed it."
+  },
+  "aboutThis.download.insideArchive": "Inside the archive “{archive}”.",
+  "@aboutThis.download.insideArchive": {
+    "description": "First line of the \"Where it came from\" row on the \"Tell me about this\" card for a file inside a zip or other archive: the file has no download record of its own, so the row names the archive it sits in.",
+    "placeholders": {
+      "archive": { "description": "The archive's file name, exactly as it appears in the file list (\"Photos.zip\")." }
+    }
+  },
+  "aboutThis.download.archiveRecord": "{platform, select, macos {What macOS recorded about the archive:} other {What your browser recorded about the archive:}}",
+  "@aboutThis.download.archiveRecord": {
+    "description": "Quiet line on the \"Tell me about this\" card for a file inside an archive, right above the archive's own download record (where the archive was downloaded from). Makes clear the lines that follow are about the archive, not the file inside it.",
+    "placeholders": {
+      "platform": { "description": "The OS Cmdr runs on: macos or other." }
+    }
+  },
+  "aboutThis.gitSnapshot.from": "{kind, select, branch {As the branch {name} has it in <repo></repo>} tag {As the tag {name} has it in <repo></repo>} commit {As commit {name} has it in <repo></repo>} other {As stash entry {name} has it in <repo></repo>}}",
+  "@aboutThis.gitSnapshot.from": {
+    "description": "The \"Git history\" row on the \"Tell me about this\" card, for a file inside git's history view: which branch, tag, commit, or stash entry this version of the file comes from, and which repository. <repo></repo> becomes the repository's folder name.",
+    "placeholders": {
+      "kind": { "description": "branch, tag, commit, or other (a stash entry)." },
+      "name": {
+        "description": "The branch or tag name, a commit's short id (\"1a2b3c4\"), or the stash entry's number."
+      }
+    }
+  },
+  "aboutThis.gitSnapshot.lastChanged": "Last changed by a commit on <date></date>",
+  "@aboutThis.gitSnapshot.lastChanged": {
+    "description": "Quiet second line of the \"Git history\" row on the \"Tell me about this\" card: when a commit last changed this file in that branch or commit. <date></date> becomes a date. No closing period."
+  },
+  "aboutThis.gitSnapshot.copyCommit": "Copy the commit’s id",
+  "@aboutThis.gitSnapshot.copyCommit": {
+    "description": "Tooltip and screen-reader label of the copy button beside a commit on the \"Tell me about this\" card. Copies the commit's full id."
+  },
+  "aboutThis.headline.insideArchive": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, inside {archive}",
+  "@aboutThis.headline.insideArchive": {
+    "description": "One-line summary at the top of the \"Tell me about this\" card for a file inside an archive, for example \"Image, 2 MB, inside Photos.zip\". <size></size> becomes a size.",
+    "placeholders": {
+      "what": { "description": "What the item is, already worded (\"Image\", \"Folder\", \"Item in an archive\")." },
+      "sizeShown": { "description": "Whether a size follows: exact, atLeast, or other (no size)." },
+      "archive": { "description": "The archive's file name, exactly as it appears in the file list." }
+    }
+  },
+  "aboutThis.headline.fromGitHistory": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {kind, select, branch {as the branch {name} has it} tag {as the tag {name} has it} commit {as commit {name} has it} other {as stash entry {name} has it}}",
+  "@aboutThis.headline.fromGitHistory": {
+    "description": "One-line summary at the top of the \"Tell me about this\" card for a file inside git's history view, for example \"Swift file, 4 KB, as commit 1a2b3c4 has it\". <size></size> becomes a size.",
+    "placeholders": {
+      "what": { "description": "What the item is, already worded (\"Image\", \"Folder\", \"Item in an archive\")." },
+      "sizeShown": { "description": "Whether a size follows: exact, atLeast, or other (no size)." },
+      "kind": { "description": "branch, tag, commit, or other (a stash entry)." },
+      "name": { "description": "The branch or tag name, a commit's short id, or the stash entry's number." }
+    }
+  },
+  "aboutThis.removal.holdsRepoHistory": "It holds the repository’s whole history. Removing it leaves the files but drops every commit that isn’t pushed somewhere else, and Cmdr can’t tell what’s pushed.",
+  "@aboutThis.removal.holdsRepoHistory": {
+    "description": "One line under \"What removing it means\" on the \"Tell me about this\" card, for a repository's own data folder (\".git\"). A consequence, never advice."
+  },
+  "aboutThis.removal.inGitHistory": "This is git’s record of it at that point in history, not a file on the disk, so there’s nothing to remove here.",
+  "@aboutThis.removal.inGitHistory": {
+    "description": "The line under \"What removing it means\" on the \"Tell me about this\" card for a file inside git's history view (a past version kept by git). A fact, never advice."
   }
 }

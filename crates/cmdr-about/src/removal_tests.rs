@@ -2,6 +2,7 @@ use super::*;
 use crate::card::AboutFact;
 use crate::digest::LibraryFolder;
 use crate::payload::{Identity, SizeCoverage};
+use crate::provenance::Download;
 use crate::test_support::{
     card, chrome_download, digest, git, identity, land, land_no_records, local, mounted_share, owned_by_id, phone,
     text, total,
@@ -96,7 +97,64 @@ fn an_archive_entry_cant_tell() {
     assert_eq!(all(&entry), [R::CantTell]);
 }
 
+/// The zip was downloaded from a site; its entry wasn't, and nothing says the
+/// site still offers that one file: the entry's row never names the site.
+#[test]
+fn an_archive_entry_never_claims_the_archives_download_as_its_own() {
+    let archive = crate::card::VolumeCaps {
+        download_record: true,
+        ..crate::card::VolumeCaps::identity_only(text("Photos.zip"))
+    };
+    let mut entry = card(ArchiveEntry, Some("jpg"), &archive);
+    land(&mut entry, identity("a.jpg", 1_000));
+    let AboutFact::Download(record) = chrome_download("https://example.com/Photos.zip") else {
+        unreachable!("chrome_download is a download")
+    };
+    land(
+        &mut entry,
+        AboutFact::Download(Download::of_archive(text("Photos.zip"), record)),
+    );
+    assert_eq!(all(&entry), [R::CantTell]);
+}
+
+/// A drive that stopped answering is no evidence the item is the person's own.
+#[test]
+fn rows_the_volume_never_answered_are_no_evidence() {
+    let mut on_share = card(File, Some("txt"), &mounted_share());
+    land(&mut on_share, identity("Notes.txt", 2_000));
+    on_share.settle_pending(UnknownWhy::VolumeStoppedAnswering);
+    assert_eq!(all(&on_share), [R::CantTell]);
+}
+
 // ── Git ─────────────────────────────────────────────────────────────────────
+
+/// A repository's `.git` is its history: removing it drops every commit not
+/// pushed elsewhere, which outranks anything else the folder says.
+#[test]
+fn a_repos_own_data_says_it_holds_the_history() {
+    let card = settled_folder(vec![digest(FolderClass::VersionControl)]);
+    assert_eq!(all(&card)[0], R::HoldsRepoHistory);
+    assert!(!all(&card).contains(&R::UserDocument));
+}
+
+/// A file inside `.git/commits/<id>/` is git's record of it: that's the one line.
+#[test]
+fn a_snapshot_from_git_history_says_only_that() {
+    let mut snapshot = AboutCard::new(&crate::card::plan(crate::card::PlanInput {
+        target: File,
+        extension: Some("rs"),
+        is_executable: false,
+        contents_local: false,
+        caps: &crate::card::VolumeCaps::identity_only(text("cmdr")),
+        os: &crate::test_support::macos(),
+        owner: &crate::owner::OwnerQuestion::Nothing,
+        in_a_repo: false,
+        git_snapshot: true,
+    }));
+    assert_eq!(all(&snapshot), [R::InGitHistory]);
+    land(&mut snapshot, identity("main.rs", 1_000));
+    assert_eq!(all(&snapshot), [R::InGitHistory]);
+}
 
 #[test]
 fn git_says_what_it_can_and_cant_bring_back() {
@@ -387,6 +445,7 @@ fn consequences_come_most_painful_first_and_two_are_shown() {
 fn no_consequence_is_a_green_light() {
     let every = [
         R::UncommittedWork,
+        R::HoldsRepoHistory,
         R::UntrackedNotInGit,
         R::IgnoredByGit,
         R::UserDocument,
@@ -416,6 +475,7 @@ fn no_consequence_is_a_green_light() {
         R::RegeneratedCache { app: None },
         R::OtherNamesRemain { others: 1 },
         R::LinkOnly,
+        R::InGitHistory,
         R::CantTell,
     ];
     let ranks: Vec<u8> = every.iter().map(R::rank).collect();

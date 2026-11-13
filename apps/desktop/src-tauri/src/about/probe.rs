@@ -8,7 +8,7 @@
 use std::io::ErrorKind;
 use std::path::Path;
 
-use cmdr_about::fact::{AboutTarget, Fact, UnknownWhy};
+use cmdr_about::fact::{AboutTarget, Fact};
 use cmdr_about::payload::Identity;
 use cmdr_about::text::ItemText;
 use cmdr_fs::file_extension::{is_listed_package, needs_package_lookup};
@@ -34,11 +34,10 @@ pub(crate) struct Probe {
     pub(crate) on_local_disk: bool,
     pub(crate) identity: Fact<Identity>,
     /// Which node the item is, off the same `lstat`: what Cmdr's own history is
-    /// asked about. `None` for an archive's entry, and on a filesystem that keeps
-    /// no birth time.
+    /// asked about. `None` on a filesystem that keeps no birth time.
     pub(crate) node: Option<NodeIdentity>,
     /// The git repo around it, looked for here so the plan knows whether it has a
-    /// git row. Only on a local disk, never for an archive's entry.
+    /// git row. Only on a local disk.
     pub(crate) repo: RepoAround,
 }
 
@@ -47,7 +46,7 @@ pub(crate) fn probe(path: &str) -> Result<Probe, AboutUnavailable> {
     let fs_path = Path::new(path);
     let metadata = match std::fs::symlink_metadata(fs_path) {
         Ok(metadata) => metadata,
-        Err(error) => return inside_an_archive(fs_path).ok_or_else(|| unavailable(&error)),
+        Err(error) => return Err(unavailable(&error)),
     };
     let name = fs_path
         .file_name()
@@ -76,24 +75,6 @@ fn extension_of(name: &str) -> Option<String> {
     Path::new(name)
         .extension()
         .map(|extension| extension.to_string_lossy().into_owned())
-}
-
-/// An entry inside an archive: the path isn't a real file, and an archive on this
-/// disk holds it. Its facts come from the archive's own listing, which the card
-/// doesn't read yet, so it says what it can't tell.
-fn inside_an_archive(path: &Path) -> Option<Probe> {
-    let (archive, _inner) = cmdr_archive::confirm_archive_boundary(path)?;
-    let name = path.file_name()?.to_string_lossy().into_owned();
-    Some(Probe {
-        target: AboutTarget::ArchiveEntry,
-        extension: extension_of(&name),
-        is_executable: false,
-        contents_local: false,
-        on_local_disk: sits_on_a_local_disk(&archive.to_string_lossy()),
-        identity: Fact::unknown(UnknownWhy::VolumeCantTell),
-        node: None,
-        repo: RepoAround::None,
-    })
 }
 
 fn unavailable(error: &std::io::Error) -> AboutUnavailable {
@@ -129,7 +110,7 @@ fn target_of(path: &Path, name: &str, metadata: &std::fs::Metadata) -> AboutTarg
 
 /// Whether the mount `path` sits on is a local disk, by the mount table's own
 /// answer. A path the mount table can't place reads as not local.
-fn sits_on_a_local_disk(path: &str) -> bool {
+pub(crate) fn sits_on_a_local_disk(path: &str) -> bool {
     crate::volumes::get_mount_point(path).is_some_and(|(_mount_point, fs_type, source)| {
         cmdr_fs::filesystem_kind::mount_is_local_disk(Some(&source), Some(&fs_type))
     })
