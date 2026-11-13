@@ -167,6 +167,11 @@ output: `docs/i18n/termbase.md` § Tooling; the translator-facing rules: `docs/i
   `platformPluralDetail`) plus `frozenMacosIssue` from the macOS baseline lib, so it can't disagree with
   `i18n:check-locale`. Files are written in the shape `sync-locale-keys.ts` writes (`JSON.stringify`, two spaces),
   through a temp file and a rename.
+- **`i18n-apply-terms.ts`** (+ `-lib.ts`, `pnpm i18n:apply-terms`): patches `terms.json`, `concepts.json`, or a
+  `concepts-proposed.json` and validates the result with `i18n-check-termbase.ts`'s own validators, refusing only the
+  problems the patch adds. Writes through `JSON.stringify` then oxfmt, which reproduces an oxfmt-formatted termbase byte
+  for byte (verified on every `terms.json` and `concepts.json`, 2026-11-13), so only the patched lines move. New IDs go
+  last: the files aren't sorted, and the homemade scripts that re-sorted them churned hundreds of lines.
 - **`i18n-repo-lib.ts`**: git, the main clone (from `--git-common-dir`, so a worktree finds the pile without anyone
   naming the main clone's path), each tag's pile folders (`pt` → `pt-BR`), `--changed-since`'s merge-base English, and
   one-key-per-line list files. Every i18n CLI goes through it.

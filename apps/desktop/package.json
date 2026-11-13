@@ -52,6 +52,7 @@
     "i18n:check-mechanics": "node scripts/i18n-check-mechanics.ts",
     "i18n:brief": "node scripts/i18n-brief.ts",
     "i18n:apply": "node scripts/i18n-apply.ts",
+    "i18n:apply-terms": "node scripts/i18n-apply-terms.ts",
     "analytics:defaults": "node scripts/gen-analytics-defaults.ts",
     "marketing:shots": "node scripts/marketing-shots.ts",
     "marketing:clips": "node scripts/marketing-clips.ts",

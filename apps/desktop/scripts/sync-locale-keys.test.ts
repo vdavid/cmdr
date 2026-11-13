@@ -228,6 +228,17 @@ describe('parseSyncArgs', () => {
     })
   })
 
+  it('reads --restamp-file lists (one key per line, # comments) and merges them with --restamp', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cmdr-i18n-restamp-file-'))
+    const list = join(dir, 'keys.txt')
+    writeFileSync(list, '# batch\na.two\n\na.three\n', 'utf8')
+    expect(parseSyncArgs(['--restamp', 'a.one', '--restamp', 'a.two', '--restamp-file', list, 'de'])).toMatchObject({
+      restampKeys: ['a.one', 'a.two', 'a.three'],
+      tags: ['de'],
+    })
+    rmSync(dir, { recursive: true, force: true })
+  })
+
   it('defaults to no tags, no root, and no restamps', () => {
     expect(parseSyncArgs([])).toEqual({ tags: [], messagesRoot: undefined, restampKeys: [] })
   })

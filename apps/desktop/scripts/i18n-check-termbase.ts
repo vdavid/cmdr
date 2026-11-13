@@ -413,7 +413,7 @@ export interface TermbaseOutcome {
 }
 
 /** Every `##` / `###` heading of a locale's `decisions.md`. */
-function decisionHeadings(tag: string, docsRoot?: string): Set<string> {
+export function decisionHeadings(tag: string, docsRoot?: string): Set<string> {
   const markdown = readTextIfPresent(decisionsPath(tag, docsRoot))
   return new Set(markdown === undefined ? [] : parseDecisions(markdown).map((section) => section.heading))
 }
@@ -424,7 +424,12 @@ function decisionHeadings(tag: string, docsRoot?: string): Set<string> {
  * excuses nothing today and would silently excuse the key again if the English
  * ever matched, so it's an error: drop it, or fix the concept.
  */
-function staleExceptionErrors(tag: string, terms: Termbase, concepts: Concepts, en: Record<string, string>): string[] {
+export function staleExceptionErrors(
+  tag: string,
+  terms: Termbase,
+  concepts: Concepts,
+  en: Record<string, string>,
+): string[] {
   const matchers = compileConcepts(concepts)
   const errors: string[] = []
   for (const [id, term] of Object.entries(terms)) {

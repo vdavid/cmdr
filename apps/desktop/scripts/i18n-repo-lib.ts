@@ -7,7 +7,7 @@
  * everywhere.
  */
 
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { BASE_LOCALE, mergeCatalogFiles, readLocaleFiles, resolveMessagesRoot } from './i18n-catalog-lib.ts'
@@ -86,6 +86,19 @@ export function englishAt(ref: string, messagesRoot?: string): Record<string, st
 /** A list file's entries: one per line, trimmed, blank lines and `#` comments skipped. */
 export function readListFile(path: string): string[] {
   return parseList(readFileSync(path, 'utf8'))
+}
+
+/**
+ * Restores the house JSON shape after a `JSON.stringify` rewrite: oxfmt keeps
+ * short arrays and objects inline where `JSON.stringify` expands them, and
+ * stringify-then-oxfmt reproduces an oxfmt-formatted file byte for byte, so only
+ * the edited lines move.
+ * @returns whether oxfmt exited cleanly
+ */
+export function formatJson(paths: readonly string[]): boolean {
+  if (paths.length === 0) return true
+  const desktopDir = join(import.meta.dirname, '..')
+  return spawnSync('pnpm', ['exec', 'oxfmt', ...paths], { cwd: desktopDir, stdio: 'ignore' }).status === 0
 }
 
 /** `readListFile` over text already in hand. */

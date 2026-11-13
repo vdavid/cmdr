@@ -56,14 +56,14 @@
  *
  * Run: node scripts/sync-locale-keys.ts <tag> [<tag> …]   (omit tags = every non-en locale)
  * Pass `--messages-root <dir>` to point at a fixture, `--restamp <key>` to refresh
- * one key's stored hash across the synced locales and the overlays' forks. A tag
- * that isn't a locale dir is refused.
+ * one key's stored hash across the synced locales and the overlays' forks, and
+ * `--restamp-file <file>` for a list of them (one key per line, `#` comments). A
+ * tag that isn't a locale dir is refused. A translator's own batch needs neither:
+ * `pnpm i18n:apply` stamps what it writes.
  */
 
-import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 import {
   BASE_LOCALE,
@@ -77,6 +77,7 @@ import {
   sourceHash,
 } from './i18n-catalog-lib.ts'
 import { termsPath } from './i18n-termbase-lib.ts'
+import { formatJson, readListFile } from './i18n-repo-lib.ts'
 
 /**
  * `@key` fields that vouch for one specific English value and so can't outlive it:
@@ -247,8 +248,9 @@ export interface SyncArgs {
 }
 
 /**
- * Parses the CLI arguments: positional locale tags, `--messages-root <dir>`, and a
- * repeatable `--restamp <key>`.
+ * Parses the CLI arguments: positional locale tags, `--messages-root <dir>`, a
+ * repeatable `--restamp <key>`, and a repeatable `--restamp-file <file>` (one key
+ * per line), deduplicated together.
  * @param argv `process.argv.slice(2)`
  */
 export function parseSyncArgs(argv: string[]): SyncArgs {
@@ -257,10 +259,16 @@ export function parseSyncArgs(argv: string[]): SyncArgs {
     options: {
       'messages-root': { type: 'string' },
       restamp: { type: 'string', multiple: true },
+      'restamp-file': { type: 'string', multiple: true },
     },
     allowPositionals: true,
   })
-  return { tags: positionals, messagesRoot: values['messages-root'], restampKeys: values.restamp ?? [] }
+  const fromFiles = (values['restamp-file'] ?? []).flatMap((path) => readListFile(path))
+  return {
+    tags: positionals,
+    messagesRoot: values['messages-root'],
+    restampKeys: [...new Set([...(values.restamp ?? []), ...fromFiles])],
+  }
 }
 
 /**
@@ -388,11 +396,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     rewrittenTermbases.push(termsPath(tag))
     console.log(`Dropped ${tag} termbase exceptions naming deleted keys: ${dropped.join(', ')}.`)
   }
-  if (rewrittenTermbases.length > 0) {
-    // JSON.stringify expands what oxfmt keeps inline; restore the house shape.
-    const desktopDir = join(dirname(fileURLToPath(import.meta.url)), '..')
-    const fmt = spawnSync('pnpm', ['exec', 'oxfmt', ...rewrittenTermbases], { cwd: desktopDir, stdio: 'inherit' })
-    if (fmt.status !== 0) console.warn('  warning: oxfmt did not exit cleanly; run `pnpm exec oxfmt` on the termbases.')
+  // JSON.stringify expands what oxfmt keeps inline; restore the house shape.
+  if (!formatJson(rewrittenTermbases)) {
+    console.warn('  warning: oxfmt did not exit cleanly; run `pnpm exec oxfmt` on the termbases.')
   }
   for (const key of restampKeys) {
     if (!restampedAnywhere.has(key)) {
