@@ -112,7 +112,7 @@ export function classifySystemShortcut(combo: string): SystemConflict | null {
 
 /**
  * The banner copy for a system-owned combo, like
- * `⌘Space is usually taken by macOS (Spotlight), so it may never reach Cmdr. …`, or on Linux
+ * `⌘Space is usually taken by macOS (Spotlight), so the shortcut may never reach Cmdr. …`, or on Linux
  * `On KDE Plasma and Xfce, the desktop usually takes Ctrl+F3 for itself, …`. Each owner has its
  * own sentence: what's reserved, who reserves it, and where to free it differ per OS.
  */

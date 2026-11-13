@@ -246,7 +246,7 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "Schermvullende weergave aan/uit",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Schermvullende weergave aan/uit} windows {Schermvullende weergave aan/uit} other {Toggle full screen mode}}",
   "@commands.viewToggleFullScreen.label": {
     "sourceHash": "57789cb"
   },

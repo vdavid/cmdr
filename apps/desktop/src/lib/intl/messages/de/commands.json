@@ -244,7 +244,7 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "Vollbildmodus ein-/ausschalten",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Vollbildmodus ein-/ausschalten} windows {Vollbildmodus ein-/ausschalten} other {Toggle full screen mode}}",
   "@commands.viewToggleFullScreen.label": {
     "sourceHash": "57789cb"
   },

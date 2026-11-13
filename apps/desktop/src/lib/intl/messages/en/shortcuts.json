@@ -72,7 +72,7 @@
   },
   "shortcuts.scope.searchDialog": "Search and Select files",
   "@shortcuts.scope.searchDialog": {
-    "description": "Group heading in the Keyboard shortcuts list for keys that work inside the two query dialogs: Search (finds files on the drive) and Select files (selects files in a pane by a pattern). Use the same words as those dialogs' titles (search.dialog.title, selection.dialog.title.add). A short section title.",
+    "description": "Group heading in the Keyboard shortcuts list for keys that work inside the two query dialogs: Search (finds files on the drive) and Select files (selects files in a pane by a pattern). A short section title, at most about 40 characters. Reuse the words of those dialogs' titles (search.dialog.title, selection.dialog.title.add) where they join naturally. Where they don't (for example one title is a noun and the other a verb phrase), a short noun heading that names both is fine, such as \"Search and file selection\".",
     "screenshot": "settings-keyboard-shortcuts.png",
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
@@ -174,9 +174,9 @@
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
-  "shortcuts.conflict.systemShortcut": "{combo} is usually taken by macOS ({label}), so it may never reach Cmdr. You can free it up in System Settings > Keyboard.",
+  "shortcuts.conflict.systemShortcut": "{combo} is usually taken by macOS ({label}), so the shortcut may never reach Cmdr. You can free it up in System Settings > Keyboard.",
   "@shortcuts.conflict.systemShortcut": {
-    "description": "Soft warning when the user assigns a shortcut macOS usually uses for a system feature; they can still keep it. Shown on macOS only (Windows and Linux have their own sentences). \"Cmdr\" and \"macOS\" are names; do not translate them. \"System Settings > Keyboard\" is a macOS settings path; reuse the localized macOS wording for that screen.",
+    "description": "Soft warning when the user assigns a shortcut macOS usually uses for a system feature; they can still keep it. Shown on macOS only (Windows and Linux have their own sentences). \"Cmdr\" and \"macOS\" are names; do not translate them. \"System Settings > Keyboard\" is a macOS settings path; reuse the localized macOS wording for that screen. \"The shortcut\" refers back to {combo}: name it with a noun in your language (avoid a pronoun pointing at {combo}), so the words around it can agree.",
     "placeholders": {
       "combo": "the key combination the user pressed, shown as glyphs (e.g. ⌘Space)",
       "label": "the macOS feature that usually uses this combination (e.g. Spotlight)"
@@ -185,9 +185,9 @@
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
-  "shortcuts.conflict.takenByWindows": "{combo} is usually taken by Windows ({label}), so it may never reach Cmdr.",
+  "shortcuts.conflict.takenByWindows": "{combo} is usually taken by Windows ({label}), so the shortcut may never reach Cmdr.",
   "@shortcuts.conflict.takenByWindows": {
-    "description": "Soft warning on Windows when the user assigns a shortcut Windows itself uses (for example Alt+Tab or Ctrl+Shift+Esc); they can still keep it with a \"Use anyway\" button. Shown on Windows only. \"Cmdr\" and \"Windows\" are names; do not translate them.",
+    "description": "Soft warning on Windows when the user assigns a shortcut Windows itself uses (for example Alt+Tab or Ctrl+Shift+Esc); they can still keep it with a \"Use anyway\" button. Shown on Windows only. \"Cmdr\" and \"Windows\" are names; do not translate them. \"The shortcut\" refers back to {combo}: name it with a noun in your language (avoid a pronoun pointing at {combo}), so the words around it can agree.",
     "placeholders": {
       "combo": "the key combination the user pressed, as Windows key names (e.g. Ctrl+Shift+Esc)",
       "label": "the Windows feature that usually uses this combination, lowercase mid-sentence unless it's a name (e.g. switching apps, Task Manager)"
@@ -196,9 +196,9 @@
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
-  "shortcuts.conflict.takenByLinuxDesktops": "On {desktops}, the desktop usually takes {combo} for itself, so it may never reach Cmdr. You can free it up in your desktop’s keyboard settings.",
+  "shortcuts.conflict.takenByLinuxDesktops": "On {desktops}, the desktop usually takes {combo} for itself, so the shortcut may never reach Cmdr. You can free it up in your desktop’s keyboard settings.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "description": "Soft warning on Linux when the user assigns a shortcut that some common Linux desktops use for themselves; they can still keep it with a \"Use anyway\" button, since they may run a different desktop or have changed the key. Shown on Linux only. Word it so it reads right for one desktop or several. \"Cmdr\" is the product name; do not translate it.",
+    "description": "Soft warning on Linux when the user assigns a shortcut that some common Linux desktops use for themselves; they can still keep it with a \"Use anyway\" button, since they may run a different desktop or have changed the key. Shown on Linux only. Word it so it reads right for one desktop or several. \"Cmdr\" is the product name; do not translate it. \"The shortcut\" refers back to {combo}: name it with a noun in your language (avoid a pronoun pointing at {combo}), so the words around it can agree.",
     "placeholders": {
       "desktops": "the names of every Linux desktop that takes this key, already joined as a list in your language (e.g. “KDE Plasma, Xfce, and Cinnamon” or just “Ubuntu”). The names (GNOME, KDE Plasma, Xfce, Cinnamon, Ubuntu) are proper nouns and stay untranslated",
       "combo": "the key combination the user pressed, as Linux key names (e.g. Alt+F1)"
@@ -207,9 +207,9 @@
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
-  "shortcuts.conflict.opensMenuBarMenu": "{combo} opens the {menu} menu in Cmdr’s menu bar, so it won’t reach this command unless a dialog is open.",
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} opens the {menu} menu in Cmdr’s menu bar, so the shortcut won’t reach this command unless a dialog is open.",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "description": "Soft warning on Linux when the user assigns Alt plus a letter that a menu bar title underlines (pressing it opens that menu) to a command that runs outside dialogs, so the menu takes the key first. They can still keep it with a \"Use anyway\" button, since the key works while a dialog is open. Shown on Linux only. Same register as the other \"usually taken\" warnings. \"Cmdr\" is the product name; do not translate it.",
+    "description": "Soft warning on Linux when the user assigns Alt plus a letter that a menu bar title underlines (pressing it opens that menu) to a command that runs outside dialogs, so the menu takes the key first. They can still keep it with a \"Use anyway\" button, since the key works while a dialog is open. Shown on Linux only. Same register as the other \"usually taken\" warnings. \"Cmdr\" is the product name; do not translate it. \"The shortcut\" refers back to {combo}: name it with a noun in your language (avoid a pronoun pointing at {combo}), so the words around it can agree.",
     "placeholders": {
       "combo": "the key combination the user pressed, as Linux key names (e.g. Alt+F)",
       "menu": "the menu bar title the key opens, already in your language (e.g. File)"
@@ -325,7 +325,7 @@
 
   "shortcuts.system.windowMenu": "the window menu",
   "@shortcuts.system.windowMenu": {
-    "description": "What Windows uses Alt+Space for (the active window's shortcut menu with Restore, Move, Minimize, Close), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Lowercase because it appears mid-sentence; use the name Windows gives that menu in your language.",
+    "description": "What Windows uses Alt+Space for (the active window's shortcut menu with Restore, Move, Minimize, Close), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Lowercase because it appears mid-sentence. Windows never titles this menu (Microsoft’s keyboard-shortcut help describes it as the shortcut menu for the active window, and \"system menu\" is a developer term), so write a short descriptive phrase a Windows user would recognize, like the English.",
     "screenshot": "settings-keyboard-shortcuts.png",
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
@@ -353,14 +353,14 @@
 
   "shortcuts.system.securityScreen": "the security screen",
   "@shortcuts.system.securityScreen": {
-    "description": "What Windows uses Ctrl+Alt+Delete for (the full-screen menu with Lock, Switch user, Sign out, and Task Manager), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Lowercase because it appears mid-sentence.",
+    "description": "What Windows uses Ctrl+Alt+Delete for (the full-screen menu with Lock, Switch user, Sign out, and Task Manager), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Lowercase because it appears mid-sentence. Windows never titles this screen, so write a short descriptive phrase a Windows user would recognize, like the English.",
     "screenshot": "settings-keyboard-shortcuts.png",
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
   "shortcuts.system.inputMethodToggle": "turning an input method on or off",
   "@shortcuts.system.inputMethodToggle": {
-    "description": "What Windows uses Ctrl+Space for (turning a Chinese input method editor, IME, on or off), shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Lowercase because it appears mid-sentence.",
+    "description": "What Windows uses Ctrl+Space for, shown in parentheses inside a Windows shortcut-conflict warning. Windows only. Lowercase because it appears mid-sentence. \"Input method\" is Windows’ input method editor (IME), the tool for typing Chinese and similar scripts (Microsoft’s keyboard-shortcut help: \"Turn the Chinese input method editor (IME) on or off\"); use the term your language’s Windows uses for it.",
     "screenshot": "settings-keyboard-shortcuts.png",
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },

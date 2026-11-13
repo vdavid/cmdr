@@ -2562,7 +2562,7 @@
   },
   "fileExplorer.quickLookHint.quickView": "In Cmdr, you can trigger Quick Look via <key></key>. (<key></key> works in Finder, too, btw!)",
   "@fileExplorer.quickLookHint.quickView": {
-    "description": "Third line of the Finder-convert toast, telling the user the Cmdr shortcut for Quick Look (the macOS preview feature; use the name your language’s macOS shows). Each <key></key> tag wraps an inline chip showing the same Quick Look shortcut (it appears twice). \"Cmdr\"/\"Finder\" are app names; \"btw\" is casual for \"by the way\". Keep both chips in the sentence.",
+    "description": "Third line of the Finder-convert toast, telling the user the Cmdr shortcut for Quick Look (the macOS preview feature; use the name your language’s macOS shows). Each <key></key> tag wraps an inline chip showing the same Quick Look shortcut (it appears twice). \"Cmdr\"/\"Finder\" are app names; \"btw\" is casual for \"by the way\". Keep both chips in the sentence. This variant always shows ⇧Space, so the words around the chips may agree with that key. Its sibling fileExplorer.quickLookHint.quickViewRebound shows whatever key the user bound and may word around its chip differently (a colon slot is fine); the two needn't match word for word.",
     "placeholders": {
       "key": "marks where the Quick Look shortcut chip is shown inline (appears twice, same shortcut); carries no translatable text"
     },
@@ -2570,7 +2570,7 @@
   },
   "fileExplorer.quickLookHint.quickViewRebound": "In Cmdr, you can trigger Quick Look via <key></key>.",
   "@fileExplorer.quickLookHint.quickViewRebound": {
-    "description": "Third line of the Finder-convert toast, shown when the user bound Quick Look to a key other than ⇧Space: the sentence of \"fileExplorer.quickLookHint.quickView\" without its \"works in Finder, too\" aside, which holds for ⇧Space only. \"Quick Look\" is the macOS preview feature (use the name your language’s macOS shows). The <key></key> tag wraps an inline chip showing the user’s Quick Look key.",
+    "description": "Third line of the Finder-convert toast, shown when the user bound Quick Look to a key other than ⇧Space: the sentence of \"fileExplorer.quickLookHint.quickView\" without its \"works in Finder, too\" aside, which holds for ⇧Space only. \"Quick Look\" is the macOS preview feature (use the name your language’s macOS shows). The <key></key> tag wraps an inline chip showing the user’s Quick Look key. That can be any key, so word around the chip without an article or case ending that depends on it (a colon slot is fine); it needn't match fileExplorer.quickLookHint.quickView word for word.",
     "placeholders": {
       "key": "marks where the Quick Look shortcut chip is shown inline; carries no translatable text"
     }

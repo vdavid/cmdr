@@ -156,24 +156,24 @@ describe('systemShortcutMessage', () => {
     onTestFinished(withPlatform('macos'))
     const message = systemShortcutMessage('⌘Space', { os: 'macos', featureKey: 'shortcuts.system.spotlight' })
     expect(message).toBe(
-      '⌘Space is usually taken by macOS (Spotlight), so it may never reach Cmdr. You can free it up in System Settings > Keyboard.',
+      '⌘Space is usually taken by macOS (Spotlight), so the shortcut may never reach Cmdr. You can free it up in System Settings > Keyboard.',
     )
   })
 
   it('names Windows and the feature on Windows', () => {
     onTestFinished(withPlatform('windows'))
     expect(systemShortcutMessage('Ctrl+Shift+Esc', { os: 'windows', featureKey: 'shortcuts.system.taskManager' })).toBe(
-      'Ctrl+Shift+Esc is usually taken by Windows (Task Manager), so it may never reach Cmdr.',
+      'Ctrl+Shift+Esc is usually taken by Windows (Task Manager), so the shortcut may never reach Cmdr.',
     )
   })
 
   it('names every desktop that takes it on Linux, as a list in the UI language', () => {
     onTestFinished(withPlatform('linux'))
     expect(systemShortcutMessage('Alt+F1', { os: 'linux', desktops: ['KDE Plasma', 'Xfce', 'Cinnamon'] })).toBe(
-      'On KDE Plasma, Xfce, and Cinnamon, the desktop usually takes Alt+F1 for itself, so it may never reach Cmdr. You can free it up in your desktop’s keyboard settings.',
+      'On KDE Plasma, Xfce, and Cinnamon, the desktop usually takes Alt+F1 for itself, so the shortcut may never reach Cmdr. You can free it up in your desktop’s keyboard settings.',
     )
     expect(systemShortcutMessage('Ctrl+Alt+D', { os: 'linux', desktops: ['Ubuntu'] })).toBe(
-      'On Ubuntu, the desktop usually takes Ctrl+Alt+D for itself, so it may never reach Cmdr. You can free it up in your desktop’s keyboard settings.',
+      'On Ubuntu, the desktop usually takes Ctrl+Alt+D for itself, so the shortcut may never reach Cmdr. You can free it up in your desktop’s keyboard settings.',
     )
   })
 })

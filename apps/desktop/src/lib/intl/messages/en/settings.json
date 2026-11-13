@@ -622,9 +622,9 @@
     "description": "Settings label for a three-way choice: whether copying, moving, and compressing leaves out the hidden files only macOS uses (Finder’s .DS_Store and the ._ files beside items). \"Mac-only\" means files that mean something only on a Mac; other systems show them as clutter. Same wording as the copy dialog’s toggle (fileOperations.transferDialog.macOnlyFiles.toggle).",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
-  "settings.fileOperations.macOnlyFiles.description": "Skips .DS_Store and ._* files when copying/moving/compressing files.",
+  "settings.fileOperations.macOnlyFiles.description": "Skips .DS_Store and ._* files when copying, moving, or compressing.",
   "@settings.fileOperations.macOnlyFiles.description": {
-    "description": "Help text under the 'Skip Mac-only hidden files' setting. Keep \".DS_Store\" and \"._*\" exactly as written: they are file names. The slashes join the three operations (copy, move, compress) as alternatives.",
+    "description": "Help text under the 'Skip Mac-only hidden files' setting. Keep \".DS_Store\" and \"._*\" exactly as written: they are file names. The three operations (copy, move, compress) are alternatives: the setting applies to each.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.macOnlyFiles.opt.include": "Include",

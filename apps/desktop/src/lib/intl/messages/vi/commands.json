@@ -244,7 +244,7 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "Bật/tắt toàn màn hình",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Bật/tắt toàn màn hình} windows {Bật/tắt toàn màn hình} other {Toggle full screen mode}}",
   "@commands.viewToggleFullScreen.label": {
     "sourceHash": "57789cb"
   },

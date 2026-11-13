@@ -244,7 +244,7 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "Přepnout režim celé obrazovky",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Přepnout režim celé obrazovky} windows {Přepnout režim celé obrazovky} other {Toggle full screen mode}}",
   "@commands.viewToggleFullScreen.label": {
     "sourceHash": "57789cb"
   },

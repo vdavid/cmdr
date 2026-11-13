@@ -286,9 +286,9 @@
     "description": "Command name that decreases the UI text size by one step. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.viewToggleFullScreen.label": "Toggle full screen",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Toggle full screen} windows {Toggle full screen} other {Toggle full screen mode}}",
   "@commands.viewToggleFullScreen.label": {
-    "description": "Command name that puts the main window into full screen (filling the whole display, no title bar or taskbar), or takes it back out. Appears in the command palette and the keyboard-shortcuts list. Use the OS's own term for full screen in this language (macOS's \"Enter Full Screen\", Windows' and the browsers' \"Full screen\"); \"Toggle\" matches the other on/off commands such as commands.viewShowHidden.label."
+    "description": "Command name that puts the main window into full screen (filling the whole display, no title bar or taskbar), or takes it back out. Appears in the command palette and the keyboard-shortcuts list. Each OS has its own branch, so use that OS's own term for full screen in your language: the macOS branch takes macOS's (its View menu's \"Enter Full Screen\"), the windows branch Windows' and the browsers' (Edge and Chrome: \"Full screen\", the same term as menu.view.fullScreen), and the other branch (Linux) the term the Linux desktops use (KDE's \"Full Screen Mode\", GNOME's \"Fullscreen\"), which in many languages matches Windows'. \"Toggle\" matches the other on/off commands such as commands.viewShowHidden.label."
   },
   "commands.sortByName.label": "Sort by name",
   "@commands.sortByName.label": {
@@ -794,7 +794,7 @@
   },
   "commands.searchModeByNumber.label": "Switch to the search mode with that number",
   "@commands.searchModeByNumber.label": {
-    "description": "Row in the Keyboard shortcuts list, describing what the number keys do while the Search or Select files dialog is open: each one switches to the search mode in that position (AI, Filename, Regex) and puts the cursor back in the query field. Read-only (the keys can't be rebound), so this is a description of the behavior rather than a command name."
+    "description": "Row in the Keyboard shortcuts list, describing what the number keys do while the Search or Select files dialog is open: each one switches to the search mode in that position (AI, Filename, Regex) and puts the cursor back in the query field. Read-only (the keys can't be rebound), so this is a description of the behavior rather than a command name. It sits in a one-line row beside command names: keep it a short verb phrase, at most about 50 characters, with no final period."
   },
   "commands.multiRenameOpenPresets.label": "Open the presets menu",
   "@commands.multiRenameOpenPresets.label": {

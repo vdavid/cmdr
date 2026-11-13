@@ -2137,7 +2137,7 @@
   },
   "fileOperations.validation.pathShareMissing": "Add the share’s name after the server, like \\\\server\\share",
   "@fileOperations.validation.pathShareMissing": {
-    "description": "Inline validation message for a directory-path field (the copy/move destination), shown only on Windows when the typed path names a network server but no shared folder on it (like \\\\server alone). A \"share\" is a shared folder on that server. \"\\\\server\\share\" is the literal Windows network-path form: keep its backslashes and the words \"server\" and \"share\" as placeholders a person recognizes."
+    "description": "Inline validation message for a directory-path field (the copy/move destination), shown only on Windows when the typed path names a network server but no shared folder on it (like \\\\server alone). A \"share\" is a shared folder on that server. \"\\\\server\\share\" is the literal Windows network-path form: keep its backslashes and translate the words \"server\" and \"share\" into your language's everyday words for them, so a reader sees them as stand-ins for their own server's and shared folder's names."
   },
   "fileOperations.validation.pathNullChar": "Path contains a null character",
   "@fileOperations.validation.pathNullChar": {

@@ -244,7 +244,7 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "切換全螢幕",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {切換全螢幕} windows {切換全螢幕} other {Toggle full screen mode}}",
   "@commands.viewToggleFullScreen.label": {
     "sourceHash": "57789cb"
   },

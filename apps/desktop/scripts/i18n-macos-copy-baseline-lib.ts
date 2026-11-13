@@ -116,11 +116,18 @@ export function desktopPath(relative: string): string {
   return join(import.meta.dirname, '..', relative)
 }
 
-/** The two macOS English changes David accepted (`docs/notes/windows-port/copy-decisions.md`), key → new text. */
+/**
+ * The macOS English changes accepted on purpose, key → new macOS text: the first two are David’s
+ * (`docs/notes/windows-port/copy-decisions.md`), the rest translator-reported wording fixes (`docs/i18n/source-queue.md`).
+ */
 export const ACCEPTED_ENGLISH_CHANGES: Readonly<Partial<Record<string, string>>> = {
   'ai.secretError.genericBody':
     'Check that your Keychain is available, then try again. If it persists, restart the app.',
   'goToPath.dialog.inputPlaceholder': 'Type or paste a path, for example ~/Documents',
+  'errors.write.trashRefused.message.ownedByAnotherUser':
+    'Another account on this Mac owns {count} of the items you picked, and the folder holding them lets only an item’s owner move it.',
+  'shortcuts.conflict.systemShortcut':
+    '{combo} is usually taken by macOS ({label}), so the shortcut may never reach Cmdr. You can free it up in System Settings > Keyboard.',
 }
 
 /**
