@@ -71,9 +71,9 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "{platform, select, windows {Settings} other {Ajustes…}}",
+  "menu.app.settings": "{platform, select, windows {Ajustes} other {Ajustes…}}",
   "@menu.app.settings": {
-    "sourceHash": "7a04083"
+    "sourceHash": "7af8e23"
   },
   "menu.app.services": "Serviços",
   "@menu.app.services": {
@@ -147,9 +147,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFileManager": "{platform, select, macos {Mostrar no Finder} windows {Show in File Explorer} other {Mostrar no gerenciador de arquivos}}",
+  "menu.file.showInFileManager": "{platform, select, macos {Mostrar no Finder} windows {Mostrar no Explorador de Arquivos} other {Mostrar no gerenciador de arquivos}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "menu.file.openTerminalHere": "Abrir terminal aqui",
   "@menu.file.openTerminalHere": {
@@ -175,17 +175,17 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Desfazer mover para o Lixo}}",
+  "menu.edit.undoTrash": "{platform, select, windows {Desfazer apagamento} other {Desfazer mover para o Lixo}}",
   "@menu.edit.undoTrash": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Desfazer mover “{name}” para o Lixo}}",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Desfazer apagamento de “{name}”} other {Desfazer mover “{name}” para o Lixo}}",
   "@menu.edit.undoTrashOne": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Desfazer mover {countText} itens para o Lixo}}",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Desfazer apagamento de {countText} itens} other {Desfazer mover {countText} itens para o Lixo}}",
   "@menu.edit.undoTrashMany": {
-    "sourceHash": "bb9192a"
+    "sourceHash": "4ad492a"
   },
   "menu.edit.cut": "Cortar",
   "@menu.edit.cut": {
@@ -401,9 +401,9 @@
   "@menu.go.rootFolder": {
     "sourceHash": "6d92528"
   },
-  "menu.go.home": "{platform, select, windows {User folder} other {Pasta pessoal}}",
+  "menu.go.home": "{platform, select, windows {Pasta de usuário} other {Pasta pessoal}}",
   "@menu.go.home": {
-    "sourceHash": "3a78695"
+    "sourceHash": "4ff1502"
   },
   "menu.go.goToPath": "Ir para pasta…",
   "@menu.go.goToPath": {
@@ -658,13 +658,13 @@
   "@menu.volume.ejectBusy": {
     "sourceHash": "e2145a6"
   },
-  "menu.volume.detachShare": "{platform, select, macos {Ejetar ({name})} windows {Disconnect ({name})} other {Unmount ({name})}}",
+  "menu.volume.detachShare": "{platform, select, macos {Ejetar ({name})} windows {Desconectar ({name})} other {Desmontar ({name})}}",
   "@menu.volume.detachShare": {
-    "sourceHash": "913d6ea"
+    "sourceHash": "458748f"
   },
-  "menu.volume.detachShareBusy": "{platform, select, macos {Ejetar ({name}) (ocupado)} windows {Disconnect ({name}) (busy)} other {Unmount ({name}) (busy)}}",
+  "menu.volume.detachShareBusy": "{platform, select, macos {Ejetar ({name}) (ocupado)} windows {Desconectar ({name}) (ocupado)} other {Desmontar ({name}) (ocupado)}}",
   "@menu.volume.detachShareBusy": {
-    "sourceHash": "e2145a6"
+    "sourceHash": "d3578bf"
   },
   "menu.volume.ejectAll": "Ejetar tudo",
   "@menu.volume.ejectAll": {

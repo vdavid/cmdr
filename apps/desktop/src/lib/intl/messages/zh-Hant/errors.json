@@ -19,9 +19,9 @@
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "ff103cd"
   },
-  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {可以這樣試試：\n- 關掉一些 App 來釋放記憶體，特別是佔用資源多的（開了很多分頁的瀏覽器、編輯器、媒體類 App）\n- 在**活動監視器**裡查看記憶體用量（用 Spotlight 搜尋就能開啟）\n- 再次進入這裡重試} windows {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Task Manager** (press Ctrl+Shift+Esc)\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in your system monitor app\n- Navigate here again to retry}}",
+  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {可以這樣試試：\n- 關掉一些 App 來釋放記憶體，特別是佔用資源多的（開了很多分頁的瀏覽器、編輯器、媒體類 App）\n- 在**活動監視器**裡查看記憶體用量（用 Spotlight 搜尋就能開啟）\n- 再次進入這裡重試} windows {可以這樣試試：\n- 關掉一些 App 來釋放記憶體，特別是佔用資源多的（開了很多分頁的瀏覽器、編輯器、媒體類 App）\n- 在**工作管理員**裡查看記憶體用量（按 Ctrl+Shift+Esc 就能開啟）\n- 再次進入這裡重試} other {可以這樣試試：\n- 關掉一些 App 來釋放記憶體，特別是佔用資源多的（開了很多分頁的瀏覽器、編輯器、媒體類 App）\n- 在你的系統監視器 App 裡查看記憶體用量\n- 再次進入這裡重試}}",
   "@errors.listing.notEnoughMemory.suggestion": {
-    "sourceHash": "d05a4e4"
+    "sourceHash": "5b716f4"
   },
   "errors.listing.resourceBusy.title": "資源忙碌中",
   "@errors.listing.resourceBusy.title": {
@@ -31,9 +31,9 @@
   "@errors.listing.resourceBusy.explanation": {
     "sourceHash": "18a07d9"
   },
-  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {稍等一下，再次進入這裡。如果一直這樣，看看是哪個 App 可能一直開著這個檔案（在終端機裡執行 `lsof +D <folder-path>`，查看有哪些程序正在使用這個資料夾）。} windows {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the folder open: in **Resource Monitor** (search for it in Start), open the CPU tab and search **Associated Handles** for the folder’s name.} other {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in a terminal, run `lsof +D <folder-path>` to see which processes are using this folder).}}",
+  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {稍等一下，再次進入這裡。如果一直這樣，看看是哪個 App 可能一直開著這個檔案（在終端機裡執行 `lsof +D <folder-path>`，查看有哪些程序正在使用這個資料夾）。} windows {稍等一下，再次進入這裡。如果一直這樣，看看是哪個 App 可能一直開著這個資料夾：在**資源監視器**裡（在「開始」中搜尋就能開啟），開啟「CPU」索引標籤，然後在**關聯的控制代碼**裡搜尋這個資料夾的名稱。} other {稍等一下，再次進入這裡。如果一直這樣，看看是哪個 App 可能一直開著這個檔案（在終端機裡執行 `lsof +D <folder-path>`，查看有哪些程序正在使用這個資料夾）。}}",
   "@errors.listing.resourceBusy.suggestion": {
-    "sourceHash": "fa266e6"
+    "sourceHash": "31ef425"
   },
   "errors.listing.temporarilyUnavailable.title": "暫時無法使用",
   "@errors.listing.temporarilyUnavailable.title": {
@@ -43,21 +43,21 @@
   "@errors.listing.temporarilyUnavailable.explanation": {
     "sourceHash": "2193876"
   },
-  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {再次進入這裡重試。這通常會自行恢復。如果一直這樣，系統可能負載很重。到**活動監視器**看看有哪些 App 佔用了大量資源。} windows {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Task Manager** for apps consuming a lot of resources.} other {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check your system monitor app for apps consuming a lot of resources.}}",
+  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {再次進入這裡重試。這通常會自行恢復。如果一直這樣，系統可能負載很重。到**活動監視器**看看有哪些 App 佔用了大量資源。} windows {再次進入這裡重試。這通常會自行恢復。如果一直這樣，系統可能負載很重。到**工作管理員**看看有哪些 App 佔用了大量資源。} other {再次進入這裡重試。這通常會自行恢復。如果一直這樣，系統可能負載很重。到你的系統監視器 App 看看有哪些 App 佔用了大量資源。}}",
   "@errors.listing.temporarilyUnavailable.suggestion": {
-    "sourceHash": "1ec4aef"
+    "sourceHash": "a677915"
   },
   "errors.listing.networkDown.title": "網路已中斷",
   "@errors.listing.networkDown.title": {
     "sourceHash": "399ab40"
   },
-  "errors.listing.networkDown.explanation": "{platform, select, macos {你的 Mac 網路連線已中斷，所以 Cmdr 連不到這個卷宗。可能是 Wi-Fi 斷了、乙太網路線沒插好，或網路介面被停用了。} windows {Your PC’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network adapter is disabled.} other {Your computer’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.}}",
+  "errors.listing.networkDown.explanation": "{platform, select, macos {你的 Mac 網路連線已中斷，所以 Cmdr 連不到這個卷宗。可能是 Wi-Fi 斷了、乙太網路線沒插好，或網路介面被停用了。} windows {你的電腦網路連線已中斷，所以 Cmdr 連不到這個卷宗。可能是 Wi-Fi 斷了、乙太網路線沒插好，或網路介面卡被停用了。} other {你的電腦網路連線已中斷，所以 Cmdr 連不到這個卷宗。可能是 Wi-Fi 斷了、乙太網路線沒插好，或網路介面被停用了。}}",
   "@errors.listing.networkDown.explanation": {
-    "sourceHash": "179f8bb"
+    "sourceHash": "e5fcd3d"
   },
-  "errors.listing.networkDown.suggestion": "{platform, select, macos {可以這樣試試：\n- 在 **{system_settings} > 網路**裡查看 Wi-Fi 或乙太網路狀態\n- 如果用的是 Wi-Fi，試試關掉再開啟\n- 在終端機裡執行 `ping google.com` 測試連線\n- 恢復連線後，再次進入這裡} windows {Here’s what to try:\n- Check Wi-Fi or Ethernet status in **Settings > Network & internet**\n- If you’re on Wi-Fi, try turning it off and on again\n- In PowerShell, run `ping google.com` to test your connection\n- Navigate here again once you’re back online} other {Here’s what to try:\n- Check Wi-Fi or Ethernet status in your system’s network settings\n- If you’re on Wi-Fi, try turning it off and on again\n- In a terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online}}",
+  "errors.listing.networkDown.suggestion": "{platform, select, macos {可以這樣試試：\n- 在 **{system_settings} > 網路**裡查看 Wi-Fi 或乙太網路狀態\n- 如果用的是 Wi-Fi，試試關掉再開啟\n- 在終端機裡執行 `ping google.com` 測試連線\n- 恢復連線後，再次進入這裡} windows {可以這樣試試：\n- 在**設定 > 網路和網際網路**裡查看 Wi-Fi 或乙太網路狀態\n- 如果用的是 Wi-Fi，試試關掉再開啟\n- 在 PowerShell 裡執行 `ping google.com` 測試連線\n- 恢復連線後，再次進入這裡} other {可以這樣試試：\n- 在系統的網路設定裡查看 Wi-Fi 或乙太網路狀態\n- 如果用的是 Wi-Fi，試試關掉再開啟\n- 在終端機裡執行 `ping google.com` 測試連線\n- 恢復連線後，再次進入這裡}}",
   "@errors.listing.networkDown.suggestion": {
-    "sourceHash": "bf4b517"
+    "sourceHash": "1712df1"
   },
   "errors.listing.networkConnectionDropped.title": "網路連線中斷",
   "@errors.listing.networkConnectionDropped.title": {
@@ -91,9 +91,9 @@
   "@errors.listing.connectionReset.explanation": {
     "sourceHash": "3ccfa1c"
   },
-  "errors.listing.connectionReset.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認伺服器正在執行\n- 在終端機裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 再次進入這裡重試} windows {Here’s what to try:\n- Check that the server is running\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry}}",
+  "errors.listing.connectionReset.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認伺服器正在執行\n- 在終端機裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 再次進入這裡重試} windows {可以這樣試試：\n- 確認伺服器正在執行\n- 在 PowerShell 裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 再次進入這裡重試} other {可以這樣試試：\n- 確認伺服器正在執行\n- 在終端機裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 再次進入這裡重試}}",
   "@errors.listing.connectionReset.suggestion": {
-    "sourceHash": "d980663"
+    "sourceHash": "85ce28a"
   },
   "errors.listing.connectionTimedOutErrno.title": "連線逾時",
   "@errors.listing.connectionTimedOutErrno.title": {
@@ -103,9 +103,9 @@
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "c088c41"
   },
-  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認裝置或伺服器已開機而且連得上\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 在終端機裡試試 `ping <hostname>`，測試連通性\n- 再次進入這裡重試} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry}}",
+  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認裝置或伺服器已開機而且連得上\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 在終端機裡試試 `ping <hostname>`，測試連通性\n- 再次進入這裡重試} windows {可以這樣試試：\n- 確認裝置或伺服器已開機而且連得上\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 在 PowerShell 裡試試 `ping <hostname>`，測試連通性\n- 再次進入這裡重試} other {可以這樣試試：\n- 確認裝置或伺服器已開機而且連得上\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 在終端機裡試試 `ping <hostname>`，測試連通性\n- 再次進入這裡重試}}",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
-    "sourceHash": "230ef64"
+    "sourceHash": "446063f"
   },
   "errors.listing.hostDown.title": "主機已關閉",
   "@errors.listing.hostDown.title": {
@@ -115,9 +115,9 @@
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "e175712"
   },
-  "errors.listing.hostDown.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認主機已開機而且連上了網路\n- 在終端機裡試試 `ping <hostname>`，測試它連不連得上\n- 如果是 NAS 或伺服器，看看它的管理介面\n- 主機回來後，再次進入這裡} windows {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In PowerShell, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back} other {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In a terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back}}",
+  "errors.listing.hostDown.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認主機已開機而且連上了網路\n- 在終端機裡試試 `ping <hostname>`，測試它連不連得上\n- 如果是 NAS 或伺服器，看看它的管理介面\n- 主機回來後，再次進入這裡} windows {可以這樣試試：\n- 確認主機已開機而且連上了網路\n- 在 PowerShell 裡試試 `ping <hostname>`，測試它連不連得上\n- 如果是 NAS 或伺服器，看看它的管理介面\n- 主機回來後，再次進入這裡} other {可以這樣試試：\n- 確認主機已開機而且連上了網路\n- 在終端機裡試試 `ping <hostname>`，測試它連不連得上\n- 如果是 NAS 或伺服器，看看它的管理介面\n- 主機回來後，再次進入這裡}}",
   "@errors.listing.hostDown.suggestion": {
-    "sourceHash": "7a8ecd8"
+    "sourceHash": "238aad1"
   },
   "errors.listing.staleConnection.title": "連線已失效",
   "@errors.listing.staleConnection.title": {
@@ -127,9 +127,9 @@
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "{platform, select, macos {可以這樣試試：\n- 離開這個資料夾再回來\n- 如果這是網路磁碟機，試試在 Finder 裡卸除再重新裝載\n- 確認存放這個資料夾的伺服器正在執行\n- 在終端機裡執行 `mount`，查看目前已裝載的卷宗} windows {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try disconnecting it and connecting it again in File Explorer\n- Check that the server hosting this folder is running\n- In PowerShell, run `net use` to see your connected network drives} other {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in your file manager\n- Check that the server hosting this folder is running\n- In a terminal, run `mount` to see currently mounted volumes}}",
+  "errors.listing.staleConnection.suggestion": "{platform, select, macos {可以這樣試試：\n- 離開這個資料夾再回來\n- 如果這是網路磁碟機，試試在 Finder 裡卸除再重新裝載\n- 確認存放這個資料夾的伺服器正在執行\n- 在終端機裡執行 `mount`，查看目前已裝載的卷宗} windows {可以這樣試試：\n- 離開這個資料夾再回來\n- 如果這是網路磁碟機，試試在檔案總管裡中斷它的連線，再重新連線\n- 確認存放這個資料夾的伺服器正在執行\n- 在 PowerShell 裡執行 `net use`，查看你已連線的網路磁碟機} other {可以這樣試試：\n- 離開這個資料夾再回來\n- 如果這是網路磁碟機，試試在你的檔案管理程式裡卸載再重新掛載\n- 確認存放這個資料夾的伺服器正在執行\n- 在終端機裡執行 `mount`，查看目前已掛載的卷宗}}",
   "@errors.listing.staleConnection.suggestion": {
-    "sourceHash": "73de81d"
+    "sourceHash": "0264ba5"
   },
   "errors.listing.lockUnavailable.title": "檔案鎖用完了",
   "@errors.listing.lockUnavailable.title": {
@@ -139,9 +139,9 @@
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "154df3c"
   },
-  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {可以這樣試試：\n- 關掉一些 App，特別是會處理很多檔案的（編輯器、IDE、備份工具）\n- 在終端機裡執行 `lsof | wc -l`，看看所有 App 一共開了多少檔案\n- 如果問題一直出現，可以在終端機裡用 `ulimit -n 4096` 提高上限\n- 再次進入這裡重試} windows {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In a terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in a terminal\n- Navigate here again to retry}}",
+  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {可以這樣試試：\n- 關掉一些 App，特別是會處理很多檔案的（編輯器、IDE、備份工具）\n- 在終端機裡執行 `lsof | wc -l`，看看所有 App 一共開了多少檔案\n- 如果問題一直出現，可以在終端機裡用 `ulimit -n 4096` 提高上限\n- 再次進入這裡重試} windows {可以這樣試試：\n- 關掉一些 App，特別是會處理很多檔案的（編輯器、IDE、備份工具）\n- 如果一直這樣，請把你的電腦重新開機\n- 再次進入這裡重試} other {可以這樣試試：\n- 關掉一些 App，特別是會處理很多檔案的（編輯器、IDE、備份工具）\n- 在終端機裡執行 `lsof | wc -l`，看看所有 App 一共開了多少檔案\n- 如果問題一直出現，可以在終端機裡用 `ulimit -n 4096` 提高上限\n- 再次進入這裡重試}}",
   "@errors.listing.lockUnavailable.suggestion": {
-    "sourceHash": "a9f23bd"
+    "sourceHash": "1fa1762"
   },
   "errors.listing.cancelledErrno.title": "已取消",
   "@errors.listing.cancelledErrno.title": {
@@ -159,13 +159,13 @@
   "@errors.listing.notPermitted.title": {
     "sourceHash": "8ec5f4b"
   },
-  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS 擋下了 Cmdr 對 `{path}` 的存取。這通常表示這個資料夾受 macOS 安全性政策保護，或 Cmdr 還沒拿到相應的權限。} windows {Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.} other {Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it.}}",
+  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS 擋下了 Cmdr 對 `{path}` 的存取。這通常表示這個資料夾受 macOS 安全性政策保護，或 Cmdr 還沒拿到相應的權限。} windows {Windows 擋下了 Cmdr 對 `{path}` 的存取。這通常表示這個資料夾受 Windows 保護，或你的帳號沒有開啟它的權限。} other {Cmdr 沒有被允許存取 `{path}`。這通常表示這個資料夾的權限不允許這樣做，或它受到安全性政策（例如 SELinux 或 AppArmor）保護。}}",
   "@errors.listing.notPermitted.explanation": {
-    "sourceHash": "e28dd0e"
+    "sourceHash": "9f159af"
   },
-  "errors.listing.notPermitted.suggestion": "{platform, select, macos {可以這樣試試：\n- 開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 存取權\n- 如果這是受系統保護的資料夾，你可能得在 {privacy_and_security} 裡授予 Cmdr **{full_disk_access}**\n- 在終端機裡對這個路徑執行 `ls -la`，查看擁有者和權限} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If it’s a system folder, Windows may keep it off-limits on purpose\n- In PowerShell, run `icacls \"<folder-path>\"` to see who has access} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a system folder, it may need administrator rights\n- In a terminal, run `ls -la` on this path to check ownership and permissions}}",
+  "errors.listing.notPermitted.suggestion": "{platform, select, macos {可以這樣試試：\n- 開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 存取權\n- 如果這是受系統保護的資料夾，你可能得在 {privacy_and_security} 裡授予 Cmdr **{full_disk_access}**\n- 在終端機裡對這個路徑執行 `ls -la`，查看擁有者和權限} windows {可以這樣試試：\n- 在檔案總管裡查看這個資料夾的權限：在它上面按右鍵，選取**內容**，然後看**安全性**\n- 如果這是系統資料夾，Windows 可能是刻意不讓人碰它\n- 在 PowerShell 裡執行 `icacls \"<folder-path>\"`，查看誰有存取權} other {可以這樣試試：\n- 在你的檔案管理程式裡查看這個資料夾的權限：開啟它的屬性，然後看**權限**\n- 如果這是系統資料夾，可能需要管理者權限\n- 在終端機裡對這個路徑執行 `ls -la`，查看擁有者和權限}}",
   "@errors.listing.notPermitted.suggestion": {
-    "sourceHash": "2926956"
+    "sourceHash": "367f19a"
   },
   "errors.listing.pathNotFoundErrno.title": "找不到路徑",
   "@errors.listing.pathNotFoundErrno.title": {
@@ -175,21 +175,21 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認路徑拼寫正確\n- 如果它在網路磁碟機上，確認磁碟機已連線而且共享資料夾存取得到\n- 前往上層資料夾，在那裡找找這個項目\n- 在終端機裡對上層資料夾執行 `ls -la`，看看裡面有什麼} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
+  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認路徑拼寫正確\n- 如果它在網路磁碟機上，確認磁碟機已連線而且共享資料夾存取得到\n- 前往上層資料夾，在那裡找找這個項目\n- 在終端機裡對上層資料夾執行 `ls -la`，看看裡面有什麼} windows {可以這樣試試：\n- 確認路徑拼寫正確\n- 如果它在網路磁碟機上，確認磁碟機已連線而且共享資料夾存取得到\n- 前往上層資料夾，在那裡找找這個項目\n- 在 PowerShell 裡對上層資料夾執行 `dir`，看看裡面有什麼} other {可以這樣試試：\n- 確認路徑拼寫正確\n- 如果它在網路磁碟機上，確認磁碟機已連線而且共享資料夾存取得到\n- 前往上層資料夾，在那裡找找這個項目\n- 在終端機裡對上層資料夾執行 `ls -la`，看看裡面有什麼}}",
   "@errors.listing.pathNotFoundErrno.suggestion": {
-    "sourceHash": "8a51477"
+    "sourceHash": "eabe5b2"
   },
   "errors.listing.noPermissionErrno.title": "沒有權限",
   "@errors.listing.noPermissionErrno.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr 沒有存取 `{path}` 的權限。macOS 管控哪些 App 能存取哪些資料夾，而 Cmdr 還沒拿到這個資料夾的存取權。} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
+  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr 沒有存取 `{path}` 的權限。macOS 管控哪些 App 能存取哪些資料夾，而 Cmdr 還沒拿到這個資料夾的存取權。} windows {Cmdr 沒有存取 `{path}` 的權限。你的 Windows 帳號不被允許開啟這個資料夾。} other {Cmdr 沒有存取 `{path}` 的權限。你的使用者帳號不被允許開啟這個資料夾。}}",
   "@errors.listing.noPermissionErrno.explanation": {
-    "sourceHash": "3871273"
+    "sourceHash": "08a2f03"
   },
-  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {可以這樣試試：\n- 開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 存取權\n- 在 Finder 裡查看資料夾權限：按右鍵，選擇「取得資訊」，然後看「共享與權限」\n- 如果這是共享資料夾，請擁有者更新權限\n- 在終端機裡對這個路徑執行 `ls -la`，查看目前的權限} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on this path to see the current permissions}}",
+  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {可以這樣試試：\n- 開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 存取權\n- 在 Finder 裡查看資料夾權限：按右鍵，選擇「取得資訊」，然後看「共享與權限」\n- 如果這是共享資料夾，請擁有者更新權限\n- 在終端機裡對這個路徑執行 `ls -la`，查看目前的權限} windows {可以這樣試試：\n- 在檔案總管裡查看這個資料夾的權限：在它上面按右鍵，選取**內容**，然後看**安全性**\n- 如果這是共享資料夾，請擁有者更新權限\n- 在 PowerShell 裡執行 `icacls \"<folder-path>\"`，查看目前的權限} other {可以這樣試試：\n- 在你的檔案管理程式裡查看這個資料夾的權限：開啟它的屬性，然後看**權限**\n- 如果這是共享資料夾，請擁有者更新權限\n- 在終端機裡對這個路徑執行 `ls -la`，查看目前的權限}}",
   "@errors.listing.noPermissionErrno.suggestion": {
-    "sourceHash": "4b513ef"
+    "sourceHash": "d1ce430"
   },
   "errors.listing.alreadyExistsErrno.title": "已經存在",
   "@errors.listing.alreadyExistsErrno.title": {
@@ -247,9 +247,9 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {可以這樣試試：\n- 移動或刪除不再需要的檔案，騰出空間\n- 清空垃圾桶（在 Dock 裡的垃圾桶圖像上按右鍵）\n- 在終端機裡執行 `df -h`，查看每個卷宗還剩多少空間\n- 到 **{system_settings} > 一般 > 儲存空間**看看空間都用在哪裡} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {可以這樣試試：\n- 移動或刪除不再需要的檔案，騰出空間\n- 清空垃圾桶（在 Dock 裡的垃圾桶圖像上按右鍵）\n- 在終端機裡執行 `df -h`，查看每個卷宗還剩多少空間\n- 到 **{system_settings} > 一般 > 儲存空間**看看空間都用在哪裡} windows {可以這樣試試：\n- 移動或刪除不再需要的檔案，騰出空間\n- 清理資源回收筒（在桌面上的資源回收筒按右鍵，然後選取**清理資源回收筒**）\n- 到**設定 > 系統 > 儲存體**看看空間都用在哪裡} other {可以這樣試試：\n- 移動或刪除不再需要的檔案，騰出空間\n- 在你的檔案管理程式裡清空垃圾桶\n- 在終端機裡執行 `df -h`，查看每個卷宗還剩多少空間}}",
   "@errors.listing.diskFullErrno.suggestion": {
-    "sourceHash": "f2eb27b"
+    "sourceHash": "bba2927"
   },
   "errors.listing.readOnlyVolumeErrno.title": "唯讀卷宗",
   "@errors.listing.readOnlyVolumeErrno.title": {
@@ -271,9 +271,9 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "a0ca28f"
   },
-  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {換個做法試試，或用 Finder 來完成這項操作。如果你在用外接磁碟機，它可能格式化成了有限制的檔案系統（例如 FAT32 存不了 4 GiB 以上的檔案）。} windows {Try a different approach, or use File Explorer for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).} other {Try a different approach, or use your file manager for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).}}",
+  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {換個做法試試，或用 Finder 來完成這項操作。如果你在用外接磁碟機，它可能格式化成了有限制的檔案系統（例如 FAT32 存不了 4 GiB 以上的檔案）。} windows {換個做法試試，或用檔案總管來完成這項操作。如果你在用外接磁碟機，它可能格式化成了有限制的檔案系統（例如 FAT32 存不了 4 GiB 以上的檔案）。} other {換個做法試試，或用你的檔案管理程式來完成這項操作。如果你在用外接磁碟機，它可能格式化成了有限制的檔案系統（例如 FAT32 存不了 4 GiB 以上的檔案）。}}",
   "@errors.listing.notSupportedErrno.suggestion": {
-    "sourceHash": "8fea918"
+    "sourceHash": "c5735be"
   },
   "errors.listing.networkUnreachable.title": "連不上網路",
   "@errors.listing.networkUnreachable.title": {
@@ -283,21 +283,21 @@
   "@errors.listing.networkUnreachable.explanation": {
     "sourceHash": "d3c1975"
   },
-  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {可以這樣試試：\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 確認你連的是正確的網路（例如公司的 Wi-Fi 或 VPN）\n- 在終端機裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 連上之後，再次進入這裡} windows {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected} other {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected}}",
+  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {可以這樣試試：\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 確認你連的是正確的網路（例如公司的 Wi-Fi 或 VPN）\n- 在終端機裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 連上之後，再次進入這裡} windows {可以這樣試試：\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 確認你連的是正確的網路（例如公司的 Wi-Fi 或 VPN）\n- 在 PowerShell 裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 連上之後，再次進入這裡} other {可以這樣試試：\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 確認你連的是正確的網路（例如公司的 Wi-Fi 或 VPN）\n- 在終端機裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 連上之後，再次進入這裡}}",
   "@errors.listing.networkUnreachable.suggestion": {
-    "sourceHash": "7feb3cb"
+    "sourceHash": "75cc2f7"
   },
   "errors.listing.connectionRefused.title": "連線遭到拒絕",
   "@errors.listing.connectionRefused.title": {
     "sourceHash": "1a28032"
   },
-  "errors.listing.connectionRefused.explanation": "{platform, select, macos {伺服器主動拒絕了連線。這通常表示伺服器軟體（例如 SMB 或 NFS 服務）沒在執行，或它被設定成拒絕來自這部 Mac 的連線。} windows {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.} other {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this computer.}}",
+  "errors.listing.connectionRefused.explanation": "{platform, select, macos {伺服器主動拒絕了連線。這通常表示伺服器軟體（例如 SMB 或 NFS 服務）沒在執行，或它被設定成拒絕來自這部 Mac 的連線。} windows {伺服器主動拒絕了連線。這通常表示伺服器軟體（例如 SMB 或 NFS 服務）沒在執行，或它被設定成拒絕來自這台電腦的連線。} other {伺服器主動拒絕了連線。這通常表示伺服器軟體（例如 SMB 或 NFS 服務）沒在執行，或它被設定成拒絕來自這台電腦的連線。}}",
   "@errors.listing.connectionRefused.explanation": {
-    "sourceHash": "88e1ac7"
+    "sourceHash": "75e0ad7"
   },
-  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認伺服器正在執行，而且檔案共享服務已啟用\n- 核對伺服器位址和連接埠是否正確\n- 在終端機裡試試 `ping <hostname>`，看看伺服器到底連不連得上\n- 再次進入這裡重試} windows {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In PowerShell, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In a terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry}}",
+  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認伺服器正在執行，而且檔案共享服務已啟用\n- 核對伺服器位址和連接埠是否正確\n- 在終端機裡試試 `ping <hostname>`，看看伺服器到底連不連得上\n- 再次進入這裡重試} windows {可以這樣試試：\n- 確認伺服器正在執行，而且檔案共享服務已啟用\n- 核對伺服器位址和連接埠是否正確\n- 在 PowerShell 裡試試 `ping <hostname>`，看看伺服器到底連不連得上\n- 再次進入這裡重試} other {可以這樣試試：\n- 確認伺服器正在執行，而且檔案共享服務已啟用\n- 核對伺服器位址和連接埠是否正確\n- 在終端機裡試試 `ping <hostname>`，看看伺服器到底連不連得上\n- 再次進入這裡重試}}",
   "@errors.listing.connectionRefused.suggestion": {
-    "sourceHash": "17decc3"
+    "sourceHash": "aebd280"
   },
   "errors.listing.symlinkLoopErrno.title": "符號連結繞成了圈",
   "@errors.listing.symlinkLoopErrno.title": {
@@ -307,17 +307,17 @@
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "4157be6"
   },
-  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {可以這樣試試：\n- 在終端機裡對這個路徑執行 `ls -la`，看看這些符號連結指向哪裡\n- 找出並修正繞成圈的那個連結\n- 如果不確定是哪個連結有問題，用 `readlink <path>` 一個一個順著查} windows {Here’s what to try:\n- In PowerShell, run `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in this folder to see where the links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one} other {Here’s what to try:\n- In a terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`}}",
+  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {可以這樣試試：\n- 在終端機裡對這個路徑執行 `ls -la`，看看這些符號連結指向哪裡\n- 找出並修正繞成圈的那個連結\n- 如果不確定是哪個連結有問題，用 `readlink <path>` 一個一個順著查} windows {可以這樣試試：\n- 在 PowerShell 裡，到這個資料夾執行 `Get-ChildItem -Force | Select-Object Name, LinkType, Target`，看看這些連結指向哪裡\n- 找出並修正繞成圈的那個連結\n- 如果不確定是哪個連結有問題，就一個一個順著查} other {可以這樣試試：\n- 在終端機裡對這個路徑執行 `ls -la`，看看這些符號連結指向哪裡\n- 找出並修正繞成圈的那個連結\n- 如果不確定是哪個連結有問題，用 `readlink <path>` 一個一個順著查}}",
   "@errors.listing.symlinkLoopErrno.suggestion": {
-    "sourceHash": "eed9a5a"
+    "sourceHash": "9b5c2d2"
   },
   "errors.listing.nameTooLongErrno.title": "名稱太長",
   "@errors.listing.nameTooLongErrno.title": {
     "sourceHash": "de4bc1d"
   },
-  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {檔案或資料夾的名稱超過了系統上限（大多數 Mac 卷宗是 255 個字元）。完整路徑（所有資料夾加起來）超過系統的最大長度時，也會這樣。} windows {The file or folder name exceeds the system’s limit (255 characters for one name on NTFS). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.} other {The file or folder name exceeds the system’s limit (255 bytes on most Linux file systems). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.}}",
+  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {檔案或資料夾的名稱超過了系統上限（大多數 Mac 卷宗是 255 個字元）。完整路徑（所有資料夾加起來）超過系統的最大長度時，也會這樣。} windows {檔案或資料夾的名稱超過了系統上限（NTFS 上單一名稱是 255 個字元）。完整路徑（所有資料夾加起來）超過系統的最大長度時，也會這樣。} other {檔案或資料夾的名稱超過了系統上限（大多數 Linux 檔案系統是 255 個位元組）。完整路徑（所有資料夾加起來）超過系統的最大長度時，也會這樣。}}",
   "@errors.listing.nameTooLongErrno.explanation": {
-    "sourceHash": "8b9a6ff"
+    "sourceHash": "c0846c4"
   },
   "errors.listing.nameTooLongErrno.suggestion": "把這個項目改成短一點的名稱。如果名稱看起來沒問題，那可能是完整路徑（包含所有上層資料夾）太長了。試試把它移到短一點的路徑下。",
   "@errors.listing.nameTooLongErrno.suggestion": {
@@ -331,9 +331,9 @@
   "@errors.listing.hostUnreachable.explanation": {
     "sourceHash": "184b0fc"
   },
-  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認主機已開機而且在同一個網路上\n- 如果要透過 VPN 才連得到它，確認 VPN 已經連上\n- 在終端機裡試試 `ping <hostname>`，測試連通性\n- 主機連得上之後，再次進入這裡} windows {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable} other {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable}}",
+  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認主機已開機而且在同一個網路上\n- 如果要透過 VPN 才連得到它，確認 VPN 已經連上\n- 在終端機裡試試 `ping <hostname>`，測試連通性\n- 主機連得上之後，再次進入這裡} windows {可以這樣試試：\n- 確認主機已開機而且在同一個網路上\n- 如果要透過 VPN 才連得到它，確認 VPN 已經連上\n- 在 PowerShell 裡試試 `ping <hostname>`，測試連通性\n- 主機連得上之後，再次進入這裡} other {可以這樣試試：\n- 確認主機已開機而且在同一個網路上\n- 如果要透過 VPN 才連得到它，確認 VPN 已經連上\n- 在終端機裡試試 `ping <hostname>`，測試連通性\n- 主機連得上之後，再次進入這裡}}",
   "@errors.listing.hostUnreachable.suggestion": {
-    "sourceHash": "c222f76"
+    "sourceHash": "d595833"
   },
   "errors.listing.folderNotEmpty.title": "資料夾不是空的",
   "@errors.listing.folderNotEmpty.title": {
@@ -355,9 +355,9 @@
   "@errors.listing.quotaExceeded.explanation": {
     "sourceHash": "b9b0b0e"
   },
-  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {可以這樣試試：\n- 刪掉這個卷宗上不再需要的檔案，騰出空間\n- 請系統管理員把你的配額調高\n- 在終端機裡執行 `quota`，查看你目前的用量和上限} windows {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota} other {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In a terminal, run `quota` to see your current usage and limit}}",
+  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {可以這樣試試：\n- 刪掉這個卷宗上不再需要的檔案，騰出空間\n- 請系統管理員把你的配額調高\n- 在終端機裡執行 `quota`，查看你目前的用量和上限} windows {可以這樣試試：\n- 刪掉這個卷宗上不再需要的檔案，騰出空間\n- 請系統管理員把你的配額調高} other {可以這樣試試：\n- 刪掉這個卷宗上不再需要的檔案，騰出空間\n- 請系統管理員把你的配額調高\n- 在終端機裡執行 `quota`，查看你目前的用量和上限}}",
   "@errors.listing.quotaExceeded.suggestion": {
-    "sourceHash": "1b5f0df"
+    "sourceHash": "9ad0632"
   },
   "errors.listing.authRequiredEauth.title": "需要通過驗證",
   "@errors.listing.authRequiredEauth.title": {
@@ -379,9 +379,9 @@
   "@errors.listing.authRequiredEneedauth.explanation": {
     "sourceHash": "b4e86e5"
   },
-  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator} other {可以這樣試試：\n- 在 Finder 裡中斷再重新連線這個卷宗\n- 出現提示時輸入你的使用者名稱和密碼\n- 如果不確定登入資訊，找這台伺服器的管理者確認}}",
+  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {可以這樣試試：\n- 在檔案總管裡中斷這個網路磁碟機的連線，再重新連線\n- 出現提示時輸入你的使用者名稱和密碼\n- 如果不確定登入資訊，找這台伺服器的管理者確認} other {可以這樣試試：\n- 在 Finder 裡中斷再重新連線這個卷宗\n- 出現提示時輸入你的使用者名稱和密碼\n- 如果不確定登入資訊，找這台伺服器的管理者確認}}",
   "@errors.listing.authRequiredEneedauth.suggestion": {
-    "sourceHash": "a90b520"
+    "sourceHash": "64621a8"
   },
   "errors.listing.devicePoweredOff.title": "裝置已關機",
   "@errors.listing.devicePoweredOff.title": {
@@ -403,9 +403,9 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee39dd8"
   },
-  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {這個檔案系統可能不支援 Cmdr 需要的中繼資料。換一個卷宗試試這項操作，或先把檔案複製到你 Mac 的內建磁碟機上。} windows {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your PC’s internal drive first.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {這個檔案系統可能不支援 Cmdr 需要的中繼資料。換一個卷宗試試這項操作，或先把檔案複製到你 Mac 的內建磁碟機上。} windows {這個檔案系統可能不支援 Cmdr 需要的中繼資料。換一個卷宗試試這項操作，或先把檔案複製到你電腦的內建磁碟機上。} other {這個檔案系統可能不支援 Cmdr 需要的中繼資料。換一個卷宗試試這項操作，或先把檔案複製到你電腦的內建磁碟機上。}}",
   "@errors.listing.attributeNotFound.suggestion": {
-    "sourceHash": "463ee44"
+    "sourceHash": "e8c2492"
   },
   "errors.listing.diskReadProblem.title": "磁碟讀取出了狀況",
   "@errors.listing.diskReadProblem.title": {
@@ -415,9 +415,9 @@
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
-  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認磁碟或裝置仍然正確連接著\n- 開啟**磁碟工具程式**（用 Spotlight 搜尋就能開啟），對這個卷宗執行**修理工具**\n- 如果一直這樣，請盡快備份你的資料。這顆磁碟可能開始出現損壞磁區，或正在老化。} windows {Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.} other {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.}}",
+  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認磁碟或裝置仍然正確連接著\n- 開啟**磁碟工具程式**（用 Spotlight 搜尋就能開啟），對這個卷宗執行**修理工具**\n- 如果一直這樣，請盡快備份你的資料。這顆磁碟可能開始出現損壞磁區，或正在老化。} windows {可以這樣試試：\n- 確認磁碟機或裝置仍然正確連接著\n- 在檔案總管裡的磁碟機上按右鍵，選取**內容**，然後選**工具 > 檢查**，掃描看看有沒有問題\n- 如果一直這樣，請盡快備份你的資料。這個磁碟機可能開始出現損壞磁區，或正在老化。} other {可以這樣試試：\n- 確認磁碟或裝置仍然正確連接著\n- 用你桌面環境的磁碟工具（例如 GNOME Disks）檢查檔案系統\n- 如果一直這樣，請盡快備份你的資料。這顆磁碟可能開始出現損壞磁區，或正在老化。}}",
   "@errors.listing.diskReadProblem.suggestion": {
-    "sourceHash": "614a5fe"
+    "sourceHash": "11fa23f"
   },
   "errors.listing.unexpectedSystemResponse.title": "系統回應不如預期",
   "@errors.listing.unexpectedSystemResponse.title": {
@@ -427,9 +427,9 @@
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "a834896"
   },
-  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {可以這樣試試：\n- 再次進入這裡重試\n- 如果一直這樣，開啟**磁碟工具程式**（用 Spotlight 搜尋就能開啟），對這個卷宗執行**修理工具**，檢查檔案系統有沒有問題} windows {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check** to look for file system problems} other {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool (for example, GNOME Disks)}}",
+  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {可以這樣試試：\n- 再次進入這裡重試\n- 如果一直這樣，開啟**磁碟工具程式**（用 Spotlight 搜尋就能開啟），對這個卷宗執行**修理工具**，檢查檔案系統有沒有問題} windows {可以這樣試試：\n- 再次進入這裡重試\n- 如果一直這樣，在檔案總管裡的磁碟機上按右鍵，選取**內容**，然後選**工具 > 檢查**，檢查檔案系統有沒有問題} other {可以這樣試試：\n- 再次進入這裡重試\n- 如果一直這樣，用你桌面環境的磁碟工具（例如 GNOME Disks）檢查檔案系統有沒有問題}}",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
-    "sourceHash": "f63d225"
+    "sourceHash": "5a0ffb5"
   },
   "errors.listing.deviceProblem.title": "裝置出了狀況",
   "@errors.listing.deviceProblem.title": {
@@ -451,9 +451,9 @@
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "bade4a7"
   },
-  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認磁碟或裝置仍然連接著\n- 再次進入這裡重試\n- 如果一直這樣，開啟**磁碟工具程式**，對這個卷宗執行**修理工具**} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
+  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認磁碟或裝置仍然連接著\n- 再次進入這裡重試\n- 如果一直這樣，開啟**磁碟工具程式**，對這個卷宗執行**修理工具**} windows {可以這樣試試：\n- 確認磁碟機或裝置仍然連接著\n- 再次進入這裡重試\n- 如果一直這樣，在檔案總管裡的磁碟機上按右鍵，選取**內容**，然後選**工具 > 檢查**} other {可以這樣試試：\n- 確認磁碟或裝置仍然連接著\n- 再次進入這裡重試\n- 如果一直這樣，用你桌面環境的磁碟工具檢查檔案系統}}",
   "@errors.listing.couldntReadUnknown.suggestion": {
-    "sourceHash": "5155626"
+    "sourceHash": "625375f"
   },
   "errors.listing.notFound.title": "找不到路徑",
   "@errors.listing.notFound.title": {
@@ -463,9 +463,9 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.notFound.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認路徑拼寫正確\n- 如果它在網路磁碟機上，確認磁碟機已連線而且共享資料夾存取得到\n- 前往上層資料夾，在那裡找找這個項目\n- 在終端機裡對上層資料夾執行 `ls -la`，看看裡面有什麼} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
+  "errors.listing.notFound.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認路徑拼寫正確\n- 如果它在網路磁碟機上，確認磁碟機已連線而且共享資料夾存取得到\n- 前往上層資料夾，在那裡找找這個項目\n- 在終端機裡對上層資料夾執行 `ls -la`，看看裡面有什麼} windows {可以這樣試試：\n- 確認路徑拼寫正確\n- 如果它在網路磁碟機上，確認磁碟機已連線而且共享資料夾存取得到\n- 前往上層資料夾，在那裡找找這個項目\n- 在 PowerShell 裡對上層資料夾執行 `dir`，看看裡面有什麼} other {可以這樣試試：\n- 確認路徑拼寫正確\n- 如果它在網路磁碟機上，確認磁碟機已連線而且共享資料夾存取得到\n- 前往上層資料夾，在那裡找找這個項目\n- 在終端機裡對上層資料夾執行 `ls -la`，看看裡面有什麼}}",
   "@errors.listing.notFound.suggestion": {
-    "sourceHash": "8a51477"
+    "sourceHash": "eabe5b2"
   },
   "errors.listing.tccRestricted.title": "這個資料夾受到 macOS 限制",
   "@errors.listing.tccRestricted.title": {
@@ -483,13 +483,13 @@
   "@errors.listing.permissionDenied.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr 沒有存取 `{path}` 的權限。macOS 管控哪些 App 能存取哪些資料夾，而 Cmdr 還沒拿到這個資料夾的存取權。} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
+  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr 沒有存取 `{path}` 的權限。macOS 管控哪些 App 能存取哪些資料夾，而 Cmdr 還沒拿到這個資料夾的存取權。} windows {Cmdr 沒有存取 `{path}` 的權限。你的 Windows 帳號不被允許開啟這個資料夾。} other {Cmdr 沒有存取 `{path}` 的權限。你的使用者帳號不被允許開啟這個資料夾。}}",
   "@errors.listing.permissionDenied.explanation": {
-    "sourceHash": "3871273"
+    "sourceHash": "08a2f03"
   },
-  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {可以這樣試試：\n- 開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 存取權\n- 在 Finder 裡查看資料夾權限：在資料夾上按右鍵，選擇「取得資訊」，然後看「共享與權限」\n- 如果這是共享資料夾，請擁有者更新權限\n- 在終端機裡對這個路徑執行 `ls -la`，查看目前的權限} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click the folder, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on the path to see the current permissions}}",
+  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {可以這樣試試：\n- 開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 存取權\n- 在 Finder 裡查看資料夾權限：在資料夾上按右鍵，選擇「取得資訊」，然後看「共享與權限」\n- 如果這是共享資料夾，請擁有者更新權限\n- 在終端機裡對這個路徑執行 `ls -la`，查看目前的權限} windows {可以這樣試試：\n- 在檔案總管裡查看這個資料夾的權限：在資料夾上按右鍵，選取**內容**，然後看**安全性**\n- 如果這是共享資料夾，請擁有者更新權限\n- 在 PowerShell 裡執行 `icacls \"<folder-path>\"`，查看目前的權限} other {可以這樣試試：\n- 在你的檔案管理程式裡查看這個資料夾的權限：開啟它的屬性，然後看**權限**\n- 如果這是共享資料夾，請擁有者更新權限\n- 在終端機裡對這個路徑執行 `ls -la`，查看目前的權限}}",
   "@errors.listing.permissionDenied.suggestion": {
-    "sourceHash": "3450aff"
+    "sourceHash": "7015505"
   },
   "errors.listing.objectStoreRefused.title": "你的儲存服務提供者拒絕了存取",
   "@errors.listing.objectStoreRefused.title": {
@@ -507,13 +507,13 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` 在一個網路共享資料夾上，而你連線時用的帳號沒有開啟它的權限。伺服器在 macOS 介入之前就回絕了請求，所以這跟你 Mac 上的隱私設定無關。} windows {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.} other {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your computer can change that.}}",
+  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` 在一個網路共享資料夾上，而你連線時用的帳號沒有開啟它的權限。伺服器在 macOS 介入之前就回絕了請求，所以這跟你 Mac 上的隱私設定無關。} windows {`{path}` 在一個網路共享資料夾上，而你連線時用的帳號沒有開啟它的權限。這是伺服器回絕了請求，所以你電腦上的任何設定都改變不了。} other {`{path}` 在一個網路共享資料夾上，而你連線時用的帳號沒有開啟它的權限。這是伺服器回絕了請求，所以你電腦上的任何設定都改變不了。}}",
   "@errors.listing.remotePermissionDenied.explanation": {
-    "sourceHash": "d8463b0"
+    "sourceHash": "dec659d"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {可以這樣試試：\n- 在伺服器上查看這個資料夾的權限，以及你是用哪個帳號裝載這個共享資料夾的\n- 有些資料夾屬於伺服器自己的系統帳號（例如 Linux 共享資料夾上的 `lost+found`），對其他所有人都是關著的\n- 想換個身分連線，就先退出這個共享資料夾，再用那組登入資訊重新裝載} windows {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials} other {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, unmount the share and mount it again with those credentials}}",
+  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {可以這樣試試：\n- 在伺服器上查看這個資料夾的權限，以及你是用哪個帳號裝載這個共享資料夾的\n- 有些資料夾屬於伺服器自己的系統帳號（例如 Linux 共享資料夾上的 `lost+found`），對其他所有人都是關著的\n- 想換個身分連線，就先退出這個共享資料夾，再用那組登入資訊重新裝載} windows {可以這樣試試：\n- 在伺服器上查看這個資料夾的權限，以及你是用哪個帳號連線到這個共享資料夾的\n- 有些資料夾屬於伺服器自己的系統帳號（例如 Linux 共享資料夾上的 `lost+found`），對其他所有人都是關著的\n- 想換個身分連線，就先中斷這個共享資料夾的連線，再用那組登入資訊重新連線} other {可以這樣試試：\n- 在伺服器上查看這個資料夾的權限，以及你是用哪個帳號掛載這個共享資料夾的\n- 有些資料夾屬於伺服器自己的系統帳號（例如 Linux 共享資料夾上的 `lost+found`），對其他所有人都是關著的\n- 想換個身分連線，就先卸載這個共享資料夾，再用那組登入資訊重新掛載}}",
   "@errors.listing.remotePermissionDenied.suggestion": {
-    "sourceHash": "3e6497d"
+    "sourceHash": "8481dce"
   },
   "errors.listing.phoneRefused.title": "這支手機不公開這個資料夾",
   "@errors.listing.phoneRefused.title": {
@@ -531,9 +531,9 @@
   "@errors.listing.serverRefused.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.serverRefused.explanation": "{platform, select, windows {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.} other {這個資料夾在伺服器上，而你連線時用的帳號沒有開啟它的權限。這由伺服器決定，所以這台電腦上的任何設定都改變不了。}}",
+  "errors.listing.serverRefused.explanation": "{platform, select, windows {這個資料夾在伺服器上，而你連線時用的帳號沒有開啟它的權限。這由伺服器決定，所以這台電腦上的任何設定都改變不了。} other {這個資料夾在伺服器上，而你連線時用的帳號沒有開啟它的權限。這由伺服器決定，所以這台電腦上的任何設定都改變不了。}}",
   "@errors.listing.serverRefused.explanation": {
-    "sourceHash": "bba853c"
+    "sourceHash": "c21c3d5"
   },
   "errors.listing.serverRefused.suggestion": "可以這樣試試：\n- 在伺服器上查看這個資料夾的權限\n- 有些資料夾屬於伺服器自己的系統帳號，對其他所有人都是關著的\n- 用有存取權限的帳號連線",
   "@errors.listing.serverRefused.suggestion": {
@@ -631,9 +631,9 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.storageFull.suggestion": "{platform, select, macos {可以這樣試試：\n- 移動或刪除不再需要的檔案，騰出空間\n- 清空垃圾桶（在 Dock 裡的垃圾桶圖像上按右鍵）\n- 在終端機裡執行 `df -h`，查看每個卷宗還剩多少空間} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {可以這樣試試：\n- 移動或刪除不再需要的檔案，騰出空間\n- 清空垃圾桶（在 Dock 裡的垃圾桶圖像上按右鍵）\n- 在終端機裡執行 `df -h`，查看每個卷宗還剩多少空間} windows {可以這樣試試：\n- 移動或刪除不再需要的檔案，騰出空間\n- 清理資源回收筒（在桌面上的資源回收筒按右鍵，然後選取**清理資源回收筒**）\n- 到**設定 > 系統 > 儲存體**看看還剩多少空間} other {可以這樣試試：\n- 移動或刪除不再需要的檔案，騰出空間\n- 在你的檔案管理程式裡清空垃圾桶\n- 在終端機裡執行 `df -h`，查看每個卷宗還剩多少空間}}",
   "@errors.listing.storageFull.suggestion": {
-    "sourceHash": "101099b"
+    "sourceHash": "c04afed"
   },
   "errors.listing.connectionTimedOut.title": "連線逾時",
   "@errors.listing.connectionTimedOut.title": {
@@ -643,9 +643,9 @@
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "15d3054"
   },
-  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認裝置或伺服器已開機而且連得上\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 在終端機裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 再試一次} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Try again} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Try again}}",
+  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認裝置或伺服器已開機而且連得上\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 在終端機裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 再試一次} windows {可以這樣試試：\n- 確認裝置或伺服器已開機而且連得上\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 在 PowerShell 裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 再試一次} other {可以這樣試試：\n- 確認裝置或伺服器已開機而且連得上\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 在終端機裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 再試一次}}",
   "@errors.listing.connectionTimedOut.suggestion": {
-    "sourceHash": "f474938"
+    "sourceHash": "4e58263"
   },
   "errors.listing.notSupported.title": "不支援",
   "@errors.listing.notSupported.title": {
@@ -655,9 +655,9 @@
   "@errors.listing.notSupported.explanation": {
     "sourceHash": "d074574"
   },
-  "errors.listing.notSupported.suggestion": "{platform, select, macos {換個做法試試，或用 Finder 來完成這項操作。} windows {Try a different approach, or use File Explorer for this operation.} other {Try a different approach, or use your file manager for this operation.}}",
+  "errors.listing.notSupported.suggestion": "{platform, select, macos {換個做法試試，或用 Finder 來完成這項操作。} windows {換個做法試試，或用檔案總管來完成這項操作。} other {換個做法試試，或用你的檔案管理程式來完成這項操作。}}",
   "@errors.listing.notSupported.suggestion": {
-    "sourceHash": "d4e3965"
+    "sourceHash": "626b662"
   },
   "errors.listing.deletePending.title": "檔案正在移除中",
   "@errors.listing.deletePending.title": {
@@ -727,9 +727,9 @@
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
-  "errors.listing.ioSerious.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認磁碟或裝置仍然連接著\n- 再試一次\n- 如果一直這樣，試著對這個卷宗執行**磁碟工具程式 > 修理工具**} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Try again\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
+  "errors.listing.ioSerious.suggestion": "{platform, select, macos {可以這樣試試：\n- 確認磁碟或裝置仍然連接著\n- 再試一次\n- 如果一直這樣，試著對這個卷宗執行**磁碟工具程式 > 修理工具**} windows {可以這樣試試：\n- 確認磁碟機或裝置仍然連接著\n- 再試一次\n- 如果一直這樣，在檔案總管裡的磁碟機上按右鍵，選取**內容**，然後選**工具 > 檢查**} other {可以這樣試試：\n- 確認磁碟或裝置仍然連接著\n- 再試一次\n- 如果一直這樣，用你桌面環境的磁碟工具檢查檔案系統}}",
   "@errors.listing.ioSerious.suggestion": {
-    "sourceHash": "6e83ebb"
+    "sourceHash": "059416c"
   },
   "errors.listing.isADirectory.title": "這是資料夾，不是檔案",
   "@errors.listing.isADirectory.title": {
@@ -847,9 +847,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "53012e9"
   },
-  "errors.git.permissionDenied.suggestion": "{platform, select, macos {開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 這個資料夾的存取權。} windows {Check that your account can read this repo’s `.git` folder: in File Explorer, right-click it, select **Properties**, and look under **Security**.} other {Check that your account can read this repo’s `.git` folder. In a terminal, `ls -la .git` shows its owner and mode.}}",
+  "errors.git.permissionDenied.suggestion": "{platform, select, macos {開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 這個資料夾的存取權。} windows {確認你的帳號讀得到這個存放庫的 `.git` 資料夾：在檔案總管裡的這個資料夾上按右鍵，選取**內容**，然後看**安全性**。} other {確認你的帳號讀得到這個存放庫的 `.git` 資料夾。在終端機裡，`ls -la .git` 會顯示它的擁有者和權限模式。}}",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "7396b5a"
+    "sourceHash": "aef68dd"
   },
   "errors.git.bareRepo.title": "還不支援 bare 存放庫",
   "@errors.git.bareRepo.title": {
@@ -907,9 +907,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 存取權。在終端機裡，`ls -la .git` 會顯示目前的擁有者和權限模式。} windows {Check that your account can read this folder: in File Explorer, right-click the `.git` folder, select **Properties**, and look under **Security**. In PowerShell, `icacls .git` shows who has access.} other {Check that your account can read the `.git` folder. In a terminal, `ls -la .git` shows the current owner and mode.}}",
+  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 存取權。在終端機裡，`ls -la .git` 會顯示目前的擁有者和權限模式。} windows {確認你的帳號讀得到這個資料夾：在檔案總管裡的 `.git` 資料夾上按右鍵，選取**內容**，然後看**安全性**。在 PowerShell 裡，`icacls .git` 會顯示誰有存取權。} other {確認你的帳號讀得到 `.git` 資料夾。在終端機裡，`ls -la .git` 會顯示目前的擁有者和權限模式。}}",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "b091738"
+    "sourceHash": "7081e9a"
   },
   "errors.git.volumeGone.title": "這個存放庫所在的磁碟機不見了",
   "@errors.git.volumeGone.title": {
@@ -1157,9 +1157,9 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "{platform, select, windows {This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages} other {這個資料夾由 **{name}** 管理。可以這樣試試：\n- 結束 {app} 再重新開啟\n- 登出 {app} 再重新登入\n- 查看 {name} 的狀態頁面，看看有沒有服務中斷}}",
+  "errors.provider.appBased.serious": "{platform, select, windows {這個資料夾由 **{name}** 管理。可以這樣試試：\n- 關掉 {app} 再重新開啟\n- 登出 {app} 再重新登入\n- 查看 {name} 的狀態頁面，看看有沒有服務中斷} other {這個資料夾由 **{name}** 管理。可以這樣試試：\n- 結束 {app} 再重新開啟\n- 登出 {app} 再重新登入\n- 查看 {name} 的狀態頁面，看看有沒有服務中斷}}",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "5a4e14e"
+    "sourceHash": "79006a7"
   },
   "errors.write.sourceNotFound.title": "找不到這個檔案",
   "@errors.write.sourceNotFound.title": {
@@ -1177,9 +1177,9 @@
   "@errors.write.sourceNotFound.message.delete": {
     "sourceHash": "cb0ab8f"
   },
-  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {The file or folder you tried to move to the Recycle Bin no longer exists.} other {你想移至垃圾桶的檔案或資料夾已經不在了。}}",
+  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {你想移到資源回收筒的檔案或資料夾已經不在了。} other {你想移至垃圾桶的檔案或資料夾已經不在了。}}",
   "@errors.write.sourceNotFound.message.trash": {
-    "sourceHash": "dbc0bbe"
+    "sourceHash": "31f9dd7"
   },
   "errors.write.sourceNotFound.suggestion": "它可能被移動、重新命名或刪除了。試試重新整理檔案列表。",
   "@errors.write.sourceNotFound.suggestion": {
@@ -1301,9 +1301,9 @@
   "@errors.write.cancelled.title.delete": {
     "sourceHash": "546aac1"
   },
-  "errors.write.cancelled.title.trash": "{platform, select, windows {Move to the Recycle Bin canceled} other {已取消移至垃圾桶}}",
+  "errors.write.cancelled.title.trash": "{platform, select, windows {已取消移到資源回收筒} other {已取消移至垃圾桶}}",
   "@errors.write.cancelled.title.trash": {
-    "sourceHash": "52a8954"
+    "sourceHash": "97c84cd"
   },
   "errors.write.cancelled.message.copy": "這次複製操作已經取消。",
   "@errors.write.cancelled.message.copy": {
@@ -1317,9 +1317,9 @@
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
   },
-  "errors.write.cancelled.message.trash": "{platform, select, windows {The move to the Recycle Bin was canceled.} other {這次移至垃圾桶的操作已經取消。}}",
+  "errors.write.cancelled.message.trash": "{platform, select, windows {這次移到資源回收筒的操作已經取消。} other {這次移至垃圾桶的操作已經取消。}}",
   "@errors.write.cancelled.message.trash": {
-    "sourceHash": "9585f1b"
+    "sourceHash": "7e76a39"
   },
   "errors.write.cancelled.suggestion": "準備好了隨時可以再試一次。",
   "@errors.write.cancelled.suggestion": {
@@ -1341,9 +1341,9 @@
   "@errors.write.deviceDisconnected.message.delete": {
     "sourceHash": "195562e"
   },
-  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {The device was disconnected during the move to the Recycle Bin.} other {移至垃圾桶的過程中，裝置斷線了。}}",
+  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {移到資源回收筒的過程中，裝置斷線了。} other {移至垃圾桶的過程中，裝置斷線了。}}",
   "@errors.write.deviceDisconnected.message.trash": {
-    "sourceHash": "9d5a47a"
+    "sourceHash": "bdadd25"
   },
   "errors.write.deviceDisconnected.suggestion": "確認裝置有正確接上，然後再試一次。",
   "@errors.write.deviceDisconnected.suggestion": {
@@ -1381,13 +1381,13 @@
   "@errors.write.moveNotConfirmed.suggestion": {
     "sourceHash": "4d7fedc"
   },
-  "errors.write.trashNotSupported.title": "{platform, select, windows {Recycle Bin not supported} other {不支援垃圾桶}}",
+  "errors.write.trashNotSupported.title": "{platform, select, windows {不支援資源回收筒} other {不支援垃圾桶}}",
   "@errors.write.trashNotSupported.title": {
-    "sourceHash": "af90a02"
+    "sourceHash": "fc24baf"
   },
-  "errors.write.trashNotSupported.message": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {這個卷宗不支援垃圾桶。}}",
+  "errors.write.trashNotSupported.message": "{platform, select, windows {這個卷宗沒有資源回收筒。} other {這個卷宗不支援垃圾桶。}}",
   "@errors.write.trashNotSupported.message": {
-    "sourceHash": "911688a"
+    "sourceHash": "63875e3"
   },
   "errors.write.trashNotSupported.suggestion": "改用 {deletePermanentlyKey} 來永久刪除。",
   "@errors.write.trashNotSupported.suggestion": {
@@ -1509,9 +1509,9 @@
   "@errors.write.readError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.readError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {無法移至垃圾桶}}",
+  "errors.write.readError.title.trash": "{platform, select, windows {無法移到資源回收筒} other {無法移至垃圾桶}}",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.readError.message": "無法從來源讀取。",
   "@errors.write.readError.message": {
@@ -1533,9 +1533,9 @@
   "@errors.write.writeError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.writeError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {無法移至垃圾桶}}",
+  "errors.write.writeError.title.trash": "{platform, select, windows {無法移到資源回收筒} other {無法移至垃圾桶}}",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.writeError.message": "無法寫入目標位置。",
   "@errors.write.writeError.message": {
@@ -1641,13 +1641,13 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "77cff09"
   },
-  "errors.write.trashRefused.title": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {無法移至垃圾桶}}",
+  "errors.write.trashRefused.title": "{platform, select, windows {無法移到資源回收筒} other {無法移至垃圾桶}}",
   "@errors.write.trashRefused.title": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
-  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {你選的項目裡有 {count} 個，macOS 不讓 Cmdr 碰。} windows {Windows wouldn’t let Cmdr touch {count} of the items you picked.} other {Cmdr wasn’t allowed to touch {count} of the items you picked.}}",
+  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {你選的項目裡有 {count} 個，macOS 不讓 Cmdr 碰。} windows {你選的項目裡有 {count} 個，Windows 不讓 Cmdr 碰。} other {你選的項目裡有 {count} 個，Cmdr 不被允許碰。}}",
   "@errors.write.trashRefused.message.notPermitted": {
-    "sourceHash": "57a38d7"
+    "sourceHash": "6ea1348"
   },
   "errors.write.trashRefused.message.locked": "你選的項目裡有 {count} 個已鎖定，macOS 不會移動已鎖定的項目，所以它們留在原處。",
   "@errors.write.trashRefused.message.locked": {
@@ -1661,33 +1661,33 @@
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "b65d875"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {你選的項目裡有 {count} 個，因為這個磁碟機上的垃圾桶不讓 Cmdr 放入任何東西，所以它們留在原處。}}",
+  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {你選的項目裡有 {count} 個，因為這個磁碟機上的資源回收筒不讓 Cmdr 放入任何東西，所以它們留在原處。} other {你選的項目裡有 {count} 個，因為這個磁碟機上的垃圾桶不讓 Cmdr 放入任何東西，所以它們留在原處。}}",
   "@errors.write.trashRefused.message.trashNotWritable": {
-    "sourceHash": "024ef04"
+    "sourceHash": "c3d5e1e"
   },
-  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {你選的項目裡有 {count} 個，macOS 找不到對應的垃圾桶。} windows {Windows couldn’t find a Recycle Bin for {count} of the items you picked.} other {Cmdr couldn’t find a trash for {count} of the items you picked.}}",
+  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {你選的項目裡有 {count} 個，macOS 找不到對應的垃圾桶。} windows {你選的項目裡有 {count} 個，Windows 找不到對應的資源回收筒。} other {你選的項目裡有 {count} 個，Cmdr 找不到對應的垃圾桶。}}",
   "@errors.write.trashRefused.message.noTrashForVolume": {
-    "sourceHash": "702ae17"
+    "sourceHash": "07e7834"
   },
-  "errors.write.trashRefused.message.other": "{platform, select, macos {你選的項目裡有 {count} 個，macOS 沒有移至垃圾桶。} windows {Windows wouldn’t move {count} of the items you picked to the Recycle Bin.} other {Cmdr couldn’t move {count} of the items you picked to the trash.}}",
+  "errors.write.trashRefused.message.other": "{platform, select, macos {你選的項目裡有 {count} 個，macOS 沒有移至垃圾桶。} windows {你選的項目裡有 {count} 個，Windows 沒有移到資源回收筒。} other {你選的項目裡有 {count} 個，Cmdr 無法移至垃圾桶。}}",
   "@errors.write.trashRefused.message.other": {
-    "sourceHash": "6f71e12"
+    "sourceHash": "cdd735e"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {這些項目可能放在 macOS 自己留著的地方。Finder 有時還是能移動它們，因為它可以要求你輸入密碼。} windows {The items may sit somewhere Windows keeps to itself. File Explorer can sometimes still move them, since it can ask for administrator permission.} other {The items may sit somewhere only an administrator can change. Check the folder’s permissions, or ask whoever manages this computer.}}",
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {這些項目可能放在 macOS 自己留著的地方。Finder 有時還是能移動它們，因為它可以要求你輸入密碼。} windows {這些項目可能放在 Windows 自己留著的地方。檔案總管有時還是能移動它們，因為它可以要求管理者權限。} other {這些項目可能放在只有管理者才能更改的地方。看看這個資料夾的權限，或問問管理這台電腦的人。}}",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "2ef3e96"
+    "sourceHash": "ad6373b"
   },
   "errors.write.trashRefused.suggestion.locked": "要移動它們，先在 Finder 裡解鎖：選擇「取得資訊」，然後取消勾選「已鎖定」。",
   "@errors.write.trashRefused.suggestion.locked": {
     "sourceHash": "ece70f5"
   },
-  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {要移動它們，你需要有修改所在資料夾的權限。在 Finder 裡開啟這個資料夾的「取得資訊」，在「共享與權限」底下可以看到誰有這個權限。} windows {To move them, you need permission to change their folder. File Explorer shows who can in the folder’s Properties, under Security.} other {To move them, you need permission to change their folder. Your file manager shows who can in the folder’s properties, under Permissions.}}",
+  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {要移動它們，你需要有修改所在資料夾的權限。在 Finder 裡開啟這個資料夾的「取得資訊」，在「共享與權限」底下可以看到誰有這個權限。} windows {要移動它們，你需要有修改所在資料夾的權限。在檔案總管裡開啟這個資料夾的「內容」，在「安全性」底下可以看到誰有這個權限。} other {要移動它們，你需要有修改所在資料夾的權限。在你的檔案管理程式裡開啟這個資料夾的屬性，在「權限」底下可以看到誰有這個權限。}}",
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
-    "sourceHash": "8614665"
+    "sourceHash": "1f3b45d"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder 要求輸入管理者密碼之後，還是可以移動它們。} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder 要求輸入管理者密碼之後，還是可以移動它們。} windows {管理者還是可以移動它們。請問問管理這台電腦的人。} other {管理者還是可以移動它們，例如在終端機裡用 sudo。}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
-    "sourceHash": "6a8fbff"
+    "sourceHash": "b2708c6"
   },
   "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {如果垃圾桶資料夾的權限變了，就可能出現這種情況，比如換到新的 Mac 之後。你還是可以用 {deletePermanentlyKey} 把這些項目永久刪除。} windows {如果資源回收筒的權限變了，就可能出現這種情況，比如換到新的電腦之後。你還是可以用 {deletePermanentlyKey} 把這些項目永久刪除。} other {如果垃圾桶資料夾的權限變了，就可能出現這種情況，比如換到新的電腦之後。你還是可以用 {deletePermanentlyKey} 把這些項目永久刪除。}}",
   "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
@@ -1705,9 +1705,9 @@
   "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
     "sourceHash": "d582f73"
   },
-  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {看看下方的技術詳細資訊，裡面有 macOS 回報的內容。} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
+  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {看看下方的技術詳細資訊，裡面有 macOS 回報的內容。} windows {看看下方的技術詳細資訊，裡面有 Windows 回報的內容。} other {看看下方的技術詳細資訊，裡面有確切的原因。}}",
   "@errors.write.trashRefused.suggestion.other": {
-    "sourceHash": "b61b3c1"
+    "sourceHash": "76a78a7"
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr 在這部 Mac 上也沒有「完全取用磁碟」權限，這是很常見的原因。標題列上的警告標記寫著：沒有「完全取用磁碟」權限。按一下就會帶你回到這個選擇。",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
@@ -1725,9 +1725,9 @@
   "@errors.write.ioError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.ioError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {無法移至垃圾桶}}",
+  "errors.write.ioError.title.trash": "{platform, select, windows {無法移到資源回收筒} other {無法移至垃圾桶}}",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.ioError.message.copy": "無法複製這個檔案。",
   "@errors.write.ioError.message.copy": {
@@ -1741,9 +1741,9 @@
   "@errors.write.ioError.message.delete": {
     "sourceHash": "9e79007"
   },
-  "errors.write.ioError.message.trash": "{platform, select, windows {Couldn’t move the file to the Recycle Bin.} other {無法把這個檔案移至垃圾桶。}}",
+  "errors.write.ioError.message.trash": "{platform, select, windows {無法把這個檔案移到資源回收筒。} other {無法把這個檔案移至垃圾桶。}}",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "948e289"
+    "sourceHash": "490dd97"
   },
   "errors.write.ioError.suggestion": "再試一次。如果一直這樣，看看下方的技術詳細資訊。",
   "@errors.write.ioError.suggestion": {
@@ -1765,21 +1765,21 @@
   "@errors.write.permissionDenied.message.delete": {
     "sourceHash": "0c03fc4"
   },
-  "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {你沒有權限在這裡把檔案移至垃圾桶。}}",
+  "errors.write.permissionDenied.message.trash": "{platform, select, windows {你沒有權限在這裡把檔案移到資源回收筒。} other {你沒有權限在這裡把檔案移至垃圾桶。}}",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "cca028a"
+    "sourceHash": "7d53afa"
   },
-  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {確認你對上層資料夾有寫入權。這個檔案可能被鎖定了。在 Finder 裡把它解鎖（取得資訊 > 取消勾選「已鎖定」），然後再試一次。} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {確認你對上層資料夾有寫入權。這個檔案可能受到保護。看看它的權限（例如用 chmod 或你的檔案管理程式），然後再試一次。}}",
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {確認你對上層資料夾有寫入權。這個檔案可能被鎖定了。在 Finder 裡把它解鎖（取得資訊 > 取消勾選「已鎖定」），然後再試一次。} windows {確認你對上層資料夾有寫入權。這個檔案可能是唯讀的：在檔案總管裡開啟它的「內容」，取消勾選「唯讀」，然後再試一次。} other {確認你對上層資料夾有寫入權。這個檔案可能受到保護。看看它的權限（例如用 chmod 或你的檔案管理程式），然後再試一次。}}",
   "@errors.write.permissionDenied.suggestion.delete": {
-    "sourceHash": "1e6e123"
+    "sourceHash": "89a73d1"
   },
   "errors.write.permissionDenied.suggestion.default": "確認你對目標資料夾有寫入權。你可能得先把裝置解鎖，或更改資料夾權限。",
   "@errors.write.permissionDenied.suggestion.default": {
     "sourceHash": "ec02093"
   },
-  "errors.write.permissionDenied.message.named": "{platform, select, macos {你的 macOS 使用者無法更改 {folder}。} windows {Your Windows account can’t change {folder}.} other {Your user account can’t change {folder}.}}",
+  "errors.write.permissionDenied.message.named": "{platform, select, macos {你的 macOS 使用者無法更改 {folder}。} windows {你的 Windows 帳號無法更改 {folder}。} other {你的使用者帳號無法更改 {folder}。}}",
   "@errors.write.permissionDenied.message.named": {
-    "sourceHash": "0ffd79b"
+    "sourceHash": "7c12395"
   },
   "errors.write.permissionDenied.suggestion.phone": "Android 把這個位置留給系統和系統的 App。你的照片、下載項目和其他檔案都在手機的共用儲存空間裡，試試那裡的資料夾吧。",
   "@errors.write.permissionDenied.suggestion.phone": {
@@ -1793,13 +1793,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {這需要管理者權限。要讓你自己的帳號有權限，請在 Finder 裡選取這個資料夾，選擇「取得資訊」，然後查看「共享與權限」部分。} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {這需要管理者權限。要讓你自己的帳號有權限，請更改資料夾的權限（例如用 chmod），然後再試一次。}}",
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {這需要管理者權限。要讓你自己的帳號有權限，請在 Finder 裡選取這個資料夾，選擇「取得資訊」，然後查看「共享與權限」部分。} windows {這需要管理者權限。要讓你自己的帳號有權限，請在檔案總管裡開啟這個資料夾的「內容」，然後查看「安全性」。} other {這需要管理者權限。要讓你自己的帳號有權限，請更改資料夾的權限（例如用 chmod），然後再試一次。}}",
   "@errors.write.permissionDenied.suggestion.needsAdmin": {
-    "sourceHash": "674192a"
+    "sourceHash": "3425cc6"
   },
-  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {這是 macOS 自己保護的，管理者權限也改不了。它可能被鎖定了：在 Finder 裡選取它，選擇「取得資訊」，然後取消勾選「已鎖定」。} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {這是系統自己保護的，管理者權限也改不了。它可能帶著一個必須先清除的保護標記。}}",
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {這是 macOS 自己保護的，管理者權限也改不了。它可能被鎖定了：在 Finder 裡選取它，選擇「取得資訊」，然後取消勾選「已鎖定」。} windows {這是 Windows 自己保護的，光有管理者權限也改不了。系統檔案通常屬於 Windows，最好別動它們。} other {這是系統自己保護的，管理者權限也改不了。它可能帶著一個必須先清除的保護標記。}}",
   "@errors.write.permissionDenied.suggestion.systemProtected": {
-    "sourceHash": "64a71c8"
+    "sourceHash": "b1780bc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "你沒有權限讀取這個項目，所以無法複製它。",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,9 +1917,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion": "{platform, select, macos {在 Finder 裡把它解鎖（取得資訊 > 取消勾選「已鎖定」），然後再試一次。} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {這個檔案可能受到保護。看看它的權限（例如用 chmod 或你的檔案管理程式），然後再試一次。}}",
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {在 Finder 裡把它解鎖（取得資訊 > 取消勾選「已鎖定」），然後再試一次。} windows {這個檔案可能是唯讀的。在檔案總管裡開啟它的「內容」，取消勾選「唯讀」，然後再試一次。} other {這個檔案可能受到保護。看看它的權限（例如用 chmod 或你的檔案管理程式），然後再試一次。}}",
   "@errors.write.fileLocked.suggestion": {
-    "sourceHash": "8f84de5"
+    "sourceHash": "2e9f5c6"
   },
   "errors.write.deletePending.title": "檔案正在移除中",
   "@errors.write.deletePending.title": {
@@ -1985,17 +1985,17 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
-  "errors.write.homeFolder.title": "{platform, select, windows {Please don’t delete your user folder} other {拜託，別刪掉你的個人專屬資料夾}}",
+  "errors.write.homeFolder.title": "{platform, select, windows {拜託，別刪掉你的使用者資料夾} other {拜託，別刪掉你的個人專屬資料夾}}",
   "@errors.write.homeFolder.title": {
-    "sourceHash": "6005e89"
+    "sourceHash": "d7a7939"
   },
-  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hey, you can’t delete your own user folder.} other {嘿，你可不能刪除自己的個人專屬資料夾。}}",
+  "errors.write.homeFolder.message.isHome": "{platform, select, windows {嘿，你可不能刪除自己的使用者資料夾。} other {嘿，你可不能刪除自己的個人專屬資料夾。}}",
   "@errors.write.homeFolder.message.isHome": {
-    "sourceHash": "16ee6cd"
+    "sourceHash": "a5d7a8a"
   },
-  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {You can’t delete <code>{path}</code> because it contains your user folder, and you can’t delete your user folder.} other {你不能刪除 <code>{path}</code>，因為你的個人專屬資料夾就在裡面，而個人專屬資料夾是不能刪的。}}",
+  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {你不能刪除 <code>{path}</code>，因為你的使用者資料夾就在裡面，而使用者資料夾是不能刪的。} other {你不能刪除 <code>{path}</code>，因為你的個人專屬資料夾就在裡面，而個人專屬資料夾是不能刪的。}}",
   "@errors.write.homeFolder.message.holdsHome": {
-    "sourceHash": "4ad5896"
+    "sourceHash": "f11f80f"
   },
   "errors.write.homeFolder.suggestion.isHome": "如果你想刪掉所有檔案，就進到裡面，全選，然後刪除。不過說真的，這聽起來還是個很糟的主意。",
   "@errors.write.homeFolder.suggestion.isHome": {
@@ -2005,37 +2005,37 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
-  "errors.write.homeFolderMove.title": "{platform, select, windows {Please don’t move your user folder} other {拜託，別移動你的個人專屬資料夾}}",
+  "errors.write.homeFolderMove.title": "{platform, select, windows {拜託，別移動你的使用者資料夾} other {拜託，別移動你的個人專屬資料夾}}",
   "@errors.write.homeFolderMove.title": {
-    "sourceHash": "f5db2db"
+    "sourceHash": "df34b54"
   },
-  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {嘿，你的個人專屬資料夾就該待在原地。一旦移走，下次登入時你的 Mac 就會跑錯地方找你。} windows {Hey, your user folder lives right where it is. Move it, and Windows will look for you in the wrong place next time you sign in.} other {Hey, your home folder lives right where it is. Move it, and your computer will look for you in the wrong place next time you log in.}}",
+  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {嘿，你的個人專屬資料夾就該待在原地。一旦移走，下次登入時你的 Mac 就會跑錯地方找你。} windows {嘿，你的使用者資料夾就該待在原地。一旦移走，下次登入時 Windows 就會跑錯地方找你。} other {嘿，你的個人專屬資料夾就該待在原地。一旦移走，下次登入時你的電腦就會跑錯地方找你。}}",
   "@errors.write.homeFolderMove.message.isHome": {
-    "sourceHash": "17b0b0b"
+    "sourceHash": "575bc91"
   },
-  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {你不能移動 <code>{path}</code>，因為你的個人專屬資料夾就在裡面，而你的 Mac 預期會在原地找到它。} windows {You can’t move <code>{path}</code> because your user folder is in there, and Windows expects to find it right where it is.} other {You can’t move <code>{path}</code> because your home folder is in there, and your computer expects to find it right where it is.}}",
+  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {你不能移動 <code>{path}</code>，因為你的個人專屬資料夾就在裡面，而你的 Mac 預期會在原地找到它。} windows {你不能移動 <code>{path}</code>，因為你的使用者資料夾就在裡面，而 Windows 預期會在原地找到它。} other {你不能移動 <code>{path}</code>，因為你的個人專屬資料夾就在裡面，而你的電腦預期會在原地找到它。}}",
   "@errors.write.homeFolderMove.message.holdsHome": {
-    "sourceHash": "c43a8e6"
+    "sourceHash": "870f337"
   },
-  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {如果你想把檔案放到別處，就進到裡面，挑出需要的，再移動它們。你的 Mac 會感謝你的。} windows {If you want your files somewhere else, go in there, pick what you need, and move that. Your PC will thank you.} other {If you want your files somewhere else, go in there, pick what you need, and move that. Your computer will thank you.}}",
+  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {如果你想把檔案放到別處，就進到裡面，挑出需要的，再移動它們。你的 Mac 會感謝你的。} windows {如果你想把檔案放到別處，就進到裡面，挑出需要的，再移動它們。你的電腦會感謝你的。} other {如果你想把檔案放到別處，就進到裡面，挑出需要的，再移動它們。你的電腦會感謝你的。}}",
   "@errors.write.homeFolderMove.suggestion.isHome": {
-    "sourceHash": "580bee6"
+    "sourceHash": "01b6088"
   },
   "errors.write.homeFolderMove.suggestion.holdsHome": "如果你想移動一些檔案，就挑得具體一點，從裡面選出來。",
   "@errors.write.homeFolderMove.suggestion.holdsHome": {
     "sourceHash": "a766ab5"
   },
-  "errors.write.homeFolderRename.title": "{platform, select, windows {Please don’t rename your user folder} other {拜託，別重新命名你的個人專屬資料夾}}",
+  "errors.write.homeFolderRename.title": "{platform, select, windows {拜託，別重新命名你的使用者資料夾} other {拜託，別重新命名你的個人專屬資料夾}}",
   "@errors.write.homeFolderRename.title": {
-    "sourceHash": "ec47bfe"
+    "sourceHash": "8775009"
   },
-  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {嘿，你的 Mac 就是靠這個名稱認出你的個人專屬資料夾的。一旦改名，下次登入時它就找不到你了。} windows {Hey, Windows knows your user folder by this name. Rename it, and it won’t find you next time you sign in.} other {Hey, your computer knows your home folder by this name. Rename it, and it won’t find you next time you log in.}}",
+  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {嘿，你的 Mac 就是靠這個名稱認出你的個人專屬資料夾的。一旦改名，下次登入時它就找不到你了。} windows {嘿，Windows 就是靠這個名稱認出你的使用者資料夾的。一旦改名，下次登入時它就找不到你了。} other {嘿，你的電腦就是靠這個名稱認出你的個人專屬資料夾的。一旦改名，下次登入時它就找不到你了。}}",
   "@errors.write.homeFolderRename.message.isHome": {
-    "sourceHash": "fd78f2f"
+    "sourceHash": "7e7be74"
   },
-  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {你不能重新命名 <code>{path}</code>，因為你的個人專屬資料夾就在裡面，而你的 Mac 預期會在這個確切的路徑找到它。} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
+  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {你不能重新命名 <code>{path}</code>，因為你的個人專屬資料夾就在裡面，而你的 Mac 預期會在這個確切的路徑找到它。} windows {你不能重新命名 <code>{path}</code>，因為你的使用者資料夾就在裡面，而 Windows 預期會在這個確切的路徑找到它。} other {你不能重新命名 <code>{path}</code>，因為你的個人專屬資料夾就在裡面，而你的電腦預期會在這個確切的路徑找到它。}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
-    "sourceHash": "b09f296"
+    "sourceHash": "51b7f8f"
   },
   "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {如果你真的需要換個名稱，macOS 在「使用者與群組」裡有一套穩妥的做法。不過，這可不是按一下 {renameKey} 就能搞定的事。} windows {Windows 沒有安全的內建方式可以幫它改名，所以最好維持原狀。} other {如果你真的需要換個名稱，管理者可以用另一個使用者登入，再用 usermod 小心處理。不過，這可不是按一下 {renameKey} 就能搞定的事。}}",
   "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
@@ -2069,9 +2069,9 @@
   "@errors.write.landingNotRecorded.message": {
     "sourceHash": "6ca4881"
   },
-  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {請再試一次。如果持續發生，請確認你 Mac 的磁碟還有可用空間，然後重新啟動 Cmdr。} windows {Try again. If it keeps happening, check that your PC has free space, then restart Cmdr.} other {Try again. If it keeps happening, check that your computer’s disk has free space, then restart Cmdr.}}",
+  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {請再試一次。如果持續發生，請確認你 Mac 的磁碟還有可用空間，然後重新啟動 Cmdr。} windows {請再試一次。如果持續發生，請確認你的電腦還有可用空間，然後重新啟動 Cmdr。} other {請再試一次。如果持續發生，請確認你電腦的磁碟還有可用空間，然後重新啟動 Cmdr。}}",
   "@errors.write.landingNotRecorded.suggestion": {
-    "sourceHash": "e99aa6e"
+    "sourceHash": "98864f9"
   },
   "errors.write.newDataKeptAt.title": "你的新檔案換了個名字",
   "@errors.write.newDataKeptAt.title": {
@@ -2145,9 +2145,9 @@
   "@errors.write.fallback.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.fallback.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {無法移至垃圾桶}}",
+  "errors.write.fallback.title.trash": "{platform, select, windows {無法移到資源回收筒} other {無法移至垃圾桶}}",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.fallback.message.copy": "複製的時候出了點狀況。",
   "@errors.write.fallback.message.copy": {
@@ -2161,9 +2161,9 @@
   "@errors.write.fallback.message.delete": {
     "sourceHash": "9a08b89"
   },
-  "errors.write.fallback.message.trash": "{platform, select, windows {Something went wrong while moving to the Recycle Bin.} other {移至垃圾桶的時候出了點狀況。}}",
+  "errors.write.fallback.message.trash": "{platform, select, windows {移到資源回收筒的時候出了點狀況。} other {移至垃圾桶的時候出了點狀況。}}",
   "@errors.write.fallback.message.trash": {
-    "sourceHash": "63f8393"
+    "sourceHash": "ba7128f"
   },
   "errors.write.fallback.suggestion": "再試一次，或看看下方的技術詳細資訊了解更多。",
   "@errors.write.fallback.suggestion": {
@@ -2177,9 +2177,9 @@
   "@errors.mutation.cantRenameVolumeRoot": {
     "sourceHash": "0845c57"
   },
-  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr 無法寫入「{path}」。請在 Finder 裡看看這個資料夾的權限。} windows {Cmdr can’t write into “{path}”. Check the folder’s permissions in File Explorer.} other {Cmdr can’t write into “{path}”. Check the folder’s permissions in your file manager.}}",
+  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr 無法寫入「{path}」。請在 Finder 裡看看這個資料夾的權限。} windows {Cmdr 無法寫入「{path}」。請在檔案總管裡看看這個資料夾的權限。} other {Cmdr 無法寫入「{path}」。請在你的檔案管理程式裡看看這個資料夾的權限。}}",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "e0a7ad6"
+    "sourceHash": "23a1c44"
   },
   "errors.mutation.fileLocked": "這個項目已鎖定。請在 Finder 的「取得資訊」面板裡解鎖，然後再試一次。",
   "@errors.mutation.fileLocked": {
@@ -2341,13 +2341,13 @@
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"
   },
-  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {這個卷宗沒有垃圾桶，只能永久刪除。}}",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {這個卷宗沒有資源回收筒，只能永久刪除。} other {這個卷宗沒有垃圾桶，只能永久刪除。}}",
   "@errors.mutation.trashNotSupported": {
-    "sourceHash": "525ef25"
+    "sourceHash": "519075e"
   },
-  "errors.mutation.trashRefused": "{platform, select, macos {macOS 不肯把這個項目移至垃圾桶。} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Trash.}}",
+  "errors.mutation.trashRefused": "{platform, select, macos {macOS 不肯把這個項目移至垃圾桶。} windows {Windows 不肯把這個項目移到資源回收筒。} other {Cmdr 無法把這個項目移至垃圾桶。}}",
   "@errors.mutation.trashRefused": {
-    "sourceHash": "7a6d1a5"
+    "sourceHash": "7ad59d2"
   },
   "errors.serverRequest.unreachable": "Cmdr 無法連線到它的伺服器。請檢查網際網路連線，然後再試一次。",
   "@errors.serverRequest.unreachable": {
@@ -2429,9 +2429,9 @@
   "@errors.eject.unmountRefusedByDiskImage": {
     "sourceHash": "1fa3d53"
   },
-  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS 還在使用那裡的某些內容。請稍等一下，然後再試一次。} windows {Windows is still using something there. Wait a minute, then try again.} other {This computer is still using something there. Wait a minute, then try again.}}",
+  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS 還在使用那裡的某些內容。請稍等一下，然後再試一次。} windows {Windows 還在使用那裡的某些內容。請稍等一下，然後再試一次。} other {這台電腦還在使用那裡的某些內容。請稍等一下，然後再試一次。}}",
   "@errors.eject.unmountRefusedBySystem": {
-    "sourceHash": "9b066c9"
+    "sourceHash": "d9f40b9"
   },
   "errors.eject.unmountRefusedByCmdr": "Cmdr 自己還在使用那裡的某些內容。請等一下再試一次，如果一直這樣，請傳送一份報告。",
   "@errors.eject.unmountRefusedByCmdr": {
@@ -2449,9 +2449,9 @@
   "@errors.eject.unexpected": {
     "sourceHash": "2978e2a"
   },
-  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr 連不上「{server}」。請確認它已經開機，而且和這台電腦在同一個網路上。}}",
+  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr 連不上「{server}」。請確認它已經開機，而且和這台電腦在同一個網路上。} other {Cmdr 連不上「{server}」。請確認它已經開機，而且和這台電腦在同一個網路上。}}",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "45ac92c"
+    "sourceHash": "5e2f5c7"
   },
   "errors.mount.timeout": "Cmdr 等了一下，但「{server}」沒有及時回應。請確認它已經開機而且連得上，然後再試一次。",
   "@errors.mount.timeout": {
@@ -2481,17 +2481,17 @@
   "@errors.mount.cancelled": {
     "sourceHash": "bc771b3"
   },
-  "errors.mount.unsupportedProtocol": "{platform, select, windows {This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.} other {這台電腦和「{server}」沒有共同支援的 SMB 版本。請在伺服器的設定中開啟 SMB 2 或更新版本，然後再試一次。}}",
+  "errors.mount.unsupportedProtocol": "{platform, select, windows {這台電腦和「{server}」沒有共同支援的 SMB 版本。請在伺服器的設定中開啟 SMB 2 或更新版本，然後再試一次。} other {這台電腦和「{server}」沒有共同支援的 SMB 版本。請在伺服器的設定中開啟 SMB 2 或更新版本，然後再試一次。}}",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "8afe4cb"
+    "sourceHash": "b7d61a2"
   },
   "errors.mount.mountRefused": "你已經登入「{server}」，但它不肯開啟「{share}」。請到伺服器上檢查這個共享資料夾的設定，然後再試一次。",
   "@errors.mount.mountRefused": {
     "sourceHash": "6cf694d"
   },
-  "errors.mount.mountMissing": "{platform, select, windows {Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.} other {你的電腦回報「{server}」上的「{share}」已經連線，但它一直沒有出現。請再試一次。}}",
+  "errors.mount.mountMissing": "{platform, select, windows {你的電腦回報「{server}」上的「{share}」已經連線，但它一直沒有出現。請再試一次。} other {你的電腦回報「{server}」上的「{share}」已經連線，但它一直沒有出現。請再試一次。}}",
   "@errors.mount.mountMissing": {
-    "sourceHash": "72ab946"
+    "sourceHash": "9d2f8d5"
   },
   "errors.mount.gvfsMissing": "在 Linux 上連線到網路共享資料夾需要 GVFS。請安裝你所用發行版的 gvfs-smb 套件，然後再試一次。",
   "@errors.mount.gvfsMissing": {
@@ -2501,9 +2501,9 @@
   "@errors.mount.unexpected": {
     "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr 連不上「{server}」。請確認它已經開機，而且和這台電腦在同一個網路上。}}",
+  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr 連不上「{server}」。請確認它已經開機，而且和這台電腦在同一個網路上。} other {Cmdr 連不上「{server}」。請確認它已經開機，而且和這台電腦在同一個網路上。}}",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "45ac92c"
+    "sourceHash": "5e2f5c7"
   },
   "errors.shareList.timeout": "Cmdr 等了一下，但「{server}」沒有及時回應。請稍後再試一次。",
   "@errors.shareList.timeout": {

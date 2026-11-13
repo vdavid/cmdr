@@ -27,7 +27,12 @@
     "confidence": "high",
     "decision": "Look-alike names on a server",
     "forms": "accented letter → 帶重音符號的字母; diacritic → 變音符號",
-    "sources": "MS (accent → 重音符號, diacritic → 變音符號); TC (將帶有重音符號的名稱…)"
+    "sources": "MS (accent → 重音符號, diacritic → 變音符號); TC (將帶有重音符號的名稱…)",
+    "exceptions": {
+      "settings.appearance.appColor.description": "accent color here is Windows' system highlight color (MS terminology accent color → 輔色), not a diacritic",
+      "settings.appearance.themeColorSwatchAria": "accent color here is Windows' system highlight color (MS terminology accent color → 輔色), not a diacritic",
+      "settings.appearance.appColorHintPrefix": "accent color here is Windows' system highlight color (MS terminology accent color → 輔色), not a diacritic"
+    }
   },
   "access": {
     "accept": ["取用", "權限", "寫入權", "可寫入"],
@@ -872,7 +877,12 @@
     "chosen": "登入資訊",
     "confidence": "high",
     "forms": "cloud and tool credentials → 雲端和工具的登入資訊",
-    "sources": "catalog, 11 uses (fileExplorer.network.browser.tooltip.credsStored, errors.listing.authRequiredEneedauth.explanation); MS has no entry for it"
+    "sources": "catalog, 11 uses (fileExplorer.network.browser.tooltip.credsStored, errors.listing.authRequiredEneedauth.explanation); MS has no entry for it",
+    "windows": {
+      "chosen": "登入資訊",
+      "accept": ["認證"],
+      "note": "Credential Manager's Windows Credentials section is Windows 認證 (from memory of Windows zh-TW, no pile hit; tentative)"
+    }
   },
   "data": {
     "chosen": "資料",
@@ -1340,7 +1350,10 @@
     "chosen": "啟用",
     "confidence": "high",
     "forms": "enable (a setting) → 啟用; turn on (a feature) → 開啟 (在「設定」中開啟)",
-    "sources": "MS, standard; AP live Turn On → 開啟 (TW = HK, 299 of ~314)"
+    "sources": "MS, standard; AP live Turn On → 開啟 (TW = HK, 299 of ~314)",
+    "exceptions": {
+      "servers.hub.emptyMessage": "Turn on a computer or NAS means power it on: 開機, not switching a setting on."
+    }
   },
   "encoding": {
     "chosen": "編碼",
@@ -2539,7 +2552,15 @@
         "form": "輔助按鍵",
         "why": "Microsoft's form; macOS's Keyboard settings say 變更鍵"
       }
-    ]
+    ],
+    "windows": {
+      "chosen": "輔助按鍵",
+      "note": "MS terminology modifier key → 輔助按鍵 (HKG, TWN)"
+    },
+    "other": {
+      "chosen": "輔助按鍵",
+      "note": "Linux branch: no Nautilus/Dolphin/Thunar hit; 變更鍵 is macOS-only, so take MS's desktop-neutral 輔助按鍵 (tentative)"
+    }
   },
   "mount": {
     "accept": ["卸除"],
@@ -2556,7 +2577,16 @@
     "chosen": "裝載",
     "confidence": "high",
     "forms": "unmount → 卸除; mount point → 裝載點 (coined, tentative)",
-    "sources": "AP-TW = AP-HK (無法裝載卷宗…, 卸除伺服器)"
+    "sources": "AP-TW = AP-HK (無法裝載卷宗…, 卸除伺服器)",
+    "other": {
+      "chosen": "掛載",
+      "accept": ["卸載", "裝載", "卸除"],
+      "note": "Linux branch: Nautilus, Thunar, and Dolphin zh-TW all say 掛載 / 卸載; a plain value shown on every OS keeps the macOS 裝載 / 卸除"
+    },
+    "windows": {
+      "chosen": "掛接",
+      "note": "File Explorer zh-TW's Mount command for a disk image says 掛接 (from memory of the Windows UI, no pile hit; tentative)"
+    }
   },
   "move": {
     "accept": ["移至", "移到", "移出", "移走", "移回", "移過去"],
@@ -2569,7 +2599,10 @@
     "chosen": "移動",
     "confidence": "high",
     "forms": "F6 and prose → 移動; move to X → 移到 X / 移至垃圾桶; move out of a device → 移出; moved away → 移走; move back → 移回原處; move them there → 移過去",
-    "sources": "AP-HK, MS, TC, DC"
+    "sources": "AP-HK, MS, TC, DC",
+    "exceptions": {
+      "stateRecovery.credentials.body": "A move to a new computer is the user relocating, not moving files: 換到新電腦."
+    }
   },
   "move-to-trash": {
     "chosen": "垃圾桶",
@@ -3576,7 +3609,10 @@
     "chosen": "伺服器",
     "confidence": "confirmed",
     "forms": "classifier 部 in counts ({countText} 部伺服器, tentative); 這個伺服器 in servers.json",
-    "sources": "AP-TW = AP-HK (Connect to Server… → 連接伺服器⋯), MS, TC"
+    "sources": "AP-TW = AP-HK (Connect to Server… → 連接伺服器⋯), MS, TC",
+    "exceptions": {
+      "fileOperations.validation.pathNotAbsolute": "“server” here is the literal sample path \\\\server\\share, kept verbatim like the English."
+    }
   },
   "server-address": {
     "accept": ["網址"],
@@ -3865,7 +3901,15 @@
   "startup-disk": {
     "chosen": "啟動磁碟",
     "confidence": "confirmed",
-    "sources": "AP-TW (選擇啟動磁碟)"
+    "sources": "AP-TW (選擇啟動磁碟)",
+    "windows": {
+      "chosen": "系統磁碟機",
+      "note": "MS terminology system drive → 系統磁碟機 (HKG, TWN)"
+    },
+    "other": {
+      "chosen": "系統磁碟",
+      "note": "Linux branch's system disk; Thunar's 系統碟 is a sidebar label, the catalog's disk is 磁碟 (tentative)"
+    }
   },
   "start": {
     "accept": ["啟動"],
@@ -3904,7 +3948,12 @@
     "chosen": "儲存空間",
     "confidence": "confirmed",
     "forms": "Manage Storage… → 管理儲存空間⋯; cloud storage → 雲端儲存空間; storing logs (log storage) → 記錄檔儲存",
-    "sources": "AP-TW = AP-HK, MS"
+    "sources": "AP-TW = AP-HK, MS",
+    "windows": {
+      "chosen": "儲存體",
+      "accept": ["儲存空間", "空間"],
+      "note": "the Windows Settings page 設定 > 系統 > 儲存體 (MS TBX Storage → 儲存體, 儲存空間感知器; tentative)"
+    }
   },
   "store": {
     "accept": ["存", "留"],
@@ -3992,7 +4041,10 @@
     ],
     "chosen": "分頁",
     "confidence": "high",
-    "sources": "AP-HK, MS, NAU, DOL, THU, DC"
+    "sources": "AP-HK, MS, NAU, DOL, THU, DC",
+    "exceptions": {
+      "errors.listing.resourceBusy.suggestion": "The Windows branch names Resource Monitor's own dialog tab, which Windows zh-TW calls 索引標籤 (「CPU」索引標籤), not a Cmdr pane tab."
+    }
   },
   "tail": {
     "chosen": "跟隨",
@@ -4304,7 +4356,10 @@
     "chosen": "使用者",
     "confidence": "high",
     "forms": "prefer 你 when a sentence reads naturally with it",
-    "sources": "AP-TW (36), TC (51)"
+    "sources": "AP-TW (36), TC (51)",
+    "exceptions": {
+      "goToPath.dialog.inputPlaceholder": "“Users” is the literal sample path C:\\Users, kept verbatim like the English."
+    }
   },
   "username": {
     "chosen": "使用者名稱",
@@ -4365,7 +4420,12 @@
     ],
     "chosen": "卷宗",
     "confidence": "high",
-    "sources": "AP-TW (68), AP-HK (69)"
+    "sources": "AP-TW (68), AP-HK (69)",
+    "windows": {
+      "chosen": "磁碟區",
+      "accept": ["卷宗"],
+      "note": "MS terminology volume → 磁碟區; Windows zh-TW Disk Management says 磁碟區 (tentative). Five earlier Windows branches (errors.listing.*, errors.*trashNotSupported*) still say the macOS 卷宗, accepted until a pass realigns them"
+    }
   },
   "volume-switcher": {
     "accept": ["切換器"],
@@ -4705,5 +4765,110 @@
     "note": "Windows TW names This PC 本機, but 本機 is the ruled form of local, so prose keeps 這台電腦",
     "confidence": "tentative",
     "sources": "MS terminology PC (the TBX has no “This PC”) → 個人電腦; prose 這台電腦, same as this-computer"
+  },
+  "file-explorer": {
+    "chosen": "檔案總管",
+    "confidence": "high",
+    "sources": "MS terminology (File Explorer → 檔案總管, HKG, TWN)",
+    "exceptions": {
+      "fileExplorer.pane.fileExplorerAriaLabel": "The English names Cmdr's own pane generically (a file explorer), not Windows' File Explorer app, so it stays 檔案瀏覽器."
+    }
+  },
+  "file-manager": {
+    "chosen": "檔案管理程式",
+    "accept": ["檔案管理員"],
+    "confidence": "high",
+    "sources": "catalog (onboarding.stepFda.firstAsk.explain, commands.fileShowInFileManager.label other); Thunar/Dolphin 檔案管理員"
+  },
+  "properties": {
+    "chosen": "屬性",
+    "confidence": "high",
+    "sources": "Nautilus/Thunar/Dolphin Properties → 屬性; catalog commands.fileGetInfo.label other 檔案屬性",
+    "windows": {
+      "chosen": "內容",
+      "note": "File Explorer's right-click command and window: 選取**內容**; its tabs 「安全性」 and 工具 > 檢查 (MS TBX Properties UI element → 內容, Security → 安全性)"
+    }
+  },
+  "powershell": {
+    "chosen": "PowerShell",
+    "confidence": "confirmed",
+    "sources": "MS terminology (PowerShell → PowerShell, HKG, TWN)"
+  },
+  "empty-trash": {
+    "chosen": "清空垃圾桶",
+    "confidence": "high",
+    "sources": "macOS Finder zh-TW (Empty Trash → 清空垃圾桶, AL10, N157); Dolphin, Nautilus",
+    "windows": {
+      "chosen": "清理資源回收筒",
+      "note": "the Recycle Bin's context-menu command as Windows zh-TW shows it (no pile hit for the label; built from MS Recycle Bin → 資源回收筒, tentative)"
+    }
+  },
+  "privacy-permission": {
+    "chosen": "取用權",
+    "accept": ["權限", "存取權", "取用"],
+    "confidence": "tentative",
+    "sources": "macOS Privacy & Security 完全取用磁碟 (取用); catalog errors.listing.notPermitted.title 沒有取用權; shipped macOS branches say 權限"
+  },
+  "user-folder": {
+    "chosen": "使用者資料夾",
+    "confidence": "tentative",
+    "sources": "Windows zh-TW shows C:\\Users as 使用者; MS TBX has no user folder entry (its home folder is the admin-assigned sense)"
+  },
+  "credential-manager": {
+    "chosen": "認證管理員",
+    "confidence": "high",
+    "sources": "MS terminology (Credential Manager → 認證管理員, HKG, TWN)",
+    "note": "the app named in running text, like 鑰匙圈; a list naming the app as a place quotes it 「認證管理員」, like 「鑰匙圈存取」"
+  },
+  "app-closes": {
+    "chosen": "關閉",
+    "confidence": "tentative",
+    "sources": "MS terminology close → 關閉; catalog close ruling; no pile entry for an app closing itself",
+    "note": "Windows branch: 然後關閉 / Cmdr 關閉後; the macOS and Linux branches keep quit 結束"
+  },
+  "go-to-trash": {
+    "chosen": "前往垃圾桶",
+    "confidence": "high",
+    "sources": "catalog fileOperations.trash.goToTrashAction and commands.fileGoToTrash.label other 前往垃圾桶",
+    "windows": {
+      "chosen": "前往資源回收筒",
+      "note": "MS terminology Recycle Bin → 資源回收筒 with the catalog's 前往"
+    }
+  },
+  "linux-distribution": {
+    "chosen": "發行版",
+    "confidence": "tentative",
+    "sources": "no pile hit (MS distribution is 發佈, the publishing sense); zh-TW Linux community usage Linux 發行版",
+    "note": "Linux distribution and version → Linux 發行版和版本"
+  },
+  "lock": {
+    "chosen": "鎖定",
+    "confidence": "high",
+    "sources": "catalog commands.resticForgetPassword.description macos 再次鎖定這個備份, fileExplorer.restic.forgetPassword.keychainKeptIt macos 暫時鎖定了"
+  },
+  "open-beta": {
+    "chosen": "公開測試",
+    "confidence": "high",
+    "sources": "catalog settings.analytics.enabled.description and onboarding.stepBeta.analyticsLede 公開測試期間"
+  },
+  "timeout": {
+    "chosen": "逾時",
+    "confidence": "high",
+    "sources": "MS terminology timeout → 逾時 (HKG, TWN); macOS AppKit zh-TW 逾時; catalog settings.advanced.serviceResolveTimeout.label"
+  },
+  "smb-negotiated-security": {
+    "chosen": "協商好的安全性設定",
+    "confidence": "high",
+    "sources": "catalog servers.paneState.negotiationInvalid and fileExplorer.pane.directConnectionNegotiationInvalidToast 和 Cmdr 協商好的安全性設定"
+  },
+  "private-key": {
+    "chosen": "私密金鑰",
+    "confidence": "high",
+    "sources": "MS terminology (private key → 私密金鑰, HKG, TWN); shipped in ai.cloudConsent.askCmdr.protectedContents macos"
+  },
+  "database": {
+    "chosen": "資料庫",
+    "confidence": "high",
+    "sources": "MS terminology (database → 資料庫, HKG, TWN); KDE Dolphin zh-TW 資料庫"
   }
 }

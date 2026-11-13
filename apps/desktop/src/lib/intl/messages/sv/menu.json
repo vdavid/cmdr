@@ -71,9 +71,9 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "{platform, select, windows {Settings} other {Inställningar…}}",
+  "menu.app.settings": "{platform, select, windows {Inställningar} other {Inställningar…}}",
   "@menu.app.settings": {
-    "sourceHash": "7a04083"
+    "sourceHash": "7af8e23"
   },
   "menu.app.services": "Tjänster",
   "@menu.app.services": {
@@ -147,9 +147,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFileManager": "{platform, select, macos {Visa i Finder} windows {Show in File Explorer} other {Visa i filhanteraren}}",
+  "menu.file.showInFileManager": "{platform, select, macos {Visa i Finder} windows {Visa i Utforskaren} other {Visa i filhanteraren}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "menu.file.openTerminalHere": "Öppna terminal här",
   "@menu.file.openTerminalHere": {
@@ -175,17 +175,17 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Ångra flytt till papperskorgen}}",
+  "menu.edit.undoTrash": "{platform, select, windows {Ångra radering} other {Ångra flytt till papperskorgen}}",
   "@menu.edit.undoTrash": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Ångra flytt av ”{name}” till papperskorgen}}",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Ångra radering av ”{name}”} other {Ångra flytt av ”{name}” till papperskorgen}}",
   "@menu.edit.undoTrashOne": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Ångra flytt av {countText} objekt till papperskorgen}}",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Ångra radering av {countText} objekt} other {Ångra flytt av {countText} objekt till papperskorgen}}",
   "@menu.edit.undoTrashMany": {
-    "sourceHash": "bb9192a"
+    "sourceHash": "4ad492a"
   },
   "menu.edit.cut": "Klipp ut",
   "@menu.edit.cut": {
@@ -397,9 +397,9 @@
   "@menu.go.rootFolder": {
     "sourceHash": "6d92528"
   },
-  "menu.go.home": "{platform, select, windows {User folder} other {Hem}}",
+  "menu.go.home": "{platform, select, windows {Användarmapp} other {Hem}}",
   "@menu.go.home": {
-    "sourceHash": "3a78695"
+    "sourceHash": "4ff1502"
   },
   "menu.go.goToPath": "Gå till mapp…",
   "@menu.go.goToPath": {
@@ -654,13 +654,13 @@
   "@menu.volume.ejectBusy": {
     "sourceHash": "e2145a6"
   },
-  "menu.volume.detachShare": "{platform, select, macos {Mata ut ({name})} windows {Disconnect ({name})} other {Unmount ({name})}}",
+  "menu.volume.detachShare": "{platform, select, macos {Mata ut ({name})} windows {Koppla från ({name})} other {Avmontera ({name})}}",
   "@menu.volume.detachShare": {
-    "sourceHash": "913d6ea"
+    "sourceHash": "458748f"
   },
-  "menu.volume.detachShareBusy": "{platform, select, macos {Mata ut ({name}) (upptagen)} windows {Disconnect ({name}) (busy)} other {Unmount ({name}) (busy)}}",
+  "menu.volume.detachShareBusy": "{platform, select, macos {Mata ut ({name}) (upptagen)} windows {Koppla från ({name}) (upptagen)} other {Avmontera ({name}) (upptagen)}}",
   "@menu.volume.detachShareBusy": {
-    "sourceHash": "e2145a6"
+    "sourceHash": "d3578bf"
   },
   "menu.volume.ejectAll": "Mata ut alla",
   "@menu.volume.ejectAll": {

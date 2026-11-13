@@ -72,9 +72,9 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "{platform, select, macos {Cmdr benötigt vollständigen Festplattenzugriff, um deinen Downloads-Ordner zu überwachen.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "downloads.fda.message": "{platform, select, macos {Cmdr benötigt vollständigen Festplattenzugriff, um deinen Downloads-Ordner zu überwachen.} other {Cmdr kann deinen Downloads-Ordner nicht überwachen. Prüfe, ob der Ordner existiert und ob du ihn öffnen kannst.}}",
   "@downloads.fda.message": {
-    "sourceHash": "82c82c6"
+    "sourceHash": "dd37803"
   },
   "downloads.fda.dismiss": "Schließen",
   "@downloads.fda.dismiss": {
@@ -133,9 +133,9 @@
   "@downloads.shortcutRow.unavailable": {
     "sourceHash": "8882532"
   },
-  "downloads.shortcutRow.addModifier": "{platform, select, macos {Füge eine Sondertaste hinzu (⌘, ⌃, ⌥ oder ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Füge eine Sondertaste hinzu (⌘, ⌃, ⌥ oder ⇧)} windows {Füge eine Sondertaste hinzu (Strg, Alt, Umschalt oder Win)} other {Füge eine Sondertaste hinzu (Strg, Alt, Umschalt oder Super)}}",
   "@downloads.shortcutRow.addModifier": {
-    "sourceHash": "28a5ba2"
+    "sourceHash": "a56bd6c"
   },
   "downloads.toggleDescription.bound": "Drücke {binding} aus jeder App, um zu deinem neuesten Download zu springen.",
   "@downloads.toggleDescription.bound": {

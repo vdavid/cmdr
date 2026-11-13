@@ -16,29 +16,29 @@
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
-  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Den här volymen saknar papperskorg.}}",
+  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {Den här volymen kan inte använda Papperskorgen.} other {Den här volymen saknar papperskorg.}}",
   "@fileOperations.delete.noTrashWarningStrong": {
-    "sourceHash": "911688a"
+    "sourceHash": "63875e3"
   },
   "fileOperations.delete.noTrashWarningRest": "Filerna raderas permanent.",
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.} other {En del av det du har markerat finns bara online. Att flytta dem till papperskorgen skulle <strong>hämta dem först</strong>. Därför erbjuder Cmdr här bara att <strong>radera</strong> hela markeringen. Ingen kopia hamnar i papperskorgen, men molntjänster brukar behålla sin egen papperskorg i ungefär 30 dagar. Klicka på ”Radera” om det är okej att radera, annars avbryt den här dialogen och gör antingen alla filer tillgängliga offline först, eller avmarkera alla filer som bara finns online.}}",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {En del av det du har markerat finns bara online. Att flytta dem till Papperskorgen skulle <strong>hämta dem först</strong>. Därför erbjuder Cmdr här bara att <strong>radera</strong> hela markeringen. Ingen kopia hamnar i Papperskorgen, men molntjänster brukar behålla raderade filer i ungefär 30 dagar. Välj ”Radera permanent” om det är okej att radera, annars avbryt den här dialogen och gör antingen alla filer tillgängliga offline först, eller avmarkera alla filer som bara finns online.} other {En del av det du har markerat finns bara online. Att flytta dem till papperskorgen skulle <strong>hämta dem först</strong>. Därför erbjuder Cmdr här bara att <strong>radera</strong> hela markeringen. Ingen kopia hamnar i papperskorgen, men molntjänster brukar behålla sin egen papperskorg i ungefär 30 dagar. Klicka på ”Radera” om det är okej att radera, annars avbryt den här dialogen och gör antingen alla filer tillgängliga offline först, eller avmarkera alla filer som bara finns online.}}",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2468db5"
+    "sourceHash": "88a6cc7"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and make these files available offline first.} other {Allt du har markerat finns bara online. Att flytta det till papperskorgen skulle <strong>hämta det först</strong>. Därför erbjuder Cmdr här bara att <strong>radera</strong> hela markeringen. Ingen kopia hamnar i papperskorgen, men molntjänster brukar behålla sin egen papperskorg i ungefär 30 dagar. Klicka på ”Radera” om det är okej att radera, annars avbryt den här dialogen och gör de här filerna tillgängliga offline först.}}",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Allt du har markerat finns bara online. Att flytta det till Papperskorgen skulle <strong>hämta det först</strong>. Därför erbjuder Cmdr här bara att <strong>radera</strong> hela markeringen. Ingen kopia hamnar i Papperskorgen, men molntjänster brukar behålla raderade filer i ungefär 30 dagar. Välj ”Radera permanent” om det är okej att radera, annars avbryt den här dialogen och gör de här filerna tillgängliga offline först.} other {Allt du har markerat finns bara online. Att flytta det till papperskorgen skulle <strong>hämta det först</strong>. Därför erbjuder Cmdr här bara att <strong>radera</strong> hela markeringen. Ingen kopia hamnar i papperskorgen, men molntjänster brukar behålla sin egen papperskorg i ungefär 30 dagar. Klicka på ”Radera” om det är okej att radera, annars avbryt den här dialogen och gör de här filerna tillgängliga offline först.}}",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "dd04d39"
+    "sourceHash": "7228d5a"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Your selection turned out to hold online-only content, so the button below now offers Delete permanently. Read the note above, then press it again if that’s OK.} other {Det du markerade visade sig innehålla material som bara finns online, så knappen nedanför erbjuder nu ”Radera”. Läs noteringen ovanför och tryck på den igen om det är okej.}}",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Det du markerade visade sig innehålla material som bara finns online, så knappen nedanför erbjuder nu ”Radera permanent”. Läs noteringen ovanför och tryck på den igen om det är okej.} other {Det du markerade visade sig innehålla material som bara finns online, så knappen nedanför erbjuder nu ”Radera”. Läs noteringen ovanför och tryck på den igen om det är okej.}}",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
-    "sourceHash": "d3f4a7a"
+    "sourceHash": "04a6895"
   },
-  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {There’s no Recycle Bin inside an archive.} other {Det finns ingen papperskorg i ett arkiv.}}",
+  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {Det går inte att använda Papperskorgen i ett arkiv.} other {Det finns ingen papperskorg i ett arkiv.}}",
   "@fileOperations.delete.archiveWarningStrong": {
-    "sourceHash": "d25cd46"
+    "sourceHash": "423ca00"
   },
   "fileOperations.delete.archiveWarningRest": "Objekten tas bort permanent ur zip-arkivet.",
   "@fileOperations.delete.archiveWarningRest": {
@@ -48,9 +48,9 @@
   "@fileOperations.trash.undoAction": {
     "sourceHash": "a8283ad"
   },
-  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Go to Recycle Bin} other {Gå till papperskorgen}}",
+  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Gå till Papperskorgen} other {Gå till papperskorgen}}",
   "@fileOperations.trash.goToTrashAction": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
   "fileOperations.trash.undoing": "Lägger tillbaka dem…",
   "@fileOperations.trash.undoing": {
@@ -60,29 +60,29 @@
   "@fileOperations.trash.undone": {
     "sourceHash": "a76ffee"
   },
-  "fileOperations.trash.undonePartial": "{platform, select, windows {Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Recycle Bin.} other {Lade tillbaka {restoredText} {restored, plural, one {fil} other {filer}}; {skippedText} {skipped, plural, one {objekt} other {objekt}} ligger kvar i papperskorgen.}}",
+  "fileOperations.trash.undonePartial": "{platform, select, windows {Lade tillbaka {restoredText} {restored, plural, one {fil} other {filer}}; {skippedText} {skipped, plural, one {objekt} other {objekt}} ligger kvar i Papperskorgen.} other {Lade tillbaka {restoredText} {restored, plural, one {fil} other {filer}}; {skippedText} {skipped, plural, one {objekt} other {objekt}} ligger kvar i papperskorgen.}}",
   "@fileOperations.trash.undonePartial": {
-    "sourceHash": "371413d"
+    "sourceHash": "820579a"
   },
   "fileOperations.trash.undoUnavailable": "Det finns inget att lägga tillbaka. Objekten kan redan vara tillbaka, eller så är deras enhet inte ansluten.",
   "@fileOperations.trash.undoUnavailable": {
     "sourceHash": "ee17b5f"
   },
-  "fileOperations.trash.undoGone": "{platform, select, windows {Nothing to put back: {count, plural, one {the item was} other {the items were}} no longer in the Recycle Bin.} other {Det finns inget att lägga tillbaka: {count, plural, one {objektet} other {objekten}} finns inte längre i papperskorgen.}}",
+  "fileOperations.trash.undoGone": "{platform, select, windows {Det finns inget att lägga tillbaka: {count, plural, one {objektet} other {objekten}} finns inte längre i Papperskorgen.} other {Det finns inget att lägga tillbaka: {count, plural, one {objektet} other {objekten}} finns inte längre i papperskorgen.}}",
   "@fileOperations.trash.undoGone": {
-    "sourceHash": "69a90c2"
+    "sourceHash": "7a2975c"
   },
-  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {item was} other {items were}} no longer in the Recycle Bin.} other {{countText} {count, plural, one {objekt} other {objekt}} fanns inte längre i papperskorgen.}}",
+  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {objekt} other {objekt}} fanns inte längre i Papperskorgen.} other {{countText} {count, plural, one {objekt} other {objekt}} fanns inte längre i papperskorgen.}}",
   "@fileOperations.trash.undoPartlyGone": {
-    "sourceHash": "2e23577"
+    "sourceHash": "acece5b"
   },
-  "fileOperations.trash.noTrashHere": "{platform, select, windows {This drive doesn’t have a Recycle Bin.} other {Det finns ingen papperskorg på den här enheten.}}",
+  "fileOperations.trash.noTrashHere": "{platform, select, windows {Den här enheten kan inte använda Papperskorgen.} other {Det finns ingen papperskorg på den här enheten.}}",
   "@fileOperations.trash.noTrashHere": {
-    "sourceHash": "f58bdab"
+    "sourceHash": "cff83da"
   },
-  "fileOperations.delete.trashSwitch": "{platform, select, windows {Move to the Recycle Bin} other {Flytta till papperskorgen}}",
+  "fileOperations.delete.trashSwitch": "{platform, select, windows {Flytta till Papperskorgen} other {Flytta till papperskorgen}}",
   "@fileOperations.delete.trashSwitch": {
-    "sourceHash": "b250a45"
+    "sourceHash": "287751e"
   },
   "fileOperations.delete.overflowMore": "… och {countText} {count, plural, one {objekt} other {objekt}} till",
   "@fileOperations.delete.overflowMore": {
@@ -96,13 +96,13 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "46b23b5"
   },
-  "fileOperations.delete.confirmDelete": "{platform, select, windows {Delete permanently} other {Radera}}",
+  "fileOperations.delete.confirmDelete": "{platform, select, windows {Radera permanent} other {Radera}}",
   "@fileOperations.delete.confirmDelete": {
-    "sourceHash": "e2d0a54"
+    "sourceHash": "45efa80"
   },
-  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Delete} other {Flytta till papperskorgen}}",
+  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Radera} other {Flytta till papperskorgen}}",
   "@fileOperations.delete.confirmMoveToTrash": {
-    "sourceHash": "b250a45"
+    "sourceHash": "362a813"
   },
   "fileOperations.delete.titleCursorFile": "Radera 1 fil under markören",
   "@fileOperations.delete.titleCursorFile": {
@@ -357,9 +357,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "8331da7"
   },
-  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.} other {”{target}” är en befintlig mapp, så ”{name}” skulle få mappens namn. Vill du lägga ”{name}” i mappen avslutar du sökvägen med ”/”.}}",
+  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {”{target}” är en befintlig mapp, så ”{name}” skulle få mappens namn. Vill du lägga ”{name}” i mappen avslutar du sökvägen med ”\\”.} other {”{target}” är en befintlig mapp, så ”{name}” skulle få mappens namn. Vill du lägga ”{name}” i mappen avslutar du sökvägen med ”/”.}}",
   "@fileOperations.transferDialog.namedFolderHint": {
-    "sourceHash": "41dc88c"
+    "sourceHash": "aaa65e6"
   },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {mapp finns redan där} other {mappar finns redan där}}, så innehållet slås samman.",
   "@fileOperations.transferDialog.mergeInfoMany": {
@@ -437,13 +437,13 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to the Recycle Bin}}} other {{verb, select, copy {Kopiera} move {Flytta} compress {Komprimera} delete {Radera} other {Flytta till papperskorgen}}}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Kopiera} move {Flytta} compress {Komprimera} delete {Radera} other {Flytta till Papperskorgen}}} other {{verb, select, copy {Kopiera} move {Flytta} compress {Komprimera} delete {Radera} other {Flytta till papperskorgen}}}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
-    "sourceHash": "b18b6e3"
+    "sourceHash": "61043bf"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Copy {phrase}} move {Move {phrase}} compress {Compress {phrase}} delete {Delete {phrase}} other {Move {phrase} to the Recycle Bin}}} other {{verb, select, copy {Kopiera} move {Flytta} compress {Komprimera} delete {Radera} other {Flytta till papperskorgen}} {phrase}}}",
+  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Kopiera {phrase}} move {Flytta {phrase}} compress {Komprimera {phrase}} delete {Radera {phrase}} other {Flytta {phrase} till Papperskorgen}}} other {{verb, select, copy {Kopiera} move {Flytta} compress {Komprimera} delete {Radera} other {Flytta till papperskorgen}} {phrase}}}",
   "@fileOperations.transferDialog.titleWithCounts": {
-    "sourceHash": "d21c910"
+    "sourceHash": "9892d81"
   },
   "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {fil} other {filer}}",
   "@fileOperations.transferDialog.filesPart": {
@@ -505,9 +505,9 @@
   "@fileOperations.transferProgress.scanTitleDelete": {
     "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Counting items to move to the Recycle Bin…} other {Räknar objekt att flytta till papperskorgen…}}",
+  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Räknar objekt att flytta till Papperskorgen…} other {Räknar objekt att flytta till papperskorgen…}}",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "6df6c7f"
+    "sourceHash": "44b29fd"
   },
   "fileOperations.transferProgress.rollbackUnavailableCrossVolumeTooltip": "Det går inte att ångra en flytt mellan volymer. Cmdr tar bort varje original så fort kopian ligger säkert på plats, så det finns inget original kvar att gå tillbaka till. Avbryt stoppar flytten och varje fil finns kvar hel på den ena eller andra sidan.",
   "@fileOperations.transferProgress.rollbackUnavailableCrossVolumeTooltip": {
@@ -553,13 +553,13 @@
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to the Recycle Bin canceled} other {Canceled}}} other {{type, select, copy {Kopiering avbruten} move {Flytt avbruten} compress {Komprimering avbruten} delete {Radering avbruten} trash {Flytt till papperskorgen avbruten} other {Avbruten}}}}",
+  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Kopiering avbruten} move {Flytt avbruten} compress {Komprimering avbruten} delete {Radering avbruten} trash {Flytt till Papperskorgen avbruten} other {Avbruten}}} other {{type, select, copy {Kopiering avbruten} move {Flytt avbruten} compress {Komprimering avbruten} delete {Radering avbruten} trash {Flytt till papperskorgen avbruten} other {Avbruten}}}}",
   "@fileOperations.transferProgress.canceledAlertTitle": {
-    "sourceHash": "3cba939"
+    "sourceHash": "b041c89"
   },
-  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to the Recycle Bin. The files it moved so far stay in the Recycle Bin, and the rest are where they were.} other {You’ve canceled this operation.}}} other {{type, select, copy {Du har avbrutit den här kopieringen. Filerna som kopierats hittills ligger kvar där de är.} move {Du har avbrutit den här flytten. Filerna som flyttats hittills ligger kvar där de hamnade.} compress {Du har avbrutit den här komprimeringen.} delete {Du har avbrutit den här raderingen. Filerna som raderats hittills är borta och resten finns kvar.} trash {Du har avbrutit den här flytten till papperskorgen. Filerna som flyttats hittills ligger kvar i papperskorgen och resten ligger kvar där de var.} other {Du har avbrutit den här åtgärden.}}}}",
+  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {Du har avbrutit den här kopieringen. Filerna som kopierats hittills ligger kvar där de är.} move {Du har avbrutit den här flytten. Filerna som flyttats hittills ligger kvar där de hamnade.} compress {Du har avbrutit den här komprimeringen.} delete {Du har avbrutit den här raderingen. Filerna som raderats hittills är borta och resten finns kvar.} trash {Du har avbrutit den här flytten till Papperskorgen. Filerna som flyttats hittills ligger kvar i Papperskorgen och resten ligger kvar där de var.} other {Du har avbrutit den här åtgärden.}}} other {{type, select, copy {Du har avbrutit den här kopieringen. Filerna som kopierats hittills ligger kvar där de är.} move {Du har avbrutit den här flytten. Filerna som flyttats hittills ligger kvar där de hamnade.} compress {Du har avbrutit den här komprimeringen.} delete {Du har avbrutit den här raderingen. Filerna som raderats hittills är borta och resten finns kvar.} trash {Du har avbrutit den här flytten till papperskorgen. Filerna som flyttats hittills ligger kvar i papperskorgen och resten ligger kvar där de var.} other {Du har avbrutit den här åtgärden.}}}}",
   "@fileOperations.transferProgress.canceledAlertMessage": {
-    "sourceHash": "1d1de76"
+    "sourceHash": "c2ed004"
   },
   "fileOperations.transferProgress.titleCancellingSlow": "Avbryter… (rensar upp)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
@@ -653,9 +653,9 @@
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
-  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Recycle Bin} one {Moved {countText} file to the Recycle Bin} other {Moved {countText} files to the Recycle Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}} other {{type, select, copy {{count, plural, =0 {Inget kopierat} one {Kopierade {countText} fil} other {Kopierade {countText} filer}}} move {{count, plural, =0 {Inget flyttat} one {Flyttade {countText} fil} other {Flyttade {countText} filer}}} delete {{count, plural, =0 {Inget raderat} one {Raderade {countText} fil} other {Raderade {countText} filer}}} trash {{count, plural, =0 {Inget flyttat till papperskorgen} one {Flyttade {countText} fil till papperskorgen} other {Flyttade {countText} filer till papperskorgen}}} compress {{count, plural, =0 {Inget komprimerat} one {Komprimerade {countText} fil} other {Komprimerade {countText} filer}}} other {Klart}}}}",
+  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Inget kopierat} one {Kopierade {countText} fil} other {Kopierade {countText} filer}}} move {{count, plural, =0 {Inget flyttat} one {Flyttade {countText} fil} other {Flyttade {countText} filer}}} delete {{count, plural, =0 {Inget raderat} one {Raderade {countText} fil} other {Raderade {countText} filer}}} trash {{count, plural, =0 {Inget flyttat till Papperskorgen} one {Flyttade {countText} fil till Papperskorgen} other {Flyttade {countText} filer till Papperskorgen}}} compress {{count, plural, =0 {Inget komprimerat} one {Komprimerade {countText} fil} other {Komprimerade {countText} filer}}} other {Klart}}} other {{type, select, copy {{count, plural, =0 {Inget kopierat} one {Kopierade {countText} fil} other {Kopierade {countText} filer}}} move {{count, plural, =0 {Inget flyttat} one {Flyttade {countText} fil} other {Flyttade {countText} filer}}} delete {{count, plural, =0 {Inget raderat} one {Raderade {countText} fil} other {Raderade {countText} filer}}} trash {{count, plural, =0 {Inget flyttat till papperskorgen} one {Flyttade {countText} fil till papperskorgen} other {Flyttade {countText} filer till papperskorgen}}} compress {{count, plural, =0 {Inget komprimerat} one {Komprimerade {countText} fil} other {Komprimerade {countText} filer}}} other {Klart}}}}",
   "@fileOperations.transferProgress.titleDone": {
-    "sourceHash": "3db0154"
+    "sourceHash": "74225e6"
   },
   "fileOperations.transferProgress.doneSummaryRate": "<size></size> på {duration}, i genomsnitt <rate></rate>/s",
   "@fileOperations.transferProgress.doneSummaryRate": {
@@ -693,9 +693,9 @@
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Recycle Bin}}…} other {{gerund, select, copy {Kopierar} move {Flyttar} compress {Komprimerar} delete {Raderar} other {Flyttar till papperskorgen}}…}}",
+  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Kopierar} move {Flyttar} compress {Komprimerar} delete {Raderar} other {Flyttar till Papperskorgen}}…} other {{gerund, select, copy {Kopierar} move {Flyttar} compress {Komprimerar} delete {Raderar} other {Flyttar till papperskorgen}}…}}",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "0c636e5"
+    "sourceHash": "f40304c"
   },
   "fileOperations.transferProgress.stageScanning": "Söker igenom",
   "@fileOperations.transferProgress.stageScanning": {
@@ -845,25 +845,25 @@
   "@fileOperations.sourcesGone.title": {
     "sourceHash": "9f8e2cb"
   },
-  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to the Recycle Bin was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {{goneText} av de {totalText} objekt som skulle kopieras {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan åtgärden väntade på sin tur.} move {{goneText} av de {totalText} objekt som skulle flyttas {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan åtgärden väntade på sin tur.} delete {{goneText} av de {totalText} objekt som skulle raderas {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan åtgärden väntade på sin tur.} trash {{goneText} av de {totalText} objekt som skulle flyttas till papperskorgen {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan åtgärden väntade på sin tur.} other {{goneText} av de {totalText} objekt som åtgärden skulle hantera {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan den väntade på sin tur.}}}}",
+  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} av de {totalText} objekt som skulle kopieras {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan åtgärden väntade på sin tur.} move {{goneText} av de {totalText} objekt som skulle flyttas {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan åtgärden väntade på sin tur.} delete {{goneText} av de {totalText} objekt som skulle raderas {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan åtgärden väntade på sin tur.} trash {{goneText} av de {totalText} objekt som skulle flyttas till Papperskorgen {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan åtgärden väntade på sin tur.} other {{goneText} av de {totalText} objekt som åtgärden skulle hantera {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan den väntade på sin tur.}}} other {{type, select, copy {{goneText} av de {totalText} objekt som skulle kopieras {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan åtgärden väntade på sin tur.} move {{goneText} av de {totalText} objekt som skulle flyttas {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan åtgärden väntade på sin tur.} delete {{goneText} av de {totalText} objekt som skulle raderas {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan åtgärden väntade på sin tur.} trash {{goneText} av de {totalText} objekt som skulle flyttas till papperskorgen {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan åtgärden väntade på sin tur.} other {{goneText} av de {totalText} objekt som åtgärden skulle hantera {gone, plural, one {har flyttats eller raderats} other {har flyttats eller raderats}} medan den väntade på sin tur.}}}}",
   "@fileOperations.sourcesGone.message": {
-    "sourceHash": "0512078"
+    "sourceHash": "bb8d9df"
   },
   "fileOperations.sourcesGone.moreItems": "{count, plural, one {och ytterligare {countText} objekt} other {och ytterligare {countText} objekt}}",
   "@fileOperations.sourcesGone.moreItems": {
     "sourceHash": "c39507d"
   },
-  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest permanently} trash {Delete the rest} other {Do the rest}}} other {{type, select, copy {Kopiera resten} move {Flytta resten} delete {Radera resten} trash {Flytta resten till papperskorgen} other {Fortsätt med resten}}}}",
+  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Kopiera resten} move {Flytta resten} delete {Radera resten permanent} trash {Radera resten} other {Fortsätt med resten}}} other {{type, select, copy {Kopiera resten} move {Flytta resten} delete {Radera resten} trash {Flytta resten till papperskorgen} other {Fortsätt med resten}}}}",
   "@fileOperations.sourcesGone.continue": {
-    "sourceHash": "2790bfb"
+    "sourceHash": "079ea59"
   },
-  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {A queued copy has a question for you. You’ll see it as soon as the open dialog closes.} move {A queued move has a question for you. You’ll see it as soon as the open dialog closes.} delete {A queued delete has a question for you. You’ll see it as soon as the open dialog closes.} trash {A queued move to the Recycle Bin has a question for you. You’ll see it as soon as the open dialog closes.} other {A queued operation has a question for you. You’ll see it as soon as the open dialog closes.}}} other {{type, select, copy {En väntande kopiering har en fråga till dig. Du ser den så fort den öppna dialogen stängs.} move {En väntande flytt har en fråga till dig. Du ser den så fort den öppna dialogen stängs.} delete {En väntande radering har en fråga till dig. Du ser den så fort den öppna dialogen stängs.} trash {En väntande flytt till papperskorgen har en fråga till dig. Du ser den så fort den öppna dialogen stängs.} other {En väntande åtgärd har en fråga till dig. Du ser den så fort den öppna dialogen stängs.}}}}",
+  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {En väntande kopiering har en fråga till dig. Du ser den så fort den öppna dialogen stängs.} move {En väntande flytt har en fråga till dig. Du ser den så fort den öppna dialogen stängs.} delete {En väntande radering har en fråga till dig. Du ser den så fort den öppna dialogen stängs.} trash {En väntande flytt till Papperskorgen har en fråga till dig. Du ser den så fort den öppna dialogen stängs.} other {En väntande åtgärd har en fråga till dig. Du ser den så fort den öppna dialogen stängs.}}} other {{type, select, copy {En väntande kopiering har en fråga till dig. Du ser den så fort den öppna dialogen stängs.} move {En väntande flytt har en fråga till dig. Du ser den så fort den öppna dialogen stängs.} delete {En väntande radering har en fråga till dig. Du ser den så fort den öppna dialogen stängs.} trash {En väntande flytt till papperskorgen har en fråga till dig. Du ser den så fort den öppna dialogen stängs.} other {En väntande åtgärd har en fråga till dig. Du ser den så fort den öppna dialogen stängs.}}}}",
   "@fileOperations.sourcesGone.heldToast": {
-    "sourceHash": "75f645d"
+    "sourceHash": "fc21ca7"
   },
-  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Nothing left to copy: {total, plural, one {the item} other {all {totalText} items}} this copy was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} move {Nothing left to move: {total, plural, one {the item} other {all {totalText} items}} this move was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} delete {Nothing left to delete: {total, plural, one {the item} other {all {totalText} items}} this delete was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} trash {Nothing left to move to the Recycle Bin: {total, plural, one {the item} other {all {totalText} items}} this move to the Recycle Bin was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} other {Nothing left to do: {total, plural, one {the item} other {all {totalText} items}} this operation was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {Inget kvar att kopiera: {total, plural, one {objektet som skulle kopieras} other {alla {totalText} objekt som skulle kopieras}} har flyttats eller raderats medan åtgärden väntade på sin tur.} move {Inget kvar att flytta: {total, plural, one {objektet som skulle flyttas} other {alla {totalText} objekt som skulle flyttas}} har flyttats eller raderats medan åtgärden väntade på sin tur.} delete {Inget kvar att radera: {total, plural, one {objektet som skulle raderas} other {alla {totalText} objekt som skulle raderas}} har flyttats eller raderats medan åtgärden väntade på sin tur.} trash {Inget kvar att flytta till papperskorgen: {total, plural, one {objektet som skulle flyttas till papperskorgen} other {alla {totalText} objekt som skulle flyttas till papperskorgen}} har flyttats eller raderats medan åtgärden väntade på sin tur.} other {Inget kvar att göra: {total, plural, one {objektet som åtgärden skulle hantera} other {alla {totalText} objekt som åtgärden skulle hantera}} har flyttats eller raderats medan den väntade på sin tur.}}}}",
+  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Inget kvar att kopiera: {total, plural, one {objektet som skulle kopieras} other {alla {totalText} objekt som skulle kopieras}} har flyttats eller raderats medan åtgärden väntade på sin tur.} move {Inget kvar att flytta: {total, plural, one {objektet som skulle flyttas} other {alla {totalText} objekt som skulle flyttas}} har flyttats eller raderats medan åtgärden väntade på sin tur.} delete {Inget kvar att radera: {total, plural, one {objektet som skulle raderas} other {alla {totalText} objekt som skulle raderas}} har flyttats eller raderats medan åtgärden väntade på sin tur.} trash {Inget kvar att flytta till Papperskorgen: {total, plural, one {objektet som skulle flyttas till Papperskorgen} other {alla {totalText} objekt som skulle flyttas till Papperskorgen}} har flyttats eller raderats medan åtgärden väntade på sin tur.} other {Inget kvar att göra: {total, plural, one {objektet som åtgärden skulle hantera} other {alla {totalText} objekt som åtgärden skulle hantera}} har flyttats eller raderats medan den väntade på sin tur.}}} other {{type, select, copy {Inget kvar att kopiera: {total, plural, one {objektet som skulle kopieras} other {alla {totalText} objekt som skulle kopieras}} har flyttats eller raderats medan åtgärden väntade på sin tur.} move {Inget kvar att flytta: {total, plural, one {objektet som skulle flyttas} other {alla {totalText} objekt som skulle flyttas}} har flyttats eller raderats medan åtgärden väntade på sin tur.} delete {Inget kvar att radera: {total, plural, one {objektet som skulle raderas} other {alla {totalText} objekt som skulle raderas}} har flyttats eller raderats medan åtgärden väntade på sin tur.} trash {Inget kvar att flytta till papperskorgen: {total, plural, one {objektet som skulle flyttas till papperskorgen} other {alla {totalText} objekt som skulle flyttas till papperskorgen}} har flyttats eller raderats medan åtgärden väntade på sin tur.} other {Inget kvar att göra: {total, plural, one {objektet som åtgärden skulle hantera} other {alla {totalText} objekt som åtgärden skulle hantera}} har flyttats eller raderats medan den väntade på sin tur.}}}}",
   "@fileOperations.sourcesGone.nothingLeftToast": {
-    "sourceHash": "4d62b7d"
+    "sourceHash": "936d7b4"
   },
   "fileOperations.alreadyGone.one": "”{name}” var redan borta. En annan app har troligen flyttat eller raderat objektet.",
   "@fileOperations.alreadyGone.one": {
@@ -1305,9 +1305,9 @@
   "@fileOperations.resticPassword.inputAria": {
     "sourceHash": "3e39703"
   },
-  "fileOperations.resticPassword.remember": "{platform, select, macos {Kom ihåg i nyckelringen} windows {Remember password} other {Remember in keyring}}",
+  "fileOperations.resticPassword.remember": "{platform, select, macos {Kom ihåg i nyckelringen} windows {Kom ihåg lösenord} other {Kom ihåg i nyckelringen}}",
   "@fileOperations.resticPassword.remember": {
-    "sourceHash": "3fd7384"
+    "sourceHash": "42237e1"
   },
   "fileOperations.resticPassword.checking": "Kontrollerar lösenordet…",
   "@fileOperations.resticPassword.checking": {
@@ -1349,9 +1349,9 @@
   "@fileOperations.validation.pathEmpty": {
     "sourceHash": "c7afbbc"
   },
-  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {Sökvägen måste vara absolut (börja med /)}}",
+  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Sökvägen måste vara absolut (börja med en enhetsbokstav, till exempel C:\\, eller en delad mapp, till exempel \\\\server\\mapp)} other {Sökvägen måste vara absolut (börja med /)}}",
   "@fileOperations.validation.pathNotAbsolute": {
-    "sourceHash": "3c08374"
+    "sourceHash": "f910f77"
   },
   "fileOperations.validation.pathShareMissing": "Lägg till namnet på den delade mappen efter servern, till exempel \\\\server\\mapp",
   "@fileOperations.validation.pathShareMissing": {

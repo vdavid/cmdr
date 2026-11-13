@@ -71,9 +71,9 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "{platform, select, macos {Чтобы следить за папкой «Загрузки», Cmdr нужен полный доступ к диску.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "downloads.fda.message": "{platform, select, macos {Чтобы следить за папкой «Загрузки», Cmdr нужен полный доступ к диску.} other {Cmdr не может следить за папкой «Загрузки». Проверьте, что папка существует и вы можете ее открыть.}}",
   "@downloads.fda.message": {
-    "sourceHash": "82c82c6"
+    "sourceHash": "dd37803"
   },
   "downloads.fda.dismiss": "Закрыть",
   "@downloads.fda.dismiss": {
@@ -131,9 +131,9 @@
   "@downloads.shortcutRow.unavailable": {
     "sourceHash": "8882532"
   },
-  "downloads.shortcutRow.addModifier": "{platform, select, macos {Добавьте модификатор (⌘, ⌃, ⌥ или ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Добавьте модификатор (⌘, ⌃, ⌥ или ⇧)} windows {Добавьте модификатор (Ctrl, Alt, Shift или Win)} other {Добавьте модификатор (Ctrl, Alt, Shift или Super)}}",
   "@downloads.shortcutRow.addModifier": {
-    "sourceHash": "28a5ba2"
+    "sourceHash": "a56bd6c"
   },
   "downloads.toggleDescription.bound": "Нажмите {binding} в любом приложении, чтобы перейти к последней загрузке.",
   "@downloads.toggleDescription.bound": {

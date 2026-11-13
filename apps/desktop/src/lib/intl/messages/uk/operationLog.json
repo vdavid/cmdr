@@ -188,9 +188,9 @@
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {Звідки: {from}, куди: Смітник}}",
+  "operationLog.route.fromToTrash": "{platform, select, windows {Звідки: {from}, куди: Кошик} other {Звідки: {from}, куди: Смітник}}",
   "@operationLog.route.fromToTrash": {
-    "sourceHash": "9eff97f"
+    "sourceHash": "2e133c1"
   },
   "operationLog.route.from": "Звідки: {from}",
   "@operationLog.route.from": {
@@ -256,9 +256,9 @@
   "@operationLog.summary.delete": {
     "sourceHash": "97ec6b7"
   },
-  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {Переміщено {countText} елемент у Смітник} few {Переміщено {countText} елементи в Смітник} many {Переміщено {countText} елементів у Смітник} other {Переміщено {countText} елемента в Смітник}}}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Переміщено {countText} елемент у Кошик} few {Переміщено {countText} елементи в Кошик} many {Переміщено {countText} елементів у Кошик} other {Переміщено {countText} елемента в Кошик}}} other {{count, plural, one {Переміщено {countText} елемент у Смітник} few {Переміщено {countText} елементи в Смітник} many {Переміщено {countText} елементів у Смітник} other {Переміщено {countText} елемента в Смітник}}}}",
   "@operationLog.summary.trash": {
-    "sourceHash": "34b4457"
+    "sourceHash": "2dea5c8"
   },
   "operationLog.summary.rename": "{count, plural, one {Перейменовано {countText} елемент} few {Перейменовано {countText} елементи} many {Перейменовано {countText} елементів} other {Перейменовано {countText} елемента}}",
   "@operationLog.summary.rename": {
@@ -348,9 +348,9 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {Cmdr завершив роботу ще до кінця цієї операції, тож міг записати не все, що вона зробила. Відкат охопить лише те, що записано.}}",
+  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr закрився ще до кінця цієї операції, тож міг записати не все, що вона зробила. Відкат охопить лише те, що записано.} other {Cmdr завершив роботу ще до кінця цієї операції, тож міг записати не все, що вона зробила. Відкат охопить лише те, що записано.}}",
   "@operationLog.rollback.interruptedNotice": {
-    "sourceHash": "642e6fc"
+    "sourceHash": "da924aa"
   },
   "operationLog.rollback.partialRolledBack": "{count, plural, one {Відкочено {countText} елемент.} few {Відкочено {countText} елементи.} many {Відкочено {countText} елементів.} other {Відкочено {countText} елемента.}}",
   "@operationLog.rollback.partialRolledBack": {

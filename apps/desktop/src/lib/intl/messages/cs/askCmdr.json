@@ -1425,13 +1425,13 @@
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
   },
-  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {You turned down moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You turned down {verbName} {countText} {count, plural, one {item} other {items}}}}} other {Odmítli jste: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}}}",
+  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {Odmítli jste přesunutí {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}} do koše} other {Odmítli jste: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}}}} other {Odmítli jste: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}}}",
   "@askCmdr.decision.rejected": {
-    "sourceHash": "19d12c1"
+    "sourceHash": "da3b52e"
   },
-  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {You approved moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You approved {verbName} {countText} {count, plural, one {item} other {items}}}}} other {Schválili jste: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}}}",
+  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {Schválili jste přesunutí {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}} do koše} other {Schválili jste: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}}}} other {Schválili jste: {verbName} {countText} {count, plural, one {položky} few {položek} many {položky} other {položek}}}}",
   "@askCmdr.decision.approved": {
-    "sourceHash": "aa911e6"
+    "sourceHash": "3f61860"
   },
   "askCmdr.decision.result": "hotovo: {doneText}, přeskočeno: {skippedText}, nezdařilo se: {failedText}",
   "@askCmdr.decision.result": {
@@ -1441,9 +1441,9 @@
   "@askCmdr.decision.running": {
     "sourceHash": "46c5413"
   },
-  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr closed before this finished} other {Cmdr se ukončil dřív, než to doběhlo}}",
+  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr se zavřel dřív, než to doběhlo} other {Cmdr se ukončil dřív, než to doběhlo}}",
   "@askCmdr.decision.interrupted": {
-    "sourceHash": "ece92cc"
+    "sourceHash": "de4a5c0"
   },
   "askCmdr.decision.verbMove": "přesun",
   "@askCmdr.decision.verbMove": {
@@ -1801,17 +1801,17 @@
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "729d49f"
   },
-  "askCmdr.tool.quit.doing": "{platform, select, windows {Closing Cmdr} other {Ukončuje se Cmdr}}",
+  "askCmdr.tool.quit.doing": "{platform, select, windows {Zavírá se Cmdr} other {Ukončuje se Cmdr}}",
   "@askCmdr.tool.quit.doing": {
-    "sourceHash": "b26d1c8"
+    "sourceHash": "b1e13d3"
   },
-  "askCmdr.tool.quit.done": "{platform, select, windows {Asked Cmdr to close} other {Vyžádáno ukončení Cmdru}}",
+  "askCmdr.tool.quit.done": "{platform, select, windows {Vyžádáno zavření Cmdru} other {Vyžádáno ukončení Cmdru}}",
   "@askCmdr.tool.quit.done": {
-    "sourceHash": "b9083af"
+    "sourceHash": "17a08e9"
   },
-  "askCmdr.tool.quit.tried": "{platform, select, windows {Tried to close Cmdr} other {Pokus o ukončení Cmdru}}",
+  "askCmdr.tool.quit.tried": "{platform, select, windows {Pokus o zavření Cmdru} other {Pokus o ukončení Cmdru}}",
   "@askCmdr.tool.quit.tried": {
-    "sourceHash": "ab34547"
+    "sourceHash": "c05f3a9"
   },
   "askCmdr.tool.switchPane.doing": "Přepíná se mezi panely",
   "@askCmdr.tool.switchPane.doing": {

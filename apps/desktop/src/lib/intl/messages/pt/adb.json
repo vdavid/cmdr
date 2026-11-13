@@ -7,9 +7,9 @@
   "@adb.connect.openSettings": {
     "sourceHash": "3f94010"
   },
-  "adb.connect.serverUnreachable": "{platform, select, macos {As ferramentas do Android neste Mac não responderam.} windows {The Android tools on this PC didn’t answer.} other {The Android tools on this computer didn’t answer.}}",
+  "adb.connect.serverUnreachable": "{platform, select, macos {As ferramentas do Android neste Mac não responderam.} windows {As ferramentas do Android neste PC não responderam.} other {As ferramentas do Android neste computador não responderam.}}",
   "@adb.connect.serverUnreachable": {
-    "sourceHash": "b53716b"
+    "sourceHash": "0b8e427"
   },
   "adb.connect.deviceGone": "Seu celular não está mais conectado.",
   "@adb.connect.deviceGone": {
@@ -55,9 +55,9 @@
   "@adb.readiness.offline": {
     "sourceHash": "6061885"
   },
-  "adb.readiness.noPermissions": "{platform, select, macos {Este Mac não consegue alcançar o seu celular pelo USB. Tente outro cabo ou outra porta.} windows {This PC can’t reach your phone over USB. Try another cable or port.} other {This computer can’t reach your phone over USB. Try another cable or port.}}",
+  "adb.readiness.noPermissions": "{platform, select, macos {Este Mac não consegue alcançar o seu celular pelo USB. Tente outro cabo ou outra porta.} windows {Este PC não consegue alcançar o seu celular pelo USB. Tente outro cabo ou outra porta.} other {Este computador não consegue alcançar o seu celular pelo USB. Tente outro cabo ou outra porta.}}",
   "@adb.readiness.noPermissions": {
-    "sourceHash": "265d7ed"
+    "sourceHash": "30bcbc3"
   },
   "adb.hint.text": "Quer o sistema de arquivos inteiro? Ative a depuração USB.",
   "@adb.hint.text": {

@@ -7,9 +7,9 @@
   "@adb.connect.openSettings": {
     "sourceHash": "eabd4e6"
   },
-  "adb.connect.serverUnreachable": "{platform, select, macos {Las herramientas de Android en este Mac no respondieron.} windows {The Android tools on this PC didn’t answer.} other {The Android tools on this computer didn’t answer.}}",
+  "adb.connect.serverUnreachable": "{platform, select, macos {Las herramientas de Android en este Mac no respondieron.} windows {Las herramientas de Android en este PC no respondieron.} other {Las herramientas de Android en esta computadora no respondieron.}}",
   "@adb.connect.serverUnreachable": {
-    "sourceHash": "48ebbc0"
+    "sourceHash": "06c36f6"
   },
   "adb.connect.timedOut": "Tu teléfono no respondió a tiempo.",
   "@adb.connect.timedOut": {
@@ -18,5 +18,9 @@
   "adb.connect.transport": "Cmdr perdió la conexión con tu teléfono.",
   "@adb.connect.transport": {
     "sourceHash": "45bfab0"
+  },
+  "adb.readiness.noPermissions": "{platform, select, macos {Este Mac no puede acceder a tu teléfono por USB. Prueba con otro cable u otro puerto.} windows {Este PC no puede acceder a tu teléfono por USB. Prueba con otro cable u otro puerto.} other {Esta computadora no puede acceder a tu teléfono por USB. Prueba con otro cable u otro puerto.}}",
+  "@adb.readiness.noPermissions": {
+    "sourceHash": "881a93a"
   }
 }

@@ -24,9 +24,9 @@
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "{platform, select, macos {O Cmdr precisa de Acesso Total ao Disco para monitorar sua pasta Downloads. <settingsLink>Abrir os Ajustes do Sistema</settingsLink>} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "common.downloadsFdaHint": "{platform, select, macos {O Cmdr precisa de Acesso Total ao Disco para monitorar sua pasta Downloads. <settingsLink>Abrir os Ajustes do Sistema</settingsLink>} other {O Cmdr não consegue monitorar sua pasta Downloads. Confira se a pasta existe e se você consegue abri-la.}}",
   "@common.downloadsFdaHint": {
-    "sourceHash": "315e1d8"
+    "sourceHash": "b54bf8b"
   },
   "common.sizeUnit.byte": "{count, plural, one {byte} many {bytes} other {bytes}}",
   "@common.sizeUnit.byte": {

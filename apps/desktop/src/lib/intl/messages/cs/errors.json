@@ -19,9 +19,9 @@
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "ff103cd"
   },
-  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zavřete některé aplikace a uvolněte paměť, hlavně ty, které spotřebovávají hodně prostředků (prohlížeče s mnoha záložkami, editory, multimediální aplikace)\n- Zkontrolujte využití paměti v aplikaci **Monitor aktivity** (vyhledejte ji ve Spotlightu)\n- Zkuste sem přejít znovu} windows {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Task Manager** (press Ctrl+Shift+Esc)\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in your system monitor app\n- Navigate here again to retry}}",
+  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zavřete některé aplikace a uvolněte paměť, hlavně ty, které spotřebovávají hodně prostředků (prohlížeče s mnoha záložkami, editory, multimediální aplikace)\n- Zkontrolujte využití paměti v aplikaci **Monitor aktivity** (vyhledejte ji ve Spotlightu)\n- Zkuste sem přejít znovu} windows {Co můžete zkusit:\n- Zavřete některé aplikace a uvolněte paměť, hlavně ty, které spotřebovávají hodně prostředků (prohlížeče s mnoha záložkami, editory, multimediální aplikace)\n- Zkontrolujte využití paměti ve **Správci úloh** (stiskněte Ctrl+Shift+Esc)\n- Zkuste sem přejít znovu} other {Co můžete zkusit:\n- Zavřete některé aplikace a uvolněte paměť, hlavně ty, které spotřebovávají hodně prostředků (prohlížeče s mnoha záložkami, editory, multimediální aplikace)\n- Zkontrolujte využití paměti v aplikaci pro sledování systému\n- Zkuste sem přejít znovu}}",
   "@errors.listing.notEnoughMemory.suggestion": {
-    "sourceHash": "d05a4e4"
+    "sourceHash": "5b716f4"
   },
   "errors.listing.resourceBusy.title": "Prostředek je zaneprázdněný",
   "@errors.listing.resourceBusy.title": {
@@ -31,9 +31,9 @@
   "@errors.listing.resourceBusy.explanation": {
     "sourceHash": "18a07d9"
   },
-  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {Chvíli počkejte a pak sem přejděte znovu. Pokud se to opakuje, zkontrolujte, která aplikace může mít soubor otevřený (v Terminálu spusťte `lsof +D <folder-path>` a uvidíte, které procesy tuto složku používají).} windows {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the folder open: in **Resource Monitor** (search for it in Start), open the CPU tab and search **Associated Handles** for the folder’s name.} other {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in a terminal, run `lsof +D <folder-path>` to see which processes are using this folder).}}",
+  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {Chvíli počkejte a pak sem přejděte znovu. Pokud se to opakuje, zkontrolujte, která aplikace může mít soubor otevřený (v Terminálu spusťte `lsof +D <folder-path>` a uvidíte, které procesy tuto složku používají).} windows {Chvíli počkejte a pak sem přejděte znovu. Pokud se to opakuje, zkontrolujte, která aplikace může mít složku otevřenou: v aplikaci **Sledování prostředků** (vyhledejte ji v nabídce Start) otevřete kartu Procesor a v poli **Přidružené popisovače** vyhledejte název složky.} other {Chvíli počkejte a pak sem přejděte znovu. Pokud se to opakuje, zkontrolujte, která aplikace může mít soubor otevřený (v terminálu spusťte `lsof +D <folder-path>` a uvidíte, které procesy tuto složku používají).}}",
   "@errors.listing.resourceBusy.suggestion": {
-    "sourceHash": "fa266e6"
+    "sourceHash": "31ef425"
   },
   "errors.listing.temporarilyUnavailable.title": "Dočasně nedostupné",
   "@errors.listing.temporarilyUnavailable.title": {
@@ -43,21 +43,21 @@
   "@errors.listing.temporarilyUnavailable.explanation": {
     "sourceHash": "2193876"
   },
-  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {Zkuste sem přejít znovu. Obvykle se to vyřeší samo. Pokud se to opakuje, systém může být silně vytížený. V aplikaci **Monitor aktivity** zkontrolujte, které aplikace spotřebovávají hodně prostředků.} windows {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Task Manager** for apps consuming a lot of resources.} other {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check your system monitor app for apps consuming a lot of resources.}}",
+  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {Zkuste sem přejít znovu. Obvykle se to vyřeší samo. Pokud se to opakuje, systém může být silně vytížený. V aplikaci **Monitor aktivity** zkontrolujte, které aplikace spotřebovávají hodně prostředků.} windows {Zkuste sem přejít znovu. Obvykle se to vyřeší samo. Pokud se to opakuje, systém může být silně vytížený. Ve **Správci úloh** zkontrolujte, které aplikace spotřebovávají hodně prostředků.} other {Zkuste sem přejít znovu. Obvykle se to vyřeší samo. Pokud se to opakuje, systém může být silně vytížený. V aplikaci pro sledování systému zkontrolujte, které aplikace spotřebovávají hodně prostředků.}}",
   "@errors.listing.temporarilyUnavailable.suggestion": {
-    "sourceHash": "1ec4aef"
+    "sourceHash": "a677915"
   },
   "errors.listing.networkDown.title": "Síť nefunguje",
   "@errors.listing.networkDown.title": {
     "sourceHash": "399ab40"
   },
-  "errors.listing.networkDown.explanation": "{platform, select, macos {Síťové připojení vašeho Macu nefunguje, takže je tento svazek pro Cmdr nedostupný. Může to znamenat, že je Wi-Fi odpojená, kabel Ethernet vytažený nebo síťové rozhraní vypnuté.} windows {Your PC’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network adapter is disabled.} other {Your computer’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.}}",
+  "errors.listing.networkDown.explanation": "{platform, select, macos {Síťové připojení vašeho Macu nefunguje, takže je tento svazek pro Cmdr nedostupný. Může to znamenat, že je Wi-Fi odpojená, kabel Ethernet vytažený nebo síťové rozhraní vypnuté.} windows {Síťové připojení vašeho počítače nefunguje, takže je tento svazek pro Cmdr nedostupný. Může to znamenat, že je Wi-Fi odpojená, kabel Ethernet vytažený nebo síťový adaptér vypnutý.} other {Síťové připojení vašeho počítače nefunguje, takže je tento svazek pro Cmdr nedostupný. Může to znamenat, že je Wi-Fi odpojená, kabel Ethernet vytažený nebo síťové rozhraní vypnuté.}}",
   "@errors.listing.networkDown.explanation": {
-    "sourceHash": "179f8bb"
+    "sourceHash": "e5fcd3d"
   },
-  "errors.listing.networkDown.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte stav Wi-Fi nebo Ethernetu v **{system_settings} > Síť**\n- Pokud jste na Wi-Fi, zkuste ji vypnout a znovu zapnout\n- V Terminálu spusťte `ping google.com` a otestujte připojení\n- Až budete zase online, přejděte sem znovu} windows {Here’s what to try:\n- Check Wi-Fi or Ethernet status in **Settings > Network & internet**\n- If you’re on Wi-Fi, try turning it off and on again\n- In PowerShell, run `ping google.com` to test your connection\n- Navigate here again once you’re back online} other {Here’s what to try:\n- Check Wi-Fi or Ethernet status in your system’s network settings\n- If you’re on Wi-Fi, try turning it off and on again\n- In a terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online}}",
+  "errors.listing.networkDown.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte stav Wi-Fi nebo Ethernetu v **{system_settings} > Síť**\n- Pokud jste na Wi-Fi, zkuste ji vypnout a znovu zapnout\n- V Terminálu spusťte `ping google.com` a otestujte připojení\n- Až budete zase online, přejděte sem znovu} windows {Co můžete zkusit:\n- Zkontrolujte stav Wi-Fi nebo Ethernetu v **Nastavení > Síť a internet**\n- Pokud jste na Wi-Fi, zkuste ji vypnout a znovu zapnout\n- V PowerShellu spusťte `ping google.com` a otestujte připojení\n- Až budete zase online, přejděte sem znovu} other {Co můžete zkusit:\n- Zkontrolujte stav Wi-Fi nebo Ethernetu v nastavení sítě ve vašem systému\n- Pokud jste na Wi-Fi, zkuste ji vypnout a znovu zapnout\n- V terminálu spusťte `ping google.com` a otestujte připojení\n- Až budete zase online, přejděte sem znovu}}",
   "@errors.listing.networkDown.suggestion": {
-    "sourceHash": "bf4b517"
+    "sourceHash": "1712df1"
   },
   "errors.listing.networkConnectionDropped.title": "Síťové připojení vypadlo",
   "@errors.listing.networkConnectionDropped.title": {
@@ -91,9 +91,9 @@
   "@errors.listing.connectionReset.explanation": {
     "sourceHash": "3ccfa1c"
   },
-  "errors.listing.connectionReset.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že server běží\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Zkuste sem přejít znovu} windows {Here’s what to try:\n- Check that the server is running\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry}}",
+  "errors.listing.connectionReset.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že server běží\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Zkuste sem přejít znovu} windows {Co můžete zkusit:\n- Zkontrolujte, že server běží\n- V PowerShellu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Zkuste sem přejít znovu} other {Co můžete zkusit:\n- Zkontrolujte, že server běží\n- V terminálu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Zkuste sem přejít znovu}}",
   "@errors.listing.connectionReset.suggestion": {
-    "sourceHash": "d980663"
+    "sourceHash": "85ce28a"
   },
   "errors.listing.connectionTimedOutErrno.title": "Časový limit připojení vypršel",
   "@errors.listing.connectionTimedOutErrno.title": {
@@ -103,9 +103,9 @@
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "c088c41"
   },
-  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že zařízení nebo server je zapnutý a dostupný\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- V Terminálu zkuste `ping <hostname>` a otestujte připojení\n- Zkuste sem přejít znovu} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry}}",
+  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že zařízení nebo server je zapnutý a dostupný\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- V Terminálu zkuste `ping <hostname>` a otestujte připojení\n- Zkuste sem přejít znovu} windows {Co můžete zkusit:\n- Zkontrolujte, že zařízení nebo server je zapnutý a dostupný\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- V PowerShellu zkuste `ping <hostname>` a otestujte připojení\n- Zkuste sem přejít znovu} other {Co můžete zkusit:\n- Zkontrolujte, že zařízení nebo server je zapnutý a dostupný\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- V terminálu zkuste `ping <hostname>` a otestujte připojení\n- Zkuste sem přejít znovu}}",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
-    "sourceHash": "230ef64"
+    "sourceHash": "446063f"
   },
   "errors.listing.hostDown.title": "Hostitel nereaguje",
   "@errors.listing.hostDown.title": {
@@ -115,9 +115,9 @@
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "e175712"
   },
-  "errors.listing.hostDown.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je hostitel zapnutý a připojený k síti\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je dostupný\n- Pokud jde o NAS nebo server, zkontrolujte jeho rozhraní pro správu\n- Až bude hostitel zase dostupný, přejděte sem znovu} windows {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In PowerShell, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back} other {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In a terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back}}",
+  "errors.listing.hostDown.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je hostitel zapnutý a připojený k síti\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je dostupný\n- Pokud jde o NAS nebo server, zkontrolujte jeho rozhraní pro správu\n- Až bude hostitel zase dostupný, přejděte sem znovu} windows {Co můžete zkusit:\n- Zkontrolujte, že je hostitel zapnutý a připojený k síti\n- V PowerShellu zkuste `ping <hostname>` a ověřte, jestli je dostupný\n- Pokud jde o NAS nebo server, zkontrolujte jeho rozhraní pro správu\n- Až bude hostitel zase dostupný, přejděte sem znovu} other {Co můžete zkusit:\n- Zkontrolujte, že je hostitel zapnutý a připojený k síti\n- V terminálu zkuste `ping <hostname>` a ověřte, jestli je dostupný\n- Pokud jde o NAS nebo server, zkontrolujte jeho rozhraní pro správu\n- Až bude hostitel zase dostupný, přejděte sem znovu}}",
   "@errors.listing.hostDown.suggestion": {
-    "sourceHash": "7a8ecd8"
+    "sourceHash": "238aad1"
   },
   "errors.listing.staleConnection.title": "Zastaralé připojení",
   "@errors.listing.staleConnection.title": {
@@ -127,9 +127,9 @@
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Přejděte z této složky jinam a pak se do ní vraťte\n- Pokud jde o síťový disk, zkuste ho ve Finderu odpojit a znovu připojit\n- Zkontrolujte, že server, na kterém tato složka je, běží\n- V Terminálu spusťte `mount` a uvidíte právě připojené svazky} windows {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try disconnecting it and connecting it again in File Explorer\n- Check that the server hosting this folder is running\n- In PowerShell, run `net use` to see your connected network drives} other {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in your file manager\n- Check that the server hosting this folder is running\n- In a terminal, run `mount` to see currently mounted volumes}}",
+  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Přejděte z této složky jinam a pak se do ní vraťte\n- Pokud jde o síťový disk, zkuste ho ve Finderu odpojit a znovu připojit\n- Zkontrolujte, že server, na kterém tato složka je, běží\n- V Terminálu spusťte `mount` a uvidíte právě připojené svazky} windows {Co můžete zkusit:\n- Přejděte z této složky jinam a pak se do ní vraťte\n- Pokud jde o síťovou jednotku, zkuste ji v Průzkumníku souborů odpojit a znovu připojit\n- Zkontrolujte, že server, na kterém tato složka je, běží\n- V PowerShellu spusťte `net use` a uvidíte připojené síťové jednotky} other {Co můžete zkusit:\n- Přejděte z této složky jinam a pak se do ní vraťte\n- Pokud jde o síťový disk, zkuste ho ve správci souborů odpojit a znovu připojit\n- Zkontrolujte, že server, na kterém tato složka je, běží\n- V terminálu spusťte `mount` a uvidíte právě připojené svazky}}",
   "@errors.listing.staleConnection.suggestion": {
-    "sourceHash": "73de81d"
+    "sourceHash": "0264ba5"
   },
   "errors.listing.lockUnavailable.title": "Zámek není k dispozici",
   "@errors.listing.lockUnavailable.title": {
@@ -139,9 +139,9 @@
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "154df3c"
   },
-  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zavřete některé aplikace, hlavně ty, které pracují s mnoha soubory (editory, IDE, zálohovací nástroje)\n- V Terminálu spusťte `lsof | wc -l` a uvidíte, kolik souborů mají všechny aplikace dohromady otevřeno\n- Pokud se problém opakuje, můžete limit zvýšit příkazem `ulimit -n 4096` v Terminálu\n- Zkuste sem přejít znovu} windows {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In a terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in a terminal\n- Navigate here again to retry}}",
+  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zavřete některé aplikace, hlavně ty, které pracují s mnoha soubory (editory, IDE, zálohovací nástroje)\n- V Terminálu spusťte `lsof | wc -l` a uvidíte, kolik souborů mají všechny aplikace dohromady otevřeno\n- Pokud se problém opakuje, můžete limit zvýšit příkazem `ulimit -n 4096` v Terminálu\n- Zkuste sem přejít znovu} windows {Co můžete zkusit:\n- Zavřete některé aplikace, hlavně ty, které pracují s mnoha soubory (editory, IDE, zálohovací nástroje)\n- Pokud se to opakuje, restartujte počítač\n- Zkuste sem přejít znovu} other {Co můžete zkusit:\n- Zavřete některé aplikace, hlavně ty, které pracují s mnoha soubory (editory, IDE, zálohovací nástroje)\n- V terminálu spusťte `lsof | wc -l` a uvidíte, kolik souborů mají všechny aplikace dohromady otevřeno\n- Pokud se problém opakuje, můžete limit zvýšit příkazem `ulimit -n 4096` v terminálu\n- Zkuste sem přejít znovu}}",
   "@errors.listing.lockUnavailable.suggestion": {
-    "sourceHash": "a9f23bd"
+    "sourceHash": "1fa1762"
   },
   "errors.listing.cancelledErrno.title": "Zrušeno",
   "@errors.listing.cancelledErrno.title": {
@@ -159,13 +159,13 @@
   "@errors.listing.notPermitted.title": {
     "sourceHash": "8ec5f4b"
   },
-  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS zablokoval Cmdru přístup ke složce `{path}`. Obvykle to znamená, že je složka chráněná bezpečnostními zásadami macOS, nebo že Cmdr zatím nedostal potřebná oprávnění.} windows {Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.} other {Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it.}}",
+  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS zablokoval Cmdru přístup ke složce `{path}`. Obvykle to znamená, že je složka chráněná bezpečnostními zásadami macOS, nebo že Cmdr zatím nedostal potřebná oprávnění.} windows {Systém Windows zablokoval Cmdru přístup ke složce `{path}`. Obvykle to znamená, že je složka chráněná systémem Windows, nebo že váš účet nemá oprávnění ji otevřít.} other {Cmdr nemá povolený přístup ke složce `{path}`. Obvykle to znamená, že to oprávnění složky nedovolují, nebo ji chrání bezpečnostní zásada (třeba SELinux nebo AppArmor).}}",
   "@errors.listing.notPermitted.explanation": {
-    "sourceHash": "e28dd0e"
+    "sourceHash": "9f159af"
   },
-  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup\n- Pokud jde o složku chráněnou systémem, možná budete muset Cmdru udělit **{full_disk_access}** v sekci {privacy_and_security}\n- V Terminálu spusťte `ls -la` pro tuto cestu a zkontrolujte vlastníka a oprávnění} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If it’s a system folder, Windows may keep it off-limits on purpose\n- In PowerShell, run `icacls \"<folder-path>\"` to see who has access} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a system folder, it may need administrator rights\n- In a terminal, run `ls -la` on this path to check ownership and permissions}}",
+  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup\n- Pokud jde o složku chráněnou systémem, možná budete muset Cmdru udělit **{full_disk_access}** v sekci {privacy_and_security}\n- V Terminálu spusťte `ls -la` pro tuto cestu a zkontrolujte vlastníka a oprávnění} windows {Co můžete zkusit:\n- Zkontrolujte oprávnění složky v Průzkumníku souborů: klikněte na ni pravým tlačítkem, vyberte **Vlastnosti** a podívejte se na kartu **Zabezpečení**\n- Pokud jde o systémovou složku, systém Windows k ní možná záměrně nepouští\n- V PowerShellu spusťte `icacls \"<folder-path>\"` a uvidíte, kdo má přístup} other {Co můžete zkusit:\n- Zkontrolujte oprávnění složky ve správci souborů: otevřete její vlastnosti a podívejte se do části **Oprávnění**\n- Pokud jde o systémovou složku, možná budou potřeba oprávnění správce\n- V terminálu spusťte `ls -la` pro tuto cestu a zkontrolujte vlastníka a oprávnění}}",
   "@errors.listing.notPermitted.suggestion": {
-    "sourceHash": "2926956"
+    "sourceHash": "367f19a"
   },
   "errors.listing.pathNotFoundErrno.title": "Cesta nebyla nalezena",
   "@errors.listing.pathNotFoundErrno.title": {
@@ -175,21 +175,21 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je cesta napsaná správně\n- Pokud je na síťovém disku, ověřte, že je disk připojený a sdílená složka dostupná\n- Přejděte do nadřazené složky a podívejte se po položce tam\n- V Terminálu spusťte `ls -la` v nadřazené složce a uvidíte, co v ní je} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
+  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je cesta napsaná správně\n- Pokud je na síťovém disku, ověřte, že je disk připojený a sdílená složka dostupná\n- Přejděte do nadřazené složky a podívejte se po položce tam\n- V Terminálu spusťte `ls -la` v nadřazené složce a uvidíte, co v ní je} windows {Co můžete zkusit:\n- Zkontrolujte, že je cesta napsaná správně\n- Pokud je na síťové jednotce, ověřte, že je jednotka připojená a sdílená složka dostupná\n- Přejděte do nadřazené složky a podívejte se po položce tam\n- V PowerShellu spusťte v nadřazené složce `dir` a uvidíte, co v ní je} other {Co můžete zkusit:\n- Zkontrolujte, že je cesta napsaná správně\n- Pokud je na síťovém disku, ověřte, že je disk připojený a sdílená složka dostupná\n- Přejděte do nadřazené složky a podívejte se po položce tam\n- V terminálu spusťte `ls -la` v nadřazené složce a uvidíte, co v ní je}}",
   "@errors.listing.pathNotFoundErrno.suggestion": {
-    "sourceHash": "8a51477"
+    "sourceHash": "eabe5b2"
   },
   "errors.listing.noPermissionErrno.title": "Chybí oprávnění",
   "@errors.listing.noPermissionErrno.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr nemá oprávnění k přístupu ke složce `{path}`. macOS určuje, které aplikace mají přístup ke kterým složkám, a Cmdr k této složce zatím přístup nedostal.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
+  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr nemá oprávnění k přístupu ke složce `{path}`. macOS určuje, které aplikace mají přístup ke kterým složkám, a Cmdr k této složce zatím přístup nedostal.} windows {Cmdr nemá oprávnění k přístupu ke složce `{path}`. Váš účet Windows nemá povoleno tuto složku otevřít.} other {Cmdr nemá oprávnění k přístupu ke složce `{path}`. Váš uživatelský účet nemá povoleno tuto složku otevřít.}}",
   "@errors.listing.noPermissionErrno.explanation": {
-    "sourceHash": "3871273"
+    "sourceHash": "08a2f03"
   },
-  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup\n- Zkontrolujte oprávnění složky ve Finderu: klikněte na ni pravým tlačítkem, vyberte Informace a podívejte se do sekce Sdílení a oprávnění\n- Pokud jde o sdílenou složku, požádejte jejího vlastníka o úpravu oprávnění\n- V Terminálu spusťte `ls -la` pro tuto cestu a uvidíte aktuální oprávnění} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on this path to see the current permissions}}",
+  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup\n- Zkontrolujte oprávnění složky ve Finderu: klikněte na ni pravým tlačítkem, vyberte Informace a podívejte se do sekce Sdílení a oprávnění\n- Pokud jde o sdílenou složku, požádejte jejího vlastníka o úpravu oprávnění\n- V Terminálu spusťte `ls -la` pro tuto cestu a uvidíte aktuální oprávnění} windows {Co můžete zkusit:\n- Zkontrolujte oprávnění složky v Průzkumníku souborů: klikněte na ni pravým tlačítkem, vyberte **Vlastnosti** a podívejte se na kartu **Zabezpečení**\n- Pokud jde o sdílenou složku, požádejte jejího vlastníka o úpravu oprávnění\n- V PowerShellu spusťte `icacls \"<folder-path>\"` a uvidíte aktuální oprávnění} other {Co můžete zkusit:\n- Zkontrolujte oprávnění složky ve správci souborů: otevřete její vlastnosti a podívejte se do části **Oprávnění**\n- Pokud jde o sdílenou složku, požádejte jejího vlastníka o úpravu oprávnění\n- V terminálu spusťte `ls -la` pro tuto cestu a uvidíte aktuální oprávnění}}",
   "@errors.listing.noPermissionErrno.suggestion": {
-    "sourceHash": "4b513ef"
+    "sourceHash": "d1ce430"
   },
   "errors.listing.alreadyExistsErrno.title": "Už existuje",
   "@errors.listing.alreadyExistsErrno.title": {
@@ -247,9 +247,9 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Uvolněte místo přesunutím nebo smazáním souborů, které už nepotřebujete\n- Vysypejte koš (klikněte pravým tlačítkem na ikonu koše v Docku)\n- V Terminálu spusťte `df -h` a uvidíte, kolik místa zbývá na jednotlivých svazcích\n- Zkontrolujte **{system_settings} > Obecné > Úložiště**, kde najdete přehled, co zabírá místo} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Uvolněte místo přesunutím nebo smazáním souborů, které už nepotřebujete\n- Vysypejte koš (klikněte pravým tlačítkem na ikonu koše v Docku)\n- V Terminálu spusťte `df -h` a uvidíte, kolik místa zbývá na jednotlivých svazcích\n- Zkontrolujte **{system_settings} > Obecné > Úložiště**, kde najdete přehled, co zabírá místo} windows {Co můžete zkusit:\n- Uvolněte místo přesunutím nebo smazáním souborů, které už nepotřebujete\n- Vysypejte koš (klikněte na něj na ploše pravým tlačítkem a vyberte **Vysypat koš**)\n- Zkontrolujte **Nastavení > Systém > Úložiště**, kde najdete přehled, co zabírá místo} other {Co můžete zkusit:\n- Uvolněte místo přesunutím nebo smazáním souborů, které už nepotřebujete\n- Vysypejte koš ve správci souborů\n- V terminálu spusťte `df -h` a uvidíte, kolik místa zbývá na jednotlivých svazcích}}",
   "@errors.listing.diskFullErrno.suggestion": {
-    "sourceHash": "f2eb27b"
+    "sourceHash": "bba2927"
   },
   "errors.listing.readOnlyVolumeErrno.title": "Svazek jen ke čtení",
   "@errors.listing.readOnlyVolumeErrno.title": {
@@ -271,9 +271,9 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "a0ca28f"
   },
-  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Zkuste to jinak, nebo pro tuto operaci použijte Finder. Pokud pracujete s externím diskem, může být naformátovaný souborovým systémem s omezeními (třeba FAT32 neumí uložit soubory o velikosti 4 GiB a víc).} windows {Try a different approach, or use File Explorer for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).} other {Try a different approach, or use your file manager for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).}}",
+  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Zkuste to jinak, nebo pro tuto operaci použijte Finder. Pokud pracujete s externím diskem, může být naformátovaný souborovým systémem s omezeními (třeba FAT32 neumí uložit soubory o velikosti 4 GiB a víc).} windows {Zkuste to jinak, nebo pro tuto operaci použijte Průzkumník souborů. Pokud pracujete s externí jednotkou, může být naformátovaná souborovým systémem s omezeními (třeba FAT32 neumí uložit soubory o velikosti 4 GiB a víc).} other {Zkuste to jinak, nebo pro tuto operaci použijte správce souborů. Pokud pracujete s externím diskem, může být naformátovaný souborovým systémem s omezeními (třeba FAT32 neumí uložit soubory o velikosti 4 GiB a víc).}}",
   "@errors.listing.notSupportedErrno.suggestion": {
-    "sourceHash": "8fea918"
+    "sourceHash": "c5735be"
   },
   "errors.listing.networkUnreachable.title": "Síť je nedostupná",
   "@errors.listing.networkUnreachable.title": {
@@ -283,21 +283,21 @@
   "@errors.listing.networkUnreachable.explanation": {
     "sourceHash": "d3c1975"
   },
-  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- Ověřte, že jste ve správné síti (třeba ve firemní Wi-Fi nebo VPN)\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Až se připojíte, přejděte sem znovu} windows {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected} other {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected}}",
+  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- Ověřte, že jste ve správné síti (třeba ve firemní Wi-Fi nebo VPN)\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Až se připojíte, přejděte sem znovu} windows {Co můžete zkusit:\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- Ověřte, že jste ve správné síti (třeba ve firemní Wi-Fi nebo VPN)\n- V PowerShellu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Až se připojíte, přejděte sem znovu} other {Co můžete zkusit:\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- Ověřte, že jste ve správné síti (třeba ve firemní Wi-Fi nebo VPN)\n- V terminálu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Až se připojíte, přejděte sem znovu}}",
   "@errors.listing.networkUnreachable.suggestion": {
-    "sourceHash": "7feb3cb"
+    "sourceHash": "75cc2f7"
   },
   "errors.listing.connectionRefused.title": "Připojení bylo odmítnuto",
   "@errors.listing.connectionRefused.title": {
     "sourceHash": "1a28032"
   },
-  "errors.listing.connectionRefused.explanation": "{platform, select, macos {Server připojení aktivně odmítl. Obvykle to znamená, že serverový software (třeba služba SMB nebo NFS) neběží, nebo je nastavený tak, aby odmítal připojení z tohoto Macu.} windows {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.} other {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this computer.}}",
+  "errors.listing.connectionRefused.explanation": "{platform, select, macos {Server připojení aktivně odmítl. Obvykle to znamená, že serverový software (třeba služba SMB nebo NFS) neběží, nebo je nastavený tak, aby odmítal připojení z tohoto Macu.} windows {Server připojení aktivně odmítl. Obvykle to znamená, že serverový software (třeba služba SMB nebo NFS) neběží, nebo je nastavený tak, aby odmítal připojení z tohoto počítače.} other {Server připojení aktivně odmítl. Obvykle to znamená, že serverový software (třeba služba SMB nebo NFS) neběží, nebo je nastavený tak, aby odmítal připojení z tohoto počítače.}}",
   "@errors.listing.connectionRefused.explanation": {
-    "sourceHash": "88e1ac7"
+    "sourceHash": "75e0ad7"
   },
-  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že server běží a jeho služba sdílení souborů je aktivní\n- Ověřte, že adresa serveru a port jsou správné\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je server vůbec dostupný\n- Zkuste sem přejít znovu} windows {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In PowerShell, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In a terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry}}",
+  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že server běží a jeho služba sdílení souborů je aktivní\n- Ověřte, že adresa serveru a port jsou správné\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je server vůbec dostupný\n- Zkuste sem přejít znovu} windows {Co můžete zkusit:\n- Zkontrolujte, že server běží a jeho služba sdílení souborů je aktivní\n- Ověřte, že adresa serveru a port jsou správné\n- V PowerShellu zkuste `ping <hostname>` a ověřte, jestli je server vůbec dostupný\n- Zkuste sem přejít znovu} other {Co můžete zkusit:\n- Zkontrolujte, že server běží a jeho služba sdílení souborů je aktivní\n- Ověřte, že adresa serveru a port jsou správné\n- V terminálu zkuste `ping <hostname>` a ověřte, jestli je server vůbec dostupný\n- Zkuste sem přejít znovu}}",
   "@errors.listing.connectionRefused.suggestion": {
-    "sourceHash": "17decc3"
+    "sourceHash": "aebd280"
   },
   "errors.listing.symlinkLoopErrno.title": "Smyčka symbolických odkazů",
   "@errors.listing.symlinkLoopErrno.title": {
@@ -307,17 +307,17 @@
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "4157be6"
   },
-  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {Co můžete zkusit:\n- V Terminálu spusťte `ls -la` pro tuto cestu a uvidíte, kam symbolické odkazy vedou\n- Najděte a opravte odkaz, který smyčku vytváří\n- Pokud nevíte, který odkaz za problémem stojí, projděte je jeden po druhém příkazem `readlink <path>`} windows {Here’s what to try:\n- In PowerShell, run `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in this folder to see where the links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one} other {Here’s what to try:\n- In a terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`}}",
+  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {Co můžete zkusit:\n- V Terminálu spusťte `ls -la` pro tuto cestu a uvidíte, kam symbolické odkazy vedou\n- Najděte a opravte odkaz, který smyčku vytváří\n- Pokud nevíte, který odkaz za problémem stojí, projděte je jeden po druhém příkazem `readlink <path>`} windows {Co můžete zkusit:\n- V PowerShellu spusťte v této složce `Get-ChildItem -Force | Select-Object Name, LinkType, Target` a uvidíte, kam odkazy vedou\n- Najděte a opravte odkaz, který smyčku vytváří\n- Pokud nevíte, který odkaz za problémem stojí, projděte je jeden po druhém} other {Co můžete zkusit:\n- V terminálu spusťte `ls -la` pro tuto cestu a uvidíte, kam symbolické odkazy vedou\n- Najděte a opravte odkaz, který smyčku vytváří\n- Pokud nevíte, který odkaz za problémem stojí, projděte je jeden po druhém příkazem `readlink <path>`}}",
   "@errors.listing.symlinkLoopErrno.suggestion": {
-    "sourceHash": "eed9a5a"
+    "sourceHash": "9b5c2d2"
   },
   "errors.listing.nameTooLongErrno.title": "Příliš dlouhý název",
   "@errors.listing.nameTooLongErrno.title": {
     "sourceHash": "de4bc1d"
   },
-  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {Název souboru nebo složky překračuje limit systému (na většině svazků Macu je to 255 znaků). Může se to stát i tehdy, když celá cesta (všechny složky dohromady) překročí maximální délku cesty v systému.} windows {The file or folder name exceeds the system’s limit (255 characters for one name on NTFS). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.} other {The file or folder name exceeds the system’s limit (255 bytes on most Linux file systems). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.}}",
+  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {Název souboru nebo složky překračuje limit systému (na většině svazků Macu je to 255 znaků). Může se to stát i tehdy, když celá cesta (všechny složky dohromady) překročí maximální délku cesty v systému.} windows {Název souboru nebo složky překračuje limit systému (u systému NTFS je to 255 znaků na jeden název). Může se to stát i tehdy, když celá cesta (všechny složky dohromady) překročí maximální délku cesty v systému.} other {Název souboru nebo složky překračuje limit systému (na většině souborových systémů Linuxu je to 255 bajtů). Může se to stát i tehdy, když celá cesta (všechny složky dohromady) překročí maximální délku cesty v systému.}}",
   "@errors.listing.nameTooLongErrno.explanation": {
-    "sourceHash": "8b9a6ff"
+    "sourceHash": "c0846c4"
   },
   "errors.listing.nameTooLongErrno.suggestion": "Přejmenujte položku na kratší název. Pokud název vypadá rozumně, může být příliš dlouhá celá cesta (včetně všech nadřazených složek). Zkuste položku přesunout někam s kratší cestou.",
   "@errors.listing.nameTooLongErrno.suggestion": {
@@ -331,9 +331,9 @@
   "@errors.listing.hostUnreachable.explanation": {
     "sourceHash": "184b0fc"
   },
-  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je hostitel zapnutý a ve stejné síti\n- Pokud se k němu dostanete jen přes VPN, ověřte, že je VPN připojená\n- V Terminálu zkuste `ping <hostname>` a otestujte připojení\n- Až bude hostitel dostupný, přejděte sem znovu} windows {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable} other {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable}}",
+  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je hostitel zapnutý a ve stejné síti\n- Pokud se k němu dostanete jen přes VPN, ověřte, že je VPN připojená\n- V Terminálu zkuste `ping <hostname>` a otestujte připojení\n- Až bude hostitel dostupný, přejděte sem znovu} windows {Co můžete zkusit:\n- Zkontrolujte, že je hostitel zapnutý a ve stejné síti\n- Pokud se k němu dostanete jen přes VPN, ověřte, že je VPN připojená\n- V PowerShellu zkuste `ping <hostname>` a otestujte připojení\n- Až bude hostitel dostupný, přejděte sem znovu} other {Co můžete zkusit:\n- Zkontrolujte, že je hostitel zapnutý a ve stejné síti\n- Pokud se k němu dostanete jen přes VPN, ověřte, že je VPN připojená\n- V terminálu zkuste `ping <hostname>` a otestujte připojení\n- Až bude hostitel dostupný, přejděte sem znovu}}",
   "@errors.listing.hostUnreachable.suggestion": {
-    "sourceHash": "c222f76"
+    "sourceHash": "d595833"
   },
   "errors.listing.folderNotEmpty.title": "Složka není prázdná",
   "@errors.listing.folderNotEmpty.title": {
@@ -355,9 +355,9 @@
   "@errors.listing.quotaExceeded.explanation": {
     "sourceHash": "b9b0b0e"
   },
-  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Uvolněte místo odstraněním souborů, které už na tomto svazku nepotřebujete\n- Požádejte správce systému o navýšení kvóty\n- V Terminálu spusťte `quota` a uvidíte své aktuální využití a limit} windows {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota} other {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In a terminal, run `quota` to see your current usage and limit}}",
+  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Uvolněte místo odstraněním souborů, které už na tomto svazku nepotřebujete\n- Požádejte správce systému o navýšení kvóty\n- V Terminálu spusťte `quota` a uvidíte své aktuální využití a limit} windows {Co můžete zkusit:\n- Uvolněte místo odstraněním souborů, které už na tomto svazku nepotřebujete\n- Požádejte správce systému o navýšení kvóty} other {Co můžete zkusit:\n- Uvolněte místo odstraněním souborů, které už na tomto svazku nepotřebujete\n- Požádejte správce systému o navýšení kvóty\n- V terminálu spusťte `quota` a uvidíte své aktuální využití a limit}}",
   "@errors.listing.quotaExceeded.suggestion": {
-    "sourceHash": "1b5f0df"
+    "sourceHash": "9ad0632"
   },
   "errors.listing.authRequiredEauth.title": "Je potřeba ověření",
   "@errors.listing.authRequiredEauth.title": {
@@ -379,9 +379,9 @@
   "@errors.listing.authRequiredEneedauth.explanation": {
     "sourceHash": "b4e86e5"
   },
-  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator} other {Co můžete zkusit:\n- Ve Finderu svazek odpojte a znovu připojte\n- Až se zobrazí výzva, zadejte uživatelské jméno a heslo\n- Pokud nevíte, jaké přihlašovací údaje použít, obraťte se na správce serveru}}",
+  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Co můžete zkusit:\n- V Průzkumníku souborů síťovou jednotku odpojte a znovu připojte\n- Až se zobrazí výzva, zadejte uživatelské jméno a heslo\n- Pokud nevíte, jaké přihlašovací údaje použít, obraťte se na správce serveru} other {Co můžete zkusit:\n- Ve Finderu svazek odpojte a znovu připojte\n- Až se zobrazí výzva, zadejte uživatelské jméno a heslo\n- Pokud nevíte, jaké přihlašovací údaje použít, obraťte se na správce serveru}}",
   "@errors.listing.authRequiredEneedauth.suggestion": {
-    "sourceHash": "a90b520"
+    "sourceHash": "64621a8"
   },
   "errors.listing.devicePoweredOff.title": "Zařízení je vypnuté",
   "@errors.listing.devicePoweredOff.title": {
@@ -403,9 +403,9 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee39dd8"
   },
-  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Tento souborový systém možná nepodporuje metadata, která Cmdr potřebuje. Zkuste operaci provést na jiném svazku, nebo nejdřív zkopírujte soubor na interní disk vašeho Macu.} windows {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your PC’s internal drive first.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Tento souborový systém možná nepodporuje metadata, která Cmdr potřebuje. Zkuste operaci provést na jiném svazku, nebo nejdřív zkopírujte soubor na interní disk vašeho Macu.} windows {Tento souborový systém možná nepodporuje metadata, která Cmdr potřebuje. Zkuste operaci provést na jiném svazku, nebo nejdřív zkopírujte soubor na interní disk vašeho počítače.} other {Tento souborový systém možná nepodporuje metadata, která Cmdr potřebuje. Zkuste operaci provést na jiném svazku, nebo nejdřív zkopírujte soubor na interní disk vašeho počítače.}}",
   "@errors.listing.attributeNotFound.suggestion": {
-    "sourceHash": "463ee44"
+    "sourceHash": "e8c2492"
   },
   "errors.listing.diskReadProblem.title": "Problém se čtením disku",
   "@errors.listing.diskReadProblem.title": {
@@ -415,9 +415,9 @@
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
-  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád správně připojené\n- Otevřete aplikaci **Disková utilita** (vyhledejte ji ve Spotlightu) a spusťte pro tento svazek nástroj **Záchrana**\n- Pokud se to opakuje, co nejdřív si zazálohujte data. Na disku se možná objevují vadné sektory, nebo se začíná opotřebovávat.} windows {Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.} other {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.}}",
+  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád správně připojené\n- Otevřete aplikaci **Disková utilita** (vyhledejte ji ve Spotlightu) a spusťte pro tento svazek nástroj **Záchrana**\n- Pokud se to opakuje, co nejdřív si zazálohujte data. Na disku se možná objevují vadné sektory, nebo se začíná opotřebovávat.} windows {Co můžete zkusit:\n- Zkontrolujte, že je jednotka nebo zařízení pořád správně připojené\n- V Průzkumníku souborů klikněte na jednotku pravým tlačítkem, vyberte **Vlastnosti** a pak **Nástroje > Zkontrolovat**: Windows jednotku prohledá a najde případné problémy\n- Pokud se to opakuje, co nejdřív si zazálohujte data. Na jednotce se možná objevují vadné sektory, nebo se začíná opotřebovávat.} other {Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád správně připojené\n- Zkontrolujte souborový systém diskovým nástrojem vašeho pracovního prostředí (třeba GNOME Disks)\n- Pokud se to opakuje, co nejdřív si zazálohujte data. Na disku se možná objevují vadné sektory, nebo se začíná opotřebovávat.}}",
   "@errors.listing.diskReadProblem.suggestion": {
-    "sourceHash": "614a5fe"
+    "sourceHash": "11fa23f"
   },
   "errors.listing.unexpectedSystemResponse.title": "Neočekávaná odpověď systému",
   "@errors.listing.unexpectedSystemResponse.title": {
@@ -427,9 +427,9 @@
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "a834896"
   },
-  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkuste sem přejít znovu\n- Pokud se to opakuje, otevřete aplikaci **Disková utilita** (vyhledejte ji ve Spotlightu) a spusťte pro tento svazek nástroj **Záchrana**, který zkontroluje problémy souborového systému} windows {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check** to look for file system problems} other {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool (for example, GNOME Disks)}}",
+  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkuste sem přejít znovu\n- Pokud se to opakuje, otevřete aplikaci **Disková utilita** (vyhledejte ji ve Spotlightu) a spusťte pro tento svazek nástroj **Záchrana**, který zkontroluje problémy souborového systému} windows {Co můžete zkusit:\n- Zkuste sem přejít znovu\n- Pokud se to opakuje, klikněte v Průzkumníku souborů pravým tlačítkem na jednotku, vyberte **Vlastnosti** a pak **Nástroje > Zkontrolovat** a vyhledejte problémy souborového systému} other {Co můžete zkusit:\n- Zkuste sem přejít znovu\n- Pokud se to opakuje, zkontrolujte souborový systém diskovým nástrojem vašeho pracovního prostředí (třeba GNOME Disks)}}",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
-    "sourceHash": "f63d225"
+    "sourceHash": "5a0ffb5"
   },
   "errors.listing.deviceProblem.title": "Problém se zařízením",
   "@errors.listing.deviceProblem.title": {
@@ -451,9 +451,9 @@
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "bade4a7"
   },
-  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád připojené\n- Zkuste sem přejít znovu\n- Pokud se to opakuje, otevřete aplikaci **Disková utilita** a spusťte pro tento svazek nástroj **Záchrana**} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
+  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád připojené\n- Zkuste sem přejít znovu\n- Pokud se to opakuje, otevřete aplikaci **Disková utilita** a spusťte pro tento svazek nástroj **Záchrana**} windows {Co můžete zkusit:\n- Zkontrolujte, že je jednotka nebo zařízení pořád připojené\n- Zkuste sem přejít znovu\n- Pokud se to opakuje, klikněte v Průzkumníku souborů pravým tlačítkem na jednotku, vyberte **Vlastnosti** a pak **Nástroje > Zkontrolovat**} other {Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád připojené\n- Zkuste sem přejít znovu\n- Pokud se to opakuje, zkontrolujte souborový systém diskovým nástrojem vašeho pracovního prostředí}}",
   "@errors.listing.couldntReadUnknown.suggestion": {
-    "sourceHash": "5155626"
+    "sourceHash": "625375f"
   },
   "errors.listing.notFound.title": "Cesta nebyla nalezena",
   "@errors.listing.notFound.title": {
@@ -463,9 +463,9 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.notFound.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je cesta napsaná správně\n- Pokud je na síťovém disku, ověřte, že je disk připojený a sdílená složka dostupná\n- Přejděte do nadřazené složky a podívejte se po položce tam\n- V Terminálu spusťte `ls -la` v nadřazené složce a uvidíte, co v ní je} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
+  "errors.listing.notFound.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je cesta napsaná správně\n- Pokud je na síťovém disku, ověřte, že je disk připojený a sdílená složka dostupná\n- Přejděte do nadřazené složky a podívejte se po položce tam\n- V Terminálu spusťte `ls -la` v nadřazené složce a uvidíte, co v ní je} windows {Co můžete zkusit:\n- Zkontrolujte, že je cesta napsaná správně\n- Pokud je na síťové jednotce, ověřte, že je jednotka připojená a sdílená složka dostupná\n- Přejděte do nadřazené složky a podívejte se po položce tam\n- V PowerShellu spusťte v nadřazené složce `dir` a uvidíte, co v ní je} other {Co můžete zkusit:\n- Zkontrolujte, že je cesta napsaná správně\n- Pokud je na síťovém disku, ověřte, že je disk připojený a sdílená složka dostupná\n- Přejděte do nadřazené složky a podívejte se po položce tam\n- V terminálu spusťte `ls -la` v nadřazené složce a uvidíte, co v ní je}}",
   "@errors.listing.notFound.suggestion": {
-    "sourceHash": "8a51477"
+    "sourceHash": "eabe5b2"
   },
   "errors.listing.tccRestricted.title": "Tuto složku omezuje macOS",
   "@errors.listing.tccRestricted.title": {
@@ -483,13 +483,13 @@
   "@errors.listing.permissionDenied.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr nemá oprávnění k přístupu ke složce `{path}`. macOS určuje, které aplikace mají přístup ke kterým složkám, a Cmdr k této složce zatím přístup nedostal.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
+  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr nemá oprávnění k přístupu ke složce `{path}`. macOS určuje, které aplikace mají přístup ke kterým složkám, a Cmdr k této složce zatím přístup nedostal.} windows {Cmdr nemá oprávnění k přístupu ke složce `{path}`. Váš účet Windows nemá povoleno tuto složku otevřít.} other {Cmdr nemá oprávnění k přístupu ke složce `{path}`. Váš uživatelský účet nemá povoleno tuto složku otevřít.}}",
   "@errors.listing.permissionDenied.explanation": {
-    "sourceHash": "3871273"
+    "sourceHash": "08a2f03"
   },
-  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup\n- Zkontrolujte oprávnění složky ve Finderu: klikněte na složku pravým tlačítkem, vyberte Informace a podívejte se do sekce Sdílení a oprávnění\n- Pokud jde o sdílenou složku, požádejte jejího vlastníka o úpravu oprávnění\n- V Terminálu spusťte `ls -la` pro tuto cestu a uvidíte aktuální oprávnění} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click the folder, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on the path to see the current permissions}}",
+  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup\n- Zkontrolujte oprávnění složky ve Finderu: klikněte na složku pravým tlačítkem, vyberte Informace a podívejte se do sekce Sdílení a oprávnění\n- Pokud jde o sdílenou složku, požádejte jejího vlastníka o úpravu oprávnění\n- V Terminálu spusťte `ls -la` pro tuto cestu a uvidíte aktuální oprávnění} windows {Co můžete zkusit:\n- Zkontrolujte oprávnění složky v Průzkumníku souborů: klikněte na složku pravým tlačítkem, vyberte **Vlastnosti** a podívejte se na kartu **Zabezpečení**\n- Pokud jde o sdílenou složku, požádejte jejího vlastníka o úpravu oprávnění\n- V PowerShellu spusťte `icacls \"<folder-path>\"` a uvidíte aktuální oprávnění} other {Co můžete zkusit:\n- Zkontrolujte oprávnění složky ve správci souborů: otevřete její vlastnosti a podívejte se do části **Oprávnění**\n- Pokud jde o sdílenou složku, požádejte jejího vlastníka o úpravu oprávnění\n- V terminálu spusťte `ls -la` pro tuto cestu a uvidíte aktuální oprávnění}}",
   "@errors.listing.permissionDenied.suggestion": {
-    "sourceHash": "3450aff"
+    "sourceHash": "7015505"
   },
   "errors.listing.objectStoreRefused.title": "Poskytovatel úložiště odmítl přístup",
   "@errors.listing.objectStoreRefused.title": {
@@ -507,13 +507,13 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {Složka `{path}` je na síťové sdílené složce a účet použitý k připojení nemá oprávnění ji otevřít. Server požadavek odmítne dřív, než se do toho zapojí macOS, takže nejde o nastavení soukromí na vašem Macu.} windows {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.} other {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your computer can change that.}}",
+  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {Složka `{path}` je na síťové sdílené složce a účet použitý k připojení nemá oprávnění ji otevřít. Server požadavek odmítne dřív, než se do toho zapojí macOS, takže nejde o nastavení soukromí na vašem Macu.} windows {Složka `{path}` je na síťové sdílené složce a účet použitý k připojení nemá oprávnění ji otevřít. Server požadavek odmítá, takže to nic na vašem počítači nezmění.} other {Složka `{path}` je na síťové sdílené složce a účet použitý k připojení nemá oprávnění ji otevřít. Server požadavek odmítá, takže to nic na vašem počítači nezmění.}}",
   "@errors.listing.remotePermissionDenied.explanation": {
-    "sourceHash": "d8463b0"
+    "sourceHash": "dec659d"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte oprávnění složky na serveru a to, jakým účtem je sdílená složka připojená\n- Některé složky patří vlastnímu systémovému účtu serveru (třeba `lost+found` na sdílené složce s Linuxem) a pro všechny ostatní zůstávají zavřené\n- Pokud se chcete přihlásit jako někdo jiný, sdílenou složku vysuňte a připojte ji znovu s přihlašovacími údaji toho uživatele} windows {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials} other {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, unmount the share and mount it again with those credentials}}",
+  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte oprávnění složky na serveru a to, jakým účtem je sdílená složka připojená\n- Některé složky patří vlastnímu systémovému účtu serveru (třeba `lost+found` na sdílené složce s Linuxem) a pro všechny ostatní zůstávají zavřené\n- Pokud se chcete přihlásit jako někdo jiný, sdílenou složku vysuňte a připojte ji znovu s přihlašovacími údaji toho uživatele} windows {Co můžete zkusit:\n- Zkontrolujte oprávnění složky na serveru a to, jakým účtem je sdílená složka připojená\n- Některé složky patří vlastnímu systémovému účtu serveru (třeba `lost+found` na sdílené složce s Linuxem) a pro všechny ostatní zůstávají zavřené\n- Pokud se chcete připojit jako někdo jiný, sdílenou složku odpojte a připojte ji znovu s přihlašovacími údaji toho uživatele} other {Co můžete zkusit:\n- Zkontrolujte oprávnění složky na serveru a to, jakým účtem je sdílená složka připojená\n- Některé složky patří vlastnímu systémovému účtu serveru (třeba `lost+found` na sdílené složce s Linuxem) a pro všechny ostatní zůstávají zavřené\n- Pokud se chcete připojit jako někdo jiný, sdílenou složku odpojte a připojte ji znovu s přihlašovacími údaji toho uživatele}}",
   "@errors.listing.remotePermissionDenied.suggestion": {
-    "sourceHash": "3e6497d"
+    "sourceHash": "8481dce"
   },
   "errors.listing.phoneRefused.title": "Tuto složku si telefon nechává pro sebe",
   "@errors.listing.phoneRefused.title": {
@@ -531,9 +531,9 @@
   "@errors.listing.serverRefused.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.serverRefused.explanation": "{platform, select, windows {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.} other {Tato složka je na serveru a účet použitý pro připojení nemá oprávnění ji otevřít. Rozhoduje o tom server, takže to žádné nastavení na tomto počítači nezmění.}}",
+  "errors.listing.serverRefused.explanation": "{platform, select, windows {Tato složka je na serveru a účet použitý pro připojení nemá oprávnění ji otevřít. Rozhoduje o tom server, takže to žádné nastavení na tomto počítači nezmění.} other {Tato složka je na serveru a účet použitý pro připojení nemá oprávnění ji otevřít. Rozhoduje o tom server, takže to žádné nastavení na tomto počítači nezmění.}}",
   "@errors.listing.serverRefused.explanation": {
-    "sourceHash": "bba853c"
+    "sourceHash": "c21c3d5"
   },
   "errors.listing.serverRefused.suggestion": "Co můžete zkusit:\n- Zkontrolujte oprávnění složky na serveru\n- Některé složky patří vlastnímu systémovému účtu serveru a pro všechny ostatní zůstávají zavřené\n- Připojte se účtem, který má přístup",
   "@errors.listing.serverRefused.suggestion": {
@@ -631,9 +631,9 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.storageFull.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Uvolněte místo přesunutím nebo smazáním souborů, které už nepotřebujete\n- Vysypejte koš (klikněte pravým tlačítkem na ikonu koše v Docku)\n- V Terminálu spusťte `df -h` a uvidíte, kolik místa zbývá na jednotlivých svazcích} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Uvolněte místo přesunutím nebo smazáním souborů, které už nepotřebujete\n- Vysypejte koš (klikněte pravým tlačítkem na ikonu koše v Docku)\n- V Terminálu spusťte `df -h` a uvidíte, kolik místa zbývá na jednotlivých svazcích} windows {Co můžete zkusit:\n- Uvolněte místo přesunutím nebo smazáním souborů, které už nepotřebujete\n- Vysypejte koš (klikněte na něj na ploše pravým tlačítkem a vyberte **Vysypat koš**)\n- V **Nastavení > Systém > Úložiště** zjistíte, kolik místa zbývá} other {Co můžete zkusit:\n- Uvolněte místo přesunutím nebo smazáním souborů, které už nepotřebujete\n- Vysypejte koš ve správci souborů\n- V terminálu spusťte `df -h` a uvidíte, kolik místa zbývá na jednotlivých svazcích}}",
   "@errors.listing.storageFull.suggestion": {
-    "sourceHash": "101099b"
+    "sourceHash": "c04afed"
   },
   "errors.listing.connectionTimedOut.title": "Časový limit připojení vypršel",
   "@errors.listing.connectionTimedOut.title": {
@@ -643,9 +643,9 @@
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "15d3054"
   },
-  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že zařízení nebo server je zapnutý a dostupný\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Zkuste to znovu} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Try again} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Try again}}",
+  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že zařízení nebo server je zapnutý a dostupný\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- V Terminálu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Zkuste to znovu} windows {Co můžete zkusit:\n- Zkontrolujte, že zařízení nebo server je zapnutý a dostupný\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- V PowerShellu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Zkuste to znovu} other {Co můžete zkusit:\n- Zkontrolujte, že zařízení nebo server je zapnutý a dostupný\n- Zkontrolujte připojení Wi-Fi nebo Ethernet\n- V terminálu zkuste `ping <hostname>` a ověřte, jestli je server dostupný\n- Zkuste to znovu}}",
   "@errors.listing.connectionTimedOut.suggestion": {
-    "sourceHash": "f474938"
+    "sourceHash": "4e58263"
   },
   "errors.listing.notSupported.title": "Nepodporováno",
   "@errors.listing.notSupported.title": {
@@ -655,9 +655,9 @@
   "@errors.listing.notSupported.explanation": {
     "sourceHash": "d074574"
   },
-  "errors.listing.notSupported.suggestion": "{platform, select, macos {Zkuste to jinak, nebo pro tuto operaci použijte Finder.} windows {Try a different approach, or use File Explorer for this operation.} other {Try a different approach, or use your file manager for this operation.}}",
+  "errors.listing.notSupported.suggestion": "{platform, select, macos {Zkuste to jinak, nebo pro tuto operaci použijte Finder.} windows {Zkuste to jinak, nebo pro tuto operaci použijte Průzkumník souborů.} other {Zkuste to jinak, nebo pro tuto operaci použijte správce souborů.}}",
   "@errors.listing.notSupported.suggestion": {
-    "sourceHash": "d4e3965"
+    "sourceHash": "626b662"
   },
   "errors.listing.deletePending.title": "Soubor se právě odstraňuje",
   "@errors.listing.deletePending.title": {
@@ -727,9 +727,9 @@
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
-  "errors.listing.ioSerious.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád připojené\n- Zkuste to znovu\n- Pokud se to opakuje, zkuste pro tento svazek spustit **Disková utilita > Záchrana**} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Try again\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
+  "errors.listing.ioSerious.suggestion": "{platform, select, macos {Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád připojené\n- Zkuste to znovu\n- Pokud se to opakuje, zkuste pro tento svazek spustit **Disková utilita > Záchrana**} windows {Co můžete zkusit:\n- Zkontrolujte, že je jednotka nebo zařízení pořád připojené\n- Zkuste to znovu\n- Pokud se to opakuje, klikněte v Průzkumníku souborů pravým tlačítkem na jednotku, vyberte **Vlastnosti** a pak **Nástroje > Zkontrolovat**} other {Co můžete zkusit:\n- Zkontrolujte, že je disk nebo zařízení pořád připojené\n- Zkuste to znovu\n- Pokud se to opakuje, zkontrolujte souborový systém diskovým nástrojem vašeho pracovního prostředí}}",
   "@errors.listing.ioSerious.suggestion": {
-    "sourceHash": "6e83ebb"
+    "sourceHash": "059416c"
   },
   "errors.listing.isADirectory.title": "Tohle je složka, ne soubor",
   "@errors.listing.isADirectory.title": {
@@ -847,9 +847,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "53012e9"
   },
-  "errors.git.permissionDenied.suggestion": "{platform, select, macos {Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup ke složce.} windows {Check that your account can read this repo’s `.git` folder: in File Explorer, right-click it, select **Properties**, and look under **Security**.} other {Check that your account can read this repo’s `.git` folder. In a terminal, `ls -la .git` shows its owner and mode.}}",
+  "errors.git.permissionDenied.suggestion": "{platform, select, macos {Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup ke složce.} windows {Zkontrolujte, že váš účet může číst složku `.git` tohoto repozitáře: v Průzkumníku souborů na ni klikněte pravým tlačítkem, vyberte **Vlastnosti** a podívejte se na kartu **Zabezpečení**.} other {Zkontrolujte, že váš účet může číst složku `.git` tohoto repozitáře. V terminálu příkaz `ls -la .git` zobrazí jejího vlastníka a režim.}}",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "7396b5a"
+    "sourceHash": "aef68dd"
   },
   "errors.git.bareRepo.title": "Holé repozitáře zatím nejsou podporované",
   "@errors.git.bareRepo.title": {
@@ -907,9 +907,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup. V Terminálu příkaz `ls -la .git` zobrazí aktuálního vlastníka a režim.} windows {Check that your account can read this folder: in File Explorer, right-click the `.git` folder, select **Properties**, and look under **Security**. In PowerShell, `icacls .git` shows who has access.} other {Check that your account can read the `.git` folder. In a terminal, `ls -la .git` shows the current owner and mode.}}",
+  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {Otevřete **{system_settings} > {privacy_and_security} > {files_and_folders}** a udělte Cmdru přístup. V Terminálu příkaz `ls -la .git` zobrazí aktuálního vlastníka a režim.} windows {Zkontrolujte, že váš účet může tuto složku číst: v Průzkumníku souborů klikněte pravým tlačítkem na složku `.git`, vyberte **Vlastnosti** a podívejte se na kartu **Zabezpečení**. V PowerShellu příkaz `icacls .git` zobrazí, kdo má přístup.} other {Zkontrolujte, že váš účet může číst složku `.git`. V terminálu příkaz `ls -la .git` zobrazí aktuálního vlastníka a režim.}}",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "b091738"
+    "sourceHash": "7081e9a"
   },
   "errors.git.volumeGone.title": "Disk s tímto repozitářem zmizel",
   "@errors.git.volumeGone.title": {
@@ -1157,9 +1157,9 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "{platform, select, windows {This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages} other {Tuto složku spravuje **{name}**. Co můžete zkusit:\n- Ukončete aplikaci {app} a znovu ji otevřete\n- V aplikaci {app} se odhlaste a znovu se přihlaste\n- Na stránce se stavem služby {name} zkontrolujte, jestli nehlásí výpadek}}",
+  "errors.provider.appBased.serious": "{platform, select, windows {Tuto složku spravuje **{name}**. Co můžete zkusit:\n- Zavřete aplikaci {app} a znovu ji otevřete\n- V aplikaci {app} se odhlaste a znovu se přihlaste\n- Na stránce se stavem služby {name} zkontrolujte, jestli nehlásí výpadek} other {Tuto složku spravuje **{name}**. Co můžete zkusit:\n- Ukončete aplikaci {app} a znovu ji otevřete\n- V aplikaci {app} se odhlaste a znovu se přihlaste\n- Na stránce se stavem služby {name} zkontrolujte, jestli nehlásí výpadek}}",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "5a4e14e"
+    "sourceHash": "79006a7"
   },
   "errors.write.sourceNotFound.title": "Soubor se nepodařilo najít",
   "@errors.write.sourceNotFound.title": {
@@ -1177,9 +1177,9 @@
   "@errors.write.sourceNotFound.message.delete": {
     "sourceHash": "cb0ab8f"
   },
-  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {The file or folder you tried to move to the Recycle Bin no longer exists.} other {Soubor nebo složka, kterou se pokoušíte přesunout do koše, už neexistuje.}}",
+  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {Soubor nebo složka, kterou se pokoušíte přesunout do koše, už neexistuje.} other {Soubor nebo složka, kterou se pokoušíte přesunout do koše, už neexistuje.}}",
   "@errors.write.sourceNotFound.message.trash": {
-    "sourceHash": "dbc0bbe"
+    "sourceHash": "31f9dd7"
   },
   "errors.write.sourceNotFound.suggestion": "Mohlo to být přesunuto, přejmenováno nebo smazáno. Zkuste znovu načíst seznam souborů.",
   "@errors.write.sourceNotFound.suggestion": {
@@ -1301,9 +1301,9 @@
   "@errors.write.cancelled.title.delete": {
     "sourceHash": "546aac1"
   },
-  "errors.write.cancelled.title.trash": "{platform, select, windows {Move to the Recycle Bin canceled} other {Přesun do koše zrušen}}",
+  "errors.write.cancelled.title.trash": "{platform, select, windows {Přesun do koše zrušen} other {Přesun do koše zrušen}}",
   "@errors.write.cancelled.title.trash": {
-    "sourceHash": "52a8954"
+    "sourceHash": "97c84cd"
   },
   "errors.write.cancelled.message.copy": "Operace kopírování byla zrušena.",
   "@errors.write.cancelled.message.copy": {
@@ -1317,9 +1317,9 @@
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
   },
-  "errors.write.cancelled.message.trash": "{platform, select, windows {The move to the Recycle Bin was canceled.} other {Operace přesunu do koše byla zrušena.}}",
+  "errors.write.cancelled.message.trash": "{platform, select, windows {Přesun do koše byl zrušen.} other {Operace přesunu do koše byla zrušena.}}",
   "@errors.write.cancelled.message.trash": {
-    "sourceHash": "9585f1b"
+    "sourceHash": "7e76a39"
   },
   "errors.write.cancelled.suggestion": "Můžete to zkusit znovu, až se vám to bude hodit.",
   "@errors.write.cancelled.suggestion": {
@@ -1341,9 +1341,9 @@
   "@errors.write.deviceDisconnected.message.delete": {
     "sourceHash": "195562e"
   },
-  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {The device was disconnected during the move to the Recycle Bin.} other {Zařízení bylo odpojeno během přesunu do koše.}}",
+  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {Zařízení bylo odpojeno během přesunu do koše.} other {Zařízení bylo odpojeno během přesunu do koše.}}",
   "@errors.write.deviceDisconnected.message.trash": {
-    "sourceHash": "9d5a47a"
+    "sourceHash": "bdadd25"
   },
   "errors.write.deviceDisconnected.suggestion": "Ověřte, že je zařízení správně připojené, a zkuste to znovu.",
   "@errors.write.deviceDisconnected.suggestion": {
@@ -1381,13 +1381,13 @@
   "@errors.write.moveNotConfirmed.suggestion": {
     "sourceHash": "4d7fedc"
   },
-  "errors.write.trashNotSupported.title": "{platform, select, windows {Recycle Bin not supported} other {Koš není podporovaný}}",
+  "errors.write.trashNotSupported.title": "{platform, select, windows {Koš není podporovaný} other {Koš není podporovaný}}",
   "@errors.write.trashNotSupported.title": {
-    "sourceHash": "af90a02"
+    "sourceHash": "fc24baf"
   },
-  "errors.write.trashNotSupported.message": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Tento svazek nepodporuje koš.}}",
+  "errors.write.trashNotSupported.message": "{platform, select, windows {Tento svazek nemá koš.} other {Tento svazek nepodporuje koš.}}",
   "@errors.write.trashNotSupported.message": {
-    "sourceHash": "911688a"
+    "sourceHash": "63875e3"
   },
   "errors.write.trashNotSupported.suggestion": "Místo toho můžete položky trvale smazat zkratkou {deletePermanentlyKey}.",
   "@errors.write.trashNotSupported.suggestion": {
@@ -1509,9 +1509,9 @@
   "@errors.write.readError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.readError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Přesun do koše se nepodařil}}",
+  "errors.write.readError.title.trash": "{platform, select, windows {Přesun do koše se nepodařil} other {Přesun do koše se nepodařil}}",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.readError.message": "Ze zdroje se nepodařilo číst.",
   "@errors.write.readError.message": {
@@ -1533,9 +1533,9 @@
   "@errors.write.writeError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.writeError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Přesun do koše se nepodařil}}",
+  "errors.write.writeError.title.trash": "{platform, select, windows {Přesun do koše se nepodařil} other {Přesun do koše se nepodařil}}",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.writeError.message": "Do cíle se nepodařilo zapisovat.",
   "@errors.write.writeError.message": {
@@ -1641,13 +1641,13 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "77cff09"
   },
-  "errors.write.trashRefused.title": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Přesun do koše se nepodařil}}",
+  "errors.write.trashRefused.title": "{platform, select, windows {Přesun do koše se nepodařil} other {Přesun do koše se nepodařil}}",
   "@errors.write.trashRefused.title": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
-  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {Vybrané položky, na které macOS Cmdru nedovolil sáhnout: {count}.} windows {Windows wouldn’t let Cmdr touch {count} of the items you picked.} other {Cmdr wasn’t allowed to touch {count} of the items you picked.}}",
+  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {Vybrané položky, na které macOS Cmdru nedovolil sáhnout: {count}.} windows {Vybrané položky, na které systém Windows Cmdru nedovolil sáhnout: {count}.} other {Vybrané položky, na které Cmdr neměl povoleno sáhnout: {count}.}}",
   "@errors.write.trashRefused.message.notPermitted": {
-    "sourceHash": "57a38d7"
+    "sourceHash": "6ea1348"
   },
   "errors.write.trashRefused.message.locked": "macOS nepřesouvá zamčené položky, a proto zůstalo na místě {count} z vybraných položek.",
   "@errors.write.trashRefused.message.locked": {
@@ -1661,33 +1661,33 @@
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "b65d875"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {Do koše na tomto disku nemůže Cmdr nic vložit, a proto zůstalo na místě {count} z vybraných položek.}}",
+  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {Do koše na této jednotce nemůže Cmdr nic vložit, a proto zůstalo na místě {count} z vybraných položek.} other {Do koše na tomto disku nemůže Cmdr nic vložit, a proto zůstalo na místě {count} z vybraných položek.}}",
   "@errors.write.trashRefused.message.trashNotWritable": {
-    "sourceHash": "024ef04"
+    "sourceHash": "c3d5e1e"
   },
-  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {Vybrané položky, pro které macOS nenašel koš: {count}.} windows {Windows couldn’t find a Recycle Bin for {count} of the items you picked.} other {Cmdr couldn’t find a trash for {count} of the items you picked.}}",
+  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {Vybrané položky, pro které macOS nenašel koš: {count}.} windows {Vybrané položky, pro které systém Windows nenašel koš: {count}.} other {Vybrané položky, pro které Cmdr nenašel koš: {count}.}}",
   "@errors.write.trashRefused.message.noTrashForVolume": {
-    "sourceHash": "702ae17"
+    "sourceHash": "07e7834"
   },
-  "errors.write.trashRefused.message.other": "{platform, select, macos {Vybrané položky, které macOS odmítl přesunout do koše: {count}.} windows {Windows wouldn’t move {count} of the items you picked to the Recycle Bin.} other {Cmdr couldn’t move {count} of the items you picked to the trash.}}",
+  "errors.write.trashRefused.message.other": "{platform, select, macos {Vybrané položky, které macOS odmítl přesunout do koše: {count}.} windows {Vybrané položky, které systém Windows odmítl přesunout do koše: {count}.} other {Vybrané položky, které Cmdr nedokázal přesunout do koše: {count}.}}",
   "@errors.write.trashRefused.message.other": {
-    "sourceHash": "6f71e12"
+    "sourceHash": "cdd735e"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Položky můžou být na místě, které si macOS hlídá jen pro sebe. Finder je někdy přesto dokáže přesunout, protože vás může požádat o heslo.} windows {The items may sit somewhere Windows keeps to itself. File Explorer can sometimes still move them, since it can ask for administrator permission.} other {The items may sit somewhere only an administrator can change. Check the folder’s permissions, or ask whoever manages this computer.}}",
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Položky můžou být na místě, které si macOS hlídá jen pro sebe. Finder je někdy přesto dokáže přesunout, protože vás může požádat o heslo.} windows {Položky můžou být na místě, které si systém Windows hlídá jen pro sebe. Průzkumník souborů je někdy přesto dokáže přesunout, protože vás může požádat o oprávnění správce.} other {Položky můžou být na místě, které může měnit jen správce. Zkontrolujte oprávnění složky, nebo se obraťte na toho, kdo tento počítač spravuje.}}",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "2ef3e96"
+    "sourceHash": "ad6373b"
   },
   "errors.write.trashRefused.suggestion.locked": "Pokud je chcete přesunout, nejdřív je ve Finderu odemkněte: Informace, pak zrušte zaškrtnutí políčka Zamčeno.",
   "@errors.write.trashRefused.suggestion.locked": {
     "sourceHash": "ece70f5"
   },
-  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {Aby šly přesunout, potřebujete oprávnění měnit jejich složku. Kdo ho má, ukáže Finder v Informacích o složce v části Sdílení a oprávnění.} windows {To move them, you need permission to change their folder. File Explorer shows who can in the folder’s Properties, under Security.} other {To move them, you need permission to change their folder. Your file manager shows who can in the folder’s properties, under Permissions.}}",
+  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {Aby šly přesunout, potřebujete oprávnění měnit jejich složku. Kdo ho má, ukáže Finder v Informacích o složce v části Sdílení a oprávnění.} windows {Aby šly přesunout, potřebujete oprávnění měnit jejich složku. Kdo ho má, ukáže Průzkumník souborů ve Vlastnostech složky na kartě Zabezpečení.} other {Aby šly přesunout, potřebujete oprávnění měnit jejich složku. Kdo ho má, ukáže správce souborů ve vlastnostech složky v části Oprávnění.}}",
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
-    "sourceHash": "8614665"
+    "sourceHash": "1f3b45d"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder je přesto dokáže přesunout, když si nejdřív vyžádá heslo správce.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder je přesto dokáže přesunout, když si nejdřív vyžádá heslo správce.} windows {Správce je přesto dokáže přesunout. Obraťte se na toho, kdo tento počítač spravuje.} other {Správce je přesto dokáže přesunout, třeba příkazem sudo v terminálu.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
-    "sourceHash": "6a8fbff"
+    "sourceHash": "b2708c6"
   },
   "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {To se může stát, když se změní oprávnění složky koše, třeba po přechodu na nový Mac. Pořád můžete položky trvale smazat zkratkou {deletePermanentlyKey}.} windows {To se může stát, když se změní oprávnění koše, třeba po přechodu na nový počítač. Pořád můžete položky trvale smazat zkratkou {deletePermanentlyKey}.} other {To se může stát, když se změní oprávnění složky koše, třeba po přechodu na nový počítač. Pořád můžete položky trvale smazat zkratkou {deletePermanentlyKey}.}}",
   "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
@@ -1705,9 +1705,9 @@
   "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
     "sourceHash": "d582f73"
   },
-  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Zkontrolujte níže v technických podrobnostech, co macOS nahlásil.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
+  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Zkontrolujte níže v technických podrobnostech, co macOS nahlásil.} windows {Zkontrolujte níže v technických podrobnostech, co systém Windows nahlásil.} other {Zkontrolujte níže v technických podrobnostech přesný důvod.}}",
   "@errors.write.trashRefused.suggestion.other": {
-    "sourceHash": "b61b3c1"
+    "sourceHash": "76a78a7"
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr navíc na tomto Macu nemá plný přístup k disku, což bývá častá příčina. Odznak „Bez plného přístupu k disku“ v záhlaví okna vás k této volbě dovede.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
@@ -1725,9 +1725,9 @@
   "@errors.write.ioError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.ioError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Přesun do koše se nepodařil}}",
+  "errors.write.ioError.title.trash": "{platform, select, windows {Přesun do koše se nepodařil} other {Přesun do koše se nepodařil}}",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.ioError.message.copy": "Soubor se nepodařilo zkopírovat.",
   "@errors.write.ioError.message.copy": {
@@ -1741,9 +1741,9 @@
   "@errors.write.ioError.message.delete": {
     "sourceHash": "9e79007"
   },
-  "errors.write.ioError.message.trash": "{platform, select, windows {Couldn’t move the file to the Recycle Bin.} other {Soubor se nepodařilo přesunout do koše.}}",
+  "errors.write.ioError.message.trash": "{platform, select, windows {Soubor se nepodařilo přesunout do koše.} other {Soubor se nepodařilo přesunout do koše.}}",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "948e289"
+    "sourceHash": "490dd97"
   },
   "errors.write.ioError.suggestion": "Zkuste to znovu. Pokud problém přetrvává, zkontrolujte technické podrobnosti níže.",
   "@errors.write.ioError.suggestion": {
@@ -1765,21 +1765,21 @@
   "@errors.write.permissionDenied.message.delete": {
     "sourceHash": "0c03fc4"
   },
-  "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {Nemáte oprávnění tady přesouvat soubory do koše.}}",
+  "errors.write.permissionDenied.message.trash": "{platform, select, windows {Nemáte oprávnění tady přesouvat soubory do koše.} other {Nemáte oprávnění tady přesouvat soubory do koše.}}",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "cca028a"
+    "sourceHash": "7d53afa"
   },
-  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Zkontrolujte, že máte do nadřazené složky přístup pro zápis. Soubor může být zamčený. Odemkněte ho ve Finderu (Informace > zrušte zaškrtnutí políčka Zamčeno) a zkuste to znovu.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Zkontrolujte, že máte do nadřazené složky přístup pro zápis. Soubor může být chráněný. Zkontrolujte jeho oprávnění (např. příkazem chmod nebo ve správci souborů) a zkuste to znovu.}}",
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Zkontrolujte, že máte do nadřazené složky přístup pro zápis. Soubor může být zamčený. Odemkněte ho ve Finderu (Informace > zrušte zaškrtnutí políčka Zamčeno) a zkuste to znovu.} windows {Zkontrolujte, že máte do nadřazené složky přístup pro zápis. Soubor může být jen pro čtení: v Průzkumníku souborů otevřete jeho Vlastnosti, zrušte zaškrtnutí políčka „Jen pro čtení“ a zkuste to znovu.} other {Zkontrolujte, že máte do nadřazené složky přístup pro zápis. Soubor může být chráněný. Zkontrolujte jeho oprávnění (např. příkazem chmod nebo ve správci souborů) a zkuste to znovu.}}",
   "@errors.write.permissionDenied.suggestion.delete": {
-    "sourceHash": "1e6e123"
+    "sourceHash": "89a73d1"
   },
   "errors.write.permissionDenied.suggestion.default": "Zkontrolujte, že máte do cílové složky přístup pro zápis. Možná bude potřeba odemknout zařízení nebo změnit oprávnění složky.",
   "@errors.write.permissionDenied.suggestion.default": {
     "sourceHash": "ec02093"
   },
-  "errors.write.permissionDenied.message.named": "{platform, select, macos {Váš uživatelský účet v macOS nemůže měnit složku {folder}.} windows {Your Windows account can’t change {folder}.} other {Your user account can’t change {folder}.}}",
+  "errors.write.permissionDenied.message.named": "{platform, select, macos {Váš uživatelský účet v macOS nemůže měnit složku {folder}.} windows {Váš účet Windows nemůže měnit složku {folder}.} other {Váš uživatelský účet nemůže měnit složku {folder}.}}",
   "@errors.write.permissionDenied.message.named": {
-    "sourceHash": "0ffd79b"
+    "sourceHash": "7c12395"
   },
   "errors.write.permissionDenied.suggestion.phone": "Android toto umístění vyhrazuje systému a jeho aplikacím. Vaše fotky, stažené soubory a další soubory jsou ve sdíleném úložišti telefonu, takže zkuste některou složku tam.",
   "@errors.write.permissionDenied.suggestion.phone": {
@@ -1793,13 +1793,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {K této změně jsou potřeba oprávnění správce. Pokud chcete svému účtu udělit přístup, vyberte složku ve Finderu, zvolte Informace a podívejte se do sekce Sdílení a oprávnění.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {K této změně jsou potřeba oprávnění správce. Pokud chcete svému účtu udělit přístup, upravte oprávnění složky (například příkazem chmod) a zkuste to znovu.}}",
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {K této změně jsou potřeba oprávnění správce. Pokud chcete svému účtu udělit přístup, vyberte složku ve Finderu, zvolte Informace a podívejte se do sekce Sdílení a oprávnění.} windows {K této změně jsou potřeba oprávnění správce. Pokud chcete svému účtu udělit přístup, otevřete v Průzkumníku souborů Vlastnosti složky a podívejte se na kartu „Zabezpečení“.} other {K této změně jsou potřeba oprávnění správce. Pokud chcete svému účtu udělit přístup, upravte oprávnění složky (například příkazem chmod) a zkuste to znovu.}}",
   "@errors.write.permissionDenied.suggestion.needsAdmin": {
-    "sourceHash": "674192a"
+    "sourceHash": "3425cc6"
   },
-  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {Tuto položku chrání sám macOS, takže na ní nic nezmění ani oprávnění správce. Položka může být zamčená: vyberte ji ve Finderu, zvolte Informace a zrušte zaškrtnutí políčka Zamčeno.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Tuto položku chrání sám systém, takže na ní nic nezmění ani oprávnění správce. Položka může mít příznak ochrany, který je potřeba nejdřív zrušit.}}",
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {Tuto položku chrání sám macOS, takže na ní nic nezmění ani oprávnění správce. Položka může být zamčená: vyberte ji ve Finderu, zvolte Informace a zrušte zaškrtnutí políčka Zamčeno.} windows {Tuto položku chrání sám systém Windows, takže na ní samotná oprávnění správce nic nezmění. Systémové soubory obvykle patří systému Windows a je nejlepší je nechat být.} other {Tuto položku chrání sám systém, takže na ní nic nezmění ani oprávnění správce. Položka může mít příznak ochrany, který je potřeba nejdřív zrušit.}}",
   "@errors.write.permissionDenied.suggestion.systemProtected": {
-    "sourceHash": "64a71c8"
+    "sourceHash": "b1780bc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "Nemáte oprávnění číst tuto položku, takže ji nelze zkopírovat.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,9 +1917,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion": "{platform, select, macos {Odemkněte ho ve Finderu (Informace > zrušte zaškrtnutí políčka Zamčeno) a zkuste to znovu.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Soubor může být chráněný. Zkontrolujte jeho oprávnění (např. příkazem chmod nebo ve správci souborů) a zkuste to znovu.}}",
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Odemkněte ho ve Finderu (Informace > zrušte zaškrtnutí políčka Zamčeno) a zkuste to znovu.} windows {Soubor může být jen pro čtení. V Průzkumníku souborů otevřete jeho Vlastnosti, zrušte zaškrtnutí políčka „Jen pro čtení“ a zkuste to znovu.} other {Soubor může být chráněný. Zkontrolujte jeho oprávnění (např. příkazem chmod nebo ve správci souborů) a zkuste to znovu.}}",
   "@errors.write.fileLocked.suggestion": {
-    "sourceHash": "8f84de5"
+    "sourceHash": "2e9f5c6"
   },
   "errors.write.deletePending.title": "Soubor se právě odstraňuje",
   "@errors.write.deletePending.title": {
@@ -1985,17 +1985,17 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
-  "errors.write.homeFolder.title": "{platform, select, windows {Please don’t delete your user folder} other {Domovskou složku prosím nemažte}}",
+  "errors.write.homeFolder.title": "{platform, select, windows {Uživatelskou složku prosím nemažte} other {Domovskou složku prosím nemažte}}",
   "@errors.write.homeFolder.title": {
-    "sourceHash": "6005e89"
+    "sourceHash": "d7a7939"
   },
-  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hey, you can’t delete your own user folder.} other {Hej, vlastní domovskou složku přece smazat nemůžete.}}",
+  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hej, vlastní uživatelskou složku přece smazat nemůžete.} other {Hej, vlastní domovskou složku přece smazat nemůžete.}}",
   "@errors.write.homeFolder.message.isHome": {
-    "sourceHash": "16ee6cd"
+    "sourceHash": "a5d7a8a"
   },
-  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {You can’t delete <code>{path}</code> because it contains your user folder, and you can’t delete your user folder.} other {Složku <code>{path}</code> smazat nemůžete, protože obsahuje vaši domovskou složku, a tu smazat nejde.}}",
+  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {Složku <code>{path}</code> smazat nemůžete, protože obsahuje vaši uživatelskou složku, a tu smazat nejde.} other {Složku <code>{path}</code> smazat nemůžete, protože obsahuje vaši domovskou složku, a tu smazat nejde.}}",
   "@errors.write.homeFolder.message.holdsHome": {
-    "sourceHash": "4ad5896"
+    "sourceHash": "f11f80f"
   },
   "errors.write.homeFolder.suggestion.isHome": "Pokud se chcete zbavit všech svých souborů, jděte dovnitř, vyberte vše a smažte to. Pořád to ale zní jako fakt špatný nápad.",
   "@errors.write.homeFolder.suggestion.isHome": {
@@ -2005,37 +2005,37 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
-  "errors.write.homeFolderMove.title": "{platform, select, windows {Please don’t move your user folder} other {Domovskou složku prosím nepřesouvejte}}",
+  "errors.write.homeFolderMove.title": "{platform, select, windows {Uživatelskou složku prosím nepřesouvejte} other {Domovskou složku prosím nepřesouvejte}}",
   "@errors.write.homeFolderMove.title": {
-    "sourceHash": "f5db2db"
+    "sourceHash": "df34b54"
   },
-  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Hej, vaše domovská složka má své místo přesně tam, kde je. Když ji přesunete, váš Mac vás při příštím přihlášení bude hledat na špatném místě.} windows {Hey, your user folder lives right where it is. Move it, and Windows will look for you in the wrong place next time you sign in.} other {Hey, your home folder lives right where it is. Move it, and your computer will look for you in the wrong place next time you log in.}}",
+  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Hej, vaše domovská složka má své místo přesně tam, kde je. Když ji přesunete, váš Mac vás při příštím přihlášení bude hledat na špatném místě.} windows {Hej, vaše uživatelská složka má své místo přesně tam, kde je. Když ji přesunete, systém Windows vás při příštím přihlášení bude hledat na špatném místě.} other {Hej, vaše domovská složka má své místo přesně tam, kde je. Když ji přesunete, váš počítač vás při příštím přihlášení bude hledat na špatném místě.}}",
   "@errors.write.homeFolderMove.message.isHome": {
-    "sourceHash": "17b0b0b"
+    "sourceHash": "575bc91"
   },
-  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {Složku <code>{path}</code> přesunout nemůžete, protože je v ní vaše domovská složka a váš Mac počítá s tím, že ji najde přesně tam, kde je.} windows {You can’t move <code>{path}</code> because your user folder is in there, and Windows expects to find it right where it is.} other {You can’t move <code>{path}</code> because your home folder is in there, and your computer expects to find it right where it is.}}",
+  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {Složku <code>{path}</code> přesunout nemůžete, protože je v ní vaše domovská složka a váš Mac počítá s tím, že ji najde přesně tam, kde je.} windows {Složku <code>{path}</code> přesunout nemůžete, protože je v ní vaše uživatelská složka a systém Windows počítá s tím, že ji najde přesně tam, kde je.} other {Složku <code>{path}</code> přesunout nemůžete, protože je v ní vaše domovská složka a váš počítač ji očekává přesně tam, kde je.}}",
   "@errors.write.homeFolderMove.message.holdsHome": {
-    "sourceHash": "c43a8e6"
+    "sourceHash": "870f337"
   },
-  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {Pokud chcete mít soubory jinde, jděte dovnitř, vyberte, co potřebujete, a přesuňte to. Váš Mac vám poděkuje.} windows {If you want your files somewhere else, go in there, pick what you need, and move that. Your PC will thank you.} other {If you want your files somewhere else, go in there, pick what you need, and move that. Your computer will thank you.}}",
+  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {Pokud chcete mít soubory jinde, jděte dovnitř, vyberte, co potřebujete, a přesuňte to. Váš Mac vám poděkuje.} windows {Pokud chcete mít soubory jinde, jděte dovnitř, vyberte, co potřebujete, a přesuňte to. Váš počítač vám poděkuje.} other {Pokud chcete mít soubory jinde, jděte dovnitř, vyberte, co potřebujete, a přesuňte to. Váš počítač vám poděkuje.}}",
   "@errors.write.homeFolderMove.suggestion.isHome": {
-    "sourceHash": "580bee6"
+    "sourceHash": "01b6088"
   },
   "errors.write.homeFolderMove.suggestion.holdsHome": "Pokud chcete přesunout pár souborů, buďte trochu konkrétnější a vyberte je zevnitř.",
   "@errors.write.homeFolderMove.suggestion.holdsHome": {
     "sourceHash": "a766ab5"
   },
-  "errors.write.homeFolderRename.title": "{platform, select, windows {Please don’t rename your user folder} other {Domovskou složku prosím nepřejmenovávejte}}",
+  "errors.write.homeFolderRename.title": "{platform, select, windows {Uživatelskou složku prosím nepřejmenovávejte} other {Domovskou složku prosím nepřejmenovávejte}}",
   "@errors.write.homeFolderRename.title": {
-    "sourceHash": "ec47bfe"
+    "sourceHash": "8775009"
   },
-  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Hej, váš Mac zná vaši domovskou složku pod tímhle názvem. Když ji přejmenujete, při příštím přihlášení vás nenajde.} windows {Hey, Windows knows your user folder by this name. Rename it, and it won’t find you next time you sign in.} other {Hey, your computer knows your home folder by this name. Rename it, and it won’t find you next time you log in.}}",
+  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Hej, váš Mac zná vaši domovskou složku pod tímhle názvem. Když ji přejmenujete, při příštím přihlášení vás nenajde.} windows {Hej, systém Windows zná vaši uživatelskou složku pod tímhle názvem. Když ji přejmenujete, při příštím přihlášení vás nenajde.} other {Hej, váš počítač zná vaši domovskou složku pod tímhle názvem. Když ji přejmenujete, při příštím přihlášení vás nenajde.}}",
   "@errors.write.homeFolderRename.message.isHome": {
-    "sourceHash": "fd78f2f"
+    "sourceHash": "7e7be74"
   },
-  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Složku <code>{path}</code> přejmenovat nemůžete, protože je v ní vaše domovská složka a váš Mac počítá s tím, že ji najde přesně na této cestě.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
+  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Složku <code>{path}</code> přejmenovat nemůžete, protože je v ní vaše domovská složka a váš Mac počítá s tím, že ji najde přesně na této cestě.} windows {Složku <code>{path}</code> přejmenovat nemůžete, protože je v ní vaše uživatelská složka a systém Windows počítá s tím, že ji najde přesně na této cestě.} other {Složku <code>{path}</code> přejmenovat nemůžete, protože je v ní vaše domovská složka a váš počítač ji očekává přesně na této cestě.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
-    "sourceHash": "b09f296"
+    "sourceHash": "51b7f8f"
   },
   "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Pokud nový název opravdu potřebujete, macOS na to má opatrný postup v nastavení „Uživatelé a skupiny“. Jen to není rychlé {renameKey}.} windows {Windows nemá žádný bezpečný vestavěný způsob, jak ji přejmenovat, takže je nejlepší nechat ji, jak je.} other {Pokud nový název opravdu potřebujete, správce ho může opatrně změnit příkazem usermod po přihlášení jako jiný uživatel. Jen to není rychlé {renameKey}.}}",
   "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
@@ -2069,9 +2069,9 @@
   "@errors.write.landingNotRecorded.message": {
     "sourceHash": "6ca4881"
   },
-  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Zkuste to znovu. Pokud se to opakuje, zkontrolujte, že je na disku tohoto Macu volné místo, a restartujte Cmdr.} windows {Try again. If it keeps happening, check that your PC has free space, then restart Cmdr.} other {Try again. If it keeps happening, check that your computer’s disk has free space, then restart Cmdr.}}",
+  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Zkuste to znovu. Pokud se to opakuje, zkontrolujte, že je na disku tohoto Macu volné místo, a restartujte Cmdr.} windows {Zkuste to znovu. Pokud se to opakuje, zkontrolujte, že je na vašem počítači volné místo, a restartujte Cmdr.} other {Zkuste to znovu. Pokud se to opakuje, zkontrolujte, že je na disku vašeho počítače volné místo, a restartujte Cmdr.}}",
   "@errors.write.landingNotRecorded.suggestion": {
-    "sourceHash": "e99aa6e"
+    "sourceHash": "98864f9"
   },
   "errors.write.newDataKeptAt.title": "Váš nový soubor má jiný název",
   "@errors.write.newDataKeptAt.title": {
@@ -2145,9 +2145,9 @@
   "@errors.write.fallback.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.fallback.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Přesun do koše se nepodařil}}",
+  "errors.write.fallback.title.trash": "{platform, select, windows {Přesun do koše se nepodařil} other {Přesun do koše se nepodařil}}",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.fallback.message.copy": "Něco se pokazilo při kopírování.",
   "@errors.write.fallback.message.copy": {
@@ -2161,9 +2161,9 @@
   "@errors.write.fallback.message.delete": {
     "sourceHash": "9a08b89"
   },
-  "errors.write.fallback.message.trash": "{platform, select, windows {Something went wrong while moving to the Recycle Bin.} other {Něco se pokazilo při přesouvání do koše.}}",
+  "errors.write.fallback.message.trash": "{platform, select, windows {Něco se pokazilo při přesouvání do koše.} other {Něco se pokazilo při přesouvání do koše.}}",
   "@errors.write.fallback.message.trash": {
-    "sourceHash": "63f8393"
+    "sourceHash": "ba7128f"
   },
   "errors.write.fallback.suggestion": "Zkuste to znovu, nebo pro víc informací zkontrolujte technické podrobnosti níže.",
   "@errors.write.fallback.suggestion": {
@@ -2177,9 +2177,9 @@
   "@errors.mutation.cantRenameVolumeRoot": {
     "sourceHash": "0845c57"
   },
-  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr nemůže zapisovat do složky „{path}“. Zkontrolujte oprávnění složky ve Finderu.} windows {Cmdr can’t write into “{path}”. Check the folder’s permissions in File Explorer.} other {Cmdr can’t write into “{path}”. Check the folder’s permissions in your file manager.}}",
+  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr nemůže zapisovat do složky „{path}“. Zkontrolujte oprávnění složky ve Finderu.} windows {Cmdr nemůže zapisovat do složky „{path}“. Zkontrolujte oprávnění složky v Průzkumníku souborů.} other {Cmdr nemůže zapisovat do složky „{path}“. Zkontrolujte oprávnění složky ve správci souborů.}}",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "e0a7ad6"
+    "sourceHash": "23a1c44"
   },
   "errors.mutation.fileLocked": "Tato položka je zamčená. Odemkněte ji ve Finderu v okně Informace a pak to zkuste znovu.",
   "@errors.mutation.fileLocked": {
@@ -2341,13 +2341,13 @@
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"
   },
-  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {Tento svazek nemá koš, takže položku jde jen trvale smazat.}}",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {Tento svazek nemá koš, takže položku jde jen trvale smazat.} other {Tento svazek nemá koš, takže položku jde jen trvale smazat.}}",
   "@errors.mutation.trashNotSupported": {
-    "sourceHash": "525ef25"
+    "sourceHash": "519075e"
   },
-  "errors.mutation.trashRefused": "{platform, select, macos {macOS tuto položku odmítl přesunout do koše.} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Trash.}}",
+  "errors.mutation.trashRefused": "{platform, select, macos {macOS tuto položku odmítl přesunout do koše.} windows {Systém Windows tuto položku odmítl přesunout do koše.} other {Cmdr tuto položku nedokázal přesunout do koše.}}",
   "@errors.mutation.trashRefused": {
-    "sourceHash": "7a6d1a5"
+    "sourceHash": "7ad59d2"
   },
   "errors.serverRequest.unreachable": "Server aplikace Cmdr je nedostupný. Zkontrolujte připojení k internetu a zkuste to znovu.",
   "@errors.serverRequest.unreachable": {
@@ -2429,9 +2429,9 @@
   "@errors.eject.unmountRefusedByDiskImage": {
     "sourceHash": "1fa3d53"
   },
-  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS tam pořád něco používá. Počkejte minutku a zkuste to znovu.} windows {Windows is still using something there. Wait a minute, then try again.} other {This computer is still using something there. Wait a minute, then try again.}}",
+  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS tam pořád něco používá. Počkejte minutku a zkuste to znovu.} windows {Systém Windows tam pořád něco používá. Počkejte minutku a zkuste to znovu.} other {Tento počítač tam pořád něco používá. Počkejte minutku a zkuste to znovu.}}",
   "@errors.eject.unmountRefusedBySystem": {
-    "sourceHash": "9b066c9"
+    "sourceHash": "d9f40b9"
   },
   "errors.eject.unmountRefusedByCmdr": "Samotný Cmdr tam pořád něco používá. Chvíli počkejte a zkuste to znovu, nebo pošlete hlášení, pokud se to bude opakovat.",
   "@errors.eject.unmountRefusedByCmdr": {
@@ -2449,9 +2449,9 @@
   "@errors.eject.unexpected": {
     "sourceHash": "2978e2a"
   },
-  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Server „{server}“ je pro Cmdr nedostupný. Zkontrolujte, že je zapnutý a ve stejné síti jako tento počítač.}}",
+  "errors.mount.hostUnreachable": "{platform, select, windows {Server „{server}“ je pro Cmdr nedostupný. Zkontrolujte, že je zapnutý a ve stejné síti jako tento počítač.} other {Server „{server}“ je pro Cmdr nedostupný. Zkontrolujte, že je zapnutý a ve stejné síti jako tento počítač.}}",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "45ac92c"
+    "sourceHash": "5e2f5c7"
   },
   "errors.mount.timeout": "Cmdr čekal, ale server „{server}“ neodpověděl včas. Zkontrolujte, že je zapnutý a dostupný, a zkuste to znovu.",
   "@errors.mount.timeout": {
@@ -2481,17 +2481,17 @@
   "@errors.mount.cancelled": {
     "sourceHash": "bc771b3"
   },
-  "errors.mount.unsupportedProtocol": "{platform, select, windows {This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.} other {Tento počítač a server „{server}“ nemají žádnou společnou verzi SMB. Zapněte v nastavení serveru SMB 2 nebo novější a zkuste to znovu.}}",
+  "errors.mount.unsupportedProtocol": "{platform, select, windows {Tento počítač a server „{server}“ nemají žádnou společnou verzi SMB. Zapněte v nastavení serveru SMB 2 nebo novější a zkuste to znovu.} other {Tento počítač a server „{server}“ nemají žádnou společnou verzi SMB. Zapněte v nastavení serveru SMB 2 nebo novější a zkuste to znovu.}}",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "8afe4cb"
+    "sourceHash": "b7d61a2"
   },
   "errors.mount.mountRefused": "Přihlášení k serveru „{server}“ proběhlo, ale server odmítl otevřít sdílenou složku „{share}“. Zkontrolujte nastavení sdílené složky na serveru a zkuste to znovu.",
   "@errors.mount.mountRefused": {
     "sourceHash": "6cf694d"
   },
-  "errors.mount.mountMissing": "{platform, select, windows {Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.} other {Váš počítač hlásil, že je sdílená složka „{share}“ na serveru „{server}“ připojená, ale nikdy se neobjevila. Zkuste to znovu.}}",
+  "errors.mount.mountMissing": "{platform, select, windows {Váš počítač hlásil, že je sdílená složka „{share}“ na serveru „{server}“ připojená, ale nikdy se neobjevila. Zkuste to znovu.} other {Váš počítač hlásil, že je sdílená složka „{share}“ na serveru „{server}“ připojená, ale nikdy se neobjevila. Zkuste to znovu.}}",
   "@errors.mount.mountMissing": {
-    "sourceHash": "72ab946"
+    "sourceHash": "9d2f8d5"
   },
   "errors.mount.gvfsMissing": "Připojování sdílených složek v Linuxu vyžaduje GVFS. Nainstalujte balíček gvfs-smb ze své distribuce a zkuste to znovu.",
   "@errors.mount.gvfsMissing": {
@@ -2501,9 +2501,9 @@
   "@errors.mount.unexpected": {
     "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Server „{server}“ je pro Cmdr nedostupný. Zkontrolujte, že je zapnutý a ve stejné síti jako tento počítač.}}",
+  "errors.shareList.hostUnreachable": "{platform, select, windows {Server „{server}“ je pro Cmdr nedostupný. Zkontrolujte, že je zapnutý a ve stejné síti jako tento počítač.} other {Server „{server}“ je pro Cmdr nedostupný. Zkontrolujte, že je zapnutý a ve stejné síti jako tento počítač.}}",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "45ac92c"
+    "sourceHash": "5e2f5c7"
   },
   "errors.shareList.timeout": "Cmdr čekal, ale server „{server}“ neodpověděl včas. Zkuste to za chvíli znovu.",
   "@errors.shareList.timeout": {

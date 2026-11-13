@@ -27,9 +27,9 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "3f94010"
   },
-  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {Cmdr kunde inte läsa vilka mappar dina paneler hade öppna, så panelerna börjar i din hemmapp}}",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr kunde inte läsa vilka mappar dina paneler hade öppna, så panelerna börjar i din användarmapp} other {Cmdr kunde inte läsa vilka mappar dina paneler hade öppna, så panelerna börjar i din hemmapp}}",
   "@stateRecovery.appStatus.title": {
-    "sourceHash": "521f5eb"
+    "sourceHash": "1f92563"
   },
   "stateRecovery.operationLog.title": "Cmdr kunde inte läsa din åtgärdslogg, så loggen börjar om",
   "@stateRecovery.operationLog.title": {
@@ -111,17 +111,17 @@
   "@stateRecovery.credentials.title": {
     "sourceHash": "e4821b8"
   },
-  "stateRecovery.credentials.body": "{platform, select, windows {This happens after a move to a new PC. Cmdr asks for each password again the next time it needs it.} other {Det här händer efter en flytt till en ny dator. Cmdr frågar efter varje lösenord igen nästa gång det behövs.}}",
+  "stateRecovery.credentials.body": "{platform, select, windows {Det här händer efter en flytt till en ny dator. Cmdr frågar efter varje lösenord igen nästa gång det behövs.} other {Det här händer efter en flytt till en ny dator. Cmdr frågar efter varje lösenord igen nästa gång det behövs.}}",
   "@stateRecovery.credentials.body": {
-    "sourceHash": "afac266"
+    "sourceHash": "c89f267"
   },
   "stateRecovery.keptCopy": "Cmdr behöll den gamla filen på {path}.",
   "@stateRecovery.keptCopy": {
     "sourceHash": "634e87d"
   },
-  "stateRecovery.showInFinder": "{platform, select, macos {Visa i Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "stateRecovery.showInFinder": "{platform, select, macos {Visa i Finder} windows {Visa i Utforskaren} other {Visa i filhanteraren}}",
   "@stateRecovery.showInFinder": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "stateRecovery.dismiss": "Avfärda",
   "@stateRecovery.dismiss": {

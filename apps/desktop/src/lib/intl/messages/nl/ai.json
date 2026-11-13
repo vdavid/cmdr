@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Van sommige bestanden blijft de inhoud thuis, wat iemand ook vraagt: SSH-sleutels, inloggegevens voor cloudservices en tools, je sleutelhangers, browsergegevens, Mail, Berichten, Notities, de eigen gegevens van Cmdr, en elk bestand met een persoonlijke sleutel. Hun namen kunnen nog steeds bij je aanbieder terechtkomen.} windows {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, Windows credentials, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Van sommige bestanden blijft de inhoud thuis, wat iemand ook vraagt: SSH-sleutels, inloggegevens voor cloudservices en tools, je sleutelhangers, browsergegevens, Mail, Berichten, Notities, de eigen gegevens van Cmdr, en elk bestand met een persoonlijke sleutel. Hun namen kunnen nog steeds bij je aanbieder terechtkomen.} windows {Van sommige bestanden blijft de inhoud thuis, wat iemand ook vraagt: SSH-sleutels, inloggegevens voor cloudservices en tools, Windows-referenties, browsergegevens, e-mailgegevens, de eigen gegevens van Cmdr, en elk bestand met een persoonlijke sleutel. Hun namen kunnen nog steeds bij je aanbieder terechtkomen.} other {Van sommige bestanden blijft de inhoud thuis, wat iemand ook vraagt: SSH-sleutels, inloggegevens voor cloudservices en tools, je sleutelhangers, browsergegevens, e-mailgegevens, de eigen gegevens van Cmdr, en elk bestand met een persoonlijke sleutel. Hun namen kunnen nog steeds bij je aanbieder terechtkomen.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
-    "sourceHash": "048633f"
+    "sourceHash": "a533066"
   },
   "ai.cloudConsent.askCmdr.actions": "In een chat die jij begon, kan Ask Cmdr de app ook voor je bedienen: navigeren, selecteren, sorteren, tabbladen en dialoogvensters openen, en verbinding maken met een opgeslagen locatie. Kopiëren, verplaatsen, comprimeren, verwijderen, de naam wijzigen en een bewerking ongedaan maken openen elk een dialoogvenster of editor die jij bevestigt, en er gebeurt niets tot je dat doet. Een bestand openen, een instelling wijzigen (behalve hoe Cmdr eruitziet), stoppen, een schijf uitwerpen, een server verwijderen en het indexeren wijzigen: daarvoor vraagt het je eerst. Een map of bestand met een naam aanmaken en bestanden taggen gebeurt meteen, zonder vraag, en een tagwijziging kun je ongedaan maken. Naamwijzigingen en opruimacties die het als plan voorbereidt, wachten op je goedkeuring.",
   "@ai.cloudConsent.askCmdr.actions": {
@@ -159,13 +159,13 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Je Ask Cmdr-chats blijven op je Mac, in een lokale database die je kunt openen en lezen.} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Je Ask Cmdr-chats blijven op je Mac, in een lokale database die je kunt openen en lezen.} windows {Je Ask Cmdr-chats blijven op je pc, in een lokale database die je kunt openen en lezen.} other {Je Ask Cmdr-chats blijven op je computer, in een lokale database die je kunt openen en lezen.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
-    "sourceHash": "283cdd7"
+    "sourceHash": "9557acc"
   },
-  "ai.cloudConsent.logsNote": "{platform, select, macos {Als je ‘Log AI-modelaanroepen’ aanzet in de geavanceerde instellingen, bewaart Cmdr ook elk verzoek en antwoord in een map op je Mac. Die aanroeplogs blijven lokaal en worden nooit verstuurd.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {Als je ‘Log AI-modelaanroepen’ aanzet in de geavanceerde instellingen, bewaart Cmdr ook elk verzoek en antwoord in een map op je Mac. Die aanroeplogs blijven lokaal en worden nooit verstuurd.} windows {Als je ‘Log AI-modelaanroepen’ aanzet in de geavanceerde instellingen, bewaart Cmdr ook elk verzoek en antwoord in een map op je pc. Die aanroeplogs blijven lokaal en worden nooit verstuurd.} other {Als je ‘Log AI-modelaanroepen’ aanzet in de geavanceerde instellingen, bewaart Cmdr ook elk verzoek en antwoord in een map op je computer. Die aanroeplogs blijven lokaal en worden nooit verstuurd.}}",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "0178d1c"
+    "sourceHash": "e34c082"
   },
   "ai.cloudConsent.turnOffAnyTime": "Zet dit op elk moment uit en Cmdr stopt meteen met versturen. Je service, sleutel en chats blijven zoals ze zijn.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -535,29 +535,29 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.title": "{platform, select, macos {{op, select, save {Je API-sleutel kon niet worden bewaard: de macOS-sleutelhanger weigerde toegang} other {Je bewaarde API-sleutel kon niet worden gelezen: de macOS-sleutelhanger weigerde toegang}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {Je API-sleutel kon niet worden bewaard: de sleutelhanger van je systeem weigerde toegang} other {Je bewaarde API-sleutel kon niet worden gelezen: de sleutelhanger van je systeem weigerde toegang}}}}",
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {Je API-sleutel kon niet worden bewaard: de macOS-sleutelhanger weigerde toegang} other {Je bewaarde API-sleutel kon niet worden gelezen: de macOS-sleutelhanger weigerde toegang}}} windows {{op, select, save {Je API-sleutel kon niet worden bewaard: Referentiebeheer weigerde toegang} other {Je bewaarde API-sleutel kon niet worden gelezen: Referentiebeheer weigerde toegang}}} other {{op, select, save {Je API-sleutel kon niet worden bewaard: de sleutelhanger van je systeem weigerde toegang} other {Je bewaarde API-sleutel kon niet worden gelezen: de sleutelhanger van je systeem weigerde toegang}}}}",
   "@ai.secretError.title": {
-    "sourceHash": "2b2ef89"
+    "sourceHash": "25b34c4"
   },
-  "ai.secretError.body": "{platform, select, macos {{op, select, save {Open Sleutelhangertoegang en controleer het onderdeel ‘Cmdr’, of verwijder het en bewaar opnieuw.} other {Open Sleutelhangertoegang, zoek het onderdeel ‘Cmdr’, verleen toegang, of verwijder het en voer je sleutel opnieuw in.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Ontgrendel je sleutelhanger (de app Wachtwoorden / Sleutelhangers) en probeer het opnieuw.}}",
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {Open Sleutelhangertoegang en controleer het onderdeel ‘Cmdr’, of verwijder het en bewaar opnieuw.} other {Open Sleutelhangertoegang, zoek het onderdeel ‘Cmdr’, verleen toegang, of verwijder het en voer je sleutel opnieuw in.}}} windows {{op, select, save {Open Referentiebeheer en controleer de referentie ‘Cmdr’ onder Windows-referenties, of verwijder die en bewaar opnieuw.} other {Open Referentiebeheer, zoek de referentie ‘Cmdr’ onder Windows-referenties, of verwijder die en voer je sleutel opnieuw in.}}} other {Ontgrendel je sleutelhanger (de app Wachtwoorden / Sleutelhangers) en probeer het opnieuw.}}",
   "@ai.secretError.body": {
-    "sourceHash": "8f1380e"
+    "sourceHash": "d65c5e3"
   },
   "ai.secretError.genericTitle": "{op, select, save {Je API-sleutel kon niet worden bewaard.} other {Je bewaarde API-sleutel kon niet worden gelezen.}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "c343e42"
   },
-  "ai.secretError.genericBody": "{platform, select, macos {Controleer of de sleutelhanger van je systeem beschikbaar is en probeer het opnieuw. Blijft het gebeuren, herstart dan de app.} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {Controleer of de sleutelhanger van je systeem beschikbaar is en probeer het opnieuw. Blijft het gebeuren, herstart dan de app.}}",
+  "ai.secretError.genericBody": "{platform, select, macos {Controleer of de sleutelhanger van je systeem beschikbaar is en probeer het opnieuw. Blijft het gebeuren, herstart dan de app.} windows {Controleer of Referentiebeheer beschikbaar is en probeer het opnieuw. Blijft het gebeuren, herstart dan Cmdr.} other {Controleer of de sleutelhanger van je systeem beschikbaar is en probeer het opnieuw. Blijft het gebeuren, herstart dan de app.}}",
   "@ai.secretError.genericBody": {
-    "sourceHash": "2ee417d"
+    "sourceHash": "9fc0702"
   },
   "ai.secretError.removeTitle": "Je bewaarde API-sleutel kon niet worden verwijderd.",
   "@ai.secretError.removeTitle": {
     "sourceHash": "5986628"
   },
-  "ai.secretError.removeBody": "{platform, select, macos {Open Sleutelhangertoegang, zoek het onderdeel ‘Cmdr’ en verwijder het daar.} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {Ontgrendel je sleutelhanger (de app Wachtwoorden / Sleutelhangers) en probeer het opnieuw.}}",
+  "ai.secretError.removeBody": "{platform, select, macos {Open Sleutelhangertoegang, zoek het onderdeel ‘Cmdr’ en verwijder het daar.} windows {Open Referentiebeheer, zoek de referentie ‘Cmdr’ onder Windows-referenties en verwijder die daar.} other {Ontgrendel je sleutelhanger (de app Wachtwoorden / Sleutelhangers) en probeer het opnieuw.}}",
   "@ai.secretError.removeBody": {
-    "sourceHash": "4e3abe7"
+    "sourceHash": "3a85511"
   },
   "ai.managed.aiOff": "Je organisatie heeft AI in Cmdr uitgezet.",
   "@ai.managed.aiOff": {
@@ -571,9 +571,9 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Je organisatie staat alleen lokale AI toe, en deze Mac kan die niet draaien.} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Je organisatie staat alleen lokale AI toe, en deze Mac kan die niet draaien.} windows {Je organisatie staat alleen lokale AI toe, en deze pc kan die niet draaien.} other {Je organisatie staat alleen lokale AI toe, en deze computer kan die niet draaien.}}",
   "@ai.managed.localOnlyUnsupported": {
-    "sourceHash": "b760ca4"
+    "sourceHash": "b468f8f"
   },
   "ai.managed.serviceNotAllowed": "niet toegestaan door je organisatie",
   "@ai.managed.serviceNotAllowed": {

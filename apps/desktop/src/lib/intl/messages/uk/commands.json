@@ -1,7 +1,7 @@
 {
-  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Завершити Cmdr}}",
+  "commands.appQuit.label": "{platform, select, windows {Вийти з Cmdr} other {Завершити Cmdr}}",
   "@commands.appQuit.label": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "commands.appHide.label": "Сховати Cmdr",
   "@commands.appHide.label": {
@@ -192,9 +192,9 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Відкриває ~/Downloads і вибирає останній файл.}}",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Відкриває вашу папку «Завантаження» і вибирає останній файл.} other {Відкриває ~/Downloads і вибирає останній файл.}}",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "6b3fe83"
+    "sourceHash": "97b6bd4"
   },
   "commands.viewShowHidden.label": "Перемкнути показ прихованих файлів",
   "@commands.viewShowHidden.label": {
@@ -320,21 +320,21 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Відмінити переміщення в Смітник}}",
+  "commands.editUndoTrash.label": "{platform, select, windows {Відмінити видалення} other {Відмінити переміщення в Смітник}}",
   "@commands.editUndoTrash.label": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Відмінити переміщення «{name}» у Смітник}}",
+  "commands.editUndoTrash.one": "{platform, select, windows {Відмінити видалення «{name}»} other {Відмінити переміщення «{name}» у Смітник}}",
   "@commands.editUndoTrash.one": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Відмінити переміщення {countText} {count, plural, one {елемента} few {елементів} many {елементів} other {елемента}} у Смітник}}",
+  "commands.editUndoTrash.many": "{platform, select, windows {Відмінити видалення {countText} {count, plural, one {елемента} few {елементів} many {елементів} other {елемента}}} other {Відмінити переміщення {countText} {count, plural, one {елемента} few {елементів} many {елементів} other {елемента}} у Смітник}}",
   "@commands.editUndoTrash.many": {
-    "sourceHash": "69c4966"
+    "sourceHash": "39a5bbe"
   },
-  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Повертає назад файли, які ви востаннє перемістили в Смітник}}",
+  "commands.editUndoTrash.description": "{platform, select, windows {Повертає назад файли, які ви востаннє перемістили в Кошик} other {Повертає назад файли, які ви востаннє перемістили в Смітник}}",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "dca1b63"
+    "sourceHash": "6082058"
   },
   "commands.paneLeftVolumeChooser.label": "Відкрити перемикач томів лівої панелі",
   "@commands.paneLeftVolumeChooser.label": {
@@ -464,9 +464,9 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Перейти до домашньої папки}}",
+  "commands.navGoHome.label": "{platform, select, windows {Перейти до папки користувача} other {Перейти до домашньої папки}}",
   "@commands.navGoHome.label": {
-    "sourceHash": "74b2a8b"
+    "sourceHash": "0ae4c72"
   },
   "commands.errorPaneToggleTechnicalDetails.label": "Показати технічні деталі",
   "@commands.errorPaneToggleTechnicalDetails.label": {
@@ -832,21 +832,21 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Перейти до Смітника}}",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Перейти до Кошика} other {Перейти до Смітника}}",
   "@commands.fileGoToTrash.label": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
-  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Відкриває Смітник диска, який ви переглядаєте}}",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Відкриває Кошик диска, який ви переглядаєте} other {Відкриває Смітник диска, який ви переглядаєте}}",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "6496c25"
+    "sourceHash": "e4789d0"
   },
   "commands.dialogConfirm.label": "Підтвердити діалогове вікно на екрані",
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
-  "commands.fileShowInFileManager.label": "{platform, select, macos {Показати у Finder} windows {Show in File Explorer} other {Показати у файловому менеджері}}",
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Показати у Finder} windows {Показати у Провіднику} other {Показати у файловому менеджері}}",
   "@commands.fileShowInFileManager.label": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "commands.fileOpenTerminalHere.label": "Відкрити термінал тут",
   "@commands.fileOpenTerminalHere.label": {
@@ -868,13 +868,13 @@
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.label": "{platform, select, macos {Досьє} windows {Properties} other {Властивості файлу}}",
+  "commands.fileGetInfo.label": "{platform, select, macos {Досьє} windows {Властивості} other {Властивості файлу}}",
   "@commands.fileGetInfo.label": {
-    "sourceHash": "91c64ca"
+    "sourceHash": "da65a65"
   },
   "commands.fileQuickLook.label": "{platform, select, macos {Швидкий перегляд} other {Попередній перегляд}}",
   "@commands.fileQuickLook.label": {
-    "sourceHash": "f5616ce"
+    "sourceHash": "c3f57b4"
   },
   "commands.fileContextMenu.label": "Відкрити контекстне меню",
   "@commands.fileContextMenu.label": {
@@ -928,9 +928,9 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "{platform, select, macos {Вилучає збережений пароль резервної копії restic, у якій ви зараз перебуваєте, із Вʼязки ключів, і резервна копія знову стає замкненою} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Вилучає збережений пароль резервної копії restic, у якій ви зараз перебуваєте, із Вʼязки ключів, і резервна копія знову стає замкненою} windows {Вилучає збережений пароль резервної копії restic, у якій ви зараз перебуваєте, із Диспетчера облікових даних, і резервна копія знову стає замкненою} other {Вилучає збережений пароль резервної копії restic, у якій ви зараз перебуваєте, із вашої вʼязки ключів, і резервна копія знову стає замкненою}}",
   "@commands.resticForgetPassword.description": {
-    "sourceHash": "e51ac69"
+    "sourceHash": "0f616ca"
   },
   "commands.fileCopyShareLink.label": "Скопіювати посилання для поширення (сім днів)",
   "@commands.fileCopyShareLink.label": {

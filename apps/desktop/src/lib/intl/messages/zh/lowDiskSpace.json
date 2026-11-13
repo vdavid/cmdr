@@ -1,7 +1,7 @@
 {
-  "lowDiskSpace.toast.message": "{platform, select, macos {你的启动磁盘空间快用完了：剩余 {freeText}（{percentText}%）。} windows {Your system drive is running low on space: {freeText} free ({percentText}%).} other {Your system disk is running low on space: {freeText} free ({percentText}%).}}",
+  "lowDiskSpace.toast.message": "{platform, select, macos {你的启动磁盘空间快用完了：剩余 {freeText}（{percentText}%）。} windows {你的系统驱动器空间快用完了：剩余 {freeText}（{percentText}%）。} other {你的系统盘空间快用完了：剩余 {freeText}（{percentText}%）。}}",
   "@lowDiskSpace.toast.message": {
-    "sourceHash": "44b701f"
+    "sourceHash": "b8b69e6"
   },
   "lowDiskSpace.toast.disable": "停用这些通知",
   "@lowDiskSpace.toast.disable": {
@@ -15,8 +15,8 @@
   "@lowDiskSpace.notification.title": {
     "sourceHash": "5b1f5bf"
   },
-  "lowDiskSpace.notification.body": "{platform, select, macos {你的启动磁盘剩余 {freeText}（{percentText}%）。} windows {{freeText} free ({percentText}%) on your system drive.} other {{freeText} free ({percentText}%) on your system disk.}}",
+  "lowDiskSpace.notification.body": "{platform, select, macos {你的启动磁盘剩余 {freeText}（{percentText}%）。} windows {你的系统驱动器剩余 {freeText}（{percentText}%）。} other {你的系统盘剩余 {freeText}（{percentText}%）。}}",
   "@lowDiskSpace.notification.body": {
-    "sourceHash": "b17ee43"
+    "sourceHash": "9869348"
   }
 }

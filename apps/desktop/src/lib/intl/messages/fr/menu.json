@@ -71,9 +71,9 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "{platform, select, windows {Settings} other {Réglages…}}",
+  "menu.app.settings": "{platform, select, windows {Réglages} other {Réglages…}}",
   "@menu.app.settings": {
-    "sourceHash": "7a04083"
+    "sourceHash": "7af8e23"
   },
   "menu.app.services": "Services",
   "@menu.app.services": {
@@ -148,9 +148,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFileManager": "{platform, select, macos {Afficher dans le Finder} windows {Show in File Explorer} other {Afficher dans le gestionnaire de fichiers}}",
+  "menu.file.showInFileManager": "{platform, select, macos {Afficher dans le Finder} windows {Afficher dans l’Explorateur de fichiers} other {Afficher dans le gestionnaire de fichiers}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "menu.file.openTerminalHere": "Ouvrir un terminal ici",
   "@menu.file.openTerminalHere": {
@@ -176,17 +176,17 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Annuler le placement dans la corbeille}}",
+  "menu.edit.undoTrash": "{platform, select, windows {Annuler la suppression} other {Annuler le placement dans la corbeille}}",
   "@menu.edit.undoTrash": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Annuler le placement dans la corbeille de « {name} »}}",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Annuler la suppression de « {name} »} other {Annuler le placement dans la corbeille de « {name} »}}",
   "@menu.edit.undoTrashOne": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Annuler le placement dans la corbeille de {countText} éléments}}",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Annuler la suppression de {countText} éléments} other {Annuler le placement dans la corbeille de {countText} éléments}}",
   "@menu.edit.undoTrashMany": {
-    "sourceHash": "bb9192a"
+    "sourceHash": "4ad492a"
   },
   "menu.edit.cut": "Couper",
   "@menu.edit.cut": {
@@ -399,9 +399,9 @@
   "@menu.go.rootFolder": {
     "sourceHash": "6d92528"
   },
-  "menu.go.home": "{platform, select, windows {User folder} other {Départ}}",
+  "menu.go.home": "{platform, select, windows {Dossier utilisateur} other {Départ}}",
   "@menu.go.home": {
-    "sourceHash": "3a78695"
+    "sourceHash": "4ff1502"
   },
   "menu.go.goToPath": "Aller au dossier…",
   "@menu.go.goToPath": {
@@ -657,13 +657,13 @@
   "@menu.volume.ejectBusy": {
     "sourceHash": "e2145a6"
   },
-  "menu.volume.detachShare": "{platform, select, macos {Éjecter ({name})} windows {Disconnect ({name})} other {Unmount ({name})}}",
+  "menu.volume.detachShare": "{platform, select, macos {Éjecter ({name})} windows {Se déconnecter ({name})} other {Démonter ({name})}}",
   "@menu.volume.detachShare": {
-    "sourceHash": "913d6ea"
+    "sourceHash": "458748f"
   },
-  "menu.volume.detachShareBusy": "{platform, select, macos {Éjecter ({name}) (occupé)} windows {Disconnect ({name}) (busy)} other {Unmount ({name}) (busy)}}",
+  "menu.volume.detachShareBusy": "{platform, select, macos {Éjecter ({name}) (occupé)} windows {Se déconnecter ({name}) (occupé)} other {Démonter ({name}) (occupé)}}",
   "@menu.volume.detachShareBusy": {
-    "sourceHash": "e2145a6"
+    "sourceHash": "d3578bf"
   },
   "menu.volume.ejectAll": "Tout éjecter",
   "@menu.volume.ejectAll": {

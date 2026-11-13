@@ -112,9 +112,9 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "{platform, select, macos {Cmdr {available} finns nu, men din organisation håller den här Macen på {ceiling} eller tidigare.} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
+  "updates.status.heldByPolicy": "{platform, select, macos {Cmdr {available} finns nu, men din organisation håller den här Macen på {ceiling} eller tidigare.} windows {Cmdr {available} finns nu, men din organisation håller den här datorn på {ceiling} eller tidigare.} other {Cmdr {available} finns nu, men din organisation håller den här datorn på {ceiling} eller tidigare.}}",
   "@updates.status.heldByPolicy": {
-    "sourceHash": "5c9b196"
+    "sourceHash": "49012ba"
   },
   "updates.status.unwritableAdmin": "Cmdr {version} finns nu, men Cmdr kan inte installera den själv. Hämta appen från getcmdr.com och dra den till mappen Appar.",
   "@updates.status.unwritableAdmin": {

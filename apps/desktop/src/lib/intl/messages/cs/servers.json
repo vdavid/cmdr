@@ -139,9 +139,9 @@
   "@servers.hub.emptyTitle": {
     "sourceHash": "7846930"
   },
-  "servers.hub.emptyMessage": "{platform, select, macos {Přidejte server níže, nebo ve své síti zapněte Mac či NAS a Cmdr ho najde.} windows {Add one below, or turn on a PC or NAS on your network and Cmdr will find it.} other {Add one below, or turn on a computer or NAS on your network and Cmdr will find it.}}",
+  "servers.hub.emptyMessage": "{platform, select, macos {Přidejte server níže, nebo ve své síti zapněte Mac či NAS a Cmdr ho najde.} windows {Přidejte server níže, nebo ve své síti zapněte počítač či NAS a Cmdr ho najde.} other {Přidejte server níže, nebo ve své síti zapněte počítač či NAS a Cmdr ho najde.}}",
   "@servers.hub.emptyMessage": {
-    "sourceHash": "04bdc26"
+    "sourceHash": "7ca97ce"
   },
   "servers.hub.rowCount": "{count, plural, one {{countText} server} few {{countText} servery} many {{countText} serveru} other {{countText} serverů}}",
   "@servers.hub.rowCount": {
@@ -187,9 +187,9 @@
   "@servers.refusal.authMethodUnsupported": {
     "sourceHash": "48b9b15"
   },
-  "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS nedůvěřuje certifikátu tohoto serveru. Přidejte ho do Klíčenky a pak to zkuste znovu.} windows {Windows doesn’t trust this server’s certificate. Add it to your trusted certificates in “Manage user certificates”, then try again.} other {This server’s certificate isn’t trusted on this computer. Add it to your system’s trusted certificates, then try again.}}",
+  "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS nedůvěřuje certifikátu tohoto serveru. Přidejte ho do Klíčenky a pak to zkuste znovu.} windows {Systém Windows nedůvěřuje certifikátu tohoto serveru. Přidejte ho mezi důvěryhodné certifikáty v nástroji „Spravovat uživatelské certifikáty“ a pak to zkuste znovu.} other {Certifikát tohoto serveru není na tomto počítači důvěryhodný. Přidejte ho mezi důvěryhodné certifikáty systému a pak to zkuste znovu.}}",
   "@servers.refusal.certificateUntrusted": {
-    "sourceHash": "b8f3b4a"
+    "sourceHash": "aba3260"
   },
   "servers.refusal.certificateRejected": "Certifikát tohoto serveru je odvolaný nebo poškozený, takže se k němu Cmdr nepřipojí. Požádejte toho, kdo server spravuje, aby certifikát nahradil.",
   "@servers.refusal.certificateRejected": {
@@ -227,9 +227,9 @@
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
   },
-  "servers.refusal.hostKeyRevoked": "{platform, select, macos {Klíč serveru {host} je v nastavení SSH na tomto Macu označený jako kompromitovaný. Cmdr se k tomuto serveru nepřipojí.} windows {The key for {host} is marked as compromised in your SSH settings on this PC. Cmdr won’t connect to it.} other {The key for {host} is marked as compromised in your SSH settings on this computer. Cmdr won’t connect to it.}}",
+  "servers.refusal.hostKeyRevoked": "{platform, select, macos {Klíč serveru {host} je v nastavení SSH na tomto Macu označený jako kompromitovaný. Cmdr se k tomuto serveru nepřipojí.} windows {Klíč serveru {host} je v nastavení SSH na tomto počítači označený jako kompromitovaný. Cmdr se k tomuto serveru nepřipojí.} other {Klíč serveru {host} je v nastavení SSH na tomto počítači označený jako kompromitovaný. Cmdr se k tomuto serveru nepřipojí.}}",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "7a25d93"
+    "sourceHash": "fd34afd"
   },
   "servers.refusal.startFolderOutsideRoot": "Počáteční složka musí být kořenová složka nebo složka v ní.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -251,13 +251,13 @@
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "3fb55a6"
   },
-  "servers.refusal.secretNotStored": "{platform, select, macos {Cmdr nedokázal uložit toto heslo do svazku klíčů. Zkuste to znovu, nebo vypněte „Pamatovat si ve svazku klíčů“ a přihlaste se bez uložení hesla.} windows {Cmdr couldn’t save this password. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this password in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
+  "servers.refusal.secretNotStored": "{platform, select, macos {Cmdr nedokázal uložit toto heslo do svazku klíčů. Zkuste to znovu, nebo vypněte „Pamatovat si ve svazku klíčů“ a přihlaste se bez uložení hesla.} windows {Cmdr nedokázal uložit toto heslo. Zkuste to znovu, nebo vypněte „Zapamatovat si heslo“ a přihlaste se bez uložení hesla.} other {Cmdr nedokázal uložit toto heslo do klíčenky. Zkuste to znovu, nebo vypněte „Pamatovat si v klíčence“ a přihlaste se bez uložení hesla.}}",
   "@servers.refusal.secretNotStored": {
-    "sourceHash": "20957fe"
+    "sourceHash": "8b29064"
   },
-  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {Cmdr změny uložil, ale heslo ve svazku klíčů nedokázal aktualizovat. Zkuste to znovu tlačítkem Uložit.} windows {Cmdr saved your changes but couldn’t update the saved password. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the password in your keyring. Save again to try once more.}}",
+  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {Cmdr změny uložil, ale heslo ve svazku klíčů nedokázal aktualizovat. Zkuste to znovu tlačítkem Uložit.} windows {Cmdr změny uložil, ale uložené heslo nedokázal aktualizovat. Zkuste to znovu tlačítkem Uložit.} other {Cmdr změny uložil, ale heslo v klíčence nedokázal aktualizovat. Zkuste to znovu tlačítkem Uložit.}}",
   "@servers.refusal.savedSecretNotUpdated": {
-    "sourceHash": "2ae1e2b"
+    "sourceHash": "03fbb15"
   },
   "servers.refusal.s3AuthenticationRejected": "Tento tajný přístupový klíč nefungoval.",
   "@servers.refusal.s3AuthenticationRejected": {
@@ -271,13 +271,13 @@
   "@servers.refusal.s3SecretMissing": {
     "sourceHash": "f1f32f2"
   },
-  "servers.refusal.s3SecretNotStored": "{platform, select, macos {Cmdr nedokázal uložit tento tajný přístupový klíč do svazku klíčů. Zkuste to znovu, nebo vypněte „Pamatovat si ve svazku klíčů“ a přihlaste se bez uložení klíče.} windows {Cmdr couldn’t save this secret access key. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this secret access key in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
+  "servers.refusal.s3SecretNotStored": "{platform, select, macos {Cmdr nedokázal uložit tento tajný přístupový klíč do svazku klíčů. Zkuste to znovu, nebo vypněte „Pamatovat si ve svazku klíčů“ a přihlaste se bez uložení klíče.} windows {Cmdr nedokázal uložit tento tajný přístupový klíč. Zkuste to znovu, nebo vypněte „Zapamatovat si heslo“ a přihlaste se bez uložení klíče.} other {Cmdr nedokázal uložit tento tajný přístupový klíč do klíčenky. Zkuste to znovu, nebo vypněte „Pamatovat si v klíčence“ a přihlaste se bez uložení klíče.}}",
   "@servers.refusal.s3SecretNotStored": {
-    "sourceHash": "f7a9fb0"
+    "sourceHash": "6b787ad"
   },
-  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {Cmdr změny uložil, ale tajný přístupový klíč ve svazku klíčů nedokázal aktualizovat. Zkuste to znovu tlačítkem Uložit.} windows {Cmdr saved your changes but couldn’t update the saved secret access key. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the secret access key in your keyring. Save again to try once more.}}",
+  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {Cmdr změny uložil, ale tajný přístupový klíč ve svazku klíčů nedokázal aktualizovat. Zkuste to znovu tlačítkem Uložit.} windows {Cmdr změny uložil, ale uložený tajný přístupový klíč nedokázal aktualizovat. Zkuste to znovu tlačítkem Uložit.} other {Cmdr změny uložil, ale tajný přístupový klíč v klíčence nedokázal aktualizovat. Zkuste to znovu tlačítkem Uložit.}}",
   "@servers.refusal.s3SavedSecretNotUpdated": {
-    "sourceHash": "1d2889d"
+    "sourceHash": "5697774"
   },
   "servers.refusal.accessDenied": "Tento klíč nemá přístup k tomuto bucketu. Zkontrolujte název bucketu a tajný přístupový klíč a také to, že klíč smí bucket číst.",
   "@servers.refusal.accessDenied": {
@@ -299,9 +299,9 @@
   "@servers.refusal.regionMismatchNamed": {
     "sourceHash": "30abb0d"
   },
-  "servers.refusal.clockSkewed": "{platform, select, macos {Hodiny tohoto Macu se rozcházejí o víc než 15 minut, takže server nepřijme požadavky aplikace Cmdr. V Nastavení systému nastavte datum a čas automaticky a pak to zkuste znovu.} windows {This PC’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Turn on “Set time automatically” in Settings > Time & language > Date & time, then try again.} other {This computer’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in your system settings, then try again.}}",
+  "servers.refusal.clockSkewed": "{platform, select, macos {Hodiny tohoto Macu se rozcházejí o víc než 15 minut, takže server nepřijme požadavky aplikace Cmdr. V Nastavení systému nastavte datum a čas automaticky a pak to zkuste znovu.} windows {Hodiny tohoto počítače se rozcházejí o víc než 15 minut, takže server nepřijme požadavky aplikace Cmdr. Zapněte „Nastavit čas automaticky“ v Nastavení > Čas a jazyk > Datum a čas a pak to zkuste znovu.} other {Hodiny tohoto počítače se rozcházejí o víc než 15 minut, takže server nepřijme požadavky aplikace Cmdr. V nastavení systému nastavte datum a čas automaticky a pak to zkuste znovu.}}",
   "@servers.refusal.clockSkewed": {
-    "sourceHash": "cdee0ef"
+    "sourceHash": "2fd26d3"
   },
   "servers.refusal.notAnS3Endpoint": "Na této adrese neodpovídá žádné úložiště S3.",
   "@servers.refusal.notAnS3Endpoint": {
@@ -311,9 +311,9 @@
   "@servers.refusal.exportNotFound": {
     "sourceHash": "2ef1ce8"
   },
-  "servers.refusal.exportRefused": "{platform, select, macos {Server {host} nedovolí z tohoto Macu otevřít tento export. V nastavení NFS na serveru zkontrolujte, kterým počítačům export povoluje přístup.} windows {{host} doesn’t let this PC open that export. Check which devices the export allows in the server’s NFS settings.} other {{host} doesn’t let this computer open that export. Check which computers the export allows in the server’s NFS settings.}}",
+  "servers.refusal.exportRefused": "{platform, select, macos {Server {host} nedovolí z tohoto Macu otevřít tento export. V nastavení NFS na serveru zkontrolujte, kterým počítačům export povoluje přístup.} windows {Server {host} nedovolí z tohoto počítače otevřít tento export. V nastavení NFS na serveru zkontrolujte, kterým zařízením export povoluje přístup.} other {Server {host} nedovolí z tohoto počítače otevřít tento export. V nastavení NFS na serveru zkontrolujte, kterým počítačům export povoluje přístup.}}",
   "@servers.refusal.exportRefused": {
-    "sourceHash": "0cebd7d"
+    "sourceHash": "4a8157e"
   },
   "servers.refusal.reservedPortRequired": "Server {host} přijímá připojení jen z privilegovaného portu, který tu Cmdr nemůže otevřít. Zapněte na serveru u exportu možnost „insecure“ (některé aplikace NAS ji nazývají „Povolit připojení z neprivilegovaných portů“) a zkuste to znovu.",
   "@servers.refusal.reservedPortRequired": {
@@ -335,13 +335,13 @@
   "@servers.refusal.addressTaken": {
     "sourceHash": "5a14a92"
   },
-  "servers.refusal.secretNotMoved": "{platform, select, macos {Cmdr nemohl přenést uložené heslo na novou adresu, takže se nic nezměnilo. Zkontrolujte, že je svazek klíčů odemčený, a uložte to znovu.} windows {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Check that your keyring is unlocked, then save again.}}",
+  "servers.refusal.secretNotMoved": "{platform, select, macos {Cmdr nemohl přenést uložené heslo na novou adresu, takže se nic nezměnilo. Zkontrolujte, že je svazek klíčů odemčený, a uložte to znovu.} windows {Cmdr nemohl přenést uložené heslo na novou adresu, takže se nic nezměnilo. Zkuste to znovu tlačítkem Uložit.} other {Cmdr nemohl přenést uložené heslo na novou adresu, takže se nic nezměnilo. Zkontrolujte, že je klíčenka odemčená, a uložte to znovu.}}",
   "@servers.refusal.secretNotMoved": {
-    "sourceHash": "7f3c328"
+    "sourceHash": "3a8f01c"
   },
-  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {Cmdr nemohl přenést uložený tajný přístupový klíč na nový koncový bod, takže se nic nezměnilo. Zkontrolujte, že je svazek klíčů odemčený, a uložte to znovu.} windows {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your keyring is unlocked, then save again.}}",
+  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {Cmdr nemohl přenést uložený tajný přístupový klíč na nový koncový bod, takže se nic nezměnilo. Zkontrolujte, že je svazek klíčů odemčený, a uložte to znovu.} windows {Cmdr nemohl přenést uložený tajný přístupový klíč na nový koncový bod, takže se nic nezměnilo. Zkuste to znovu tlačítkem Uložit.} other {Cmdr nemohl přenést uložený tajný přístupový klíč na nový koncový bod, takže se nic nezměnilo. Zkontrolujte, že je klíčenka odemčená, a uložte to znovu.}}",
   "@servers.refusal.s3SecretNotMoved": {
-    "sourceHash": "69901e7"
+    "sourceHash": "d08a1d2"
   },
   "servers.refusal.accountChanged": "Jiný účet znamená jiný server, takže se nic neuložilo. Přidejte ho raději jako nový server.",
   "@servers.refusal.accountChanged": {
@@ -351,13 +351,13 @@
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
-  "servers.refusal.shareMounted": "{platform, select, macos {Sdílená složka {name} je pořád připojená ze staré adresy. Vysuňte ji a uložte to znovu.} windows {The share {name} is still connected from the old address. Disconnect it, then save again.} other {The share {name} is still mounted from the old address. Unmount it, then save again.}}",
+  "servers.refusal.shareMounted": "{platform, select, macos {Sdílená složka {name} je pořád připojená ze staré adresy. Vysuňte ji a uložte to znovu.} windows {Sdílená složka {name} je pořád připojená ze staré adresy. Odpojte ji a uložte to znovu.} other {Sdílená složka {name} je pořád připojená ze staré adresy. Odpojte ji a uložte to znovu.}}",
   "@servers.refusal.shareMounted": {
-    "sourceHash": "156a61b"
+    "sourceHash": "7b731b1"
   },
-  "servers.refusal.shareEjectRefused": "{platform, select, macos {Cmdr nemohl vysunout {name}, takže se nic neuložilo. {reason}} windows {Cmdr couldn’t disconnect {name}, so nothing was saved. {reason}} other {Cmdr couldn’t unmount {name}, so nothing was saved. {reason}}}",
+  "servers.refusal.shareEjectRefused": "{platform, select, macos {Cmdr nemohl vysunout {name}, takže se nic neuložilo. {reason}} windows {Cmdr nemohl odpojit sdílenou složku {name}, takže se nic neuložilo. {reason}} other {Cmdr nemohl odpojit sdílenou složku {name}, takže se nic neuložilo. {reason}}}",
   "@servers.refusal.shareEjectRefused": {
-    "sourceHash": "1c73fa7"
+    "sourceHash": "7b5c704"
   },
   "servers.sheet.addTitle": "Přidat server",
   "@servers.sheet.addTitle": {
@@ -387,17 +387,17 @@
   "@servers.sheet.addAnywayHelp": {
     "sourceHash": "68e90b2"
   },
-  "servers.sheet.ejectAndSave": "{platform, select, macos {Vysunout a uložit} windows {Disconnect and save} other {Unmount and save}}",
+  "servers.sheet.ejectAndSave": "{platform, select, macos {Vysunout a uložit} windows {Odpojit a uložit} other {Odpojit a uložit}}",
   "@servers.sheet.ejectAndSave": {
-    "sourceHash": "357f2dd"
+    "sourceHash": "ec03e90"
   },
-  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {Cmdr vysune všechny sdílené složky, které jsou pořád připojené ze staré adresy, a pak uloží novou.} windows {Cmdr disconnects every share still connected from the old address, then saves the new one.} other {Cmdr unmounts every share still mounted from the old address, then saves the new one.}}",
+  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {Cmdr vysune všechny sdílené složky, které jsou pořád připojené ze staré adresy, a pak uloží novou.} windows {Cmdr odpojí všechny sdílené složky, které jsou pořád připojené ze staré adresy, a pak uloží novou.} other {Cmdr odpojí všechny sdílené složky, které jsou pořád připojené ze staré adresy, a pak uloží novou.}}",
   "@servers.sheet.ejectAndSaveHelp": {
-    "sourceHash": "a1d1206"
+    "sourceHash": "fe6687b"
   },
-  "servers.sheet.ejecting": "{platform, select, macos {Vysouvání…} windows {Disconnecting…} other {Unmounting…}}",
+  "servers.sheet.ejecting": "{platform, select, macos {Vysouvání…} windows {Odpojování…} other {Odpojování…}}",
   "@servers.sheet.ejecting": {
-    "sourceHash": "4c37167"
+    "sourceHash": "67155a9"
   },
   "servers.sheet.addedToast": "Server {name} je uložený v seznamu Servery.",
   "@servers.sheet.addedToast": {
@@ -504,9 +504,9 @@
   "@servers.sheet.nfsExportsEmptyList": {
     "sourceHash": "7558a7b"
   },
-  "servers.sheet.nfsExportsNone": "{platform, select, macos {Server {host} pro tento Mac nevypisuje žádné exporty. Pokud cestu k exportu znáte, zadejte ji.} windows {{host} lists no exports for this PC. Type the export’s path if you know it.} other {{host} lists no exports for this computer. Type the export’s path if you know it.}}",
+  "servers.sheet.nfsExportsNone": "{platform, select, macos {Server {host} pro tento Mac nevypisuje žádné exporty. Pokud cestu k exportu znáte, zadejte ji.} windows {Server {host} pro tento počítač nevypisuje žádné exporty. Pokud cestu k exportu znáte, zadejte ji.} other {Server {host} pro tento počítač nevypisuje žádné exporty. Pokud cestu k exportu znáte, zadejte ji.}}",
   "@servers.sheet.nfsExportsNone": {
-    "sourceHash": "a88c0bf"
+    "sourceHash": "049e790"
   },
   "servers.sheet.nfsExportsRefused": "Server {host} nezobrazuje seznam svých exportů. Zadejte cestu k exportu.",
   "@servers.sheet.nfsExportsRefused": {
@@ -548,9 +548,9 @@
   "@servers.sheet.nfsIdentityRootOwner": {
     "sourceHash": "c464fa8"
   },
-  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {Vaše ID na tomto Macu. Pokud soubory na serveru patří někomu jinému, změňte je.} windows {The user and group IDs Cmdr sends to the server. Change them if the files on the server belong to someone else.} other {Your IDs on this computer. Change them if the files on the server belong to someone else.}}",
+  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {Vaše ID na tomto Macu. Pokud soubory na serveru patří někomu jinému, změňte je.} windows {ID uživatele a skupiny, která Cmdr posílá serveru. Pokud soubory na serveru patří někomu jinému, změňte je.} other {Vaše ID na tomto počítači. Pokud soubory na serveru patří někomu jinému, změňte je.}}",
   "@servers.sheet.nfsIdentityThisMac": {
-    "sourceHash": "8bfbb0d"
+    "sourceHash": "5d61505"
   },
   "servers.sheet.nfsUidZeroWarning": "Většina serverů nedává ID uživatele 0 žádná práva.",
   "@servers.sheet.nfsUidZeroWarning": {
@@ -580,9 +580,9 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
-  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Uloženo ve svazku klíčů. Pro zachování nechte prázdné.} windows {Saved. Leave empty to keep it.} other {Saved in your keyring. Leave empty to keep it.}}",
+  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Uloženo ve svazku klíčů. Pro zachování nechte prázdné.} windows {Uloženo. Pro zachování nechte prázdné.} other {Uloženo v klíčence. Pro zachování nechte prázdné.}}",
   "@servers.sheet.secretKeptPlaceholder": {
-    "sourceHash": "8711f6c"
+    "sourceHash": "9297a2d"
   },
   "servers.sheet.smbUsernamePlaceholder": "Nepovinné",
   "@servers.sheet.smbUsernamePlaceholder": {
@@ -596,9 +596,9 @@
   "@servers.sheet.passphrase": {
     "sourceHash": "2510031"
   },
-  "servers.sheet.remember": "{platform, select, macos {Pamatovat si ve svazku klíčů} windows {Remember password} other {Remember in keyring}}",
+  "servers.sheet.remember": "{platform, select, macos {Pamatovat si ve svazku klíčů} windows {Zapamatovat si heslo} other {Pamatovat si v klíčence}}",
   "@servers.sheet.remember": {
-    "sourceHash": "3fd7384"
+    "sourceHash": "42237e1"
   },
   "servers.sheet.connectionModeLegend": "Způsob připojení",
   "@servers.sheet.connectionModeLegend": {
@@ -786,9 +786,9 @@
   "@servers.sheet.autoReconnectInfoLabel": {
     "sourceHash": "edb9b82"
   },
-  "servers.sheet.needsStoredSecret": "{platform, select, macos {Automatické opětovné připojení potřebuje zapamatované heslo. Zapněte „Pamatovat si ve svazku klíčů“ a jednou se přihlaste.} windows {Reconnecting on its own needs a saved password. Turn on “Remember password” and sign in once.} other {Reconnecting on its own needs a remembered password. Turn on “Remember in keyring” and sign in once.}}",
+  "servers.sheet.needsStoredSecret": "{platform, select, macos {Automatické opětovné připojení potřebuje zapamatované heslo. Zapněte „Pamatovat si ve svazku klíčů“ a jednou se přihlaste.} windows {Automatické opětovné připojení potřebuje uložené heslo. Zapněte „Zapamatovat si heslo“ a jednou se přihlaste.} other {Automatické opětovné připojení potřebuje zapamatované heslo. Zapněte „Pamatovat si v klíčence“ a jednou se přihlaste.}}",
   "@servers.sheet.needsStoredSecret": {
-    "sourceHash": "32336f3"
+    "sourceHash": "ad8e162"
   },
   "servers.sheet.tryNextcloudAddress": "Zkusit adresu pro Nextcloud",
   "@servers.sheet.tryNextcloudAddress": {
@@ -826,9 +826,9 @@
   "@servers.hostKey.trustNewKey": {
     "sourceHash": "772baac"
   },
-  "servers.certificate.firstContactTitle": "{platform, select, macos {macOS nezná certifikát serveru {host}} windows {Windows doesn’t know the certificate for {host}} other {The certificate for {host} is new to this computer}}",
+  "servers.certificate.firstContactTitle": "{platform, select, macos {macOS nezná certifikát serveru {host}} windows {Systém Windows nezná certifikát serveru {host}} other {Certifikát serveru {host} je pro tento počítač nový}}",
   "@servers.certificate.firstContactTitle": {
-    "sourceHash": "ca0b44a"
+    "sourceHash": "0ce5353"
   },
   "servers.certificate.firstContactBody": "Domácí servery si často vytvářejí vlastní certifikát. Zkontrolujte, že otisk níže odpovídá tomu, který zobrazuje váš server, a pak mu důvěřujte.",
   "@servers.certificate.firstContactBody": {

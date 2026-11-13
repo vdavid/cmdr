@@ -7,9 +7,9 @@
   "@operationLog.dialog.loadError": {
     "sourceHash": "e8f023d"
   },
-  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {Se movió {countText} elemento al basurero} many {Se movieron {countText} elementos al basurero} other {Se movieron {countText} elementos al basurero}}}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Se movió {countText} elemento a la Papelera de reciclaje} many {Se movieron {countText} elementos a la Papelera de reciclaje} other {Se movieron {countText} elementos a la Papelera de reciclaje}}} other {{count, plural, one {Se movió {countText} elemento al basurero} many {Se movieron {countText} elementos al basurero} other {Se movieron {countText} elementos al basurero}}}}",
   "@operationLog.summary.trash": {
-    "sourceHash": "dc94479"
+    "sourceHash": "4da0100"
   },
   "operationLog.rollback.partiallyRolledBackNotice": "Cmdr revirtió lo que pudo y dejó el resto como estaba. Si reviertes el resto, Cmdr repasa la operación otra vez y vuelve a omitir todo aquello de lo que sigue sin estar seguro.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
@@ -19,9 +19,9 @@
   "@operationLog.rollback.refusalUnexpected": {
     "sourceHash": "80d3906"
   },
-  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {Desde {from} hacia el basurero}}",
+  "operationLog.route.fromToTrash": "{platform, select, windows {Desde {from} hacia la Papelera de reciclaje} other {Desde {from} hacia el basurero}}",
   "@operationLog.route.fromToTrash": {
-    "sourceHash": "0c8c6df"
+    "sourceHash": "5e35502"
   },
   "operationLog.skipReason.vanished": "Esto ya no está donde lo dejó la operación, así que no hay nada que devolver a su lugar.",
   "@operationLog.skipReason.vanished": {

@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Algunos contenidos se quedan en casa, lo pida quien lo pida: claves SSH, credenciales de la nube y de herramientas, tus llaveros, datos del navegador, Mail, Mensajes, Notas, los datos de Cmdr y cualquier archivo que contenga una clave privada. Aun así, sus nombres pueden llegar a tu proveedor.} windows {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, Windows credentials, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Algunos contenidos se quedan en casa, lo pida quien lo pida: claves SSH, credenciales de la nube y de herramientas, tus llaveros, datos del navegador, Mail, Mensajes, Notas, los datos de Cmdr y cualquier archivo que contenga una clave privada. Aun así, sus nombres pueden llegar a tu proveedor.} windows {Algunos contenidos se quedan en casa, lo pida quien lo pida: claves SSH, credenciales de la nube y de herramientas, credenciales de Windows, datos del navegador, datos de correo, los datos de Cmdr y cualquier archivo que contenga una clave privada. Aun así, sus nombres pueden llegar a tu proveedor.} other {Algunos contenidos se quedan en casa, lo pida quien lo pida: claves SSH, credenciales de la nube y de herramientas, tus llaveros, datos del navegador, datos de correo, los datos de Cmdr y cualquier archivo que contenga una clave privada. Aun así, sus nombres pueden llegar a tu proveedor.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
-    "sourceHash": "048633f"
+    "sourceHash": "a533066"
   },
   "ai.cloudConsent.askCmdr.actions": "En un chat que hayas empezado tú, Ask Cmdr también puede manejar la app por ti: navegar, seleccionar, ordenar, abrir pestañas y diálogos, y conectar una ubicación que hayas guardado. Copiar, mover, comprimir, eliminar, renombrar y deshacer una operación abren cada uno un diálogo o un editor para que confirmes, y no pasa nada hasta que lo hagas. Antes de abrir un archivo, cambiar un ajuste (que no sea el aspecto de Cmdr), salir, expulsar una unidad, quitar un servidor o cambiar la indexación, te pregunta. Al instante y sin preguntarte nada, etiqueta archivos y crea carpetas o archivos con nombre; un cambio de etiquetas se puede deshacer. Los cambios de nombre y las limpiezas que prepara como plan esperan tu aprobación.",
   "@ai.cloudConsent.askCmdr.actions": {
@@ -159,13 +159,13 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Tus chats de Ask Cmdr se quedan en tu Mac, en una base de datos local que puedes abrir y leer.} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Tus chats de Ask Cmdr se quedan en tu Mac, en una base de datos local que puedes abrir y leer.} windows {Tus chats de Ask Cmdr se quedan en tu PC, en una base de datos local que puedes abrir y leer.} other {Tus chats de Ask Cmdr se quedan en tu ordenador, en una base de datos local que puedes abrir y leer.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
-    "sourceHash": "283cdd7"
+    "sourceHash": "9557acc"
   },
-  "ai.cloudConsent.logsNote": "{platform, select, macos {Si activas “Registrar llamadas al modelo de IA” en Ajustes avanzados, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros de llamadas son locales y nunca se envían a ningún sitio.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {Si activas “Registrar llamadas al modelo de IA” en Ajustes avanzados, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros de llamadas son locales y nunca se envían a ningún sitio.} windows {Si activas “Registrar llamadas al modelo de IA” en Ajustes avanzados, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu PC. Esos registros de llamadas son locales y nunca se envían a ningún sitio.} other {Si activas “Registrar llamadas al modelo de IA” en Ajustes avanzados, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu ordenador. Esos registros de llamadas son locales y nunca se envían a ningún sitio.}}",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "0178d1c"
+    "sourceHash": "e34c082"
   },
   "ai.cloudConsent.turnOffAnyTime": "Desactívalo cuando quieras y Cmdr dejará de enviar al instante. Tu servicio, tu clave y tus chats se quedan como están.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -529,29 +529,29 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.title": "{platform, select, macos {{op, select, save {No se ha podido guardar tu clave de API: el Llavero de macOS ha denegado el acceso} other {No se ha podido leer tu clave de API guardada: el Llavero de macOS ha denegado el acceso}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {No se ha podido guardar tu clave de API: el llavero del sistema ha denegado el acceso} other {No se ha podido leer tu clave de API guardada: el llavero del sistema ha denegado el acceso}}}}",
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {No se ha podido guardar tu clave de API: el Llavero de macOS ha denegado el acceso} other {No se ha podido leer tu clave de API guardada: el Llavero de macOS ha denegado el acceso}}} windows {{op, select, save {No se ha podido guardar tu clave de API: el Administrador de credenciales ha denegado el acceso} other {No se ha podido leer tu clave de API guardada: el Administrador de credenciales ha denegado el acceso}}} other {{op, select, save {No se ha podido guardar tu clave de API: el llavero del sistema ha denegado el acceso} other {No se ha podido leer tu clave de API guardada: el llavero del sistema ha denegado el acceso}}}}",
   "@ai.secretError.title": {
-    "sourceHash": "2b2ef89"
+    "sourceHash": "25b34c4"
   },
-  "ai.secretError.body": "{platform, select, macos {{op, select, save {Abre Acceso a Llaveros y revisa la entrada “Cmdr”, o elimínala e intenta guardar de nuevo.} other {Abre Acceso a Llaveros, busca la entrada “Cmdr”, concede el acceso o elimínala y vuelve a introducir tu clave.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Desbloquea tu llavero (la app de Contraseñas o Llaveros) e inténtalo de nuevo.}}",
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {Abre Acceso a Llaveros y revisa la entrada “Cmdr”, o elimínala e intenta guardar de nuevo.} other {Abre Acceso a Llaveros, busca la entrada “Cmdr”, concede el acceso o elimínala y vuelve a introducir tu clave.}}} windows {{op, select, save {Abre el Administrador de credenciales, revisa la entrada “Cmdr” en Credenciales de Windows, o quítala e intenta guardar de nuevo.} other {Abre el Administrador de credenciales, busca la entrada “Cmdr” en Credenciales de Windows, o quítala y vuelve a introducir tu clave.}}} other {Desbloquea tu llavero (la app de Contraseñas o Llaveros) e inténtalo de nuevo.}}",
   "@ai.secretError.body": {
-    "sourceHash": "8f1380e"
+    "sourceHash": "d65c5e3"
   },
   "ai.secretError.genericTitle": "{op, select, save {No se ha podido guardar tu clave de API.} other {No se ha podido leer tu clave de API guardada.}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "c343e42"
   },
-  "ai.secretError.genericBody": "{platform, select, macos {Comprueba que el llavero del sistema esté disponible y vuelve a intentarlo. Si continúa, reinicia la app.} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {Comprueba que el llavero del sistema esté disponible y vuelve a intentarlo. Si continúa, reinicia la app.}}",
+  "ai.secretError.genericBody": "{platform, select, macos {Comprueba que el llavero del sistema esté disponible y vuelve a intentarlo. Si continúa, reinicia la app.} windows {Comprueba que el Administrador de credenciales esté disponible y vuelve a intentarlo. Si sigue pasando, reinicia Cmdr.} other {Comprueba que el llavero del sistema esté disponible y vuelve a intentarlo. Si continúa, reinicia la app.}}",
   "@ai.secretError.genericBody": {
-    "sourceHash": "2ee417d"
+    "sourceHash": "9fc0702"
   },
   "ai.secretError.removeTitle": "No se ha podido quitar tu clave de API guardada.",
   "@ai.secretError.removeTitle": {
     "sourceHash": "5986628"
   },
-  "ai.secretError.removeBody": "{platform, select, macos {Abre Acceso a Llaveros, busca la entrada “Cmdr” y elimínala ahí.} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {Desbloquea tu llavero (la app de Contraseñas o Llaveros) e inténtalo de nuevo.}}",
+  "ai.secretError.removeBody": "{platform, select, macos {Abre Acceso a Llaveros, busca la entrada “Cmdr” y elimínala ahí.} windows {Abre el Administrador de credenciales, busca la entrada “Cmdr” en Credenciales de Windows y quítala ahí.} other {Desbloquea tu llavero (la app de Contraseñas o Llaveros) e inténtalo de nuevo.}}",
   "@ai.secretError.removeBody": {
-    "sourceHash": "4e3abe7"
+    "sourceHash": "3a85511"
   },
   "ai.managed.aiOff": "Tu organización ha desactivado la IA en Cmdr.",
   "@ai.managed.aiOff": {
@@ -565,9 +565,9 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Tu organización solo permite la IA en el dispositivo, y este Mac no puede ejecutarla.} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Tu organización solo permite la IA en el dispositivo, y este Mac no puede ejecutarla.} windows {Tu organización solo permite la IA en el dispositivo, y este PC no puede ejecutarla.} other {Tu organización solo permite la IA en el dispositivo, y este ordenador no puede ejecutarla.}}",
   "@ai.managed.localOnlyUnsupported": {
-    "sourceHash": "b760ca4"
+    "sourceHash": "b468f8f"
   },
   "ai.managed.serviceNotAllowed": "sin permiso de tu organización",
   "@ai.managed.serviceNotAllowed": {

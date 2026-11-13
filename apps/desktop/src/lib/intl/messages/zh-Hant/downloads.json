@@ -71,9 +71,9 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "{platform, select, macos {Cmdr 需要「完全取用磁碟」權限才能監視你的「下載項目」資料夾。} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "downloads.fda.message": "{platform, select, macos {Cmdr 需要「完全取用磁碟」權限才能監視你的「下載項目」資料夾。} other {Cmdr 無法監視你的「下載」資料夾。請確認這個資料夾存在，而且你可以開啟它。}}",
   "@downloads.fda.message": {
-    "sourceHash": "82c82c6"
+    "sourceHash": "dd37803"
   },
   "downloads.fda.dismiss": "關閉",
   "@downloads.fda.dismiss": {
@@ -131,9 +131,9 @@
   "@downloads.shortcutRow.unavailable": {
     "sourceHash": "8882532"
   },
-  "downloads.shortcutRow.addModifier": "{platform, select, macos {請加上一個變更鍵（⌘、⌃、⌥ 或 ⇧）} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {請加上一個變更鍵（⌘、⌃、⌥ 或 ⇧）} windows {請加上一個輔助按鍵（Ctrl、Alt、Shift 或 Win）} other {請加上一個輔助按鍵（Ctrl、Alt、Shift 或 Super）}}",
   "@downloads.shortcutRow.addModifier": {
-    "sourceHash": "28a5ba2"
+    "sourceHash": "a56bd6c"
   },
   "downloads.toggleDescription.bound": "在任何 App 中按 {binding} 就能跳至你最近的下載項目。",
   "@downloads.toggleDescription.bound": {

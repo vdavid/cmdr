@@ -7,9 +7,9 @@
   "@crashReporter.dialog.title.report": {
     "sourceHash": "d8b86d2"
   },
-  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this.} other {Cmdr 上次意外退出了。这是一份崩溃报告，里面的详情有助于修复这个问题。}}",
+  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr 上次意外关闭了。这是一份崩溃报告，里面的详情有助于修复这个问题。} other {Cmdr 上次意外退出了。这是一份崩溃报告，里面的详情有助于修复这个问题。}}",
   "@crashReporter.dialog.body.ended": {
-    "sourceHash": "d67f8cb"
+    "sourceHash": "818d510"
   },
   "crashReporter.dialog.body.keptRunning": "Cmdr 上次在后台出现了问题，之后一直在运行。这是一份报告，里面的详情有助于修复这个问题。",
   "@crashReporter.dialog.body.keptRunning": {
@@ -19,9 +19,9 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "bed6934"
   },
-  "crashReporter.dialog.privacyNote": "{platform, select, macos {它包含应用版本、macOS 版本，以及代码中出现问题的部分。不含文件名或个人数据。} windows {It includes the app version, Windows version, and which part of the code ran into the problem. No file names or personal data.} other {It includes the app version, Linux distribution and version, and which part of the code ran into the problem. No file names or personal data.}}",
+  "crashReporter.dialog.privacyNote": "{platform, select, macos {它包含应用版本、macOS 版本，以及代码中出现问题的部分。不含文件名或个人数据。} windows {它包含应用版本、Windows 版本，以及代码中出现问题的部分。不含文件名或个人数据。} other {它包含应用版本、Linux 发行版及其版本，以及代码中出现问题的部分。不含文件名或个人数据。}}",
   "@crashReporter.dialog.privacyNote": {
-    "sourceHash": "c6875a7"
+    "sourceHash": "ebe2d23"
   },
   "crashReporter.dialog.reportIdLabel": "报告 ID：",
   "@crashReporter.dialog.reportIdLabel": {

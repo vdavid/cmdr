@@ -63,13 +63,13 @@
   "@suggestedOps.action.copy": {
     "sourceHash": "e21f935"
   },
-  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Mover para o Lixo}}",
+  "suggestedOps.action.trash": "{platform, select, windows {Apagar} other {Mover para o Lixo}}",
   "@suggestedOps.action.trash": {
-    "sourceHash": "9adcdf3"
+    "sourceHash": "d4f0678"
   },
-  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {Apagar}}",
+  "suggestedOps.action.delete": "{platform, select, windows {Apagar permanentemente} other {Apagar}}",
   "@suggestedOps.action.delete": {
-    "sourceHash": "e2d0a54"
+    "sourceHash": "45efa80"
   },
   "suggestedOps.action.rename": "Renomear",
   "@suggestedOps.action.rename": {
@@ -96,13 +96,13 @@
   "@suggestedOps.approve.copy": {
     "sourceHash": "e10c490"
   },
-  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {Mover {countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}} para o Lixo}}",
+  "suggestedOps.approve.trash": "{platform, select, windows {Apagar {countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}}} other {Mover {countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}} para o Lixo}}",
   "@suggestedOps.approve.trash": {
-    "sourceHash": "3c82946"
+    "sourceHash": "fa0db8d"
   },
-  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {Apagar {countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}}}}",
+  "suggestedOps.approve.delete": "{platform, select, windows {Apagar {countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}} permanentemente} other {Apagar {countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}}}}",
   "@suggestedOps.approve.delete": {
-    "sourceHash": "218cf04"
+    "sourceHash": "cfb3b70"
   },
   "suggestedOps.approve.rename": "Renomear {countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}}",
   "@suggestedOps.approve.rename": {
@@ -144,17 +144,17 @@
   "@suggestedOps.facts.archive": {
     "sourceHash": "66f4804"
   },
-  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Lixo}}",
+  "suggestedOps.facts.trash": "{platform, select, windows {Lixeira} other {Lixo}}",
   "@suggestedOps.facts.trash": {
-    "sourceHash": "4e42c6e"
+    "sourceHash": "7b1fc0a"
   },
   "suggestedOps.facts.severalFolders": "Várias pastas",
   "@suggestedOps.facts.severalFolders": {
     "sourceHash": "7c32950"
   },
-  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Dá para desfazer: {count, plural, one {o arquivo vai} many {os arquivos vão} other {os arquivos vão}} para o Lixo}}",
+  "suggestedOps.reversible.trash": "{platform, select, windows {Dá para desfazer: {count, plural, one {o arquivo vai} many {os arquivos vão} other {os arquivos vão}} para a Lixeira} other {Dá para desfazer: {count, plural, one {o arquivo vai} many {os arquivos vão} other {os arquivos vão}} para o Lixo}}",
   "@suggestedOps.reversible.trash": {
-    "sourceHash": "55bf957"
+    "sourceHash": "e42e327"
   },
   "suggestedOps.reversible.moveBack": "Dá para desfazer: o Cmdr pode mover {count, plural, one {o item} many {os itens} other {os itens}} de volta",
   "@suggestedOps.reversible.moveBack": {
@@ -180,13 +180,13 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {Este disco não tem Lixo}}",
+  "suggestedOps.noTrash": "{platform, select, windows {Esta unidade não tem Lixeira} other {Este disco não tem Lixo}}",
   "@suggestedOps.noTrash": {
-    "sourceHash": "38a6adc"
+    "sourceHash": "31f0f36"
   },
-  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {O disco em que estes arquivos estão não tem Lixo, então, se você aprovar, eles serão apagados permanentemente.}}",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {A unidade em que estes arquivos estão não tem Lixeira, então, se você aprovar, eles serão apagados permanentemente.} other {O disco em que estes arquivos estão não tem Lixo, então, se você aprovar, eles serão apagados permanentemente.}}",
   "@suggestedOps.noTrashTooltip": {
-    "sourceHash": "4327cb2"
+    "sourceHash": "e13c954"
   },
   "suggestedOps.irreversible.overwrite": "Não dá para desfazer: isto substitui um arquivo compactado que já existe",
   "@suggestedOps.irreversible.overwrite": {
@@ -437,9 +437,9 @@
   "@suggestedOps.server.sharesAffected": {
     "sourceHash": "390f931"
   },
-  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {Há sugestões da IA esperando. Clique para revisá-las.}}",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {Há sugestões da IA esperando. Selecione para revisá-las.} other {Há sugestões da IA esperando. Clique para revisá-las.}}",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "4508b0b"
+    "sourceHash": "3c813c4"
   },
   "suggestedOps.newNameTaken": "Nome já em uso",
   "@suggestedOps.newNameTaken": {

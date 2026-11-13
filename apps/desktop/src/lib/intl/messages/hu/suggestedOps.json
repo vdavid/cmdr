@@ -63,13 +63,13 @@
   "@suggestedOps.action.copy": {
     "sourceHash": "e21f935"
   },
-  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Áthelyezés a Kukába}}",
+  "suggestedOps.action.trash": "{platform, select, windows {Törlés} other {Áthelyezés a Kukába}}",
   "@suggestedOps.action.trash": {
-    "sourceHash": "9adcdf3"
+    "sourceHash": "d4f0678"
   },
-  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {Törlés}}",
+  "suggestedOps.action.delete": "{platform, select, windows {Végleges törlés} other {Törlés}}",
   "@suggestedOps.action.delete": {
-    "sourceHash": "e2d0a54"
+    "sourceHash": "45efa80"
   },
   "suggestedOps.action.rename": "Átnevezés",
   "@suggestedOps.action.rename": {
@@ -96,13 +96,13 @@
   "@suggestedOps.approve.copy": {
     "sourceHash": "e10c490"
   },
-  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {{countText} {count, plural, one {fájl} other {fájl}} áthelyezése a Kukába}}",
+  "suggestedOps.approve.trash": "{platform, select, windows {{countText} {count, plural, one {fájl} other {fájl}} törlése} other {{countText} {count, plural, one {fájl} other {fájl}} áthelyezése a Kukába}}",
   "@suggestedOps.approve.trash": {
-    "sourceHash": "3c82946"
+    "sourceHash": "fa0db8d"
   },
-  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {{countText} {count, plural, one {fájl} other {fájl}} törlése}}",
+  "suggestedOps.approve.delete": "{platform, select, windows {{countText} {count, plural, one {fájl} other {fájl}} végleges törlése} other {{countText} {count, plural, one {fájl} other {fájl}} törlése}}",
   "@suggestedOps.approve.delete": {
-    "sourceHash": "218cf04"
+    "sourceHash": "cfb3b70"
   },
   "suggestedOps.approve.rename": "{countText} {count, plural, one {fájl} other {fájl}} átnevezése",
   "@suggestedOps.approve.rename": {
@@ -144,17 +144,17 @@
   "@suggestedOps.facts.archive": {
     "sourceHash": "66f4804"
   },
-  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Kuka}}",
+  "suggestedOps.facts.trash": "{platform, select, windows {Lomtár} other {Kuka}}",
   "@suggestedOps.facts.trash": {
-    "sourceHash": "4e42c6e"
+    "sourceHash": "7b1fc0a"
   },
   "suggestedOps.facts.severalFolders": "Több mappa",
   "@suggestedOps.facts.severalFolders": {
     "sourceHash": "7c32950"
   },
-  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Ezt vissza tudod vonni: {count, plural, one {a fájl a Kukába kerül} other {a fájlok a Kukába kerülnek}}}}",
+  "suggestedOps.reversible.trash": "{platform, select, windows {Ezt vissza tudod vonni: {count, plural, one {a fájl a Lomtárba kerül} other {a fájlok a Lomtárba kerülnek}}} other {Ezt vissza tudod vonni: {count, plural, one {a fájl a Kukába kerül} other {a fájlok a Kukába kerülnek}}}}",
   "@suggestedOps.reversible.trash": {
-    "sourceHash": "55bf957"
+    "sourceHash": "e42e327"
   },
   "suggestedOps.reversible.moveBack": "Ezt vissza tudod vonni: a Cmdr vissza tudja helyezni {count, plural, one {a fájlt a helyére} other {a fájlokat a helyükre}}",
   "@suggestedOps.reversible.moveBack": {
@@ -180,13 +180,13 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {Ezen a meghajtón nincs Kuka}}",
+  "suggestedOps.noTrash": "{platform, select, windows {Ezen a meghajtón nincs Lomtár} other {Ezen a meghajtón nincs Kuka}}",
   "@suggestedOps.noTrash": {
-    "sourceHash": "38a6adc"
+    "sourceHash": "31f0f36"
   },
-  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {Azon a meghajtón, amelyen ezek a fájlok vannak, nincs Kuka, ezért ha jóváhagyod, véglegesen törlődnek.}}",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {Azon a meghajtón, amelyen ezek a fájlok vannak, nincs Lomtár, ezért ha jóváhagyod, véglegesen törlődnek.} other {Azon a meghajtón, amelyen ezek a fájlok vannak, nincs Kuka, ezért ha jóváhagyod, véglegesen törlődnek.}}",
   "@suggestedOps.noTrashTooltip": {
-    "sourceHash": "4327cb2"
+    "sourceHash": "e13c954"
   },
   "suggestedOps.irreversible.overwrite": "Ezt nem lehet visszavonni: lecserél egy meglévő archívumot",
   "@suggestedOps.irreversible.overwrite": {
@@ -438,9 +438,9 @@
   "@suggestedOps.server.sharesAffected": {
     "sourceHash": "390f931"
   },
-  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {AI-javaslatok várnak rád. Kattints az áttekintésükhöz.}}",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI-javaslatok várnak rád. Válaszd ki az áttekintésükhöz.} other {AI-javaslatok várnak rád. Kattints az áttekintésükhöz.}}",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "4508b0b"
+    "sourceHash": "3c813c4"
   },
   "suggestedOps.newNameTaken": "A név már foglalt",
   "@suggestedOps.newNameTaken": {

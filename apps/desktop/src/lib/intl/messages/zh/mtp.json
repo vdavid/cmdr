@@ -5,7 +5,8 @@
   },
   "mtp.connectedToast.body": "{platform, select, macos {Cmdr 已暂停 macOS 相机守护进程（ptpcamerad），以便访问这个设备。要在其他应用中使用它，请在设置中关闭 MTP 支持。} windows {} other {要在其他应用中使用这个设备，请在设置中关闭 MTP 支持。}}",
   "@mtp.connectedToast.body": {
-    "sourceHash": "3ace37b"
+    "sourceHash": "74349d8",
+    "sameAsSourceJustification": "The Windows branch is empty on purpose (Windows shares the device with File Explorer, so the toast has no body line)."
   },
   "mtp.connectedToast.dontShowAgain": "不再显示",
   "@mtp.connectedToast.dontShowAgain": {
@@ -55,13 +56,13 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {在 macOS 上，系统守护进程 <code>ptpcamerad</code> 会自动占用 Android 设备。要绕过这一点，请在终端中运行以下命令（使用 Cmdr 期间让它保持运行）：} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {在 macOS 上，系统守护进程 <code>ptpcamerad</code> 会自动占用 Android 设备。要绕过这一点，请在终端中运行以下命令（使用 Cmdr 期间让它保持运行）：} windows {另一个 App 正在占用这部手机，它得先释放，Cmdr 才能连接。} other {同一时间只有一个 App 能通过 MTP 与手机通信，而你的桌面环境通常会在手机一插上时就挂载它。}}",
   "@mtp.ptpcameradDialog.explanation": {
-    "sourceHash": "65b6ee3"
+    "sourceHash": "08df74d"
   },
-  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {这条命令运行期间会一直停止 ptpcamerad。完成后在终端里按 <key>Ctrl+C</key> 停止它。} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {这条命令运行期间会一直停止 ptpcamerad。完成后在终端里按 <key>Ctrl+C</key> 停止它。} windows {关掉正在使用这部手机的 App，然后重试。} other {在你的文件管理器中卸载这部手机，然后重试。}}",
   "@mtp.ptpcameradDialog.helpText": {
-    "sourceHash": "85b5060"
+    "sourceHash": "c44384e"
   },
   "mtp.ptpcameradDialog.close": "关闭",
   "@mtp.ptpcameradDialog.close": {

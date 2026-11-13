@@ -1427,13 +1427,13 @@
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
   },
-  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {You turned down moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You turned down {verbName} {countText} {count, plural, one {item} other {items}}}}} other {Du hast abgelehnt: {verbName} {countText} {count, plural, one {Objekt} other {Objekten}}}}",
+  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {Du hast abgelehnt: {countText} {count, plural, one {Objekt} other {Objekte}} in den Papierkorb bewegen} other {Du hast abgelehnt: {verbName} {countText} {count, plural, one {Objekt} other {Objekten}}}}} other {Du hast abgelehnt: {verbName} {countText} {count, plural, one {Objekt} other {Objekten}}}}",
   "@askCmdr.decision.rejected": {
-    "sourceHash": "19d12c1"
+    "sourceHash": "da3b52e"
   },
-  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {You approved moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You approved {verbName} {countText} {count, plural, one {item} other {items}}}}} other {Du hast zugestimmt: {verbName} {countText} {count, plural, one {Objekt} other {Objekten}}}}",
+  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {Du hast zugestimmt: {countText} {count, plural, one {Objekt} other {Objekte}} in den Papierkorb bewegen} other {Du hast zugestimmt: {verbName} {countText} {count, plural, one {Objekt} other {Objekten}}}}} other {Du hast zugestimmt: {verbName} {countText} {count, plural, one {Objekt} other {Objekten}}}}",
   "@askCmdr.decision.approved": {
-    "sourceHash": "aa911e6"
+    "sourceHash": "3f61860"
   },
   "askCmdr.decision.result": "{doneText} erledigt, {skippedText} übersprungen, {failedText} nicht abgeschlossen",
   "@askCmdr.decision.result": {
@@ -1443,9 +1443,9 @@
   "@askCmdr.decision.running": {
     "sourceHash": "46c5413"
   },
-  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr closed before this finished} other {Cmdr wurde beendet, bevor der Vorgang fertig war}}",
+  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr wurde geschlossen, bevor der Vorgang fertig war} other {Cmdr wurde beendet, bevor der Vorgang fertig war}}",
   "@askCmdr.decision.interrupted": {
-    "sourceHash": "ece92cc"
+    "sourceHash": "de4a5c0"
   },
   "askCmdr.decision.verbMove": "das Bewegen von",
   "@askCmdr.decision.verbMove": {
@@ -1803,17 +1803,17 @@
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "729d49f"
   },
-  "askCmdr.tool.quit.doing": "{platform, select, windows {Closing Cmdr} other {Cmdr wird beendet}}",
+  "askCmdr.tool.quit.doing": "{platform, select, windows {Cmdr wird geschlossen} other {Cmdr wird beendet}}",
   "@askCmdr.tool.quit.doing": {
-    "sourceHash": "b26d1c8"
+    "sourceHash": "b1e13d3"
   },
-  "askCmdr.tool.quit.done": "{platform, select, windows {Asked Cmdr to close} other {Cmdr zum Beenden aufgefordert}}",
+  "askCmdr.tool.quit.done": "{platform, select, windows {Cmdr zum Schließen aufgefordert} other {Cmdr zum Beenden aufgefordert}}",
   "@askCmdr.tool.quit.done": {
-    "sourceHash": "b9083af"
+    "sourceHash": "17a08e9"
   },
-  "askCmdr.tool.quit.tried": "{platform, select, windows {Tried to close Cmdr} other {Cmdr nicht beendet}}",
+  "askCmdr.tool.quit.tried": "{platform, select, windows {Cmdr nicht geschlossen} other {Cmdr nicht beendet}}",
   "@askCmdr.tool.quit.tried": {
-    "sourceHash": "ab34547"
+    "sourceHash": "c05f3a9"
   },
   "askCmdr.tool.switchPane.doing": "Bereich wird gewechselt",
   "@askCmdr.tool.switchPane.doing": {

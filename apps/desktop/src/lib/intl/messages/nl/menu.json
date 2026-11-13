@@ -73,9 +73,9 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "{platform, select, windows {Settings} other {Instellingen…}}",
+  "menu.app.settings": "{platform, select, windows {Instellingen} other {Instellingen…}}",
   "@menu.app.settings": {
-    "sourceHash": "7a04083"
+    "sourceHash": "7af8e23"
   },
   "menu.app.services": "Voorzieningen",
   "@menu.app.services": {
@@ -150,9 +150,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFileManager": "{platform, select, macos {Toon in Finder} windows {Show in File Explorer} other {Toon in bestandsbeheer}}",
+  "menu.file.showInFileManager": "{platform, select, macos {Toon in Finder} windows {Toon in Verkenner} other {Toon in bestandsbeheer}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "menu.file.openTerminalHere": "Terminal hier openen",
   "@menu.file.openTerminalHere": {
@@ -178,17 +178,17 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Herstel verplaatsen naar prullenmand}}",
+  "menu.edit.undoTrash": "{platform, select, windows {Herstel verwijderen} other {Herstel verplaatsen naar prullenmand}}",
   "@menu.edit.undoTrash": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Herstel verplaatsen van ‘{name}’ naar prullenmand}}",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Herstel verwijderen van ‘{name}’} other {Herstel verplaatsen van ‘{name}’ naar prullenmand}}",
   "@menu.edit.undoTrashOne": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Herstel verplaatsen van {countText} onderdelen naar prullenmand}}",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Herstel verwijderen van {countText} onderdelen} other {Herstel verplaatsen van {countText} onderdelen naar prullenmand}}",
   "@menu.edit.undoTrashMany": {
-    "sourceHash": "bb9192a"
+    "sourceHash": "4ad492a"
   },
   "menu.edit.cut": "Knip",
   "@menu.edit.cut": {
@@ -405,9 +405,9 @@
   "@menu.go.rootFolder": {
     "sourceHash": "6d92528"
   },
-  "menu.go.home": "{platform, select, windows {User folder} other {Thuismap}}",
+  "menu.go.home": "{platform, select, windows {Gebruikersmap} other {Thuismap}}",
   "@menu.go.home": {
-    "sourceHash": "3a78695"
+    "sourceHash": "4ff1502"
   },
   "menu.go.goToPath": "Ga naar map…",
   "@menu.go.goToPath": {
@@ -662,13 +662,13 @@
   "@menu.volume.ejectBusy": {
     "sourceHash": "e2145a6"
   },
-  "menu.volume.detachShare": "{platform, select, macos {Werp uit ({name})} windows {Disconnect ({name})} other {Unmount ({name})}}",
+  "menu.volume.detachShare": "{platform, select, macos {Werp uit ({name})} windows {Verbreek verbinding ({name})} other {Ontkoppel ({name})}}",
   "@menu.volume.detachShare": {
-    "sourceHash": "913d6ea"
+    "sourceHash": "458748f"
   },
-  "menu.volume.detachShareBusy": "{platform, select, macos {Werp uit ({name}) (bezet)} windows {Disconnect ({name}) (busy)} other {Unmount ({name}) (busy)}}",
+  "menu.volume.detachShareBusy": "{platform, select, macos {Werp uit ({name}) (bezet)} windows {Verbreek verbinding ({name}) (bezet)} other {Ontkoppel ({name}) (bezet)}}",
   "@menu.volume.detachShareBusy": {
-    "sourceHash": "e2145a6"
+    "sourceHash": "d3578bf"
   },
   "menu.volume.ejectAll": "Werp alle uit",
   "@menu.volume.ejectAll": {

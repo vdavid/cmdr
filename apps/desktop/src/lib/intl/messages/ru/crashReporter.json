@@ -7,9 +7,9 @@
   "@crashReporter.dialog.title.report": {
     "sourceHash": "d8b86d2"
   },
-  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this.} other {В прошлый раз Cmdr неожиданно завершил работу. Вот отчет о сбое со сведениями, которые помогут это исправить.}}",
+  "crashReporter.dialog.body.ended": "{platform, select, windows {В прошлый раз Cmdr неожиданно закрылся. Вот отчет о сбое со сведениями, которые помогут это исправить.} other {В прошлый раз Cmdr неожиданно завершил работу. Вот отчет о сбое со сведениями, которые помогут это исправить.}}",
   "@crashReporter.dialog.body.ended": {
-    "sourceHash": "d67f8cb"
+    "sourceHash": "818d510"
   },
   "crashReporter.dialog.body.keptRunning": "В прошлый раз в фоновой задаче Cmdr возникла проблема, но приложение продолжило работу. Вот отчет со сведениями, которые помогут это исправить.",
   "@crashReporter.dialog.body.keptRunning": {
@@ -19,9 +19,9 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "bed6934"
   },
-  "crashReporter.dialog.privacyNote": "{platform, select, macos {В отчет входят версия приложения, версия macOS и участок кода, где возникла проблема. Имена файлов и личные данные не включены.} windows {It includes the app version, Windows version, and which part of the code ran into the problem. No file names or personal data.} other {It includes the app version, Linux distribution and version, and which part of the code ran into the problem. No file names or personal data.}}",
+  "crashReporter.dialog.privacyNote": "{platform, select, macos {В отчет входят версия приложения, версия macOS и участок кода, где возникла проблема. Имена файлов и личные данные не включены.} windows {В отчет входят версия приложения, версия Windows и участок кода, где возникла проблема. Имена файлов и личные данные не включены.} other {В отчет входят версия приложения, название и версия дистрибутива Linux и участок кода, где возникла проблема. Имена файлов и личные данные не включены.}}",
   "@crashReporter.dialog.privacyNote": {
-    "sourceHash": "c6875a7"
+    "sourceHash": "ebe2d23"
   },
   "crashReporter.dialog.reportIdLabel": "Идентификатор отчета:",
   "@crashReporter.dialog.reportIdLabel": {

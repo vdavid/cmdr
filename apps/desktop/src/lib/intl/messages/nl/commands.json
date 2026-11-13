@@ -1,7 +1,7 @@
 {
-  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Stop Cmdr}}",
+  "commands.appQuit.label": "{platform, select, windows {Sluit Cmdr af} other {Stop Cmdr}}",
   "@commands.appQuit.label": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "commands.appHide.label": "Verberg Cmdr",
   "@commands.appHide.label": {
@@ -193,9 +193,9 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Opent ~/Downloads en selecteert het meest recente bestand.}}",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opent je map Downloads en selecteert het meest recente bestand.} other {Opent ~/Downloads en selecteert het meest recente bestand.}}",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "6b3fe83"
+    "sourceHash": "97b6bd4"
   },
   "commands.viewShowHidden.label": "Verborgen bestanden aan/uit",
   "@commands.viewShowHidden.label": {
@@ -322,21 +322,21 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Herstel verplaatsen naar prullenmand}}",
+  "commands.editUndoTrash.label": "{platform, select, windows {Herstel verwijderen} other {Herstel verplaatsen naar prullenmand}}",
   "@commands.editUndoTrash.label": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Herstel verplaatsen van ‘{name}’ naar prullenmand}}",
+  "commands.editUndoTrash.one": "{platform, select, windows {Herstel verwijderen van ‘{name}’} other {Herstel verplaatsen van ‘{name}’ naar prullenmand}}",
   "@commands.editUndoTrash.one": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Herstel verplaatsen van {countText} {count, plural, one {onderdeel} other {onderdelen}} naar prullenmand}}",
+  "commands.editUndoTrash.many": "{platform, select, windows {Herstel verwijderen van {countText} {count, plural, one {onderdeel} other {onderdelen}}} other {Herstel verplaatsen van {countText} {count, plural, one {onderdeel} other {onderdelen}} naar prullenmand}}",
   "@commands.editUndoTrash.many": {
-    "sourceHash": "69c4966"
+    "sourceHash": "39a5bbe"
   },
-  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Zet de bestanden terug die je het laatst naar de prullenmand hebt verplaatst}}",
+  "commands.editUndoTrash.description": "{platform, select, windows {Zet de bestanden terug die je het laatst naar de prullenbak hebt verplaatst} other {Zet de bestanden terug die je het laatst naar de prullenmand hebt verplaatst}}",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "dca1b63"
+    "sourceHash": "6082058"
   },
   "commands.paneLeftVolumeChooser.label": "Open linker volumekiezer",
   "@commands.paneLeftVolumeChooser.label": {
@@ -466,9 +466,9 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Ga naar thuismap}}",
+  "commands.navGoHome.label": "{platform, select, windows {Ga naar gebruikersmap} other {Ga naar thuismap}}",
   "@commands.navGoHome.label": {
-    "sourceHash": "74b2a8b"
+    "sourceHash": "0ae4c72"
   },
   "commands.errorPaneToggleTechnicalDetails.label": "Technische details tonen",
   "@commands.errorPaneToggleTechnicalDetails.label": {
@@ -834,21 +834,21 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Ga naar prullenmand}}",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Ga naar prullenbak} other {Ga naar prullenmand}}",
   "@commands.fileGoToTrash.label": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
-  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Opent de prullenmand van de schijf die je bekijkt}}",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Opent de prullenbak van de schijf die je bekijkt} other {Opent de prullenmand van de schijf die je bekijkt}}",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "6496c25"
+    "sourceHash": "e4789d0"
   },
   "commands.dialogConfirm.label": "Bevestig dialoogvenster op het scherm",
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
-  "commands.fileShowInFileManager.label": "{platform, select, macos {Toon in Finder} windows {Show in File Explorer} other {Toon in bestandsbeheer}}",
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Toon in Finder} windows {Toon in Verkenner} other {Toon in bestandsbeheer}}",
   "@commands.fileShowInFileManager.label": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "commands.fileOpenTerminalHere.label": "Terminal hier openen",
   "@commands.fileOpenTerminalHere.label": {
@@ -870,13 +870,13 @@
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.label": "{platform, select, macos {Toon info} windows {Properties} other {Bestandseigenschappen}}",
+  "commands.fileGetInfo.label": "{platform, select, macos {Toon info} windows {Eigenschappen} other {Bestandseigenschappen}}",
   "@commands.fileGetInfo.label": {
-    "sourceHash": "91c64ca"
+    "sourceHash": "da65a65"
   },
   "commands.fileQuickLook.label": "{platform, select, macos {Geef snel weer} other {Voorvertoning}}",
   "@commands.fileQuickLook.label": {
-    "sourceHash": "f5616ce"
+    "sourceHash": "c3f57b4"
   },
   "commands.fileContextMenu.label": "Open contextmenu",
   "@commands.fileContextMenu.label": {
@@ -930,9 +930,9 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "{platform, select, macos {Verwijdert het opgeslagen wachtwoord van de met restic gemaakte back-up waarin je zit uit Sleutelhanger, en vergrendelt de back-up weer} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Verwijdert het opgeslagen wachtwoord van de met restic gemaakte back-up waarin je zit uit Sleutelhanger, en vergrendelt de back-up weer} windows {Verwijdert het opgeslagen wachtwoord van de met restic gemaakte back-up waarin je zit uit Referentiebeheer, en vergrendelt de back-up weer} other {Verwijdert het opgeslagen wachtwoord van de met restic gemaakte back-up waarin je zit uit je sleutelhanger, en vergrendelt de back-up weer}}",
   "@commands.resticForgetPassword.description": {
-    "sourceHash": "e51ac69"
+    "sourceHash": "0f616ca"
   },
   "commands.fileCopyShareLink.label": "Kopieer deellink (zeven dagen)",
   "@commands.fileCopyShareLink.label": {

@@ -24,9 +24,9 @@
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "{platform, select, macos {Cmdr potřebuje plný přístup k disku, aby mohl sledovat vaši složku Stahování. <settingsLink>Otevřít Nastavení systému</settingsLink>} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "common.downloadsFdaHint": "{platform, select, macos {Cmdr potřebuje plný přístup k disku, aby mohl sledovat vaši složku Stahování. <settingsLink>Otevřít Nastavení systému</settingsLink>} other {Cmdr nemůže sledovat vaši složku Stahování. Zkontrolujte, že složka existuje a že ji můžete otevřít.}}",
   "@common.downloadsFdaHint": {
-    "sourceHash": "315e1d8"
+    "sourceHash": "b54bf8b"
   },
   "common.sizeUnit.byte": "{count, plural, one {bajt} few {bajty} many {bajtu} other {bajtů}}",
   "@common.sizeUnit.byte": {

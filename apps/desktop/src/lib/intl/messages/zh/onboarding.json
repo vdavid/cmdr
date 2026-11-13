@@ -303,9 +303,9 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "f95b4a9"
   },
-  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {You’ve turned on AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Select “{nextLabel}” again to ignore this and go on.</strong>} other {你开启了 AI，但还没填写 API 密钥。AI 用不了，而且你会看到一条警告。请在上面补上。\n\n<strong>再点按一次“{nextLabel}”就会忽略这个提示，继续往下。</strong>}}",
+  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {你开启了 AI，但还没填写 API 密钥。AI 用不了，而且你会看到一条警告。请在上面补上。\n\n<strong>再选择一次“{nextLabel}”就会忽略这个提示，继续往下。</strong>} other {你开启了 AI，但还没填写 API 密钥。AI 用不了，而且你会看到一条警告。请在上面补上。\n\n<strong>再点按一次“{nextLabel}”就会忽略这个提示，继续往下。</strong>}}",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "b942278"
+    "sourceHash": "2856a6e"
   },
   "onboarding.stepAi.cloudConsentOffNote": "在你允许之前，云端 AI 会一直保持关闭。之后可以在“设置 > AI”中允许。",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -395,17 +395,17 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "06ce4eb"
   },
-  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {崩溃报告同样已开启：如果 Cmdr 意外退出，它会发送应用版本、你的 macOS 版本，以及代码停下的位置。\n绝不包含你的文件。\n这两项你随时可以在设置中关闭。} windows {Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.} other {Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.}}",
+  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {崩溃报告同样已开启：如果 Cmdr 意外退出，它会发送应用版本、你的 macOS 版本，以及代码停下的位置。\n绝不包含你的文件。\n这两项你随时可以在设置中关闭。} windows {崩溃报告同样已开启：如果 Cmdr 意外退出，它会发送应用版本、你的 Windows 版本，以及代码停下的位置。\n绝不包含你的文件。\n这两项你随时可以在设置中关闭。} other {崩溃报告同样已开启：如果 Cmdr 意外退出，它会发送应用版本、你的 Linux 发行版及其版本，以及代码停下的位置。\n绝不包含你的文件。\n这两项你随时可以在设置中关闭。}}",
   "@onboarding.stepBeta.crashReportsNote": {
-    "sourceHash": "9be0be1"
+    "sourceHash": "55b9634"
   },
   "onboarding.stepBeta.analyticsManaged": "你的组织关闭了使用统计。",
   "@onboarding.stepBeta.analyticsManaged": {
     "sourceHash": "49484ee"
   },
-  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {崩溃报告已开启：如果 Cmdr 意外退出，它会发送应用版本、你的 macOS 版本，以及代码停下的位置。\n绝不包含你的文件。\n这一项你随时可以在设置中关闭。} windows {Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.} other {Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.}}",
+  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {崩溃报告已开启：如果 Cmdr 意外退出，它会发送应用版本、你的 macOS 版本，以及代码停下的位置。\n绝不包含你的文件。\n这一项你随时可以在设置中关闭。} windows {崩溃报告已开启：如果 Cmdr 意外退出，它会发送应用版本、你的 Windows 版本，以及代码停下的位置。\n绝不包含你的文件。\n这一项你随时可以在设置中关闭。} other {崩溃报告已开启：如果 Cmdr 意外退出，它会发送应用版本、你的 Linux 发行版及其版本，以及代码停下的位置。\n绝不包含你的文件。\n这一项你随时可以在设置中关闭。}}",
   "@onboarding.stepBeta.crashReportsNoteAlone": {
-    "sourceHash": "5084dd0"
+    "sourceHash": "27d4b1b"
   },
   "onboarding.stepBeta.emailTitle": "保持联系（可选）",
   "@onboarding.stepBeta.emailTitle": {
@@ -428,13 +428,13 @@
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "5a1bca7"
   },
-  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {刚才连不上注册服务器，所以你还没进到列表里。你的地址已经保存在这台 Mac 上：过一会儿再点一次“保存”，也可以随时在“设置 › 更新与隐私”中再试。} windows {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this PC: hit Save again in a minute, or any time from Settings › Updates & privacy.} other {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this computer: hit Save again in a minute, or any time from Settings › Updates & privacy.}}",
+  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {刚才连不上注册服务器，所以你还没进到列表里。你的地址已经保存在这台 Mac 上：过一会儿再点一次“保存”，也可以随时在“设置 › 更新与隐私”中再试。} windows {刚才连不上注册服务器，所以你还没进到列表里。你的地址已经保存在这台电脑上：过一会儿再点一次“保存”，也可以随时在“设置 › 更新与隐私”中再试。} other {刚才连不上注册服务器，所以你还没进到列表里。你的地址已经保存在这台电脑上：过一会儿再点一次“保存”，也可以随时在“设置 › 更新与隐私”中再试。}}",
   "@onboarding.stepBeta.signup.unreachable": {
-    "sourceHash": "e4d8f67"
+    "sourceHash": "6032194"
   },
-  "onboarding.stepBeta.emailNote": "{platform, select, macos {留下你的邮箱，我会偶尔来问个问题或发个更新。\n你在这里填的邮箱只保存在你的 Mac 上，绝不会和你的使用统计关联，这两者是有意分开的两个子系统。} windows {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your PC and it’s never connected to your usage stats, the two are intentionally two separate subsystems.} other {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your computer and it’s never connected to your usage stats, the two are intentionally two separate subsystems.}}",
+  "onboarding.stepBeta.emailNote": "{platform, select, macos {留下你的邮箱，我会偶尔来问个问题或发个更新。\n你在这里填的邮箱只保存在你的 Mac 上，绝不会和你的使用统计关联，这两者是有意分开的两个子系统。} windows {留下你的邮箱，我会偶尔来问个问题或发个更新。\n你在这里填的邮箱只保存在你的电脑上，绝不会和你的使用统计关联，这两者是有意分开的两个子系统。} other {留下你的邮箱，我会偶尔来问个问题或发个更新。\n你在这里填的邮箱只保存在你的电脑上，绝不会和你的使用统计关联，这两者是有意分开的两个子系统。}}",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "0a793b1"
+    "sourceHash": "494fcbc"
   },
   "onboarding.stepBeta.terms.title": "哦，还有这个，麻烦你了",
   "@onboarding.stepBeta.terms.title": {
@@ -460,9 +460,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "{platform, select, windows {You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, select the button below. All of these are optional, and the defaults are picked for your benefit.} other {你选择了走一遍详细设置，所以这里有几个很快就能选好的选项。如果你不太在意，点按下面的按钮就行。这些全都是可选的，默认值是为你着想而选的。}}",
+  "onboarding.stepOptional.lede": "{platform, select, windows {你选择了走一遍详细设置，所以这里有几个很快就能选好的选项。如果你不太在意，选择下面的按钮就行。这些全都是可选的，默认值是为你着想而选的。} other {你选择了走一遍详细设置，所以这里有几个很快就能选好的选项。如果你不太在意，点按下面的按钮就行。这些全都是可选的，默认值是为你着想而选的。}}",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "94c3a5a"
+    "sourceHash": "d0e9a13"
   },
   "onboarding.stepOptional.recommendedOn": "推荐：开启",
   "@onboarding.stepOptional.recommendedOn": {
@@ -476,13 +476,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "{platform, select, macos {需要同意一次“本地网络”访问} windows {Windows may ask to let Cmdr through its firewall} other {No permission needed}}",
+  "onboarding.stepOptional.networking.summary": "{platform, select, macos {需要同意一次“本地网络”访问} windows {Windows 可能会询问是否允许 Cmdr 通过防火墙} other {不需要任何权限}}",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "f49fbc6"
+    "sourceHash": "d902dfe"
   },
-  "onboarding.stepOptional.networking.desc": "{platform, select, macos {<em>开启</em>这一项，你就能连接到 SMB 服务器，比如公司的网络共享、家里的 NAS 等等。\n唯一的代价是会弹出一个 macOS 权限对话框，请你允许“本地网络”访问，以及一个请你允许“接受传入连接”的对话框。\n这两个对话框都无害，但如果你不知道它们是什么，可能会觉得吓人或烦人。} windows {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nWindows may ask once whether to let Cmdr through its firewall.} other {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.}}",
+  "onboarding.stepOptional.networking.desc": "{platform, select, macos {<em>开启</em>这一项，你就能连接到 SMB 服务器，比如公司的网络共享、家里的 NAS 等等。\n唯一的代价是会弹出一个 macOS 权限对话框，请你允许“本地网络”访问，以及一个请你允许“接受传入连接”的对话框。\n这两个对话框都无害，但如果你不知道它们是什么，可能会觉得吓人或烦人。} windows {<em>开启</em>这一项，你就能连接到 SMB 服务器，比如公司的网络共享、家里的 NAS 等等。\nWindows 可能会询问一次是否允许 Cmdr 通过防火墙。} other {<em>开启</em>这一项，你就能连接到 SMB 服务器，比如公司的网络共享、家里的 NAS 等等。}}",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "d473c62"
+    "sourceHash": "e479f6e"
   },
   "onboarding.stepOptional.indexing.title": "驱动器索引",
   "@onboarding.stepOptional.indexing.title": {
@@ -496,9 +496,9 @@
   "@onboarding.stepOptional.indexing.descIntro": {
     "sourceHash": "6b86a1f"
   },
-  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {对整个驱动器即时搜索。可以理解成聚焦，但还要更快。} windows {Instant search of your whole drive. Think Windows Search, but much faster.} other {Instant search of your whole drive.}}",
+  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {对整个驱动器即时搜索。可以理解成聚焦，但还要更快。} windows {对整个驱动器即时搜索。可以理解成 Windows Search，但要快得多。} other {对整个驱动器即时搜索。}}",
   "@onboarding.stepOptional.indexing.benefit1": {
-    "sourceHash": "5fa0e9f"
+    "sourceHash": "bfe626a"
   },
   "onboarding.stepOptional.indexing.benefit2": "对整个驱动器实时显示文件夹大小。你总能知道每个文件夹里装了多少东西。",
   "@onboarding.stepOptional.indexing.benefit2": {
@@ -516,21 +516,21 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "{platform, select, windows {If you turn this on, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you turn it off, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).} other {如果你开启这一项，Cmdr 会在每次应用启动时、以及每 24 小时一次，向一台中心许可证服务器发起一个很小的网络请求，这样你总能拿到最新更新。\n如果你关闭它，你会保留当前版本，Cmdr 也不会发起任何自动网络请求（如果你持有商业许可证，则定期的许可证检查除外）。}}",
+  "onboarding.stepOptional.updates.desc": "{platform, select, windows {如果你开启这一项，Cmdr 会在每次应用启动时、以及每 24 小时一次，向一台中心许可证服务器发起一个很小的网络请求，这样你总能拿到最新更新。\n如果你关闭它，你会保留当前版本，Cmdr 也不会发起任何自动网络请求（如果你持有商业许可证，则定期的许可证检查除外）。} other {如果你开启这一项，Cmdr 会在每次应用启动时、以及每 24 小时一次，向一台中心许可证服务器发起一个很小的网络请求，这样你总能拿到最新更新。\n如果你关闭它，你会保留当前版本，Cmdr 也不会发起任何自动网络请求（如果你持有商业许可证，则定期的许可证检查除外）。}}",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "e1a0582"
+    "sourceHash": "f030fea"
   },
   "onboarding.stepOptional.mtp.title": "MTP（Android 手机、Kindle、相机）",
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {可以连接 Android 手机之类的设备，会抑制 macOS 内建的处理程序} other {Lets you connect Android phones and similar devices}}",
+  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {可以连接 Android 手机之类的设备，会抑制 macOS 内建的处理程序} other {可以连接 Android 手机等类似设备}}",
   "@onboarding.stepOptional.mtp.summary": {
-    "sourceHash": "d5b9a6e"
+    "sourceHash": "b6bfad0"
   },
-  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {如果你开启这一项，Cmdr 就能<strong>连接到 Android 手机、Kindle、相机</strong>、一些音乐播放器，以及任何支持 MTP 或 PTP 协议的设备。\n代价是 macOS <em>也</em>想连接这些设备（而且通常连不上，这也是你没法直接用 Finder 从 Android 手机拷贝照片的原因），所以 Cmdr 运行时必须抑制 macOS 的那个进程。\n当你退出 Cmdr 时，它会被妥善恢复。} windows {If you turn this on, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.} other {If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nYour desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first.}}",
+  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {如果你开启这一项，Cmdr 就能<strong>连接到 Android 手机、Kindle、相机</strong>、一些音乐播放器，以及任何支持 MTP 或 PTP 协议的设备。\n代价是 macOS <em>也</em>想连接这些设备（而且通常连不上，这也是你没法直接用 Finder 从 Android 手机拷贝照片的原因），所以 Cmdr 运行时必须抑制 macOS 的那个进程。\n当你退出 Cmdr 时，它会被妥善恢复。} windows {如果你开启这一项，Cmdr 就能<strong>连接到 Android 手机、Kindle、相机</strong>、一些音乐播放器，以及任何支持 MTP 或 PTP 协议的设备。} other {如果你开启这一项，Cmdr 就能<strong>连接到 Android 手机、Kindle、相机</strong>、一些音乐播放器，以及任何支持 MTP 或 PTP 协议的设备。\n你的桌面环境也可能会尝试打开这些设备；如果设备好像处于占用中，请先在你的文件管理器中卸载它。}}",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "8a60e7f"
+    "sourceHash": "ed865f5"
   },
   "onboarding.cloudPicker.listAria": "云端 AI 提供方",
   "@onboarding.cloudPicker.listAria": {

@@ -145,9 +145,9 @@
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
   },
-  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "{platform, select, macos {Iets op deze Mac verhindert dat Cmdr direct verbinding maakt met {server}, dus deze gedeelde map blijft op de systeemverbinding. Probeer Cmdr onder {localNetwork} uit en weer aan te zetten, of controleer je firewallapp.} windows {Something on this PC is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.} other {Something on this computer is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.}}",
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "{platform, select, macos {Iets op deze Mac verhindert dat Cmdr direct verbinding maakt met {server}, dus deze gedeelde map blijft op de systeemverbinding. Probeer Cmdr onder {localNetwork} uit en weer aan te zetten, of controleer je firewallapp.} windows {Iets op deze pc verhindert dat Cmdr direct verbinding maakt met {server}, dus deze gedeelde map blijft op de systeemverbinding. Controleer je firewallinstellingen.} other {Iets op deze computer verhindert dat Cmdr direct verbinding maakt met {server}, dus deze gedeelde map blijft op de systeemverbinding. Controleer je firewallinstellingen.}}",
   "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
-    "sourceHash": "74f758e"
+    "sourceHash": "48523c1"
   },
   "fileExplorer.pane.directConnectionBlockedAfterUpdateToast": "Cmdr is bijgewerkt, en macOS blokkeert daarna soms nog de directe verbinding van Cmdr met {server}. Zet Cmdr uit en weer aan bij {localNetwork} om dit op te lossen. Tot die tijd blijft deze gedeelde map op de tragere systeemverbinding.",
   "@fileExplorer.pane.directConnectionBlockedAfterUpdateToast": {
@@ -185,9 +185,9 @@
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
     "sourceHash": "f634743"
   },
-  "fileExplorer.pane.trashUnconfirmedToast": "{platform, select, windows {Couldn’t confirm the file was moved to the Recycle Bin. The volume may be slow, but the file may still have been moved. Please check the Recycle Bin to be sure.} other {We konden niet bevestigen dat het bestand naar de prullenmand is verplaatst. Het volume is misschien traag, maar het bestand is mogelijk wel verplaatst. Controleer je prullenmand voor de zekerheid.}}",
+  "fileExplorer.pane.trashUnconfirmedToast": "{platform, select, windows {We konden niet bevestigen dat het bestand naar de prullenbak is verplaatst. Het volume is misschien traag, maar het bestand is mogelijk wel verplaatst. Controleer de prullenbak voor de zekerheid.} other {We konden niet bevestigen dat het bestand naar de prullenmand is verplaatst. Het volume is misschien traag, maar het bestand is mogelijk wel verplaatst. Controleer je prullenmand voor de zekerheid.}}",
   "@fileExplorer.pane.trashUnconfirmedToast": {
-    "sourceHash": "6764112"
+    "sourceHash": "46967f6"
   },
   "fileExplorer.pane.refreshStillRunningToast": "We lezen deze map nog. De lijst wordt bijgewerkt zodra hij binnen is.",
   "@fileExplorer.pane.refreshStillRunningToast": {
@@ -221,9 +221,9 @@
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "f4072a7"
   },
-  "fileExplorer.pane.detachShareFailedToast": "{platform, select, macos {{volumeName} uitwerpen lukte niet: {message}} windows {Couldn’t disconnect {volumeName}: {message}} other {Couldn’t unmount {volumeName}: {message}}}",
+  "fileExplorer.pane.detachShareFailedToast": "{platform, select, macos {{volumeName} uitwerpen lukte niet: {message}} windows {Verbinding met {volumeName} verbreken lukte niet: {message}} other {{volumeName} ontkoppelen lukte niet: {message}}}",
   "@fileExplorer.pane.detachShareFailedToast": {
-    "sourceHash": "f4072a7"
+    "sourceHash": "2e00aff"
   },
   "fileExplorer.errorPane.tryAgain": "Probeer opnieuw",
   "@fileExplorer.errorPane.tryAgain": {
@@ -242,9 +242,9 @@
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "{platform, select, windows {Go to user folder} other {Ga naar thuismap}}",
+  "fileExplorer.errorPane.goHome": "{platform, select, windows {Ga naar gebruikersmap} other {Ga naar thuismap}}",
   "@fileExplorer.errorPane.goHome": {
-    "sourceHash": "74b2a8b"
+    "sourceHash": "0ae4c72"
   },
   "fileExplorer.errorPane.technicalDetails": "Technische details",
   "@fileExplorer.errorPane.technicalDetails": {
@@ -322,17 +322,17 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
-  "fileExplorer.open.notOnThisMac": "{platform, select, macos {Cmdr kan dit bestand nog niet in een andere app openen, omdat het geen gewoon bestand op je Mac is. Druk op {viewKey} om het te tonen.} windows {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your PC. Press {viewKey} to view it.} other {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your computer. Press {viewKey} to view it.}}",
+  "fileExplorer.open.notOnThisMac": "{platform, select, macos {Cmdr kan dit bestand nog niet in een andere app openen, omdat het geen gewoon bestand op je Mac is. Druk op {viewKey} om het te tonen.} windows {Cmdr kan dit bestand nog niet in een andere app openen, omdat het geen gewoon bestand op je pc is. Druk op {viewKey} om het te tonen.} other {Cmdr kan dit bestand nog niet in een andere app openen, omdat het geen gewoon bestand op je computer is. Druk op {viewKey} om het te tonen.}}",
   "@fileExplorer.open.notOnThisMac": {
-    "sourceHash": "66fcc50"
+    "sourceHash": "f927dac"
   },
   "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr kan dit bestand nog niet in een andere app openen, omdat het geen gewoon bestand op je Mac is. Toon het in plaats daarvan met de opdracht ‘Toon’.} windows {Cmdr kan dit bestand nog niet in een andere app openen, omdat het geen gewoon bestand op je pc is. Toon het in plaats daarvan met de opdracht ‘Toon’.} other {Cmdr kan dit bestand nog niet in een andere app openen, omdat het geen gewoon bestand op je computer is. Toon het in plaats daarvan met de opdracht ‘Toon’.}}",
   "@fileExplorer.open.notOnThisMacWithoutKey": {
     "sourceHash": "b281a7e"
   },
-  "fileExplorer.open.didNotOpen": "{platform, select, macos {{fileName} ging niet open. macOS kon het bestand niet vinden, of geen enkele app opent het.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
+  "fileExplorer.open.didNotOpen": "{platform, select, macos {{fileName} ging niet open. macOS kon het bestand niet vinden, of geen enkele app opent het.} windows {{fileName} ging niet open. Windows kon het bestand niet vinden, of er is geen app ingesteld om het te openen.} other {{fileName} ging niet open. Het bestand is misschien weg, of geen enkele app opent het.}}",
   "@fileExplorer.open.didNotOpen": {
-    "sourceHash": "cd95423"
+    "sourceHash": "5df1868"
   },
   "fileExplorer.openingToast.noApp": "{fileName} openen…",
   "@fileExplorer.openingToast.noApp": {
@@ -343,9 +343,9 @@
     "sourceHash": "e0926fd",
     "sameAsSourceJustification": "Loanword: the generic name for this class of app is \"Terminal\" here too, and Apple keeps the app name English in its localized Finder (\"Open in Terminal\", key N67); same as settings.navigationAndFileOps.card.terminal."
   },
-  "fileExplorer.functionKeyBar.hiddenToast": "{platform, select, windows {Function key bar is now hidden. Turn it back on any time later in <settingsLink>Settings</settingsLink>.} other {De functietoetsbalk is nu verborgen. Zet hem op elk moment weer aan in <settingsLink>Instellingen</settingsLink>.}}",
+  "fileExplorer.functionKeyBar.hiddenToast": "{platform, select, windows {De functietoetsbalk is nu verborgen. Zet hem op elk moment weer aan in <settingsLink>Instellingen</settingsLink>.} other {De functietoetsbalk is nu verborgen. Zet hem op elk moment weer aan in <settingsLink>Instellingen</settingsLink>.}}",
   "@fileExplorer.functionKeyBar.hiddenToast": {
-    "sourceHash": "f961d3b"
+    "sourceHash": "cb00b6d"
   },
   "fileExplorer.typeToJump.prefix": "Ga naar: ",
   "@fileExplorer.typeToJump.prefix": {
@@ -384,13 +384,13 @@
   "@fileExplorer.network.signIn": {
     "sourceHash": "bfd402b"
   },
-  "fileExplorer.network.osMountFallback.message": "{platform, select, macos {Direct verbinden met <shareName>{share}</shareName> lukte niet. Je bent verbonden, maar alleen via de systeemeigen SMB-netwerkverbinding van macOS, die voor de meeste verbindingen 4x zo langzaam is als de directe verbinding van Cmdr (soms 100x). Klik op de knop hieronder om het opnieuw te proberen.} windows {Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via Windows’ own SMB connection, which is often slower than Cmdr’s direct connection. Select the button below to try again.} other {Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via your system’s SMB connection (GVFS), which is often a lot slower than Cmdr’s direct connection. Click the button below to try again.}}",
+  "fileExplorer.network.osMountFallback.message": "{platform, select, macos {Direct verbinden met <shareName>{share}</shareName> lukte niet. Je bent verbonden, maar alleen via de systeemeigen SMB-netwerkverbinding van macOS, die voor de meeste verbindingen 4x zo langzaam is als de directe verbinding van Cmdr (soms 100x). Klik op de knop hieronder om het opnieuw te proberen.} windows {Direct verbinden met <shareName>{share}</shareName> lukte niet. Je bent verbonden, maar alleen via de eigen SMB-verbinding van Windows, die vaak langzamer is dan de directe verbinding van Cmdr. Selecteer de knop hieronder om het opnieuw te proberen.} other {Direct verbinden met <shareName>{share}</shareName> lukte niet. Je bent verbonden, maar alleen via de SMB-verbinding van je systeem (GVFS), die vaak een stuk langzamer is dan de directe verbinding van Cmdr. Klik op de knop hieronder om het opnieuw te proberen.}}",
   "@fileExplorer.network.osMountFallback.message": {
-    "sourceHash": "cb53372"
+    "sourceHash": "1279133"
   },
-  "fileExplorer.network.osMountFallback.shareNotOnServer": "{platform, select, macos {Direct verbinden met <shareName>{share}</shareName> lukte niet, want de server zegt dat hij geen gedeelde map met die naam heeft. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is. Dit lost zichzelf niet op: de gedeelde map is misschien van naam veranderd of verwijderd op de server, dus daar kun je het beste even kijken.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through Windows’ own SMB connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through your system’s SMB connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.}}",
+  "fileExplorer.network.osMountFallback.shareNotOnServer": "{platform, select, macos {Direct verbinden met <shareName>{share}</shareName> lukte niet, want de server zegt dat hij geen gedeelde map met die naam heeft. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is. Dit lost zichzelf niet op: de gedeelde map is misschien van naam veranderd of verwijderd op de server, dus daar kun je het beste even kijken.} windows {Direct verbinden met <shareName>{share}</shareName> lukte niet, want de server zegt dat hij geen gedeelde map met die naam heeft. Je bent nog steeds verbonden, maar via de eigen SMB-verbinding van Windows, die een stuk langzamer is. Dit lost zichzelf niet op: de gedeelde map is misschien van naam veranderd of verwijderd op de server, dus daar kun je het beste even kijken.} other {Direct verbinden met <shareName>{share}</shareName> lukte niet, want de server zegt dat hij geen gedeelde map met die naam heeft. Je bent nog steeds verbonden, maar via de SMB-verbinding van je systeem, die een stuk langzamer is. Dit lost zichzelf niet op: de gedeelde map is misschien van naam veranderd of verwijderd op de server, dus daar kun je het beste even kijken.}}",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
-    "sourceHash": "3ae984e"
+    "sourceHash": "aef7f41"
   },
   "fileExplorer.network.osMountFallback.retry": "Probeer direct te verbinden",
   "@fileExplorer.network.osMountFallback.retry": {
@@ -408,9 +408,9 @@
   "@fileExplorer.network.browser.refresh": {
     "sourceHash": "0e91610"
   },
-  "fileExplorer.network.browser.refreshHint": "{platform, select, windows {Press <key></key> or select here to refresh} other {Druk op <key></key> of klik hier om te verversen}}",
+  "fileExplorer.network.browser.refreshHint": "{platform, select, windows {Druk op <key></key> of selecteer hier om te verversen} other {Druk op <key></key> of klik hier om te verversen}}",
   "@fileExplorer.network.browser.refreshHint": {
-    "sourceHash": "7f65c7d"
+    "sourceHash": "3e17581"
   },
   "fileExplorer.network.browser.status.resolving": "Omzetten…",
   "@fileExplorer.network.browser.status.resolving": {
@@ -492,9 +492,9 @@
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "bde1b3c"
   },
-  "fileExplorer.network.browser.removeHostConfirm": "{platform, select, windows {Forget {hostName}? Cmdr stops listing it and the shares saved under it. Nothing gets disconnected.} other {{hostName} vergeten? Cmdr haalt de server en de gedeelde mappen die daaronder zijn opgeslagen uit de lijst. Cmdr koppelt niets los.}}",
+  "fileExplorer.network.browser.removeHostConfirm": "{platform, select, windows {{hostName} vergeten? Cmdr haalt de server en de gedeelde mappen die daaronder zijn opgeslagen uit de lijst. Er wordt geen verbinding verbroken.} other {{hostName} vergeten? Cmdr haalt de server en de gedeelde mappen die daaronder zijn opgeslagen uit de lijst. Cmdr koppelt niets los.}}",
   "@fileExplorer.network.browser.removeHostConfirm": {
-    "sourceHash": "25262e0"
+    "sourceHash": "274c4b9"
   },
   "fileExplorer.network.browser.hostRemoved": "{hostName} vergeten",
   "@fileExplorer.network.browser.hostRemoved": {
@@ -524,9 +524,9 @@
   "@fileExplorer.network.browser.disconnectFailed": {
     "sourceHash": "e394098"
   },
-  "fileExplorer.network.share.credentialsStoredLocally": "{platform, select, windows {Credentials stored locally (Credential Manager not available)} other {Inloggegevens lokaal opgeslagen (geen systeemsleutelhanger gevonden)}}",
+  "fileExplorer.network.share.credentialsStoredLocally": "{platform, select, windows {Inloggegevens lokaal opgeslagen (Referentiebeheer niet beschikbaar)} other {Inloggegevens lokaal opgeslagen (geen systeemsleutelhanger gevonden)}}",
   "@fileExplorer.network.share.credentialsStoredLocally": {
-    "sourceHash": "18dd24e"
+    "sourceHash": "e14f91d"
   },
   "fileExplorer.network.share.notFound": "Gedeelde map ‘{shareName}’ niet gevonden op {hostName}",
   "@fileExplorer.network.share.notFound": {
@@ -560,9 +560,9 @@
   "@fileExplorer.network.share.backArrow": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.network.share.forgetPasswordTooltip": "{platform, select, macos {Verwijder opgeslagen wachtwoord uit Sleutelhanger} windows {Remove saved password from Credential Manager} other {Remove saved password from your keyring}}",
+  "fileExplorer.network.share.forgetPasswordTooltip": "{platform, select, macos {Verwijder opgeslagen wachtwoord uit Sleutelhanger} windows {Verwijder opgeslagen wachtwoord uit Referentiebeheer} other {Verwijder opgeslagen wachtwoord uit je sleutelhanger}}",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
-    "sourceHash": "f067186"
+    "sourceHash": "4ae6a02"
   },
   "fileExplorer.network.share.useGuest": "Blader als gast",
   "@fileExplorer.network.share.useGuest": {
@@ -600,9 +600,9 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.networkMount.mountingSlow": "{platform, select, macos {Nog steeds wachten tot macOS verbinding maakt. Je kunt op elk moment annuleren.} windows {Still waiting for Windows to connect. You can cancel at any time.} other {Still connecting to the share. You can cancel at any time.}}",
+  "fileExplorer.networkMount.mountingSlow": "{platform, select, macos {Nog steeds wachten tot macOS verbinding maakt. Je kunt op elk moment annuleren.} windows {Nog steeds wachten tot Windows verbinding maakt. Je kunt op elk moment annuleren.} other {Nog steeds bezig met verbinden met de gedeelde map. Je kunt op elk moment annuleren.}}",
   "@fileExplorer.networkMount.mountingSlow": {
-    "sourceHash": "e8e9040"
+    "sourceHash": "8267138"
   },
   "fileExplorer.networkMount.mountFailedTitle": "Gedeelde map aankoppelen lukte niet",
   "@fileExplorer.networkMount.mountFailedTitle": {
@@ -648,9 +648,9 @@
   "@fileExplorer.unreachable.disconnect": {
     "sourceHash": "acfc5be"
   },
-  "fileExplorer.unreachable.openHome": "{platform, select, windows {Open user folder} other {Open thuismap}}",
+  "fileExplorer.unreachable.openHome": "{platform, select, windows {Open gebruikersmap} other {Open thuismap}}",
   "@fileExplorer.unreachable.openHome": {
-    "sourceHash": "a178b4d"
+    "sourceHash": "c5f1d02"
   },
   "fileExplorer.listingStalled.title": "Nog steeds wachten op deze map",
   "@fileExplorer.listingStalled.title": {
@@ -953,9 +953,9 @@
   "@fileExplorer.restic.forgetPassword.forgotten": {
     "sourceHash": "bd4ac8e"
   },
-  "fileExplorer.restic.forgetPassword.keychainKeptIt": "{platform, select, macos {Cmdr heeft {name} voorlopig vergrendeld, maar het opgeslagen wachtwoord staat nog in Sleutelhanger. Wil je het voorgoed kwijt, verwijder het dan in Sleutelhangertoegang.} windows {Cmdr locked {name} for now, but Credential Manager kept its saved password. To remove it for good, delete it in Credential Manager.} other {Cmdr locked {name} for now, but your keyring kept its saved password. To remove it for good, delete it in your keyring app.}}",
+  "fileExplorer.restic.forgetPassword.keychainKeptIt": "{platform, select, macos {Cmdr heeft {name} voorlopig vergrendeld, maar het opgeslagen wachtwoord staat nog in Sleutelhanger. Wil je het voorgoed kwijt, verwijder het dan in Sleutelhangertoegang.} windows {Cmdr heeft {name} voorlopig vergrendeld, maar het opgeslagen wachtwoord staat nog in Referentiebeheer. Wil je het voorgoed kwijt, verwijder het dan in Referentiebeheer.} other {Cmdr heeft {name} voorlopig vergrendeld, maar het opgeslagen wachtwoord staat nog in je sleutelhanger. Wil je het voorgoed kwijt, verwijder het dan in je sleutelhangerapp.}}",
   "@fileExplorer.restic.forgetPassword.keychainKeptIt": {
-    "sourceHash": "56adfb0"
+    "sourceHash": "20277f3"
   },
   "fileExplorer.restic.forgetPassword.unreachable": "Cmdr kon {name} zojuist niet bereiken, dus het wachtwoord blijft opgeslagen. Probeer het zo meteen opnieuw.",
   "@fileExplorer.restic.forgetPassword.unreachable": {
@@ -1061,9 +1061,9 @@
   "@fileExplorer.openWith.copyRefused.tooLargeInBackup": {
     "sourceHash": "071fe99"
   },
-  "fileExplorer.openWith.copyRefused.notEnoughSpace": "{platform, select, macos {De schijf van je Mac heeft niet genoeg ruimte voor een kopie van {fileName} ({size}), dus Cmdr kan het bestand niet in {appName} openen. Maak wat ruimte vrij en probeer het dan opnieuw.} windows {Your PC doesn’t have room for a {size} copy of {fileName}, so Cmdr can’t open it in {appName}. Free up some space, then try again.} other {Your computer’s disk doesn’t have room for a {size} copy of {fileName}, so Cmdr can’t open it in {appName}. Free up some space, then try again.}}",
+  "fileExplorer.openWith.copyRefused.notEnoughSpace": "{platform, select, macos {De schijf van je Mac heeft niet genoeg ruimte voor een kopie van {fileName} ({size}), dus Cmdr kan het bestand niet in {appName} openen. Maak wat ruimte vrij en probeer het dan opnieuw.} windows {Je pc heeft niet genoeg ruimte voor een kopie van {fileName} ({size}), dus Cmdr kan het bestand niet in {appName} openen. Maak wat ruimte vrij en probeer het dan opnieuw.} other {De schijf van je computer heeft niet genoeg ruimte voor een kopie van {fileName} ({size}), dus Cmdr kan het bestand niet in {appName} openen. Maak wat ruimte vrij en probeer het dan opnieuw.}}",
   "@fileExplorer.openWith.copyRefused.notEnoughSpace": {
-    "sourceHash": "5cd8e49"
+    "sourceHash": "67ac459"
   },
   "fileExplorer.openWith.copyRefused.needsPassword": "{fileName} staat in een met een wachtwoord beveiligd archief. Kopieer het bestand eerst naar een map (Cmdr zal dan om het wachtwoord vragen) en open het daarna in {appName}.",
   "@fileExplorer.openWith.copyRefused.needsPassword": {
@@ -1073,9 +1073,9 @@
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
   },
-  "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} kan dit bestand niet openen, omdat het geen gewoon bestand op je Mac is. Druk op {viewKey} om het in Cmdr te tonen.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
+  "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} kan dit bestand niet openen, omdat het geen gewoon bestand op je Mac is. Druk op {viewKey} om het in Cmdr te tonen.} windows {{appName} kan dit bestand niet openen, omdat het geen gewoon bestand op je pc is. Druk op {viewKey} om het in Cmdr te tonen.} other {{appName} kan dit bestand niet openen, omdat het geen gewoon bestand op je computer is. Druk op {viewKey} om het in Cmdr te tonen.}}",
   "@fileExplorer.openWith.notOnThisMac": {
-    "sourceHash": "4e5520c"
+    "sourceHash": "94bd635"
   },
   "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} kan dit bestand niet openen, omdat het geen gewoon bestand op je Mac is. Toon het in plaats daarvan in Cmdr met de opdracht ‘Toon’.} windows {{appName} kan dit bestand niet openen, omdat het geen gewoon bestand op je pc is. Toon het in plaats daarvan in Cmdr met de opdracht ‘Toon’.} other {{appName} kan dit bestand niet openen, omdat het geen gewoon bestand op je computer is. Toon het in plaats daarvan in Cmdr met de opdracht ‘Toon’.}}",
   "@fileExplorer.openWith.notOnThisMacWithoutKey": {
@@ -1305,9 +1305,9 @@
   "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
     "sourceHash": "c655c6f"
   },
-  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "{platform, select, macos {Deze grootte is mogelijk verouderd: het indexeren is gepauzeerd, omdat je opstartschijf, waarop Cmdr zijn index bewaart, bijna vol is.} windows {This size may be out of date: indexing is paused because your system drive, where Cmdr keeps its index, is almost full.} other {This size may be out of date: indexing is paused because your system disk, where Cmdr keeps its index, is almost full.}}",
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "{platform, select, macos {Deze grootte is mogelijk verouderd: het indexeren is gepauzeerd, omdat je opstartschijf, waarop Cmdr zijn index bewaart, bijna vol is.} windows {Deze grootte is mogelijk verouderd: het indexeren is gepauzeerd, omdat je systeemstation, waarop Cmdr zijn index bewaart, bijna vol is.} other {Deze grootte is mogelijk verouderd: het indexeren is gepauzeerd, omdat je systeemschijf, waarop Cmdr zijn index bewaart, bijna vol is.}}",
   "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
-    "sourceHash": "29c5f81"
+    "sourceHash": "0063d50"
   },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} branch} other {{countText} branches}}",
   "@fileExplorer.git.size.branches": {
@@ -1654,17 +1654,17 @@
   "@fileExplorer.renameConflict.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "fileExplorer.renameConflict.overwriteTrash": "{platform, select, windows {Overwrite and delete old file} other {Overschrijf en verplaats oud bestand naar prullenmand}}",
+  "fileExplorer.renameConflict.overwriteTrash": "{platform, select, windows {Overschrijf en verwijder oud bestand} other {Overschrijf en verplaats oud bestand naar prullenmand}}",
   "@fileExplorer.renameConflict.overwriteTrash": {
-    "sourceHash": "e0192f6"
+    "sourceHash": "4461739"
   },
-  "fileExplorer.renameConflict.overwriteTrashFolder": "{platform, select, windows {Overwrite and delete old folder} other {Overschrijf en verplaats oude map naar prullenmand}}",
+  "fileExplorer.renameConflict.overwriteTrashFolder": "{platform, select, windows {Overschrijf en verwijder oude map} other {Overschrijf en verplaats oude map naar prullenmand}}",
   "@fileExplorer.renameConflict.overwriteTrashFolder": {
-    "sourceHash": "7f94bfa"
+    "sourceHash": "c3945c1"
   },
-  "fileExplorer.renameConflict.overwriteDelete": "{platform, select, windows {Overwrite and permanently delete old file} other {Overschrijf en verwijder oud bestand}}",
+  "fileExplorer.renameConflict.overwriteDelete": "{platform, select, windows {Overschrijf en verwijder oud bestand definitief} other {Overschrijf en verwijder oud bestand}}",
   "@fileExplorer.renameConflict.overwriteDelete": {
-    "sourceHash": "02093d5"
+    "sourceHash": "4cf34c9"
   },
   "fileExplorer.renameConflict.cancel": "Annuleer",
   "@fileExplorer.renameConflict.cancel": {
@@ -1682,13 +1682,13 @@
   "@fileExplorer.extensionChange.description": {
     "sourceHash": "ef7ac59"
   },
-  "fileExplorer.extensionChange.descriptionRemove": "{platform, select, macos {{kind, select, folder {Weet je zeker dat je de extensie ‘.{oldExt}’ wilt verwijderen? macOS toont dit onderdeel dan als een gewone map in plaats van als één onderdeel.} other {Weet je zeker dat je de extensie ‘.{oldExt}’ wilt verwijderen? Zonder extensie weet je Mac misschien niet met welke app het bestand moet openen.}}} windows {{kind, select, folder {Are you sure you want to remove the “.{oldExt}” extension?} other {Are you sure you want to remove the “.{oldExt}” extension? Windows may not know which app opens the file without it.}}} other {{kind, select, folder {Are you sure you want to remove the “.{oldExt}” extension?} other {Are you sure you want to remove the “.{oldExt}” extension? Your computer may not know which app opens the file without it.}}}}",
+  "fileExplorer.extensionChange.descriptionRemove": "{platform, select, macos {{kind, select, folder {Weet je zeker dat je de extensie ‘.{oldExt}’ wilt verwijderen? macOS toont dit onderdeel dan als een gewone map in plaats van als één onderdeel.} other {Weet je zeker dat je de extensie ‘.{oldExt}’ wilt verwijderen? Zonder extensie weet je Mac misschien niet met welke app het bestand moet openen.}}} windows {{kind, select, folder {Weet je zeker dat je de extensie ‘.{oldExt}’ wilt verwijderen?} other {Weet je zeker dat je de extensie ‘.{oldExt}’ wilt verwijderen? Zonder extensie weet Windows misschien niet met welke app het bestand moet openen.}}} other {{kind, select, folder {Weet je zeker dat je de extensie ‘.{oldExt}’ wilt verwijderen?} other {Weet je zeker dat je de extensie ‘.{oldExt}’ wilt verwijderen? Zonder extensie weet je computer misschien niet met welke app het bestand moet openen.}}}}",
   "@fileExplorer.extensionChange.descriptionRemove": {
-    "sourceHash": "8c87a3d"
+    "sourceHash": "e33975c"
   },
-  "fileExplorer.extensionChange.descriptionAdd": "{platform, select, macos {{kind, select, folder {Weet je zeker dat je de extensie ‘.{newExt}’ wilt toevoegen? macOS toont deze map dan mogelijk als één onderdeel.} other {Weet je zeker dat je de extensie ‘.{newExt}’ wilt toevoegen? Je bestand opent de volgende keer mogelijk in een andere app.}}} other {{kind, select, folder {Are you sure you want to add the “.{newExt}” extension?} other {Are you sure you want to add the “.{newExt}” extension? Your file may open in a different app next time you open it.}}}}",
+  "fileExplorer.extensionChange.descriptionAdd": "{platform, select, macos {{kind, select, folder {Weet je zeker dat je de extensie ‘.{newExt}’ wilt toevoegen? macOS toont deze map dan mogelijk als één onderdeel.} other {Weet je zeker dat je de extensie ‘.{newExt}’ wilt toevoegen? Je bestand opent de volgende keer mogelijk in een andere app.}}} other {{kind, select, folder {Weet je zeker dat je de extensie ‘.{newExt}’ wilt toevoegen?} other {Weet je zeker dat je de extensie ‘.{newExt}’ wilt toevoegen? Je bestand opent de volgende keer mogelijk in een andere app.}}}}",
   "@fileExplorer.extensionChange.descriptionAdd": {
-    "sourceHash": "c18c736"
+    "sourceHash": "e3f2b28"
   },
   "fileExplorer.extensionChange.keepNone": "Behoud zonder extensie",
   "@fileExplorer.extensionChange.keepNone": {
@@ -1786,9 +1786,9 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "{platform, select, windows {This folder can’t be a favorite: favorites point at folders on drives, shares, servers, and phones} other {Deze map kan geen favoriet worden: favorieten verwijzen naar mappen op schijven, netwerkshares, servers en telefoons}}",
+  "fileExplorer.navigation.favoritesCantAddHere": "{platform, select, windows {Deze map kan geen favoriet worden: favorieten verwijzen naar mappen op schijven, netwerkshares, servers en telefoons} other {Deze map kan geen favoriet worden: favorieten verwijzen naar mappen op schijven, netwerkshares, servers en telefoons}}",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "03886b7"
+    "sourceHash": "8949eb3"
   },
   "fileExplorer.navigation.switcherFavorites": "Favorieten",
   "@fileExplorer.navigation.switcherFavorites": {
@@ -2046,17 +2046,17 @@
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
     "sourceHash": "e8bca64"
   },
-  "fileExplorer.navigation.detachShareAriaLabel": "{platform, select, macos {Werp {name} uit} windows {Disconnect {name}} other {Unmount {name}}}",
+  "fileExplorer.navigation.detachShareAriaLabel": "{platform, select, macos {Werp {name} uit} windows {Verbreek de verbinding met {name}} other {Ontkoppel {name}}}",
   "@fileExplorer.navigation.detachShareAriaLabel": {
-    "sourceHash": "61db18b"
+    "sourceHash": "063ed02"
   },
-  "fileExplorer.navigation.detachingShareAriaLabel": "{platform, select, macos {{name} wordt uitgeworpen…} windows {Disconnecting {name}…} other {Unmounting {name}…}}",
+  "fileExplorer.navigation.detachingShareAriaLabel": "{platform, select, macos {{name} wordt uitgeworpen…} windows {Verbinding met {name} wordt verbroken…} other {{name} wordt ontkoppeld…}}",
   "@fileExplorer.navigation.detachingShareAriaLabel": {
-    "sourceHash": "e8bca64"
+    "sourceHash": "d902264"
   },
-  "fileExplorer.navigation.detachShareBusyTooltip": "{platform, select, macos {Cmdr is nog bezig met bestanden op dit apparaat. Je kunt het uitwerpen zodra dat klaar is.} windows {Cmdr is still working with files on this device. You can disconnect it once that’s done.} other {Cmdr is still working with files on this device. You can unmount it once that’s done.}}",
+  "fileExplorer.navigation.detachShareBusyTooltip": "{platform, select, macos {Cmdr is nog bezig met bestanden op dit apparaat. Je kunt het uitwerpen zodra dat klaar is.} windows {Cmdr is nog bezig met bestanden op dit apparaat. Je kunt de verbinding verbreken zodra dat klaar is.} other {Cmdr is nog bezig met bestanden op dit apparaat. Je kunt het ontkoppelen zodra dat klaar is.}}",
   "@fileExplorer.navigation.detachShareBusyTooltip": {
-    "sourceHash": "b298e2f"
+    "sourceHash": "4614293"
   },
   "fileExplorer.navigation.usbSpeed": "{label} (Max. {mbps} MB/s)",
   "@fileExplorer.navigation.usbSpeed": {
@@ -2139,21 +2139,21 @@
   "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
     "sourceHash": "5714115"
   },
-  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "{platform, select, macos {Het indexeren is gepauzeerd, omdat je opstartschijf, waarop Cmdr zijn index bewaart, bijna vol is. Mapgroottes op deze schijf zijn mogelijk verouderd tot het indexeren wordt hervat. Dat gebeurt vanzelf zodra er op de opstartschijf meer vrije ruimte is.} windows {Indexing is paused because your system drive, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.} other {Indexing is paused because your system disk, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.}}",
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "{platform, select, macos {Het indexeren is gepauzeerd, omdat je opstartschijf, waarop Cmdr zijn index bewaart, bijna vol is. Mapgroottes op deze schijf zijn mogelijk verouderd tot het indexeren wordt hervat. Dat gebeurt vanzelf zodra er op de opstartschijf meer vrije ruimte is.} windows {Het indexeren is gepauzeerd, omdat je systeemstation, waarop Cmdr zijn index bewaart, bijna vol is. Mapgroottes op deze schijf zijn mogelijk verouderd tot het indexeren wordt hervat. Dat gebeurt vanzelf zodra er op het systeemstation meer vrije ruimte is.} other {Het indexeren is gepauzeerd, omdat je systeemschijf, waarop Cmdr zijn index bewaart, bijna vol is. Mapgroottes op deze schijf zijn mogelijk verouderd tot het indexeren wordt hervat. Dat gebeurt vanzelf zodra er op de systeemschijf meer vrije ruimte is.}}",
   "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
-    "sourceHash": "68994e4"
+    "sourceHash": "0703785"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "{platform, select, macos {macOS is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, en de volgende volledige controle van Cmdr {remaining, plural, one {over een uur} other {over {remainingText} uur}} zet dat weer recht.} windows {Windows lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and Cmdr’s next full check in {remaining, plural, one {an hour} other {{remainingText} hours}} will fix it.} other {Your system lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and Cmdr’s next full check in {remaining, plural, one {an hour} other {{remainingText} hours}} will fix it.}}",
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "{platform, select, macos {macOS is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, en de volgende volledige controle van Cmdr {remaining, plural, one {over een uur} other {over {remainingText} uur}} zet dat weer recht.} windows {Windows is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gebeurt dat als er veel bestanden tegelijk veranderen, en de volgende volledige controle van Cmdr {remaining, plural, one {over een uur} other {over {remainingText} uur}} zet dat weer recht.} other {Je systeem is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gebeurt dat als er veel bestanden tegelijk veranderen, en de volgende volledige controle van Cmdr {remaining, plural, one {over een uur} other {over {remainingText} uur}} zet dat weer recht.}}",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
-    "sourceHash": "eb09aed"
+    "sourceHash": "2e13468"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "{platform, select, macos {macOS is {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, en de controle die nu bezig is zet dat weer recht.} windows {Windows lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and the check running right now will put them right.} other {Your system lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and the check running right now will put them right.}}",
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "{platform, select, macos {macOS is {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, en de controle die nu bezig is zet dat weer recht.} windows {Windows is {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gebeurt dat als er veel bestanden tegelijk veranderen, en de controle die nu bezig is zet dat weer recht.} other {Je systeem is {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gebeurt dat als er veel bestanden tegelijk veranderen, en de controle die nu bezig is zet dat weer recht.}}",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
-    "sourceHash": "0ff330c"
+    "sourceHash": "056944a"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "{platform, select, macos {macOS is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, dus dat is geen probleem.} windows {Windows lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and Cmdr’s next full check will fix it.} other {Your system lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and Cmdr’s next full check will fix it.}}",
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "{platform, select, macos {macOS is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, dus dat is geen probleem.} windows {Windows is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gebeurt dat als er veel bestanden tegelijk veranderen, en de volgende volledige controle van Cmdr zet dat weer recht.} other {Je systeem is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gebeurt dat als er veel bestanden tegelijk veranderen, en de volgende volledige controle van Cmdr zet dat weer recht.}}",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
-    "sourceHash": "68420b0"
+    "sourceHash": "c2e72eb"
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr kon {count, plural, one {één plek} other {{countText} plekken}} op deze schijf niet lezen, dus een zoekopdracht hier komt misschien iets tekort.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
@@ -2301,9 +2301,9 @@
   "@fileExplorer.dropIn.timedOut": {
     "sourceHash": "7591ca5"
   },
-  "fileExplorer.dropIn.noFolder": "{platform, select, windows {Cmdr couldn’t make room for the dropped file. Check that your PC has free space, then try again.} other {Cmdr kon geen ruimte maken voor het gesleepte bestand. Controleer of je schijf nog vrije ruimte heeft en probeer het dan opnieuw.}}",
+  "fileExplorer.dropIn.noFolder": "{platform, select, windows {Cmdr kon geen ruimte maken voor het gesleepte bestand. Controleer of je pc nog vrije ruimte heeft en probeer het dan opnieuw.} other {Cmdr kon geen ruimte maken voor het gesleepte bestand. Controleer of je schijf nog vrije ruimte heeft en probeer het dan opnieuw.}}",
   "@fileExplorer.dropIn.noFolder": {
-    "sourceHash": "ea7fb38"
+    "sourceHash": "19630a6"
   },
   "fileExplorer.dropIn.someMissing": "{count, plural, one {Eén gesleept bestand is niet aangekomen, dus het zit niet in deze kopie.} other {{countText} gesleepte bestanden zijn niet aangekomen, dus ze zitten niet in deze kopie.}}",
   "@fileExplorer.dropIn.someMissing": {
@@ -2357,9 +2357,9 @@
   "@fileExplorer.quickFilter.intro.switchToJump": {
     "sourceHash": "38642f9"
   },
-  "fileExplorer.quickFilter.intro.openSettings": "{platform, select, windows {Settings} other {Instellingen…}}",
+  "fileExplorer.quickFilter.intro.openSettings": "{platform, select, windows {Instellingen} other {Instellingen…}}",
   "@fileExplorer.quickFilter.intro.openSettings": {
-    "sourceHash": "7a04083"
+    "sourceHash": "7af8e23"
   },
   "fileExplorer.quickFilter.intro.gotIt": "Begrepen",
   "@fileExplorer.quickFilter.intro.gotIt": {
@@ -2377,9 +2377,9 @@
   "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
     "sourceHash": "c350d80"
   },
-  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "{platform, select, macos {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de bestanden op een andere server staan en Cmdr daar niet uit zichzelf inlogt. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through your system’s SMB connection, which is a lot slower.}}",
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "{platform, select, macos {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de bestanden op een andere server staan en Cmdr daar niet uit zichzelf inlogt. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.} windows {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de bestanden op een andere server staan en Cmdr zich daar niet uit zichzelf aanmeldt. Je bent nog steeds verbonden, maar via de eigen SMB-verbinding van Windows, die een stuk langzamer is.} other {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de bestanden op een andere server staan en Cmdr daar niet uit zichzelf inlogt. Je bent nog steeds verbonden, maar via de SMB-verbinding van je systeem, die een stuk langzamer is.}}",
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
-    "sourceHash": "9c9c5a5"
+    "sourceHash": "c07ebf8"
   },
   "fileExplorer.pane.directConnectionNegotiationInvalidToast": "{server} bevestigde de beveiligingsinstellingen die met Cmdr waren afgesproken niet, dus deze gedeelde map blijft op de systeemverbinding. Een server die niet goed werkt kan dit veroorzaken, maar ook iemand die met de verbinding knoeit.",
   "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
@@ -2393,17 +2393,17 @@
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
     "sourceHash": "fe17565"
   },
-  "fileExplorer.network.osMountFallback.encryptionRequired": "{platform, select, macos {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de server de verbinding niet kan versleutelen en in Cmdr ‘Altijd SMB-versleuteling vereisen’ aanstaat. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through your system’s SMB connection, which is a lot slower.}}",
+  "fileExplorer.network.osMountFallback.encryptionRequired": "{platform, select, macos {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de server de verbinding niet kan versleutelen en in Cmdr ‘Altijd SMB-versleuteling vereisen’ aanstaat. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.} windows {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de server de verbinding niet kan versleutelen en in Cmdr ‘Altijd SMB-versleuteling vereisen’ aanstaat. Je bent nog steeds verbonden, maar via de eigen SMB-verbinding van Windows, die een stuk langzamer is.} other {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de server de verbinding niet kan versleutelen en in Cmdr ‘Altijd SMB-versleuteling vereisen’ aanstaat. Je bent nog steeds verbonden, maar via de SMB-verbinding van je systeem, die een stuk langzamer is.}}",
   "@fileExplorer.network.osMountFallback.encryptionRequired": {
-    "sourceHash": "14a8cb4"
+    "sourceHash": "ce39f58"
   },
-  "fileExplorer.network.osMountFallback.negotiationInvalid": "{platform, select, macos {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de server de beveiligingsinstellingen die met Cmdr waren afgesproken niet bevestigde. Een server die niet goed werkt kan dit veroorzaken, maar ook iemand die met de verbinding knoeit. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. You are still connected through your system’s SMB connection, which is a lot slower.}}",
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "{platform, select, macos {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de server de beveiligingsinstellingen die met Cmdr waren afgesproken niet bevestigde. Een server die niet goed werkt kan dit veroorzaken, maar ook iemand die met de verbinding knoeit. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.} windows {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de server de beveiligingsinstellingen die met Cmdr waren afgesproken niet bevestigde. Een server die niet goed werkt kan dit veroorzaken, maar ook iemand die met de verbinding knoeit. Je bent nog steeds verbonden, maar via de eigen SMB-verbinding van Windows, die een stuk langzamer is.} other {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat de server de beveiligingsinstellingen die met Cmdr waren afgesproken niet bevestigde. Een server die niet goed werkt kan dit veroorzaken, maar ook iemand die met de verbinding knoeit. Je bent nog steeds verbonden, maar via de SMB-verbinding van je systeem, die een stuk langzamer is.}}",
   "@fileExplorer.network.osMountFallback.negotiationInvalid": {
-    "sourceHash": "758e268"
+    "sourceHash": "fb0da3f"
   },
-  "fileExplorer.network.osMountFallback.encryptionUnavailable": "{platform, select, macos {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat deze gedeelde map alleen versleutelde verbindingen accepteert en de server met Cmdr geen manier kon afspreken om de verbinding te versleutelen. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the share only accepts encrypted connections and the server didn’t agree on a way to encrypt one with Cmdr. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the share only accepts encrypted connections and the server didn’t agree on a way to encrypt one with Cmdr. You are still connected through your system’s SMB connection, which is a lot slower.}}",
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "{platform, select, macos {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat deze gedeelde map alleen versleutelde verbindingen accepteert en de server met Cmdr geen manier kon afspreken om de verbinding te versleutelen. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is.} windows {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat deze gedeelde map alleen versleutelde verbindingen accepteert en de server met Cmdr geen manier kon afspreken om de verbinding te versleutelen. Je bent nog steeds verbonden, maar via de eigen SMB-verbinding van Windows, die een stuk langzamer is.} other {Direct verbinden met <shareName>{share}</shareName> lukte niet, omdat deze gedeelde map alleen versleutelde verbindingen accepteert en de server met Cmdr geen manier kon afspreken om de verbinding te versleutelen. Je bent nog steeds verbonden, maar via de SMB-verbinding van je systeem, die een stuk langzamer is.}}",
   "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
-    "sourceHash": "23dd607"
+    "sourceHash": "cd7c5d3"
   },
   "fileExplorer.smbLinkConsent.title": "Inloggen bij een andere server?",
   "@fileExplorer.smbLinkConsent.title": {

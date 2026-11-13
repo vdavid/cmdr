@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{platform, select, windows {{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to the Recycle Bin} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}} other {{type, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} delete {Bezig met verwijderen} trash {Naar prullenmand verplaatsen} rename {Bezig met naam wijzigen} create_folder {Bezig met map aanmaken} create_file {Bezig met bestand aanmaken} archive_edit {Bezig met archief bewerken} compress {Bezig met comprimeren} tag {Bezig met tags wijzigen} other {Bezig}}}}",
+  "queue.row.label": "{platform, select, windows {{type, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} delete {Bezig met verwijderen} trash {Naar prullenbak verplaatsen} rename {Bezig met naam wijzigen} create_folder {Bezig met map aanmaken} create_file {Bezig met bestand aanmaken} archive_edit {Bezig met archief bewerken} compress {Bezig met comprimeren} tag {Bezig met tags wijzigen} other {Bezig}}} other {{type, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} delete {Bezig met verwijderen} trash {Naar prullenmand verplaatsen} rename {Bezig met naam wijzigen} create_folder {Bezig met map aanmaken} create_file {Bezig met bestand aanmaken} archive_edit {Bezig met archief bewerken} compress {Bezig met comprimeren} tag {Bezig met tags wijzigen} other {Bezig}}}}",
   "@queue.row.label": {
-    "sourceHash": "b051663"
+    "sourceHash": "6210892"
   },
   "queue.row.reversalMovingBack": "Bezig met bestanden terugzetten",
   "@queue.row.reversalMovingBack": {
@@ -161,9 +161,9 @@
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
   },
-  "queue.failureToast.title": "{platform, select, windows {{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to the Recycle Bin} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}} other {{type, select, copy {Kopiëren niet voltooid} move {Verplaatsen niet voltooid} delete {Verwijderen niet voltooid} trash {Naar prullenmand verplaatsen niet voltooid} rename {Naam wijzigen niet voltooid} create_folder {Map aanmaken niet voltooid} create_file {Bestand aanmaken niet voltooid} archive_edit {Archief bewerken niet voltooid} other {Niet voltooid}}}}",
+  "queue.failureToast.title": "{platform, select, windows {{type, select, copy {Kopiëren niet voltooid} move {Verplaatsen niet voltooid} delete {Verwijderen niet voltooid} trash {Verplaatsen naar prullenbak niet voltooid} rename {Naam wijzigen niet voltooid} create_folder {Map aanmaken niet voltooid} create_file {Bestand aanmaken niet voltooid} archive_edit {Archief bewerken niet voltooid} other {Niet voltooid}}} other {{type, select, copy {Kopiëren niet voltooid} move {Verplaatsen niet voltooid} delete {Verwijderen niet voltooid} trash {Naar prullenmand verplaatsen niet voltooid} rename {Naam wijzigen niet voltooid} create_folder {Map aanmaken niet voltooid} create_file {Bestand aanmaken niet voltooid} archive_edit {Archief bewerken niet voltooid} other {Niet voltooid}}}}",
   "@queue.failureToast.title": {
-    "sourceHash": "b5f2b47"
+    "sourceHash": "6055ffa"
   },
   "queue.failureToast.action": "Toon in de bewerkingenwachtrij",
   "@queue.failureToast.action": {

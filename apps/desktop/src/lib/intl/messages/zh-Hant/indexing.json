@@ -29,9 +29,9 @@
   "@indexing.phase.priorityFolders": {
     "sourceHash": "09dd19d"
   },
-  "indexing.phase.home": "{platform, select, windows {Indexing the rest of your user folder} other {正在為你個人專屬資料夾的其餘部分建立索引}}",
+  "indexing.phase.home": "{platform, select, windows {正在為你使用者資料夾的其餘部分建立索引} other {正在為你個人專屬資料夾的其餘部分建立索引}}",
   "@indexing.phase.home": {
-    "sourceHash": "8c31671"
+    "sourceHash": "4da71e9"
   },
   "indexing.phase.wholeDrive": "正在為磁碟機的其餘部分建立索引",
   "@indexing.phase.wholeDrive": {
@@ -209,9 +209,9 @@
   "@indexing.firstConnect.body": {
     "sourceHash": "56ec1e5"
   },
-  "indexing.firstConnect.enable": "{platform, select, windows {Turn on indexing} other {啟用索引}}",
+  "indexing.firstConnect.enable": "{platform, select, windows {開啟索引} other {啟用索引}}",
   "@indexing.firstConnect.enable": {
-    "sourceHash": "3dc7ddf"
+    "sourceHash": "060aa19"
   },
   "indexing.firstConnect.silenceDrive": "這個磁碟機別再問了",
   "@indexing.firstConnect.silenceDrive": {

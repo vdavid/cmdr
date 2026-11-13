@@ -1378,7 +1378,9 @@
       "errors.listing.staleConnection.suggestion": "the windows branch's only File is the app name File Explorer → Utforskaren"
     },
     "forms": "filen, filer; the menu-bar File menu is Arkiv",
-    "sources": "macOS, MS, GNOME"
+    "sources": "macOS, MS, GNOME",
+    "accept": ["Utforskaren"],
+    "note": "The English concept also matches the app name File Explorer, which Swedish Windows calls Utforskaren with no fil- in it."
   },
   "file-list": {
     "chosen": "fillista",
@@ -3367,7 +3369,10 @@
     "chosen": "Systeminställningar",
     "confidence": "high",
     "note": "Usually the runtime token {system_settings}; never hang a suffix or preposition off it.",
-    "sources": "macOS SystemSettings"
+    "sources": "macOS SystemSettings",
+    "exceptions": {
+      "servers.refusal.clockSkewed": "The Linux branch names no app: systemets inställningar is generic prose for the desktop's own settings, not macOS System Settings."
+    }
   },
   "system-settings-pane": {
     "accept": ["Startobjekt och tillägg", "Lagring"],
@@ -3643,13 +3648,17 @@
       "ansluten",
       "kopplats från",
       "kopplades",
-      "kopplar du ur"
+      "kopplar du ur",
+      "ansluts"
     ],
     "chosen": "koppla ur",
     "confidence": "high",
     "decision": "Eject and disconnect errors",
     "forms": "the device out of the port → koppla ur; the cable → dra ur; state → frånkopplad",
-    "sources": "catalog (errors.listing.deviceReconnecting.suggestion)"
+    "sources": "catalog (errors.listing.deviceReconnecting.suggestion)",
+    "exceptions": {
+      "fileExplorer.network.browser.removeHostConfirm": "Windows branch says disconnected in the share sense (Windows' word for detaching a mapped drive) → Inget kopplas från, the disconnect ruling, not unplugging a device"
+    }
   },
   "unreachable": {
     "accept": ["nå"],
@@ -3693,11 +3702,14 @@
     "sources": "AOSP SettingsLib values-sv enable_adb (read 2026-09-07)"
   },
   "user": {
-    "accept": ["användaren", "användar-ID", "användarkonto"],
+    "accept": ["användaren", "användar-ID", "användarkonto", "användarmapp", "användarcertifikat", "Användar-"],
     "chosen": "användare",
     "confidence": "high",
     "forms": "användaren, användare; user ID → användar-ID, group ID → grupp-ID (hyphen after the acronym)",
-    "sources": "MS terminology (user ID → användar-ID, group identifier → grupp-ID); catalog (användaren, användare)"
+    "sources": "MS terminology (user ID → användar-ID, group identifier → grupp-ID); catalog (användaren, användare)",
+    "exceptions": {
+      "goToPath.dialog.inputPlaceholder": "C:\\Users is a literal example path, kept as Windows stores it on disk."
+    }
   },
   "username": {
     "chosen": "användarnamn",
@@ -4030,5 +4042,123 @@
     "confidence": "high",
     "forms": "lowercase in prose; the Windows Settings section quotes Nätverk och Internet",
     "sources": "MS terminology SWEDISH.tbx (Network & Internet → Nätverk och Internet); catalog ai.translateError.unavailable.body, 2026-11-13"
+  },
+  "user-folder": {
+    "chosen": "användarmapp",
+    "confidence": "tentative",
+    "forms": "din användarmapp, användarmappen; only in a platform select's windows branch (macOS and Linux say hemmapp)",
+    "sources": "no pile hit (pnpm i18n:pile --term \"user folder\", 2026-11-13; the TBX has no user folder); built from Swedish Windows' Användare (C:\\Users) and mapp"
+  },
+  "credential-manager": {
+    "chosen": "Autentiseringshanteraren",
+    "confidence": "high",
+    "forms": "always definite, capitalized as Windows names it: i Autentiseringshanteraren, från Autentiseringshanteraren",
+    "sources": "MS terminology SWEDISH.tbx (Credential Manager → Autentiseringshanteraren), 2026-11-13"
+  },
+  "app-closes": {
+    "chosen": "stängs",
+    "confidence": "tentative",
+    "forms": "Windows branch only: Cmdr stängs efteråt; och stängs sedan; när Cmdr har stängts (macOS and Linux keep avslutas)",
+    "sources": "no exact pile hit; MS terminology SWEDISH.tbx close → stäng, built as the passive like macOS's avslutas, 2026-11-13",
+    "accept": ["stängts", "stäng"]
+  },
+  "linux-distribution": {
+    "chosen": "Linux-distribution",
+    "confidence": "tentative",
+    "forms": "Linux-distribution och dess version",
+    "sources": "pile has no Linux sense (pnpm i18n:pile --term distribution, 2026-11-13; TBX only other senses); standard Swedish usage",
+    "accept": ["distribution"]
+  },
+  "accent": {
+    "chosen": "accent",
+    "confidence": "high",
+    "forms": "the Windows accent color → accentfärg (systemets accentfärg)",
+    "sources": "MS terminology SWEDISH.tbx (accent color → accentfärg), 2026-11-13"
+  },
+  "appearance": {
+    "chosen": "utseende",
+    "confidence": "high",
+    "forms": "section Utseende; Linux prose dina inställningar för systemets utseende",
+    "sources": "macOS System Settings Utseende; catalog settings.section.appearance, 2026-11-13"
+  },
+  "theme": {
+    "chosen": "tema",
+    "confidence": "high",
+    "forms": "macOS theme color → temafärg; Windows and Linux say accentfärg",
+    "sources": "catalog settings.appearance.appColor.opt.system (Systemets temafärg); MS TBX accent color → accentfärg, 2026-11-13"
+  },
+  "language": {
+    "chosen": "språk",
+    "confidence": "high",
+    "forms": "Windows display language → visningsspråk (ditt visningsspråk i Windows)",
+    "sources": "MS terminology SWEDISH.tbx (display language → visningsspråk); catalog settings.appearance.language.label, 2026-11-13"
+  },
+  "lock": {
+    "chosen": "låsa",
+    "confidence": "high",
+    "accept": ["låser", "låst", "låste"],
+    "forms": "låser säkerhetskopian igen; Cmdr har låst {name}",
+    "sources": "shipped macOS branches of commands.resticForgetPassword.description and fileExplorer.restic.forgetPassword.keychainKeptIt, 2026-11-13"
+  },
+  "personal-data": {
+    "chosen": "personuppgifter",
+    "confidence": "high",
+    "sources": "catalog crashReporter.dialog.privacyNote and the data ruling's form, 2026-11-13",
+    "accept": ["uppgifter"]
+  },
+  "prompt": {
+    "chosen": "prompt",
+    "confidence": "high",
+    "accept": ["prompter", "fråg"],
+    "forms": "AI text → prompt / prompter; a system or Cmdr prompt to the user → fråga (systemfråga, indexeringsfrågan)",
+    "sources": "catalog settings.analytics.enabled.description, settings.advanced.logLlmCalls.keywords, 2026-11-13"
+  },
+  "open-beta": {
+    "chosen": "öppna betan",
+    "confidence": "high",
+    "accept": ["öppen beta"],
+    "sources": "catalog onboarding.stepBeta.analyticsLede, settings.analytics.enabled.description, 2026-11-13"
+  },
+  "detect": {
+    "chosen": "upptäcka",
+    "confidence": "high",
+    "accept": ["upptäck"],
+    "sources": "catalog viewer.toolbar.encoding.detectedSuffix, fileExplorer.network.share.credentialsStoredLocally, 2026-11-13"
+  },
+  "speed": {
+    "chosen": "hastighet",
+    "confidence": "high",
+    "accept": ["snabbare", "snabb", "långsammare"],
+    "forms": "for faster file operations → för snabbare filåtgärder",
+    "sources": "catalog settings.network.directSmbConnection.*, 2026-11-13"
+  },
+  "smb-negotiated-security": {
+    "chosen": "de säkerhetsinställningar som hade avtalats med Cmdr",
+    "confidence": "high",
+    "sources": "shipped siblings servers.paneState.negotiationInvalid, fileExplorer.pane.directConnectionNegotiationInvalidToast, 2026-11-13"
+  },
+  "attribute": {
+    "chosen": "attribut",
+    "confidence": "high",
+    "accept": ["attributet", "filattribut", "utökade attribut"],
+    "forms": "extended attributes → utökade attribut (the Linux branch of transfer.metadataClass.extendedAttributes)",
+    "sources": "catalog: errors.listing.attributeNotFound.explanation (filattribut, utökade attribut); no pile hit for extended attributes (pnpm i18n:pile, 2026-11-13)"
+  },
+  "database": {
+    "chosen": "databas",
+    "confidence": "high",
+    "accept": ["databasen", "databaser"],
+    "sources": "catalog: ai.cloudConsent.askCmdr.chatsStayLocal macOS branch (en lokal databas), 2026-11-13"
+  },
+  "private-key": {
+    "chosen": "privat nyckel",
+    "confidence": "high",
+    "accept": ["privata nyckeln", "privata nycklar"],
+    "sources": "catalog: ai.cloudConsent.askCmdr.protectedContents macOS branch (en privat nyckel), 2026-11-13"
+  },
+  "release-notes": {
+    "chosen": "uppdateringsnoteringar",
+    "confidence": "tentative",
+    "sources": "catalog: whatsNew.optOutToast macOS/Linux branch (inga fler uppdateringsnoteringar), 2026-11-13"
   }
 }

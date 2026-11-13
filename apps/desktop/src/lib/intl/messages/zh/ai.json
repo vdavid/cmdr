@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {有些内容不管谁来要，都只留在本地：SSH 密钥、云服务和工具的凭证、你的钥匙串、浏览器数据、“邮件”、“信息”、“备忘录”、Cmdr 自己的数据，以及任何存有私钥的文件。它们的名称仍可能发送给你的提供方。} windows {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, Windows credentials, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {有些内容不管谁来要，都只留在本地：SSH 密钥、云服务和工具的凭证、你的钥匙串、浏览器数据、“邮件”、“信息”、“备忘录”、Cmdr 自己的数据，以及任何存有私钥的文件。它们的名称仍可能发送给你的提供方。} windows {有些内容不管谁来要，都只留在本地：SSH 密钥、云服务和工具的凭证、Windows 凭据、浏览器数据、邮件数据、Cmdr 自己的数据，以及任何存有私钥的文件。它们的名称仍可能发送给你的提供方。} other {有些内容不管谁来要，都只留在本地：SSH 密钥、云服务和工具的凭证、你的密钥环、浏览器数据、邮件数据、Cmdr 自己的数据，以及任何存有私钥的文件。它们的名称仍可能发送给你的提供方。}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
-    "sourceHash": "048633f"
+    "sourceHash": "a533066"
   },
   "ai.cloudConsent.askCmdr.actions": "在你开启的聊天里，Ask Cmdr 还可以替你操作 App：前往文件夹、选择、排序、打开标签页和对话框，以及连接你保存的位置。拷贝、移动、压缩、删除、重命名和回滚一项操作，都会打开对话框或编辑器让你确认，你确认之前什么都不会发生。打开文件、更改设置（Cmdr 的外观除外）、退出、推出驱动器、移除服务器和更改索引，都会先问你。创建指定名称的文件夹或文件，以及给文件加标签，会立即执行，不会问你，不过标签的改动可以回滚。它以计划形式准备的重命名和整理，要等你批准。",
   "@ai.cloudConsent.askCmdr.actions": {
@@ -159,13 +159,13 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {你的 Ask Cmdr 聊天记录留在你的 Mac 上，存放在一个你可以打开查看的本地数据库里。} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {你的 Ask Cmdr 聊天记录留在你的 Mac 上，存放在一个你可以打开查看的本地数据库里。} windows {你的 Ask Cmdr 聊天记录留在你的电脑上，存放在一个你可以打开查看的本地数据库里。} other {你的 Ask Cmdr 聊天记录留在你的电脑上，存放在一个你可以打开查看的本地数据库里。}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
-    "sourceHash": "283cdd7"
+    "sourceHash": "9557acc"
   },
-  "ai.cloudConsent.logsNote": "{platform, select, macos {如果你在“高级”设置中开启“记录 AI 模型调用”，Cmdr 还会把每次请求和回复保存到你 Mac 上的一个文件夹里。这些调用日志只保存在本地，从不会发送到任何地方。} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {如果你在“高级”设置中开启“记录 AI 模型调用”，Cmdr 还会把每次请求和回复保存到你 Mac 上的一个文件夹里。这些调用日志只保存在本地，从不会发送到任何地方。} windows {如果你在“高级”设置中开启“记录 AI 模型调用”，Cmdr 还会把每次请求和回复保存到你电脑上的一个文件夹里。这些调用日志只保存在本地，从不会发送到任何地方。} other {如果你在“高级”设置中开启“记录 AI 模型调用”，Cmdr 还会把每次请求和回复保存到你电脑上的一个文件夹里。这些调用日志只保存在本地，从不会发送到任何地方。}}",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "0178d1c"
+    "sourceHash": "e34c082"
   },
   "ai.cloudConsent.turnOffAnyTime": "随时可以关闭这一项，Cmdr 会立即停止发送。你的服务、密钥和聊天记录都会保持原样。",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -529,29 +529,29 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.title": "{platform, select, macos {{op, select, save {无法保存你的 API 密钥：macOS 钥匙串拒绝了访问} other {无法读取你保存的 API 密钥：macOS 钥匙串拒绝了访问}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {无法保存你的 API 密钥：系统密钥环拒绝了访问} other {无法读取你保存的 API 密钥：系统密钥环拒绝了访问}}}}",
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {无法保存你的 API 密钥：macOS 钥匙串拒绝了访问} other {无法读取你保存的 API 密钥：macOS 钥匙串拒绝了访问}}} windows {{op, select, save {无法保存你的 API 密钥：凭据管理器拒绝了访问} other {无法读取你保存的 API 密钥：凭据管理器拒绝了访问}}} other {{op, select, save {无法保存你的 API 密钥：系统密钥环拒绝了访问} other {无法读取你保存的 API 密钥：系统密钥环拒绝了访问}}}}",
   "@ai.secretError.title": {
-    "sourceHash": "2b2ef89"
+    "sourceHash": "25b34c4"
   },
-  "ai.secretError.body": "{platform, select, macos {{op, select, save {打开“钥匙串访问”，检查“Cmdr”这一项，或将它删除后重新保存。} other {打开“钥匙串访问”，找到“Cmdr”这一项并授予访问权限，或将它删除后重新输入密钥。}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {解锁你的密钥环（“密码”/“密钥环”应用），然后重试。}}",
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {打开“钥匙串访问”，检查“Cmdr”这一项，或将它删除后重新保存。} other {打开“钥匙串访问”，找到“Cmdr”这一项并授予访问权限，或将它删除后重新输入密钥。}}} windows {{op, select, save {打开“凭据管理器”，在“Windows 凭据”下检查“Cmdr”这一项，或将它移除后重新保存。} other {打开“凭据管理器”，在“Windows 凭据”下找到“Cmdr”这一项，或将它移除后重新输入密钥。}}} other {解锁你的密钥环（“密码”/“密钥环”应用），然后重试。}}",
   "@ai.secretError.body": {
-    "sourceHash": "8f1380e"
+    "sourceHash": "d65c5e3"
   },
   "ai.secretError.genericTitle": "{op, select, save {无法保存你的 API 密钥。} other {无法读取你保存的 API 密钥。}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "c343e42"
   },
-  "ai.secretError.genericBody": "{platform, select, macos {确认你的系统密钥环可用，然后重试。如果问题仍然存在，请重新启动应用。} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {确认你的系统密钥环可用，然后重试。如果问题仍然存在，请重新启动应用。}}",
+  "ai.secretError.genericBody": "{platform, select, macos {确认你的系统密钥环可用，然后重试。如果问题仍然存在，请重新启动应用。} windows {确认凭据管理器可用，然后重试。如果问题一直出现，请重新启动 Cmdr。} other {确认你的系统密钥环可用，然后重试。如果问题仍然存在，请重新启动应用。}}",
   "@ai.secretError.genericBody": {
-    "sourceHash": "2ee417d"
+    "sourceHash": "9fc0702"
   },
   "ai.secretError.removeTitle": "无法移除你保存的 API 密钥。",
   "@ai.secretError.removeTitle": {
     "sourceHash": "5986628"
   },
-  "ai.secretError.removeBody": "{platform, select, macos {打开“钥匙串访问”，找到“Cmdr”这一项，然后在那里将它删除。} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {解锁你的密钥环（“密码”/“密钥环”应用），然后重试。}}",
+  "ai.secretError.removeBody": "{platform, select, macos {打开“钥匙串访问”，找到“Cmdr”这一项，然后在那里将它删除。} windows {打开“凭据管理器”，在“Windows 凭据”下找到“Cmdr”这一项，然后在那里将它移除。} other {解锁你的密钥环（“密码”/“密钥环”应用），然后重试。}}",
   "@ai.secretError.removeBody": {
-    "sourceHash": "4e3abe7"
+    "sourceHash": "3a85511"
   },
   "ai.managed.aiOff": "你的组织关闭了 Cmdr 中的 AI。",
   "@ai.managed.aiOff": {
@@ -565,9 +565,9 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "{platform, select, macos {你的组织只允许使用本地 AI，而这台 Mac 无法运行它。} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {你的组织只允许使用本地 AI，而这台 Mac 无法运行它。} windows {你的组织只允许使用本地 AI，而这台电脑无法运行它。} other {你的组织只允许使用本地 AI，而这台电脑无法运行它。}}",
   "@ai.managed.localOnlyUnsupported": {
-    "sourceHash": "b760ca4"
+    "sourceHash": "b468f8f"
   },
   "ai.managed.serviceNotAllowed": "你的组织不允许使用",
   "@ai.managed.serviceNotAllowed": {

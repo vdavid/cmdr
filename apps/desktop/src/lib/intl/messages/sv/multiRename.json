@@ -325,9 +325,9 @@
   "@multiRename.results.gone": {
     "sourceHash": "8aa255a"
   },
-  "multiRename.error.couldntWriteNames": "{platform, select, macos {Det gick inte att skriva namnlistan. Kontrollera att det finns ledigt utrymme på din startskiva.} windows {Couldn’t write the names list. Check that your system drive has free space.} other {Couldn’t write the names list. Check that your system disk has free space.}}",
+  "multiRename.error.couldntWriteNames": "{platform, select, macos {Det gick inte att skriva namnlistan. Kontrollera att det finns ledigt utrymme på din startskiva.} windows {Det gick inte att skriva namnlistan. Kontrollera att det finns ledigt utrymme på din systemenhet.} other {Det gick inte att skriva namnlistan. Kontrollera att det finns ledigt utrymme på din systemdisk.}}",
   "@multiRename.error.couldntWriteNames": {
-    "sourceHash": "bb5e415"
+    "sourceHash": "aee4df7"
   },
   "multiRename.resultsTooltip": "Redigera de nya namnen i din textredigerare och kom sedan tillbaka hit för att använda dem.",
   "@multiRename.resultsTooltip": {

@@ -7,9 +7,9 @@
   "@crashReporter.dialog.title.report": {
     "sourceHash": "d8b86d2"
   },
-  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this.} other {Cmdr avslutades oväntat förra gången. Här är en kraschrapport med detaljer som kan hjälpa till att åtgärda det.}}",
+  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr stängdes oväntat förra gången. Här är en kraschrapport med detaljer som kan hjälpa till att åtgärda det.} other {Cmdr avslutades oväntat förra gången. Här är en kraschrapport med detaljer som kan hjälpa till att åtgärda det.}}",
   "@crashReporter.dialog.body.ended": {
-    "sourceHash": "d67f8cb"
+    "sourceHash": "818d510"
   },
   "crashReporter.dialog.body.keptRunning": "Cmdr stötte på ett problem i bakgrunden förra gången och fortsatte köra. Här är en rapport med detaljer som kan hjälpa till att åtgärda det.",
   "@crashReporter.dialog.body.keptRunning": {
@@ -19,9 +19,9 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "bed6934"
   },
-  "crashReporter.dialog.privacyNote": "{platform, select, macos {Den innehåller appversionen, macOS-versionen och vilken del av koden som stötte på problemet. Inga filnamn eller personuppgifter.} windows {It includes the app version, Windows version, and which part of the code ran into the problem. No file names or personal data.} other {It includes the app version, Linux distribution and version, and which part of the code ran into the problem. No file names or personal data.}}",
+  "crashReporter.dialog.privacyNote": "{platform, select, macos {Den innehåller appversionen, macOS-versionen och vilken del av koden som stötte på problemet. Inga filnamn eller personuppgifter.} windows {Den innehåller appversionen, Windows-versionen och vilken del av koden som stötte på problemet. Inga filnamn eller personuppgifter.} other {Den innehåller appversionen, Linux-distributionen och dess version samt vilken del av koden som stötte på problemet. Inga filnamn eller personuppgifter.}}",
   "@crashReporter.dialog.privacyNote": {
-    "sourceHash": "c6875a7"
+    "sourceHash": "ebe2d23"
   },
   "crashReporter.dialog.reportIdLabel": "Rapport-ID:",
   "@crashReporter.dialog.reportIdLabel": {

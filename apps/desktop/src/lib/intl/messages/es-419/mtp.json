@@ -1,14 +1,14 @@
 {
   "mtp.connectedToast.body": "{platform, select, macos {Cmdr pausó el daemon de cámara de macOS (ptpcamerad) para acceder a este dispositivo. Para usarlo en otra app, desactiva la compatibilidad con MTP en la configuración.} windows {} other {Para usar este dispositivo en otra app, desactiva la compatibilidad con MTP en la configuración.}}",
   "@mtp.connectedToast.body": {
-    "sourceHash": "087e4c4"
+    "sourceHash": "c130247"
   },
   "mtp.connectedToast.ok": "OK",
   "@mtp.connectedToast.ok": {
     "sourceHash": "640d676"
   },
-  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Este comando detiene ptpcamerad de forma continua mientras se ejecuta. Presiona <key>Ctrl+C</key> en Terminal para detenerlo cuando termines.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Este comando detiene ptpcamerad de forma continua mientras se ejecuta. Presiona <key>Ctrl+C</key> en Terminal para detenerlo cuando termines.} windows {Cierra la app que está usando el teléfono y vuelve a intentarlo.} other {Desmonta el teléfono en tu administrador de archivos y vuelve a intentarlo.}}",
   "@mtp.ptpcameradDialog.helpText": {
-    "sourceHash": "07da7a3"
+    "sourceHash": "5d784bb"
   }
 }

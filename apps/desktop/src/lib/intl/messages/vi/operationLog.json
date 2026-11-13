@@ -188,9 +188,9 @@
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {Từ {from} vào Thùng rác}}",
+  "operationLog.route.fromToTrash": "{platform, select, windows {Từ {from} vào Thùng rác} other {Từ {from} vào Thùng rác}}",
   "@operationLog.route.fromToTrash": {
-    "sourceHash": "9eff97f"
+    "sourceHash": "2e133c1"
   },
   "operationLog.route.from": "Từ {from}",
   "@operationLog.route.from": {
@@ -256,9 +256,9 @@
   "@operationLog.summary.delete": {
     "sourceHash": "97ec6b7"
   },
-  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, other {Đã chuyển {countText} mục vào thùng rác}}}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, other {Đã chuyển {countText} mục vào Thùng rác}}} other {{count, plural, other {Đã chuyển {countText} mục vào thùng rác}}}}",
   "@operationLog.summary.trash": {
-    "sourceHash": "34b4457"
+    "sourceHash": "2dea5c8"
   },
   "operationLog.summary.rename": "{count, plural, other {Đã đổi tên {countText} mục}}",
   "@operationLog.summary.rename": {
@@ -348,9 +348,9 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {Cmdr đã thoát trước khi thao tác này xong, nên có thể chưa ghi lại hết mọi việc thao tác đã làm. Việc hoàn tác chỉ chạm tới những gì đã được ghi lại.}}",
+  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr đã đóng trước khi thao tác này xong, nên có thể chưa ghi lại hết mọi việc thao tác đã làm. Việc hoàn tác chỉ chạm tới những gì đã được ghi lại.} other {Cmdr đã thoát trước khi thao tác này xong, nên có thể chưa ghi lại hết mọi việc thao tác đã làm. Việc hoàn tác chỉ chạm tới những gì đã được ghi lại.}}",
   "@operationLog.rollback.interruptedNotice": {
-    "sourceHash": "642e6fc"
+    "sourceHash": "da924aa"
   },
   "operationLog.rollback.partialRolledBack": "{count, plural, other {{countText} mục đã trở lại như cũ.}}",
   "@operationLog.rollback.partialRolledBack": {

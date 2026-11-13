@@ -564,6 +564,10 @@
     ],
     "ru": [
       {
+        "source": "System",
+        "reason": "`settings.theme.mode.opt.system` is the theme that follows the system (Системная, agreeing with тема); the notification options `settings.behavior.fileSystemWatching.*Notifications.opt.macos` (Linux branch) name where the notice shows, next to their siblings `В приложении` and `Оба варианта` (В системе)."
+      },
+      {
         "source": "Added",
         "reason": "Two senses of one English word. `fileExplorer.columns.added` is a date column header, so it takes Finder's date label `Дата добавления` (LocalizableMerged N169.38), parallel with its siblings `Дата создания` and `Дата изменения`. `Добавлено` is a state: a file git added (`fileExplorer.git.status.added`) and a shortcut the user added (`shortcuts.list.addedTooltip`)."
       },
@@ -747,6 +751,14 @@
       }
     ],
     "cs": [
+      {
+        "source": "Disconnecting {name}",
+        "reason": "`fileExplorer.navigation.detachingShareAriaLabel` names a network share (sdílené složky), `adb.disconnectingDeviceAriaLabel` an Android phone (zařízení); Czech needs the object noun, so the two can't share a form."
+      },
+      {
+        "source": "System",
+        "reason": "`settings.theme.mode.opt.system` means follow the system setting (Podle systému); the notification options `settings.behavior.fileSystemWatching.*Notifications.opt.macos` (Linux branch) name the system itself as the notifier, next to the macOS and Windows options (Systém)."
+      },
       {
         "source": "{count, plural, one {file} other {files}}",
         "reason": "`fileExplorer.summary.fileNoun` follows the z connector of the selection summary (3 z 10 souborů), so it needs the genitive; the scan counters (`fileOperations.delete.scanFile`, `fileOperations.scanPhase.scanFile`, `fileOperations.transferDialog.scanFile`) count in the nominative (2 soubory). `file` exceptions in `docs/i18n/cs/terms.json`, `docs/i18n/cs/decisions.md` § Selection summary in the genitive."

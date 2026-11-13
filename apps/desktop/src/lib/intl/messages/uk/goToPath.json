@@ -7,9 +7,9 @@
   "@goToPath.dialog.inputAriaLabel": {
     "sourceHash": "ac4d152"
   },
-  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Type or paste a path, for example C:\\Users} other {Введіть або вставте шлях, наприклад ~/Documents}}",
+  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Введіть або вставте шлях, наприклад C:\\Users} other {Введіть або вставте шлях, наприклад ~/Documents}}",
   "@goToPath.dialog.inputPlaceholder": {
-    "sourceHash": "d84d343"
+    "sourceHash": "b0126b3"
   },
   "goToPath.dialog.recentsAriaLabel": "Недавні шляхи",
   "@goToPath.dialog.recentsAriaLabel": {

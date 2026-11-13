@@ -1,6 +1,6 @@
 {
-  "common.downloadsFdaHint": "{platform, select, macos {Cmdr necesita acceso a todo el disco para vigilar tu carpeta Descargas. <settingsLink>Abrir Configuración del Sistema</settingsLink>} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "common.downloadsFdaHint": "{platform, select, macos {Cmdr necesita acceso a todo el disco para vigilar tu carpeta Descargas. <settingsLink>Abrir Configuración del Sistema</settingsLink>} other {Cmdr no puede vigilar tu carpeta Descargas. Comprueba que la carpeta existe y que puedes abrirla.}}",
   "@common.downloadsFdaHint": {
-    "sourceHash": "e1122b8"
+    "sourceHash": "f5e01c6"
   }
 }

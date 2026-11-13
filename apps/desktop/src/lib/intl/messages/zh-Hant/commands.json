@@ -1,7 +1,7 @@
 {
-  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {結束 Cmdr}}",
+  "commands.appQuit.label": "{platform, select, windows {結束 Cmdr} other {結束 Cmdr}}",
   "@commands.appQuit.label": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "commands.appHide.label": "隱藏 Cmdr",
   "@commands.appHide.label": {
@@ -192,9 +192,9 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {開啟 ~/Downloads 並選取最新的檔案。}}",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {開啟你的「下載」資料夾並選取最新的檔案。} other {開啟 ~/Downloads 並選取最新的檔案。}}",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "6b3fe83"
+    "sourceHash": "97b6bd4"
   },
   "commands.viewShowHidden.label": "切換隱藏檔案",
   "@commands.viewShowHidden.label": {
@@ -320,21 +320,21 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {還原移至垃圾桶}}",
+  "commands.editUndoTrash.label": "{platform, select, windows {還原刪除} other {還原移至垃圾桶}}",
   "@commands.editUndoTrash.label": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {還原把「{name}」移至垃圾桶}}",
+  "commands.editUndoTrash.one": "{platform, select, windows {還原刪除「{name}」} other {還原把「{name}」移至垃圾桶}}",
   "@commands.editUndoTrash.one": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {還原把 {countText} 個{count, plural, other {項目}}移至垃圾桶}}",
+  "commands.editUndoTrash.many": "{platform, select, windows {還原刪除 {countText} 個{count, plural, other {項目}}} other {還原把 {countText} 個{count, plural, other {項目}}移至垃圾桶}}",
   "@commands.editUndoTrash.many": {
-    "sourceHash": "69c4966"
+    "sourceHash": "39a5bbe"
   },
-  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {把你上次移到垃圾桶的檔案放回原處}}",
+  "commands.editUndoTrash.description": "{platform, select, windows {把你上次移到資源回收筒的檔案放回原處} other {把你上次移到垃圾桶的檔案放回原處}}",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "dca1b63"
+    "sourceHash": "6082058"
   },
   "commands.paneLeftVolumeChooser.label": "開啟左側卷宗切換器",
   "@commands.paneLeftVolumeChooser.label": {
@@ -464,9 +464,9 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {前往個人專屬資料夾}}",
+  "commands.navGoHome.label": "{platform, select, windows {前往使用者資料夾} other {前往個人專屬資料夾}}",
   "@commands.navGoHome.label": {
-    "sourceHash": "74b2a8b"
+    "sourceHash": "0ae4c72"
   },
   "commands.errorPaneToggleTechnicalDetails.label": "顯示技術詳細資訊",
   "@commands.errorPaneToggleTechnicalDetails.label": {
@@ -832,21 +832,21 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {前往垃圾桶}}",
+  "commands.fileGoToTrash.label": "{platform, select, windows {前往資源回收筒} other {前往垃圾桶}}",
   "@commands.fileGoToTrash.label": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
-  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {開啟你正在瀏覽的磁碟機上的垃圾桶}}",
+  "commands.fileGoToTrash.description": "{platform, select, windows {開啟你正在瀏覽的磁碟機上的資源回收筒} other {開啟你正在瀏覽的磁碟機上的垃圾桶}}",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "6496c25"
+    "sourceHash": "e4789d0"
   },
   "commands.dialogConfirm.label": "確認畫面上的對話方塊",
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
-  "commands.fileShowInFileManager.label": "{platform, select, macos {在 Finder 中顯示} windows {Show in File Explorer} other {在檔案管理程式中顯示}}",
+  "commands.fileShowInFileManager.label": "{platform, select, macos {在 Finder 中顯示} windows {在檔案總管中顯示} other {在檔案管理程式中顯示}}",
   "@commands.fileShowInFileManager.label": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "commands.fileOpenTerminalHere.label": "在此開啟終端機",
   "@commands.fileOpenTerminalHere.label": {
@@ -868,13 +868,13 @@
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.label": "{platform, select, macos {取得資訊} windows {Properties} other {檔案屬性}}",
+  "commands.fileGetInfo.label": "{platform, select, macos {取得資訊} windows {內容} other {檔案屬性}}",
   "@commands.fileGetInfo.label": {
-    "sourceHash": "91c64ca"
+    "sourceHash": "da65a65"
   },
   "commands.fileQuickLook.label": "{platform, select, macos {快速查看} other {預覽}}",
   "@commands.fileQuickLook.label": {
-    "sourceHash": "f5616ce"
+    "sourceHash": "c3f57b4"
   },
   "commands.fileContextMenu.label": "開啟右鍵選單",
   "@commands.fileContextMenu.label": {
@@ -928,9 +928,9 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "{platform, select, macos {從鑰匙圈中移除你所在的 restic 備份已儲存的密碼，並再次鎖定這個備份} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
+  "commands.resticForgetPassword.description": "{platform, select, macos {從鑰匙圈中移除你所在的 restic 備份已儲存的密碼，並再次鎖定這個備份} windows {從認證管理員中移除你所在的 restic 備份已儲存的密碼，並再次鎖定這個備份} other {從你的鑰匙圈中移除你所在的 restic 備份已儲存的密碼，並再次鎖定這個備份}}",
   "@commands.resticForgetPassword.description": {
-    "sourceHash": "e51ac69"
+    "sourceHash": "0f616ca"
   },
   "commands.fileCopyShareLink.label": "複製分享連結（7 天）",
   "@commands.fileCopyShareLink.label": {

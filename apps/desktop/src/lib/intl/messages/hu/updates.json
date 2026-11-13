@@ -112,9 +112,9 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "{platform, select, macos {Megjelent a Cmdr {available}, de a szervezeted ezen a Macen legfeljebb ezt a verziót engedi: {ceiling}.} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
+  "updates.status.heldByPolicy": "{platform, select, macos {Megjelent a Cmdr {available}, de a szervezeted ezen a Macen legfeljebb ezt a verziót engedi: {ceiling}.} windows {Megjelent a Cmdr {available}, de a szervezeted ezen a gépen legfeljebb ezt a verziót engedi: {ceiling}.} other {Megjelent a Cmdr {available}, de a szervezeted ezen a számítógépen legfeljebb ezt a verziót engedi: {ceiling}.}}",
   "@updates.status.heldByPolicy": {
-    "sourceHash": "5c9b196"
+    "sourceHash": "49012ba"
   },
   "updates.status.unwritableAdmin": "Megjelent a Cmdr {version}, de a Cmdr nem tudja magától telepíteni. Töltsd le a getcmdr.com oldalról, és húzd az Alkalmazások mappába.",
   "@updates.status.unwritableAdmin": {

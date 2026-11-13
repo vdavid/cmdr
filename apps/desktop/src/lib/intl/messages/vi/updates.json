@@ -112,9 +112,9 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "{platform, select, macos {Đã có Cmdr {available}, nhưng tổ chức của bạn giữ máy Mac này ở phiên bản {ceiling} hoặc cũ hơn.} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
+  "updates.status.heldByPolicy": "{platform, select, macos {Đã có Cmdr {available}, nhưng tổ chức của bạn giữ máy Mac này ở phiên bản {ceiling} hoặc cũ hơn.} windows {Đã có Cmdr {available}, nhưng tổ chức của bạn giữ PC này ở phiên bản {ceiling} hoặc cũ hơn.} other {Đã có Cmdr {available}, nhưng tổ chức của bạn giữ máy tính này ở phiên bản {ceiling} hoặc cũ hơn.}}",
   "@updates.status.heldByPolicy": {
-    "sourceHash": "5c9b196"
+    "sourceHash": "49012ba"
   },
   "updates.status.unwritableAdmin": "Đã có Cmdr {version}, nhưng Cmdr không thể tự cài đặt. Hãy tải về từ getcmdr.com rồi kéo vào thư mục Ứng dụng.",
   "@updates.status.unwritableAdmin": {

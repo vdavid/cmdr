@@ -71,9 +71,9 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "{platform, select, windows {Settings} other {設定⋯}}",
+  "menu.app.settings": "{platform, select, windows {設定} other {設定⋯}}",
   "@menu.app.settings": {
-    "sourceHash": "7a04083"
+    "sourceHash": "7af8e23"
   },
   "menu.app.services": "服務",
   "@menu.app.services": {
@@ -147,9 +147,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFileManager": "{platform, select, macos {在 Finder 中顯示} windows {Show in File Explorer} other {在檔案管理程式中顯示}}",
+  "menu.file.showInFileManager": "{platform, select, macos {在 Finder 中顯示} windows {在檔案總管中顯示} other {在檔案管理程式中顯示}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "menu.file.openTerminalHere": "在此開啟終端機",
   "@menu.file.openTerminalHere": {
@@ -175,17 +175,17 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {還原移至垃圾桶}}",
+  "menu.edit.undoTrash": "{platform, select, windows {還原刪除} other {還原移至垃圾桶}}",
   "@menu.edit.undoTrash": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {還原把「{name}」移至垃圾桶}}",
+  "menu.edit.undoTrashOne": "{platform, select, windows {還原刪除「{name}」} other {還原把「{name}」移至垃圾桶}}",
   "@menu.edit.undoTrashOne": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {還原把 {countText} 個項目移至垃圾桶}}",
+  "menu.edit.undoTrashMany": "{platform, select, windows {還原刪除 {countText} 個項目} other {還原把 {countText} 個項目移至垃圾桶}}",
   "@menu.edit.undoTrashMany": {
-    "sourceHash": "bb9192a"
+    "sourceHash": "4ad492a"
   },
   "menu.edit.cut": "剪下",
   "@menu.edit.cut": {
@@ -400,9 +400,9 @@
   "@menu.go.rootFolder": {
     "sourceHash": "6d92528"
   },
-  "menu.go.home": "{platform, select, windows {User folder} other {個人專屬}}",
+  "menu.go.home": "{platform, select, windows {使用者資料夾} other {個人專屬}}",
   "@menu.go.home": {
-    "sourceHash": "3a78695"
+    "sourceHash": "4ff1502"
   },
   "menu.go.goToPath": "前往資料夾⋯",
   "@menu.go.goToPath": {
@@ -656,13 +656,13 @@
   "@menu.volume.ejectBusy": {
     "sourceHash": "e2145a6"
   },
-  "menu.volume.detachShare": "{platform, select, macos {退出（{name}）} windows {Disconnect ({name})} other {Unmount ({name})}}",
+  "menu.volume.detachShare": "{platform, select, macos {退出（{name}）} windows {中斷連線（{name}）} other {卸載（{name}）}}",
   "@menu.volume.detachShare": {
-    "sourceHash": "913d6ea"
+    "sourceHash": "458748f"
   },
-  "menu.volume.detachShareBusy": "{platform, select, macos {退出（{name}）（使用中）} windows {Disconnect ({name}) (busy)} other {Unmount ({name}) (busy)}}",
+  "menu.volume.detachShareBusy": "{platform, select, macos {退出（{name}）（使用中）} windows {中斷連線（{name}）（使用中）} other {卸載（{name}）（使用中）}}",
   "@menu.volume.detachShareBusy": {
-    "sourceHash": "e2145a6"
+    "sourceHash": "d3578bf"
   },
   "menu.volume.ejectAll": "全部退出",
   "@menu.volume.ejectAll": {

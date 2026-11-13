@@ -71,9 +71,9 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "{platform, select, windows {Settings} other {Nastavení…}}",
+  "menu.app.settings": "{platform, select, windows {Nastavení} other {Nastavení…}}",
   "@menu.app.settings": {
-    "sourceHash": "7a04083"
+    "sourceHash": "7af8e23"
   },
   "menu.app.services": "Služby",
   "@menu.app.services": {
@@ -147,9 +147,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFileManager": "{platform, select, macos {Zobrazit ve Finderu} windows {Show in File Explorer} other {Zobrazit ve správci souborů}}",
+  "menu.file.showInFileManager": "{platform, select, macos {Zobrazit ve Finderu} windows {Zobrazit v Průzkumníku souborů} other {Zobrazit ve správci souborů}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "menu.file.openTerminalHere": "Otevřít terminál zde",
   "@menu.file.openTerminalHere": {
@@ -175,17 +175,17 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Odvolat přesunutí do koše}}",
+  "menu.edit.undoTrash": "{platform, select, windows {Odvolat smazání} other {Odvolat přesunutí do koše}}",
   "@menu.edit.undoTrash": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Odvolat přesunutí „{name}“ do koše}}",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Odvolat smazání „{name}“} other {Odvolat přesunutí „{name}“ do koše}}",
   "@menu.edit.undoTrashOne": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Odvolat přesunutí položek do koše ({countText})}}",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Odvolat smazání položek ({countText})} other {Odvolat přesunutí položek do koše ({countText})}}",
   "@menu.edit.undoTrashMany": {
-    "sourceHash": "bb9192a"
+    "sourceHash": "4ad492a"
   },
   "menu.edit.cut": "Vyjmout",
   "@menu.edit.cut": {
@@ -396,9 +396,9 @@
   "@menu.go.rootFolder": {
     "sourceHash": "6d92528"
   },
-  "menu.go.home": "{platform, select, windows {User folder} other {Domov}}",
+  "menu.go.home": "{platform, select, windows {Uživatelská složka} other {Domov}}",
   "@menu.go.home": {
-    "sourceHash": "3a78695"
+    "sourceHash": "4ff1502"
   },
   "menu.go.goToPath": "Otevřít složku…",
   "@menu.go.goToPath": {
@@ -652,13 +652,13 @@
   "@menu.volume.ejectBusy": {
     "sourceHash": "e2145a6"
   },
-  "menu.volume.detachShare": "{platform, select, macos {Vysunout ({name})} windows {Disconnect ({name})} other {Unmount ({name})}}",
+  "menu.volume.detachShare": "{platform, select, macos {Vysunout ({name})} windows {Odpojit ({name})} other {Odpojit ({name})}}",
   "@menu.volume.detachShare": {
-    "sourceHash": "913d6ea"
+    "sourceHash": "458748f"
   },
-  "menu.volume.detachShareBusy": "{platform, select, macos {Vysunout ({name}) (probíhá operace)} windows {Disconnect ({name}) (busy)} other {Unmount ({name}) (busy)}}",
+  "menu.volume.detachShareBusy": "{platform, select, macos {Vysunout ({name}) (probíhá operace)} windows {Odpojit ({name}) (probíhá operace)} other {Odpojit ({name}) (probíhá operace)}}",
   "@menu.volume.detachShareBusy": {
-    "sourceHash": "e2145a6"
+    "sourceHash": "d3578bf"
   },
   "menu.volume.ejectAll": "Vysunout vše",
   "@menu.volume.ejectAll": {

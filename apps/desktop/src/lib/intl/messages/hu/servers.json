@@ -139,9 +139,9 @@
   "@servers.hub.emptyTitle": {
     "sourceHash": "7846930"
   },
-  "servers.hub.emptyMessage": "{platform, select, macos {Adj hozzá egyet lent, vagy kapcsolj be egy Macet vagy NAS-t a hálózatodon, és a Cmdr megtalálja.} windows {Add one below, or turn on a PC or NAS on your network and Cmdr will find it.} other {Add one below, or turn on a computer or NAS on your network and Cmdr will find it.}}",
+  "servers.hub.emptyMessage": "{platform, select, macos {Adj hozzá egyet lent, vagy kapcsolj be egy Macet vagy NAS-t a hálózatodon, és a Cmdr megtalálja.} windows {Adj hozzá egyet lent, vagy kapcsolj be egy gépet vagy NAS-t a hálózatodon, és a Cmdr megtalálja.} other {Adj hozzá egyet lent, vagy kapcsolj be egy számítógépet vagy NAS-t a hálózatodon, és a Cmdr megtalálja.}}",
   "@servers.hub.emptyMessage": {
-    "sourceHash": "04bdc26"
+    "sourceHash": "7ca97ce"
   },
   "servers.hub.rowCount": "{count, plural, one {{countText} szerver} other {{countText} szerver}}",
   "@servers.hub.rowCount": {
@@ -187,9 +187,9 @@
   "@servers.refusal.authMethodUnsupported": {
     "sourceHash": "48b9b15"
   },
-  "servers.refusal.certificateUntrusted": "{platform, select, macos {A macOS nem bízik meg ennek a szervernek a tanúsítványában. Add hozzá a Kulcskarika-elérés appban, majd próbáld újra.} windows {Windows doesn’t trust this server’s certificate. Add it to your trusted certificates in “Manage user certificates”, then try again.} other {This server’s certificate isn’t trusted on this computer. Add it to your system’s trusted certificates, then try again.}}",
+  "servers.refusal.certificateUntrusted": "{platform, select, macos {A macOS nem bízik meg ennek a szervernek a tanúsítványában. Add hozzá a Kulcskarika-elérés appban, majd próbáld újra.} windows {A Windows nem bízik meg ennek a szervernek a tanúsítványában. Add hozzá a megbízható tanúsítványaidhoz a „Felhasználói tanúsítványok kezelése” eszközben, majd próbáld újra.} other {Ennek a szervernek a tanúsítványa nem megbízható ezen a számítógépen. Add hozzá a rendszered megbízható tanúsítványaihoz, majd próbáld újra.}}",
   "@servers.refusal.certificateUntrusted": {
-    "sourceHash": "b8f3b4a"
+    "sourceHash": "aba3260"
   },
   "servers.refusal.certificateRejected": "Ennek a szervernek a tanúsítványa visszavont vagy sérült, ezért a Cmdr nem csatlakozik hozzá. Kérd meg azt, aki a szervert üzemelteti, hogy cserélje le a tanúsítványt.",
   "@servers.refusal.certificateRejected": {
@@ -227,9 +227,9 @@
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
   },
-  "servers.refusal.hostKeyRevoked": "{platform, select, macos {{host} kulcsa kompromittáltként van megjelölve az SSH-beállításaidban ezen a Macen. A Cmdr nem kapcsolódik ehhez a szerverhez.} windows {The key for {host} is marked as compromised in your SSH settings on this PC. Cmdr won’t connect to it.} other {The key for {host} is marked as compromised in your SSH settings on this computer. Cmdr won’t connect to it.}}",
+  "servers.refusal.hostKeyRevoked": "{platform, select, macos {{host} kulcsa kompromittáltként van megjelölve az SSH-beállításaidban ezen a Macen. A Cmdr nem kapcsolódik ehhez a szerverhez.} windows {{host} kulcsa kompromittáltként van megjelölve az SSH-beállításaidban ezen a gépen. A Cmdr nem kapcsolódik ehhez a szerverhez.} other {{host} kulcsa kompromittáltként van megjelölve az SSH-beállításaidban ezen a számítógépen. A Cmdr nem kapcsolódik ehhez a szerverhez.}}",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "7a25d93"
+    "sourceHash": "fd34afd"
   },
   "servers.refusal.startFolderOutsideRoot": "A kezdőmappa csak a gyökérmappa vagy egy benne lévő mappa lehet.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -251,13 +251,13 @@
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "3fb55a6"
   },
-  "servers.refusal.secretNotStored": "{platform, select, macos {A Cmdr nem tudta menteni ezt a jelszót a kulcskarikába. Próbáld újra, vagy kapcsold ki a „Megjegyzés a kulcskarikában” beállítást, hogy mentés nélkül jelentkezz be.} windows {Cmdr couldn’t save this password. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this password in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
+  "servers.refusal.secretNotStored": "{platform, select, macos {A Cmdr nem tudta menteni ezt a jelszót a kulcskarikába. Próbáld újra, vagy kapcsold ki a „Megjegyzés a kulcskarikában” beállítást, hogy mentés nélkül jelentkezz be.} windows {A Cmdr nem tudta menteni ezt a jelszót. Próbáld újra, vagy kapcsold ki a „Jelszó megjegyzése” beállítást, hogy mentés nélkül jelentkezz be.} other {A Cmdr nem tudta menteni ezt a jelszót a kulcstartódba. Próbáld újra, vagy kapcsold ki a „Megjegyzés a kulcstartóban” beállítást, hogy mentés nélkül jelentkezz be.}}",
   "@servers.refusal.secretNotStored": {
-    "sourceHash": "20957fe"
+    "sourceHash": "8b29064"
   },
-  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {A Cmdr mentette a módosításaidat, de a jelszót nem tudta frissíteni a kulcskarikában. Ments újra, és a Cmdr újra megpróbálja.} windows {Cmdr saved your changes but couldn’t update the saved password. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the password in your keyring. Save again to try once more.}}",
+  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {A Cmdr mentette a módosításaidat, de a jelszót nem tudta frissíteni a kulcskarikában. Ments újra, és a Cmdr újra megpróbálja.} windows {A Cmdr mentette a módosításaidat, de a mentett jelszót nem tudta frissíteni. Ments újra, és a Cmdr újra megpróbálja.} other {A Cmdr mentette a módosításaidat, de a jelszót nem tudta frissíteni a kulcstartódban. Ments újra, és a Cmdr újra megpróbálja.}}",
   "@servers.refusal.savedSecretNotUpdated": {
-    "sourceHash": "2ae1e2b"
+    "sourceHash": "03fbb15"
   },
   "servers.refusal.s3AuthenticationRejected": "Ez a titkos hozzáférési kulcs nem jó.",
   "@servers.refusal.s3AuthenticationRejected": {
@@ -271,13 +271,13 @@
   "@servers.refusal.s3SecretMissing": {
     "sourceHash": "f1f32f2"
   },
-  "servers.refusal.s3SecretNotStored": "{platform, select, macos {A Cmdr nem tudta menteni ezt a titkos hozzáférési kulcsot a kulcskarikába. Próbáld újra, vagy kapcsold ki a „Megjegyzés a kulcskarikában” beállítást, hogy mentés nélkül jelentkezz be.} windows {Cmdr couldn’t save this secret access key. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this secret access key in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
+  "servers.refusal.s3SecretNotStored": "{platform, select, macos {A Cmdr nem tudta menteni ezt a titkos hozzáférési kulcsot a kulcskarikába. Próbáld újra, vagy kapcsold ki a „Megjegyzés a kulcskarikában” beállítást, hogy mentés nélkül jelentkezz be.} windows {A Cmdr nem tudta menteni ezt a titkos hozzáférési kulcsot. Próbáld újra, vagy kapcsold ki a „Jelszó megjegyzése” beállítást, hogy mentés nélkül jelentkezz be.} other {A Cmdr nem tudta menteni ezt a titkos hozzáférési kulcsot a kulcstartódba. Próbáld újra, vagy kapcsold ki a „Megjegyzés a kulcstartóban” beállítást, hogy mentés nélkül jelentkezz be.}}",
   "@servers.refusal.s3SecretNotStored": {
-    "sourceHash": "f7a9fb0"
+    "sourceHash": "6b787ad"
   },
-  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {A Cmdr mentette a módosításaidat, de a titkos hozzáférési kulcsot nem tudta frissíteni a kulcskarikában. Ments újra, és a Cmdr újra megpróbálja.} windows {Cmdr saved your changes but couldn’t update the saved secret access key. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the secret access key in your keyring. Save again to try once more.}}",
+  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {A Cmdr mentette a módosításaidat, de a titkos hozzáférési kulcsot nem tudta frissíteni a kulcskarikában. Ments újra, és a Cmdr újra megpróbálja.} windows {A Cmdr mentette a módosításaidat, de a mentett titkos hozzáférési kulcsot nem tudta frissíteni. Ments újra, és a Cmdr újra megpróbálja.} other {A Cmdr mentette a módosításaidat, de a titkos hozzáférési kulcsot nem tudta frissíteni a kulcstartódban. Ments újra, és a Cmdr újra megpróbálja.}}",
   "@servers.refusal.s3SavedSecretNotUpdated": {
-    "sourceHash": "1d2889d"
+    "sourceHash": "5697774"
   },
   "servers.refusal.accessDenied": "Ez a kulcs nem éri el ezt a bucketet. Ellenőrizd a bucket nevét és a titkos hozzáférési kulcsot, és azt, hogy a kulcs olvashatja-e a bucketet.",
   "@servers.refusal.accessDenied": {
@@ -299,9 +299,9 @@
   "@servers.refusal.regionMismatchNamed": {
     "sourceHash": "30abb0d"
   },
-  "servers.refusal.clockSkewed": "{platform, select, macos {Ezen a Macen több mint 15 percet téved az óra, ezért a szerver nem fogadja el a Cmdr kéréseit. Kapcsold be az „Idő és dátum automatikus beállítása” lehetőséget a Rendszerbeállításokban, majd próbáld újra.} windows {This PC’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Turn on “Set time automatically” in Settings > Time & language > Date & time, then try again.} other {This computer’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in your system settings, then try again.}}",
+  "servers.refusal.clockSkewed": "{platform, select, macos {Ezen a Macen több mint 15 percet téved az óra, ezért a szerver nem fogadja el a Cmdr kéréseit. Kapcsold be az „Idő és dátum automatikus beállítása” lehetőséget a Rendszerbeállításokban, majd próbáld újra.} windows {Ezen a gépen több mint 15 percet téved az óra, ezért a szerver nem fogadja el a Cmdr kéréseit. Kapcsold be az „Idő automatikus beállítása” lehetőséget itt: Gépház > Idő és nyelv > Dátum és idő, majd próbáld újra.} other {Ezen a számítógépen több mint 15 percet téved az óra, ezért a szerver nem fogadja el a Cmdr kéréseit. Állítsd automatikusra a dátumot és az időt a rendszered beállításaiban, majd próbáld újra.}}",
   "@servers.refusal.clockSkewed": {
-    "sourceHash": "cdee0ef"
+    "sourceHash": "2fd26d3"
   },
   "servers.refusal.notAnS3Endpoint": "Ezen a címen semmi nem válaszol S3-tárhelyként.",
   "@servers.refusal.notAnS3Endpoint": {
@@ -311,9 +311,9 @@
   "@servers.refusal.exportNotFound": {
     "sourceHash": "2ef1ce8"
   },
-  "servers.refusal.exportRefused": "{platform, select, macos {{host} nem engedi, hogy ez a Mac megnyissa ezt a megosztást. A szerver NFS-beállításaiban ellenőrizd, mely számítógépeknek engedélyezi a hozzáférést a megosztás.} windows {{host} doesn’t let this PC open that export. Check which devices the export allows in the server’s NFS settings.} other {{host} doesn’t let this computer open that export. Check which computers the export allows in the server’s NFS settings.}}",
+  "servers.refusal.exportRefused": "{platform, select, macos {{host} nem engedi, hogy ez a Mac megnyissa ezt a megosztást. A szerver NFS-beállításaiban ellenőrizd, mely számítógépeknek engedélyezi a hozzáférést a megosztás.} windows {{host} nem engedi, hogy ez a gép megnyissa ezt a megosztást. A szerver NFS-beállításaiban ellenőrizd, mely eszközöknek engedélyezi a hozzáférést a megosztás.} other {{host} nem engedi, hogy ez a számítógép megnyissa ezt a megosztást. A szerver NFS-beállításaiban ellenőrizd, mely számítógépeknek engedélyezi a hozzáférést a megosztás.}}",
   "@servers.refusal.exportRefused": {
-    "sourceHash": "0cebd7d"
+    "sourceHash": "4a8157e"
   },
   "servers.refusal.reservedPortRequired": "{host} csak privilegizált portról fogad kapcsolatot, ilyet viszont a Cmdr itt nem tud nyitni. Kapcsold be a szerveren a megosztás „insecure” beállítását (egyes NAS-appokban „Kapcsolatok engedélyezése nem privilegizált portokról” a neve), majd próbáld újra.",
   "@servers.refusal.reservedPortRequired": {
@@ -335,13 +335,13 @@
   "@servers.refusal.addressTaken": {
     "sourceHash": "5a14a92"
   },
-  "servers.refusal.secretNotMoved": "{platform, select, macos {A Cmdr nem tudta átvinni a mentett jelszót az új címre, ezért semmi sem változott. Ellenőrizd, hogy a kulcskarika fel van oldva, aztán ments újra.} windows {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Check that your keyring is unlocked, then save again.}}",
+  "servers.refusal.secretNotMoved": "{platform, select, macos {A Cmdr nem tudta átvinni a mentett jelszót az új címre, ezért semmi sem változott. Ellenőrizd, hogy a kulcskarika fel van oldva, aztán ments újra.} windows {A Cmdr nem tudta átvinni a mentett jelszót az új címre, ezért semmi sem változott. Ments újra, és a Cmdr újra megpróbálja.} other {A Cmdr nem tudta átvinni a mentett jelszót az új címre, ezért semmi sem változott. Ellenőrizd, hogy a kulcstartód fel van oldva, aztán ments újra.}}",
   "@servers.refusal.secretNotMoved": {
-    "sourceHash": "7f3c328"
+    "sourceHash": "3a8f01c"
   },
-  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {A Cmdr nem tudta átvinni a mentett titkos hozzáférési kulcsot az új végpontra, ezért semmi sem változott. Ellenőrizd, hogy a kulcskarika fel van oldva, aztán ments újra.} windows {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your keyring is unlocked, then save again.}}",
+  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {A Cmdr nem tudta átvinni a mentett titkos hozzáférési kulcsot az új végpontra, ezért semmi sem változott. Ellenőrizd, hogy a kulcskarika fel van oldva, aztán ments újra.} windows {A Cmdr nem tudta átvinni a mentett titkos hozzáférési kulcsot az új végpontra, ezért semmi sem változott. Ments újra, és a Cmdr újra megpróbálja.} other {A Cmdr nem tudta átvinni a mentett titkos hozzáférési kulcsot az új végpontra, ezért semmi sem változott. Ellenőrizd, hogy a kulcstartód fel van oldva, aztán ments újra.}}",
   "@servers.refusal.s3SecretNotMoved": {
-    "sourceHash": "69901e7"
+    "sourceHash": "d08a1d2"
   },
   "servers.refusal.accountChanged": "Egy másik fiók egy másik szervert jelent, ezért a Cmdr nem mentett semmit. Add hozzá inkább új szerverként.",
   "@servers.refusal.accountChanged": {
@@ -351,13 +351,13 @@
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
-  "servers.refusal.shareMounted": "{platform, select, macos {Ez a megosztás még a régi címről van csatolva: „{name}”. Add ki, aztán ments újra.} windows {The share {name} is still connected from the old address. Disconnect it, then save again.} other {The share {name} is still mounted from the old address. Unmount it, then save again.}}",
+  "servers.refusal.shareMounted": "{platform, select, macos {Ez a megosztás még a régi címről van csatolva: „{name}”. Add ki, aztán ments újra.} windows {Ez a megosztás még a régi címről van csatlakoztatva: „{name}”. Válaszd le, aztán ments újra.} other {Ez a megosztás még a régi címről van csatolva: „{name}”. Válaszd le, aztán ments újra.}}",
   "@servers.refusal.shareMounted": {
-    "sourceHash": "156a61b"
+    "sourceHash": "7b731b1"
   },
-  "servers.refusal.shareEjectRefused": "{platform, select, macos {A Cmdr nem tudta kiadni ezt a megosztást: „{name}”, ezért nem mentett semmit. {reason}} windows {Cmdr couldn’t disconnect {name}, so nothing was saved. {reason}} other {Cmdr couldn’t unmount {name}, so nothing was saved. {reason}}}",
+  "servers.refusal.shareEjectRefused": "{platform, select, macos {A Cmdr nem tudta kiadni ezt a megosztást: „{name}”, ezért nem mentett semmit. {reason}} windows {A Cmdr nem tudta leválasztani ezt a megosztást: „{name}”, ezért nem mentett semmit. {reason}} other {A Cmdr nem tudta leválasztani ezt a megosztást: „{name}”, ezért nem mentett semmit. {reason}}}",
   "@servers.refusal.shareEjectRefused": {
-    "sourceHash": "1c73fa7"
+    "sourceHash": "7b5c704"
   },
   "servers.sheet.addTitle": "Szerver hozzáadása",
   "@servers.sheet.addTitle": {
@@ -387,17 +387,17 @@
   "@servers.sheet.addAnywayHelp": {
     "sourceHash": "68e90b2"
   },
-  "servers.sheet.ejectAndSave": "{platform, select, macos {Kiadás és mentés} windows {Disconnect and save} other {Unmount and save}}",
+  "servers.sheet.ejectAndSave": "{platform, select, macos {Kiadás és mentés} windows {Leválasztás és mentés} other {Leválasztás és mentés}}",
   "@servers.sheet.ejectAndSave": {
-    "sourceHash": "357f2dd"
+    "sourceHash": "ec03e90"
   },
-  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {A Cmdr kiad minden megosztást, amely még a régi címről van csatolva, aztán elmenti az új címet.} windows {Cmdr disconnects every share still connected from the old address, then saves the new one.} other {Cmdr unmounts every share still mounted from the old address, then saves the new one.}}",
+  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {A Cmdr kiad minden megosztást, amely még a régi címről van csatolva, aztán elmenti az új címet.} windows {A Cmdr leválaszt minden megosztást, amely még a régi címről van csatlakoztatva, aztán elmenti az új címet.} other {A Cmdr leválaszt minden megosztást, amely még a régi címről van csatolva, aztán elmenti az új címet.}}",
   "@servers.sheet.ejectAndSaveHelp": {
-    "sourceHash": "a1d1206"
+    "sourceHash": "fe6687b"
   },
-  "servers.sheet.ejecting": "{platform, select, macos {Kiadás…} windows {Disconnecting…} other {Unmounting…}}",
+  "servers.sheet.ejecting": "{platform, select, macos {Kiadás…} windows {Leválasztás…} other {Leválasztás…}}",
   "@servers.sheet.ejecting": {
-    "sourceHash": "4c37167"
+    "sourceHash": "67155a9"
   },
   "servers.sheet.addedToast": "{name} el van mentve a Szerverek listádban.",
   "@servers.sheet.addedToast": {
@@ -503,9 +503,9 @@
   "@servers.sheet.nfsExportsEmptyList": {
     "sourceHash": "7558a7b"
   },
-  "servers.sheet.nfsExportsNone": "{platform, select, macos {{host} egyetlen megosztást sem sorol fel ennek a Macnek. Ha tudod a megosztás útvonalát, írd be.} windows {{host} lists no exports for this PC. Type the export’s path if you know it.} other {{host} lists no exports for this computer. Type the export’s path if you know it.}}",
+  "servers.sheet.nfsExportsNone": "{platform, select, macos {{host} egyetlen megosztást sem sorol fel ennek a Macnek. Ha tudod a megosztás útvonalát, írd be.} windows {{host} egyetlen megosztást sem sorol fel ennek a gépnek. Ha tudod a megosztás útvonalát, írd be.} other {{host} egyetlen megosztást sem sorol fel ennek a számítógépnek. Ha tudod a megosztás útvonalát, írd be.}}",
   "@servers.sheet.nfsExportsNone": {
-    "sourceHash": "a88c0bf"
+    "sourceHash": "049e790"
   },
   "servers.sheet.nfsExportsRefused": "{host} nem sorolja fel, milyen megosztásokat kínál. Írd be a megosztás útvonalát.",
   "@servers.sheet.nfsExportsRefused": {
@@ -547,9 +547,9 @@
   "@servers.sheet.nfsIdentityRootOwner": {
     "sourceHash": "c464fa8"
   },
-  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {Az azonosítóid ezen a Macen. Módosítsd őket, ha a szerveren lévő fájlok valaki máshoz tartoznak.} windows {The user and group IDs Cmdr sends to the server. Change them if the files on the server belong to someone else.} other {Your IDs on this computer. Change them if the files on the server belong to someone else.}}",
+  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {Az azonosítóid ezen a Macen. Módosítsd őket, ha a szerveren lévő fájlok valaki máshoz tartoznak.} windows {A felhasználói és csoportazonosítók, amelyeket a Cmdr elküld a szervernek. Módosítsd őket, ha a szerveren lévő fájlok valaki máshoz tartoznak.} other {Az azonosítóid ezen a számítógépen. Módosítsd őket, ha a szerveren lévő fájlok valaki máshoz tartoznak.}}",
   "@servers.sheet.nfsIdentityThisMac": {
-    "sourceHash": "8bfbb0d"
+    "sourceHash": "5d61505"
   },
   "servers.sheet.nfsUidZeroWarning": "A legtöbb szerver semmilyen jogot nem ad a 0-s felhasználóazonosítónak.",
   "@servers.sheet.nfsUidZeroWarning": {
@@ -579,9 +579,9 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
-  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Mentve a kulcskarikában. Ha üresen hagyod, megmarad.} windows {Saved. Leave empty to keep it.} other {Saved in your keyring. Leave empty to keep it.}}",
+  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Mentve a kulcskarikában. Ha üresen hagyod, megmarad.} windows {Mentve. Ha üresen hagyod, megmarad.} other {Mentve a kulcstartódban. Ha üresen hagyod, megmarad.}}",
   "@servers.sheet.secretKeptPlaceholder": {
-    "sourceHash": "8711f6c"
+    "sourceHash": "9297a2d"
   },
   "servers.sheet.smbUsernamePlaceholder": "Nem kötelező",
   "@servers.sheet.smbUsernamePlaceholder": {
@@ -595,9 +595,9 @@
   "@servers.sheet.passphrase": {
     "sourceHash": "2510031"
   },
-  "servers.sheet.remember": "{platform, select, macos {Megjegyzés a kulcskarikában} windows {Remember password} other {Remember in keyring}}",
+  "servers.sheet.remember": "{platform, select, macos {Megjegyzés a kulcskarikában} windows {Jelszó megjegyzése} other {Megjegyzés a kulcstartóban}}",
   "@servers.sheet.remember": {
-    "sourceHash": "3fd7384"
+    "sourceHash": "42237e1"
   },
   "servers.sheet.connectionModeLegend": "Kapcsolódás módja",
   "@servers.sheet.connectionModeLegend": {
@@ -785,9 +785,9 @@
   "@servers.sheet.autoReconnectInfoLabel": {
     "sourceHash": "edb9b82"
   },
-  "servers.sheet.needsStoredSecret": "{platform, select, macos {Az automatikus újracsatlakozáshoz megjegyzett jelszó kell. Kapcsold be a „Megjegyzés a kulcskarikában” beállítást, és jelentkezz be egyszer.} windows {Reconnecting on its own needs a saved password. Turn on “Remember password” and sign in once.} other {Reconnecting on its own needs a remembered password. Turn on “Remember in keyring” and sign in once.}}",
+  "servers.sheet.needsStoredSecret": "{platform, select, macos {Az automatikus újracsatlakozáshoz megjegyzett jelszó kell. Kapcsold be a „Megjegyzés a kulcskarikában” beállítást, és jelentkezz be egyszer.} windows {Az automatikus újracsatlakozáshoz mentett jelszó kell. Kapcsold be a „Jelszó megjegyzése” beállítást, és jelentkezz be egyszer.} other {Az automatikus újracsatlakozáshoz megjegyzett jelszó kell. Kapcsold be a „Megjegyzés a kulcstartóban” beállítást, és jelentkezz be egyszer.}}",
   "@servers.sheet.needsStoredSecret": {
-    "sourceHash": "32336f3"
+    "sourceHash": "ad8e162"
   },
   "servers.sheet.tryNextcloudAddress": "A Nextcloud-cím kipróbálása",
   "@servers.sheet.tryNextcloudAddress": {
@@ -825,9 +825,9 @@
   "@servers.hostKey.trustNewKey": {
     "sourceHash": "772baac"
   },
-  "servers.certificate.firstContactTitle": "{platform, select, macos {A macOS nem ismeri {host} tanúsítványát} windows {Windows doesn’t know the certificate for {host}} other {The certificate for {host} is new to this computer}}",
+  "servers.certificate.firstContactTitle": "{platform, select, macos {A macOS nem ismeri {host} tanúsítványát} windows {A Windows nem ismeri {host} tanúsítványát} other {Ez a számítógép még nem ismeri {host} tanúsítványát}}",
   "@servers.certificate.firstContactTitle": {
-    "sourceHash": "ca0b44a"
+    "sourceHash": "0ce5353"
   },
   "servers.certificate.firstContactBody": "Az otthoni szerverek gyakran maguk készítik a tanúsítványukat. Vesd össze az alábbi ujjlenyomatot azzal, amit a szervered mutat, majd állítsd be megbízhatóként.",
   "@servers.certificate.firstContactBody": {

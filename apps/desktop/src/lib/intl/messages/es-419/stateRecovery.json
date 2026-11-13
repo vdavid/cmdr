@@ -27,9 +27,9 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "eabd4e6"
   },
-  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {Cmdr no pudo leer qué carpetas tenían abiertas tus paneles, así que se abren en tu carpeta de inicio}}",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr no pudo leer qué carpetas tenían abiertas tus paneles, así que se abren en tu carpeta de usuario} other {Cmdr no pudo leer qué carpetas tenían abiertas tus paneles, así que se abren en tu carpeta de inicio}}",
   "@stateRecovery.appStatus.title": {
-    "sourceHash": "53260b0"
+    "sourceHash": "eb85a7d"
   },
   "stateRecovery.operationLog.title": "Cmdr no pudo leer tu registro de operaciones, así que el registro empieza de cero",
   "@stateRecovery.operationLog.title": {
@@ -39,9 +39,9 @@
   "@stateRecovery.credentials.title": {
     "sourceHash": "0f2d1fa"
   },
-  "stateRecovery.credentials.body": "{platform, select, windows {This happens after a move to a new PC. Cmdr asks for each password again the next time it needs it.} other {Esto pasa después de cambiar a una computadora nueva. Cmdr te volverá a pedir cada contraseña la próxima vez que la necesite.}}",
+  "stateRecovery.credentials.body": "{platform, select, windows {Esto pasa después de cambiar a un PC nuevo. Cmdr te volverá a pedir cada contraseña la próxima vez que la necesite.} other {Esto pasa después de cambiar a una computadora nueva. Cmdr te volverá a pedir cada contraseña la próxima vez que la necesite.}}",
   "@stateRecovery.credentials.body": {
-    "sourceHash": "cf16e70"
+    "sourceHash": "238d421"
   },
   "stateRecovery.chatHistory.title": "Cmdr no pudo leer tus chats de Ask Cmdr, así que la lista de chats empieza vacía",
   "@stateRecovery.chatHistory.title": {
@@ -118,6 +118,10 @@
   "stateRecovery.nfsPlaces.title": "Cmdr no pudo leer todas tus ubicaciones NFS guardadas, así que puede que falten algunas",
   "@stateRecovery.nfsPlaces.title": {
     "sourceHash": "06d14d3"
+  },
+  "stateRecovery.showInFinder": "{platform, select, macos {Mostrar en el Finder} windows {Mostrar en el Explorador de archivos} other {Mostrar en el administrador de archivos}}",
+  "@stateRecovery.showInFinder": {
+    "sourceHash": "a11bd4b"
   },
   "stateRecovery.smbLinkConsents.title": "Cmdr no pudo leer todos los servidores en los que permitiste iniciar sesión a los enlaces SMB, así que puede volver a preguntar por algunos",
   "@stateRecovery.smbLinkConsents.title": {

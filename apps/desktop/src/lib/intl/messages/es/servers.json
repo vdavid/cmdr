@@ -139,9 +139,9 @@
   "@servers.hub.emptyTitle": {
     "sourceHash": "7846930"
   },
-  "servers.hub.emptyMessage": "{platform, select, macos {Añade uno aquí abajo, o enciende un Mac o un NAS de tu red y Cmdr lo encontrará.} windows {Add one below, or turn on a PC or NAS on your network and Cmdr will find it.} other {Add one below, or turn on a computer or NAS on your network and Cmdr will find it.}}",
+  "servers.hub.emptyMessage": "{platform, select, macos {Añade uno aquí abajo, o enciende un Mac o un NAS de tu red y Cmdr lo encontrará.} windows {Añade uno aquí abajo, o enciende un PC o un NAS de tu red y Cmdr lo encontrará.} other {Añade uno aquí abajo, o enciende un ordenador o un NAS de tu red y Cmdr lo encontrará.}}",
   "@servers.hub.emptyMessage": {
-    "sourceHash": "04bdc26"
+    "sourceHash": "7ca97ce"
   },
   "servers.hub.rowCount": "{count, plural, one {{countText} servidor} many {{countText} servidores} other {{countText} servidores}}",
   "@servers.hub.rowCount": {
@@ -187,9 +187,9 @@
   "@servers.refusal.authMethodUnsupported": {
     "sourceHash": "48b9b15"
   },
-  "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS no confía en el certificado de este servidor. Añádelo en Acceso a Llaveros y vuelve a intentarlo.} windows {Windows doesn’t trust this server’s certificate. Add it to your trusted certificates in “Manage user certificates”, then try again.} other {This server’s certificate isn’t trusted on this computer. Add it to your system’s trusted certificates, then try again.}}",
+  "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS no confía en el certificado de este servidor. Añádelo en Acceso a Llaveros y vuelve a intentarlo.} windows {Windows no confía en el certificado de este servidor. Añádelo a tus certificados de confianza en “Administrar certificados de usuario” y vuelve a intentarlo.} other {El certificado de este servidor no es de confianza en este ordenador. Añádelo a los certificados de confianza de tu sistema y vuelve a intentarlo.}}",
   "@servers.refusal.certificateUntrusted": {
-    "sourceHash": "b8f3b4a"
+    "sourceHash": "aba3260"
   },
   "servers.refusal.certificateRejected": "El certificado de este servidor está revocado o dañado, así que Cmdr no se conectará. Pide a quien administre el servidor que sustituya el certificado.",
   "@servers.refusal.certificateRejected": {
@@ -227,9 +227,9 @@
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
   },
-  "servers.refusal.hostKeyRevoked": "{platform, select, macos {Tus ajustes de SSH en este Mac marcan la clave de {host} como comprometida. Cmdr no se conectará a ese servidor.} windows {The key for {host} is marked as compromised in your SSH settings on this PC. Cmdr won’t connect to it.} other {The key for {host} is marked as compromised in your SSH settings on this computer. Cmdr won’t connect to it.}}",
+  "servers.refusal.hostKeyRevoked": "{platform, select, macos {Tus ajustes de SSH en este Mac marcan la clave de {host} como comprometida. Cmdr no se conectará a ese servidor.} windows {Tus ajustes de SSH en este PC marcan la clave de {host} como comprometida. Cmdr no se conectará a ese servidor.} other {Tus ajustes de SSH en este ordenador marcan la clave de {host} como comprometida. Cmdr no se conectará a ese servidor.}}",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "7a25d93"
+    "sourceHash": "fd34afd"
   },
   "servers.refusal.startFolderOutsideRoot": "La carpeta inicial tiene que ser la carpeta raíz o una carpeta dentro de ella.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -251,13 +251,13 @@
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "3fb55a6"
   },
-  "servers.refusal.secretNotStored": "{platform, select, macos {Cmdr no ha podido guardar esta contraseña en el Llavero. Inténtalo de nuevo o desactiva “Recordar en el Llavero” para iniciar sesión sin guardarla.} windows {Cmdr couldn’t save this password. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this password in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
+  "servers.refusal.secretNotStored": "{platform, select, macos {Cmdr no ha podido guardar esta contraseña en el Llavero. Inténtalo de nuevo o desactiva “Recordar en el Llavero” para iniciar sesión sin guardarla.} windows {Cmdr no ha podido guardar esta contraseña. Inténtalo de nuevo o desactiva “Recordar contraseña” para iniciar sesión sin guardarla.} other {Cmdr no ha podido guardar esta contraseña en el llavero. Inténtalo de nuevo o desactiva “Recordar en el llavero” para iniciar sesión sin guardarla.}}",
   "@servers.refusal.secretNotStored": {
-    "sourceHash": "20957fe"
+    "sourceHash": "8b29064"
   },
-  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {Cmdr ha guardado tus cambios, pero no ha podido actualizar la contraseña en el Llavero. Vuelve a guardar para intentarlo otra vez.} windows {Cmdr saved your changes but couldn’t update the saved password. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the password in your keyring. Save again to try once more.}}",
+  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {Cmdr ha guardado tus cambios, pero no ha podido actualizar la contraseña en el Llavero. Vuelve a guardar para intentarlo otra vez.} windows {Cmdr ha guardado tus cambios, pero no ha podido actualizar la contraseña guardada. Vuelve a guardar para intentarlo otra vez.} other {Cmdr ha guardado tus cambios, pero no ha podido actualizar la contraseña en el llavero. Vuelve a guardar para intentarlo otra vez.}}",
   "@servers.refusal.savedSecretNotUpdated": {
-    "sourceHash": "2ae1e2b"
+    "sourceHash": "03fbb15"
   },
   "servers.refusal.s3AuthenticationRejected": "Esa clave de acceso secreta no ha funcionado.",
   "@servers.refusal.s3AuthenticationRejected": {
@@ -271,13 +271,13 @@
   "@servers.refusal.s3SecretMissing": {
     "sourceHash": "f1f32f2"
   },
-  "servers.refusal.s3SecretNotStored": "{platform, select, macos {Cmdr no ha podido guardar esta clave de acceso secreta en el Llavero. Inténtalo de nuevo o desactiva “Recordar en el Llavero” para iniciar sesión sin guardarla.} windows {Cmdr couldn’t save this secret access key. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this secret access key in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
+  "servers.refusal.s3SecretNotStored": "{platform, select, macos {Cmdr no ha podido guardar esta clave de acceso secreta en el Llavero. Inténtalo de nuevo o desactiva “Recordar en el Llavero” para iniciar sesión sin guardarla.} windows {Cmdr no ha podido guardar esta clave de acceso secreta. Inténtalo de nuevo o desactiva “Recordar contraseña” para iniciar sesión sin guardarla.} other {Cmdr no ha podido guardar esta clave de acceso secreta en el llavero. Inténtalo de nuevo o desactiva “Recordar en el llavero” para iniciar sesión sin guardarla.}}",
   "@servers.refusal.s3SecretNotStored": {
-    "sourceHash": "f7a9fb0"
+    "sourceHash": "6b787ad"
   },
-  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {Cmdr ha guardado tus cambios, pero no ha podido actualizar la clave de acceso secreta en el Llavero. Vuelve a guardar para intentarlo otra vez.} windows {Cmdr saved your changes but couldn’t update the saved secret access key. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the secret access key in your keyring. Save again to try once more.}}",
+  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {Cmdr ha guardado tus cambios, pero no ha podido actualizar la clave de acceso secreta en el Llavero. Vuelve a guardar para intentarlo otra vez.} windows {Cmdr ha guardado tus cambios, pero no ha podido actualizar la clave de acceso secreta guardada. Vuelve a guardar para intentarlo otra vez.} other {Cmdr ha guardado tus cambios, pero no ha podido actualizar la clave de acceso secreta en el llavero. Vuelve a guardar para intentarlo otra vez.}}",
   "@servers.refusal.s3SavedSecretNotUpdated": {
-    "sourceHash": "1d2889d"
+    "sourceHash": "5697774"
   },
   "servers.refusal.accessDenied": "Esta clave no puede acceder a este bucket. Comprueba el nombre del bucket y la clave de acceso secreta, y que la clave tenga permiso para leer el bucket.",
   "@servers.refusal.accessDenied": {
@@ -299,9 +299,9 @@
   "@servers.refusal.regionMismatchNamed": {
     "sourceHash": "30abb0d"
   },
-  "servers.refusal.clockSkewed": "{platform, select, macos {El reloj de este Mac va desfasado más de 15 minutos, así que el servidor no acepta las solicitudes de Cmdr. Haz que la fecha y la hora se ajusten automáticamente en Ajustes del Sistema y vuelve a intentarlo.} windows {This PC’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Turn on “Set time automatically” in Settings > Time & language > Date & time, then try again.} other {This computer’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in your system settings, then try again.}}",
+  "servers.refusal.clockSkewed": "{platform, select, macos {El reloj de este Mac va desfasado más de 15 minutos, así que el servidor no acepta las solicitudes de Cmdr. Haz que la fecha y la hora se ajusten automáticamente en Ajustes del Sistema y vuelve a intentarlo.} windows {El reloj de este PC va desfasado más de 15 minutos, así que el servidor no acepta las solicitudes de Cmdr. Activa “Establecer la hora automáticamente” en Configuración > Hora e idioma > Fecha y hora y vuelve a intentarlo.} other {El reloj de este ordenador va desfasado más de 15 minutos, así que el servidor no acepta las solicitudes de Cmdr. Haz que la fecha y la hora se ajusten automáticamente en los ajustes del sistema y vuelve a intentarlo.}}",
   "@servers.refusal.clockSkewed": {
-    "sourceHash": "cdee0ef"
+    "sourceHash": "2fd26d3"
   },
   "servers.refusal.notAnS3Endpoint": "En esta dirección no hay nada que responda como almacenamiento S3.",
   "@servers.refusal.notAnS3Endpoint": {
@@ -311,9 +311,9 @@
   "@servers.refusal.exportNotFound": {
     "sourceHash": "2ef1ce8"
   },
-  "servers.refusal.exportRefused": "{platform, select, macos {{host} no permite que este Mac abra esa exportación. Comprueba en los ajustes NFS del servidor a qué ordenadores da acceso la exportación.} windows {{host} doesn’t let this PC open that export. Check which devices the export allows in the server’s NFS settings.} other {{host} doesn’t let this computer open that export. Check which computers the export allows in the server’s NFS settings.}}",
+  "servers.refusal.exportRefused": "{platform, select, macos {{host} no permite que este Mac abra esa exportación. Comprueba en los ajustes NFS del servidor a qué ordenadores da acceso la exportación.} windows {{host} no permite que este PC abra esa exportación. Comprueba en la configuración NFS del servidor a qué dispositivos da acceso la exportación.} other {{host} no permite que este ordenador abra esa exportación. Comprueba en los ajustes NFS del servidor a qué ordenadores da acceso la exportación.}}",
   "@servers.refusal.exportRefused": {
-    "sourceHash": "0cebd7d"
+    "sourceHash": "4a8157e"
   },
   "servers.refusal.reservedPortRequired": "{host} solo acepta conexiones desde un puerto privilegiado, y Cmdr no puede abrir uno aquí. Activa en el servidor la opción “insecure” de la exportación (algunas apps de NAS la llaman “Permitir conexiones desde puertos no privilegiados”) y vuelve a intentarlo.",
   "@servers.refusal.reservedPortRequired": {
@@ -335,13 +335,13 @@
   "@servers.refusal.addressTaken": {
     "sourceHash": "5a14a92"
   },
-  "servers.refusal.secretNotMoved": "{platform, select, macos {Cmdr no ha podido llevar la contraseña guardada a la nueva dirección, así que no ha cambiado nada. Comprueba que el Llavero esté desbloqueado y vuelve a guardar.} windows {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Check that your keyring is unlocked, then save again.}}",
+  "servers.refusal.secretNotMoved": "{platform, select, macos {Cmdr no ha podido llevar la contraseña guardada a la nueva dirección, así que no ha cambiado nada. Comprueba que el Llavero esté desbloqueado y vuelve a guardar.} windows {Cmdr no ha podido llevar la contraseña guardada a la nueva dirección, así que no ha cambiado nada. Vuelve a guardar para intentarlo otra vez.} other {Cmdr no ha podido llevar la contraseña guardada a la nueva dirección, así que no ha cambiado nada. Comprueba que el llavero esté desbloqueado y vuelve a guardar.}}",
   "@servers.refusal.secretNotMoved": {
-    "sourceHash": "7f3c328"
+    "sourceHash": "3a8f01c"
   },
-  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {Cmdr no ha podido llevar la clave de acceso secreta guardada al nuevo punto de conexión, así que no ha cambiado nada. Comprueba que el Llavero esté desbloqueado y vuelve a guardar.} windows {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your keyring is unlocked, then save again.}}",
+  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {Cmdr no ha podido llevar la clave de acceso secreta guardada al nuevo punto de conexión, así que no ha cambiado nada. Comprueba que el Llavero esté desbloqueado y vuelve a guardar.} windows {Cmdr no ha podido llevar la clave de acceso secreta guardada al nuevo punto de conexión, así que no ha cambiado nada. Vuelve a guardar para intentarlo otra vez.} other {Cmdr no ha podido llevar la clave de acceso secreta guardada al nuevo punto de conexión, así que no ha cambiado nada. Comprueba que el llavero esté desbloqueado y vuelve a guardar.}}",
   "@servers.refusal.s3SecretNotMoved": {
-    "sourceHash": "69901e7"
+    "sourceHash": "d08a1d2"
   },
   "servers.refusal.accountChanged": "Una cuenta distinta es un servidor distinto, así que no se ha guardado nada. Añádela como un servidor nuevo.",
   "@servers.refusal.accountChanged": {
@@ -351,13 +351,13 @@
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
-  "servers.refusal.shareMounted": "{platform, select, macos {El recurso compartido {name} sigue montado desde la dirección anterior. Expúlsalo y vuelve a guardar.} windows {The share {name} is still connected from the old address. Disconnect it, then save again.} other {The share {name} is still mounted from the old address. Unmount it, then save again.}}",
+  "servers.refusal.shareMounted": "{platform, select, macos {El recurso compartido {name} sigue montado desde la dirección anterior. Expúlsalo y vuelve a guardar.} windows {El recurso compartido {name} sigue conectado desde la dirección anterior. Desconéctalo y vuelve a guardar.} other {El recurso compartido {name} sigue montado desde la dirección anterior. Desmóntalo y vuelve a guardar.}}",
   "@servers.refusal.shareMounted": {
-    "sourceHash": "156a61b"
+    "sourceHash": "7b731b1"
   },
-  "servers.refusal.shareEjectRefused": "{platform, select, macos {Cmdr no ha podido expulsar el recurso compartido {name}, así que no se ha guardado nada. {reason}} windows {Cmdr couldn’t disconnect {name}, so nothing was saved. {reason}} other {Cmdr couldn’t unmount {name}, so nothing was saved. {reason}}}",
+  "servers.refusal.shareEjectRefused": "{platform, select, macos {Cmdr no ha podido expulsar el recurso compartido {name}, así que no se ha guardado nada. {reason}} windows {Cmdr no ha podido desconectar el recurso compartido {name}, así que no se ha guardado nada. {reason}} other {Cmdr no ha podido desmontar el recurso compartido {name}, así que no se ha guardado nada. {reason}}}",
   "@servers.refusal.shareEjectRefused": {
-    "sourceHash": "1c73fa7"
+    "sourceHash": "7b5c704"
   },
   "servers.sheet.addTitle": "Añadir servidor",
   "@servers.sheet.addTitle": {
@@ -387,17 +387,17 @@
   "@servers.sheet.addAnywayHelp": {
     "sourceHash": "68e90b2"
   },
-  "servers.sheet.ejectAndSave": "{platform, select, macos {Expulsar y guardar} windows {Disconnect and save} other {Unmount and save}}",
+  "servers.sheet.ejectAndSave": "{platform, select, macos {Expulsar y guardar} windows {Desconectar y guardar} other {Desmontar y guardar}}",
   "@servers.sheet.ejectAndSave": {
-    "sourceHash": "357f2dd"
+    "sourceHash": "ec03e90"
   },
-  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {Cmdr expulsa todos los recursos compartidos que siguen montados desde la dirección anterior y luego guarda la nueva.} windows {Cmdr disconnects every share still connected from the old address, then saves the new one.} other {Cmdr unmounts every share still mounted from the old address, then saves the new one.}}",
+  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {Cmdr expulsa todos los recursos compartidos que siguen montados desde la dirección anterior y luego guarda la nueva.} windows {Cmdr desconecta todos los recursos compartidos que siguen conectados desde la dirección anterior y luego guarda la nueva.} other {Cmdr desmonta todos los recursos compartidos que siguen montados desde la dirección anterior y luego guarda la nueva.}}",
   "@servers.sheet.ejectAndSaveHelp": {
-    "sourceHash": "a1d1206"
+    "sourceHash": "fe6687b"
   },
-  "servers.sheet.ejecting": "{platform, select, macos {Expulsando…} windows {Disconnecting…} other {Unmounting…}}",
+  "servers.sheet.ejecting": "{platform, select, macos {Expulsando…} windows {Desconectando…} other {Desmontando…}}",
   "@servers.sheet.ejecting": {
-    "sourceHash": "4c37167"
+    "sourceHash": "67155a9"
   },
   "servers.sheet.addedToast": "{name} se ha guardado en tu lista Servidores.",
   "@servers.sheet.addedToast": {
@@ -503,9 +503,9 @@
   "@servers.sheet.nfsExportsEmptyList": {
     "sourceHash": "7558a7b"
   },
-  "servers.sheet.nfsExportsNone": "{platform, select, macos {En la lista de {host} no hay ninguna exportación para este Mac. Escribe la ruta de la exportación si la sabes.} windows {{host} lists no exports for this PC. Type the export’s path if you know it.} other {{host} lists no exports for this computer. Type the export’s path if you know it.}}",
+  "servers.sheet.nfsExportsNone": "{platform, select, macos {En la lista de {host} no hay ninguna exportación para este Mac. Escribe la ruta de la exportación si la sabes.} windows {En la lista de {host} no hay ninguna exportación para este PC. Escribe la ruta de la exportación si la sabes.} other {En la lista de {host} no hay ninguna exportación para este ordenador. Escribe la ruta de la exportación si la sabes.}}",
   "@servers.sheet.nfsExportsNone": {
-    "sourceHash": "a88c0bf"
+    "sourceHash": "049e790"
   },
   "servers.sheet.nfsExportsRefused": "{host} no comparte la lista de exportaciones. Escribe la ruta de la exportación.",
   "@servers.sheet.nfsExportsRefused": {
@@ -547,9 +547,9 @@
   "@servers.sheet.nfsIdentityRootOwner": {
     "sourceHash": "c464fa8"
   },
-  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {Tus ID en este Mac. Cámbialos si los archivos del servidor pertenecen a otra persona.} windows {The user and group IDs Cmdr sends to the server. Change them if the files on the server belong to someone else.} other {Your IDs on this computer. Change them if the files on the server belong to someone else.}}",
+  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {Tus ID en este Mac. Cámbialos si los archivos del servidor pertenecen a otra persona.} windows {Los ID de usuario y de grupo que Cmdr envía al servidor. Cámbialos si los archivos del servidor pertenecen a otra persona.} other {Tus ID en este ordenador. Cámbialos si los archivos del servidor pertenecen a otra persona.}}",
   "@servers.sheet.nfsIdentityThisMac": {
-    "sourceHash": "8bfbb0d"
+    "sourceHash": "5d61505"
   },
   "servers.sheet.nfsUidZeroWarning": "La mayoría de los servidores no dan ningún permiso al ID de usuario 0.",
   "@servers.sheet.nfsUidZeroWarning": {
@@ -579,9 +579,9 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
-  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Guardada en el Llavero. Déjalo vacío para conservarla.} windows {Saved. Leave empty to keep it.} other {Saved in your keyring. Leave empty to keep it.}}",
+  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Guardada en el Llavero. Déjalo vacío para conservarla.} windows {Guardada. Déjalo vacío para conservarla.} other {Guardada en tu llavero. Déjalo vacío para conservarla.}}",
   "@servers.sheet.secretKeptPlaceholder": {
-    "sourceHash": "8711f6c"
+    "sourceHash": "9297a2d"
   },
   "servers.sheet.smbUsernamePlaceholder": "Opcional",
   "@servers.sheet.smbUsernamePlaceholder": {
@@ -595,9 +595,9 @@
   "@servers.sheet.passphrase": {
     "sourceHash": "2510031"
   },
-  "servers.sheet.remember": "{platform, select, macos {Recordar en el Llavero} windows {Remember password} other {Remember in keyring}}",
+  "servers.sheet.remember": "{platform, select, macos {Recordar en el Llavero} windows {Recordar contraseña} other {Recordar en el llavero}}",
   "@servers.sheet.remember": {
-    "sourceHash": "3fd7384"
+    "sourceHash": "42237e1"
   },
   "servers.sheet.connectionModeLegend": "Cómo conectarse",
   "@servers.sheet.connectionModeLegend": {
@@ -785,9 +785,9 @@
   "@servers.sheet.autoReconnectInfoLabel": {
     "sourceHash": "edb9b82"
   },
-  "servers.sheet.needsStoredSecret": "{platform, select, macos {Para volver a conectar por su cuenta hace falta una contraseña recordada. Activa “Recordar en el Llavero” e inicia sesión una vez.} windows {Reconnecting on its own needs a saved password. Turn on “Remember password” and sign in once.} other {Reconnecting on its own needs a remembered password. Turn on “Remember in keyring” and sign in once.}}",
+  "servers.sheet.needsStoredSecret": "{platform, select, macos {Para volver a conectar por su cuenta hace falta una contraseña recordada. Activa “Recordar en el Llavero” e inicia sesión una vez.} windows {Para volver a conectar por su cuenta hace falta una contraseña guardada. Activa “Recordar contraseña” e inicia sesión una vez.} other {Para volver a conectar por su cuenta hace falta una contraseña recordada. Activa “Recordar en el llavero” e inicia sesión una vez.}}",
   "@servers.sheet.needsStoredSecret": {
-    "sourceHash": "32336f3"
+    "sourceHash": "ad8e162"
   },
   "servers.sheet.tryNextcloudAddress": "Probar la dirección de Nextcloud",
   "@servers.sheet.tryNextcloudAddress": {
@@ -825,9 +825,9 @@
   "@servers.hostKey.trustNewKey": {
     "sourceHash": "772baac"
   },
-  "servers.certificate.firstContactTitle": "{platform, select, macos {macOS no conoce el certificado de {host}} windows {Windows doesn’t know the certificate for {host}} other {The certificate for {host} is new to this computer}}",
+  "servers.certificate.firstContactTitle": "{platform, select, macos {macOS no conoce el certificado de {host}} windows {Windows no conoce el certificado de {host}} other {El certificado de {host} es nuevo para este ordenador}}",
   "@servers.certificate.firstContactTitle": {
-    "sourceHash": "ca0b44a"
+    "sourceHash": "0ce5353"
   },
   "servers.certificate.firstContactBody": "Los servidores de casa suelen crear su propio certificado. Compara la huella digital de abajo con la que muestra tu servidor y luego confía en el certificado.",
   "@servers.certificate.firstContactBody": {

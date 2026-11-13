@@ -519,9 +519,9 @@
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "55d0fe7"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Puede que los elementos estén en un lugar que macOS se reserva. A veces el Finder sí puede moverlos, porque puede pedirte la contraseña.} windows {Puede que los elementos estén en un lugar que Windows se reserva. A veces el Explorador de archivos sí puede moverlos, porque puede pedir permiso de administrador.} other {Puede que los elementos estén en un lugar que solo un administrador puede cambiar. Revisa los permisos de la carpeta, o pregunta a quien administre esta computadora.}}",
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Puede que los elementos estén en un lugar que macOS se reserva. A veces el Finder sí puede moverlos, porque puede pedirte la contraseña.} windows {Puede que los elementos estén en un lugar que Windows se reserva. A veces el Explorador de archivos sí puede moverlos, porque puede pedir permiso de administrador.} other {Puede que los elementos estén en un lugar que solo se puede cambiar con permisos de administrador. Revisa los permisos de la carpeta, o pregunta a quien administre esta computadora.}}",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "d122209"
+    "sourceHash": "e6a627d"
   },
   "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {Para moverlos, necesitas permiso para cambiar su carpeta. El Finder muestra quién puede hacerlo en Obtener información de la carpeta, en la sección “Compartir y permisos”.} windows {Para moverlos, necesitas permiso para cambiar su carpeta. El Explorador de archivos muestra quién puede hacerlo en las Propiedades de la carpeta, en “Seguridad”.} other {Para moverlos, necesitas permiso para cambiar su carpeta. Tu administrador de archivos muestra quién puede hacerlo en las propiedades de la carpeta, en “Permisos”.}}",
   "@errors.write.trashRefused.suggestion.folderNotWritable": {

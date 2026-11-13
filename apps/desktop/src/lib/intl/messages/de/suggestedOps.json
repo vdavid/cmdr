@@ -63,13 +63,13 @@
   "@suggestedOps.action.copy": {
     "sourceHash": "e21f935"
   },
-  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {In den Papierkorb bewegen}}",
+  "suggestedOps.action.trash": "{platform, select, windows {Löschen} other {In den Papierkorb bewegen}}",
   "@suggestedOps.action.trash": {
-    "sourceHash": "9adcdf3"
+    "sourceHash": "d4f0678"
   },
-  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {Löschen}}",
+  "suggestedOps.action.delete": "{platform, select, windows {Endgültig löschen} other {Löschen}}",
   "@suggestedOps.action.delete": {
-    "sourceHash": "e2d0a54"
+    "sourceHash": "45efa80"
   },
   "suggestedOps.action.rename": "Umbenennen",
   "@suggestedOps.action.rename": {
@@ -96,13 +96,13 @@
   "@suggestedOps.approve.copy": {
     "sourceHash": "e10c490"
   },
-  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {{countText} {count, plural, one {Datei} other {Dateien}} in den Papierkorb bewegen}}",
+  "suggestedOps.approve.trash": "{platform, select, windows {{countText} {count, plural, one {Datei} other {Dateien}} löschen} other {{countText} {count, plural, one {Datei} other {Dateien}} in den Papierkorb bewegen}}",
   "@suggestedOps.approve.trash": {
-    "sourceHash": "3c82946"
+    "sourceHash": "fa0db8d"
   },
-  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {{countText} {count, plural, one {Datei} other {Dateien}} löschen}}",
+  "suggestedOps.approve.delete": "{platform, select, windows {{countText} {count, plural, one {Datei} other {Dateien}} endgültig löschen} other {{countText} {count, plural, one {Datei} other {Dateien}} löschen}}",
   "@suggestedOps.approve.delete": {
-    "sourceHash": "218cf04"
+    "sourceHash": "cfb3b70"
   },
   "suggestedOps.approve.rename": "{countText} {count, plural, one {Datei} other {Dateien}} umbenennen",
   "@suggestedOps.approve.rename": {
@@ -144,17 +144,17 @@
   "@suggestedOps.facts.archive": {
     "sourceHash": "66f4804"
   },
-  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Papierkorb}}",
+  "suggestedOps.facts.trash": "{platform, select, windows {Papierkorb} other {Papierkorb}}",
   "@suggestedOps.facts.trash": {
-    "sourceHash": "4e42c6e"
+    "sourceHash": "7b1fc0a"
   },
   "suggestedOps.facts.severalFolders": "Mehrere Ordner",
   "@suggestedOps.facts.severalFolders": {
     "sourceHash": "7c32950"
   },
-  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Du kannst das widerrufen: {count, plural, one {Die Datei kommt} other {Die Dateien kommen}} in den Papierkorb}}",
+  "suggestedOps.reversible.trash": "{platform, select, windows {Du kannst das rückgängig machen: {count, plural, one {Die Datei kommt} other {Die Dateien kommen}} in den Papierkorb} other {Du kannst das widerrufen: {count, plural, one {Die Datei kommt} other {Die Dateien kommen}} in den Papierkorb}}",
   "@suggestedOps.reversible.trash": {
-    "sourceHash": "55bf957"
+    "sourceHash": "e42e327"
   },
   "suggestedOps.reversible.moveBack": "Du kannst das widerrufen: Cmdr kann {count, plural, one {die Datei} other {die Dateien}} zurücklegen",
   "@suggestedOps.reversible.moveBack": {
@@ -180,13 +180,13 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {Dieses Laufwerk hat keinen Papierkorb}}",
+  "suggestedOps.noTrash": "{platform, select, windows {Dieses Laufwerk hat keinen Papierkorb} other {Dieses Laufwerk hat keinen Papierkorb}}",
   "@suggestedOps.noTrash": {
-    "sourceHash": "38a6adc"
+    "sourceHash": "31f0f36"
   },
-  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {Das Laufwerk, auf dem diese Dateien liegen, hat keinen Papierkorb, deshalb werden sie nach deiner Zustimmung endgültig gelöscht.}}",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {Das Laufwerk, auf dem diese Dateien liegen, hat keinen Papierkorb, deshalb werden sie nach deiner Zustimmung endgültig gelöscht.} other {Das Laufwerk, auf dem diese Dateien liegen, hat keinen Papierkorb, deshalb werden sie nach deiner Zustimmung endgültig gelöscht.}}",
   "@suggestedOps.noTrashTooltip": {
-    "sourceHash": "4327cb2"
+    "sourceHash": "e13c954"
   },
   "suggestedOps.irreversible.overwrite": "Das lässt sich nicht widerrufen: Ein vorhandenes Archiv wird ersetzt",
   "@suggestedOps.irreversible.overwrite": {
@@ -439,9 +439,9 @@
   "@suggestedOps.server.sharesAffected": {
     "sourceHash": "390f931"
   },
-  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {KI-Vorschläge warten auf dich. Zum Ansehen klicken.}}",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {KI-Vorschläge warten auf dich. Zum Ansehen auswählen.} other {KI-Vorschläge warten auf dich. Zum Ansehen klicken.}}",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "4508b0b"
+    "sourceHash": "3c813c4"
   },
   "suggestedOps.newNameTaken": "Name bereits belegt",
   "@suggestedOps.newNameTaken": {

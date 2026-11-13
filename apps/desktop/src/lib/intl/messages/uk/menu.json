@@ -71,9 +71,9 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "{platform, select, windows {Settings} other {Параметри…}}",
+  "menu.app.settings": "{platform, select, windows {Параметри} other {Параметри…}}",
   "@menu.app.settings": {
-    "sourceHash": "7a04083"
+    "sourceHash": "7af8e23"
   },
   "menu.app.services": "Служби",
   "@menu.app.services": {
@@ -147,9 +147,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFileManager": "{platform, select, macos {Показати у Finder} windows {Show in File Explorer} other {Показати у файловому менеджері}}",
+  "menu.file.showInFileManager": "{platform, select, macos {Показати у Finder} windows {Показати у Провіднику} other {Показати у файловому менеджері}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "menu.file.openTerminalHere": "Відкрити термінал тут",
   "@menu.file.openTerminalHere": {
@@ -175,17 +175,17 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Відмінити переміщення в Смітник}}",
+  "menu.edit.undoTrash": "{platform, select, windows {Відмінити видалення} other {Відмінити переміщення в Смітник}}",
   "@menu.edit.undoTrash": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Відмінити переміщення «{name}» у Смітник}}",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Відмінити видалення «{name}»} other {Відмінити переміщення «{name}» у Смітник}}",
   "@menu.edit.undoTrashOne": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Відмінити переміщення в Смітник (елементів: {countText})}}",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Відмінити видалення (елементів: {countText})} other {Відмінити переміщення в Смітник (елементів: {countText})}}",
   "@menu.edit.undoTrashMany": {
-    "sourceHash": "bb9192a"
+    "sourceHash": "4ad492a"
   },
   "menu.edit.cut": "Вирізати",
   "@menu.edit.cut": {
@@ -396,9 +396,9 @@
   "@menu.go.rootFolder": {
     "sourceHash": "6d92528"
   },
-  "menu.go.home": "{platform, select, windows {User folder} other {Домівка}}",
+  "menu.go.home": "{platform, select, windows {Папка користувача} other {Домівка}}",
   "@menu.go.home": {
-    "sourceHash": "3a78695"
+    "sourceHash": "4ff1502"
   },
   "menu.go.goToPath": "Перейти до папки…",
   "@menu.go.goToPath": {
@@ -652,13 +652,13 @@
   "@menu.volume.ejectBusy": {
     "sourceHash": "e2145a6"
   },
-  "menu.volume.detachShare": "{platform, select, macos {Вийняти ({name})} windows {Disconnect ({name})} other {Unmount ({name})}}",
+  "menu.volume.detachShare": "{platform, select, macos {Вийняти ({name})} windows {Відʼєднати ({name})} other {Відмонтувати ({name})}}",
   "@menu.volume.detachShare": {
-    "sourceHash": "913d6ea"
+    "sourceHash": "458748f"
   },
-  "menu.volume.detachShareBusy": "{platform, select, macos {Вийняти ({name}) (зайнято)} windows {Disconnect ({name}) (busy)} other {Unmount ({name}) (busy)}}",
+  "menu.volume.detachShareBusy": "{platform, select, macos {Вийняти ({name}) (зайнято)} windows {Відʼєднати ({name}) (зайнято)} other {Відмонтувати ({name}) (зайнято)}}",
   "@menu.volume.detachShareBusy": {
-    "sourceHash": "e2145a6"
+    "sourceHash": "d3578bf"
   },
   "menu.volume.ejectAll": "Вийняти всі",
   "@menu.volume.ejectAll": {

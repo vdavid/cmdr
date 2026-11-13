@@ -303,9 +303,9 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "f95b4a9"
   },
-  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {You’ve turned on AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Select “{nextLabel}” again to ignore this and go on.</strong>} other {Du har aktiverat AI men inte angett någon API-nyckel. AI fungerar inte och du får se en varning. Åtgärda det här ovanför.\n\n<strong>Klicka på ”{nextLabel}” igen för att strunta i det här och gå vidare.</strong>}}",
+  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {Du har slagit på AI men inte angett någon API-nyckel. AI fungerar inte och du får se en varning. Åtgärda det här ovanför.\n\n<strong>Välj ”{nextLabel}” igen för att strunta i det här och gå vidare.</strong>} other {Du har aktiverat AI men inte angett någon API-nyckel. AI fungerar inte och du får se en varning. Åtgärda det här ovanför.\n\n<strong>Klicka på ”{nextLabel}” igen för att strunta i det här och gå vidare.</strong>}}",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "b942278"
+    "sourceHash": "2856a6e"
   },
   "onboarding.stepAi.cloudConsentOffNote": "Moln-AI förblir avstängt tills du tillåter det. Du kan göra det senare i Inställningar > AI.",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -395,17 +395,17 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "06ce4eb"
   },
-  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Kraschrapporter är också på: om Cmdr går ner skickar appen appversionen, din macOS-version och stället i koden där det stannade.\nAldrig dina filer.\nDu kan stänga av båda i inställningarna när du vill.} windows {Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.} other {Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.}}",
+  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Kraschrapporter är också på: om Cmdr går ner skickar appen appversionen, din macOS-version och stället i koden där det stannade.\nAldrig dina filer.\nDu kan stänga av båda i inställningarna när du vill.} windows {Kraschrapporter är också på: om Cmdr går ner skickar appen appversionen, din Windows-version och stället i koden där det stannade.\nAldrig dina filer.\nDu kan stänga av båda i inställningarna när du vill.} other {Kraschrapporter är också på: om Cmdr går ner skickar appen appversionen, din Linux-distribution och dess version samt stället i koden där det stannade.\nAldrig dina filer.\nDu kan stänga av båda i inställningarna när du vill.}}",
   "@onboarding.stepBeta.crashReportsNote": {
-    "sourceHash": "9be0be1"
+    "sourceHash": "55b9634"
   },
   "onboarding.stepBeta.analyticsManaged": "Din organisation har stängt av användningsstatistiken.",
   "@onboarding.stepBeta.analyticsManaged": {
     "sourceHash": "49484ee"
   },
-  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Kraschrapporter är på: om Cmdr går ner skickar appen appversionen, din macOS-version och stället i koden där det stannade.\nAldrig dina filer.\nDu kan stänga av dem i inställningarna när du vill.} windows {Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.} other {Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.}}",
+  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Kraschrapporter är på: om Cmdr går ner skickar appen appversionen, din macOS-version och stället i koden där det stannade.\nAldrig dina filer.\nDu kan stänga av dem i inställningarna när du vill.} windows {Kraschrapporter är på: om Cmdr går ner skickar appen appversionen, din Windows-version och stället i koden där det stannade.\nAldrig dina filer.\nDu kan stänga av dem i inställningarna när du vill.} other {Kraschrapporter är på: om Cmdr går ner skickar appen appversionen, din Linux-distribution och dess version samt stället i koden där det stannade.\nAldrig dina filer.\nDu kan stänga av dem i inställningarna när du vill.}}",
   "@onboarding.stepBeta.crashReportsNoteAlone": {
-    "sourceHash": "5084dd0"
+    "sourceHash": "27d4b1b"
   },
   "onboarding.stepBeta.emailTitle": "Håll kontakten (valfritt)",
   "@onboarding.stepBeta.emailTitle": {
@@ -427,13 +427,13 @@
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "5a1bca7"
   },
-  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {Det gick inte att nå registreringsservern just nu, så du står inte på listan än. Din adress är sparad på den här Macen: tryck på Spara igen om en stund, eller när som helst från Inställningar › Uppdateringar och integritet.} windows {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this PC: hit Save again in a minute, or any time from Settings › Updates & privacy.} other {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this computer: hit Save again in a minute, or any time from Settings › Updates & privacy.}}",
+  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {Det gick inte att nå registreringsservern just nu, så du står inte på listan än. Din adress är sparad på den här Macen: tryck på Spara igen om en stund, eller när som helst från Inställningar › Uppdateringar och integritet.} windows {Det gick inte att nå registreringsservern just nu, så du står inte på listan än. Din adress är sparad på den här datorn: tryck på Spara igen om en stund, eller när som helst från Inställningar › Uppdateringar och integritet.} other {Det gick inte att nå registreringsservern just nu, så du står inte på listan än. Din adress är sparad på den här datorn: tryck på Spara igen om en stund, eller när som helst från Inställningar › Uppdateringar och integritet.}}",
   "@onboarding.stepBeta.signup.unreachable": {
-    "sourceHash": "e4d8f67"
+    "sourceHash": "6032194"
   },
-  "onboarding.stepBeta.emailNote": "{platform, select, macos {Lämna din e-postadress så hör jag av mig med en och annan fråga eller uppdatering.\nE-postadressen du anger här lagras bara på din Mac och kopplas aldrig till din användningsstatistik, de två är medvetet två separata delsystem.} windows {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your PC and it’s never connected to your usage stats, the two are intentionally two separate subsystems.} other {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your computer and it’s never connected to your usage stats, the two are intentionally two separate subsystems.}}",
+  "onboarding.stepBeta.emailNote": "{platform, select, macos {Lämna din e-postadress så hör jag av mig med en och annan fråga eller uppdatering.\nE-postadressen du anger här lagras bara på din Mac och kopplas aldrig till din användningsstatistik, de två är medvetet två separata delsystem.} windows {Lämna din e-postadress så hör jag av mig med en och annan fråga eller uppdatering.\nE-postadressen du anger här lagras bara på din dator och kopplas aldrig till din användningsstatistik, de två är medvetet två separata delsystem.} other {Lämna din e-postadress så hör jag av mig med en och annan fråga eller uppdatering.\nE-postadressen du anger här lagras bara på din dator och kopplas aldrig till din användningsstatistik, de två är medvetet två separata delsystem.}}",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "0a793b1"
+    "sourceHash": "494fcbc"
   },
   "onboarding.stepBeta.terms.title": "Åh, och det här också, tack",
   "@onboarding.stepBeta.terms.title": {
@@ -459,9 +459,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "{platform, select, windows {You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, select the button below. All of these are optional, and the defaults are picked for your benefit.} other {Du valde att gå igenom en detaljerad inställning, så här är några snabba val. Om du inte bryr dig så mycket, klicka på knappen nedan. Allt det här är valfritt, och standardvärdena är valda för din skull.}}",
+  "onboarding.stepOptional.lede": "{platform, select, windows {Du valde att gå igenom en detaljerad inställning, så här är några snabba val. Om du inte bryr dig så mycket, välj knappen nedan. Allt det här är valfritt, och standardvärdena är valda för din skull.} other {Du valde att gå igenom en detaljerad inställning, så här är några snabba val. Om du inte bryr dig så mycket, klicka på knappen nedan. Allt det här är valfritt, och standardvärdena är valda för din skull.}}",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "94c3a5a"
+    "sourceHash": "d0e9a13"
   },
   "onboarding.stepOptional.recommendedOn": "Rekommenderas: på",
   "@onboarding.stepOptional.recommendedOn": {
@@ -475,13 +475,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "{platform, select, macos {Kräver att du godkänner ”Lokalt nätverk” en gång} windows {Windows may ask to let Cmdr through its firewall} other {No permission needed}}",
+  "onboarding.stepOptional.networking.summary": "{platform, select, macos {Kräver att du godkänner ”Lokalt nätverk” en gång} windows {Windows kan fråga om Cmdr ska släppas igenom brandväggen} other {Ingen behörighet behövs}}",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "f49fbc6"
+    "sourceHash": "d902dfe"
   },
-  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Med det här <em>på</em> kan du ansluta till SMB-servrar som delade mappar på företagets nätverk, en NAS hemma och liknande.\nDen enda kostnaden är en macOS-behörighetsdialog som dyker upp och ber dig tillåta ”Lokalt nätverk”, och en för ”Acceptera inkommande anslutningar”.\nBåda dialogerna är ofarliga, men om du inte vet vad de är kan de verka skrämmande eller irriterande.} windows {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nWindows may ask once whether to let Cmdr through its firewall.} other {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.}}",
+  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Med det här <em>på</em> kan du ansluta till SMB-servrar som delade mappar på företagets nätverk, en NAS hemma och liknande.\nDen enda kostnaden är en macOS-behörighetsdialog som dyker upp och ber dig tillåta ”Lokalt nätverk”, och en för ”Acceptera inkommande anslutningar”.\nBåda dialogerna är ofarliga, men om du inte vet vad de är kan de verka skrämmande eller irriterande.} windows {Med det här <em>på</em> kan du ansluta till SMB-servrar som delade mappar på företagets nätverk, en NAS hemma och liknande.\nWindows kan fråga en gång om Cmdr ska släppas igenom brandväggen.} other {Med det här <em>på</em> kan du ansluta till SMB-servrar som delade mappar på företagets nätverk, en NAS hemma och liknande.}}",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "d473c62"
+    "sourceHash": "e479f6e"
   },
   "onboarding.stepOptional.indexing.title": "Enhetsindexering",
   "@onboarding.stepOptional.indexing.title": {
@@ -495,9 +495,9 @@
   "@onboarding.stepOptional.indexing.descIntro": {
     "sourceHash": "6b86a1f"
   },
-  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {Direkt sökning av hela din enhet. Tänk Spotlight, fast ännu snabbare.} windows {Instant search of your whole drive. Think Windows Search, but much faster.} other {Instant search of your whole drive.}}",
+  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {Direkt sökning av hela din enhet. Tänk Spotlight, fast ännu snabbare.} windows {Direkt sökning av hela din enhet. Tänk Windows Search, fast mycket snabbare.} other {Direkt sökning av hela din enhet.}}",
   "@onboarding.stepOptional.indexing.benefit1": {
-    "sourceHash": "5fa0e9f"
+    "sourceHash": "bfe626a"
   },
   "onboarding.stepOptional.indexing.benefit2": "Mappstorlekar i realtid för hela din enhet. Du vet alltid hur mycket du har i varje mapp.",
   "@onboarding.stepOptional.indexing.benefit2": {
@@ -515,21 +515,21 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "{platform, select, windows {If you turn this on, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you turn it off, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).} other {Om du aktiverar det här gör Cmdr en liten nätverksförfrågan till en central licensserver vid varje appstart plus en gång var 24:e timme, och du får alltid de senaste uppdateringarna.\nOm du stänger av det behåller du din nuvarande version, och Cmdr gör noll automatiska nätverksförfrågningar (förutom periodiska licenskontroller, om du har en kommersiell licens).}}",
+  "onboarding.stepOptional.updates.desc": "{platform, select, windows {Om du slår på det här gör Cmdr en liten nätverksförfrågan till en central licensserver vid varje appstart plus en gång var 24:e timme, och du får alltid de senaste uppdateringarna.\nOm du stänger av det behåller du din nuvarande version, och Cmdr gör noll automatiska nätverksförfrågningar (förutom periodiska licenskontroller, om du har en kommersiell licens).} other {Om du aktiverar det här gör Cmdr en liten nätverksförfrågan till en central licensserver vid varje appstart plus en gång var 24:e timme, och du får alltid de senaste uppdateringarna.\nOm du stänger av det behåller du din nuvarande version, och Cmdr gör noll automatiska nätverksförfrågningar (förutom periodiska licenskontroller, om du har en kommersiell licens).}}",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "e1a0582"
+    "sourceHash": "f030fea"
   },
   "onboarding.stepOptional.mtp.title": "MTP (Android-telefoner, Kindles, kameror)",
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {Låter dig ansluta Android-telefoner och liknande, håller tillbaka macOS inbyggda hanterare} other {Lets you connect Android phones and similar devices}}",
+  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {Låter dig ansluta Android-telefoner och liknande, håller tillbaka macOS inbyggda hanterare} other {Låter dig ansluta Android-telefoner och liknande enheter}}",
   "@onboarding.stepOptional.mtp.summary": {
-    "sourceHash": "d5b9a6e"
+    "sourceHash": "b6bfad0"
   },
-  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Om du aktiverar det här kan Cmdr <strong>ansluta till Android-telefoner, Kindles, kameror</strong>, vissa musikspelare och alla andra enheter som stöder protokollen MTP eller PTP.\nKostnaden är att macOS <em>också</em> vill ansluta till dem (och det går oftast inte, det är därför du inte bara kan använda Finder för att kopiera foton från Android-telefoner), så Cmdr måste hålla tillbaka den macOS-processen medan den körs.\nNär du avslutar Cmdr får macOS snällt tillbaka processen.} windows {If you turn this on, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.} other {If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nYour desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first.}}",
+  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Om du aktiverar det här kan Cmdr <strong>ansluta till Android-telefoner, Kindles, kameror</strong>, vissa musikspelare och alla andra enheter som stöder protokollen MTP eller PTP.\nKostnaden är att macOS <em>också</em> vill ansluta till dem (och det går oftast inte, det är därför du inte bara kan använda Finder för att kopiera foton från Android-telefoner), så Cmdr måste hålla tillbaka den macOS-processen medan den körs.\nNär du avslutar Cmdr får macOS snällt tillbaka processen.} windows {Om du slår på det här kan Cmdr <strong>ansluta till Android-telefoner, Kindles, kameror</strong>, vissa musikspelare och alla andra enheter som stöder protokollen MTP eller PTP.} other {Om du aktiverar det här kan Cmdr <strong>ansluta till Android-telefoner, Kindles, kameror</strong>, vissa musikspelare och alla andra enheter som stöder protokollen MTP eller PTP.\nDin skrivbordsmiljö kan också försöka öppna de här enheterna. Om en enhet verkar upptagen, avmontera den i din filhanterare först.}}",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "8a60e7f"
+    "sourceHash": "ed865f5"
   },
   "onboarding.cloudPicker.listAria": "Moln-AI-leverantörer",
   "@onboarding.cloudPicker.listAria": {

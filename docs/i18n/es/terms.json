@@ -268,7 +268,10 @@
     "proseAccept": ["pedi", "pide", "pidas"],
     "confidence": "high",
     "sources": "standard option label",
-    "note": "Asking someone FOR something (a password, a yes) is pedir in prose (te pedirá la contraseña); the option label stays Preguntar."
+    "note": "Asking someone FOR something (a password, a yes) is pedir in prose (te pedirá la contraseña); the option label stays Preguntar.",
+    "exceptions": {
+      "onboarding.stepOptional.networking.summary": "Ordinary verb: Windows asking permission (pida), not the Ask Cmdr name."
+    }
   },
   "ask-cmdr": {
     "chosen": "Ask Cmdr",
@@ -514,7 +517,8 @@
     "confidence": "high",
     "sources": "macOS Finder (Comprobando…), SoftwareUpdate/Mail (Check Again → Comprobar de nuevo)",
     "exceptions": {
-      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "A full index check is análisis in this catalog (el análisis que se está ejecutando ahora mismo)."
+      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "A full index check is análisis in this catalog (el análisis que se está ejecutando ahora mismo).",
+      "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "A full index check is análisis in this catalog (el próximo análisis completo de Cmdr)."
     },
     "decision": "Índice de unidades"
   },
@@ -1846,7 +1850,11 @@
     "forms": "one other file → otro archivo; N other items → otros N elementos",
     "confidence": "high",
     "sources": "catalog (44 to 8 over macOS ítem)",
-    "decision": "Coherencia del termbase"
+    "decision": "Coherencia del termbase",
+    "exceptions": {
+      "settings.dataWipe.leftover.secretItems": "The Windows branch counts entries in Credential Manager, which names one entry a credencial (Credenciales de Windows), as the @key asks for the store's own word.",
+      "settings.dataWipe.leftover.secretsUnreadable": "The Windows branch counts entries in Credential Manager, which names one entry a credencial (Credenciales de Windows), as the @key asks for the store's own word."
+    }
   },
   "just-now": {
     "chosen": "ahora mismo",
@@ -1875,7 +1883,11 @@
     "accept": ["Acceso a Llaveros"],
     "forms": "the store el Llavero (Recordar en el Llavero); the app Acceso a Llaveros",
     "confidence": "high",
-    "sources": "Keychain Access Localizable.loctable (Acceso a Llaveros, Llavero)"
+    "sources": "Keychain Access Localizable.loctable (Acceso a Llaveros, Llavero)",
+    "windows": {
+      "chosen": "Administrador de credenciales",
+      "note": "Windows' counterpart is the credential-manager concept (Administrador de credenciales)"
+    }
   },
   "kind": {
     "chosen": "Clase",
@@ -2043,7 +2055,7 @@
   },
   "mount": {
     "chosen": "montar",
-    "accept": ["mont"],
+    "accept": ["mont", "desmónt"],
     "forms": "unmount → desmontar",
     "confidence": "high",
     "sources": "Xfce Thunar (Montar); macOS Finder (desmontar servidores)"
@@ -2063,7 +2075,8 @@
       "suggestedOps.reversible.moveBack": "move it back → devolverlo a su sitio, the catalog's undo-a-move phrasing (commands.editUndoTrash.description)",
       "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "move back → devolver al lugar del que salieron, word for word from its sibling bodyUndoByMovingBack",
       "operationLog.rollback.rollbackableNoticeMoveBack": "move back → vuelven al lugar del que salieron, the bodyUndoByMovingBack phrasing",
-      "operationLog.tree.statusMovedBack": "Moved back → Devuelto, the catalog's undo-a-move verb (devolver)"
+      "operationLog.tree.statusMovedBack": "Moved back → Devuelto, the catalog's undo-a-move verb (devolver)",
+      "stateRecovery.credentials.body": "Moving to a new PC (cambiar a un PC nuevo), not moving files."
     },
     "sources": "macOS Finder (label sense)"
   },
@@ -2690,7 +2703,7 @@
   },
   "remove": {
     "chosen": "Quitar",
-    "accept": ["quit"],
+    "accept": ["quit", "quít"],
     "forms": "Quitar atajo, Quitar adjunto, Quitar “{color}”, Quitar de la lista; removing FILES or data is eliminar",
     "exceptions": {
       "main.cliCommand.takenByOther": "remove it = delete another program’s file from /usr/local/bin by hand (elimínalo), not a list edit",
@@ -3165,7 +3178,15 @@
   "startup-disk": {
     "chosen": "disco de arranque",
     "confidence": "high",
-    "sources": "macOS (Startup Disk → Disco de arranque)"
+    "sources": "macOS (Startup Disk → Disco de arranque)",
+    "windows": {
+      "chosen": "unidad de sistema",
+      "note": "Windows' system drive (ms TBX system drive → unidad de sistema), feminine: tu unidad de sistema, casi llena"
+    },
+    "other": {
+      "chosen": "disco del sistema",
+      "note": "Linux's system disk, parallel to macOS's disco de arranque; tentative, no pile hit for the disk (Thunar's Unidad del sistema names a drive)"
+    }
   },
   "status": {
     "chosen": "estado",
@@ -3307,7 +3328,10 @@
   "system-settings": {
     "chosen": "Ajustes del Sistema",
     "confidence": "high",
-    "sources": "macOS"
+    "sources": "macOS",
+    "exceptions": {
+      "settings.appearance.themeColorSwatchAria": "The Linux branch names no settings app, only the system's settings in general (los ajustes de tu sistema); Ajustes del Sistema is the macOS app."
+    }
   },
   "system-settings-pane": {
     "chosen": "General",
@@ -3547,7 +3571,7 @@
   },
   "uninstall": {
     "chosen": "desinstalar",
-    "accept": ["desinstal"],
+    "accept": ["desinstal", "desinstál"],
     "forms": "Uninstalled X → Se ha desinstalado X (es-419: Se desinstaló); Installing or uninstalling → instalar o desinstalar",
     "avoid": [
       {
@@ -3639,7 +3663,10 @@
     "forms": "a Unix uid → ID de usuario; gid → ID de grupo; several IDs → los ID (invariable)",
     "confidence": "high",
     "sources": "Microsoft Terminology (user ID → ID de usuario), Nautilus (Establecer ID de usuario, Establecer ID de grupo)",
-    "note": "Names the account or its ID; a person as a role is restructured instead (quien administre este Mac)."
+    "note": "Names the account or its ID; a person as a role is restructured instead (quien administre este Mac).",
+    "exceptions": {
+      "goToPath.dialog.inputPlaceholder": "The windows branch shows the literal sample path C:\\Users, which stays as Windows names the folder on disk."
+    }
   },
   "username": {
     "chosen": "nombre de usuario",
@@ -4146,5 +4173,103 @@
     "forms": "plural, masculine: los metadatos",
     "confidence": "high",
     "sources": "ms TBX (metadata → metadatos); GNOME Nautilus (Metadatos); catalog (errors.listing.attributeNotFound.*)"
+  },
+  "accent": {
+    "chosen": "acento",
+    "accept": ["tilde"],
+    "confidence": "tentative",
+    "sources": "RAE (acento gráfico, tilde); no pile hit for the diacritic sense",
+    "exceptions": {
+      "settings.appearance.appColor.description": "accent color is a different sense: Windows' color de énfasis (ms TBX accent color → color de énfasis), not a diacritic.",
+      "settings.appearance.themeColorSwatchAria": "accent color is a different sense: Windows' color de énfasis (ms TBX accent color → color de énfasis), not a diacritic.",
+      "settings.appearance.appColorHintPrefix": "accent color is a different sense: Windows' color de énfasis (ms TBX accent color → color de énfasis), not a diacritic."
+    }
+  },
+  "credential-manager": {
+    "chosen": "Administrador de credenciales",
+    "accept": ["administrador de credenciales"],
+    "forms": "with the article, capitalized as the Windows app: el Administrador de credenciales, del Administrador de credenciales; only in a platform select's windows branch; one entry in it → una credencial",
+    "confidence": "high",
+    "sources": "ms TBX Credential Manager → Administrador de credenciales (ESP and 419)"
+  },
+  "app-closes": {
+    "chosen": "cerrarse",
+    "accept": ["se cierra", "se cerrará", "se cierre", "cierr", "se cerró", "Cerrando"],
+    "forms": "Cmdr closes → Cmdr se cierra; then closes → y después se cerrará; after Cmdr closes → después de que Cmdr se cierre (the same verb macOS es uses for the app ending itself)",
+    "confidence": "high",
+    "sources": "macOS es (se cerró inesperadamente); catalog quit ruling (the APP ending itself → cerrarse)"
+  },
+  "appearance": {
+    "chosen": "Apariencia",
+    "accept": ["apariencia"],
+    "forms": "the macOS pane and Cmdr's section → Apariencia; the Linux branch's generic system appearance settings → los ajustes de apariencia de tu sistema",
+    "confidence": "high",
+    "sources": "macOS SystemSettings (Apariencia); catalog settings.section.appearance"
+  },
+  "detect": {
+    "chosen": "detectar",
+    "accept": ["detect"],
+    "confidence": "high",
+    "sources": "ms TBX detect → detectar; Nautilus _Detectar soporte"
+  },
+  "language": {
+    "chosen": "idioma",
+    "accept": ["idiomas", "lenguaje"],
+    "forms": "Windows display language → el idioma de visualización de Windows",
+    "confidence": "high",
+    "sources": "catalog settings.appearance.language.label (Idioma); ms TBX display language → idioma"
+  },
+  "linux-distribution": {
+    "chosen": "distribución",
+    "accept": ["distribuciones"],
+    "forms": "Linux distribution and version → la distribución de Linux y su versión",
+    "confidence": "high",
+    "sources": "ms TBX distribution → distribución; standard Linux usage"
+  },
+  "lock": {
+    "chosen": "bloquear",
+    "accept": ["bloque", "bloqué"],
+    "forms": "locks the backup again → vuelve a bloquearla; Cmdr locked {name} → Cmdr ha bloqueado {name}",
+    "confidence": "high",
+    "sources": "macOS AppKit lock → bloquear; ms TBX lock → bloquear; Thunar _Bloquear"
+  },
+  "open-beta": {
+    "chosen": "beta abierta",
+    "confidence": "high",
+    "sources": "catalog settings.analytics.enabled.description, onboarding.stepBeta.analyticsLede (la beta abierta)"
+  },
+  "personal-data": {
+    "chosen": "datos personales",
+    "confidence": "high",
+    "sources": "ms TBX personal data → datos personales; catalog settings.updates.crashReports.description",
+    "accept": ["información privada", "privad"]
+  },
+  "prompt": {
+    "chosen": "prompt",
+    "accept": ["prompts", "instrucción", "aviso", "pregunt", "diálogo"],
+    "note": "the AI sense keeps the loanword (catalog settings.analytics.enabled.description: ni prompts); a system prompt dialog is a diálogo",
+    "confidence": "tentative",
+    "sources": "catalog settings.analytics.enabled.description, settings.advanced.logLlmCalls.keywords"
+  },
+  "smb-negotiated-security": {
+    "chosen": "los ajustes de seguridad que acordó con Cmdr",
+    "accept": ["ajustes de seguridad", "configuración de seguridad"],
+    "forms": "es-419 → la configuración de seguridad que acordó con Cmdr",
+    "confidence": "high",
+    "sources": "catalog servers.paneState.negotiationInvalid, fileExplorer.pane.directConnectionNegotiationInvalidToast"
+  },
+  "speed": {
+    "chosen": "velocidad",
+    "accept": ["aceler", "rápid", "lent"],
+    "forms": "for faster file operations → para acelerar las operaciones de archivos",
+    "confidence": "high",
+    "sources": "catalog settings.network.directSmbConnection.description (macOS branch), settings.network.directSmbConnection.keywords"
+  },
+  "theme": {
+    "chosen": "tema",
+    "accept": ["temas"],
+    "forms": "system theme color (macOS) → el color del tema del sistema",
+    "confidence": "high",
+    "sources": "catalog settings.appearance.appColor.opt.system (Color del tema del sistema), settings.theme.mode.keywords"
   }
 }

@@ -112,9 +112,9 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "{platform, select, macos {Cmdr {available} 已推出，但你的组织把这台 Mac 限制在 {ceiling} 或更早的版本。} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
+  "updates.status.heldByPolicy": "{platform, select, macos {Cmdr {available} 已推出，但你的组织把这台 Mac 限制在 {ceiling} 或更早的版本。} windows {Cmdr {available} 已推出，但你的组织把这台电脑限制在 {ceiling} 或更早的版本。} other {Cmdr {available} 已推出，但你的组织把这台电脑限制在 {ceiling} 或更早的版本。}}",
   "@updates.status.heldByPolicy": {
-    "sourceHash": "5c9b196"
+    "sourceHash": "49012ba"
   },
   "updates.status.unwritableAdmin": "Cmdr {version} 已推出，但 Cmdr 无法自行安装。请从 getcmdr.com 下载，再把它拖到“应用程序”文件夹。",
   "@updates.status.unwritableAdmin": {

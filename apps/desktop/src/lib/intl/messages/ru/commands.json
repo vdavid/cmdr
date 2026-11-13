@@ -1,7 +1,7 @@
 {
-  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Завершить Cmdr}}",
+  "commands.appQuit.label": "{platform, select, windows {Выйти из Cmdr} other {Завершить Cmdr}}",
   "@commands.appQuit.label": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "commands.appHide.label": "Скрыть Cmdr",
   "@commands.appHide.label": {
@@ -192,9 +192,9 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Открыть ~/Downloads и поставить курсор на самый новый файл.}}",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Открыть папку «Загрузки» и поставить курсор на самый новый файл.} other {Открыть ~/Downloads и поставить курсор на самый новый файл.}}",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "6b3fe83"
+    "sourceHash": "97b6bd4"
   },
   "commands.viewShowHidden.label": "Переключить показ скрытых файлов",
   "@commands.viewShowHidden.label": {
@@ -320,21 +320,21 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Отменить перемещение в Корзину}}",
+  "commands.editUndoTrash.label": "{platform, select, windows {Отменить удаление} other {Отменить перемещение в Корзину}}",
   "@commands.editUndoTrash.label": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Отменить перемещение «{name}» в Корзину}}",
+  "commands.editUndoTrash.one": "{platform, select, windows {Отменить удаление «{name}»} other {Отменить перемещение «{name}» в Корзину}}",
   "@commands.editUndoTrash.one": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Отменить перемещение {countText} {count, plural, one {объекта} few {объектов} many {объектов} other {объекта}} в Корзину}}",
+  "commands.editUndoTrash.many": "{platform, select, windows {Отменить удаление {countText} {count, plural, one {объекта} few {объектов} many {объектов} other {объекта}}} other {Отменить перемещение {countText} {count, plural, one {объекта} few {объектов} many {объектов} other {объекта}} в Корзину}}",
   "@commands.editUndoTrash.many": {
-    "sourceHash": "69c4966"
+    "sourceHash": "39a5bbe"
   },
-  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Восстановить файлы, которые вы в последний раз переместили в Корзину}}",
+  "commands.editUndoTrash.description": "{platform, select, windows {Восстановить файлы, которые вы в последний раз переместили в Корзину} other {Восстановить файлы, которые вы в последний раз переместили в Корзину}}",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "dca1b63"
+    "sourceHash": "6082058"
   },
   "commands.paneLeftVolumeChooser.label": "Открыть переключатель томов левой панели",
   "@commands.paneLeftVolumeChooser.label": {
@@ -464,9 +464,9 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Перейти в папку пользователя}}",
+  "commands.navGoHome.label": "{platform, select, windows {Перейти в папку пользователя} other {Перейти в папку пользователя}}",
   "@commands.navGoHome.label": {
-    "sourceHash": "74b2a8b"
+    "sourceHash": "0ae4c72"
   },
   "commands.errorPaneToggleTechnicalDetails.label": "Показать технические подробности",
   "@commands.errorPaneToggleTechnicalDetails.label": {
@@ -832,21 +832,21 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Перейти в Корзину}}",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Перейти в Корзину} other {Перейти в Корзину}}",
   "@commands.fileGoToTrash.label": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
-  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Открыть Корзину просматриваемого диска}}",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Открыть Корзину просматриваемого диска} other {Открыть Корзину просматриваемого диска}}",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "6496c25"
+    "sourceHash": "e4789d0"
   },
   "commands.dialogConfirm.label": "Подтвердить диалог на экране",
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
-  "commands.fileShowInFileManager.label": "{platform, select, macos {Показать в Finder} windows {Show in File Explorer} other {Показать в файловом менеджере}}",
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Показать в Finder} windows {Показать в Проводнике} other {Показать в файловом менеджере}}",
   "@commands.fileShowInFileManager.label": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "commands.fileOpenTerminalHere.label": "Открыть терминал здесь",
   "@commands.fileOpenTerminalHere.label": {
@@ -868,13 +868,13 @@
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.label": "{platform, select, macos {Свойства} windows {Properties} other {Свойства файла}}",
+  "commands.fileGetInfo.label": "{platform, select, macos {Свойства} windows {Свойства} other {Свойства файла}}",
   "@commands.fileGetInfo.label": {
-    "sourceHash": "91c64ca"
+    "sourceHash": "da65a65"
   },
   "commands.fileQuickLook.label": "{platform, select, macos {Быстрый просмотр} other {Предпросмотр}}",
   "@commands.fileQuickLook.label": {
-    "sourceHash": "f5616ce"
+    "sourceHash": "c3f57b4"
   },
   "commands.fileContextMenu.label": "Открыть контекстное меню",
   "@commands.fileContextMenu.label": {
@@ -928,9 +928,9 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "{platform, select, macos {Удалить из Связки ключей сохраненный пароль резервной копии restic, в которой вы находитесь, и снова заблокировать эту резервную копию} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Удалить из Связки ключей сохраненный пароль резервной копии restic, в которой вы находитесь, и снова заблокировать эту резервную копию} windows {Удалить из Диспетчера учетных данных сохраненный пароль резервной копии restic, в которой вы находитесь, и снова заблокировать эту резервную копию} other {Удалить из хранилища ключей сохраненный пароль резервной копии restic, в которой вы находитесь, и снова заблокировать эту резервную копию}}",
   "@commands.resticForgetPassword.description": {
-    "sourceHash": "e51ac69"
+    "sourceHash": "0f616ca"
   },
   "commands.fileCopyShareLink.label": "Скопировать публичную ссылку (семь дней)",
   "@commands.fileCopyShareLink.label": {

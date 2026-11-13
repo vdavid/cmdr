@@ -9,7 +9,7 @@
   },
   "main.upgradeNudge": "{platform, select, macos {Přidali jsme do úvodního průvodce nové možnosti. Otevřete Cmdr > Úvodní průvodce… a projděte si je.} other {Přidali jsme do úvodního průvodce nové možnosti. Otevřete paletu příkazů, spusťte Úvodní průvodce… a projděte si je.}}",
   "@main.upgradeNudge": {
-    "sourceHash": "439adfd"
+    "sourceHash": "b28cac1"
   },
   "main.dockPinNudge.title": "Ponechat Cmdr v Docku?",
   "@main.dockPinNudge.title": {
@@ -139,41 +139,41 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, one {Ukončit, i když ještě běží operace?} few {Ukončit, i když ještě běží {countText} operace?} many {Ukončit, i když ještě běží {countText} operace?} other {Ukončit, i když ještě běží {countText} operací?}}}}",
+  "main.quit.title": "{platform, select, windows {{count, plural, one {Ukončit, i když ještě běží operace?} few {Ukončit, i když ještě běží {countText} operace?} many {Ukončit, i když ještě běží {countText} operace?} other {Ukončit, i když ještě běží {countText} operací?}}} other {{count, plural, one {Ukončit, i když ještě běží operace?} few {Ukončit, i když ještě běží {countText} operace?} many {Ukončit, i když ještě běží {countText} operace?} other {Ukončit, i když ještě běží {countText} operací?}}}}",
   "@main.quit.title": {
-    "sourceHash": "2671a89"
+    "sourceHash": "a3f024b"
   },
   "main.quit.body": "Co je hotové, zůstane hotové. Co se ještě zapisuje, se zastaví tam, kde je, a Cmdr uklidí všechno, co zůstane zapsané jen napůl.",
   "@main.quit.body": {
     "sourceHash": "79a69f9"
   },
-  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, one {Cmdr se ukončí za {secondsText} sekundu, aby restart nebo odhlášení nikdy nečekaly na Cmdr.} few {Cmdr se ukončí za {secondsText} sekundy, aby restart nebo odhlášení nikdy nečekaly na Cmdr.} many {Cmdr se ukončí za {secondsText} sekundy, aby restart nebo odhlášení nikdy nečekaly na Cmdr.} other {Cmdr se ukončí za {secondsText} sekund, aby restart nebo odhlášení nikdy nečekaly na Cmdr.}}}}",
+  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Cmdr se zavře za {secondsText} sekundu, aby restart nebo odhlášení nikdy nečekaly na Cmdr.} few {Cmdr se zavře za {secondsText} sekundy, aby restart nebo odhlášení nikdy nečekaly na Cmdr.} many {Cmdr se zavře za {secondsText} sekundy, aby restart nebo odhlášení nikdy nečekaly na Cmdr.} other {Cmdr se zavře za {secondsText} sekund, aby restart nebo odhlášení nikdy nečekaly na Cmdr.}}} other {{seconds, plural, one {Cmdr se ukončí za {secondsText} sekundu, aby restart nebo odhlášení nikdy nečekaly na Cmdr.} few {Cmdr se ukončí za {secondsText} sekundy, aby restart nebo odhlášení nikdy nečekaly na Cmdr.} many {Cmdr se ukončí za {secondsText} sekundy, aby restart nebo odhlášení nikdy nečekaly na Cmdr.} other {Cmdr se ukončí za {secondsText} sekund, aby restart nebo odhlášení nikdy nečekaly na Cmdr.}}}}",
   "@main.quit.countdown": {
-    "sourceHash": "a389e0c"
+    "sourceHash": "e220441"
   },
-  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Čas do automatického ukončení Cmdru}}",
+  "main.quit.countdownAria": "{platform, select, windows {Čas do automatického zavření Cmdru} other {Čas do automatického ukončení Cmdru}}",
   "@main.quit.countdownAria": {
-    "sourceHash": "6b0b5c2"
+    "sourceHash": "c9dd122"
   },
   "main.quit.keepWorking": "Pokračovat v práci",
   "@main.quit.keepWorking": {
     "sourceHash": "5ed03f2"
   },
-  "main.quit.quitNow": "{platform, select, windows {Exit now} other {Ukončit hned}}",
+  "main.quit.quitNow": "{platform, select, windows {Ukončit hned} other {Ukončit hned}}",
   "@main.quit.quitNow": {
-    "sourceHash": "c96bcc8"
+    "sourceHash": "2895d9d"
   },
   "main.quit.operationsHeading": "Stále běží",
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "{platform, select, macos {Cmdr potřebuje novější Safari} other {Cmdr needs a newer WebKitGTK}}",
+  "main.oldWebkit.title": "{platform, select, macos {Cmdr potřebuje novější Safari} other {Cmdr potřebuje novější WebKitGTK}}",
   "@main.oldWebkit.title": {
-    "sourceHash": "03e502b"
+    "sourceHash": "760c868"
   },
-  "main.oldWebkit.body": "{platform, select, macos {Rozhraní Cmdru vyžaduje Safari 15.4 nebo novější a tento Mac má starší verzi. Otevřete nastavení Aktualizace softwaru a nainstalujte všechny čekající aktualizace. To by mělo pomoct.} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
+  "main.oldWebkit.body": "{platform, select, macos {Rozhraní Cmdru vyžaduje Safari 15.4 nebo novější a tento Mac má starší verzi. Otevřete nastavení Aktualizace softwaru a nainstalujte všechny čekající aktualizace. To by mělo pomoct.} other {Rozhraní Cmdru vyžaduje novější WebKitGTK, než má tento počítač. Nainstalujte čekající aktualizace systému. To by mělo pomoct.}}",
   "@main.oldWebkit.body": {
-    "sourceHash": "a7112ec"
+    "sourceHash": "200e524"
   },
   "main.oldMacos.title": "Cmdr v systému macOS {version}",
   "@main.oldMacos.title": {

@@ -140,9 +140,9 @@
   "@servers.hub.emptyTitle": {
     "sourceHash": "7846930"
   },
-  "servers.hub.emptyMessage": "{platform, select, macos {Lägg till en nedan, eller slå på en Mac eller NAS i ditt nätverk, så hittar Cmdr den.} windows {Add one below, or turn on a PC or NAS on your network and Cmdr will find it.} other {Add one below, or turn on a computer or NAS on your network and Cmdr will find it.}}",
+  "servers.hub.emptyMessage": "{platform, select, macos {Lägg till en nedan, eller slå på en Mac eller NAS i ditt nätverk, så hittar Cmdr den.} windows {Lägg till en nedan, eller slå på en dator eller NAS i ditt nätverk, så hittar Cmdr den.} other {Lägg till en nedan, eller slå på en dator eller NAS i ditt nätverk, så hittar Cmdr den.}}",
   "@servers.hub.emptyMessage": {
-    "sourceHash": "04bdc26"
+    "sourceHash": "7ca97ce"
   },
   "servers.hub.rowCount": "{count, plural, one {{countText} server} other {{countText} servrar}}",
   "@servers.hub.rowCount": {
@@ -188,9 +188,9 @@
   "@servers.refusal.authMethodUnsupported": {
     "sourceHash": "48b9b15"
   },
-  "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS litar inte på den här serverns certifikat. Lägg till det i Nyckelhanterare och försök sedan igen.} windows {Windows doesn’t trust this server’s certificate. Add it to your trusted certificates in “Manage user certificates”, then try again.} other {This server’s certificate isn’t trusted on this computer. Add it to your system’s trusted certificates, then try again.}}",
+  "servers.refusal.certificateUntrusted": "{platform, select, macos {macOS litar inte på den här serverns certifikat. Lägg till det i Nyckelhanterare och försök sedan igen.} windows {Windows litar inte på den här serverns certifikat. Lägg till det bland dina betrodda certifikat i ”Hantera användarcertifikat” och försök sedan igen.} other {Den här serverns certifikat är inte betrott på den här datorn. Lägg till det bland systemets betrodda certifikat och försök sedan igen.}}",
   "@servers.refusal.certificateUntrusted": {
-    "sourceHash": "b8f3b4a"
+    "sourceHash": "aba3260"
   },
   "servers.refusal.certificateRejected": "Den här serverns certifikat är återkallat eller skadat, så Cmdr ansluter inte. Be den som driver servern att ersätta certifikatet.",
   "@servers.refusal.certificateRejected": {
@@ -228,9 +228,9 @@
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
   },
-  "servers.refusal.hostKeyRevoked": "{platform, select, macos {Nyckeln från {host} är märkt som komprometterad i dina SSH-inställningar på den här Macen. Cmdr ansluter inte till servern.} windows {The key for {host} is marked as compromised in your SSH settings on this PC. Cmdr won’t connect to it.} other {The key for {host} is marked as compromised in your SSH settings on this computer. Cmdr won’t connect to it.}}",
+  "servers.refusal.hostKeyRevoked": "{platform, select, macos {Nyckeln från {host} är märkt som komprometterad i dina SSH-inställningar på den här Macen. Cmdr ansluter inte till servern.} windows {Nyckeln från {host} är märkt som komprometterad i dina SSH-inställningar på den här datorn. Cmdr ansluter inte till servern.} other {Nyckeln från {host} är märkt som komprometterad i dina SSH-inställningar på den här datorn. Cmdr ansluter inte till servern.}}",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "7a25d93"
+    "sourceHash": "fd34afd"
   },
   "servers.refusal.startFolderOutsideRoot": "Startmappen måste vara rotmappen eller en mapp inuti den.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -252,13 +252,13 @@
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "3fb55a6"
   },
-  "servers.refusal.secretNotStored": "{platform, select, macos {Cmdr kunde inte spara det här lösenordet i nyckelringen. Försök igen eller stäng av ”Kom ihåg i nyckelringen” för att logga in utan att spara det.} windows {Cmdr couldn’t save this password. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this password in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
+  "servers.refusal.secretNotStored": "{platform, select, macos {Cmdr kunde inte spara det här lösenordet i nyckelringen. Försök igen eller stäng av ”Kom ihåg i nyckelringen” för att logga in utan att spara det.} windows {Cmdr kunde inte spara det här lösenordet. Försök igen eller stäng av ”Kom ihåg lösenord” för att logga in utan att spara det.} other {Cmdr kunde inte spara det här lösenordet i din nyckelring. Försök igen eller stäng av ”Kom ihåg i nyckelringen” för att logga in utan att spara det.}}",
   "@servers.refusal.secretNotStored": {
-    "sourceHash": "20957fe"
+    "sourceHash": "8b29064"
   },
-  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {Cmdr sparade dina ändringar men kunde inte uppdatera lösenordet i nyckelringen. Spara igen för att försöka en gång till.} windows {Cmdr saved your changes but couldn’t update the saved password. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the password in your keyring. Save again to try once more.}}",
+  "servers.refusal.savedSecretNotUpdated": "{platform, select, macos {Cmdr sparade dina ändringar men kunde inte uppdatera lösenordet i nyckelringen. Spara igen för att försöka en gång till.} windows {Cmdr sparade dina ändringar men kunde inte uppdatera det sparade lösenordet. Spara igen för att försöka en gång till.} other {Cmdr sparade dina ändringar men kunde inte uppdatera lösenordet i din nyckelring. Spara igen för att försöka en gång till.}}",
   "@servers.refusal.savedSecretNotUpdated": {
-    "sourceHash": "2ae1e2b"
+    "sourceHash": "03fbb15"
   },
   "servers.refusal.s3AuthenticationRejected": "Den hemliga åtkomstnyckeln fungerade inte.",
   "@servers.refusal.s3AuthenticationRejected": {
@@ -272,13 +272,13 @@
   "@servers.refusal.s3SecretMissing": {
     "sourceHash": "f1f32f2"
   },
-  "servers.refusal.s3SecretNotStored": "{platform, select, macos {Cmdr kunde inte spara den här hemliga åtkomstnyckeln i nyckelringen. Försök igen eller stäng av ”Kom ihåg i nyckelringen” för att logga in utan att spara den.} windows {Cmdr couldn’t save this secret access key. Try again, or turn off “Remember password” to sign in without saving it.} other {Cmdr couldn’t store this secret access key in your keyring. Try again, or turn off “Remember in keyring” to sign in without storing it.}}",
+  "servers.refusal.s3SecretNotStored": "{platform, select, macos {Cmdr kunde inte spara den här hemliga åtkomstnyckeln i nyckelringen. Försök igen eller stäng av ”Kom ihåg i nyckelringen” för att logga in utan att spara den.} windows {Cmdr kunde inte spara den här hemliga åtkomstnyckeln. Försök igen eller stäng av ”Kom ihåg lösenord” för att logga in utan att spara den.} other {Cmdr kunde inte spara den här hemliga åtkomstnyckeln i din nyckelring. Försök igen eller stäng av ”Kom ihåg i nyckelringen” för att logga in utan att spara den.}}",
   "@servers.refusal.s3SecretNotStored": {
-    "sourceHash": "f7a9fb0"
+    "sourceHash": "6b787ad"
   },
-  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {Cmdr sparade dina ändringar men kunde inte uppdatera den hemliga åtkomstnyckeln i nyckelringen. Spara igen för att försöka en gång till.} windows {Cmdr saved your changes but couldn’t update the saved secret access key. Save again to try once more.} other {Cmdr saved your changes but couldn’t update the secret access key in your keyring. Save again to try once more.}}",
+  "servers.refusal.s3SavedSecretNotUpdated": "{platform, select, macos {Cmdr sparade dina ändringar men kunde inte uppdatera den hemliga åtkomstnyckeln i nyckelringen. Spara igen för att försöka en gång till.} windows {Cmdr sparade dina ändringar men kunde inte uppdatera den sparade hemliga åtkomstnyckeln. Spara igen för att försöka en gång till.} other {Cmdr sparade dina ändringar men kunde inte uppdatera den hemliga åtkomstnyckeln i din nyckelring. Spara igen för att försöka en gång till.}}",
   "@servers.refusal.s3SavedSecretNotUpdated": {
-    "sourceHash": "1d2889d"
+    "sourceHash": "5697774"
   },
   "servers.refusal.accessDenied": "Den här nyckeln kommer inte åt den här bucketen. Kontrollera bucketnamnet och den hemliga åtkomstnyckeln, och att nyckeln får läsa bucketen.",
   "@servers.refusal.accessDenied": {
@@ -300,9 +300,9 @@
   "@servers.refusal.regionMismatchNamed": {
     "sourceHash": "30abb0d"
   },
-  "servers.refusal.clockSkewed": "{platform, select, macos {Klockan på den här Macen går fel med mer än 15 minuter, så servern godtar inte Cmdrs förfrågningar. Slå på ”Ställ in tid och datum automatiskt” i Systeminställningar och försök sedan igen.} windows {This PC’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Turn on “Set time automatically” in Settings > Time & language > Date & time, then try again.} other {This computer’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in your system settings, then try again.}}",
+  "servers.refusal.clockSkewed": "{platform, select, macos {Klockan på den här Macen går fel med mer än 15 minuter, så servern godtar inte Cmdrs förfrågningar. Slå på ”Ställ in tid och datum automatiskt” i Systeminställningar och försök sedan igen.} windows {Klockan på den här datorn går fel med mer än 15 minuter, så servern godtar inte Cmdrs förfrågningar. Slå på ”Ange tid automatiskt” i Inställningar > Tid och språk > Datum och tid och försök sedan igen.} other {Klockan på den här datorn går fel med mer än 15 minuter, så servern godtar inte Cmdrs förfrågningar. Ställ in datum och tid automatiskt i systemets inställningar och försök sedan igen.}}",
   "@servers.refusal.clockSkewed": {
-    "sourceHash": "cdee0ef"
+    "sourceHash": "2fd26d3"
   },
   "servers.refusal.notAnS3Endpoint": "Ingenting på den här adressen svarar som S3-lagring.",
   "@servers.refusal.notAnS3Endpoint": {
@@ -312,9 +312,9 @@
   "@servers.refusal.exportNotFound": {
     "sourceHash": "2ef1ce8"
   },
-  "servers.refusal.exportRefused": "{platform, select, macos {{host} låter inte den här Macen öppna den exporten. Kontrollera i serverns NFS-inställningar vilka datorer exporten tillåter.} windows {{host} doesn’t let this PC open that export. Check which devices the export allows in the server’s NFS settings.} other {{host} doesn’t let this computer open that export. Check which computers the export allows in the server’s NFS settings.}}",
+  "servers.refusal.exportRefused": "{platform, select, macos {{host} låter inte den här Macen öppna den exporten. Kontrollera i serverns NFS-inställningar vilka datorer exporten tillåter.} windows {{host} låter inte den här datorn öppna den exporten. Kontrollera i serverns NFS-inställningar vilka enheter exporten tillåter.} other {{host} låter inte den här datorn öppna den exporten. Kontrollera i serverns NFS-inställningar vilka datorer exporten tillåter.}}",
   "@servers.refusal.exportRefused": {
-    "sourceHash": "0cebd7d"
+    "sourceHash": "4a8157e"
   },
   "servers.refusal.reservedPortRequired": "{host} tar bara emot anslutningar från en privilegierad port, och en sådan kan Cmdr inte öppna här. Slå på alternativet ”insecure” för exporten på servern (vissa NAS-appar kallar det ”Tillåt anslutningar från icke-privilegierade portar”) och försök sedan igen.",
   "@servers.refusal.reservedPortRequired": {
@@ -336,13 +336,13 @@
   "@servers.refusal.addressTaken": {
     "sourceHash": "5a14a92"
   },
-  "servers.refusal.secretNotMoved": "{platform, select, macos {Cmdr kunde inte ta med det sparade lösenordet till den nya adressen, så ingenting ändrades. Kontrollera att nyckelringen är upplåst och spara sedan igen.} windows {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved password along to the new address, so nothing changed. Check that your keyring is unlocked, then save again.}}",
+  "servers.refusal.secretNotMoved": "{platform, select, macos {Cmdr kunde inte ta med det sparade lösenordet till den nya adressen, så ingenting ändrades. Kontrollera att nyckelringen är upplåst och spara sedan igen.} windows {Cmdr kunde inte ta med det sparade lösenordet till den nya adressen, så ingenting ändrades. Spara igen för att försöka en gång till.} other {Cmdr kunde inte ta med det sparade lösenordet till den nya adressen, så ingenting ändrades. Kontrollera att din nyckelring är upplåst och spara sedan igen.}}",
   "@servers.refusal.secretNotMoved": {
-    "sourceHash": "7f3c328"
+    "sourceHash": "3a8f01c"
   },
-  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {Cmdr kunde inte ta med den sparade hemliga åtkomstnyckeln till den nya slutpunkten, så ingenting ändrades. Kontrollera att nyckelringen är upplåst och spara sedan igen.} windows {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Save again to try once more.} other {Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your keyring is unlocked, then save again.}}",
+  "servers.refusal.s3SecretNotMoved": "{platform, select, macos {Cmdr kunde inte ta med den sparade hemliga åtkomstnyckeln till den nya slutpunkten, så ingenting ändrades. Kontrollera att nyckelringen är upplåst och spara sedan igen.} windows {Cmdr kunde inte ta med den sparade hemliga åtkomstnyckeln till den nya slutpunkten, så ingenting ändrades. Spara igen för att försöka en gång till.} other {Cmdr kunde inte ta med den sparade hemliga åtkomstnyckeln till den nya slutpunkten, så ingenting ändrades. Kontrollera att din nyckelring är upplåst och spara sedan igen.}}",
   "@servers.refusal.s3SecretNotMoved": {
-    "sourceHash": "69901e7"
+    "sourceHash": "d08a1d2"
   },
   "servers.refusal.accountChanged": "Ett annat konto är en annan server, så Cmdr sparade ingenting. Lägg till det som en ny server i stället.",
   "@servers.refusal.accountChanged": {
@@ -352,13 +352,13 @@
   "@servers.refusal.operationRunning": {
     "sourceHash": "86e3a4d"
   },
-  "servers.refusal.shareMounted": "{platform, select, macos {Den delade mappen {name} är fortfarande monterad från den gamla adressen. Mata ut den och spara sedan igen.} windows {The share {name} is still connected from the old address. Disconnect it, then save again.} other {The share {name} is still mounted from the old address. Unmount it, then save again.}}",
+  "servers.refusal.shareMounted": "{platform, select, macos {Den delade mappen {name} är fortfarande monterad från den gamla adressen. Mata ut den och spara sedan igen.} windows {Den delade mappen {name} är fortfarande ansluten från den gamla adressen. Koppla från den och spara sedan igen.} other {Den delade mappen {name} är fortfarande monterad från den gamla adressen. Avmontera den och spara sedan igen.}}",
   "@servers.refusal.shareMounted": {
-    "sourceHash": "156a61b"
+    "sourceHash": "7b731b1"
   },
-  "servers.refusal.shareEjectRefused": "{platform, select, macos {Cmdr kunde inte mata ut den delade mappen {name}, så ingenting sparades. {reason}} windows {Cmdr couldn’t disconnect {name}, so nothing was saved. {reason}} other {Cmdr couldn’t unmount {name}, so nothing was saved. {reason}}}",
+  "servers.refusal.shareEjectRefused": "{platform, select, macos {Cmdr kunde inte mata ut den delade mappen {name}, så ingenting sparades. {reason}} windows {Cmdr kunde inte koppla från den delade mappen {name}, så ingenting sparades. {reason}} other {Cmdr kunde inte avmontera den delade mappen {name}, så ingenting sparades. {reason}}}",
   "@servers.refusal.shareEjectRefused": {
-    "sourceHash": "1c73fa7"
+    "sourceHash": "7b5c704"
   },
   "servers.sheet.addTitle": "Lägg till server",
   "@servers.sheet.addTitle": {
@@ -388,17 +388,17 @@
   "@servers.sheet.addAnywayHelp": {
     "sourceHash": "68e90b2"
   },
-  "servers.sheet.ejectAndSave": "{platform, select, macos {Mata ut och spara} windows {Disconnect and save} other {Unmount and save}}",
+  "servers.sheet.ejectAndSave": "{platform, select, macos {Mata ut och spara} windows {Koppla från och spara} other {Avmontera och spara}}",
   "@servers.sheet.ejectAndSave": {
-    "sourceHash": "357f2dd"
+    "sourceHash": "ec03e90"
   },
-  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {Cmdr matar ut alla delade mappar som fortfarande är monterade från den gamla adressen och sparar sedan den nya.} windows {Cmdr disconnects every share still connected from the old address, then saves the new one.} other {Cmdr unmounts every share still mounted from the old address, then saves the new one.}}",
+  "servers.sheet.ejectAndSaveHelp": "{platform, select, macos {Cmdr matar ut alla delade mappar som fortfarande är monterade från den gamla adressen och sparar sedan den nya.} windows {Cmdr kopplar från alla delade mappar som fortfarande är anslutna från den gamla adressen och sparar sedan den nya.} other {Cmdr avmonterar alla delade mappar som fortfarande är monterade från den gamla adressen och sparar sedan den nya.}}",
   "@servers.sheet.ejectAndSaveHelp": {
-    "sourceHash": "a1d1206"
+    "sourceHash": "fe6687b"
   },
-  "servers.sheet.ejecting": "{platform, select, macos {Matar ut…} windows {Disconnecting…} other {Unmounting…}}",
+  "servers.sheet.ejecting": "{platform, select, macos {Matar ut…} windows {Kopplar från…} other {Avmonterar…}}",
   "@servers.sheet.ejecting": {
-    "sourceHash": "4c37167"
+    "sourceHash": "67155a9"
   },
   "servers.sheet.addedToast": "Servern {name} är sparad i listan Servrar.",
   "@servers.sheet.addedToast": {
@@ -505,9 +505,9 @@
   "@servers.sheet.nfsExportsEmptyList": {
     "sourceHash": "7558a7b"
   },
-  "servers.sheet.nfsExportsNone": "{platform, select, macos {{host} listar inga exporter för den här Macen. Skriv in sökvägen till exporten om du vet den.} windows {{host} lists no exports for this PC. Type the export’s path if you know it.} other {{host} lists no exports for this computer. Type the export’s path if you know it.}}",
+  "servers.sheet.nfsExportsNone": "{platform, select, macos {{host} listar inga exporter för den här Macen. Skriv in sökvägen till exporten om du vet den.} windows {{host} listar inga exporter för den här datorn. Skriv in sökvägen till exporten om du vet den.} other {{host} listar inga exporter för den här datorn. Skriv in sökvägen till exporten om du vet den.}}",
   "@servers.sheet.nfsExportsNone": {
-    "sourceHash": "a88c0bf"
+    "sourceHash": "049e790"
   },
   "servers.sheet.nfsExportsRefused": "{host} listar inte vilka exporter som finns. Skriv in sökvägen till exporten.",
   "@servers.sheet.nfsExportsRefused": {
@@ -549,9 +549,9 @@
   "@servers.sheet.nfsIdentityRootOwner": {
     "sourceHash": "c464fa8"
   },
-  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {Dina ID:n på den här Macen. Ändra dem om filerna på servern tillhör någon annan.} windows {The user and group IDs Cmdr sends to the server. Change them if the files on the server belong to someone else.} other {Your IDs on this computer. Change them if the files on the server belong to someone else.}}",
+  "servers.sheet.nfsIdentityThisMac": "{platform, select, macos {Dina ID:n på den här Macen. Ändra dem om filerna på servern tillhör någon annan.} windows {Användar- och grupp-ID:n som Cmdr skickar till servern. Ändra dem om filerna på servern tillhör någon annan.} other {Dina ID:n på den här datorn. Ändra dem om filerna på servern tillhör någon annan.}}",
   "@servers.sheet.nfsIdentityThisMac": {
-    "sourceHash": "8bfbb0d"
+    "sourceHash": "5d61505"
   },
   "servers.sheet.nfsUidZeroWarning": "De flesta servrar ger användar-ID 0 inga behörigheter.",
   "@servers.sheet.nfsUidZeroWarning": {
@@ -581,9 +581,9 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
-  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Sparat i nyckelringen. Lämna fältet tomt för att behålla det.} windows {Saved. Leave empty to keep it.} other {Saved in your keyring. Leave empty to keep it.}}",
+  "servers.sheet.secretKeptPlaceholder": "{platform, select, macos {Sparat i nyckelringen. Lämna fältet tomt för att behålla det.} windows {Sparat. Lämna fältet tomt för att behålla det.} other {Sparat i din nyckelring. Lämna fältet tomt för att behålla det.}}",
   "@servers.sheet.secretKeptPlaceholder": {
-    "sourceHash": "8711f6c"
+    "sourceHash": "9297a2d"
   },
   "servers.sheet.smbUsernamePlaceholder": "Valfritt",
   "@servers.sheet.smbUsernamePlaceholder": {
@@ -597,9 +597,9 @@
   "@servers.sheet.passphrase": {
     "sourceHash": "2510031"
   },
-  "servers.sheet.remember": "{platform, select, macos {Kom ihåg i nyckelringen} windows {Remember password} other {Remember in keyring}}",
+  "servers.sheet.remember": "{platform, select, macos {Kom ihåg i nyckelringen} windows {Kom ihåg lösenord} other {Kom ihåg i nyckelringen}}",
   "@servers.sheet.remember": {
-    "sourceHash": "3fd7384"
+    "sourceHash": "42237e1"
   },
   "servers.sheet.connectionModeLegend": "Hur du ansluter",
   "@servers.sheet.connectionModeLegend": {
@@ -788,9 +788,9 @@
   "@servers.sheet.autoReconnectInfoLabel": {
     "sourceHash": "edb9b82"
   },
-  "servers.sheet.needsStoredSecret": "{platform, select, macos {Att återansluta på egen hand kräver ett sparat lösenord. Slå på ”Kom ihåg i nyckelringen” och logga in en gång.} windows {Reconnecting on its own needs a saved password. Turn on “Remember password” and sign in once.} other {Reconnecting on its own needs a remembered password. Turn on “Remember in keyring” and sign in once.}}",
+  "servers.sheet.needsStoredSecret": "{platform, select, macos {Att återansluta på egen hand kräver ett sparat lösenord. Slå på ”Kom ihåg i nyckelringen” och logga in en gång.} windows {Att återansluta på egen hand kräver ett sparat lösenord. Slå på ”Kom ihåg lösenord” och logga in en gång.} other {Att återansluta på egen hand kräver ett sparat lösenord. Slå på ”Kom ihåg i nyckelringen” och logga in en gång.}}",
   "@servers.sheet.needsStoredSecret": {
-    "sourceHash": "32336f3"
+    "sourceHash": "ad8e162"
   },
   "servers.sheet.tryNextcloudAddress": "Prova Nextcloud-adressen",
   "@servers.sheet.tryNextcloudAddress": {
@@ -828,9 +828,9 @@
   "@servers.hostKey.trustNewKey": {
     "sourceHash": "772baac"
   },
-  "servers.certificate.firstContactTitle": "{platform, select, macos {macOS känner inte igen certifikatet från {host}} windows {Windows doesn’t know the certificate for {host}} other {The certificate for {host} is new to this computer}}",
+  "servers.certificate.firstContactTitle": "{platform, select, macos {macOS känner inte igen certifikatet från {host}} windows {Windows känner inte igen certifikatet från {host}} other {Certifikatet från {host} är nytt för den här datorn}}",
   "@servers.certificate.firstContactTitle": {
-    "sourceHash": "ca0b44a"
+    "sourceHash": "0ce5353"
   },
   "servers.certificate.firstContactBody": "Hemmaservrar skapar ofta ett eget certifikat. Jämför fingeravtrycket nedan med det som din server visar, och lita sedan på certifikatet.",
   "@servers.certificate.firstContactBody": {

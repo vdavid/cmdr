@@ -187,9 +187,9 @@
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {從 {from} 到垃圾桶}}",
+  "operationLog.route.fromToTrash": "{platform, select, windows {從 {from} 到資源回收筒} other {從 {from} 到垃圾桶}}",
   "@operationLog.route.fromToTrash": {
-    "sourceHash": "9eff97f"
+    "sourceHash": "2e133c1"
   },
   "operationLog.route.from": "來源：{from}",
   "@operationLog.route.from": {
@@ -255,9 +255,9 @@
   "@operationLog.summary.delete": {
     "sourceHash": "97ec6b7"
   },
-  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, other {已將 {countText} 個項目移到垃圾桶}}}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, other {已將 {countText} 個項目移到資源回收筒}}} other {{count, plural, other {已將 {countText} 個項目移到垃圾桶}}}}",
   "@operationLog.summary.trash": {
-    "sourceHash": "34b4457"
+    "sourceHash": "2dea5c8"
   },
   "operationLog.summary.rename": "{count, plural, other {已重新命名 {countText} 個項目}}",
   "@operationLog.summary.rename": {
@@ -347,9 +347,9 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {Cmdr 在這項操作完成前就結束了，所以可能沒有記錄到這項操作做的所有事。復原只能處理有記錄到的部分。}}",
+  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr 在這項操作完成前就關閉了，所以可能沒有記錄到這項操作做的所有事。復原只能處理有記錄到的部分。} other {Cmdr 在這項操作完成前就結束了，所以可能沒有記錄到這項操作做的所有事。復原只能處理有記錄到的部分。}}",
   "@operationLog.rollback.interruptedNotice": {
-    "sourceHash": "642e6fc"
+    "sourceHash": "da924aa"
   },
   "operationLog.rollback.partialRolledBack": "{count, plural, other {有 {countText} 個項目已經回到原本的樣子。}}",
   "@operationLog.rollback.partialRolledBack": {

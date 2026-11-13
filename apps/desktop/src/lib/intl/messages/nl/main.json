@@ -9,7 +9,7 @@
   },
   "main.upgradeNudge": "{platform, select, macos {We hebben nieuwe onboardingopties toegevoegd. Open Cmdr > Onboarding… om ze te bekijken.} other {We hebben nieuwe onboardingopties toegevoegd. Open het opdrachtenpalet en voer Onboarding… uit om ze te bekijken.}}",
   "@main.upgradeNudge": {
-    "sourceHash": "439adfd"
+    "sourceHash": "b28cac1"
   },
   "main.dockPinNudge.title": "Cmdr in je Dock houden?",
   "@main.dockPinNudge.title": {
@@ -139,41 +139,41 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {Stoppen terwijl er nog {count, plural, one {een bewerking wordt} other {{countText} bewerkingen worden}} uitgevoerd?}}",
+  "main.quit.title": "{platform, select, windows {Afsluiten terwijl er nog {count, plural, one {een bewerking wordt} other {{countText} bewerkingen worden}} uitgevoerd?} other {Stoppen terwijl er nog {count, plural, one {een bewerking wordt} other {{countText} bewerkingen worden}} uitgevoerd?}}",
   "@main.quit.title": {
-    "sourceHash": "2671a89"
+    "sourceHash": "a3f024b"
   },
   "main.quit.body": "Wat al klaar is, blijft klaar. Alles wat nog wordt geschreven, stopt waar het is, en wat gedeeltelijk geschreven achterblijft, ruimt Cmdr op.",
   "@main.quit.body": {
     "sourceHash": "79a69f9"
   },
-  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {Over {seconds, plural, one {{secondsText} seconde} other {{secondsText} seconden}} stopt Cmdr vanzelf, zodat herstarten of uitloggen nooit hoeft te wachten.}}",
+  "main.quit.countdown": "{platform, select, windows {Over {seconds, plural, one {{secondsText} seconde} other {{secondsText} seconden}} sluit Cmdr vanzelf af, zodat opnieuw opstarten of afmelden nooit hoeft te wachten.} other {Over {seconds, plural, one {{secondsText} seconde} other {{secondsText} seconden}} stopt Cmdr vanzelf, zodat herstarten of uitloggen nooit hoeft te wachten.}}",
   "@main.quit.countdown": {
-    "sourceHash": "a389e0c"
+    "sourceHash": "e220441"
   },
-  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Tijd totdat Cmdr vanzelf stopt}}",
+  "main.quit.countdownAria": "{platform, select, windows {Tijd totdat Cmdr vanzelf afsluit} other {Tijd totdat Cmdr vanzelf stopt}}",
   "@main.quit.countdownAria": {
-    "sourceHash": "6b0b5c2"
+    "sourceHash": "c9dd122"
   },
   "main.quit.keepWorking": "Werk door",
   "@main.quit.keepWorking": {
     "sourceHash": "5ed03f2"
   },
-  "main.quit.quitNow": "{platform, select, windows {Exit now} other {Stop nu}}",
+  "main.quit.quitNow": "{platform, select, windows {Sluit nu af} other {Stop nu}}",
   "@main.quit.quitNow": {
-    "sourceHash": "c96bcc8"
+    "sourceHash": "2895d9d"
   },
   "main.quit.operationsHeading": "Nog bezig",
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "{platform, select, macos {Cmdr heeft een nieuwere Safari nodig} other {Cmdr needs a newer WebKitGTK}}",
+  "main.oldWebkit.title": "{platform, select, macos {Cmdr heeft een nieuwere Safari nodig} other {Cmdr heeft een nieuwere WebKitGTK nodig}}",
   "@main.oldWebkit.title": {
-    "sourceHash": "03e502b"
+    "sourceHash": "760c868"
   },
-  "main.oldWebkit.body": "{platform, select, macos {De interface van Cmdr heeft Safari 15.4 of nieuwer nodig, en op deze Mac staat een oudere versie. Open Software-update en installeer alles wat klaarstaat. Dat lost het meestal op.} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
+  "main.oldWebkit.body": "{platform, select, macos {De interface van Cmdr heeft Safari 15.4 of nieuwer nodig, en op deze Mac staat een oudere versie. Open Software-update en installeer alles wat klaarstaat. Dat lost het meestal op.} other {De interface van Cmdr heeft een nieuwere WebKitGTK nodig dan er op deze computer staat. Installeer de openstaande updates van je systeem. Dat lost het meestal op.}}",
   "@main.oldWebkit.body": {
-    "sourceHash": "a7112ec"
+    "sourceHash": "200e524"
   },
   "main.oldMacos.title": "Cmdr op macOS {version}",
   "@main.oldMacos.title": {

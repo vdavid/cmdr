@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Một số nội dung luôn ở lại trên máy Mac này, dù ai yêu cầu gì đi nữa: khóa SSH, thông tin đăng nhập của dịch vụ đám mây và công cụ, các chuỗi khóa của bạn, dữ liệu trình duyệt, Mail, Tin nhắn, Ghi chú, dữ liệu của chính Cmdr và mọi tệp chứa khóa riêng tư. Tên của chúng vẫn có thể đến nhà cung cấp của bạn.} windows {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, Windows credentials, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Một số nội dung luôn ở lại trên máy Mac này, dù ai yêu cầu gì đi nữa: khóa SSH, thông tin đăng nhập của dịch vụ đám mây và công cụ, các chuỗi khóa của bạn, dữ liệu trình duyệt, Mail, Tin nhắn, Ghi chú, dữ liệu của chính Cmdr và mọi tệp chứa khóa riêng tư. Tên của chúng vẫn có thể đến nhà cung cấp của bạn.} windows {Một số nội dung luôn ở lại trên PC này, dù ai yêu cầu gì đi nữa: khóa SSH, thông tin đăng nhập của dịch vụ đám mây và công cụ, thông tin xác thực Windows, dữ liệu trình duyệt, dữ liệu email, dữ liệu của chính Cmdr và mọi tệp chứa khóa riêng tư. Tên của chúng vẫn có thể đến nhà cung cấp của bạn.} other {Một số nội dung luôn ở lại trên máy tính này, dù ai yêu cầu gì đi nữa: khóa SSH, thông tin đăng nhập của dịch vụ đám mây và công cụ, các kho khóa của bạn, dữ liệu trình duyệt, dữ liệu email, dữ liệu của chính Cmdr và mọi tệp chứa khóa riêng tư. Tên của chúng vẫn có thể đến nhà cung cấp của bạn.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
-    "sourceHash": "048633f"
+    "sourceHash": "a533066"
   },
   "ai.cloudConsent.askCmdr.actions": "Trong cuộc trò chuyện do bạn bắt đầu, Ask Cmdr còn có thể thao tác ứng dụng thay bạn: đi tới các thư mục, chọn, sắp xếp, mở tab hay hộp thoại và kết nối tới một vị trí bạn đã lưu. Sao chép, di chuyển, nén, xóa, đổi tên và hoàn tác một thao tác đều mở một hộp thoại hoặc ô đổi tên để bạn xác nhận, và không có gì xảy ra cho đến khi bạn xác nhận. Mở tệp, thay đổi cài đặt (trừ giao diện của Cmdr), thoát, tháo ổ đĩa, gỡ bỏ máy chủ và thay đổi việc lập chỉ mục đều hỏi bạn trước. Tạo một thư mục hoặc tệp có tên và gắn thẻ cho tệp diễn ra ngay lập tức mà không hỏi gì, nhưng bạn có thể hoàn tác một lần thay đổi thẻ. Các lần đổi tên và dọn dẹp mà Ask Cmdr chuẩn bị thành một kế hoạch sẽ chờ bạn phê duyệt.",
   "@ai.cloudConsent.askCmdr.actions": {
@@ -159,13 +159,13 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Các cuộc trò chuyện Ask Cmdr của bạn ở lại trên máy Mac này, trong một cơ sở dữ liệu cục bộ mà bạn có thể mở ra đọc.} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Các cuộc trò chuyện Ask Cmdr của bạn ở lại trên máy Mac này, trong một cơ sở dữ liệu cục bộ mà bạn có thể mở ra đọc.} windows {Các cuộc trò chuyện Ask Cmdr của bạn ở lại trên PC này, trong một cơ sở dữ liệu cục bộ mà bạn có thể mở ra đọc.} other {Các cuộc trò chuyện Ask Cmdr của bạn ở lại trên máy tính này, trong một cơ sở dữ liệu cục bộ mà bạn có thể mở ra đọc.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
-    "sourceHash": "283cdd7"
+    "sourceHash": "9557acc"
   },
-  "ai.cloudConsent.logsNote": "{platform, select, macos {Nếu bạn bật “Ghi nhật ký lệnh gọi mô hình AI” trong phần cài đặt Nâng cao, Cmdr cũng sẽ lưu mỗi yêu cầu và câu trả lời vào một thư mục trên máy Mac của bạn. Các nhật ký lệnh gọi đó chỉ ở cục bộ, không bao giờ được gửi đi bất cứ đâu.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {Nếu bạn bật “Ghi nhật ký lệnh gọi mô hình AI” trong phần cài đặt Nâng cao, Cmdr cũng sẽ lưu mỗi yêu cầu và câu trả lời vào một thư mục trên máy Mac của bạn. Các nhật ký lệnh gọi đó chỉ ở cục bộ, không bao giờ được gửi đi bất cứ đâu.} windows {Nếu bạn bật “Ghi nhật ký lệnh gọi mô hình AI” trong phần cài đặt Nâng cao, Cmdr cũng sẽ lưu mỗi yêu cầu và câu trả lời vào một thư mục trên PC của bạn. Các nhật ký lệnh gọi đó chỉ ở cục bộ, không bao giờ được gửi đi bất cứ đâu.} other {Nếu bạn bật “Ghi nhật ký lệnh gọi mô hình AI” trong phần cài đặt Nâng cao, Cmdr cũng sẽ lưu mỗi yêu cầu và câu trả lời vào một thư mục trên máy tính của bạn. Các nhật ký lệnh gọi đó chỉ ở cục bộ, không bao giờ được gửi đi bất cứ đâu.}}",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "0178d1c"
+    "sourceHash": "e34c082"
   },
   "ai.cloudConsent.turnOffAnyTime": "Tắt mục này bất cứ lúc nào và Cmdr sẽ ngừng gửi ngay lập tức. Dịch vụ, khóa và các cuộc trò chuyện của bạn vẫn giữ nguyên.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -529,29 +529,29 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.title": "{platform, select, macos {{op, select, save {Không thể lưu khóa API của bạn: chuỗi khóa macOS đã từ chối quyền truy cập} other {Không thể đọc khóa API đã lưu của bạn: chuỗi khóa macOS đã từ chối quyền truy cập}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {Không thể lưu khóa API của bạn: kho khóa hệ thống đã từ chối quyền truy cập} other {Không thể đọc khóa API đã lưu của bạn: kho khóa hệ thống đã từ chối quyền truy cập}}}}",
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {Không thể lưu khóa API của bạn: chuỗi khóa macOS đã từ chối quyền truy cập} other {Không thể đọc khóa API đã lưu của bạn: chuỗi khóa macOS đã từ chối quyền truy cập}}} windows {{op, select, save {Không thể lưu khóa API của bạn: Trình quản lý thông tin xác thực đã từ chối quyền truy cập} other {Không thể đọc khóa API đã lưu của bạn: Trình quản lý thông tin xác thực đã từ chối quyền truy cập}}} other {{op, select, save {Không thể lưu khóa API của bạn: kho khóa hệ thống đã từ chối quyền truy cập} other {Không thể đọc khóa API đã lưu của bạn: kho khóa hệ thống đã từ chối quyền truy cập}}}}",
   "@ai.secretError.title": {
-    "sourceHash": "2b2ef89"
+    "sourceHash": "25b34c4"
   },
-  "ai.secretError.body": "{platform, select, macos {{op, select, save {Mở Truy cập chuỗi khóa và kiểm tra mục “Cmdr”, hoặc xóa mục đó rồi thử lưu lại.} other {Mở Truy cập chuỗi khóa, tìm mục “Cmdr”, cấp quyền truy cập, hoặc xóa mục đó rồi nhập lại khóa của bạn.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Mở khóa kho khóa của bạn (ứng dụng Passwords / Keyrings) rồi thử lại.}}",
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {Mở Truy cập chuỗi khóa và kiểm tra mục “Cmdr”, hoặc xóa mục đó rồi thử lưu lại.} other {Mở Truy cập chuỗi khóa, tìm mục “Cmdr”, cấp quyền truy cập, hoặc xóa mục đó rồi nhập lại khóa của bạn.}}} windows {{op, select, save {Mở Trình quản lý thông tin xác thực, kiểm tra mục “Cmdr” trong Thông tin xác thực Windows, hoặc gỡ bỏ mục đó rồi thử lưu lại.} other {Mở Trình quản lý thông tin xác thực, tìm mục “Cmdr” trong Thông tin xác thực Windows, hoặc gỡ bỏ mục đó rồi nhập lại khóa của bạn.}}} other {Mở khóa kho khóa của bạn (ứng dụng Passwords / Keyrings) rồi thử lại.}}",
   "@ai.secretError.body": {
-    "sourceHash": "8f1380e"
+    "sourceHash": "d65c5e3"
   },
   "ai.secretError.genericTitle": "{op, select, save {Không thể lưu khóa API của bạn.} other {Không thể đọc khóa API đã lưu của bạn.}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "c343e42"
   },
-  "ai.secretError.genericBody": "{platform, select, macos {Kiểm tra xem kho khóa hệ thống của bạn có sẵn sàng không, rồi thử lại. Nếu vẫn tiếp diễn, hãy khởi động lại ứng dụng.} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {Kiểm tra xem kho khóa hệ thống của bạn có sẵn sàng không, rồi thử lại. Nếu vẫn tiếp diễn, hãy khởi động lại ứng dụng.}}",
+  "ai.secretError.genericBody": "{platform, select, macos {Kiểm tra xem chuỗi khóa của bạn có sẵn sàng không, rồi thử lại. Nếu vẫn tiếp diễn, hãy khởi động lại ứng dụng.} windows {Kiểm tra xem Trình quản lý thông tin xác thực có sẵn sàng không, rồi thử lại. Nếu việc này cứ tiếp diễn, hãy khởi động lại Cmdr.} other {Kiểm tra xem kho khóa hệ thống của bạn có sẵn sàng không, rồi thử lại. Nếu vẫn tiếp diễn, hãy khởi động lại ứng dụng.}}",
   "@ai.secretError.genericBody": {
-    "sourceHash": "2ee417d"
+    "sourceHash": "9fc0702"
   },
   "ai.secretError.removeTitle": "Không thể xóa khóa API đã lưu của bạn.",
   "@ai.secretError.removeTitle": {
     "sourceHash": "5986628"
   },
-  "ai.secretError.removeBody": "{platform, select, macos {Mở Truy cập chuỗi khóa, tìm mục “Cmdr” rồi xóa mục đó.} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {Mở khóa kho khóa của bạn (ứng dụng Passwords / Keyrings) rồi thử lại.}}",
+  "ai.secretError.removeBody": "{platform, select, macos {Mở Truy cập chuỗi khóa, tìm mục “Cmdr” rồi xóa mục đó.} windows {Mở Trình quản lý thông tin xác thực, tìm mục “Cmdr” trong Thông tin xác thực Windows rồi gỡ bỏ mục đó.} other {Mở khóa kho khóa của bạn (ứng dụng Passwords / Keyrings) rồi thử lại.}}",
   "@ai.secretError.removeBody": {
-    "sourceHash": "4e3abe7"
+    "sourceHash": "3a85511"
   },
   "ai.managed.aiOff": "Tổ chức của bạn đã tắt AI trong Cmdr.",
   "@ai.managed.aiOff": {
@@ -565,9 +565,9 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Tổ chức của bạn chỉ cho phép AI trên thiết bị, và máy Mac này không chạy được AI đó.} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Tổ chức của bạn chỉ cho phép AI trên thiết bị, và máy Mac này không chạy được AI đó.} windows {Tổ chức của bạn chỉ cho phép AI trên thiết bị, và PC này không chạy được AI đó.} other {Tổ chức của bạn chỉ cho phép AI trên thiết bị, và máy tính này không chạy được AI đó.}}",
   "@ai.managed.localOnlyUnsupported": {
-    "sourceHash": "b760ca4"
+    "sourceHash": "b468f8f"
   },
   "ai.managed.serviceNotAllowed": "tổ chức của bạn không cho phép",
   "@ai.managed.serviceNotAllowed": {

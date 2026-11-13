@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{platform, select, windows {{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to the Recycle Bin} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}} other {{type, select, copy {Copiando} move {Movendo} delete {Apagando} trash {Movendo para o Lixo} rename {Renomeando} create_folder {Criando pasta} create_file {Criando arquivo} archive_edit {Editando arquivo compactado} compress {Comprimindo} tag {Mudando etiquetas} other {Em andamento}}}}",
+  "queue.row.label": "{platform, select, windows {{type, select, copy {Copiando} move {Movendo} delete {Apagando} trash {Movendo para a Lixeira} rename {Renomeando} create_folder {Criando pasta} create_file {Criando arquivo} archive_edit {Editando arquivo compactado} compress {Comprimindo} tag {Mudando etiquetas} other {Em andamento}}} other {{type, select, copy {Copiando} move {Movendo} delete {Apagando} trash {Movendo para o Lixo} rename {Renomeando} create_folder {Criando pasta} create_file {Criando arquivo} archive_edit {Editando arquivo compactado} compress {Comprimindo} tag {Mudando etiquetas} other {Em andamento}}}}",
   "@queue.row.label": {
-    "sourceHash": "b051663"
+    "sourceHash": "6210892"
   },
   "queue.row.reversalMovingBack": "Levando os arquivos de volta",
   "@queue.row.reversalMovingBack": {
@@ -159,9 +159,9 @@
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
   },
-  "queue.failureToast.title": "{platform, select, windows {{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to the Recycle Bin} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}} other {{type, select, copy {Não foi possível concluir a cópia} move {Não foi possível concluir a movimentação} delete {Não foi possível concluir o apagamento} trash {Não foi possível concluir a movimentação para o Lixo} rename {Não foi possível concluir a renomeação} create_folder {Não foi possível concluir a criação da pasta} create_file {Não foi possível concluir a criação do arquivo} archive_edit {Não foi possível concluir a edição do arquivo compactado} other {Não foi possível concluir}}}}",
+  "queue.failureToast.title": "{platform, select, windows {{type, select, copy {Não foi possível concluir a cópia} move {Não foi possível concluir a movimentação} delete {Não foi possível concluir o apagamento} trash {Não foi possível concluir a movimentação para a Lixeira} rename {Não foi possível concluir a renomeação} create_folder {Não foi possível concluir a criação da pasta} create_file {Não foi possível concluir a criação do arquivo} archive_edit {Não foi possível concluir a edição do arquivo compactado} other {Não foi possível concluir}}} other {{type, select, copy {Não foi possível concluir a cópia} move {Não foi possível concluir a movimentação} delete {Não foi possível concluir o apagamento} trash {Não foi possível concluir a movimentação para o Lixo} rename {Não foi possível concluir a renomeação} create_folder {Não foi possível concluir a criação da pasta} create_file {Não foi possível concluir a criação do arquivo} archive_edit {Não foi possível concluir a edição do arquivo compactado} other {Não foi possível concluir}}}}",
   "@queue.failureToast.title": {
-    "sourceHash": "b5f2b47"
+    "sourceHash": "6055ffa"
   },
   "queue.failureToast.action": "Mostrar na fila de operações",
   "@queue.failureToast.action": {

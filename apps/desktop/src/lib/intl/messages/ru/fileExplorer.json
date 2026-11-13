@@ -145,9 +145,9 @@
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
   },
-  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "{platform, select, macos {Что-то на этом Mac не дает Cmdr подключиться к серверу {server} напрямую, поэтому общая папка продолжает работать через системное подключение. Выключите и снова включите Cmdr в разделе «{localNetwork}» или проверьте приложение-брандмауэр.} windows {Something on this PC is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.} other {Something on this computer is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Check your firewall settings.}}",
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "{platform, select, macos {Что-то на этом Mac не дает Cmdr подключиться к серверу {server} напрямую, поэтому общая папка продолжает работать через системное подключение. Выключите и снова включите Cmdr в разделе «{localNetwork}» или проверьте приложение-брандмауэр.} windows {Что-то на этом компьютере не дает Cmdr подключиться к серверу {server} напрямую, поэтому общая папка продолжает работать через системное подключение. Проверьте настройки брандмауэра.} other {Что-то на этом компьютере не дает Cmdr подключиться к серверу {server} напрямую, поэтому общая папка продолжает работать через системное подключение. Проверьте настройки брандмауэра.}}",
   "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
-    "sourceHash": "74f758e"
+    "sourceHash": "48523c1"
   },
   "fileExplorer.pane.directConnectionBlockedAfterUpdateToast": "Cmdr обновился, и после этого macOS иногда продолжает блокировать его прямое подключение к серверу {server}. Чтобы это исправить, выключите и снова включите Cmdr в разделе «{localNetwork}». До тех пор общая папка продолжает работать через более медленное системное подключение.",
   "@fileExplorer.pane.directConnectionBlockedAfterUpdateToast": {
@@ -185,9 +185,9 @@
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
     "sourceHash": "f634743"
   },
-  "fileExplorer.pane.trashUnconfirmedToast": "{platform, select, windows {Couldn’t confirm the file was moved to the Recycle Bin. The volume may be slow, but the file may still have been moved. Please check the Recycle Bin to be sure.} other {Не удалось подтвердить перемещение файла в Корзину. Возможно, том отвечает медленно и файл все же перемещен. Проверьте Корзину.}}",
+  "fileExplorer.pane.trashUnconfirmedToast": "{platform, select, windows {Не удалось подтвердить перемещение файла в Корзину. Возможно, том отвечает медленно и файл все же перемещен. Проверьте Корзину.} other {Не удалось подтвердить перемещение файла в Корзину. Возможно, том отвечает медленно и файл все же перемещен. Проверьте Корзину.}}",
   "@fileExplorer.pane.trashUnconfirmedToast": {
-    "sourceHash": "6764112"
+    "sourceHash": "46967f6"
   },
   "fileExplorer.pane.refreshStillRunningToast": "Чтение папки продолжается. Список обновится сразу после получения данных.",
   "@fileExplorer.pane.refreshStillRunningToast": {
@@ -221,9 +221,9 @@
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "f4072a7"
   },
-  "fileExplorer.pane.detachShareFailedToast": "{platform, select, macos {Том {volumeName} не извлечен: {message}} windows {Couldn’t disconnect {volumeName}: {message}} other {Couldn’t unmount {volumeName}: {message}}}",
+  "fileExplorer.pane.detachShareFailedToast": "{platform, select, macos {Том {volumeName} не извлечен: {message}} windows {Том {volumeName} не отключен: {message}} other {Том {volumeName} не отключен: {message}}}",
   "@fileExplorer.pane.detachShareFailedToast": {
-    "sourceHash": "f4072a7"
+    "sourceHash": "2e00aff"
   },
   "fileExplorer.errorPane.tryAgain": "Повторить попытку",
   "@fileExplorer.errorPane.tryAgain": {
@@ -241,9 +241,9 @@
   "@fileExplorer.errorPane.goBack": {
     "sourceHash": "6aadac2"
   },
-  "fileExplorer.errorPane.goHome": "{platform, select, windows {Go to user folder} other {Перейти в папку пользователя}}",
+  "fileExplorer.errorPane.goHome": "{platform, select, windows {Перейти в папку пользователя} other {Перейти в папку пользователя}}",
   "@fileExplorer.errorPane.goHome": {
-    "sourceHash": "74b2a8b"
+    "sourceHash": "0ae4c72"
   },
   "fileExplorer.errorPane.technicalDetails": "Технические подробности",
   "@fileExplorer.errorPane.technicalDetails": {
@@ -321,17 +321,17 @@
   "@fileExplorer.openingToast.withApp": {
     "sourceHash": "68aaf91"
   },
-  "fileExplorer.open.notOnThisMac": "{platform, select, macos {Cmdr пока не может открыть этот файл в другом приложении: это не обычный файл на вашем Mac. Нажмите {viewKey} для просмотра.} windows {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your PC. Press {viewKey} to view it.} other {Cmdr can’t open this file in another app yet, because it isn’t a regular file on your computer. Press {viewKey} to view it.}}",
+  "fileExplorer.open.notOnThisMac": "{platform, select, macos {Cmdr пока не может открыть этот файл в другом приложении: это не обычный файл на вашем Mac. Нажмите {viewKey} для просмотра.} windows {Cmdr пока не может открыть этот файл в другом приложении: это не обычный файл на вашем компьютере. Нажмите {viewKey} для просмотра.} other {Cmdr пока не может открыть этот файл в другом приложении: это не обычный файл на вашем компьютере. Нажмите {viewKey} для просмотра.}}",
   "@fileExplorer.open.notOnThisMac": {
-    "sourceHash": "66fcc50"
+    "sourceHash": "f927dac"
   },
   "fileExplorer.open.notOnThisMacWithoutKey": "{platform, select, macos {Cmdr пока не может открыть этот файл в другом приложении: это не обычный файл на вашем Mac. Для просмотра используйте команду «Просмотр».} windows {Cmdr пока не может открыть этот файл в другом приложении: это не обычный файл на вашем компьютере. Для просмотра используйте команду «Просмотр».} other {Cmdr пока не может открыть этот файл в другом приложении: это не обычный файл на вашем компьютере. Для просмотра используйте команду «Просмотр».}}",
   "@fileExplorer.open.notOnThisMacWithoutKey": {
     "sourceHash": "b281a7e"
   },
-  "fileExplorer.open.didNotOpen": "{platform, select, macos {Файл {fileName} не открылся. macOS не нашла этот файл, или нет приложения, которое его открывает.} windows {{fileName} didn’t open. Windows couldn’t find the file, or no app is set to open it.} other {{fileName} didn’t open. The file may be gone, or no app opens it.}}",
+  "fileExplorer.open.didNotOpen": "{platform, select, macos {Файл {fileName} не открылся. macOS не нашла этот файл, или нет приложения, которое его открывает.} windows {Файл {fileName} не открылся. Windows не нашла этот файл, или для него не назначено приложение.} other {Файл {fileName} не открылся. Возможно, файла уже нет, или нет приложения, которое его открывает.}}",
   "@fileExplorer.open.didNotOpen": {
-    "sourceHash": "cd95423"
+    "sourceHash": "5df1868"
   },
   "fileExplorer.openingToast.noApp": "Открытие «{fileName}»…",
   "@fileExplorer.openingToast.noApp": {
@@ -341,9 +341,9 @@
   "@fileExplorer.functionKeyBar.terminalLabel": {
     "sourceHash": "e0926fd"
   },
-  "fileExplorer.functionKeyBar.hiddenToast": "{platform, select, windows {Function key bar is now hidden. Turn it back on any time later in <settingsLink>Settings</settingsLink>.} other {Панель функциональных клавиш скрыта. Снова включить ее можно в <settingsLink>настройках</settingsLink>.}}",
+  "fileExplorer.functionKeyBar.hiddenToast": "{platform, select, windows {Панель функциональных клавиш скрыта. Снова включить ее можно в <settingsLink>настройках</settingsLink>.} other {Панель функциональных клавиш скрыта. Снова включить ее можно в <settingsLink>настройках</settingsLink>.}}",
   "@fileExplorer.functionKeyBar.hiddenToast": {
-    "sourceHash": "f961d3b"
+    "sourceHash": "cb00b6d"
   },
   "fileExplorer.typeToJump.prefix": "Переход: ",
   "@fileExplorer.typeToJump.prefix": {
@@ -381,13 +381,13 @@
   "@fileExplorer.network.signIn": {
     "sourceHash": "bfd402b"
   },
-  "fileExplorer.network.osMountFallback.message": "{platform, select, macos {Не удалось подключиться напрямую к <shareName>{share}</shareName>. Подключение установлено через системное SMB-подключение macOS. Обычно оно в 4 раза медленнее прямого подключения Cmdr, а иногда — в 100 раз. Нажмите кнопку ниже, чтобы попробовать еще раз.} windows {Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via Windows’ own SMB connection, which is often slower than Cmdr’s direct connection. Select the button below to try again.} other {Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via your system’s SMB connection (GVFS), which is often a lot slower than Cmdr’s direct connection. Click the button below to try again.}}",
+  "fileExplorer.network.osMountFallback.message": "{platform, select, macos {Не удалось подключиться напрямую к <shareName>{share}</shareName>. Подключение установлено через системное SMB-подключение macOS. Обычно оно в 4 раза медленнее прямого подключения Cmdr, а иногда — в 100 раз. Нажмите кнопку ниже, чтобы попробовать еще раз.} windows {Не удалось подключиться напрямую к <shareName>{share}</shareName>. Подключение установлено через собственное SMB-подключение Windows. Обычно оно медленнее прямого подключения Cmdr. Нажмите кнопку ниже, чтобы попробовать еще раз.} other {Не удалось подключиться напрямую к <shareName>{share}</shareName>. Подключение установлено через системное SMB-подключение (GVFS). Обычно оно намного медленнее прямого подключения Cmdr. Нажмите кнопку ниже, чтобы попробовать еще раз.}}",
   "@fileExplorer.network.osMountFallback.message": {
-    "sourceHash": "cb53372"
+    "sourceHash": "1279133"
   },
-  "fileExplorer.network.osMountFallback.shareNotOnServer": "{platform, select, macos {Не удалось подключиться напрямую к <shareName>{share}</shareName>: сервер сообщает, что общей папки с таким именем нет. Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее. Повторная попытка тут не поможет: возможно, папку переименовали или удалили на сервере, так что стоит проверить там.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through Windows’ own SMB connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through your system’s SMB connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.}}",
+  "fileExplorer.network.osMountFallback.shareNotOnServer": "{platform, select, macos {Не удалось подключиться напрямую к <shareName>{share}</shareName>: сервер сообщает, что общей папки с таким именем нет. Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее. Повторная попытка тут не поможет: возможно, папку переименовали или удалили на сервере, так что стоит проверить там.} windows {Не удалось подключиться напрямую к <shareName>{share}</shareName>: сервер сообщает, что общей папки с таким именем нет. Подключение по-прежнему идет через собственное SMB-подключение Windows, а оно намного медленнее. Повторная попытка тут не поможет: возможно, папку переименовали или удалили на сервере, так что стоит проверить там.} other {Не удалось подключиться напрямую к <shareName>{share}</shareName>: сервер сообщает, что общей папки с таким именем нет. Подключение по-прежнему идет через системное SMB-подключение, а оно намного медленнее. Повторная попытка тут не поможет: возможно, папку переименовали или удалили на сервере, так что стоит проверить там.}}",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
-    "sourceHash": "3ae984e"
+    "sourceHash": "aef7f41"
   },
   "fileExplorer.network.osMountFallback.retry": "Попробовать подключиться напрямую",
   "@fileExplorer.network.osMountFallback.retry": {
@@ -405,9 +405,9 @@
   "@fileExplorer.network.browser.refresh": {
     "sourceHash": "0e91610"
   },
-  "fileExplorer.network.browser.refreshHint": "{platform, select, windows {Press <key></key> or select here to refresh} other {Чтобы обновить, нажмите <key></key> или сюда}}",
+  "fileExplorer.network.browser.refreshHint": "{platform, select, windows {Чтобы обновить, нажмите <key></key> или сюда} other {Чтобы обновить, нажмите <key></key> или сюда}}",
   "@fileExplorer.network.browser.refreshHint": {
-    "sourceHash": "7f65c7d"
+    "sourceHash": "3e17581"
   },
   "fileExplorer.network.browser.status.resolving": "Определение адреса…",
   "@fileExplorer.network.browser.status.resolving": {
@@ -489,9 +489,9 @@
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "bde1b3c"
   },
-  "fileExplorer.network.browser.removeHostConfirm": "{platform, select, windows {Forget {hostName}? Cmdr stops listing it and the shares saved under it. Nothing gets disconnected.} other {Забыть {hostName}? Cmdr перестанет показывать этот хост и сохраненные для него общие папки. Подключенные тома останутся подключенными.}}",
+  "fileExplorer.network.browser.removeHostConfirm": "{platform, select, windows {Забыть {hostName}? Cmdr перестанет показывать этот хост и сохраненные для него общие папки. Подключенные тома останутся подключенными.} other {Забыть {hostName}? Cmdr перестанет показывать этот хост и сохраненные для него общие папки. Подключенные тома останутся подключенными.}}",
   "@fileExplorer.network.browser.removeHostConfirm": {
-    "sourceHash": "25262e0"
+    "sourceHash": "274c4b9"
   },
   "fileExplorer.network.browser.hostRemoved": "Хост забыт: {hostName}",
   "@fileExplorer.network.browser.hostRemoved": {
@@ -521,9 +521,9 @@
   "@fileExplorer.network.browser.disconnectFailed": {
     "sourceHash": "e394098"
   },
-  "fileExplorer.network.share.credentialsStoredLocally": "{platform, select, windows {Credentials stored locally (Credential Manager not available)} other {Учетные данные сохранены локально (системное хранилище ключей не найдено)}}",
+  "fileExplorer.network.share.credentialsStoredLocally": "{platform, select, windows {Учетные данные сохранены локально (Диспетчер учетных данных недоступен)} other {Учетные данные сохранены локально (системное хранилище ключей не найдено)}}",
   "@fileExplorer.network.share.credentialsStoredLocally": {
-    "sourceHash": "18dd24e"
+    "sourceHash": "e14f91d"
   },
   "fileExplorer.network.share.notFound": "Общая папка «{shareName}» не найдена на сервере {hostName}",
   "@fileExplorer.network.share.notFound": {
@@ -557,9 +557,9 @@
   "@fileExplorer.network.share.backArrow": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.network.share.forgetPasswordTooltip": "{platform, select, macos {Удалить сохраненный пароль из Связки ключей} windows {Remove saved password from Credential Manager} other {Remove saved password from your keyring}}",
+  "fileExplorer.network.share.forgetPasswordTooltip": "{platform, select, macos {Удалить сохраненный пароль из Связки ключей} windows {Удалить сохраненный пароль из Диспетчера учетных данных} other {Удалить сохраненный пароль из хранилища ключей}}",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
-    "sourceHash": "f067186"
+    "sourceHash": "4ae6a02"
   },
   "fileExplorer.network.share.useGuest": "Просмотреть как гость",
   "@fileExplorer.network.share.useGuest": {
@@ -597,9 +597,9 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.networkMount.mountingSlow": "{platform, select, macos {Ожидание подключения macOS продолжается. Отменить можно в любой момент.} windows {Still waiting for Windows to connect. You can cancel at any time.} other {Still connecting to the share. You can cancel at any time.}}",
+  "fileExplorer.networkMount.mountingSlow": "{platform, select, macos {Ожидание подключения macOS продолжается. Отменить можно в любой момент.} windows {Ожидание подключения Windows продолжается. Отменить можно в любой момент.} other {Подключение к общей папке продолжается. Отменить можно в любой момент.}}",
   "@fileExplorer.networkMount.mountingSlow": {
-    "sourceHash": "e8e9040"
+    "sourceHash": "8267138"
   },
   "fileExplorer.networkMount.mountFailedTitle": "Не удалось подключить общую папку",
   "@fileExplorer.networkMount.mountFailedTitle": {
@@ -645,9 +645,9 @@
   "@fileExplorer.unreachable.disconnect": {
     "sourceHash": "acfc5be"
   },
-  "fileExplorer.unreachable.openHome": "{platform, select, windows {Open user folder} other {Открыть папку пользователя}}",
+  "fileExplorer.unreachable.openHome": "{platform, select, windows {Открыть папку пользователя} other {Открыть папку пользователя}}",
   "@fileExplorer.unreachable.openHome": {
-    "sourceHash": "a178b4d"
+    "sourceHash": "c5f1d02"
   },
   "fileExplorer.listingStalled.title": "Ожидание этой папки продолжается",
   "@fileExplorer.listingStalled.title": {
@@ -949,9 +949,9 @@
   "@fileExplorer.restic.forgetPassword.forgotten": {
     "sourceHash": "bd4ac8e"
   },
-  "fileExplorer.restic.forgetPassword.keychainKeptIt": "{platform, select, macos {Cmdr пока заблокировал резервную копию {name}, но сохраненный пароль остался в Связке ключей. Чтобы избавиться от него навсегда, удалите его в приложении «Связка ключей».} windows {Cmdr locked {name} for now, but Credential Manager kept its saved password. To remove it for good, delete it in Credential Manager.} other {Cmdr locked {name} for now, but your keyring kept its saved password. To remove it for good, delete it in your keyring app.}}",
+  "fileExplorer.restic.forgetPassword.keychainKeptIt": "{platform, select, macos {Cmdr пока заблокировал резервную копию {name}, но сохраненный пароль остался в Связке ключей. Чтобы избавиться от него навсегда, удалите его в приложении «Связка ключей».} windows {Cmdr пока заблокировал резервную копию {name}, но сохраненный пароль остался в Диспетчере учетных данных. Чтобы избавиться от него навсегда, удалите его в Диспетчере учетных данных.} other {Cmdr пока заблокировал резервную копию {name}, но сохраненный пароль остался в хранилище ключей. Чтобы избавиться от него навсегда, удалите его в приложении для управления ключами.}}",
   "@fileExplorer.restic.forgetPassword.keychainKeptIt": {
-    "sourceHash": "56adfb0"
+    "sourceHash": "20277f3"
   },
   "fileExplorer.restic.forgetPassword.unreachable": "Сейчас Cmdr не удалось получить доступ к резервной копии {name}, поэтому пароль остается сохраненным. Попробуйте еще раз чуть позже.",
   "@fileExplorer.restic.forgetPassword.unreachable": {
@@ -1057,9 +1057,9 @@
   "@fileExplorer.openWith.copyRefused.tooLargeInBackup": {
     "sourceHash": "071fe99"
   },
-  "fileExplorer.openWith.copyRefused.notEnoughSpace": "{platform, select, macos {На диске вашего Mac не хватает места для копии файла {fileName} размером {size}, поэтому Cmdr не может открыть файл в {appName}. Освободите немного места и попробуйте еще раз.} windows {Your PC doesn’t have room for a {size} copy of {fileName}, so Cmdr can’t open it in {appName}. Free up some space, then try again.} other {Your computer’s disk doesn’t have room for a {size} copy of {fileName}, so Cmdr can’t open it in {appName}. Free up some space, then try again.}}",
+  "fileExplorer.openWith.copyRefused.notEnoughSpace": "{platform, select, macos {На диске вашего Mac не хватает места для копии файла {fileName} размером {size}, поэтому Cmdr не может открыть файл в {appName}. Освободите немного места и попробуйте еще раз.} windows {На вашем компьютере не хватает места для копии файла {fileName} размером {size}, поэтому Cmdr не может открыть файл в приложении {appName}. Освободите немного места и попробуйте еще раз.} other {На диске вашего компьютера не хватает места для копии файла {fileName} размером {size}, поэтому Cmdr не может открыть файл в приложении {appName}. Освободите немного места и попробуйте еще раз.}}",
   "@fileExplorer.openWith.copyRefused.notEnoughSpace": {
-    "sourceHash": "5cd8e49"
+    "sourceHash": "67ac459"
   },
   "fileExplorer.openWith.copyRefused.needsPassword": "Файл {fileName} находится в архиве, защищенном паролем. Сначала скопируйте его в папку (Cmdr запросит пароль), затем откройте в {appName}.",
   "@fileExplorer.openWith.copyRefused.needsPassword": {
@@ -1069,9 +1069,9 @@
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "4ff2573"
   },
-  "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} не может открыть этот файл: это не обычный файл на вашем Mac. Нажмите {viewKey}, чтобы просмотреть его в Cmdr.} windows {{appName} can’t open this file, because it isn’t a regular file on your PC. Press {viewKey} to view it in Cmdr.} other {{appName} can’t open this file, because it isn’t a regular file on your computer. Press {viewKey} to view it in Cmdr.}}",
+  "fileExplorer.openWith.notOnThisMac": "{platform, select, macos {{appName} не может открыть этот файл: это не обычный файл на вашем Mac. Нажмите {viewKey}, чтобы просмотреть его в Cmdr.} windows {{appName} не может открыть этот файл: это не обычный файл на вашем компьютере. Нажмите {viewKey}, чтобы просмотреть его в Cmdr.} other {{appName} не может открыть этот файл: это не обычный файл на вашем компьютере. Нажмите {viewKey}, чтобы просмотреть его в Cmdr.}}",
   "@fileExplorer.openWith.notOnThisMac": {
-    "sourceHash": "4e5520c"
+    "sourceHash": "94bd635"
   },
   "fileExplorer.openWith.notOnThisMacWithoutKey": "{platform, select, macos {{appName} не может открыть этот файл: это не обычный файл на вашем Mac. Чтобы просмотреть его в Cmdr, используйте команду «Просмотр».} windows {{appName} не может открыть этот файл: это не обычный файл на вашем компьютере. Чтобы просмотреть его в Cmdr, используйте команду «Просмотр».} other {{appName} не может открыть этот файл: это не обычный файл на вашем компьютере. Чтобы просмотреть его в Cmdr, используйте команду «Просмотр».}}",
   "@fileExplorer.openWith.notOnThisMacWithoutKey": {
@@ -1299,9 +1299,9 @@
   "@fileExplorer.dirSize.pausedForSpaceThisDrive": {
     "sourceHash": "c655c6f"
   },
-  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "{platform, select, macos {Этот размер может быть неактуальным: индексация приостановлена, потому что загрузочный диск, на котором Cmdr хранит свой индекс, почти заполнен.} windows {This size may be out of date: indexing is paused because your system drive, where Cmdr keeps its index, is almost full.} other {This size may be out of date: indexing is paused because your system disk, where Cmdr keeps its index, is almost full.}}",
+  "fileExplorer.dirSize.pausedForSpaceOtherDrive": "{platform, select, macos {Этот размер может быть неактуальным: индексация приостановлена, потому что загрузочный диск, на котором Cmdr хранит свой индекс, почти заполнен.} windows {Этот размер может быть неактуальным: индексация приостановлена, потому что системный диск, на котором Cmdr хранит свой индекс, почти заполнен.} other {Этот размер может быть неактуальным: индексация приостановлена, потому что системный диск, на котором Cmdr хранит свой индекс, почти заполнен.}}",
   "@fileExplorer.dirSize.pausedForSpaceOtherDrive": {
-    "sourceHash": "29c5f81"
+    "sourceHash": "0063d50"
   },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} ветка} few {{countText} ветки} many {{countText} веток} other {{countText} ветки}}",
   "@fileExplorer.git.size.branches": {
@@ -1644,17 +1644,17 @@
   "@fileExplorer.renameConflict.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "fileExplorer.renameConflict.overwriteTrash": "{platform, select, windows {Overwrite and delete old file} other {Заменить, отправив старый файл в Корзину}}",
+  "fileExplorer.renameConflict.overwriteTrash": "{platform, select, windows {Заменить, удалив старый файл} other {Заменить, отправив старый файл в Корзину}}",
   "@fileExplorer.renameConflict.overwriteTrash": {
-    "sourceHash": "e0192f6"
+    "sourceHash": "4461739"
   },
-  "fileExplorer.renameConflict.overwriteTrashFolder": "{platform, select, windows {Overwrite and delete old folder} other {Заменить, отправив старую папку в Корзину}}",
+  "fileExplorer.renameConflict.overwriteTrashFolder": "{platform, select, windows {Заменить, удалив старую папку} other {Заменить, отправив старую папку в Корзину}}",
   "@fileExplorer.renameConflict.overwriteTrashFolder": {
-    "sourceHash": "7f94bfa"
+    "sourceHash": "c3945c1"
   },
-  "fileExplorer.renameConflict.overwriteDelete": "{platform, select, windows {Overwrite and permanently delete old file} other {Заменить, удалив старый файл}}",
+  "fileExplorer.renameConflict.overwriteDelete": "{platform, select, windows {Заменить, безвозвратно удалив старый файл} other {Заменить, удалив старый файл}}",
   "@fileExplorer.renameConflict.overwriteDelete": {
-    "sourceHash": "02093d5"
+    "sourceHash": "4cf34c9"
   },
   "fileExplorer.renameConflict.cancel": "Отменить",
   "@fileExplorer.renameConflict.cancel": {
@@ -1672,13 +1672,13 @@
   "@fileExplorer.extensionChange.description": {
     "sourceHash": "ef7ac59"
   },
-  "fileExplorer.extensionChange.descriptionRemove": "{platform, select, macos {{kind, select, folder {Убрать расширение «.{oldExt}»? macOS будет показывать этот объект как обычную папку, а не как единый объект.} other {Убрать расширение «.{oldExt}»? Без него ваш Mac может не знать, в каком приложении открывать файл.}}} windows {{kind, select, folder {Are you sure you want to remove the “.{oldExt}” extension?} other {Are you sure you want to remove the “.{oldExt}” extension? Windows may not know which app opens the file without it.}}} other {{kind, select, folder {Are you sure you want to remove the “.{oldExt}” extension?} other {Are you sure you want to remove the “.{oldExt}” extension? Your computer may not know which app opens the file without it.}}}}",
+  "fileExplorer.extensionChange.descriptionRemove": "{platform, select, macos {{kind, select, folder {Убрать расширение «.{oldExt}»? macOS будет показывать этот объект как обычную папку, а не как единый объект.} other {Убрать расширение «.{oldExt}»? Без него ваш Mac может не знать, в каком приложении открывать файл.}}} windows {{kind, select, folder {Убрать расширение «.{oldExt}»?} other {Убрать расширение «.{oldExt}»? Без него Windows может не знать, в каком приложении открывать файл.}}} other {{kind, select, folder {Убрать расширение «.{oldExt}»?} other {Убрать расширение «.{oldExt}»? Без него ваш компьютер может не знать, в каком приложении открывать файл.}}}}",
   "@fileExplorer.extensionChange.descriptionRemove": {
-    "sourceHash": "8c87a3d"
+    "sourceHash": "e33975c"
   },
-  "fileExplorer.extensionChange.descriptionAdd": "{platform, select, macos {{kind, select, folder {Добавить расширение «.{newExt}»? macOS может начать показывать эту папку как единый объект.} other {Добавить расширение «.{newExt}»? При следующем открытии файл может открыться в другом приложении.}}} other {{kind, select, folder {Are you sure you want to add the “.{newExt}” extension?} other {Are you sure you want to add the “.{newExt}” extension? Your file may open in a different app next time you open it.}}}}",
+  "fileExplorer.extensionChange.descriptionAdd": "{platform, select, macos {{kind, select, folder {Добавить расширение «.{newExt}»? macOS может начать показывать эту папку как единый объект.} other {Добавить расширение «.{newExt}»? При следующем открытии файл может открыться в другом приложении.}}} other {{kind, select, folder {Добавить расширение «.{newExt}»?} other {Добавить расширение «.{newExt}»? При следующем открытии файл может открыться в другом приложении.}}}}",
   "@fileExplorer.extensionChange.descriptionAdd": {
-    "sourceHash": "c18c736"
+    "sourceHash": "e3f2b28"
   },
   "fileExplorer.extensionChange.keepNone": "Оставить без расширения",
   "@fileExplorer.extensionChange.keepNone": {
@@ -1772,9 +1772,9 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "{platform, select, windows {This folder can’t be a favorite: favorites point at folders on drives, shares, servers, and phones} other {Эту папку нельзя добавить в избранное: избранное ведет к папкам на дисках, серверах, телефонах и в общих папках}}",
+  "fileExplorer.navigation.favoritesCantAddHere": "{platform, select, windows {Эту папку нельзя добавить в избранное: избранное ведет к папкам на дисках, серверах, телефонах и в общих папках} other {Эту папку нельзя добавить в избранное: избранное ведет к папкам на дисках, серверах, телефонах и в общих папках}}",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "03886b7"
+    "sourceHash": "8949eb3"
   },
   "fileExplorer.navigation.switcherFavorites": "Избранное",
   "@fileExplorer.navigation.switcherFavorites": {
@@ -2032,17 +2032,17 @@
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
     "sourceHash": "e8bca64"
   },
-  "fileExplorer.navigation.detachShareAriaLabel": "{platform, select, macos {Извлечь «{name}»} windows {Disconnect {name}} other {Unmount {name}}}",
+  "fileExplorer.navigation.detachShareAriaLabel": "{platform, select, macos {Извлечь «{name}»} windows {Отключить {name}} other {Отключить «{name}»}}",
   "@fileExplorer.navigation.detachShareAriaLabel": {
-    "sourceHash": "61db18b"
+    "sourceHash": "063ed02"
   },
-  "fileExplorer.navigation.detachingShareAriaLabel": "{platform, select, macos {Извлечение «{name}»…} windows {Disconnecting {name}…} other {Unmounting {name}…}}",
+  "fileExplorer.navigation.detachingShareAriaLabel": "{platform, select, macos {Извлечение «{name}»…} windows {Отключение: {name}…} other {Отключение «{name}»…}}",
   "@fileExplorer.navigation.detachingShareAriaLabel": {
-    "sourceHash": "e8bca64"
+    "sourceHash": "d902264"
   },
-  "fileExplorer.navigation.detachShareBusyTooltip": "{platform, select, macos {Cmdr еще работает с файлами на этом устройстве. Его можно будет извлечь, когда работа завершится.} windows {Cmdr is still working with files on this device. You can disconnect it once that’s done.} other {Cmdr is still working with files on this device. You can unmount it once that’s done.}}",
+  "fileExplorer.navigation.detachShareBusyTooltip": "{platform, select, macos {Cmdr еще работает с файлами на этом устройстве. Его можно будет извлечь, когда работа завершится.} windows {Cmdr еще работает с файлами на этом устройстве. Его можно будет отключить, когда работа завершится.} other {Cmdr еще работает с файлами на этом устройстве. Его можно будет отключить, когда работа завершится.}}",
   "@fileExplorer.navigation.detachShareBusyTooltip": {
-    "sourceHash": "b298e2f"
+    "sourceHash": "4614293"
   },
   "fileExplorer.navigation.usbSpeed": "{label} (макс. {mbps} МБ/с)",
   "@fileExplorer.navigation.usbSpeed": {
@@ -2124,21 +2124,21 @@
   "@fileExplorer.navigation.driveIndex.tooltipPausedThisDrive": {
     "sourceHash": "5714115"
   },
-  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "{platform, select, macos {Индексация приостановлена, потому что загрузочный диск, на котором Cmdr хранит свой индекс, почти заполнен. Размеры папок на этом диске могут быть неактуальны, пока индексация не возобновится. Она возобновится сама, как только на загрузочном диске освободится больше места.} windows {Indexing is paused because your system drive, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.} other {Indexing is paused because your system disk, where Cmdr keeps its index, is almost full. Folder sizes on this drive may be out of date until it resumes, which it does by itself once there’s more free space there.}}",
+  "fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": "{platform, select, macos {Индексация приостановлена, потому что загрузочный диск, на котором Cmdr хранит свой индекс, почти заполнен. Размеры папок на этом диске могут быть неактуальны, пока индексация не возобновится. Она возобновится сама, как только на загрузочном диске освободится больше места.} windows {Индексация приостановлена, потому что системный диск, на котором Cmdr хранит свой индекс, почти заполнен. Размеры папок на этом диске могут быть неактуальны, пока индексация не возобновится. Она возобновится сама, как только на системном диске освободится больше места.} other {Индексация приостановлена, потому что системный диск, на котором Cmdr хранит свой индекс, почти заполнен. Размеры папок на этом диске могут быть неактуальны, пока индексация не возобновится. Она возобновится сама, как только на системном диске освободится больше места.}}",
   "@fileExplorer.navigation.driveIndex.tooltipPausedOtherDrive": {
-    "sourceHash": "68994e4"
+    "sourceHash": "0703785"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "{platform, select, macos {{hours, plural, =1 {За последний час} one {За последний {hoursText} час} few {За последние {hoursText} часа} many {За последние {hoursText} часов} other {За последние {hoursText} часа}} macOS {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно это кэши с множеством мелких файлов. Следующая полная проверка Cmdr {remaining, plural, =1 {через час} one {через {remainingText} час} few {через {remainingText} часа} many {через {remainingText} часов} other {через {remainingText} часа}} все исправит.} windows {Windows lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and Cmdr’s next full check in {remaining, plural, one {an hour} other {{remainingText} hours}} will fix it.} other {Your system lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and Cmdr’s next full check in {remaining, plural, one {an hour} other {{remainingText} hours}} will fix it.}}",
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "{platform, select, macos {{hours, plural, =1 {За последний час} one {За последний {hoursText} час} few {За последние {hoursText} часа} many {За последние {hoursText} часов} other {За последние {hoursText} часа}} macOS {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно это кэши с множеством мелких файлов. Следующая полная проверка Cmdr {remaining, plural, =1 {через час} one {через {remainingText} час} few {через {remainingText} часа} many {через {remainingText} часов} other {через {remainingText} часа}} все исправит.} windows {{hours, plural, =1 {За последний час} one {За последний {hoursText} час} few {За последние {hoursText} часа} many {За последние {hoursText} часов} other {За последние {hoursText} часа}} Windows {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно так бывает, когда много файлов меняется одновременно. Следующая полная проверка Cmdr {remaining, plural, =1 {через час} one {через {remainingText} час} few {через {remainingText} часа} many {через {remainingText} часов} other {через {remainingText} часа}} все исправит.} other {{hours, plural, =1 {За последний час} one {За последний {hoursText} час} few {За последние {hoursText} часа} many {За последние {hoursText} часов} other {За последние {hoursText} часа}} ваша система {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно так бывает, когда много файлов меняется одновременно. Следующая полная проверка Cmdr {remaining, plural, =1 {через час} one {через {remainingText} час} few {через {remainingText} часа} many {через {remainingText} часов} other {через {remainingText} часа}} все исправит.}}",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
-    "sourceHash": "eb09aed"
+    "sourceHash": "2e13468"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "{platform, select, macos {macOS {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно это кэши с множеством мелких файлов. Текущая проверка все исправит.} windows {Windows lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and the check running right now will put them right.} other {Your system lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and the check running right now will put them right.}}",
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "{platform, select, macos {macOS {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно это кэши с множеством мелких файлов. Текущая проверка все исправит.} windows {Windows {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно так бывает, когда много файлов меняется одновременно. Текущая проверка все исправит.} other {Ваша система {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно так бывает, когда много файлов меняется одновременно. Текущая проверка все исправит.}}",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
-    "sourceHash": "0ff330c"
+    "sourceHash": "056944a"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "{platform, select, macos {{hours, plural, =1 {За последний час} one {За последний {hoursText} час} few {За последние {hoursText} часа} many {За последние {hoursText} часов} other {За последние {hoursText} часа}} macOS {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно это кэши с множеством мелких файлов, так что ничего страшного.} windows {Windows lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and Cmdr’s next full check will fix it.} other {Your system lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It usually happens when lots of files change at once, and Cmdr’s next full check will fix it.}}",
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "{platform, select, macos {{hours, plural, =1 {За последний час} one {За последний {hoursText} час} few {За последние {hoursText} часа} many {За последние {hoursText} часов} other {За последние {hoursText} часа}} macOS {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно это кэши с множеством мелких файлов, так что ничего страшного.} windows {{hours, plural, =1 {За последний час} one {За последний {hoursText} час} few {За последние {hoursText} часа} many {За последние {hoursText} часов} other {За последние {hoursText} часа}} Windows {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно так бывает, когда много файлов меняется одновременно. Следующая полная проверка Cmdr все исправит.} other {{hours, plural, =1 {За последний час} one {За последний {hoursText} час} few {За последние {hoursText} часа} many {За последние {hoursText} часов} other {За последние {hoursText} часа}} ваша система {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно так бывает, когда много файлов меняется одновременно. Следующая полная проверка Cmdr все исправит.}}",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
-    "sourceHash": "68420b0"
+    "sourceHash": "c2e72eb"
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr не удалось прочитать {count, plural, =1 {одно расположение} one {{countText} расположение} few {{countText} расположения} many {{countText} расположений} other {{countText} расположения}} на этом диске, поэтому поиск здесь может найти не все.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
@@ -2284,9 +2284,9 @@
   "@fileExplorer.dropIn.timedOut": {
     "sourceHash": "7591ca5"
   },
-  "fileExplorer.dropIn.noFolder": "{platform, select, windows {Cmdr couldn’t make room for the dropped file. Check that your PC has free space, then try again.} other {Cmdr не удалось подготовить место для перетянутого файла. Проверьте, есть ли свободное место на диске, и попробуйте еще раз.}}",
+  "fileExplorer.dropIn.noFolder": "{platform, select, windows {Cmdr не удалось подготовить место для перетянутого файла. Проверьте, есть ли свободное место на компьютере, и попробуйте еще раз.} other {Cmdr не удалось подготовить место для перетянутого файла. Проверьте, есть ли свободное место на диске, и попробуйте еще раз.}}",
   "@fileExplorer.dropIn.noFolder": {
-    "sourceHash": "ea7fb38"
+    "sourceHash": "19630a6"
   },
   "fileExplorer.dropIn.someMissing": "{count, plural, =1 {Один перетянутый файл не пришел, поэтому он не будет скопирован.} one {{countText} перетянутый файл не пришел, поэтому он не будет скопирован.} few {{countText} перетянутых файла не пришли, поэтому они не будут скопированы.} many {{countText} перетянутых файлов не пришло, поэтому они не будут скопированы.} other {{countText} перетянутого файла не пришло, поэтому они не будут скопированы.}}",
   "@fileExplorer.dropIn.someMissing": {
@@ -2340,9 +2340,9 @@
   "@fileExplorer.quickFilter.intro.switchToJump": {
     "sourceHash": "38642f9"
   },
-  "fileExplorer.quickFilter.intro.openSettings": "{platform, select, windows {Settings} other {Настройки…}}",
+  "fileExplorer.quickFilter.intro.openSettings": "{platform, select, windows {Настройки} other {Настройки…}}",
   "@fileExplorer.quickFilter.intro.openSettings": {
-    "sourceHash": "7a04083"
+    "sourceHash": "7af8e23"
   },
   "fileExplorer.quickFilter.intro.gotIt": "Понятно",
   "@fileExplorer.quickFilter.intro.gotIt": {
@@ -2360,9 +2360,9 @@
   "@fileExplorer.pane.directConnectionOtherServerNotAllowedToast": {
     "sourceHash": "c350d80"
   },
-  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "{platform, select, macos {Не удалось напрямую подключиться к <shareName>{share}</shareName>: файлы находятся на другом сервере, а Cmdr не входит туда сам. Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because its files live on another server and Cmdr won’t sign in there on its own. You are still connected through your system’s SMB connection, which is a lot slower.}}",
+  "fileExplorer.network.osMountFallback.otherServerNotAllowed": "{platform, select, macos {Не удалось напрямую подключиться к <shareName>{share}</shareName>: файлы находятся на другом сервере, а Cmdr не входит туда сам. Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее.} windows {Не удалось напрямую подключиться к <shareName>{share}</shareName>: файлы находятся на другом сервере, а Cmdr не входит туда сам. Подключение по-прежнему идет через собственное SMB-подключение Windows, а оно намного медленнее.} other {Не удалось напрямую подключиться к <shareName>{share}</shareName>: файлы находятся на другом сервере, а Cmdr не входит туда сам. Подключение по-прежнему идет через системное SMB-подключение, а оно намного медленнее.}}",
   "@fileExplorer.network.osMountFallback.otherServerNotAllowed": {
-    "sourceHash": "9c9c5a5"
+    "sourceHash": "c07ebf8"
   },
   "fileExplorer.pane.directConnectionNegotiationInvalidToast": "Сервер {server} не подтвердил параметры безопасности, согласованные с Cmdr, поэтому эта общая папка по-прежнему использует системное подключение. Причиной может быть сервер, работающий со сбоями, или чье-то вмешательство в соединение.",
   "@fileExplorer.pane.directConnectionNegotiationInvalidToast": {
@@ -2376,17 +2376,17 @@
   "@fileExplorer.pane.directConnectionEncryptionRequiredToast": {
     "sourceHash": "fe17565"
   },
-  "fileExplorer.network.osMountFallback.encryptionRequired": "{platform, select, macos {Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: сервер не может зашифровать подключение, а в Cmdr включен параметр «Всегда требовать шифрование SMB». Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server can’t encrypt the connection and Cmdr is set to always require SMB encryption. You are still connected through your system’s SMB connection, which is a lot slower.}}",
+  "fileExplorer.network.osMountFallback.encryptionRequired": "{platform, select, macos {Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: сервер не может зашифровать подключение, а в Cmdr включен параметр «Всегда требовать шифрование SMB». Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее.} windows {Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: сервер не может зашифровать подключение, а в Cmdr включен параметр «Всегда требовать шифрование SMB». Подключение по-прежнему идет через собственное SMB-подключение Windows, а оно намного медленнее.} other {Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: сервер не может зашифровать подключение, а в Cmdr включен параметр «Всегда требовать шифрование SMB». Подключение по-прежнему идет через системное SMB-подключение, а оно намного медленнее.}}",
   "@fileExplorer.network.osMountFallback.encryptionRequired": {
-    "sourceHash": "14a8cb4"
+    "sourceHash": "ce39f58"
   },
-  "fileExplorer.network.osMountFallback.negotiationInvalid": "{platform, select, macos {Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: сервер не подтвердил параметры безопасности, согласованные с Cmdr. Причиной может быть сервер, работающий со сбоями, или чье-то вмешательство в соединение. Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the server didn’t confirm the security settings it agreed on with Cmdr. A misbehaving server can cause this, and so can someone tampering with the connection. You are still connected through your system’s SMB connection, which is a lot slower.}}",
+  "fileExplorer.network.osMountFallback.negotiationInvalid": "{platform, select, macos {Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: сервер не подтвердил параметры безопасности, согласованные с Cmdr. Причиной может быть сервер, работающий со сбоями, или чье-то вмешательство в соединение. Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее.} windows {Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: сервер не подтвердил параметры безопасности, согласованные с Cmdr. Причиной может быть сервер, работающий со сбоями, или чье-то вмешательство в соединение. Подключение по-прежнему идет через собственное SMB-подключение Windows, а оно намного медленнее.} other {Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: сервер не подтвердил параметры безопасности, согласованные с Cmdr. Причиной может быть сервер, работающий со сбоями, или чье-то вмешательство в соединение. Подключение по-прежнему идет через системное SMB-подключение, а оно намного медленнее.}}",
   "@fileExplorer.network.osMountFallback.negotiationInvalid": {
-    "sourceHash": "758e268"
+    "sourceHash": "fb0da3f"
   },
-  "fileExplorer.network.osMountFallback.encryptionUnavailable": "{platform, select, macos {Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: она принимает только зашифрованные подключения, а сервер не смог договориться с Cmdr о способе шифрования. Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее.} windows {Couldn’t directly connect to <shareName>{share}</shareName>, because the share only accepts encrypted connections and the server didn’t agree on a way to encrypt one with Cmdr. You are still connected through Windows’ own SMB connection, which is a lot slower.} other {Couldn’t directly connect to <shareName>{share}</shareName>, because the share only accepts encrypted connections and the server didn’t agree on a way to encrypt one with Cmdr. You are still connected through your system’s SMB connection, which is a lot slower.}}",
+  "fileExplorer.network.osMountFallback.encryptionUnavailable": "{platform, select, macos {Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: она принимает только зашифрованные подключения, а сервер не смог договориться с Cmdr о способе шифрования. Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее.} windows {Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: она принимает только зашифрованные подключения, а сервер не смог договориться с Cmdr о способе шифрования. Подключение по-прежнему идет через собственное SMB-подключение Windows, а оно намного медленнее.} other {Не удалось напрямую подключиться к общей папке <shareName>{share}</shareName>: она принимает только зашифрованные подключения, а сервер не смог договориться с Cmdr о способе шифрования. Подключение по-прежнему идет через системное SMB-подключение, а оно намного медленнее.}}",
   "@fileExplorer.network.osMountFallback.encryptionUnavailable": {
-    "sourceHash": "23dd607"
+    "sourceHash": "cd7c5d3"
   },
   "fileExplorer.smbLinkConsent.title": "Войти на другой сервер?",
   "@fileExplorer.smbLinkConsent.title": {

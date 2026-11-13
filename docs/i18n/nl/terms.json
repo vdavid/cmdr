@@ -148,7 +148,13 @@
     "chosen": "hulpmiddel",
     "confidence": "high",
     "forms": "tool status lines: present tense without subject for doing (Kijkt in bestanden), participle-led for done (In bestanden gekeken); Android platform tools stays English, Android tooling → Android-tools",
-    "sources": "MS terminology (tool → hulpmiddel)"
+    "sources": "MS terminology (tool → hulpmiddel)",
+    "exceptions": {
+      "errors.listing.diskReadProblem.suggestion": "Not the AI-tool sense: the English names a desktop disk tool (schijfprogramma) and Windows' Tools tab (Extra).",
+      "errors.listing.unexpectedSystemResponse.suggestion": "Not the AI-tool sense: a desktop disk tool (schijfprogramma) and Windows' Tools tab (Extra).",
+      "errors.listing.couldntReadUnknown.suggestion": "Not the AI-tool sense: a desktop disk tool (schijfprogramma) and Windows' Tools tab (Extra).",
+      "errors.listing.ioSerious.suggestion": "Not the AI-tool sense: a desktop disk tool (schijfprogramma) and Windows' Tools tab (Extra)."
+    }
   },
   "allow": {
     "accept": [
@@ -902,7 +908,12 @@
   "credentials": {
     "chosen": "inloggegevens",
     "confidence": "tentative",
-    "sources": "standard NL; macOS uses naam en wachtwoord descriptively"
+    "sources": "standard NL; macOS uses naam en wachtwoord descriptively",
+    "windows": {
+      "chosen": "inloggegevens",
+      "accept": ["Windows-referenties", "referentie", "referenties"],
+      "note": "Credential Manager's own section is Windows-referenties; one saved entry there is a referentie (see credential-manager)."
+    }
   },
   "current-folder": {
     "chosen": "huidige map",
@@ -1152,7 +1163,15 @@
     "chosen": "schijf",
     "confidence": "high",
     "forms": "de-woord (hij/hem); compounds schijfindex, schijfruimte, schijfkopie",
-    "sources": "macOS Finder (schijf throughout)"
+    "sources": "macOS Finder (schijf throughout)",
+    "windows": {
+      "chosen": "schijf",
+      "accept": ["schijven", "netwerkschijf", "netwerkschijven", "systeemstation"],
+      "note": "MS terminology system drive → systeemstation (NLD, BEL); a drive in general stays schijf, like Verkenner's Lokale schijf (C:)."
+    },
+    "exceptions": {
+      "fileOperations.validation.pathNotAbsolute": "Windows branch: drive letter is stationsletter, Microsoft's term (MS terminology drive letter)."
+    }
   },
   "duplicate": {
     "accept": ["dupliceren"],
@@ -1359,11 +1378,18 @@
       "errors.write.readOnlyDevice.source.suggestion": "Pronoun ze for the files already named.",
       "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Restructured into a free relative (Wat daarbij is vervangen).",
       "menu.bar.file": "The menu bar's File menu is Apple's title: Archief.",
-      "onboarding.stepAi.table.selectWith": "Quoted example prompt: selecteer alle afbeeldingen."
+      "onboarding.stepAi.table.selectWith": "Quoted example prompt: selecteer alle afbeeldingen.",
+      "errorReporter.bundleSavedToast.reveal": "The windows branch names the app File Explorer: Verkenner.",
+      "stateRecovery.showInFinder": "The windows branch names the app File Explorer: Verkenner."
     },
     "forms": "pl. bestanden; compounds bestandsnaam, bestandenlijst",
     "note": "The menu bar's File menu is Apple's Archief; never replace a menu-bar title with the ordinary word.",
-    "sources": "macOS, MS, Nautilus"
+    "sources": "macOS, MS, Nautilus",
+    "windows": {
+      "chosen": "bestand",
+      "accept": ["bestanden", "bestands", "Verkenner"],
+      "note": "The English concept also matches the app name File Explorer, which Dutch Windows calls Verkenner, with no bestand in it."
+    }
   },
   "file-list": {
     "chosen": "bestandenlijst",
@@ -1876,7 +1902,11 @@
     "confidence": "high",
     "decision": "Namen die er hetzelfde uitzien",
     "forms": "het-woord; one other file → één ander bestand, N other items → N andere onderdelen; keeps item only for non-files (menu-item, stash-item, recent-list entries)",
-    "sources": "macOS Finder (items → onderdelen), Keychain Access (Alle onderdelen)"
+    "sources": "macOS Finder (items → onderdelen), Keychain Access (Alle onderdelen)",
+    "exceptions": {
+      "settings.dataWipe.leftover.secretItems": "Windows branch: an entry in Referentiebeheer is a referentie, the store's own word for one saved entry (the key's description asks for it).",
+      "settings.dataWipe.leftover.secretsUnreadable": "Windows branch: an entry in Referentiebeheer is a referentie, the store's own word for one saved entry (the key's description asks for it)."
+    }
   },
   "just-now": {
     "accept": ["net", "nu even"],
@@ -2205,7 +2235,10 @@
       "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Moving back is the put-back concept: zet … terug, as bodyUndoByMovingBack.",
       "operationLog.rollback.rollbackableNoticeMoveBack": "Moving back is the put-back concept: zet … terug.",
       "operationLog.tree.statusMovedBack": "Moved back is the put-back concept: Teruggezet.",
-      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Undoing the move is the rollback concept: terugdraaien."
+      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Undoing the move is the rollback concept: terugdraaien.",
+      "fileOperations.delete.trashSwitch": "Windows branch mirrors the switch label Naar prullenbak, the move-to-trash ruling.",
+      "fileOperations.transferProgress.scanTitleTrash": "Windows branch mirrors the other branch: Onderdelen tellen voor de prullenbak…",
+      "stateRecovery.credentials.body": "A move to a new PC is a change of computer: overstap, not the file move."
     },
     "forms": "button Verplaats; the move as a noun → het verplaatsen (voordat Cmdr het verplaatsen kon voltooien)",
     "sources": "macOS Finder (move → verplaatsen; NE111 het kopiëren)"
@@ -2215,7 +2248,17 @@
     "chosen": "Naar prullenmand",
     "confidence": "high",
     "forms": "switch and confirm button Naar prullenmand; sentence and gerund Naar prullenmand verplaatsen / naar de prullenmand verplaatsen",
-    "sources": "macOS Finder (Verplaats naar prullenmand, AL13 / N153)"
+    "sources": "macOS Finder (Verplaats naar prullenmand, AL13 / N153)",
+    "windows": {
+      "chosen": "naar de prullenbak",
+      "accept": ["naar prullenbak"],
+      "note": "Titles mirror the other branch without the article: Verplaatsen naar prullenbak lukte niet."
+    },
+    "other": {
+      "chosen": "naar de prullenbak",
+      "accept": ["naar prullenbak", "naar de prullenmand", "Naar prullenmand"],
+      "note": "Linux file managers say prullenbak; an other branch macOS also reads keeps prullenmand."
+    }
   },
   "name": {
     "accept": ["namen", "Naam"],
@@ -2558,7 +2601,12 @@
     "chosen": "bevoegdheid",
     "confidence": "high",
     "forms": "file-system permission → bevoegdheid / bevoegdheden (leesbevoegdheden)",
-    "sources": "macOS (geen bevoegdheden, leesbevoegdheden, bevoegdhedenfout)"
+    "sources": "macOS (geen bevoegdheden, leesbevoegdheden, bevoegdhedenfout)",
+    "windows": {
+      "chosen": "machtigingen",
+      "accept": ["machtiging", "bevoegdheid", "bevoegdheden", "rechten", "toegang"],
+      "note": "MS terminology permissions → machtigingen; bevoegdheid stays accepted for a server's refusal and the shipped trashNotWritable pair; geen toegang where the sentence states the outcome."
+    }
   },
   "phone": {
     "accept": ["telefoons", "Android"],
@@ -2915,7 +2963,12 @@
     "chosen": "Herstart",
     "confidence": "high",
     "forms": "button Herstart; Restart to update → Herstart om bij te werken; a restart (of the Mac) → herstarten",
-    "sources": "macOS (Restart → Herstart)"
+    "sources": "macOS (Restart → Herstart)",
+    "windows": {
+      "chosen": "opnieuw opstarten",
+      "accept": ["opnieuw", "herstart"],
+      "note": "Restarting the PC is Windows' Opnieuw opstarten (start je pc opnieuw op); restarting Cmdr keeps herstart."
+    }
   },
   "restore": {
     "accept": ["herstel", "hersteld", "Herstellen"],
@@ -3215,7 +3268,12 @@
     "chosen": "Log in",
     "confidence": "high",
     "forms": "button Log in / Log in…; Sign in to X → Log in bij X; sign in with → Log in met …; sign-in method → inlogmethode (tentative); status Ingelogd; finite separable verb in prose: Cmdr logt daar … in",
-    "sources": "macOS Finder (Log In… → Log in…), CloudKit (Sign In to %1$@ → Log in bij %1$@)"
+    "sources": "macOS Finder (Log In… → Log in…), CloudKit (Sign In to %1$@ → Log in bij %1$@)",
+    "windows": {
+      "chosen": "aanmelden",
+      "accept": ["aanmeld", "aangemeld", "aan te melden", "meld je"],
+      "note": "MS terminology sign in → aanmelden (NLD, BEL); in prose de volgende keer dat je je aanmeldt; om je aan te melden; meld je één keer aan."
+    }
   },
   "sign-out": {
     "accept": ["uitloggen", "Log uit", "uitgelogd"],
@@ -3228,7 +3286,15 @@
     "chosen": "Uitgelogd",
     "confidence": "high",
     "forms": "status Uitgelogd; Signed out of X → Uitgelogd bij X; log out of the Mac → uitloggen",
-    "sources": "macOS Localizable.loctable (iCloud Signed Out → Uitgelogd bij iCloud), menu Log uit"
+    "sources": "macOS Localizable.loctable (iCloud Signed Out → Uitgelogd bij iCloud), menu Log uit; Windows: MS terminology Sign Out → Afmelden",
+    "windows": {
+      "chosen": "afmelden",
+      "accept": ["afgemeld", "Afmelden"],
+      "note": "Windows names signing out of the PC afmelden (main.quit.countdown)."
+    },
+    "exceptions": {
+      "errors.provider.appBased.serious": "Signing out of a cloud app ({app}), not of the PC: Log uit en weer in, like the app's own UI."
+    }
   },
   "signature": {
     "chosen": "handtekening",
@@ -3797,7 +3863,10 @@
     "chosen": "gebruiker",
     "confidence": "high",
     "forms": "user ID → gebruikers-ID; group ID → groeps-ID (the catalog writes -ID uppercase in compounds: Referentie-ID, Account-ID)",
-    "sources": "MS terminology DUTCH.tbx (user → gebruiker; user ID → gebruikers-id)"
+    "sources": "MS terminology DUTCH.tbx (user → gebruiker; user ID → gebruikers-id)",
+    "exceptions": {
+      "goToPath.dialog.inputPlaceholder": "Windows branch: C:\\Users is a literal example path, kept as is."
+    }
   },
   "username": {
     "chosen": "gebruikersnaam",
@@ -4006,7 +4075,9 @@
     "accept": ["onderdelen", "vermelding", "vermeldingen", "item", "items"],
     "confidence": "high",
     "exceptions": {
-      "stateRecovery.goToPathHistory.title": "Every entry in that list is a path, so ‘je recente paden in ‘Ga naar map’’ names what it holds; ‘items’ would read vaguer"
+      "stateRecovery.goToPathHistory.title": "Every entry in that list is a path, so ‘je recente paden in ‘Ga naar map’’ names what it holds; ‘items’ would read vaguer",
+      "ai.secretError.body": "Windows branch: a Credential Manager entry is a referentie, Windows' own word.",
+      "ai.secretError.removeBody": "Windows branch: a Credential Manager entry is a referentie, Windows' own word."
     },
     "forms": "a scanned or indexed file or folder → onderdeel (indexing.scan.counters, queryUi.results.*); an image-index record → vermelding (settings.mediaIndex.reclaim.*); a stash or recent-list entry → item",
     "sources": "catalog (queryUi.empty.indexReady, settings.mediaIndex.reclaim.*, fileExplorer.git.size.stashEntries); MS terminology (entry → vermelding); macOS has no vermelding, and says onderdelen for Finder items"
@@ -4214,7 +4285,11 @@
     "chosen": "bureaublad",
     "confidence": "high",
     "forms": "the Desktop folder → Bureaublad; on the desktop → op het bureaublad",
-    "sources": "macOS Finder (Bureaublad, Op bureaublad); MS terminology (Desktop → Bureaublad)"
+    "sources": "macOS Finder (Bureaublad, Op bureaublad); MS terminology (Desktop → Bureaublad)",
+    "exceptions": {
+      "mtp.ptpcameradDialog.explanation": "Linux branch: desktop means the desktop environment (desktopomgeving), not the Desktop folder.",
+      "onboarding.stepOptional.mtp.desc": "Linux branch: desktop means the desktop environment (desktopomgeving), not the Desktop folder."
+    }
   },
   "toggle": {
     "chosen": "aan/uit",
@@ -4222,5 +4297,93 @@
     "confidence": "high",
     "forms": "a Toggle <x> command → <x> aan/uit (Verborgen bestanden aan/uit, Selectie aan/uit, Schermvullende weergave aan/uit); a viewer row that says Turn … on or off → Zet … aan of uit; toggle a file's selection in prose → de bestandsselectie wisselen; Toggle sort order → Sorteervolgorde omkeren",
     "sources": "catalog (commands.viewShowHidden.label, commands.selectionToggle.label, commands.viewerToggleWordWrap.label); style.md § register follows the English shape"
+  },
+  "file-explorer": {
+    "chosen": "Verkenner",
+    "confidence": "high",
+    "forms": "a name, no article: in Verkenner, gebruik Verkenner",
+    "sources": "MS terminology File Explorer → Verkenner (NLD, BEL); the older Windows Verkenner and Bestandenverkenner are skipped"
+  },
+  "file-manager": {
+    "chosen": "bestandsbeheerder",
+    "accept": ["bestandsbeheer", "bestandsbeheerders"],
+    "confidence": "high",
+    "forms": "in prose je bestandsbeheerder; a short label keeps the catalog's bestandsbeheer (Toon in bestandsbeheer)",
+    "sources": "KDE Dolphin File Manager → Bestandsbeheerder; MS terminology file manager → bestandsbeheer; catalog errors.write.permissionDenied.suggestion.delete"
+  },
+  "empty-trash": {
+    "chosen": "Leeg prullenmand",
+    "accept": ["leeg", "leegmaken", "legen"],
+    "confidence": "high",
+    "forms": "in prose Leeg de prullenmand",
+    "sources": "macOS Finder Empty Trash → Leeg prullenmand (N157)",
+    "windows": {
+      "chosen": "Prullenbak leegmaken",
+      "accept": ["leeg", "leegmaken"],
+      "note": "Tentative: the TBX has no Empty Recycle Bin entry; Dutch Windows' context-menu label is Prullenbak leegmaken; in prose Leeg de prullenbak."
+    },
+    "other": {
+      "chosen": "Prullenbak legen",
+      "accept": ["leeg", "legen", "ledigen"],
+      "note": "Nautilus and Dolphin Empty Trash → Prullenbak legen (Thunar ledigen); in prose Leeg de prullenbak."
+    }
+  },
+  "internet": {
+    "chosen": "internet",
+    "accept": ["internetverbinding"],
+    "confidence": "high",
+    "sources": "MS terminology Network & Internet → Netwerk en internet; catalog licensing.error.networkHint (internetverbinding)"
+  },
+  "metadata": {
+    "chosen": "metadata",
+    "accept": ["metagegevens"],
+    "confidence": "high",
+    "sources": "GNOME Nautilus Metadata → Metadata; catalog errors.listing.attributeNotFound.*; MS and Thunar say metagegevens"
+  },
+  "powershell": {
+    "chosen": "PowerShell",
+    "confidence": "high",
+    "forms": "a name, no article: Voer in PowerShell … uit",
+    "sources": "Microsoft keeps PowerShell English in every locale"
+  },
+  "privacy-permission": {
+    "chosen": "toegang",
+    "accept": ["bevoegdheid", "bevoegdheden", "toestemming", "machtiging"],
+    "confidence": "tentative",
+    "sources": "macOS Privacy en beveiliging consent copy phrases it as toegang geven; catalog errors.listing.noPermissionErrno.explanation (Cmdr heeft geen toegang)"
+  },
+  "software": {
+    "chosen": "software",
+    "accept": ["serversoftware", "hardware"],
+    "confidence": "high",
+    "note": "The concept's English pattern also matches hardware; accept hardware so hardwareniveau passes.",
+    "sources": "MS terminology software → software; catalog errors.listing.connectionRefused.explanation (serversoftware)"
+  },
+  "user-folder": {
+    "chosen": "gebruikersmap",
+    "confidence": "tentative",
+    "forms": "je gebruikersmap",
+    "sources": "Dutch Windows shows C:\\Users as Gebruikers; the TBX has no user-folder entry (its home folder is the admin-assigned sense)"
+  },
+  "credential-manager": {
+    "chosen": "Referentiebeheer",
+    "confidence": "high",
+    "accept": ["referentie", "referenties"],
+    "note": "A name, no article: in Referentiebeheer. One saved entry → referentie. The TBX's Aanmeldingsgegevensbeheer is not what Windows shows.",
+    "sources": "Microsoft support nl-nl (page title Referentiebeheer in Windows; Zoek in het menu Start naar Referentiebeheer, 2026-11-13); TBX lists Aanmeldingsgegevensbeheer"
+  },
+  "app-closes": {
+    "chosen": "afsluiten",
+    "confidence": "tentative",
+    "accept": ["sluit", "afgesloten"],
+    "note": "Cmdr as subject on Windows: Cmdr sluit daarna af; nadat Cmdr is afgesloten. Pairs with exit → Sluit Cmdr af.",
+    "sources": "MS terminology exit/close app → afsluiten (NLD, BEL); this catalog's Sluit Cmdr af"
+  },
+  "linux-distribution": {
+    "chosen": "distributie",
+    "confidence": "high",
+    "accept": ["Linux-distributie", "distributies"],
+    "forms": "Linux-distributie en de versie daarvan",
+    "sources": "MS terminology distribution → distributie; catalog already ships distributie (errors, crash-report keys)"
   }
 }

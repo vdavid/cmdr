@@ -1,7 +1,7 @@
 {
-  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Cmdr beenden}}",
+  "commands.appQuit.label": "{platform, select, windows {Cmdr beenden} other {Cmdr beenden}}",
   "@commands.appQuit.label": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "commands.appHide.label": "Cmdr ausblenden",
   "@commands.appHide.label": {
@@ -192,9 +192,9 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Öffnet ~/Downloads und wählt die neueste Datei aus.}}",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Öffnet deinen Downloads-Ordner und wählt die neueste Datei aus.} other {Öffnet ~/Downloads und wählt die neueste Datei aus.}}",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "6b3fe83"
+    "sourceHash": "97b6bd4"
   },
   "commands.viewShowHidden.label": "Verborgene Dateien ein-/ausblenden",
   "@commands.viewShowHidden.label": {
@@ -320,21 +320,21 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {In den Papierkorb bewegen widerrufen}}",
+  "commands.editUndoTrash.label": "{platform, select, windows {Löschen rückgängig machen} other {In den Papierkorb bewegen widerrufen}}",
   "@commands.editUndoTrash.label": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Bewegen von „{name}“ in den Papierkorb widerrufen}}",
+  "commands.editUndoTrash.one": "{platform, select, windows {Löschen von „{name}“ rückgängig machen} other {Bewegen von „{name}“ in den Papierkorb widerrufen}}",
   "@commands.editUndoTrash.one": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Bewegen von {countText} {count, plural, one {Objekt} other {Objekten}} in den Papierkorb widerrufen}}",
+  "commands.editUndoTrash.many": "{platform, select, windows {Löschen von {countText} {count, plural, one {Objekt} other {Objekten}} rückgängig machen} other {Bewegen von {countText} {count, plural, one {Objekt} other {Objekten}} in den Papierkorb widerrufen}}",
   "@commands.editUndoTrash.many": {
-    "sourceHash": "69c4966"
+    "sourceHash": "39a5bbe"
   },
-  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Legt die Dateien zurück, die du zuletzt in den Papierkorb bewegt hast}}",
+  "commands.editUndoTrash.description": "{platform, select, windows {Legt die Dateien zurück, die du zuletzt in den Papierkorb bewegt hast} other {Legt die Dateien zurück, die du zuletzt in den Papierkorb bewegt hast}}",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "dca1b63"
+    "sourceHash": "6082058"
   },
   "commands.paneLeftVolumeChooser.label": "Linke Volume-Auswahl öffnen",
   "@commands.paneLeftVolumeChooser.label": {
@@ -464,9 +464,9 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Zum persönlichen Ordner gehen}}",
+  "commands.navGoHome.label": "{platform, select, windows {Zum Benutzerordner gehen} other {Zum persönlichen Ordner gehen}}",
   "@commands.navGoHome.label": {
-    "sourceHash": "74b2a8b"
+    "sourceHash": "0ae4c72"
   },
   "commands.errorPaneToggleTechnicalDetails.label": "Technische Details anzeigen",
   "@commands.errorPaneToggleTechnicalDetails.label": {
@@ -832,21 +832,21 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Zum Papierkorb gehen}}",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Zum Papierkorb gehen} other {Zum Papierkorb gehen}}",
   "@commands.fileGoToTrash.label": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
-  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Öffnet den Papierkorb des Laufwerks, auf dem du gerade bist}}",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Öffnet den Papierkorb des Laufwerks, auf dem du gerade bist} other {Öffnet den Papierkorb des Laufwerks, auf dem du gerade bist}}",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "6496c25"
+    "sourceHash": "e4789d0"
   },
   "commands.dialogConfirm.label": "Dialog auf dem Bildschirm bestätigen",
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
-  "commands.fileShowInFileManager.label": "{platform, select, macos {Im Finder anzeigen} windows {Show in File Explorer} other {Im Dateimanager anzeigen}}",
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Im Finder anzeigen} windows {Im Datei-Explorer anzeigen} other {Im Dateimanager anzeigen}}",
   "@commands.fileShowInFileManager.label": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "commands.fileOpenTerminalHere.label": "Terminal hier öffnen",
   "@commands.fileOpenTerminalHere.label": {
@@ -868,13 +868,13 @@
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.label": "{platform, select, macos {Informationen} windows {Properties} other {Dateieigenschaften}}",
+  "commands.fileGetInfo.label": "{platform, select, macos {Informationen} windows {Eigenschaften} other {Dateieigenschaften}}",
   "@commands.fileGetInfo.label": {
-    "sourceHash": "91c64ca"
+    "sourceHash": "da65a65"
   },
   "commands.fileQuickLook.label": "{platform, select, macos {Übersicht} other {Vorschau}}",
   "@commands.fileQuickLook.label": {
-    "sourceHash": "f5616ce"
+    "sourceHash": "c3f57b4"
   },
   "commands.fileContextMenu.label": "Kontextmenü öffnen",
   "@commands.fileContextMenu.label": {
@@ -928,9 +928,9 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "{platform, select, macos {Entfernt das gespeicherte Passwort des restic-Backups, in dem du gerade bist, aus dem Schlüsselbund und sperrt das Backup wieder} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Entfernt das gespeicherte Passwort des restic-Backups, in dem du gerade bist, aus dem Schlüsselbund und sperrt das Backup wieder} windows {Entfernt das gespeicherte Passwort des restic-Backups, in dem du gerade bist, aus der Anmeldeinformationsverwaltung und sperrt das Backup wieder} other {Entfernt das gespeicherte Passwort des restic-Backups, in dem du gerade bist, aus deinem Schlüsselbund und sperrt das Backup wieder}}",
   "@commands.resticForgetPassword.description": {
-    "sourceHash": "e51ac69"
+    "sourceHash": "0f616ca"
   },
   "commands.fileCopyShareLink.label": "Freigabelink kopieren (sieben Tage)",
   "@commands.fileCopyShareLink.label": {

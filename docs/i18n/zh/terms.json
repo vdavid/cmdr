@@ -150,7 +150,8 @@
       "errors.write.trashRefused.message.folderNotWritable": "English sense: “isn’t allowed to change” is a file-system permission, not granting consent, so it takes 没有权限"
     },
     "forms": "Allow all → 全部允许; settings label 允许使用云端 AI (允许 alone reads as missing a verb); Android's own button quoted as “允许” with 点按",
-    "sources": "macOS permission dialogs; AOSP usb_debugging_allow"
+    "sources": "macOS permission dialogs; AOSP usb_debugging_allow",
+    "accept": ["没有权限", "不能", "不让"]
   },
   "always": {
     "chosen": "始终",
@@ -306,7 +307,8 @@
     },
     "proseAccept": ["问你"],
     "forms": "setting option 询问 / 每次询问; don't-ask-again 不再询问; prose asking the user (问你要不要信任它, 问你要密码) → 问你",
-    "sources": "catalog"
+    "sources": "catalog",
+    "accept": ["请求"]
   },
   "ask-cmdr": {
     "chosen": "Ask Cmdr",
@@ -926,7 +928,11 @@
     "chosen": "凭证",
     "confidence": "high",
     "forms": "sign-in copy 登录信息; low-level error copy 凭证",
-    "sources": "MS terminology"
+    "sources": "MS terminology",
+    "exceptions": {
+      "ai.secretError.body": "Windows branch quotes Credential Manager's own section name “Windows 凭据” (Microsoft zh-CN), not the generic credentials word.",
+      "ai.secretError.removeBody": "Windows branch quotes Credential Manager's own section name “Windows 凭据” (Microsoft zh-CN), not the generic credentials word."
+    }
   },
   "current-folder": {
     "accept": ["当前目录"],
@@ -1155,7 +1161,7 @@
     "sources": "catalog (拖动 in fileExplorer.navigation.favoriteTooltip and settings.mediaIndex.importanceThreshold.previewNone; 拖到 in updates.moveToApplicationsDialog.howTo); macOS zh AppKit (拖移 ×10, 拖到 ×5): the catalog outranks the pile for which of two correct forms"
   },
   "drive": {
-    "accept": ["磁盘"],
+    "accept": ["磁盘", "系统盘"],
     "chosen": "驱动器",
     "confidence": "confirmed",
     "forms": "驱动器 (even where Finder's eject copy says 磁盘, because the English says drive); the terse drive-index family keeps 此驱动器; physical disk senses 磁盘",
@@ -1199,7 +1205,10 @@
     "confidence": "high",
     "decision": "Drive-indexing master-switch strings",
     "forms": "turning a settings toggle on → 开启 (在“设置 > …”中开启); a card title or label 启用 (启用索引, 启用网络); the per-drive index menu keeps its own 打开索引",
-    "sources": "macOS/MS"
+    "sources": "macOS/MS",
+    "exceptions": {
+      "servers.hub.emptyMessage": "\"turn on a computer or NAS\" is powering a machine on (开机), not switching a setting on; matches the macOS branch."
+    }
   },
   "encoding": {
     "avoid": [
@@ -2124,7 +2133,10 @@
     "confidence": "high",
     "forms": "a network share (Finder-evidenced) 装载 (已装载的共享); FUSE, force-unmount, and remount error copy 挂载 / 卸载",
     "note": "Pick by surface: user-facing share copy 装载, low-level error copy 挂载.",
-    "sources": "MS terminology; macOS Finder"
+    "sources": "MS terminology; macOS Finder",
+    "exceptions": {
+      "settings.network.enabled.description": "Windows branch: Windows doesn't mount shares, it connects them (File Explorer's mapped network drive), so already-mounted shares → 已连接的共享."
+    }
   },
   "move": {
     "accept": ["移到", "移出", "移入", "移过", "移回", "移走", "放回"],
@@ -2139,7 +2151,10 @@
     "decision": "Standalone conflict prompt",
     "forms": "F6 移动; in a sentence with a destination 移动到“{destination}”; out of / into an archive 移出 / 移入; moving back 移回原处, a rollback's moving back 放回原处 / 放回原来的位置 (fileOperations.rollbackConfirm.bodyUndoByMovingBack); a file something moved away 已被移走",
     "note": "A progress line or conflict prompt naming the operation writes 移动到 so it matches the queue row's 正在移动; everyday prose may use Finder's contraction 移到 (移到废纸篓, 把 Cmdr 移到“应用程序”文件夹).",
-    "sources": "macOS"
+    "sources": "macOS",
+    "exceptions": {
+      "stateRecovery.credentials.body": "\"a move to a new PC\" is the user switching computers (换了新电脑), not moving files."
+    }
   },
   "move-to-trash": {
     "avoid": [
@@ -2151,7 +2166,12 @@
     "chosen": "移到废纸篓",
     "confidence": "high",
     "forms": "the switch and the queue arm 移到废纸篓; \"couldn't confirm\" 无法确认文件是否已移到废纸篓",
-    "sources": "macOS Finder"
+    "sources": "macOS Finder",
+    "other": {
+      "chosen": "移到回收站",
+      "accept": ["移到废纸篓"],
+      "note": "Linux's trash is 回收站 (Nautilus, Dolphin, Thunar), so a Linux-only branch moves items 移到回收站. 移到废纸篓 stays accepted for an other branch that macOS also reads (a block with no macos branch)."
+    }
   },
   "name": {
     "accept": ["文件名", "名字", "同名", "重名", "文件夹名"],
@@ -2494,7 +2514,10 @@
   "path": {
     "chosen": "路径",
     "confidence": "confirmed",
-    "sources": "macOS/MS"
+    "sources": "macOS/MS",
+    "exceptions": {
+      "settings.fileOperations.adbBinaryPath.description": "English sense: PATH is the shell's environment variable name, kept Latin, not a file path (路径)."
+    }
   },
   "pattern": {
     "accept": ["规则"],
@@ -3115,7 +3138,10 @@
     "chosen": "服务器",
     "confidence": "confirmed",
     "forms": "classifier 台 (这台服务器, {countText} 台服务器); the volume-switcher row and shortcut scope 服务器, the group around it 网络",
-    "sources": "macOS"
+    "sources": "macOS",
+    "exceptions": {
+      "fileOperations.validation.pathNotAbsolute": "The Windows branch's \\\\server\\share is a literal example UNC path, kept verbatim."
+    }
   },
   "server-address": {
     "chosen": "地址",
@@ -3179,7 +3205,8 @@
     },
     "forms": "Show X → 显示X (显示服务器, 显示个人收藏); Show in X → 在X中显示; Show less on a disclosure → 收起",
     "note": "See X (a look) is 查看.",
-    "sources": "macOS"
+    "sources": "macOS",
+    "accept": ["看到"]
   },
   "show-in-finder": {
     "chosen": "在 Finder 中显示",
@@ -3425,7 +3452,10 @@
   "tab": {
     "chosen": "标签页",
     "confidence": "confirmed",
-    "sources": "macOS/MS"
+    "sources": "macOS/MS",
+    "exceptions": {
+      "errors.listing.resourceBusy.suggestion": "the Windows branch names a tab in Resource Monitor's window, which Windows zh-CN calls a 选项卡 (the “CPU”选项卡), not a pane tab"
+    }
   },
   "tag": {
     "chosen": "标签",
@@ -3696,7 +3726,10 @@
     "chosen": "用户",
     "confidence": "high",
     "forms": "a numeric Unix uid → 用户 ID (servers.sheet.nfsUid, servers.sheet.nfsUidZeroWarning); the person reading the UI is 你",
-    "sources": "macOS Finder zh-CN Get Info (选择新用户或群组 IN_S20.1, 该用户没有权限执行此任务 PE88); Microsoft zh-Hans terminology (user → 用户, user ID → 用户 ID); pile, 2026-10-22"
+    "sources": "macOS Finder zh-CN Get Info (选择新用户或群组 IN_S20.1, 该用户没有权限执行此任务 PE88); Microsoft zh-Hans terminology (user → 用户, user ID → 用户 ID); pile, 2026-10-22",
+    "exceptions": {
+      "goToPath.dialog.inputPlaceholder": "The Windows branch's C:\\Users is a literal example path, kept verbatim."
+    }
   },
   "username": {
     "chosen": "用户名",
@@ -4129,5 +4162,137 @@
     "confidence": "high",
     "forms": "the Users & Groups pane “用户与群组”; owner, group, and permissions 所有者、群组和权限",
     "sources": "macOS Finder zh-CN (群组, 所有者、群组和权限); catalog errors.write.homeFolderRename.suggestion.isHome*"
+  },
+  "file-explorer": {
+    "chosen": "文件资源管理器",
+    "confidence": "high",
+    "avoid": [
+      {
+        "form": "Windows 资源管理器",
+        "why": "the older Windows Explorer name; the TBX lists it beside 文件资源管理器, and the concept asks for the current one"
+      }
+    ],
+    "sources": "MS TBX File Explorer → 文件资源管理器 (pnpm i18n:pile --term \"File Explorer\", 2026-11-13)",
+    "exceptions": {
+      "fileExplorer.pane.fileExplorerAriaLabel": "names Cmdr's own two-pane area, not the Windows app: 文件浏览器"
+    }
+  },
+  "file-manager": {
+    "chosen": "文件管理器",
+    "confidence": "high",
+    "forms": "the Linux branch's \"your file manager\" → 你的文件管理器",
+    "sources": "MS TBX file manager → 文件管理器; Thunar and Dolphin File Manager → 文件管理器; catalog commands.fileShowInFileManager.label"
+  },
+  "powershell": {
+    "chosen": "PowerShell",
+    "confidence": "high",
+    "forms": "在 PowerShell 里运行 …",
+    "sources": "MS TBX PowerShell → PowerShell"
+  },
+  "user-folder": {
+    "chosen": "用户文件夹",
+    "confidence": "tentative",
+    "forms": "your user folder → 你的用户文件夹",
+    "sources": "Windows zh-CN names C:\\Users\\<name> 用户文件夹 (the pile has no entry; the TBX home folder is the admin-assigned server sense)"
+  },
+  "empty-trash": {
+    "chosen": "清倒废纸篓",
+    "confidence": "high",
+    "sources": "macOS Finder Empty Trash → 清倒废纸篓 (catalog errors.listing.diskFullErrno.suggestion macos branch)",
+    "windows": {
+      "chosen": "清空回收站",
+      "note": "Windows' desktop Recycle Bin context-menu command; the pile has no exact entry, built from MS TBX empty + Recycle Bin → 回收站 (tentative)"
+    },
+    "other": {
+      "chosen": "清空回收站",
+      "note": "Nautilus, Dolphin, and Thunar empty the trash as 清空回收站"
+    }
+  },
+  "internet": {
+    "chosen": "互联网",
+    "accept": ["联网", "网络", "Internet"],
+    "confidence": "high",
+    "sources": "macOS AppKit Internet → 互联网; MS TBX Internet → Internet / 互联网",
+    "windows": {
+      "chosen": "Internet",
+      "note": "the Windows Settings pane is 网络和 Internet (MS TBX Network & Internet)"
+    }
+  },
+  "metadata": {
+    "chosen": "元数据",
+    "confidence": "high",
+    "sources": "MS TBX metadata → 元数据; Nautilus Metadata → 元数据"
+  },
+  "grant": {
+    "chosen": "授予",
+    "accept": ["授权", "获得", "允许", "给"],
+    "confidence": "high",
+    "forms": "grant Cmdr access → 授予 Cmdr 访问权限; hasn't been granted → 还没获得…权限; give your account access → 给你自己的账户授权",
+    "sources": "catalog (fileExplorer.restrictedFolder.tooltip 授予 Cmdr {fullDiskAccess}); MS TBX grant → 授权"
+  },
+  "software": {
+    "chosen": "软件",
+    "confidence": "high",
+    "sources": "MS TBX software → 软件; Nautilus Software → 软件",
+    "exceptions": {
+      "errors.listing.deviceProblem.explanation": "the English says hardware, not software: 硬件",
+      "errors.listing.diskReadProblem.explanation": "the English says hardware, not software: 硬件",
+      "settings.network.smbConcurrency.description": "the English says NAS hardware, not software: 硬件"
+    }
+  },
+  "privacy-permission": {
+    "chosen": "访问权限",
+    "accept": ["权限", "允许"],
+    "confidence": "tentative",
+    "sources": "catalog errors.listing.*.explanation macOS branches (Cmdr 还没获得这个文件夹的访问权限); macOS Privacy & Security consent wording not mined yet"
+  },
+  "credential-manager": {
+    "chosen": "凭据管理器",
+    "confidence": "high",
+    "forms": "only in a platform select's windows branch; prose 从凭据管理器中 / 留在凭据管理器里; the app as a place to go or a list's container is quoted: 到“凭据管理器”里, “凭据管理器”中名为…; its unavailable state 凭据管理器不可用",
+    "sources": "zh/microsoft-terminology/CHINESE (SIMPLIFIED).tbx (Credential Manager → 凭据管理器, SGP, CHN)"
+  },
+  "app-closes": {
+    "chosen": "关闭",
+    "confidence": "tentative",
+    "forms": "then closes → 然后关闭; Cmdr closes afterwards → 之后 Cmdr 会关闭; after Cmdr closes → 在 Cmdr 关闭后",
+    "note": "Windows branch only; the action button Exit stays 退出 (exit concept).",
+    "sources": "zh/microsoft-terminology TBX close → 关闭; the catalog's own 关闭 for close"
+  },
+  "appearance": {
+    "chosen": "外观",
+    "confidence": "high",
+    "forms": "the Linux branch's 'your system appearance settings' → 你的系统外观设置",
+    "sources": "macOS System Settings 外观; catalog settings.appearance.appColorHintLink other"
+  },
+  "linux-distribution": {
+    "chosen": "发行版",
+    "confidence": "tentative",
+    "forms": "Linux distribution and version → Linux 发行版及其版本",
+    "sources": "no pile hit (TBX 'distribution' is goods distribution, a different sense); 发行版 is the standard zh-CN Linux term"
+  },
+  "language": {
+    "chosen": "语言",
+    "confidence": "high",
+    "forms": "Windows display language → 你的 Windows 显示语言; your system's language → 你系统的语言",
+    "sources": "zh/microsoft-terminology TBX display language → 显示语言; catalog settings.appearance.language.description macos"
+  },
+  "lock": {
+    "chosen": "锁定",
+    "confidence": "high",
+    "forms": "locks the backup again → 重新锁定这个备份; locked for now → 暂时锁定了",
+    "sources": "catalog commands.resticForgetPassword.description and fileExplorer.restic.forgetPassword.keychainKeptIt macos branches"
+  },
+  "smb-negotiated-security": {
+    "chosen": "商定好的安全设置",
+    "confidence": "high",
+    "forms": "the security settings it agreed on with Cmdr → 和 Cmdr 商定好的安全设置",
+    "sources": "catalog fileExplorer.network.osMountFallback.negotiationInvalid macos branch"
+  },
+  "detect": {
+    "chosen": "检测",
+    "confidence": "high",
+    "forms": "no system keyring detected → 未检测到系统钥匙串",
+    "sources": "catalog fileExplorer.network.share.credentialsStoredLocally other branch"
   }
 }

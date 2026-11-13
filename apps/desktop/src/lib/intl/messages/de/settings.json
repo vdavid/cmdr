@@ -3,9 +3,9 @@
   "@settings.appearance.language.label": {
     "sourceHash": "a4fe652"
   },
-  "settings.appearance.language.description": "{platform, select, macos {Wähle die Sprache, die Cmdr verwendet. „Systemstandard“ folgt der Sprache deines Macs.} windows {Choose the language Cmdr uses. “System default” follows your Windows display language.} other {Choose the language Cmdr uses. “System default” follows your system’s language.}}",
+  "settings.appearance.language.description": "{platform, select, macos {Wähle die Sprache, die Cmdr verwendet. „Systemstandard“ folgt der Sprache deines Macs.} windows {Wähle die Sprache, die Cmdr verwendet. „Systemstandard“ folgt deiner Windows-Anzeigesprache.} other {Wähle die Sprache, die Cmdr verwendet. „Systemstandard“ folgt der Sprache deines Systems.}}",
   "@settings.appearance.language.description": {
-    "sourceHash": "2dd7f63"
+    "sourceHash": "7ca0276"
   },
   "settings.appearance.language.opt.system": "Systemstandard",
   "@settings.appearance.language.opt.system": {
@@ -48,9 +48,9 @@
   "@settings.appearance.appColor.label": {
     "sourceHash": "b1107c8"
   },
-  "settings.appearance.appColor.description": "{platform, select, macos {Um deine System-Akzentfarbe zu ändern, geh zu Systemeinstellungen > Erscheinungsbild.} windows {To change your system accent color, go to Settings > Personalization > Colors.} other {To change your system accent color, go to your system appearance settings.}}",
+  "settings.appearance.appColor.description": "{platform, select, macos {Um deine System-Akzentfarbe zu ändern, geh zu Systemeinstellungen > Erscheinungsbild.} windows {Um deine System-Akzentfarbe zu ändern, geh zu Einstellungen > Personalisierung > Farben.} other {Um deine System-Akzentfarbe zu ändern, öffne deine System-Einstellungen für das Erscheinungsbild.}}",
   "@settings.appearance.appColor.description": {
-    "sourceHash": "7dc4ab7"
+    "sourceHash": "0045d05"
   },
   "settings.appearance.appColor.opt.system": "System-Akzentfarbe",
   "@settings.appearance.appColor.opt.system": {
@@ -215,9 +215,9 @@
   "@settings.appearance.textSize.label": {
     "sourceHash": "d68761c"
   },
-  "settings.appearance.textSize.description": "{platform, select, macos {Skaliert Text und Oberfläche in der ganzen App. Wirkt zusammen mit der macOS-Textgröße der Bedienungshilfen, wobei 100 % „genau die Systemgröße“ bedeutet.} other {Scales text and UI throughout the app.}}",
+  "settings.appearance.textSize.description": "{platform, select, macos {Skaliert Text und Oberfläche in der ganzen App. Wirkt zusammen mit der macOS-Textgröße der Bedienungshilfen, wobei 100 % „genau die Systemgröße“ bedeutet.} other {Skaliert Text und Oberfläche in der ganzen App.}}",
   "@settings.appearance.textSize.description": {
-    "sourceHash": "49a0a6b"
+    "sourceHash": "c460c56"
   },
   "settings.appearance.textSize.keywords": "Text, Größe, Schrift, Schriftgröße, größer, kleiner, Bedienungshilfen, Barrierefreiheit, Zoom, zoomen, skalieren, Skalierung",
   "@settings.appearance.textSize.keywords": {
@@ -352,9 +352,9 @@
   "@settings.listing.showHiddenFiles.label": {
     "sourceHash": "b5ede7f"
   },
-  "settings.listing.showHiddenFiles.description": "{platform, select, macos {Zeigt Dot-Dateien (wie .zshrc) und Objekte an, die das System als verborgen markiert. Gilt für beide Bereiche.} windows {Zeigt Dot-Dateien (wie .zshrc) und Objekte an, die das System als verborgen markiert. Gilt für beide Bereiche.} other {Show dotfiles (like .bashrc) and items the system marks as hidden. Applies to both panes.}}",
+  "settings.listing.showHiddenFiles.description": "{platform, select, macos {Zeigt Dot-Dateien (wie .zshrc) und Objekte an, die das System als verborgen markiert. Gilt für beide Bereiche.} windows {Zeigt Dot-Dateien (wie .zshrc) und Objekte an, die das System als verborgen markiert. Gilt für beide Bereiche.} other {Zeigt Dot-Dateien (wie .bashrc) und Objekte an, die das System als verborgen markiert. Gilt für beide Bereiche.}}",
   "@settings.listing.showHiddenFiles.description": {
-    "sourceHash": "8e77c67"
+    "sourceHash": "2526fb4"
   },
   "settings.listing.showHiddenFiles.keywords": "verborgen, versteckt, unsichtbar, Punktdatei, Punktdateien, System, Systemdateien, einblenden, anzeigen",
   "@settings.listing.showHiddenFiles.keywords": {
@@ -536,17 +536,17 @@
   "@settings.fileOperations.macOnlyFiles.keywords": {
     "sourceHash": "b668774"
   },
-  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Bestätigung für „Kopieren“, „Bewegen“ und „In den Papierkorb bewegen“ überspringen}}",
+  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Bestätigung für „Kopieren“, „Bewegen“ und „Löschen“ überspringen} other {Bestätigung für „Kopieren“, „Bewegen“ und „In den Papierkorb bewegen“ überspringen}}",
   "@settings.fileOperations.skipConfirmation.label": {
-    "sourceHash": "6af6546"
+    "sourceHash": "f1b1b39"
   },
   "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {Mit „Kopieren“ und „Bewegen“ landen Objekte sofort im anderen Bereich, und „Löschen“ bewegt sie ohne Nachfrage in den Papierkorb. Etwas riskant, denn ein Tastendruck wirkt sofort. Endgültiges Löschen fragt immer vorher nach.} other {Mit „Kopieren“ und „Bewegen“ landen Objekte sofort im anderen Bereich, und „Löschen“ bewegt sie ohne Nachfrage in den Papierkorb. Etwas riskant, denn ein Tastendruck wirkt sofort. Endgültiges Löschen fragt immer vorher nach.}}",
   "@settings.fileOperations.skipConfirmation.explanation": {
     "sourceHash": "564f000"
   },
-  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {bestätigen, Bestätigung, Dialog, Nachfrage, fragen, kopieren, bewegen, verschieben, Papierkorb, löschen, überspringen, Klicks}}",
+  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {bestätigen, Bestätigung, Dialog, Nachfrage, fragen, kopieren, bewegen, verschieben, Papierkorb, löschen, überspringen, Klicks} other {bestätigen, Bestätigung, Dialog, Nachfrage, fragen, kopieren, bewegen, verschieben, Papierkorb, löschen, überspringen, Klicks}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
-    "sourceHash": "9f61258"
+    "sourceHash": "8179d90"
   },
   "settings.fileOperations.defaultConflictPolicy.label": "Wenn Dateien bereits vorhanden sind",
   "@settings.fileOperations.defaultConflictPolicy.label": {
@@ -568,9 +568,9 @@
   "@settings.fileOperations.keepProgressOpenWhenDone.description": {
     "sourceHash": "005448f"
   },
-  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, recycle bin} other {Fortschritt, fertig, erledigt, abgeschlossen, beendet, Zusammenfassung, Ergebnis, Bericht, Bilanz, geöffnet, bleiben, stehen lassen, Dialog, Dauer, Geschwindigkeit, Tempo, Kopieren, Bewegen, Verschieben, Löschen, Papierkorb}}",
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {Fortschritt, fertig, erledigt, abgeschlossen, beendet, Zusammenfassung, Ergebnis, Bericht, Bilanz, geöffnet, bleiben, stehen lassen, Dialog, Dauer, Geschwindigkeit, Tempo, Kopieren, Bewegen, Verschieben, Löschen, Papierkorb} other {Fortschritt, fertig, erledigt, abgeschlossen, beendet, Zusammenfassung, Ergebnis, Bericht, Bilanz, geöffnet, bleiben, stehen lassen, Dialog, Dauer, Geschwindigkeit, Tempo, Kopieren, Bewegen, Verschieben, Löschen, Papierkorb}}",
   "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
-    "sourceHash": "978b2ff"
+    "sourceHash": "1f64fb0"
   },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Überspringen",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
@@ -1082,8 +1082,8 @@
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "sourceHash": "aed6b7a",
-    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
+    "sourceHash": "24dac61",
+    "sameAsSourceJustification": "OS brand names macOS and Windows stay verbatim; „System“ is the German word too (de/macOS Systemeinstellungen, catalog System-Akzentfarbe)."
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Beide",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
@@ -1157,9 +1157,9 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
     "sourceHash": "911b74b"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {Wie du gewarnt wirst, wenn auf deinem Startvolume wenig freier Speicher übrig ist.} windows {How to warn you when your system drive runs low on free space.} other {How to warn you when your system disk runs low on free space.}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {Wie du gewarnt wirst, wenn auf deinem Startvolume wenig freier Speicher übrig ist.} windows {Wie du gewarnt wirst, wenn auf deinem Systemlaufwerk wenig freier Speicher übrig ist.} other {Wie du gewarnt wirst, wenn auf deinem Systemlaufwerk wenig freier Speicher übrig ist.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
-    "sourceHash": "32b852d"
+    "sourceHash": "07714d7"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "In der App",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
@@ -1167,8 +1167,8 @@
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "sourceHash": "aed6b7a",
-    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
+    "sourceHash": "24dac61",
+    "sameAsSourceJustification": "OS brand names macOS and Windows stay verbatim; „System“ is the German word too (de/macOS Systemeinstellungen, catalog System-Akzentfarbe)."
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Aus",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
@@ -1182,9 +1182,9 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "sourceHash": "fd1382f"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Warnt, wenn der freie Speicher unter diesen Prozentsatz deines Startvolumes fällt.} windows {Warn when free space drops below this percent of your system drive.} other {Warn when free space drops below this percent of your system disk.}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Warnt, wenn der freie Speicher unter diesen Prozentsatz deines Startvolumes fällt.} windows {Warnt, wenn der freie Speicher unter diesen Prozentsatz deines Systemlaufwerks fällt.} other {Warnt, wenn der freie Speicher unter diesen Prozentsatz deines Systemlaufwerks fällt.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
-    "sourceHash": "9ed41b8"
+    "sourceHash": "b4d0378"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "Festplatte, Speicherplatz, Platz, Schwelle, Grenze, Prozent, wenig, knapp, frei, Warnung",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
@@ -1194,9 +1194,9 @@
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "{platform, select, windows {Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or select the run button to search.} other {Führt Dateinamen- und Regex-Suchen automatisch aus, während du tippst (1 Sekunde nach dem letzten Tastendruck). KI-Suchen warten immer auf die Eingabetaste, da sie Geld kosten. Wenn aus, drücke die Eingabetaste oder klicke auf die Taste zum Ausführen, um zu suchen.}}",
+  "settings.search.autoApply.description": "{platform, select, windows {Führt Dateinamen- und Regex-Suchen automatisch aus, während du tippst (1 Sekunde nach dem letzten Tastendruck). KI-Suchen warten immer auf die Eingabetaste, da sie Geld kosten. Wenn aus, drücke die Eingabetaste oder wähle die Schaltfläche zum Ausführen aus, um zu suchen.} other {Führt Dateinamen- und Regex-Suchen automatisch aus, während du tippst (1 Sekunde nach dem letzten Tastendruck). KI-Suchen warten immer auf die Eingabetaste, da sie Geld kosten. Wenn aus, drücke die Eingabetaste oder klicke auf die Taste zum Ausführen, um zu suchen.}}",
   "@settings.search.autoApply.description": {
-    "sourceHash": "19fcaf7"
+    "sourceHash": "b0f85fd"
   },
   "settings.search.autoApply.keywords": "Suche, suchen, automatisch, anwenden, live, sofort, verzögern, Dateiname",
   "@settings.search.autoApply.keywords": {
@@ -1294,13 +1294,13 @@
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
   },
-  "settings.network.enabled.label": "{platform, select, windows {Turn on networking} other {Netzwerk aktivieren}}",
+  "settings.network.enabled.label": "{platform, select, windows {Netzwerk aktivieren} other {Netzwerk aktivieren}}",
   "@settings.network.enabled.label": {
-    "sourceHash": "10f5de9"
+    "sourceHash": "ecb8b03"
   },
-  "settings.network.enabled.description": "{platform, select, macos {Findet SMB-Server in deinem lokalen Netzwerk und verbindet sich mit ihnen. Wenn aus, kann Cmdr weiterhin Dateien auf bereits eingebundenen Freigaben lesen und schreiben, fragt macOS aber nicht nach Zugriff auf das lokale Netzwerk.} windows {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, and Windows won’t ask to let Cmdr through the firewall.} other {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares.}}",
+  "settings.network.enabled.description": "{platform, select, macos {Findet SMB-Server in deinem lokalen Netzwerk und verbindet sich mit ihnen. Wenn aus, kann Cmdr weiterhin Dateien auf bereits eingebundenen Freigaben lesen und schreiben, fragt macOS aber nicht nach Zugriff auf das lokale Netzwerk.} windows {Findet SMB-Server in deinem lokalen Netzwerk und verbindet sich mit ihnen. Wenn aus, kann Cmdr weiterhin Dateien auf bereits eingebundenen Freigaben lesen und schreiben, und Windows fragt nicht, ob Cmdr die Firewall passieren darf.} other {Findet SMB-Server in deinem lokalen Netzwerk und verbindet sich mit ihnen. Wenn aus, kann Cmdr weiterhin Dateien auf bereits eingebundenen Freigaben lesen und schreiben.}}",
   "@settings.network.enabled.description": {
-    "sourceHash": "72a0854"
+    "sourceHash": "6994272"
   },
   "settings.network.enabled.keywords": "Netzwerk, aktivieren, aktiviert, einschalten, Erkennung, finden, lokal, Berechtigung, Erlaubnis",
   "@settings.network.enabled.keywords": {
@@ -1322,9 +1322,9 @@
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "{platform, select, macos {Wenn aktiviert, stellt Cmdr eine direkte Verbindung zu SMB-Freigaben her, für schnellere Dateivorgänge. Die Systemeinbindung bleibt für Finder und andere Apps erhalten.} windows {When this is on, Cmdr establishes a direct connection to SMB shares for faster file operations. The system connection stays for File Explorer and other apps.} other {When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for your file manager and other apps.}}",
+  "settings.network.directSmbConnection.description": "{platform, select, macos {Wenn aktiviert, stellt Cmdr eine direkte Verbindung zu SMB-Freigaben her, für schnellere Dateivorgänge. Die Systemeinbindung bleibt für Finder und andere Apps erhalten.} windows {Wenn das eingeschaltet ist, stellt Cmdr eine direkte Verbindung zu SMB-Freigaben her, für schnellere Dateivorgänge. Die Systemverbindung bleibt für den Datei-Explorer und andere Apps erhalten.} other {Wenn aktiviert, stellt Cmdr eine direkte Verbindung zu SMB-Freigaben her, für schnellere Dateivorgänge. Die Systemeinbindung bleibt für deinen Dateimanager und andere Apps erhalten.}}",
   "@settings.network.directSmbConnection.description": {
-    "sourceHash": "44a5a6d"
+    "sourceHash": "429c68c"
   },
   "settings.network.directSmbConnection.keywords": "direkt, schnell, Verbindung, verbinden, Netzwerk, Freigabe, Leistung, Geschwindigkeit",
   "@settings.network.directSmbConnection.keywords": {
@@ -1334,9 +1334,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr verschlüsselt seine Verbindungen zu SMB-Freigaben, auch wenn der Server das nicht verlangt, und öffnet keine Freigabe, deren Verbindung sich nicht verschlüsseln lässt, auch keine, mit der sich dein Mac ohne Verschlüsselung verbunden hat. Gastverbindungen lassen sich nicht verschlüsseln, daher musst du dich anmelden. Verbindungen, die Cmdr schon offen hat, bleiben, wie sie sind, bis Cmdr sie erneut verbindet.} windows {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your PC connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.} other {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your computer connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.}}",
+  "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr verschlüsselt seine Verbindungen zu SMB-Freigaben, auch wenn der Server das nicht verlangt, und öffnet keine Freigabe, deren Verbindung sich nicht verschlüsseln lässt, auch keine, mit der sich dein Mac ohne Verschlüsselung verbunden hat. Gastverbindungen lassen sich nicht verschlüsseln, daher musst du dich anmelden. Verbindungen, die Cmdr schon offen hat, bleiben, wie sie sind, bis Cmdr sie erneut verbindet.} windows {Cmdr verschlüsselt seine Verbindungen zu SMB-Freigaben, auch wenn der Server das nicht verlangt, und öffnet keine Freigabe, deren Verbindung sich nicht verschlüsseln lässt, auch keine, mit der sich dein PC ohne Verschlüsselung verbunden hat. Gastverbindungen lassen sich nicht verschlüsseln, daher musst du dich anmelden. Verbindungen, die Cmdr schon offen hat, bleiben, wie sie sind, bis Cmdr sie erneut verbindet.} other {Cmdr verschlüsselt seine Verbindungen zu SMB-Freigaben, auch wenn der Server das nicht verlangt, und öffnet keine Freigabe, deren Verbindung sich nicht verschlüsseln lässt, auch keine, mit der sich dein Computer ohne Verschlüsselung verbunden hat. Gastverbindungen lassen sich nicht verschlüsseln, daher musst du dich anmelden. Verbindungen, die Cmdr schon offen hat, bleiben, wie sie sind, bis Cmdr sie erneut verbindet.}}",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "8c27a6c"
+    "sourceHash": "26291fe"
   },
   "settings.network.requireSmbEncryption.keywords": "verschlüsseln, verschlüsselt, Sicherheit, sicher, Datenschutz, Privatsphäre, abhörsicher, Schutz",
   "@settings.network.requireSmbEncryption.keywords": {
@@ -1447,9 +1447,9 @@
   "@settings.fileOperations.adbEnabled.label": {
     "sourceHash": "3651356"
   },
-  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {Zeigt dir das gesamte Dateisystem eines Android-Telefons, auf dem USB-Debugging eingeschaltet ist, also auch das, was über MTP verborgen bleibt. Dafür brauchst du die Android Platform Tools (den Befehl „adb“) auf diesem Mac. Wenn du keine Android-Tools installiert hast, kostet es nichts, die Einstellung anzulassen.} windows {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this PC. Leaving this on costs nothing if you have no Android tooling installed.} other {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this computer. Leaving this on costs nothing if you have no Android tooling installed.}}",
+  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {Zeigt dir das gesamte Dateisystem eines Android-Telefons, auf dem USB-Debugging eingeschaltet ist, also auch das, was über MTP verborgen bleibt. Dafür brauchst du die Android Platform Tools (den Befehl „adb“) auf diesem Mac. Wenn du keine Android-Tools installiert hast, kostet es nichts, die Einstellung anzulassen.} windows {Zeigt dir das gesamte Dateisystem eines Android-Telefons, auf dem USB-Debugging eingeschaltet ist, also auch das, was über MTP verborgen bleibt. Dafür brauchst du die Android Platform Tools (den Befehl „adb“) auf diesem PC. Wenn du keine Android-Tools installiert hast, kostet es nichts, die Einstellung anzulassen.} other {Zeigt dir das gesamte Dateisystem eines Android-Telefons, auf dem USB-Debugging eingeschaltet ist, also auch das, was über MTP verborgen bleibt. Dafür brauchst du die Android Platform Tools (den Befehl „adb“) auf diesem Computer. Wenn du keine Android-Tools installiert hast, kostet es nichts, die Einstellung anzulassen.}}",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "a89c957"
+    "sourceHash": "4c92b52"
   },
   "settings.fileOperations.adbEnabled.keywords": "USB-Debugging, Entwickleroptionen, Entwickler, Telefon, Handy, Smartphone, Gerät",
   "@settings.fileOperations.adbEnabled.keywords": {
@@ -1459,9 +1459,9 @@
   "@settings.fileOperations.adbBinaryPath.label": {
     "sourceHash": "a67fbbd"
   },
-  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Leer lassen, dann sucht Cmdr adb auf den üblichen Wegen, unter anderem im Android SDK und bei Homebrew. Gib hier einen Pfad an, wenn du die Platform Tools an einem eigenen Ort aufbewahrst.} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
+  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Leer lassen, dann sucht Cmdr adb auf den üblichen Wegen, unter anderem im Android SDK und bei Homebrew. Gib hier einen Pfad an, wenn du die Platform Tools an einem eigenen Ort aufbewahrst.} other {Leer lassen, dann sucht Cmdr adb auf den üblichen Wegen, unter anderem im Android SDK und in deinem PATH. Gib hier einen Pfad an, wenn du die Platform Tools an einem eigenen Ort aufbewahrst.}}",
   "@settings.fileOperations.adbBinaryPath.description": {
-    "sourceHash": "940ff29"
+    "sourceHash": "e8cde17"
   },
   "settings.fileOperations.adbBinaryPath.keywords": "Pfad, Programm, Programmdatei, binär, Speicherort, Ort",
   "@settings.fileOperations.adbBinaryPath.keywords": {
@@ -1539,9 +1539,9 @@
   "@settings.viewer.showTextCursor.keywords": {
     "sourceHash": "1214804"
   },
-  "settings.developer.mcpEnabled.label": "{platform, select, windows {Turn on MCP server} other {MCP-Server aktivieren}}",
+  "settings.developer.mcpEnabled.label": "{platform, select, windows {MCP-Server aktivieren} other {MCP-Server aktivieren}}",
   "@settings.developer.mcpEnabled.label": {
-    "sourceHash": "32b62ff"
+    "sourceHash": "a2e166c"
   },
   "settings.developer.mcpEnabled.description": "Startet einen Model-Context-Protocol-Server zur Integration mit KI-Assistenten.",
   "@settings.developer.mcpEnabled.description": {
@@ -1620,9 +1620,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "{platform, select, windows {Please turn this on to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats.} other {Bitte aktiviere das, damit wir sehen, welche Funktionen während der offenen Beta wichtig sind.\nDie Statistiken sind nicht mit deinem Namen oder deiner E-Mail-Adresse verknüpft, sondern mit einer zufälligen ID.\nCmdr sendet nie Dateinamen, Pfade, Suchbegriffe oder Prompts.\nWenn es aus ist, sendet Cmdr gar keine Statistiken.}}",
+  "settings.analytics.enabled.description": "{platform, select, windows {Bitte aktiviere das, damit wir sehen, welche Funktionen während der offenen Beta wichtig sind.\nDie Statistiken sind nicht mit deinem Namen oder deiner E-Mail-Adresse verknüpft, sondern mit einer zufälligen ID.\nCmdr sendet nie Dateinamen, Pfade, Suchbegriffe oder Prompts.\nWenn es aus ist, sendet Cmdr gar keine Statistiken.} other {Bitte aktiviere das, damit wir sehen, welche Funktionen während der offenen Beta wichtig sind.\nDie Statistiken sind nicht mit deinem Namen oder deiner E-Mail-Adresse verknüpft, sondern mit einer zufälligen ID.\nCmdr sendet nie Dateinamen, Pfade, Suchbegriffe oder Prompts.\nWenn es aus ist, sendet Cmdr gar keine Statistiken.}}",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "f5534ee"
+    "sourceHash": "2527a03"
   },
   "settings.analytics.enabled.keywords": "Analyse, Nutzung, Nutzungsdaten, Statistik, Statistiken, Datenschutz, Privatsphäre, Telemetrie, Beta, Tracking, abmelden, deaktivieren",
   "@settings.analytics.enabled.keywords": {
@@ -1644,9 +1644,9 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "{platform, select, macos {Sendet automatisch einen Bericht, wenn Cmdr unerwartet beendet wird oder im Hintergrund auf ein Problem stößt. Enthält App-Version, macOS-Version und den Teil des Codes, der auf das Problem gestoßen ist. Nie Dateinamen oder persönliche Daten.} windows {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Windows version, and where in the code the problem happened. Never file names or personal data.} other {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Linux distribution and version, and where in the code the problem happened. Never file names or personal data.}}",
+  "settings.updates.crashReports.description": "{platform, select, macos {Sendet automatisch einen Bericht, wenn Cmdr unerwartet beendet wird oder im Hintergrund auf ein Problem stößt. Enthält App-Version, macOS-Version und den Teil des Codes, der auf das Problem gestoßen ist. Nie Dateinamen oder persönliche Daten.} windows {Sendet automatisch einen Bericht, wenn Cmdr unerwartet beendet wird oder im Hintergrund auf ein Problem stößt. Enthält App-Version, Windows-Version und den Teil des Codes, der auf das Problem gestoßen ist. Nie Dateinamen oder persönliche Daten.} other {Sendet automatisch einen Bericht, wenn Cmdr unerwartet beendet wird oder im Hintergrund auf ein Problem stößt. Enthält App-Version, Linux-Distribution und ihre Version sowie den Teil des Codes, der auf das Problem gestoßen ist. Nie Dateinamen oder persönliche Daten.}}",
   "@settings.updates.crashReports.description": {
-    "sourceHash": "e726766"
+    "sourceHash": "abfdc61"
   },
   "settings.updates.crashReports.keywords": "Absturz, abgestürzt, Bericht, Absturzbericht, Datenschutz, Privatsphäre, Telemetrie, Bug, Fehler",
   "@settings.updates.crashReports.keywords": {
@@ -1740,9 +1740,9 @@
   "@settings.advanced.indexPauseFreeSpacePercent.label": {
     "sourceHash": "c6fe418"
   },
-  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {Cmdr hält die Laufwerksindizierung an, wenn der freie Speicherplatz auf deinem Startvolume unter diesen Prozentwert fällt, damit der Index nicht den Platz belegt, den deine eigenen Dateien brauchen. Die Indizierung macht dort weiter, wo sie aufgehört hat, sobald der freie Speicherplatz einen Prozentpunkt darüber liegt. Das gilt unabhängig davon, ob die „Warnung bei wenig Speicherplatz“ ein- oder ausgeschaltet ist.} windows {Cmdr pauses drive indexing when free space on your system drive drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} other {Cmdr pauses drive indexing when free space on your system disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.}}",
+  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {Cmdr hält die Laufwerksindizierung an, wenn der freie Speicherplatz auf deinem Startvolume unter diesen Prozentwert fällt, damit der Index nicht den Platz belegt, den deine eigenen Dateien brauchen. Die Indizierung macht dort weiter, wo sie aufgehört hat, sobald der freie Speicherplatz einen Prozentpunkt darüber liegt. Das gilt unabhängig davon, ob die „Warnung bei wenig Speicherplatz“ ein- oder ausgeschaltet ist.} windows {Cmdr hält die Laufwerksindizierung an, wenn der freie Speicherplatz auf deinem Systemlaufwerk unter diesen Prozentwert fällt, damit der Index nicht den Platz belegt, den deine eigenen Dateien brauchen. Die Indizierung macht dort weiter, wo sie aufgehört hat, sobald der freie Speicherplatz einen Prozentpunkt darüber liegt. Das gilt unabhängig davon, ob die „Warnung bei wenig Speicherplatz“ ein- oder ausgeschaltet ist.} other {Cmdr hält die Laufwerksindizierung an, wenn der freie Speicherplatz auf deinem Systemlaufwerk unter diesen Prozentwert fällt, damit der Index nicht den Platz belegt, den deine eigenen Dateien brauchen. Die Indizierung macht dort weiter, wo sie aufgehört hat, sobald der freie Speicherplatz einen Prozentpunkt darüber liegt. Das gilt unabhängig davon, ob die „Warnung bei wenig Speicherplatz“ ein- oder ausgeschaltet ist.}}",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "4ee1cce"
+    "sourceHash": "bb41d41"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "Festplatte, Speicherplatz, Platz, voll, frei, Index, Indizierung, anhalten, Pause, Speicher, Schwelle, Grenze, Prozent, wenig, knapp",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
@@ -1804,9 +1804,9 @@
   "@settings.fileOperations.showAlreadyGoneToast.label": {
     "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or select “Never show this again” in the notice) to stop these notices.} other {Wenn du etwas löschst, das eine andere App schon bewegt oder gelöscht hat, wertet Cmdr das als erledigt und zeigt einen kurzen Hinweis dazu an. Schalte das aus (oder klicke im Hinweis auf „Nicht mehr anzeigen“), damit diese Hinweise wegbleiben.}}",
+  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {Wenn du etwas löschst, das eine andere App schon bewegt oder gelöscht hat, wertet Cmdr das als erledigt und zeigt einen kurzen Hinweis dazu an. Schalte das aus (oder wähle im Hinweis „Nicht mehr anzeigen“ aus), damit diese Hinweise wegbleiben.} other {Wenn du etwas löschst, das eine andere App schon bewegt oder gelöscht hat, wertet Cmdr das als erledigt und zeigt einen kurzen Hinweis dazu an. Schalte das aus (oder klicke im Hinweis auf „Nicht mehr anzeigen“), damit diese Hinweise wegbleiben.}}",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "9655e46"
+    "sourceHash": "72a3ead"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "fehlend, verschwunden, nicht mehr da, verschoben, entfernt, Benachrichtigung, Meldung, Mitteilung, Toast",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -1984,9 +1984,9 @@
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"
   },
-  "settings.advanced.logLlmCalls.description": "{platform, select, macos {Speichert zur Fehlerbehebung jede KI-Anfrage und -Antwort in einem lokalen Ordner (llm-logs). Diese Dateien bleiben auf deinem Mac und enthalten die Dateinamen und Pfade, die Cmdr an deinen Anbieter sendet.} windows {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your PC and include the file names and paths Cmdr sends to your provider.} other {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your computer and include the file names and paths Cmdr sends to your provider.}}",
+  "settings.advanced.logLlmCalls.description": "{platform, select, macos {Speichert zur Fehlerbehebung jede KI-Anfrage und -Antwort in einem lokalen Ordner (llm-logs). Diese Dateien bleiben auf deinem Mac und enthalten die Dateinamen und Pfade, die Cmdr an deinen Anbieter sendet.} windows {Speichert zur Fehlerbehebung jede KI-Anfrage und -Antwort in einem lokalen Ordner (llm-logs). Diese Dateien bleiben auf deinem PC und enthalten die Dateinamen und Pfade, die Cmdr an deinen Anbieter sendet.} other {Speichert zur Fehlerbehebung jede KI-Anfrage und -Antwort in einem lokalen Ordner (llm-logs). Diese Dateien bleiben auf deinem Computer und enthalten die Dateinamen und Pfade, die Cmdr an deinen Anbieter sendet.}}",
   "@settings.advanced.logLlmCalls.description": {
-    "sourceHash": "86b3d34"
+    "sourceHash": "0f9361b"
   },
   "settings.advanced.logLlmCalls.keywords": "KI, Protokoll, protokollieren, Log, Debug, Anfrage, Antwort, Prompt, Eingabeaufforderung",
   "@settings.advanced.logLlmCalls.keywords": {
@@ -1996,9 +1996,9 @@
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
   },
-  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {Zeitüberschreitung für das Auflösen von Netzwerkdiensten über Bonjour.} other {Timeout for resolving network services found on your local network (mDNS).}}",
+  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {Zeitüberschreitung für das Auflösen von Netzwerkdiensten über Bonjour.} other {Zeitüberschreitung für das Auflösen von Netzwerkdiensten, die in deinem lokalen Netzwerk gefunden werden (mDNS).}}",
   "@settings.advanced.serviceResolveTimeout.description": {
-    "sourceHash": "5cf231d"
+    "sourceHash": "cb44fa3"
   },
   "settings.advanced.serviceResolveTimeout.keywords": "auflösen, Auflösung, Dienst, Dienstsuche, Netzwerksuche, Netzwerkerkennung, nachschlagen, Suche, lokales Netzwerk, warten, Wartezeit, Zeitüberschreitung, Zeitlimit",
   "@settings.advanced.serviceResolveTimeout.keywords": {
@@ -2773,9 +2773,9 @@
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "{platform, select, windows {Turn on networking, direct SMB connections, share cache, and timeouts.} other {Netzwerk aktivieren, direkte SMB-Verbindungen, Freigabe-Cache und Zeitüberschreitungen.}}",
+  "settings.summary.smbNetworkShares": "{platform, select, windows {Netzwerk aktivieren, direkte SMB-Verbindungen, Freigabe-Cache und Zeitüberschreitungen.} other {Netzwerk aktivieren, direkte SMB-Verbindungen, Freigabe-Cache und Zeitüberschreitungen.}}",
   "@settings.summary.smbNetworkShares": {
-    "sourceHash": "10604ac"
+    "sourceHash": "47e037d"
   },
   "settings.summary.servers": "Die SSH-Hostschlüssel, denen du vertraust.",
   "@settings.summary.servers": {
@@ -2950,18 +2950,18 @@
   "@settings.sidebar.matchCount": {
     "sourceHash": "fb95dc1"
   },
-  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {Systemeinstellungen öffnen, um die System-Akzentfarbe zu ändern} windows {Open Windows Settings to change the system accent color} other {Open your system settings to change the system accent color}}",
+  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {Systemeinstellungen öffnen, um die System-Akzentfarbe zu ändern} windows {Windows-Einstellungen öffnen, um die System-Akzentfarbe zu ändern} other {Deine System-Einstellungen öffnen, um die System-Akzentfarbe zu ändern}}",
   "@settings.appearance.themeColorSwatchAria": {
-    "sourceHash": "4cad022"
+    "sourceHash": "b76cab4"
   },
-  "settings.appearance.appColorHintPrefix": "{platform, select, macos {Um deine System-Akzentfarbe zu ändern, geh zu} other {To change your system accent color, go to}}",
+  "settings.appearance.appColorHintPrefix": "{platform, select, macos {Um deine System-Akzentfarbe zu ändern, geh zu} other {Um deine System-Akzentfarbe zu ändern, öffne}}",
   "@settings.appearance.appColorHintPrefix": {
-    "sourceHash": "748470a"
+    "sourceHash": "f06932f"
   },
-  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {deine System-Einstellungen für das Erscheinungsbild}}",
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Einstellungen > Personalisierung > Farben} other {deine System-Einstellungen für das Erscheinungsbild}}",
   "@settings.appearance.appColorHintLink": {
-    "sourceHash": "5c94206",
-    "sameAsSourceJustification": "Placeholder-only path '{systemSettings} > {appearance}'; both placeholders are OS-localized macOS labels injected at runtime, and the '>' arrow is kept. No translatable text."
+    "sourceHash": "551a3a4",
+    "sameAsSourceJustification": "The macos branch is only the two OS-localized placeholders and the > separator; nothing in it to translate."
   },
   "settings.appearance.datePreviewLabel": "Vorschau:",
   "@settings.appearance.datePreviewLabel": {
@@ -3199,17 +3199,17 @@
   "@settings.securityLog.enabled.label": {
     "sourceHash": "9f5e32e"
   },
-  "settings.securityLog.enabled.description": "{platform, select, macos {Hält in einer kleinen Datei auf diesem Mac sicherheitsrelevante Änderungen und Ablehnungen fest, etwa die Zustimmung zur Cloud-KI, ein installiertes Update oder eine App, die der MCP-Server abgewiesen hat. Die Datei enthält keine Dateinamen, Inhalte oder Passwörter und verlässt deinen Mac nie.} windows {Keep a small file on this PC that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your PC.} other {Keep a small file on this computer that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your computer.}}",
+  "settings.securityLog.enabled.description": "{platform, select, macos {Hält in einer kleinen Datei auf diesem Mac sicherheitsrelevante Änderungen und Ablehnungen fest, etwa die Zustimmung zur Cloud-KI, ein installiertes Update oder eine App, die der MCP-Server abgewiesen hat. Die Datei enthält keine Dateinamen, Inhalte oder Passwörter und verlässt deinen Mac nie.} windows {Hält in einer kleinen Datei auf diesem PC sicherheitsrelevante Änderungen und Ablehnungen fest, etwa die Zustimmung zur Cloud-KI, ein installiertes Update oder eine App, die der MCP-Server abgewiesen hat. Die Datei enthält keine Dateinamen, Inhalte oder Passwörter und verlässt deinen PC nie.} other {Hält in einer kleinen Datei auf diesem Computer sicherheitsrelevante Änderungen und Ablehnungen fest, etwa die Zustimmung zur Cloud-KI, ein installiertes Update oder eine App, die der MCP-Server abgewiesen hat. Die Datei enthält keine Dateinamen, Inhalte oder Passwörter und verlässt deinen Computer nie.}}",
   "@settings.securityLog.enabled.description": {
-    "sourceHash": "11361eb"
+    "sourceHash": "c0d2160"
   },
   "settings.securityLog.enabled.keywords": "Sicherheit, Protokoll, Prüfprotokoll, Audit, aufzeichnen, Ereignisse, Zugriff, Datenschutz, Privatsphäre",
   "@settings.securityLog.enabled.keywords": {
     "sourceHash": "6f113c0"
   },
-  "settings.securityLog.showInFinder": "{platform, select, macos {Im Finder anzeigen} windows {Show in File Explorer} other {Show in file manager}}",
+  "settings.securityLog.showInFinder": "{platform, select, macos {Im Finder anzeigen} windows {Im Datei-Explorer anzeigen} other {Im Dateimanager anzeigen}}",
   "@settings.securityLog.showInFinder": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "settings.updates.showSecurityLog.keywords": "Sicherheit, Protokoll, Prüfprotokoll, Audit, Ereignisse, Datei, öffnen, anzeigen, zeigen, Ordner, Speicherort, Ort",
   "@settings.updates.showSecurityLog.keywords": {
@@ -3272,9 +3272,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "14adb30"
   },
-  "settings.updates.emailPrivacyNote": "{platform, select, macos {Wird nur auf deinem Mac gespeichert. Wir senden sie nie zusammen mit deinen Nutzungsstatistiken, damit diese nicht mit dir verknüpft werden können. Wird nur genutzt, um dich zu erreichen und wahlweise an einen von dir gesendeten Bericht anzuhängen. Um keine E-Mails mehr zu bekommen, nutze den Abmeldelink in jeder Nachricht, die wir senden.} windows {Stored only on your PC. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.} other {Stored only on your computer. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.}}",
+  "settings.updates.emailPrivacyNote": "{platform, select, macos {Wird nur auf deinem Mac gespeichert. Wir senden sie nie zusammen mit deinen Nutzungsstatistiken, damit diese nicht mit dir verknüpft werden können. Wird nur genutzt, um dich zu erreichen und wahlweise an einen von dir gesendeten Bericht anzuhängen. Um keine E-Mails mehr zu bekommen, nutze den Abmeldelink in jeder Nachricht, die wir senden.} windows {Wird nur auf deinem PC gespeichert. Wir senden sie nie zusammen mit deinen Nutzungsstatistiken, damit diese nicht mit dir verknüpft werden können. Wird nur genutzt, um dich zu erreichen und wahlweise an einen von dir gesendeten Bericht anzuhängen. Um keine E-Mails mehr zu bekommen, nutze den Abmeldelink in jeder Nachricht, die wir senden.} other {Wird nur auf deinem Computer gespeichert. Wir senden sie nie zusammen mit deinen Nutzungsstatistiken, damit diese nicht mit dir verknüpft werden können. Wird nur genutzt, um dich zu erreichen und wahlweise an einen von dir gesendeten Bericht anzuhängen. Um keine E-Mails mehr zu bekommen, nutze den Abmeldelink in jeder Nachricht, die wir senden.}}",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "cf92795"
+    "sourceHash": "d8146b0"
   },
   "settings.logging.openLogFile": "Protokolldatei öffnen",
   "@settings.logging.openLogFile": {
@@ -3440,13 +3440,13 @@
   "@settings.network.trustedCertificates.keywords": {
     "sourceHash": "554a965"
   },
-  "settings.servers.trustedCertificates.description": "{platform, select, macos {Wenn macOS dem Zertifikat eines Servers nicht vertraut, fragt Cmdr nach, bevor es dem Zertifikat für dich vertraut, und merkt sich deine Antwort hier. Heimserver erstellen ihr Zertifikat oft selbst.} windows {When Windows doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.} other {When your system doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.}}",
+  "settings.servers.trustedCertificates.description": "{platform, select, macos {Wenn macOS dem Zertifikat eines Servers nicht vertraut, fragt Cmdr nach, bevor es dem Zertifikat für dich vertraut, und merkt sich deine Antwort hier. Heimserver erstellen ihr Zertifikat oft selbst.} windows {Wenn Windows dem Zertifikat eines Servers nicht vertraut, fragt Cmdr nach, bevor es dem Zertifikat für dich vertraut, und merkt sich deine Antwort hier. Heimserver erstellen ihr Zertifikat oft selbst.} other {Wenn dein System dem Zertifikat eines Servers nicht vertraut, fragt Cmdr nach, bevor es dem Zertifikat für dich vertraut, und merkt sich deine Antwort hier. Heimserver erstellen ihr Zertifikat oft selbst.}}",
   "@settings.servers.trustedCertificates.description": {
-    "sourceHash": "0b00c1e"
+    "sourceHash": "9eb44db"
   },
-  "settings.servers.trustedCertificates.empty": "{platform, select, macos {Bisher vertraust du keinem Zertifikat. Wenn du dich mit einem WebDAV-Server verbindest, dem macOS nicht vertraut, zeigt dir Cmdr den Fingerabdruck des Zertifikats und fragt nach.} windows {Nothing trusted yet. When you connect to a WebDAV server Windows doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.} other {Nothing trusted yet. When you connect to a WebDAV server your system doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.}}",
+  "settings.servers.trustedCertificates.empty": "{platform, select, macos {Bisher vertraust du keinem Zertifikat. Wenn du dich mit einem WebDAV-Server verbindest, dem macOS nicht vertraut, zeigt dir Cmdr den Fingerabdruck des Zertifikats und fragt nach.} windows {Bisher vertraust du keinem Zertifikat. Wenn du dich mit einem WebDAV-Server verbindest, dem Windows nicht vertraut, zeigt dir Cmdr den Fingerabdruck des Zertifikats und fragt nach.} other {Bisher vertraust du keinem Zertifikat. Wenn du dich mit einem WebDAV-Server verbindest, dem dein System nicht vertraut, zeigt dir Cmdr den Fingerabdruck des Zertifikats und fragt nach.}}",
   "@settings.servers.trustedCertificates.empty": {
-    "sourceHash": "a3c2089"
+    "sourceHash": "da34116"
   },
   "settings.servers.trustedCertificates.confirmTitle": "Dieses Zertifikat vergessen?",
   "@settings.servers.trustedCertificates.confirmTitle": {
@@ -3537,13 +3537,13 @@
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },
-  "settings.dataWipe.card": "{platform, select, macos {Deine Daten auf diesem Mac} windows {Your data on this PC} other {Your data on this computer}}",
+  "settings.dataWipe.card": "{platform, select, macos {Deine Daten auf diesem Mac} windows {Deine Daten auf diesem PC} other {Deine Daten auf diesem Computer}}",
   "@settings.dataWipe.card": {
-    "sourceHash": "e4b3cee"
+    "sourceHash": "3d21fb8"
   },
-  "settings.dataWipe.description": "{platform, select, macos {Löscht alles, was Cmdr auf diesem Mac speichert: Einstellungen, gespeicherte Passwörter, Verläufe, Indizes und heruntergeladene Modelle. Danach beendet sich Cmdr.} windows {Delete everything Cmdr keeps on this PC: settings, saved passwords, histories, indexes, and downloaded models. Cmdr closes afterwards.} other {Delete everything Cmdr keeps on this computer: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.}}",
+  "settings.dataWipe.description": "{platform, select, macos {Löscht alles, was Cmdr auf diesem Mac speichert: Einstellungen, gespeicherte Passwörter, Verläufe, Indizes und heruntergeladene Modelle. Danach beendet sich Cmdr.} windows {Löscht alles, was Cmdr auf diesem PC speichert: Einstellungen, gespeicherte Passwörter, Verläufe, Indizes und heruntergeladene Modelle. Danach wird Cmdr geschlossen.} other {Löscht alles, was Cmdr auf diesem Computer speichert: Einstellungen, gespeicherte Passwörter, Verläufe, Indizes und heruntergeladene Modelle. Danach beendet sich Cmdr.}}",
   "@settings.dataWipe.description": {
-    "sourceHash": "f1012f4"
+    "sourceHash": "7dc0c1c"
   },
   "settings.dataWipe.button": "Alle Daten von Cmdr löschen",
   "@settings.dataWipe.button": {
@@ -3553,17 +3553,17 @@
   "@settings.updates.deleteAllData.keywords": {
     "sourceHash": "0ffb0f6"
   },
-  "settings.dataWipe.title": "{platform, select, macos {Alle Daten von Cmdr auf diesem Mac löschen?} windows {Delete all Cmdr data on this PC?} other {Delete all Cmdr data on this computer?}}",
+  "settings.dataWipe.title": "{platform, select, macos {Alle Daten von Cmdr auf diesem Mac löschen?} windows {Alle Daten von Cmdr auf diesem PC löschen?} other {Alle Daten von Cmdr auf diesem Computer löschen?}}",
   "@settings.dataWipe.title": {
-    "sourceHash": "35db003"
+    "sourceHash": "63322b8"
   },
-  "settings.dataWipe.intro": "{platform, select, macos {Cmdr löscht alles, was es auf diesem Mac speichert, und beendet sich dann. Das lässt sich nicht rückgängig machen.} windows {Cmdr deletes everything it keeps on this PC, then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer, then quits. This can’t be undone.}}",
+  "settings.dataWipe.intro": "{platform, select, macos {Cmdr löscht alles, was es auf diesem Mac speichert, und beendet sich dann. Das lässt sich nicht rückgängig machen.} windows {Cmdr löscht alles, was es auf diesem PC speichert, und wird dann geschlossen. Das lässt sich nicht rückgängig machen.} other {Cmdr löscht alles, was es auf diesem Computer speichert, und beendet sich dann. Das lässt sich nicht rückgängig machen.}}",
   "@settings.dataWipe.intro": {
-    "sourceHash": "61ed875"
+    "sourceHash": "75dd0c6"
   },
-  "settings.dataWipe.introWithSize": "{platform, select, macos {Cmdr löscht alles, was es auf diesem Mac speichert ({sizeText}), und beendet sich dann. Das lässt sich nicht rückgängig machen.} windows {Cmdr deletes everything it keeps on this PC ({sizeText}), then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer ({sizeText}), then quits. This can’t be undone.}}",
+  "settings.dataWipe.introWithSize": "{platform, select, macos {Cmdr löscht alles, was es auf diesem Mac speichert ({sizeText}), und beendet sich dann. Das lässt sich nicht rückgängig machen.} windows {Cmdr löscht alles, was es auf diesem PC speichert ({sizeText}), und wird dann geschlossen. Das lässt sich nicht rückgängig machen.} other {Cmdr löscht alles, was es auf diesem Computer speichert ({sizeText}), und beendet sich dann. Das lässt sich nicht rückgängig machen.}}",
   "@settings.dataWipe.introWithSize": {
-    "sourceHash": "e5262e8"
+    "sourceHash": "8dacc9c"
   },
   "settings.dataWipe.goesHeading": "Was gelöscht wird",
   "@settings.dataWipe.goesHeading": {
@@ -3581,13 +3581,13 @@
   "@settings.dataWipe.goes.apiKeys": {
     "sourceHash": "146397c"
   },
-  "settings.dataWipe.goes.license": "{platform, select, macos {Die Lizenz auf diesem Mac. Um sie wieder zu aktivieren, gib den Lizenzschlüssel aus deiner Kauf-E-Mail ein.} windows {The license on this PC. To activate it again, enter the license key from your purchase email.} other {The license on this computer. To activate it again, enter the license key from your purchase email.}}",
+  "settings.dataWipe.goes.license": "{platform, select, macos {Die Lizenz auf diesem Mac. Um sie wieder zu aktivieren, gib den Lizenzschlüssel aus deiner Kauf-E-Mail ein.} windows {Die Lizenz auf diesem PC. Um sie wieder zu aktivieren, gib den Lizenzschlüssel aus deiner Kauf-E-Mail ein.} other {Die Lizenz auf diesem Computer. Um sie wieder zu aktivieren, gib den Lizenzschlüssel aus deiner Kauf-E-Mail ein.}}",
   "@settings.dataWipe.goes.license": {
-    "sourceHash": "90b5b06"
+    "sourceHash": "12597d5"
   },
-  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {Die Lizenz auf diesem Mac, falls du eine aktiviert hast. Um sie wieder zu aktivieren, gib den Lizenzschlüssel aus deiner Kauf-E-Mail ein.} windows {The license on this PC, if you activated one. To activate it again, enter the license key from your purchase email.} other {The license on this computer, if you activated one. To activate it again, enter the license key from your purchase email.}}",
+  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {Die Lizenz auf diesem Mac, falls du eine aktiviert hast. Um sie wieder zu aktivieren, gib den Lizenzschlüssel aus deiner Kauf-E-Mail ein.} windows {Die Lizenz auf diesem PC, falls du eine aktiviert hast. Um sie wieder zu aktivieren, gib den Lizenzschlüssel aus deiner Kauf-E-Mail ein.} other {Die Lizenz auf diesem Computer, falls du eine aktiviert hast. Um sie wieder zu aktivieren, gib den Lizenzschlüssel aus deiner Kauf-E-Mail ein.}}",
   "@settings.dataWipe.goes.licenseIfAny": {
-    "sourceHash": "db7f6f2"
+    "sourceHash": "93cc028"
   },
   "settings.dataWipe.goes.askCmdr": "Ask-Cmdr-Chats und was sich Cmdr über dich merkt",
   "@settings.dataWipe.goes.askCmdr": {
@@ -3629,9 +3629,9 @@
   "@settings.dataWipe.cancel": {
     "sourceHash": "19766ed"
   },
-  "settings.dataWipe.confirm": "{platform, select, windows {Delete all and exit} other {Alles löschen und beenden}}",
+  "settings.dataWipe.confirm": "{platform, select, windows {Alles löschen und beenden} other {Alles löschen und beenden}}",
   "@settings.dataWipe.confirm": {
-    "sourceHash": "5efdab7"
+    "sourceHash": "8b73f1a"
   },
   "settings.dataWipe.deleting": "Wird gelöscht …",
   "@settings.dataWipe.deleting": {
@@ -3653,9 +3653,9 @@
   "@settings.dataWipe.doneTitle": {
     "sourceHash": "18aa13d"
   },
-  "settings.dataWipe.doneMessage": "{platform, select, macos {Alles, was Cmdr auf diesem Mac gespeichert hat, ist weg. Um auch die App zu entfernen, bewege sie in den Papierkorb, nachdem sich Cmdr beendet hat.} windows {Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps after Cmdr closes.} other {Everything Cmdr kept on this computer is gone. To remove the app as well, uninstall it the way you installed it after Cmdr quits.}}",
+  "settings.dataWipe.doneMessage": "{platform, select, macos {Alles, was Cmdr auf diesem Mac gespeichert hat, ist weg. Um auch die App zu entfernen, bewege sie in den Papierkorb, nachdem sich Cmdr beendet hat.} windows {Alles, was Cmdr auf diesem PC gespeichert hat, ist weg. Um auch die App zu entfernen, deinstalliere sie unter Einstellungen > Apps, nachdem Cmdr geschlossen wurde.} other {Alles, was Cmdr auf diesem Computer gespeichert hat, ist weg. Um auch die App zu entfernen, deinstalliere sie auf demselben Weg, auf dem du sie installiert hast, nachdem sich Cmdr beendet hat.}}",
   "@settings.dataWipe.doneMessage": {
-    "sourceHash": "a0d09dc"
+    "sourceHash": "a18fa9f"
   },
   "settings.dataWipe.partialTitle": "Cmdr hat die meisten seiner Daten gelöscht",
   "@settings.dataWipe.partialTitle": {
@@ -3665,17 +3665,17 @@
   "@settings.dataWipe.partialMessage": {
     "sourceHash": "24d0b58"
   },
-  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, one {Ein Eintrag namens „{itemName}“ in der Schlüsselbundverwaltung} other {{countText} Einträge namens „{itemName}“ in der Schlüsselbundverwaltung}}} windows {{count, plural, one {One item in Credential Manager named “{itemName}”} other {{countText} items in Credential Manager named “{itemName}”}}} other {{count, plural, one {One item in your keyring named “{itemName}”} other {{countText} items in your keyring named “{itemName}”}}}}",
+  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, one {Ein Eintrag namens „{itemName}“ in der Schlüsselbundverwaltung} other {{countText} Einträge namens „{itemName}“ in der Schlüsselbundverwaltung}}} windows {{count, plural, one {Ein Eintrag namens „{itemName}“ in der Anmeldeinformationsverwaltung} other {{countText} Einträge namens „{itemName}“ in der Anmeldeinformationsverwaltung}}} other {{count, plural, one {Ein Eintrag namens „{itemName}“ in deinem Schlüsselbund} other {{countText} Einträge namens „{itemName}“ in deinem Schlüsselbund}}}}",
   "@settings.dataWipe.leftover.secretItems": {
-    "sourceHash": "91321bb"
+    "sourceHash": "6cf1e9c"
   },
-  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {Einträge namens „{itemName}“ in der Schlüsselbundverwaltung, falls vorhanden} windows {Any items in Credential Manager named “{itemName}”} other {Any items in your keyring named “{itemName}”}}",
+  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {Einträge namens „{itemName}“ in der Schlüsselbundverwaltung, falls vorhanden} windows {Einträge namens „{itemName}“ in der Anmeldeinformationsverwaltung, falls vorhanden} other {Einträge namens „{itemName}“ in deinem Schlüsselbund, falls vorhanden}}",
   "@settings.dataWipe.leftover.secretsUnreadable": {
-    "sourceHash": "e3b3312"
+    "sourceHash": "0e9e95b"
   },
-  "settings.dataWipe.quit": "{platform, select, windows {Exit Cmdr} other {Cmdr beenden}}",
+  "settings.dataWipe.quit": "{platform, select, windows {Cmdr beenden} other {Cmdr beenden}}",
   "@settings.dataWipe.quit": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "settings.askCmdr.forgetMemory.keywords": "vergessen, Gedächtnis, Speicher, löschen, entfernen, merkt sich, erinnert sich, Datenschutz, Privatsphäre",
   "@settings.askCmdr.forgetMemory.keywords": {

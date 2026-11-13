@@ -324,9 +324,9 @@
   "@multiRename.results.gone": {
     "sourceHash": "8aa255a"
   },
-  "multiRename.error.couldntWriteNames": "{platform, select, macos {O Cmdr não conseguiu gravar a lista de nomes. Confira se o seu disco de inicialização tem espaço livre.} windows {Couldn’t write the names list. Check that your system drive has free space.} other {Couldn’t write the names list. Check that your system disk has free space.}}",
+  "multiRename.error.couldntWriteNames": "{platform, select, macos {O Cmdr não conseguiu gravar a lista de nomes. Confira se o seu disco de inicialização tem espaço livre.} windows {O Cmdr não conseguiu gravar a lista de nomes. Confira se a sua unidade do sistema tem espaço livre.} other {O Cmdr não conseguiu gravar a lista de nomes. Confira se o seu disco do sistema tem espaço livre.}}",
   "@multiRename.error.couldntWriteNames": {
-    "sourceHash": "bb5e415"
+    "sourceHash": "aee4df7"
   },
   "multiRename.resultsTooltip": "Edite os novos nomes no seu editor de texto e depois volte aqui para usá-los.",
   "@multiRename.resultsTooltip": {

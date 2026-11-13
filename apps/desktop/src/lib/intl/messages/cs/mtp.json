@@ -5,7 +5,8 @@
   },
   "mtp.connectedToast.body": "{platform, select, macos {Cmdr kvůli přístupu k tomuto zařízení pozastavil systémový proces macOS pro fotoaparáty (ptpcamerad). Pokud chcete zařízení používat v jiné aplikaci, vypněte v Nastavení podporu MTP.} windows {} other {Pokud chcete toto zařízení používat v jiné aplikaci, vypněte v Nastavení podporu MTP.}}",
   "@mtp.connectedToast.body": {
-    "sourceHash": "3ace37b"
+    "sourceHash": "74349d8",
+    "sameAsSourceJustification": "The windows branch is empty on purpose (no body line on Windows, per the @key description); there is no text to translate."
   },
   "mtp.connectedToast.dontShowAgain": "Už nezobrazovat",
   "@mtp.connectedToast.dontShowAgain": {
@@ -56,13 +57,13 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {V macOS si zařízení s Androidem automaticky zabírá systémový proces <code>ptpcamerad</code>. Obejdete to tak, že v Terminálu spustíte následující příkaz (nechte ho běžet, dokud používáte Cmdr):} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {V macOS si zařízení s Androidem automaticky zabírá systémový proces <code>ptpcamerad</code>. Obejdete to tak, že v Terminálu spustíte následující příkaz (nechte ho běžet, dokud používáte Cmdr):} windows {Telefon drží jiná aplikace a musí ho uvolnit, než se Cmdr může připojit.} other {Přes MTP může s telefonem komunikovat vždy jen jedna aplikace a vaše pracovní prostředí obvykle telefon připojí, jakmile ho zapojíte.}}",
   "@mtp.ptpcameradDialog.explanation": {
-    "sourceHash": "65b6ee3"
+    "sourceHash": "08df74d"
   },
-  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Tento příkaz po celou dobu běhu průběžně zastavuje ptpcamerad. Až bude hotovo, zastavte ho v Terminálu klávesami <key>Ctrl+C</key>.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Tento příkaz po celou dobu běhu průběžně zastavuje ptpcamerad. Až bude hotovo, zastavte ho v Terminálu klávesami <key>Ctrl+C</key>.} windows {Zavřete aplikaci, která telefon používá, a pak to zkuste znovu.} other {Odpojte telefon ve správci souborů a pak to zkuste znovu.}}",
   "@mtp.ptpcameradDialog.helpText": {
-    "sourceHash": "85b5060"
+    "sourceHash": "c44384e"
   },
   "mtp.ptpcameradDialog.close": "Zavřít",
   "@mtp.ptpcameradDialog.close": {

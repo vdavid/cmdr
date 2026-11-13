@@ -5,7 +5,7 @@
   },
   "main.upgradeNudge": "{platform, select, macos {Hemos agregado nuevas opciones de introducción. Abre Cmdr > Introducción… para revisarlas.} other {Hemos agregado nuevas opciones de introducción. Abre la paleta de comandos y ejecuta Introducción… para revisarlas.}}",
   "@main.upgradeNudge": {
-    "sourceHash": "d982b5c"
+    "sourceHash": "159de3d"
   },
   "main.dockPinNudge.accept": "Sí, agregar a mi Dock",
   "@main.dockPinNudge.accept": {
@@ -70,6 +70,10 @@
   "main.revealActivation.openSettings": "Cambiarlo en Configuración",
   "@main.revealActivation.openSettings": {
     "sourceHash": "84f0924"
+  },
+  "main.oldWebkit.body": "{platform, select, macos {La interfaz de Cmdr necesita Safari 15.4 o posterior, y este Mac tiene una versión anterior. Abre Actualización de software e instala todo lo que esté pendiente. Con eso debería bastar.} other {La interfaz de Cmdr necesita una versión de WebKitGTK más reciente que la que tiene esta computadora. Instala las actualizaciones pendientes de tu sistema. Con eso debería bastar.}}",
+  "@main.oldWebkit.body": {
+    "sourceHash": "70dee46"
   },
   "main.escapeFullScreenHint.message": "La tecla Esc sacó a Cmdr de la pantalla completa.",
   "@main.escapeFullScreenHint.message": {

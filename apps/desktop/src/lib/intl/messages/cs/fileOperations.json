@@ -16,29 +16,29 @@
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
-  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Tento svazek nepodporuje koš.}}",
+  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {Tento svazek nemá koš.} other {Tento svazek nepodporuje koš.}}",
   "@fileOperations.delete.noTrashWarningStrong": {
-    "sourceHash": "911688a"
+    "sourceHash": "63875e3"
   },
   "fileOperations.delete.noTrashWarningRest": "Soubory budou trvale smazány.",
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.} other {Část výběru je dostupná jen online. Přesunutí těchto položek do koše by je <strong>nejdřív stáhlo</strong>. V takovém případě Cmdr nabízí jen <strong>smazání</strong> celého výběru. V koši nezůstanou žádné kopie, ale cloudové služby obvykle mají vlastní koš, kde smazané soubory drží asi 30 dní. Pokud vám smazání nevadí, klikněte na „Smazat“. Jinak toto dialogové okno zrušte a buď nejdřív všechny soubory stáhněte, nebo zrušte výběr všech souborů dostupných jen online.}}",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Část výběru je dostupná jen online. Přesunutí těchto položek do koše by je <strong>nejdřív stáhlo</strong>. V takovém případě Cmdr nabízí jen <strong>smazání</strong> celého výběru. V koši nezůstanou žádné kopie, ale cloudové služby obvykle drží smazané soubory asi 30 dní. Pokud vám smazání nevadí, vyberte „Smazat trvale“. Jinak toto dialogové okno zrušte a buď nejdřív všechny soubory stáhněte, nebo zrušte výběr všech souborů dostupných jen online.} other {Část výběru je dostupná jen online. Přesunutí těchto položek do koše by je <strong>nejdřív stáhlo</strong>. V takovém případě Cmdr nabízí jen <strong>smazání</strong> celého výběru. V koši nezůstanou žádné kopie, ale cloudové služby obvykle mají vlastní koš, kde smazané soubory drží asi 30 dní. Pokud vám smazání nevadí, klikněte na „Smazat“. Jinak toto dialogové okno zrušte a buď nejdřív všechny soubory stáhněte, nebo zrušte výběr všech souborů dostupných jen online.}}",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2468db5"
+    "sourceHash": "88a6cc7"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and make these files available offline first.} other {Všechno, co máte vybrané, je dostupné jen online. Přesunutí do koše by to <strong>nejdřív stáhlo</strong>. V takovém případě Cmdr nabízí jen <strong>smazání</strong> celého výběru. V koši nezůstanou žádné kopie, ale cloudové služby obvykle mají vlastní koš, kde smazané soubory drží asi 30 dní. Pokud vám smazání nevadí, klikněte na „Smazat“. Jinak toto dialogové okno zrušte a tyto soubory nejdřív stáhněte.}}",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Všechno, co máte vybrané, je dostupné jen online. Přesunutí do koše by to <strong>nejdřív stáhlo</strong>. V takovém případě Cmdr nabízí jen <strong>smazání</strong> celého výběru. V koši nezůstanou žádné kopie, ale cloudové služby obvykle drží smazané soubory asi 30 dní. Pokud vám smazání nevadí, vyberte „Smazat trvale“. Jinak toto dialogové okno zrušte a tyto soubory nejdřív stáhněte.} other {Všechno, co máte vybrané, je dostupné jen online. Přesunutí do koše by to <strong>nejdřív stáhlo</strong>. V takovém případě Cmdr nabízí jen <strong>smazání</strong> celého výběru. V koši nezůstanou žádné kopie, ale cloudové služby obvykle mají vlastní koš, kde smazané soubory drží asi 30 dní. Pokud vám smazání nevadí, klikněte na „Smazat“. Jinak toto dialogové okno zrušte a tyto soubory nejdřív stáhněte.}}",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "dd04d39"
+    "sourceHash": "7228d5a"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Your selection turned out to hold online-only content, so the button below now offers Delete permanently. Read the note above, then press it again if that’s OK.} other {Ukázalo se, že výběr obsahuje i položky dostupné jen online, takže tlačítko níže teď nabízí „Smazat“. Přečtěte si upozornění nahoře, a pokud vám to nevadí, stiskněte tlačítko znovu.}}",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Ukázalo se, že výběr obsahuje i položky dostupné jen online, takže tlačítko níže teď nabízí „Smazat trvale“. Přečtěte si upozornění nahoře, a pokud vám to nevadí, stiskněte tlačítko znovu.} other {Ukázalo se, že výběr obsahuje i položky dostupné jen online, takže tlačítko níže teď nabízí „Smazat“. Přečtěte si upozornění nahoře, a pokud vám to nevadí, stiskněte tlačítko znovu.}}",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
-    "sourceHash": "d3f4a7a"
+    "sourceHash": "04a6895"
   },
-  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {There’s no Recycle Bin inside an archive.} other {V archivu žádný koš není.}}",
+  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {V archivu žádný koš není.} other {V archivu žádný koš není.}}",
   "@fileOperations.delete.archiveWarningStrong": {
-    "sourceHash": "d25cd46"
+    "sourceHash": "423ca00"
   },
   "fileOperations.delete.archiveWarningRest": "Tyto položky budou z archivu ZIP natrvalo smazány.",
   "@fileOperations.delete.archiveWarningRest": {
@@ -48,9 +48,9 @@
   "@fileOperations.trash.undoAction": {
     "sourceHash": "a8283ad"
   },
-  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Go to Recycle Bin} other {Přejít do koše}}",
+  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Přejít do koše} other {Přejít do koše}}",
   "@fileOperations.trash.goToTrashAction": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
   "fileOperations.trash.undoing": "Vracení zpět…",
   "@fileOperations.trash.undoing": {
@@ -60,29 +60,29 @@
   "@fileOperations.trash.undone": {
     "sourceHash": "a76ffee"
   },
-  "fileOperations.trash.undonePartial": "{platform, select, windows {Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Recycle Bin.} other {{restored, plural, one {Vrácen zpět {restoredText} soubor} few {Vráceny zpět {restoredText} soubory} many {Vráceno zpět {restoredText} souboru} other {Vráceno zpět {restoredText} souborů}}; {skippedText} {skipped, plural, one {položka zůstala} few {položky zůstaly} many {položky zůstalo} other {položek zůstalo}} v koši.}}",
+  "fileOperations.trash.undonePartial": "{platform, select, windows {{restored, plural, one {Vrácen zpět {restoredText} soubor} few {Vráceny zpět {restoredText} soubory} many {Vráceno zpět {restoredText} souboru} other {Vráceno zpět {restoredText} souborů}}; {skippedText} {skipped, plural, one {položka zůstala} few {položky zůstaly} many {položky zůstalo} other {položek zůstalo}} v koši.} other {{restored, plural, one {Vrácen zpět {restoredText} soubor} few {Vráceny zpět {restoredText} soubory} many {Vráceno zpět {restoredText} souboru} other {Vráceno zpět {restoredText} souborů}}; {skippedText} {skipped, plural, one {položka zůstala} few {položky zůstaly} many {položky zůstalo} other {položek zůstalo}} v koši.}}",
   "@fileOperations.trash.undonePartial": {
-    "sourceHash": "371413d"
+    "sourceHash": "820579a"
   },
   "fileOperations.trash.undoUnavailable": "Není co vrátit zpět. Tyto položky už možná jsou zpátky na svém místě, nebo jejich disk není připojený.",
   "@fileOperations.trash.undoUnavailable": {
     "sourceHash": "ee17b5f"
   },
-  "fileOperations.trash.undoGone": "{platform, select, windows {Nothing to put back: {count, plural, one {the item was} other {the items were}} no longer in the Recycle Bin.} other {Není co vrátit zpět: {count, plural, one {položka už v koši nebyla} few {položky už v koši nebyly} many {položky už v koši nebyly} other {položky už v koši nebyly}}.}}",
+  "fileOperations.trash.undoGone": "{platform, select, windows {Není co vrátit zpět: {count, plural, one {položka už v koši nebyla} few {položky už v koši nebyly} many {položky už v koši nebyly} other {položky už v koši nebyly}}.} other {Není co vrátit zpět: {count, plural, one {položka už v koši nebyla} few {položky už v koši nebyly} many {položky už v koši nebyly} other {položky už v koši nebyly}}.}}",
   "@fileOperations.trash.undoGone": {
-    "sourceHash": "69a90c2"
+    "sourceHash": "7a2975c"
   },
-  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {item was} other {items were}} no longer in the Recycle Bin.} other {{count, plural, one {{countText} položka už v koši nebyla} few {{countText} položky už v koši nebyly} many {{countText} položky už v koši nebylo} other {{countText} položek už v koši nebylo}}.}}",
+  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{count, plural, one {{countText} položka už v koši nebyla} few {{countText} položky už v koši nebyly} many {{countText} položky už v koši nebylo} other {{countText} položek už v koši nebylo}}.} other {{count, plural, one {{countText} položka už v koši nebyla} few {{countText} položky už v koši nebyly} many {{countText} položky už v koši nebylo} other {{countText} položek už v koši nebylo}}.}}",
   "@fileOperations.trash.undoPartlyGone": {
-    "sourceHash": "2e23577"
+    "sourceHash": "acece5b"
   },
-  "fileOperations.trash.noTrashHere": "{platform, select, windows {This drive doesn’t have a Recycle Bin.} other {Tento disk nemá koš.}}",
+  "fileOperations.trash.noTrashHere": "{platform, select, windows {Tato jednotka nemá koš.} other {Tento disk nemá koš.}}",
   "@fileOperations.trash.noTrashHere": {
-    "sourceHash": "f58bdab"
+    "sourceHash": "cff83da"
   },
-  "fileOperations.delete.trashSwitch": "{platform, select, windows {Move to the Recycle Bin} other {Přesunout do koše}}",
+  "fileOperations.delete.trashSwitch": "{platform, select, windows {Přesunout do koše} other {Přesunout do koše}}",
   "@fileOperations.delete.trashSwitch": {
-    "sourceHash": "b250a45"
+    "sourceHash": "287751e"
   },
   "fileOperations.delete.overflowMore": "… a {countText} {count, plural, one {další položka} few {další položky} many {další položky} other {dalších položek}}",
   "@fileOperations.delete.overflowMore": {
@@ -96,13 +96,13 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "46b23b5"
   },
-  "fileOperations.delete.confirmDelete": "{platform, select, windows {Delete permanently} other {Smazat}}",
+  "fileOperations.delete.confirmDelete": "{platform, select, windows {Smazat trvale} other {Smazat}}",
   "@fileOperations.delete.confirmDelete": {
-    "sourceHash": "e2d0a54"
+    "sourceHash": "45efa80"
   },
-  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Delete} other {Přesunout do koše}}",
+  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Smazat} other {Přesunout do koše}}",
   "@fileOperations.delete.confirmMoveToTrash": {
-    "sourceHash": "b250a45"
+    "sourceHash": "362a813"
   },
   "fileOperations.delete.titleCursorFile": "Smazat 1 soubor pod kurzorem",
   "@fileOperations.delete.titleCursorFile": {
@@ -357,9 +357,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "8331da7"
   },
-  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.} other {„{target}“ je existující složka, takže by položka „{name}“ dostala její název. Pokud chcete „{name}“ vložit dovnitř, ukončete cestu znakem „/“.}}",
+  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {„{target}“ je existující složka, takže by položka „{name}“ dostala její název. Pokud chcete „{name}“ vložit dovnitř, ukončete cestu znakem „\\“.} other {„{target}“ je existující složka, takže by položka „{name}“ dostala její název. Pokud chcete „{name}“ vložit dovnitř, ukončete cestu znakem „/“.}}",
   "@fileOperations.transferDialog.namedFolderHint": {
-    "sourceHash": "41dc88c"
+    "sourceHash": "aaa65e6"
   },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {složka už v cíli existuje, takže se její obsah sloučí} few {složky už v cíli existují, takže se jejich obsah sloučí} many {složky už v cíli existuje, takže se jejich obsah sloučí} other {složek už v cíli existuje, takže se jejich obsah sloučí}}.",
   "@fileOperations.transferDialog.mergeInfoMany": {
@@ -437,13 +437,13 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to the Recycle Bin}}} other {{verb, select, copy {Kopírovat} move {Přesunout} compress {Komprimovat} delete {Smazat} other {Přesunout do koše}}}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Kopírovat} move {Přesunout} compress {Komprimovat} delete {Smazat} other {Přesunout do koše}}} other {{verb, select, copy {Kopírovat} move {Přesunout} compress {Komprimovat} delete {Smazat} other {Přesunout do koše}}}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
-    "sourceHash": "b18b6e3"
+    "sourceHash": "61043bf"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Copy {phrase}} move {Move {phrase}} compress {Compress {phrase}} delete {Delete {phrase}} other {Move {phrase} to the Recycle Bin}}} other {{verb, select, copy {Kopírovat} move {Přesunout} compress {Komprimovat} delete {Smazat} other {Přesunout do koše}} {phrase}}}",
+  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Kopírovat {phrase}} move {Přesunout {phrase}} compress {Komprimovat {phrase}} delete {Smazat {phrase}} other {Přesunout {phrase} do koše}}} other {{verb, select, copy {Kopírovat} move {Přesunout} compress {Komprimovat} delete {Smazat} other {Přesunout do koše}} {phrase}}}",
   "@fileOperations.transferDialog.titleWithCounts": {
-    "sourceHash": "d21c910"
+    "sourceHash": "9892d81"
   },
   "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
   "@fileOperations.transferDialog.filesPart": {
@@ -505,9 +505,9 @@
   "@fileOperations.transferProgress.scanTitleDelete": {
     "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Counting items to move to the Recycle Bin…} other {Počítání položek k přesunutí do koše…}}",
+  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Počítání položek k přesunutí do koše…} other {Počítání položek k přesunutí do koše…}}",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "6df6c7f"
+    "sourceHash": "44b29fd"
   },
   "fileOperations.transferProgress.rollbackUnavailableCrossVolumeTooltip": "Při přesunu mezi svazky nejde vrátit změny. Cmdr odstraní každý originál, jakmile je jeho kopie bezpečně na místě, takže není k čemu se vrátit. Zrušit přesun zastaví a každý soubor zůstane celý na jedné nebo druhé straně.",
   "@fileOperations.transferProgress.rollbackUnavailableCrossVolumeTooltip": {
@@ -553,13 +553,13 @@
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to the Recycle Bin canceled} other {Canceled}}} other {{type, select, copy {Kopírování zrušeno} move {Přesun zrušen} compress {Komprimování zrušeno} delete {Mazání zrušeno} trash {Přesun do koše zrušen} other {Zrušeno}}}}",
+  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Kopírování zrušeno} move {Přesun zrušen} compress {Komprimování zrušeno} delete {Mazání zrušeno} trash {Přesun do koše zrušen} other {Zrušeno}}} other {{type, select, copy {Kopírování zrušeno} move {Přesun zrušen} compress {Komprimování zrušeno} delete {Mazání zrušeno} trash {Přesun do koše zrušen} other {Zrušeno}}}}",
   "@fileOperations.transferProgress.canceledAlertTitle": {
-    "sourceHash": "3cba939"
+    "sourceHash": "b041c89"
   },
-  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to the Recycle Bin. The files it moved so far stay in the Recycle Bin, and the rest are where they were.} other {You’ve canceled this operation.}}} other {{type, select, copy {Kopírování je zrušené. Soubory, které se už zkopírovaly, zůstávají, kde jsou.} move {Přesun je zrušený. Soubory, které se už přesunuly, zůstávají tam, kam se dostaly.} compress {Komprimování je zrušené.} delete {Mazání je zrušené. Soubory, které se už smazaly, jsou pryč, a zbytek je pořád na místě.} trash {Přesun do koše je zrušený. Soubory, které se už přesunuly, zůstávají v koši, a zbytek je tam, kde byl.} other {Operace je zrušená.}}}}",
+  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {Kopírování je zrušené. Soubory, které se už zkopírovaly, zůstávají, kde jsou.} move {Přesun je zrušený. Soubory, které se už přesunuly, zůstávají tam, kam se dostaly.} compress {Komprimování je zrušené.} delete {Mazání je zrušené. Soubory, které se už smazaly, jsou pryč, a zbytek je pořád na místě.} trash {Přesun do koše je zrušený. Soubory, které se už přesunuly, zůstávají v koši, a zbytek je tam, kde byl.} other {Operace je zrušená.}}} other {{type, select, copy {Kopírování je zrušené. Soubory, které se už zkopírovaly, zůstávají, kde jsou.} move {Přesun je zrušený. Soubory, které se už přesunuly, zůstávají tam, kam se dostaly.} compress {Komprimování je zrušené.} delete {Mazání je zrušené. Soubory, které se už smazaly, jsou pryč, a zbytek je pořád na místě.} trash {Přesun do koše je zrušený. Soubory, které se už přesunuly, zůstávají v koši, a zbytek je tam, kde byl.} other {Operace je zrušená.}}}}",
   "@fileOperations.transferProgress.canceledAlertMessage": {
-    "sourceHash": "1d1de76"
+    "sourceHash": "c2ed004"
   },
   "fileOperations.transferProgress.titleCancellingSlow": "Rušení… (uklidí se rozpracované soubory)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
@@ -653,9 +653,9 @@
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
-  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Recycle Bin} one {Moved {countText} file to the Recycle Bin} other {Moved {countText} files to the Recycle Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}} other {{type, select, copy {{count, plural, =0 {Nic se nezkopírovalo} one {Zkopírován {countText} soubor} few {Zkopírovány {countText} soubory} many {Zkopírováno {countText} souboru} other {Zkopírováno {countText} souborů}}} move {{count, plural, =0 {Nic se nepřesunulo} one {Přesunut {countText} soubor} few {Přesunuty {countText} soubory} many {Přesunuto {countText} souboru} other {Přesunuto {countText} souborů}}} delete {{count, plural, =0 {Nic se nesmazalo} one {Smazán {countText} soubor} few {Smazány {countText} soubory} many {Smazáno {countText} souboru} other {Smazáno {countText} souborů}}} trash {{count, plural, =0 {Nic se nepřesunulo do koše} one {Do koše přesunut {countText} soubor} few {Do koše přesunuty {countText} soubory} many {Do koše přesunuto {countText} souboru} other {Do koše přesunuto {countText} souborů}}} compress {{count, plural, =0 {Nic se nezkomprimovalo} one {Zkomprimován {countText} soubor} few {Zkomprimovány {countText} soubory} many {Zkomprimováno {countText} souboru} other {Zkomprimováno {countText} souborů}}} other {Hotovo}}}}",
+  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Nic se nezkopírovalo} one {Zkopírován {countText} soubor} few {Zkopírovány {countText} soubory} many {Zkopírováno {countText} souboru} other {Zkopírováno {countText} souborů}}} move {{count, plural, =0 {Nic se nepřesunulo} one {Přesunut {countText} soubor} few {Přesunuty {countText} soubory} many {Přesunuto {countText} souboru} other {Přesunuto {countText} souborů}}} delete {{count, plural, =0 {Nic se nesmazalo} one {Smazán {countText} soubor} few {Smazány {countText} soubory} many {Smazáno {countText} souboru} other {Smazáno {countText} souborů}}} trash {{count, plural, =0 {Nic se nepřesunulo do koše} one {Do koše přesunut {countText} soubor} few {Do koše přesunuty {countText} soubory} many {Do koše přesunuto {countText} souboru} other {Do koše přesunuto {countText} souborů}}} compress {{count, plural, =0 {Nic se nezkomprimovalo} one {Zkomprimován {countText} soubor} few {Zkomprimovány {countText} soubory} many {Zkomprimováno {countText} souboru} other {Zkomprimováno {countText} souborů}}} other {Hotovo}}} other {{type, select, copy {{count, plural, =0 {Nic se nezkopírovalo} one {Zkopírován {countText} soubor} few {Zkopírovány {countText} soubory} many {Zkopírováno {countText} souboru} other {Zkopírováno {countText} souborů}}} move {{count, plural, =0 {Nic se nepřesunulo} one {Přesunut {countText} soubor} few {Přesunuty {countText} soubory} many {Přesunuto {countText} souboru} other {Přesunuto {countText} souborů}}} delete {{count, plural, =0 {Nic se nesmazalo} one {Smazán {countText} soubor} few {Smazány {countText} soubory} many {Smazáno {countText} souboru} other {Smazáno {countText} souborů}}} trash {{count, plural, =0 {Nic se nepřesunulo do koše} one {Do koše přesunut {countText} soubor} few {Do koše přesunuty {countText} soubory} many {Do koše přesunuto {countText} souboru} other {Do koše přesunuto {countText} souborů}}} compress {{count, plural, =0 {Nic se nezkomprimovalo} one {Zkomprimován {countText} soubor} few {Zkomprimovány {countText} soubory} many {Zkomprimováno {countText} souboru} other {Zkomprimováno {countText} souborů}}} other {Hotovo}}}}",
   "@fileOperations.transferProgress.titleDone": {
-    "sourceHash": "3db0154"
+    "sourceHash": "74225e6"
   },
   "fileOperations.transferProgress.doneSummaryRate": "<size></size> za {duration}, průměrně <rate></rate>/s",
   "@fileOperations.transferProgress.doneSummaryRate": {
@@ -693,9 +693,9 @@
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Recycle Bin}}…} other {{gerund, select, copy {Kopírování} move {Přesouvání} compress {Komprimování} delete {Mazání} other {Přesouvání do koše}}…}}",
+  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Kopírování} move {Přesouvání} compress {Komprimování} delete {Mazání} other {Přesouvání do koše}}…} other {{gerund, select, copy {Kopírování} move {Přesouvání} compress {Komprimování} delete {Mazání} other {Přesouvání do koše}}…}}",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "0c636e5"
+    "sourceHash": "f40304c"
   },
   "fileOperations.transferProgress.stageScanning": "Prohledávání",
   "@fileOperations.transferProgress.stageScanning": {
@@ -845,25 +845,25 @@
   "@fileOperations.sourcesGone.title": {
     "sourceHash": "9f8e2cb"
   },
-  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to the Recycle Bin was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {Z {totalText} položek, na které čekalo toto kopírování, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} move {Z {totalText} položek, na které čekal tento přesun, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} delete {Z {totalText} položek, na které čekalo toto mazání, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} trash {Z {totalText} položek, na které čekal tento přesun do koše, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} other {Z {totalText} položek, na které čekala tato operace, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.}}}}",
+  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {Z {totalText} položek, na které čekalo toto kopírování, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} move {Z {totalText} položek, na které čekal tento přesun, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} delete {Z {totalText} položek, na které čekalo toto mazání, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} trash {Z {totalText} položek, na které čekal tento přesun do koše, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} other {Z {totalText} položek, na které čekala tato operace, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.}}} other {{type, select, copy {Z {totalText} položek, na které čekalo toto kopírování, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} move {Z {totalText} položek, na které čekal tento přesun, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} delete {Z {totalText} položek, na které čekalo toto mazání, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} trash {Z {totalText} položek, na které čekal tento přesun do koše, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.} other {Z {totalText} položek, na které čekala tato operace, {gone, plural, one {byla od zařazení do fronty přesunuta nebo smazána {goneText}} few {byly od zařazení do fronty přesunuty nebo smazány {goneText}} many {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}} other {bylo od zařazení do fronty přesunuto nebo smazáno {goneText}}}.}}}}",
   "@fileOperations.sourcesGone.message": {
-    "sourceHash": "0512078"
+    "sourceHash": "bb8d9df"
   },
   "fileOperations.sourcesGone.moreItems": "{count, plural, one {a {countText} další položka} few {a {countText} další položky} many {a {countText} další položky} other {a {countText} dalších položek}}",
   "@fileOperations.sourcesGone.moreItems": {
     "sourceHash": "c39507d"
   },
-  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest permanently} trash {Delete the rest} other {Do the rest}}} other {{type, select, copy {Zkopírovat zbytek} move {Přesunout zbytek} delete {Smazat zbytek} trash {Přesunout zbytek do koše} other {Provést zbytek}}}}",
+  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Zkopírovat zbytek} move {Přesunout zbytek} delete {Trvale smazat zbytek} trash {Smazat zbytek} other {Provést zbytek}}} other {{type, select, copy {Zkopírovat zbytek} move {Přesunout zbytek} delete {Smazat zbytek} trash {Přesunout zbytek do koše} other {Provést zbytek}}}}",
   "@fileOperations.sourcesGone.continue": {
-    "sourceHash": "2790bfb"
+    "sourceHash": "079ea59"
   },
-  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {A queued copy has a question for you. You’ll see it as soon as the open dialog closes.} move {A queued move has a question for you. You’ll see it as soon as the open dialog closes.} delete {A queued delete has a question for you. You’ll see it as soon as the open dialog closes.} trash {A queued move to the Recycle Bin has a question for you. You’ll see it as soon as the open dialog closes.} other {A queued operation has a question for you. You’ll see it as soon as the open dialog closes.}}} other {{type, select, copy {Kopírování ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} move {Přesun ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} delete {Mazání ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} trash {Přesun do koše ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} other {Operace ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.}}}}",
+  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {Kopírování ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} move {Přesun ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} delete {Mazání ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} trash {Přesun do koše ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} other {Operace ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.}}} other {{type, select, copy {Kopírování ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} move {Přesun ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} delete {Mazání ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} trash {Přesun do koše ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.} other {Operace ve frontě se vás na něco ptá. Dotaz uvidíte, jakmile se zavře otevřené dialogové okno.}}}}",
   "@fileOperations.sourcesGone.heldToast": {
-    "sourceHash": "75f645d"
+    "sourceHash": "fc21ca7"
   },
-  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Nothing left to copy: {total, plural, one {the item} other {all {totalText} items}} this copy was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} move {Nothing left to move: {total, plural, one {the item} other {all {totalText} items}} this move was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} delete {Nothing left to delete: {total, plural, one {the item} other {all {totalText} items}} this delete was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} trash {Nothing left to move to the Recycle Bin: {total, plural, one {the item} other {all {totalText} items}} this move to the Recycle Bin was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} other {Nothing left to do: {total, plural, one {the item} other {all {totalText} items}} this operation was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {Není co kopírovat: {total, plural, one {položka, na kterou kopírování čekalo, se} few {všechny {totalText} položky, na které kopírování čekalo, se} many {všech {totalText} položky, na které kopírování čekalo, se} other {všech {totalText} položek, na které kopírování čekalo, se}} od zařazení do fronty přesunulo nebo smazalo.} move {Není co přesouvat: {total, plural, one {položka, na kterou přesun čekal, se} few {všechny {totalText} položky, na které přesun čekal, se} many {všech {totalText} položky, na které přesun čekal, se} other {všech {totalText} položek, na které přesun čekal, se}} od zařazení do fronty přesunulo nebo smazalo.} delete {Není co mazat: {total, plural, one {položka, na kterou mazání čekalo, se} few {všechny {totalText} položky, na které mazání čekalo, se} many {všech {totalText} položky, na které mazání čekalo, se} other {všech {totalText} položek, na které mazání čekalo, se}} od zařazení do fronty přesunulo nebo smazalo.} trash {Není co přesouvat do koše: {total, plural, one {položka, na kterou přesun do koše čekal, se} few {všechny {totalText} položky, na které přesun do koše čekal, se} many {všech {totalText} položky, na které přesun do koše čekal, se} other {všech {totalText} položek, na které přesun do koše čekal, se}} od zařazení do fronty přesunulo nebo smazalo.} other {Není co dělat: {total, plural, one {položka, na kterou operace čekala, se} few {všechny {totalText} položky, na které operace čekala, se} many {všech {totalText} položky, na které operace čekala, se} other {všech {totalText} položek, na které operace čekala, se}} od zařazení do fronty přesunulo nebo smazalo.}}}}",
+  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Není co kopírovat: {total, plural, one {položka, na kterou kopírování čekalo, se} few {všechny {totalText} položky, na které kopírování čekalo, se} many {všech {totalText} položky, na které kopírování čekalo, se} other {všech {totalText} položek, na které kopírování čekalo, se}} od zařazení do fronty přesunulo nebo smazalo.} move {Není co přesouvat: {total, plural, one {položka, na kterou přesun čekal, se} few {všechny {totalText} položky, na které přesun čekal, se} many {všech {totalText} položky, na které přesun čekal, se} other {všech {totalText} položek, na které přesun čekal, se}} od zařazení do fronty přesunulo nebo smazalo.} delete {Není co mazat: {total, plural, one {položka, na kterou mazání čekalo, se} few {všechny {totalText} položky, na které mazání čekalo, se} many {všech {totalText} položky, na které mazání čekalo, se} other {všech {totalText} položek, na které mazání čekalo, se}} od zařazení do fronty přesunulo nebo smazalo.} trash {Není co přesouvat do koše: {total, plural, one {položka, na kterou přesun do koše čekal, se} few {všechny {totalText} položky, na které přesun do koše čekal, se} many {všech {totalText} položky, na které přesun do koše čekal, se} other {všech {totalText} položek, na které přesun do koše čekal, se}} od zařazení do fronty přesunulo nebo smazalo.} other {Není co dělat: {total, plural, one {položka, na kterou operace čekala, se} few {všechny {totalText} položky, na které operace čekala, se} many {všech {totalText} položky, na které operace čekala, se} other {všech {totalText} položek, na které operace čekala, se}} od zařazení do fronty přesunulo nebo smazalo.}}} other {{type, select, copy {Není co kopírovat: {total, plural, one {položka, na kterou kopírování čekalo, se} few {všechny {totalText} položky, na které kopírování čekalo, se} many {všech {totalText} položky, na které kopírování čekalo, se} other {všech {totalText} položek, na které kopírování čekalo, se}} od zařazení do fronty přesunulo nebo smazalo.} move {Není co přesouvat: {total, plural, one {položka, na kterou přesun čekal, se} few {všechny {totalText} položky, na které přesun čekal, se} many {všech {totalText} položky, na které přesun čekal, se} other {všech {totalText} položek, na které přesun čekal, se}} od zařazení do fronty přesunulo nebo smazalo.} delete {Není co mazat: {total, plural, one {položka, na kterou mazání čekalo, se} few {všechny {totalText} položky, na které mazání čekalo, se} many {všech {totalText} položky, na které mazání čekalo, se} other {všech {totalText} položek, na které mazání čekalo, se}} od zařazení do fronty přesunulo nebo smazalo.} trash {Není co přesouvat do koše: {total, plural, one {položka, na kterou přesun do koše čekal, se} few {všechny {totalText} položky, na které přesun do koše čekal, se} many {všech {totalText} položky, na které přesun do koše čekal, se} other {všech {totalText} položek, na které přesun do koše čekal, se}} od zařazení do fronty přesunulo nebo smazalo.} other {Není co dělat: {total, plural, one {položka, na kterou operace čekala, se} few {všechny {totalText} položky, na které operace čekala, se} many {všech {totalText} položky, na které operace čekala, se} other {všech {totalText} položek, na které operace čekala, se}} od zařazení do fronty přesunulo nebo smazalo.}}}}",
   "@fileOperations.sourcesGone.nothingLeftToast": {
-    "sourceHash": "4d62b7d"
+    "sourceHash": "936d7b4"
   },
   "fileOperations.alreadyGone.one": "Položka „{name}“ už neexistovala. Nejspíš ji přesunula nebo smazala jiná aplikace.",
   "@fileOperations.alreadyGone.one": {
@@ -1305,9 +1305,9 @@
   "@fileOperations.resticPassword.inputAria": {
     "sourceHash": "3e39703"
   },
-  "fileOperations.resticPassword.remember": "{platform, select, macos {Pamatovat si ve svazku klíčů} windows {Remember password} other {Remember in keyring}}",
+  "fileOperations.resticPassword.remember": "{platform, select, macos {Pamatovat si ve svazku klíčů} windows {Zapamatovat si heslo} other {Pamatovat si v klíčence}}",
   "@fileOperations.resticPassword.remember": {
-    "sourceHash": "3fd7384"
+    "sourceHash": "42237e1"
   },
   "fileOperations.resticPassword.checking": "Kontroluje se heslo…",
   "@fileOperations.resticPassword.checking": {
@@ -1349,9 +1349,9 @@
   "@fileOperations.validation.pathEmpty": {
     "sourceHash": "c7afbbc"
   },
-  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {Cesta musí být absolutní (začínat znakem /)}}",
+  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Cesta musí být absolutní (začínat písmenem jednotky, například C:\\, nebo sdílenou složkou, například \\\\server\\share)} other {Cesta musí být absolutní (začínat znakem /)}}",
   "@fileOperations.validation.pathNotAbsolute": {
-    "sourceHash": "3c08374"
+    "sourceHash": "f910f77"
   },
   "fileOperations.validation.pathShareMissing": "Za název serveru přidejte název sdílené složky, například \\\\server\\složka",
   "@fileOperations.validation.pathShareMissing": {

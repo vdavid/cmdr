@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "89e6045"
   },
-  "queue.row.label": "{platform, select, windows {{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to the Recycle Bin} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} compress {Compressing} tag {Changing tags} other {Working}}} other {{type, select, copy {Копіювання} move {Переміщення} delete {Видалення} trash {Переміщення в Смітник} rename {Перейменування} create_folder {Створення папки} create_file {Створення файлу} archive_edit {Редагування архіву} compress {Архівування} tag {Зміна тегів} other {Виконання операції}}}}",
+  "queue.row.label": "{platform, select, windows {{type, select, copy {Копіювання} move {Переміщення} delete {Видалення} trash {Переміщення в Кошик} rename {Перейменування} create_folder {Створення папки} create_file {Створення файлу} archive_edit {Редагування архіву} compress {Архівування} tag {Зміна тегів} other {Виконання операції}}} other {{type, select, copy {Копіювання} move {Переміщення} delete {Видалення} trash {Переміщення в Смітник} rename {Перейменування} create_folder {Створення папки} create_file {Створення файлу} archive_edit {Редагування архіву} compress {Архівування} tag {Зміна тегів} other {Виконання операції}}}}",
   "@queue.row.label": {
-    "sourceHash": "b051663"
+    "sourceHash": "6210892"
   },
   "queue.row.reversalMovingBack": "Повернення файлів на місце",
   "@queue.row.reversalMovingBack": {
@@ -159,9 +159,9 @@
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
   },
-  "queue.failureToast.title": "{platform, select, windows {{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to the Recycle Bin} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}} other {{type, select, copy {Не вдалося завершити копіювання} move {Не вдалося завершити переміщення} delete {Не вдалося завершити видалення} trash {Не вдалося завершити переміщення в Смітник} rename {Не вдалося завершити перейменування} create_folder {Не вдалося завершити створення папки} create_file {Не вдалося завершити створення файлу} archive_edit {Не вдалося завершити редагування архіву} other {Не вдалося завершити операцію}}}}",
+  "queue.failureToast.title": "{platform, select, windows {{type, select, copy {Не вдалося завершити копіювання} move {Не вдалося завершити переміщення} delete {Не вдалося завершити видалення} trash {Не вдалося завершити переміщення в Кошик} rename {Не вдалося завершити перейменування} create_folder {Не вдалося завершити створення папки} create_file {Не вдалося завершити створення файлу} archive_edit {Не вдалося завершити редагування архіву} other {Не вдалося завершити операцію}}} other {{type, select, copy {Не вдалося завершити копіювання} move {Не вдалося завершити переміщення} delete {Не вдалося завершити видалення} trash {Не вдалося завершити переміщення в Смітник} rename {Не вдалося завершити перейменування} create_folder {Не вдалося завершити створення папки} create_file {Не вдалося завершити створення файлу} archive_edit {Не вдалося завершити редагування архіву} other {Не вдалося завершити операцію}}}}",
   "@queue.failureToast.title": {
-    "sourceHash": "b5f2b47"
+    "sourceHash": "6055ffa"
   },
   "queue.failureToast.action": "Показати у вікні «Черга операцій»",
   "@queue.failureToast.action": {

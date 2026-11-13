@@ -67,6 +67,10 @@
   "@errorReporter.amendedToast.message": {
     "sourceHash": "7ded0bc"
   },
+  "errorReporter.bundleSavedToast.reveal": "{platform, select, macos {Mostrar en el Finder} windows {Mostrar en el Explorador de archivos} other {Mostrar en el administrador de archivos}}",
+  "@errorReporter.bundleSavedToast.reveal": {
+    "sourceHash": "a11bd4b"
+  },
   "errorReporter.autoSentToast.title": "Reporte de error enviado",
   "@errorReporter.autoSentToast.title": {
     "sourceHash": "4dd8345"

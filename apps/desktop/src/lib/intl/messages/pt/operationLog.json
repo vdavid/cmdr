@@ -189,9 +189,9 @@
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {De {from} para o Lixo}}",
+  "operationLog.route.fromToTrash": "{platform, select, windows {De {from} para a Lixeira} other {De {from} para o Lixo}}",
   "@operationLog.route.fromToTrash": {
-    "sourceHash": "9eff97f"
+    "sourceHash": "2e133c1"
   },
   "operationLog.route.from": "De {from}",
   "@operationLog.route.from": {
@@ -257,9 +257,9 @@
   "@operationLog.summary.delete": {
     "sourceHash": "97ec6b7"
   },
-  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {Moveu {countText} item para o Lixo} many {Moveu {countText} itens para o Lixo} other {Moveu {countText} itens para o Lixo}}}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moveu {countText} item para a Lixeira} many {Moveu {countText} itens para a Lixeira} other {Moveu {countText} itens para a Lixeira}}} other {{count, plural, one {Moveu {countText} item para o Lixo} many {Moveu {countText} itens para o Lixo} other {Moveu {countText} itens para o Lixo}}}}",
   "@operationLog.summary.trash": {
-    "sourceHash": "34b4457"
+    "sourceHash": "2dea5c8"
   },
   "operationLog.summary.rename": "{count, plural, one {Renomeou {countText} item} many {Renomeou {countText} itens} other {Renomeou {countText} itens}}",
   "@operationLog.summary.rename": {
@@ -349,9 +349,9 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {O Cmdr foi encerrado antes de esta operação terminar, então talvez não tenha registrado tudo o que ela fez. A reversão só alcança o que o Cmdr registrou.}}",
+  "operationLog.rollback.interruptedNotice": "{platform, select, windows {O Cmdr fechou antes de esta operação terminar, então talvez não tenha registrado tudo o que ela fez. A reversão só alcança o que o Cmdr registrou.} other {O Cmdr foi encerrado antes de esta operação terminar, então talvez não tenha registrado tudo o que ela fez. A reversão só alcança o que o Cmdr registrou.}}",
   "@operationLog.rollback.interruptedNotice": {
-    "sourceHash": "642e6fc"
+    "sourceHash": "da924aa"
   },
   "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} item voltou ao que era.} many {{countText} itens voltaram ao que eram.} other {{countText} itens voltaram ao que eram.}}",
   "@operationLog.rollback.partialRolledBack": {

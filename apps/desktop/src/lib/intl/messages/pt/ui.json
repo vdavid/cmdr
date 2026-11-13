@@ -204,9 +204,9 @@
   "@ui.toolAsk.setSetting.emptyValue": {
     "sourceHash": "1785cfc"
   },
-  "ui.toolAsk.quit.title": "{platform, select, windows {Exit Cmdr?} other {Encerrar Cmdr?}}",
+  "ui.toolAsk.quit.title": "{platform, select, windows {Sair do Cmdr?} other {Encerrar Cmdr?}}",
   "@ui.toolAsk.quit.title": {
-    "sourceHash": "b1f6e98"
+    "sourceHash": "38fe7a0"
   },
   "ui.toolAsk.quit.body": "Isso fecha o Cmdr. Se algo ainda estiver em andamento, você decide sobre isso antes.",
   "@ui.toolAsk.quit.body": {

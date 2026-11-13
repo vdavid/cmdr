@@ -112,9 +112,9 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "{platform, select, macos {Cmdr {available} est disponible, mais votre organisation maintient ce Mac sur la version {ceiling} ou une version antérieure.} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
+  "updates.status.heldByPolicy": "{platform, select, macos {Cmdr {available} est disponible, mais votre organisation maintient ce Mac sur la version {ceiling} ou une version antérieure.} windows {Cmdr {available} est disponible, mais votre organisation maintient ce PC sur la version {ceiling} ou une version antérieure.} other {Cmdr {available} est disponible, mais votre organisation maintient cet ordinateur sur la version {ceiling} ou une version antérieure.}}",
   "@updates.status.heldByPolicy": {
-    "sourceHash": "5c9b196"
+    "sourceHash": "49012ba"
   },
   "updates.status.unwritableAdmin": "Cmdr {version} est disponible, mais Cmdr ne peut pas l’installer lui-même. Téléchargez-le sur getcmdr.com et faites-le glisser dans le dossier Applications.",
   "@updates.status.unwritableAdmin": {

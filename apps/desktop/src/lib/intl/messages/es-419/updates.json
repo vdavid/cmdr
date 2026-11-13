@@ -30,5 +30,9 @@
   "updates.failure.notGenuine": "Cmdr no instaló esta actualización: no es una versión auténtica de Cmdr.",
   "@updates.failure.notGenuine": {
     "sourceHash": "8eb9570"
+  },
+  "updates.status.heldByPolicy": "{platform, select, macos {Ya está disponible Cmdr {available}, pero tu organización mantiene este Mac en la versión {ceiling} o anterior.} windows {Ya está disponible Cmdr {available}, pero tu organización mantiene este PC en la versión {ceiling} o anterior.} other {Ya está disponible Cmdr {available}, pero tu organización mantiene esta computadora en la versión {ceiling} o anterior.}}",
+  "@updates.status.heldByPolicy": {
+    "sourceHash": "608c1b3"
   }
 }

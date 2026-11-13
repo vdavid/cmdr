@@ -1673,7 +1673,7 @@
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "cdd735e"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Puede que los elementos estén en un sitio que macOS se reserva. A veces el Finder sí puede moverlos, porque puede pedirte la contraseña.} windows {Puede que los elementos estén en un sitio que Windows se reserva. A veces el Explorador de archivos sí puede moverlos, porque puede pedir permiso de administrador.} other {Puede que los elementos estén en un sitio que solo un administrador puede cambiar. Revisa los permisos de la carpeta, o pregunta a quien administre este ordenador.}}",
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Puede que los elementos estén en un sitio que macOS se reserva. A veces el Finder sí puede moverlos, porque puede pedirte la contraseña.} windows {Puede que los elementos estén en un sitio que Windows se reserva. A veces el Explorador de archivos sí puede moverlos, porque puede pedir permiso de administrador.} other {Puede que los elementos estén en un sitio que solo se puede cambiar con permisos de administrador. Revisa los permisos de la carpeta, o pregunta a quien administre este ordenador.}}",
   "@errors.write.trashRefused.suggestion.notPermitted": {
     "sourceHash": "ad6373b"
   },

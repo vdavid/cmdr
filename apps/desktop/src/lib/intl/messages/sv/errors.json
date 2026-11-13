@@ -483,13 +483,13 @@
   "@errors.listing.permissionDenied.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr har inte behörighet att komma åt `{path}`. macOS styr vilka appar som får komma åt vilka mappar, och Cmdr har inte fått åtkomst till den här än.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
+  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr har inte behörighet att komma åt `{path}`. macOS styr vilka appar som får komma åt vilka mappar, och Cmdr har inte fått åtkomst till den här än.} windows {Cmdr har inte behörighet att komma åt `{path}`. Ditt Windows-konto får inte öppna den här mappen.} other {Cmdr har inte behörighet att komma åt `{path}`. Ditt användarkonto får inte öppna den här mappen.}}",
   "@errors.listing.permissionDenied.explanation": {
-    "sourceHash": "3871273"
+    "sourceHash": "08a2f03"
   },
-  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Kontrollera mappens behörigheter i Finder: högerklicka på mappen, välj Visa info, och titta under Delning och behörigheter\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `ls -la` på sökvägen i Terminal för att se de aktuella behörigheterna} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click the folder, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on the path to see the current permissions}}",
+  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Kontrollera mappens behörigheter i Finder: högerklicka på mappen, välj Visa info, och titta under Delning och behörigheter\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `ls -la` på sökvägen i Terminal för att se de aktuella behörigheterna} windows {Så här kan du prova:\n- Kontrollera mappens behörigheter i Utforskaren: högerklicka på mappen, välj **Egenskaper**, och titta under **Säkerhet**\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `icacls \"<folder-path>\"` i PowerShell för att se de aktuella behörigheterna} other {Så här kan du prova:\n- Kontrollera mappens behörigheter i din filhanterare: öppna mappens egenskaper och titta under **Rättigheter**\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `ls -la` på sökvägen i en terminal för att se de aktuella behörigheterna}}",
   "@errors.listing.permissionDenied.suggestion": {
-    "sourceHash": "3450aff"
+    "sourceHash": "7015505"
   },
   "errors.listing.objectStoreRefused.title": "Din lagringsleverantör nekade åtkomst",
   "@errors.listing.objectStoreRefused.title": {
@@ -507,13 +507,13 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` ligger i en delad mapp på nätverket, och kontot du anslöt med har inte behörighet att öppna den. Servern avvisar förfrågan innan macOS ens är inblandat, så det här är ingen integritetsinställning på din Mac.} windows {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.} other {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your computer can change that.}}",
+  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` ligger i en delad mapp på nätverket, och kontot du anslöt med har inte behörighet att öppna den. Servern avvisar förfrågan innan macOS ens är inblandat, så det här är ingen integritetsinställning på din Mac.} windows {`{path}` ligger i en delad mapp på nätverket, och kontot du anslöt med har inte behörighet att öppna den. Servern avvisar förfrågan, så inget på din dator kan ändra på det.} other {`{path}` ligger i en delad mapp på nätverket, och kontot du anslöt med har inte behörighet att öppna den. Servern avvisar förfrågan, så inget på din dator kan ändra på det.}}",
   "@errors.listing.remotePermissionDenied.explanation": {
-    "sourceHash": "d8463b0"
+    "sourceHash": "dec659d"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera mappens behörigheter på servern, och vilket konto du monterade den delade mappen med\n- Vissa mappar tillhör serverns eget systemkonto (`lost+found` på en Linux-server, till exempel) och förblir stängda för alla andra\n- Vill du ansluta som någon annan, mata ut den delade mappen och montera den igen med de uppgifterna} windows {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials} other {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, unmount the share and mount it again with those credentials}}",
+  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera mappens behörigheter på servern, och vilket konto du monterade den delade mappen med\n- Vissa mappar tillhör serverns eget systemkonto (`lost+found` på en Linux-server, till exempel) och förblir stängda för alla andra\n- Vill du ansluta som någon annan, mata ut den delade mappen och montera den igen med de uppgifterna} windows {Så här kan du prova:\n- Kontrollera mappens behörigheter på servern, och vilket konto du anslöt den delade mappen med\n- Vissa mappar tillhör serverns eget systemkonto (`lost+found` på en Linux-server, till exempel) och förblir stängda för alla andra\n- Vill du ansluta som någon annan, koppla från den delade mappen och anslut den igen med de uppgifterna} other {Så här kan du prova:\n- Kontrollera mappens behörigheter på servern, och vilket konto du monterade den delade mappen med\n- Vissa mappar tillhör serverns eget systemkonto (`lost+found` på en Linux-server, till exempel) och förblir stängda för alla andra\n- Vill du ansluta som någon annan, avmontera den delade mappen och montera den igen med de uppgifterna}}",
   "@errors.listing.remotePermissionDenied.suggestion": {
-    "sourceHash": "3e6497d"
+    "sourceHash": "8481dce"
   },
   "errors.listing.phoneRefused.title": "Den här telefonen håller den här mappen privat",
   "@errors.listing.phoneRefused.title": {
@@ -531,9 +531,9 @@
   "@errors.listing.serverRefused.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.serverRefused.explanation": "{platform, select, windows {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.} other {Mappen finns på en server, och kontot du anslöt med har inte behörighet att öppna den. Det är servern som bestämmer, så ingen inställning på den här datorn ändrar det.}}",
+  "errors.listing.serverRefused.explanation": "{platform, select, windows {Mappen finns på en server, och kontot du anslöt med har inte behörighet att öppna den. Det är servern som bestämmer, så ingen inställning på den här datorn ändrar det.} other {Mappen finns på en server, och kontot du anslöt med har inte behörighet att öppna den. Det är servern som bestämmer, så ingen inställning på den här datorn ändrar det.}}",
   "@errors.listing.serverRefused.explanation": {
-    "sourceHash": "bba853c"
+    "sourceHash": "c21c3d5"
   },
   "errors.listing.serverRefused.suggestion": "Så här kan du prova:\n- Kontrollera mappens behörigheter på servern\n- Vissa mappar tillhör serverns eget systemkonto och förblir stängda för alla andra\n- Anslut med ett konto som har åtkomst",
   "@errors.listing.serverRefused.suggestion": {
@@ -631,9 +631,9 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.storageFull.suggestion": "{platform, select, macos {Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm papperskorgen (högerklicka på papperskorgssymbolen i Dock)\n- Kör `df -h` i Terminal för att se hur mycket utrymme som är kvar på varje volym} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm papperskorgen (högerklicka på papperskorgssymbolen i Dock)\n- Kör `df -h` i Terminal för att se hur mycket utrymme som är kvar på varje volym} windows {Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm Papperskorgen (högerklicka på den på skrivbordet och välj **Töm Papperskorgen**)\n- Kontrollera **Inställningar > System > Lagring** för att se hur mycket utrymme som är kvar} other {Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm papperskorgen i din filhanterare\n- Kör `df -h` i en terminal för att se hur mycket utrymme som är kvar på varje volym}}",
   "@errors.listing.storageFull.suggestion": {
-    "sourceHash": "101099b"
+    "sourceHash": "c04afed"
   },
   "errors.listing.connectionTimedOut.title": "Anslutningen nådde tidsgränsen",
   "@errors.listing.connectionTimedOut.title": {
@@ -643,9 +643,9 @@
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "15d3054"
   },
-  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att enheten eller servern är påslagen och går att nå\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Prova `ping <hostname>` i Terminal för att testa om servern går att nå\n- Försök igen} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Try again} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Try again}}",
+  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att enheten eller servern är påslagen och går att nå\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Prova `ping <hostname>` i Terminal för att testa om servern går att nå\n- Försök igen} windows {Så här kan du prova:\n- Kontrollera att enheten eller servern är påslagen och går att nå\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Prova `ping <hostname>` i PowerShell för att testa om servern går att nå\n- Försök igen} other {Så här kan du prova:\n- Kontrollera att enheten eller servern är påslagen och går att nå\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Prova `ping <hostname>` i en terminal för att testa om servern går att nå\n- Försök igen}}",
   "@errors.listing.connectionTimedOut.suggestion": {
-    "sourceHash": "f474938"
+    "sourceHash": "4e58263"
   },
   "errors.listing.notSupported.title": "Stöds inte",
   "@errors.listing.notSupported.title": {
@@ -655,9 +655,9 @@
   "@errors.listing.notSupported.explanation": {
     "sourceHash": "d074574"
   },
-  "errors.listing.notSupported.suggestion": "{platform, select, macos {Prova ett annat sätt, eller använd Finder för den här åtgärden.} windows {Try a different approach, or use File Explorer for this operation.} other {Try a different approach, or use your file manager for this operation.}}",
+  "errors.listing.notSupported.suggestion": "{platform, select, macos {Prova ett annat sätt, eller använd Finder för den här åtgärden.} windows {Prova ett annat sätt, eller använd Utforskaren för den här åtgärden.} other {Prova ett annat sätt, eller använd din filhanterare för den här åtgärden.}}",
   "@errors.listing.notSupported.suggestion": {
-    "sourceHash": "d4e3965"
+    "sourceHash": "626b662"
   },
   "errors.listing.deletePending.title": "Filen håller på att tas bort",
   "@errors.listing.deletePending.title": {
@@ -727,9 +727,9 @@
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
-  "errors.listing.ioSerious.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Försök igen\n- Om det här fortsätter, prova att köra **Skivverktyg > Skivkontroll** på den här volymen} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Try again\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
+  "errors.listing.ioSerious.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Försök igen\n- Om det här fortsätter, prova att köra **Skivverktyg > Skivkontroll** på den här volymen} windows {Så här kan du prova:\n- Kontrollera att enheten fortfarande är ansluten\n- Försök igen\n- Om det här fortsätter, högerklicka på enheten i Utforskaren, välj **Egenskaper** och sedan **Verktyg > Kontrollera**} other {Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Försök igen\n- Om det här fortsätter, kontrollera filsystemet med skrivbordsmiljöns diskverktyg}}",
   "@errors.listing.ioSerious.suggestion": {
-    "sourceHash": "6e83ebb"
+    "sourceHash": "059416c"
   },
   "errors.listing.isADirectory.title": "Det här är en mapp, inte en fil",
   "@errors.listing.isADirectory.title": {
@@ -847,9 +847,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "53012e9"
   },
-  "errors.git.permissionDenied.suggestion": "{platform, select, macos {Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst till mappen.} windows {Check that your account can read this repo’s `.git` folder: in File Explorer, right-click it, select **Properties**, and look under **Security**.} other {Check that your account can read this repo’s `.git` folder. In a terminal, `ls -la .git` shows its owner and mode.}}",
+  "errors.git.permissionDenied.suggestion": "{platform, select, macos {Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst till mappen.} windows {Kontrollera att ditt konto kan läsa repots `.git`-mapp: högerklicka på mappen i Utforskaren, välj **Egenskaper** och titta under **Säkerhet**.} other {Kontrollera att ditt konto kan läsa repots `.git`-mapp. I en terminal visar `ls -la .git` mappens ägare och rättigheter.}}",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "7396b5a"
+    "sourceHash": "aef68dd"
   },
   "errors.git.bareRepo.title": "Bare-repon stöds inte än",
   "@errors.git.bareRepo.title": {
@@ -907,9 +907,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst. I Terminal visar `ls -la .git` aktuell ägare och rättigheter.} windows {Check that your account can read this folder: in File Explorer, right-click the `.git` folder, select **Properties**, and look under **Security**. In PowerShell, `icacls .git` shows who has access.} other {Check that your account can read the `.git` folder. In a terminal, `ls -la .git` shows the current owner and mode.}}",
+  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst. I Terminal visar `ls -la .git` aktuell ägare och rättigheter.} windows {Kontrollera att ditt konto kan läsa mappen: högerklicka på `.git`-mappen i Utforskaren, välj **Egenskaper** och titta under **Säkerhet**. I PowerShell visar `icacls .git` vem som har åtkomst.} other {Kontrollera att ditt konto kan läsa `.git`-mappen. I en terminal visar `ls -la .git` aktuell ägare och rättigheter.}}",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "b091738"
+    "sourceHash": "7081e9a"
   },
   "errors.git.volumeGone.title": "Enheten med det här repot försvann",
   "@errors.git.volumeGone.title": {
@@ -1157,9 +1157,9 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "{platform, select, windows {This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages} other {Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Avsluta och öppna {app} igen\n- Logga ut och in igen på {app}\n- Kolla statussidan för {name} efter avbrott}}",
+  "errors.provider.appBased.serious": "{platform, select, windows {Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Stäng och öppna {app} igen\n- Logga ut och in igen på {app}\n- Kolla statussidan för {name} efter avbrott} other {Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Avsluta och öppna {app} igen\n- Logga ut och in igen på {app}\n- Kolla statussidan för {name} efter avbrott}}",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "5a4e14e"
+    "sourceHash": "79006a7"
   },
   "errors.write.sourceNotFound.title": "Det gick inte att hitta filen",
   "@errors.write.sourceNotFound.title": {
@@ -1177,9 +1177,9 @@
   "@errors.write.sourceNotFound.message.delete": {
     "sourceHash": "cb0ab8f"
   },
-  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {The file or folder you tried to move to the Recycle Bin no longer exists.} other {Filen eller mappen du försökte flytta till papperskorgen finns inte längre.}}",
+  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {Filen eller mappen du försökte flytta till Papperskorgen finns inte längre.} other {Filen eller mappen du försökte flytta till papperskorgen finns inte längre.}}",
   "@errors.write.sourceNotFound.message.trash": {
-    "sourceHash": "dbc0bbe"
+    "sourceHash": "31f9dd7"
   },
   "errors.write.sourceNotFound.suggestion": "Den kan ha flyttats, döpts om eller raderats. Prova att uppdatera fillistan.",
   "@errors.write.sourceNotFound.suggestion": {
@@ -1301,9 +1301,9 @@
   "@errors.write.cancelled.title.delete": {
     "sourceHash": "546aac1"
   },
-  "errors.write.cancelled.title.trash": "{platform, select, windows {Move to the Recycle Bin canceled} other {Flytt till papperskorgen avbruten}}",
+  "errors.write.cancelled.title.trash": "{platform, select, windows {Flytt till Papperskorgen avbruten} other {Flytt till papperskorgen avbruten}}",
   "@errors.write.cancelled.title.trash": {
-    "sourceHash": "52a8954"
+    "sourceHash": "97c84cd"
   },
   "errors.write.cancelled.message.copy": "Kopieringen avbröts.",
   "@errors.write.cancelled.message.copy": {
@@ -1317,9 +1317,9 @@
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
   },
-  "errors.write.cancelled.message.trash": "{platform, select, windows {The move to the Recycle Bin was canceled.} other {Flytten till papperskorgen avbröts.}}",
+  "errors.write.cancelled.message.trash": "{platform, select, windows {Flytten till Papperskorgen avbröts.} other {Flytten till papperskorgen avbröts.}}",
   "@errors.write.cancelled.message.trash": {
-    "sourceHash": "9585f1b"
+    "sourceHash": "7e76a39"
   },
   "errors.write.cancelled.suggestion": "Du kan försöka igen när du är redo.",
   "@errors.write.cancelled.suggestion": {
@@ -1341,9 +1341,9 @@
   "@errors.write.deviceDisconnected.message.delete": {
     "sourceHash": "195562e"
   },
-  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {The device was disconnected during the move to the Recycle Bin.} other {Enheten kopplades från under flytten till papperskorgen.}}",
+  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {Enheten kopplades från under flytten till Papperskorgen.} other {Enheten kopplades från under flytten till papperskorgen.}}",
   "@errors.write.deviceDisconnected.message.trash": {
-    "sourceHash": "9d5a47a"
+    "sourceHash": "bdadd25"
   },
   "errors.write.deviceDisconnected.suggestion": "Se till att enheten är ordentligt ansluten och försök igen.",
   "@errors.write.deviceDisconnected.suggestion": {
@@ -1381,13 +1381,13 @@
   "@errors.write.moveNotConfirmed.suggestion": {
     "sourceHash": "4d7fedc"
   },
-  "errors.write.trashNotSupported.title": "{platform, select, windows {Recycle Bin not supported} other {Papperskorgen stöds inte}}",
+  "errors.write.trashNotSupported.title": "{platform, select, windows {Papperskorgen stöds inte} other {Papperskorgen stöds inte}}",
   "@errors.write.trashNotSupported.title": {
-    "sourceHash": "af90a02"
+    "sourceHash": "fc24baf"
   },
-  "errors.write.trashNotSupported.message": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Den här volymen saknar papperskorg.}}",
+  "errors.write.trashNotSupported.message": "{platform, select, windows {Den här volymen kan inte använda Papperskorgen.} other {Den här volymen saknar papperskorg.}}",
   "@errors.write.trashNotSupported.message": {
-    "sourceHash": "911688a"
+    "sourceHash": "63875e3"
   },
   "errors.write.trashNotSupported.suggestion": "Använd {deletePermanentlyKey} för att radera permanent i stället.",
   "@errors.write.trashNotSupported.suggestion": {
@@ -1509,9 +1509,9 @@
   "@errors.write.readError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.readError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Det gick inte att flytta till papperskorgen}}",
+  "errors.write.readError.title.trash": "{platform, select, windows {Det gick inte att flytta till Papperskorgen} other {Det gick inte att flytta till papperskorgen}}",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.readError.message": "Det gick inte att läsa från källan.",
   "@errors.write.readError.message": {
@@ -1533,9 +1533,9 @@
   "@errors.write.writeError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.writeError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Det gick inte att flytta till papperskorgen}}",
+  "errors.write.writeError.title.trash": "{platform, select, windows {Det gick inte att flytta till Papperskorgen} other {Det gick inte att flytta till papperskorgen}}",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.writeError.message": "Det gick inte att skriva till målet.",
   "@errors.write.writeError.message": {
@@ -1641,13 +1641,13 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "77cff09"
   },
-  "errors.write.trashRefused.title": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Det gick inte att flytta till papperskorgen}}",
+  "errors.write.trashRefused.title": "{platform, select, windows {Det gick inte att flytta till Papperskorgen} other {Det gick inte att flytta till papperskorgen}}",
   "@errors.write.trashRefused.title": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
-  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS lät inte Cmdr röra {count} av objekten du valde.} windows {Windows wouldn’t let Cmdr touch {count} of the items you picked.} other {Cmdr wasn’t allowed to touch {count} of the items you picked.}}",
+  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS lät inte Cmdr röra {count} av objekten du valde.} windows {Windows lät inte Cmdr röra {count} av objekten du valde.} other {Cmdr fick inte röra {count} av objekten du valde.}}",
   "@errors.write.trashRefused.message.notPermitted": {
-    "sourceHash": "57a38d7"
+    "sourceHash": "6ea1348"
   },
   "errors.write.trashRefused.message.locked": "macOS flyttar inte låsta objekt, så {count} av objekten du valde stannade där de var.",
   "@errors.write.trashRefused.message.locked": {
@@ -1661,33 +1661,33 @@
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "b65d875"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {Papperskorgen på den här enheten låter inte Cmdr lägga något i den, så {count} av objekten du valde stannade där de var.}}",
+  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {Papperskorgen på den här enheten låter inte Cmdr lägga något i den, så {count} av objekten du valde stannade där de var.} other {Papperskorgen på den här enheten låter inte Cmdr lägga något i den, så {count} av objekten du valde stannade där de var.}}",
   "@errors.write.trashRefused.message.trashNotWritable": {
-    "sourceHash": "024ef04"
+    "sourceHash": "c3d5e1e"
   },
-  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS hittade ingen papperskorg för {count} av objekten du valde.} windows {Windows couldn’t find a Recycle Bin for {count} of the items you picked.} other {Cmdr couldn’t find a trash for {count} of the items you picked.}}",
+  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS hittade ingen papperskorg för {count} av objekten du valde.} windows {Windows kunde inte använda Papperskorgen för {count} av objekten du valde.} other {Cmdr hittade ingen papperskorg för {count} av objekten du valde.}}",
   "@errors.write.trashRefused.message.noTrashForVolume": {
-    "sourceHash": "702ae17"
+    "sourceHash": "07e7834"
   },
-  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS flyttade inte {count} av objekten du valde till papperskorgen.} windows {Windows wouldn’t move {count} of the items you picked to the Recycle Bin.} other {Cmdr couldn’t move {count} of the items you picked to the trash.}}",
+  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS flyttade inte {count} av objekten du valde till papperskorgen.} windows {Windows flyttade inte {count} av objekten du valde till Papperskorgen.} other {Cmdr kunde inte flytta {count} av objekten du valde till papperskorgen.}}",
   "@errors.write.trashRefused.message.other": {
-    "sourceHash": "6f71e12"
+    "sourceHash": "cdd735e"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Objekten kan ligga på ett ställe som macOS håller för sig själv. Finder kan ibland ändå flytta dem, eftersom Finder kan be om ditt lösenord.} windows {The items may sit somewhere Windows keeps to itself. File Explorer can sometimes still move them, since it can ask for administrator permission.} other {The items may sit somewhere only an administrator can change. Check the folder’s permissions, or ask whoever manages this computer.}}",
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Objekten kan ligga på ett ställe som macOS håller för sig själv. Finder kan ibland ändå flytta dem, eftersom Finder kan be om ditt lösenord.} windows {Objekten kan ligga på ett ställe som Windows håller för sig själv. Utforskaren kan ibland ändå flytta dem, eftersom Utforskaren kan be om administratörsbehörighet.} other {Objekten kan ligga på ett ställe som bara en administratör kan ändra. Kontrollera mappens behörigheter, eller fråga den som hanterar den här datorn.}}",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "2ef3e96"
+    "sourceHash": "ad6373b"
   },
   "errors.write.trashRefused.suggestion.locked": "För att flytta dem låser du först upp dem i Finder: välj Visa info och avmarkera Låst.",
   "@errors.write.trashRefused.suggestion.locked": {
     "sourceHash": "ece70f5"
   },
-  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {För att flytta dem behöver du behörighet att ändra deras mapp. Finder visar vem som får det i mappens Visa info, under Delning och behörigheter.} windows {To move them, you need permission to change their folder. File Explorer shows who can in the folder’s Properties, under Security.} other {To move them, you need permission to change their folder. Your file manager shows who can in the folder’s properties, under Permissions.}}",
+  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {För att flytta dem behöver du behörighet att ändra deras mapp. Finder visar vem som får det i mappens Visa info, under Delning och behörigheter.} windows {För att flytta dem behöver du behörighet att ändra deras mapp. Utforskaren visar vem som får det i mappens Egenskaper, under Säkerhet.} other {För att flytta dem behöver du behörighet att ändra deras mapp. Din filhanterare visar vem som får det i mappens egenskaper, under Rättigheter.}}",
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
-    "sourceHash": "8614665"
+    "sourceHash": "1f3b45d"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder kan ändå flytta dem efter att ha bett om ett administratörslösenord.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder kan ändå flytta dem efter att ha bett om ett administratörslösenord.} windows {En administratör kan ändå flytta dem. Fråga den som hanterar den här datorn.} other {En administratör kan ändå flytta dem, till exempel med sudo i en terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
-    "sourceHash": "6a8fbff"
+    "sourceHash": "b2708c6"
   },
   "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Det här kan hända när behörigheterna för papperskorgsmappen ändras, till exempel efter ett byte till en ny Mac. Du kan ändå radera objekten permanent med {deletePermanentlyKey}.} windows {Det här kan hända när behörigheterna för Papperskorgen ändras, till exempel efter ett byte till en ny dator. Du kan ändå radera objekten permanent med {deletePermanentlyKey}.} other {Det här kan hända när behörigheterna för papperskorgsmappen ändras, till exempel efter ett byte till en ny dator. Du kan ändå radera objekten permanent med {deletePermanentlyKey}.}}",
   "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
@@ -1705,9 +1705,9 @@
   "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
     "sourceHash": "d582f73"
   },
-  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Kolla de tekniska detaljerna nedan för vad macOS rapporterade.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
+  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Kolla de tekniska detaljerna nedan för vad macOS rapporterade.} windows {Kolla de tekniska detaljerna nedan för vad Windows rapporterade.} other {Kolla de tekniska detaljerna nedan för den exakta orsaken.}}",
   "@errors.write.trashRefused.suggestion.other": {
-    "sourceHash": "b61b3c1"
+    "sourceHash": "76a78a7"
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr har dessutom ingen full skivtillgång på den här Macen, vilket är en vanlig orsak. Märket ”Ingen full skivtillgång” i namnlisten tar dig till det valet.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
@@ -1725,9 +1725,9 @@
   "@errors.write.ioError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.ioError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Det gick inte att flytta till papperskorgen}}",
+  "errors.write.ioError.title.trash": "{platform, select, windows {Det gick inte att flytta till Papperskorgen} other {Det gick inte att flytta till papperskorgen}}",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.ioError.message.copy": "Det gick inte att kopiera filen.",
   "@errors.write.ioError.message.copy": {
@@ -1741,9 +1741,9 @@
   "@errors.write.ioError.message.delete": {
     "sourceHash": "9e79007"
   },
-  "errors.write.ioError.message.trash": "{platform, select, windows {Couldn’t move the file to the Recycle Bin.} other {Det gick inte att flytta filen till papperskorgen.}}",
+  "errors.write.ioError.message.trash": "{platform, select, windows {Det gick inte att flytta filen till Papperskorgen.} other {Det gick inte att flytta filen till papperskorgen.}}",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "948e289"
+    "sourceHash": "490dd97"
   },
   "errors.write.ioError.suggestion": "Försök igen. Om problemet kvarstår, kolla de tekniska detaljerna nedan.",
   "@errors.write.ioError.suggestion": {
@@ -1765,21 +1765,21 @@
   "@errors.write.permissionDenied.message.delete": {
     "sourceHash": "0c03fc4"
   },
-  "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {Du har inte behörighet att flytta filer till papperskorgen här.}}",
+  "errors.write.permissionDenied.message.trash": "{platform, select, windows {Du har inte behörighet att flytta filer till Papperskorgen här.} other {Du har inte behörighet att flytta filer till papperskorgen här.}}",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "cca028a"
+    "sourceHash": "7d53afa"
   },
-  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Kontrollera att du har skrivåtkomst till den överordnade mappen. Filen kan vara låst. Lås upp den i Finder (Visa info > avmarkera Låst) och försök igen.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Kontrollera att du har skrivåtkomst till den överordnade mappen. Filen kan vara skyddad. Kontrollera dess behörigheter (t.ex. via chmod eller din filhanterare) och försök igen.}}",
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Kontrollera att du har skrivåtkomst till den överordnade mappen. Filen kan vara låst. Lås upp den i Finder (Visa info > avmarkera Låst) och försök igen.} windows {Kontrollera att du har skrivåtkomst till den överordnade mappen. Filen kan vara skrivskyddad: öppna filens Egenskaper i Utforskaren, avmarkera ”Skrivskyddad” och försök igen.} other {Kontrollera att du har skrivåtkomst till den överordnade mappen. Filen kan vara skyddad. Kontrollera dess behörigheter (t.ex. via chmod eller din filhanterare) och försök igen.}}",
   "@errors.write.permissionDenied.suggestion.delete": {
-    "sourceHash": "1e6e123"
+    "sourceHash": "89a73d1"
   },
   "errors.write.permissionDenied.suggestion.default": "Kontrollera att du har skrivåtkomst till målmappen. Du kan behöva låsa upp enheten eller ändra mappens behörigheter.",
   "@errors.write.permissionDenied.suggestion.default": {
     "sourceHash": "ec02093"
   },
-  "errors.write.permissionDenied.message.named": "{platform, select, macos {Din macOS-användare kan inte ändra {folder}.} windows {Your Windows account can’t change {folder}.} other {Your user account can’t change {folder}.}}",
+  "errors.write.permissionDenied.message.named": "{platform, select, macos {Din macOS-användare kan inte ändra {folder}.} windows {Ditt Windows-konto kan inte ändra {folder}.} other {Ditt användarkonto kan inte ändra {folder}.}}",
   "@errors.write.permissionDenied.message.named": {
-    "sourceHash": "0ffd79b"
+    "sourceHash": "7c12395"
   },
   "errors.write.permissionDenied.suggestion.phone": "Android reserverar den här platsen för systemet och dess appar. Dina bilder, hämtningar och andra filer finns i telefonens delade lagringsutrymme, så prova en mapp där.",
   "@errors.write.permissionDenied.suggestion.phone": {
@@ -1793,13 +1793,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Det kräver administratörsbehörighet. Om du vill ge ditt eget konto åtkomst markerar du mappen i Finder, går till Visa info och tittar under Delning och behörigheter.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Det kräver administratörsbehörighet. Om du vill ge ditt eget konto åtkomst ändrar du mappens behörigheter (t.ex. via chmod) och försöker igen.}}",
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Det kräver administratörsbehörighet. Om du vill ge ditt eget konto åtkomst markerar du mappen i Finder, går till Visa info och tittar under Delning och behörigheter.} windows {Det kräver administratörsbehörighet. Om du vill ge ditt eget konto åtkomst öppnar du mappens Egenskaper i Utforskaren och tittar under ”Säkerhet”.} other {Det kräver administratörsbehörighet. Om du vill ge ditt eget konto åtkomst ändrar du mappens behörigheter (t.ex. via chmod) och försöker igen.}}",
   "@errors.write.permissionDenied.suggestion.needsAdmin": {
-    "sourceHash": "674192a"
+    "sourceHash": "3425cc6"
   },
-  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS skyddar det här objektet självt, så administratörsbehörighet ändrar ingenting. Det kan vara låst: markera det i Finder, gå till Visa info och avmarkera Låst.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Systemet skyddar det här objektet självt, så administratörsbehörighet ändrar ingenting. Det kan ha en skyddsflagga som måste tas bort först.}}",
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS skyddar det här objektet självt, så administratörsbehörighet ändrar ingenting. Det kan vara låst: markera det i Finder, gå till Visa info och avmarkera Låst.} windows {Windows skyddar det här objektet självt, så administratörsbehörighet räcker inte för att ändra det. Systemfiler tillhör oftast Windows och får helst vara i fred.} other {Systemet skyddar det här objektet självt, så administratörsbehörighet ändrar ingenting. Det kan ha en skyddsflagga som måste tas bort först.}}",
   "@errors.write.permissionDenied.suggestion.systemProtected": {
-    "sourceHash": "64a71c8"
+    "sourceHash": "b1780bc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "Du har inte behörighet att läsa det här objektet, så det går inte att kopiera.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,9 +1917,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion": "{platform, select, macos {Lås upp den i Finder (Visa info > avmarkera Låst) och försök igen.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Filen kan vara skyddad. Kontrollera dess behörigheter (t.ex. via chmod eller din filhanterare) och försök igen.}}",
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Lås upp den i Finder (Visa info > avmarkera Låst) och försök igen.} windows {Filen kan vara skrivskyddad. Öppna filens Egenskaper i Utforskaren, avmarkera ”Skrivskyddad” och försök igen.} other {Filen kan vara skyddad. Kontrollera dess behörigheter (t.ex. via chmod eller din filhanterare) och försök igen.}}",
   "@errors.write.fileLocked.suggestion": {
-    "sourceHash": "8f84de5"
+    "sourceHash": "2e9f5c6"
   },
   "errors.write.deletePending.title": "Filen håller på att tas bort",
   "@errors.write.deletePending.title": {
@@ -1985,17 +1985,17 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
-  "errors.write.homeFolder.title": "{platform, select, windows {Please don’t delete your user folder} other {Snälla, radera inte din hemmapp}}",
+  "errors.write.homeFolder.title": "{platform, select, windows {Snälla, radera inte din användarmapp} other {Snälla, radera inte din hemmapp}}",
   "@errors.write.homeFolder.title": {
-    "sourceHash": "6005e89"
+    "sourceHash": "d7a7939"
   },
-  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hey, you can’t delete your own user folder.} other {Hallå, du kan inte radera din egen hemmapp.}}",
+  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hallå, du kan inte radera din egen användarmapp.} other {Hallå, du kan inte radera din egen hemmapp.}}",
   "@errors.write.homeFolder.message.isHome": {
-    "sourceHash": "16ee6cd"
+    "sourceHash": "a5d7a8a"
   },
-  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {You can’t delete <code>{path}</code> because it contains your user folder, and you can’t delete your user folder.} other {Du kan inte radera <code>{path}</code> eftersom din hemmapp ligger där, och din hemmapp kan du inte radera.}}",
+  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {Du kan inte radera <code>{path}</code> eftersom din användarmapp ligger där, och din användarmapp kan du inte radera.} other {Du kan inte radera <code>{path}</code> eftersom din hemmapp ligger där, och din hemmapp kan du inte radera.}}",
   "@errors.write.homeFolder.message.holdsHome": {
-    "sourceHash": "4ad5896"
+    "sourceHash": "f11f80f"
   },
   "errors.write.homeFolder.suggestion.isHome": "Om du vill bli av med alla dina filer, gå in där, markera allt och radera. Fast ärligt talat låter det fortfarande som en väldigt dålig idé.",
   "@errors.write.homeFolder.suggestion.isHome": {
@@ -2005,37 +2005,37 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
-  "errors.write.homeFolderMove.title": "{platform, select, windows {Please don’t move your user folder} other {Snälla, flytta inte din hemmapp}}",
+  "errors.write.homeFolderMove.title": "{platform, select, windows {Snälla, flytta inte din användarmapp} other {Snälla, flytta inte din hemmapp}}",
   "@errors.write.homeFolderMove.title": {
-    "sourceHash": "f5db2db"
+    "sourceHash": "df34b54"
   },
-  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Hallå, din hemmapp bor precis där den är. Flyttar du den letar din Mac efter dig på fel ställe nästa gång du loggar in.} windows {Hey, your user folder lives right where it is. Move it, and Windows will look for you in the wrong place next time you sign in.} other {Hey, your home folder lives right where it is. Move it, and your computer will look for you in the wrong place next time you log in.}}",
+  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Hallå, din hemmapp bor precis där den är. Flyttar du den letar din Mac efter dig på fel ställe nästa gång du loggar in.} windows {Hallå, din användarmapp bor precis där den är. Flyttar du den letar Windows efter dig på fel ställe nästa gång du loggar in.} other {Hallå, din hemmapp bor precis där den är. Flyttar du den letar din dator efter dig på fel ställe nästa gång du loggar in.}}",
   "@errors.write.homeFolderMove.message.isHome": {
-    "sourceHash": "17b0b0b"
+    "sourceHash": "575bc91"
   },
-  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {Du kan inte flytta <code>{path}</code> eftersom din hemmapp ligger där, och din Mac räknar med att hitta den precis där den är.} windows {You can’t move <code>{path}</code> because your user folder is in there, and Windows expects to find it right where it is.} other {You can’t move <code>{path}</code> because your home folder is in there, and your computer expects to find it right where it is.}}",
+  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {Du kan inte flytta <code>{path}</code> eftersom din hemmapp ligger där, och din Mac räknar med att hitta den precis där den är.} windows {Du kan inte flytta <code>{path}</code> eftersom din användarmapp ligger där, och Windows räknar med att hitta den precis där den är.} other {Du kan inte flytta <code>{path}</code> eftersom din hemmapp ligger där, och din dator räknar med att hitta den precis där den är.}}",
   "@errors.write.homeFolderMove.message.holdsHome": {
-    "sourceHash": "c43a8e6"
+    "sourceHash": "870f337"
   },
-  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {Om du vill ha dina filer någon annanstans, gå in där, välj det du behöver och flytta det. Din Mac kommer att tacka dig.} windows {If you want your files somewhere else, go in there, pick what you need, and move that. Your PC will thank you.} other {If you want your files somewhere else, go in there, pick what you need, and move that. Your computer will thank you.}}",
+  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {Om du vill ha dina filer någon annanstans, gå in där, välj det du behöver och flytta det. Din Mac kommer att tacka dig.} windows {Om du vill ha dina filer någon annanstans, gå in där, välj det du behöver och flytta det. Din dator kommer att tacka dig.} other {Om du vill ha dina filer någon annanstans, gå in där, välj det du behöver och flytta det. Din dator kommer att tacka dig.}}",
   "@errors.write.homeFolderMove.suggestion.isHome": {
-    "sourceHash": "580bee6"
+    "sourceHash": "01b6088"
   },
   "errors.write.homeFolderMove.suggestion.holdsHome": "Om du vill flytta några filer, var lite mer specifik och välj dem inifrån.",
   "@errors.write.homeFolderMove.suggestion.holdsHome": {
     "sourceHash": "a766ab5"
   },
-  "errors.write.homeFolderRename.title": "{platform, select, windows {Please don’t rename your user folder} other {Snälla, byt inte namn på din hemmapp}}",
+  "errors.write.homeFolderRename.title": "{platform, select, windows {Snälla, byt inte namn på din användarmapp} other {Snälla, byt inte namn på din hemmapp}}",
   "@errors.write.homeFolderRename.title": {
-    "sourceHash": "ec47bfe"
+    "sourceHash": "8775009"
   },
-  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Hallå, din Mac känner igen din hemmapp på det här namnet. Byter du namn på den hittar din Mac dig inte nästa gång du loggar in.} windows {Hey, Windows knows your user folder by this name. Rename it, and it won’t find you next time you sign in.} other {Hey, your computer knows your home folder by this name. Rename it, and it won’t find you next time you log in.}}",
+  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Hallå, din Mac känner igen din hemmapp på det här namnet. Byter du namn på den hittar din Mac dig inte nästa gång du loggar in.} windows {Hallå, Windows känner igen din användarmapp på det här namnet. Byter du namn på den hittar Windows dig inte nästa gång du loggar in.} other {Hallå, din dator känner igen din hemmapp på det här namnet. Byter du namn på den hittar din dator dig inte nästa gång du loggar in.}}",
   "@errors.write.homeFolderRename.message.isHome": {
-    "sourceHash": "fd78f2f"
+    "sourceHash": "7e7be74"
   },
-  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Du kan inte byta namn på <code>{path}</code> eftersom din hemmapp ligger där, och din Mac räknar med att hitta den på exakt den här sökvägen.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
+  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Du kan inte byta namn på <code>{path}</code> eftersom din hemmapp ligger där, och din Mac räknar med att hitta den på exakt den här sökvägen.} windows {Du kan inte byta namn på <code>{path}</code> eftersom din användarmapp ligger där, och Windows räknar med att hitta den på exakt den här sökvägen.} other {Du kan inte byta namn på <code>{path}</code> eftersom din hemmapp ligger där, och din dator räknar med att hitta den på exakt den här sökvägen.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
-    "sourceHash": "b09f296"
+    "sourceHash": "51b7f8f"
   },
   "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Om du verkligen behöver ett nytt namn har macOS ett försiktigt sätt att göra det i ”Användare och grupper”. Det är dock ingen snabb {renameKey}.} windows {Windows har inget säkert inbyggt sätt att byta namn på mappen, så det är bäst att låta den vara som den är.} other {Om du verkligen behöver ett nytt namn kan en administratör göra det försiktigt med usermod, inloggad som en annan användare. Det är dock ingen snabb {renameKey}.}}",
   "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
@@ -2069,9 +2069,9 @@
   "@errors.write.landingNotRecorded.message": {
     "sourceHash": "6ca4881"
   },
-  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Försök igen. Om det fortsätter, kontrollera att det finns ledigt utrymme på din Macs disk och starta sedan om Cmdr.} windows {Try again. If it keeps happening, check that your PC has free space, then restart Cmdr.} other {Try again. If it keeps happening, check that your computer’s disk has free space, then restart Cmdr.}}",
+  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Försök igen. Om det fortsätter, kontrollera att det finns ledigt utrymme på din Macs disk och starta sedan om Cmdr.} windows {Försök igen. Om det fortsätter, kontrollera att det finns ledigt utrymme på din dator och starta sedan om Cmdr.} other {Försök igen. Om det fortsätter, kontrollera att det finns ledigt utrymme på datorns disk och starta sedan om Cmdr.}}",
   "@errors.write.landingNotRecorded.suggestion": {
-    "sourceHash": "e99aa6e"
+    "sourceHash": "98864f9"
   },
   "errors.write.newDataKeptAt.title": "Din nya fil ligger under ett annat namn",
   "@errors.write.newDataKeptAt.title": {
@@ -2145,9 +2145,9 @@
   "@errors.write.fallback.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.fallback.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Det gick inte att flytta till papperskorgen}}",
+  "errors.write.fallback.title.trash": "{platform, select, windows {Det gick inte att flytta till Papperskorgen} other {Det gick inte att flytta till papperskorgen}}",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.fallback.message.copy": "Något oväntat gick fel under kopieringen.",
   "@errors.write.fallback.message.copy": {
@@ -2161,9 +2161,9 @@
   "@errors.write.fallback.message.delete": {
     "sourceHash": "9a08b89"
   },
-  "errors.write.fallback.message.trash": "{platform, select, windows {Something went wrong while moving to the Recycle Bin.} other {Något oväntat gick fel under flytten till papperskorgen.}}",
+  "errors.write.fallback.message.trash": "{platform, select, windows {Något oväntat gick fel under flytten till Papperskorgen.} other {Något oväntat gick fel under flytten till papperskorgen.}}",
   "@errors.write.fallback.message.trash": {
-    "sourceHash": "63f8393"
+    "sourceHash": "ba7128f"
   },
   "errors.write.fallback.suggestion": "Försök igen, eller kolla de tekniska detaljerna nedan för mer information.",
   "@errors.write.fallback.suggestion": {
@@ -2177,9 +2177,9 @@
   "@errors.mutation.cantRenameVolumeRoot": {
     "sourceHash": "0845c57"
   },
-  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr kan inte skriva till ”{path}”. Kontrollera mappens behörigheter i Finder.} windows {Cmdr can’t write into “{path}”. Check the folder’s permissions in File Explorer.} other {Cmdr can’t write into “{path}”. Check the folder’s permissions in your file manager.}}",
+  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr kan inte skriva till ”{path}”. Kontrollera mappens behörigheter i Finder.} windows {Cmdr kan inte skriva till ”{path}”. Kontrollera mappens behörigheter i Utforskaren.} other {Cmdr kan inte skriva till ”{path}”. Kontrollera mappens behörigheter i din filhanterare.}}",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "e0a7ad6"
+    "sourceHash": "23a1c44"
   },
   "errors.mutation.fileLocked": "Det här objektet är låst. Lås upp det i Finders fönster Visa info och försök sedan igen.",
   "@errors.mutation.fileLocked": {
@@ -2341,13 +2341,13 @@
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"
   },
-  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {Den här volymen har ingen papperskorg, så det går bara att radera permanent.}}",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {Den här volymen kan inte använda Papperskorgen, så det går bara att radera permanent.} other {Den här volymen har ingen papperskorg, så det går bara att radera permanent.}}",
   "@errors.mutation.trashNotSupported": {
-    "sourceHash": "525ef25"
+    "sourceHash": "519075e"
   },
-  "errors.mutation.trashRefused": "{platform, select, macos {macOS nekade flytten till papperskorgen.} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Trash.}}",
+  "errors.mutation.trashRefused": "{platform, select, macos {macOS nekade flytten till papperskorgen.} windows {Windows nekade flytten till Papperskorgen.} other {Cmdr kunde inte flytta det här till papperskorgen.}}",
   "@errors.mutation.trashRefused": {
-    "sourceHash": "7a6d1a5"
+    "sourceHash": "7ad59d2"
   },
   "errors.serverRequest.unreachable": "Cmdr nådde inte sin server. Kontrollera din internetanslutning och försök igen.",
   "@errors.serverRequest.unreachable": {
@@ -2429,9 +2429,9 @@
   "@errors.eject.unmountRefusedByDiskImage": {
     "sourceHash": "1fa3d53"
   },
-  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS använder fortfarande något där. Vänta en minut och försök sedan igen.} windows {Windows is still using something there. Wait a minute, then try again.} other {This computer is still using something there. Wait a minute, then try again.}}",
+  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS använder fortfarande något där. Vänta en minut och försök sedan igen.} windows {Windows använder fortfarande något där. Vänta en minut och försök sedan igen.} other {Den här datorn använder fortfarande något där. Vänta en minut och försök sedan igen.}}",
   "@errors.eject.unmountRefusedBySystem": {
-    "sourceHash": "9b066c9"
+    "sourceHash": "d9f40b9"
   },
   "errors.eject.unmountRefusedByCmdr": "Cmdr själv använder fortfarande något där. Vänta en stund och försök igen, eller skicka en rapport om det fortsätter.",
   "@errors.eject.unmountRefusedByCmdr": {
@@ -2449,9 +2449,9 @@
   "@errors.eject.unexpected": {
     "sourceHash": "2978e2a"
   },
-  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.}}",
+  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.} other {Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.}}",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "45ac92c"
+    "sourceHash": "5e2f5c7"
   },
   "errors.mount.timeout": "Cmdr väntade, men ”{server}” svarade inte i tid. Kontrollera att servern är påslagen och går att nå, och försök sedan igen.",
   "@errors.mount.timeout": {
@@ -2481,17 +2481,17 @@
   "@errors.mount.cancelled": {
     "sourceHash": "bc771b3"
   },
-  "errors.mount.unsupportedProtocol": "{platform, select, windows {This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.} other {Den här datorn och ”{server}” har ingen gemensam SMB-version. Slå på SMB 2 eller senare i serverns inställningar och försök sedan igen.}}",
+  "errors.mount.unsupportedProtocol": "{platform, select, windows {Den här datorn och ”{server}” har ingen gemensam SMB-version. Slå på SMB 2 eller senare i serverns inställningar och försök sedan igen.} other {Den här datorn och ”{server}” har ingen gemensam SMB-version. Slå på SMB 2 eller senare i serverns inställningar och försök sedan igen.}}",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "8afe4cb"
+    "sourceHash": "b7d61a2"
   },
   "errors.mount.mountRefused": "Du är inloggad på ”{server}”, men servern ville inte öppna ”{share}”. Kontrollera den delade mappens inställningar på servern och försök sedan igen.",
   "@errors.mount.mountRefused": {
     "sourceHash": "6cf694d"
   },
-  "errors.mount.mountMissing": "{platform, select, windows {Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.} other {Din dator rapporterade att ”{share}” på ”{server}” var ansluten, men den delade mappen dök aldrig upp. Försök igen.}}",
+  "errors.mount.mountMissing": "{platform, select, windows {Din dator rapporterade att ”{share}” på ”{server}” var ansluten, men den delade mappen dök aldrig upp. Försök igen.} other {Din dator rapporterade att ”{share}” på ”{server}” var ansluten, men den delade mappen dök aldrig upp. Försök igen.}}",
   "@errors.mount.mountMissing": {
-    "sourceHash": "72ab946"
+    "sourceHash": "9d2f8d5"
   },
   "errors.mount.gvfsMissing": "För att ansluta till delade mappar på nätverket i Linux krävs GVFS. Installera paketet gvfs-smb från din distribution och försök sedan igen.",
   "@errors.mount.gvfsMissing": {
@@ -2501,9 +2501,9 @@
   "@errors.mount.unexpected": {
     "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.}}",
+  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.} other {Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.}}",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "45ac92c"
+    "sourceHash": "5e2f5c7"
   },
   "errors.shareList.timeout": "Cmdr väntade, men ”{server}” svarade inte i tid. Försök igen om en stund.",
   "@errors.shareList.timeout": {

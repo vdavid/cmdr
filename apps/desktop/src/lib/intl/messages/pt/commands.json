@@ -1,7 +1,7 @@
 {
-  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Encerrar Cmdr}}",
+  "commands.appQuit.label": "{platform, select, windows {Sair do Cmdr} other {Encerrar Cmdr}}",
   "@commands.appQuit.label": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "commands.appHide.label": "Ocultar Cmdr",
   "@commands.appHide.label": {
@@ -192,9 +192,9 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Abre ~/Downloads e seleciona o arquivo mais recente.}}",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Abre sua pasta Downloads e seleciona o arquivo mais recente.} other {Abre ~/Downloads e seleciona o arquivo mais recente.}}",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "6b3fe83"
+    "sourceHash": "97b6bd4"
   },
   "commands.viewShowHidden.label": "Alternar arquivos ocultos",
   "@commands.viewShowHidden.label": {
@@ -320,21 +320,21 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Desfazer mover para o Lixo}}",
+  "commands.editUndoTrash.label": "{platform, select, windows {Desfazer apagamento} other {Desfazer mover para o Lixo}}",
   "@commands.editUndoTrash.label": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Desfazer mover “{name}” para o Lixo}}",
+  "commands.editUndoTrash.one": "{platform, select, windows {Desfazer apagamento de “{name}”} other {Desfazer mover “{name}” para o Lixo}}",
   "@commands.editUndoTrash.one": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Desfazer mover {countText} {count, plural, one {item} many {itens} other {itens}} para o Lixo}}",
+  "commands.editUndoTrash.many": "{platform, select, windows {Desfazer apagamento de {countText} {count, plural, one {item} many {itens} other {itens}}} other {Desfazer mover {countText} {count, plural, one {item} many {itens} other {itens}} para o Lixo}}",
   "@commands.editUndoTrash.many": {
-    "sourceHash": "69c4966"
+    "sourceHash": "39a5bbe"
   },
-  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Coloca de volta os arquivos que você moveu por último para o Lixo}}",
+  "commands.editUndoTrash.description": "{platform, select, windows {Coloca de volta os arquivos que você moveu por último para a Lixeira} other {Coloca de volta os arquivos que você moveu por último para o Lixo}}",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "dca1b63"
+    "sourceHash": "6082058"
   },
   "commands.paneLeftVolumeChooser.label": "Abrir seletor de volume da esquerda",
   "@commands.paneLeftVolumeChooser.label": {
@@ -464,9 +464,9 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Ir para a pasta pessoal}}",
+  "commands.navGoHome.label": "{platform, select, windows {Ir para a pasta de usuário} other {Ir para a pasta pessoal}}",
   "@commands.navGoHome.label": {
-    "sourceHash": "74b2a8b"
+    "sourceHash": "0ae4c72"
   },
   "commands.errorPaneToggleTechnicalDetails.label": "Mostrar detalhes técnicos",
   "@commands.errorPaneToggleTechnicalDetails.label": {
@@ -832,21 +832,21 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Ir para o Lixo}}",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Ir para a Lixeira} other {Ir para o Lixo}}",
   "@commands.fileGoToTrash.label": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
-  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Abre o Lixo do disco em que você está navegando}}",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Abre a Lixeira da unidade em que você está navegando} other {Abre o Lixo do disco em que você está navegando}}",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "6496c25"
+    "sourceHash": "e4789d0"
   },
   "commands.dialogConfirm.label": "Confirmar caixa de diálogo na tela",
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
-  "commands.fileShowInFileManager.label": "{platform, select, macos {Mostrar no Finder} windows {Show in File Explorer} other {Mostrar no gerenciador de arquivos}}",
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Mostrar no Finder} windows {Mostrar no Explorador de Arquivos} other {Mostrar no gerenciador de arquivos}}",
   "@commands.fileShowInFileManager.label": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "commands.fileOpenTerminalHere.label": "Abrir terminal aqui",
   "@commands.fileOpenTerminalHere.label": {
@@ -868,13 +868,13 @@
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.label": "{platform, select, macos {Obter informações} windows {Properties} other {Propriedades do arquivo}}",
+  "commands.fileGetInfo.label": "{platform, select, macos {Obter informações} windows {Propriedades} other {Propriedades do arquivo}}",
   "@commands.fileGetInfo.label": {
-    "sourceHash": "91c64ca"
+    "sourceHash": "da65a65"
   },
   "commands.fileQuickLook.label": "{platform, select, macos {Visualização rápida} other {Pré-visualizar}}",
   "@commands.fileQuickLook.label": {
-    "sourceHash": "f5616ce"
+    "sourceHash": "c3f57b4"
   },
   "commands.fileContextMenu.label": "Abrir menu de contexto",
   "@commands.fileContextMenu.label": {
@@ -928,9 +928,9 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "{platform, select, macos {Remove do Acesso às Chaves a senha salva do backup do restic em que você está e bloqueia o backup de novo} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Remove do Acesso às Chaves a senha salva do backup do restic em que você está e bloqueia o backup de novo} windows {Remove do Gerenciador de Credenciais a senha salva do backup do restic em que você está e bloqueia o backup de novo} other {Remove do seu chaveiro a senha salva do backup do restic em que você está e bloqueia o backup de novo}}",
   "@commands.resticForgetPassword.description": {
-    "sourceHash": "e51ac69"
+    "sourceHash": "0f616ca"
   },
   "commands.fileCopyShareLink.label": "Copiar link de compartilhamento (sete dias)",
   "@commands.fileCopyShareLink.label": {

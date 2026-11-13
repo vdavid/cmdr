@@ -188,9 +188,9 @@
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {Из папки {from} в Корзину}}",
+  "operationLog.route.fromToTrash": "{platform, select, windows {Из папки {from} в Корзину} other {Из папки {from} в Корзину}}",
   "@operationLog.route.fromToTrash": {
-    "sourceHash": "9eff97f"
+    "sourceHash": "2e133c1"
   },
   "operationLog.route.from": "Из папки {from}",
   "@operationLog.route.from": {
@@ -256,9 +256,9 @@
   "@operationLog.summary.delete": {
     "sourceHash": "97ec6b7"
   },
-  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {Перемещен в Корзину {countText} объект} few {Перемещены в Корзину {countText} объекта} many {Перемещено в Корзину {countText} объектов} other {Перемещено в Корзину {countText} объекта}}}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Перемещен в Корзину {countText} объект} few {Перемещены в Корзину {countText} объекта} many {Перемещено в Корзину {countText} объектов} other {Перемещено в Корзину {countText} объекта}}} other {{count, plural, one {Перемещен в Корзину {countText} объект} few {Перемещены в Корзину {countText} объекта} many {Перемещено в Корзину {countText} объектов} other {Перемещено в Корзину {countText} объекта}}}}",
   "@operationLog.summary.trash": {
-    "sourceHash": "34b4457"
+    "sourceHash": "2dea5c8"
   },
   "operationLog.summary.rename": "{count, plural, one {Переименован {countText} объект} few {Переименованы {countText} объекта} many {Переименовано {countText} объектов} other {Переименовано {countText} объекта}}",
   "@operationLog.summary.rename": {
@@ -348,9 +348,9 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {Cmdr завершил работу до окончания этой операции, поэтому мог записать не все, что она сделала. Откат затронет только записанное.}}",
+  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr закрылся до окончания этой операции, поэтому мог записать не все, что она сделала. Откат затронет только записанное.} other {Cmdr завершил работу до окончания этой операции, поэтому мог записать не все, что она сделала. Откат затронет только записанное.}}",
   "@operationLog.rollback.interruptedNotice": {
-    "sourceHash": "642e6fc"
+    "sourceHash": "da924aa"
   },
   "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} объект вернулся в прежнее состояние.} few {{countText} объекта вернулись в прежнее состояние.} many {{countText} объектов вернулись в прежнее состояние.} other {{countText} объекта вернулись в прежнее состояние.}}",
   "@operationLog.rollback.partialRolledBack": {

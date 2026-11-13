@@ -323,9 +323,9 @@
   "@multiRename.results.gone": {
     "sourceHash": "8aa255a"
   },
-  "multiRename.error.couldntWriteNames": "{platform, select, macos {Seznam názvů se nepodařilo zapsat. Zkontrolujte, že je na startovacím disku volné místo.} windows {Couldn’t write the names list. Check that your system drive has free space.} other {Couldn’t write the names list. Check that your system disk has free space.}}",
+  "multiRename.error.couldntWriteNames": "{platform, select, macos {Seznam názvů se nepodařilo zapsat. Zkontrolujte, že je na startovacím disku volné místo.} windows {Seznam názvů se nepodařilo zapsat. Zkontrolujte, že je na systémové jednotce volné místo.} other {Seznam názvů se nepodařilo zapsat. Zkontrolujte, že je na systémovém disku volné místo.}}",
   "@multiRename.error.couldntWriteNames": {
-    "sourceHash": "bb5e415"
+    "sourceHash": "aee4df7"
   },
   "multiRename.resultsTooltip": "Upravte nové názvy v textovém editoru a pak se sem vraťte a použijte je.",
   "@multiRename.resultsTooltip": {

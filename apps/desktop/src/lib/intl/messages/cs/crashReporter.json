@@ -7,9 +7,9 @@
   "@crashReporter.dialog.title.report": {
     "sourceHash": "d8b86d2"
   },
-  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this.} other {Cmdr minule neočekávaně skončil. Tady je zpráva o havárii s podrobnostmi, které můžou pomoct s opravou.}}",
+  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr se minule neočekávaně zavřel. Tady je zpráva o havárii s podrobnostmi, které můžou pomoct s opravou.} other {Cmdr minule neočekávaně skončil. Tady je zpráva o havárii s podrobnostmi, které můžou pomoct s opravou.}}",
   "@crashReporter.dialog.body.ended": {
-    "sourceHash": "d67f8cb"
+    "sourceHash": "818d510"
   },
   "crashReporter.dialog.body.keptRunning": "Cmdr minule na pozadí narazil na problém a běžel dál. Tady je zpráva s podrobnostmi, které můžou pomoct s opravou.",
   "@crashReporter.dialog.body.keptRunning": {
@@ -19,9 +19,9 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "bed6934"
   },
-  "crashReporter.dialog.privacyNote": "{platform, select, macos {Obsahuje verzi aplikace, verzi macOS a místo v kódu, kde k problému došlo. Žádné názvy souborů ani osobní údaje.} windows {It includes the app version, Windows version, and which part of the code ran into the problem. No file names or personal data.} other {It includes the app version, Linux distribution and version, and which part of the code ran into the problem. No file names or personal data.}}",
+  "crashReporter.dialog.privacyNote": "{platform, select, macos {Obsahuje verzi aplikace, verzi macOS a místo v kódu, kde k problému došlo. Žádné názvy souborů ani osobní údaje.} windows {Obsahuje verzi aplikace, verzi Windows a místo v kódu, kde k problému došlo. Žádné názvy souborů ani osobní údaje.} other {Obsahuje verzi aplikace, distribuci a verzi Linuxu a místo v kódu, kde k problému došlo. Žádné názvy souborů ani osobní údaje.}}",
   "@crashReporter.dialog.privacyNote": {
-    "sourceHash": "c6875a7"
+    "sourceHash": "ebe2d23"
   },
   "crashReporter.dialog.reportIdLabel": "Referenční ID zprávy:",
   "@crashReporter.dialog.reportIdLabel": {

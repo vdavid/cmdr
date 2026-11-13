@@ -7,9 +7,9 @@
   "@goToPath.dialog.inputAriaLabel": {
     "sourceHash": "ac4d152"
   },
-  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Type or paste a path, for example C:\\Users} other {Skriv eller klistra in en sökväg, t.ex. ~/Documents}}",
+  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Skriv eller klistra in en sökväg, t.ex. C:\\Users} other {Skriv eller klistra in en sökväg, t.ex. ~/Documents}}",
   "@goToPath.dialog.inputPlaceholder": {
-    "sourceHash": "d84d343"
+    "sourceHash": "b0126b3"
   },
   "goToPath.dialog.recentsAriaLabel": "Senaste sökvägar",
   "@goToPath.dialog.recentsAriaLabel": {

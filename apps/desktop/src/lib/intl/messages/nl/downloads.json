@@ -72,9 +72,9 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "{platform, select, macos {Cmdr heeft Volledige schijftoegang nodig om je map Downloads te volgen.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "downloads.fda.message": "{platform, select, macos {Cmdr heeft Volledige schijftoegang nodig om je map Downloads te volgen.} other {Cmdr kan je map Downloads niet volgen. Controleer of de map bestaat en of je hem kunt openen.}}",
   "@downloads.fda.message": {
-    "sourceHash": "82c82c6"
+    "sourceHash": "dd37803"
   },
   "downloads.fda.dismiss": "Sluit",
   "@downloads.fda.dismiss": {
@@ -132,9 +132,9 @@
   "@downloads.shortcutRow.unavailable": {
     "sourceHash": "8882532"
   },
-  "downloads.shortcutRow.addModifier": "{platform, select, macos {Voeg een speciale toets toe (⌘, ⌃, ⌥ of ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Voeg een speciale toets toe (⌘, ⌃, ⌥ of ⇧)} windows {Voeg een speciale toets toe (Ctrl, Alt, Shift of Win)} other {Voeg een speciale toets toe (Ctrl, Alt, Shift of Super)}}",
   "@downloads.shortcutRow.addModifier": {
-    "sourceHash": "28a5ba2"
+    "sourceHash": "a56bd6c"
   },
   "downloads.toggleDescription.bound": "Druk op {binding} vanuit elke app om naar je meest recente download te springen.",
   "@downloads.toggleDescription.bound": {

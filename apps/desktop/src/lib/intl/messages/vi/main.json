@@ -9,7 +9,7 @@
   },
   "main.upgradeNudge": "{platform, select, macos {Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở Cmdr > Thiết lập ban đầu… để xem qua.} other {Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở bảng lệnh và chạy Thiết lập ban đầu… để xem qua.}}",
   "@main.upgradeNudge": {
-    "sourceHash": "439adfd"
+    "sourceHash": "b28cac1"
   },
   "main.dockPinNudge.title": "Giữ lại Cmdr trong Dock?",
   "@main.dockPinNudge.title": {
@@ -139,41 +139,41 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, other {Thoát trong khi {countText} thao tác đang chạy?}}}}",
+  "main.quit.title": "{platform, select, windows {{count, plural, other {Thoát trong khi {countText} thao tác đang chạy?}}} other {{count, plural, other {Thoát trong khi {countText} thao tác đang chạy?}}}}",
   "@main.quit.title": {
-    "sourceHash": "2671a89"
+    "sourceHash": "a3f024b"
   },
   "main.quit.body": "Những gì đã xong vẫn được giữ nguyên. Những gì đang được ghi sẽ dừng lại ngay tại chỗ, và Cmdr dọn dẹp tệp ghi dở còn sót lại.",
   "@main.quit.body": {
     "sourceHash": "79a69f9"
   },
-  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, other {Sẽ thoát sau {secondsText} giây, để việc khởi động lại máy hoặc đăng xuất không bao giờ phải chờ Cmdr.}}}}",
+  "main.quit.countdown": "{platform, select, windows {{seconds, plural, other {Sẽ đóng sau {secondsText} giây, để việc khởi động lại máy hoặc đăng xuất không bao giờ phải chờ Cmdr.}}} other {{seconds, plural, other {Sẽ thoát sau {secondsText} giây, để việc khởi động lại máy hoặc đăng xuất không bao giờ phải chờ Cmdr.}}}}",
   "@main.quit.countdown": {
-    "sourceHash": "a389e0c"
+    "sourceHash": "e220441"
   },
-  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Thời gian còn lại trước khi Cmdr tự thoát}}",
+  "main.quit.countdownAria": "{platform, select, windows {Thời gian còn lại trước khi Cmdr tự đóng} other {Thời gian còn lại trước khi Cmdr tự thoát}}",
   "@main.quit.countdownAria": {
-    "sourceHash": "6b0b5c2"
+    "sourceHash": "c9dd122"
   },
   "main.quit.keepWorking": "Tiếp tục làm việc",
   "@main.quit.keepWorking": {
     "sourceHash": "5ed03f2"
   },
-  "main.quit.quitNow": "{platform, select, windows {Exit now} other {Thoát ngay}}",
+  "main.quit.quitNow": "{platform, select, windows {Thoát ngay} other {Thoát ngay}}",
   "@main.quit.quitNow": {
-    "sourceHash": "c96bcc8"
+    "sourceHash": "2895d9d"
   },
   "main.quit.operationsHeading": "Vẫn đang chạy",
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "{platform, select, macos {Cmdr cần phiên bản Safari mới hơn} other {Cmdr needs a newer WebKitGTK}}",
+  "main.oldWebkit.title": "{platform, select, macos {Cmdr cần phiên bản Safari mới hơn} other {Cmdr cần phiên bản WebKitGTK mới hơn}}",
   "@main.oldWebkit.title": {
-    "sourceHash": "03e502b"
+    "sourceHash": "760c868"
   },
-  "main.oldWebkit.body": "{platform, select, macos {Giao diện của Cmdr cần Safari 15.4 trở lên, còn máy Mac này đang dùng phiên bản cũ hơn. Hãy mở Cập nhật phần mềm và cài mọi bản cập nhật đang chờ. Như vậy thường là xong.} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
+  "main.oldWebkit.body": "{platform, select, macos {Giao diện của Cmdr cần Safari 15.4 trở lên, còn máy Mac này đang dùng phiên bản cũ hơn. Hãy mở Cập nhật phần mềm và cài mọi bản cập nhật đang chờ. Như vậy thường là xong.} other {Giao diện của Cmdr cần phiên bản WebKitGTK mới hơn bản đang có trên máy tính này. Hãy cài mọi bản cập nhật hệ thống đang chờ. Như vậy thường là xong.}}",
   "@main.oldWebkit.body": {
-    "sourceHash": "a7112ec"
+    "sourceHash": "200e524"
   },
   "main.oldMacos.title": "Cmdr trên macOS {version}",
   "@main.oldMacos.title": {

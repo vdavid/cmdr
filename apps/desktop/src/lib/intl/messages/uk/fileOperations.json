@@ -16,29 +16,29 @@
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
-  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Цей том не підтримує Смітник.}}",
+  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {На цьому томі немає Кошика.} other {Цей том не підтримує Смітник.}}",
   "@fileOperations.delete.noTrashWarningStrong": {
-    "sourceHash": "911688a"
+    "sourceHash": "63875e3"
   },
   "fileOperations.delete.noTrashWarningRest": "Файли буде видалено остаточно.",
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.} other {Частина вибраного доступна лише онлайн. Щоб перемістити ці елементи в Смітник, їх довелося б <strong>спершу викачати</strong>. Тому Cmdr пропонує лише <strong>видалити</strong> всі вибрані елементи. Копій у Смітнику не буде, але в хмарних сервісах зазвичай є власний смітник, де файли зберігаються близько 30 днів. Натисніть «Видалити», якщо вас це влаштовує. Якщо ні, закрийте це діалогове вікно кнопкою «Скасувати». Далі можна спершу зробити всі файли доступними офлайн або зняти виділення з усіх файлів, доступних лише онлайн.}}",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Частина вибраного доступна лише онлайн. Щоб перемістити ці елементи в Кошик, їх довелося б <strong>спершу завантажити</strong>. Тому Cmdr пропонує лише <strong>видалити</strong> всі вибрані елементи. Копій у Кошику не буде, але хмарні сервіси зазвичай зберігають видалені файли близько 30 днів. Виберіть «Видалити остаточно», якщо вас це влаштовує. Якщо ні, закрийте це діалогове вікно кнопкою «Скасувати». Далі можна спершу зробити всі файли доступними офлайн або зняти виділення з усіх файлів, доступних лише онлайн.} other {Частина вибраного доступна лише онлайн. Щоб перемістити ці елементи в Смітник, їх довелося б <strong>спершу викачати</strong>. Тому Cmdr пропонує лише <strong>видалити</strong> всі вибрані елементи. Копій у Смітнику не буде, але в хмарних сервісах зазвичай є власний смітник, де файли зберігаються близько 30 днів. Натисніть «Видалити», якщо вас це влаштовує. Якщо ні, закрийте це діалогове вікно кнопкою «Скасувати». Далі можна спершу зробити всі файли доступними офлайн або зняти виділення з усіх файлів, доступних лише онлайн.}}",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2468db5"
+    "sourceHash": "88a6cc7"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and make these files available offline first.} other {Усе вибране доступне лише онлайн. Щоб перемістити це в Смітник, його довелося б <strong>спершу викачати</strong>. Тому Cmdr пропонує лише <strong>видалити</strong> всі вибрані елементи. Копій у Смітнику не буде, але в хмарних сервісах зазвичай є власний смітник, де файли зберігаються близько 30 днів. Натисніть «Видалити», якщо вас це влаштовує. Якщо ні, закрийте це діалогове вікно кнопкою «Скасувати». Далі можна спершу зробити ці файли доступними офлайн.}}",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Усе вибране доступне лише онлайн. Щоб перемістити це в Кошик, його довелося б <strong>спершу завантажити</strong>. Тому Cmdr пропонує лише <strong>видалити</strong> всі вибрані елементи. Копій у Кошику не буде, але хмарні сервіси зазвичай зберігають видалені файли близько 30 днів. Виберіть «Видалити остаточно», якщо вас це влаштовує. Якщо ні, закрийте це діалогове вікно кнопкою «Скасувати». Далі можна спершу зробити ці файли доступними офлайн.} other {Усе вибране доступне лише онлайн. Щоб перемістити це в Смітник, його довелося б <strong>спершу викачати</strong>. Тому Cmdr пропонує лише <strong>видалити</strong> всі вибрані елементи. Копій у Смітнику не буде, але в хмарних сервісах зазвичай є власний смітник, де файли зберігаються близько 30 днів. Натисніть «Видалити», якщо вас це влаштовує. Якщо ні, закрийте це діалогове вікно кнопкою «Скасувати». Далі можна спершу зробити ці файли доступними офлайн.}}",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "dd04d39"
+    "sourceHash": "7228d5a"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Your selection turned out to hold online-only content, so the button below now offers Delete permanently. Read the note above, then press it again if that’s OK.} other {Виявилося, що серед вибраного є вміст, доступний лише онлайн, тож кнопка нижче тепер пропонує «Видалити». Прочитайте примітку вище й натисніть кнопку ще раз, якщо вас це влаштовує.}}",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Виявилося, що серед вибраного є вміст, доступний лише онлайн, тож кнопка нижче тепер пропонує «Видалити остаточно». Прочитайте примітку вище й натисніть кнопку ще раз, якщо вас це влаштовує.} other {Виявилося, що серед вибраного є вміст, доступний лише онлайн, тож кнопка нижче тепер пропонує «Видалити». Прочитайте примітку вище й натисніть кнопку ще раз, якщо вас це влаштовує.}}",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
-    "sourceHash": "d3f4a7a"
+    "sourceHash": "04a6895"
   },
-  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {There’s no Recycle Bin inside an archive.} other {В архіві немає Смітника.}}",
+  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {В архіві немає Кошика.} other {В архіві немає Смітника.}}",
   "@fileOperations.delete.archiveWarningStrong": {
-    "sourceHash": "d25cd46"
+    "sourceHash": "423ca00"
   },
   "fileOperations.delete.archiveWarningRest": "Ці елементи буде остаточно видалено із zip-архіву.",
   "@fileOperations.delete.archiveWarningRest": {
@@ -48,9 +48,9 @@
   "@fileOperations.trash.undoAction": {
     "sourceHash": "a8283ad"
   },
-  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Go to Recycle Bin} other {Перейти до Смітника}}",
+  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Перейти до Кошика} other {Перейти до Смітника}}",
   "@fileOperations.trash.goToTrashAction": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
   "fileOperations.trash.undoing": "Повернення назад…",
   "@fileOperations.trash.undoing": {
@@ -60,29 +60,29 @@
   "@fileOperations.trash.undone": {
     "sourceHash": "a76ffee"
   },
-  "fileOperations.trash.undonePartial": "{platform, select, windows {Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Recycle Bin.} other {Повернуто назад {restoredText} {restored, plural, one {файл} few {файли} many {файлів} other {файлу}}; {skippedText} {skipped, plural, one {елемент} few {елементи} many {елементів} other {елемента}} залишено у Смітнику.}}",
+  "fileOperations.trash.undonePartial": "{platform, select, windows {Повернуто назад {restoredText} {restored, plural, one {файл} few {файли} many {файлів} other {файлу}}; {skippedText} {skipped, plural, one {елемент} few {елементи} many {елементів} other {елемента}} залишено в Кошику.} other {Повернуто назад {restoredText} {restored, plural, one {файл} few {файли} many {файлів} other {файлу}}; {skippedText} {skipped, plural, one {елемент} few {елементи} many {елементів} other {елемента}} залишено у Смітнику.}}",
   "@fileOperations.trash.undonePartial": {
-    "sourceHash": "371413d"
+    "sourceHash": "820579a"
   },
   "fileOperations.trash.undoUnavailable": "Немає чого повернути назад. Можливо, ці елементи вже повернуто або їхній диск не підʼєднано.",
   "@fileOperations.trash.undoUnavailable": {
     "sourceHash": "ee17b5f"
   },
-  "fileOperations.trash.undoGone": "{platform, select, windows {Nothing to put back: {count, plural, one {the item was} other {the items were}} no longer in the Recycle Bin.} other {Немає чого повернути назад: {count, plural, =1 {елемент уже зник зі Смітника} one {елементи вже зникли зі Смітника} few {елементи вже зникли зі Смітника} many {елементи вже зникли зі Смітника} other {елементи вже зникли зі Смітника}}.}}",
+  "fileOperations.trash.undoGone": "{platform, select, windows {Немає чого повернути назад: {count, plural, =1 {елемент уже зник із Кошика} one {елементи вже зникли з Кошика} few {елементи вже зникли з Кошика} many {елементи вже зникли з Кошика} other {елементи вже зникли з Кошика}}.} other {Немає чого повернути назад: {count, plural, =1 {елемент уже зник зі Смітника} one {елементи вже зникли зі Смітника} few {елементи вже зникли зі Смітника} many {елементи вже зникли зі Смітника} other {елементи вже зникли зі Смітника}}.}}",
   "@fileOperations.trash.undoGone": {
-    "sourceHash": "69a90c2"
+    "sourceHash": "7a2975c"
   },
-  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {item was} other {items were}} no longer in the Recycle Bin.} other {{countText} {count, plural, one {елемент уже зник зі Смітника} few {елементи вже зникли зі Смітника} many {елементів уже зникло зі Смітника} other {елемента вже зникло зі Смітника}}.}}",
+  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {елемент уже зник із Кошика} few {елементи вже зникли з Кошика} many {елементів уже зникло з Кошика} other {елемента вже зникло з Кошика}}.} other {{countText} {count, plural, one {елемент уже зник зі Смітника} few {елементи вже зникли зі Смітника} many {елементів уже зникло зі Смітника} other {елемента вже зникло зі Смітника}}.}}",
   "@fileOperations.trash.undoPartlyGone": {
-    "sourceHash": "2e23577"
+    "sourceHash": "acece5b"
   },
-  "fileOperations.trash.noTrashHere": "{platform, select, windows {This drive doesn’t have a Recycle Bin.} other {На цьому диску немає Смітника.}}",
+  "fileOperations.trash.noTrashHere": "{platform, select, windows {На цьому диску немає Кошика.} other {На цьому диску немає Смітника.}}",
   "@fileOperations.trash.noTrashHere": {
-    "sourceHash": "f58bdab"
+    "sourceHash": "cff83da"
   },
-  "fileOperations.delete.trashSwitch": "{platform, select, windows {Move to the Recycle Bin} other {Перемістити в Смітник}}",
+  "fileOperations.delete.trashSwitch": "{platform, select, windows {Перемістити в Кошик} other {Перемістити в Смітник}}",
   "@fileOperations.delete.trashSwitch": {
-    "sourceHash": "b250a45"
+    "sourceHash": "287751e"
   },
   "fileOperations.delete.overflowMore": "… і ще {countText} {count, plural, one {елемент} few {елементи} many {елементів} other {елемента}}",
   "@fileOperations.delete.overflowMore": {
@@ -96,13 +96,13 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "46b23b5"
   },
-  "fileOperations.delete.confirmDelete": "{platform, select, windows {Delete permanently} other {Видалити}}",
+  "fileOperations.delete.confirmDelete": "{platform, select, windows {Видалити остаточно} other {Видалити}}",
   "@fileOperations.delete.confirmDelete": {
-    "sourceHash": "e2d0a54"
+    "sourceHash": "45efa80"
   },
-  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Delete} other {Перемістити в Смітник}}",
+  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Видалити} other {Перемістити в Смітник}}",
   "@fileOperations.delete.confirmMoveToTrash": {
-    "sourceHash": "b250a45"
+    "sourceHash": "362a813"
   },
   "fileOperations.delete.titleCursorFile": "Видалити 1 файл під курсором",
   "@fileOperations.delete.titleCursorFile": {
@@ -356,9 +356,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "8331da7"
   },
-  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.} other {«{target}» — це наявна папка, тож «{name}» отримає її назву. Щоб покласти «{name}» усередину цієї папки, допишіть у кінці шляху «/».}}",
+  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {«{target}» — це наявна папка, тож «{name}» отримає її назву. Щоб покласти «{name}» усередину цієї папки, допишіть у кінці шляху «\\».} other {«{target}» — це наявна папка, тож «{name}» отримає її назву. Щоб покласти «{name}» усередину цієї папки, допишіть у кінці шляху «/».}}",
   "@fileOperations.transferDialog.namedFolderHint": {
-    "sourceHash": "41dc88c"
+    "sourceHash": "aaa65e6"
   },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {папка вже існує в місці призначення, тож її вміст} few {папки вже існують у місці призначення, тож їхній вміст} many {папок уже існує в місці призначення, тож їхній вміст} other {папки вже існує в місці призначення, тож їхній вміст}} буде обʼєднано.",
   "@fileOperations.transferDialog.mergeInfoMany": {
@@ -436,13 +436,13 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to the Recycle Bin}}} other {{verb, select, copy {Скопіювати} move {Перемістити} compress {Створити архів} delete {Видалити} other {Перемістити в Смітник}}}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Скопіювати} move {Перемістити} compress {Створити архів} delete {Видалити} other {Перемістити в Кошик}}} other {{verb, select, copy {Скопіювати} move {Перемістити} compress {Створити архів} delete {Видалити} other {Перемістити в Смітник}}}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
-    "sourceHash": "b18b6e3"
+    "sourceHash": "61043bf"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Copy {phrase}} move {Move {phrase}} compress {Compress {phrase}} delete {Delete {phrase}} other {Move {phrase} to the Recycle Bin}}} other {{verb, select, copy {Скопіювати {phrase}} move {Перемістити {phrase}} compress {Стиснути {phrase}} delete {Видалити {phrase}} other {Перемістити {phrase} у Смітник}}}}",
+  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Скопіювати {phrase}} move {Перемістити {phrase}} compress {Стиснути {phrase}} delete {Видалити {phrase}} other {Перемістити {phrase} у Кошик}}} other {{verb, select, copy {Скопіювати {phrase}} move {Перемістити {phrase}} compress {Стиснути {phrase}} delete {Видалити {phrase}} other {Перемістити {phrase} у Смітник}}}}",
   "@fileOperations.transferDialog.titleWithCounts": {
-    "sourceHash": "d21c910"
+    "sourceHash": "9892d81"
   },
   "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {файл} few {файли} many {файлів} other {файлу}}",
   "@fileOperations.transferDialog.filesPart": {
@@ -504,9 +504,9 @@
   "@fileOperations.transferProgress.scanTitleDelete": {
     "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Counting items to move to the Recycle Bin…} other {Підрахунок елементів для переміщення в Смітник…}}",
+  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Підрахунок елементів для переміщення в Кошик…} other {Підрахунок елементів для переміщення в Смітник…}}",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "6df6c7f"
+    "sourceHash": "44b29fd"
   },
   "fileOperations.transferProgress.rollbackUnavailableCrossVolumeTooltip": "Під час переміщення між томами відкат недоступний. Cmdr видаляє кожен оригінал, щойно його копія безпечно опиняється на місці, тож оригіналу, до якого можна повернутися, вже немає. Кнопка «Скасувати» зупиняє переміщення, і кожен файл лишається цілим: або на старому місці, або на новому.",
   "@fileOperations.transferProgress.rollbackUnavailableCrossVolumeTooltip": {
@@ -552,13 +552,13 @@
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to the Recycle Bin canceled} other {Canceled}}} other {{type, select, copy {Копіювання скасовано} move {Переміщення скасовано} compress {Архівування скасовано} delete {Видалення скасовано} trash {Переміщення в Смітник скасовано} other {Скасовано}}}}",
+  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Копіювання скасовано} move {Переміщення скасовано} compress {Архівування скасовано} delete {Видалення скасовано} trash {Переміщення в Кошик скасовано} other {Скасовано}}} other {{type, select, copy {Копіювання скасовано} move {Переміщення скасовано} compress {Архівування скасовано} delete {Видалення скасовано} trash {Переміщення в Смітник скасовано} other {Скасовано}}}}",
   "@fileOperations.transferProgress.canceledAlertTitle": {
-    "sourceHash": "3cba939"
+    "sourceHash": "b041c89"
   },
-  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to the Recycle Bin. The files it moved so far stay in the Recycle Bin, and the rest are where they were.} other {You’ve canceled this operation.}}} other {{type, select, copy {Ви скасували це копіювання. Файли, які вже скопійовано, лишаються там, де є.} move {Ви скасували це переміщення. Файли, які вже переміщено, лишаються там, куди потрапили.} compress {Ви скасували це архівування.} delete {Ви скасували це видалення. Файли, які вже видалено, зникли, а решта на місці.} trash {Ви скасували це переміщення в Смітник. Файли, які вже переміщено, лишаються в Смітнику, а решта там, де й були.} other {Ви скасували цю операцію.}}}}",
+  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {Ви скасували це копіювання. Файли, які вже скопійовано, лишаються там, де є.} move {Ви скасували це переміщення. Файли, які вже переміщено, лишаються там, куди потрапили.} compress {Ви скасували це архівування.} delete {Ви скасували це видалення. Файли, які вже видалено, зникли, а решта на місці.} trash {Ви скасували це переміщення в Кошик. Файли, які вже переміщено, лишаються в Кошику, а решта там, де й були.} other {Ви скасували цю операцію.}}} other {{type, select, copy {Ви скасували це копіювання. Файли, які вже скопійовано, лишаються там, де є.} move {Ви скасували це переміщення. Файли, які вже переміщено, лишаються там, куди потрапили.} compress {Ви скасували це архівування.} delete {Ви скасували це видалення. Файли, які вже видалено, зникли, а решта на місці.} trash {Ви скасували це переміщення в Смітник. Файли, які вже переміщено, лишаються в Смітнику, а решта там, де й були.} other {Ви скасували цю операцію.}}}}",
   "@fileOperations.transferProgress.canceledAlertMessage": {
-    "sourceHash": "1d1de76"
+    "sourceHash": "c2ed004"
   },
   "fileOperations.transferProgress.titleCancellingSlow": "Скасування… (очищення)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
@@ -652,9 +652,9 @@
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
-  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Recycle Bin} one {Moved {countText} file to the Recycle Bin} other {Moved {countText} files to the Recycle Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}} other {{type, select, copy {{count, plural, =0 {Нічого не скопійовано} one {Скопійовано {countText} файл} few {Скопійовано {countText} файли} many {Скопійовано {countText} файлів} other {Скопійовано {countText} файлу}}} move {{count, plural, =0 {Нічого не переміщено} one {Переміщено {countText} файл} few {Переміщено {countText} файли} many {Переміщено {countText} файлів} other {Переміщено {countText} файлу}}} delete {{count, plural, =0 {Нічого не видалено} one {Видалено {countText} файл} few {Видалено {countText} файли} many {Видалено {countText} файлів} other {Видалено {countText} файлу}}} trash {{count, plural, =0 {Нічого не переміщено в Смітник} one {Переміщено в Смітник {countText} файл} few {Переміщено в Смітник {countText} файли} many {Переміщено в Смітник {countText} файлів} other {Переміщено в Смітник {countText} файлу}}} compress {{count, plural, =0 {Нічого не заархівовано} one {Заархівовано {countText} файл} few {Заархівовано {countText} файли} many {Заархівовано {countText} файлів} other {Заархівовано {countText} файлу}}} other {Готово}}}}",
+  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Нічого не скопійовано} one {Скопійовано {countText} файл} few {Скопійовано {countText} файли} many {Скопійовано {countText} файлів} other {Скопійовано {countText} файлу}}} move {{count, plural, =0 {Нічого не переміщено} one {Переміщено {countText} файл} few {Переміщено {countText} файли} many {Переміщено {countText} файлів} other {Переміщено {countText} файлу}}} delete {{count, plural, =0 {Нічого не видалено} one {Видалено {countText} файл} few {Видалено {countText} файли} many {Видалено {countText} файлів} other {Видалено {countText} файлу}}} trash {{count, plural, =0 {Нічого не переміщено в Кошик} one {Переміщено в Кошик {countText} файл} few {Переміщено в Кошик {countText} файли} many {Переміщено в Кошик {countText} файлів} other {Переміщено в Кошик {countText} файлу}}} compress {{count, plural, =0 {Нічого не заархівовано} one {Заархівовано {countText} файл} few {Заархівовано {countText} файли} many {Заархівовано {countText} файлів} other {Заархівовано {countText} файлу}}} other {Готово}}} other {{type, select, copy {{count, plural, =0 {Нічого не скопійовано} one {Скопійовано {countText} файл} few {Скопійовано {countText} файли} many {Скопійовано {countText} файлів} other {Скопійовано {countText} файлу}}} move {{count, plural, =0 {Нічого не переміщено} one {Переміщено {countText} файл} few {Переміщено {countText} файли} many {Переміщено {countText} файлів} other {Переміщено {countText} файлу}}} delete {{count, plural, =0 {Нічого не видалено} one {Видалено {countText} файл} few {Видалено {countText} файли} many {Видалено {countText} файлів} other {Видалено {countText} файлу}}} trash {{count, plural, =0 {Нічого не переміщено в Смітник} one {Переміщено в Смітник {countText} файл} few {Переміщено в Смітник {countText} файли} many {Переміщено в Смітник {countText} файлів} other {Переміщено в Смітник {countText} файлу}}} compress {{count, plural, =0 {Нічого не заархівовано} one {Заархівовано {countText} файл} few {Заархівовано {countText} файли} many {Заархівовано {countText} файлів} other {Заархівовано {countText} файлу}}} other {Готово}}}}",
   "@fileOperations.transferProgress.titleDone": {
-    "sourceHash": "3db0154"
+    "sourceHash": "74225e6"
   },
   "fileOperations.transferProgress.doneSummaryRate": "<size></size> за {duration}, у середньому <rate></rate>/с",
   "@fileOperations.transferProgress.doneSummaryRate": {
@@ -692,9 +692,9 @@
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Recycle Bin}}…} other {{gerund, select, copy {Копіювання} move {Переміщення} compress {Архівування} delete {Видалення} other {Переміщення в Смітник}}…}}",
+  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Копіювання} move {Переміщення} compress {Архівування} delete {Видалення} other {Переміщення в Кошик}}…} other {{gerund, select, copy {Копіювання} move {Переміщення} compress {Архівування} delete {Видалення} other {Переміщення в Смітник}}…}}",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "0c636e5"
+    "sourceHash": "f40304c"
   },
   "fileOperations.transferProgress.stageScanning": "Сканування",
   "@fileOperations.transferProgress.stageScanning": {
@@ -844,25 +844,25 @@
   "@fileOperations.sourcesGone.title": {
     "sourceHash": "9f8e2cb"
   },
-  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to the Recycle Bin was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {Відколи ви поставили це копіювання в чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які воно чекало, перемістили або видалили.} move {Відколи ви поставили це переміщення в чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які воно чекало, перемістили або видалили.} delete {Відколи ви поставили це видалення в чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які воно чекало, перемістили або видалили.} trash {Відколи ви поставили це переміщення в Смітник у чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які воно чекало, перемістили або видалили.} other {Відколи ви поставили цю операцію в чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які вона чекала, перемістили або видалили.}}}}",
+  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {Відколи ви поставили це копіювання в чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які воно чекало, перемістили або видалили.} move {Відколи ви поставили це переміщення в чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які воно чекало, перемістили або видалили.} delete {Відколи ви поставили це видалення в чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які воно чекало, перемістили або видалили.} trash {Відколи ви поставили це переміщення в Кошик у чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які воно чекало, перемістили або видалили.} other {Відколи ви поставили цю операцію в чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які вона чекала, перемістили або видалили.}}} other {{type, select, copy {Відколи ви поставили це копіювання в чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які воно чекало, перемістили або видалили.} move {Відколи ви поставили це переміщення в чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які воно чекало, перемістили або видалили.} delete {Відколи ви поставили це видалення в чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які воно чекало, перемістили або видалили.} trash {Відколи ви поставили це переміщення в Смітник у чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які воно чекало, перемістили або видалили.} other {Відколи ви поставили цю операцію в чергу, {goneText} {gone, plural, one {елемент} few {елементи} many {елементів} other {елемента}} із {totalText}, на які вона чекала, перемістили або видалили.}}}}",
   "@fileOperations.sourcesGone.message": {
-    "sourceHash": "0512078"
+    "sourceHash": "bb8d9df"
   },
   "fileOperations.sourcesGone.moreItems": "{count, plural, one {і ще {countText} елемент} few {і ще {countText} елементи} many {і ще {countText} елементів} other {і ще {countText} елемента}}",
   "@fileOperations.sourcesGone.moreItems": {
     "sourceHash": "c39507d"
   },
-  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest permanently} trash {Delete the rest} other {Do the rest}}} other {{type, select, copy {Скопіювати решту} move {Перемістити решту} delete {Видалити решту} trash {Перемістити решту в Смітник} other {Виконати решту}}}}",
+  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Скопіювати решту} move {Перемістити решту} delete {Видалити решту остаточно} trash {Видалити решту} other {Виконати решту}}} other {{type, select, copy {Скопіювати решту} move {Перемістити решту} delete {Видалити решту} trash {Перемістити решту в Смітник} other {Виконати решту}}}}",
   "@fileOperations.sourcesGone.continue": {
-    "sourceHash": "2790bfb"
+    "sourceHash": "079ea59"
   },
-  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {A queued copy has a question for you. You’ll see it as soon as the open dialog closes.} move {A queued move has a question for you. You’ll see it as soon as the open dialog closes.} delete {A queued delete has a question for you. You’ll see it as soon as the open dialog closes.} trash {A queued move to the Recycle Bin has a question for you. You’ll see it as soon as the open dialog closes.} other {A queued operation has a question for you. You’ll see it as soon as the open dialog closes.}}} other {{type, select, copy {Копіювання, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.} move {Переміщення, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.} delete {Видалення, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.} trash {Переміщення в Смітник, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.} other {Операція, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.}}}}",
+  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {Копіювання, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.} move {Переміщення, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.} delete {Видалення, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.} trash {Переміщення в Кошик, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.} other {Операція, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.}}} other {{type, select, copy {Копіювання, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.} move {Переміщення, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.} delete {Видалення, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.} trash {Переміщення в Смітник, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.} other {Операція, що чекає в черзі, потребує вашої відповіді. Запитання зʼявиться, щойно закриється відкрите діалогове вікно.}}}}",
   "@fileOperations.sourcesGone.heldToast": {
-    "sourceHash": "75f645d"
+    "sourceHash": "fc21ca7"
   },
-  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Nothing left to copy: {total, plural, one {the item} other {all {totalText} items}} this copy was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} move {Nothing left to move: {total, plural, one {the item} other {all {totalText} items}} this move was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} delete {Nothing left to delete: {total, plural, one {the item} other {all {totalText} items}} this delete was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} trash {Nothing left to move to the Recycle Bin: {total, plural, one {the item} other {all {totalText} items}} this move to the Recycle Bin was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} other {Nothing left to do: {total, plural, one {the item} other {all {totalText} items}} this operation was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {Копіювати вже нічого: відколи ви поставили це копіювання в чергу, {total, plural, =1 {елемент, на який воно чекало,} one {усі {totalText} елемент, на які воно чекало,} few {усі {totalText} елементи, на які воно чекало,} many {усі {totalText} елементів, на які воно чекало,} other {усі {totalText} елемента, на які воно чекало,}} перемістили або видалили.} move {Переміщувати вже нічого: відколи ви поставили це переміщення в чергу, {total, plural, =1 {елемент, на який воно чекало,} one {усі {totalText} елемент, на які воно чекало,} few {усі {totalText} елементи, на які воно чекало,} many {усі {totalText} елементів, на які воно чекало,} other {усі {totalText} елемента, на які воно чекало,}} перемістили або видалили.} delete {Видаляти вже нічого: відколи ви поставили це видалення в чергу, {total, plural, =1 {елемент, на який воно чекало,} one {усі {totalText} елемент, на які воно чекало,} few {усі {totalText} елементи, на які воно чекало,} many {усі {totalText} елементів, на які воно чекало,} other {усі {totalText} елемента, на які воно чекало,}} перемістили або видалили.} trash {Переміщувати в Смітник уже нічого: відколи ви поставили це переміщення в Смітник у чергу, {total, plural, =1 {елемент, на який воно чекало,} one {усі {totalText} елемент, на які воно чекало,} few {усі {totalText} елементи, на які воно чекало,} many {усі {totalText} елементів, на які воно чекало,} other {усі {totalText} елемента, на які воно чекало,}} перемістили або видалили.} other {Робити вже нічого: відколи ви поставили цю операцію в чергу, {total, plural, =1 {елемент, на який вона чекала,} one {усі {totalText} елемент, на які вона чекала,} few {усі {totalText} елементи, на які вона чекала,} many {усі {totalText} елементів, на які вона чекала,} other {усі {totalText} елемента, на які вона чекала,}} перемістили або видалили.}}}}",
+  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Копіювати вже нічого: відколи ви поставили це копіювання в чергу, {total, plural, =1 {елемент, на який воно чекало,} one {усі {totalText} елемент, на які воно чекало,} few {усі {totalText} елементи, на які воно чекало,} many {усі {totalText} елементів, на які воно чекало,} other {усі {totalText} елемента, на які воно чекало,}} перемістили або видалили.} move {Переміщувати вже нічого: відколи ви поставили це переміщення в чергу, {total, plural, =1 {елемент, на який воно чекало,} one {усі {totalText} елемент, на які воно чекало,} few {усі {totalText} елементи, на які воно чекало,} many {усі {totalText} елементів, на які воно чекало,} other {усі {totalText} елемента, на які воно чекало,}} перемістили або видалили.} delete {Видаляти вже нічого: відколи ви поставили це видалення в чергу, {total, plural, =1 {елемент, на який воно чекало,} one {усі {totalText} елемент, на які воно чекало,} few {усі {totalText} елементи, на які воно чекало,} many {усі {totalText} елементів, на які воно чекало,} other {усі {totalText} елемента, на які воно чекало,}} перемістили або видалили.} trash {Переміщувати в Кошик уже нічого: відколи ви поставили це переміщення в Кошик у чергу, {total, plural, =1 {елемент, на який воно чекало,} one {усі {totalText} елемент, на які воно чекало,} few {усі {totalText} елементи, на які воно чекало,} many {усі {totalText} елементів, на які воно чекало,} other {усі {totalText} елемента, на які воно чекало,}} перемістили або видалили.} other {Робити вже нічого: відколи ви поставили цю операцію в чергу, {total, plural, =1 {елемент, на який вона чекала,} one {усі {totalText} елемент, на які вона чекала,} few {усі {totalText} елементи, на які вона чекала,} many {усі {totalText} елементів, на які вона чекала,} other {усі {totalText} елемента, на які вона чекала,}} перемістили або видалили.}}} other {{type, select, copy {Копіювати вже нічого: відколи ви поставили це копіювання в чергу, {total, plural, =1 {елемент, на який воно чекало,} one {усі {totalText} елемент, на які воно чекало,} few {усі {totalText} елементи, на які воно чекало,} many {усі {totalText} елементів, на які воно чекало,} other {усі {totalText} елемента, на які воно чекало,}} перемістили або видалили.} move {Переміщувати вже нічого: відколи ви поставили це переміщення в чергу, {total, plural, =1 {елемент, на який воно чекало,} one {усі {totalText} елемент, на які воно чекало,} few {усі {totalText} елементи, на які воно чекало,} many {усі {totalText} елементів, на які воно чекало,} other {усі {totalText} елемента, на які воно чекало,}} перемістили або видалили.} delete {Видаляти вже нічого: відколи ви поставили це видалення в чергу, {total, plural, =1 {елемент, на який воно чекало,} one {усі {totalText} елемент, на які воно чекало,} few {усі {totalText} елементи, на які воно чекало,} many {усі {totalText} елементів, на які воно чекало,} other {усі {totalText} елемента, на які воно чекало,}} перемістили або видалили.} trash {Переміщувати в Смітник уже нічого: відколи ви поставили це переміщення в Смітник у чергу, {total, plural, =1 {елемент, на який воно чекало,} one {усі {totalText} елемент, на які воно чекало,} few {усі {totalText} елементи, на які воно чекало,} many {усі {totalText} елементів, на які воно чекало,} other {усі {totalText} елемента, на які воно чекало,}} перемістили або видалили.} other {Робити вже нічого: відколи ви поставили цю операцію в чергу, {total, plural, =1 {елемент, на який вона чекала,} one {усі {totalText} елемент, на які вона чекала,} few {усі {totalText} елементи, на які вона чекала,} many {усі {totalText} елементів, на які вона чекала,} other {усі {totalText} елемента, на які вона чекала,}} перемістили або видалили.}}}}",
   "@fileOperations.sourcesGone.nothingLeftToast": {
-    "sourceHash": "4d62b7d"
+    "sourceHash": "936d7b4"
   },
   "fileOperations.alreadyGone.one": "Елемента «{name}» уже немає. Мабуть, його перемістила або видалила інша програма.",
   "@fileOperations.alreadyGone.one": {
@@ -1304,9 +1304,9 @@
   "@fileOperations.resticPassword.inputAria": {
     "sourceHash": "3e39703"
   },
-  "fileOperations.resticPassword.remember": "{platform, select, macos {Зберегти пароль у Вʼязці ключів} windows {Remember password} other {Remember in keyring}}",
+  "fileOperations.resticPassword.remember": "{platform, select, macos {Зберегти пароль у Вʼязці ключів} windows {Запамʼятати пароль} other {Зберегти пароль у вʼязці ключів}}",
   "@fileOperations.resticPassword.remember": {
-    "sourceHash": "3fd7384"
+    "sourceHash": "42237e1"
   },
   "fileOperations.resticPassword.checking": "Перевірка пароля…",
   "@fileOperations.resticPassword.checking": {
@@ -1348,9 +1348,9 @@
   "@fileOperations.validation.pathEmpty": {
     "sourceHash": "c7afbbc"
   },
-  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {Шлях має бути абсолютним (починатися з /)}}",
+  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Шлях має бути абсолютним (починатися з літери диска, як-от C:\\, або зі спільної папки, як-от \\\\server\\share)} other {Шлях має бути абсолютним (починатися з /)}}",
   "@fileOperations.validation.pathNotAbsolute": {
-    "sourceHash": "3c08374"
+    "sourceHash": "f910f77"
   },
   "fileOperations.validation.pathShareMissing": "Додайте після назви сервера назву спільної папки, наприклад \\\\сервер\\папка",
   "@fileOperations.validation.pathShareMissing": {

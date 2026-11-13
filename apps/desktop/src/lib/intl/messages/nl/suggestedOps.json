@@ -63,13 +63,13 @@
   "@suggestedOps.action.copy": {
     "sourceHash": "e21f935"
   },
-  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Naar prullenmand}}",
+  "suggestedOps.action.trash": "{platform, select, windows {Verwijder} other {Naar prullenmand}}",
   "@suggestedOps.action.trash": {
-    "sourceHash": "9adcdf3"
+    "sourceHash": "d4f0678"
   },
-  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {Verwijder}}",
+  "suggestedOps.action.delete": "{platform, select, windows {Verwijder definitief} other {Verwijder}}",
   "@suggestedOps.action.delete": {
-    "sourceHash": "e2d0a54"
+    "sourceHash": "45efa80"
   },
   "suggestedOps.action.rename": "Wijzig naam",
   "@suggestedOps.action.rename": {
@@ -96,13 +96,13 @@
   "@suggestedOps.approve.copy": {
     "sourceHash": "e10c490"
   },
-  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {Verplaats {countText} {count, plural, one {bestand} other {bestanden}} naar prullenmand}}",
+  "suggestedOps.approve.trash": "{platform, select, windows {Verwijder {countText} {count, plural, one {bestand} other {bestanden}}} other {Verplaats {countText} {count, plural, one {bestand} other {bestanden}} naar prullenmand}}",
   "@suggestedOps.approve.trash": {
-    "sourceHash": "3c82946"
+    "sourceHash": "fa0db8d"
   },
-  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {Verwijder {countText} {count, plural, one {bestand} other {bestanden}}}}",
+  "suggestedOps.approve.delete": "{platform, select, windows {Verwijder {countText} {count, plural, one {bestand} other {bestanden}} definitief} other {Verwijder {countText} {count, plural, one {bestand} other {bestanden}}}}",
   "@suggestedOps.approve.delete": {
-    "sourceHash": "218cf04"
+    "sourceHash": "cfb3b70"
   },
   "suggestedOps.approve.rename": "Wijzig {countText} {count, plural, one {bestandsnaam} other {bestandsnamen}}",
   "@suggestedOps.approve.rename": {
@@ -144,17 +144,17 @@
   "@suggestedOps.facts.archive": {
     "sourceHash": "66f4804"
   },
-  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Prullenmand}}",
+  "suggestedOps.facts.trash": "{platform, select, windows {Prullenbak} other {Prullenmand}}",
   "@suggestedOps.facts.trash": {
-    "sourceHash": "4e42c6e"
+    "sourceHash": "7b1fc0a"
   },
   "suggestedOps.facts.severalFolders": "Verschillende mappen",
   "@suggestedOps.facts.severalFolders": {
     "sourceHash": "7c32950"
   },
-  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Dit kun je ongedaan maken: {count, plural, one {het bestand gaat} other {de bestanden gaan}} naar de prullenmand}}",
+  "suggestedOps.reversible.trash": "{platform, select, windows {Dit kun je ongedaan maken: {count, plural, one {het bestand gaat} other {de bestanden gaan}} naar de prullenbak} other {Dit kun je ongedaan maken: {count, plural, one {het bestand gaat} other {de bestanden gaan}} naar de prullenmand}}",
   "@suggestedOps.reversible.trash": {
-    "sourceHash": "55bf957"
+    "sourceHash": "e42e327"
   },
   "suggestedOps.reversible.moveBack": "Dit kun je ongedaan maken: Cmdr kan {count, plural, one {het onderdeel} other {de onderdelen}} terugverplaatsen",
   "@suggestedOps.reversible.moveBack": {
@@ -180,13 +180,13 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {Deze schijf heeft geen prullenmand}}",
+  "suggestedOps.noTrash": "{platform, select, windows {Deze schijf heeft geen prullenbak} other {Deze schijf heeft geen prullenmand}}",
   "@suggestedOps.noTrash": {
-    "sourceHash": "38a6adc"
+    "sourceHash": "31f0f36"
   },
-  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {De schijf waar deze bestanden op staan, heeft geen prullenmand, dus als je dit goedkeurt, worden ze definitief verwijderd.}}",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {De schijf waar deze bestanden op staan, heeft geen prullenbak, dus als je dit goedkeurt, worden ze definitief verwijderd.} other {De schijf waar deze bestanden op staan, heeft geen prullenmand, dus als je dit goedkeurt, worden ze definitief verwijderd.}}",
   "@suggestedOps.noTrashTooltip": {
-    "sourceHash": "4327cb2"
+    "sourceHash": "e13c954"
   },
   "suggestedOps.irreversible.overwrite": "Dit kun je niet ongedaan maken: een bestaand archief wordt vervangen",
   "@suggestedOps.irreversible.overwrite": {
@@ -438,9 +438,9 @@
   "@suggestedOps.server.sharesAffected": {
     "sourceHash": "390f931"
   },
-  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {Er staan AI-suggesties klaar. Klik om ze te bekijken.}}",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {Er staan AI-suggesties klaar. Selecteer om ze te bekijken.} other {Er staan AI-suggesties klaar. Klik om ze te bekijken.}}",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "4508b0b"
+    "sourceHash": "3c813c4"
   },
   "suggestedOps.newNameTaken": "Naam is al in gebruik",
   "@suggestedOps.newNameTaken": {

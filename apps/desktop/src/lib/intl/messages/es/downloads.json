@@ -71,9 +71,9 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "{platform, select, macos {Cmdr necesita acceso a todo el disco para vigilar tu carpeta Descargas.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "downloads.fda.message": "{platform, select, macos {Cmdr necesita acceso a todo el disco para vigilar tu carpeta Descargas.} other {Cmdr no puede vigilar tu carpeta Descargas. Comprueba que la carpeta existe y que puedes abrirla.}}",
   "@downloads.fda.message": {
-    "sourceHash": "82c82c6"
+    "sourceHash": "dd37803"
   },
   "downloads.fda.dismiss": "Descartar",
   "@downloads.fda.dismiss": {
@@ -132,9 +132,9 @@
   "@downloads.shortcutRow.unavailable": {
     "sourceHash": "8882532"
   },
-  "downloads.shortcutRow.addModifier": "{platform, select, macos {Añade un modificador (⌘, ⌃, ⌥ o ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Añade un modificador (⌘, ⌃, ⌥ o ⇧)} windows {Añade un modificador (Ctrl, Alt, Mayús o Win)} other {Añade un modificador (Ctrl, Alt, Mayús o Super)}}",
   "@downloads.shortcutRow.addModifier": {
-    "sourceHash": "28a5ba2"
+    "sourceHash": "a56bd6c"
   },
   "downloads.toggleDescription.bound": "Pulsa {binding} desde cualquier app para saltar a tu descarga más reciente.",
   "@downloads.toggleDescription.bound": {

@@ -1,7 +1,7 @@
 {
-  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Ukončit Cmdr}}",
+  "commands.appQuit.label": "{platform, select, windows {Ukončit Cmdr} other {Ukončit Cmdr}}",
   "@commands.appQuit.label": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "commands.appHide.label": "Skrýt Cmdr",
   "@commands.appHide.label": {
@@ -192,9 +192,9 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Otevře ~/Downloads a vybere naposledy stažený soubor.}}",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Otevře složku Stažené soubory a vybere naposledy stažený soubor.} other {Otevře ~/Downloads a vybere naposledy stažený soubor.}}",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "6b3fe83"
+    "sourceHash": "97b6bd4"
   },
   "commands.viewShowHidden.label": "Zobrazit nebo skrýt skryté soubory",
   "@commands.viewShowHidden.label": {
@@ -320,21 +320,21 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Odvolat přesunutí do koše}}",
+  "commands.editUndoTrash.label": "{platform, select, windows {Odvolat smazání} other {Odvolat přesunutí do koše}}",
   "@commands.editUndoTrash.label": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Odvolat přesunutí „{name}“ do koše}}",
+  "commands.editUndoTrash.one": "{platform, select, windows {Odvolat smazání „{name}“} other {Odvolat přesunutí „{name}“ do koše}}",
   "@commands.editUndoTrash.one": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Odvolat přesunutí {count, plural, one {{countText} položky} few {{countText} položek} many {{countText} položky} other {{countText} položek}} do koše}}",
+  "commands.editUndoTrash.many": "{platform, select, windows {Odvolat smazání {count, plural, one {{countText} položky} few {{countText} položek} many {{countText} položky} other {{countText} položek}}} other {Odvolat přesunutí {count, plural, one {{countText} položky} few {{countText} položek} many {{countText} položky} other {{countText} položek}} do koše}}",
   "@commands.editUndoTrash.many": {
-    "sourceHash": "69c4966"
+    "sourceHash": "39a5bbe"
   },
-  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Vrátí zpět soubory naposledy přesunuté do koše}}",
+  "commands.editUndoTrash.description": "{platform, select, windows {Vrátí zpět soubory naposledy přesunuté do koše} other {Vrátí zpět soubory naposledy přesunuté do koše}}",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "dca1b63"
+    "sourceHash": "6082058"
   },
   "commands.paneLeftVolumeChooser.label": "Otevřít levý přepínač svazků",
   "@commands.paneLeftVolumeChooser.label": {
@@ -464,9 +464,9 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Přejít do domovské složky}}",
+  "commands.navGoHome.label": "{platform, select, windows {Přejít do uživatelské složky} other {Přejít do domovské složky}}",
   "@commands.navGoHome.label": {
-    "sourceHash": "74b2a8b"
+    "sourceHash": "0ae4c72"
   },
   "commands.errorPaneToggleTechnicalDetails.label": "Zobrazit technické podrobnosti",
   "@commands.errorPaneToggleTechnicalDetails.label": {
@@ -832,21 +832,21 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Přejít do koše}}",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Přejít do koše} other {Přejít do koše}}",
   "@commands.fileGoToTrash.label": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
-  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Otevře koš na disku, který právě procházíte}}",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Otevře koš jednotky, kterou právě procházíte} other {Otevře koš na disku, který právě procházíte}}",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "6496c25"
+    "sourceHash": "e4789d0"
   },
   "commands.dialogConfirm.label": "Potvrdit zobrazené dialogové okno",
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
-  "commands.fileShowInFileManager.label": "{platform, select, macos {Zobrazit ve Finderu} windows {Show in File Explorer} other {Zobrazit ve správci souborů}}",
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Zobrazit ve Finderu} windows {Zobrazit v Průzkumníku souborů} other {Zobrazit ve správci souborů}}",
   "@commands.fileShowInFileManager.label": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "commands.fileOpenTerminalHere.label": "Otevřít terminál zde",
   "@commands.fileOpenTerminalHere.label": {
@@ -868,13 +868,13 @@
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.label": "{platform, select, macos {Informace} windows {Properties} other {Vlastnosti souboru}}",
+  "commands.fileGetInfo.label": "{platform, select, macos {Informace} windows {Vlastnosti} other {Vlastnosti souboru}}",
   "@commands.fileGetInfo.label": {
-    "sourceHash": "91c64ca"
+    "sourceHash": "da65a65"
   },
   "commands.fileQuickLook.label": "{platform, select, macos {Rychlý náhled} other {Náhled}}",
   "@commands.fileQuickLook.label": {
-    "sourceHash": "f5616ce"
+    "sourceHash": "c3f57b4"
   },
   "commands.fileContextMenu.label": "Otevřít místní nabídku",
   "@commands.fileContextMenu.label": {
@@ -928,9 +928,9 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "{platform, select, macos {Odstraní uložené heslo zálohy restic, ve které právě jste, ze svazku klíčů a zálohu znovu zamkne} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Odstraní uložené heslo zálohy restic, ve které právě jste, ze svazku klíčů a zálohu znovu zamkne} windows {Odstraní uložené heslo zálohy restic, ve které právě jste, ze Správce přihlašovacích údajů a zálohu znovu zamkne} other {Odstraní uložené heslo zálohy restic, ve které právě jste, ze systémové klíčenky a zálohu znovu zamkne}}",
   "@commands.resticForgetPassword.description": {
-    "sourceHash": "e51ac69"
+    "sourceHash": "0f616ca"
   },
   "commands.fileCopyShareLink.label": "Zkopírovat odkaz ke sdílení (na sedm dní)",
   "@commands.fileCopyShareLink.label": {

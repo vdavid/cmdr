@@ -27,9 +27,9 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "3f94010"
   },
-  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {Cmdr не вдалося прочитати, які папки були відкриті на ваших панелях, тож панелі відкриються в домашній папці}}",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr не вдалося прочитати, які папки були відкриті на ваших панелях, тож панелі відкриються в папці користувача} other {Cmdr не вдалося прочитати, які папки були відкриті на ваших панелях, тож панелі відкриються в домашній папці}}",
   "@stateRecovery.appStatus.title": {
-    "sourceHash": "521f5eb"
+    "sourceHash": "1f92563"
   },
   "stateRecovery.operationLog.title": "Cmdr не вдалося прочитати ваш журнал операцій, тож журнал почнеться з нуля",
   "@stateRecovery.operationLog.title": {
@@ -111,17 +111,17 @@
   "@stateRecovery.credentials.title": {
     "sourceHash": "e4821b8"
   },
-  "stateRecovery.credentials.body": "{platform, select, windows {This happens after a move to a new PC. Cmdr asks for each password again the next time it needs it.} other {Так буває після перенесення на новий компʼютер. Cmdr знову запитає кожен пароль, коли він знадобиться наступного разу.}}",
+  "stateRecovery.credentials.body": "{platform, select, windows {Так буває після перенесення на новий ПК. Cmdr знову запитає кожен пароль, коли він знадобиться наступного разу.} other {Так буває після перенесення на новий компʼютер. Cmdr знову запитає кожен пароль, коли він знадобиться наступного разу.}}",
   "@stateRecovery.credentials.body": {
-    "sourceHash": "afac266"
+    "sourceHash": "c89f267"
   },
   "stateRecovery.keptCopy": "Cmdr зберіг старий файл тут: {path}.",
   "@stateRecovery.keptCopy": {
     "sourceHash": "634e87d"
   },
-  "stateRecovery.showInFinder": "{platform, select, macos {Показати у Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "stateRecovery.showInFinder": "{platform, select, macos {Показати у Finder} windows {Показати у Провіднику} other {Показати у файловому менеджері}}",
   "@stateRecovery.showInFinder": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "stateRecovery.dismiss": "Закрити",
   "@stateRecovery.dismiss": {

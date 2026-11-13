@@ -523,6 +523,11 @@
     "note": "loc. pl. discích (o vašich souborech, discích a historii)",
     "exceptions": {
       "search.coverage.unnamedDrive": "the fallback stands for a drive or a server: toto umístění"
+    },
+    "windows": {
+      "chosen": "jednotka",
+      "accept": ["jednotk", "jednotc", "disk"],
+      "note": "Czech Windows names a drive jednotka (MS TBX drive → jednotka; File Explorer's Zařízení a jednotky); loc. na jednotce; an internal disk may stay disk."
     }
   },
   "dropped-file": {
@@ -886,7 +891,7 @@
   },
   "keychain": {
     "chosen": "svazek klíčů",
-    "accept": ["svazek klíčů", "svazku klíčů", "svazkem klíčů", "klíčenk"],
+    "accept": ["svazek klíčů", "svazku klíčů", "svazkem klíčů", "klíčenk", "klíčen"],
     "forms": "m.: Remember in Keychain (servers.sheet.remember) → Pamatovat si ve svazku klíčů; the Keychain Access app → Klíčenka (otevřete Klíčenku)",
     "confidence": "high",
     "sources": "macOS NetAuthAgent (Uložit heslo do svazku klíčů), Time Machine (záznam v systémovém svazku klíčů; Zkuste použít Klíčenku), i.e. the store is svazek klíčů and the app Klíčenka",
@@ -1062,7 +1067,10 @@
     "accept": ["přesun", "přesouv", "přesuň"],
     "forms": "command → Přesunout… (F6); Move here → Přesunout sem; progress → Přesouvání…; result → Přesunuto; noun → přesun",
     "confidence": "high",
-    "sources": "macOS Finder/AppKit (Přesunout, Přesouvání „^1“ do „^2“, Příprava přesunu); Total Commander (Přesunout F6); Double Commander (Přesunout); Thunar; MS"
+    "sources": "macOS Finder/AppKit (Přesunout, Přesouvání „^1“ do „^2“, Příprava přesunu); Total Commander (Přesunout F6); Double Commander (Přesunout); Thunar; MS",
+    "exceptions": {
+      "stateRecovery.credentials.body": "A move to a new PC is changing computers (přechod na nový počítač), not a file move."
+    }
   },
   "move-to-trash": {
     "chosen": "přesunout do koše",
@@ -1117,7 +1125,12 @@
       }
     ],
     "confidence": "tentative",
-    "sources": "derived: drive → disk (macOS); MS/TC network drive → síťová jednotka is the Windows mapped-drive term; macOS Time Machine says síťové úložné zařízení"
+    "sources": "derived: drive → disk (macOS); MS/TC network drive → síťová jednotka is the Windows mapped-drive term; macOS Time Machine says síťové úložné zařízení",
+    "windows": {
+      "chosen": "síťová jednotka",
+      "accept": ["síťov"],
+      "note": "Windows' mapped network drive is síťová jednotka (MS TBX, TC); the macOS/Linux síťový disk stays for other branches."
+    }
   },
   "network-share": {
     "chosen": "sdílená složka",
@@ -1271,7 +1284,8 @@
     "confidence": "high",
     "sources": "macOS Finder/AppKit (Cesta); Double Commander (Cesta:); Dolphin; MS (cesta); TC (cesta)",
     "exceptions": {
-      "servers.sheet.s3PathStyle": "path-style is the S3 addressing term, kept in English"
+      "servers.sheet.s3PathStyle": "path-style is the S3 addressing term, kept in English",
+      "settings.fileOperations.adbBinaryPath.description": "PATH is the environment variable name (proměnná PATH), not a file path"
     }
   },
   "pause": {
@@ -1394,7 +1408,12 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS Finder (Toto umístění je pouze ke čtení), AppKit (na svazku určeném jen ke čtení), CoreTypes (Souborový systém pouze ke čtení); DC/Thunar/MS say jen pro čtení"
+    "sources": "macOS Finder (Toto umístění je pouze ke čtení), AppKit (na svazku určeném jen ke čtení), CoreTypes (Souborový systém pouze ke čtení); DC/Thunar/MS say jen pro čtení",
+    "windows": {
+      "chosen": "jen pro čtení",
+      "accept": ["pro čtení"],
+      "note": "Quotes the File Explorer Properties attribute checkbox Jen pro čtení (MS TBX read-only → jen pro čtení)."
+    }
   },
   "recent": {
     "chosen": "poslední",
@@ -1792,6 +1811,11 @@
     "decision": "Pane is panel, tab is záložka",
     "exceptions": {
       "servers.sheet.s3GcsKeyHelp": "Google Cloud console’s own tab, which Google Czech calls karta"
+    },
+    "windows": {
+      "chosen": "karta",
+      "accept": ["kart", "záložk"],
+      "note": "Windows dialogs and Resource Monitor call their tabs karty (kartu Zabezpečení, kartu Procesor); a browser's tabs stay záložky (prohlížeče s mnoha záložkami)."
     }
   },
   "tag": {
@@ -2541,7 +2565,10 @@
     "accept": ["uživatel"],
     "forms": "m. animate; per-user limits → limity pro jednotlivé uživatele; user account → uživatelský účet",
     "confidence": "high",
-    "sources": "macOS Finder AFPUserGroupSheet (Uživatel); MS (user → uživatel)"
+    "sources": "macOS Finder AFPUserGroupSheet (Uživatel); MS (user → uživatel)",
+    "exceptions": {
+      "goToPath.dialog.inputPlaceholder": "The windows branch's C:\\Users is a literal sample path, not the user concept."
+    }
   },
   "guest": {
     "chosen": "host",
@@ -3170,7 +3197,12 @@
     "accept": ["diakriti"],
     "forms": "f.: an accented letter → písmeno s diakritikou",
     "confidence": "high",
-    "sources": "TC (bez diakritiky; Abecedně včetně diakritiky); MS (accented character → znaky s diakritikou)"
+    "sources": "TC (bez diakritiky; Abecedně včetně diakritiky); MS (accented character → znaky s diakritikou)",
+    "exceptions": {
+      "settings.appearance.appColor.description": "accent color here is the system highlight color (barva zvýraznění), not a diacritic",
+      "settings.appearance.appColorHintPrefix": "accent color here is the system highlight color (barva zvýraznění), not a diacritic",
+      "settings.appearance.themeColorSwatchAria": "accent color here is the system highlight color (barva zvýraznění), not a diacritic"
+    }
   },
   "case-sensitive": {
     "chosen": "rozlišovat velká a malá písmena",
@@ -3356,7 +3388,17 @@
         "form": "spouštěcí disk",
         "why": "macOS cs says Startovací disk; spouštěcí appears only in Boot volume → Spouštěcí svazek"
       }
-    ]
+    ],
+    "windows": {
+      "chosen": "systémová jednotka",
+      "accept": ["systémov"],
+      "note": "the Windows system drive: na systémové jednotce, systémová jednotka (ms TBX system drive → systémová jednotka; Thunar System Drive → Systémová jednotka)"
+    },
+    "other": {
+      "chosen": "systémový disk",
+      "accept": ["systémov"],
+      "note": "the Linux system disk: na systémovém disku. No exact pile hit; built from systémový + disk, tentative"
+    }
   },
   "hint": {
     "chosen": "tip",
@@ -4081,7 +4123,17 @@
     "accept": ["ploch"],
     "forms": "f.: the folder → Plocha; ke složce Plocha; files on your desktop → soubory na ploše",
     "confidence": "high",
-    "sources": "macOS Finder Localizable Desktop → Plocha; Dock, SystemSettings DesktopSettings Desktop → Plocha; live SecurityPrivacyExtension DESKTOP_FOLDER_* → na ploše"
+    "sources": "macOS Finder Localizable Desktop → Plocha; Dock, SystemSettings DesktopSettings Desktop → Plocha; live SecurityPrivacyExtension DESKTOP_FOLDER_* → na ploše",
+    "other": {
+      "chosen": "pracovní prostředí",
+      "accept": ["ploch", "prostředí"],
+      "note": "A Linux branch's your desktop's disk tool means the desktop environment: diskovým nástrojem vašeho pracovního prostředí."
+    },
+    "windows": {
+      "chosen": "plocha",
+      "accept": ["ploch", "ploš"],
+      "note": "Czech Windows' desktop the Recycle Bin sits on: klikněte na něj na ploše (loc. ploše has no ploch stem)."
+    }
   },
   "previous-next": {
     "chosen": "Další",
@@ -4619,5 +4671,85 @@
     "forms": "m. anim., capitalized as the Windows app: ve Správci úloh",
     "confidence": "high",
     "sources": "MS TBX (Task Manager → Správce úloh)"
+  },
+  "file-explorer": {
+    "chosen": "Průzkumník souborů",
+    "confidence": "high",
+    "accept": ["Průzkumník souborů", "Průzkumníku souborů", "Průzkumníkem souborů"],
+    "forms": "m. anim., app name: použijte Průzkumník souborů; loc. v Průzkumníku souborů (Microsoft's own Czech help writes v Průzkumníku souborů)",
+    "sources": "cs/microsoft-terminology/CZECH.tbx File Explorer → Průzkumník souborů (Průzkumník Windows is the older Windows Explorer name)",
+    "exceptions": {
+      "fileExplorer.pane.fileExplorerAriaLabel": "the English means Cmdr's own file-list pane (a file explorer), not Windows' File Explorer app: Správce souborů"
+    }
+  },
+  "powershell": {
+    "chosen": "PowerShell",
+    "confidence": "high",
+    "accept": ["PowerShell"],
+    "forms": "m., inflects: v PowerShellu",
+    "sources": "Microsoft product name, kept English in Czech Windows"
+  },
+  "user-folder": {
+    "chosen": "uživatelská složka",
+    "confidence": "tentative",
+    "accept": ["uživatelsk"],
+    "forms": "f.: vaši uživatelskou složku, v uživatelské složce",
+    "sources": "no pile hit (the TBX home folder is the admin-assigned server sense); built from Windows' C:\\Users (Uživatelé) and the folder concept složka"
+  },
+  "link": {
+    "chosen": "odkaz",
+    "confidence": "high",
+    "accept": ["odkaz"],
+    "forms": "m.: pl. odkazy; where the links point → kam odkazy vedou",
+    "sources": "macOS cs (odkaz for links); symbolic link → symbolický odkaz in the catalog"
+  },
+  "privacy-permission": {
+    "chosen": "přístup",
+    "confidence": "tentative",
+    "accept": ["přístup", "oprávnění", "povol"],
+    "forms": "an app granted access → aplikace má přístup; the right permissions → potřebná oprávnění (shipped errors.listing.notPermitted.explanation)",
+    "sources": "macOS cs Soukromí a zabezpečení asks for přístup (… žádá o přístup); the shipped macOS branches already read přístup / oprávnění"
+  },
+  "blocked-by": {
+    "chosen": "zablokovat",
+    "confidence": "tentative",
+    "accept": ["blok", "povol", "nedovol", "zabrán"],
+    "forms": "macOS blocked Cmdr → macOS zablokoval Cmdru přístup; wasn't allowed → nemá povolený přístup",
+    "sources": "shipped errors.listing.notPermitted.explanation (macOS branch)"
+  },
+  "credential-manager": {
+    "chosen": "Správce přihlašovacích údajů",
+    "accept": ["Správce přihlašovacích údajů", "Správci přihlašovacích údajů"],
+    "forms": "m. anim., capitalized as the Windows app and store: ze Správce přihlašovacích údajů, ve Správci přihlašovacích údajů; only in a platform select's windows branch (macOS says svazek klíčů, Linux systémová klíčenka)",
+    "confidence": "high",
+    "sources": "ms TBX (Credential Manager → Správce přihlašovacích údajů)"
+  },
+  "lock": {
+    "chosen": "zamknout",
+    "accept": ["zamk", "zamyk"],
+    "forms": "locks the backup again → zálohu znovu zamkne; Cmdr locked → Cmdr zamkl",
+    "confidence": "high",
+    "sources": "catalog (commands.resticForgetPassword.description, fileExplorer.restic.forgetPassword.keychainKeptIt macOS branches)"
+  },
+  "smb-negotiated-security": {
+    "chosen": "nastavení zabezpečení",
+    "accept": ["nastavení zabezpečení"],
+    "forms": "the security settings it agreed on with Cmdr → nastavení zabezpečení, na kterém se s Cmdrem dohodl (one fixed phrase across the family)",
+    "confidence": "high",
+    "sources": "catalog (fileExplorer.network.osMountFallback.negotiationInvalid macOS branch)"
+  },
+  "uninstall": {
+    "chosen": "odinstalovat",
+    "accept": ["odinstal"],
+    "forms": "uninstall it → odinstalujte ji; uninstalled → odinstalovaný",
+    "confidence": "high",
+    "sources": "ms TBX (uninstall → odinstalovat); catalog (settings.cliCommandUninstall)"
+  },
+  "app-closes": {
+    "chosen": "zavřít se",
+    "accept": ["zavře", "zavření", "zavír"],
+    "forms": "then closes → a pak se zavře; Cmdr closes afterwards → Pak se Cmdr zavře; after Cmdr closes → po zavření Cmdru; only in a platform select's windows branch (macOS and Linux say ukončit se)",
+    "confidence": "tentative",
+    "sources": "ms (close → zavřít); no TBX entry for an app closing by itself"
   }
 }

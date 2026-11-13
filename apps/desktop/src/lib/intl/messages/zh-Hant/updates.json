@@ -112,9 +112,9 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "{platform, select, macos {Cmdr {available} 已經推出，但你的組織讓這部 Mac 停留在 {ceiling} 或更早的版本。} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
+  "updates.status.heldByPolicy": "{platform, select, macos {Cmdr {available} 已經推出，但你的組織讓這部 Mac 停留在 {ceiling} 或更早的版本。} windows {Cmdr {available} 已經推出，但你的組織讓這台電腦停留在 {ceiling} 或更早的版本。} other {Cmdr {available} 已經推出，但你的組織讓這台電腦停留在 {ceiling} 或更早的版本。}}",
   "@updates.status.heldByPolicy": {
-    "sourceHash": "5c9b196"
+    "sourceHash": "49012ba"
   },
   "updates.status.unwritableAdmin": "Cmdr {version} 已經推出，但 Cmdr 無法自行安裝。請從 getcmdr.com 下載，再把它拖到「應用程式」資料夾。",
   "@updates.status.unwritableAdmin": {

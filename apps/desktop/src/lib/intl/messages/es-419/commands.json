@@ -27,21 +27,21 @@
   "@commands.favoritesAdd.description": {
     "sourceHash": "161aa45"
   },
-  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Deshacer movimiento al basurero}}",
+  "commands.editUndoTrash.label": "{platform, select, windows {Deshacer eliminación} other {Deshacer movimiento al basurero}}",
   "@commands.editUndoTrash.label": {
-    "sourceHash": "ae39e1f"
+    "sourceHash": "47912be"
   },
-  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Deshacer movimiento de “{name}” al basurero}}",
+  "commands.editUndoTrash.one": "{platform, select, windows {Deshacer eliminación de “{name}”} other {Deshacer movimiento de “{name}” al basurero}}",
   "@commands.editUndoTrash.one": {
-    "sourceHash": "77a330a"
+    "sourceHash": "34e6b5e"
   },
-  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Deshacer movimiento de {countText} {count, plural, one {elemento} many {elementos} other {elementos}} al basurero}}",
+  "commands.editUndoTrash.many": "{platform, select, windows {Deshacer eliminación de {countText} {count, plural, one {elemento} many {elementos} other {elementos}}} other {Deshacer movimiento de {countText} {count, plural, one {elemento} many {elementos} other {elementos}} al basurero}}",
   "@commands.editUndoTrash.many": {
-    "sourceHash": "d100947"
+    "sourceHash": "0d1e2b6"
   },
-  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Devuelve a su lugar los archivos que moviste al basurero la última vez}}",
+  "commands.editUndoTrash.description": "{platform, select, windows {Devuelve a su lugar los archivos que moviste a la Papelera de reciclaje la última vez} other {Devuelve a su lugar los archivos que moviste al basurero la última vez}}",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "ff1e685"
+    "sourceHash": "a80273e"
   },
   "commands.paneQuickFilter.description": "Abre la insignia con lo que has escrito hasta ahora. Presiona de nuevo para cambiar entre “Filtrar” y “Saltar”",
   "@commands.paneQuickFilter.description": {
@@ -51,17 +51,17 @@
   "@commands.fileEdit.label": {
     "sourceHash": "012941c"
   },
-  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Ir al basurero}}",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Ir a la Papelera de reciclaje} other {Ir al basurero}}",
   "@commands.fileGoToTrash.label": {
-    "sourceHash": "9c15ead"
+    "sourceHash": "a4bd867"
   },
-  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Abre el basurero de la unidad que estás explorando}}",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Abre la Papelera de reciclaje de la unidad que estás explorando} other {Abre el basurero de la unidad que estás explorando}}",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "42d98bb"
+    "sourceHash": "bcc9610"
   },
-  "commands.fileShowInFileManager.label": "{platform, select, macos {Mostrar en el Finder} windows {Show in File Explorer} other {Mostrar en el administrador de archivos}}",
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Mostrar en el Finder} windows {Mostrar en el Explorador de archivos} other {Mostrar en el administrador de archivos}}",
   "@commands.fileShowInFileManager.label": {
-    "sourceHash": "f887b5e"
+    "sourceHash": "a11bd4b"
   },
   "commands.tagsToggleGrey.description": "Agrega o quita la etiqueta Gris del Finder en los archivos seleccionados",
   "@commands.tagsToggleGrey.description": {
@@ -203,9 +203,9 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "b241432"
   },
-  "commands.resticForgetPassword.description": "{platform, select, macos {Quita del Llavero la contraseña guardada del respaldo de restic en el que estás y vuelve a bloquearlo} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Quita del Llavero la contraseña guardada del respaldo de restic en el que estás y vuelve a bloquearlo} windows {Quita del Administrador de credenciales la contraseña guardada del respaldo de restic en el que estás y vuelve a bloquearlo} other {Quita de tu llavero la contraseña guardada del respaldo de restic en el que estás y vuelve a bloquearlo}}",
   "@commands.resticForgetPassword.description": {
-    "sourceHash": "3ad0182"
+    "sourceHash": "816f96b"
   },
   "commands.multiRenameInsertField.label": "Insertar un campo de foto, video o música",
   "@commands.multiRenameInsertField.label": {

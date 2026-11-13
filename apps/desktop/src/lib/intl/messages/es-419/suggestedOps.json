@@ -31,17 +31,17 @@
   "@suggestedOps.refusal.couldNotStart.message": {
     "sourceHash": "2630cd3"
   },
-  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {Mover {countText} {count, plural, one {archivo} many {archivos} other {archivos}} al basurero}}",
+  "suggestedOps.approve.trash": "{platform, select, windows {Eliminar {countText} {count, plural, one {archivo} many {archivos} other {archivos}}} other {Mover {countText} {count, plural, one {archivo} many {archivos} other {archivos}} al basurero}}",
   "@suggestedOps.approve.trash": {
-    "sourceHash": "9e59a65"
+    "sourceHash": "ff6433f"
   },
-  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Basurero}}",
+  "suggestedOps.facts.trash": "{platform, select, windows {Papelera de reciclaje} other {Basurero}}",
   "@suggestedOps.facts.trash": {
-    "sourceHash": "c5181f9"
+    "sourceHash": "be27454"
   },
-  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Puedes deshacerlo: {count, plural, one {va} many {van} other {van}} al basurero}}",
+  "suggestedOps.reversible.trash": "{platform, select, windows {Puedes deshacerlo: {count, plural, one {va} many {van} other {van}} a la Papelera de reciclaje} other {Puedes deshacerlo: {count, plural, one {va} many {van} other {van}} al basurero}}",
   "@suggestedOps.reversible.trash": {
-    "sourceHash": "1b00836"
+    "sourceHash": "64c4667"
   },
   "suggestedOps.reversible.moveBack": "Puedes deshacerlo: Cmdr puede {count, plural, one {devolverlo} many {devolverlos} other {devolverlos}} a su lugar",
   "@suggestedOps.reversible.moveBack": {
@@ -79,16 +79,16 @@
   "@suggestedOps.refusal.nameTaken.message": {
     "sourceHash": "82e8501"
   },
-  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Mover al basurero}}",
+  "suggestedOps.action.trash": "{platform, select, windows {Eliminar} other {Mover al basurero}}",
   "@suggestedOps.action.trash": {
-    "sourceHash": "b9a042e"
+    "sourceHash": "b26bc7f"
   },
-  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {Esta unidad no tiene basurero}}",
+  "suggestedOps.noTrash": "{platform, select, windows {Esta unidad no tiene Papelera de reciclaje} other {Esta unidad no tiene basurero}}",
   "@suggestedOps.noTrash": {
-    "sourceHash": "d7ca3fa"
+    "sourceHash": "c2fd60b"
   },
-  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {La unidad donde están estos archivos no tiene basurero, así que, si lo apruebas, se eliminarán para siempre.}}",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {La unidad donde están estos archivos no tiene Papelera de reciclaje, así que, si lo apruebas, se eliminarán para siempre.} other {La unidad donde están estos archivos no tiene basurero, así que, si lo apruebas, se eliminarán para siempre.}}",
   "@suggestedOps.noTrashTooltip": {
-    "sourceHash": "91d3e36"
+    "sourceHash": "bd48ce2"
   }
 }

@@ -600,7 +600,9 @@
       "errors.write.readError.suggestion": "English-sense: check the technical details means read them (consultez).",
       "errors.write.trashRefused.suggestion.other": "English-sense: check the technical details means read them (consultez).",
       "errors.write.writeError.suggestion": "English-sense: check the technical details means read them (consultez).",
-      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family."
+      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family.",
+      "errors.listing.storageFull.suggestion": "English-sense: check Settings to see how much space is left means look it up (consultez).",
+      "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "The full check is the index’s scheduled scan, named analyse complète like its siblings tooltipCoalesced and its macOS branch."
     },
     "forms": "Check that … → Vérifiez que …; Check for updates → Rechercher les mises à jour; Re-check (adb) → Rechercher à nouveau; checking (update check) → Recherche / vérification",
     "sources": "macOS AppKit (Review Changes… → Vérifier les modifications…); macOS Software Update (Check for Updates → Rechercher les mises à jour, macOS 26.6.2 build 25G83, 2026-08-30)"
@@ -978,7 +980,11 @@
     "chosen": "identifiants",
     "confidence": "high",
     "forms": "when the source names both fields, name both: S’identifier avec un nom d’utilisateur et un mot de passe",
-    "sources": "standard FR UI term; MS \"infos de connexion\" is the consumer-account sense"
+    "sources": "standard FR UI term; MS \"infos de connexion\" is the consumer-account sense",
+    "exceptions": {
+      "ai.secretError.body": "windows branch quotes the Credential Manager section by its Windows fr name, Informations d’identification Windows",
+      "ai.secretError.removeBody": "windows branch quotes the Credential Manager section by its Windows fr name, Informations d’identification Windows"
+    }
   },
   "current-folder": {
     "avoid": [
@@ -1246,7 +1252,7 @@
     "sources": "macOS AppKit (NSNavEjectButton), Finder (Éjecter, Tout éjecter)"
   },
   "email": {
-    "accept": ["écrivez-nous"],
+    "accept": ["écrivez-nous", "messagerie"],
     "chosen": "e-mail",
     "confidence": "high",
     "forms": "adresse e-mail; email us (verb) → écrivez-nous; placeholder vous@example.com (never exemple.com, a real domain)",
@@ -1257,7 +1263,10 @@
     "chosen": "Activer",
     "confidence": "high",
     "forms": "turn it on in Settings → Activez-la dans les Réglages; Couldn’t turn on X → Activation de X impossible; button Activer Ask Cmdr",
-    "sources": "macOS; catalog"
+    "sources": "macOS; catalog",
+    "exceptions": {
+      "servers.hub.emptyMessage": "turn on a computer or NAS means powering it on (allumer), not enabling a setting"
+    }
   },
   "encoding": {
     "chosen": "encodage",
@@ -2138,7 +2147,7 @@
     "sources": "macOS FR convention"
   },
   "mount": {
-    "accept": ["montage", "monté"],
+    "accept": ["montage", "monté", "monte", "démont"],
     "chosen": "monter",
     "confidence": "high",
     "forms": "mounted share → un partage monté",
@@ -2163,7 +2172,8 @@
       "settings.dataWipe.doneMessage": "English-sense: moving to the trash is placer dans la corbeille.",
       "suggestedOps.approve.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "suggestedOps.reversible.moveBack": "Moving files back where they were is remettre à sa place, the put-back verb Finder uses (Remettre).",
-      "transfer.trash": "English-sense: moving to the trash is placer dans la corbeille."
+      "transfer.trash": "English-sense: moving to the trash is placer dans la corbeille.",
+      "stateRecovery.credentials.body": "a move to a new computer is changing machines (un passage à un nouveau PC/ordinateur), not moving files"
     },
     "forms": "progress noun Déplacement (Déplacement vers {destination}); participles déplacé/déplacés",
     "sources": "macOS Finder (Déplacer les éléments ici)"
@@ -2245,7 +2255,8 @@
     "confidence": "high",
     "decision": "Réseau : connexion, identification et partages",
     "forms": "network share → partage réseau (masculine); SMB share → partage SMB",
-    "sources": "macOS (Partage et permissions); NetAuthAgent EINFO_NO_SHARE; MS terminology FRA"
+    "sources": "macOS (Partage et permissions); NetAuthAgent EINFO_NO_SHARE; MS terminology FRA",
+    "accept": ["partagé", "partagés"]
   },
   "nfs-export": {
     "accept": ["partages", "partagé"],
@@ -2832,7 +2843,9 @@
     "exceptions": {
       "errors.git.orphanedWorktree.suggestion": "English-sense: removing a git worktree deletes it.",
       "operationLog.skipReason.locked": "removing here deletes the copy (undoing a copy), so supprimer, the delete term",
-      "operationLog.tree.statusRemoved": "a rollback deleted the copy, so Supprimé, the delete term"
+      "operationLog.tree.statusRemoved": "a rollback deleted the copy, so Supprimé, the delete term",
+      "ai.secretError.body": "windows branch: Credential Manager’s own button for an entry reads Supprimer",
+      "ai.secretError.removeBody": "windows branch: Credential Manager’s own button for an entry reads Supprimer"
     },
     "forms": "take off a list without deleting anything (a favorite, a folder from indexing, a tag, an attachment)",
     "sources": "catalog (Retirer la pièce jointe)"
@@ -3159,7 +3172,12 @@
       "servers.sheet.s3GcsKeyHelp": "Third-party UI: Google Cloud’s French console names Cloud Storage’s settings page Paramètres, so the hint quotes the vendor’s word (tentative)."
     },
     "forms": "Cmdr’s own window → les Réglages (Ouvrir les réglages, Activez-la dans les Réglages); breadcrumbs Réglages > IA, Réglages › Mises à jour et confidentialité (mirror EN’s separator); Apple’s app is Réglages Système",
-    "sources": "macOS (Réglages Système CFBundleName)"
+    "sources": "macOS (Réglages Système CFBundleName)",
+    "windows": {
+      "chosen": "Paramètres",
+      "accept": ["paramètre", "paramètres", "réglage", "réglages", "Réglages"],
+      "note": "Windows names its own Settings app Paramètres (Paramètres > Système > Stockage, Paramètres > Réseau et Internet; a setting on the PC is un paramètre); Cmdr’s own Réglages and a server’s réglages keep the base form."
+    }
   },
   "share-menu": {
     "accept": ["partage"],
@@ -3478,7 +3496,11 @@
     "chosen": "Réglages Système",
     "confidence": "high",
     "forms": "capital S when naming the app or a breadcrumb; lowercase réglages système only as a common noun mid-sentence; usually the {system_settings} token",
-    "sources": "macOS SystemSettings CFBundleName"
+    "sources": "macOS SystemSettings CFBundleName",
+    "exceptions": {
+      "settings.appearance.themeColorSwatchAria": "The Linux branch names no app: les réglages de votre système is a common noun, never Apple’s Réglages Système.",
+      "servers.refusal.clockSkewed": "other (Linux) branch names the desktop’s own settings generically (les réglages de votre système), not Apple’s Réglages Système"
+    }
   },
   "system-settings-pane": {
     "accept": ["Ouverture et extensions", "Stockage", "Apparence"],
@@ -3829,7 +3851,10 @@
     "chosen": "utilisateur",
     "confidence": "high",
     "forms": "user ID (Unix uid) → ID utilisateur, group ID → ID de groupe (MS FRA identifiant utilisateur, UID); give user ID 0 no rights → n’accorder aucun droit à l’ID utilisateur 0; a person in prose → name the object or vous, never a gendered role noun",
-    "sources": "MS terminology FRA (user → utilisateur; user ID → identifiant utilisateur / UID); catalog (compte utilisateur, nom d’utilisateur)"
+    "sources": "MS terminology FRA (user → utilisateur; user ID → identifiant utilisateur / UID); catalog (compte utilisateur, nom d’utilisateur)",
+    "exceptions": {
+      "goToPath.dialog.inputPlaceholder": "windows branch shows the literal sample path C:\\Users, never translated"
+    }
   },
   "username": {
     "chosen": "nom d’utilisateur",
@@ -4181,5 +4206,136 @@
     "confidence": "high",
     "forms": "the macOS pane Users & Groups → « Utilisateurs et groupes »; group ID → ID de groupe",
     "sources": "macOS 27 UsersGroups.appex InfoPlist.loctable CFBundleDisplayName (live bundle, 2026-11-12); MS FRA group ID → ID de groupe"
+  },
+  "file-explorer": {
+    "chosen": "Explorateur de fichiers",
+    "confidence": "high",
+    "forms": "masculine with elision (l’Explorateur de fichiers, dans l’Explorateur de fichiers)",
+    "sources": "MS terminology File Explorer → Explorateur de fichiers (fr/microsoft-terminology/FRENCH.tbx)",
+    "avoid": [
+      {
+        "form": "Explorateur Windows",
+        "why": "the older Windows Explorer name the TBX also lists"
+      }
+    ],
+    "exceptions": {
+      "fileExplorer.pane.fileExplorerAriaLabel": "Names Cmdr’s own pane (file explorer in the generic sense), not Windows’ File Explorer app."
+    }
+  },
+  "file-manager": {
+    "chosen": "gestionnaire de fichiers",
+    "confidence": "high",
+    "forms": "masculine (votre gestionnaire de fichiers)",
+    "sources": "MS terminology file manager → gestionnaire de fichiers; Thunar and Dolphin File Manager → Gestionnaire de fichiers"
+  },
+  "user-folder": {
+    "chosen": "dossier utilisateur",
+    "confidence": "tentative",
+    "forms": "masculine (votre dossier utilisateur)",
+    "sources": "No TBX or pile entry; built from Windows French, which names C:\\Users Utilisateurs and the per-user folder under it the dossier utilisateur"
+  },
+  "software": {
+    "chosen": "logiciel",
+    "confidence": "high",
+    "forms": "server software → logiciel serveur",
+    "sources": "MS terminology software → logiciel; catalog (logiciel serveur in the macOS branch)",
+    "accept": ["logiciel", "logiciels", "matériel"],
+    "note": "The concept also matches hardware: matériel (problème matériel) is accepted for that sense.",
+    "exceptions": {
+      "settings.network.smbConcurrency.description": "home NAS hardware is rendered by naming the NAS itself, with no word for hardware."
+    }
+  },
+  "credential-manager": {
+    "chosen": "Gestionnaire d’identification",
+    "confidence": "tentative",
+    "forms": "masculine, capitalized as the Windows app name (le Gestionnaire d’identification, dans le Gestionnaire d’identification)",
+    "avoid": [
+      {
+        "form": "Gestionnaire d’informations d’identification",
+        "why": "the TBX’s long form; the Windows Control Panel item reads Gestionnaire d’identification"
+      }
+    ],
+    "sources": "microsoft-terminology TBX (Credential Manager → Gestionnaire d’informations d’identification); Windows Control Panel item name (Gestionnaire d’identification), not in the pile"
+  },
+  "app-closes": {
+    "chosen": "se fermer",
+    "confidence": "tentative",
+    "accept": ["se ferme", "s’est fermé", "Fermeture"],
+    "forms": "windows branch only: Cmdr se ferme ensuite; puis se ferme; une fois que Cmdr s’est fermé",
+    "sources": "microsoft-terminology TBX (close → fermer); an app closing is pronominal in French"
+  },
+  "appearance": {
+    "chosen": "apparence",
+    "confidence": "high",
+    "accept": ["Apparence"],
+    "forms": "the macOS pane → Apparence; Linux generic → les réglages d’apparence de votre système",
+    "sources": "macOS Réglages Système (Apparence); catalog (settings.appearance.appColorHintLink other)"
+  },
+  "language": {
+    "chosen": "langue",
+    "confidence": "high",
+    "forms": "a human language Cmdr shows → langue; Windows display language → la langue d’affichage de Windows; natural language and a language model → langage (langage naturel, modèle de langage)",
+    "sources": "catalog; microsoft-terminology TBX (display language → langue d’affichage)",
+    "accept": ["langage"]
+  },
+  "linux-distribution": {
+    "chosen": "distribution",
+    "confidence": "high",
+    "forms": "la distribution Linux et sa version",
+    "sources": "standard French Linux usage (distribution Linux)"
+  },
+  "theme": {
+    "chosen": "thème",
+    "confidence": "high",
+    "forms": "macOS theme color → couleur du thème; Windows and Linux say accent color → couleur d’accentuation (MS TBX)",
+    "sources": "catalog (settings.appearance.appColor.description macos); microsoft-terminology TBX (accent color → couleur d’accentuation)"
+  },
+  "accent": {
+    "chosen": "accent",
+    "confidence": "high",
+    "exceptions": {
+      "settings.appearance.appColor.description": "accent color is a UI color (couleur d’accentuation, MS TBX), not a diacritic",
+      "settings.appearance.themeColorSwatchAria": "accent color is a UI color (couleur d’accentuation, MS TBX), not a diacritic",
+      "settings.appearance.appColorHintPrefix": "accent color is a UI color (couleur d’accentuation, MS TBX), not a diacritic"
+    },
+    "sources": "French orthography"
+  },
+  "attribute": {
+    "chosen": "attribut",
+    "accept": ["attributs"],
+    "confidence": "high",
+    "forms": "extended attributes → les attributs étendus",
+    "sources": "Double Commander fr (« attributs étendus »); MS terminology attribute → attribut"
+  },
+  "database": {
+    "chosen": "base de données",
+    "confidence": "high",
+    "sources": "MS terminology database → base de données; catalog ai.cloudConsent.askCmdr.chatsStayLocal"
+  },
+  "personal-data": {
+    "chosen": "données personnelles",
+    "accept": ["donnée personnelle"],
+    "confidence": "high",
+    "sources": "MS terminology personal data → données personnelles; catalog crashReporter.dialog.privacyNote",
+    "exceptions": {
+      "crashReporter.sentToast.sendLogHint": "the log hint’s “private info like file and folder names” is a description, rendered informations privées"
+    }
+  },
+  "private-key": {
+    "chosen": "clé privée",
+    "confidence": "high",
+    "sources": "MS terminology private key → clé privée"
+  },
+  "release-notes": {
+    "chosen": "notes de mise à jour",
+    "accept": ["notes de version"],
+    "confidence": "high",
+    "sources": "catalog whatsNew.optOutToast; MS terminology release notes → notes de publication (Cmdr keeps the everyday form)"
+  },
+  "privacy-permission": {
+    "chosen": "autorisation",
+    "accept": ["autorisations"],
+    "confidence": "high",
+    "sources": "macOS fr Confidentialité et sécurité (autorisations); catalog onboarding.stepOptional.networking.desc"
   }
 }

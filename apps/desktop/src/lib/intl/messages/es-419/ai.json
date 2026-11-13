@@ -15,9 +15,13 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "2e3443b"
   },
-  "ai.cloudConsent.logsNote": "{platform, select, macos {Si activas “Registrar llamadas al modelo de IA” en Configuración avanzada, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros de llamadas son locales y nunca se envían a ningún lado.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Tus chats de Ask Cmdr se quedan en tu Mac, en una base de datos local que puedes abrir y leer.} windows {Tus chats de Ask Cmdr se quedan en tu PC, en una base de datos local que puedes abrir y leer.} other {Tus chats de Ask Cmdr se quedan en tu computadora, en una base de datos local que puedes abrir y leer.}}",
+  "@ai.cloudConsent.askCmdr.chatsStayLocal": {
+    "sourceHash": "b686f1d"
+  },
+  "ai.cloudConsent.logsNote": "{platform, select, macos {Si activas “Registrar llamadas al modelo de IA” en Configuración avanzada, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros de llamadas son locales y nunca se envían a ningún lado.} windows {Si activas “Registrar llamadas al modelo de IA” en Configuración avanzada, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu PC. Esos registros de llamadas son locales y nunca se envían a ningún lado.} other {Si activas “Registrar llamadas al modelo de IA” en Configuración avanzada, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu computadora. Esos registros de llamadas son locales y nunca se envían a ningún lado.}}",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "6512b49"
+    "sourceHash": "1b4c19e"
   },
   "ai.cloudConsent.notSaved": "Cmdr no pudo guardar tu elección. ¿Lo intentas de nuevo?",
   "@ai.cloudConsent.notSaved": {
@@ -87,13 +91,13 @@
   "@ai.cloud.providerRefused": {
     "sourceHash": "e59b6f3"
   },
-  "ai.secretError.title": "{platform, select, macos {{op, select, save {No se pudo guardar tu clave de API: el Llavero de macOS denegó el acceso} other {No se pudo leer tu clave de API guardada: el Llavero de macOS denegó el acceso}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {No se pudo guardar tu clave de API: el llavero del sistema denegó el acceso} other {No se pudo leer tu clave de API guardada: el llavero del sistema denegó el acceso}}}}",
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {No se pudo guardar tu clave de API: el Llavero de macOS denegó el acceso} other {No se pudo leer tu clave de API guardada: el Llavero de macOS denegó el acceso}}} windows {{op, select, save {No se pudo guardar tu clave de API: el Administrador de credenciales denegó el acceso} other {No se pudo leer tu clave de API guardada: el Administrador de credenciales denegó el acceso}}} other {{op, select, save {No se pudo guardar tu clave de API: el llavero del sistema denegó el acceso} other {No se pudo leer tu clave de API guardada: el llavero del sistema denegó el acceso}}}}",
   "@ai.secretError.title": {
-    "sourceHash": "5560d64"
+    "sourceHash": "bc2c49c"
   },
-  "ai.secretError.body": "{platform, select, macos {{op, select, save {Abre Acceso a Llaveros y revisa la entrada “Cmdr”, o elimínala e intenta guardar de nuevo.} other {Abre Acceso a Llaveros, busca la entrada “Cmdr”, concede el acceso o elimínala y vuelve a ingresar tu clave.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Desbloquea tu llavero (la app de Contraseñas o Llaveros) e inténtalo de nuevo.}}",
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {Abre Acceso a Llaveros y revisa la entrada “Cmdr”, o elimínala e intenta guardar de nuevo.} other {Abre Acceso a Llaveros, busca la entrada “Cmdr”, concede el acceso o elimínala y vuelve a ingresar tu clave.}}} windows {{op, select, save {Abre el Administrador de credenciales, revisa la entrada “Cmdr” en Credenciales de Windows, o quítala e intenta guardar de nuevo.} other {Abre el Administrador de credenciales, busca la entrada “Cmdr” en Credenciales de Windows, o quítala y vuelve a ingresar tu clave.}}} other {Desbloquea tu llavero (la app de Contraseñas o Llaveros) e inténtalo de nuevo.}}",
   "@ai.secretError.body": {
-    "sourceHash": "f29e433"
+    "sourceHash": "20333ed"
   },
   "ai.secretError.genericTitle": "{op, select, save {No se pudo guardar tu clave de API.} other {No se pudo leer tu clave de API guardada.}}",
   "@ai.secretError.genericTitle": {
@@ -126,5 +130,9 @@
   "ai.cloudConsent.askCmdr.actions": "En un chat que hayas empezado tú, Ask Cmdr también puede manejar la app por ti: navegar, seleccionar, ordenar, abrir pestañas y diálogos, y conectar una ubicación que hayas guardado. Copiar, mover, comprimir, eliminar, renombrar y deshacer una operación abren cada uno un diálogo o un editor para que confirmes, y no pasa nada hasta que lo hagas. Antes de abrir un archivo, cambiar una opción (que no sea el aspecto de Cmdr), salir, expulsar una unidad, quitar un servidor o cambiar la indexación, te pregunta. Al instante y sin preguntarte nada, etiqueta archivos y crea carpetas o archivos con nombre; un cambio de etiquetas se puede deshacer. Los cambios de nombre y las limpiezas que prepara como plan esperan tu aprobación.",
   "@ai.cloudConsent.askCmdr.actions": {
     "sourceHash": "66cd58c"
+  },
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Tu organización solo permite la IA en el dispositivo, y este Mac no puede ejecutarla.} windows {Tu organización solo permite la IA en el dispositivo, y este PC no puede ejecutarla.} other {Tu organización solo permite la IA en el dispositivo, y esta computadora no puede ejecutarla.}}",
+  "@ai.managed.localOnlyUnsupported": {
+    "sourceHash": "6d87bff"
   }
 }

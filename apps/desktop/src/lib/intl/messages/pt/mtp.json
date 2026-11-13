@@ -5,7 +5,8 @@
   },
   "mtp.connectedToast.body": "{platform, select, macos {O Cmdr pausou o daemon de câmera do macOS (ptpcamerad) para acessar este dispositivo. Para usá-lo em outro app, desative o suporte a MTP nos ajustes.} windows {} other {Para usar este dispositivo em outro app, desative o suporte a MTP nos ajustes.}}",
   "@mtp.connectedToast.body": {
-    "sourceHash": "3ace37b"
+    "sourceHash": "74349d8",
+    "sameAsSourceJustification": "The Windows branch is empty in English (Windows shows no extra toast text), so it stays empty."
   },
   "mtp.connectedToast.dontShowAgain": "Não mostrar novamente",
   "@mtp.connectedToast.dontShowAgain": {
@@ -56,13 +57,13 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {No macOS, o daemon de sistema <code>ptpcamerad</code> reivindica automaticamente os dispositivos Android. Para contornar isso, execute o comando a seguir no Terminal (mantenha-o em execução enquanto usa o Cmdr):} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {No macOS, o daemon de sistema <code>ptpcamerad</code> reivindica automaticamente os dispositivos Android. Para contornar isso, execute o comando a seguir no Terminal (mantenha-o em execução enquanto usa o Cmdr):} windows {Outro app está usando o celular e precisa liberá-lo antes que o Cmdr consiga se conectar.} other {Só um app por vez consegue se comunicar com um celular por MTP, e o seu ambiente de trabalho geralmente monta o celular assim que ele é conectado.}}",
   "@mtp.ptpcameradDialog.explanation": {
-    "sourceHash": "65b6ee3"
+    "sourceHash": "08df74d"
   },
-  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Este comando interrompe o ptpcamerad continuamente enquanto roda. Pressione <key>Ctrl+C</key> no Terminal para pará-lo quando terminar.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Este comando interrompe o ptpcamerad continuamente enquanto roda. Pressione <key>Ctrl+C</key> no Terminal para pará-lo quando terminar.} windows {Feche o app que está usando o celular e tente de novo.} other {Desmonte o celular no seu gerenciador de arquivos e tente de novo.}}",
   "@mtp.ptpcameradDialog.helpText": {
-    "sourceHash": "85b5060"
+    "sourceHash": "c44384e"
   },
   "mtp.ptpcameradDialog.close": "Fechar",
   "@mtp.ptpcameradDialog.close": {

@@ -1424,13 +1424,13 @@
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
   },
-  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {You turned down moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You turned down {verbName} {countText} {count, plural, one {item} other {items}}}}} other {你拒絕了把 {countText} 個{count, plural, other {項目}}{verbName}}}",
+  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {你拒絕了把 {countText} 個{count, plural, other {項目}}移到資源回收筒} other {你拒絕了把 {countText} 個{count, plural, other {項目}}{verbName}}}} other {你拒絕了把 {countText} 個{count, plural, other {項目}}{verbName}}}",
   "@askCmdr.decision.rejected": {
-    "sourceHash": "19d12c1"
+    "sourceHash": "da3b52e"
   },
-  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {You approved moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You approved {verbName} {countText} {count, plural, one {item} other {items}}}}} other {你同意了把 {countText} 個{count, plural, other {項目}}{verbName}}}",
+  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {你同意了把 {countText} 個{count, plural, other {項目}}移到資源回收筒} other {你同意了把 {countText} 個{count, plural, other {項目}}{verbName}}}} other {你同意了把 {countText} 個{count, plural, other {項目}}{verbName}}}",
   "@askCmdr.decision.approved": {
-    "sourceHash": "aa911e6"
+    "sourceHash": "3f61860"
   },
   "askCmdr.decision.result": "完成 {doneText} 個，略過 {skippedText} 個，未完成 {failedText} 個",
   "@askCmdr.decision.result": {
@@ -1440,9 +1440,9 @@
   "@askCmdr.decision.running": {
     "sourceHash": "46c5413"
   },
-  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr closed before this finished} other {Cmdr 在這項操作完成前就結束了}}",
+  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr 在這項操作完成前就關閉了} other {Cmdr 在這項操作完成前就結束了}}",
   "@askCmdr.decision.interrupted": {
-    "sourceHash": "ece92cc"
+    "sourceHash": "de4a5c0"
   },
   "askCmdr.decision.verbMove": "移到別的資料夾",
   "@askCmdr.decision.verbMove": {
@@ -1800,17 +1800,17 @@
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "729d49f"
   },
-  "askCmdr.tool.quit.doing": "{platform, select, windows {Closing Cmdr} other {正在結束 Cmdr}}",
+  "askCmdr.tool.quit.doing": "{platform, select, windows {正在關閉 Cmdr} other {正在結束 Cmdr}}",
   "@askCmdr.tool.quit.doing": {
-    "sourceHash": "b26d1c8"
+    "sourceHash": "b1e13d3"
   },
-  "askCmdr.tool.quit.done": "{platform, select, windows {Asked Cmdr to close} other {已要求 Cmdr 結束}}",
+  "askCmdr.tool.quit.done": "{platform, select, windows {已要求 Cmdr 關閉} other {已要求 Cmdr 結束}}",
   "@askCmdr.tool.quit.done": {
-    "sourceHash": "b9083af"
+    "sourceHash": "17a08e9"
   },
-  "askCmdr.tool.quit.tried": "{platform, select, windows {Tried to close Cmdr} other {沒能結束 Cmdr}}",
+  "askCmdr.tool.quit.tried": "{platform, select, windows {沒能關閉 Cmdr} other {沒能結束 Cmdr}}",
   "@askCmdr.tool.quit.tried": {
-    "sourceHash": "ab34547"
+    "sourceHash": "c05f3a9"
   },
   "askCmdr.tool.switchPane.doing": "正在切換窗格",
   "@askCmdr.tool.switchPane.doing": {

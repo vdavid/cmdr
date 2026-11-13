@@ -323,9 +323,9 @@
   "@multiRename.results.gone": {
     "sourceHash": "8aa255a"
   },
-  "multiRename.error.couldntWriteNames": "{platform, select, macos {Не удалось записать список имен. Проверьте, есть ли свободное место на загрузочном диске.} windows {Couldn’t write the names list. Check that your system drive has free space.} other {Couldn’t write the names list. Check that your system disk has free space.}}",
+  "multiRename.error.couldntWriteNames": "{platform, select, macos {Не удалось записать список имен. Проверьте, есть ли свободное место на загрузочном диске.} windows {Не удалось записать список имен. Проверьте, есть ли свободное место на системном диске.} other {Не удалось записать список имен. Проверьте, есть ли свободное место на системном диске.}}",
   "@multiRename.error.couldntWriteNames": {
-    "sourceHash": "bb5e415"
+    "sourceHash": "aee4df7"
   },
   "multiRename.resultsTooltip": "Измените новые имена в текстовом редакторе, а потом вернитесь сюда, чтобы применить их.",
   "@multiRename.resultsTooltip": {

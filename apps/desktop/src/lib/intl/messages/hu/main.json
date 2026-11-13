@@ -9,7 +9,7 @@
   },
   "main.upgradeNudge": "{platform, select, macos {Új bevezető beállításokat adtunk hozzá. Az átnézésükhöz nyisd meg a Cmdr > Bevezető… menüpontot.} other {Új bevezető beállításokat adtunk hozzá. Az átnézésükhöz nyisd meg a parancspalettát, és futtasd a Bevezető… parancsot.}}",
   "@main.upgradeNudge": {
-    "sourceHash": "439adfd"
+    "sourceHash": "b28cac1"
   },
   "main.dockPinNudge.title": "Maradjon a Cmdr a Dockodban?",
   "@main.dockPinNudge.title": {
@@ -139,41 +139,41 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, one {Kilépsz, amíg egy művelet folyamatban van?} other {Kilépsz, amíg {countText} művelet folyamatban van?}}}}",
+  "main.quit.title": "{platform, select, windows {{count, plural, one {Kilépsz, amíg egy művelet folyamatban van?} other {Kilépsz, amíg {countText} művelet folyamatban van?}}} other {{count, plural, one {Kilépsz, amíg egy művelet folyamatban van?} other {Kilépsz, amíg {countText} művelet folyamatban van?}}}}",
   "@main.quit.title": {
-    "sourceHash": "2671a89"
+    "sourceHash": "a3f024b"
   },
   "main.quit.body": "Ami elkészült, az kész marad. Ami éppen íródik, ott áll meg, ahol tart, a Cmdr pedig eltávolít minden félig megírt fájlt.",
   "@main.quit.body": {
     "sourceHash": "79a69f9"
   },
-  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, one {Kilépés {secondsText} másodperc múlva, így egy újraindítás vagy kijelentkezés soha nem vár a Cmdrre.} other {Kilépés {secondsText} másodperc múlva, így egy újraindítás vagy kijelentkezés soha nem vár a Cmdrre.}}}}",
+  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {A Cmdr {secondsText} másodperc múlva bezárul, így egy újraindítás vagy kijelentkezés soha nem vár rá.} other {A Cmdr {secondsText} másodperc múlva bezárul, így egy újraindítás vagy kijelentkezés soha nem vár rá.}}} other {{seconds, plural, one {Kilépés {secondsText} másodperc múlva, így egy újraindítás vagy kijelentkezés soha nem vár a Cmdrre.} other {Kilépés {secondsText} másodperc múlva, így egy újraindítás vagy kijelentkezés soha nem vár a Cmdrre.}}}}",
   "@main.quit.countdown": {
-    "sourceHash": "a389e0c"
+    "sourceHash": "e220441"
   },
-  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Hátralévő idő a Cmdr automatikus kilépéséig}}",
+  "main.quit.countdownAria": "{platform, select, windows {Hátralévő idő, amíg a Cmdr magától bezárul} other {Hátralévő idő a Cmdr automatikus kilépéséig}}",
   "@main.quit.countdownAria": {
-    "sourceHash": "6b0b5c2"
+    "sourceHash": "c9dd122"
   },
   "main.quit.keepWorking": "Munka folytatása",
   "@main.quit.keepWorking": {
     "sourceHash": "5ed03f2"
   },
-  "main.quit.quitNow": "{platform, select, windows {Exit now} other {Kilépés most}}",
+  "main.quit.quitNow": "{platform, select, windows {Kilépés most} other {Kilépés most}}",
   "@main.quit.quitNow": {
-    "sourceHash": "c96bcc8"
+    "sourceHash": "2895d9d"
   },
   "main.quit.operationsHeading": "Még folyamatban",
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "{platform, select, macos {A Cmdrnek újabb Safari kell} other {Cmdr needs a newer WebKitGTK}}",
+  "main.oldWebkit.title": "{platform, select, macos {A Cmdrnek újabb Safari kell} other {A Cmdrnek újabb WebKitGTK kell}}",
   "@main.oldWebkit.title": {
-    "sourceHash": "03e502b"
+    "sourceHash": "760c868"
   },
-  "main.oldWebkit.body": "{platform, select, macos {A Cmdr felületéhez Safari 15.4-es vagy újabb verzió kell, ezen a Macen viszont régebbi van. Nyisd meg a Szoftverfrissítést, és telepíts mindent, ami függőben van. Ez általában megoldja.} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
+  "main.oldWebkit.body": "{platform, select, macos {A Cmdr felületéhez Safari 15.4-es vagy újabb verzió kell, ezen a Macen viszont régebbi van. Nyisd meg a Szoftverfrissítést, és telepíts mindent, ami függőben van. Ez általában megoldja.} other {A Cmdr felületéhez újabb WebKitGTK kell, mint ami ezen a számítógépen van. Telepítsd a rendszered függőben lévő frissítéseit. Ez általában megoldja.}}",
   "@main.oldWebkit.body": {
-    "sourceHash": "a7112ec"
+    "sourceHash": "200e524"
   },
   "main.oldMacos.title": "A Cmdr macOS {version} rendszeren",
   "@main.oldMacos.title": {

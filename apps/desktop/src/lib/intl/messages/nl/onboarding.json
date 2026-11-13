@@ -305,9 +305,9 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "f95b4a9"
   },
-  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {You’ve turned on AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Select “{nextLabel}” again to ignore this and go on.</strong>} other {Je hebt AI ingeschakeld, maar geen API-sleutel ingevuld. AI werkt dan niet en je krijgt een waarschuwing te zien. Los dit hierboven op.\n\n<strong>Klik nogmaals op ‘{nextLabel}’ om dit te negeren en verder te gaan.</strong>}}",
+  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {Je hebt AI ingeschakeld, maar geen API-sleutel ingevuld. AI werkt dan niet en je krijgt een waarschuwing te zien. Los dit hierboven op.\n\n<strong>Selecteer nogmaals ‘{nextLabel}’ om dit te negeren en verder te gaan.</strong>} other {Je hebt AI ingeschakeld, maar geen API-sleutel ingevuld. AI werkt dan niet en je krijgt een waarschuwing te zien. Los dit hierboven op.\n\n<strong>Klik nogmaals op ‘{nextLabel}’ om dit te negeren en verder te gaan.</strong>}}",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "b942278"
+    "sourceHash": "2856a6e"
   },
   "onboarding.stepAi.cloudConsentOffNote": "Cloud-AI blijft uit tot je die toestaat. Dat kan later ook bij Instellingen > AI.",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -397,17 +397,17 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "06ce4eb"
   },
-  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Crashrapporten staan ook aan: als Cmdr onderuitgaat, stuurt het de appversie, je macOS-versie en de plek in de code waar het stopte.\nNooit je bestanden.\nJe kunt allebei uitzetten in de instellingen wanneer je wilt.} windows {Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.} other {Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.}}",
+  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Crashrapporten staan ook aan: als Cmdr onderuitgaat, stuurt het de appversie, je macOS-versie en de plek in de code waar het stopte.\nNooit je bestanden.\nJe kunt allebei uitzetten in de instellingen wanneer je wilt.} windows {Crashrapporten staan ook aan: als Cmdr onderuitgaat, stuurt het de appversie, je Windows-versie en de plek in de code waar het stopte.\nNooit je bestanden.\nJe kunt allebei uitzetten in de instellingen wanneer je wilt.} other {Crashrapporten staan ook aan: als Cmdr onderuitgaat, stuurt het de appversie, je Linux-distributie en de versie daarvan, en de plek in de code waar het stopte.\nNooit je bestanden.\nJe kunt allebei uitzetten in de instellingen wanneer je wilt.}}",
   "@onboarding.stepBeta.crashReportsNote": {
-    "sourceHash": "9be0be1"
+    "sourceHash": "55b9634"
   },
   "onboarding.stepBeta.analyticsManaged": "Je organisatie heeft gebruiksstatistieken uitgezet.",
   "@onboarding.stepBeta.analyticsManaged": {
     "sourceHash": "49484ee"
   },
-  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Crashrapporten staan aan: als Cmdr onderuitgaat, stuurt het de appversie, je macOS-versie en de plek in de code waar het stopte.\nNooit je bestanden.\nJe kunt ze uitzetten in de instellingen wanneer je wilt.} windows {Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.} other {Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.}}",
+  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Crashrapporten staan aan: als Cmdr onderuitgaat, stuurt het de appversie, je macOS-versie en de plek in de code waar het stopte.\nNooit je bestanden.\nJe kunt ze uitzetten in de instellingen wanneer je wilt.} windows {Crashrapporten staan aan: als Cmdr onderuitgaat, stuurt het de appversie, je Windows-versie en de plek in de code waar het stopte.\nNooit je bestanden.\nJe kunt ze uitzetten in de instellingen wanneer je wilt.} other {Crashrapporten staan aan: als Cmdr onderuitgaat, stuurt het de appversie, je Linux-distributie en de versie daarvan, en de plek in de code waar het stopte.\nNooit je bestanden.\nJe kunt ze uitzetten in de instellingen wanneer je wilt.}}",
   "@onboarding.stepBeta.crashReportsNoteAlone": {
-    "sourceHash": "5084dd0"
+    "sourceHash": "27d4b1b"
   },
   "onboarding.stepBeta.emailTitle": "Blijf in contact (optioneel)",
   "@onboarding.stepBeta.emailTitle": {
@@ -429,13 +429,13 @@
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "5a1bca7"
   },
-  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {De inschrijfserver was net niet bereikbaar, dus je staat nog niet op de lijst. Je adres is op deze Mac bewaard: klik over een minuutje opnieuw op ‘Bewaar’, of wanneer je maar wilt via Instellingen › Updates en privacy.} windows {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this PC: hit Save again in a minute, or any time from Settings › Updates & privacy.} other {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this computer: hit Save again in a minute, or any time from Settings › Updates & privacy.}}",
+  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {De inschrijfserver was net niet bereikbaar, dus je staat nog niet op de lijst. Je adres is op deze Mac bewaard: klik over een minuutje opnieuw op ‘Bewaar’, of wanneer je maar wilt via Instellingen › Updates en privacy.} windows {De inschrijfserver was net niet bereikbaar, dus je staat nog niet op de lijst. Je adres is op deze pc bewaard: klik over een minuutje opnieuw op ‘Bewaar’, of wanneer je maar wilt via Instellingen › Updates en privacy.} other {De inschrijfserver was net niet bereikbaar, dus je staat nog niet op de lijst. Je adres is op deze computer bewaard: klik over een minuutje opnieuw op ‘Bewaar’, of wanneer je maar wilt via Instellingen › Updates en privacy.}}",
   "@onboarding.stepBeta.signup.unreachable": {
-    "sourceHash": "e4d8f67"
+    "sourceHash": "6032194"
   },
-  "onboarding.stepBeta.emailNote": "{platform, select, macos {Geef je e-mailadres op, dan neem ik af en toe contact op met een vraag of update.\nHet e-mailadres dat je hier invult, wordt alleen op je Mac bewaard en is nooit gekoppeld aan je gebruiksstatistieken; die twee zijn bewust twee aparte subsystemen.} windows {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your PC and it’s never connected to your usage stats, the two are intentionally two separate subsystems.} other {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your computer and it’s never connected to your usage stats, the two are intentionally two separate subsystems.}}",
+  "onboarding.stepBeta.emailNote": "{platform, select, macos {Geef je e-mailadres op, dan neem ik af en toe contact op met een vraag of update.\nHet e-mailadres dat je hier invult, wordt alleen op je Mac bewaard en is nooit gekoppeld aan je gebruiksstatistieken; die twee zijn bewust twee aparte subsystemen.} windows {Geef je e-mailadres op, dan neem ik af en toe contact op met een vraag of update.\nHet e-mailadres dat je hier invult, wordt alleen op je pc bewaard en is nooit gekoppeld aan je gebruiksstatistieken; die twee zijn bewust twee aparte subsystemen.} other {Geef je e-mailadres op, dan neem ik af en toe contact op met een vraag of update.\nHet e-mailadres dat je hier invult, wordt alleen op je computer bewaard en is nooit gekoppeld aan je gebruiksstatistieken; die twee zijn bewust twee aparte subsystemen.}}",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "0a793b1"
+    "sourceHash": "494fcbc"
   },
   "onboarding.stepBeta.terms.title": "O ja, en dit ook nog, alsjeblieft",
   "@onboarding.stepBeta.terms.title": {
@@ -461,9 +461,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "{platform, select, windows {You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, select the button below. All of these are optional, and the defaults are picked for your benefit.} other {Je koos voor een uitgebreide setup, dus hier zijn een paar snelle keuzes. Als het je niet zoveel uitmaakt, klik dan op de knop hieronder. Dit is allemaal optioneel, en de standaardwaarden zijn in je voordeel gekozen.}}",
+  "onboarding.stepOptional.lede": "{platform, select, windows {Je koos voor een uitgebreide setup, dus hier zijn een paar snelle keuzes. Als het je niet zoveel uitmaakt, selecteer dan de knop hieronder. Dit is allemaal optioneel, en de standaardwaarden zijn in je voordeel gekozen.} other {Je koos voor een uitgebreide setup, dus hier zijn een paar snelle keuzes. Als het je niet zoveel uitmaakt, klik dan op de knop hieronder. Dit is allemaal optioneel, en de standaardwaarden zijn in je voordeel gekozen.}}",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "94c3a5a"
+    "sourceHash": "d0e9a13"
   },
   "onboarding.stepOptional.recommendedOn": "Aanbevolen: aan",
   "@onboarding.stepOptional.recommendedOn": {
@@ -477,13 +477,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "{platform, select, macos {Eén keer ‘Lokaal netwerk’ toestaan} windows {Windows may ask to let Cmdr through its firewall} other {No permission needed}}",
+  "onboarding.stepOptional.networking.summary": "{platform, select, macos {Eén keer ‘Lokaal netwerk’ toestaan} windows {Windows vraagt misschien om Cmdr door de firewall te laten} other {Geen toestemming nodig}}",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "f49fbc6"
+    "sourceHash": "d902dfe"
   },
-  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Met dit <em>aan</em> kun je verbinding maken met SMB-servers zoals bedrijfsnetwerkshares, een thuis-NAS en dergelijke.\nDe enige kostenpost is een macOS-toegangsvenster dat verschijnt en je vraagt ‘Lokaal netwerk’ toe te staan, en nog één voor ‘Inkomende verbindingen accepteren’.\nBeide vensters zijn onschadelijk, maar als je niet weet wat dit is, kunnen ze eng of vervelend overkomen.} windows {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nWindows may ask once whether to let Cmdr through its firewall.} other {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.}}",
+  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Met dit <em>aan</em> kun je verbinding maken met SMB-servers zoals bedrijfsnetwerkshares, een thuis-NAS en dergelijke.\nDe enige kostenpost is een macOS-toegangsvenster dat verschijnt en je vraagt ‘Lokaal netwerk’ toe te staan, en nog één voor ‘Inkomende verbindingen accepteren’.\nBeide vensters zijn onschadelijk, maar als je niet weet wat dit is, kunnen ze eng of vervelend overkomen.} windows {Met dit <em>aan</em> kun je verbinding maken met SMB-servers zoals bedrijfsnetwerkshares, een thuis-NAS en dergelijke.\nWindows vraagt misschien één keer of Cmdr door de firewall mag.} other {Met dit <em>aan</em> kun je verbinding maken met SMB-servers zoals bedrijfsnetwerkshares, een thuis-NAS en dergelijke.}}",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "d473c62"
+    "sourceHash": "e479f6e"
   },
   "onboarding.stepOptional.indexing.title": "Schijf indexeren",
   "@onboarding.stepOptional.indexing.title": {
@@ -497,9 +497,9 @@
   "@onboarding.stepOptional.indexing.descIntro": {
     "sourceHash": "6b86a1f"
   },
-  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {Direct zoeken op je hele schijf. Denk aan Spotlight, maar nog sneller.} windows {Instant search of your whole drive. Think Windows Search, but much faster.} other {Instant search of your whole drive.}}",
+  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {Direct zoeken op je hele schijf. Denk aan Spotlight, maar nog sneller.} windows {Direct zoeken op je hele schijf. Denk aan Windows Search, maar veel sneller.} other {Direct zoeken op je hele schijf.}}",
   "@onboarding.stepOptional.indexing.benefit1": {
-    "sourceHash": "5fa0e9f"
+    "sourceHash": "bfe626a"
   },
   "onboarding.stepOptional.indexing.benefit2": "Realtime mapgroottes voor je hele schijf. Je weet altijd hoeveel je in elke map hebt staan.",
   "@onboarding.stepOptional.indexing.benefit2": {
@@ -517,21 +517,21 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "{platform, select, windows {If you turn this on, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you turn it off, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).} other {Als je dit inschakelt, doet Cmdr bij elke start van de app plus eenmaal per 24 uur een piepklein netwerkverzoek aan een centrale licentieserver, en krijg je altijd de nieuwste updates.\nSchakel je het uit, dan houd je je huidige versie en doet Cmdr helemaal geen automatische netwerkverzoeken (op periodieke licentiecontroles na, als je een commerciële licentie hebt).}}",
+  "onboarding.stepOptional.updates.desc": "{platform, select, windows {Als je dit inschakelt, doet Cmdr bij elke start van de app plus eenmaal per 24 uur een piepklein netwerkverzoek aan een centrale licentieserver, en krijg je altijd de nieuwste updates.\nSchakel je het uit, dan houd je je huidige versie en doet Cmdr helemaal geen automatische netwerkverzoeken (op periodieke licentiecontroles na, als je een commerciële licentie hebt).} other {Als je dit inschakelt, doet Cmdr bij elke start van de app plus eenmaal per 24 uur een piepklein netwerkverzoek aan een centrale licentieserver, en krijg je altijd de nieuwste updates.\nSchakel je het uit, dan houd je je huidige versie en doet Cmdr helemaal geen automatische netwerkverzoeken (op periodieke licentiecontroles na, als je een commerciële licentie hebt).}}",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "e1a0582"
+    "sourceHash": "f030fea"
   },
   "onboarding.stepOptional.mtp.title": "MTP (Android-telefoons, Kindles, camera''s)",
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {Verbindt met Android-telefoons en dergelijke, onderdrukt de macOS-afhandeling} other {Lets you connect Android phones and similar devices}}",
+  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {Verbindt met Android-telefoons en dergelijke, onderdrukt de macOS-afhandeling} other {Verbindt met Android-telefoons en vergelijkbare apparaten}}",
   "@onboarding.stepOptional.mtp.summary": {
-    "sourceHash": "d5b9a6e"
+    "sourceHash": "b6bfad0"
   },
-  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Als je dit inschakelt, kan Cmdr <strong>verbinding maken met Android-telefoons, Kindles, camera''s</strong>, sommige muziekspelers en elk ander apparaat dat de protocollen MTP of PTP ondersteunt.\nDe kostenpost is dat macOS hier <em>ook</em> verbinding mee wil maken (en dat mislukt meestal, daarom kun je niet zomaar Finder gebruiken om foto''s van Android-telefoons te kopiëren), dus moet Cmdr dat macOS-proces onderdrukken zolang het draait.\nWanneer je Cmdr stopt, wordt dit netjes hersteld.} windows {If you turn this on, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.} other {If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nYour desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first.}}",
+  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Als je dit inschakelt, kan Cmdr <strong>verbinding maken met Android-telefoons, Kindles, camera''s</strong>, sommige muziekspelers en elk ander apparaat dat de protocollen MTP of PTP ondersteunt.\nDe kostenpost is dat macOS hier <em>ook</em> verbinding mee wil maken (en dat mislukt meestal, daarom kun je niet zomaar Finder gebruiken om foto''s van Android-telefoons te kopiëren), dus moet Cmdr dat macOS-proces onderdrukken zolang het draait.\nWanneer je Cmdr stopt, wordt dit netjes hersteld.} windows {Als je dit inschakelt, kan Cmdr <strong>verbinding maken met Android-telefoons, Kindles, camera''s</strong>, sommige muziekspelers en elk ander apparaat dat de protocollen MTP of PTP ondersteunt.} other {Als je dit inschakelt, kan Cmdr <strong>verbinding maken met Android-telefoons, Kindles, camera''s</strong>, sommige muziekspelers en elk ander apparaat dat de protocollen MTP of PTP ondersteunt.\nJe desktopomgeving probeert deze apparaten misschien ook te openen; lijkt een apparaat bezet, ontkoppel het dan eerst in je bestandsbeheerder.}}",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "8a60e7f"
+    "sourceHash": "ed865f5"
   },
   "onboarding.cloudPicker.listAria": "Cloud-AI-aanbieders",
   "@onboarding.cloudPicker.listAria": {

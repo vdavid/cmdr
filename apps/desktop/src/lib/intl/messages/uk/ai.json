@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Деякий вміст залишається вдома, хоч би хто про нього просив: ключі SSH, облікові дані хмарних сервісів та інструментів, ваші вʼязки ключів, дані браузера, Пошта, Повідомлення, Нотатки, власні дані Cmdr і будь-який файл із приватним ключем. Назви цих файлів усе ж можуть потрапити до вашого постачальника.} windows {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, Windows credentials, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Деякий вміст залишається вдома, хоч би хто про нього просив: ключі SSH, облікові дані хмарних сервісів та інструментів, ваші вʼязки ключів, дані браузера, Пошта, Повідомлення, Нотатки, власні дані Cmdr і будь-який файл із приватним ключем. Назви цих файлів усе ж можуть потрапити до вашого постачальника.} windows {Деякий вміст залишається вдома, хоч би хто про нього просив: ключі SSH, облікові дані хмарних сервісів та інструментів, облікові дані Windows, дані браузера, дані електронної пошти, власні дані Cmdr і будь-який файл із приватним ключем. Назви цих файлів усе ж можуть потрапити до вашого постачальника.} other {Деякий вміст залишається вдома, хоч би хто про нього просив: ключі SSH, облікові дані хмарних сервісів та інструментів, ваші вʼязки ключів, дані браузера, дані електронної пошти, власні дані Cmdr і будь-який файл із приватним ключем. Назви цих файлів усе ж можуть потрапити до вашого постачальника.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
-    "sourceHash": "048633f"
+    "sourceHash": "a533066"
   },
   "ai.cloudConsent.askCmdr.actions": "У чаті, який ви почали, Ask Cmdr також може керувати програмою за вас: переходити між папками, вибирати, сортувати, відкривати вкладки й діалогові вікна та підʼєднувати збережені місця. Копіювання, переміщення, архівування, видалення, перейменування й відміна операції відкривають діалогове вікно або редактор, де ви підтверджуєте дію, і нічого не станеться, доки ви цього не зробите. Перед відкриттям файлу, зміною параметра (окрім вигляду Cmdr), завершенням роботи, вийманням диска, вилученням сервера та зміною індексування Ask Cmdr спершу спитає вас. Створення папки чи файлу із заданою назвою і додавання тегів до файлів відбуваються одразу, без запитань, але зміну тегів можна відмінити. Перейменування й прибирання, які Ask Cmdr готує як план, чекають на ваше схвалення.",
   "@ai.cloudConsent.askCmdr.actions": {
@@ -159,13 +159,13 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Чати Ask Cmdr залишаються на вашому Mac, у локальній базі даних, яку можна відкрити й прочитати.} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Чати Ask Cmdr залишаються на вашому Mac, у локальній базі даних, яку можна відкрити й прочитати.} windows {Чати Ask Cmdr залишаються на вашому ПК, у локальній базі даних, яку можна відкрити й прочитати.} other {Чати Ask Cmdr залишаються на вашому компʼютері, у локальній базі даних, яку можна відкрити й прочитати.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
-    "sourceHash": "283cdd7"
+    "sourceHash": "9557acc"
   },
-  "ai.cloudConsent.logsNote": "{platform, select, macos {Якщо в Параметрах > Експертні ввімкнути «Записувати виклики моделі ШІ в журнал», Cmdr також зберігатиме кожен запит і відповідь у папці на вашому Mac. Ці журнали викликів залишаються локальними й нікуди не надсилаються.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {Якщо в Параметрах > Експертні ввімкнути «Записувати виклики моделі ШІ в журнал», Cmdr також зберігатиме кожен запит і відповідь у папці на вашому Mac. Ці журнали викликів залишаються локальними й нікуди не надсилаються.} windows {Якщо в Параметрах > Експертні ввімкнути «Записувати виклики моделі ШІ в журнал», Cmdr також зберігатиме кожен запит і відповідь у папці на вашому ПК. Ці журнали викликів залишаються локальними й нікуди не надсилаються.} other {Якщо в Параметрах > Експертні ввімкнути «Записувати виклики моделі ШІ в журнал», Cmdr також зберігатиме кожен запит і відповідь у папці на вашому компʼютері. Ці журнали викликів залишаються локальними й нікуди не надсилаються.}}",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "0178d1c"
+    "sourceHash": "e34c082"
   },
   "ai.cloudConsent.turnOffAnyTime": "Вимкніть це будь-коли, і Cmdr одразу зупинить надсилання. Ваш сервіс, ключ і чати залишаться без змін.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -528,29 +528,29 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.title": "{platform, select, macos {{op, select, save {Не вдалося зберегти ключ API: Вʼязка ключів macOS не надала доступу} other {Не вдалося прочитати збережений ключ API: Вʼязка ключів macOS не надала доступу}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {Не вдалося зберегти ключ API: системна вʼязка ключів не надала доступу} other {Не вдалося прочитати збережений ключ API: системна вʼязка ключів не надала доступу}}}}",
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {Не вдалося зберегти ключ API: Вʼязка ключів macOS не надала доступу} other {Не вдалося прочитати збережений ключ API: Вʼязка ключів macOS не надала доступу}}} windows {{op, select, save {Не вдалося зберегти ключ API: Диспетчер облікових даних не надав доступу} other {Не вдалося прочитати збережений ключ API: Диспетчер облікових даних не надав доступу}}} other {{op, select, save {Не вдалося зберегти ключ API: системна вʼязка ключів не надала доступу} other {Не вдалося прочитати збережений ключ API: системна вʼязка ключів не надала доступу}}}}",
   "@ai.secretError.title": {
-    "sourceHash": "2b2ef89"
+    "sourceHash": "25b34c4"
   },
-  "ai.secretError.body": "{platform, select, macos {{op, select, save {Відкрийте програму «Ключар» і перевірте запис «Cmdr» або видаліть цей запис і спробуйте зберегти ще раз.} other {Відкрийте програму «Ключар», знайдіть запис «Cmdr» і надайте доступ або видаліть цей запис і введіть ключ знову.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Відімкніть вʼязку ключів (у програмі «Паролі та ключі» чи подібній) і спробуйте ще раз.}}",
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {Відкрийте програму «Ключар» і перевірте запис «Cmdr» або видаліть цей запис і спробуйте зберегти ще раз.} other {Відкрийте програму «Ключар», знайдіть запис «Cmdr» і надайте доступ або видаліть цей запис і введіть ключ знову.}}} windows {{op, select, save {Відкрийте Диспетчер облікових даних і перевірте запис «Cmdr» у розділі «Облікові дані Windows» або вилучіть цей запис і спробуйте зберегти ще раз.} other {Відкрийте Диспетчер облікових даних, знайдіть запис «Cmdr» у розділі «Облікові дані Windows» або вилучіть цей запис і введіть ключ знову.}}} other {Відімкніть вʼязку ключів (у програмі «Паролі та ключі» чи подібній) і спробуйте ще раз.}}",
   "@ai.secretError.body": {
-    "sourceHash": "8f1380e"
+    "sourceHash": "d65c5e3"
   },
   "ai.secretError.genericTitle": "{op, select, save {Не вдалося зберегти ключ API.} other {Не вдалося прочитати збережений ключ API.}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "c343e42"
   },
-  "ai.secretError.genericBody": "{platform, select, macos {Перевірте, чи доступна системна вʼязка ключів, і спробуйте ще раз. Якщо проблема не зникне, перезапустіть програму.} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {Перевірте, чи доступна системна вʼязка ключів, і спробуйте ще раз. Якщо проблема не зникне, перезапустіть програму.}}",
+  "ai.secretError.genericBody": "{platform, select, macos {Перевірте, чи доступна системна вʼязка ключів, і спробуйте ще раз. Якщо проблема не зникне, перезапустіть програму.} windows {Перевірте, чи доступний Диспетчер облікових даних, і спробуйте ще раз. Якщо це повторюється, перезапустіть Cmdr.} other {Перевірте, чи доступна системна вʼязка ключів, і спробуйте ще раз. Якщо проблема не зникне, перезапустіть програму.}}",
   "@ai.secretError.genericBody": {
-    "sourceHash": "2ee417d"
+    "sourceHash": "9fc0702"
   },
   "ai.secretError.removeTitle": "Не вдалося вилучити збережений ключ API.",
   "@ai.secretError.removeTitle": {
     "sourceHash": "5986628"
   },
-  "ai.secretError.removeBody": "{platform, select, macos {Відкрийте програму «Ключар», знайдіть запис «Cmdr» і видаліть його там.} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {Відімкніть вʼязку ключів (у програмі «Паролі та ключі» чи подібній) і спробуйте ще раз.}}",
+  "ai.secretError.removeBody": "{platform, select, macos {Відкрийте програму «Ключар», знайдіть запис «Cmdr» і видаліть його там.} windows {Відкрийте Диспетчер облікових даних, знайдіть запис «Cmdr» у розділі «Облікові дані Windows» і вилучіть його там.} other {Відімкніть вʼязку ключів (у програмі «Паролі та ключі» чи подібній) і спробуйте ще раз.}}",
   "@ai.secretError.removeBody": {
-    "sourceHash": "4e3abe7"
+    "sourceHash": "3a85511"
   },
   "ai.managed.aiOff": "Ваша установа вимкнула ШІ в Cmdr.",
   "@ai.managed.aiOff": {
@@ -564,9 +564,9 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Ваша установа дозволяє лише ШІ на пристрої, а цей Mac не може його запускати.} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Ваша установа дозволяє лише ШІ на пристрої, а цей Mac не може його запускати.} windows {Ваша установа дозволяє лише ШІ на пристрої, а цей ПК не може його запускати.} other {Ваша установа дозволяє лише ШІ на пристрої, а цей компʼютер не може його запускати.}}",
   "@ai.managed.localOnlyUnsupported": {
-    "sourceHash": "b760ca4"
+    "sourceHash": "b468f8f"
   },
   "ai.managed.serviceNotAllowed": "не дозволено вашою установою",
   "@ai.managed.serviceNotAllowed": {

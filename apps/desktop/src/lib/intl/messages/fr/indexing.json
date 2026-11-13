@@ -29,9 +29,9 @@
   "@indexing.phase.priorityFolders": {
     "sourceHash": "09dd19d"
   },
-  "indexing.phase.home": "{platform, select, windows {Indexing the rest of your user folder} other {Indexation du reste de votre dossier personnel}}",
+  "indexing.phase.home": "{platform, select, windows {Indexation du reste de votre dossier utilisateur} other {Indexation du reste de votre dossier personnel}}",
   "@indexing.phase.home": {
-    "sourceHash": "8c31671"
+    "sourceHash": "4da71e9"
   },
   "indexing.phase.wholeDrive": "Indexation du reste du disque",
   "@indexing.phase.wholeDrive": {
@@ -209,9 +209,9 @@
   "@indexing.firstConnect.body": {
     "sourceHash": "56ec1e5"
   },
-  "indexing.firstConnect.enable": "{platform, select, windows {Turn on indexing} other {Activer l’indexation}}",
+  "indexing.firstConnect.enable": "{platform, select, windows {Activer l’indexation} other {Activer l’indexation}}",
   "@indexing.firstConnect.enable": {
-    "sourceHash": "3dc7ddf"
+    "sourceHash": "060aa19"
   },
   "indexing.firstConnect.silenceDrive": "Ne plus demander pour ce disque",
   "@indexing.firstConnect.silenceDrive": {

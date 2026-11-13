@@ -172,9 +172,9 @@
   "@errorReporter.bundleSavedToast.dismiss": {
     "sourceHash": "48845bf"
   },
-  "errorReporter.bundleSavedToast.reveal": "{platform, select, macos {在 Finder 中顯示} windows {Show in File Explorer} other {Show in file manager}}",
+  "errorReporter.bundleSavedToast.reveal": "{platform, select, macos {在 Finder 中顯示} windows {在檔案總管中顯示} other {在檔案管理程式中顯示}}",
   "@errorReporter.bundleSavedToast.reveal": {
-    "sourceHash": "cc84938"
+    "sourceHash": "4d7fe91"
   },
   "errorReporter.autoSentToast.title": "錯誤報告已傳送",
   "@errorReporter.autoSentToast.title": {

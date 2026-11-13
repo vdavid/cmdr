@@ -39,8 +39,8 @@
   "@whatsNew.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "whatsNew.optOutToast": "{platform, select, windows {Got it, no more update notes. Turn them back on anytime in Settings > Updates & privacy.} other {好的，之後不再顯示更新說明。你隨時可以在「設定 > 更新與隱私」中重新開啟。}}",
+  "whatsNew.optOutToast": "{platform, select, windows {好的，之後不再顯示更新說明。你隨時可以在「設定 > 更新與隱私」中重新開啟。} other {好的，之後不再顯示更新說明。你隨時可以在「設定 > 更新與隱私」中重新開啟。}}",
   "@whatsNew.optOutToast": {
-    "sourceHash": "368591b"
+    "sourceHash": "e27e52a"
   }
 }

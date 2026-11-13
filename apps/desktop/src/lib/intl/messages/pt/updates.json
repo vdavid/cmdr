@@ -112,9 +112,9 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "{platform, select, macos {O Cmdr {available} já saiu, mas sua organização mantém este Mac na versão {ceiling} ou anterior.} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
+  "updates.status.heldByPolicy": "{platform, select, macos {O Cmdr {available} já saiu, mas sua organização mantém este Mac na versão {ceiling} ou anterior.} windows {O Cmdr {available} já saiu, mas sua organização mantém este PC na versão {ceiling} ou anterior.} other {O Cmdr {available} já saiu, mas sua organização mantém este computador na versão {ceiling} ou anterior.}}",
   "@updates.status.heldByPolicy": {
-    "sourceHash": "5c9b196"
+    "sourceHash": "49012ba"
   },
   "updates.status.unwritableAdmin": "O Cmdr {version} já saiu, mas o Cmdr não consegue instalá-lo sozinho. Baixe-o em getcmdr.com e arraste-o para a pasta Aplicativos.",
   "@updates.status.unwritableAdmin": {

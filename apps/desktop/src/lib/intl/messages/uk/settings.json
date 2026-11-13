@@ -3,9 +3,9 @@
   "@settings.appearance.language.label": {
     "sourceHash": "a4fe652"
   },
-  "settings.appearance.language.description": "{platform, select, macos {Виберіть мову інтерфейсу Cmdr. «Типова мова системи» відповідає мові вашого Mac.} windows {Choose the language Cmdr uses. “System default” follows your Windows display language.} other {Choose the language Cmdr uses. “System default” follows your system’s language.}}",
+  "settings.appearance.language.description": "{platform, select, macos {Виберіть мову інтерфейсу Cmdr. «Типова мова системи» відповідає мові вашого Mac.} windows {Виберіть мову інтерфейсу Cmdr. «Типова мова системи» відповідає мові інтерфейсу Windows.} other {Виберіть мову інтерфейсу Cmdr. «Типова мова системи» відповідає мові вашої системи.}}",
   "@settings.appearance.language.description": {
-    "sourceHash": "2dd7f63"
+    "sourceHash": "7ca0276"
   },
   "settings.appearance.language.opt.system": "Типова мова системи",
   "@settings.appearance.language.opt.system": {
@@ -47,9 +47,9 @@
   "@settings.appearance.appColor.label": {
     "sourceHash": "b1107c8"
   },
-  "settings.appearance.appColor.description": "{platform, select, macos {Щоб змінити колір теми системи, перейдіть у Системні параметри > Вигляд.} windows {To change your system accent color, go to Settings > Personalization > Colors.} other {To change your system accent color, go to your system appearance settings.}}",
+  "settings.appearance.appColor.description": "{platform, select, macos {Щоб змінити колір теми системи, перейдіть у Системні параметри > Вигляд.} windows {Щоб змінити колір елементів системи, перейдіть у Параметри > Персоналізація > Кольори.} other {Щоб змінити колір елементів системи, перейдіть у системні параметри вигляду.}}",
   "@settings.appearance.appColor.description": {
-    "sourceHash": "7dc4ab7"
+    "sourceHash": "0045d05"
   },
   "settings.appearance.appColor.opt.system": "Колір теми системи",
   "@settings.appearance.appColor.opt.system": {
@@ -212,9 +212,9 @@
   "@settings.appearance.textSize.label": {
     "sourceHash": "d68761c"
   },
-  "settings.appearance.textSize.description": "{platform, select, macos {Масштабує текст та інтерфейс у всій програмі. Поєднується з розміром тексту в розділі «Доступність» macOS, де 100 % означає «точно як у системі».} other {Scales text and UI throughout the app.}}",
+  "settings.appearance.textSize.description": "{platform, select, macos {Масштабує текст та інтерфейс у всій програмі. Поєднується з розміром тексту в розділі «Доступність» macOS, де 100 % означає «точно як у системі».} other {Масштабує текст та інтерфейс у всій програмі.}}",
   "@settings.appearance.textSize.description": {
-    "sourceHash": "49a0a6b"
+    "sourceHash": "c460c56"
   },
   "settings.appearance.textSize.keywords": "шрифт, кегль, більше, менше, збільшити, зменшити, масштаб, зум, читабельність",
   "@settings.appearance.textSize.keywords": {
@@ -348,9 +348,9 @@
   "@settings.listing.showHiddenFiles.label": {
     "sourceHash": "b5ede7f"
   },
-  "settings.listing.showHiddenFiles.description": "{platform, select, macos {Показувати файли з крапкою на початку назви (як-от .zshrc) та елементи, які система позначає як приховані. Діє на обох панелях.} windows {Показувати файли з крапкою на початку назви (як-от .zshrc) та елементи, які система позначає як приховані. Діє на обох панелях.} other {Show dotfiles (like .bashrc) and items the system marks as hidden. Applies to both panes.}}",
+  "settings.listing.showHiddenFiles.description": "{platform, select, macos {Показувати файли з крапкою на початку назви (як-от .zshrc) та елементи, які система позначає як приховані. Діє на обох панелях.} windows {Показувати файли з крапкою на початку назви (як-от .zshrc) та елементи, які система позначає як приховані. Діє на обох панелях.} other {Показувати файли з крапкою на початку назви (як-от .bashrc) та елементи, які система позначає як приховані. Діє на обох панелях.}}",
   "@settings.listing.showHiddenFiles.description": {
-    "sourceHash": "8e77c67"
+    "sourceHash": "2526fb4"
   },
   "settings.listing.showHiddenFiles.keywords": "приховані, сховані, невидимі, крапка, системні, службові",
   "@settings.listing.showHiddenFiles.keywords": {
@@ -532,17 +532,17 @@
   "@settings.fileOperations.macOnlyFiles.keywords": {
     "sourceHash": "b668774"
   },
-  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Пропускати підтвердження копіювання, переміщення й переміщення в Смітник}}",
+  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Пропускати підтвердження копіювання, переміщення й видалення} other {Пропускати підтвердження копіювання, переміщення й переміщення в Смітник}}",
   "@settings.fileOperations.skipConfirmation.label": {
-    "sourceHash": "6af6546"
+    "sourceHash": "f1b1b39"
   },
   "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {«Скопіювати» і «Перемістити» одразу переносять файли на іншу панель, а «Видалити» переміщує їх у Кошик без запитань. Трохи ризиковано, бо одне натискання клавіші діє відразу. Перед остаточним видаленням Cmdr завжди спершу запитує.} other {«Скопіювати» і «Перемістити» одразу переносять файли на іншу панель, а «Видалити» переміщує їх у Смітник без запитань. Трохи ризиковано, бо одне натискання клавіші діє відразу. Перед остаточним видаленням Cmdr завжди спершу запитує.}}",
   "@settings.fileOperations.skipConfirmation.explanation": {
     "sourceHash": "564f000"
   },
-  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {підтвердження, діалог, запитання, без запитань, копіювання, переміщення, кошик, видалення, швидко}}",
+  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {підтвердження, діалог, запитання, без запитань, копіювання, переміщення, кошик, видалення, швидко} other {підтвердження, діалог, запитання, без запитань, копіювання, переміщення, кошик, видалення, швидко}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
-    "sourceHash": "9f61258"
+    "sourceHash": "8179d90"
   },
   "settings.fileOperations.defaultConflictPolicy.label": "Коли файли вже існують",
   "@settings.fileOperations.defaultConflictPolicy.label": {
@@ -564,9 +564,9 @@
   "@settings.fileOperations.keepProgressOpenWhenDone.description": {
     "sourceHash": "005448f"
   },
-  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, recycle bin} other {перебіг, прогрес, завершено, готово, підсумок, результат, звіт, залишати, закрити, вікно, копіювання, переміщення, видалення, кошик}}",
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {перебіг, прогрес, завершено, готово, підсумок, результат, звіт, залишати, закрити, вікно, копіювання, переміщення, видалення, кошик} other {перебіг, прогрес, завершено, готово, підсумок, результат, звіт, залишати, закрити, вікно, копіювання, переміщення, видалення, кошик}}",
   "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
-    "sourceHash": "978b2ff"
+    "sourceHash": "1f64fb0"
   },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Пропустити",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
@@ -1076,10 +1076,10 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {Системний}}",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "sourceHash": "aed6b7a",
-    "sameAsSourceJustification": "macOS is a brand name kept verbatim (BRAND_WORDS; the @key note says keep it)."
+    "sourceHash": "24dac61",
+    "sameAsSourceJustification": "The macos and windows branches are the OS brand names macOS and Windows, kept verbatim in Ukrainian (brand words)."
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Обидва",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
@@ -1153,18 +1153,18 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
     "sourceHash": "911b74b"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {Як попереджати, коли на стартовому диску закінчується вільне місце.} windows {How to warn you when your system drive runs low on free space.} other {How to warn you when your system disk runs low on free space.}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {Як попереджати, коли на стартовому диску закінчується вільне місце.} windows {Як попереджати, коли на системному диску закінчується вільне місце.} other {Як попереджати, коли на системному диску закінчується вільне місце.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
-    "sourceHash": "32b852d"
+    "sourceHash": "07714d7"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "У програмі",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {Системний}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "sourceHash": "aed6b7a",
-    "sameAsSourceJustification": "macOS is a brand name kept verbatim (BRAND_WORDS; the @key note says keep it)."
+    "sourceHash": "24dac61",
+    "sameAsSourceJustification": "The macos and windows branches are the OS brand names macOS and Windows, kept verbatim in Ukrainian (brand words)."
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Вимкнено",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
@@ -1178,9 +1178,9 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "sourceHash": "fd1382f"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Попереджати, коли вільного місця на стартовому диску лишається менше за цей відсоток.} windows {Warn when free space drops below this percent of your system drive.} other {Warn when free space drops below this percent of your system disk.}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Попереджати, коли вільного місця на стартовому диску лишається менше за цей відсоток.} windows {Попереджати, коли вільного місця на системному диску лишається менше за цей відсоток.} other {Попереджати, коли вільного місця на системному диску лишається менше за цей відсоток.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
-    "sourceHash": "9ed41b8"
+    "sourceHash": "b4d0378"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "диск, місце, поріг, межа, відсоток, мало, вільне, попередження",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
@@ -1190,9 +1190,9 @@
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "{platform, select, windows {Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or select the run button to search.} other {Запускати пошук за назвою файлу й регулярним виразом автоматично, поки ви друкуєте (через 1 секунду після паузи). Пошук із ШІ завжди чекає на Enter, бо він коштує грошей. Якщо вимкнено, натисніть Enter або кнопку запуску, щоб шукати.}}",
+  "settings.search.autoApply.description": "{platform, select, windows {Запускати пошук за назвою файлу й регулярним виразом автоматично, поки ви друкуєте (через 1 секунду після паузи). Пошук із ШІ завжди чекає на Enter, бо він коштує грошей. Якщо вимкнено, натисніть Enter або виберіть кнопку запуску, щоб шукати.} other {Запускати пошук за назвою файлу й регулярним виразом автоматично, поки ви друкуєте (через 1 секунду після паузи). Пошук із ШІ завжди чекає на Enter, бо він коштує грошей. Якщо вимкнено, натисніть Enter або кнопку запуску, щоб шукати.}}",
   "@settings.search.autoApply.description": {
-    "sourceHash": "19fcaf7"
+    "sourceHash": "b0f85fd"
   },
   "settings.search.autoApply.keywords": "автоматично, одразу, наживо, миттєво, введення, назва файлу, затримка",
   "@settings.search.autoApply.keywords": {
@@ -1290,13 +1290,13 @@
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
   },
-  "settings.network.enabled.label": "{platform, select, windows {Turn on networking} other {Увімкнути роботу з мережею}}",
+  "settings.network.enabled.label": "{platform, select, windows {Увімкнути роботу з мережею} other {Увімкнути роботу з мережею}}",
   "@settings.network.enabled.label": {
-    "sourceHash": "10f5de9"
+    "sourceHash": "ecb8b03"
   },
-  "settings.network.enabled.description": "{platform, select, macos {Знаходити сервери SMB у вашій локальній мережі та підʼєднуватися до них. Коли вимкнено, Cmdr і далі може читати й записувати файли у вже змонтованих спільних папках, але не проситиме в macOS дозволу на доступ до локальної мережі.} windows {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, and Windows won’t ask to let Cmdr through the firewall.} other {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares.}}",
+  "settings.network.enabled.description": "{platform, select, macos {Знаходити сервери SMB у вашій локальній мережі та підʼєднуватися до них. Коли вимкнено, Cmdr і далі може читати й записувати файли у вже змонтованих спільних папках, але не проситиме в macOS дозволу на доступ до локальної мережі.} windows {Знаходити сервери SMB у вашій локальній мережі та підʼєднуватися до них. Коли вимкнено, Cmdr і далі може читати й записувати файли у вже змонтованих спільних папках, а Windows не питатиме, чи пропустити Cmdr через брандмауер.} other {Знаходити сервери SMB у вашій локальній мережі та підʼєднуватися до них. Коли вимкнено, Cmdr і далі може читати й записувати файли у вже змонтованих спільних папках.}}",
   "@settings.network.enabled.description": {
-    "sourceHash": "72a0854"
+    "sourceHash": "6994272"
   },
   "settings.network.enabled.keywords": "мережа, мережеві диски, виявлення, пошук серверів, локальна, дозвіл, вимкнути",
   "@settings.network.enabled.keywords": {
@@ -1318,9 +1318,9 @@
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "{platform, select, macos {Коли ввімкнено, Cmdr підʼєднується до спільних папок SMB напряму, щоб операції з файлами йшли швидше. Системне монтування залишається для Finder та інших програм.} windows {When this is on, Cmdr establishes a direct connection to SMB shares for faster file operations. The system connection stays for File Explorer and other apps.} other {When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for your file manager and other apps.}}",
+  "settings.network.directSmbConnection.description": "{platform, select, macos {Коли ввімкнено, Cmdr підʼєднується до спільних папок SMB напряму, щоб операції з файлами йшли швидше. Системне монтування залишається для Finder та інших програм.} windows {Коли це ввімкнено, Cmdr підʼєднується до спільних папок SMB напряму, щоб операції з файлами йшли швидше. Системне підʼєднання залишається для Провідника та інших програм.} other {Коли ввімкнено, Cmdr підʼєднується до спільних папок SMB напряму, щоб операції з файлами йшли швидше. Системне монтування залишається для вашого файлового менеджера та інших програм.}}",
   "@settings.network.directSmbConnection.description": {
-    "sourceHash": "44a5a6d"
+    "sourceHash": "429c68c"
   },
   "settings.network.directSmbConnection.keywords": "напряму, швидко, швидкість, підключення, продуктивність, мережа",
   "@settings.network.directSmbConnection.keywords": {
@@ -1330,9 +1330,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr шифрує свої підʼєднання до спільних папок SMB, навіть без запиту від сервера, і не відкриває спільну папку, підʼєднання до якої не можна зашифрувати, зокрема ту, яку ваш Mac підʼєднав без шифрування. Гостьові підʼєднання зашифрувати не можна, тож доведеться ввійти. Підʼєднання, які Cmdr уже відкрив, залишаються як є, доки не підʼєднаються знову.} windows {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your PC connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.} other {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your computer connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.}}",
+  "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr шифрує свої підʼєднання до спільних папок SMB, навіть без запиту від сервера, і не відкриває спільну папку, підʼєднання до якої не можна зашифрувати, зокрема ту, яку ваш Mac підʼєднав без шифрування. Гостьові підʼєднання зашифрувати не можна, тож доведеться ввійти. Підʼєднання, які Cmdr уже відкрив, залишаються як є, доки не підʼєднаються знову.} windows {Cmdr шифрує свої підʼєднання до спільних папок SMB, навіть без запиту від сервера, і не відкриває спільну папку, підʼєднання до якої не можна зашифрувати, зокрема ту, яку ваш ПК підʼєднав без шифрування. Гостьові підʼєднання зашифрувати не можна, тож доведеться ввійти. Підʼєднання, які Cmdr уже відкрив, залишаються як є, доки не підʼєднаються знову.} other {Cmdr шифрує свої підʼєднання до спільних папок SMB, навіть без запиту від сервера, і не відкриває спільну папку, підʼєднання до якої не можна зашифрувати, зокрема ту, яку ваш компʼютер підʼєднав без шифрування. Гостьові підʼєднання зашифрувати не можна, тож доведеться ввійти. Підʼєднання, які Cmdr уже відкрив, залишаються як є, доки не підʼєднаються знову.}}",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "8c27a6c"
+    "sourceHash": "26291fe"
   },
   "settings.network.requireSmbEncryption.keywords": "шифр, шифрувати, зашифровано, захист, безпека, приватність, конфіденційність, підключення, мережа",
   "@settings.network.requireSmbEncryption.keywords": {
@@ -1442,9 +1442,9 @@
   "@settings.fileOperations.adbEnabled.label": {
     "sourceHash": "3651356"
   },
-  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {Відкриває всю файлову систему телефона Android з увімкненим параметром «Налагодження USB», яку MTP показати не може. Потрібні Android platform tools (команда «adb») на цьому Mac. Якщо інструменти Android не встановлено, увімкнений параметр нічого не коштує.} windows {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this PC. Leaving this on costs nothing if you have no Android tooling installed.} other {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this computer. Leaving this on costs nothing if you have no Android tooling installed.}}",
+  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {Відкриває всю файлову систему телефона Android з увімкненим параметром «Налагодження USB», яку MTP показати не може. Потрібні Android platform tools (команда «adb») на цьому Mac. Якщо інструменти Android не встановлено, увімкнений параметр нічого не коштує.} windows {Відкриває всю файлову систему телефона Android з увімкненим параметром «Налагодження USB», яку MTP показати не може. Потрібні Android platform tools (команда «adb») на цьому ПК. Якщо інструменти Android не встановлено, увімкнений параметр нічого не коштує.} other {Відкриває всю файлову систему телефона Android з увімкненим параметром «Налагодження USB», яку MTP показати не може. Потрібні Android platform tools (команда «adb») на цьому компʼютері. Якщо інструменти Android не встановлено, увімкнений параметр нічого не коштує.}}",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "a89c957"
+    "sourceHash": "4c92b52"
   },
   "settings.fileOperations.adbEnabled.keywords": "налагодження usb, для розробників, параметри розробника, телефон, пристрій, смартфон",
   "@settings.fileOperations.adbEnabled.keywords": {
@@ -1454,9 +1454,9 @@
   "@settings.fileOperations.adbBinaryPath.label": {
     "sourceHash": "a67fbbd"
   },
-  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Залиште поле порожнім, і Cmdr шукатиме adb у звичних місцях, зокрема в Android SDK і Homebrew. Вкажіть інше місце, якщо тримаєте platform tools окремо.} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
+  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Залиште поле порожнім, і Cmdr шукатиме adb у звичних місцях, зокрема в Android SDK і Homebrew. Вкажіть інше місце, якщо тримаєте platform tools окремо.} other {Залиште поле порожнім, і Cmdr шукатиме adb у звичних місцях, зокрема в Android SDK і у вашому PATH. Вкажіть інше місце, якщо тримаєте platform tools окремо.}}",
   "@settings.fileOperations.adbBinaryPath.description": {
-    "sourceHash": "940ff29"
+    "sourceHash": "e8cde17"
   },
   "settings.fileOperations.adbBinaryPath.keywords": "шлях, файл, виконуваний, бінарний, розташування, папка",
   "@settings.fileOperations.adbBinaryPath.keywords": {
@@ -1534,9 +1534,9 @@
   "@settings.viewer.showTextCursor.keywords": {
     "sourceHash": "1214804"
   },
-  "settings.developer.mcpEnabled.label": "{platform, select, windows {Turn on MCP server} other {Увімкнути сервер MCP}}",
+  "settings.developer.mcpEnabled.label": "{platform, select, windows {Увімкнути сервер MCP} other {Увімкнути сервер MCP}}",
   "@settings.developer.mcpEnabled.label": {
-    "sourceHash": "32b62ff"
+    "sourceHash": "a2e166c"
   },
   "settings.developer.mcpEnabled.description": "Запустити сервер Model Context Protocol для інтеграції з ШІ-асистентами.",
   "@settings.developer.mcpEnabled.description": {
@@ -1614,9 +1614,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "{platform, select, windows {Please turn this on to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats.} other {Будь ласка, увімкніть це, щоб допомогти нам побачити, які функції важливі під час відкритого бета-тестування.\nСтатистика привʼязана не до вашого імені чи е‑адреси, а до випадкового ідентифікатора.\nCmdr ніколи не надсилає назви файлів, шляхи, пошукові запити чи запити до ШІ.\nКоли вимкнено, Cmdr не надсилає жодної статистики.}}",
+  "settings.analytics.enabled.description": "{platform, select, windows {Будь ласка, увімкніть це, щоб допомогти нам побачити, які функції важливі під час відкритого бета-тестування.\nСтатистика привʼязана не до вашого імені чи е‑адреси, а до випадкового ідентифікатора.\nCmdr ніколи не надсилає назви файлів, шляхи, пошукові запити чи запити до ШІ.\nКоли вимкнено, Cmdr не надсилає жодної статистики.} other {Будь ласка, увімкніть це, щоб допомогти нам побачити, які функції важливі під час відкритого бета-тестування.\nСтатистика привʼязана не до вашого імені чи е‑адреси, а до випадкового ідентифікатора.\nCmdr ніколи не надсилає назви файлів, шляхи, пошукові запити чи запити до ШІ.\nКоли вимкнено, Cmdr не надсилає жодної статистики.}}",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "f5534ee"
+    "sourceHash": "2527a03"
   },
   "settings.analytics.enabled.keywords": "аналітика, статистика, приватність, конфіденційність, телеметрія, бета, відстеження",
   "@settings.analytics.enabled.keywords": {
@@ -1638,9 +1638,9 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "{platform, select, macos {Автоматично надсилати звіт, коли Cmdr аварійно завершує роботу або стикається з проблемою у фоновому режимі. Звіт містить версію програми, версію macOS і місце в коді, де виникла проблема. Жодних назв файлів чи особистих даних.} windows {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Windows version, and where in the code the problem happened. Never file names or personal data.} other {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Linux distribution and version, and where in the code the problem happened. Never file names or personal data.}}",
+  "settings.updates.crashReports.description": "{platform, select, macos {Автоматично надсилати звіт, коли Cmdr аварійно завершує роботу або стикається з проблемою у фоновому режимі. Звіт містить версію програми, версію macOS і місце в коді, де виникла проблема. Жодних назв файлів чи особистих даних.} windows {Автоматично надсилати звіт, коли Cmdr аварійно завершує роботу або стикається з проблемою у фоновому режимі. Звіт містить версію програми, версію Windows і місце в коді, де виникла проблема. Жодних назв файлів чи особистих даних.} other {Автоматично надсилати звіт, коли Cmdr аварійно завершує роботу або стикається з проблемою у фоновому режимі. Звіт містить версію програми, дистрибутив Linux і його версію та місце в коді, де виникла проблема. Жодних назв файлів чи особистих даних.}}",
   "@settings.updates.crashReports.description": {
-    "sourceHash": "e726766"
+    "sourceHash": "abfdc61"
   },
   "settings.updates.crashReports.keywords": "аварія, збій, вилітає, звіт, приватність, телеметрія, вада, помилка",
   "@settings.updates.crashReports.keywords": {
@@ -1734,9 +1734,9 @@
   "@settings.advanced.indexPauseFreeSpacePercent.label": {
     "sourceHash": "c6fe418"
   },
-  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {Cmdr призупиняє індексування дисків, коли вільного місця на стартовому диску стає менше за цей відсоток, щоб індекс не займав місце, потрібне вашим власним файлам. Індексування продовжиться з того самого місця, щойно вільного місця стане на один відсотковий пункт більше за поріг. Це працює незалежно від того, чи увімкнено «Застереження про брак місця на диску».} windows {Cmdr pauses drive indexing when free space on your system drive drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} other {Cmdr pauses drive indexing when free space on your system disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.}}",
+  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {Cmdr призупиняє індексування дисків, коли вільного місця на стартовому диску стає менше за цей відсоток, щоб індекс не займав місце, потрібне вашим власним файлам. Індексування продовжиться з того самого місця, щойно вільного місця стане на один відсотковий пункт більше за поріг. Це працює незалежно від того, чи увімкнено «Застереження про брак місця на диску».} windows {Cmdr призупиняє індексування дисків, коли вільного місця на системному диску стає менше за цей відсоток, щоб індекс не займав місце, потрібне вашим власним файлам. Індексування продовжиться з того самого місця, щойно вільного місця стане на один відсотковий пункт більше за поріг. Це працює незалежно від того, чи увімкнено «Застереження про брак місця на диску».} other {Cmdr призупиняє індексування дисків, коли вільного місця на системному диску стає менше за цей відсоток, щоб індекс не займав місце, потрібне вашим власним файлам. Індексування продовжиться з того самого місця, щойно вільного місця стане на один відсотковий пункт більше за поріг. Це працює незалежно від того, чи увімкнено «Застереження про брак місця на диску».}}",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "4ee1cce"
+    "sourceHash": "bb41d41"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "диск, місце, заповнений, повний, вільне, індекс, індексування, пауза, сховище, поріг, межа, відсоток, мало",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
@@ -1798,9 +1798,9 @@
   "@settings.fileOperations.showAlreadyGoneToast.label": {
     "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or select “Never show this again” in the notice) to stop these notices.} other {Коли ви видаляєте щось, що інша програма вже перемістила або видалила, Cmdr вважає, що все виконано, і показує коротке сповіщення про це. Вимкніть цей параметр (або клацніть «Більше не показувати» у сповіщенні), щоб більше не бачити таких сповіщень.}}",
+  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {Коли ви видаляєте щось, що інша програма вже перемістила або видалила, Cmdr вважає, що все виконано, і показує коротке сповіщення про це. Вимкніть цей параметр (або виберіть «Більше не показувати» у сповіщенні), щоб більше не бачити таких сповіщень.} other {Коли ви видаляєте щось, що інша програма вже перемістила або видалила, Cmdr вважає, що все виконано, і показує коротке сповіщення про це. Вимкніть цей параметр (або клацніть «Більше не показувати» у сповіщенні), щоб більше не бачити таких сповіщень.}}",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "9655e46"
+    "sourceHash": "72a3ead"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "зник, зниклий, відсутній, пропав, немає, сповіщення, повідомлення, спливне",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -1978,9 +1978,9 @@
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"
   },
-  "settings.advanced.logLlmCalls.description": "{platform, select, macos {Зберігає кожен запит до ШІ та відповідь на нього в локальну папку (llm-logs) для налагодження. Ці файли залишаються на вашому Mac і містять назви файлів і шляхи, які Cmdr надсилає вашому постачальнику.} windows {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your PC and include the file names and paths Cmdr sends to your provider.} other {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your computer and include the file names and paths Cmdr sends to your provider.}}",
+  "settings.advanced.logLlmCalls.description": "{platform, select, macos {Зберігає кожен запит до ШІ та відповідь на нього в локальну папку (llm-logs) для налагодження. Ці файли залишаються на вашому Mac і містять назви файлів і шляхи, які Cmdr надсилає вашому постачальнику.} windows {Зберігає кожен запит до ШІ та відповідь на нього в локальну папку (llm-logs) для налагодження. Ці файли залишаються на вашому ПК і містять назви файлів і шляхи, які Cmdr надсилає вашому постачальнику.} other {Зберігає кожен запит до ШІ та відповідь на нього в локальну папку (llm-logs) для налагодження. Ці файли залишаються на вашому компʼютері і містять назви файлів і шляхи, які Cmdr надсилає вашому постачальнику.}}",
   "@settings.advanced.logLlmCalls.description": {
-    "sourceHash": "86b3d34"
+    "sourceHash": "0f9361b"
   },
   "settings.advanced.logLlmCalls.keywords": "ШІ, журнал, налагодження, запит, відповідь, промпт, модель",
   "@settings.advanced.logLlmCalls.keywords": {
@@ -1990,9 +1990,9 @@
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
   },
-  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {Час очікування під час визначення адрес мережевих сервісів через Bonjour.} other {Timeout for resolving network services found on your local network (mDNS).}}",
+  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {Час очікування під час визначення адрес мережевих сервісів через Bonjour.} other {Час очікування під час визначення адрес мережевих сервісів, знайдених у вашій локальній мережі (mDNS).}}",
   "@settings.advanced.serviceResolveTimeout.description": {
-    "sourceHash": "5cf231d"
+    "sourceHash": "cb44fa3"
   },
   "settings.advanced.serviceResolveTimeout.keywords": "виявлення, пошук серверів, локальна мережа, адреса, чекати, тайм-аут",
   "@settings.advanced.serviceResolveTimeout.keywords": {
@@ -2762,9 +2762,9 @@
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "{platform, select, windows {Turn on networking, direct SMB connections, share cache, and timeouts.} other {Увімкнення роботи з мережею, пряме підʼєднання SMB, кеш спільних папок і час очікування.}}",
+  "settings.summary.smbNetworkShares": "{platform, select, windows {Увімкнення роботи з мережею, пряме підʼєднання SMB, кеш спільних папок і час очікування.} other {Увімкнення роботи з мережею, пряме підʼєднання SMB, кеш спільних папок і час очікування.}}",
   "@settings.summary.smbNetworkShares": {
-    "sourceHash": "10604ac"
+    "sourceHash": "47e037d"
   },
   "settings.summary.servers": "Ключі хостів SSH, яким ви довіряєте.",
   "@settings.summary.servers": {
@@ -2938,18 +2938,18 @@
   "@settings.sidebar.matchCount": {
     "sourceHash": "fb95dc1"
   },
-  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {Відкрити Системні параметри, щоб змінити колір теми системи} windows {Open Windows Settings to change the system accent color} other {Open your system settings to change the system accent color}}",
+  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {Відкрити Системні параметри, щоб змінити колір теми системи} windows {Відкрити Параметри Windows, щоб змінити колір елементів системи} other {Відкрити системні параметри, щоб змінити колір елементів системи}}",
   "@settings.appearance.themeColorSwatchAria": {
-    "sourceHash": "4cad022"
+    "sourceHash": "b76cab4"
   },
-  "settings.appearance.appColorHintPrefix": "{platform, select, macos {Щоб змінити колір теми системи, перейдіть у} other {To change your system accent color, go to}}",
+  "settings.appearance.appColorHintPrefix": "{platform, select, macos {Щоб змінити колір теми системи, перейдіть у} other {Щоб змінити колір елементів системи, перейдіть у}}",
   "@settings.appearance.appColorHintPrefix": {
-    "sourceHash": "748470a"
+    "sourceHash": "f06932f"
   },
-  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {системні параметри вигляду}}",
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Параметри > Персоналізація > Кольори} other {системні параметри вигляду}}",
   "@settings.appearance.appColorHintLink": {
-    "sourceHash": "5c94206",
-    "sameAsSourceJustification": "Placeholder-only path: both parts are OS-localized macOS labels injected at runtime, and the > separator is how Ukrainian macOS paths read too."
+    "sourceHash": "551a3a4",
+    "sameAsSourceJustification": "The macos branch is only the two OS-supplied placeholders joined by the path arrow ({systemSettings} > {appearance}); macOS localizes both at runtime."
   },
   "settings.appearance.datePreviewLabel": "Попередній перегляд:",
   "@settings.appearance.datePreviewLabel": {
@@ -3184,17 +3184,17 @@
   "@settings.securityLog.enabled.label": {
     "sourceHash": "9f5e32e"
   },
-  "settings.securityLog.enabled.description": "{platform, select, macos {Зберігати на цьому Mac невеликий файл, де записано важливі для безпеки зміни й відмови, як-от згоду на хмарний ШІ, інстальоване оновлення чи програму, якій сервер MCP відмовив у доступі. У ньому немає назв файлів, їхнього вмісту чи паролів, і він ніколи не залишає ваш Mac.} windows {Keep a small file on this PC that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your PC.} other {Keep a small file on this computer that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your computer.}}",
+  "settings.securityLog.enabled.description": "{platform, select, macos {Зберігати на цьому Mac невеликий файл, де записано важливі для безпеки зміни й відмови, як-от згоду на хмарний ШІ, інстальоване оновлення чи програму, якій сервер MCP відмовив у доступі. У ньому немає назв файлів, їхнього вмісту чи паролів, і він ніколи не залишає ваш Mac.} windows {Зберігати на цьому ПК невеликий файл, де записано важливі для безпеки зміни й відмови, як-от згоду на хмарний ШІ, інстальоване оновлення чи програму, якій сервер MCP відмовив у доступі. У ньому немає назв файлів, їхнього вмісту чи паролів, і він ніколи не залишає ваш ПК.} other {Зберігати на цьому компʼютері невеликий файл, де записано важливі для безпеки зміни й відмови, як-от згоду на хмарний ШІ, інстальоване оновлення чи програму, якій сервер MCP відмовив у доступі. У ньому немає назв файлів, їхнього вмісту чи паролів, і він ніколи не залишає ваш компʼютер.}}",
   "@settings.securityLog.enabled.description": {
-    "sourceHash": "11361eb"
+    "sourceHash": "c0d2160"
   },
   "settings.securityLog.enabled.keywords": "безпека, аудит, журнал, лог, події, доступ, приватність, конфіденційність",
   "@settings.securityLog.enabled.keywords": {
     "sourceHash": "6f113c0"
   },
-  "settings.securityLog.showInFinder": "{platform, select, macos {Показати у Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "settings.securityLog.showInFinder": "{platform, select, macos {Показати у Finder} windows {Показати у Провіднику} other {Показати у файловому менеджері}}",
   "@settings.securityLog.showInFinder": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "settings.updates.showSecurityLog.keywords": "безпека, журнал, аудит, події, файл, відкрити, показати, папка, розташування",
   "@settings.updates.showSecurityLog.keywords": {
@@ -3257,9 +3257,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "14adb30"
   },
-  "settings.updates.emailPrivacyNote": "{platform, select, macos {Е‑адреса зберігається лише на вашому Mac. Ми ніколи не надсилаємо її разом зі статистикою використання, тож статистику неможливо повʼязати з вами. Вона потрібна лише для звʼязку з вами і щоб за бажанням додати її до звіту, який ви надсилаєте. Щоб більше не отримувати листів, скористайтеся посиланням для відписки в будь-якому нашому повідомленні.} windows {Stored only on your PC. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.} other {Stored only on your computer. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.}}",
+  "settings.updates.emailPrivacyNote": "{platform, select, macos {Е‑адреса зберігається лише на вашому Mac. Ми ніколи не надсилаємо її разом зі статистикою використання, тож статистику неможливо повʼязати з вами. Вона потрібна лише для звʼязку з вами і щоб за бажанням додати її до звіту, який ви надсилаєте. Щоб більше не отримувати листів, скористайтеся посиланням для відписки в будь-якому нашому повідомленні.} windows {Е‑адреса зберігається лише на вашому ПК. Ми ніколи не надсилаємо її разом зі статистикою використання, тож статистику неможливо повʼязати з вами. Вона потрібна лише для звʼязку з вами і щоб за бажанням додати її до звіту, який ви надсилаєте. Щоб більше не отримувати листів, скористайтеся посиланням для відписки в будь-якому нашому повідомленні.} other {Е‑адреса зберігається лише на вашому компʼютері. Ми ніколи не надсилаємо її разом зі статистикою використання, тож статистику неможливо повʼязати з вами. Вона потрібна лише для звʼязку з вами і щоб за бажанням додати її до звіту, який ви надсилаєте. Щоб більше не отримувати листів, скористайтеся посиланням для відписки в будь-якому нашому повідомленні.}}",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "cf92795"
+    "sourceHash": "d8146b0"
   },
   "settings.logging.openLogFile": "Відкрити файл журналу",
   "@settings.logging.openLogFile": {
@@ -3425,13 +3425,13 @@
   "@settings.network.trustedCertificates.keywords": {
     "sourceHash": "554a965"
   },
-  "settings.servers.trustedCertificates.description": "{platform, select, macos {Коли macOS не довіряє сертифікату сервера, Cmdr питає вас, перш ніж довіряти йому, і запамʼятовує вашу відповідь тут. Домашні сервери часто створюють власні сертифікати.} windows {When Windows doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.} other {When your system doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.}}",
+  "settings.servers.trustedCertificates.description": "{platform, select, macos {Коли macOS не довіряє сертифікату сервера, Cmdr питає вас, перш ніж довіряти йому, і запамʼятовує вашу відповідь тут. Домашні сервери часто створюють власні сертифікати.} windows {Коли Windows не довіряє сертифікату сервера, Cmdr питає вас, перш ніж довіряти йому, і запамʼятовує вашу відповідь тут. Домашні сервери часто створюють власні сертифікати.} other {Коли ваша система не довіряє сертифікату сервера, Cmdr питає вас, перш ніж довіряти йому, і запамʼятовує вашу відповідь тут. Домашні сервери часто створюють власні сертифікати.}}",
   "@settings.servers.trustedCertificates.description": {
-    "sourceHash": "0b00c1e"
+    "sourceHash": "9eb44db"
   },
-  "settings.servers.trustedCertificates.empty": "{platform, select, macos {Поки нічого не довірено. Коли ви підʼєднаєтеся до сервера WebDAV, якому macOS не довіряє, Cmdr покаже відбиток його сертифіката й запитає вас.} windows {Nothing trusted yet. When you connect to a WebDAV server Windows doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.} other {Nothing trusted yet. When you connect to a WebDAV server your system doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.}}",
+  "settings.servers.trustedCertificates.empty": "{platform, select, macos {Поки нічого не довірено. Коли ви підʼєднаєтеся до сервера WebDAV, якому macOS не довіряє, Cmdr покаже відбиток його сертифіката й запитає вас.} windows {Поки нічого не довірено. Коли ви підʼєднаєтеся до сервера WebDAV, якому Windows не довіряє, Cmdr покаже відбиток його сертифіката й запитає вас.} other {Поки нічого не довірено. Коли ви підʼєднаєтеся до сервера WebDAV, якому ваша система не довіряє, Cmdr покаже відбиток його сертифіката й запитає вас.}}",
   "@settings.servers.trustedCertificates.empty": {
-    "sourceHash": "a3c2089"
+    "sourceHash": "da34116"
   },
   "settings.servers.trustedCertificates.confirmTitle": "Забути цей сертифікат?",
   "@settings.servers.trustedCertificates.confirmTitle": {
@@ -3521,13 +3521,13 @@
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },
-  "settings.dataWipe.card": "{platform, select, macos {Ваші дані на цьому Mac} windows {Your data on this PC} other {Your data on this computer}}",
+  "settings.dataWipe.card": "{platform, select, macos {Ваші дані на цьому Mac} windows {Ваші дані на цьому ПК} other {Ваші дані на цьому компʼютері}}",
   "@settings.dataWipe.card": {
-    "sourceHash": "e4b3cee"
+    "sourceHash": "3d21fb8"
   },
-  "settings.dataWipe.description": "{platform, select, macos {Видаляє все, що Cmdr зберігає на цьому Mac: параметри, збережені паролі, історію, індекси й викачані моделі. Після цього Cmdr завершує роботу.} windows {Delete everything Cmdr keeps on this PC: settings, saved passwords, histories, indexes, and downloaded models. Cmdr closes afterwards.} other {Delete everything Cmdr keeps on this computer: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.}}",
+  "settings.dataWipe.description": "{platform, select, macos {Видаляє все, що Cmdr зберігає на цьому Mac: параметри, збережені паролі, історію, індекси й викачані моделі. Після цього Cmdr завершує роботу.} windows {Видаляє все, що Cmdr зберігає на цьому ПК: параметри, збережені паролі, історію, індекси й завантажені моделі. Після цього Cmdr закриється.} other {Видаляє все, що Cmdr зберігає на цьому компʼютері: параметри, збережені паролі, історію, індекси й викачані моделі. Після цього Cmdr завершує роботу.}}",
   "@settings.dataWipe.description": {
-    "sourceHash": "f1012f4"
+    "sourceHash": "7dc0c1c"
   },
   "settings.dataWipe.button": "Видалити всі дані Cmdr",
   "@settings.dataWipe.button": {
@@ -3537,17 +3537,17 @@
   "@settings.updates.deleteAllData.keywords": {
     "sourceHash": "0ffb0f6"
   },
-  "settings.dataWipe.title": "{platform, select, macos {Видалити всі дані Cmdr на цьому Mac?} windows {Delete all Cmdr data on this PC?} other {Delete all Cmdr data on this computer?}}",
+  "settings.dataWipe.title": "{platform, select, macos {Видалити всі дані Cmdr на цьому Mac?} windows {Видалити всі дані Cmdr на цьому ПК?} other {Видалити всі дані Cmdr на цьому компʼютері?}}",
   "@settings.dataWipe.title": {
-    "sourceHash": "35db003"
+    "sourceHash": "63322b8"
   },
-  "settings.dataWipe.intro": "{platform, select, macos {Cmdr видалить усе, що зберігає на цьому Mac, а потім завершить роботу. Цю дію не можна відмінити.} windows {Cmdr deletes everything it keeps on this PC, then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer, then quits. This can’t be undone.}}",
+  "settings.dataWipe.intro": "{platform, select, macos {Cmdr видалить усе, що зберігає на цьому Mac, а потім завершить роботу. Цю дію не можна відмінити.} windows {Cmdr видалить усе, що зберігає на цьому ПК, а потім закриється. Цю дію не можна відмінити.} other {Cmdr видалить усе, що зберігає на цьому компʼютері, а потім завершить роботу. Цю дію не можна відмінити.}}",
   "@settings.dataWipe.intro": {
-    "sourceHash": "61ed875"
+    "sourceHash": "75dd0c6"
   },
-  "settings.dataWipe.introWithSize": "{platform, select, macos {Cmdr видалить усе, що зберігає на цьому Mac ({sizeText}), а потім завершить роботу. Цю дію не можна відмінити.} windows {Cmdr deletes everything it keeps on this PC ({sizeText}), then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer ({sizeText}), then quits. This can’t be undone.}}",
+  "settings.dataWipe.introWithSize": "{platform, select, macos {Cmdr видалить усе, що зберігає на цьому Mac ({sizeText}), а потім завершить роботу. Цю дію не можна відмінити.} windows {Cmdr видалить усе, що зберігає на цьому ПК ({sizeText}), а потім закриється. Цю дію не можна відмінити.} other {Cmdr видалить усе, що зберігає на цьому компʼютері ({sizeText}), а потім завершить роботу. Цю дію не можна відмінити.}}",
   "@settings.dataWipe.introWithSize": {
-    "sourceHash": "e5262e8"
+    "sourceHash": "8dacc9c"
   },
   "settings.dataWipe.goesHeading": "Що буде видалено",
   "@settings.dataWipe.goesHeading": {
@@ -3565,13 +3565,13 @@
   "@settings.dataWipe.goes.apiKeys": {
     "sourceHash": "146397c"
   },
-  "settings.dataWipe.goes.license": "{platform, select, macos {Ліцензія на цьому Mac. Щоб активувати її знову, введіть ліцензійний ключ із листа про покупку.} windows {The license on this PC. To activate it again, enter the license key from your purchase email.} other {The license on this computer. To activate it again, enter the license key from your purchase email.}}",
+  "settings.dataWipe.goes.license": "{platform, select, macos {Ліцензія на цьому Mac. Щоб активувати її знову, введіть ліцензійний ключ із листа про покупку.} windows {Ліцензія на цьому ПК. Щоб активувати її знову, введіть ліцензійний ключ із листа про покупку.} other {Ліцензія на цьому компʼютері. Щоб активувати її знову, введіть ліцензійний ключ із листа про покупку.}}",
   "@settings.dataWipe.goes.license": {
-    "sourceHash": "90b5b06"
+    "sourceHash": "12597d5"
   },
-  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {Ліцензія на цьому Mac, якщо ви її активували. Щоб активувати її знову, введіть ліцензійний ключ із листа про покупку.} windows {The license on this PC, if you activated one. To activate it again, enter the license key from your purchase email.} other {The license on this computer, if you activated one. To activate it again, enter the license key from your purchase email.}}",
+  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {Ліцензія на цьому Mac, якщо ви її активували. Щоб активувати її знову, введіть ліцензійний ключ із листа про покупку.} windows {Ліцензія на цьому ПК, якщо ви її активували. Щоб активувати її знову, введіть ліцензійний ключ із листа про покупку.} other {Ліцензія на цьому компʼютері, якщо ви її активували. Щоб активувати її знову, введіть ліцензійний ключ із листа про покупку.}}",
   "@settings.dataWipe.goes.licenseIfAny": {
-    "sourceHash": "db7f6f2"
+    "sourceHash": "93cc028"
   },
   "settings.dataWipe.goes.askCmdr": "Чати Ask Cmdr і все, що запамʼятано про вас",
   "@settings.dataWipe.goes.askCmdr": {
@@ -3613,9 +3613,9 @@
   "@settings.dataWipe.cancel": {
     "sourceHash": "19766ed"
   },
-  "settings.dataWipe.confirm": "{platform, select, windows {Delete all and exit} other {Видалити все й завершити}}",
+  "settings.dataWipe.confirm": "{platform, select, windows {Видалити все й вийти} other {Видалити все й завершити}}",
   "@settings.dataWipe.confirm": {
-    "sourceHash": "5efdab7"
+    "sourceHash": "8b73f1a"
   },
   "settings.dataWipe.deleting": "Видалення…",
   "@settings.dataWipe.deleting": {
@@ -3637,9 +3637,9 @@
   "@settings.dataWipe.doneTitle": {
     "sourceHash": "18aa13d"
   },
-  "settings.dataWipe.doneMessage": "{platform, select, macos {Усе, що Cmdr зберігав на цьому Mac, видалено. Щоб видалити й саму програму, перемістіть її в Смітник, коли Cmdr завершить роботу.} windows {Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps after Cmdr closes.} other {Everything Cmdr kept on this computer is gone. To remove the app as well, uninstall it the way you installed it after Cmdr quits.}}",
+  "settings.dataWipe.doneMessage": "{platform, select, macos {Усе, що Cmdr зберігав на цьому Mac, видалено. Щоб видалити й саму програму, перемістіть її в Смітник, коли Cmdr завершить роботу.} windows {Усе, що Cmdr зберігав на цьому ПК, видалено. Щоб видалити й саму програму, видаліть її в Параметрах, у розділі «Програми», коли Cmdr закриється.} other {Усе, що Cmdr зберігав на цьому компʼютері, видалено. Щоб видалити й саму програму, видаліть її тим самим способом, яким інсталювали, коли Cmdr завершить роботу.}}",
   "@settings.dataWipe.doneMessage": {
-    "sourceHash": "a0d09dc"
+    "sourceHash": "a18fa9f"
   },
   "settings.dataWipe.partialTitle": "Більшість даних Cmdr видалено",
   "@settings.dataWipe.partialTitle": {
@@ -3649,17 +3649,17 @@
   "@settings.dataWipe.partialMessage": {
     "sourceHash": "24d0b58"
   },
-  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, =1 {Один елемент вʼязки з назвою «{itemName}» у програмі «Ключар»} one {{countText} елемент вʼязки з назвою «{itemName}» у програмі «Ключар»} few {{countText} елементи вʼязки з назвою «{itemName}» у програмі «Ключар»} many {{countText} елементів вʼязки з назвою «{itemName}» у програмі «Ключар»} other {{countText} елемента вʼязки з назвою «{itemName}» у програмі «Ключар»}}} windows {{count, plural, one {One item in Credential Manager named “{itemName}”} other {{countText} items in Credential Manager named “{itemName}”}}} other {{count, plural, one {One item in your keyring named “{itemName}”} other {{countText} items in your keyring named “{itemName}”}}}}",
+  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, =1 {Один елемент вʼязки з назвою «{itemName}» у програмі «Ключар»} one {{countText} елемент вʼязки з назвою «{itemName}» у програмі «Ключар»} few {{countText} елементи вʼязки з назвою «{itemName}» у програмі «Ключар»} many {{countText} елементів вʼязки з назвою «{itemName}» у програмі «Ключар»} other {{countText} елемента вʼязки з назвою «{itemName}» у програмі «Ключар»}}} windows {{count, plural, =1 {Один елемент з назвою «{itemName}» у Диспетчері облікових даних} one {{countText} елемент з назвою «{itemName}» у Диспетчері облікових даних} few {{countText} елементи з назвою «{itemName}» у Диспетчері облікових даних} many {{countText} елементів з назвою «{itemName}» у Диспетчері облікових даних} other {{countText} елемента з назвою «{itemName}» у Диспетчері облікових даних}}} other {{count, plural, =1 {Один елемент з назвою «{itemName}» у вашій вʼязці ключів} one {{countText} елемент з назвою «{itemName}» у вашій вʼязці ключів} few {{countText} елементи з назвою «{itemName}» у вашій вʼязці ключів} many {{countText} елементів з назвою «{itemName}» у вашій вʼязці ключів} other {{countText} елемента з назвою «{itemName}» у вашій вʼязці ключів}}}}",
   "@settings.dataWipe.leftover.secretItems": {
-    "sourceHash": "91321bb"
+    "sourceHash": "6cf1e9c"
   },
-  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {Будь-які елементи вʼязки з назвою «{itemName}» у програмі «Ключар»} windows {Any items in Credential Manager named “{itemName}”} other {Any items in your keyring named “{itemName}”}}",
+  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {Будь-які елементи вʼязки з назвою «{itemName}» у програмі «Ключар»} windows {Будь-які елементи з назвою «{itemName}» у Диспетчері облікових даних} other {Будь-які елементи з назвою «{itemName}» у вашій вʼязці ключів}}",
   "@settings.dataWipe.leftover.secretsUnreadable": {
-    "sourceHash": "e3b3312"
+    "sourceHash": "0e9e95b"
   },
-  "settings.dataWipe.quit": "{platform, select, windows {Exit Cmdr} other {Завершити Cmdr}}",
+  "settings.dataWipe.quit": "{platform, select, windows {Вийти з Cmdr} other {Завершити Cmdr}}",
   "@settings.dataWipe.quit": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "settings.askCmdr.forgetMemory.keywords": "забути, стерти, видалити, нотатки, приватність, очистити",
   "@settings.askCmdr.forgetMemory.keywords": {

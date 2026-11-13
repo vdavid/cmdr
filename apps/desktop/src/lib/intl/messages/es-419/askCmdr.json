@@ -727,13 +727,13 @@
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "39933ff"
   },
-  "askCmdr.tool.quit.done": "{platform, select, windows {Asked Cmdr to close} other {Se le pidió a Cmdr que se cierre}}",
+  "askCmdr.tool.quit.done": "{platform, select, windows {Se le pidió a Cmdr que se cierre} other {Se le pidió a Cmdr que se cierre}}",
   "@askCmdr.tool.quit.done": {
-    "sourceHash": "08a4428"
+    "sourceHash": "bed56d1"
   },
-  "askCmdr.tool.quit.tried": "{platform, select, windows {Tried to close Cmdr} other {Se intentó salir de Cmdr}}",
+  "askCmdr.tool.quit.tried": "{platform, select, windows {Se intentó cerrar Cmdr} other {Se intentó salir de Cmdr}}",
   "@askCmdr.tool.quit.tried": {
-    "sourceHash": "2b9e286"
+    "sourceHash": "83c1d00"
   },
   "askCmdr.tool.switchPane.done": "Se cambió de panel",
   "@askCmdr.tool.switchPane.done": {

@@ -71,9 +71,9 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "{platform, select, macos {Cmdr 需要完全磁盘访问权限才能监视你的“下载”文件夹。} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "downloads.fda.message": "{platform, select, macos {Cmdr 需要完全磁盘访问权限才能监视你的“下载”文件夹。} other {Cmdr 无法监视你的“下载”文件夹。请确认这个文件夹存在，并且你可以打开它。}}",
   "@downloads.fda.message": {
-    "sourceHash": "82c82c6"
+    "sourceHash": "dd37803"
   },
   "downloads.fda.dismiss": "关闭",
   "@downloads.fda.dismiss": {
@@ -131,9 +131,9 @@
   "@downloads.shortcutRow.unavailable": {
     "sourceHash": "8882532"
   },
-  "downloads.shortcutRow.addModifier": "{platform, select, macos {请添加一个修饰键（⌘、⌃、⌥ 或 ⇧）} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {请添加一个修饰键（⌘、⌃、⌥ 或 ⇧）} windows {请添加一个修饰键（Ctrl、Alt、Shift 或 Win）} other {请添加一个修饰键（Ctrl、Alt、Shift 或 Super）}}",
   "@downloads.shortcutRow.addModifier": {
-    "sourceHash": "28a5ba2"
+    "sourceHash": "a56bd6c"
   },
   "downloads.toggleDescription.bound": "在任意应用中按 {binding} 即可跳转到你最近的下载内容。",
   "@downloads.toggleDescription.bound": {

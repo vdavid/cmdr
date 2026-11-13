@@ -3,8 +3,8 @@
   "@whatsNew.securityNotice.title": {
     "sourceHash": "deff433"
   },
-  "whatsNew.optOutToast": "{platform, select, windows {Got it, no more update notes. Turn them back on anytime in Settings > Updates & privacy.} other {Entendido, no más notas de actualización. Vuelve a activarlas cuando quieras en Configuración > Actualizaciones y privacidad.}}",
+  "whatsNew.optOutToast": "{platform, select, windows {Entendido, no más notas de actualización. Vuelve a activarlas cuando quieras en Configuración > Actualizaciones y privacidad.} other {Entendido, no más notas de actualización. Vuelve a activarlas cuando quieras en Configuración > Actualizaciones y privacidad.}}",
   "@whatsNew.optOutToast": {
-    "sourceHash": "5640cce"
+    "sourceHash": "0cf166b"
   }
 }

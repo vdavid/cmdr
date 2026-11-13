@@ -9,7 +9,7 @@
   },
   "main.upgradeNudge": "{platform, select, macos {Ми додали нові параметри до початкового налаштування. Відкрийте «Cmdr > Початкове налаштування…», щоб переглянути їх.} other {Ми додали нові параметри до початкового налаштування. Відкрийте палітру команд і виконайте «Початкове налаштування…», щоб переглянути їх.}}",
   "@main.upgradeNudge": {
-    "sourceHash": "439adfd"
+    "sourceHash": "b28cac1"
   },
   "main.dockPinNudge.title": "Закріпити Cmdr у Dock?",
   "@main.dockPinNudge.title": {
@@ -139,41 +139,41 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, =1 {Завершити, поки виконується операція?} one {Завершити, поки виконується {countText} операція?} few {Завершити, поки виконуються {countText} операції?} many {Завершити, поки виконується {countText} операцій?} other {Завершити, поки виконується {countText} операції?}}}}",
+  "main.quit.title": "{platform, select, windows {{count, plural, =1 {Вийти, поки виконується операція?} one {Вийти, поки виконується {countText} операція?} few {Вийти, поки виконуються {countText} операції?} many {Вийти, поки виконується {countText} операцій?} other {Вийти, поки виконується {countText} операції?}}} other {{count, plural, =1 {Завершити, поки виконується операція?} one {Завершити, поки виконується {countText} операція?} few {Завершити, поки виконуються {countText} операції?} many {Завершити, поки виконується {countText} операцій?} other {Завершити, поки виконується {countText} операції?}}}}",
   "@main.quit.title": {
-    "sourceHash": "2671a89"
+    "sourceHash": "a3f024b"
   },
   "main.quit.body": "Усе, що вже завершено, так і залишиться. Те, що ще записується, зупиниться там, де є, а все недописане Cmdr прибере.",
   "@main.quit.body": {
     "sourceHash": "79a69f9"
   },
-  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, one {Завершення через {secondsText} секунду, щоб перезапуск або вихід із системи ніколи не чекали на Cmdr.} few {Завершення через {secondsText} секунди, щоб перезапуск або вихід із системи ніколи не чекали на Cmdr.} many {Завершення через {secondsText} секунд, щоб перезапуск або вихід із системи ніколи не чекали на Cmdr.} other {Завершення через {secondsText} секунди, щоб перезапуск або вихід із системи ніколи не чекали на Cmdr.}}}}",
+  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Закриття через {secondsText} секунду, щоб перезапуск або вихід із системи ніколи не чекали на Cmdr.} few {Закриття через {secondsText} секунди, щоб перезапуск або вихід із системи ніколи не чекали на Cmdr.} many {Закриття через {secondsText} секунд, щоб перезапуск або вихід із системи ніколи не чекали на Cmdr.} other {Закриття через {secondsText} секунди, щоб перезапуск або вихід із системи ніколи не чекали на Cmdr.}}} other {{seconds, plural, one {Завершення через {secondsText} секунду, щоб перезапуск або вихід із системи ніколи не чекали на Cmdr.} few {Завершення через {secondsText} секунди, щоб перезапуск або вихід із системи ніколи не чекали на Cmdr.} many {Завершення через {secondsText} секунд, щоб перезапуск або вихід із системи ніколи не чекали на Cmdr.} other {Завершення через {secondsText} секунди, щоб перезапуск або вихід із системи ніколи не чекали на Cmdr.}}}}",
   "@main.quit.countdown": {
-    "sourceHash": "a389e0c"
+    "sourceHash": "e220441"
   },
-  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Час до автоматичного завершення Cmdr}}",
+  "main.quit.countdownAria": "{platform, select, windows {Час до автоматичного закриття Cmdr} other {Час до автоматичного завершення Cmdr}}",
   "@main.quit.countdownAria": {
-    "sourceHash": "6b0b5c2"
+    "sourceHash": "c9dd122"
   },
   "main.quit.keepWorking": "Продовжити роботу",
   "@main.quit.keepWorking": {
     "sourceHash": "5ed03f2"
   },
-  "main.quit.quitNow": "{platform, select, windows {Exit now} other {Завершити зараз}}",
+  "main.quit.quitNow": "{platform, select, windows {Вийти зараз} other {Завершити зараз}}",
   "@main.quit.quitNow": {
-    "sourceHash": "c96bcc8"
+    "sourceHash": "2895d9d"
   },
   "main.quit.operationsHeading": "Ще виконуються",
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "{platform, select, macos {Cmdr потрібна новіша версія Safari} other {Cmdr needs a newer WebKitGTK}}",
+  "main.oldWebkit.title": "{platform, select, macos {Cmdr потрібна новіша версія Safari} other {Cmdr потрібна новіша версія WebKitGTK}}",
   "@main.oldWebkit.title": {
-    "sourceHash": "03e502b"
+    "sourceHash": "760c868"
   },
-  "main.oldWebkit.body": "{platform, select, macos {Інтерфейсу Cmdr потрібен Safari 15.4 або новіший, а на цьому Mac стоїть старіша версія. Відкрийте «Оновлення ПЗ» й інсталюйте всі доступні оновлення. Це має допомогти.} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
+  "main.oldWebkit.body": "{platform, select, macos {Інтерфейсу Cmdr потрібен Safari 15.4 або новіший, а на цьому Mac стоїть старіша версія. Відкрийте «Оновлення ПЗ» й інсталюйте всі доступні оновлення. Це має допомогти.} other {Інтерфейсу Cmdr потрібна новіша версія WebKitGTK, ніж є на цьому компʼютері. Інсталюйте всі доступні оновлення системи. Це має допомогти.}}",
   "@main.oldWebkit.body": {
-    "sourceHash": "a7112ec"
+    "sourceHash": "200e524"
   },
   "main.oldMacos.title": "Cmdr на macOS {version}",
   "@main.oldMacos.title": {

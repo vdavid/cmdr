@@ -71,9 +71,9 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "{platform, select, macos {A Cmdrnek Teljes lemezhozzáférésre van szüksége a Letöltések mappa figyeléséhez.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "downloads.fda.message": "{platform, select, macos {A Cmdrnek Teljes lemezhozzáférésre van szüksége a Letöltések mappa figyeléséhez.} other {A Cmdr nem tudja figyelni a Letöltések mappádat. Ellenőrizd, hogy a mappa létezik-e, és hogy meg tudod-e nyitni.}}",
   "@downloads.fda.message": {
-    "sourceHash": "82c82c6"
+    "sourceHash": "dd37803"
   },
   "downloads.fda.dismiss": "Elvetés",
   "@downloads.fda.dismiss": {
@@ -131,9 +131,9 @@
   "@downloads.shortcutRow.unavailable": {
     "sourceHash": "8882532"
   },
-  "downloads.shortcutRow.addModifier": "{platform, select, macos {Adj hozzá egy módosítóbillentyűt (⌘, ⌃, ⌥ vagy ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Adj hozzá egy módosítóbillentyűt (⌘, ⌃, ⌥ vagy ⇧)} windows {Adj hozzá egy módosítóbillentyűt (Ctrl, Alt, Shift vagy Win)} other {Adj hozzá egy módosítóbillentyűt (Ctrl, Alt, Shift vagy Super)}}",
   "@downloads.shortcutRow.addModifier": {
-    "sourceHash": "28a5ba2"
+    "sourceHash": "a56bd6c"
   },
   "downloads.toggleDescription.bound": "Bármelyik appból a legutóbbi letöltésedhez ugrasz ezzel: {binding}.",
   "@downloads.toggleDescription.bound": {

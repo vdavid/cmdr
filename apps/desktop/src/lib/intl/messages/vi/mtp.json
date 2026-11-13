@@ -5,7 +5,8 @@
   },
   "mtp.connectedToast.body": "{platform, select, macos {Cmdr đã tạm dừng daemon máy ảnh của macOS (ptpcamerad) để truy cập thiết bị này. Để dùng nó trong ứng dụng khác, hãy tắt hỗ trợ MTP trong cài đặt.} windows {} other {Để dùng thiết bị này trong ứng dụng khác, hãy tắt hỗ trợ MTP trong cài đặt.}}",
   "@mtp.connectedToast.body": {
-    "sourceHash": "3ace37b"
+    "sourceHash": "74349d8",
+    "sameAsSourceJustification": "The windows branch is empty on purpose: Windows shares the device with File Explorer, so the toast has no body line there."
   },
   "mtp.connectedToast.dontShowAgain": "Không hiển thị lại",
   "@mtp.connectedToast.dontShowAgain": {
@@ -56,13 +57,13 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {Trên macOS, daemon hệ thống <code>ptpcamerad</code> tự động chiếm các thiết bị Android. Để khắc phục, hãy chạy lệnh sau trong Terminal (giữ cho nó chạy trong khi dùng Cmdr):} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {Trên macOS, daemon hệ thống <code>ptpcamerad</code> tự động chiếm các thiết bị Android. Để khắc phục, hãy chạy lệnh sau trong Terminal (giữ cho nó chạy trong khi dùng Cmdr):} windows {Một ứng dụng khác đang giữ điện thoại, và ứng dụng đó phải nhả ra thì Cmdr mới kết nối được.} other {Mỗi lúc chỉ một ứng dụng có thể trao đổi với điện thoại qua MTP, và môi trường máy tính để bàn của bạn thường gắn kết điện thoại ngay khi điện thoại được cắm vào.}}",
   "@mtp.ptpcameradDialog.explanation": {
-    "sourceHash": "65b6ee3"
+    "sourceHash": "08df74d"
   },
-  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Lệnh này liên tục dừng ptpcamerad trong khi chạy. Nhấn <key>Ctrl+C</key> trong Terminal để dừng nó khi xong.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Lệnh này liên tục dừng ptpcamerad trong khi chạy. Nhấn <key>Ctrl+C</key> trong Terminal để dừng nó khi xong.} windows {Hãy đóng ứng dụng đang dùng điện thoại, rồi thử lại.} other {Hãy bỏ gắn kết điện thoại trong trình quản lý tệp của bạn, rồi thử lại.}}",
   "@mtp.ptpcameradDialog.helpText": {
-    "sourceHash": "85b5060"
+    "sourceHash": "c44384e"
   },
   "mtp.ptpcameradDialog.close": "Đóng",
   "@mtp.ptpcameradDialog.close": {

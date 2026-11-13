@@ -24,9 +24,9 @@
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "{platform, select, macos {Cmdr 需要完全磁盘访问权限才能监视你的下载文件夹。<settingsLink>打开系统设置</settingsLink>} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "common.downloadsFdaHint": "{platform, select, macos {Cmdr 需要完全磁盘访问权限才能监视你的下载文件夹。<settingsLink>打开系统设置</settingsLink>} other {Cmdr 无法监视你的“下载”文件夹。请确认这个文件夹存在，并且你可以打开它。}}",
   "@common.downloadsFdaHint": {
-    "sourceHash": "315e1d8"
+    "sourceHash": "b54bf8b"
   },
   "common.sizeUnit.byte": "{count, plural, other {字节}}",
   "@common.sizeUnit.byte": {

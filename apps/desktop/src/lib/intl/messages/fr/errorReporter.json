@@ -172,9 +172,9 @@
   "@errorReporter.bundleSavedToast.dismiss": {
     "sourceHash": "48845bf"
   },
-  "errorReporter.bundleSavedToast.reveal": "{platform, select, macos {Afficher dans le Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "errorReporter.bundleSavedToast.reveal": "{platform, select, macos {Afficher dans le Finder} windows {Afficher dans l’Explorateur de fichiers} other {Afficher dans le gestionnaire de fichiers}}",
   "@errorReporter.bundleSavedToast.reveal": {
-    "sourceHash": "cc84938"
+    "sourceHash": "4d7fe91"
   },
   "errorReporter.autoSentToast.title": "Rapport d’incident envoyé",
   "@errorReporter.autoSentToast.title": {

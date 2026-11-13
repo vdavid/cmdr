@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Certains contenus restent chez vous, quoi qu’on demande : les clés SSH, les identifiants de cloud et d’outils, vos trousseaux, les données de navigateur, Mail, Messages, Notes, les données de Cmdr lui-même et tout fichier contenant une clé privée. Leurs noms peuvent quand même parvenir à votre fournisseur.} windows {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, Windows credentials, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Certains contenus restent chez vous, quoi qu’on demande : les clés SSH, les identifiants de cloud et d’outils, vos trousseaux, les données de navigateur, Mail, Messages, Notes, les données de Cmdr lui-même et tout fichier contenant une clé privée. Leurs noms peuvent quand même parvenir à votre fournisseur.} windows {Certains contenus restent chez vous, quoi qu’on demande : les clés SSH, les identifiants de cloud et d’outils, les informations d’identification Windows, les données de navigateur, les données de messagerie, les données de Cmdr lui-même et tout fichier contenant une clé privée. Leurs noms peuvent quand même parvenir à votre fournisseur.} other {Certains contenus restent chez vous, quoi qu’on demande : les clés SSH, les identifiants de cloud et d’outils, vos trousseaux, les données de navigateur, les données de messagerie, les données de Cmdr lui-même et tout fichier contenant une clé privée. Leurs noms peuvent quand même parvenir à votre fournisseur.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
-    "sourceHash": "048633f"
+    "sourceHash": "a533066"
   },
   "ai.cloudConsent.askCmdr.actions": "Dans une conversation que vous avez lancée, Ask Cmdr peut aussi piloter l’app pour vous : naviguer, sélectionner, trier, ouvrir des onglets et des boîtes de dialogue, et se connecter à un emplacement enregistré. Copier, déplacer, compresser, supprimer, renommer et revenir en arrière sur une opération ouvrent chacun une boîte de dialogue ou un éditeur à confirmer, et rien ne se passe tant que vous n’avez pas confirmé. Avant d’ouvrir un fichier, de modifier un réglage (sauf l’apparence de Cmdr), de quitter, d’éjecter un disque, de retirer un serveur ou de modifier l’indexation, Cmdr vous pose la question. Créer un dossier ou un fichier nommé et ajouter des tags à des fichiers se font immédiatement, sans question ; vous pouvez annuler une modification de tags. Les renommages et les rangements que Cmdr prépare sous forme de plan attendent votre approbation.",
   "@ai.cloudConsent.askCmdr.actions": {
@@ -159,13 +159,13 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Vos conversations Ask Cmdr restent sur votre Mac, dans une base de données locale que vous pouvez ouvrir et lire.} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Vos conversations Ask Cmdr restent sur votre Mac, dans une base de données locale que vous pouvez ouvrir et lire.} windows {Vos conversations Ask Cmdr restent sur votre PC, dans une base de données locale que vous pouvez ouvrir et lire.} other {Vos conversations Ask Cmdr restent sur votre ordinateur, dans une base de données locale que vous pouvez ouvrir et lire.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
-    "sourceHash": "283cdd7"
+    "sourceHash": "9557acc"
   },
-  "ai.cloudConsent.logsNote": "{platform, select, macos {Si vous activez « Journaliser les appels au modèle d’IA » dans les réglages avancés, Cmdr enregistre aussi chaque requête et réponse dans un dossier sur votre Mac. Ces journaux d’appels restent en local et ne sont jamais envoyés nulle part.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {Si vous activez « Journaliser les appels au modèle d’IA » dans les réglages avancés, Cmdr enregistre aussi chaque requête et réponse dans un dossier sur votre Mac. Ces journaux d’appels restent en local et ne sont jamais envoyés nulle part.} windows {Si vous activez « Journaliser les appels au modèle d’IA » dans les réglages avancés, Cmdr enregistre aussi chaque requête et réponse dans un dossier sur votre PC. Ces journaux d’appels restent en local et ne sont jamais envoyés nulle part.} other {Si vous activez « Journaliser les appels au modèle d’IA » dans les réglages avancés, Cmdr enregistre aussi chaque requête et réponse dans un dossier sur votre ordinateur. Ces journaux d’appels restent en local et ne sont jamais envoyés nulle part.}}",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "0178d1c"
+    "sourceHash": "e34c082"
   },
   "ai.cloudConsent.turnOffAnyTime": "Désactivez cette option à tout moment et Cmdr cesse aussitôt d’envoyer. Votre service, votre clé et vos conversations restent tels quels.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -528,29 +528,29 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.title": "{platform, select, macos {{op, select, save {Impossible d’enregistrer votre clé d’API : le Trousseau macOS a refusé l’accès} other {Impossible de lire votre clé d’API enregistrée : le Trousseau macOS a refusé l’accès}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {Impossible d’enregistrer votre clé d’API : le trousseau du système a refusé l’accès} other {Impossible de lire votre clé d’API enregistrée : le trousseau du système a refusé l’accès}}}}",
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {Impossible d’enregistrer votre clé d’API : le Trousseau macOS a refusé l’accès} other {Impossible de lire votre clé d’API enregistrée : le Trousseau macOS a refusé l’accès}}} windows {{op, select, save {Impossible d’enregistrer votre clé d’API : le Gestionnaire d’identification a refusé l’accès} other {Impossible de lire votre clé d’API enregistrée : le Gestionnaire d’identification a refusé l’accès}}} other {{op, select, save {Impossible d’enregistrer votre clé d’API : le trousseau du système a refusé l’accès} other {Impossible de lire votre clé d’API enregistrée : le trousseau du système a refusé l’accès}}}}",
   "@ai.secretError.title": {
-    "sourceHash": "2b2ef89"
+    "sourceHash": "25b34c4"
   },
-  "ai.secretError.body": "{platform, select, macos {{op, select, save {Ouvrez Trousseaux d’accès et vérifiez l’entrée « Cmdr », ou supprimez-la puis réessayez d’enregistrer.} other {Ouvrez Trousseaux d’accès, trouvez l’entrée « Cmdr », autorisez l’accès, ou supprimez-la puis saisissez de nouveau votre clé.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Déverrouillez votre trousseau (application Mots de passe ou Trousseaux) puis réessayez.}}",
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {Ouvrez Trousseaux d’accès et vérifiez l’entrée « Cmdr », ou supprimez-la puis réessayez d’enregistrer.} other {Ouvrez Trousseaux d’accès, trouvez l’entrée « Cmdr », autorisez l’accès, ou supprimez-la puis saisissez de nouveau votre clé.}}} windows {{op, select, save {Ouvrez le Gestionnaire d’identification, vérifiez l’entrée « Cmdr » sous Informations d’identification Windows, ou supprimez-la puis réessayez d’enregistrer.} other {Ouvrez le Gestionnaire d’identification, trouvez l’entrée « Cmdr » sous Informations d’identification Windows, ou supprimez-la puis saisissez de nouveau votre clé.}}} other {Déverrouillez votre trousseau (application Mots de passe ou Trousseaux) puis réessayez.}}",
   "@ai.secretError.body": {
-    "sourceHash": "8f1380e"
+    "sourceHash": "d65c5e3"
   },
   "ai.secretError.genericTitle": "{op, select, save {Impossible d’enregistrer votre clé d’API.} other {Impossible de lire votre clé d’API enregistrée.}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "c343e42"
   },
-  "ai.secretError.genericBody": "{platform, select, macos {Vérifiez que le trousseau de votre système est disponible, puis réessayez. Si le problème persiste, redémarrez l’application.} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {Vérifiez que le trousseau de votre système est disponible, puis réessayez. Si le problème persiste, redémarrez l’application.}}",
+  "ai.secretError.genericBody": "{platform, select, macos {Vérifiez que le trousseau de votre système est disponible, puis réessayez. Si le problème persiste, redémarrez l’application.} windows {Vérifiez que le Gestionnaire d’identification est disponible, puis réessayez. Si le problème continue, redémarrez Cmdr.} other {Vérifiez que le trousseau de votre système est disponible, puis réessayez. Si le problème persiste, redémarrez l’application.}}",
   "@ai.secretError.genericBody": {
-    "sourceHash": "2ee417d"
+    "sourceHash": "9fc0702"
   },
   "ai.secretError.removeTitle": "Impossible de retirer votre clé d’API enregistrée.",
   "@ai.secretError.removeTitle": {
     "sourceHash": "5986628"
   },
-  "ai.secretError.removeBody": "{platform, select, macos {Ouvrez Trousseaux d’accès, trouvez l’entrée « Cmdr » et supprimez-la.} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {Déverrouillez votre trousseau (application Mots de passe ou Trousseaux) puis réessayez.}}",
+  "ai.secretError.removeBody": "{platform, select, macos {Ouvrez Trousseaux d’accès, trouvez l’entrée « Cmdr » et supprimez-la.} windows {Ouvrez le Gestionnaire d’identification, trouvez l’entrée « Cmdr » sous Informations d’identification Windows et supprimez-la.} other {Déverrouillez votre trousseau (application Mots de passe ou Trousseaux) puis réessayez.}}",
   "@ai.secretError.removeBody": {
-    "sourceHash": "4e3abe7"
+    "sourceHash": "3a85511"
   },
   "ai.managed.aiOff": "Votre organisation a désactivé l’IA dans Cmdr.",
   "@ai.managed.aiOff": {
@@ -564,9 +564,9 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Votre organisation n’autorise que l’IA en local, et ce Mac ne peut pas l’exécuter.} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Votre organisation n’autorise que l’IA en local, et ce Mac ne peut pas l’exécuter.} windows {Votre organisation n’autorise que l’IA en local, et ce PC ne peut pas l’exécuter.} other {Votre organisation n’autorise que l’IA en local, et cet ordinateur ne peut pas l’exécuter.}}",
   "@ai.managed.localOnlyUnsupported": {
-    "sourceHash": "b760ca4"
+    "sourceHash": "b468f8f"
   },
   "ai.managed.serviceNotAllowed": "non autorisé par votre organisation",
   "@ai.managed.serviceNotAllowed": {

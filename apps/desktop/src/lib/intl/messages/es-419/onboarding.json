@@ -55,9 +55,9 @@
   "@onboarding.stepAi.local.note": {
     "sourceHash": "11042b5"
   },
-  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {You’ve turned on AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Select “{nextLabel}” again to ignore this and go on.</strong>} other {Activaste la IA pero no ingresaste ninguna clave de API. La IA no funcionará y verás un aviso. Corrígelo arriba.\n\n<strong>Haz clic en “{nextLabel}” otra vez para ignorarlo y continuar.</strong>}}",
+  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {Activaste la IA pero no ingresaste ninguna clave de API. La IA no funcionará y verás un aviso. Corrígelo arriba.\n\n<strong>Selecciona “{nextLabel}” otra vez para ignorarlo y continuar.</strong>} other {Activaste la IA pero no ingresaste ninguna clave de API. La IA no funcionará y verás un aviso. Corrígelo arriba.\n\n<strong>Haz clic en “{nextLabel}” otra vez para ignorarlo y continuar.</strong>}}",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "9fa39ca"
+    "sourceHash": "fbd63e1"
   },
   "onboarding.stepAi.cloudConsentOffNote": "La IA en la nube seguirá desactivada hasta que la permitas. Puedes hacerlo más tarde en Configuración > IA.",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -75,9 +75,9 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "eea1d1d"
   },
-  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Los reportes de fallos también están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de macOS y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivar ambas cosas en Configuración cuando quieras.} windows {Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.} other {Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.}}",
+  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Los reportes de fallos también están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de macOS y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivar ambas cosas en Configuración cuando quieras.} windows {Los reportes de fallos también están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de Windows y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivar ambas cosas en Configuración cuando quieras.} other {Los reportes de fallos también están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu distribución de Linux y su versión, y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivar ambas cosas en Configuración cuando quieras.}}",
   "@onboarding.stepBeta.crashReportsNote": {
-    "sourceHash": "7d25210"
+    "sourceHash": "406349b"
   },
   "onboarding.stepBeta.signup.failure": "Vaya, no pudimos darte de alta ahora mismo. ¿Lo intentas de nuevo?",
   "@onboarding.stepBeta.signup.failure": {
@@ -87,29 +87,33 @@
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "7aed43d"
   },
-  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {No se pudo acceder al servidor de altas ahora mismo, así que todavía no estás en la lista. Tu dirección está guardada en este Mac: vuelve a hacer clic en Guardar dentro de un minuto, o cuando quieras desde Configuración › Actualizaciones y privacidad.} windows {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this PC: hit Save again in a minute, or any time from Settings › Updates & privacy.} other {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this computer: hit Save again in a minute, or any time from Settings › Updates & privacy.}}",
+  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {No se pudo acceder al servidor de altas ahora mismo, así que todavía no estás en la lista. Tu dirección está guardada en este Mac: vuelve a hacer clic en Guardar dentro de un minuto, o cuando quieras desde Configuración › Actualizaciones y privacidad.} windows {No se pudo acceder al servidor de altas ahora mismo, así que todavía no estás en la lista. Tu dirección está guardada en este PC: vuelve a hacer clic en Guardar dentro de un minuto, o cuando quieras desde Configuración › Actualizaciones y privacidad.} other {No se pudo acceder al servidor de altas ahora mismo, así que todavía no estás en la lista. Tu dirección está guardada en esta computadora: vuelve a hacer clic en Guardar dentro de un minuto, o cuando quieras desde Configuración › Actualizaciones y privacidad.}}",
   "@onboarding.stepBeta.signup.unreachable": {
-    "sourceHash": "18378ab"
+    "sourceHash": "d8df085"
   },
-  "onboarding.stepOptional.lede": "{platform, select, windows {You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, select the button below. All of these are optional, and the defaults are picked for your benefit.} other {Elegiste pasar por una configuración detallada, así que aquí tienes unas cuantas decisiones rápidas. Si no te importan demasiado, haz clic en el botón de abajo. Todas son opcionales, y los valores predeterminados están elegidos pensando en ti.}}",
+  "onboarding.stepBeta.emailNote": "{platform, select, macos {Déjame tu correo y te escribiré con alguna pregunta o novedad de vez en cuando.\nLa dirección de correo que pongas aquí se guarda solo en tu Mac y nunca se vincula a tus estadísticas de uso; son dos subsistemas intencionadamente separados.} windows {Déjame tu correo y te escribiré con alguna pregunta o novedad de vez en cuando.\nLa dirección de correo que pongas aquí se guarda solo en tu PC y nunca se vincula a tus estadísticas de uso; son dos subsistemas intencionadamente separados.} other {Déjame tu correo y te escribiré con alguna pregunta o novedad de vez en cuando.\nLa dirección de correo que pongas aquí se guarda solo en tu computadora y nunca se vincula a tus estadísticas de uso; son dos subsistemas intencionadamente separados.}}",
+  "@onboarding.stepBeta.emailNote": {
+    "sourceHash": "3697298"
+  },
+  "onboarding.stepOptional.lede": "{platform, select, windows {Elegiste pasar por una configuración detallada, así que aquí tienes unas cuantas decisiones rápidas. Si no te importan demasiado, selecciona el botón de abajo. Todas son opcionales, y los valores predeterminados están elegidos pensando en ti.} other {Elegiste pasar por una configuración detallada, así que aquí tienes unas cuantas decisiones rápidas. Si no te importan demasiado, haz clic en el botón de abajo. Todas son opcionales, y los valores predeterminados están elegidos pensando en ti.}}",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "1648c26"
+    "sourceHash": "2a9fc4f"
   },
   "onboarding.stepOptional.changeAnytime": "Puedes cambiarlo cuando quieras en Configuración.",
   "@onboarding.stepOptional.changeAnytime": {
     "sourceHash": "cf9851e"
   },
-  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Tener esto <em>activado</em> significa que puedes conectarte a servidores SMB como recursos compartidos de una empresa, un NAS doméstico y similares.\nEl único costo es un diálogo de permiso de macOS que aparece y te pide permitir la “Red local”, y otro para “Aceptar conexiones entrantes”.\nAmbos diálogos son inofensivos, pero si no sabes qué son, pueden dar miedo o resultar molestos.} windows {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nWindows may ask once whether to let Cmdr through its firewall.} other {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.}}",
+  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Tener esto <em>activado</em> significa que puedes conectarte a servidores SMB como recursos compartidos de una empresa, un NAS doméstico y similares.\nEl único costo es un diálogo de permiso de macOS que aparece y te pide permitir la “Red local”, y otro para “Aceptar conexiones entrantes”.\nAmbos diálogos son inofensivos, pero si no sabes qué son, pueden dar miedo o resultar molestos.} windows {Tener esto <em>activado</em> significa que puedes conectarte a servidores SMB como recursos compartidos de una empresa, un NAS doméstico y similares.\nPuede que Windows pregunte una vez si quieres dejar pasar a Cmdr por su firewall.} other {Tener esto <em>activado</em> significa que puedes conectarte a servidores SMB como recursos compartidos de una empresa, un NAS doméstico y similares.}}",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "a709d41"
+    "sourceHash": "42c1693"
   },
   "onboarding.stepOptional.indexing.descCost": "Si lo desactivas, solo obtienes <code>{dirPlaceholder}</code> en lugar de los tamaños.\nEl costo es alrededor de 1 GB de índice en tu unidad para unos pocos millones de archivos, pero ningún uso extra de CPU ni de memoria tras los primeros 2–3 minutos al iniciar la app por primera vez, o al iniciarla después de mucho tiempo.\nEs una función barata teniendo en cuenta las ventajas.",
   "@onboarding.stepOptional.indexing.descCost": {
     "sourceHash": "882c73b"
   },
-  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Si activas esto, Cmdr puede <strong>conectarse a teléfonos Android, Kindles, cámaras</strong>, algunos reproductores de música y cualquier otro dispositivo compatible con los protocolos llamados MTP o PTP.\nEl costo es que macOS <em>también</em> quiere conectarse a estos (y no suele conseguirlo, por eso no puedes usar simplemente el Finder para copiar fotos de teléfonos Android), así que Cmdr tiene que suprimir ese proceso de macOS mientras se ejecuta.\nCuando sales de Cmdr, se restaura con cuidado.} windows {If you turn this on, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.} other {If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nYour desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first.}}",
+  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Si activas esto, Cmdr puede <strong>conectarse a teléfonos Android, Kindles, cámaras</strong>, algunos reproductores de música y cualquier otro dispositivo compatible con los protocolos llamados MTP o PTP.\nEl costo es que macOS <em>también</em> quiere conectarse a estos (y no suele conseguirlo, por eso no puedes usar simplemente el Finder para copiar fotos de teléfonos Android), así que Cmdr tiene que suprimir ese proceso de macOS mientras se ejecuta.\nCuando sales de Cmdr, se restaura con cuidado.} windows {Si activas esto, Cmdr puede <strong>conectarse a teléfonos Android, Kindles, cámaras</strong>, algunos reproductores de música y cualquier otro dispositivo compatible con los protocolos llamados MTP o PTP.} other {Si activas esto, Cmdr puede <strong>conectarse a teléfonos Android, Kindles, cámaras</strong>, algunos reproductores de música y cualquier otro dispositivo compatible con los protocolos llamados MTP o PTP.\nTu escritorio también puede intentar abrir estos dispositivos; si uno parece ocupado, desmóntalo primero en tu administrador de archivos.}}",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "a9124a0"
+    "sourceHash": "2c4923a"
   },
   "onboarding.cloudSetup.status.authError": "Esa clave no funcionó",
   "@onboarding.cloudSetup.status.authError": {
@@ -127,9 +131,9 @@
   "@onboarding.stepBeta.analyticsManaged": {
     "sourceHash": "44f4b62"
   },
-  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Los reportes de fallos están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de macOS y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivarlos en Configuración cuando quieras.} windows {Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.} other {Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.}}",
+  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Los reportes de fallos están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de macOS y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivarlos en Configuración cuando quieras.} windows {Los reportes de fallos están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de Windows y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivarlos en Configuración cuando quieras.} other {Los reportes de fallos están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu distribución de Linux y su versión, y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivarlos en Configuración cuando quieras.}}",
   "@onboarding.stepBeta.crashReportsNoteAlone": {
-    "sourceHash": "4351643"
+    "sourceHash": "a326da8"
   },
   "onboarding.localDownloadFailed.title": "El modelo de IA local no terminó de descargarse",
   "@onboarding.localDownloadFailed.title": {

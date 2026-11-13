@@ -63,13 +63,13 @@
   "@suggestedOps.action.copy": {
     "sourceHash": "e21f935"
   },
-  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Přesunout do koše}}",
+  "suggestedOps.action.trash": "{platform, select, windows {Smazat} other {Přesunout do koše}}",
   "@suggestedOps.action.trash": {
-    "sourceHash": "9adcdf3"
+    "sourceHash": "d4f0678"
   },
-  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {Smazat}}",
+  "suggestedOps.action.delete": "{platform, select, windows {Smazat trvale} other {Smazat}}",
   "@suggestedOps.action.delete": {
-    "sourceHash": "e2d0a54"
+    "sourceHash": "45efa80"
   },
   "suggestedOps.action.rename": "Přejmenovat",
   "@suggestedOps.action.rename": {
@@ -96,13 +96,13 @@
   "@suggestedOps.approve.copy": {
     "sourceHash": "e10c490"
   },
-  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {Přesunout {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}} do koše}}",
+  "suggestedOps.approve.trash": "{platform, select, windows {Smazat {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}} other {Přesunout {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}} do koše}}",
   "@suggestedOps.approve.trash": {
-    "sourceHash": "3c82946"
+    "sourceHash": "fa0db8d"
   },
-  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {Smazat {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}}}",
+  "suggestedOps.approve.delete": "{platform, select, windows {Trvale smazat {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}} other {Smazat {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}}}",
   "@suggestedOps.approve.delete": {
-    "sourceHash": "218cf04"
+    "sourceHash": "cfb3b70"
   },
   "suggestedOps.approve.rename": "Přejmenovat {countText} {count, plural, one {soubor} few {soubory} many {souboru} other {souborů}}",
   "@suggestedOps.approve.rename": {
@@ -144,17 +144,17 @@
   "@suggestedOps.facts.archive": {
     "sourceHash": "66f4804"
   },
-  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Koš}}",
+  "suggestedOps.facts.trash": "{platform, select, windows {Koš} other {Koš}}",
   "@suggestedOps.facts.trash": {
-    "sourceHash": "4e42c6e"
+    "sourceHash": "7b1fc0a"
   },
   "suggestedOps.facts.severalFolders": "Několik složek",
   "@suggestedOps.facts.severalFolders": {
     "sourceHash": "7c32950"
   },
-  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Dá se to odvolat: {count, plural, one {soubor jde} few {soubory jdou} many {soubory jdou} other {soubory jdou}} do koše}}",
+  "suggestedOps.reversible.trash": "{platform, select, windows {Dá se to odvolat: {count, plural, one {soubor jde} few {soubory jdou} many {soubory jdou} other {soubory jdou}} do koše} other {Dá se to odvolat: {count, plural, one {soubor jde} few {soubory jdou} many {soubory jdou} other {soubory jdou}} do koše}}",
   "@suggestedOps.reversible.trash": {
-    "sourceHash": "55bf957"
+    "sourceHash": "e42e327"
   },
   "suggestedOps.reversible.moveBack": "Dá se to odvolat: Cmdr {count, plural, one {ho} few {je} many {je} other {je}} může přesunout zpět",
   "@suggestedOps.reversible.moveBack": {
@@ -180,13 +180,13 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {Tento disk nemá koš}}",
+  "suggestedOps.noTrash": "{platform, select, windows {Tato jednotka nemá koš} other {Tento disk nemá koš}}",
   "@suggestedOps.noTrash": {
-    "sourceHash": "38a6adc"
+    "sourceHash": "31f0f36"
   },
-  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {Disk, na kterém tyto soubory jsou, nemá koš, takže je schválením trvale smažete.}}",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {Jednotka, na které tyto soubory jsou, nemá koš, takže je schválením trvale smažete.} other {Disk, na kterém tyto soubory jsou, nemá koš, takže je schválením trvale smažete.}}",
   "@suggestedOps.noTrashTooltip": {
-    "sourceHash": "4327cb2"
+    "sourceHash": "e13c954"
   },
   "suggestedOps.irreversible.overwrite": "Nedá se to odvolat: nahradí existující archiv",
   "@suggestedOps.irreversible.overwrite": {
@@ -438,9 +438,9 @@
   "@suggestedOps.server.sharesAffected": {
     "sourceHash": "390f931"
   },
-  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {Čekají návrhy od AI. Klikněte a posuďte je.}}",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {Čekají návrhy od AI. Vyberte a posuďte je.} other {Čekají návrhy od AI. Klikněte a posuďte je.}}",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "4508b0b"
+    "sourceHash": "3c813c4"
   },
   "suggestedOps.newNameTaken": "Název je už obsazený",
   "@suggestedOps.newNameTaken": {

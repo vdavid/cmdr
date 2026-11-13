@@ -227,7 +227,7 @@ A `###` section whose `##` parent also matches is left out, since the parent's b
 
 ## Tooling
 
-### `pnpm i18n:brief` (`apps/desktop/scripts/i18n-brief.ts`, assembly in `i18n-brief-lib.ts`, key selection in `i18n-brief-select.ts`, memory in `i18n-brief-memory.ts`, the per-OS key note in `i18n-brief-per-os.ts`, the run-directory and frozen-macOS notes in `i18n-brief-run.ts`)
+### `pnpm i18n:brief` (`apps/desktop/scripts/i18n-brief.ts`, assembly in `i18n-brief-lib.ts`, key selection in `i18n-brief-select.ts`, memory in `i18n-brief-memory.ts`, the per-OS key note in `i18n-brief-per-os.ts`, the word diff and current-value lines in `i18n-brief-changes.ts`, the run-directory and frozen-macOS notes in `i18n-brief-run.ts`)
 
 - `--lang nl` | `--lang nl,de` | `--lang all` (every full translation; overlays are refused).
 - Key selectors, which narrow each other when combined: `--keys a.b.c,servers.sheet.*` (exact keys or `*` globs; a
@@ -273,7 +273,11 @@ Sections, each selected by the batch:
    words, and words fewer than three English keys use (a concept recurs). That line is how a missing concept ("offline")
    shows up as work instead of passing for settled. A search keyword list gets a one-line note instead (§ Search keyword
    lists below). A per-OS value gets a note naming which OS reads each of its branches, that OS's pile folders, and
-   which branch macOS reads (its translation stays).
+   which branch macOS reads (its translation stays). A per-OS batch says each repeated thing once
+   (`i18n-brief-changes.ts` and the two note modules): the per-OS and frozen-macOS notes are full on the first key that
+   carries each and one line after, an English that only became a block says which branch is the old text where the diff
+   would repeat the value, and a half-done value shows only its translated branches. Why: every model turn re-reads the
+   brief, and an 88-key per-OS batch went from about 108k to 81k tokens (2026-11-13).
    - Regional overlays, when a target language has one (`es-419` for `es`): the batch keys it already forks (values
      withheld in a blind run), that a value using a form it replaces needs a fork, and the
      `pnpm i18n:apply --lang <overlay>` call that writes a fork stamped with the hash of the base value it overrides.

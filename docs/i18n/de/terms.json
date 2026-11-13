@@ -623,7 +623,8 @@
       "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "the check running now is der gerade laufende Durchlauf, the catalog word for a full check",
       "indexing.step.findFilesChangeCheck": "check against the index → mit dem Index verglichen, deliberately plain vergleichen over database-register abgleichen",
       "onboarding.stepOptional.updates.summary": "a tiny check → eine winzige Anfrage; the one-line summary has no room for a verb",
-      "updates.status.checking": "Checking for updates → Wird gesucht …, the macOS Software Update idiom (Nach Updates suchen)"
+      "updates.status.checking": "Checking for updates → Wird gesucht …, the macOS Software Update idiom (Nach Updates suchen)",
+      "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "the full check is the scheduled full scan: vollständiger Durchlauf, like its siblings tooltipCoalesced and tooltipCoalescedCheckRunning"
     },
     "forms": "Checking … (a connection, a key) → Wird geprüft …; Checking for updates → Nach Updates suchen (macOS Software Update idiom); Checking for changes → Prüfung auf Änderungen; Re-check → Erneut prüfen; Verifying before copy → Prüfung vor dem Kopieren",
     "sources": "macOS Finder (BN9 Inhalt von „^0“ überprüfen); SoftwareUpdate (Check Again → Erneut prüfen)"
@@ -1014,7 +1015,11 @@
     ],
     "chosen": "Anmeldedaten",
     "confidence": "high",
-    "sources": "MS terminology (Anmeldeinfos), catalog"
+    "sources": "MS terminology (Anmeldeinfos), catalog",
+    "exceptions": {
+      "ai.secretError.body": "Windows branch quotes Windows' own names Anmeldeinformationsverwaltung and „Windows-Anmeldeinformationen“ (MS TBX Credential Manager).",
+      "ai.secretError.removeBody": "Windows branch quotes Windows' own names Anmeldeinformationsverwaltung and „Windows-Anmeldeinformationen“ (MS TBX Credential Manager)."
+    }
   },
   "current-folder": {
     "accept": ["aktuellen Ordner", "aktueller Ordner"],
@@ -1153,7 +1158,7 @@
     "sources": "macOS Finder, MS terminology"
   },
   "disconnect": {
-    "accept": ["getrennt", "trenne"],
+    "accept": ["getrennt", "trenne", "trennt"],
     "avoid": [
       {
         "form": "aushängen",
@@ -2017,7 +2022,11 @@
     "chosen": "Objekt",
     "confidence": "high",
     "forms": "neuter: weiteres Objekt / weitere Objekte; a sentence that refers back to {name} repeats das Objekt, never a pronoun",
-    "sources": "macOS Finder (Ausgewählte Objekte, Objekte komprimieren; PE82)"
+    "sources": "macOS Finder (Ausgewählte Objekte, Objekte komprimieren; PE82)",
+    "exceptions": {
+      "settings.dataWipe.leftover.secretItems": "one saved entry in a password store, not a file: Eintrag, as Keychain Access and the macOS text say",
+      "settings.dataWipe.leftover.secretsUnreadable": "saved entries in a password store, not files: Einträge, as Keychain Access and the macOS text say"
+    }
   },
   "just-now": {
     "accept": ["gerade"],
@@ -2261,7 +2270,8 @@
     "chosen": "einbinden",
     "confidence": "high",
     "exceptions": {
-      "updates.moveToApplicationsDialog.readOnlyVolume": "a disk image that’s still mounted → einem noch geöffneten Image, the catalog’s settled phrase"
+      "updates.moveToApplicationsDialog.readOnlyVolume": "a disk image that’s still mounted → einem noch geöffneten Image, the catalog’s settled phrase",
+      "mtp.ptpcameradDialog.helpText": "TODO: Linux branch should say hänge … aus (unmount); outside this batch, flagged for the next de per-OS pass."
     },
     "forms": "a mounted share → eine eingebundene Freigabe; unmount → aushängen; force-unmount → zwangsweise aushängen",
     "sources": "macOS Finder (eingebunden/einbinden); MS (Einbinden)"
@@ -2282,7 +2292,9 @@
       "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "putting files back where they were is zurücklegen (style digest), like its sibling bodyUndoByMovingBack",
       "operationLog.rollback.rollbackableNoticeMoveBack": "putting files back where they were is zurücklegen (style digest), like rollbackConfirm.bodyUndoByMovingBack",
       "operationLog.tree.statusMovedBack": "moved back where it came from is zurücklegen (style digest): Zurückgelegt",
-      "suggestedOps.reversible.moveBack": "putting files back where they were is zurücklegen (style digest), like the trash undo's Zurücklegen"
+      "suggestedOps.reversible.moveBack": "putting files back where they were is zurücklegen (style digest), like the trash undo's Zurücklegen",
+      "stateRecovery.credentials.body": "Moving to a new PC is relocating to new hardware (Umzug), not the F6 move.",
+      "fileOperations.transferProgress.scanTitleTrash": "Windows branch counts items headed for the Recycle Bin (für den Papierkorb); German Windows names the action Löschen, so no move verb fits."
     },
     "forms": "button Bewegen; progress Wird bewegt; the one move as a noun → die Bewegung, the act → das Bewegen; moves as an enumerated noun has no German noun, so enumerate verbs (umzubenennen, zu bewegen und aufzuräumen)",
     "note": "Don't use bewegen for a message that also covers copying and deleting: say Vorgang there.",
@@ -3412,7 +3424,15 @@
   "startup-disk": {
     "chosen": "Startvolume",
     "confidence": "high",
-    "sources": "macOS Finder Get Info (Startvolume:, f82-Dg-tGh)"
+    "sources": "macOS Finder Get Info (Startvolume:, f82-Dg-tGh)",
+    "windows": {
+      "chosen": "Systemlaufwerk",
+      "note": "MS TBX system drive → Systemlaufwerk."
+    },
+    "other": {
+      "chosen": "Systemlaufwerk",
+      "note": "Xfce Thunar System Drive → Systemlaufwerk (de/xfce-thunar/thunar.po); MS's Systemdatenträger is Windows disk-management jargon."
+    }
   },
   "status": {
     "accept": ["-status", "Statusseite", "Zustand"],
@@ -3507,7 +3527,10 @@
     "confidence": "high",
     "decision": "Die Bereichsnamen kommen jetzt vom Mac des Nutzers",
     "note": "Usually a runtime placeholder; a preposition may precede it, an article can't (Öffne {system_settings} und …).",
-    "sources": "macOS"
+    "sources": "macOS",
+    "exceptions": {
+      "settings.appearance.themeColorSwatchAria": "the Linux branch names the desktop's own settings generically (deine System-Einstellungen), not the macOS app, matching appColorHintLink"
+    }
   },
   "system-settings-pane": {
     "accept": ["Anmeldeobjekte"],
@@ -3728,7 +3751,14 @@
     "chosen": "Taste",
     "confidence": "high",
     "decision": "SMB-Fallback-Hinweis: die Freigabe hängt an der Systemverbindung",
-    "sources": "macOS de; catalog (Klicke unten auf die Taste „+“ …)"
+    "sources": "macOS de; catalog (Klicke unten auf die Taste „+“ …)",
+    "windows": {
+      "chosen": "Schaltfläche",
+      "note": "German Windows names an on-screen button Schaltfläche (MS TBX button → Schaltfläche), with Windows' select verb: Wähle … die Schaltfläche … aus."
+    },
+    "exceptions": {
+      "fileOperations.delete.cloudOnlineOnlyHandedBack": "TODO: windows branch should say Schaltfläche and wähle … aus; outside this batch, flagged for the next de per-OS pass."
+    }
   },
   "undo": {
     "accept": ["widerrufen", "rückgängig", "zurückgesetzt", "zurücksetz", "zurückgelegt", "zurückzulegen", "zurückn"],
@@ -3742,7 +3772,12 @@
     "confidence": "high",
     "decision": "Papierkorb-Toast: Widerrufen und Zurücklegen",
     "forms": "the Undo button and menu item → Widerrufen (Redo → Wiederholen); undoing a rename run in prose → zurücksetzen",
-    "sources": "macOS AppKit MenuCommands (Undo Smart Dash → Intelligenten Bindestrich widerrufen)"
+    "sources": "macOS AppKit MenuCommands (Undo Smart Dash → Intelligenten Bindestrich widerrufen)",
+    "windows": {
+      "chosen": "rückgängig machen",
+      "accept": ["rückgängig"],
+      "note": "German Windows and File Explorer say Rückgängig machen (Ctrl+Z), never Widerrufen: Löschen rückgängig machen, Löschen von „{name}“ rückgängig machen."
+    }
   },
   "unexpected": {
     "accept": ["schiefgelaufen", "auf ein Problem gestoßen", "Unerwartet"],
@@ -3825,7 +3860,8 @@
       "settings.indexing.silencedDrives.description": "„the user“ is implied by the participle (markiert, stummgeschaltet, aktiviert), so no personal noun is needed",
       "settings.mediaIndex.alwaysIndexFolders.description": "„the user“ is implied by the participle (markiert, stummgeschaltet, aktiviert), so no personal noun is needed",
       "settings.mediaIndex.alwaysIndexVolumes.description": "„the user“ is implied by the participle (markiert, stummgeschaltet, aktiviert), so no personal noun is needed",
-      "settings.mediaIndex.networkVolumes.description": "„the user“ is implied by the participle (markiert, stummgeschaltet, aktiviert), so no personal noun is needed"
+      "settings.mediaIndex.networkVolumes.description": "„the user“ is implied by the participle (markiert, stummgeschaltet, aktiviert), so no personal noun is needed",
+      "goToPath.dialog.inputPlaceholder": "C:\\Users is a literal path example, not prose."
     },
     "forms": "user ID → Benutzer-ID, group ID → Gruppen-ID (beside it); a server or macOS account in a compound → Benutzer- (Benutzername, Benutzerkonto); a person → rephrase to du or a neutral noun, never Apple’s Benutzer:in",
     "sources": "Microsoft terminology (Benutzer-ID 126624, Gruppen-ID 232983); catalog (Benutzername, Benutzerkonto); macOS writes Benutzer:in for people, which the style guide rules out"
@@ -4512,5 +4548,78 @@
     "forms": "masculine: dein Benutzerordner, deinen Benutzerordner",
     "note": "The folder under C:\\Benutzer. No pile hit (the TBX has no user folder); Benutzerordner is also what Finder's Go > Home says, so the word is familiar on both systems.",
     "sources": "no pile hit (pnpm i18n:pile --term \"user folder\", 2026-11-13); built from MS TBX user → Benutzer and folder → Ordner"
+  },
+  "credential-manager": {
+    "chosen": "Anmeldeinformationsverwaltung",
+    "confidence": "high",
+    "forms": "feminine, takes the article: in der Anmeldeinformationsverwaltung, aus der Anmeldeinformationsverwaltung",
+    "sources": "de/microsoft-terminology/GERMAN.tbx (Credential Manager → Anmeldeinformationsverwaltung)"
+  },
+  "app-closes": {
+    "chosen": "wird geschlossen",
+    "confidence": "tentative",
+    "accept": ["geschlossen"],
+    "forms": "Cmdr closes afterwards → Danach wird Cmdr geschlossen; then closes → und wird dann geschlossen; after Cmdr closes → nachdem Cmdr geschlossen wurde",
+    "sources": "no exact pile hit; German Windows narrates an app closing in the passive (… wird geschlossen), MS TBX close → schließen"
+  },
+  "lock": {
+    "chosen": "sperren",
+    "confidence": "high",
+    "accept": ["gesperrt", "sperrt"],
+    "sources": "catalog fileExplorer.restic.forgetPassword.keychainKeptIt (macOS text: vorerst gesperrt); commands.resticForgetPassword.description (sperrt das Backup wieder)"
+  },
+  "appearance": {
+    "chosen": "Erscheinungsbild",
+    "confidence": "high",
+    "sources": "macOS Systemeinstellungen pane Erscheinungsbild; catalog settings.appearance.appColor.description"
+  },
+  "language": {
+    "chosen": "Sprache",
+    "confidence": "high",
+    "forms": "Windows display language → Windows-Anzeigesprache (built from MS Anzeigesprache, no exact pile hit)",
+    "sources": "catalog settings.appearance.language.description (macOS text)",
+    "accept": ["Sprachmodell", "Anzeigesprache"]
+  },
+  "linux-distribution": {
+    "chosen": "Distribution",
+    "confidence": "high",
+    "forms": "Linux distribution → Linux-Distribution",
+    "sources": "everyday German Linux usage; the MS TBX Verteilung is the logistics sense"
+  },
+  "open-beta": {
+    "chosen": "offene Beta",
+    "confidence": "high",
+    "accept": ["offenen Beta"],
+    "sources": "catalog settings.analytics.enabled.description (other branch)"
+  },
+  "personal-data": {
+    "chosen": "persönliche Daten",
+    "confidence": "high",
+    "sources": "catalog settings.updates.crashReports.description (macOS text)",
+    "accept": ["persönlichen Daten", "Private Angaben"]
+  },
+  "prompt": {
+    "chosen": "Prompt",
+    "confidence": "high",
+    "accept": ["Prompts", "Abfrage", "Systemabfrage", "Indizierungsabfrage", "Laufwerksabfragen", "Frage"],
+    "forms": "the AI sense stays Prompt; a system dialog asking something → Abfrage / fragt",
+    "sources": "catalog settings.analytics.enabled.description (other branch)"
+  },
+  "detect": {
+    "chosen": "erkennen",
+    "confidence": "high",
+    "accept": ["erkannt", "Erkennt"],
+    "sources": "catalog fileExplorer.network.share.credentialsStoredLocally (kein System-Schlüsselbund erkannt)"
+  },
+  "accent": {
+    "chosen": "Akzent",
+    "confidence": "tentative",
+    "accept": ["Akzente", "Akzentzeichen"],
+    "sources": "standard German orthography term for a diacritic (é: Akzent); no pile mining done for this sense yet",
+    "exceptions": {
+      "settings.appearance.appColor.description": "accent color is the system color (Akzentfarbe), not a diacritic",
+      "settings.appearance.themeColorSwatchAria": "accent color is the system color (Akzentfarbe), not a diacritic",
+      "settings.appearance.appColorHintPrefix": "accent color is the system color (Akzentfarbe), not a diacritic"
+    }
   }
 }

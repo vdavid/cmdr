@@ -7,9 +7,9 @@
   "@crashReporter.dialog.title.report": {
     "sourceHash": "d8b86d2"
   },
-  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this.} other {A Cmdr legutóbb váratlanul bezárult. Itt egy összeomlási jelentés a részletekkel, ami segíthet ezt kijavítani.}}",
+  "crashReporter.dialog.body.ended": "{platform, select, windows {A Cmdr legutóbb váratlanul bezárult. Itt egy összeomlási jelentés a részletekkel, ami segíthet ezt kijavítani.} other {A Cmdr legutóbb váratlanul bezárult. Itt egy összeomlási jelentés a részletekkel, ami segíthet ezt kijavítani.}}",
   "@crashReporter.dialog.body.ended": {
-    "sourceHash": "d67f8cb"
+    "sourceHash": "818d510"
   },
   "crashReporter.dialog.body.keptRunning": "A Cmdr legutóbb a háttérben problémába ütközött, és tovább futott. Itt egy jelentés a részletekkel, ami segíthet ezt kijavítani.",
   "@crashReporter.dialog.body.keptRunning": {
@@ -19,9 +19,9 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "bed6934"
   },
-  "crashReporter.dialog.privacyNote": "{platform, select, macos {Tartalmazza az app verzióját, a macOS verzióját, és hogy a kód melyik része ütközött a problémába. Fájlnevek és személyes adatok nélkül.} windows {It includes the app version, Windows version, and which part of the code ran into the problem. No file names or personal data.} other {It includes the app version, Linux distribution and version, and which part of the code ran into the problem. No file names or personal data.}}",
+  "crashReporter.dialog.privacyNote": "{platform, select, macos {Tartalmazza az app verzióját, a macOS verzióját, és hogy a kód melyik része ütközött a problémába. Fájlnevek és személyes adatok nélkül.} windows {Tartalmazza az app verzióját, a Windows verzióját, és hogy a kód melyik része ütközött a problémába. Fájlnevek és személyes adatok nélkül.} other {Tartalmazza az app verzióját, a Linux-disztribúció nevét és verzióját, és hogy a kód melyik része ütközött a problémába. Fájlnevek és személyes adatok nélkül.}}",
   "@crashReporter.dialog.privacyNote": {
-    "sourceHash": "c6875a7"
+    "sourceHash": "ebe2d23"
   },
   "crashReporter.dialog.reportIdLabel": "Jelentésazonosító:",
   "@crashReporter.dialog.reportIdLabel": {

@@ -5,7 +5,8 @@
   },
   "mtp.connectedToast.body": "{platform, select, macos {A Cmdr szüneteltette a macOS kameradémonját (ptpcamerad), hogy hozzáférjen ehhez az eszközhöz. Ha másik appban szeretnéd használni, kapcsold ki az MTP-támogatást a beállításokban.} windows {} other {Ha ezt az eszközt másik appban szeretnéd használni, kapcsold ki az MTP-támogatást a beállításokban.}}",
   "@mtp.connectedToast.body": {
-    "sourceHash": "3ace37b"
+    "sourceHash": "74349d8",
+    "sameAsSourceJustification": "The Windows branch is empty on purpose in English too: the toast has no body line on Windows."
   },
   "mtp.connectedToast.dontShowAgain": "Ne jelenjen meg többé",
   "@mtp.connectedToast.dontShowAgain": {
@@ -56,13 +57,13 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {macOS-en a rendszerdémon, a <code>ptpcamerad</code> automatikusan lefoglalja az Android-eszközöket. Ennek megkerüléséhez futtasd a következő parancsot a Terminalban (hagyd futni, amíg a Cmdrt használod):} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {macOS-en a rendszerdémon, a <code>ptpcamerad</code> automatikusan lefoglalja az Android-eszközöket. Ennek megkerüléséhez futtasd a következő parancsot a Terminalban (hagyd futni, amíg a Cmdrt használod):} windows {Egy másik app használja a telefont, és el kell engednie, mielőtt a Cmdr kapcsolódni tudna.} other {Egyszerre csak egy app kommunikálhat egy telefonnal MTP-n keresztül, és az asztali környezeted általában csatolja a telefont, amint csatlakoztatod.}}",
   "@mtp.ptpcameradDialog.explanation": {
-    "sourceHash": "65b6ee3"
+    "sourceHash": "08df74d"
   },
-  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Ez a parancs futás közben folyamatosan leállítja a ptpcameradot. Ha végeztél, nyomd meg a <key>Ctrl+C</key> billentyűkombinációt a Terminalban a leállításához.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Ez a parancs futás közben folyamatosan leállítja a ptpcameradot. Ha végeztél, nyomd meg a <key>Ctrl+C</key> billentyűkombinációt a Terminalban a leállításához.} windows {Zárd be azt az appot, amely a telefont használja, majd próbáld újra.} other {Válaszd le a telefont a fájlkezelődben, majd próbáld újra.}}",
   "@mtp.ptpcameradDialog.helpText": {
-    "sourceHash": "85b5060"
+    "sourceHash": "c44384e"
   },
   "mtp.ptpcameradDialog.close": "Bezárás",
   "@mtp.ptpcameradDialog.close": {

@@ -1427,13 +1427,13 @@
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
   },
-  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {You turned down moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You turned down {verbName} {countText} {count, plural, one {item} other {items}}}}} other {Du tackade nej till att {verbName} {countText} {count, plural, one {objekt} other {objekt}}}}",
+  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {Du tackade nej till att flytta {countText} {count, plural, one {objekt} other {objekt}} till Papperskorgen} other {Du tackade nej till att {verbName} {countText} {count, plural, one {objekt} other {objekt}}}}} other {Du tackade nej till att {verbName} {countText} {count, plural, one {objekt} other {objekt}}}}",
   "@askCmdr.decision.rejected": {
-    "sourceHash": "19d12c1"
+    "sourceHash": "da3b52e"
   },
-  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {You approved moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You approved {verbName} {countText} {count, plural, one {item} other {items}}}}} other {Du godkände att {verbName} {countText} {count, plural, one {objekt} other {objekt}}}}",
+  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {Du godkände att flytta {countText} {count, plural, one {objekt} other {objekt}} till Papperskorgen} other {Du godkände att {verbName} {countText} {count, plural, one {objekt} other {objekt}}}}} other {Du godkände att {verbName} {countText} {count, plural, one {objekt} other {objekt}}}}",
   "@askCmdr.decision.approved": {
-    "sourceHash": "aa911e6"
+    "sourceHash": "3f61860"
   },
   "askCmdr.decision.result": "{doneText} klara, {skippedText} överhoppade, {failedText} gick inte",
   "@askCmdr.decision.result": {
@@ -1443,9 +1443,9 @@
   "@askCmdr.decision.running": {
     "sourceHash": "46c5413"
   },
-  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr closed before this finished} other {Cmdr avslutades innan åtgärden var klar}}",
+  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr stängdes innan åtgärden var klar} other {Cmdr avslutades innan åtgärden var klar}}",
   "@askCmdr.decision.interrupted": {
-    "sourceHash": "ece92cc"
+    "sourceHash": "de4a5c0"
   },
   "askCmdr.decision.verbMove": "flytta",
   "@askCmdr.decision.verbMove": {
@@ -1803,17 +1803,17 @@
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "729d49f"
   },
-  "askCmdr.tool.quit.doing": "{platform, select, windows {Closing Cmdr} other {Avslutar Cmdr}}",
+  "askCmdr.tool.quit.doing": "{platform, select, windows {Stänger Cmdr} other {Avslutar Cmdr}}",
   "@askCmdr.tool.quit.doing": {
-    "sourceHash": "b26d1c8"
+    "sourceHash": "b1e13d3"
   },
-  "askCmdr.tool.quit.done": "{platform, select, windows {Asked Cmdr to close} other {Bad om att Cmdr ska avslutas}}",
+  "askCmdr.tool.quit.done": "{platform, select, windows {Bad om att Cmdr ska stängas} other {Bad om att Cmdr ska avslutas}}",
   "@askCmdr.tool.quit.done": {
-    "sourceHash": "b9083af"
+    "sourceHash": "17a08e9"
   },
-  "askCmdr.tool.quit.tried": "{platform, select, windows {Tried to close Cmdr} other {Försökte avsluta Cmdr}}",
+  "askCmdr.tool.quit.tried": "{platform, select, windows {Försökte stänga Cmdr} other {Försökte avsluta Cmdr}}",
   "@askCmdr.tool.quit.tried": {
-    "sourceHash": "ab34547"
+    "sourceHash": "c05f3a9"
   },
   "askCmdr.tool.switchPane.doing": "Byter panel",
   "@askCmdr.tool.switchPane.doing": {

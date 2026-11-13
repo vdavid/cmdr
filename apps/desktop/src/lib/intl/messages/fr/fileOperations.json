@@ -16,29 +16,29 @@
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
-  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Ce volume ne prend pas en charge la corbeille.}}",
+  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {Ce volume n’a pas de Corbeille.} other {Ce volume ne prend pas en charge la corbeille.}}",
   "@fileOperations.delete.noTrashWarningStrong": {
-    "sourceHash": "911688a"
+    "sourceHash": "63875e3"
   },
   "fileOperations.delete.noTrashWarningRest": "Les fichiers seront supprimés définitivement.",
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.} other {Une partie de votre sélection est disponible en ligne uniquement. Les placer dans la corbeille les <strong>téléchargerait d’abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la corbeille, mais les services cloud gardent en général leur propre corbeille pendant environ 30 jours. Cliquez sur « Supprimer » si la suppression vous convient, sinon annulez cette fenêtre et rendez d’abord tous les fichiers disponibles hors connexion, ou désélectionnez tous les fichiers disponibles en ligne uniquement.}}",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Une partie de votre sélection est disponible en ligne uniquement. Les déplacer vers la Corbeille les <strong>téléchargerait d’abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la Corbeille, mais les services cloud gardent en général les fichiers supprimés pendant environ 30 jours. Sélectionnez « Supprimer définitivement » si la suppression vous convient, sinon annulez cette fenêtre et rendez d’abord tous les fichiers disponibles hors connexion, ou désélectionnez tous les fichiers disponibles en ligne uniquement.} other {Une partie de votre sélection est disponible en ligne uniquement. Les placer dans la corbeille les <strong>téléchargerait d’abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la corbeille, mais les services cloud gardent en général leur propre corbeille pendant environ 30 jours. Cliquez sur « Supprimer » si la suppression vous convient, sinon annulez cette fenêtre et rendez d’abord tous les fichiers disponibles hors connexion, ou désélectionnez tous les fichiers disponibles en ligne uniquement.}}",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2468db5"
+    "sourceHash": "88a6cc7"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and make these files available offline first.} other {Tout ce que vous avez sélectionné est disponible en ligne uniquement. Le placer dans la corbeille le <strong>téléchargerait d’abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la corbeille, mais les services cloud gardent en général leur propre corbeille pendant environ 30 jours. Cliquez sur « Supprimer » si la suppression vous convient, sinon annulez cette fenêtre et rendez d’abord ces fichiers disponibles hors connexion.}}",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Tout ce que vous avez sélectionné est disponible en ligne uniquement. Le déplacer vers la Corbeille le <strong>téléchargerait d’abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la Corbeille, mais les services cloud gardent en général les fichiers supprimés pendant environ 30 jours. Sélectionnez « Supprimer définitivement » si la suppression vous convient, sinon annulez cette fenêtre et rendez d’abord ces fichiers disponibles hors connexion.} other {Tout ce que vous avez sélectionné est disponible en ligne uniquement. Le placer dans la corbeille le <strong>téléchargerait d’abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la corbeille, mais les services cloud gardent en général leur propre corbeille pendant environ 30 jours. Cliquez sur « Supprimer » si la suppression vous convient, sinon annulez cette fenêtre et rendez d’abord ces fichiers disponibles hors connexion.}}",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "dd04d39"
+    "sourceHash": "7228d5a"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Your selection turned out to hold online-only content, so the button below now offers Delete permanently. Read the note above, then press it again if that’s OK.} other {Votre sélection contient finalement du contenu disponible en ligne uniquement : le bouton ci-dessous propose maintenant « Supprimer ». Lisez la note ci-dessus, puis appuyez à nouveau si cela vous convient.}}",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Votre sélection contient finalement du contenu disponible en ligne uniquement : le bouton ci-dessous propose maintenant « Supprimer définitivement ». Lisez la note ci-dessus, puis appuyez à nouveau si cela vous convient.} other {Votre sélection contient finalement du contenu disponible en ligne uniquement : le bouton ci-dessous propose maintenant « Supprimer ». Lisez la note ci-dessus, puis appuyez à nouveau si cela vous convient.}}",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
-    "sourceHash": "d3f4a7a"
+    "sourceHash": "04a6895"
   },
-  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {There’s no Recycle Bin inside an archive.} other {Il n’y a pas de corbeille dans une archive.}}",
+  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {Il n’y a pas de Corbeille dans une archive.} other {Il n’y a pas de corbeille dans une archive.}}",
   "@fileOperations.delete.archiveWarningStrong": {
-    "sourceHash": "d25cd46"
+    "sourceHash": "423ca00"
   },
   "fileOperations.delete.archiveWarningRest": "Ces éléments seront définitivement retirés du zip.",
   "@fileOperations.delete.archiveWarningRest": {
@@ -48,9 +48,9 @@
   "@fileOperations.trash.undoAction": {
     "sourceHash": "a8283ad"
   },
-  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Go to Recycle Bin} other {Aller à la corbeille}}",
+  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Aller à la Corbeille} other {Aller à la corbeille}}",
   "@fileOperations.trash.goToTrashAction": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
   "fileOperations.trash.undoing": "Remise en place…",
   "@fileOperations.trash.undoing": {
@@ -60,29 +60,29 @@
   "@fileOperations.trash.undone": {
     "sourceHash": "a76ffee"
   },
-  "fileOperations.trash.undonePartial": "{platform, select, windows {Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Recycle Bin.} other {{restoredText} {restored, plural, one {fichier remis en place} many {fichiers remis en place} other {fichiers remis en place}} ; {skippedText} {skipped, plural, one {élément est resté} many {éléments sont restés} other {éléments sont restés}} dans la corbeille.}}",
+  "fileOperations.trash.undonePartial": "{platform, select, windows {{restoredText} {restored, plural, one {fichier remis en place} many {fichiers remis en place} other {fichiers remis en place}} ; {skippedText} {skipped, plural, one {élément est resté} many {éléments sont restés} other {éléments sont restés}} dans la Corbeille.} other {{restoredText} {restored, plural, one {fichier remis en place} many {fichiers remis en place} other {fichiers remis en place}} ; {skippedText} {skipped, plural, one {élément est resté} many {éléments sont restés} other {éléments sont restés}} dans la corbeille.}}",
   "@fileOperations.trash.undonePartial": {
-    "sourceHash": "371413d"
+    "sourceHash": "820579a"
   },
   "fileOperations.trash.undoUnavailable": "Rien à remettre en place. Ces éléments sont peut-être déjà de retour, ou leur disque n’est pas connecté.",
   "@fileOperations.trash.undoUnavailable": {
     "sourceHash": "ee17b5f"
   },
-  "fileOperations.trash.undoGone": "{platform, select, windows {Nothing to put back: {count, plural, one {the item was} other {the items were}} no longer in the Recycle Bin.} other {Rien à remettre en place : {count, plural, one {l’élément n’était plus} many {les éléments n’étaient plus} other {les éléments n’étaient plus}} dans la corbeille.}}",
+  "fileOperations.trash.undoGone": "{platform, select, windows {Rien à remettre en place : {count, plural, one {l’élément n’était plus} many {les éléments n’étaient plus} other {les éléments n’étaient plus}} dans la Corbeille.} other {Rien à remettre en place : {count, plural, one {l’élément n’était plus} many {les éléments n’étaient plus} other {les éléments n’étaient plus}} dans la corbeille.}}",
   "@fileOperations.trash.undoGone": {
-    "sourceHash": "69a90c2"
+    "sourceHash": "7a2975c"
   },
-  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {item was} other {items were}} no longer in the Recycle Bin.} other {{countText} {count, plural, one {élément n’était plus} many {éléments n’étaient plus} other {éléments n’étaient plus}} dans la corbeille.}}",
+  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {élément n’était plus} many {éléments n’étaient plus} other {éléments n’étaient plus}} dans la Corbeille.} other {{countText} {count, plural, one {élément n’était plus} many {éléments n’étaient plus} other {éléments n’étaient plus}} dans la corbeille.}}",
   "@fileOperations.trash.undoPartlyGone": {
-    "sourceHash": "2e23577"
+    "sourceHash": "acece5b"
   },
-  "fileOperations.trash.noTrashHere": "{platform, select, windows {This drive doesn’t have a Recycle Bin.} other {Ce disque n’a pas de corbeille.}}",
+  "fileOperations.trash.noTrashHere": "{platform, select, windows {Ce lecteur n’a pas de Corbeille.} other {Ce disque n’a pas de corbeille.}}",
   "@fileOperations.trash.noTrashHere": {
-    "sourceHash": "f58bdab"
+    "sourceHash": "cff83da"
   },
-  "fileOperations.delete.trashSwitch": "{platform, select, windows {Move to the Recycle Bin} other {Placer dans la corbeille}}",
+  "fileOperations.delete.trashSwitch": "{platform, select, windows {Déplacer vers la Corbeille} other {Placer dans la corbeille}}",
   "@fileOperations.delete.trashSwitch": {
-    "sourceHash": "b250a45"
+    "sourceHash": "287751e"
   },
   "fileOperations.delete.overflowMore": "… et {countText} {count, plural, one {autre élément} many {autres éléments} other {autres éléments}}",
   "@fileOperations.delete.overflowMore": {
@@ -96,13 +96,13 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "46b23b5"
   },
-  "fileOperations.delete.confirmDelete": "{platform, select, windows {Delete permanently} other {Supprimer}}",
+  "fileOperations.delete.confirmDelete": "{platform, select, windows {Supprimer définitivement} other {Supprimer}}",
   "@fileOperations.delete.confirmDelete": {
-    "sourceHash": "e2d0a54"
+    "sourceHash": "45efa80"
   },
-  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Delete} other {Placer dans la corbeille}}",
+  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Supprimer} other {Placer dans la corbeille}}",
   "@fileOperations.delete.confirmMoveToTrash": {
-    "sourceHash": "b250a45"
+    "sourceHash": "362a813"
   },
   "fileOperations.delete.titleCursorFile": "Supprimer 1 fichier sous le curseur",
   "@fileOperations.delete.titleCursorFile": {
@@ -358,9 +358,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "8331da7"
   },
-  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.} other {« {target} » est un dossier existant, donc « {name} » prendrait le nom de ce dossier. Pour placer « {name} » dans ce dossier, terminez le chemin par « / ».}}",
+  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {« {target} » est un dossier existant, donc « {name} » prendrait le nom de ce dossier. Pour placer « {name} » dans ce dossier, terminez le chemin par « \\ ».} other {« {target} » est un dossier existant, donc « {name} » prendrait le nom de ce dossier. Pour placer « {name} » dans ce dossier, terminez le chemin par « / ».}}",
   "@fileOperations.transferDialog.namedFolderHint": {
-    "sourceHash": "41dc88c"
+    "sourceHash": "aaa65e6"
   },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {dossier existe déjà à cet emplacement, son contenu sera donc fusionné} many {dossiers existent déjà à cet emplacement, leur contenu sera donc fusionné} other {dossiers existent déjà à cet emplacement, leur contenu sera donc fusionné}}.",
   "@fileOperations.transferDialog.mergeInfoMany": {
@@ -438,13 +438,13 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to the Recycle Bin}}} other {{verb, select, copy {Copier} move {Déplacer} compress {Compresser} delete {Supprimer} other {Placer dans la corbeille}}}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Copier} move {Déplacer} compress {Compresser} delete {Supprimer} other {Déplacer vers la Corbeille}}} other {{verb, select, copy {Copier} move {Déplacer} compress {Compresser} delete {Supprimer} other {Placer dans la corbeille}}}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
-    "sourceHash": "b18b6e3"
+    "sourceHash": "61043bf"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Copy {phrase}} move {Move {phrase}} compress {Compress {phrase}} delete {Delete {phrase}} other {Move {phrase} to the Recycle Bin}}} other {{verb, select, copy {Copier} move {Déplacer} compress {Compresser} delete {Supprimer} other {Placer dans la corbeille}} {phrase}}}",
+  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Copier {phrase}} move {Déplacer {phrase}} compress {Compresser {phrase}} delete {Supprimer {phrase}} other {Déplacer {phrase} vers la Corbeille}}} other {{verb, select, copy {Copier} move {Déplacer} compress {Compresser} delete {Supprimer} other {Placer dans la corbeille}} {phrase}}}",
   "@fileOperations.transferDialog.titleWithCounts": {
-    "sourceHash": "d21c910"
+    "sourceHash": "9892d81"
   },
   "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}",
   "@fileOperations.transferDialog.filesPart": {
@@ -506,9 +506,9 @@
   "@fileOperations.transferProgress.scanTitleDelete": {
     "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Counting items to move to the Recycle Bin…} other {Décompte des éléments à placer dans la corbeille…}}",
+  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Décompte des éléments à déplacer vers la Corbeille…} other {Décompte des éléments à placer dans la corbeille…}}",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "6df6c7f"
+    "sourceHash": "44b29fd"
   },
   "fileOperations.transferProgress.rollbackUnavailableCrossVolumeTooltip": "Le retour en arrière n’est pas possible lors d’un déplacement entre volumes. Cmdr supprime chaque original dès que sa copie est bien en place, il ne reste donc aucun original auquel revenir. Annuler arrête le déplacement, et chaque fichier reste entier d’un côté ou de l’autre.",
   "@fileOperations.transferProgress.rollbackUnavailableCrossVolumeTooltip": {
@@ -554,13 +554,13 @@
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to the Recycle Bin canceled} other {Canceled}}} other {{type, select, copy {Copie annulée} move {Déplacement annulé} compress {Compression annulée} delete {Suppression annulée} trash {Placement dans la corbeille annulé} other {Opération annulée}}}}",
+  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Copie annulée} move {Déplacement annulé} compress {Compression annulée} delete {Suppression annulée} trash {Déplacement vers la Corbeille annulé} other {Opération annulée}}} other {{type, select, copy {Copie annulée} move {Déplacement annulé} compress {Compression annulée} delete {Suppression annulée} trash {Placement dans la corbeille annulé} other {Opération annulée}}}}",
   "@fileOperations.transferProgress.canceledAlertTitle": {
-    "sourceHash": "3cba939"
+    "sourceHash": "b041c89"
   },
-  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to the Recycle Bin. The files it moved so far stay in the Recycle Bin, and the rest are where they were.} other {You’ve canceled this operation.}}} other {{type, select, copy {Vous avez annulé cette copie. Les fichiers copiés jusqu’à présent restent là où ils sont.} move {Vous avez annulé ce déplacement. Les fichiers déplacés jusqu’à présent restent là où ils sont arrivés.} compress {Vous avez annulé cette compression.} delete {Vous avez annulé cette suppression. Les fichiers supprimés jusqu’à présent ont disparu et les autres sont toujours là.} trash {Vous avez annulé ce placement dans la corbeille. Les fichiers déjà placés dans la corbeille y restent et les autres n’ont pas bougé.} other {Vous avez annulé cette opération.}}}}",
+  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {Vous avez annulé cette copie. Les fichiers copiés jusqu’à présent restent là où ils sont.} move {Vous avez annulé ce déplacement. Les fichiers déplacés jusqu’à présent restent là où ils sont arrivés.} compress {Vous avez annulé cette compression.} delete {Vous avez annulé cette suppression. Les fichiers supprimés jusqu’à présent ont disparu et les autres sont toujours là.} trash {Vous avez annulé ce déplacement vers la Corbeille. Les fichiers déjà déplacés vers la Corbeille y restent et les autres n’ont pas bougé.} other {Vous avez annulé cette opération.}}} other {{type, select, copy {Vous avez annulé cette copie. Les fichiers copiés jusqu’à présent restent là où ils sont.} move {Vous avez annulé ce déplacement. Les fichiers déplacés jusqu’à présent restent là où ils sont arrivés.} compress {Vous avez annulé cette compression.} delete {Vous avez annulé cette suppression. Les fichiers supprimés jusqu’à présent ont disparu et les autres sont toujours là.} trash {Vous avez annulé ce placement dans la corbeille. Les fichiers déjà placés dans la corbeille y restent et les autres n’ont pas bougé.} other {Vous avez annulé cette opération.}}}}",
   "@fileOperations.transferProgress.canceledAlertMessage": {
-    "sourceHash": "1d1de76"
+    "sourceHash": "c2ed004"
   },
   "fileOperations.transferProgress.titleCancellingSlow": "Annulation… (nettoyage en cours)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
@@ -654,9 +654,9 @@
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
-  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Recycle Bin} one {Moved {countText} file to the Recycle Bin} other {Moved {countText} files to the Recycle Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}} other {{type, select, copy {{count, plural, =0 {Aucun fichier copié} one {{countText} fichier copié} many {{countText} fichiers copiés} other {{countText} fichiers copiés}}} move {{count, plural, =0 {Aucun fichier déplacé} one {{countText} fichier déplacé} many {{countText} fichiers déplacés} other {{countText} fichiers déplacés}}} delete {{count, plural, =0 {Aucun fichier supprimé} one {{countText} fichier supprimé} many {{countText} fichiers supprimés} other {{countText} fichiers supprimés}}} trash {{count, plural, =0 {Aucun fichier placé dans la corbeille} one {{countText} fichier placé dans la corbeille} many {{countText} fichiers placés dans la corbeille} other {{countText} fichiers placés dans la corbeille}}} compress {{count, plural, =0 {Aucun fichier compressé} one {{countText} fichier compressé} many {{countText} fichiers compressés} other {{countText} fichiers compressés}}} other {Terminé}}}}",
+  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Aucun fichier copié} one {{countText} fichier copié} many {{countText} fichiers copiés} other {{countText} fichiers copiés}}} move {{count, plural, =0 {Aucun fichier déplacé} one {{countText} fichier déplacé} many {{countText} fichiers déplacés} other {{countText} fichiers déplacés}}} delete {{count, plural, =0 {Aucun fichier supprimé} one {{countText} fichier supprimé} many {{countText} fichiers supprimés} other {{countText} fichiers supprimés}}} trash {{count, plural, =0 {Aucun fichier déplacé vers la Corbeille} one {{countText} fichier déplacé vers la Corbeille} many {{countText} fichiers déplacés vers la Corbeille} other {{countText} fichiers déplacés vers la Corbeille}}} compress {{count, plural, =0 {Aucun fichier compressé} one {{countText} fichier compressé} many {{countText} fichiers compressés} other {{countText} fichiers compressés}}} other {Terminé}}} other {{type, select, copy {{count, plural, =0 {Aucun fichier copié} one {{countText} fichier copié} many {{countText} fichiers copiés} other {{countText} fichiers copiés}}} move {{count, plural, =0 {Aucun fichier déplacé} one {{countText} fichier déplacé} many {{countText} fichiers déplacés} other {{countText} fichiers déplacés}}} delete {{count, plural, =0 {Aucun fichier supprimé} one {{countText} fichier supprimé} many {{countText} fichiers supprimés} other {{countText} fichiers supprimés}}} trash {{count, plural, =0 {Aucun fichier placé dans la corbeille} one {{countText} fichier placé dans la corbeille} many {{countText} fichiers placés dans la corbeille} other {{countText} fichiers placés dans la corbeille}}} compress {{count, plural, =0 {Aucun fichier compressé} one {{countText} fichier compressé} many {{countText} fichiers compressés} other {{countText} fichiers compressés}}} other {Terminé}}}}",
   "@fileOperations.transferProgress.titleDone": {
-    "sourceHash": "3db0154"
+    "sourceHash": "74225e6"
   },
   "fileOperations.transferProgress.doneSummaryRate": "<size></size> en {duration}, <rate></rate>/s en moyenne",
   "@fileOperations.transferProgress.doneSummaryRate": {
@@ -694,9 +694,9 @@
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Recycle Bin}}…} other {{gerund, select, copy {Copie} move {Déplacement} compress {Compression} delete {Suppression} other {Placement dans la corbeille}} en cours…}}",
+  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Copie} move {Déplacement} compress {Compression} delete {Suppression} other {Déplacement vers la Corbeille}} en cours…} other {{gerund, select, copy {Copie} move {Déplacement} compress {Compression} delete {Suppression} other {Placement dans la corbeille}} en cours…}}",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "0c636e5"
+    "sourceHash": "f40304c"
   },
   "fileOperations.transferProgress.stageScanning": "Analyse",
   "@fileOperations.transferProgress.stageScanning": {
@@ -846,25 +846,25 @@
   "@fileOperations.sourcesGone.title": {
     "sourceHash": "9f8e2cb"
   },
-  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to the Recycle Bin was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {{goneText} des {totalText} éléments que cette copie devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’elle attendait son tour.} move {{goneText} des {totalText} éléments que ce déplacement devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’il attendait son tour.} delete {{goneText} des {totalText} éléments que cette suppression devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’elle attendait son tour.} trash {{goneText} des {totalText} éléments que ce placement dans la corbeille devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’il attendait son tour.} other {{goneText} des {totalText} éléments que cette opération devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’elle attendait son tour.}}}}",
+  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} des {totalText} éléments que cette copie devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’elle attendait son tour.} move {{goneText} des {totalText} éléments que ce déplacement devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’il attendait son tour.} delete {{goneText} des {totalText} éléments que cette suppression devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’elle attendait son tour.} trash {{goneText} des {totalText} éléments que ce déplacement vers la Corbeille devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’il attendait son tour.} other {{goneText} des {totalText} éléments que cette opération devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’elle attendait son tour.}}} other {{type, select, copy {{goneText} des {totalText} éléments que cette copie devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’elle attendait son tour.} move {{goneText} des {totalText} éléments que ce déplacement devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’il attendait son tour.} delete {{goneText} des {totalText} éléments que cette suppression devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’elle attendait son tour.} trash {{goneText} des {totalText} éléments que ce placement dans la corbeille devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’il attendait son tour.} other {{goneText} des {totalText} éléments que cette opération devait traiter {gone, plural, one {a été déplacé ou supprimé} many {ont été déplacés ou supprimés} other {ont été déplacés ou supprimés}} pendant qu’elle attendait son tour.}}}}",
   "@fileOperations.sourcesGone.message": {
-    "sourceHash": "0512078"
+    "sourceHash": "bb8d9df"
   },
   "fileOperations.sourcesGone.moreItems": "{count, plural, one {et {countText} élément de plus} many {et {countText} éléments de plus} other {et {countText} éléments de plus}}",
   "@fileOperations.sourcesGone.moreItems": {
     "sourceHash": "c39507d"
   },
-  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest permanently} trash {Delete the rest} other {Do the rest}}} other {{type, select, copy {Copier le reste} move {Déplacer le reste} delete {Supprimer le reste} trash {Placer le reste dans la corbeille} other {Continuer avec le reste}}}}",
+  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Copier le reste} move {Déplacer le reste} delete {Supprimer définitivement le reste} trash {Supprimer le reste} other {Continuer avec le reste}}} other {{type, select, copy {Copier le reste} move {Déplacer le reste} delete {Supprimer le reste} trash {Placer le reste dans la corbeille} other {Continuer avec le reste}}}}",
   "@fileOperations.sourcesGone.continue": {
-    "sourceHash": "2790bfb"
+    "sourceHash": "079ea59"
   },
-  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {A queued copy has a question for you. You’ll see it as soon as the open dialog closes.} move {A queued move has a question for you. You’ll see it as soon as the open dialog closes.} delete {A queued delete has a question for you. You’ll see it as soon as the open dialog closes.} trash {A queued move to the Recycle Bin has a question for you. You’ll see it as soon as the open dialog closes.} other {A queued operation has a question for you. You’ll see it as soon as the open dialog closes.}}} other {{type, select, copy {Une copie en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.} move {Un déplacement en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.} delete {Une suppression en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.} trash {Un placement dans la corbeille en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.} other {Une opération en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.}}}}",
+  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {Une copie en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.} move {Un déplacement en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.} delete {Une suppression en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.} trash {Un déplacement vers la Corbeille en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.} other {Une opération en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.}}} other {{type, select, copy {Une copie en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.} move {Un déplacement en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.} delete {Une suppression en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.} trash {Un placement dans la corbeille en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.} other {Une opération en attente a une question pour vous. Vous la verrez dès que la boîte de dialogue ouverte sera fermée.}}}}",
   "@fileOperations.sourcesGone.heldToast": {
-    "sourceHash": "75f645d"
+    "sourceHash": "fc21ca7"
   },
-  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Nothing left to copy: {total, plural, one {the item} other {all {totalText} items}} this copy was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} move {Nothing left to move: {total, plural, one {the item} other {all {totalText} items}} this move was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} delete {Nothing left to delete: {total, plural, one {the item} other {all {totalText} items}} this delete was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} trash {Nothing left to move to the Recycle Bin: {total, plural, one {the item} other {all {totalText} items}} this move to the Recycle Bin was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} other {Nothing left to do: {total, plural, one {the item} other {all {totalText} items}} this operation was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {Plus rien à copier : {total, plural, one {l’élément que cette copie devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que cette copie devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que cette copie devait traiter ont tous été déplacés ou supprimés}} pendant qu’elle attendait son tour.} move {Plus rien à déplacer : {total, plural, one {l’élément que ce déplacement devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que ce déplacement devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que ce déplacement devait traiter ont tous été déplacés ou supprimés}} pendant qu’il attendait son tour.} delete {Plus rien à supprimer : {total, plural, one {l’élément que cette suppression devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que cette suppression devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que cette suppression devait traiter ont tous été déplacés ou supprimés}} pendant qu’elle attendait son tour.} trash {Plus rien à placer dans la corbeille : {total, plural, one {l’élément que ce placement dans la corbeille devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que ce placement dans la corbeille devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que ce placement dans la corbeille devait traiter ont tous été déplacés ou supprimés}} pendant qu’il attendait son tour.} other {Plus rien à faire : {total, plural, one {l’élément que cette opération devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que cette opération devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que cette opération devait traiter ont tous été déplacés ou supprimés}} pendant qu’elle attendait son tour.}}}}",
+  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Plus rien à copier : {total, plural, one {l’élément que cette copie devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que cette copie devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que cette copie devait traiter ont tous été déplacés ou supprimés}} pendant qu’elle attendait son tour.} move {Plus rien à déplacer : {total, plural, one {l’élément que ce déplacement devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que ce déplacement devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que ce déplacement devait traiter ont tous été déplacés ou supprimés}} pendant qu’il attendait son tour.} delete {Plus rien à supprimer : {total, plural, one {l’élément que cette suppression devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que cette suppression devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que cette suppression devait traiter ont tous été déplacés ou supprimés}} pendant qu’elle attendait son tour.} trash {Plus rien à déplacer vers la Corbeille : {total, plural, one {l’élément que ce déplacement vers la Corbeille devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que ce déplacement vers la Corbeille devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que ce déplacement vers la Corbeille devait traiter ont tous été déplacés ou supprimés}} pendant qu’il attendait son tour.} other {Plus rien à faire : {total, plural, one {l’élément que cette opération devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que cette opération devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que cette opération devait traiter ont tous été déplacés ou supprimés}} pendant qu’elle attendait son tour.}}} other {{type, select, copy {Plus rien à copier : {total, plural, one {l’élément que cette copie devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que cette copie devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que cette copie devait traiter ont tous été déplacés ou supprimés}} pendant qu’elle attendait son tour.} move {Plus rien à déplacer : {total, plural, one {l’élément que ce déplacement devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que ce déplacement devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que ce déplacement devait traiter ont tous été déplacés ou supprimés}} pendant qu’il attendait son tour.} delete {Plus rien à supprimer : {total, plural, one {l’élément que cette suppression devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que cette suppression devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que cette suppression devait traiter ont tous été déplacés ou supprimés}} pendant qu’elle attendait son tour.} trash {Plus rien à placer dans la corbeille : {total, plural, one {l’élément que ce placement dans la corbeille devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que ce placement dans la corbeille devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que ce placement dans la corbeille devait traiter ont tous été déplacés ou supprimés}} pendant qu’il attendait son tour.} other {Plus rien à faire : {total, plural, one {l’élément que cette opération devait traiter a été déplacé ou supprimé} many {les {totalText} éléments que cette opération devait traiter ont tous été déplacés ou supprimés} other {les {totalText} éléments que cette opération devait traiter ont tous été déplacés ou supprimés}} pendant qu’elle attendait son tour.}}}}",
   "@fileOperations.sourcesGone.nothingLeftToast": {
-    "sourceHash": "4d62b7d"
+    "sourceHash": "936d7b4"
   },
   "fileOperations.alreadyGone.one": "« {name} » avait déjà disparu. Une autre app a probablement déplacé ou supprimé cet élément.",
   "@fileOperations.alreadyGone.one": {
@@ -1307,9 +1307,9 @@
   "@fileOperations.resticPassword.inputAria": {
     "sourceHash": "3e39703"
   },
-  "fileOperations.resticPassword.remember": "{platform, select, macos {Mémoriser dans le trousseau} windows {Remember password} other {Remember in keyring}}",
+  "fileOperations.resticPassword.remember": "{platform, select, macos {Mémoriser dans le trousseau} windows {Mémoriser le mot de passe} other {Mémoriser dans le trousseau}}",
   "@fileOperations.resticPassword.remember": {
-    "sourceHash": "3fd7384"
+    "sourceHash": "42237e1"
   },
   "fileOperations.resticPassword.checking": "Vérification du mot de passe…",
   "@fileOperations.resticPassword.checking": {
@@ -1351,9 +1351,9 @@
   "@fileOperations.validation.pathEmpty": {
     "sourceHash": "c7afbbc"
   },
-  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {Le chemin d’accès doit être absolu (commencer par /)}}",
+  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Le chemin d’accès doit être absolu (commencer par une lettre de lecteur, comme C:\\, ou par un partage, comme \\\\serveur\\partage)} other {Le chemin d’accès doit être absolu (commencer par /)}}",
   "@fileOperations.validation.pathNotAbsolute": {
-    "sourceHash": "3c08374"
+    "sourceHash": "f910f77"
   },
   "fileOperations.validation.pathShareMissing": "Ajoutez le nom du partage après le serveur, par exemple \\\\serveur\\partage",
   "@fileOperations.validation.pathShareMissing": {

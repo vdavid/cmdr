@@ -3,9 +3,9 @@
   "@settings.appearance.language.label": {
     "sourceHash": "a4fe652"
   },
-  "settings.appearance.language.description": "{platform, select, macos {Chọn ngôn ngữ Cmdr dùng. “Mặc định hệ thống” theo ngôn ngữ máy Mac của bạn.} windows {Choose the language Cmdr uses. “System default” follows your Windows display language.} other {Choose the language Cmdr uses. “System default” follows your system’s language.}}",
+  "settings.appearance.language.description": "{platform, select, macos {Chọn ngôn ngữ Cmdr dùng. “Mặc định hệ thống” theo ngôn ngữ máy Mac của bạn.} windows {Chọn ngôn ngữ Cmdr dùng. “Mặc định hệ thống” theo ngôn ngữ hiển thị Windows của bạn.} other {Chọn ngôn ngữ Cmdr dùng. “Mặc định hệ thống” theo ngôn ngữ hệ thống của bạn.}}",
   "@settings.appearance.language.description": {
-    "sourceHash": "2dd7f63"
+    "sourceHash": "7ca0276"
   },
   "settings.appearance.language.opt.system": "Mặc định hệ thống",
   "@settings.appearance.language.opt.system": {
@@ -47,9 +47,9 @@
   "@settings.appearance.appColor.label": {
     "sourceHash": "b1107c8"
   },
-  "settings.appearance.appColor.description": "{platform, select, macos {Để đổi màu giao diện hệ thống, vào Cài đặt hệ thống > Giao diện.} windows {To change your system accent color, go to Settings > Personalization > Colors.} other {To change your system accent color, go to your system appearance settings.}}",
+  "settings.appearance.appColor.description": "{platform, select, macos {Để đổi màu giao diện hệ thống, vào Cài đặt hệ thống > Giao diện.} windows {Để đổi màu chủ đề hệ thống, vào Cài đặt > Cá nhân hóa > Màu.} other {Để đổi màu chủ đề hệ thống, vào cài đặt giao diện hệ thống của bạn.}}",
   "@settings.appearance.appColor.description": {
-    "sourceHash": "7dc4ab7"
+    "sourceHash": "0045d05"
   },
   "settings.appearance.appColor.opt.system": "Màu giao diện hệ thống",
   "@settings.appearance.appColor.opt.system": {
@@ -212,9 +212,9 @@
   "@settings.appearance.textSize.label": {
     "sourceHash": "d68761c"
   },
-  "settings.appearance.textSize.description": "{platform, select, macos {Co giãn chữ và giao diện trên toàn ứng dụng. Nhân thêm với cỡ chữ Trợ năng của macOS, trong đó 100% nghĩa là “đúng bằng cỡ hệ thống”.} other {Scales text and UI throughout the app.}}",
+  "settings.appearance.textSize.description": "{platform, select, macos {Co giãn chữ và giao diện trên toàn ứng dụng. Nhân thêm với cỡ chữ Trợ năng của macOS, trong đó 100% nghĩa là “đúng bằng cỡ hệ thống”.} other {Co giãn chữ và giao diện trên toàn ứng dụng.}}",
   "@settings.appearance.textSize.description": {
-    "sourceHash": "49a0a6b"
+    "sourceHash": "c460c56"
   },
   "settings.appearance.textSize.keywords": "chữ, văn bản, cỡ chữ, kích cỡ, phông chữ, to hơn, nhỏ hơn, phóng to, thu nhỏ, tỷ lệ, trợ năng",
   "@settings.appearance.textSize.keywords": {
@@ -348,9 +348,9 @@
   "@settings.listing.showHiddenFiles.label": {
     "sourceHash": "b5ede7f"
   },
-  "settings.listing.showHiddenFiles.description": "{platform, select, macos {Hiển thị các tệp bắt đầu bằng dấu chấm (như .zshrc) và những mục hệ thống đánh dấu là ẩn. Áp dụng cho cả hai khung.} windows {Hiển thị các tệp bắt đầu bằng dấu chấm (như .zshrc) và những mục hệ thống đánh dấu là ẩn. Áp dụng cho cả hai khung.} other {Show dotfiles (like .bashrc) and items the system marks as hidden. Applies to both panes.}}",
+  "settings.listing.showHiddenFiles.description": "{platform, select, macos {Hiển thị các tệp bắt đầu bằng dấu chấm (như .zshrc) và những mục hệ thống đánh dấu là ẩn. Áp dụng cho cả hai khung.} windows {Hiển thị các tệp bắt đầu bằng dấu chấm (như .zshrc) và những mục hệ thống đánh dấu là ẩn. Áp dụng cho cả hai khung.} other {Hiển thị các tệp bắt đầu bằng dấu chấm (như .bashrc) và những mục hệ thống đánh dấu là ẩn. Áp dụng cho cả hai khung.}}",
   "@settings.listing.showHiddenFiles.description": {
-    "sourceHash": "8e77c67"
+    "sourceHash": "2526fb4"
   },
   "settings.listing.showHiddenFiles.keywords": "ẩn, tệp ẩn, tệp chấm, vô hình, hệ thống, hiển thị",
   "@settings.listing.showHiddenFiles.keywords": {
@@ -532,17 +532,17 @@
   "@settings.fileOperations.macOnlyFiles.keywords": {
     "sourceHash": "b668774"
   },
-  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Bỏ qua xác nhận khi sao chép, di chuyển và chuyển vào thùng rác}}",
+  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Bỏ qua xác nhận khi sao chép, di chuyển và xóa} other {Bỏ qua xác nhận khi sao chép, di chuyển và chuyển vào thùng rác}}",
   "@settings.fileOperations.skipConfirmation.label": {
-    "sourceHash": "6af6546"
+    "sourceHash": "f1b1b39"
   },
   "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {Lệnh Sao chép và Di chuyển chạy ngay sang khung bên kia, còn lệnh Xóa chuyển vào Thùng rác mà không hỏi. Hơi mạo hiểm, vì chỉ một lần nhấn phím là thao tác chạy ngay. Xóa vĩnh viễn thì luôn hỏi trước.} other {Lệnh Sao chép và Di chuyển chạy ngay sang khung bên kia, còn lệnh Xóa chuyển vào thùng rác mà không hỏi. Hơi mạo hiểm, vì chỉ một lần nhấn phím là thao tác chạy ngay. Xóa vĩnh viễn thì luôn hỏi trước.}}",
   "@settings.fileOperations.skipConfirmation.explanation": {
     "sourceHash": "564f000"
   },
-  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {xác nhận, hộp thoại, hỏi, sao chép, di chuyển, thùng rác, xóa, bỏ qua, lượt bấm}}",
+  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {xác nhận, hộp thoại, hỏi, sao chép, di chuyển, thùng rác, xóa, bỏ qua, lượt bấm} other {xác nhận, hộp thoại, hỏi, sao chép, di chuyển, thùng rác, xóa, bỏ qua, lượt bấm}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
-    "sourceHash": "9f61258"
+    "sourceHash": "8179d90"
   },
   "settings.fileOperations.defaultConflictPolicy.label": "Khi tệp đã tồn tại",
   "@settings.fileOperations.defaultConflictPolicy.label": {
@@ -564,9 +564,9 @@
   "@settings.fileOperations.keepProgressOpenWhenDone.description": {
     "sourceHash": "005448f"
   },
-  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, recycle bin} other {tiến độ, xong, hoàn thành, kết thúc, tóm tắt, kết quả, báo cáo, thống kê, tốc độ, thời gian, giữ lại, ở lại, đóng, hộp thoại, chép, chuyển, xóa, rác}}",
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {tiến độ, xong, hoàn thành, kết thúc, tóm tắt, kết quả, báo cáo, thống kê, tốc độ, thời gian, giữ lại, ở lại, đóng, hộp thoại, chép, chuyển, xóa, thùng rác} other {tiến độ, xong, hoàn thành, kết thúc, tóm tắt, kết quả, báo cáo, thống kê, tốc độ, thời gian, giữ lại, ở lại, đóng, hộp thoại, chép, chuyển, xóa, rác}}",
   "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
-    "sourceHash": "978b2ff"
+    "sourceHash": "1f64fb0"
   },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Bỏ qua",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
@@ -1076,10 +1076,10 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {Hệ thống}}",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "sourceHash": "aed6b7a",
-    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
+    "sourceHash": "24dac61",
+    "sameAsSourceJustification": "The macos and windows branches are the OS brand names macOS and Windows, kept verbatim in vi (brand words); only the Linux branch translates."
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Cả hai",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
@@ -1153,18 +1153,18 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
     "sourceHash": "911b74b"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {Cách cảnh báo khi ổ đĩa khởi động của bạn sắp hết dung lượng trống.} windows {How to warn you when your system drive runs low on free space.} other {How to warn you when your system disk runs low on free space.}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {Cách cảnh báo khi ổ đĩa khởi động của bạn sắp hết dung lượng trống.} windows {Cách cảnh báo khi ổ đĩa hệ thống của bạn sắp hết dung lượng trống.} other {Cách cảnh báo khi ổ đĩa hệ thống của bạn sắp hết dung lượng trống.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
-    "sourceHash": "32b852d"
+    "sourceHash": "07714d7"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "Trong ứng dụng",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {Hệ thống}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "sourceHash": "aed6b7a",
-    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
+    "sourceHash": "24dac61",
+    "sameAsSourceJustification": "The macos and windows branches are the OS brand names macOS and Windows, kept verbatim in vi (brand words); only the Linux branch translates."
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Tắt",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
@@ -1178,9 +1178,9 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "sourceHash": "fd1382f"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Cảnh báo khi dung lượng trống tụt xuống dưới mức phần trăm này của ổ đĩa khởi động.} windows {Warn when free space drops below this percent of your system drive.} other {Warn when free space drops below this percent of your system disk.}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Cảnh báo khi dung lượng trống tụt xuống dưới mức phần trăm này của ổ đĩa khởi động.} windows {Cảnh báo khi dung lượng trống tụt xuống dưới mức phần trăm này của ổ đĩa hệ thống.} other {Cảnh báo khi dung lượng trống tụt xuống dưới mức phần trăm này của ổ đĩa hệ thống.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
-    "sourceHash": "9ed41b8"
+    "sourceHash": "b4d0378"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "đĩa, dung lượng, ngưỡng, phần trăm, thiếu, còn trống, cảnh báo",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
@@ -1190,9 +1190,9 @@
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "{platform, select, windows {Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or select the run button to search.} other {Chạy tìm kiếm theo tên tệp và biểu thức chính quy tự động khi bạn gõ (1 giây sau khi bạn ngừng). Tìm kiếm AI luôn chờ Enter, vì chúng tốn tiền. Khi tắt, nhấn Enter hoặc bấm nút chạy để tìm kiếm.}}",
+  "settings.search.autoApply.description": "{platform, select, windows {Chạy tìm kiếm theo tên tệp và biểu thức chính quy tự động khi bạn gõ (1 giây sau khi bạn ngừng). Tìm kiếm AI luôn chờ Enter, vì chúng tốn tiền. Khi tắt, nhấn Enter hoặc chọn nút chạy để tìm kiếm.} other {Chạy tìm kiếm theo tên tệp và biểu thức chính quy tự động khi bạn gõ (1 giây sau khi bạn ngừng). Tìm kiếm AI luôn chờ Enter, vì chúng tốn tiền. Khi tắt, nhấn Enter hoặc bấm nút chạy để tìm kiếm.}}",
   "@settings.search.autoApply.description": {
-    "sourceHash": "19fcaf7"
+    "sourceHash": "b0f85fd"
   },
   "settings.search.autoApply.keywords": "tìm kiếm, tự động, áp dụng, trực tiếp, tức thì, ngay lập tức, tên tệp, độ trễ",
   "@settings.search.autoApply.keywords": {
@@ -1290,13 +1290,13 @@
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
   },
-  "settings.network.enabled.label": "{platform, select, windows {Turn on networking} other {Bật kết nối mạng}}",
+  "settings.network.enabled.label": "{platform, select, windows {Bật kết nối mạng} other {Bật kết nối mạng}}",
   "@settings.network.enabled.label": {
-    "sourceHash": "10f5de9"
+    "sourceHash": "ecb8b03"
   },
-  "settings.network.enabled.description": "{platform, select, macos {Tìm các máy chủ SMB trên mạng cục bộ của bạn và kết nối tới chúng. Khi tắt, Cmdr vẫn đọc và ghi tệp được trên các mục chia sẻ đã gắn kết, nhưng sẽ không xin quyền Mạng cục bộ từ macOS.} windows {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, and Windows won’t ask to let Cmdr through the firewall.} other {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares.}}",
+  "settings.network.enabled.description": "{platform, select, macos {Tìm các máy chủ SMB trên mạng cục bộ của bạn và kết nối tới chúng. Khi tắt, Cmdr vẫn đọc và ghi tệp được trên các mục chia sẻ đã gắn kết, nhưng sẽ không xin quyền Mạng cục bộ từ macOS.} windows {Tìm các máy chủ SMB trên mạng cục bộ của bạn và kết nối tới chúng. Khi tắt, Cmdr vẫn đọc và ghi tệp được trên các mục chia sẻ đã gắn kết, và Windows sẽ không hỏi có cho Cmdr đi qua tường lửa hay không.} other {Tìm các máy chủ SMB trên mạng cục bộ của bạn và kết nối tới chúng. Khi tắt, Cmdr vẫn đọc và ghi tệp được trên các mục chia sẻ đã gắn kết.}}",
   "@settings.network.enabled.description": {
-    "sourceHash": "72a0854"
+    "sourceHash": "6994272"
   },
   "settings.network.enabled.keywords": "mạng, kết nối mạng, bật, khám phá, mạng cục bộ, cục bộ, quyền",
   "@settings.network.enabled.keywords": {
@@ -1318,9 +1318,9 @@
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "{platform, select, macos {Khi bật, Cmdr thiết lập kết nối trực tiếp tới các mục chia sẻ SMB để thao tác tệp nhanh hơn. Bản gắn kết hệ thống vẫn giữ cho Finder và các ứng dụng khác.} windows {When this is on, Cmdr establishes a direct connection to SMB shares for faster file operations. The system connection stays for File Explorer and other apps.} other {When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for your file manager and other apps.}}",
+  "settings.network.directSmbConnection.description": "{platform, select, macos {Khi bật, Cmdr thiết lập kết nối trực tiếp tới các mục chia sẻ SMB để thao tác tệp nhanh hơn. Bản gắn kết hệ thống vẫn giữ cho Finder và các ứng dụng khác.} windows {Khi bật, Cmdr thiết lập kết nối trực tiếp tới các mục chia sẻ SMB để thao tác tệp nhanh hơn. Kết nối hệ thống vẫn giữ cho File Explorer và các ứng dụng khác.} other {Khi bật, Cmdr thiết lập kết nối trực tiếp tới các mục chia sẻ SMB để thao tác tệp nhanh hơn. Bản gắn kết hệ thống vẫn giữ cho trình quản lý tệp của bạn và các ứng dụng khác.}}",
   "@settings.network.directSmbConnection.description": {
-    "sourceHash": "44a5a6d"
+    "sourceHash": "429c68c"
   },
   "settings.network.directSmbConnection.keywords": "trực tiếp, nhanh, kết nối, mạng, hiệu năng, tốc độ, mục chia sẻ",
   "@settings.network.directSmbConnection.keywords": {
@@ -1330,9 +1330,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr mã hóa các kết nối của mình tới mục chia sẻ SMB, kể cả khi máy chủ không đòi hỏi, và không mở mục chia sẻ nào có kết nối không mã hóa được, kể cả mục mà máy Mac của bạn đã kết nối mà không mã hóa. Kết nối với tư cách khách không mã hóa được, nên bạn cần đăng nhập. Các kết nối Cmdr đang mở vẫn giữ nguyên cho tới khi kết nối lại.} windows {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your PC connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.} other {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your computer connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.}}",
+  "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr mã hóa các kết nối của mình tới mục chia sẻ SMB, kể cả khi máy chủ không đòi hỏi, và không mở mục chia sẻ nào có kết nối không mã hóa được, kể cả mục mà máy Mac của bạn đã kết nối mà không mã hóa. Kết nối với tư cách khách không mã hóa được, nên bạn cần đăng nhập. Các kết nối Cmdr đang mở vẫn giữ nguyên cho tới khi kết nối lại.} windows {Cmdr mã hóa các kết nối của mình tới mục chia sẻ SMB, kể cả khi máy chủ không đòi hỏi, và không mở mục chia sẻ nào có kết nối không mã hóa được, kể cả mục mà PC của bạn đã kết nối mà không mã hóa. Kết nối với tư cách khách không mã hóa được, nên bạn cần đăng nhập. Các kết nối Cmdr đang mở vẫn giữ nguyên cho tới khi kết nối lại.} other {Cmdr mã hóa các kết nối của mình tới mục chia sẻ SMB, kể cả khi máy chủ không đòi hỏi, và không mở mục chia sẻ nào có kết nối không mã hóa được, kể cả mục mà máy tính của bạn đã kết nối mà không mã hóa. Kết nối với tư cách khách không mã hóa được, nên bạn cần đăng nhập. Các kết nối Cmdr đang mở vẫn giữ nguyên cho tới khi kết nối lại.}}",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "8c27a6c"
+    "sourceHash": "26291fe"
   },
   "settings.network.requireSmbEncryption.keywords": "bảo mật, an toàn, riêng tư, quyền riêng tư, bảo vệ, an ninh, mật mã",
   "@settings.network.requireSmbEncryption.keywords": {
@@ -1442,9 +1442,9 @@
   "@settings.fileOperations.adbEnabled.label": {
     "sourceHash": "3651356"
   },
-  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {Truy cập toàn bộ hệ thống tệp của một điện thoại Android đang bật gỡ lỗi qua USB, phần mà MTP không cho bạn thấy. Cần có bộ công cụ nền tảng Android (lệnh “adb”) trên máy Mac này. Cứ để bật cũng không tốn gì nếu bạn chưa cài công cụ Android nào.} windows {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this PC. Leaving this on costs nothing if you have no Android tooling installed.} other {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this computer. Leaving this on costs nothing if you have no Android tooling installed.}}",
+  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {Truy cập toàn bộ hệ thống tệp của một điện thoại Android đang bật gỡ lỗi qua USB, phần mà MTP không cho bạn thấy. Cần có bộ công cụ nền tảng Android (lệnh “adb”) trên máy Mac này. Cứ để bật cũng không tốn gì nếu bạn chưa cài công cụ Android nào.} windows {Truy cập toàn bộ hệ thống tệp của một điện thoại Android đang bật gỡ lỗi qua USB, phần mà MTP không cho bạn thấy. Cần có bộ công cụ nền tảng Android (lệnh “adb”) trên PC này. Cứ để bật cũng không tốn gì nếu bạn chưa cài công cụ Android nào.} other {Truy cập toàn bộ hệ thống tệp của một điện thoại Android đang bật gỡ lỗi qua USB, phần mà MTP không cho bạn thấy. Cần có bộ công cụ nền tảng Android (lệnh “adb”) trên máy tính này. Cứ để bật cũng không tốn gì nếu bạn chưa cài công cụ Android nào.}}",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "a89c957"
+    "sourceHash": "4c92b52"
   },
   "settings.fileOperations.adbEnabled.keywords": "gỡ lỗi qua USB, tùy chọn cho nhà phát triển, nhà phát triển, điện thoại, thiết bị",
   "@settings.fileOperations.adbEnabled.keywords": {
@@ -1454,9 +1454,9 @@
   "@settings.fileOperations.adbBinaryPath.label": {
     "sourceHash": "a67fbbd"
   },
-  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Để trống thì Cmdr tìm adb theo cách thông thường, gồm cả Android SDK và Homebrew. Hãy trỏ sang nơi khác nếu bạn để bộ công cụ nền tảng ở chỗ riêng.} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
+  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Để trống thì Cmdr tìm adb theo cách thông thường, gồm cả Android SDK và Homebrew. Hãy trỏ sang nơi khác nếu bạn để bộ công cụ nền tảng ở chỗ riêng.} other {Để trống thì Cmdr tìm adb theo cách thông thường, gồm cả Android SDK và PATH của bạn. Hãy trỏ sang nơi khác nếu bạn để bộ công cụ nền tảng ở chỗ riêng.}}",
   "@settings.fileOperations.adbBinaryPath.description": {
-    "sourceHash": "940ff29"
+    "sourceHash": "e8cde17"
   },
   "settings.fileOperations.adbBinaryPath.keywords": "đường dẫn, tệp thực thi, nhị phân, vị trí",
   "@settings.fileOperations.adbBinaryPath.keywords": {
@@ -1534,9 +1534,9 @@
   "@settings.viewer.showTextCursor.keywords": {
     "sourceHash": "1214804"
   },
-  "settings.developer.mcpEnabled.label": "{platform, select, windows {Turn on MCP server} other {Bật máy chủ MCP}}",
+  "settings.developer.mcpEnabled.label": "{platform, select, windows {Bật máy chủ MCP} other {Bật máy chủ MCP}}",
   "@settings.developer.mcpEnabled.label": {
-    "sourceHash": "32b62ff"
+    "sourceHash": "a2e166c"
   },
   "settings.developer.mcpEnabled.description": "Khởi động một máy chủ Model Context Protocol để tích hợp với trợ lý AI.",
   "@settings.developer.mcpEnabled.description": {
@@ -1614,9 +1614,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "{platform, select, windows {Please turn this on to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats.} other {Hãy bật mục này để giúp chúng tôi thấy tính năng nào quan trọng trong giai đoạn beta công khai.\nThống kê không gắn với tên hay email của bạn, mà gắn với một mã định danh ngẫu nhiên.\nCmdr không bao giờ gửi tên tệp, đường dẫn, từ khóa tìm kiếm hay câu lệnh.\nKhi tắt, Cmdr không gửi bất kỳ thống kê nào.}}",
+  "settings.analytics.enabled.description": "{platform, select, windows {Hãy bật mục này để giúp chúng tôi thấy tính năng nào quan trọng trong giai đoạn beta công khai.\nThống kê không gắn với tên hay email của bạn, mà gắn với một mã định danh ngẫu nhiên.\nCmdr không bao giờ gửi tên tệp, đường dẫn, từ khóa tìm kiếm hay câu lệnh.\nKhi tắt, Cmdr không gửi bất kỳ thống kê nào.} other {Hãy bật mục này để giúp chúng tôi thấy tính năng nào quan trọng trong giai đoạn beta công khai.\nThống kê không gắn với tên hay email của bạn, mà gắn với một mã định danh ngẫu nhiên.\nCmdr không bao giờ gửi tên tệp, đường dẫn, từ khóa tìm kiếm hay câu lệnh.\nKhi tắt, Cmdr không gửi bất kỳ thống kê nào.}}",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "f5534ee"
+    "sourceHash": "2527a03"
   },
   "settings.analytics.enabled.keywords": "phân tích, sử dụng, thống kê, quyền riêng tư, đo từ xa, thử nghiệm, theo dõi, từ chối",
   "@settings.analytics.enabled.keywords": {
@@ -1638,9 +1638,9 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "{platform, select, macos {Tự động gửi báo cáo khi Cmdr thoát bất ngờ hoặc gặp sự cố ở chế độ nền. Gồm phiên bản ứng dụng, phiên bản macOS, và phần mã nào đã gặp sự cố. Không bao giờ gồm tên tệp hay dữ liệu cá nhân.} windows {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Windows version, and where in the code the problem happened. Never file names or personal data.} other {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Linux distribution and version, and where in the code the problem happened. Never file names or personal data.}}",
+  "settings.updates.crashReports.description": "{platform, select, macos {Tự động gửi báo cáo khi Cmdr thoát bất ngờ hoặc gặp sự cố ở chế độ nền. Gồm phiên bản ứng dụng, phiên bản macOS, và phần mã nào đã gặp sự cố. Không bao giờ gồm tên tệp hay dữ liệu cá nhân.} windows {Tự động gửi báo cáo khi Cmdr thoát bất ngờ hoặc gặp sự cố ở chế độ nền. Gồm phiên bản ứng dụng, phiên bản Windows, và phần mã nào đã gặp sự cố. Không bao giờ gồm tên tệp hay dữ liệu cá nhân.} other {Tự động gửi báo cáo khi Cmdr thoát bất ngờ hoặc gặp sự cố ở chế độ nền. Gồm phiên bản ứng dụng, bản phân phối và phiên bản Linux, và phần mã nào đã gặp sự cố. Không bao giờ gồm tên tệp hay dữ liệu cá nhân.}}",
   "@settings.updates.crashReports.description": {
-    "sourceHash": "e726766"
+    "sourceHash": "abfdc61"
   },
   "settings.updates.crashReports.keywords": "sự cố, báo cáo sự cố, báo cáo, thoát bất ngờ, quyền riêng tư, đo từ xa, lỗi",
   "@settings.updates.crashReports.keywords": {
@@ -1734,9 +1734,9 @@
   "@settings.advanced.indexPauseFreeSpacePercent.label": {
     "sourceHash": "c6fe418"
   },
-  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {Cmdr tạm dừng lập chỉ mục ổ đĩa khi dung lượng trống trên ổ đĩa khởi động tụt xuống dưới mức phần trăm này, để chỉ mục không chiếm chỗ mà tệp của bạn cần. Việc lập chỉ mục sẽ tiếp tục từ chỗ đã dừng khi dung lượng trống tăng lên cao hơn mức này một điểm phần trăm. Tính năng này hoạt động dù “Cảnh báo thiếu dung lượng đĩa” đang bật hay tắt.} windows {Cmdr pauses drive indexing when free space on your system drive drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} other {Cmdr pauses drive indexing when free space on your system disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.}}",
+  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {Cmdr tạm dừng lập chỉ mục ổ đĩa khi dung lượng trống trên ổ đĩa khởi động tụt xuống dưới mức phần trăm này, để chỉ mục không chiếm chỗ mà tệp của bạn cần. Việc lập chỉ mục sẽ tiếp tục từ chỗ đã dừng khi dung lượng trống tăng lên cao hơn mức này một điểm phần trăm. Tính năng này hoạt động dù “Cảnh báo thiếu dung lượng đĩa” đang bật hay tắt.} windows {Cmdr tạm dừng lập chỉ mục ổ đĩa khi dung lượng trống trên ổ đĩa hệ thống tụt xuống dưới mức phần trăm này, để chỉ mục không chiếm chỗ mà tệp của bạn cần. Việc lập chỉ mục sẽ tiếp tục từ chỗ đã dừng khi dung lượng trống tăng lên cao hơn mức này một điểm phần trăm. Tính năng này hoạt động dù “Cảnh báo thiếu dung lượng đĩa” đang bật hay tắt.} other {Cmdr tạm dừng lập chỉ mục ổ đĩa khi dung lượng trống trên ổ đĩa hệ thống tụt xuống dưới mức phần trăm này, để chỉ mục không chiếm chỗ mà tệp của bạn cần. Việc lập chỉ mục sẽ tiếp tục từ chỗ đã dừng khi dung lượng trống tăng lên cao hơn mức này một điểm phần trăm. Tính năng này hoạt động dù “Cảnh báo thiếu dung lượng đĩa” đang bật hay tắt.}}",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "4ee1cce"
+    "sourceHash": "bb41d41"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "đĩa, ổ đĩa, dung lượng, đầy, sắp đầy, còn trống, chỉ mục, tạm dừng, lưu trữ, ngưỡng, phần trăm, thiếu",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
@@ -1798,9 +1798,9 @@
   "@settings.fileOperations.showAlreadyGoneToast.label": {
     "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or select “Never show this again” in the notice) to stop these notices.} other {Khi bạn xóa thứ gì đó mà một ứng dụng khác đã di chuyển hoặc xóa trước, Cmdr coi như đã xong và hiển thị một thông báo ngắn cho bạn biết. Hãy tắt tùy chọn này (hoặc bấm “Không hiển thị lại nữa” trong thông báo) để ngừng hiển thị các thông báo này.}}",
+  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {Khi bạn xóa thứ gì đó mà một ứng dụng khác đã di chuyển hoặc xóa trước, Cmdr coi như đã xong và hiển thị một thông báo ngắn cho bạn biết. Hãy tắt tùy chọn này (hoặc chọn “Không hiển thị lại nữa” trong thông báo) để ngừng hiển thị các thông báo này.} other {Khi bạn xóa thứ gì đó mà một ứng dụng khác đã di chuyển hoặc xóa trước, Cmdr coi như đã xong và hiển thị một thông báo ngắn cho bạn biết. Hãy tắt tùy chọn này (hoặc bấm “Không hiển thị lại nữa” trong thông báo) để ngừng hiển thị các thông báo này.}}",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "9655e46"
+    "sourceHash": "72a3ead"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "biến mất, không còn, mất tích, đã chuyển, thông báo, nhắc, cảnh báo",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -1978,9 +1978,9 @@
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"
   },
-  "settings.advanced.logLlmCalls.description": "{platform, select, macos {Lưu mỗi yêu cầu và phản hồi AI vào một thư mục cục bộ (llm-logs) để gỡ lỗi. Các tệp này ở lại trên máy Mac của bạn và bao gồm tên tệp và đường dẫn mà Cmdr gửi đến nhà cung cấp của bạn.} windows {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your PC and include the file names and paths Cmdr sends to your provider.} other {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your computer and include the file names and paths Cmdr sends to your provider.}}",
+  "settings.advanced.logLlmCalls.description": "{platform, select, macos {Lưu mỗi yêu cầu và phản hồi AI vào một thư mục cục bộ (llm-logs) để gỡ lỗi. Các tệp này ở lại trên máy Mac của bạn và bao gồm tên tệp và đường dẫn mà Cmdr gửi đến nhà cung cấp của bạn.} windows {Lưu mỗi yêu cầu và phản hồi AI vào một thư mục cục bộ (llm-logs) để gỡ lỗi. Các tệp này ở lại trên PC của bạn và bao gồm tên tệp và đường dẫn mà Cmdr gửi đến nhà cung cấp của bạn.} other {Lưu mỗi yêu cầu và phản hồi AI vào một thư mục cục bộ (llm-logs) để gỡ lỗi. Các tệp này ở lại trên máy tính của bạn và bao gồm tên tệp và đường dẫn mà Cmdr gửi đến nhà cung cấp của bạn.}}",
   "@settings.advanced.logLlmCalls.description": {
-    "sourceHash": "86b3d34"
+    "sourceHash": "0f9361b"
   },
   "settings.advanced.logLlmCalls.keywords": "trí tuệ nhân tạo, nhật ký, gỡ lỗi, yêu cầu, phản hồi, câu lệnh, lời nhắc, mô hình",
   "@settings.advanced.logLlmCalls.keywords": {
@@ -1990,9 +1990,9 @@
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
   },
-  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {Thời gian chờ phân giải các dịch vụ mạng qua Bonjour.} other {Timeout for resolving network services found on your local network (mDNS).}}",
+  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {Thời gian chờ phân giải các dịch vụ mạng qua Bonjour.} other {Thời gian chờ phân giải các dịch vụ mạng tìm thấy trên mạng cục bộ của bạn (mDNS).}}",
   "@settings.advanced.serviceResolveTimeout.description": {
-    "sourceHash": "5cf231d"
+    "sourceHash": "cb44fa3"
   },
   "settings.advanced.serviceResolveTimeout.keywords": "phân giải, thời gian chờ, dịch vụ, khám phá dịch vụ, khám phá mạng, dò tìm, tra cứu, mạng cục bộ, chờ, đợi",
   "@settings.advanced.serviceResolveTimeout.keywords": {
@@ -2764,9 +2764,9 @@
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "{platform, select, windows {Turn on networking, direct SMB connections, share cache, and timeouts.} other {Bật kết nối mạng, kết nối SMB trực tiếp, bộ đệm mục chia sẻ, và thời gian chờ.}}",
+  "settings.summary.smbNetworkShares": "{platform, select, windows {Bật kết nối mạng, kết nối SMB trực tiếp, bộ đệm mục chia sẻ, và thời gian chờ.} other {Bật kết nối mạng, kết nối SMB trực tiếp, bộ đệm mục chia sẻ, và thời gian chờ.}}",
   "@settings.summary.smbNetworkShares": {
-    "sourceHash": "10604ac"
+    "sourceHash": "47e037d"
   },
   "settings.summary.servers": "Các khóa máy chủ SSH mà bạn đã tin cậy.",
   "@settings.summary.servers": {
@@ -2941,18 +2941,18 @@
   "@settings.sidebar.matchCount": {
     "sourceHash": "fb95dc1"
   },
-  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {Mở Cài đặt hệ thống để đổi màu giao diện hệ thống} windows {Open Windows Settings to change the system accent color} other {Open your system settings to change the system accent color}}",
+  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {Mở Cài đặt hệ thống để đổi màu giao diện hệ thống} windows {Mở Cài đặt Windows để đổi màu chủ đề hệ thống} other {Mở cài đặt hệ thống của bạn để đổi màu chủ đề hệ thống}}",
   "@settings.appearance.themeColorSwatchAria": {
-    "sourceHash": "4cad022"
+    "sourceHash": "b76cab4"
   },
-  "settings.appearance.appColorHintPrefix": "{platform, select, macos {Để đổi màu giao diện hệ thống, vào} other {To change your system accent color, go to}}",
+  "settings.appearance.appColorHintPrefix": "{platform, select, macos {Để đổi màu giao diện hệ thống, vào} other {Để đổi màu chủ đề hệ thống, vào}}",
   "@settings.appearance.appColorHintPrefix": {
-    "sourceHash": "748470a"
+    "sourceHash": "f06932f"
   },
-  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {cài đặt giao diện hệ thống của bạn}}",
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Cài đặt > Cá nhân hóa > Màu} other {cài đặt giao diện hệ thống của bạn}}",
   "@settings.appearance.appColorHintLink": {
-    "sourceHash": "5c94206",
-    "sameAsSourceJustification": "Placeholder-only navigation path '{systemSettings} > {appearance}': both placeholders are OS-localized macOS labels injected at runtime (do-not-translate), and '> ' is the literal path separator. Nothing to translate."
+    "sourceHash": "551a3a4",
+    "sameAsSourceJustification": "The macos branch is only the two OS-supplied placeholders joined by the path arrow; nothing in it is translatable."
   },
   "settings.appearance.datePreviewLabel": "Xem trước:",
   "@settings.appearance.datePreviewLabel": {
@@ -3187,17 +3187,17 @@
   "@settings.securityLog.enabled.label": {
     "sourceHash": "9f5e32e"
   },
-  "settings.securityLog.enabled.description": "{platform, select, macos {Giữ một tệp nhỏ trên máy Mac này để ghi lại các thay đổi và lần từ chối liên quan đến bảo mật, như việc đồng ý dùng AI đám mây, một bản cập nhật đã cài đặt hoặc một ứng dụng bị máy chủ MCP từ chối. Tệp này không chứa tên tệp, nội dung hay mật khẩu, và không bao giờ rời khỏi máy Mac của bạn.} windows {Keep a small file on this PC that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your PC.} other {Keep a small file on this computer that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your computer.}}",
+  "settings.securityLog.enabled.description": "{platform, select, macos {Giữ một tệp nhỏ trên máy Mac này để ghi lại các thay đổi và lần từ chối liên quan đến bảo mật, như việc đồng ý dùng AI đám mây, một bản cập nhật đã cài đặt hoặc một ứng dụng bị máy chủ MCP từ chối. Tệp này không chứa tên tệp, nội dung hay mật khẩu, và không bao giờ rời khỏi máy Mac của bạn.} windows {Giữ một tệp nhỏ trên PC này để ghi lại các thay đổi và lần từ chối liên quan đến bảo mật, như việc đồng ý dùng AI đám mây, một bản cập nhật đã cài đặt hoặc một ứng dụng bị máy chủ MCP từ chối. Tệp này không chứa tên tệp, nội dung hay mật khẩu, và không bao giờ rời khỏi PC của bạn.} other {Giữ một tệp nhỏ trên máy tính này để ghi lại các thay đổi và lần từ chối liên quan đến bảo mật, như việc đồng ý dùng AI đám mây, một bản cập nhật đã cài đặt hoặc một ứng dụng bị máy chủ MCP từ chối. Tệp này không chứa tên tệp, nội dung hay mật khẩu, và không bao giờ rời khỏi máy tính của bạn.}}",
   "@settings.securityLog.enabled.description": {
-    "sourceHash": "11361eb"
+    "sourceHash": "c0d2160"
   },
   "settings.securityLog.enabled.keywords": "bảo mật, an ninh, nhật ký, kiểm toán, ghi lại, sự kiện, truy cập, quyền riêng tư",
   "@settings.securityLog.enabled.keywords": {
     "sourceHash": "6f113c0"
   },
-  "settings.securityLog.showInFinder": "{platform, select, macos {Hiển thị trong Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "settings.securityLog.showInFinder": "{platform, select, macos {Hiển thị trong Finder} windows {Hiển thị trong File Explorer} other {Hiển thị trong trình quản lý tệp}}",
   "@settings.securityLog.showInFinder": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "settings.updates.showSecurityLog.keywords": "bảo mật, nhật ký, kiểm toán, sự kiện, tệp, mở, hiển thị, hiện, thư mục, vị trí",
   "@settings.updates.showSecurityLog.keywords": {
@@ -3260,9 +3260,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "14adb30"
   },
-  "settings.updates.emailPrivacyNote": "{platform, select, macos {Chỉ lưu trên máy Mac của bạn. Chúng tôi không bao giờ gửi nó cùng thống kê sử dụng của bạn, nên thống kê không thể bị truy ngược về bạn. Chỉ dùng để liên hệ và để tùy chọn đính kèm vào báo cáo bạn gửi. Để ngừng nhận email, dùng liên kết hủy đăng ký trong bất kỳ thư nào chúng tôi gửi.} windows {Stored only on your PC. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.} other {Stored only on your computer. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.}}",
+  "settings.updates.emailPrivacyNote": "{platform, select, macos {Chỉ lưu trên máy Mac của bạn. Chúng tôi không bao giờ gửi nó cùng thống kê sử dụng của bạn, nên thống kê không thể bị truy ngược về bạn. Chỉ dùng để liên hệ và để tùy chọn đính kèm vào báo cáo bạn gửi. Để ngừng nhận email, dùng liên kết hủy đăng ký trong bất kỳ thư nào chúng tôi gửi.} windows {Chỉ lưu trên PC của bạn. Chúng tôi không bao giờ gửi nó cùng thống kê sử dụng của bạn, nên thống kê không thể bị truy ngược về bạn. Chỉ dùng để liên hệ và để tùy chọn đính kèm vào báo cáo bạn gửi. Để ngừng nhận email, dùng liên kết hủy đăng ký trong bất kỳ thư nào chúng tôi gửi.} other {Chỉ lưu trên máy tính của bạn. Chúng tôi không bao giờ gửi nó cùng thống kê sử dụng của bạn, nên thống kê không thể bị truy ngược về bạn. Chỉ dùng để liên hệ và để tùy chọn đính kèm vào báo cáo bạn gửi. Để ngừng nhận email, dùng liên kết hủy đăng ký trong bất kỳ thư nào chúng tôi gửi.}}",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "cf92795"
+    "sourceHash": "d8146b0"
   },
   "settings.logging.openLogFile": "Mở tệp nhật ký",
   "@settings.logging.openLogFile": {
@@ -3428,13 +3428,13 @@
   "@settings.network.trustedCertificates.keywords": {
     "sourceHash": "554a965"
   },
-  "settings.servers.trustedCertificates.description": "{platform, select, macos {Khi macOS không tin cậy chứng nhận của một máy chủ, Cmdr hỏi trước khi tin cậy chứng nhận đó thay bạn, và ghi nhớ câu trả lời của bạn ở đây. Máy chủ tại nhà thường tự tạo chứng nhận riêng.} windows {When Windows doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.} other {When your system doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.}}",
+  "settings.servers.trustedCertificates.description": "{platform, select, macos {Khi macOS không tin cậy chứng nhận của một máy chủ, Cmdr hỏi trước khi tin cậy chứng nhận đó thay bạn, và ghi nhớ câu trả lời của bạn ở đây. Máy chủ tại nhà thường tự tạo chứng nhận riêng.} windows {Khi Windows không tin cậy chứng nhận của một máy chủ, Cmdr hỏi trước khi tin cậy chứng nhận đó thay bạn, và ghi nhớ câu trả lời của bạn ở đây. Máy chủ tại nhà thường tự tạo chứng nhận riêng.} other {Khi hệ thống của bạn không tin cậy chứng nhận của một máy chủ, Cmdr hỏi trước khi tin cậy chứng nhận đó thay bạn, và ghi nhớ câu trả lời của bạn ở đây. Máy chủ tại nhà thường tự tạo chứng nhận riêng.}}",
   "@settings.servers.trustedCertificates.description": {
-    "sourceHash": "0b00c1e"
+    "sourceHash": "9eb44db"
   },
-  "settings.servers.trustedCertificates.empty": "{platform, select, macos {Chưa tin cậy chứng nhận nào. Khi bạn kết nối tới một máy chủ WebDAV mà macOS không tin cậy, Cmdr sẽ cho bạn xem dấu vân tay của chứng nhận rồi hỏi bạn.} windows {Nothing trusted yet. When you connect to a WebDAV server Windows doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.} other {Nothing trusted yet. When you connect to a WebDAV server your system doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.}}",
+  "settings.servers.trustedCertificates.empty": "{platform, select, macos {Chưa tin cậy chứng nhận nào. Khi bạn kết nối tới một máy chủ WebDAV mà macOS không tin cậy, Cmdr sẽ cho bạn xem dấu vân tay của chứng nhận rồi hỏi bạn.} windows {Chưa tin cậy chứng nhận nào. Khi bạn kết nối tới một máy chủ WebDAV mà Windows không tin cậy, Cmdr sẽ cho bạn xem dấu vân tay của chứng nhận rồi hỏi bạn.} other {Chưa tin cậy chứng nhận nào. Khi bạn kết nối tới một máy chủ WebDAV mà hệ thống của bạn không tin cậy, Cmdr sẽ cho bạn xem dấu vân tay của chứng nhận rồi hỏi bạn.}}",
   "@settings.servers.trustedCertificates.empty": {
-    "sourceHash": "a3c2089"
+    "sourceHash": "da34116"
   },
   "settings.servers.trustedCertificates.confirmTitle": "Quên chứng nhận này?",
   "@settings.servers.trustedCertificates.confirmTitle": {
@@ -3524,13 +3524,13 @@
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },
-  "settings.dataWipe.card": "{platform, select, macos {Dữ liệu của bạn trên máy Mac này} windows {Your data on this PC} other {Your data on this computer}}",
+  "settings.dataWipe.card": "{platform, select, macos {Dữ liệu của bạn trên máy Mac này} windows {Dữ liệu của bạn trên PC này} other {Dữ liệu của bạn trên máy tính này}}",
   "@settings.dataWipe.card": {
-    "sourceHash": "e4b3cee"
+    "sourceHash": "3d21fb8"
   },
-  "settings.dataWipe.description": "{platform, select, macos {Xóa mọi thứ Cmdr giữ trên máy Mac này: cài đặt, mật khẩu đã lưu, lịch sử, chỉ mục và mô hình đã tải về. Sau đó Cmdr sẽ thoát.} windows {Delete everything Cmdr keeps on this PC: settings, saved passwords, histories, indexes, and downloaded models. Cmdr closes afterwards.} other {Delete everything Cmdr keeps on this computer: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.}}",
+  "settings.dataWipe.description": "{platform, select, macos {Xóa mọi thứ Cmdr giữ trên máy Mac này: cài đặt, mật khẩu đã lưu, lịch sử, chỉ mục và mô hình đã tải về. Sau đó Cmdr sẽ thoát.} windows {Xóa mọi thứ Cmdr giữ trên PC này: cài đặt, mật khẩu đã lưu, lịch sử, chỉ mục và mô hình đã tải về. Sau đó Cmdr sẽ đóng.} other {Xóa mọi thứ Cmdr giữ trên máy tính này: cài đặt, mật khẩu đã lưu, lịch sử, chỉ mục và mô hình đã tải về. Sau đó Cmdr sẽ thoát.}}",
   "@settings.dataWipe.description": {
-    "sourceHash": "f1012f4"
+    "sourceHash": "7dc0c1c"
   },
   "settings.dataWipe.button": "Xóa toàn bộ dữ liệu Cmdr",
   "@settings.dataWipe.button": {
@@ -3540,17 +3540,17 @@
   "@settings.updates.deleteAllData.keywords": {
     "sourceHash": "0ffb0f6"
   },
-  "settings.dataWipe.title": "{platform, select, macos {Xóa toàn bộ dữ liệu Cmdr trên máy Mac này?} windows {Delete all Cmdr data on this PC?} other {Delete all Cmdr data on this computer?}}",
+  "settings.dataWipe.title": "{platform, select, macos {Xóa toàn bộ dữ liệu Cmdr trên máy Mac này?} windows {Xóa toàn bộ dữ liệu Cmdr trên PC này?} other {Xóa toàn bộ dữ liệu Cmdr trên máy tính này?}}",
   "@settings.dataWipe.title": {
-    "sourceHash": "35db003"
+    "sourceHash": "63322b8"
   },
-  "settings.dataWipe.intro": "{platform, select, macos {Cmdr sẽ xóa mọi thứ đang giữ trên máy Mac này, rồi thoát. Bạn không thể hoàn tác việc này.} windows {Cmdr deletes everything it keeps on this PC, then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer, then quits. This can’t be undone.}}",
+  "settings.dataWipe.intro": "{platform, select, macos {Cmdr sẽ xóa mọi thứ đang giữ trên máy Mac này, rồi thoát. Bạn không thể hoàn tác việc này.} windows {Cmdr sẽ xóa mọi thứ đang giữ trên PC này, rồi đóng. Bạn không thể hoàn tác việc này.} other {Cmdr sẽ xóa mọi thứ đang giữ trên máy tính này, rồi thoát. Bạn không thể hoàn tác việc này.}}",
   "@settings.dataWipe.intro": {
-    "sourceHash": "61ed875"
+    "sourceHash": "75dd0c6"
   },
-  "settings.dataWipe.introWithSize": "{platform, select, macos {Cmdr sẽ xóa mọi thứ đang giữ trên máy Mac này ({sizeText}), rồi thoát. Bạn không thể hoàn tác việc này.} windows {Cmdr deletes everything it keeps on this PC ({sizeText}), then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer ({sizeText}), then quits. This can’t be undone.}}",
+  "settings.dataWipe.introWithSize": "{platform, select, macos {Cmdr sẽ xóa mọi thứ đang giữ trên máy Mac này ({sizeText}), rồi thoát. Bạn không thể hoàn tác việc này.} windows {Cmdr sẽ xóa mọi thứ đang giữ trên PC này ({sizeText}), rồi đóng. Bạn không thể hoàn tác việc này.} other {Cmdr sẽ xóa mọi thứ đang giữ trên máy tính này ({sizeText}), rồi thoát. Bạn không thể hoàn tác việc này.}}",
   "@settings.dataWipe.introWithSize": {
-    "sourceHash": "e5262e8"
+    "sourceHash": "8dacc9c"
   },
   "settings.dataWipe.goesHeading": "Những gì bị xóa",
   "@settings.dataWipe.goesHeading": {
@@ -3568,13 +3568,13 @@
   "@settings.dataWipe.goes.apiKeys": {
     "sourceHash": "146397c"
   },
-  "settings.dataWipe.goes.license": "{platform, select, macos {Giấy phép trên máy Mac này. Để kích hoạt lại, hãy nhập khóa giấy phép từ email mua hàng của bạn.} windows {The license on this PC. To activate it again, enter the license key from your purchase email.} other {The license on this computer. To activate it again, enter the license key from your purchase email.}}",
+  "settings.dataWipe.goes.license": "{platform, select, macos {Giấy phép trên máy Mac này. Để kích hoạt lại, hãy nhập khóa giấy phép từ email mua hàng của bạn.} windows {Giấy phép trên PC này. Để kích hoạt lại, hãy nhập khóa giấy phép từ email mua hàng của bạn.} other {Giấy phép trên máy tính này. Để kích hoạt lại, hãy nhập khóa giấy phép từ email mua hàng của bạn.}}",
   "@settings.dataWipe.goes.license": {
-    "sourceHash": "90b5b06"
+    "sourceHash": "12597d5"
   },
-  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {Giấy phép trên máy Mac này, nếu bạn đã kích hoạt. Để kích hoạt lại, hãy nhập khóa giấy phép từ email mua hàng của bạn.} windows {The license on this PC, if you activated one. To activate it again, enter the license key from your purchase email.} other {The license on this computer, if you activated one. To activate it again, enter the license key from your purchase email.}}",
+  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {Giấy phép trên máy Mac này, nếu bạn đã kích hoạt. Để kích hoạt lại, hãy nhập khóa giấy phép từ email mua hàng của bạn.} windows {Giấy phép trên PC này, nếu bạn đã kích hoạt. Để kích hoạt lại, hãy nhập khóa giấy phép từ email mua hàng của bạn.} other {Giấy phép trên máy tính này, nếu bạn đã kích hoạt. Để kích hoạt lại, hãy nhập khóa giấy phép từ email mua hàng của bạn.}}",
   "@settings.dataWipe.goes.licenseIfAny": {
-    "sourceHash": "db7f6f2"
+    "sourceHash": "93cc028"
   },
   "settings.dataWipe.goes.askCmdr": "Các cuộc trò chuyện Ask Cmdr và những gì Cmdr nhớ về bạn",
   "@settings.dataWipe.goes.askCmdr": {
@@ -3616,9 +3616,9 @@
   "@settings.dataWipe.cancel": {
     "sourceHash": "19766ed"
   },
-  "settings.dataWipe.confirm": "{platform, select, windows {Delete all and exit} other {Xóa hết và thoát}}",
+  "settings.dataWipe.confirm": "{platform, select, windows {Xóa hết và thoát} other {Xóa hết và thoát}}",
   "@settings.dataWipe.confirm": {
-    "sourceHash": "5efdab7"
+    "sourceHash": "8b73f1a"
   },
   "settings.dataWipe.deleting": "Đang xóa…",
   "@settings.dataWipe.deleting": {
@@ -3640,9 +3640,9 @@
   "@settings.dataWipe.doneTitle": {
     "sourceHash": "18aa13d"
   },
-  "settings.dataWipe.doneMessage": "{platform, select, macos {Mọi thứ Cmdr giữ trên máy Mac này đã được xóa hết. Để xóa luôn cả ứng dụng, hãy chuyển ứng dụng vào Thùng rác sau khi Cmdr thoát.} windows {Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps after Cmdr closes.} other {Everything Cmdr kept on this computer is gone. To remove the app as well, uninstall it the way you installed it after Cmdr quits.}}",
+  "settings.dataWipe.doneMessage": "{platform, select, macos {Mọi thứ Cmdr giữ trên máy Mac này đã được xóa hết. Để xóa luôn cả ứng dụng, hãy chuyển ứng dụng vào Thùng rác sau khi Cmdr thoát.} windows {Mọi thứ Cmdr giữ trên PC này đã được xóa hết. Để xóa luôn cả ứng dụng, hãy gỡ cài đặt ứng dụng trong Cài đặt > Ứng dụng sau khi Cmdr đóng.} other {Mọi thứ Cmdr giữ trên máy tính này đã được xóa hết. Để xóa luôn cả ứng dụng, hãy gỡ cài đặt ứng dụng theo cách bạn đã cài đặt, sau khi Cmdr thoát.}}",
   "@settings.dataWipe.doneMessage": {
-    "sourceHash": "a0d09dc"
+    "sourceHash": "a18fa9f"
   },
   "settings.dataWipe.partialTitle": "Cmdr đã xóa phần lớn dữ liệu",
   "@settings.dataWipe.partialTitle": {
@@ -3652,17 +3652,17 @@
   "@settings.dataWipe.partialMessage": {
     "sourceHash": "24d0b58"
   },
-  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, other {{countText} mục có tên “{itemName}” trong Truy cập chuỗi khóa}}} windows {{count, plural, one {One item in Credential Manager named “{itemName}”} other {{countText} items in Credential Manager named “{itemName}”}}} other {{count, plural, one {One item in your keyring named “{itemName}”} other {{countText} items in your keyring named “{itemName}”}}}}",
+  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, other {{countText} mục có tên “{itemName}” trong Truy cập chuỗi khóa}}} windows {{count, plural, other {{countText} mục có tên “{itemName}” trong Trình quản lý thông tin xác thực}}} other {{count, plural, other {{countText} mục có tên “{itemName}” trong kho khóa của bạn}}}}",
   "@settings.dataWipe.leftover.secretItems": {
-    "sourceHash": "91321bb"
+    "sourceHash": "6cf1e9c"
   },
-  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {Mọi mục có tên “{itemName}” trong Truy cập chuỗi khóa, nếu có} windows {Any items in Credential Manager named “{itemName}”} other {Any items in your keyring named “{itemName}”}}",
+  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {Mọi mục có tên “{itemName}” trong Truy cập chuỗi khóa, nếu có} windows {Mọi mục có tên “{itemName}” trong Trình quản lý thông tin xác thực, nếu có} other {Mọi mục có tên “{itemName}” trong kho khóa của bạn, nếu có}}",
   "@settings.dataWipe.leftover.secretsUnreadable": {
-    "sourceHash": "e3b3312"
+    "sourceHash": "0e9e95b"
   },
-  "settings.dataWipe.quit": "{platform, select, windows {Exit Cmdr} other {Thoát Cmdr}}",
+  "settings.dataWipe.quit": "{platform, select, windows {Thoát Cmdr} other {Thoát Cmdr}}",
   "@settings.dataWipe.quit": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "settings.askCmdr.forgetMemory.keywords": "quên, bộ nhớ, xóa, ghi nhớ, quyền riêng tư",
   "@settings.askCmdr.forgetMemory.keywords": {

@@ -9,7 +9,7 @@
   },
   "main.upgradeNudge": "{platform, select, macos {Vi har lagt till nya alternativ för att komma igång. Öppna Cmdr > Introduktion… för att gå igenom dem.} other {Vi har lagt till nya alternativ för att komma igång. Öppna kommandopaletten och kör Introduktion… för att gå igenom dem.}}",
   "@main.upgradeNudge": {
-    "sourceHash": "439adfd"
+    "sourceHash": "b28cac1"
   },
   "main.dockPinNudge.title": "Behåll Cmdr i Dock?",
   "@main.dockPinNudge.title": {
@@ -139,41 +139,41 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, one {Avsluta medan en åtgärd pågår?} other {Avsluta medan {countText} åtgärder pågår?}}}}",
+  "main.quit.title": "{platform, select, windows {{count, plural, one {Avsluta medan en åtgärd pågår?} other {Avsluta medan {countText} åtgärder pågår?}}} other {{count, plural, one {Avsluta medan en åtgärd pågår?} other {Avsluta medan {countText} åtgärder pågår?}}}}",
   "@main.quit.title": {
-    "sourceHash": "2671a89"
+    "sourceHash": "a3f024b"
   },
   "main.quit.body": "Allt som redan är klart förblir klart. Allt som fortfarande skrivs stannar där det är, och Cmdr rensar bort det som blivit delvis skrivet.",
   "@main.quit.body": {
     "sourceHash": "79a69f9"
   },
-  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, one {Cmdr avslutas om {secondsText} sekund, så att en omstart eller utloggning aldrig behöver vänta.} other {Cmdr avslutas om {secondsText} sekunder, så att en omstart eller utloggning aldrig behöver vänta.}}}}",
+  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Cmdr stängs om {secondsText} sekund, så att en omstart eller utloggning aldrig behöver vänta.} other {Cmdr stängs om {secondsText} sekunder, så att en omstart eller utloggning aldrig behöver vänta.}}} other {{seconds, plural, one {Cmdr avslutas om {secondsText} sekund, så att en omstart eller utloggning aldrig behöver vänta.} other {Cmdr avslutas om {secondsText} sekunder, så att en omstart eller utloggning aldrig behöver vänta.}}}}",
   "@main.quit.countdown": {
-    "sourceHash": "a389e0c"
+    "sourceHash": "e220441"
   },
-  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Tid kvar tills Cmdr avslutas av sig själv}}",
+  "main.quit.countdownAria": "{platform, select, windows {Tid kvar tills Cmdr stängs av sig själv} other {Tid kvar tills Cmdr avslutas av sig själv}}",
   "@main.quit.countdownAria": {
-    "sourceHash": "6b0b5c2"
+    "sourceHash": "c9dd122"
   },
   "main.quit.keepWorking": "Fortsätt arbeta",
   "@main.quit.keepWorking": {
     "sourceHash": "5ed03f2"
   },
-  "main.quit.quitNow": "{platform, select, windows {Exit now} other {Avsluta nu}}",
+  "main.quit.quitNow": "{platform, select, windows {Avsluta nu} other {Avsluta nu}}",
   "@main.quit.quitNow": {
-    "sourceHash": "c96bcc8"
+    "sourceHash": "2895d9d"
   },
   "main.quit.operationsHeading": "Pågår fortfarande",
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "{platform, select, macos {Cmdr behöver en nyare Safari} other {Cmdr needs a newer WebKitGTK}}",
+  "main.oldWebkit.title": "{platform, select, macos {Cmdr behöver en nyare Safari} other {Cmdr behöver en nyare WebKitGTK}}",
   "@main.oldWebkit.title": {
-    "sourceHash": "03e502b"
+    "sourceHash": "760c868"
   },
-  "main.oldWebkit.body": "{platform, select, macos {Cmdrs gränssnitt behöver Safari 15.4 eller nyare, och den här Macen har en äldre version. Öppna Programuppdatering och installera allt som väntar. Det brukar lösa det.} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
+  "main.oldWebkit.body": "{platform, select, macos {Cmdrs gränssnitt behöver Safari 15.4 eller nyare, och den här Macen har en äldre version. Öppna Programuppdatering och installera allt som väntar. Det brukar lösa det.} other {Cmdrs gränssnitt behöver en nyare WebKitGTK än den här datorn har. Installera systemets väntande uppdateringar. Det brukar lösa det.}}",
   "@main.oldWebkit.body": {
-    "sourceHash": "a7112ec"
+    "sourceHash": "200e524"
   },
   "main.oldMacos.title": "Cmdr på macOS {version}",
   "@main.oldMacos.title": {

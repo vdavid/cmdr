@@ -1,4 +1,8 @@
 {
+  "ai.secretError.genericBody": {
+    "text": "Kiểm tra xem chuỗi khóa của bạn có sẵn sàng không, rồi thử lại. Nếu vẫn tiếp diễn, hãy khởi động lại ứng dụng.",
+    "reason": "The macOS branch carried the old generic text (kho khóa hệ thống, the Linux keyring word); its English now names the Keychain, which vi macOS calls chuỗi khóa."
+  },
   "shortcuts.conflict.systemShortcut": {
     "text": "{combo} thường được macOS dùng ({label}), nên phím tắt này có thể không bao giờ đến được Cmdr. Bạn có thể giải phóng phím tắt này trong Cài đặt hệ thống > Bàn phím.",
     "reason": "“nên nó” could read as macOS (the nearer subject) rather than `{combo}`; it now names “phím tắt này”, as the reworded English asks"

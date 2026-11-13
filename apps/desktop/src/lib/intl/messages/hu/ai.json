@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Bizonyos tartalmak otthon maradnak, bárki bármit is kér: SSH-kulcsok, felhőszolgáltatások és eszközök hitelesítő adatai, a kulcskarikáid, böngészőadatok, a Mail, az Üzenetek, a Jegyzetek, a Cmdr saját adatai és minden fájl, amelyben titkos kulcs van. A nevük viszont így is eljuthat a szolgáltatódhoz.} windows {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, Windows credentials, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Bizonyos tartalmak otthon maradnak, bárki bármit is kér: SSH-kulcsok, felhőszolgáltatások és eszközök hitelesítő adatai, a kulcskarikáid, böngészőadatok, a Mail, az Üzenetek, a Jegyzetek, a Cmdr saját adatai és minden fájl, amelyben titkos kulcs van. A nevük viszont így is eljuthat a szolgáltatódhoz.} windows {Bizonyos tartalmak otthon maradnak, bárki bármit is kér: SSH-kulcsok, felhőszolgáltatások és eszközök hitelesítő adatai, a Windows hitelesítő adatai, böngészőadatok, e-mail-adatok, a Cmdr saját adatai és minden fájl, amelyben titkos kulcs van. A nevük viszont így is eljuthat a szolgáltatódhoz.} other {Bizonyos tartalmak otthon maradnak, bárki bármit is kér: SSH-kulcsok, felhőszolgáltatások és eszközök hitelesítő adatai, a kulcstartóid, böngészőadatok, e-mail-adatok, a Cmdr saját adatai és minden fájl, amelyben titkos kulcs van. A nevük viszont így is eljuthat a szolgáltatódhoz.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
-    "sourceHash": "048633f"
+    "sourceHash": "a533066"
   },
   "ai.cloudConsent.askCmdr.actions": "Egy általad indított csevegésben az Ask Cmdr az appot is kezelheti helyetted: navigálhat, kijelölhet, rendezhet, lapokat és párbeszédablakokat nyithat, és csatlakoztathat egy általad mentett helyet. A másolás, az áthelyezés, a tömörítés, a törlés, az átnevezés és egy művelet visszavonása mindig megnyit egy párbeszédablakot vagy szerkesztőt, ahol te erősíted meg, és addig semmi sem történik, amíg meg nem teszed. Egy fájl megnyitása, egy beállítás módosítása (kivéve a Cmdr megjelenését), a kilépés, egy meghajtó kiadása, egy szerver eltávolítása és az indexelés módosítása előtt először megkérdez. Egy megnevezett mappa vagy fájl létrehozása és a fájlok címkézése azonnal, kérdés nélkül megtörténik; a címkék módosítását vissza tudod vonni. A tervként előkészített átnevezések és rendrakások a jóváhagyásodra várnak.",
   "@ai.cloudConsent.askCmdr.actions": {
@@ -159,13 +159,13 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Az Ask Cmdr-csevegéseid a Mac-eden maradnak, egy helyi adatbázisban, amelyet megnyithatsz és elolvashatsz.} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Az Ask Cmdr-csevegéseid a Mac-eden maradnak, egy helyi adatbázisban, amelyet megnyithatsz és elolvashatsz.} windows {Az Ask Cmdr-csevegéseid a gépeden maradnak, egy helyi adatbázisban, amelyet megnyithatsz és elolvashatsz.} other {Az Ask Cmdr-csevegéseid a számítógépeden maradnak, egy helyi adatbázisban, amelyet megnyithatsz és elolvashatsz.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
-    "sourceHash": "283cdd7"
+    "sourceHash": "9557acc"
   },
-  "ai.cloudConsent.logsNote": "{platform, select, macos {Ha bekapcsolod az „AI-modellhívások naplózása” beállítást a Speciális beállításokban, a Cmdr minden kérést és választ elment egy mappába a Mac-eden. Ezek a hívásnaplók helyben maradnak, a Cmdr sehova nem küldi el őket.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {Ha bekapcsolod az „AI-modellhívások naplózása” beállítást a Speciális beállításokban, a Cmdr minden kérést és választ elment egy mappába a Mac-eden. Ezek a hívásnaplók helyben maradnak, a Cmdr sehova nem küldi el őket.} windows {Ha bekapcsolod az „AI-modellhívások naplózása” beállítást a Speciális beállításokban, a Cmdr minden kérést és választ elment egy mappába a gépeden. Ezek a hívásnaplók helyben maradnak, a Cmdr sehova nem küldi el őket.} other {Ha bekapcsolod az „AI-modellhívások naplózása” beállítást a Speciális beállításokban, a Cmdr minden kérést és választ elment egy mappába a számítógépeden. Ezek a hívásnaplók helyben maradnak, a Cmdr sehova nem küldi el őket.}}",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "0178d1c"
+    "sourceHash": "e34c082"
   },
   "ai.cloudConsent.turnOffAnyTime": "Bármikor kikapcsolhatod, és a Cmdr azonnal abbahagyja a küldést. A szolgáltatásod, a kulcsod és a csevegéseid maradnak, ahogy vannak.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -529,29 +529,29 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.title": "{platform, select, macos {{op, select, save {Nem sikerült elmenteni az API-kulcsodat: a macOS kulcskarika megtagadta a hozzáférést} other {Nem sikerült beolvasni a mentett API-kulcsodat: a macOS kulcskarika megtagadta a hozzáférést}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {Nem sikerült elmenteni az API-kulcsodat: a rendszer kulcstartója megtagadta a hozzáférést} other {Nem sikerült beolvasni a mentett API-kulcsodat: a rendszer kulcstartója megtagadta a hozzáférést}}}}",
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {Nem sikerült elmenteni az API-kulcsodat: a macOS kulcskarika megtagadta a hozzáférést} other {Nem sikerült beolvasni a mentett API-kulcsodat: a macOS kulcskarika megtagadta a hozzáférést}}} windows {{op, select, save {Nem sikerült elmenteni az API-kulcsodat: a Hitelesítőadat-kezelő megtagadta a hozzáférést} other {Nem sikerült beolvasni a mentett API-kulcsodat: a Hitelesítőadat-kezelő megtagadta a hozzáférést}}} other {{op, select, save {Nem sikerült elmenteni az API-kulcsodat: a rendszer kulcstartója megtagadta a hozzáférést} other {Nem sikerült beolvasni a mentett API-kulcsodat: a rendszer kulcstartója megtagadta a hozzáférést}}}}",
   "@ai.secretError.title": {
-    "sourceHash": "2b2ef89"
+    "sourceHash": "25b34c4"
   },
-  "ai.secretError.body": "{platform, select, macos {{op, select, save {Nyisd meg a Kulcskarika-elérés appot, és nézd meg a „Cmdr” bejegyzést, vagy töröld, majd próbáld újra a mentést.} other {Nyisd meg a Kulcskarika-elérés appot, keresd meg a „Cmdr” bejegyzést, és adj hozzáférést, vagy töröld, majd add meg újra a kulcsodat.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Oldd fel a kulcstartódat (Jelszavak / Kulcstartók alkalmazás), majd próbáld újra.}}",
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {Nyisd meg a Kulcskarika-elérés appot, és nézd meg a „Cmdr” bejegyzést, vagy töröld, majd próbáld újra a mentést.} other {Nyisd meg a Kulcskarika-elérés appot, keresd meg a „Cmdr” bejegyzést, és adj hozzáférést, vagy töröld, majd add meg újra a kulcsodat.}}} windows {{op, select, save {Nyisd meg a Hitelesítőadat-kezelőt, és nézd meg a „Cmdr” bejegyzést a „Windows hitelesítő adatok” szakaszban, vagy távolítsd el, majd próbáld újra a mentést.} other {Nyisd meg a Hitelesítőadat-kezelőt, keresd meg a „Cmdr” bejegyzést a „Windows hitelesítő adatok” szakaszban, vagy távolítsd el, majd add meg újra a kulcsodat.}}} other {Oldd fel a kulcstartódat (Jelszavak / Kulcstartók alkalmazás), majd próbáld újra.}}",
   "@ai.secretError.body": {
-    "sourceHash": "8f1380e"
+    "sourceHash": "d65c5e3"
   },
   "ai.secretError.genericTitle": "{op, select, save {Nem sikerült elmenteni az API-kulcsodat.} other {Nem sikerült beolvasni a mentett API-kulcsodat.}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "c343e42"
   },
-  "ai.secretError.genericBody": "{platform, select, macos {Ellenőrizd, hogy a rendszer kulcstartója elérhető-e, majd próbáld újra. Ha továbbra is fennáll, indítsd újra az appot.} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {Ellenőrizd, hogy a rendszer kulcstartója elérhető-e, majd próbáld újra. Ha továbbra is fennáll, indítsd újra az appot.}}",
+  "ai.secretError.genericBody": "{platform, select, macos {Ellenőrizd, hogy a rendszer kulcstartója elérhető-e, majd próbáld újra. Ha továbbra is fennáll, indítsd újra az appot.} windows {Ellenőrizd, hogy a Hitelesítőadat-kezelő elérhető-e, majd próbáld újra. Ha továbbra is előfordul, indítsd újra a Cmdrt.} other {Ellenőrizd, hogy a rendszer kulcstartója elérhető-e, majd próbáld újra. Ha továbbra is fennáll, indítsd újra az appot.}}",
   "@ai.secretError.genericBody": {
-    "sourceHash": "2ee417d"
+    "sourceHash": "9fc0702"
   },
   "ai.secretError.removeTitle": "Nem sikerült eltávolítani a mentett API-kulcsodat.",
   "@ai.secretError.removeTitle": {
     "sourceHash": "5986628"
   },
-  "ai.secretError.removeBody": "{platform, select, macos {Nyisd meg a Kulcskarika-elérés appot, keresd meg a „Cmdr” bejegyzést, és ott töröld.} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {Oldd fel a kulcstartódat (Jelszavak / Kulcstartók alkalmazás), majd próbáld újra.}}",
+  "ai.secretError.removeBody": "{platform, select, macos {Nyisd meg a Kulcskarika-elérés appot, keresd meg a „Cmdr” bejegyzést, és ott töröld.} windows {Nyisd meg a Hitelesítőadat-kezelőt, keresd meg a „Cmdr” bejegyzést a „Windows hitelesítő adatok” szakaszban, és ott távolítsd el.} other {Oldd fel a kulcstartódat (Jelszavak / Kulcstartók alkalmazás), majd próbáld újra.}}",
   "@ai.secretError.removeBody": {
-    "sourceHash": "4e3abe7"
+    "sourceHash": "3a85511"
   },
   "ai.managed.aiOff": "A szervezeted kikapcsolta az AI-t a Cmdrben.",
   "@ai.managed.aiOff": {
@@ -565,9 +565,9 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "{platform, select, macos {A szervezeted csak a helyi AI-t engedélyezi, ez a Mac viszont nem tudja futtatni.} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {A szervezeted csak a helyi AI-t engedélyezi, ez a Mac viszont nem tudja futtatni.} windows {A szervezeted csak a helyi AI-t engedélyezi, ez a gép viszont nem tudja futtatni.} other {A szervezeted csak a helyi AI-t engedélyezi, ez a számítógép viszont nem tudja futtatni.}}",
   "@ai.managed.localOnlyUnsupported": {
-    "sourceHash": "b760ca4"
+    "sourceHash": "b468f8f"
   },
   "ai.managed.serviceNotAllowed": "a szervezeted nem engedélyezi",
   "@ai.managed.serviceNotAllowed": {

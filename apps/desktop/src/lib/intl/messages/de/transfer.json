@@ -1,7 +1,7 @@
 {
-  "transfer.trash": "{platform, select, windows {Moved {countText} {count, plural, one {file} other {files}} to the Recycle Bin} other {{countText} {count, plural, one {Datei} other {Dateien}} in den Papierkorb bewegt}}",
+  "transfer.trash": "{platform, select, windows {{countText} {count, plural, one {Datei} other {Dateien}} in den Papierkorb bewegt} other {{countText} {count, plural, one {Datei} other {Dateien}} in den Papierkorb bewegt}}",
   "@transfer.trash": {
-    "sourceHash": "0be2310"
+    "sourceHash": "a8e88f3"
   },
   "transfer.delete": "Löschen abgeschlossen: {countText} {count, plural, one {Datei} other {Dateien}}",
   "@transfer.delete": {
@@ -87,9 +87,9 @@
   "@transfer.metadataClass.lockedAndHidden": {
     "sourceHash": "18174cd"
   },
-  "transfer.metadataClass.extendedAttributes": "{platform, select, macos {Finder-Tags} windows {Finder-Tags} other {Extended attributes}}",
+  "transfer.metadataClass.extendedAttributes": "{platform, select, macos {Finder-Tags} windows {Finder-Tags} other {erweiterte Attribute}}",
   "@transfer.metadataClass.extendedAttributes": {
-    "sourceHash": "fd34d8e"
+    "sourceHash": "78c4aac"
   },
   "transfer.metadataClass.folderDates": "Datumsangaben von Ordnern",
   "@transfer.metadataClass.folderDates": {

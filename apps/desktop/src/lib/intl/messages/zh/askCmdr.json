@@ -1424,13 +1424,13 @@
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
   },
-  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {You turned down moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You turned down {verbName} {countText} {count, plural, one {item} other {items}}}}} other {你拒绝了{verbName} {countText} {count, plural, other {个项目}}}}",
+  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {你拒绝了将 {countText} {count, plural, other {个项目}}移到回收站} other {你拒绝了{verbName} {countText} {count, plural, other {个项目}}}}} other {你拒绝了{verbName} {countText} {count, plural, other {个项目}}}}",
   "@askCmdr.decision.rejected": {
-    "sourceHash": "19d12c1"
+    "sourceHash": "da3b52e"
   },
-  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {You approved moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You approved {verbName} {countText} {count, plural, one {item} other {items}}}}} other {你批准了{verbName} {countText} {count, plural, other {个项目}}}}",
+  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {你批准了将 {countText} {count, plural, other {个项目}}移到回收站} other {你批准了{verbName} {countText} {count, plural, other {个项目}}}}} other {你批准了{verbName} {countText} {count, plural, other {个项目}}}}",
   "@askCmdr.decision.approved": {
-    "sourceHash": "aa911e6"
+    "sourceHash": "3f61860"
   },
   "askCmdr.decision.result": "{doneText} 个完成，{skippedText} 个跳过，{failedText} 个无法完成",
   "@askCmdr.decision.result": {
@@ -1440,9 +1440,9 @@
   "@askCmdr.decision.running": {
     "sourceHash": "46c5413"
   },
-  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr closed before this finished} other {Cmdr 在这项操作完成前退出了}}",
+  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr 在这项操作完成前关闭了} other {Cmdr 在这项操作完成前退出了}}",
   "@askCmdr.decision.interrupted": {
-    "sourceHash": "ece92cc"
+    "sourceHash": "de4a5c0"
   },
   "askCmdr.decision.verbMove": "移动",
   "@askCmdr.decision.verbMove": {
@@ -1800,17 +1800,17 @@
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "729d49f"
   },
-  "askCmdr.tool.quit.doing": "{platform, select, windows {Closing Cmdr} other {正在退出 Cmdr}}",
+  "askCmdr.tool.quit.doing": "{platform, select, windows {正在关闭 Cmdr} other {正在退出 Cmdr}}",
   "@askCmdr.tool.quit.doing": {
-    "sourceHash": "b26d1c8"
+    "sourceHash": "b1e13d3"
   },
-  "askCmdr.tool.quit.done": "{platform, select, windows {Asked Cmdr to close} other {已请求退出 Cmdr}}",
+  "askCmdr.tool.quit.done": "{platform, select, windows {已请求关闭 Cmdr} other {已请求退出 Cmdr}}",
   "@askCmdr.tool.quit.done": {
-    "sourceHash": "b9083af"
+    "sourceHash": "17a08e9"
   },
-  "askCmdr.tool.quit.tried": "{platform, select, windows {Tried to close Cmdr} other {尝试退出 Cmdr}}",
+  "askCmdr.tool.quit.tried": "{platform, select, windows {尝试关闭 Cmdr} other {尝试退出 Cmdr}}",
   "@askCmdr.tool.quit.tried": {
-    "sourceHash": "ab34547"
+    "sourceHash": "c05f3a9"
   },
   "askCmdr.tool.switchPane.doing": "正在切换窗格",
   "@askCmdr.tool.switchPane.doing": {

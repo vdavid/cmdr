@@ -7,9 +7,9 @@
   "@goToPath.dialog.inputAriaLabel": {
     "sourceHash": "ac4d152"
   },
-  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Type or paste a path, for example C:\\Users} other {Írj be vagy illessz be egy útvonalat, például ~/Documents}}",
+  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Írj be vagy illessz be egy útvonalat, például C:\\Users} other {Írj be vagy illessz be egy útvonalat, például ~/Documents}}",
   "@goToPath.dialog.inputPlaceholder": {
-    "sourceHash": "d84d343"
+    "sourceHash": "b0126b3"
   },
   "goToPath.dialog.recentsAriaLabel": "Legutóbbi útvonalak",
   "@goToPath.dialog.recentsAriaLabel": {

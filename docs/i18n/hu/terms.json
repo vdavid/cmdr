@@ -2499,7 +2499,7 @@
   },
   "mount": {
     "chosen": "csatolás",
-    "accept": ["csatol", "csatlakoztat", "leválaszt", "lecsatol"],
+    "accept": ["csatol", "csatlakoztat", "leválaszt", "lecsatol", "válaszd le"],
     "forms": "verb csatol; mounted share → csatolt megosztás; can't be mounted → nem csatolható",
     "avoid": [
       {
@@ -2515,7 +2515,12 @@
     "accept": ["áthelyez", "helyezd át", "mozgat", "helyez", "mozg", "visszavi"],
     "forms": "label Áthelyezés; result áthelyezve; Move it instead → Helyezd át inkább; files being moved in prose → mozgat",
     "confidence": "high",
-    "sources": "macOS; ms"
+    "sources": "macOS; ms",
+    "exceptions": {
+      "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Moving those to the Recycle Bin → a Lomtárba kerülnének: the sentence says where the files would land, as the macOS branch does with the Kuka.",
+      "fileOperations.delete.cloudOnlineOnlyAllWarning": "Moving it to the Recycle Bin → a Lomtárba kerülne: the sentence says where the files would land, as the macOS branch does with the Kuka.",
+      "stateRecovery.credentials.body": "a move to a new PC → új gépre költözöl: moving house to a new computer, not a file move."
+    }
   },
   "move-to-trash": {
     "chosen": "Áthelyezés a Kukába",
@@ -3549,7 +3554,10 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS (Kapcsolódás szerverre…, 38×); AppKit Menus.loctable and SystemFolderLocalizations (Servers = Szerverek)"
+    "sources": "macOS (Kapcsolódás szerverre…, 38×); AppKit Menus.loctable and SystemFolderLocalizations (Servers = Szerverek)",
+    "exceptions": {
+      "fileOperations.validation.pathNotAbsolute": "\\\\server\\share is a literal UNC path example, kept as typed."
+    }
   },
   "server-address": {
     "chosen": "szervercím",
@@ -3808,7 +3816,10 @@
     "chosen": "Rendszerbeállítások",
     "forms": "usually the runtime token {system_settings}: never suffix it, use itt: {system_settings}",
     "confidence": "high",
-    "sources": "macOS"
+    "sources": "macOS",
+    "exceptions": {
+      "servers.refusal.clockSkewed": "The Linux branch names the desktop's own settings generically (a rendszered beállításaiban), not Apple's System Settings app."
+    }
   },
   "system-settings-pane": {
     "chosen": "Általános",
@@ -4144,7 +4155,10 @@
     "accept": ["felhasználóazonosító"],
     "forms": "user ID (a Unix uid) → felhasználóazonosító; group ID → csoportazonosító; user ID 0 → a 0-s felhasználóazonosító",
     "confidence": "high",
-    "sources": "ms (user ID → felhasználóazonosító); catalog (5× felhasználó)"
+    "sources": "ms (user ID → felhasználóazonosító); catalog (5× felhasználó)",
+    "exceptions": {
+      "goToPath.dialog.inputPlaceholder": "C:\\Users is a literal path example, kept as typed."
+    }
   },
   "username": {
     "chosen": "felhasználónév",
@@ -4494,7 +4508,7 @@
   },
   "app-closes": {
     "chosen": "bezárul",
-    "accept": ["bezárult"],
+    "accept": ["bezárult", "bezárás"],
     "forms": "Cmdr closes afterwards → Utána a Cmdr bezárul; then closes → aztán bezárul; after Cmdr closes → miután a Cmdr bezárult; only in a platform select's windows branch (macOS and Linux say kilép)",
     "confidence": "tentative",
     "sources": "catalog (quit unexpectedly → váratlanul bezárult); ms (close → bezár); no TBX entry for an app closing by itself"

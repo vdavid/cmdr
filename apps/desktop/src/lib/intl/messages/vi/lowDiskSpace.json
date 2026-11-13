@@ -1,7 +1,7 @@
 {
-  "lowDiskSpace.toast.message": "{platform, select, macos {Đĩa khởi động của bạn sắp hết dung lượng: còn trống {freeText} ({percentText}%).} windows {Your system drive is running low on space: {freeText} free ({percentText}%).} other {Your system disk is running low on space: {freeText} free ({percentText}%).}}",
+  "lowDiskSpace.toast.message": "{platform, select, macos {Đĩa khởi động của bạn sắp hết dung lượng: còn trống {freeText} ({percentText}%).} windows {Ổ đĩa hệ thống của bạn sắp hết dung lượng: còn trống {freeText} ({percentText}%).} other {Ổ đĩa hệ thống của bạn sắp hết dung lượng: còn trống {freeText} ({percentText}%).}}",
   "@lowDiskSpace.toast.message": {
-    "sourceHash": "44b701f"
+    "sourceHash": "b8b69e6"
   },
   "lowDiskSpace.toast.disable": "Tắt các thông báo này",
   "@lowDiskSpace.toast.disable": {
@@ -15,8 +15,8 @@
   "@lowDiskSpace.notification.title": {
     "sourceHash": "5b1f5bf"
   },
-  "lowDiskSpace.notification.body": "{platform, select, macos {Còn trống {freeText} ({percentText}%) trên đĩa khởi động của bạn.} windows {{freeText} free ({percentText}%) on your system drive.} other {{freeText} free ({percentText}%) on your system disk.}}",
+  "lowDiskSpace.notification.body": "{platform, select, macos {Còn trống {freeText} ({percentText}%) trên đĩa khởi động của bạn.} windows {Còn trống {freeText} ({percentText}%) trên ổ đĩa hệ thống của bạn.} other {Còn trống {freeText} ({percentText}%) trên ổ đĩa hệ thống của bạn.}}",
   "@lowDiskSpace.notification.body": {
-    "sourceHash": "b17ee43"
+    "sourceHash": "9869348"
   }
 }

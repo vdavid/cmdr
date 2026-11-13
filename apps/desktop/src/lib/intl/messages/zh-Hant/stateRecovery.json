@@ -27,9 +27,9 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "3f94010"
   },
-  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {Cmdr 無法讀取窗格之前開啟的資料夾，所以窗格改從你的個人專屬資料夾開始}}",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr 無法讀取窗格之前開啟的資料夾，所以窗格改從你的使用者資料夾開始} other {Cmdr 無法讀取窗格之前開啟的資料夾，所以窗格改從你的個人專屬資料夾開始}}",
   "@stateRecovery.appStatus.title": {
-    "sourceHash": "521f5eb"
+    "sourceHash": "1f92563"
   },
   "stateRecovery.operationLog.title": "Cmdr 無法讀取你的操作記錄，所以從頭開始記錄",
   "@stateRecovery.operationLog.title": {
@@ -111,17 +111,17 @@
   "@stateRecovery.credentials.title": {
     "sourceHash": "e4821b8"
   },
-  "stateRecovery.credentials.body": "{platform, select, windows {This happens after a move to a new PC. Cmdr asks for each password again the next time it needs it.} other {換到新電腦後就會這樣。Cmdr 下次需要某個密碼時，會再問你一次。}}",
+  "stateRecovery.credentials.body": "{platform, select, windows {換到新電腦後就會這樣。Cmdr 下次需要某個密碼時，會再問你一次。} other {換到新電腦後就會這樣。Cmdr 下次需要某個密碼時，會再問你一次。}}",
   "@stateRecovery.credentials.body": {
-    "sourceHash": "afac266"
+    "sourceHash": "c89f267"
   },
   "stateRecovery.keptCopy": "Cmdr 已把舊檔案保留在 {path}。",
   "@stateRecovery.keptCopy": {
     "sourceHash": "634e87d"
   },
-  "stateRecovery.showInFinder": "{platform, select, macos {在 Finder 中顯示} windows {Show in File Explorer} other {Show in file manager}}",
+  "stateRecovery.showInFinder": "{platform, select, macos {在 Finder 中顯示} windows {在檔案總管中顯示} other {在檔案管理程式中顯示}}",
   "@stateRecovery.showInFinder": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "stateRecovery.dismiss": "關閉",
   "@stateRecovery.dismiss": {

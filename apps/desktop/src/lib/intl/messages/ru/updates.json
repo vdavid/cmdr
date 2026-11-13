@@ -112,9 +112,9 @@
   "@updates.status.managedOff": {
     "sourceHash": "aa342dc"
   },
-  "updates.status.heldByPolicy": "{platform, select, macos {Вышла версия Cmdr {available}, но ваша организация разрешает на этом Mac версии не новее {ceiling}.} windows {Cmdr {available} is out, but your organization keeps this PC on {ceiling} or earlier.} other {Cmdr {available} is out, but your organization keeps this computer on {ceiling} or earlier.}}",
+  "updates.status.heldByPolicy": "{platform, select, macos {Вышла версия Cmdr {available}, но ваша организация разрешает на этом Mac версии не новее {ceiling}.} windows {Вышла версия Cmdr {available}, но ваша организация разрешает на этом компьютере версии не новее {ceiling}.} other {Вышла версия Cmdr {available}, но ваша организация разрешает на этом компьютере версии не новее {ceiling}.}}",
   "@updates.status.heldByPolicy": {
-    "sourceHash": "5c9b196"
+    "sourceHash": "49012ba"
   },
   "updates.status.unwritableAdmin": "Вышла версия Cmdr {version}, но Cmdr не может установить ее сам. Загрузите ее с getcmdr.com и перетяните в папку «Программы».",
   "@updates.status.unwritableAdmin": {

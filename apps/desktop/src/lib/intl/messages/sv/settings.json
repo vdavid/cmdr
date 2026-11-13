@@ -3,9 +3,9 @@
   "@settings.appearance.language.label": {
     "sourceHash": "a4fe652"
   },
-  "settings.appearance.language.description": "{platform, select, macos {Välj vilket språk Cmdr använder. ”Systemets standard” följer din Macs språk.} windows {Choose the language Cmdr uses. “System default” follows your Windows display language.} other {Choose the language Cmdr uses. “System default” follows your system’s language.}}",
+  "settings.appearance.language.description": "{platform, select, macos {Välj vilket språk Cmdr använder. ”Systemets standard” följer din Macs språk.} windows {Välj vilket språk Cmdr använder. ”Systemets standard” följer ditt visningsspråk i Windows.} other {Välj vilket språk Cmdr använder. ”Systemets standard” följer systemets språk.}}",
   "@settings.appearance.language.description": {
-    "sourceHash": "2dd7f63"
+    "sourceHash": "7ca0276"
   },
   "settings.appearance.language.opt.system": "Systemets standard",
   "@settings.appearance.language.opt.system": {
@@ -48,9 +48,9 @@
   "@settings.appearance.appColor.label": {
     "sourceHash": "b1107c8"
   },
-  "settings.appearance.appColor.description": "{platform, select, macos {För att ändra systemets temafärg, gå till Systeminställningar > Utseende.} windows {To change your system accent color, go to Settings > Personalization > Colors.} other {To change your system accent color, go to your system appearance settings.}}",
+  "settings.appearance.appColor.description": "{platform, select, macos {För att ändra systemets temafärg, gå till Systeminställningar > Utseende.} windows {För att ändra systemets accentfärg, gå till Inställningar > Anpassning > Färger.} other {För att ändra systemets accentfärg, gå till dina inställningar för systemets utseende.}}",
   "@settings.appearance.appColor.description": {
-    "sourceHash": "7dc4ab7"
+    "sourceHash": "0045d05"
   },
   "settings.appearance.appColor.opt.system": "Systemets temafärg",
   "@settings.appearance.appColor.opt.system": {
@@ -215,9 +215,9 @@
   "@settings.appearance.textSize.label": {
     "sourceHash": "d68761c"
   },
-  "settings.appearance.textSize.description": "{platform, select, macos {Skalar text och gränssnitt i hela appen. Kombineras med macOS textstorlek för hjälpmedel, där 100 % betyder ”exakt systemstorleken”.} other {Scales text and UI throughout the app.}}",
+  "settings.appearance.textSize.description": "{platform, select, macos {Skalar text och gränssnitt i hela appen. Kombineras med macOS textstorlek för hjälpmedel, där 100 % betyder ”exakt systemstorleken”.} other {Skalar text och gränssnitt i hela appen.}}",
   "@settings.appearance.textSize.description": {
-    "sourceHash": "49a0a6b"
+    "sourceHash": "c460c56"
   },
   "settings.appearance.textSize.keywords": "text, storlek, textstorlek, typsnitt, teckensnitt, större, mindre, hjälpmedel, zoom, skala",
   "@settings.appearance.textSize.keywords": {
@@ -352,9 +352,9 @@
   "@settings.listing.showHiddenFiles.label": {
     "sourceHash": "b5ede7f"
   },
-  "settings.listing.showHiddenFiles.description": "{platform, select, macos {Visa filer som börjar med punkt (som .zshrc) och objekt som systemet markerar som dolda. Gäller båda panelerna.} windows {Visa filer som börjar med punkt (som .zshrc) och objekt som systemet markerar som dolda. Gäller båda panelerna.} other {Show dotfiles (like .bashrc) and items the system marks as hidden. Applies to both panes.}}",
+  "settings.listing.showHiddenFiles.description": "{platform, select, macos {Visa filer som börjar med punkt (som .zshrc) och objekt som systemet markerar som dolda. Gäller båda panelerna.} windows {Visa filer som börjar med punkt (som .zshrc) och objekt som systemet markerar som dolda. Gäller båda panelerna.} other {Visa filer som börjar med punkt (som .bashrc) och objekt som systemet markerar som dolda. Gäller båda panelerna.}}",
   "@settings.listing.showHiddenFiles.description": {
-    "sourceHash": "8e77c67"
+    "sourceHash": "2526fb4"
   },
   "settings.listing.showHiddenFiles.keywords": "dold, dolda filer, osynlig, punktfil, punktfiler, system, visa",
   "@settings.listing.showHiddenFiles.keywords": {
@@ -536,17 +536,17 @@
   "@settings.fileOperations.macOnlyFiles.keywords": {
     "sourceHash": "b668774"
   },
-  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Hoppa över bekräftelse vid kopiering, flytt och flytt till papperskorgen}}",
+  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Hoppa över bekräftelse vid kopiering, flytt och radering} other {Hoppa över bekräftelse vid kopiering, flytt och flytt till papperskorgen}}",
   "@settings.fileOperations.skipConfirmation.label": {
-    "sourceHash": "6af6546"
+    "sourceHash": "f1b1b39"
   },
   "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {Kopiera och Flytta skickar filerna direkt till den andra panelen, och Radera flyttar dem till Papperskorgen utan att fråga. Lite riskabelt, eftersom ett enda tangenttryck räcker. Permanent radering frågar alltid först.} other {Kopiera och Flytta skickar filerna direkt till den andra panelen, och Radera flyttar dem till papperskorgen utan att fråga. Lite riskabelt, eftersom ett enda tangenttryck räcker. Permanent radering frågar alltid först.}}",
   "@settings.fileOperations.skipConfirmation.explanation": {
     "sourceHash": "564f000"
   },
-  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {bekräfta, bekräftelse, dialog, fråga, kopiera, flytta, papperskorg, radera, hoppa över, klick}}",
+  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {bekräfta, bekräftelse, dialog, fråga, kopiera, flytta, papperskorgen, radera, ta bort, hoppa över, klick} other {bekräfta, bekräftelse, dialog, fråga, kopiera, flytta, papperskorg, radera, hoppa över, klick}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
-    "sourceHash": "9f61258"
+    "sourceHash": "8179d90"
   },
   "settings.fileOperations.defaultConflictPolicy.label": "När filer redan finns",
   "@settings.fileOperations.defaultConflictPolicy.label": {
@@ -568,9 +568,9 @@
   "@settings.fileOperations.keepProgressOpenWhenDone.description": {
     "sourceHash": "005448f"
   },
-  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, recycle bin} other {förlopp, klar, färdig, slutförd, sammanfattning, resultat, rapport, översikt, stanna kvar, behåll, stäng, fönster, dialog, kopiera, flytta, radera, papperskorg, hastighet, tid}}",
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {förlopp, klar, färdig, slutförd, sammanfattning, resultat, rapport, översikt, stanna kvar, behåll, stäng, fönster, dialog, kopiera, flytta, radera, papperskorgen, hastighet, tid} other {förlopp, klar, färdig, slutförd, sammanfattning, resultat, rapport, översikt, stanna kvar, behåll, stäng, fönster, dialog, kopiera, flytta, radera, papperskorg, hastighet, tid}}",
   "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
-    "sourceHash": "978b2ff"
+    "sourceHash": "1f64fb0"
   },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Hoppa över",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
@@ -1082,8 +1082,8 @@
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "sourceHash": "aed6b7a",
-    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
+    "sourceHash": "24dac61",
+    "sameAsSourceJustification": "macOS and Windows are brand names; Swedish says System for the system's own notifications, as settings.theme.mode.opt.system already ships (System)."
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Båda",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
@@ -1157,9 +1157,9 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
     "sourceHash": "911b74b"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {Hur du ska varnas när startskivan börjar få ont om ledigt utrymme.} windows {How to warn you when your system drive runs low on free space.} other {How to warn you when your system disk runs low on free space.}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {Hur du ska varnas när startskivan börjar få ont om ledigt utrymme.} windows {Hur du ska varnas när systemenheten börjar få ont om ledigt utrymme.} other {Hur du ska varnas när systemdisken börjar få ont om ledigt utrymme.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
-    "sourceHash": "32b852d"
+    "sourceHash": "07714d7"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "I appen",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
@@ -1167,8 +1167,8 @@
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "sourceHash": "aed6b7a",
-    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
+    "sourceHash": "24dac61",
+    "sameAsSourceJustification": "macOS and Windows are brand names; Swedish says System for the system's own notifications, as settings.theme.mode.opt.system already ships (System)."
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Av",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
@@ -1182,9 +1182,9 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "sourceHash": "fd1382f"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Varna när det lediga utrymmet sjunker under den här procentandelen av startskivan.} windows {Warn when free space drops below this percent of your system drive.} other {Warn when free space drops below this percent of your system disk.}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Varna när det lediga utrymmet sjunker under den här procentandelen av startskivan.} windows {Varna när det lediga utrymmet sjunker under den här procentandelen av systemenheten.} other {Varna när det lediga utrymmet sjunker under den här procentandelen av systemdisken.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
-    "sourceHash": "9ed41b8"
+    "sourceHash": "b4d0378"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "disk, utrymme, diskutrymme, tröskel, procent, lite, ledigt, varning",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
@@ -1194,9 +1194,9 @@
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "{platform, select, windows {Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or select the run button to search.} other {Kör filnamns- och regex-sökningar automatiskt medan du skriver (1 sekund efter att du slutat). AI-sökningar väntar alltid på Retur, eftersom de kostar pengar. När det är av trycker du på Retur eller klickar på körknappen för att söka.}}",
+  "settings.search.autoApply.description": "{platform, select, windows {Kör filnamns- och regex-sökningar automatiskt medan du skriver (1 sekund efter att du slutat). AI-sökningar väntar alltid på Retur, eftersom de kostar pengar. När det är av trycker du på Retur eller väljer körknappen för att söka.} other {Kör filnamns- och regex-sökningar automatiskt medan du skriver (1 sekund efter att du slutat). AI-sökningar väntar alltid på Retur, eftersom de kostar pengar. När det är av trycker du på Retur eller klickar på körknappen för att söka.}}",
   "@settings.search.autoApply.description": {
-    "sourceHash": "19fcaf7"
+    "sourceHash": "b0f85fd"
   },
   "settings.search.autoApply.keywords": "sök, sökning, automatiskt, tillämpa, direkt, live, fördröjning, filnamn, omedelbart",
   "@settings.search.autoApply.keywords": {
@@ -1294,13 +1294,13 @@
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
   },
-  "settings.network.enabled.label": "{platform, select, windows {Turn on networking} other {Aktivera nätverk}}",
+  "settings.network.enabled.label": "{platform, select, windows {Aktivera nätverk} other {Aktivera nätverk}}",
   "@settings.network.enabled.label": {
-    "sourceHash": "10f5de9"
+    "sourceHash": "ecb8b03"
   },
-  "settings.network.enabled.description": "{platform, select, macos {Upptäck SMB-servrar i ditt lokala nätverk och anslut till dem. När det är av kan Cmdr fortfarande läsa och skriva filer i redan monterade delade mappar, men ber inte macOS om åtkomst till Lokalt nätverk.} windows {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, and Windows won’t ask to let Cmdr through the firewall.} other {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares.}}",
+  "settings.network.enabled.description": "{platform, select, macos {Upptäck SMB-servrar i ditt lokala nätverk och anslut till dem. När det är av kan Cmdr fortfarande läsa och skriva filer i redan monterade delade mappar, men ber inte macOS om åtkomst till Lokalt nätverk.} windows {Upptäck SMB-servrar i ditt lokala nätverk och anslut till dem. När det är av kan Cmdr fortfarande läsa och skriva filer i redan monterade delade mappar, och Windows frågar inte om Cmdr ska släppas igenom brandväggen.} other {Upptäck SMB-servrar i ditt lokala nätverk och anslut till dem. När det är av kan Cmdr fortfarande läsa och skriva filer i redan monterade delade mappar.}}",
   "@settings.network.enabled.description": {
-    "sourceHash": "72a0854"
+    "sourceHash": "6994272"
   },
   "settings.network.enabled.keywords": "nätverk, aktivera, aktiverad, nätverkssökning, upptäckt, lokal, lokalt nätverk, behörighet",
   "@settings.network.enabled.keywords": {
@@ -1322,9 +1322,9 @@
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "{platform, select, macos {När det är aktiverat ansluter Cmdr direkt till SMB-resurser för snabbare filåtgärder. Systemmonteringen finns kvar för Finder och andra appar.} windows {When this is on, Cmdr establishes a direct connection to SMB shares for faster file operations. The system connection stays for File Explorer and other apps.} other {When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for your file manager and other apps.}}",
+  "settings.network.directSmbConnection.description": "{platform, select, macos {När det är aktiverat ansluter Cmdr direkt till SMB-resurser för snabbare filåtgärder. Systemmonteringen finns kvar för Finder och andra appar.} windows {När det här är på ansluter Cmdr direkt till SMB-resurser för snabbare filåtgärder. Systemanslutningen finns kvar för Utforskaren och andra appar.} other {När det är aktiverat ansluter Cmdr direkt till SMB-resurser för snabbare filåtgärder. Systemmonteringen finns kvar för din filhanterare och andra appar.}}",
   "@settings.network.directSmbConnection.description": {
-    "sourceHash": "44a5a6d"
+    "sourceHash": "429c68c"
   },
   "settings.network.directSmbConnection.keywords": "direkt, snabb, anslutning, nätverk, prestanda",
   "@settings.network.directSmbConnection.keywords": {
@@ -1334,9 +1334,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr krypterar sina anslutningar till SMB-resurser, även när servern inte ber om det, och öppnar inte en delad mapp vars anslutning inte kan krypteras, inte heller en som din Mac har anslutit till utan kryptering. Gästanslutningar kan inte krypteras, så du behöver logga in. Anslutningar som Cmdr redan har öppna förblir som de är tills de återansluts.} windows {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your PC connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.} other {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your computer connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.}}",
+  "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr krypterar sina anslutningar till SMB-resurser, även när servern inte ber om det, och öppnar inte en delad mapp vars anslutning inte kan krypteras, inte heller en som din Mac har anslutit till utan kryptering. Gästanslutningar kan inte krypteras, så du behöver logga in. Anslutningar som Cmdr redan har öppna förblir som de är tills de återansluts.} windows {Cmdr krypterar sina anslutningar till SMB-resurser, även när servern inte ber om det, och öppnar inte en delad mapp vars anslutning inte kan krypteras, inte heller en som din dator har anslutit till utan kryptering. Gästanslutningar kan inte krypteras, så du behöver logga in. Anslutningar som Cmdr redan har öppna förblir som de är tills de återansluts.} other {Cmdr krypterar sina anslutningar till SMB-resurser, även när servern inte ber om det, och öppnar inte en delad mapp vars anslutning inte kan krypteras, inte heller en som din dator har anslutit till utan kryptering. Gästanslutningar kan inte krypteras, så du behöver logga in. Anslutningar som Cmdr redan har öppna förblir som de är tills de återansluts.}}",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "8c27a6c"
+    "sourceHash": "26291fe"
   },
   "settings.network.requireSmbEncryption.keywords": "kryptera, krypterad, chiffrera, säkerhet, säker, integritet, skydd, skyddad anslutning",
   "@settings.network.requireSmbEncryption.keywords": {
@@ -1446,9 +1446,9 @@
   "@settings.fileOperations.adbEnabled.label": {
     "sourceHash": "3651356"
   },
-  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {Nå hela filsystemet på en Android-telefon som har USB-felsökning aktiverad, något som MTP inte kan visa dig. Kräver Android platform tools (kommandot ”adb”) på den här Macen. Att låta det vara påslaget kostar ingenting om du inte har några Android-verktyg installerade.} windows {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this PC. Leaving this on costs nothing if you have no Android tooling installed.} other {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this computer. Leaving this on costs nothing if you have no Android tooling installed.}}",
+  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {Nå hela filsystemet på en Android-telefon som har USB-felsökning aktiverad, något som MTP inte kan visa dig. Kräver Android platform tools (kommandot ”adb”) på den här Macen. Att låta det vara påslaget kostar ingenting om du inte har några Android-verktyg installerade.} windows {Nå hela filsystemet på en Android-telefon som har USB-felsökning aktiverad, något som MTP inte kan visa dig. Kräver Android platform tools (kommandot ”adb”) på den här datorn. Att låta det vara påslaget kostar ingenting om du inte har några Android-verktyg installerade.} other {Nå hela filsystemet på en Android-telefon som har USB-felsökning aktiverad, något som MTP inte kan visa dig. Kräver Android platform tools (kommandot ”adb”) på den här datorn. Att låta det vara påslaget kostar ingenting om du inte har några Android-verktyg installerade.}}",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "a89c957"
+    "sourceHash": "4c92b52"
   },
   "settings.fileOperations.adbEnabled.keywords": "usb-felsökning, utvecklaralternativ, telefon, mobil, enhet",
   "@settings.fileOperations.adbEnabled.keywords": {
@@ -1458,9 +1458,9 @@
   "@settings.fileOperations.adbBinaryPath.label": {
     "sourceHash": "a67fbbd"
   },
-  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Lämna det tomt, så letar Cmdr efter adb på vanligt sätt, bland annat i Android SDK och Homebrew. Ange en annan sökväg om du har platform tools på en egen plats.} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
+  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Lämna det tomt, så letar Cmdr efter adb på vanligt sätt, bland annat i Android SDK och Homebrew. Ange en annan sökväg om du har platform tools på en egen plats.} other {Lämna det tomt, så letar Cmdr efter adb på vanligt sätt, bland annat i Android SDK och i din PATH. Ange en annan sökväg om du har platform tools på en egen plats.}}",
   "@settings.fileOperations.adbBinaryPath.description": {
-    "sourceHash": "940ff29"
+    "sourceHash": "e8cde17"
   },
   "settings.fileOperations.adbBinaryPath.keywords": "sökväg, binärfil, program, plats",
   "@settings.fileOperations.adbBinaryPath.keywords": {
@@ -1538,9 +1538,9 @@
   "@settings.viewer.showTextCursor.keywords": {
     "sourceHash": "1214804"
   },
-  "settings.developer.mcpEnabled.label": "{platform, select, windows {Turn on MCP server} other {Aktivera MCP-server}}",
+  "settings.developer.mcpEnabled.label": "{platform, select, windows {Aktivera MCP-server} other {Aktivera MCP-server}}",
   "@settings.developer.mcpEnabled.label": {
-    "sourceHash": "32b62ff"
+    "sourceHash": "a2e166c"
   },
   "settings.developer.mcpEnabled.description": "Starta en Model Context Protocol-server för integration med AI-assistenter.",
   "@settings.developer.mcpEnabled.description": {
@@ -1619,9 +1619,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "{platform, select, windows {Please turn this on to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats.} other {Slå på det här så hjälper du oss se vilka funktioner som spelar roll under den öppna betan.\nStatistiken är inte kopplad till ditt namn eller din e-post utan till ett slumpmässigt id.\nCmdr skickar aldrig filnamn, sökvägar, sökord eller prompter.\nNär det är avstängt skickar Cmdr ingen statistik alls.}}",
+  "settings.analytics.enabled.description": "{platform, select, windows {Slå på det här så hjälper du oss se vilka funktioner som spelar roll under den öppna betan.\nStatistiken är inte kopplad till ditt namn eller din e-post utan till ett slumpmässigt id.\nCmdr skickar aldrig filnamn, sökvägar, sökord eller prompter.\nNär det är avstängt skickar Cmdr ingen statistik alls.} other {Slå på det här så hjälper du oss se vilka funktioner som spelar roll under den öppna betan.\nStatistiken är inte kopplad till ditt namn eller din e-post utan till ett slumpmässigt id.\nCmdr skickar aldrig filnamn, sökvägar, sökord eller prompter.\nNär det är avstängt skickar Cmdr ingen statistik alls.}}",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "f5534ee"
+    "sourceHash": "2527a03"
   },
   "settings.analytics.enabled.keywords": "analys, användning, statistik, användningsstatistik, integritet, telemetri, beta, spårning, avstå",
   "@settings.analytics.enabled.keywords": {
@@ -1643,9 +1643,9 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "{platform, select, macos {Skicka automatiskt en rapport när Cmdr avslutas oväntat eller stöter på ett problem i bakgrunden. Innehåller appversion, macOS-version och vilken del av koden som stötte på problemet. Aldrig filnamn eller personuppgifter.} windows {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Windows version, and where in the code the problem happened. Never file names or personal data.} other {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Linux distribution and version, and where in the code the problem happened. Never file names or personal data.}}",
+  "settings.updates.crashReports.description": "{platform, select, macos {Skicka automatiskt en rapport när Cmdr avslutas oväntat eller stöter på ett problem i bakgrunden. Innehåller appversion, macOS-version och vilken del av koden som stötte på problemet. Aldrig filnamn eller personuppgifter.} windows {Skicka automatiskt en rapport när Cmdr avslutas oväntat eller stöter på ett problem i bakgrunden. Innehåller appversion, Windows-version och vilken del av koden som stötte på problemet. Aldrig filnamn eller personuppgifter.} other {Skicka automatiskt en rapport när Cmdr avslutas oväntat eller stöter på ett problem i bakgrunden. Innehåller appversion, Linux-distribution och dess version samt vilken del av koden som stötte på problemet. Aldrig filnamn eller personuppgifter.}}",
   "@settings.updates.crashReports.description": {
-    "sourceHash": "e726766"
+    "sourceHash": "abfdc61"
   },
   "settings.updates.crashReports.keywords": "krasch, kraschrapport, rapport, integritet, telemetri, bugg, fel",
   "@settings.updates.crashReports.keywords": {
@@ -1739,9 +1739,9 @@
   "@settings.advanced.indexPauseFreeSpacePercent.label": {
     "sourceHash": "c6fe418"
   },
-  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {Cmdr pausar enhetsindexeringen när det lediga utrymmet på startskivan sjunker under den här procentandelen, så att indexet inte tar platsen som dina egna filer behöver. Indexeringen fortsätter där den slutade när det lediga utrymmet är en procentenhet över gränsen. Det fungerar oavsett om ”Varning vid lågt diskutrymme” är på eller av.} windows {Cmdr pauses drive indexing when free space on your system drive drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} other {Cmdr pauses drive indexing when free space on your system disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.}}",
+  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {Cmdr pausar enhetsindexeringen när det lediga utrymmet på startskivan sjunker under den här procentandelen, så att indexet inte tar platsen som dina egna filer behöver. Indexeringen fortsätter där den slutade när det lediga utrymmet är en procentenhet över gränsen. Det fungerar oavsett om ”Varning vid lågt diskutrymme” är på eller av.} windows {Cmdr pausar enhetsindexeringen när det lediga utrymmet på systemenheten sjunker under den här procentandelen, så att indexet inte tar platsen som dina egna filer behöver. Indexeringen fortsätter där den slutade när det lediga utrymmet är en procentenhet över gränsen. Det fungerar oavsett om ”Varning vid lågt diskutrymme” är på eller av.} other {Cmdr pausar enhetsindexeringen när det lediga utrymmet på systemdisken sjunker under den här procentandelen, så att indexet inte tar platsen som dina egna filer behöver. Indexeringen fortsätter där den slutade när det lediga utrymmet är en procentenhet över gränsen. Det fungerar oavsett om ”Varning vid lågt diskutrymme” är på eller av.}}",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "4ee1cce"
+    "sourceHash": "bb41d41"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "disk, utrymme, diskutrymme, full, ledigt, index, indexering, paus, lagring, tröskel, gräns, procent, lite",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
@@ -1803,9 +1803,9 @@
   "@settings.fileOperations.showAlreadyGoneToast.label": {
     "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or select “Never show this again” in the notice) to stop these notices.} other {När du raderar något som en annan app redan har flyttat eller raderat räknar Cmdr det som klart och visar en kort avisering om det. Stäng av det här (eller klicka på ”Visa aldrig igen” i aviseringen) så slutar de här aviseringarna att visas.}}",
+  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {När du raderar något som en annan app redan har flyttat eller raderat räknar Cmdr det som klart och visar en kort avisering om det. Stäng av det här (eller välj ”Visa aldrig igen” i aviseringen) så slutar de här aviseringarna att visas.} other {När du raderar något som en annan app redan har flyttat eller raderat räknar Cmdr det som klart och visar en kort avisering om det. Stäng av det här (eller klicka på ”Visa aldrig igen” i aviseringen) så slutar de här aviseringarna att visas.}}",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "9655e46"
+    "sourceHash": "72a3ead"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "saknas, försvunnen, försvunnet, borttagen, flyttad, avisering, notis, meddelande, popup",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -1983,9 +1983,9 @@
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"
   },
-  "settings.advanced.logLlmCalls.description": "{platform, select, macos {Spara varje AI-förfrågan och -svar i en lokal mapp (llm-logs) för felsökning. De här filerna stannar på din Mac och innehåller filnamnen och sökvägarna som Cmdr skickar till din leverantör.} windows {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your PC and include the file names and paths Cmdr sends to your provider.} other {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your computer and include the file names and paths Cmdr sends to your provider.}}",
+  "settings.advanced.logLlmCalls.description": "{platform, select, macos {Spara varje AI-förfrågan och -svar i en lokal mapp (llm-logs) för felsökning. De här filerna stannar på din Mac och innehåller filnamnen och sökvägarna som Cmdr skickar till din leverantör.} windows {Spara varje AI-förfrågan och -svar i en lokal mapp (llm-logs) för felsökning. De här filerna stannar på din dator och innehåller filnamnen och sökvägarna som Cmdr skickar till din leverantör.} other {Spara varje AI-förfrågan och -svar i en lokal mapp (llm-logs) för felsökning. De här filerna stannar på din dator och innehåller filnamnen och sökvägarna som Cmdr skickar till din leverantör.}}",
   "@settings.advanced.logLlmCalls.description": {
-    "sourceHash": "86b3d34"
+    "sourceHash": "0f9361b"
   },
   "settings.advanced.logLlmCalls.keywords": "ai, logg, felsökning, förfrågan, svar, prompt",
   "@settings.advanced.logLlmCalls.keywords": {
@@ -1995,9 +1995,9 @@
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
   },
-  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {Tidsgräns för att slå upp nätverkstjänster via Bonjour.} other {Timeout for resolving network services found on your local network (mDNS).}}",
+  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {Tidsgräns för att slå upp nätverkstjänster via Bonjour.} other {Tidsgräns för att slå upp nätverkstjänster som hittas i ditt lokala nätverk (mDNS).}}",
   "@settings.advanced.serviceResolveTimeout.description": {
-    "sourceHash": "5cf231d"
+    "sourceHash": "cb44fa3"
   },
   "settings.advanced.serviceResolveTimeout.keywords": "uppslagning, slå upp, tidsgräns, tjänst, tjänstidentifiering, nätverksidentifiering, nätverkssökning, lokalt nätverk, vänta, väntetid",
   "@settings.advanced.serviceResolveTimeout.keywords": {
@@ -2773,9 +2773,9 @@
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "{platform, select, windows {Turn on networking, direct SMB connections, share cache, and timeouts.} other {Aktivera nätverk, direkta SMB-anslutningar, resurscache och tidsgränser.}}",
+  "settings.summary.smbNetworkShares": "{platform, select, windows {Aktivera nätverk, direkta SMB-anslutningar, resurscache och tidsgränser.} other {Aktivera nätverk, direkta SMB-anslutningar, resurscache och tidsgränser.}}",
   "@settings.summary.smbNetworkShares": {
-    "sourceHash": "10604ac"
+    "sourceHash": "47e037d"
   },
   "settings.summary.servers": "SSH-värdnycklarna du har litat på.",
   "@settings.summary.servers": {
@@ -2950,18 +2950,18 @@
   "@settings.sidebar.matchCount": {
     "sourceHash": "fb95dc1"
   },
-  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {Öppna Systeminställningar för att ändra systemets temafärg} windows {Open Windows Settings to change the system accent color} other {Open your system settings to change the system accent color}}",
+  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {Öppna Systeminställningar för att ändra systemets temafärg} windows {Öppna Inställningar i Windows för att ändra systemets accentfärg} other {Öppna dina systeminställningar för att ändra systemets accentfärg}}",
   "@settings.appearance.themeColorSwatchAria": {
-    "sourceHash": "4cad022"
+    "sourceHash": "b76cab4"
   },
-  "settings.appearance.appColorHintPrefix": "{platform, select, macos {För att ändra systemets temafärg, gå till} other {To change your system accent color, go to}}",
+  "settings.appearance.appColorHintPrefix": "{platform, select, macos {För att ändra systemets temafärg, gå till} other {För att ändra systemets accentfärg, gå till}}",
   "@settings.appearance.appColorHintPrefix": {
-    "sourceHash": "748470a"
+    "sourceHash": "f06932f"
   },
-  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {dina inställningar för systemets utseende}}",
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Inställningar > Anpassning > Färger} other {dina inställningar för systemets utseende}}",
   "@settings.appearance.appColorHintLink": {
-    "sourceHash": "5c94206",
-    "sameAsSourceJustification": "Placeholder-only value: '{systemSettings} > {appearance}', two OS-localized navigation tokens joined by the '> ' arrow. No translatable text."
+    "sourceHash": "551a3a4",
+    "sameAsSourceJustification": "The macOS branch is two placeholders joined by the path arrow; macOS supplies both labels already localized, so nothing in it translates."
   },
   "settings.appearance.datePreviewLabel": "Förhandsvisning:",
   "@settings.appearance.datePreviewLabel": {
@@ -3196,17 +3196,17 @@
   "@settings.securityLog.enabled.label": {
     "sourceHash": "9f5e32e"
   },
-  "settings.securityLog.enabled.description": "{platform, select, macos {Spara en liten fil på den här Macen som noterar säkerhetsrelevanta ändringar och avvisningar, till exempel samtycke till moln-AI, en installerad uppdatering eller en app som MCP-servern har avvisat. Filen innehåller inga filnamn, innehåll eller lösenord och lämnar aldrig din Mac.} windows {Keep a small file on this PC that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your PC.} other {Keep a small file on this computer that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your computer.}}",
+  "settings.securityLog.enabled.description": "{platform, select, macos {Spara en liten fil på den här Macen som noterar säkerhetsrelevanta ändringar och avvisningar, till exempel samtycke till moln-AI, en installerad uppdatering eller en app som MCP-servern har avvisat. Filen innehåller inga filnamn, innehåll eller lösenord och lämnar aldrig din Mac.} windows {Spara en liten fil på den här datorn som noterar säkerhetsrelevanta ändringar och avvisningar, till exempel samtycke till moln-AI, en installerad uppdatering eller en app som MCP-servern har avvisat. Filen innehåller inga filnamn, innehåll eller lösenord och lämnar aldrig din dator.} other {Spara en liten fil på den här datorn som noterar säkerhetsrelevanta ändringar och avvisningar, till exempel samtycke till moln-AI, en installerad uppdatering eller en app som MCP-servern har avvisat. Filen innehåller inga filnamn, innehåll eller lösenord och lämnar aldrig din dator.}}",
   "@settings.securityLog.enabled.description": {
-    "sourceHash": "11361eb"
+    "sourceHash": "c0d2160"
   },
   "settings.securityLog.enabled.keywords": "säkerhet, logg, granskning, registrera, händelser, åtkomst, integritet",
   "@settings.securityLog.enabled.keywords": {
     "sourceHash": "6f113c0"
   },
-  "settings.securityLog.showInFinder": "{platform, select, macos {Visa i Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "settings.securityLog.showInFinder": "{platform, select, macos {Visa i Finder} windows {Visa i Utforskaren} other {Visa i filhanteraren}}",
   "@settings.securityLog.showInFinder": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "settings.updates.showSecurityLog.keywords": "säkerhet, logg, granskning, händelser, fil, öppna, visa, mapp, plats",
   "@settings.updates.showSecurityLog.keywords": {
@@ -3269,9 +3269,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "14adb30"
   },
-  "settings.updates.emailPrivacyNote": "{platform, select, macos {Lagras bara på din Mac. Vi skickar den aldrig tillsammans med din användningsstatistik, så statistiken kan inte kopplas tillbaka till dig. Används bara för att höra av oss och, om du vill, för att bifoga till en rapport du skickar. Vill du sluta få e-post använder du avregistreringslänken i något av våra meddelanden.} windows {Stored only on your PC. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.} other {Stored only on your computer. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.}}",
+  "settings.updates.emailPrivacyNote": "{platform, select, macos {Lagras bara på din Mac. Vi skickar den aldrig tillsammans med din användningsstatistik, så statistiken kan inte kopplas tillbaka till dig. Används bara för att höra av oss och, om du vill, för att bifoga till en rapport du skickar. Vill du sluta få e-post använder du avregistreringslänken i något av våra meddelanden.} windows {Lagras bara på din dator. Vi skickar den aldrig tillsammans med din användningsstatistik, så statistiken kan inte kopplas tillbaka till dig. Används bara för att höra av oss och, om du vill, för att bifoga till en rapport du skickar. Vill du sluta få e-post använder du avregistreringslänken i något av våra meddelanden.} other {Lagras bara på din dator. Vi skickar den aldrig tillsammans med din användningsstatistik, så statistiken kan inte kopplas tillbaka till dig. Används bara för att höra av oss och, om du vill, för att bifoga till en rapport du skickar. Vill du sluta få e-post använder du avregistreringslänken i något av våra meddelanden.}}",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "cf92795"
+    "sourceHash": "d8146b0"
   },
   "settings.logging.openLogFile": "Öppna loggfil",
   "@settings.logging.openLogFile": {
@@ -3437,13 +3437,13 @@
   "@settings.network.trustedCertificates.keywords": {
     "sourceHash": "554a965"
   },
-  "settings.servers.trustedCertificates.description": "{platform, select, macos {När macOS inte litar på en servers certifikat frågar Cmdr innan den litar på det åt dig, och kommer ihåg ditt svar här. Hemmaservrar skapar ofta ett eget.} windows {When Windows doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.} other {When your system doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.}}",
+  "settings.servers.trustedCertificates.description": "{platform, select, macos {När macOS inte litar på en servers certifikat frågar Cmdr innan den litar på det åt dig, och kommer ihåg ditt svar här. Hemmaservrar skapar ofta ett eget.} windows {När Windows inte litar på en servers certifikat frågar Cmdr innan den litar på det åt dig, och kommer ihåg ditt svar här. Hemmaservrar skapar ofta ett eget.} other {När ditt system inte litar på en servers certifikat frågar Cmdr innan den litar på det åt dig, och kommer ihåg ditt svar här. Hemmaservrar skapar ofta ett eget.}}",
   "@settings.servers.trustedCertificates.description": {
-    "sourceHash": "0b00c1e"
+    "sourceHash": "9eb44db"
   },
-  "settings.servers.trustedCertificates.empty": "{platform, select, macos {Inget betrott än. När du ansluter till en WebDAV-server som macOS inte litar på visar Cmdr dig certifikatets fingeravtryck och frågar.} windows {Nothing trusted yet. When you connect to a WebDAV server Windows doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.} other {Nothing trusted yet. When you connect to a WebDAV server your system doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.}}",
+  "settings.servers.trustedCertificates.empty": "{platform, select, macos {Inget betrott än. När du ansluter till en WebDAV-server som macOS inte litar på visar Cmdr dig certifikatets fingeravtryck och frågar.} windows {Inget betrott än. När du ansluter till en WebDAV-server som Windows inte litar på visar Cmdr dig certifikatets fingeravtryck och frågar.} other {Inget betrott än. När du ansluter till en WebDAV-server som ditt system inte litar på visar Cmdr dig certifikatets fingeravtryck och frågar.}}",
   "@settings.servers.trustedCertificates.empty": {
-    "sourceHash": "a3c2089"
+    "sourceHash": "da34116"
   },
   "settings.servers.trustedCertificates.confirmTitle": "Glöm det här certifikatet?",
   "@settings.servers.trustedCertificates.confirmTitle": {
@@ -3534,13 +3534,13 @@
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },
-  "settings.dataWipe.card": "{platform, select, macos {Dina data på den här Macen} windows {Your data on this PC} other {Your data on this computer}}",
+  "settings.dataWipe.card": "{platform, select, macos {Dina data på den här Macen} windows {Dina data på den här datorn} other {Dina data på den här datorn}}",
   "@settings.dataWipe.card": {
-    "sourceHash": "e4b3cee"
+    "sourceHash": "3d21fb8"
   },
-  "settings.dataWipe.description": "{platform, select, macos {Radera allt som Cmdr sparar på den här Macen: inställningar, sparade lösenord, historik, index och hämtade modeller. Cmdr avslutas efteråt.} windows {Delete everything Cmdr keeps on this PC: settings, saved passwords, histories, indexes, and downloaded models. Cmdr closes afterwards.} other {Delete everything Cmdr keeps on this computer: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.}}",
+  "settings.dataWipe.description": "{platform, select, macos {Radera allt som Cmdr sparar på den här Macen: inställningar, sparade lösenord, historik, index och hämtade modeller. Cmdr avslutas efteråt.} windows {Radera allt som Cmdr sparar på den här datorn: inställningar, sparade lösenord, historik, index och hämtade modeller. Cmdr stängs efteråt.} other {Radera allt som Cmdr sparar på den här datorn: inställningar, sparade lösenord, historik, index och hämtade modeller. Cmdr avslutas efteråt.}}",
   "@settings.dataWipe.description": {
-    "sourceHash": "f1012f4"
+    "sourceHash": "7dc0c1c"
   },
   "settings.dataWipe.button": "Radera all Cmdr-data",
   "@settings.dataWipe.button": {
@@ -3550,17 +3550,17 @@
   "@settings.updates.deleteAllData.keywords": {
     "sourceHash": "0ffb0f6"
   },
-  "settings.dataWipe.title": "{platform, select, macos {Radera all Cmdr-data på den här Macen?} windows {Delete all Cmdr data on this PC?} other {Delete all Cmdr data on this computer?}}",
+  "settings.dataWipe.title": "{platform, select, macos {Radera all Cmdr-data på den här Macen?} windows {Radera all Cmdr-data på den här datorn?} other {Radera all Cmdr-data på den här datorn?}}",
   "@settings.dataWipe.title": {
-    "sourceHash": "35db003"
+    "sourceHash": "63322b8"
   },
-  "settings.dataWipe.intro": "{platform, select, macos {Cmdr raderar allt som Cmdr sparar på den här Macen och avslutas sedan. Det här går inte att ångra.} windows {Cmdr deletes everything it keeps on this PC, then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer, then quits. This can’t be undone.}}",
+  "settings.dataWipe.intro": "{platform, select, macos {Cmdr raderar allt som Cmdr sparar på den här Macen och avslutas sedan. Det här går inte att ångra.} windows {Cmdr raderar allt som Cmdr sparar på den här datorn och stängs sedan. Det här går inte att ångra.} other {Cmdr raderar allt som Cmdr sparar på den här datorn och avslutas sedan. Det här går inte att ångra.}}",
   "@settings.dataWipe.intro": {
-    "sourceHash": "61ed875"
+    "sourceHash": "75dd0c6"
   },
-  "settings.dataWipe.introWithSize": "{platform, select, macos {Cmdr raderar allt som Cmdr sparar på den här Macen ({sizeText}) och avslutas sedan. Det här går inte att ångra.} windows {Cmdr deletes everything it keeps on this PC ({sizeText}), then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer ({sizeText}), then quits. This can’t be undone.}}",
+  "settings.dataWipe.introWithSize": "{platform, select, macos {Cmdr raderar allt som Cmdr sparar på den här Macen ({sizeText}) och avslutas sedan. Det här går inte att ångra.} windows {Cmdr raderar allt som Cmdr sparar på den här datorn ({sizeText}) och stängs sedan. Det här går inte att ångra.} other {Cmdr raderar allt som Cmdr sparar på den här datorn ({sizeText}) och avslutas sedan. Det här går inte att ångra.}}",
   "@settings.dataWipe.introWithSize": {
-    "sourceHash": "e5262e8"
+    "sourceHash": "8dacc9c"
   },
   "settings.dataWipe.goesHeading": "Det här försvinner",
   "@settings.dataWipe.goesHeading": {
@@ -3578,13 +3578,13 @@
   "@settings.dataWipe.goes.apiKeys": {
     "sourceHash": "146397c"
   },
-  "settings.dataWipe.goes.license": "{platform, select, macos {Licensen på den här Macen. Aktivera den igen genom att ange licensnyckeln från ditt köpmejl.} windows {The license on this PC. To activate it again, enter the license key from your purchase email.} other {The license on this computer. To activate it again, enter the license key from your purchase email.}}",
+  "settings.dataWipe.goes.license": "{platform, select, macos {Licensen på den här Macen. Aktivera den igen genom att ange licensnyckeln från ditt köpmejl.} windows {Licensen på den här datorn. Aktivera den igen genom att ange licensnyckeln från ditt köpmejl.} other {Licensen på den här datorn. Aktivera den igen genom att ange licensnyckeln från ditt köpmejl.}}",
   "@settings.dataWipe.goes.license": {
-    "sourceHash": "90b5b06"
+    "sourceHash": "12597d5"
   },
-  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {Licensen på den här Macen, om du har aktiverat en. Aktivera den igen genom att ange licensnyckeln från ditt köpmejl.} windows {The license on this PC, if you activated one. To activate it again, enter the license key from your purchase email.} other {The license on this computer, if you activated one. To activate it again, enter the license key from your purchase email.}}",
+  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {Licensen på den här Macen, om du har aktiverat en. Aktivera den igen genom att ange licensnyckeln från ditt köpmejl.} windows {Licensen på den här datorn, om du har aktiverat en. Aktivera den igen genom att ange licensnyckeln från ditt köpmejl.} other {Licensen på den här datorn, om du har aktiverat en. Aktivera den igen genom att ange licensnyckeln från ditt köpmejl.}}",
   "@settings.dataWipe.goes.licenseIfAny": {
-    "sourceHash": "db7f6f2"
+    "sourceHash": "93cc028"
   },
   "settings.dataWipe.goes.askCmdr": "Chattar i Ask Cmdr och det som Cmdr minns om dig",
   "@settings.dataWipe.goes.askCmdr": {
@@ -3626,9 +3626,9 @@
   "@settings.dataWipe.cancel": {
     "sourceHash": "19766ed"
   },
-  "settings.dataWipe.confirm": "{platform, select, windows {Delete all and exit} other {Radera allt och avsluta}}",
+  "settings.dataWipe.confirm": "{platform, select, windows {Radera allt och avsluta} other {Radera allt och avsluta}}",
   "@settings.dataWipe.confirm": {
-    "sourceHash": "5efdab7"
+    "sourceHash": "8b73f1a"
   },
   "settings.dataWipe.deleting": "Raderar…",
   "@settings.dataWipe.deleting": {
@@ -3650,9 +3650,9 @@
   "@settings.dataWipe.doneTitle": {
     "sourceHash": "18aa13d"
   },
-  "settings.dataWipe.doneMessage": "{platform, select, macos {Allt som Cmdr sparade på den här Macen är borta. Om du vill ta bort appen också flyttar du den till papperskorgen när Cmdr har avslutats.} windows {Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps after Cmdr closes.} other {Everything Cmdr kept on this computer is gone. To remove the app as well, uninstall it the way you installed it after Cmdr quits.}}",
+  "settings.dataWipe.doneMessage": "{platform, select, macos {Allt som Cmdr sparade på den här Macen är borta. Om du vill ta bort appen också flyttar du den till papperskorgen när Cmdr har avslutats.} windows {Allt som Cmdr sparade på den här datorn är borta. Om du vill ta bort appen också avinstallerar du den i Inställningar > Appar när Cmdr har stängts.} other {Allt som Cmdr sparade på den här datorn är borta. Om du vill ta bort appen också avinstallerar du den på samma sätt som du installerade den, när Cmdr har avslutats.}}",
   "@settings.dataWipe.doneMessage": {
-    "sourceHash": "a0d09dc"
+    "sourceHash": "a18fa9f"
   },
   "settings.dataWipe.partialTitle": "Cmdr har raderat det mesta av sina data",
   "@settings.dataWipe.partialTitle": {
@@ -3662,17 +3662,17 @@
   "@settings.dataWipe.partialMessage": {
     "sourceHash": "24d0b58"
   },
-  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, one {Ett objekt i Nyckelhanterare som heter ”{itemName}”} other {{countText} objekt i Nyckelhanterare som heter ”{itemName}”}}} windows {{count, plural, one {One item in Credential Manager named “{itemName}”} other {{countText} items in Credential Manager named “{itemName}”}}} other {{count, plural, one {One item in your keyring named “{itemName}”} other {{countText} items in your keyring named “{itemName}”}}}}",
+  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, one {Ett objekt i Nyckelhanterare som heter ”{itemName}”} other {{countText} objekt i Nyckelhanterare som heter ”{itemName}”}}} windows {{count, plural, one {Ett objekt i Autentiseringshanteraren som heter ”{itemName}”} other {{countText} objekt i Autentiseringshanteraren som heter ”{itemName}”}}} other {{count, plural, one {Ett objekt i din nyckelring som heter ”{itemName}”} other {{countText} objekt i din nyckelring som heter ”{itemName}”}}}}",
   "@settings.dataWipe.leftover.secretItems": {
-    "sourceHash": "91321bb"
+    "sourceHash": "6cf1e9c"
   },
-  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {Eventuella objekt i Nyckelhanterare som heter ”{itemName}”} windows {Any items in Credential Manager named “{itemName}”} other {Any items in your keyring named “{itemName}”}}",
+  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {Eventuella objekt i Nyckelhanterare som heter ”{itemName}”} windows {Eventuella objekt i Autentiseringshanteraren som heter ”{itemName}”} other {Eventuella objekt i din nyckelring som heter ”{itemName}”}}",
   "@settings.dataWipe.leftover.secretsUnreadable": {
-    "sourceHash": "e3b3312"
+    "sourceHash": "0e9e95b"
   },
-  "settings.dataWipe.quit": "{platform, select, windows {Exit Cmdr} other {Avsluta Cmdr}}",
+  "settings.dataWipe.quit": "{platform, select, windows {Avsluta Cmdr} other {Avsluta Cmdr}}",
   "@settings.dataWipe.quit": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "settings.askCmdr.forgetMemory.keywords": "glöm, minne, radera, ta bort, kommer ihåg, minns, integritet",
   "@settings.askCmdr.forgetMemory.keywords": {

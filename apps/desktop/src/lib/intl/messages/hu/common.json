@@ -24,9 +24,9 @@
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "{platform, select, macos {A Cmdrnek teljes lemezhozzáférésre van szüksége a Letöltések mappád figyeléséhez. <settingsLink>Rendszerbeállítások megnyitása</settingsLink>} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "common.downloadsFdaHint": "{platform, select, macos {A Cmdrnek teljes lemezhozzáférésre van szüksége a Letöltések mappád figyeléséhez. <settingsLink>Rendszerbeállítások megnyitása</settingsLink>} other {A Cmdr nem tudja figyelni a Letöltések mappádat. Ellenőrizd, hogy a mappa létezik-e, és hogy meg tudod-e nyitni.}}",
   "@common.downloadsFdaHint": {
-    "sourceHash": "315e1d8"
+    "sourceHash": "b54bf8b"
   },
   "common.sizeUnit.byte": "{count, plural, one {bájt} other {bájt}}",
   "@common.sizeUnit.byte": {

@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Visst innehåll stannar hemma, vad någon än ber om: SSH-nycklar, inloggningsuppgifter för moln och verktyg, dina nyckelringar, webbläsardata, Mail, Meddelanden, Anteckningar, Cmdrs egna data och alla filer som innehåller en privat nyckel. Filernas namn kan ändå nå din leverantör.} windows {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, Windows credentials, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Visst innehåll stannar hemma, vad någon än ber om: SSH-nycklar, inloggningsuppgifter för moln och verktyg, dina nyckelringar, webbläsardata, Mail, Meddelanden, Anteckningar, Cmdrs egna data och alla filer som innehåller en privat nyckel. Filernas namn kan ändå nå din leverantör.} windows {Visst innehåll stannar hemma, vad någon än ber om: SSH-nycklar, inloggningsuppgifter för moln och verktyg, Windows-autentiseringsuppgifter, webbläsardata, e-postdata, Cmdrs egna data och alla filer som innehåller en privat nyckel. Filernas namn kan ändå nå din leverantör.} other {Visst innehåll stannar hemma, vad någon än ber om: SSH-nycklar, inloggningsuppgifter för moln och verktyg, dina nyckelringar, webbläsardata, e-postdata, Cmdrs egna data och alla filer som innehåller en privat nyckel. Filernas namn kan ändå nå din leverantör.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
-    "sourceHash": "048633f"
+    "sourceHash": "a533066"
   },
   "ai.cloudConsent.askCmdr.actions": "I en chatt som du har startat kan Ask Cmdr också sköta appen åt dig: gå till mappar, markera, sortera, öppna flikar och dialoger och ansluta till en plats du har sparat. Att kopiera, flytta, komprimera, radera, byta namn och ångra en åtgärd öppnar varje gång en dialog eller redigerare där du bekräftar, och ingenting händer förrän du gör det. Innan Ask Cmdr öppnar en fil, ändrar en inställning (utom hur Cmdr ser ut), avslutar, matar ut en enhet, tar bort en server eller ändrar indexeringen frågar Ask Cmdr dig först. Att skapa en namngiven mapp eller fil och att tagga filer sker direkt utan någon fråga, och du kan ångra en ändring av taggar. Namnbyten och upprensningar som Ask Cmdr förbereder som en plan väntar på ditt godkännande.",
   "@ai.cloudConsent.askCmdr.actions": {
@@ -159,13 +159,13 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Dina chattar i Ask Cmdr stannar på din Mac, i en lokal databas som du kan öppna och läsa.} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Dina chattar i Ask Cmdr stannar på din Mac, i en lokal databas som du kan öppna och läsa.} windows {Dina chattar i Ask Cmdr stannar på din dator, i en lokal databas som du kan öppna och läsa.} other {Dina chattar i Ask Cmdr stannar på din dator, i en lokal databas som du kan öppna och läsa.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
-    "sourceHash": "283cdd7"
+    "sourceHash": "9557acc"
   },
-  "ai.cloudConsent.logsNote": "{platform, select, macos {Om du aktiverar ”Logga AI-modellanrop” i Avancerat i inställningarna sparar Cmdr också varje förfrågan och svar i en mapp på din Mac. De anropsloggarna stannar lokalt och skickas aldrig någonstans.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {Om du aktiverar ”Logga AI-modellanrop” i Avancerat i inställningarna sparar Cmdr också varje förfrågan och svar i en mapp på din Mac. De anropsloggarna stannar lokalt och skickas aldrig någonstans.} windows {Om du aktiverar ”Logga AI-modellanrop” i Avancerat i inställningarna sparar Cmdr också varje förfrågan och svar i en mapp på din dator. De anropsloggarna stannar lokalt och skickas aldrig någonstans.} other {Om du aktiverar ”Logga AI-modellanrop” i Avancerat i inställningarna sparar Cmdr också varje förfrågan och svar i en mapp på din dator. De anropsloggarna stannar lokalt och skickas aldrig någonstans.}}",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "0178d1c"
+    "sourceHash": "e34c082"
   },
   "ai.cloudConsent.turnOffAnyTime": "Stäng av det här när som helst, så slutar Cmdr skicka direkt. Tjänsten, nyckeln och chattarna finns kvar som de är.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -531,29 +531,29 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.title": "{platform, select, macos {{op, select, save {Det gick inte att spara din API-nyckel: macOS Nyckelring nekade åtkomst} other {Det gick inte att läsa din sparade API-nyckel: macOS Nyckelring nekade åtkomst}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {Det gick inte att spara din API-nyckel: systemets nyckelring nekade åtkomst} other {Det gick inte att läsa din sparade API-nyckel: systemets nyckelring nekade åtkomst}}}}",
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {Det gick inte att spara din API-nyckel: macOS Nyckelring nekade åtkomst} other {Det gick inte att läsa din sparade API-nyckel: macOS Nyckelring nekade åtkomst}}} windows {{op, select, save {Det gick inte att spara din API-nyckel: Autentiseringshanteraren nekade åtkomst} other {Det gick inte att läsa din sparade API-nyckel: Autentiseringshanteraren nekade åtkomst}}} other {{op, select, save {Det gick inte att spara din API-nyckel: systemets nyckelring nekade åtkomst} other {Det gick inte att läsa din sparade API-nyckel: systemets nyckelring nekade åtkomst}}}}",
   "@ai.secretError.title": {
-    "sourceHash": "2b2ef89"
+    "sourceHash": "25b34c4"
   },
-  "ai.secretError.body": "{platform, select, macos {{op, select, save {Öppna Nyckelhanterare och kontrollera posten ”Cmdr”, eller radera den och försök spara igen.} other {Öppna Nyckelhanterare, leta upp posten ”Cmdr”, ge åtkomst, eller radera den och ange din nyckel på nytt.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Lås upp din nyckelring (appen Lösenord eller Nyckelringar) och försök igen.}}",
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {Öppna Nyckelhanterare och kontrollera posten ”Cmdr”, eller radera den och försök spara igen.} other {Öppna Nyckelhanterare, leta upp posten ”Cmdr”, ge åtkomst, eller radera den och ange din nyckel på nytt.}}} windows {{op, select, save {Öppna Autentiseringshanteraren och kontrollera posten ”Cmdr” under Windows-autentiseringsuppgifter, eller ta bort den och försök spara igen.} other {Öppna Autentiseringshanteraren, leta upp posten ”Cmdr” under Windows-autentiseringsuppgifter, eller ta bort den och ange din nyckel igen.}}} other {Lås upp din nyckelring (appen Lösenord eller Nyckelringar) och försök igen.}}",
   "@ai.secretError.body": {
-    "sourceHash": "8f1380e"
+    "sourceHash": "d65c5e3"
   },
   "ai.secretError.genericTitle": "{op, select, save {Det gick inte att spara din API-nyckel.} other {Det gick inte att läsa din sparade API-nyckel.}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "c343e42"
   },
-  "ai.secretError.genericBody": "{platform, select, macos {Kontrollera att systemets nyckelring är tillgänglig och försök igen. Om det kvarstår, starta om appen.} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {Kontrollera att systemets nyckelring är tillgänglig och försök igen. Om det kvarstår, starta om appen.}}",
+  "ai.secretError.genericBody": "{platform, select, macos {Kontrollera att systemets nyckelring är tillgänglig och försök igen. Om det kvarstår, starta om appen.} windows {Kontrollera att Autentiseringshanteraren är tillgänglig och försök igen. Om det fortsätter att hända, starta om Cmdr.} other {Kontrollera att systemets nyckelring är tillgänglig och försök igen. Om det kvarstår, starta om appen.}}",
   "@ai.secretError.genericBody": {
-    "sourceHash": "2ee417d"
+    "sourceHash": "9fc0702"
   },
   "ai.secretError.removeTitle": "Det gick inte att ta bort din sparade API-nyckel.",
   "@ai.secretError.removeTitle": {
     "sourceHash": "5986628"
   },
-  "ai.secretError.removeBody": "{platform, select, macos {Öppna Nyckelhanterare, leta upp posten ”Cmdr” och radera den där.} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {Lås upp din nyckelring (appen Lösenord eller Nyckelringar) och försök igen.}}",
+  "ai.secretError.removeBody": "{platform, select, macos {Öppna Nyckelhanterare, leta upp posten ”Cmdr” och radera den där.} windows {Öppna Autentiseringshanteraren, leta upp posten ”Cmdr” under Windows-autentiseringsuppgifter och ta bort den där.} other {Lås upp din nyckelring (appen Lösenord eller Nyckelringar) och försök igen.}}",
   "@ai.secretError.removeBody": {
-    "sourceHash": "4e3abe7"
+    "sourceHash": "3a85511"
   },
   "ai.managed.aiOff": "Din organisation har stängt av AI i Cmdr.",
   "@ai.managed.aiOff": {
@@ -567,9 +567,9 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Din organisation tillåter bara lokal AI, som den här Macen inte kan köra.} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Din organisation tillåter bara lokal AI, som den här Macen inte kan köra.} windows {Din organisation tillåter bara lokal AI, som den här datorn inte kan köra.} other {Din organisation tillåter bara lokal AI, som den här datorn inte kan köra.}}",
   "@ai.managed.localOnlyUnsupported": {
-    "sourceHash": "b760ca4"
+    "sourceHash": "b468f8f"
   },
   "ai.managed.serviceNotAllowed": "tillåts inte av din organisation",
   "@ai.managed.serviceNotAllowed": {

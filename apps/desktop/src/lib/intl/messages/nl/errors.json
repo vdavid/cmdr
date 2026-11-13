@@ -19,9 +19,9 @@
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "ff103cd"
   },
-  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Sluit een paar apps om geheugen vrij te maken, vooral apps die veel bronnen gebruiken (browsers met veel tabbladen, editors, media-apps)\n- Bekijk het geheugengebruik in **Activity Monitor** (zoek ernaar in Spotlight)\n- Navigeer hier opnieuw heen om het nog eens te proberen} windows {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Task Manager** (press Ctrl+Shift+Esc)\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in your system monitor app\n- Navigate here again to retry}}",
+  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Sluit een paar apps om geheugen vrij te maken, vooral apps die veel bronnen gebruiken (browsers met veel tabbladen, editors, media-apps)\n- Bekijk het geheugengebruik in **Activity Monitor** (zoek ernaar in Spotlight)\n- Navigeer hier opnieuw heen om het nog eens te proberen} windows {Dit kun je proberen:\n- Sluit een paar apps om geheugen vrij te maken, vooral apps die veel bronnen gebruiken (browsers met veel tabbladen, editors, media-apps)\n- Bekijk het geheugengebruik in **Taakbeheer** (druk op Ctrl+Shift+Esc)\n- Navigeer hier opnieuw heen om het nog eens te proberen} other {Dit kun je proberen:\n- Sluit een paar apps om geheugen vrij te maken, vooral apps die veel bronnen gebruiken (browsers met veel tabbladen, editors, media-apps)\n- Bekijk het geheugengebruik in je systeemmonitor\n- Navigeer hier opnieuw heen om het nog eens te proberen}}",
   "@errors.listing.notEnoughMemory.suggestion": {
-    "sourceHash": "d05a4e4"
+    "sourceHash": "5b716f4"
   },
   "errors.listing.resourceBusy.title": "Bron in gebruik",
   "@errors.listing.resourceBusy.title": {
@@ -31,9 +31,9 @@
   "@errors.listing.resourceBusy.explanation": {
     "sourceHash": "18a07d9"
   },
-  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {Wacht even en navigeer hier dan opnieuw heen. Als het blijft gebeuren, kijk dan welke app het bestand mogelijk open houdt (voer in Terminal `lsof +D <folder-path>` uit om te zien welke processen deze map gebruiken).} windows {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the folder open: in **Resource Monitor** (search for it in Start), open the CPU tab and search **Associated Handles** for the folder’s name.} other {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in a terminal, run `lsof +D <folder-path>` to see which processes are using this folder).}}",
+  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {Wacht even en navigeer hier dan opnieuw heen. Als het blijft gebeuren, kijk dan welke app het bestand mogelijk open houdt (voer in Terminal `lsof +D <folder-path>` uit om te zien welke processen deze map gebruiken).} windows {Wacht even en navigeer hier dan opnieuw heen. Als het blijft gebeuren, kijk dan welke app de map mogelijk open houdt: open **Broncontrole** (zoek ernaar in Start), ga naar het tabblad CPU en zoek bij **Gekoppelde ingangen** naar de naam van de map.} other {Wacht even en navigeer hier dan opnieuw heen. Als het blijft gebeuren, kijk dan welke app het bestand mogelijk open houdt (voer in een terminal `lsof +D <folder-path>` uit om te zien welke processen deze map gebruiken).}}",
   "@errors.listing.resourceBusy.suggestion": {
-    "sourceHash": "fa266e6"
+    "sourceHash": "31ef425"
   },
   "errors.listing.temporarilyUnavailable.title": "Tijdelijk niet beschikbaar",
   "@errors.listing.temporarilyUnavailable.title": {
@@ -43,21 +43,21 @@
   "@errors.listing.temporarilyUnavailable.explanation": {
     "sourceHash": "2193876"
   },
-  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {Navigeer hier opnieuw heen om het nog eens te proberen. Dit lost meestal vanzelf op. Als het blijft gebeuren, staat het systeem misschien onder zware belasting. Kijk in **Activity Monitor** naar apps die veel bronnen verbruiken.} windows {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Task Manager** for apps consuming a lot of resources.} other {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check your system monitor app for apps consuming a lot of resources.}}",
+  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {Navigeer hier opnieuw heen om het nog eens te proberen. Dit lost meestal vanzelf op. Als het blijft gebeuren, staat het systeem misschien onder zware belasting. Kijk in **Activity Monitor** naar apps die veel bronnen verbruiken.} windows {Navigeer hier opnieuw heen om het nog eens te proberen. Dit lost meestal vanzelf op. Als het blijft gebeuren, staat het systeem misschien onder zware belasting. Kijk in **Taakbeheer** naar apps die veel bronnen verbruiken.} other {Navigeer hier opnieuw heen om het nog eens te proberen. Dit lost meestal vanzelf op. Als het blijft gebeuren, staat het systeem misschien onder zware belasting. Kijk in je systeemmonitor naar apps die veel bronnen verbruiken.}}",
   "@errors.listing.temporarilyUnavailable.suggestion": {
-    "sourceHash": "1ec4aef"
+    "sourceHash": "a677915"
   },
   "errors.listing.networkDown.title": "Netwerk is uitgevallen",
   "@errors.listing.networkDown.title": {
     "sourceHash": "399ab40"
   },
-  "errors.listing.networkDown.explanation": "{platform, select, macos {De netwerkverbinding van je Mac is uitgevallen, dus Cmdr kan dit volume niet bereiken. Dit kan betekenen dat de wifi is losgekoppeld, een ethernetkabel is losgeraakt, of de netwerkinterface is uitgeschakeld.} windows {Your PC’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network adapter is disabled.} other {Your computer’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.}}",
+  "errors.listing.networkDown.explanation": "{platform, select, macos {De netwerkverbinding van je Mac is uitgevallen, dus Cmdr kan dit volume niet bereiken. Dit kan betekenen dat de wifi is losgekoppeld, een ethernetkabel is losgeraakt, of de netwerkinterface is uitgeschakeld.} windows {De netwerkverbinding van je pc is uitgevallen, dus Cmdr kan dit volume niet bereiken. Dit kan betekenen dat de wifi is losgekoppeld, een ethernetkabel is losgeraakt, of de netwerkadapter is uitgeschakeld.} other {De netwerkverbinding van je computer is uitgevallen, dus Cmdr kan dit volume niet bereiken. Dit kan betekenen dat de wifi is losgekoppeld, een ethernetkabel is losgeraakt, of de netwerkinterface is uitgeschakeld.}}",
   "@errors.listing.networkDown.explanation": {
-    "sourceHash": "179f8bb"
+    "sourceHash": "e5fcd3d"
   },
-  "errors.listing.networkDown.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer de wifi- of ethernetstatus in **{system_settings} > Netwerk**\n- Als je wifi gebruikt, zet die dan even uit en weer aan\n- Voer in Terminal `ping google.com` uit om je verbinding te testen\n- Navigeer hier opnieuw heen zodra je weer online bent} windows {Here’s what to try:\n- Check Wi-Fi or Ethernet status in **Settings > Network & internet**\n- If you’re on Wi-Fi, try turning it off and on again\n- In PowerShell, run `ping google.com` to test your connection\n- Navigate here again once you’re back online} other {Here’s what to try:\n- Check Wi-Fi or Ethernet status in your system’s network settings\n- If you’re on Wi-Fi, try turning it off and on again\n- In a terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online}}",
+  "errors.listing.networkDown.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer de wifi- of ethernetstatus in **{system_settings} > Netwerk**\n- Als je wifi gebruikt, zet die dan even uit en weer aan\n- Voer in Terminal `ping google.com` uit om je verbinding te testen\n- Navigeer hier opnieuw heen zodra je weer online bent} windows {Dit kun je proberen:\n- Controleer de wifi- of ethernetstatus in **Instellingen > Netwerk en internet**\n- Als je wifi gebruikt, zet die dan even uit en weer aan\n- Voer in PowerShell `ping google.com` uit om je verbinding te testen\n- Navigeer hier opnieuw heen zodra je weer online bent} other {Dit kun je proberen:\n- Controleer de wifi- of ethernetstatus in de netwerkinstellingen van je systeem\n- Als je wifi gebruikt, zet die dan even uit en weer aan\n- Voer in een terminal `ping google.com` uit om je verbinding te testen\n- Navigeer hier opnieuw heen zodra je weer online bent}}",
   "@errors.listing.networkDown.suggestion": {
-    "sourceHash": "bf4b517"
+    "sourceHash": "1712df1"
   },
   "errors.listing.networkConnectionDropped.title": "Netwerkverbinding verbroken",
   "@errors.listing.networkConnectionDropped.title": {
@@ -91,9 +91,9 @@
   "@errors.listing.connectionReset.explanation": {
     "sourceHash": "3ccfa1c"
   },
-  "errors.listing.connectionReset.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de server draait\n- Probeer in Terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Navigeer hier opnieuw heen om het nog eens te proberen} windows {Here’s what to try:\n- Check that the server is running\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry}}",
+  "errors.listing.connectionReset.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de server draait\n- Probeer in Terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Navigeer hier opnieuw heen om het nog eens te proberen} windows {Dit kun je proberen:\n- Controleer of de server draait\n- Probeer in PowerShell `ping <hostname>` om te testen of de server bereikbaar is\n- Navigeer hier opnieuw heen om het nog eens te proberen} other {Dit kun je proberen:\n- Controleer of de server draait\n- Probeer in een terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Navigeer hier opnieuw heen om het nog eens te proberen}}",
   "@errors.listing.connectionReset.suggestion": {
-    "sourceHash": "d980663"
+    "sourceHash": "85ce28a"
   },
   "errors.listing.connectionTimedOutErrno.title": "Time-out op verbinding",
   "@errors.listing.connectionTimedOutErrno.title": {
@@ -103,9 +103,9 @@
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "c088c41"
   },
-  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of het apparaat of de server aanstaat en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in Terminal `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen om het nog eens te proberen} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry}}",
+  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of het apparaat of de server aanstaat en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in Terminal `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen om het nog eens te proberen} windows {Dit kun je proberen:\n- Controleer of het apparaat of de server aanstaat en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in PowerShell `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen om het nog eens te proberen} other {Dit kun je proberen:\n- Controleer of het apparaat of de server aanstaat en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in een terminal `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen om het nog eens te proberen}}",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
-    "sourceHash": "230ef64"
+    "sourceHash": "446063f"
   },
   "errors.listing.hostDown.title": "Host is uitgevallen",
   "@errors.listing.hostDown.title": {
@@ -115,9 +115,9 @@
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "e175712"
   },
-  "errors.listing.hostDown.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de host aanstaat en met het netwerk is verbonden\n- Probeer in Terminal `ping <hostname>` om te testen of de host bereikbaar is\n- Als het een NAS of server is, controleer dan de beheerinterface ervan\n- Navigeer hier opnieuw heen zodra de host weer terug is} windows {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In PowerShell, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back} other {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In a terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back}}",
+  "errors.listing.hostDown.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de host aanstaat en met het netwerk is verbonden\n- Probeer in Terminal `ping <hostname>` om te testen of de host bereikbaar is\n- Als het een NAS of server is, controleer dan de beheerinterface ervan\n- Navigeer hier opnieuw heen zodra de host weer terug is} windows {Dit kun je proberen:\n- Controleer of de host aanstaat en met het netwerk is verbonden\n- Probeer in PowerShell `ping <hostname>` om te testen of de host bereikbaar is\n- Als het een NAS of server is, controleer dan de beheerinterface ervan\n- Navigeer hier opnieuw heen zodra de host weer terug is} other {Dit kun je proberen:\n- Controleer of de host aanstaat en met het netwerk is verbonden\n- Probeer in een terminal `ping <hostname>` om te testen of de host bereikbaar is\n- Als het een NAS of server is, controleer dan de beheerinterface ervan\n- Navigeer hier opnieuw heen zodra de host weer terug is}}",
   "@errors.listing.hostDown.suggestion": {
-    "sourceHash": "7a8ecd8"
+    "sourceHash": "238aad1"
   },
   "errors.listing.staleConnection.title": "Verouderde verbinding",
   "@errors.listing.staleConnection.title": {
@@ -127,9 +127,9 @@
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Navigeer weg uit deze map en kom terug\n- Als dit een netwerkschijf is, probeer die dan los te koppelen en opnieuw te koppelen in Finder\n- Controleer of de server die deze map host draait\n- Voer in Terminal `mount` uit om te zien welke volumes nu gekoppeld zijn} windows {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try disconnecting it and connecting it again in File Explorer\n- Check that the server hosting this folder is running\n- In PowerShell, run `net use` to see your connected network drives} other {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in your file manager\n- Check that the server hosting this folder is running\n- In a terminal, run `mount` to see currently mounted volumes}}",
+  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Navigeer weg uit deze map en kom terug\n- Als dit een netwerkschijf is, probeer die dan los te koppelen en opnieuw te koppelen in Finder\n- Controleer of de server die deze map host draait\n- Voer in Terminal `mount` uit om te zien welke volumes nu gekoppeld zijn} windows {Dit kun je proberen:\n- Navigeer weg uit deze map en kom terug\n- Als dit een netwerkschijf is, probeer dan in Verkenner de verbinding ermee te verbreken en opnieuw te maken\n- Controleer of de server die deze map host draait\n- Voer in PowerShell `net use` uit om je verbonden netwerkschijven te zien} other {Dit kun je proberen:\n- Navigeer weg uit deze map en kom terug\n- Als dit een netwerkschijf is, probeer die dan in je bestandsbeheerder af te koppelen en opnieuw aan te koppelen\n- Controleer of de server die deze map host draait\n- Voer in een terminal `mount` uit om te zien welke volumes nu gekoppeld zijn}}",
   "@errors.listing.staleConnection.suggestion": {
-    "sourceHash": "73de81d"
+    "sourceHash": "0264ba5"
   },
   "errors.listing.lockUnavailable.title": "Vergrendeling niet beschikbaar",
   "@errors.listing.lockUnavailable.title": {
@@ -139,9 +139,9 @@
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "154df3c"
   },
-  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Sluit een paar apps, vooral apps die met veel bestanden werken (editors, IDE's, back-uptools)\n- Voer in Terminal `lsof | wc -l` uit om te zien hoeveel bestanden er over alle apps heen open staan\n- Als het probleem blijft, kun je de limiet verhogen met `ulimit -n 4096` in Terminal\n- Navigeer hier opnieuw heen om het nog eens te proberen} windows {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In a terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in a terminal\n- Navigate here again to retry}}",
+  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Sluit een paar apps, vooral apps die met veel bestanden werken (editors, IDE's, back-uptools)\n- Voer in Terminal `lsof | wc -l` uit om te zien hoeveel bestanden er over alle apps heen open staan\n- Als het probleem blijft, kun je de limiet verhogen met `ulimit -n 4096` in Terminal\n- Navigeer hier opnieuw heen om het nog eens te proberen} windows {Dit kun je proberen:\n- Sluit een paar apps, vooral apps die met veel bestanden werken (editors, IDE's, back-uptools)\n- Als het blijft gebeuren, start je pc dan opnieuw op\n- Navigeer hier opnieuw heen om het nog eens te proberen} other {Dit kun je proberen:\n- Sluit een paar apps, vooral apps die met veel bestanden werken (editors, IDE's, back-uptools)\n- Voer in een terminal `lsof | wc -l` uit om te zien hoeveel bestanden er over alle apps heen open staan\n- Als het probleem blijft, kun je de limiet verhogen met `ulimit -n 4096` in een terminal\n- Navigeer hier opnieuw heen om het nog eens te proberen}}",
   "@errors.listing.lockUnavailable.suggestion": {
-    "sourceHash": "a9f23bd"
+    "sourceHash": "1fa1762"
   },
   "errors.listing.cancelledErrno.title": "Geannuleerd",
   "@errors.listing.cancelledErrno.title": {
@@ -159,13 +159,13 @@
   "@errors.listing.notPermitted.title": {
     "sourceHash": "8ec5f4b"
   },
-  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS blokkeerde de toegang van Cmdr tot `{path}`. Dit betekent meestal dat de map is beschermd door het beveiligingsbeleid van macOS, of dat Cmdr nog niet de juiste bevoegdheden heeft gekregen.} windows {Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.} other {Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it.}}",
+  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS blokkeerde de toegang van Cmdr tot `{path}`. Dit betekent meestal dat de map is beschermd door het beveiligingsbeleid van macOS, of dat Cmdr nog niet de juiste bevoegdheden heeft gekregen.} windows {Windows blokkeerde de toegang van Cmdr tot `{path}`. Dit betekent meestal dat de map door Windows is beschermd, of dat je account geen machtiging heeft om de map te openen.} other {Cmdr kreeg geen toegang tot `{path}`. Dit betekent meestal dat de bevoegdheden van de map dat niet toestaan, of dat een beveiligingsbeleid (zoals SELinux of AppArmor) de map beschermt.}}",
   "@errors.listing.notPermitted.explanation": {
-    "sourceHash": "e28dd0e"
+    "sourceHash": "9f159af"
   },
-  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang\n- Als dit een door het systeem beschermde map is, moet je Cmdr misschien **{full_disk_access}** geven onder {privacy_and_security}\n- Voer in Terminal `ls -la` op dit pad uit om de eigenaar en bevoegdheden te controleren} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If it’s a system folder, Windows may keep it off-limits on purpose\n- In PowerShell, run `icacls \"<folder-path>\"` to see who has access} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a system folder, it may need administrator rights\n- In a terminal, run `ls -la` on this path to check ownership and permissions}}",
+  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang\n- Als dit een door het systeem beschermde map is, moet je Cmdr misschien **{full_disk_access}** geven onder {privacy_and_security}\n- Voer in Terminal `ls -la` op dit pad uit om de eigenaar en bevoegdheden te controleren} windows {Dit kun je proberen:\n- Controleer de machtigingen van de map in Verkenner: klik er met de rechtermuisknop op, selecteer **Eigenschappen** en kijk onder **Beveiliging**\n- Als het een systeemmap is, houdt Windows die misschien bewust afgeschermd\n- Voer in PowerShell `icacls \"<folder-path>\"` uit om te zien wie toegang heeft} other {Dit kun je proberen:\n- Controleer de bevoegdheden van de map in je bestandsbeheerder: open de eigenschappen ervan en kijk onder **Rechten**\n- Als dit een systeemmap is, zijn er misschien beheerdersrechten voor nodig\n- Voer in een terminal `ls -la` op dit pad uit om de eigenaar en bevoegdheden te controleren}}",
   "@errors.listing.notPermitted.suggestion": {
-    "sourceHash": "2926956"
+    "sourceHash": "367f19a"
   },
   "errors.listing.pathNotFoundErrno.title": "Pad niet gevonden",
   "@errors.listing.pathNotFoundErrno.title": {
@@ -175,21 +175,21 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of het pad correct gespeld is\n- Als dit op een netwerkschijf staat, zorg dan dat die verbonden is en de share toegankelijk is\n- Navigeer naar de bovenliggende map en zoek het onderdeel daar\n- Voer in Terminal `ls -la` op de bovenliggende map uit om te zien wat erin staat} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
+  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of het pad correct gespeld is\n- Als dit op een netwerkschijf staat, zorg dan dat die verbonden is en de share toegankelijk is\n- Navigeer naar de bovenliggende map en zoek het onderdeel daar\n- Voer in Terminal `ls -la` op de bovenliggende map uit om te zien wat erin staat} windows {Dit kun je proberen:\n- Controleer of het pad correct gespeld is\n- Als dit op een netwerkschijf staat, zorg dan dat die verbonden is en de share toegankelijk is\n- Navigeer naar de bovenliggende map en zoek het onderdeel daar\n- Voer in PowerShell `dir` in de bovenliggende map uit om te zien wat erin staat} other {Dit kun je proberen:\n- Controleer of het pad correct gespeld is\n- Als dit op een netwerkschijf staat, zorg dan dat die verbonden is en de share toegankelijk is\n- Navigeer naar de bovenliggende map en zoek het onderdeel daar\n- Voer in een terminal `ls -la` op de bovenliggende map uit om te zien wat erin staat}}",
   "@errors.listing.pathNotFoundErrno.suggestion": {
-    "sourceHash": "8a51477"
+    "sourceHash": "eabe5b2"
   },
   "errors.listing.noPermissionErrno.title": "Geen bevoegdheid",
   "@errors.listing.noPermissionErrno.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr heeft geen toegang tot `{path}`. macOS bepaalt welke apps bij welke mappen mogen, en Cmdr heeft voor deze map nog geen toegang gekregen.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
+  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr heeft geen toegang tot `{path}`. macOS bepaalt welke apps bij welke mappen mogen, en Cmdr heeft voor deze map nog geen toegang gekregen.} windows {Cmdr heeft geen toegang tot `{path}`. Windows staat je account niet toe om deze map te openen.} other {Cmdr heeft geen toegang tot `{path}`. Het systeem staat je gebruikersaccount niet toe om deze map te openen.}}",
   "@errors.listing.noPermissionErrno.explanation": {
-    "sourceHash": "3871273"
+    "sourceHash": "08a2f03"
   },
-  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang\n- Controleer de bevoegdheden van de map in Finder: klik er met de rechtermuisknop op, kies Toon info, en kijk onder Delen en bevoegdheden\n- Als dit een gedeelde map is, vraag de eigenaar dan de bevoegdheden bij te werken\n- Voer in Terminal `ls -la` op dit pad uit om de huidige bevoegdheden te zien} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on this path to see the current permissions}}",
+  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang\n- Controleer de bevoegdheden van de map in Finder: klik er met de rechtermuisknop op, kies Toon info, en kijk onder Delen en bevoegdheden\n- Als dit een gedeelde map is, vraag de eigenaar dan de bevoegdheden bij te werken\n- Voer in Terminal `ls -la` op dit pad uit om de huidige bevoegdheden te zien} windows {Dit kun je proberen:\n- Controleer de machtigingen van de map in Verkenner: klik er met de rechtermuisknop op, selecteer **Eigenschappen** en kijk onder **Beveiliging**\n- Als dit een gedeelde map is, vraag de eigenaar dan de machtigingen bij te werken\n- Voer in PowerShell `icacls \"<folder-path>\"` uit om de huidige machtigingen te zien} other {Dit kun je proberen:\n- Controleer de bevoegdheden van de map in je bestandsbeheerder: open de eigenschappen ervan en kijk onder **Rechten**\n- Als dit een gedeelde map is, vraag de eigenaar dan de bevoegdheden bij te werken\n- Voer in een terminal `ls -la` op dit pad uit om de huidige bevoegdheden te zien}}",
   "@errors.listing.noPermissionErrno.suggestion": {
-    "sourceHash": "4b513ef"
+    "sourceHash": "d1ce430"
   },
   "errors.listing.alreadyExistsErrno.title": "Bestaat al",
   "@errors.listing.alreadyExistsErrno.title": {
@@ -247,9 +247,9 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt te verplaatsen of te verwijderen\n- Leeg de Prullenmand (klik met de rechtermuisknop op het Prullenmand-symbool in het Dock)\n- Voer in Terminal `df -h` uit om te zien hoeveel ruimte er nog over is op elk volume\n- Kijk in **{system_settings} > Algemeen > Opslag** voor een overzicht van wat ruimte gebruikt} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt te verplaatsen of te verwijderen\n- Leeg de Prullenmand (klik met de rechtermuisknop op het Prullenmand-symbool in het Dock)\n- Voer in Terminal `df -h` uit om te zien hoeveel ruimte er nog over is op elk volume\n- Kijk in **{system_settings} > Algemeen > Opslag** voor een overzicht van wat ruimte gebruikt} windows {Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt te verplaatsen of te verwijderen\n- Leeg de prullenbak (klik er op het bureaublad met de rechtermuisknop op en selecteer **Prullenbak leegmaken**)\n- Kijk in **Instellingen > Systeem > Opslag** voor een overzicht van wat ruimte gebruikt} other {Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt te verplaatsen of te verwijderen\n- Leeg de prullenbak in je bestandsbeheerder\n- Voer in een terminal `df -h` uit om te zien hoeveel ruimte er nog over is op elk volume}}",
   "@errors.listing.diskFullErrno.suggestion": {
-    "sourceHash": "f2eb27b"
+    "sourceHash": "bba2927"
   },
   "errors.listing.readOnlyVolumeErrno.title": "Alleen-lezenvolume",
   "@errors.listing.readOnlyVolumeErrno.title": {
@@ -271,9 +271,9 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "a0ca28f"
   },
-  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Probeer een andere aanpak, of gebruik Finder voor deze bewerking. Als je met een externe schijf werkt, is die misschien geformatteerd met een bestandssysteem met beperkingen (FAT32 kan bijvoorbeeld geen bestanden van 4 GiB of groter opslaan).} windows {Try a different approach, or use File Explorer for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).} other {Try a different approach, or use your file manager for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).}}",
+  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Probeer een andere aanpak, of gebruik Finder voor deze bewerking. Als je met een externe schijf werkt, is die misschien geformatteerd met een bestandssysteem met beperkingen (FAT32 kan bijvoorbeeld geen bestanden van 4 GiB of groter opslaan).} windows {Probeer een andere aanpak, of gebruik Verkenner voor deze bewerking. Als je met een externe schijf werkt, is die misschien geformatteerd met een bestandssysteem met beperkingen (FAT32 kan bijvoorbeeld geen bestanden van 4 GiB of groter opslaan).} other {Probeer een andere aanpak, of gebruik je bestandsbeheerder voor deze bewerking. Als je met een externe schijf werkt, is die misschien geformatteerd met een bestandssysteem met beperkingen (FAT32 kan bijvoorbeeld geen bestanden van 4 GiB of groter opslaan).}}",
   "@errors.listing.notSupportedErrno.suggestion": {
-    "sourceHash": "8fea918"
+    "sourceHash": "c5735be"
   },
   "errors.listing.networkUnreachable.title": "Netwerk onbereikbaar",
   "@errors.listing.networkUnreachable.title": {
@@ -283,21 +283,21 @@
   "@errors.listing.networkUnreachable.explanation": {
     "sourceHash": "d3c1975"
   },
-  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer je wifi- of ethernetverbinding\n- Zorg dat je op het juiste netwerk zit (bijvoorbeeld je kantoorwifi of VPN)\n- Probeer in Terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Navigeer hier opnieuw heen zodra je verbonden bent} windows {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected} other {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected}}",
+  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer je wifi- of ethernetverbinding\n- Zorg dat je op het juiste netwerk zit (bijvoorbeeld je kantoorwifi of VPN)\n- Probeer in Terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Navigeer hier opnieuw heen zodra je verbonden bent} windows {Dit kun je proberen:\n- Controleer je wifi- of ethernetverbinding\n- Zorg dat je op het juiste netwerk zit (bijvoorbeeld je kantoorwifi of VPN)\n- Probeer in PowerShell `ping <hostname>` om te testen of de server bereikbaar is\n- Navigeer hier opnieuw heen zodra je verbonden bent} other {Dit kun je proberen:\n- Controleer je wifi- of ethernetverbinding\n- Zorg dat je op het juiste netwerk zit (bijvoorbeeld je kantoorwifi of VPN)\n- Probeer in een terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Navigeer hier opnieuw heen zodra je verbonden bent}}",
   "@errors.listing.networkUnreachable.suggestion": {
-    "sourceHash": "7feb3cb"
+    "sourceHash": "75cc2f7"
   },
   "errors.listing.connectionRefused.title": "Verbinding geweigerd",
   "@errors.listing.connectionRefused.title": {
     "sourceHash": "1a28032"
   },
-  "errors.listing.connectionRefused.explanation": "{platform, select, macos {De server weigerde de verbinding actief. Dit betekent meestal dat de serversoftware (bijvoorbeeld een SMB- of NFS-service) niet draait, of is ingesteld om verbindingen van deze Mac te weigeren.} windows {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.} other {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this computer.}}",
+  "errors.listing.connectionRefused.explanation": "{platform, select, macos {De server weigerde de verbinding actief. Dit betekent meestal dat de serversoftware (bijvoorbeeld een SMB- of NFS-service) niet draait, of is ingesteld om verbindingen van deze Mac te weigeren.} windows {De server weigerde de verbinding actief. Dit betekent meestal dat de serversoftware (bijvoorbeeld een SMB- of NFS-service) niet draait, of is ingesteld om verbindingen van deze pc te weigeren.} other {De server weigerde de verbinding actief. Dit betekent meestal dat de serversoftware (bijvoorbeeld een SMB- of NFS-service) niet draait, of is ingesteld om verbindingen van deze computer te weigeren.}}",
   "@errors.listing.connectionRefused.explanation": {
-    "sourceHash": "88e1ac7"
+    "sourceHash": "75e0ad7"
   },
-  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de server draait en de service voor bestandsdeling actief is\n- Controleer of het serveradres en de poort kloppen\n- Probeer in Terminal `ping <hostname>` om te kijken of de server überhaupt bereikbaar is\n- Navigeer hier opnieuw heen om het nog eens te proberen} windows {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In PowerShell, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In a terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry}}",
+  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de server draait en de service voor bestandsdeling actief is\n- Controleer of het serveradres en de poort kloppen\n- Probeer in Terminal `ping <hostname>` om te kijken of de server überhaupt bereikbaar is\n- Navigeer hier opnieuw heen om het nog eens te proberen} windows {Dit kun je proberen:\n- Controleer of de server draait en de service voor bestandsdeling actief is\n- Controleer of het serveradres en de poort kloppen\n- Probeer in PowerShell `ping <hostname>` om te kijken of de server überhaupt bereikbaar is\n- Navigeer hier opnieuw heen om het nog eens te proberen} other {Dit kun je proberen:\n- Controleer of de server draait en de service voor bestandsdeling actief is\n- Controleer of het serveradres en de poort kloppen\n- Probeer in een terminal `ping <hostname>` om te kijken of de server überhaupt bereikbaar is\n- Navigeer hier opnieuw heen om het nog eens te proberen}}",
   "@errors.listing.connectionRefused.suggestion": {
-    "sourceHash": "17decc3"
+    "sourceHash": "aebd280"
   },
   "errors.listing.symlinkLoopErrno.title": "Lus van symbolische koppelingen",
   "@errors.listing.symlinkLoopErrno.title": {
@@ -307,17 +307,17 @@
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "4157be6"
   },
-  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Voer in Terminal `ls -la` op dit pad uit om te zien waar de symbolische koppelingen naar wijzen\n- Vind en herstel de koppeling die de lus veroorzaakt\n- Als je niet zeker weet welke koppeling het probleem is, volg ze dan één voor één met `readlink <path>`} windows {Here’s what to try:\n- In PowerShell, run `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in this folder to see where the links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one} other {Here’s what to try:\n- In a terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`}}",
+  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Voer in Terminal `ls -la` op dit pad uit om te zien waar de symbolische koppelingen naar wijzen\n- Vind en herstel de koppeling die de lus veroorzaakt\n- Als je niet zeker weet welke koppeling het probleem is, volg ze dan één voor één met `readlink <path>`} windows {Dit kun je proberen:\n- Voer in PowerShell `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in deze map uit om te zien waar de koppelingen naar wijzen\n- Vind en herstel de koppeling die de lus veroorzaakt\n- Als je niet zeker weet welke koppeling het probleem is, volg ze dan één voor één} other {Dit kun je proberen:\n- Voer in een terminal `ls -la` op dit pad uit om te zien waar de symbolische koppelingen naar wijzen\n- Vind en herstel de koppeling die de lus veroorzaakt\n- Als je niet zeker weet welke koppeling het probleem is, volg ze dan één voor één met `readlink <path>`}}",
   "@errors.listing.symlinkLoopErrno.suggestion": {
-    "sourceHash": "eed9a5a"
+    "sourceHash": "9b5c2d2"
   },
   "errors.listing.nameTooLongErrno.title": "Naam te lang",
   "@errors.listing.nameTooLongErrno.title": {
     "sourceHash": "de4bc1d"
   },
-  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {De bestands- of mapnaam overschrijdt de systeemlimiet (255 tekens op de meeste Mac-volumes). Dit kan ook gebeuren wanneer het volledige pad (alle mappen samen) de maximale padlengte van het systeem overschrijdt.} windows {The file or folder name exceeds the system’s limit (255 characters for one name on NTFS). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.} other {The file or folder name exceeds the system’s limit (255 bytes on most Linux file systems). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.}}",
+  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {De bestands- of mapnaam overschrijdt de systeemlimiet (255 tekens op de meeste Mac-volumes). Dit kan ook gebeuren wanneer het volledige pad (alle mappen samen) de maximale padlengte van het systeem overschrijdt.} windows {De bestands- of mapnaam overschrijdt de systeemlimiet (255 tekens voor één naam op NTFS). Dit kan ook gebeuren wanneer het volledige pad (alle mappen samen) de maximale padlengte van het systeem overschrijdt.} other {De bestands- of mapnaam overschrijdt de systeemlimiet (255 bytes op de meeste Linux-bestandssystemen). Dit kan ook gebeuren wanneer het volledige pad (alle mappen samen) de maximale padlengte van het systeem overschrijdt.}}",
   "@errors.listing.nameTooLongErrno.explanation": {
-    "sourceHash": "8b9a6ff"
+    "sourceHash": "c0846c4"
   },
   "errors.listing.nameTooLongErrno.suggestion": "Geef het onderdeel een kortere naam. Als de naam redelijk lijkt, is het volledige pad (inclusief alle bovenliggende mappen) misschien te lang. Probeer het naar een korter pad te verplaatsen.",
   "@errors.listing.nameTooLongErrno.suggestion": {
@@ -331,9 +331,9 @@
   "@errors.listing.hostUnreachable.explanation": {
     "sourceHash": "184b0fc"
   },
-  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de host aanstaat en op hetzelfde netwerk zit\n- Als je een VPN nodig hebt om de host te bereiken, zorg dan dat de VPN verbonden is\n- Probeer in Terminal `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen zodra de host bereikbaar is} windows {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable} other {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable}}",
+  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de host aanstaat en op hetzelfde netwerk zit\n- Als je een VPN nodig hebt om de host te bereiken, zorg dan dat de VPN verbonden is\n- Probeer in Terminal `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen zodra de host bereikbaar is} windows {Dit kun je proberen:\n- Controleer of de host aanstaat en op hetzelfde netwerk zit\n- Als je een VPN nodig hebt om de host te bereiken, zorg dan dat de VPN verbonden is\n- Probeer in PowerShell `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen zodra de host bereikbaar is} other {Dit kun je proberen:\n- Controleer of de host aanstaat en op hetzelfde netwerk zit\n- Als je een VPN nodig hebt om de host te bereiken, zorg dan dat de VPN verbonden is\n- Probeer in een terminal `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen zodra de host bereikbaar is}}",
   "@errors.listing.hostUnreachable.suggestion": {
-    "sourceHash": "c222f76"
+    "sourceHash": "d595833"
   },
   "errors.listing.folderNotEmpty.title": "Map niet leeg",
   "@errors.listing.folderNotEmpty.title": {
@@ -355,9 +355,9 @@
   "@errors.listing.quotaExceeded.explanation": {
     "sourceHash": "b9b0b0e"
   },
-  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt op dit volume te verwijderen\n- Vraag je systeembeheerder om je quotum te verhogen\n- Voer in Terminal `quota` uit om je huidige gebruik en limiet te zien} windows {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota} other {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In a terminal, run `quota` to see your current usage and limit}}",
+  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt op dit volume te verwijderen\n- Vraag je systeembeheerder om je quotum te verhogen\n- Voer in Terminal `quota` uit om je huidige gebruik en limiet te zien} windows {Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt op dit volume te verwijderen\n- Vraag je systeembeheerder om je quotum te verhogen} other {Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt op dit volume te verwijderen\n- Vraag je systeembeheerder om je quotum te verhogen\n- Voer in een terminal `quota` uit om je huidige gebruik en limiet te zien}}",
   "@errors.listing.quotaExceeded.suggestion": {
-    "sourceHash": "1b5f0df"
+    "sourceHash": "9ad0632"
   },
   "errors.listing.authRequiredEauth.title": "Verificatie vereist",
   "@errors.listing.authRequiredEauth.title": {
@@ -379,9 +379,9 @@
   "@errors.listing.authRequiredEneedauth.explanation": {
     "sourceHash": "b4e86e5"
   },
-  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator} other {Dit kun je proberen:\n- Verbreek de verbinding met het volume en maak die opnieuw in Finder\n- Voer je gebruikersnaam en wachtwoord in wanneer daarom wordt gevraagd\n- Als je niet zeker bent van de inloggegevens, neem dan contact op met de beheerder van de server}}",
+  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Dit kun je proberen:\n- Verbreek in Verkenner de verbinding met de netwerkschijf en maak die opnieuw\n- Voer je gebruikersnaam en wachtwoord in wanneer daarom wordt gevraagd\n- Als je niet zeker bent van de inloggegevens, neem dan contact op met de beheerder van de server} other {Dit kun je proberen:\n- Verbreek de verbinding met het volume en maak die opnieuw in Finder\n- Voer je gebruikersnaam en wachtwoord in wanneer daarom wordt gevraagd\n- Als je niet zeker bent van de inloggegevens, neem dan contact op met de beheerder van de server}}",
   "@errors.listing.authRequiredEneedauth.suggestion": {
-    "sourceHash": "a90b520"
+    "sourceHash": "64621a8"
   },
   "errors.listing.devicePoweredOff.title": "Apparaat uitgeschakeld",
   "@errors.listing.devicePoweredOff.title": {
@@ -403,9 +403,9 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee39dd8"
   },
-  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Dit bestandssysteem ondersteunt mogelijk niet de metadata die Cmdr nodig heeft. Probeer de bewerking op een ander volume, of kopieer het bestand eerst naar de interne schijf van je Mac.} windows {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your PC’s internal drive first.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Dit bestandssysteem ondersteunt mogelijk niet de metadata die Cmdr nodig heeft. Probeer de bewerking op een ander volume, of kopieer het bestand eerst naar de interne schijf van je Mac.} windows {Dit bestandssysteem ondersteunt mogelijk niet de metadata die Cmdr nodig heeft. Probeer de bewerking op een ander volume, of kopieer het bestand eerst naar de interne schijf van je pc.} other {Dit bestandssysteem ondersteunt mogelijk niet de metadata die Cmdr nodig heeft. Probeer de bewerking op een ander volume, of kopieer het bestand eerst naar de interne schijf van je computer.}}",
   "@errors.listing.attributeNotFound.suggestion": {
-    "sourceHash": "463ee44"
+    "sourceHash": "e8c2492"
   },
   "errors.listing.diskReadProblem.title": "Probleem bij lezen van schijf",
   "@errors.listing.diskReadProblem.title": {
@@ -415,9 +415,9 @@
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
-  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog goed is aangesloten\n- Open **Disk Utility** (zoek ernaar in Spotlight) en voer **First Aid** uit op dit volume\n- Als dit blijft gebeuren, maak dan zo snel mogelijk een back-up van je gegevens. De schijf ontwikkelt misschien slechte sectoren of begint te slijten.} windows {Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.} other {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.}}",
+  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog goed is aangesloten\n- Open **Disk Utility** (zoek ernaar in Spotlight) en voer **First Aid** uit op dit volume\n- Als dit blijft gebeuren, maak dan zo snel mogelijk een back-up van je gegevens. De schijf ontwikkelt misschien slechte sectoren of begint te slijten.} windows {Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog goed is aangesloten\n- Klik in Verkenner met de rechtermuisknop op de schijf, selecteer **Eigenschappen** en daarna **Extra > Controleren** om de schijf op problemen te scannen\n- Als dit blijft gebeuren, maak dan zo snel mogelijk een back-up van je gegevens. De schijf ontwikkelt misschien slechte sectoren of begint te slijten.} other {Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog goed is aangesloten\n- Controleer het bestandssysteem met het schijfprogramma van je bureaubladomgeving (bijvoorbeeld GNOME Disks)\n- Als dit blijft gebeuren, maak dan zo snel mogelijk een back-up van je gegevens. De schijf ontwikkelt misschien slechte sectoren of begint te slijten.}}",
   "@errors.listing.diskReadProblem.suggestion": {
-    "sourceHash": "614a5fe"
+    "sourceHash": "11fa23f"
   },
   "errors.listing.unexpectedSystemResponse.title": "Onverwachte systeemreactie",
   "@errors.listing.unexpectedSystemResponse.title": {
@@ -427,9 +427,9 @@
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "a834896"
   },
-  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Navigeer hier opnieuw heen om het nog eens te proberen\n- Als dit blijft gebeuren, open dan **Disk Utility** (zoek ernaar in Spotlight) en voer **First Aid** uit op dit volume om te controleren op problemen met het bestandssysteem} windows {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check** to look for file system problems} other {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool (for example, GNOME Disks)}}",
+  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Navigeer hier opnieuw heen om het nog eens te proberen\n- Als dit blijft gebeuren, open dan **Disk Utility** (zoek ernaar in Spotlight) en voer **First Aid** uit op dit volume om te controleren op problemen met het bestandssysteem} windows {Dit kun je proberen:\n- Navigeer hier opnieuw heen om het nog eens te proberen\n- Als dit blijft gebeuren, klik dan in Verkenner met de rechtermuisknop op de schijf, selecteer **Eigenschappen** en daarna **Extra > Controleren** om te controleren op problemen met het bestandssysteem} other {Dit kun je proberen:\n- Navigeer hier opnieuw heen om het nog eens te proberen\n- Als dit blijft gebeuren, controleer dan het bestandssysteem met het schijfprogramma van je bureaubladomgeving (bijvoorbeeld GNOME Disks)}}",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
-    "sourceHash": "f63d225"
+    "sourceHash": "5a0ffb5"
   },
   "errors.listing.deviceProblem.title": "Apparaatprobleem",
   "@errors.listing.deviceProblem.title": {
@@ -451,9 +451,9 @@
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "bade4a7"
   },
-  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog is aangesloten\n- Navigeer hier opnieuw heen om het nog eens te proberen\n- Als dit blijft gebeuren, open dan **Disk Utility** en voer **First Aid** uit op dit volume} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
+  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog is aangesloten\n- Navigeer hier opnieuw heen om het nog eens te proberen\n- Als dit blijft gebeuren, open dan **Disk Utility** en voer **First Aid** uit op dit volume} windows {Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog is aangesloten\n- Navigeer hier opnieuw heen om het nog eens te proberen\n- Als dit blijft gebeuren, klik dan in Verkenner met de rechtermuisknop op de schijf, selecteer **Eigenschappen** en daarna **Extra > Controleren**} other {Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog is aangesloten\n- Navigeer hier opnieuw heen om het nog eens te proberen\n- Als dit blijft gebeuren, controleer dan het bestandssysteem met het schijfprogramma van je bureaubladomgeving}}",
   "@errors.listing.couldntReadUnknown.suggestion": {
-    "sourceHash": "5155626"
+    "sourceHash": "625375f"
   },
   "errors.listing.notFound.title": "Pad niet gevonden",
   "@errors.listing.notFound.title": {
@@ -463,9 +463,9 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.notFound.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of het pad correct gespeld is\n- Als dit op een netwerkschijf staat, zorg dan dat die verbonden is en de share toegankelijk is\n- Navigeer naar de bovenliggende map en zoek het onderdeel daar\n- Voer in Terminal `ls -la` op de bovenliggende map uit om te zien wat erin staat} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
+  "errors.listing.notFound.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of het pad correct gespeld is\n- Als dit op een netwerkschijf staat, zorg dan dat die verbonden is en de share toegankelijk is\n- Navigeer naar de bovenliggende map en zoek het onderdeel daar\n- Voer in Terminal `ls -la` op de bovenliggende map uit om te zien wat erin staat} windows {Dit kun je proberen:\n- Controleer of het pad correct gespeld is\n- Als dit op een netwerkschijf staat, zorg dan dat die verbonden is en de share toegankelijk is\n- Navigeer naar de bovenliggende map en zoek het onderdeel daar\n- Voer in PowerShell `dir` in de bovenliggende map uit om te zien wat erin staat} other {Dit kun je proberen:\n- Controleer of het pad correct gespeld is\n- Als dit op een netwerkschijf staat, zorg dan dat die verbonden is en de share toegankelijk is\n- Navigeer naar de bovenliggende map en zoek het onderdeel daar\n- Voer in een terminal `ls -la` op de bovenliggende map uit om te zien wat erin staat}}",
   "@errors.listing.notFound.suggestion": {
-    "sourceHash": "8a51477"
+    "sourceHash": "eabe5b2"
   },
   "errors.listing.tccRestricted.title": "Deze map is beperkt door macOS",
   "@errors.listing.tccRestricted.title": {
@@ -483,13 +483,13 @@
   "@errors.listing.permissionDenied.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr heeft geen toegang tot `{path}`. macOS bepaalt welke apps bij welke mappen mogen, en Cmdr heeft voor deze map nog geen toegang gekregen.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
+  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr heeft geen toegang tot `{path}`. macOS bepaalt welke apps bij welke mappen mogen, en Cmdr heeft voor deze map nog geen toegang gekregen.} windows {Cmdr heeft geen toegang tot `{path}`. Windows staat je account niet toe om deze map te openen.} other {Cmdr heeft geen toegang tot `{path}`. Het systeem staat je gebruikersaccount niet toe om deze map te openen.}}",
   "@errors.listing.permissionDenied.explanation": {
-    "sourceHash": "3871273"
+    "sourceHash": "08a2f03"
   },
-  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang\n- Controleer de bevoegdheden van de map in Finder: klik er met de rechtermuisknop op, kies Toon info, en kijk onder Delen en bevoegdheden\n- Als dit een gedeelde map is, vraag de eigenaar dan de bevoegdheden bij te werken\n- Voer in Terminal `ls -la` op het pad uit om de huidige bevoegdheden te zien} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click the folder, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on the path to see the current permissions}}",
+  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang\n- Controleer de bevoegdheden van de map in Finder: klik er met de rechtermuisknop op, kies Toon info, en kijk onder Delen en bevoegdheden\n- Als dit een gedeelde map is, vraag de eigenaar dan de bevoegdheden bij te werken\n- Voer in Terminal `ls -la` op het pad uit om de huidige bevoegdheden te zien} windows {Dit kun je proberen:\n- Controleer de machtigingen van de map in Verkenner: klik met de rechtermuisknop op de map, selecteer **Eigenschappen** en kijk onder **Beveiliging**\n- Als dit een gedeelde map is, vraag de eigenaar dan de machtigingen bij te werken\n- Voer in PowerShell `icacls \"<folder-path>\"` uit om de huidige machtigingen te zien} other {Dit kun je proberen:\n- Controleer de bevoegdheden van de map in je bestandsbeheerder: open de eigenschappen ervan en kijk onder **Rechten**\n- Als dit een gedeelde map is, vraag de eigenaar dan de bevoegdheden bij te werken\n- Voer in een terminal `ls -la` op het pad uit om de huidige bevoegdheden te zien}}",
   "@errors.listing.permissionDenied.suggestion": {
-    "sourceHash": "3450aff"
+    "sourceHash": "7015505"
   },
   "errors.listing.objectStoreRefused.title": "Je opslagaanbieder heeft de toegang geweigerd",
   "@errors.listing.objectStoreRefused.title": {
@@ -507,13 +507,13 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` staat op een netwerkshare, en het account waarmee je verbinding hebt gemaakt heeft geen bevoegdheid om de map te openen. De server wijst het verzoek af nog voordat macOS eraan te pas komt, dus dit is geen privacyinstelling op je Mac.} windows {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.} other {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your computer can change that.}}",
+  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` staat op een netwerkshare, en het account waarmee je verbinding hebt gemaakt heeft geen bevoegdheid om de map te openen. De server wijst het verzoek af nog voordat macOS eraan te pas komt, dus dit is geen privacyinstelling op je Mac.} windows {`{path}` staat op een netwerkshare, en het account waarmee je verbinding hebt gemaakt heeft geen bevoegdheid om de map te openen. De server wijst het verzoek af, dus niets op je pc kan daar iets aan veranderen.} other {`{path}` staat op een netwerkshare, en het account waarmee je verbinding hebt gemaakt heeft geen bevoegdheid om de map te openen. De server wijst het verzoek af, dus niets op je computer kan daar iets aan veranderen.}}",
   "@errors.listing.remotePermissionDenied.explanation": {
-    "sourceHash": "d8463b0"
+    "sourceHash": "dec659d"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer de bevoegdheden van de map op de server, en met welk account je de share hebt aangekoppeld\n- Sommige mappen horen bij het systeemaccount van de server zelf (`lost+found` op een Linux-share bijvoorbeeld) en blijven voor iedereen anders gesloten\n- Wil je als iemand anders verbinden, werp de share dan uit en koppel hem opnieuw aan met die inloggegevens} windows {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials} other {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, unmount the share and mount it again with those credentials}}",
+  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer de bevoegdheden van de map op de server, en met welk account je de share hebt aangekoppeld\n- Sommige mappen horen bij het systeemaccount van de server zelf (`lost+found` op een Linux-share bijvoorbeeld) en blijven voor iedereen anders gesloten\n- Wil je als iemand anders verbinden, werp de share dan uit en koppel hem opnieuw aan met die inloggegevens} windows {Dit kun je proberen:\n- Controleer de bevoegdheden van de map op de server, en met welk account je verbinding met de share hebt gemaakt\n- Sommige mappen horen bij het systeemaccount van de server zelf (`lost+found` op een Linux-share bijvoorbeeld) en blijven voor iedereen anders gesloten\n- Wil je als iemand anders verbinden, verbreek dan de verbinding met de share en maak die opnieuw met die inloggegevens} other {Dit kun je proberen:\n- Controleer de bevoegdheden van de map op de server, en met welk account je de share hebt aangekoppeld\n- Sommige mappen horen bij het systeemaccount van de server zelf (`lost+found` op een Linux-share bijvoorbeeld) en blijven voor iedereen anders gesloten\n- Wil je als iemand anders verbinden, koppel de share dan af en koppel hem opnieuw aan met die inloggegevens}}",
   "@errors.listing.remotePermissionDenied.suggestion": {
-    "sourceHash": "3e6497d"
+    "sourceHash": "8481dce"
   },
   "errors.listing.phoneRefused.title": "Deze telefoon houdt deze map privé",
   "@errors.listing.phoneRefused.title": {
@@ -531,9 +531,9 @@
   "@errors.listing.serverRefused.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.serverRefused.explanation": "{platform, select, windows {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.} other {Deze map staat op een server, en het account waarmee je verbinding hebt gemaakt heeft geen bevoegdheid om de map te openen. De server beslist daarover, dus geen enkele instelling op deze computer verandert dat.}}",
+  "errors.listing.serverRefused.explanation": "{platform, select, windows {Deze map staat op een server, en het account waarmee je verbinding hebt gemaakt heeft geen bevoegdheid om de map te openen. De server beslist daarover, dus geen enkele instelling op deze pc verandert dat.} other {Deze map staat op een server, en het account waarmee je verbinding hebt gemaakt heeft geen bevoegdheid om de map te openen. De server beslist daarover, dus geen enkele instelling op deze computer verandert dat.}}",
   "@errors.listing.serverRefused.explanation": {
-    "sourceHash": "bba853c"
+    "sourceHash": "c21c3d5"
   },
   "errors.listing.serverRefused.suggestion": "Dit kun je proberen:\n- Controleer de bevoegdheden van de map op de server\n- Sommige mappen horen bij het systeemaccount van de server zelf en blijven voor iedereen anders gesloten\n- Maak verbinding met een account dat toegang heeft",
   "@errors.listing.serverRefused.suggestion": {
@@ -631,9 +631,9 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.storageFull.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt te verplaatsen of te verwijderen\n- Leeg de Prullenmand (klik met de rechtermuisknop op het Prullenmand-symbool in het Dock)\n- Voer in Terminal `df -h` uit om te zien hoeveel ruimte er nog over is op elk volume} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt te verplaatsen of te verwijderen\n- Leeg de Prullenmand (klik met de rechtermuisknop op het Prullenmand-symbool in het Dock)\n- Voer in Terminal `df -h` uit om te zien hoeveel ruimte er nog over is op elk volume} windows {Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt te verplaatsen of te verwijderen\n- Leeg de prullenbak (klik er op het bureaublad met de rechtermuisknop op en selecteer **Prullenbak leegmaken**)\n- Kijk in **Instellingen > Systeem > Opslag** hoeveel ruimte er nog over is} other {Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt te verplaatsen of te verwijderen\n- Leeg de prullenbak in je bestandsbeheerder\n- Voer in een terminal `df -h` uit om te zien hoeveel ruimte er nog over is op elk volume}}",
   "@errors.listing.storageFull.suggestion": {
-    "sourceHash": "101099b"
+    "sourceHash": "c04afed"
   },
   "errors.listing.connectionTimedOut.title": "Time-out op verbinding",
   "@errors.listing.connectionTimedOut.title": {
@@ -643,9 +643,9 @@
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "15d3054"
   },
-  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of het apparaat of de server aanstaat en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in Terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Probeer het opnieuw} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Try again} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Try again}}",
+  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of het apparaat of de server aanstaat en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in Terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Probeer het opnieuw} windows {Dit kun je proberen:\n- Controleer of het apparaat of de server aanstaat en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in PowerShell `ping <hostname>` om te testen of de server bereikbaar is\n- Probeer het opnieuw} other {Dit kun je proberen:\n- Controleer of het apparaat of de server aanstaat en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in een terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Probeer het opnieuw}}",
   "@errors.listing.connectionTimedOut.suggestion": {
-    "sourceHash": "f474938"
+    "sourceHash": "4e58263"
   },
   "errors.listing.notSupported.title": "Niet ondersteund",
   "@errors.listing.notSupported.title": {
@@ -655,9 +655,9 @@
   "@errors.listing.notSupported.explanation": {
     "sourceHash": "d074574"
   },
-  "errors.listing.notSupported.suggestion": "{platform, select, macos {Probeer een andere aanpak, of gebruik Finder voor deze bewerking.} windows {Try a different approach, or use File Explorer for this operation.} other {Try a different approach, or use your file manager for this operation.}}",
+  "errors.listing.notSupported.suggestion": "{platform, select, macos {Probeer een andere aanpak, of gebruik Finder voor deze bewerking.} windows {Probeer een andere aanpak, of gebruik Verkenner voor deze bewerking.} other {Probeer een andere aanpak, of gebruik je bestandsbeheerder voor deze bewerking.}}",
   "@errors.listing.notSupported.suggestion": {
-    "sourceHash": "d4e3965"
+    "sourceHash": "626b662"
   },
   "errors.listing.deletePending.title": "Bestand wordt verwijderd",
   "@errors.listing.deletePending.title": {
@@ -727,9 +727,9 @@
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
-  "errors.listing.ioSerious.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog is aangesloten\n- Probeer het opnieuw\n- Als dit blijft gebeuren, probeer dan **Disk Utility > First Aid** op dit volume} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Try again\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
+  "errors.listing.ioSerious.suggestion": "{platform, select, macos {Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog is aangesloten\n- Probeer het opnieuw\n- Als dit blijft gebeuren, probeer dan **Disk Utility > First Aid** op dit volume} windows {Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog is aangesloten\n- Probeer het opnieuw\n- Als dit blijft gebeuren, klik dan in Verkenner met de rechtermuisknop op de schijf, selecteer **Eigenschappen** en daarna **Extra > Controleren**} other {Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog is aangesloten\n- Probeer het opnieuw\n- Als dit blijft gebeuren, controleer dan het bestandssysteem met het schijfprogramma van je bureaubladomgeving}}",
   "@errors.listing.ioSerious.suggestion": {
-    "sourceHash": "6e83ebb"
+    "sourceHash": "059416c"
   },
   "errors.listing.isADirectory.title": "Dit is een map, geen bestand",
   "@errors.listing.isADirectory.title": {
@@ -847,9 +847,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "53012e9"
   },
-  "errors.git.permissionDenied.suggestion": "{platform, select, macos {Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang tot de map.} windows {Check that your account can read this repo’s `.git` folder: in File Explorer, right-click it, select **Properties**, and look under **Security**.} other {Check that your account can read this repo’s `.git` folder. In a terminal, `ls -la .git` shows its owner and mode.}}",
+  "errors.git.permissionDenied.suggestion": "{platform, select, macos {Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang tot de map.} windows {Controleer of je account de `.git`-map van deze repo kan lezen: klik er in Verkenner met de rechtermuisknop op, selecteer **Eigenschappen** en kijk onder **Beveiliging**.} other {Controleer of je account de `.git`-map van deze repo kan lezen. In een terminal toont `ls -la .git` de eigenaar en modus ervan.}}",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "7396b5a"
+    "sourceHash": "aef68dd"
   },
   "errors.git.bareRepo.title": "Bare repo's worden nog niet ondersteund",
   "@errors.git.bareRepo.title": {
@@ -907,9 +907,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang. In Terminal toont `ls -la .git` de huidige eigenaar en modus.} windows {Check that your account can read this folder: in File Explorer, right-click the `.git` folder, select **Properties**, and look under **Security**. In PowerShell, `icacls .git` shows who has access.} other {Check that your account can read the `.git` folder. In a terminal, `ls -la .git` shows the current owner and mode.}}",
+  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang. In Terminal toont `ls -la .git` de huidige eigenaar en modus.} windows {Controleer of je account deze map kan lezen: klik in Verkenner met de rechtermuisknop op de `.git`-map, selecteer **Eigenschappen** en kijk onder **Beveiliging**. In PowerShell toont `icacls .git` wie toegang heeft.} other {Controleer of je account de `.git`-map kan lezen. In een terminal toont `ls -la .git` de huidige eigenaar en modus.}}",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "b091738"
+    "sourceHash": "7081e9a"
   },
   "errors.git.volumeGone.title": "De schijf met deze repo is weg",
   "@errors.git.volumeGone.title": {
@@ -1157,9 +1157,9 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "{platform, select, windows {This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages} other {Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Stop en heropen {app}\n- Log uit en weer in bij {app}\n- Bekijk de statuspagina van {name} voor storingen}}",
+  "errors.provider.appBased.serious": "{platform, select, windows {Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Sluit en heropen {app}\n- Log uit en weer in bij {app}\n- Bekijk de statuspagina van {name} voor storingen} other {Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Stop en heropen {app}\n- Log uit en weer in bij {app}\n- Bekijk de statuspagina van {name} voor storingen}}",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "5a4e14e"
+    "sourceHash": "79006a7"
   },
   "errors.write.sourceNotFound.title": "Kon het bestand niet vinden",
   "@errors.write.sourceNotFound.title": {
@@ -1177,9 +1177,9 @@
   "@errors.write.sourceNotFound.message.delete": {
     "sourceHash": "cb0ab8f"
   },
-  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {The file or folder you tried to move to the Recycle Bin no longer exists.} other {Het bestand of de map die je naar de prullenmand wilde verplaatsen bestaat niet meer.}}",
+  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {Het bestand of de map die je naar de prullenbak wilde verplaatsen bestaat niet meer.} other {Het bestand of de map die je naar de prullenmand wilde verplaatsen bestaat niet meer.}}",
   "@errors.write.sourceNotFound.message.trash": {
-    "sourceHash": "dbc0bbe"
+    "sourceHash": "31f9dd7"
   },
   "errors.write.sourceNotFound.suggestion": "Het is misschien verplaatst, van naam veranderd of verwijderd. Probeer de bestandenlijst te verversen.",
   "@errors.write.sourceNotFound.suggestion": {
@@ -1301,9 +1301,9 @@
   "@errors.write.cancelled.title.delete": {
     "sourceHash": "546aac1"
   },
-  "errors.write.cancelled.title.trash": "{platform, select, windows {Move to the Recycle Bin canceled} other {Verplaatsen naar prullenmand geannuleerd}}",
+  "errors.write.cancelled.title.trash": "{platform, select, windows {Verplaatsen naar prullenbak geannuleerd} other {Verplaatsen naar prullenmand geannuleerd}}",
   "@errors.write.cancelled.title.trash": {
-    "sourceHash": "52a8954"
+    "sourceHash": "97c84cd"
   },
   "errors.write.cancelled.message.copy": "Het kopiëren is geannuleerd.",
   "@errors.write.cancelled.message.copy": {
@@ -1317,9 +1317,9 @@
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
   },
-  "errors.write.cancelled.message.trash": "{platform, select, windows {The move to the Recycle Bin was canceled.} other {Het verplaatsen naar de prullenmand is geannuleerd.}}",
+  "errors.write.cancelled.message.trash": "{platform, select, windows {Het verplaatsen naar de prullenbak is geannuleerd.} other {Het verplaatsen naar de prullenmand is geannuleerd.}}",
   "@errors.write.cancelled.message.trash": {
-    "sourceHash": "9585f1b"
+    "sourceHash": "7e76a39"
   },
   "errors.write.cancelled.suggestion": "Je kunt het opnieuw proberen wanneer je klaar bent.",
   "@errors.write.cancelled.suggestion": {
@@ -1341,9 +1341,9 @@
   "@errors.write.deviceDisconnected.message.delete": {
     "sourceHash": "195562e"
   },
-  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {The device was disconnected during the move to the Recycle Bin.} other {Het apparaat werd losgekoppeld tijdens het verplaatsen naar de prullenmand.}}",
+  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {Het apparaat werd losgekoppeld tijdens het verplaatsen naar de prullenbak.} other {Het apparaat werd losgekoppeld tijdens het verplaatsen naar de prullenmand.}}",
   "@errors.write.deviceDisconnected.message.trash": {
-    "sourceHash": "9d5a47a"
+    "sourceHash": "bdadd25"
   },
   "errors.write.deviceDisconnected.suggestion": "Zorg dat het apparaat goed is aangesloten en probeer het opnieuw.",
   "@errors.write.deviceDisconnected.suggestion": {
@@ -1381,13 +1381,13 @@
   "@errors.write.moveNotConfirmed.suggestion": {
     "sourceHash": "4d7fedc"
   },
-  "errors.write.trashNotSupported.title": "{platform, select, windows {Recycle Bin not supported} other {Prullenmand niet ondersteund}}",
+  "errors.write.trashNotSupported.title": "{platform, select, windows {Prullenbak niet ondersteund} other {Prullenmand niet ondersteund}}",
   "@errors.write.trashNotSupported.title": {
-    "sourceHash": "af90a02"
+    "sourceHash": "fc24baf"
   },
-  "errors.write.trashNotSupported.message": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Dit volume ondersteunt de prullenmand niet.}}",
+  "errors.write.trashNotSupported.message": "{platform, select, windows {Dit volume heeft geen prullenbak.} other {Dit volume ondersteunt de prullenmand niet.}}",
   "@errors.write.trashNotSupported.message": {
-    "sourceHash": "911688a"
+    "sourceHash": "63875e3"
   },
   "errors.write.trashNotSupported.suggestion": "Gebruik {deletePermanentlyKey} om in plaats daarvan definitief te verwijderen.",
   "@errors.write.trashNotSupported.suggestion": {
@@ -1509,9 +1509,9 @@
   "@errors.write.readError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.readError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Verplaatsen naar prullenmand lukte niet}}",
+  "errors.write.readError.title.trash": "{platform, select, windows {Verplaatsen naar prullenbak lukte niet} other {Verplaatsen naar prullenmand lukte niet}}",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.readError.message": "Kon niet van de bron lezen.",
   "@errors.write.readError.message": {
@@ -1533,9 +1533,9 @@
   "@errors.write.writeError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.writeError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Verplaatsen naar prullenmand lukte niet}}",
+  "errors.write.writeError.title.trash": "{platform, select, windows {Verplaatsen naar prullenbak lukte niet} other {Verplaatsen naar prullenmand lukte niet}}",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.writeError.message": "Kon niet naar de bestemming schrijven.",
   "@errors.write.writeError.message": {
@@ -1641,13 +1641,13 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "77cff09"
   },
-  "errors.write.trashRefused.title": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Verplaatsen naar prullenmand lukte niet}}",
+  "errors.write.trashRefused.title": "{platform, select, windows {Verplaatsen naar prullenbak lukte niet} other {Verplaatsen naar prullenmand lukte niet}}",
   "@errors.write.trashRefused.title": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
-  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS liet Cmdr {count} van de onderdelen die je koos niet aanraken.} windows {Windows wouldn’t let Cmdr touch {count} of the items you picked.} other {Cmdr wasn’t allowed to touch {count} of the items you picked.}}",
+  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS liet Cmdr {count} van de onderdelen die je koos niet aanraken.} windows {Windows liet Cmdr {count} van de onderdelen die je koos niet aanraken.} other {Cmdr mocht {count} van de onderdelen die je koos niet aanraken.}}",
   "@errors.write.trashRefused.message.notPermitted": {
-    "sourceHash": "57a38d7"
+    "sourceHash": "6ea1348"
   },
   "errors.write.trashRefused.message.locked": "macOS verplaatst geen beveiligde onderdelen en liet daarom {count} van de onderdelen die je koos gewoon staan.",
   "@errors.write.trashRefused.message.locked": {
@@ -1661,33 +1661,33 @@
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "b65d875"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {Cmdr mag niets in de prullenmand op deze schijf zetten en liet daarom {count} van de onderdelen die je koos gewoon staan.}}",
+  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {Cmdr mag niets in de prullenbak op deze schijf zetten en liet daarom {count} van de onderdelen die je koos gewoon staan.} other {Cmdr mag niets in de prullenmand op deze schijf zetten en liet daarom {count} van de onderdelen die je koos gewoon staan.}}",
   "@errors.write.trashRefused.message.trashNotWritable": {
-    "sourceHash": "024ef04"
+    "sourceHash": "c3d5e1e"
   },
-  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS kon voor {count} van de onderdelen die je koos geen prullenmand vinden.} windows {Windows couldn’t find a Recycle Bin for {count} of the items you picked.} other {Cmdr couldn’t find a trash for {count} of the items you picked.}}",
+  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS kon voor {count} van de onderdelen die je koos geen prullenmand vinden.} windows {Windows kon voor {count} van de onderdelen die je koos geen prullenbak vinden.} other {Cmdr kon voor {count} van de onderdelen die je koos geen prullenbak vinden.}}",
   "@errors.write.trashRefused.message.noTrashForVolume": {
-    "sourceHash": "702ae17"
+    "sourceHash": "07e7834"
   },
-  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS verplaatste {count} van de onderdelen die je koos niet naar de prullenmand.} windows {Windows wouldn’t move {count} of the items you picked to the Recycle Bin.} other {Cmdr couldn’t move {count} of the items you picked to the trash.}}",
+  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS verplaatste {count} van de onderdelen die je koos niet naar de prullenmand.} windows {Windows verplaatste {count} van de onderdelen die je koos niet naar de prullenbak.} other {Cmdr kon {count} van de onderdelen die je koos niet naar de prullenbak verplaatsen.}}",
   "@errors.write.trashRefused.message.other": {
-    "sourceHash": "6f71e12"
+    "sourceHash": "cdd735e"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {De onderdelen staan misschien op een plek die macOS voor zichzelf houdt. Finder kan ze soms toch verplaatsen, want Finder kan om je wachtwoord vragen.} windows {The items may sit somewhere Windows keeps to itself. File Explorer can sometimes still move them, since it can ask for administrator permission.} other {The items may sit somewhere only an administrator can change. Check the folder’s permissions, or ask whoever manages this computer.}}",
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {De onderdelen staan misschien op een plek die macOS voor zichzelf houdt. Finder kan ze soms toch verplaatsen, want Finder kan om je wachtwoord vragen.} windows {De onderdelen staan misschien op een plek die Windows voor zichzelf houdt. Verkenner kan ze soms toch verplaatsen, want Verkenner kan om beheerdersrechten vragen.} other {De onderdelen staan misschien op een plek die alleen een beheerder kan wijzigen. Controleer de bevoegdheden van de map, of vraag het aan wie deze computer beheert.}}",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "2ef3e96"
+    "sourceHash": "ad6373b"
   },
   "errors.write.trashRefused.suggestion.locked": "Om ze te verplaatsen, hef je eerst de beveiliging op in Finder: ‘Toon info’, en deselecteer dan ‘Beveiligd’.",
   "@errors.write.trashRefused.suggestion.locked": {
     "sourceHash": "ece70f5"
   },
-  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {Om ze te verplaatsen, heb je de bevoegdheid nodig om hun map te wijzigen. Finder toont wie dat mag in ‘Toon info’ van de map, onder ‘Delen en bevoegdheden’.} windows {To move them, you need permission to change their folder. File Explorer shows who can in the folder’s Properties, under Security.} other {To move them, you need permission to change their folder. Your file manager shows who can in the folder’s properties, under Permissions.}}",
+  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {Om ze te verplaatsen, heb je de bevoegdheid nodig om hun map te wijzigen. Finder toont wie dat mag in ‘Toon info’ van de map, onder ‘Delen en bevoegdheden’.} windows {Om ze te verplaatsen, heb je de machtiging nodig om hun map te wijzigen. Verkenner toont wie dat mag in ‘Eigenschappen’ van de map, onder ‘Beveiliging’.} other {Om ze te verplaatsen, heb je de bevoegdheid nodig om hun map te wijzigen. Je bestandsbeheerder toont wie dat mag in de eigenschappen van de map, onder ‘Rechten’.}}",
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
-    "sourceHash": "8614665"
+    "sourceHash": "1f3b45d"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder kan ze toch verplaatsen door eerst om een beheerderswachtwoord te vragen.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Finder kan ze toch verplaatsen door eerst om een beheerderswachtwoord te vragen.} windows {Een beheerder kan ze nog wel verplaatsen. Vraag het aan wie deze pc beheert.} other {Een beheerder kan ze nog wel verplaatsen, bijvoorbeeld met sudo in een terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
-    "sourceHash": "6a8fbff"
+    "sourceHash": "b2708c6"
   },
   "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Dit kan gebeuren als de bevoegdheden van de prullenmandmap veranderen, bijvoorbeeld na de overstap naar een nieuwe Mac. Je kunt de onderdelen wel definitief verwijderen met {deletePermanentlyKey}.} windows {Dit kan gebeuren als de bevoegdheden van de prullenbak veranderen, bijvoorbeeld na de overstap naar een nieuwe pc. Je kunt de onderdelen wel definitief verwijderen met {deletePermanentlyKey}.} other {Dit kan gebeuren als de bevoegdheden van de prullenbakmap veranderen, bijvoorbeeld na de overstap naar een nieuwe computer. Je kunt de onderdelen wel definitief verwijderen met {deletePermanentlyKey}.}}",
   "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
@@ -1705,9 +1705,9 @@
   "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
     "sourceHash": "d582f73"
   },
-  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Bekijk de technische details hieronder voor wat macOS meldde.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
+  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Bekijk de technische details hieronder voor wat macOS meldde.} windows {Bekijk de technische details hieronder voor wat Windows meldde.} other {Bekijk de technische details hieronder voor de precieze reden.}}",
   "@errors.write.trashRefused.suggestion.other": {
-    "sourceHash": "b61b3c1"
+    "sourceHash": "76a78a7"
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr heeft op deze Mac ook geen volledige schijftoegang, en dat is een veelvoorkomende oorzaak. De markering ‘Geen volledige schijftoegang’ in de titelbalk brengt je naar die keuze.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
@@ -1725,9 +1725,9 @@
   "@errors.write.ioError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.ioError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Verplaatsen naar prullenmand lukte niet}}",
+  "errors.write.ioError.title.trash": "{platform, select, windows {Verplaatsen naar prullenbak lukte niet} other {Verplaatsen naar prullenmand lukte niet}}",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.ioError.message.copy": "Kon het bestand niet kopiëren.",
   "@errors.write.ioError.message.copy": {
@@ -1741,9 +1741,9 @@
   "@errors.write.ioError.message.delete": {
     "sourceHash": "9e79007"
   },
-  "errors.write.ioError.message.trash": "{platform, select, windows {Couldn’t move the file to the Recycle Bin.} other {Kon het bestand niet naar de prullenmand verplaatsen.}}",
+  "errors.write.ioError.message.trash": "{platform, select, windows {Kon het bestand niet naar de prullenbak verplaatsen.} other {Kon het bestand niet naar de prullenmand verplaatsen.}}",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "948e289"
+    "sourceHash": "490dd97"
   },
   "errors.write.ioError.suggestion": "Probeer het opnieuw. Als het probleem aanhoudt, bekijk dan de technische details hieronder.",
   "@errors.write.ioError.suggestion": {
@@ -1765,21 +1765,21 @@
   "@errors.write.permissionDenied.message.delete": {
     "sourceHash": "0c03fc4"
   },
-  "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {Je hebt geen bevoegdheid om hier bestanden naar de prullenmand te verplaatsen.}}",
+  "errors.write.permissionDenied.message.trash": "{platform, select, windows {Je hebt geen bevoegdheid om hier bestanden naar de prullenbak te verplaatsen.} other {Je hebt geen bevoegdheid om hier bestanden naar de prullenmand te verplaatsen.}}",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "cca028a"
+    "sourceHash": "7d53afa"
   },
-  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien beveiligd. Hef de beveiliging op in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien beschermd. Controleer de bevoegdheden ervan (bijvoorbeeld via chmod of je bestandsbeheerder) en probeer het opnieuw.}}",
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien beveiligd. Hef de beveiliging op in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.} windows {Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien alleen-lezen: open in Verkenner de ‘Eigenschappen’ ervan, vink ‘Alleen-lezen’ uit en probeer het opnieuw.} other {Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien beschermd. Controleer de bevoegdheden ervan (bijvoorbeeld via chmod of je bestandsbeheerder) en probeer het opnieuw.}}",
   "@errors.write.permissionDenied.suggestion.delete": {
-    "sourceHash": "1e6e123"
+    "sourceHash": "89a73d1"
   },
   "errors.write.permissionDenied.suggestion.default": "Controleer of je schrijftoegang hebt tot de bestemmingsmap. Je moet misschien het apparaat ontgrendelen of de mapbevoegdheden wijzigen.",
   "@errors.write.permissionDenied.suggestion.default": {
     "sourceHash": "ec02093"
   },
-  "errors.write.permissionDenied.message.named": "{platform, select, macos {Je macOS-gebruiker kan {folder} niet wijzigen.} windows {Your Windows account can’t change {folder}.} other {Your user account can’t change {folder}.}}",
+  "errors.write.permissionDenied.message.named": "{platform, select, macos {Je macOS-gebruiker kan {folder} niet wijzigen.} windows {Je Windows-account kan {folder} niet wijzigen.} other {Je gebruikersaccount kan {folder} niet wijzigen.}}",
   "@errors.write.permissionDenied.message.named": {
-    "sourceHash": "0ffd79b"
+    "sourceHash": "7c12395"
   },
   "errors.write.permissionDenied.suggestion.phone": "Android reserveert deze locatie voor het systeem en zijn apps. Je foto's, downloads en andere bestanden staan in de gedeelde opslag van de telefoon, dus probeer daar een map.",
   "@errors.write.permissionDenied.suggestion.phone": {
@@ -1793,13 +1793,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Daarvoor heb je beheerdersrechten nodig. Om je eigen account toegang te geven, selecteer je de map in Finder, kies je ‘Toon info’ en kijk je bij ‘Delen en bevoegdheden’.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Daarvoor heb je beheerdersrechten nodig. Om je eigen account toegang te geven, pas je de bevoegdheden van de map aan (bijvoorbeeld via chmod) en probeer je het opnieuw.}}",
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Daarvoor heb je beheerdersrechten nodig. Om je eigen account toegang te geven, selecteer je de map in Finder, kies je ‘Toon info’ en kijk je bij ‘Delen en bevoegdheden’.} windows {Daarvoor heb je beheerdersrechten nodig. Om je eigen account toegang te geven, open je in Verkenner de ‘Eigenschappen’ van de map en kijk je bij ‘Beveiliging’.} other {Daarvoor heb je beheerdersrechten nodig. Om je eigen account toegang te geven, pas je de bevoegdheden van de map aan (bijvoorbeeld via chmod) en probeer je het opnieuw.}}",
   "@errors.write.permissionDenied.suggestion.needsAdmin": {
-    "sourceHash": "674192a"
+    "sourceHash": "3425cc6"
   },
-  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS beschermt dit onderdeel zelf, dus beheerdersrechten veranderen daar niets aan. Het is misschien beveiligd: selecteer het in Finder, kies ‘Toon info’ en deselecteer ‘Beveiligd’.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Het systeem beschermt dit onderdeel zelf, dus beheerdersrechten veranderen daar niets aan. Er staat misschien een beschermingsvlag op die er eerst af moet.}}",
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS beschermt dit onderdeel zelf, dus beheerdersrechten veranderen daar niets aan. Het is misschien beveiligd: selecteer het in Finder, kies ‘Toon info’ en deselecteer ‘Beveiligd’.} windows {Windows beschermt dit onderdeel zelf, dus beheerdersrechten alleen veranderen daar niets aan. Systeembestanden horen meestal bij Windows en laat je het best met rust.} other {Het systeem beschermt dit onderdeel zelf, dus beheerdersrechten veranderen daar niets aan. Er staat misschien een beschermingsvlag op die er eerst af moet.}}",
   "@errors.write.permissionDenied.suggestion.systemProtected": {
-    "sourceHash": "64a71c8"
+    "sourceHash": "b1780bc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "Je hebt geen bevoegdheid om dit onderdeel te lezen, dus het kan niet worden gekopieerd.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,9 +1917,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion": "{platform, select, macos {Ontgrendel het in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Het bestand is misschien beschermd. Controleer de bevoegdheden ervan (bijvoorbeeld via chmod of je bestandsbeheerder) en probeer het opnieuw.}}",
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Ontgrendel het in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.} windows {Het bestand is misschien alleen-lezen. Open in Verkenner de ‘Eigenschappen’ ervan, vink ‘Alleen-lezen’ uit en probeer het opnieuw.} other {Het bestand is misschien beschermd. Controleer de bevoegdheden ervan (bijvoorbeeld via chmod of je bestandsbeheerder) en probeer het opnieuw.}}",
   "@errors.write.fileLocked.suggestion": {
-    "sourceHash": "8f84de5"
+    "sourceHash": "2e9f5c6"
   },
   "errors.write.deletePending.title": "Bestand wordt verwijderd",
   "@errors.write.deletePending.title": {
@@ -1985,17 +1985,17 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
-  "errors.write.homeFolder.title": "{platform, select, windows {Please don’t delete your user folder} other {Verwijder je thuismap alsjeblieft niet}}",
+  "errors.write.homeFolder.title": "{platform, select, windows {Verwijder je gebruikersmap alsjeblieft niet} other {Verwijder je thuismap alsjeblieft niet}}",
   "@errors.write.homeFolder.title": {
-    "sourceHash": "6005e89"
+    "sourceHash": "d7a7939"
   },
-  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hey, you can’t delete your own user folder.} other {Hé, je kunt je eigen thuismap niet verwijderen.}}",
+  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hé, je kunt je eigen gebruikersmap niet verwijderen.} other {Hé, je kunt je eigen thuismap niet verwijderen.}}",
   "@errors.write.homeFolder.message.isHome": {
-    "sourceHash": "16ee6cd"
+    "sourceHash": "a5d7a8a"
   },
-  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {You can’t delete <code>{path}</code> because it contains your user folder, and you can’t delete your user folder.} other {Je kunt <code>{path}</code> niet verwijderen, want je thuismap staat erin, en je thuismap kun je niet verwijderen.}}",
+  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {Je kunt <code>{path}</code> niet verwijderen, want je gebruikersmap staat erin, en je gebruikersmap kun je niet verwijderen.} other {Je kunt <code>{path}</code> niet verwijderen, want je thuismap staat erin, en je thuismap kun je niet verwijderen.}}",
   "@errors.write.homeFolder.message.holdsHome": {
-    "sourceHash": "4ad5896"
+    "sourceHash": "f11f80f"
   },
   "errors.write.homeFolder.suggestion.isHome": "Als je al je bestanden kwijt wilt, ga erin, selecteer alles en verwijder het. Al klinkt het eerlijk gezegd nog steeds als een heel slecht idee.",
   "@errors.write.homeFolder.suggestion.isHome": {
@@ -2005,37 +2005,37 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
-  "errors.write.homeFolderMove.title": "{platform, select, windows {Please don’t move your user folder} other {Verplaats je thuismap alsjeblieft niet}}",
+  "errors.write.homeFolderMove.title": "{platform, select, windows {Verplaats je gebruikersmap alsjeblieft niet} other {Verplaats je thuismap alsjeblieft niet}}",
   "@errors.write.homeFolderMove.title": {
-    "sourceHash": "f5db2db"
+    "sourceHash": "df34b54"
   },
-  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Hé, je thuismap staat precies waar hij hoort. Verplaats je hem, dan zoekt je Mac je de volgende keer dat je inlogt op de verkeerde plek.} windows {Hey, your user folder lives right where it is. Move it, and Windows will look for you in the wrong place next time you sign in.} other {Hey, your home folder lives right where it is. Move it, and your computer will look for you in the wrong place next time you log in.}}",
+  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Hé, je thuismap staat precies waar hij hoort. Verplaats je hem, dan zoekt je Mac je de volgende keer dat je inlogt op de verkeerde plek.} windows {Hé, je gebruikersmap staat precies waar hij hoort. Verplaats je hem, dan zoekt Windows je de volgende keer dat je je aanmeldt op de verkeerde plek.} other {Hé, je thuismap staat precies waar hij hoort. Verplaats je hem, dan zoekt je computer je de volgende keer dat je inlogt op de verkeerde plek.}}",
   "@errors.write.homeFolderMove.message.isHome": {
-    "sourceHash": "17b0b0b"
+    "sourceHash": "575bc91"
   },
-  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {Je kunt <code>{path}</code> niet verplaatsen, want je thuismap staat erin, en je Mac verwacht hem precies daar te vinden.} windows {You can’t move <code>{path}</code> because your user folder is in there, and Windows expects to find it right where it is.} other {You can’t move <code>{path}</code> because your home folder is in there, and your computer expects to find it right where it is.}}",
+  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {Je kunt <code>{path}</code> niet verplaatsen, want je thuismap staat erin, en je Mac verwacht hem precies daar te vinden.} windows {Je kunt <code>{path}</code> niet verplaatsen, want je gebruikersmap staat erin, en Windows verwacht hem precies daar te vinden.} other {Je kunt <code>{path}</code> niet verplaatsen, want je thuismap staat erin, en je computer verwacht hem precies daar te vinden.}}",
   "@errors.write.homeFolderMove.message.holdsHome": {
-    "sourceHash": "c43a8e6"
+    "sourceHash": "870f337"
   },
-  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {Als je je bestanden ergens anders wilt hebben, ga erin, kies wat je nodig hebt en verplaats dat. Je Mac zal je dankbaar zijn.} windows {If you want your files somewhere else, go in there, pick what you need, and move that. Your PC will thank you.} other {If you want your files somewhere else, go in there, pick what you need, and move that. Your computer will thank you.}}",
+  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {Als je je bestanden ergens anders wilt hebben, ga erin, kies wat je nodig hebt en verplaats dat. Je Mac zal je dankbaar zijn.} windows {Als je je bestanden ergens anders wilt hebben, ga erin, kies wat je nodig hebt en verplaats dat. Je pc zal je dankbaar zijn.} other {Als je je bestanden ergens anders wilt hebben, ga erin, kies wat je nodig hebt en verplaats dat. Je computer zal je dankbaar zijn.}}",
   "@errors.write.homeFolderMove.suggestion.isHome": {
-    "sourceHash": "580bee6"
+    "sourceHash": "01b6088"
   },
   "errors.write.homeFolderMove.suggestion.holdsHome": "Als je wat bestanden wilt verplaatsen, wees dan wat specifieker en kies ze van binnenuit.",
   "@errors.write.homeFolderMove.suggestion.holdsHome": {
     "sourceHash": "a766ab5"
   },
-  "errors.write.homeFolderRename.title": "{platform, select, windows {Please don’t rename your user folder} other {Wijzig de naam van je thuismap alsjeblieft niet}}",
+  "errors.write.homeFolderRename.title": "{platform, select, windows {Wijzig de naam van je gebruikersmap alsjeblieft niet} other {Wijzig de naam van je thuismap alsjeblieft niet}}",
   "@errors.write.homeFolderRename.title": {
-    "sourceHash": "ec47bfe"
+    "sourceHash": "8775009"
   },
-  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Hé, je Mac kent je thuismap onder deze naam. Wijzig je die naam, dan vindt je Mac je de volgende keer dat je inlogt niet meer.} windows {Hey, Windows knows your user folder by this name. Rename it, and it won’t find you next time you sign in.} other {Hey, your computer knows your home folder by this name. Rename it, and it won’t find you next time you log in.}}",
+  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Hé, je Mac kent je thuismap onder deze naam. Wijzig je die naam, dan vindt je Mac je de volgende keer dat je inlogt niet meer.} windows {Hé, Windows kent je gebruikersmap onder deze naam. Wijzig je die naam, dan vindt Windows je de volgende keer dat je je aanmeldt niet meer.} other {Hé, je computer kent je thuismap onder deze naam. Wijzig je die naam, dan vindt je computer je de volgende keer dat je inlogt niet meer.}}",
   "@errors.write.homeFolderRename.message.isHome": {
-    "sourceHash": "fd78f2f"
+    "sourceHash": "7e7be74"
   },
-  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Je kunt de naam van <code>{path}</code> niet wijzigen, want je thuismap staat erin, en je Mac verwacht hem op precies dit pad.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
+  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {Je kunt de naam van <code>{path}</code> niet wijzigen, want je thuismap staat erin, en je Mac verwacht hem op precies dit pad.} windows {Je kunt de naam van <code>{path}</code> niet wijzigen, want je gebruikersmap staat erin, en Windows verwacht hem op precies dit pad.} other {Je kunt de naam van <code>{path}</code> niet wijzigen, want je thuismap staat erin, en je computer verwacht hem op precies dit pad.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
-    "sourceHash": "b09f296"
+    "sourceHash": "51b7f8f"
   },
   "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Als je echt een nieuwe naam nodig hebt, heeft macOS daar een zorgvuldige manier voor in ‘Gebruikers en groepen’. Alleen is het geen snelle {renameKey}.} windows {Windows heeft geen veilige ingebouwde manier om de naam van deze map te wijzigen, dus laat je hem het best zoals hij is.} other {Als je echt een nieuwe naam nodig hebt, kan een beheerder dat zorgvuldig doen met usermod, ingelogd als een andere gebruiker. Alleen is het geen snelle {renameKey}.}}",
   "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
@@ -2069,9 +2069,9 @@
   "@errors.write.landingNotRecorded.message": {
     "sourceHash": "6ca4881"
   },
-  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Probeer het opnieuw. Als het blijft gebeuren, controleer dan of de schijf van je Mac nog vrije ruimte heeft en herstart Cmdr daarna.} windows {Try again. If it keeps happening, check that your PC has free space, then restart Cmdr.} other {Try again. If it keeps happening, check that your computer’s disk has free space, then restart Cmdr.}}",
+  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Probeer het opnieuw. Als het blijft gebeuren, controleer dan of de schijf van je Mac nog vrije ruimte heeft en herstart Cmdr daarna.} windows {Probeer het opnieuw. Als het blijft gebeuren, controleer dan of je pc nog vrije ruimte heeft en herstart Cmdr daarna.} other {Probeer het opnieuw. Als het blijft gebeuren, controleer dan of de schijf van je computer nog vrije ruimte heeft en herstart Cmdr daarna.}}",
   "@errors.write.landingNotRecorded.suggestion": {
-    "sourceHash": "e99aa6e"
+    "sourceHash": "98864f9"
   },
   "errors.write.newDataKeptAt.title": "Je nieuwe bestand staat onder een andere naam",
   "@errors.write.newDataKeptAt.title": {
@@ -2145,9 +2145,9 @@
   "@errors.write.fallback.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.fallback.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Verplaatsen naar prullenmand lukte niet}}",
+  "errors.write.fallback.title.trash": "{platform, select, windows {Verplaatsen naar prullenbak lukte niet} other {Verplaatsen naar prullenmand lukte niet}}",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.fallback.message.copy": "Er is een onverwacht probleem opgetreden tijdens het kopiëren.",
   "@errors.write.fallback.message.copy": {
@@ -2161,9 +2161,9 @@
   "@errors.write.fallback.message.delete": {
     "sourceHash": "9a08b89"
   },
-  "errors.write.fallback.message.trash": "{platform, select, windows {Something went wrong while moving to the Recycle Bin.} other {Er is een onverwacht probleem opgetreden tijdens het verplaatsen naar de prullenmand.}}",
+  "errors.write.fallback.message.trash": "{platform, select, windows {Er is een onverwacht probleem opgetreden tijdens het verplaatsen naar de prullenbak.} other {Er is een onverwacht probleem opgetreden tijdens het verplaatsen naar de prullenmand.}}",
   "@errors.write.fallback.message.trash": {
-    "sourceHash": "63f8393"
+    "sourceHash": "ba7128f"
   },
   "errors.write.fallback.suggestion": "Probeer het opnieuw, of bekijk de technische details hieronder voor meer informatie.",
   "@errors.write.fallback.suggestion": {
@@ -2177,9 +2177,9 @@
   "@errors.mutation.cantRenameVolumeRoot": {
     "sourceHash": "0845c57"
   },
-  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr kan niet schrijven in ‘{path}’. Controleer de bevoegdheden van de map in Finder.} windows {Cmdr can’t write into “{path}”. Check the folder’s permissions in File Explorer.} other {Cmdr can’t write into “{path}”. Check the folder’s permissions in your file manager.}}",
+  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr kan niet schrijven in ‘{path}’. Controleer de bevoegdheden van de map in Finder.} windows {Cmdr kan niet schrijven in ‘{path}’. Controleer de machtigingen van de map in Verkenner.} other {Cmdr kan niet schrijven in ‘{path}’. Controleer de bevoegdheden van de map in je bestandsbeheerder.}}",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "e0a7ad6"
+    "sourceHash": "23a1c44"
   },
   "errors.mutation.fileLocked": "Dit onderdeel is beveiligd. Hef de beveiliging op via ‘Toon info’ in Finder en probeer het opnieuw.",
   "@errors.mutation.fileLocked": {
@@ -2341,13 +2341,13 @@
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"
   },
-  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {Dit volume heeft geen prullenmand, dus definitief verwijderen is de enige manier.}}",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {Dit volume heeft geen prullenbak, dus definitief verwijderen is de enige manier.} other {Dit volume heeft geen prullenmand, dus definitief verwijderen is de enige manier.}}",
   "@errors.mutation.trashNotSupported": {
-    "sourceHash": "525ef25"
+    "sourceHash": "519075e"
   },
-  "errors.mutation.trashRefused": "{platform, select, macos {macOS wilde dit niet naar de prullenmand verplaatsen.} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Trash.}}",
+  "errors.mutation.trashRefused": "{platform, select, macos {macOS wilde dit niet naar de prullenmand verplaatsen.} windows {Windows wilde dit niet naar de prullenbak verplaatsen.} other {Cmdr kon dit niet naar de prullenbak verplaatsen.}}",
   "@errors.mutation.trashRefused": {
-    "sourceHash": "7a6d1a5"
+    "sourceHash": "7ad59d2"
   },
   "errors.serverRequest.unreachable": "Cmdr kon zijn server niet bereiken. Controleer je internetverbinding en probeer het opnieuw.",
   "@errors.serverRequest.unreachable": {
@@ -2429,9 +2429,9 @@
   "@errors.eject.unmountRefusedByDiskImage": {
     "sourceHash": "1fa3d53"
   },
-  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS gebruikt daar nog iets. Wacht een minuutje en probeer het daarna opnieuw.} windows {Windows is still using something there. Wait a minute, then try again.} other {This computer is still using something there. Wait a minute, then try again.}}",
+  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS gebruikt daar nog iets. Wacht een minuutje en probeer het daarna opnieuw.} windows {Windows gebruikt daar nog iets. Wacht een minuutje en probeer het daarna opnieuw.} other {Deze computer gebruikt daar nog iets. Wacht een minuutje en probeer het daarna opnieuw.}}",
   "@errors.eject.unmountRefusedBySystem": {
-    "sourceHash": "9b066c9"
+    "sourceHash": "d9f40b9"
   },
   "errors.eject.unmountRefusedByCmdr": "Cmdr zelf gebruikt daar nog iets. Wacht even en probeer het opnieuw, of verstuur een rapport als het blijft gebeuren.",
   "@errors.eject.unmountRefusedByCmdr": {
@@ -2449,9 +2449,9 @@
   "@errors.eject.unexpected": {
     "sourceHash": "2978e2a"
   },
-  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze computer.}}",
+  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze pc.} other {Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze computer.}}",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "45ac92c"
+    "sourceHash": "5e2f5c7"
   },
   "errors.mount.timeout": "Cmdr heeft gewacht, maar ‘{server}’ reageerde niet op tijd. Controleer of de server aanstaat en bereikbaar is, en probeer het dan opnieuw.",
   "@errors.mount.timeout": {
@@ -2481,17 +2481,17 @@
   "@errors.mount.cancelled": {
     "sourceHash": "bc771b3"
   },
-  "errors.mount.unsupportedProtocol": "{platform, select, windows {This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.} other {Deze computer en ‘{server}’ hebben geen SMB-versie gemeen. Schakel SMB 2 of later in bij de instellingen van de server en probeer het dan opnieuw.}}",
+  "errors.mount.unsupportedProtocol": "{platform, select, windows {Deze pc en ‘{server}’ hebben geen SMB-versie gemeen. Schakel SMB 2 of later in bij de instellingen van de server en probeer het dan opnieuw.} other {Deze computer en ‘{server}’ hebben geen SMB-versie gemeen. Schakel SMB 2 of later in bij de instellingen van de server en probeer het dan opnieuw.}}",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "8afe4cb"
+    "sourceHash": "b7d61a2"
   },
   "errors.mount.mountRefused": "Je bent ingelogd bij ‘{server}’, maar de server wilde ‘{share}’ niet openen. Controleer de instellingen van de gedeelde map op de server en probeer het dan opnieuw.",
   "@errors.mount.mountRefused": {
     "sourceHash": "6cf694d"
   },
-  "errors.mount.mountMissing": "{platform, select, windows {Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.} other {Je computer meldde dat ‘{share}’ op ‘{server}’ verbonden was, maar de gedeelde map verscheen nooit. Probeer het opnieuw.}}",
+  "errors.mount.mountMissing": "{platform, select, windows {Je pc meldde dat ‘{share}’ op ‘{server}’ verbonden was, maar de gedeelde map verscheen nooit. Probeer het opnieuw.} other {Je computer meldde dat ‘{share}’ op ‘{server}’ verbonden was, maar de gedeelde map verscheen nooit. Probeer het opnieuw.}}",
   "@errors.mount.mountMissing": {
-    "sourceHash": "72ab946"
+    "sourceHash": "9d2f8d5"
   },
   "errors.mount.gvfsMissing": "Om op Linux verbinding te maken met netwerkshares is GVFS nodig. Installeer het pakket gvfs-smb van je distributie en probeer het dan opnieuw.",
   "@errors.mount.gvfsMissing": {
@@ -2501,9 +2501,9 @@
   "@errors.mount.unexpected": {
     "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze computer.}}",
+  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze pc.} other {Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze computer.}}",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "45ac92c"
+    "sourceHash": "5e2f5c7"
   },
   "errors.shareList.timeout": "Cmdr heeft gewacht, maar ‘{server}’ reageerde niet op tijd. Probeer het zo meteen opnieuw.",
   "@errors.shareList.timeout": {

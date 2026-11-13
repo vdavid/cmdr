@@ -7,9 +7,9 @@
   "@crashReporter.dialog.title.report": {
     "sourceHash": "d8b86d2"
   },
-  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr closed unexpectedly last time. Here’s a crash report with details that can help fix this.} other {Cmdr wurde beim letzten Mal unerwartet beendet. Hier ist ein Absturzbericht mit Details, die bei der Behebung helfen können.}}",
+  "crashReporter.dialog.body.ended": "{platform, select, windows {Cmdr wurde beim letzten Mal unerwartet geschlossen. Hier ist ein Absturzbericht mit Details, die bei der Behebung helfen können.} other {Cmdr wurde beim letzten Mal unerwartet beendet. Hier ist ein Absturzbericht mit Details, die bei der Behebung helfen können.}}",
   "@crashReporter.dialog.body.ended": {
-    "sourceHash": "d67f8cb"
+    "sourceHash": "818d510"
   },
   "crashReporter.dialog.body.keptRunning": "Cmdr ist beim letzten Mal im Hintergrund auf ein Problem gestoßen und weitergelaufen. Hier ist ein Bericht mit Details, die bei der Behebung helfen können.",
   "@crashReporter.dialog.body.keptRunning": {
@@ -19,9 +19,9 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "bed6934"
   },
-  "crashReporter.dialog.privacyNote": "{platform, select, macos {Er enthält die App-Version, die macOS-Version und welcher Teil des Codes auf das Problem gestoßen ist. Keine Dateinamen, keine persönlichen Daten.} windows {It includes the app version, Windows version, and which part of the code ran into the problem. No file names or personal data.} other {It includes the app version, Linux distribution and version, and which part of the code ran into the problem. No file names or personal data.}}",
+  "crashReporter.dialog.privacyNote": "{platform, select, macos {Er enthält die App-Version, die macOS-Version und welcher Teil des Codes auf das Problem gestoßen ist. Keine Dateinamen, keine persönlichen Daten.} windows {Er enthält die App-Version, die Windows-Version und welcher Teil des Codes auf das Problem gestoßen ist. Keine Dateinamen, keine persönlichen Daten.} other {Er enthält die App-Version, die Linux-Distribution samt Version und welcher Teil des Codes auf das Problem gestoßen ist. Keine Dateinamen, keine persönlichen Daten.}}",
   "@crashReporter.dialog.privacyNote": {
-    "sourceHash": "c6875a7"
+    "sourceHash": "ebe2d23"
   },
   "crashReporter.dialog.reportIdLabel": "Berichts-ID:",
   "@crashReporter.dialog.reportIdLabel": {

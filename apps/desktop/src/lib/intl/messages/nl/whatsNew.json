@@ -39,8 +39,8 @@
   "@whatsNew.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "whatsNew.optOutToast": "{platform, select, windows {Got it, no more update notes. Turn them back on anytime in Settings > Updates & privacy.} other {Begrepen, geen updatenotities meer. Zet ze altijd weer aan via Instellingen > Updates en privacy.}}",
+  "whatsNew.optOutToast": "{platform, select, windows {Begrepen, geen updatenotities meer. Zet ze altijd weer aan via Instellingen > Updates en privacy.} other {Begrepen, geen updatenotities meer. Zet ze altijd weer aan via Instellingen > Updates en privacy.}}",
   "@whatsNew.optOutToast": {
-    "sourceHash": "368591b"
+    "sourceHash": "e27e52a"
   }
 }

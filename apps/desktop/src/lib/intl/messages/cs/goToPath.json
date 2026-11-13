@@ -7,9 +7,9 @@
   "@goToPath.dialog.inputAriaLabel": {
     "sourceHash": "ac4d152"
   },
-  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Type or paste a path, for example C:\\Users} other {Zadejte nebo vložte cestu, např. ~/Documents}}",
+  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Zadejte nebo vložte cestu, například C:\\Users} other {Zadejte nebo vložte cestu, např. ~/Documents}}",
   "@goToPath.dialog.inputPlaceholder": {
-    "sourceHash": "d84d343"
+    "sourceHash": "b0126b3"
   },
   "goToPath.dialog.recentsAriaLabel": "Poslední cesty",
   "@goToPath.dialog.recentsAriaLabel": {

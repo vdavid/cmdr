@@ -7,9 +7,9 @@
   "@goToPath.dialog.inputAriaLabel": {
     "sourceHash": "ac4d152"
   },
-  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Type or paste a path, for example C:\\Users} other {Nhập hoặc dán một đường dẫn, ví dụ ~/Documents}}",
+  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Nhập hoặc dán một đường dẫn, ví dụ C:\\Users} other {Nhập hoặc dán một đường dẫn, ví dụ ~/Documents}}",
   "@goToPath.dialog.inputPlaceholder": {
-    "sourceHash": "d84d343"
+    "sourceHash": "b0126b3"
   },
   "goToPath.dialog.recentsAriaLabel": "Đường dẫn gần đây",
   "@goToPath.dialog.recentsAriaLabel": {

@@ -27,9 +27,9 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "3f94010"
   },
-  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {Cmdr не удалось прочитать, какие папки были открыты в панелях, поэтому панели открываются в папке пользователя}}",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr не удалось прочитать, какие папки были открыты в панелях, поэтому панели открываются в папке пользователя} other {Cmdr не удалось прочитать, какие папки были открыты в панелях, поэтому панели открываются в папке пользователя}}",
   "@stateRecovery.appStatus.title": {
-    "sourceHash": "521f5eb"
+    "sourceHash": "1f92563"
   },
   "stateRecovery.operationLog.title": "Cmdr не удалось прочитать журнал операций, поэтому журнал начинается заново",
   "@stateRecovery.operationLog.title": {
@@ -111,17 +111,17 @@
   "@stateRecovery.credentials.title": {
     "sourceHash": "e4821b8"
   },
-  "stateRecovery.credentials.body": "{platform, select, windows {This happens after a move to a new PC. Cmdr asks for each password again the next time it needs it.} other {Так бывает после переезда на новый компьютер. Cmdr снова запросит каждый пароль, как только он понадобится.}}",
+  "stateRecovery.credentials.body": "{platform, select, windows {Так бывает после переезда на новый компьютер. Cmdr снова запросит каждый пароль, как только он понадобится.} other {Так бывает после переезда на новый компьютер. Cmdr снова запросит каждый пароль, как только он понадобится.}}",
   "@stateRecovery.credentials.body": {
-    "sourceHash": "afac266"
+    "sourceHash": "c89f267"
   },
   "stateRecovery.keptCopy": "Cmdr оставил старый файл здесь: {path}.",
   "@stateRecovery.keptCopy": {
     "sourceHash": "634e87d"
   },
-  "stateRecovery.showInFinder": "{platform, select, macos {Показать в Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "stateRecovery.showInFinder": "{platform, select, macos {Показать в Finder} windows {Показать в Проводнике} other {Показать в файловом менеджере}}",
   "@stateRecovery.showInFinder": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "stateRecovery.dismiss": "Закрыть",
   "@stateRecovery.dismiss": {

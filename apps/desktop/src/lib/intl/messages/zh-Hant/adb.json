@@ -7,9 +7,9 @@
   "@adb.connect.openSettings": {
     "sourceHash": "3f94010"
   },
-  "adb.connect.serverUnreachable": "{platform, select, macos {這部 Mac 上的 Android 工具沒有回應。} windows {The Android tools on this PC didn’t answer.} other {The Android tools on this computer didn’t answer.}}",
+  "adb.connect.serverUnreachable": "{platform, select, macos {這部 Mac 上的 Android 工具沒有回應。} windows {這台電腦上的 Android 工具沒有回應。} other {這台電腦上的 Android 工具沒有回應。}}",
   "@adb.connect.serverUnreachable": {
-    "sourceHash": "b53716b"
+    "sourceHash": "0b8e427"
   },
   "adb.connect.deviceGone": "你的手機已經中斷連線了。",
   "@adb.connect.deviceGone": {
@@ -55,9 +55,9 @@
   "@adb.readiness.offline": {
     "sourceHash": "6061885"
   },
-  "adb.readiness.noPermissions": "{platform, select, macos {這部 Mac 無法透過 USB 連到你的手機。換一條連接線或換一個連接埠試試。} windows {This PC can’t reach your phone over USB. Try another cable or port.} other {This computer can’t reach your phone over USB. Try another cable or port.}}",
+  "adb.readiness.noPermissions": "{platform, select, macos {這部 Mac 無法透過 USB 連到你的手機。換一條連接線或換一個連接埠試試。} windows {這台電腦無法透過 USB 連到你的手機。換一條連接線或換一個連接埠試試。} other {這台電腦無法透過 USB 連到你的手機。換一條連接線或換一個連接埠試試。}}",
   "@adb.readiness.noPermissions": {
-    "sourceHash": "265d7ed"
+    "sourceHash": "30bcbc3"
   },
   "adb.hint.text": "想存取整個檔案系統嗎？開啟「USB 偵錯」。",
   "@adb.hint.text": {

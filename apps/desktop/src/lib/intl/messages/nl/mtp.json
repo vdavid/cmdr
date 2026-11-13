@@ -5,7 +5,8 @@
   },
   "mtp.connectedToast.body": "{platform, select, macos {Cmdr heeft de macOS-cameradaemon (ptpcamerad) gepauzeerd om toegang te krijgen tot dit apparaat. Wil je het in een andere app gebruiken, zet MTP-ondersteuning dan uit in Instellingen.} windows {} other {Wil je dit apparaat in een andere app gebruiken, zet MTP-ondersteuning dan uit in Instellingen.}}",
   "@mtp.connectedToast.body": {
-    "sourceHash": "3ace37b"
+    "sourceHash": "74349d8",
+    "sameAsSourceJustification": "The windows branch is empty on purpose in every language (Windows shares the device with File Explorer, so the toast has no body line)."
   },
   "mtp.connectedToast.dontShowAgain": "Niet meer tonen",
   "@mtp.connectedToast.dontShowAgain": {
@@ -56,13 +57,13 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {Op macOS claimt de systeemdaemon <code>ptpcamerad</code> automatisch Android-apparaten. Als oplossing kun je de volgende opdracht uitvoeren in Terminal (laat die draaien terwijl je Cmdr gebruikt):} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {Op macOS claimt de systeemdaemon <code>ptpcamerad</code> automatisch Android-apparaten. Als oplossing kun je de volgende opdracht uitvoeren in Terminal (laat die draaien terwijl je Cmdr gebruikt):} windows {Een andere app houdt de telefoon vast, en die moet hem loslaten voordat Cmdr verbinding kan maken.} other {Er kan maar één app tegelijk via MTP met een telefoon praten, en je desktopomgeving koppelt een telefoon meestal aan zodra je hem aansluit.}}",
   "@mtp.ptpcameradDialog.explanation": {
-    "sourceHash": "65b6ee3"
+    "sourceHash": "08df74d"
   },
-  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Deze opdracht stopt ptpcamerad doorlopend zolang die draait. Druk op <key>Ctrl+C</key> in Terminal om die te stoppen als je klaar bent.} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {Deze opdracht stopt ptpcamerad doorlopend zolang die draait. Druk op <key>Ctrl+C</key> in Terminal om die te stoppen als je klaar bent.} windows {Sluit de app die de telefoon gebruikt en probeer het dan opnieuw.} other {Ontkoppel de telefoon in je bestandsbeheerder en probeer het dan opnieuw.}}",
   "@mtp.ptpcameradDialog.helpText": {
-    "sourceHash": "85b5060"
+    "sourceHash": "c44384e"
   },
   "mtp.ptpcameradDialog.close": "Sluit",
   "@mtp.ptpcameradDialog.close": {

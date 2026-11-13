@@ -323,9 +323,9 @@
   "@multiRename.results.gone": {
     "sourceHash": "8aa255a"
   },
-  "multiRename.error.couldntWriteNames": "{platform, select, macos {無法寫入名稱列表。請確認你的啟動磁碟還有可用空間。} windows {Couldn’t write the names list. Check that your system drive has free space.} other {Couldn’t write the names list. Check that your system disk has free space.}}",
+  "multiRename.error.couldntWriteNames": "{platform, select, macos {無法寫入名稱列表。請確認你的啟動磁碟還有可用空間。} windows {無法寫入名稱列表。請確認你的系統磁碟機還有可用空間。} other {無法寫入名稱列表。請確認你的系統磁碟還有可用空間。}}",
   "@multiRename.error.couldntWriteNames": {
-    "sourceHash": "bb5e415"
+    "sourceHash": "aee4df7"
   },
   "multiRename.resultsTooltip": "在文字編輯器裡編輯新名稱，然後回到這裡使用。",
   "@multiRename.resultsTooltip": {

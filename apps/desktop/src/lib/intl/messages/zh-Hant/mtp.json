@@ -5,7 +5,8 @@
   },
   "mtp.connectedToast.body": "{platform, select, macos {Cmdr 已暫停 macOS 的相機常駐程式（ptpcamerad），好存取這個裝置。如果想在其他 App 中使用它，請在設定中關閉 MTP 支援。} windows {} other {如果想在其他 App 中使用這個裝置，請在設定中關閉 MTP 支援。}}",
   "@mtp.connectedToast.body": {
-    "sourceHash": "3ace37b"
+    "sourceHash": "74349d8",
+    "sameAsSourceJustification": "The windows branch is empty on purpose in English too: Windows shares the device with File Explorer, so the toast has no body line there."
   },
   "mtp.connectedToast.dontShowAgain": "不要再顯示",
   "@mtp.connectedToast.dontShowAgain": {
@@ -55,13 +56,13 @@
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
-  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {在 macOS 上，系統常駐程式 <code>ptpcamerad</code> 會自動佔用 Android 裝置。要繞過這一點，請在「終端機」中執行以下指令（使用 Cmdr 期間讓它保持執行）：} windows {Another app is holding the phone, and it has to let go before Cmdr can connect.} other {Only one app can talk to a phone over MTP at a time, and your desktop usually mounts a phone as soon as it’s plugged in.}}",
+  "mtp.ptpcameradDialog.explanation": "{platform, select, macos {在 macOS 上，系統常駐程式 <code>ptpcamerad</code> 會自動佔用 Android 裝置。要繞過這一點，請在「終端機」中執行以下指令（使用 Cmdr 期間讓它保持執行）：} windows {有另一個 App 正在佔用這支手機，它得先放開，Cmdr 才能連線。} other {同一時間只有一個 App 能透過 MTP 和手機溝通，而你的桌面環境通常會在手機一接上就把它掛載。}}",
   "@mtp.ptpcameradDialog.explanation": {
-    "sourceHash": "65b6ee3"
+    "sourceHash": "08df74d"
   },
-  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {這個指令在執行期間會持續停止 ptpcamerad。完成後在「終端機」中按 <key>Ctrl+C</key> 就能停止它。} windows {Close the app that’s using the phone, then retry.} other {Unmount the phone in your file manager, then retry.}}",
+  "mtp.ptpcameradDialog.helpText": "{platform, select, macos {這個指令在執行期間會持續停止 ptpcamerad。完成後在「終端機」中按 <key>Ctrl+C</key> 就能停止它。} windows {請關閉正在使用這支手機的 App，然後再試一次。} other {請在檔案管理程式中卸載這支手機，然後再試一次。}}",
   "@mtp.ptpcameradDialog.helpText": {
-    "sourceHash": "85b5060"
+    "sourceHash": "c44384e"
   },
   "mtp.ptpcameradDialog.close": "關閉",
   "@mtp.ptpcameradDialog.close": {

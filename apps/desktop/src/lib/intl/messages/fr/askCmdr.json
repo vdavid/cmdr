@@ -1429,13 +1429,13 @@
   "@askCmdr.wakeToast.openThread": {
     "sourceHash": "0a641f8"
   },
-  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {You turned down moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You turned down {verbName} {countText} {count, plural, one {item} other {items}}}}} other {Vous avez refusé de {verbName} {countText} {count, plural, one {élément} many {éléments} other {éléments}}}}",
+  "askCmdr.decision.rejected": "{platform, select, windows {{verb, select, trash {Vous avez refusé de déplacer {countText} {count, plural, one {élément} many {éléments} other {éléments}} vers la Corbeille} other {Vous avez refusé de {verbName} {countText} {count, plural, one {élément} many {éléments} other {éléments}}}}} other {Vous avez refusé de {verbName} {countText} {count, plural, one {élément} many {éléments} other {éléments}}}}",
   "@askCmdr.decision.rejected": {
-    "sourceHash": "19d12c1"
+    "sourceHash": "da3b52e"
   },
-  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {You approved moving {countText} {count, plural, one {item} other {items}} to the Recycle Bin} other {You approved {verbName} {countText} {count, plural, one {item} other {items}}}}} other {Vous avez accepté de {verbName} {countText} {count, plural, one {élément} many {éléments} other {éléments}}}}",
+  "askCmdr.decision.approved": "{platform, select, windows {{verb, select, trash {Vous avez accepté de déplacer {countText} {count, plural, one {élément} many {éléments} other {éléments}} vers la Corbeille} other {Vous avez accepté de {verbName} {countText} {count, plural, one {élément} many {éléments} other {éléments}}}}} other {Vous avez accepté de {verbName} {countText} {count, plural, one {élément} many {éléments} other {éléments}}}}",
   "@askCmdr.decision.approved": {
-    "sourceHash": "aa911e6"
+    "sourceHash": "3f61860"
   },
   "askCmdr.decision.result": "{doneText} effectués, {skippedText} ignorés, {failedText} non terminés",
   "@askCmdr.decision.result": {
@@ -1445,9 +1445,9 @@
   "@askCmdr.decision.running": {
     "sourceHash": "46c5413"
   },
-  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr closed before this finished} other {Cmdr a quitté avant la fin de l’opération}}",
+  "askCmdr.decision.interrupted": "{platform, select, windows {Cmdr s’est fermé avant la fin de l’opération} other {Cmdr a quitté avant la fin de l’opération}}",
   "@askCmdr.decision.interrupted": {
-    "sourceHash": "ece92cc"
+    "sourceHash": "de4a5c0"
   },
   "askCmdr.decision.verbMove": "déplacer",
   "@askCmdr.decision.verbMove": {
@@ -1805,17 +1805,17 @@
   "@askCmdr.tool.openSearchDialog.tried": {
     "sourceHash": "729d49f"
   },
-  "askCmdr.tool.quit.doing": "{platform, select, windows {Closing Cmdr} other {Fermeture de Cmdr}}",
+  "askCmdr.tool.quit.doing": "{platform, select, windows {Fermeture de Cmdr} other {Fermeture de Cmdr}}",
   "@askCmdr.tool.quit.doing": {
-    "sourceHash": "b26d1c8"
+    "sourceHash": "b1e13d3"
   },
-  "askCmdr.tool.quit.done": "{platform, select, windows {Asked Cmdr to close} other {A demandé à Cmdr de quitter}}",
+  "askCmdr.tool.quit.done": "{platform, select, windows {A demandé à Cmdr de se fermer} other {A demandé à Cmdr de quitter}}",
   "@askCmdr.tool.quit.done": {
-    "sourceHash": "b9083af"
+    "sourceHash": "17a08e9"
   },
-  "askCmdr.tool.quit.tried": "{platform, select, windows {Tried to close Cmdr} other {A essayé de quitter Cmdr}}",
+  "askCmdr.tool.quit.tried": "{platform, select, windows {A essayé de fermer Cmdr} other {A essayé de quitter Cmdr}}",
   "@askCmdr.tool.quit.tried": {
-    "sourceHash": "ab34547"
+    "sourceHash": "c05f3a9"
   },
   "askCmdr.tool.switchPane.doing": "Changement de panneau",
   "@askCmdr.tool.switchPane.doing": {

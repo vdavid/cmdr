@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Manche Inhalte bleiben zu Hause, egal wer danach fragt: SSH-Schlüssel, Anmeldedaten von Cloud-Diensten und Tools, deine Schlüsselbunde, Browserdaten, Mail, Nachrichten, Notizen, die eigenen Daten von Cmdr und jede Datei mit einem privaten Schlüssel. Die Dateinamen können trotzdem an deinen Anbieter gehen.} windows {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, Windows credentials, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Manche Inhalte bleiben zu Hause, egal wer danach fragt: SSH-Schlüssel, Anmeldedaten von Cloud-Diensten und Tools, deine Schlüsselbunde, Browserdaten, Mail, Nachrichten, Notizen, die eigenen Daten von Cmdr und jede Datei mit einem privaten Schlüssel. Die Dateinamen können trotzdem an deinen Anbieter gehen.} windows {Manche Inhalte bleiben zu Hause, egal wer danach fragt: SSH-Schlüssel, Anmeldedaten von Cloud-Diensten und Tools, Windows-Anmeldeinformationen, Browserdaten, E-Mail-Daten, die eigenen Daten von Cmdr und jede Datei mit einem privaten Schlüssel. Die Dateinamen können trotzdem an deinen Anbieter gehen.} other {Manche Inhalte bleiben zu Hause, egal wer danach fragt: SSH-Schlüssel, Anmeldedaten von Cloud-Diensten und Tools, deine Schlüsselbunde, Browserdaten, E-Mail-Daten, die eigenen Daten von Cmdr und jede Datei mit einem privaten Schlüssel. Die Dateinamen können trotzdem an deinen Anbieter gehen.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
-    "sourceHash": "048633f"
+    "sourceHash": "a533066"
   },
   "ai.cloudConsent.askCmdr.actions": "In einem Chat, den du begonnen hast, kann Ask Cmdr auch die App für dich bedienen: navigieren, auswählen, sortieren, Tabs und Dialoge öffnen und sich mit einem gespeicherten Ort verbinden. Zum Kopieren, Bewegen, Komprimieren, Löschen, Umbenennen und zum Rückgängigmachen eines Vorgangs öffnet es jeweils einen Dialog oder Editor, den du bestätigst, und es passiert nichts, bevor du das tust. Bevor Ask Cmdr eine Datei öffnet, eine Einstellung ändert (außer dem Aussehen von Cmdr), sich beendet, ein Laufwerk auswirft, einen Server entfernt oder die Indizierung ändert, fragt es dich. Das Erstellen eines benannten Ordners oder einer benannten Datei und das Vergeben von Tags passieren sofort und ohne Nachfrage; eine Änderung der Tags kannst du widerrufen. Umbenennungen und Aufräumaktionen, die es als Plan vorbereitet, warten auf deine Zustimmung.",
   "@ai.cloudConsent.askCmdr.actions": {
@@ -159,13 +159,13 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Deine Ask-Cmdr-Chats bleiben auf deinem Mac, in einer lokalen Datenbank, die du öffnen und lesen kannst.} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Deine Ask-Cmdr-Chats bleiben auf deinem Mac, in einer lokalen Datenbank, die du öffnen und lesen kannst.} windows {Deine Ask-Cmdr-Chats bleiben auf deinem PC, in einer lokalen Datenbank, die du öffnen und lesen kannst.} other {Deine Ask-Cmdr-Chats bleiben auf deinem Computer, in einer lokalen Datenbank, die du öffnen und lesen kannst.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
-    "sourceHash": "283cdd7"
+    "sourceHash": "9557acc"
   },
-  "ai.cloudConsent.logsNote": "{platform, select, macos {Wenn du in den erweiterten Einstellungen „KI-Modellaufrufe protokollieren“ einschaltest, speichert Cmdr außerdem jede Anfrage und Antwort in einem Ordner auf deinem Mac. Diese Aufrufprotokolle bleiben lokal und werden nie irgendwohin gesendet.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {Wenn du in den erweiterten Einstellungen „KI-Modellaufrufe protokollieren“ einschaltest, speichert Cmdr außerdem jede Anfrage und Antwort in einem Ordner auf deinem Mac. Diese Aufrufprotokolle bleiben lokal und werden nie irgendwohin gesendet.} windows {Wenn du in den erweiterten Einstellungen „KI-Modellaufrufe protokollieren“ einschaltest, speichert Cmdr außerdem jede Anfrage und Antwort in einem Ordner auf deinem PC. Diese Aufrufprotokolle bleiben lokal und werden nie irgendwohin gesendet.} other {Wenn du in den erweiterten Einstellungen „KI-Modellaufrufe protokollieren“ einschaltest, speichert Cmdr außerdem jede Anfrage und Antwort in einem Ordner auf deinem Computer. Diese Aufrufprotokolle bleiben lokal und werden nie irgendwohin gesendet.}}",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "0178d1c"
+    "sourceHash": "e34c082"
   },
   "ai.cloudConsent.turnOffAnyTime": "Du kannst das jederzeit ausschalten, dann hört Cmdr sofort auf zu senden. Dein Dienst, dein Schlüssel und deine Chats bleiben, wie sie sind.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -531,29 +531,29 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.title": "{platform, select, macos {{op, select, save {Dein API-Schlüssel ließ sich nicht speichern: Der macOS-Schlüsselbund hat den Zugriff verweigert} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen: Der macOS-Schlüsselbund hat den Zugriff verweigert}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {Dein API-Schlüssel ließ sich nicht speichern: Dein System-Schlüsselbund hat den Zugriff verweigert} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen: Dein System-Schlüsselbund hat den Zugriff verweigert}}}}",
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {Dein API-Schlüssel ließ sich nicht speichern: Der macOS-Schlüsselbund hat den Zugriff verweigert} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen: Der macOS-Schlüsselbund hat den Zugriff verweigert}}} windows {{op, select, save {Dein API-Schlüssel ließ sich nicht speichern: Die Anmeldeinformationsverwaltung hat den Zugriff verweigert} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen: Die Anmeldeinformationsverwaltung hat den Zugriff verweigert}}} other {{op, select, save {Dein API-Schlüssel ließ sich nicht speichern: Dein System-Schlüsselbund hat den Zugriff verweigert} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen: Dein System-Schlüsselbund hat den Zugriff verweigert}}}}",
   "@ai.secretError.title": {
-    "sourceHash": "2b2ef89"
+    "sourceHash": "25b34c4"
   },
-  "ai.secretError.body": "{platform, select, macos {{op, select, save {Öffne die Schlüsselbundverwaltung und prüfe den Eintrag „Cmdr“, oder lösche ihn und speichere noch einmal.} other {Öffne die Schlüsselbundverwaltung, suche den Eintrag „Cmdr“ und gewähre den Zugriff, oder lösche ihn und gib deinen Schlüssel neu ein.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Entsperre deinen Schlüsselbund (App „Passwörter“ / „Schlüsselbunde“) und versuche es erneut.}}",
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {Öffne die Schlüsselbundverwaltung und prüfe den Eintrag „Cmdr“, oder lösche ihn und speichere noch einmal.} other {Öffne die Schlüsselbundverwaltung, suche den Eintrag „Cmdr“ und gewähre den Zugriff, oder lösche ihn und gib deinen Schlüssel neu ein.}}} windows {{op, select, save {Öffne die Anmeldeinformationsverwaltung und prüfe den Eintrag „Cmdr“ unter „Windows-Anmeldeinformationen“, oder entferne ihn und speichere noch einmal.} other {Öffne die Anmeldeinformationsverwaltung, suche den Eintrag „Cmdr“ unter „Windows-Anmeldeinformationen“, oder entferne ihn und gib deinen Schlüssel noch einmal ein.}}} other {Entsperre deinen Schlüsselbund (App „Passwörter“ / „Schlüsselbunde“) und versuche es erneut.}}",
   "@ai.secretError.body": {
-    "sourceHash": "8f1380e"
+    "sourceHash": "d65c5e3"
   },
   "ai.secretError.genericTitle": "{op, select, save {Dein API-Schlüssel ließ sich nicht speichern.} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen.}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "c343e42"
   },
-  "ai.secretError.genericBody": "{platform, select, macos {Prüfe, ob dein System-Schlüsselbund verfügbar ist, und versuche es erneut. Wenn es weiterhin auftritt, starte die App neu.} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {Prüfe, ob dein System-Schlüsselbund verfügbar ist, und versuche es erneut. Wenn es weiterhin auftritt, starte die App neu.}}",
+  "ai.secretError.genericBody": "{platform, select, macos {Prüfe, ob dein System-Schlüsselbund verfügbar ist, und versuche es erneut. Wenn es weiterhin auftritt, starte die App neu.} windows {Prüfe, ob die Anmeldeinformationsverwaltung verfügbar ist, und versuche es erneut. Wenn es weiterhin passiert, starte Cmdr neu.} other {Prüfe, ob dein System-Schlüsselbund verfügbar ist, und versuche es erneut. Wenn es weiterhin auftritt, starte die App neu.}}",
   "@ai.secretError.genericBody": {
-    "sourceHash": "2ee417d"
+    "sourceHash": "9fc0702"
   },
   "ai.secretError.removeTitle": "Dein gespeicherter API-Schlüssel ließ sich nicht entfernen.",
   "@ai.secretError.removeTitle": {
     "sourceHash": "5986628"
   },
-  "ai.secretError.removeBody": "{platform, select, macos {Öffne die Schlüsselbundverwaltung, suche den Eintrag „Cmdr“ und lösche ihn dort.} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {Entsperre deinen Schlüsselbund (App „Passwörter“ / „Schlüsselbunde“) und versuche es erneut.}}",
+  "ai.secretError.removeBody": "{platform, select, macos {Öffne die Schlüsselbundverwaltung, suche den Eintrag „Cmdr“ und lösche ihn dort.} windows {Öffne die Anmeldeinformationsverwaltung, suche den Eintrag „Cmdr“ unter „Windows-Anmeldeinformationen“ und entferne ihn dort.} other {Entsperre deinen Schlüsselbund (App „Passwörter“ / „Schlüsselbunde“) und versuche es erneut.}}",
   "@ai.secretError.removeBody": {
-    "sourceHash": "4e3abe7"
+    "sourceHash": "3a85511"
   },
   "ai.managed.aiOff": "Deine Organisation hat die KI in Cmdr ausgeschaltet.",
   "@ai.managed.aiOff": {
@@ -567,9 +567,9 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Deine Organisation erlaubt nur lokale KI, und dieser Mac kann sie nicht ausführen.} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Deine Organisation erlaubt nur lokale KI, und dieser Mac kann sie nicht ausführen.} windows {Deine Organisation erlaubt nur lokale KI, und dieser PC kann sie nicht ausführen.} other {Deine Organisation erlaubt nur lokale KI, und dieser Computer kann sie nicht ausführen.}}",
   "@ai.managed.localOnlyUnsupported": {
-    "sourceHash": "b760ca4"
+    "sourceHash": "b468f8f"
   },
   "ai.managed.serviceNotAllowed": "von deiner Organisation nicht erlaubt",
   "@ai.managed.serviceNotAllowed": {

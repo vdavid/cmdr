@@ -3,25 +3,25 @@
   "@menu.app.licenseEnter": {
     "sourceHash": "e5dac0a"
   },
-  "menu.app.settings": "{platform, select, windows {Settings} other {Configuración…}}",
+  "menu.app.settings": "{platform, select, windows {Configuración} other {Configuración…}}",
   "@menu.app.settings": {
-    "sourceHash": "4184f3c"
+    "sourceHash": "802a5bb"
   },
-  "menu.file.showInFileManager": "{platform, select, macos {Mostrar en el Finder} windows {Show in File Explorer} other {Mostrar en el administrador de archivos}}",
+  "menu.file.showInFileManager": "{platform, select, macos {Mostrar en el Finder} windows {Mostrar en el Explorador de archivos} other {Mostrar en el administrador de archivos}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "f887b5e"
+    "sourceHash": "a11bd4b"
   },
-  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Deshacer movimiento al basurero}}",
+  "menu.edit.undoTrash": "{platform, select, windows {Deshacer eliminación} other {Deshacer movimiento al basurero}}",
   "@menu.edit.undoTrash": {
-    "sourceHash": "ae39e1f"
+    "sourceHash": "47912be"
   },
-  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Deshacer movimiento de “{name}” al basurero}}",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Deshacer eliminación de “{name}”} other {Deshacer movimiento de “{name}” al basurero}}",
   "@menu.edit.undoTrashOne": {
-    "sourceHash": "77a330a"
+    "sourceHash": "34e6b5e"
   },
-  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Deshacer movimiento de {countText} elementos al basurero}}",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Deshacer eliminación de {countText} elementos} other {Deshacer movimiento de {countText} elementos al basurero}}",
   "@menu.edit.undoTrashMany": {
-    "sourceHash": "23068b5"
+    "sourceHash": "b209997"
   },
   "menu.go.addToFavorites": "Agregar a favoritos",
   "@menu.go.addToFavorites": {

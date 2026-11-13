@@ -24,9 +24,9 @@
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "{platform, select, macos {Cmdr braucht vollständigen Festplattenzugriff, um deinen Downloads-Ordner zu überwachen. <settingsLink>Systemeinstellungen öffnen</settingsLink>} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "common.downloadsFdaHint": "{platform, select, macos {Cmdr braucht vollständigen Festplattenzugriff, um deinen Downloads-Ordner zu überwachen. <settingsLink>Systemeinstellungen öffnen</settingsLink>} other {Cmdr kann deinen Downloads-Ordner nicht überwachen. Prüfe, ob der Ordner existiert und ob du ihn öffnen kannst.}}",
   "@common.downloadsFdaHint": {
-    "sourceHash": "315e1d8"
+    "sourceHash": "b54bf8b"
   },
   "common.sizeUnit.byte": "{count, plural, one {Byte} other {Bytes}}",
   "@common.sizeUnit.byte": {

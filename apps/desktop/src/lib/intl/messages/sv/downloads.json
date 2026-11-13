@@ -71,9 +71,9 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "{platform, select, macos {Cmdr behöver Full skivtillgång för att bevaka din mapp Hämtade filer.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "downloads.fda.message": "{platform, select, macos {Cmdr behöver Full skivtillgång för att bevaka din mapp Hämtade filer.} other {Cmdr kan inte bevaka mappen Hämtade filer. Kontrollera att mappen finns och att du kan öppna den.}}",
   "@downloads.fda.message": {
-    "sourceHash": "82c82c6"
+    "sourceHash": "dd37803"
   },
   "downloads.fda.dismiss": "Avfärda",
   "@downloads.fda.dismiss": {
@@ -132,9 +132,9 @@
   "@downloads.shortcutRow.unavailable": {
     "sourceHash": "8882532"
   },
-  "downloads.shortcutRow.addModifier": "{platform, select, macos {Lägg till en specialtangent (⌘, ⌃, ⌥ eller ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Lägg till en specialtangent (⌘, ⌃, ⌥ eller ⇧)} windows {Lägg till en specialtangent (Ctrl, Alt, Shift eller Win)} other {Lägg till en specialtangent (Ctrl, Alt, Shift eller Super)}}",
   "@downloads.shortcutRow.addModifier": {
-    "sourceHash": "28a5ba2"
+    "sourceHash": "a56bd6c"
   },
   "downloads.toggleDescription.bound": "Tryck på {binding} från valfri app för att hoppa till din senaste hämtning.",
   "@downloads.toggleDescription.bound": {

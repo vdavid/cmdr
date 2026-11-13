@@ -7,9 +7,9 @@
   "@adb.connect.openSettings": {
     "sourceHash": "3f94010"
   },
-  "adb.connect.serverUnreachable": "{platform, select, macos {Les outils Android de ce Mac n’ont pas répondu.} windows {The Android tools on this PC didn’t answer.} other {The Android tools on this computer didn’t answer.}}",
+  "adb.connect.serverUnreachable": "{platform, select, macos {Les outils Android de ce Mac n’ont pas répondu.} windows {Les outils Android de ce PC n’ont pas répondu.} other {Les outils Android de cet ordinateur n’ont pas répondu.}}",
   "@adb.connect.serverUnreachable": {
-    "sourceHash": "b53716b"
+    "sourceHash": "0b8e427"
   },
   "adb.connect.deviceGone": "Votre téléphone n’est plus connecté.",
   "@adb.connect.deviceGone": {
@@ -55,9 +55,9 @@
   "@adb.readiness.offline": {
     "sourceHash": "6061885"
   },
-  "adb.readiness.noPermissions": "{platform, select, macos {Ce Mac ne peut pas atteindre votre téléphone via USB. Essayez un autre câble ou un autre port.} windows {This PC can’t reach your phone over USB. Try another cable or port.} other {This computer can’t reach your phone over USB. Try another cable or port.}}",
+  "adb.readiness.noPermissions": "{platform, select, macos {Ce Mac ne peut pas atteindre votre téléphone via USB. Essayez un autre câble ou un autre port.} windows {Ce PC ne peut pas atteindre votre téléphone via USB. Essayez un autre câble ou un autre port.} other {Cet ordinateur ne peut pas atteindre votre téléphone via USB. Essayez un autre câble ou un autre port.}}",
   "@adb.readiness.noPermissions": {
-    "sourceHash": "265d7ed"
+    "sourceHash": "30bcbc3"
   },
   "adb.hint.text": "Besoin de tout le système de fichiers ? Activez le débogage USB.",
   "@adb.hint.text": {

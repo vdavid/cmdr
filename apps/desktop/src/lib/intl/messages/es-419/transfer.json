@@ -1,7 +1,7 @@
 {
-  "transfer.trash": "{platform, select, windows {Moved {countText} {count, plural, one {file} other {files}} to the Recycle Bin} other {{count, plural, one {Se movió {countText} archivo al basurero} many {Se movieron {countText} archivos al basurero} other {Se movieron {countText} archivos al basurero}}}}",
+  "transfer.trash": "{platform, select, windows {{count, plural, one {Se movió {countText} archivo a la Papelera de reciclaje} many {Se movieron {countText} archivos a la Papelera de reciclaje} other {Se movieron {countText} archivos a la Papelera de reciclaje}}} other {{count, plural, one {Se movió {countText} archivo al basurero} many {Se movieron {countText} archivos al basurero} other {Se movieron {countText} archivos al basurero}}}}",
   "@transfer.trash": {
-    "sourceHash": "feda264"
+    "sourceHash": "fda5c91"
   },
   "transfer.compress.split": "Se comprimió: {phrase}.",
   "@transfer.compress.split": {

@@ -29,9 +29,9 @@
   "@indexing.phase.priorityFolders": {
     "sourceHash": "09dd19d"
   },
-  "indexing.phase.home": "{platform, select, windows {Indexing the rest of your user folder} other {A saját mappád többi része indexelés alatt}}",
+  "indexing.phase.home": "{platform, select, windows {A felhasználói mappád többi része indexelés alatt} other {A saját mappád többi része indexelés alatt}}",
   "@indexing.phase.home": {
-    "sourceHash": "8c31671"
+    "sourceHash": "4da71e9"
   },
   "indexing.phase.wholeDrive": "A meghajtó többi része indexelés alatt",
   "@indexing.phase.wholeDrive": {
@@ -210,9 +210,9 @@
   "@indexing.firstConnect.body": {
     "sourceHash": "56ec1e5"
   },
-  "indexing.firstConnect.enable": "{platform, select, windows {Turn on indexing} other {Indexelés bekapcsolása}}",
+  "indexing.firstConnect.enable": "{platform, select, windows {Indexelés bekapcsolása} other {Indexelés bekapcsolása}}",
   "@indexing.firstConnect.enable": {
-    "sourceHash": "3dc7ddf"
+    "sourceHash": "060aa19"
   },
   "indexing.firstConnect.silenceDrive": "Ennél a meghajtónál ne kérdezd újra",
   "@indexing.firstConnect.silenceDrive": {

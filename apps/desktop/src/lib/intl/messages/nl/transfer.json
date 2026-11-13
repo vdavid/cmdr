@@ -1,7 +1,7 @@
 {
-  "transfer.trash": "{platform, select, windows {Moved {countText} {count, plural, one {file} other {files}} to the Recycle Bin} other {{countText} {count, plural, one {bestand} other {bestanden}} naar de prullenmand verplaatst}}",
+  "transfer.trash": "{platform, select, windows {{countText} {count, plural, one {bestand} other {bestanden}} naar de prullenbak verplaatst} other {{countText} {count, plural, one {bestand} other {bestanden}} naar de prullenmand verplaatst}}",
   "@transfer.trash": {
-    "sourceHash": "0be2310"
+    "sourceHash": "a8e88f3"
   },
   "transfer.delete": "Verwijderen voltooid: {countText} {count, plural, one {bestand} other {bestanden}}",
   "@transfer.delete": {
@@ -87,9 +87,9 @@
   "@transfer.metadataClass.lockedAndHidden": {
     "sourceHash": "18174cd"
   },
-  "transfer.metadataClass.extendedAttributes": "{platform, select, macos {Finder-tags} windows {Finder-tags} other {Extended attributes}}",
+  "transfer.metadataClass.extendedAttributes": "{platform, select, macos {Finder-tags} windows {Finder-tags} other {uitgebreide kenmerken}}",
   "@transfer.metadataClass.extendedAttributes": {
-    "sourceHash": "fd34d8e"
+    "sourceHash": "78c4aac"
   },
   "transfer.metadataClass.folderDates": "datums van mappen",
   "@transfer.metadataClass.folderDates": {

@@ -7,9 +7,9 @@
   "@goToPath.dialog.inputAriaLabel": {
     "sourceHash": "ac4d152"
   },
-  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Type or paste a path, for example C:\\Users} other {Saisissez ou collez un chemin, par exemple ~/Documents}}",
+  "goToPath.dialog.inputPlaceholder": "{platform, select, windows {Saisissez ou collez un chemin, par exemple C:\\Users} other {Saisissez ou collez un chemin, par exemple ~/Documents}}",
   "@goToPath.dialog.inputPlaceholder": {
-    "sourceHash": "d84d343"
+    "sourceHash": "b0126b3"
   },
   "goToPath.dialog.recentsAriaLabel": "Chemins récents",
   "@goToPath.dialog.recentsAriaLabel": {

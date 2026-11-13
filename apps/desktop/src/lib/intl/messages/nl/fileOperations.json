@@ -16,29 +16,29 @@
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
-  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Dit volume ondersteunt de prullenmand niet.}}",
+  "fileOperations.delete.noTrashWarningStrong": "{platform, select, windows {Dit volume heeft geen prullenbak.} other {Dit volume ondersteunt de prullenmand niet.}}",
   "@fileOperations.delete.noTrashWarningStrong": {
-    "sourceHash": "911688a"
+    "sourceHash": "63875e3"
   },
   "fileOperations.delete.noTrashWarningRest": "Bestanden worden definitief verwijderd.",
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Some of your selection is online-only. Moving those to the Recycle Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.} other {Een deel van je selectie is alleen online beschikbaar. Als je die onderdelen naar de prullenmand verplaatst, worden ze <strong>eerst gedownload</strong>. In dit geval biedt Cmdr alleen aan om de hele selectie te <strong>verwijderen</strong>. Er komen geen kopieën in de prullenmand, maar cloudservices bewaren verwijderde bestanden meestal zelf nog ongeveer 30 dagen. Klik op ‘Verwijder’ als verwijderen goed is. Zo niet, annuleer dan en maak eerst alle bestanden offline beschikbaar, of deselecteer alle bestanden die alleen online beschikbaar zijn.}}",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "{platform, select, windows {Een deel van je selectie is alleen online beschikbaar. Als je die onderdelen naar de prullenbak verplaatst, worden ze <strong>eerst gedownload</strong>. In dit geval biedt Cmdr alleen aan om de hele selectie te <strong>verwijderen</strong>. Er komen geen kopieën in de prullenbak, maar cloudservices bewaren verwijderde bestanden meestal nog ongeveer 30 dagen. Selecteer ‘Verwijder definitief’ als verwijderen goed is. Zo niet, annuleer dan en maak eerst alle bestanden offline beschikbaar, of deselecteer alle bestanden die alleen online beschikbaar zijn.} other {Een deel van je selectie is alleen online beschikbaar. Als je die onderdelen naar de prullenmand verplaatst, worden ze <strong>eerst gedownload</strong>. In dit geval biedt Cmdr alleen aan om de hele selectie te <strong>verwijderen</strong>. Er komen geen kopieën in de prullenmand, maar cloudservices bewaren verwijderde bestanden meestal zelf nog ongeveer 30 dagen. Klik op ‘Verwijder’ als verwijderen goed is. Zo niet, annuleer dan en maak eerst alle bestanden offline beschikbaar, of deselecteer alle bestanden die alleen online beschikbaar zijn.}}",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2468db5"
+    "sourceHash": "88a6cc7"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Everything you selected is online-only. Moving it to the Recycle Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Recycle Bin, but cloud services usually keep deleted files for about 30 days. Select “Delete permanently” if deletion is OK, otherwise cancel this dialog and make these files available offline first.} other {Alles wat je hebt geselecteerd, is alleen online beschikbaar. Als je het naar de prullenmand verplaatst, wordt het <strong>eerst gedownload</strong>. In dit geval biedt Cmdr alleen aan om de hele selectie te <strong>verwijderen</strong>. Er komen geen kopieën in de prullenmand, maar cloudservices bewaren verwijderde bestanden meestal zelf nog ongeveer 30 dagen. Klik op ‘Verwijder’ als verwijderen goed is. Zo niet, annuleer dan en maak deze bestanden eerst offline beschikbaar.}}",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "{platform, select, windows {Alles wat je hebt geselecteerd, is alleen online beschikbaar. Als je het naar de prullenbak verplaatst, wordt het <strong>eerst gedownload</strong>. In dit geval biedt Cmdr alleen aan om de hele selectie te <strong>verwijderen</strong>. Er komen geen kopieën in de prullenbak, maar cloudservices bewaren verwijderde bestanden meestal nog ongeveer 30 dagen. Selecteer ‘Verwijder definitief’ als verwijderen goed is. Zo niet, annuleer dan en maak deze bestanden eerst offline beschikbaar.} other {Alles wat je hebt geselecteerd, is alleen online beschikbaar. Als je het naar de prullenmand verplaatst, wordt het <strong>eerst gedownload</strong>. In dit geval biedt Cmdr alleen aan om de hele selectie te <strong>verwijderen</strong>. Er komen geen kopieën in de prullenmand, maar cloudservices bewaren verwijderde bestanden meestal zelf nog ongeveer 30 dagen. Klik op ‘Verwijder’ als verwijderen goed is. Zo niet, annuleer dan en maak deze bestanden eerst offline beschikbaar.}}",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "dd04d39"
+    "sourceHash": "7228d5a"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Your selection turned out to hold online-only content, so the button below now offers Delete permanently. Read the note above, then press it again if that’s OK.} other {Je selectie bleek inhoud te bevatten die alleen online beschikbaar is, dus de knop hieronder biedt nu ‘Verwijder’ aan. Lees de opmerking hierboven en druk er daarna nog een keer op als dat goed is.}}",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "{platform, select, windows {Je selectie bleek inhoud te bevatten die alleen online beschikbaar is, dus de knop hieronder biedt nu ‘Verwijder definitief’ aan. Lees de opmerking hierboven en druk er daarna nog een keer op als dat goed is.} other {Je selectie bleek inhoud te bevatten die alleen online beschikbaar is, dus de knop hieronder biedt nu ‘Verwijder’ aan. Lees de opmerking hierboven en druk er daarna nog een keer op als dat goed is.}}",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
-    "sourceHash": "d3f4a7a"
+    "sourceHash": "04a6895"
   },
-  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {There’s no Recycle Bin inside an archive.} other {Er is geen prullenmand in een archief.}}",
+  "fileOperations.delete.archiveWarningStrong": "{platform, select, windows {Er is geen prullenbak in een archief.} other {Er is geen prullenmand in een archief.}}",
   "@fileOperations.delete.archiveWarningStrong": {
-    "sourceHash": "d25cd46"
+    "sourceHash": "423ca00"
   },
   "fileOperations.delete.archiveWarningRest": "Deze onderdelen worden definitief uit de zip verwijderd.",
   "@fileOperations.delete.archiveWarningRest": {
@@ -48,9 +48,9 @@
   "@fileOperations.trash.undoAction": {
     "sourceHash": "a8283ad"
   },
-  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Go to Recycle Bin} other {Ga naar prullenmand}}",
+  "fileOperations.trash.goToTrashAction": "{platform, select, windows {Ga naar prullenbak} other {Ga naar prullenmand}}",
   "@fileOperations.trash.goToTrashAction": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
   "fileOperations.trash.undoing": "Bezig met terugzetten…",
   "@fileOperations.trash.undoing": {
@@ -60,29 +60,29 @@
   "@fileOperations.trash.undone": {
     "sourceHash": "a76ffee"
   },
-  "fileOperations.trash.undonePartial": "{platform, select, windows {Put back {restoredText} {restored, plural, one {file} other {files}}; {skippedText} {skipped, plural, one {item} other {items}} stayed in the Recycle Bin.} other {{restoredText} {restored, plural, one {bestand} other {bestanden}} teruggezet; {skippedText} {skipped, plural, one {onderdeel bleef} other {onderdelen bleven}} in de prullenmand.}}",
+  "fileOperations.trash.undonePartial": "{platform, select, windows {{restoredText} {restored, plural, one {bestand} other {bestanden}} teruggezet; {skippedText} {skipped, plural, one {onderdeel bleef} other {onderdelen bleven}} in de prullenbak.} other {{restoredText} {restored, plural, one {bestand} other {bestanden}} teruggezet; {skippedText} {skipped, plural, one {onderdeel bleef} other {onderdelen bleven}} in de prullenmand.}}",
   "@fileOperations.trash.undonePartial": {
-    "sourceHash": "371413d"
+    "sourceHash": "820579a"
   },
   "fileOperations.trash.undoUnavailable": "Er is niets terug te zetten. Deze onderdelen staan misschien al terug, of hun schijf is niet verbonden.",
   "@fileOperations.trash.undoUnavailable": {
     "sourceHash": "ee17b5f"
   },
-  "fileOperations.trash.undoGone": "{platform, select, windows {Nothing to put back: {count, plural, one {the item was} other {the items were}} no longer in the Recycle Bin.} other {Er is niets terug te zetten: {count, plural, one {het onderdeel stond} other {de onderdelen stonden}} niet meer in de prullenmand.}}",
+  "fileOperations.trash.undoGone": "{platform, select, windows {Er is niets terug te zetten: {count, plural, one {het onderdeel stond} other {de onderdelen stonden}} niet meer in de prullenbak.} other {Er is niets terug te zetten: {count, plural, one {het onderdeel stond} other {de onderdelen stonden}} niet meer in de prullenmand.}}",
   "@fileOperations.trash.undoGone": {
-    "sourceHash": "69a90c2"
+    "sourceHash": "7a2975c"
   },
-  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {item was} other {items were}} no longer in the Recycle Bin.} other {{countText} {count, plural, one {onderdeel stond} other {onderdelen stonden}} niet meer in de prullenmand.}}",
+  "fileOperations.trash.undoPartlyGone": "{platform, select, windows {{countText} {count, plural, one {onderdeel stond} other {onderdelen stonden}} niet meer in de prullenbak.} other {{countText} {count, plural, one {onderdeel stond} other {onderdelen stonden}} niet meer in de prullenmand.}}",
   "@fileOperations.trash.undoPartlyGone": {
-    "sourceHash": "2e23577"
+    "sourceHash": "acece5b"
   },
-  "fileOperations.trash.noTrashHere": "{platform, select, windows {This drive doesn’t have a Recycle Bin.} other {Deze schijf heeft geen prullenmand.}}",
+  "fileOperations.trash.noTrashHere": "{platform, select, windows {Deze schijf heeft geen prullenbak.} other {Deze schijf heeft geen prullenmand.}}",
   "@fileOperations.trash.noTrashHere": {
-    "sourceHash": "f58bdab"
+    "sourceHash": "cff83da"
   },
-  "fileOperations.delete.trashSwitch": "{platform, select, windows {Move to the Recycle Bin} other {Naar prullenmand}}",
+  "fileOperations.delete.trashSwitch": "{platform, select, windows {Naar prullenbak} other {Naar prullenmand}}",
   "@fileOperations.delete.trashSwitch": {
-    "sourceHash": "b250a45"
+    "sourceHash": "287751e"
   },
   "fileOperations.delete.overflowMore": "… en nog {countText} {count, plural, one {onderdeel} other {onderdelen}}",
   "@fileOperations.delete.overflowMore": {
@@ -96,13 +96,13 @@
   "@fileOperations.delete.scanDir": {
     "sourceHash": "46b23b5"
   },
-  "fileOperations.delete.confirmDelete": "{platform, select, windows {Delete permanently} other {Verwijder}}",
+  "fileOperations.delete.confirmDelete": "{platform, select, windows {Verwijder definitief} other {Verwijder}}",
   "@fileOperations.delete.confirmDelete": {
-    "sourceHash": "e2d0a54"
+    "sourceHash": "45efa80"
   },
-  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Delete} other {Naar prullenmand}}",
+  "fileOperations.delete.confirmMoveToTrash": "{platform, select, windows {Verwijder} other {Naar prullenmand}}",
   "@fileOperations.delete.confirmMoveToTrash": {
-    "sourceHash": "b250a45"
+    "sourceHash": "362a813"
   },
   "fileOperations.delete.titleCursorFile": "Verwijder 1 bestand onder cursor",
   "@fileOperations.delete.titleCursorFile": {
@@ -357,9 +357,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "8331da7"
   },
-  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “\\”.} other {‘{target}’ is een bestaande map, dus ‘{name}’ zou de naam van die map krijgen. Om ‘{name}’ in de map te zetten, laat je het pad eindigen op ‘/’.}}",
+  "fileOperations.transferDialog.namedFolderHint": "{platform, select, windows {‘{target}’ is een bestaande map, dus ‘{name}’ zou de naam van die map krijgen. Om ‘{name}’ in de map te zetten, laat je het pad eindigen op ‘\\’.} other {‘{target}’ is een bestaande map, dus ‘{name}’ zou de naam van die map krijgen. Om ‘{name}’ in de map te zetten, laat je het pad eindigen op ‘/’.}}",
   "@fileOperations.transferDialog.namedFolderHint": {
-    "sourceHash": "41dc88c"
+    "sourceHash": "aaa65e6"
   },
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {map bestaat al} other {mappen bestaan al}} op die locatie, dus de inhoud wordt samengevoegd.",
   "@fileOperations.transferDialog.mergeInfoMany": {
@@ -437,13 +437,13 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to the Recycle Bin}}} other {{verb, select, copy {Kopieer} move {Verplaats} compress {Comprimeer} delete {Verwijder} other {Naar prullenmand}}}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{platform, select, windows {{verb, select, copy {Kopieer} move {Verplaats} compress {Comprimeer} delete {Verwijder} other {Naar prullenbak}}} other {{verb, select, copy {Kopieer} move {Verplaats} compress {Comprimeer} delete {Verwijder} other {Naar prullenmand}}}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
-    "sourceHash": "b18b6e3"
+    "sourceHash": "61043bf"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Copy {phrase}} move {Move {phrase}} compress {Compress {phrase}} delete {Delete {phrase}} other {Move {phrase} to the Recycle Bin}}} other {{verb, select, copy {Kopieer} move {Verplaats} compress {Comprimeer} delete {Verwijder} other {Naar prullenmand}} {phrase}}}",
+  "fileOperations.transferDialog.titleWithCounts": "{platform, select, windows {{verb, select, copy {Kopieer {phrase}} move {Verplaats {phrase}} compress {Comprimeer {phrase}} delete {Verwijder {phrase}} other {Verplaats {phrase} naar de prullenbak}}} other {{verb, select, copy {Kopieer} move {Verplaats} compress {Comprimeer} delete {Verwijder} other {Naar prullenmand}} {phrase}}}",
   "@fileOperations.transferDialog.titleWithCounts": {
-    "sourceHash": "d21c910"
+    "sourceHash": "9892d81"
   },
   "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {bestand} other {bestanden}}",
   "@fileOperations.transferDialog.filesPart": {
@@ -505,9 +505,9 @@
   "@fileOperations.transferProgress.scanTitleDelete": {
     "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Counting items to move to the Recycle Bin…} other {Onderdelen tellen voor de prullenmand…}}",
+  "fileOperations.transferProgress.scanTitleTrash": "{platform, select, windows {Onderdelen tellen voor de prullenbak…} other {Onderdelen tellen voor de prullenmand…}}",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "6df6c7f"
+    "sourceHash": "44b29fd"
   },
   "fileOperations.transferProgress.rollbackUnavailableCrossVolumeTooltip": "Terugdraaien kan niet bij het verplaatsen tussen volumes. Cmdr verwijdert elk origineel zodra de kopie veilig op zijn plek staat, dus er is geen origineel meer over om naar terug te gaan. Met Annuleer stopt Cmdr het verplaatsen, en elk bestand blijft heel aan de ene of de andere kant.",
   "@fileOperations.transferProgress.rollbackUnavailableCrossVolumeTooltip": {
@@ -553,13 +553,13 @@
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Copy canceled} move {Move canceled} compress {Compress canceled} delete {Delete canceled} trash {Move to the Recycle Bin canceled} other {Canceled}}} other {{type, select, copy {Kopiëren geannuleerd} move {Verplaatsen geannuleerd} compress {Comprimeren geannuleerd} delete {Verwijderen geannuleerd} trash {Verplaatsen naar prullenmand geannuleerd} other {Geannuleerd}}}}",
+  "fileOperations.transferProgress.canceledAlertTitle": "{platform, select, windows {{type, select, copy {Kopiëren geannuleerd} move {Verplaatsen geannuleerd} compress {Comprimeren geannuleerd} delete {Verwijderen geannuleerd} trash {Verplaatsen naar prullenbak geannuleerd} other {Geannuleerd}}} other {{type, select, copy {Kopiëren geannuleerd} move {Verplaatsen geannuleerd} compress {Comprimeren geannuleerd} delete {Verwijderen geannuleerd} trash {Verplaatsen naar prullenmand geannuleerd} other {Geannuleerd}}}}",
   "@fileOperations.transferProgress.canceledAlertTitle": {
-    "sourceHash": "3cba939"
+    "sourceHash": "b041c89"
   },
-  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {You’ve canceled this copy. The files it copied so far stay where they are.} move {You’ve canceled this move. The files it moved so far stay where they landed.} compress {You’ve canceled this compression.} delete {You’ve canceled this delete. The files it deleted so far are gone, and the rest are still there.} trash {You’ve canceled this move to the Recycle Bin. The files it moved so far stay in the Recycle Bin, and the rest are where they were.} other {You’ve canceled this operation.}}} other {{type, select, copy {Je hebt het kopiëren geannuleerd. De bestanden die tot nu toe zijn gekopieerd, blijven waar ze zijn.} move {Je hebt het verplaatsen geannuleerd. De bestanden die tot nu toe zijn verplaatst, blijven waar ze terechtgekomen zijn.} compress {Je hebt het comprimeren geannuleerd.} delete {Je hebt het verwijderen geannuleerd. De bestanden die tot nu toe zijn verwijderd, zijn weg en de rest staat er nog.} trash {Je hebt het verplaatsen naar de prullenmand geannuleerd. De bestanden die tot nu toe zijn verplaatst, blijven in de prullenmand en de rest staat er nog.} other {Je hebt deze bewerking geannuleerd.}}}}",
+  "fileOperations.transferProgress.canceledAlertMessage": "{platform, select, windows {{type, select, copy {Je hebt het kopiëren geannuleerd. De bestanden die tot nu toe zijn gekopieerd, blijven waar ze zijn.} move {Je hebt het verplaatsen geannuleerd. De bestanden die tot nu toe zijn verplaatst, blijven waar ze terechtgekomen zijn.} compress {Je hebt het comprimeren geannuleerd.} delete {Je hebt het verwijderen geannuleerd. De bestanden die tot nu toe zijn verwijderd, zijn weg en de rest staat er nog.} trash {Je hebt het verplaatsen naar de prullenbak geannuleerd. De bestanden die tot nu toe zijn verplaatst, blijven in de prullenbak en de rest staat er nog.} other {Je hebt deze bewerking geannuleerd.}}} other {{type, select, copy {Je hebt het kopiëren geannuleerd. De bestanden die tot nu toe zijn gekopieerd, blijven waar ze zijn.} move {Je hebt het verplaatsen geannuleerd. De bestanden die tot nu toe zijn verplaatst, blijven waar ze terechtgekomen zijn.} compress {Je hebt het comprimeren geannuleerd.} delete {Je hebt het verwijderen geannuleerd. De bestanden die tot nu toe zijn verwijderd, zijn weg en de rest staat er nog.} trash {Je hebt het verplaatsen naar de prullenmand geannuleerd. De bestanden die tot nu toe zijn verplaatst, blijven in de prullenmand en de rest staat er nog.} other {Je hebt deze bewerking geannuleerd.}}}}",
   "@fileOperations.transferProgress.canceledAlertMessage": {
-    "sourceHash": "1d1de76"
+    "sourceHash": "c2ed004"
   },
   "fileOperations.transferProgress.titleCancellingSlow": "Bezig met annuleren… (opschonen)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
@@ -653,9 +653,9 @@
   "@fileOperations.transferProgress.policyName.rename": {
     "sourceHash": "3064d79"
   },
-  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Nothing copied} one {Copied {countText} file} other {Copied {countText} files}}} move {{count, plural, =0 {Nothing moved} one {Moved {countText} file} other {Moved {countText} files}}} delete {{count, plural, =0 {Nothing deleted} one {Deleted {countText} file} other {Deleted {countText} files}}} trash {{count, plural, =0 {Nothing moved to the Recycle Bin} one {Moved {countText} file to the Recycle Bin} other {Moved {countText} files to the Recycle Bin}}} compress {{count, plural, =0 {Nothing compressed} one {Compressed {countText} file} other {Compressed {countText} files}}} other {Done}}} other {{type, select, copy {{count, plural, =0 {Niets gekopieerd} one {{countText} bestand gekopieerd} other {{countText} bestanden gekopieerd}}} move {{count, plural, =0 {Niets verplaatst} one {{countText} bestand verplaatst} other {{countText} bestanden verplaatst}}} delete {{count, plural, =0 {Niets verwijderd} one {{countText} bestand verwijderd} other {{countText} bestanden verwijderd}}} trash {{count, plural, =0 {Niets naar de prullenmand verplaatst} one {{countText} bestand naar de prullenmand verplaatst} other {{countText} bestanden naar de prullenmand verplaatst}}} compress {{count, plural, =0 {Niets gecomprimeerd} one {{countText} bestand gecomprimeerd} other {{countText} bestanden gecomprimeerd}}} other {Gereed}}}}",
+  "fileOperations.transferProgress.titleDone": "{platform, select, windows {{type, select, copy {{count, plural, =0 {Niets gekopieerd} one {{countText} bestand gekopieerd} other {{countText} bestanden gekopieerd}}} move {{count, plural, =0 {Niets verplaatst} one {{countText} bestand verplaatst} other {{countText} bestanden verplaatst}}} delete {{count, plural, =0 {Niets verwijderd} one {{countText} bestand verwijderd} other {{countText} bestanden verwijderd}}} trash {{count, plural, =0 {Niets naar de prullenbak verplaatst} one {{countText} bestand naar de prullenbak verplaatst} other {{countText} bestanden naar de prullenbak verplaatst}}} compress {{count, plural, =0 {Niets gecomprimeerd} one {{countText} bestand gecomprimeerd} other {{countText} bestanden gecomprimeerd}}} other {Gereed}}} other {{type, select, copy {{count, plural, =0 {Niets gekopieerd} one {{countText} bestand gekopieerd} other {{countText} bestanden gekopieerd}}} move {{count, plural, =0 {Niets verplaatst} one {{countText} bestand verplaatst} other {{countText} bestanden verplaatst}}} delete {{count, plural, =0 {Niets verwijderd} one {{countText} bestand verwijderd} other {{countText} bestanden verwijderd}}} trash {{count, plural, =0 {Niets naar de prullenmand verplaatst} one {{countText} bestand naar de prullenmand verplaatst} other {{countText} bestanden naar de prullenmand verplaatst}}} compress {{count, plural, =0 {Niets gecomprimeerd} one {{countText} bestand gecomprimeerd} other {{countText} bestanden gecomprimeerd}}} other {Gereed}}}}",
   "@fileOperations.transferProgress.titleDone": {
-    "sourceHash": "3db0154"
+    "sourceHash": "74225e6"
   },
   "fileOperations.transferProgress.doneSummaryRate": "<size></size> in {duration}, gemiddeld <rate></rate>/s",
   "@fileOperations.transferProgress.doneSummaryRate": {
@@ -693,9 +693,9 @@
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Recycle Bin}}…} other {{gerund, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} compress {Bezig met comprimeren} delete {Bezig met verwijderen} other {Naar prullenmand verplaatsen}}…}}",
+  "fileOperations.transferProgress.titleActive": "{platform, select, windows {{gerund, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} compress {Bezig met comprimeren} delete {Bezig met verwijderen} other {Naar prullenbak verplaatsen}}…} other {{gerund, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} compress {Bezig met comprimeren} delete {Bezig met verwijderen} other {Naar prullenmand verplaatsen}}…}}",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "0c636e5"
+    "sourceHash": "f40304c"
   },
   "fileOperations.transferProgress.stageScanning": "Doorzoeken",
   "@fileOperations.transferProgress.stageScanning": {
@@ -845,25 +845,25 @@
   "@fileOperations.sourcesGone.title": {
     "sourceHash": "9f8e2cb"
   },
-  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} of the {totalText} items this copy was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} move {{goneText} of the {totalText} items this move was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} delete {{goneText} of the {totalText} items this delete was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} trash {{goneText} of the {totalText} items this move to the Recycle Bin was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.} other {{goneText} of the {totalText} items this operation was waiting on {gone, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {{goneText} van de {totalText} onderdelen die gekopieerd zouden worden, {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} move {{goneText} van de {totalText} onderdelen die verplaatst zouden worden, {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} delete {{goneText} van de {totalText} onderdelen die verwijderd zouden worden, {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} trash {{goneText} van de {totalText} onderdelen die naar de prullenmand verplaatst zouden worden, {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} other {{goneText} van de {totalText} onderdelen van deze bewerking {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.}}}}",
+  "fileOperations.sourcesGone.message": "{platform, select, windows {{type, select, copy {{goneText} van de {totalText} onderdelen die gekopieerd zouden worden, {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} move {{goneText} van de {totalText} onderdelen die verplaatst zouden worden, {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} delete {{goneText} van de {totalText} onderdelen die verwijderd zouden worden, {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} trash {{goneText} van de {totalText} onderdelen die naar de prullenbak verplaatst zouden worden, {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} other {{goneText} van de {totalText} onderdelen van deze bewerking {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.}}} other {{type, select, copy {{goneText} van de {totalText} onderdelen die gekopieerd zouden worden, {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} move {{goneText} van de {totalText} onderdelen die verplaatst zouden worden, {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} delete {{goneText} van de {totalText} onderdelen die verwijderd zouden worden, {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} trash {{goneText} van de {totalText} onderdelen die naar de prullenmand verplaatst zouden worden, {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} other {{goneText} van de {totalText} onderdelen van deze bewerking {gone, plural, one {is} other {zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.}}}}",
   "@fileOperations.sourcesGone.message": {
-    "sourceHash": "0512078"
+    "sourceHash": "bb8d9df"
   },
   "fileOperations.sourcesGone.moreItems": "{count, plural, one {en nog {countText} onderdeel} other {en nog {countText} onderdelen}}",
   "@fileOperations.sourcesGone.moreItems": {
     "sourceHash": "c39507d"
   },
-  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Copy the rest} move {Move the rest} delete {Delete the rest permanently} trash {Delete the rest} other {Do the rest}}} other {{type, select, copy {Kopieer de rest} move {Verplaats de rest} delete {Verwijder de rest} trash {Verplaats de rest naar de prullenmand} other {Ga door met de rest}}}}",
+  "fileOperations.sourcesGone.continue": "{platform, select, windows {{type, select, copy {Kopieer de rest} move {Verplaats de rest} delete {Verwijder de rest definitief} trash {Verwijder de rest} other {Ga door met de rest}}} other {{type, select, copy {Kopieer de rest} move {Verplaats de rest} delete {Verwijder de rest} trash {Verplaats de rest naar de prullenmand} other {Ga door met de rest}}}}",
   "@fileOperations.sourcesGone.continue": {
-    "sourceHash": "2790bfb"
+    "sourceHash": "079ea59"
   },
-  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {A queued copy has a question for you. You’ll see it as soon as the open dialog closes.} move {A queued move has a question for you. You’ll see it as soon as the open dialog closes.} delete {A queued delete has a question for you. You’ll see it as soon as the open dialog closes.} trash {A queued move to the Recycle Bin has a question for you. You’ll see it as soon as the open dialog closes.} other {A queued operation has a question for you. You’ll see it as soon as the open dialog closes.}}} other {{type, select, copy {Een bewerking die wacht om te kopiëren, heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.} move {Een bewerking die wacht om te verplaatsen, heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.} delete {Een bewerking die wacht om te verwijderen, heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.} trash {Een bewerking die wacht om naar de prullenmand te verplaatsen, heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.} other {Een wachtende bewerking heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.}}}}",
+  "fileOperations.sourcesGone.heldToast": "{platform, select, windows {{type, select, copy {Een bewerking die wacht om te kopiëren, heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.} move {Een bewerking die wacht om te verplaatsen, heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.} delete {Een bewerking die wacht om te verwijderen, heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.} trash {Een bewerking die wacht om naar de prullenbak te verplaatsen, heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.} other {Een wachtende bewerking heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.}}} other {{type, select, copy {Een bewerking die wacht om te kopiëren, heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.} move {Een bewerking die wacht om te verplaatsen, heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.} delete {Een bewerking die wacht om te verwijderen, heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.} trash {Een bewerking die wacht om naar de prullenmand te verplaatsen, heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.} other {Een wachtende bewerking heeft een vraag voor je. Je ziet de vraag zodra het geopende venster sluit.}}}}",
   "@fileOperations.sourcesGone.heldToast": {
-    "sourceHash": "75f645d"
+    "sourceHash": "fc21ca7"
   },
-  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Nothing left to copy: {total, plural, one {the item} other {all {totalText} items}} this copy was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} move {Nothing left to move: {total, plural, one {the item} other {all {totalText} items}} this move was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} delete {Nothing left to delete: {total, plural, one {the item} other {all {totalText} items}} this delete was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} trash {Nothing left to move to the Recycle Bin: {total, plural, one {the item} other {all {totalText} items}} this move to the Recycle Bin was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.} other {Nothing left to do: {total, plural, one {the item} other {all {totalText} items}} this operation was waiting on {total, plural, one {was} other {were}} moved or deleted since you queued it.}}} other {{type, select, copy {Niets meer te kopiëren: {total, plural, one {het onderdeel dat gekopieerd zou worden, is} other {alle {totalText} onderdelen die gekopieerd zouden worden, zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} move {Niets meer te verplaatsen: {total, plural, one {het onderdeel dat verplaatst zou worden, is} other {alle {totalText} onderdelen die verplaatst zouden worden, zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} delete {Niets meer te verwijderen: {total, plural, one {het onderdeel dat verwijderd zou worden, is} other {alle {totalText} onderdelen die verwijderd zouden worden, zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} trash {Niets meer naar de prullenmand te verplaatsen: {total, plural, one {het onderdeel dat naar de prullenmand verplaatst zou worden, is} other {alle {totalText} onderdelen die naar de prullenmand verplaatst zouden worden, zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} other {Niets meer te doen: {total, plural, one {het onderdeel van deze bewerking is} other {alle {totalText} onderdelen van deze bewerking zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.}}}}",
+  "fileOperations.sourcesGone.nothingLeftToast": "{platform, select, windows {{type, select, copy {Niets meer te kopiëren: {total, plural, one {het onderdeel dat gekopieerd zou worden, is} other {alle {totalText} onderdelen die gekopieerd zouden worden, zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} move {Niets meer te verplaatsen: {total, plural, one {het onderdeel dat verplaatst zou worden, is} other {alle {totalText} onderdelen die verplaatst zouden worden, zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} delete {Niets meer te verwijderen: {total, plural, one {het onderdeel dat verwijderd zou worden, is} other {alle {totalText} onderdelen die verwijderd zouden worden, zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} trash {Niets meer naar de prullenbak te verplaatsen: {total, plural, one {het onderdeel dat naar de prullenbak verplaatst zou worden, is} other {alle {totalText} onderdelen die naar de prullenbak verplaatst zouden worden, zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} other {Niets meer te doen: {total, plural, one {het onderdeel van deze bewerking is} other {alle {totalText} onderdelen van deze bewerking zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.}}} other {{type, select, copy {Niets meer te kopiëren: {total, plural, one {het onderdeel dat gekopieerd zou worden, is} other {alle {totalText} onderdelen die gekopieerd zouden worden, zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} move {Niets meer te verplaatsen: {total, plural, one {het onderdeel dat verplaatst zou worden, is} other {alle {totalText} onderdelen die verplaatst zouden worden, zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} delete {Niets meer te verwijderen: {total, plural, one {het onderdeel dat verwijderd zou worden, is} other {alle {totalText} onderdelen die verwijderd zouden worden, zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} trash {Niets meer naar de prullenmand te verplaatsen: {total, plural, one {het onderdeel dat naar de prullenmand verplaatst zou worden, is} other {alle {totalText} onderdelen die naar de prullenmand verplaatst zouden worden, zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.} other {Niets meer te doen: {total, plural, one {het onderdeel van deze bewerking is} other {alle {totalText} onderdelen van deze bewerking zijn}} verplaatst of verwijderd terwijl de bewerking wachtte.}}}}",
   "@fileOperations.sourcesGone.nothingLeftToast": {
-    "sourceHash": "4d62b7d"
+    "sourceHash": "936d7b4"
   },
   "fileOperations.alreadyGone.one": "‘{name}’ was al weg. Waarschijnlijk heeft een andere app het onderdeel verplaatst of verwijderd.",
   "@fileOperations.alreadyGone.one": {
@@ -1306,9 +1306,9 @@
   "@fileOperations.resticPassword.inputAria": {
     "sourceHash": "3e39703"
   },
-  "fileOperations.resticPassword.remember": "{platform, select, macos {Onthoud in Sleutelhanger} windows {Remember password} other {Remember in keyring}}",
+  "fileOperations.resticPassword.remember": "{platform, select, macos {Onthoud in Sleutelhanger} windows {Onthoud wachtwoord} other {Onthoud in sleutelhanger}}",
   "@fileOperations.resticPassword.remember": {
-    "sourceHash": "3fd7384"
+    "sourceHash": "42237e1"
   },
   "fileOperations.resticPassword.checking": "Wachtwoord controleren…",
   "@fileOperations.resticPassword.checking": {
@@ -1350,9 +1350,9 @@
   "@fileOperations.validation.pathEmpty": {
     "sourceHash": "c7afbbc"
   },
-  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Path must be absolute (start with a drive letter, like C:\\, or a share, like \\\\server\\share)} other {Het pad moet absoluut zijn (begint met /)}}",
+  "fileOperations.validation.pathNotAbsolute": "{platform, select, windows {Het pad moet absoluut zijn (begint met een stationsletter, zoals C:\\, of een gedeelde map, zoals \\\\server\\share)} other {Het pad moet absoluut zijn (begint met /)}}",
   "@fileOperations.validation.pathNotAbsolute": {
-    "sourceHash": "3c08374"
+    "sourceHash": "f910f77"
   },
   "fileOperations.validation.pathShareMissing": "Voeg na de server de naam van de gedeelde map toe, zoals \\\\server\\share",
   "@fileOperations.validation.pathShareMissing": {

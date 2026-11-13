@@ -72,9 +72,9 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "{platform, select, windows {Settings} other {Einstellungen …}}",
+  "menu.app.settings": "{platform, select, windows {Einstellungen} other {Einstellungen …}}",
   "@menu.app.settings": {
-    "sourceHash": "7a04083"
+    "sourceHash": "7af8e23"
   },
   "menu.app.services": "Dienste",
   "@menu.app.services": {
@@ -148,9 +148,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFileManager": "{platform, select, macos {Im Finder anzeigen} windows {Show in File Explorer} other {Im Dateimanager anzeigen}}",
+  "menu.file.showInFileManager": "{platform, select, macos {Im Finder anzeigen} windows {Im Datei-Explorer anzeigen} other {Im Dateimanager anzeigen}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "menu.file.openTerminalHere": "Terminal hier öffnen",
   "@menu.file.openTerminalHere": {
@@ -176,17 +176,17 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {In den Papierkorb bewegen widerrufen}}",
+  "menu.edit.undoTrash": "{platform, select, windows {Löschen rückgängig machen} other {In den Papierkorb bewegen widerrufen}}",
   "@menu.edit.undoTrash": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {Bewegen von „{name}“ in den Papierkorb widerrufen}}",
+  "menu.edit.undoTrashOne": "{platform, select, windows {Löschen von „{name}“ rückgängig machen} other {Bewegen von „{name}“ in den Papierkorb widerrufen}}",
   "@menu.edit.undoTrashOne": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {Bewegen von {countText} Objekten in den Papierkorb widerrufen}}",
+  "menu.edit.undoTrashMany": "{platform, select, windows {Löschen von {countText} Objekten rückgängig machen} other {Bewegen von {countText} Objekten in den Papierkorb widerrufen}}",
   "@menu.edit.undoTrashMany": {
-    "sourceHash": "bb9192a"
+    "sourceHash": "4ad492a"
   },
   "menu.edit.cut": "Ausschneiden",
   "@menu.edit.cut": {
@@ -399,9 +399,9 @@
   "@menu.go.rootFolder": {
     "sourceHash": "6d92528"
   },
-  "menu.go.home": "{platform, select, windows {User folder} other {Benutzerordner}}",
+  "menu.go.home": "{platform, select, windows {Benutzerordner} other {Benutzerordner}}",
   "@menu.go.home": {
-    "sourceHash": "3a78695"
+    "sourceHash": "4ff1502"
   },
   "menu.go.goToPath": "Gehe zu Ordner …",
   "@menu.go.goToPath": {
@@ -657,13 +657,13 @@
   "@menu.volume.ejectBusy": {
     "sourceHash": "e2145a6"
   },
-  "menu.volume.detachShare": "{platform, select, macos {Auswerfen ({name})} windows {Disconnect ({name})} other {Unmount ({name})}}",
+  "menu.volume.detachShare": "{platform, select, macos {Auswerfen ({name})} windows {Trennen ({name})} other {Aushängen ({name})}}",
   "@menu.volume.detachShare": {
-    "sourceHash": "913d6ea"
+    "sourceHash": "458748f"
   },
-  "menu.volume.detachShareBusy": "{platform, select, macos {Auswerfen ({name}) (in Benutzung)} windows {Disconnect ({name}) (busy)} other {Unmount ({name}) (busy)}}",
+  "menu.volume.detachShareBusy": "{platform, select, macos {Auswerfen ({name}) (in Benutzung)} windows {Trennen ({name}) (in Benutzung)} other {Aushängen ({name}) (in Benutzung)}}",
   "@menu.volume.detachShareBusy": {
-    "sourceHash": "e2145a6"
+    "sourceHash": "d3578bf"
   },
   "menu.volume.ejectAll": "Alle auswerfen",
   "@menu.volume.ejectAll": {

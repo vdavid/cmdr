@@ -303,9 +303,9 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "f95b4a9"
   },
-  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {You’ve turned on AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Select “{nextLabel}” again to ignore this and go on.</strong>} other {AI je zapnutá, ale chybí klíč API. AI nebude fungovat a uvidíte varování. Doplňte ho prosím výše.\n\n<strong>Pokud to chcete přeskočit a pokračovat dál, klikněte znovu na „{nextLabel}“.</strong>}}",
+  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {AI je zapnutá, ale chybí klíč API. AI nebude fungovat a uvidíte varování. Doplňte ho prosím výše.\n\n<strong>Pokud to chcete přeskočit a pokračovat dál, vyberte znovu „{nextLabel}“.</strong>} other {AI je zapnutá, ale chybí klíč API. AI nebude fungovat a uvidíte varování. Doplňte ho prosím výše.\n\n<strong>Pokud to chcete přeskočit a pokračovat dál, klikněte znovu na „{nextLabel}“.</strong>}}",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "b942278"
+    "sourceHash": "2856a6e"
   },
   "onboarding.stepAi.cloudConsentOffNote": "Cloudová AI zůstane vypnutá, dokud ji nepovolíte. Můžete to udělat později v Nastavení > AI.",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -395,17 +395,17 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "06ce4eb"
   },
-  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Zprávy o haváriích jsou taky zapnuté: když Cmdr spadne, odešle verzi aplikace, vaši verzi macOS a místo, kde se kód zastavil.\nNikdy ne vaše soubory.\nObojí můžete v Nastavení vypnout, kdykoli budete chtít.} windows {Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.} other {Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.}}",
+  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Zprávy o haváriích jsou taky zapnuté: když Cmdr spadne, odešle verzi aplikace, vaši verzi macOS a místo, kde se kód zastavil.\nNikdy ne vaše soubory.\nObojí můžete v Nastavení vypnout, kdykoli budete chtít.} windows {Zprávy o haváriích jsou taky zapnuté: když Cmdr spadne, odešle verzi aplikace, vaši verzi Windows a místo, kde se kód zastavil.\nNikdy ne vaše soubory.\nObojí můžete v Nastavení vypnout, kdykoli budete chtít.} other {Zprávy o haváriích jsou taky zapnuté: když Cmdr spadne, odešle verzi aplikace, vaši distribuci a verzi Linuxu a místo, kde se kód zastavil.\nNikdy ne vaše soubory.\nObojí můžete v Nastavení vypnout, kdykoli budete chtít.}}",
   "@onboarding.stepBeta.crashReportsNote": {
-    "sourceHash": "9be0be1"
+    "sourceHash": "55b9634"
   },
   "onboarding.stepBeta.analyticsManaged": "Vaše organizace vypnula statistiky využití.",
   "@onboarding.stepBeta.analyticsManaged": {
     "sourceHash": "49484ee"
   },
-  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Zprávy o haváriích jsou zapnuté: když Cmdr spadne, odešle verzi aplikace, vaši verzi macOS a místo, kde se kód zastavil.\nNikdy ne vaše soubory.\nMůžete je v Nastavení vypnout, kdykoli budete chtít.} windows {Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.} other {Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.}}",
+  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Zprávy o haváriích jsou zapnuté: když Cmdr spadne, odešle verzi aplikace, vaši verzi macOS a místo, kde se kód zastavil.\nNikdy ne vaše soubory.\nMůžete je v Nastavení vypnout, kdykoli budete chtít.} windows {Zprávy o haváriích jsou zapnuté: když Cmdr spadne, odešle verzi aplikace, vaši verzi Windows a místo, kde se kód zastavil.\nNikdy ne vaše soubory.\nMůžete je v Nastavení vypnout, kdykoli budete chtít.} other {Zprávy o haváriích jsou zapnuté: když Cmdr spadne, odešle verzi aplikace, vaši distribuci a verzi Linuxu a místo, kde se kód zastavil.\nNikdy ne vaše soubory.\nMůžete je v Nastavení vypnout, kdykoli budete chtít.}}",
   "@onboarding.stepBeta.crashReportsNoteAlone": {
-    "sourceHash": "5084dd0"
+    "sourceHash": "27d4b1b"
   },
   "onboarding.stepBeta.emailTitle": "Zůstaňme v kontaktu (nepovinné)",
   "@onboarding.stepBeta.emailTitle": {
@@ -427,13 +427,13 @@
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "5a1bca7"
   },
-  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {Server pro přihlášení k odběru byl teď nedostupný, takže na seznamu zatím nejste. Adresa je uložená na tomto Macu: za chvíli znovu klikněte na Uložit, nebo to kdykoli zkuste v Nastavení > Aktualizace a soukromí.} windows {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this PC: hit Save again in a minute, or any time from Settings › Updates & privacy.} other {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this computer: hit Save again in a minute, or any time from Settings › Updates & privacy.}}",
+  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {Server pro přihlášení k odběru byl teď nedostupný, takže na seznamu zatím nejste. Adresa je uložená na tomto Macu: za chvíli znovu klikněte na Uložit, nebo to kdykoli zkuste v Nastavení > Aktualizace a soukromí.} windows {Server pro přihlášení k odběru byl teď nedostupný, takže na seznamu zatím nejste. Adresa je uložená na tomto počítači: za chvíli znovu klikněte na Uložit, nebo to kdykoli zkuste v Nastavení > Aktualizace a soukromí.} other {Server pro přihlášení k odběru byl teď nedostupný, takže na seznamu zatím nejste. Adresa je uložená na tomto počítači: za chvíli znovu klikněte na Uložit, nebo to kdykoli zkuste v Nastavení > Aktualizace a soukromí.}}",
   "@onboarding.stepBeta.signup.unreachable": {
-    "sourceHash": "e4d8f67"
+    "sourceHash": "6032194"
   },
-  "onboarding.stepBeta.emailNote": "{platform, select, macos {Nechte mi tu svůj e‑mail a občas se vám ozvu s otázkou nebo novinkou.\nE‑mailová adresa, kterou sem zadáte, je uložená jen na vašem Macu a nikdy se nespojuje se statistikami využití: jsou to záměrně dva oddělené subsystémy.} windows {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your PC and it’s never connected to your usage stats, the two are intentionally two separate subsystems.} other {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your computer and it’s never connected to your usage stats, the two are intentionally two separate subsystems.}}",
+  "onboarding.stepBeta.emailNote": "{platform, select, macos {Nechte mi tu svůj e‑mail a občas se vám ozvu s otázkou nebo novinkou.\nE‑mailová adresa, kterou sem zadáte, je uložená jen na vašem Macu a nikdy se nespojuje se statistikami využití: jsou to záměrně dva oddělené subsystémy.} windows {Nechte mi tu svůj e‑mail a občas se vám ozvu s otázkou nebo novinkou.\nE‑mailová adresa, kterou sem zadáte, je uložená jen na vašem počítači a nikdy se nespojuje se statistikami využití: jsou to záměrně dva oddělené subsystémy.} other {Nechte mi tu svůj e‑mail a občas se vám ozvu s otázkou nebo novinkou.\nE‑mailová adresa, kterou sem zadáte, je uložená jen na vašem počítači a nikdy se nespojuje se statistikami využití: jsou to záměrně dva oddělené subsystémy.}}",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "0a793b1"
+    "sourceHash": "494fcbc"
   },
   "onboarding.stepBeta.terms.title": "Jo, a ještě tohle, prosím",
   "@onboarding.stepBeta.terms.title": {
@@ -459,9 +459,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "{platform, select, windows {You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, select the button below. All of these are optional, and the defaults are picked for your benefit.} other {Jdete cestou podrobného nastavení, takže tady je pár rychlých voleb. Pokud vám na tom moc nezáleží, klikněte na tlačítko níže. Všechno je to nepovinné a výchozí hodnoty jsou nastavené tak, aby vám co nejvíc vyhovovaly.}}",
+  "onboarding.stepOptional.lede": "{platform, select, windows {Jdete cestou podrobného nastavení, takže tady je pár rychlých voleb. Pokud vám na tom moc nezáleží, vyberte tlačítko níže. Všechno je to nepovinné a výchozí hodnoty jsou nastavené tak, aby vám co nejvíc vyhovovaly.} other {Jdete cestou podrobného nastavení, takže tady je pár rychlých voleb. Pokud vám na tom moc nezáleží, klikněte na tlačítko níže. Všechno je to nepovinné a výchozí hodnoty jsou nastavené tak, aby vám co nejvíc vyhovovaly.}}",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "94c3a5a"
+    "sourceHash": "d0e9a13"
   },
   "onboarding.stepOptional.recommendedOn": "Doporučeno: zapnuto",
   "@onboarding.stepOptional.recommendedOn": {
@@ -475,13 +475,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "{platform, select, macos {Jednou je potřeba povolit „Místní síť“} windows {Windows may ask to let Cmdr through its firewall} other {No permission needed}}",
+  "onboarding.stepOptional.networking.summary": "{platform, select, macos {Jednou je potřeba povolit „Místní síť“} windows {Windows se může zeptat, jestli Cmdr pustit přes bránu firewall} other {Není potřeba žádné oprávnění}}",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "f49fbc6"
+    "sourceHash": "d902dfe"
   },
-  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Když je tohle <em>zapnuté</em>, můžete se připojovat k serverům SMB, jako jsou firemní sdílené síťové složky, domácí NAS a podobně.\nStojí to jen dialogové okno macOS s žádostí o oprávnění, které vyskočí a požádá o povolení „Místní síť“, a ještě jedno kvůli „Přijímání příchozích připojení“.\nObě dialogová okna jsou neškodná, ale pokud nevíte, co znamenají, můžou působit děsivě nebo otravně.} windows {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nWindows may ask once whether to let Cmdr through its firewall.} other {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.}}",
+  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Když je tohle <em>zapnuté</em>, můžete se připojovat k serverům SMB, jako jsou firemní sdílené síťové složky, domácí NAS a podobně.\nStojí to jen dialogové okno macOS s žádostí o oprávnění, které vyskočí a požádá o povolení „Místní síť“, a ještě jedno kvůli „Přijímání příchozích připojení“.\nObě dialogová okna jsou neškodná, ale pokud nevíte, co znamenají, můžou působit děsivě nebo otravně.} windows {Když je tohle <em>zapnuté</em>, můžete se připojovat k serverům SMB, jako jsou firemní sdílené síťové složky, domácí NAS a podobně.\nWindows se může jednou zeptat, jestli Cmdr pustit přes bránu firewall.} other {Když je tohle <em>zapnuté</em>, můžete se připojovat k serverům SMB, jako jsou firemní sdílené síťové složky, domácí NAS a podobně.}}",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "d473c62"
+    "sourceHash": "e479f6e"
   },
   "onboarding.stepOptional.indexing.title": "Indexování disků",
   "@onboarding.stepOptional.indexing.title": {
@@ -495,9 +495,9 @@
   "@onboarding.stepOptional.indexing.descIntro": {
     "sourceHash": "6b86a1f"
   },
-  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {Okamžité hledání na celém disku. Jako Spotlight, jen ještě rychlejší.} windows {Instant search of your whole drive. Think Windows Search, but much faster.} other {Instant search of your whole drive.}}",
+  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {Okamžité hledání na celém disku. Jako Spotlight, jen ještě rychlejší.} windows {Okamžité hledání na celém disku. Jako Windows Search, jen mnohem rychlejší.} other {Okamžité hledání na celém disku.}}",
   "@onboarding.stepOptional.indexing.benefit1": {
-    "sourceHash": "5fa0e9f"
+    "sourceHash": "bfe626a"
   },
   "onboarding.stepOptional.indexing.benefit2": "Velikosti složek na celém disku v reálném čase. Vždycky víte, kolik toho máte v které složce.",
   "@onboarding.stepOptional.indexing.benefit2": {
@@ -515,21 +515,21 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "{platform, select, windows {If you turn this on, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you turn it off, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).} other {Když tohle zapnete, Cmdr při každém spuštění aplikace a navíc jednou za 24 hodin pošle drobný síťový požadavek na centrální licenční server a vy budete mít vždy nejnovější aktualizace.\nKdyž to vypnete, zůstane vám současná verze a Cmdr nebude posílat vůbec žádné automatické síťové požadavky (kromě pravidelných kontrol licence, pokud máte komerční licenci).}}",
+  "onboarding.stepOptional.updates.desc": "{platform, select, windows {Když tohle zapnete, Cmdr při každém spuštění aplikace a navíc jednou za 24 hodin pošle drobný síťový požadavek na centrální licenční server a vy budete mít vždy nejnovější aktualizace.\nKdyž to vypnete, zůstane vám současná verze a Cmdr nebude posílat vůbec žádné automatické síťové požadavky (kromě pravidelných kontrol licence, pokud máte komerční licenci).} other {Když tohle zapnete, Cmdr při každém spuštění aplikace a navíc jednou za 24 hodin pošle drobný síťový požadavek na centrální licenční server a vy budete mít vždy nejnovější aktualizace.\nKdyž to vypnete, zůstane vám současná verze a Cmdr nebude posílat vůbec žádné automatické síťové požadavky (kromě pravidelných kontrol licence, pokud máte komerční licenci).}}",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "e1a0582"
+    "sourceHash": "f030fea"
   },
   "onboarding.stepOptional.mtp.title": "MTP (telefony s Androidem, Kindle, fotoaparáty)",
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {Umožní připojit telefony s Androidem a podobně, potlačí nativní obsluhu v macOS} other {Lets you connect Android phones and similar devices}}",
+  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {Umožní připojit telefony s Androidem a podobně, potlačí nativní obsluhu v macOS} other {Umožní připojit telefony s Androidem a podobná zařízení}}",
   "@onboarding.stepOptional.mtp.summary": {
-    "sourceHash": "d5b9a6e"
+    "sourceHash": "b6bfad0"
   },
-  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Když tohle zapnete, Cmdr se může <strong>připojit k telefonům s Androidem, čtečkám Kindle a fotoaparátům</strong>, některým hudebním přehrávačům a jakémukoli dalšímu zařízení, které podporuje protokoly MTP nebo PTP.\nStojí to jen tohle: macOS se k nim <em>taky</em> chce připojit (a většinou se mu to nepovede, proto taky nejde fotky z telefonu s Androidem jednoduše zkopírovat ve Finderu), takže Cmdr musí po dobu svého běhu tenhle proces macOS potlačit.\nAž Cmdr ukončíte, proces se zase zdvořile obnoví.} windows {If you turn this on, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.} other {If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nYour desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first.}}",
+  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Když tohle zapnete, Cmdr se může <strong>připojit k telefonům s Androidem, čtečkám Kindle a fotoaparátům</strong>, některým hudebním přehrávačům a jakémukoli dalšímu zařízení, které podporuje protokoly MTP nebo PTP.\nStojí to jen tohle: macOS se k nim <em>taky</em> chce připojit (a většinou se mu to nepovede, proto taky nejde fotky z telefonu s Androidem jednoduše zkopírovat ve Finderu), takže Cmdr musí po dobu svého běhu tenhle proces macOS potlačit.\nAž Cmdr ukončíte, proces se zase zdvořile obnoví.} windows {Když tohle zapnete, Cmdr se může <strong>připojit k telefonům s Androidem, čtečkám Kindle a fotoaparátům</strong>, některým hudebním přehrávačům a jakémukoli dalšímu zařízení, které podporuje protokoly MTP nebo PTP.} other {Když tohle zapnete, Cmdr se může <strong>připojit k telefonům s Androidem, čtečkám Kindle a fotoaparátům</strong>, některým hudebním přehrávačům a jakémukoli dalšímu zařízení, které podporuje protokoly MTP nebo PTP.\nVaše pracovní prostředí se může pokusit tato zařízení otevřít taky. Pokud se zdá, že je zařízení zaneprázdněné, nejdřív ho odpojte ve správci souborů.}}",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "8a60e7f"
+    "sourceHash": "ed865f5"
   },
   "onboarding.cloudPicker.listAria": "Poskytovatelé cloudové AI",
   "@onboarding.cloudPicker.listAria": {

@@ -43,9 +43,9 @@
   "@downloads.shortcutRow.invalidCombo": {
     "sourceHash": "0f41b13"
   },
-  "downloads.shortcutRow.addModifier": "{platform, select, macos {Agrega un modificador (⌘, ⌃, ⌥ o ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Agrega un modificador (⌘, ⌃, ⌥ o ⇧)} windows {Agrega un modificador (Ctrl, Alt, Mayús o Win)} other {Agrega un modificador (Ctrl, Alt, Mayús o Super)}}",
   "@downloads.shortcutRow.addModifier": {
-    "sourceHash": "1336fa6"
+    "sourceHash": "2e75ce3"
   },
   "downloads.toggleDescription.bound": "Presiona {binding} desde cualquier app para saltar a tu descarga más reciente.",
   "@downloads.toggleDescription.bound": {

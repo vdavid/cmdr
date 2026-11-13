@@ -189,9 +189,9 @@
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {Van {from} naar de prullenmand}}",
+  "operationLog.route.fromToTrash": "{platform, select, windows {Van {from} naar de prullenbak} other {Van {from} naar de prullenmand}}",
   "@operationLog.route.fromToTrash": {
-    "sourceHash": "9eff97f"
+    "sourceHash": "2e133c1"
   },
   "operationLog.route.from": "Van {from}",
   "@operationLog.route.from": {
@@ -258,9 +258,9 @@
   "@operationLog.summary.delete": {
     "sourceHash": "97ec6b7"
   },
-  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {{countText} onderdeel naar de prullenmand verplaatst} other {{countText} onderdelen naar de prullenmand verplaatst}}}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {{countText} onderdeel naar de prullenbak verplaatst} other {{countText} onderdelen naar de prullenbak verplaatst}}} other {{count, plural, one {{countText} onderdeel naar de prullenmand verplaatst} other {{countText} onderdelen naar de prullenmand verplaatst}}}}",
   "@operationLog.summary.trash": {
-    "sourceHash": "34b4457"
+    "sourceHash": "2dea5c8"
   },
   "operationLog.summary.rename": "{count, plural, one {Naam van {countText} onderdeel gewijzigd} other {Namen van {countText} onderdelen gewijzigd}}",
   "@operationLog.summary.rename": {
@@ -351,9 +351,9 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {Cmdr is gestopt voordat deze bewerking klaar was, dus misschien heeft Cmdr niet alles vastgelegd wat de bewerking deed. Terugdraaien werkt alleen voor wat Cmdr heeft vastgelegd.}}",
+  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr is afgesloten voordat deze bewerking klaar was, dus misschien heeft Cmdr niet alles vastgelegd wat de bewerking deed. Terugdraaien werkt alleen voor wat Cmdr heeft vastgelegd.} other {Cmdr is gestopt voordat deze bewerking klaar was, dus misschien heeft Cmdr niet alles vastgelegd wat de bewerking deed. Terugdraaien werkt alleen voor wat Cmdr heeft vastgelegd.}}",
   "@operationLog.rollback.interruptedNotice": {
-    "sourceHash": "642e6fc"
+    "sourceHash": "da924aa"
   },
   "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} onderdeel is terug zoals het was.} other {{countText} onderdelen zijn terug zoals ze waren.}}",
   "@operationLog.rollback.partialRolledBack": {

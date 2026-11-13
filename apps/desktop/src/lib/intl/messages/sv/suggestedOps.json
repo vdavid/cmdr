@@ -63,13 +63,13 @@
   "@suggestedOps.action.copy": {
     "sourceHash": "e21f935"
   },
-  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Flytta till papperskorgen}}",
+  "suggestedOps.action.trash": "{platform, select, windows {Radera} other {Flytta till papperskorgen}}",
   "@suggestedOps.action.trash": {
-    "sourceHash": "9adcdf3"
+    "sourceHash": "d4f0678"
   },
-  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {Radera}}",
+  "suggestedOps.action.delete": "{platform, select, windows {Radera permanent} other {Radera}}",
   "@suggestedOps.action.delete": {
-    "sourceHash": "e2d0a54"
+    "sourceHash": "45efa80"
   },
   "suggestedOps.action.rename": "Byt namn",
   "@suggestedOps.action.rename": {
@@ -96,13 +96,13 @@
   "@suggestedOps.approve.copy": {
     "sourceHash": "e10c490"
   },
-  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {Flytta {countText} {count, plural, one {fil} other {filer}} till papperskorgen}}",
+  "suggestedOps.approve.trash": "{platform, select, windows {Radera {countText} {count, plural, one {fil} other {filer}}} other {Flytta {countText} {count, plural, one {fil} other {filer}} till papperskorgen}}",
   "@suggestedOps.approve.trash": {
-    "sourceHash": "3c82946"
+    "sourceHash": "fa0db8d"
   },
-  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {Radera {countText} {count, plural, one {fil} other {filer}}}}",
+  "suggestedOps.approve.delete": "{platform, select, windows {Radera {countText} {count, plural, one {fil} other {filer}} permanent} other {Radera {countText} {count, plural, one {fil} other {filer}}}}",
   "@suggestedOps.approve.delete": {
-    "sourceHash": "218cf04"
+    "sourceHash": "cfb3b70"
   },
   "suggestedOps.approve.rename": "Byt namn på {countText} {count, plural, one {fil} other {filer}}",
   "@suggestedOps.approve.rename": {
@@ -144,17 +144,17 @@
   "@suggestedOps.facts.archive": {
     "sourceHash": "66f4804"
   },
-  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Papperskorgen}}",
+  "suggestedOps.facts.trash": "{platform, select, windows {Papperskorgen} other {Papperskorgen}}",
   "@suggestedOps.facts.trash": {
-    "sourceHash": "4e42c6e"
+    "sourceHash": "7b1fc0a"
   },
   "suggestedOps.facts.severalFolders": "Flera mappar",
   "@suggestedOps.facts.severalFolders": {
     "sourceHash": "7c32950"
   },
-  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Du kan ångra det här: {count, plural, one {objektet hamnar} other {objekten hamnar}} i papperskorgen}}",
+  "suggestedOps.reversible.trash": "{platform, select, windows {Du kan ångra det här: {count, plural, one {objektet hamnar} other {objekten hamnar}} i Papperskorgen} other {Du kan ångra det här: {count, plural, one {objektet hamnar} other {objekten hamnar}} i papperskorgen}}",
   "@suggestedOps.reversible.trash": {
-    "sourceHash": "55bf957"
+    "sourceHash": "e42e327"
   },
   "suggestedOps.reversible.moveBack": "Du kan ångra det här: Cmdr kan flytta tillbaka {count, plural, one {objektet} other {objekten}}",
   "@suggestedOps.reversible.moveBack": {
@@ -180,13 +180,13 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {Den här enheten har ingen papperskorg}}",
+  "suggestedOps.noTrash": "{platform, select, windows {Den här enheten kan inte använda Papperskorgen} other {Den här enheten har ingen papperskorg}}",
   "@suggestedOps.noTrash": {
-    "sourceHash": "38a6adc"
+    "sourceHash": "31f0f36"
   },
-  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {Enheten som filerna ligger på har ingen papperskorg, så om du godkänner det här raderas de permanent.}}",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {Enheten som filerna ligger på kan inte använda Papperskorgen, så om du godkänner det här raderas de permanent.} other {Enheten som filerna ligger på har ingen papperskorg, så om du godkänner det här raderas de permanent.}}",
   "@suggestedOps.noTrashTooltip": {
-    "sourceHash": "4327cb2"
+    "sourceHash": "e13c954"
   },
   "suggestedOps.irreversible.overwrite": "Det här går inte att ångra: Cmdr skriver över ett befintligt arkiv",
   "@suggestedOps.irreversible.overwrite": {
@@ -438,9 +438,9 @@
   "@suggestedOps.server.sharesAffected": {
     "sourceHash": "390f931"
   },
-  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {AI-förslag väntar. Klicka för att granska dem.}}",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI-förslag väntar. Välj för att granska dem.} other {AI-förslag väntar. Klicka för att granska dem.}}",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "4508b0b"
+    "sourceHash": "3c813c4"
   },
   "suggestedOps.newNameTaken": "Namnet är redan taget",
   "@suggestedOps.newNameTaken": {

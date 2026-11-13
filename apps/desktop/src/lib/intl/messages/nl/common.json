@@ -24,9 +24,9 @@
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "{platform, select, macos {Cmdr heeft volledige schijftoegang nodig om je map Downloads te volgen. <settingsLink>Open Systeeminstellingen</settingsLink>} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "common.downloadsFdaHint": "{platform, select, macos {Cmdr heeft volledige schijftoegang nodig om je map Downloads te volgen. <settingsLink>Open Systeeminstellingen</settingsLink>} other {Cmdr kan je map Downloads niet volgen. Controleer of de map bestaat en of je hem kunt openen.}}",
   "@common.downloadsFdaHint": {
-    "sourceHash": "315e1d8"
+    "sourceHash": "b54bf8b"
   },
   "common.sizeUnit.byte": "{count, plural, one {byte} other {bytes}}",
   "@common.sizeUnit.byte": {

@@ -39,8 +39,8 @@
   "@whatsNew.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "whatsNew.optOutToast": "{platform, select, windows {Got it, no more update notes. Turn them back on anytime in Settings > Updates & privacy.} other {Dobře, poznámky k verzím se už nebudou zobrazovat. Znovu je můžete kdykoli zapnout v Nastavení > Aktualizace a soukromí.}}",
+  "whatsNew.optOutToast": "{platform, select, windows {Dobře, poznámky k verzím se už nebudou zobrazovat. Znovu je můžete kdykoli zapnout v Nastavení > Aktualizace a soukromí.} other {Dobře, poznámky k verzím se už nebudou zobrazovat. Znovu je můžete kdykoli zapnout v Nastavení > Aktualizace a soukromí.}}",
   "@whatsNew.optOutToast": {
-    "sourceHash": "368591b"
+    "sourceHash": "e27e52a"
   }
 }

@@ -36,7 +36,12 @@
       }
     ],
     "confidence": "high",
-    "sources": "Thunar (_Match diacritics → Сопоставить диакритические знаки); DC (Diacritics and ligatures → Диакритика и лигатуры); macOS AppKit MenuCommands (Accent → Акцент, the color sense)"
+    "sources": "Thunar (_Match diacritics → Сопоставить диакритические знаки); DC (Diacritics and ligatures → Диакритика и лигатуры); macOS AppKit MenuCommands (Accent → Акцент, the color sense)",
+    "exceptions": {
+      "settings.appearance.appColor.description": "Here accent is Windows' accent color, «контрастный цвет» (MS TBX accent color), not a diacritic.",
+      "settings.appearance.themeColorSwatchAria": "Here accent is Windows' accent color, «контрастный цвет» (MS TBX accent color), not a diacritic.",
+      "settings.appearance.appColorHintPrefix": "Here accent is Windows' accent color, «контрастный цвет» (MS TBX accent color), not a diacritic."
+    }
   },
   "access": {
     "chosen": "доступ",
@@ -218,7 +223,16 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS live Grapher, Books (Tools → Инструменты), AppKit WritingTools (Инструменты для письма); MS (tool → инструмент / средство); DC (Tools → Инструменты)"
+    "sources": "macOS live Grapher, Books (Tools → Инструменты), AppKit WritingTools (Инструменты для письма); MS (tool → инструмент / средство); DC (Tools → Инструменты)",
+    "windows": {
+      "chosen": "Сервис",
+      "accept": ["Сервис"],
+      "note": "The Tools tab of a drive's Properties is «Сервис» in Russian Windows, its Check button «Проверить»: **Свойства**, затем **Сервис > Проверить** (built from Windows itself, no exact pile hit)."
+    },
+    "other": {
+      "chosen": "инструмент",
+      "note": "A desktop's disk tool → инструмент для работы с дисками в вашей среде рабочего стола."
+    }
   },
   "alias": {
     "chosen": "псевдоним",
@@ -1298,7 +1312,17 @@
     "accept": ["Рабочий стол", "Рабочего стола", "Рабочем столе", "Рабочему столу"],
     "forms": "the folder in prose: папка «Рабочий стол»; the settings pane Desktop & Dock → Рабочий стол и Dock",
     "confidence": "high",
-    "sources": "macOS Finder MenuBar 254.title and LocalizableMerged N5 (Desktop → Рабочий стол); macOS live (Desktop & Dock → Рабочий стол и Dock)"
+    "sources": "macOS Finder MenuBar 254.title and LocalizableMerged N5 (Desktop → Рабочий стол); macOS live (Desktop & Dock → Рабочий стол и Dock)",
+    "windows": {
+      "chosen": "рабочий стол",
+      "accept": ["рабочем столе", "рабочий стол"],
+      "note": "Russian Windows writes the desktop the Recycle Bin sits on in lowercase (на рабочем столе)."
+    },
+    "other": {
+      "chosen": "среда рабочего стола",
+      "accept": ["рабочего стола"],
+      "note": "A Linux branch means the desktop environment: инструмент для работы с дисками в вашей среде рабочего стола."
+    }
   },
   "destination": {
     "chosen": "место назначения",
@@ -1808,7 +1832,12 @@
       "onboarding.stepAi.table.rowRename": "Row label in a noun-only column (Поиск, Выделение); «Групповое переименование» is the batch-rename name and already means renaming many files."
     },
     "confidence": "high",
-    "sources": "macOS Finder (LocalizableMerged, InfoPlist); MS; every file manager"
+    "sources": "macOS Finder (LocalizableMerged, InfoPlist); MS; every file manager",
+    "windows": {
+      "chosen": "файл",
+      "accept": ["файл", "Проводник"],
+      "note": "The English \"File Explorer\" hits this concept; Проводник is that app's Russian name, not a file."
+    }
   },
   "file-handle": {
     "chosen": "дескриптор",
@@ -2584,7 +2613,9 @@
     "accept": ["объект"],
     "exceptions": {
       "errors.listing.attributeNotFound.explanation": "The item is carried by «атрибут файла» earlier in the same sentence.",
-      "settings.control.unitItems": "A unit after a number the user types: объект can't agree with every number (1 объектов), so the counting unit шт. stands in, like сек. for seconds."
+      "settings.control.unitItems": "A unit after a number the user types: объект can't agree with every number (1 объектов), so the counting unit шт. stands in, like сек. for seconds.",
+      "settings.dataWipe.leftover.secretItems": "An item here is one saved entry in a password store, «запись», as the shipped macOS branch says for Keychain Access.",
+      "settings.dataWipe.leftover.secretsUnreadable": "An item here is one saved entry in a password store, «запись», as the shipped macOS branch says for Keychain Access."
     },
     "forms": "plural: {countText} объект / объекта / объектов; Copied N items → Скопировано: {countText} …",
     "avoid": [
@@ -3103,7 +3134,8 @@
     "exceptions": {
       "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says.",
       "operationLog.rollback.rollbackableNoticeMoveBack": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says.",
-      "operationLog.tree.statusMovedBack": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says. Status cell «Возвращено на место»."
+      "operationLog.tree.statusMovedBack": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says. Status cell «Возвращено на место».",
+      "stateRecovery.credentials.body": "\"A move to a new PC\" is moving house to new hardware, «переезд», not a file move."
     }
   },
   "move-to-trash": {
@@ -3893,7 +3925,12 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS Finder InfoWindowPermissionsView 138 Read only → «Только чтение»; macOS live disk image read-only → «только чтение»; MS read-only → «только для чтения»"
+    "sources": "macOS Finder InfoWindowPermissionsView 138 Read only → «Только чтение»; macOS live disk image read-only → «только чтение»; MS read-only → «только для чтения»",
+    "windows": {
+      "chosen": "только для чтения",
+      "accept": ["только для чтения", "Только чтение"],
+      "note": "The attribute checkbox in a file's Properties is quoted «Только чтение» (tentative: built from Windows itself; MS TBX read-only attribute → атрибут только для чтения)."
+    }
   },
   "ready": {
     "chosen": "готово",
@@ -4556,9 +4593,19 @@
       "commands.operationLogRollBack.label": "Items ticked by checkbox in the Operation log’s item tree: «Откатить выбранные объекты», matching `fileOperations.rollbackConfirm.titleSelected`.",
       "operationLog.rollback.refusalNothingSelected": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выберите хотя бы один объект».",
       "operationLog.tree.togglesCapped": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбрать по одному» / «Выберите папку целиком».",
-      "operationLog.rollback.refusalTooManyToggles": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбрать по одному» / «Выберите папку целиком»."
+      "operationLog.rollback.refusalTooManyToggles": "Items ticked by checkbox in the Operation log’s item tree: list-item choosing like the queue, so «выбрать по одному» / «Выберите папку целиком».",
+      "fileExplorer.network.browser.refreshHint": "Windows' select here means pressing a control, the click ruling's нажать, not marking files.",
+      "fileExplorer.network.osMountFallback.message": "Windows' select here means pressing a control, the click ruling's нажать, not marking files.",
+      "settings.fileOperations.showAlreadyGoneToast.description": "Windows' select here means pressing a control, the click ruling's нажать, not marking files.",
+      "settings.search.autoApply.description": "Windows' select here means pressing a control, the click ruling's нажать, not marking files.",
+      "fileOperations.delete.cloudOnlineOnlyHandedBack": "\"Your selection\" is the marked files, «выделенных файлов» (marking stays выделить); no pick from a menu here."
     },
-    "decision": "Selection: выделение"
+    "decision": "Selection: выделение",
+    "windows": {
+      "chosen": "выбрать",
+      "accept": ["выбер", "выбр"],
+      "note": "A Windows branch's select means picking a context-menu row (select **Properties** → выберите **Свойства**), Russian Windows' выбрать; marking files stays выделить."
+    }
   },
   "send": {
     "chosen": "Отправить",
@@ -4588,7 +4635,10 @@
       }
     ],
     "confidence": "high",
-    "sources": "AppKit Menus: Servers → Серверы; MS: server → сервер; Nautilus: Server address → Адрес сервера"
+    "sources": "AppKit Menus: Servers → Серверы; MS: server → сервер; Nautilus: Server address → Адрес сервера",
+    "exceptions": {
+      "fileOperations.validation.pathNotAbsolute": "\\\\server\\share is a literal example UNC path, kept as typed."
+    }
   },
   "server-address": {
     "chosen": "адрес сервера",
@@ -4631,6 +4681,11 @@
       "settings.mediaIndex.progress.kept": "Broader settings mean indexing coverage, explicitly named «охват».",
       "settings.mediaIndex.reclaim.line": "The indexing setting is described by its resulting coverage, «охват».",
       "settings.sidebar.searchPlaceholder": "The Settings sidebar supplies the context; «Поиск…» fits the actual input at 125% text size, while «Поиск настроек…» exceeds its available width."
+    },
+    "windows": {
+      "chosen": "Параметры",
+      "accept": ["Параметр", "настро"],
+      "note": "The Windows Settings app is «Параметры» in Russian Windows (MS TBX Network & Internet → Сеть и Интернет, the Settings section); quote its paths as **Параметры > Сеть и Интернет**, **Параметры > Система > Память**. A server's or Cmdr's own settings stay настройки."
     }
   },
   "share-link": {
@@ -5051,7 +5106,17 @@
     "accept": ["загрузочн"],
     "forms": "«на загрузочном диске»",
     "confidence": "high",
-    "sources": "Finder Localizable: Startup Disk → Загрузочный диск; AppKit Menus: Startup Disk… → Загрузочный диск…; MS: boot disk → загрузочный диск"
+    "sources": "Finder Localizable: Startup Disk → Загрузочный диск; AppKit Menus: Startup Disk… → Загрузочный диск…; MS: boot disk → загрузочный диск",
+    "windows": {
+      "chosen": "системный диск",
+      "accept": ["системн"],
+      "note": "MS TBX system drive → системный диск."
+    },
+    "other": {
+      "chosen": "системный диск",
+      "accept": ["системн"],
+      "note": "Thunar says Системный накопитель; the desktop-neutral системный диск matches the Windows branch."
+    }
   },
   "status": {
     "chosen": "состояние",
@@ -5127,6 +5192,11 @@
     "note": "A phone's built-in space is «память» (Apple and Microsoft both); everything else is «хранилище».",
     "exceptions": {
       "errors.provider.iCloud.needsAction": "iCloud storage isn't full → «свободное место в iCloud»."
+    },
+    "windows": {
+      "chosen": "Память",
+      "accept": ["Память"],
+      "note": "Settings > System > Storage is **Параметры > Система > Память** in Russian Windows (MS TBX Storage → Память / Контроль памяти, the storage page)."
     }
   },
   "store": {
@@ -5294,7 +5364,15 @@
     "forms": "quote as the app name: «Системные настройки» > «Клавиатура»; open it: «Откройте Системные настройки»",
     "confidence": "high",
     "sources": "Finder LocalizableMerged.json GROUP_SYSTEM_PREFS: System Settings → Системные настройки; Finder: Choose Apple menu > System Settings → Выберите меню Apple > «Системные настройки»",
-    "note": "Usually a runtime placeholder; Finder quotes the app name in prose, so keep the case-bearing words outside the quotes."
+    "note": "Usually a runtime placeholder; Finder quotes the app name in prose, so keep the case-bearing words outside the quotes.",
+    "exceptions": {
+      "settings.appearance.themeColorSwatchAria": "The Linux branch names the desktop's own settings generically (настройки системы), not the macOS app."
+    },
+    "other": {
+      "chosen": "настройки системы",
+      "accept": ["настройк"],
+      "note": "Tentative. Linux has no single Settings app across desktops, so the other branch says «в настройках системы» (desktop-neutral where GNOME and KDE split)."
+    }
   },
   "system-settings-pane": {
     "chosen": "Основные",
@@ -5889,7 +5967,8 @@
     "confidence": "high",
     "sources": "AppKit FunctionKeyNames: User → Пользователь; live macOS SystemFolderLocalizations: Users → Пользователи; ControlCenter: User → Пользователь; MS: user → пользователь",
     "exceptions": {
-      "settings.mediaIndex.networkVolumes.description": "Internal description phrased impersonally («разрешена»)."
+      "settings.mediaIndex.networkVolumes.description": "Internal description phrased impersonally («разрешена»).",
+      "goToPath.dialog.inputPlaceholder": "C:\\Users is a literal example path, kept as Windows spells it."
     }
   },
   "username": {
@@ -6325,7 +6404,7 @@
   },
   "task-manager": {
     "chosen": "Диспетчер задач",
-    "accept": ["диспетчер задач"],
+    "accept": ["диспетчер задач", "Диспетчер"],
     "forms": "the app name, capitalized like «Мониторинг системы»: Диспетчер задач",
     "confidence": "high",
     "sources": "MS terminology Task Manager → диспетчер задач (id 119998); the Windows app titles itself «Диспетчер задач»"
@@ -6336,5 +6415,70 @@
     "forms": "the macOS pane Users & Groups → «Пользователи и группы» (в разделе «Пользователи и группы»)",
     "confidence": "high",
     "sources": "macOS 27 UsersGroups.appex InfoPlist.loctable CFBundleDisplayName ru «Пользователи и группы» (live bundle, 2026-11-12)"
+  },
+  "file-explorer": {
+    "chosen": "Проводник",
+    "confidence": "high",
+    "accept": ["Проводник"],
+    "forms": "capitalized and inflected as Russian Windows writes it: в Проводнике, Проводник иногда может…",
+    "avoid": [
+      {
+        "form": "Windows Explorer",
+        "why": "the older English name; Russian Windows shows Проводник"
+      }
+    ],
+    "sources": "MS TBX (File Explorer → проводник; pnpm i18n:pile --term \"File Explorer\", 2026-11-13); Russian Windows capitalizes the app name in its UI",
+    "exceptions": {
+      "fileExplorer.pane.fileExplorerAriaLabel": "names Cmdr's own two-pane area, not the Windows app: Файловый менеджер"
+    }
+  },
+  "powershell": {
+    "chosen": "PowerShell",
+    "confidence": "high",
+    "accept": ["PowerShell"],
+    "forms": "stays Latin and uninflected: в PowerShell выполните …",
+    "sources": "MS TBX (PowerShell → Windows PowerShell; pnpm i18n:pile --term PowerShell, 2026-11-13)"
+  },
+  "user-folder": {
+    "chosen": "папка пользователя",
+    "confidence": "tentative",
+    "accept": ["папка пользователя", "папку пользователя", "папке пользователя", "папки пользователя"],
+    "note": "The same words as the home-folder ruling, so the Windows branch reads identically to macOS and Linux; Russian Windows names C:\\Users\\<name> after the user and has no separate common noun the pile shows.",
+    "sources": "no pile hit (pnpm i18n:pile --term \"user folder\", 2026-11-13); matches the home-folder ruling"
+  },
+  "privacy-permission": {
+    "chosen": "разрешение",
+    "confidence": "high",
+    "accept": ["разреш", "прав доступа", "права доступа"],
+    "forms": "macOS privacy grant → разрешение (разрешите доступ Cmdr); in a Windows or Linux branch the same English means file rights → права доступа (У Cmdr нет прав доступа к …)",
+    "sources": "macOS SystemSettings Privacy (разрешить доступ); catalog errors.listing.noPermissionErrno.explanation macos branch; permission ruling for the file-rights sense"
+  },
+  "credential-manager": {
+    "chosen": "Диспетчер учетных данных",
+    "accept": ["Диспетчер учетных данных", "Диспетчера учетных данных", "Диспетчере учетных данных"],
+    "forms": "capitalized as an app name and inflected: из Диспетчера учетных данных, в Диспетчере учетных данных",
+    "confidence": "high",
+    "sources": "MS TBX (Credential Manager → диспетчер учетных данных); the Control Panel app title capitalizes it"
+  },
+  "app-closes": {
+    "chosen": "закроется",
+    "accept": ["закро", "закрыт", "заверш", "закрыл"],
+    "forms": "then closes → и закроется / Затем Cmdr закроется; after Cmdr closes → пока Cmdr закроется",
+    "confidence": "tentative",
+    "sources": "MS (close → закрыть); Russian Windows narrates an app closing with закрыться; no exact pile hit"
+  },
+  "lock": {
+    "chosen": "заблокировать",
+    "accept": ["заблокир", "блокир"],
+    "forms": "lock the backup again → снова заблокировать резервную копию; Cmdr locked {name} → Cmdr заблокировал резервную копию {name}",
+    "confidence": "high",
+    "sources": "the shipped macOS branches of commands.resticForgetPassword.description and fileExplorer.restic.forgetPassword.keychainKeptIt; MS (lock → заблокировать)",
+    "note": "Never the Finder Locked flag, which is «Защита» / «защищен»."
+  },
+  "smb-negotiated-security": {
+    "chosen": "параметры безопасности, согласованные с Cmdr",
+    "accept": ["параметры безопасности", "согласован"],
+    "confidence": "high",
+    "sources": "the shipped macOS branch of fileExplorer.network.osMountFallback.negotiationInvalid"
   }
 }

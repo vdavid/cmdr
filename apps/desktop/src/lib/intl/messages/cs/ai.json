@@ -143,9 +143,9 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "38dedbb"
   },
-  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Některý obsah zůstává doma, ať si o něj říká kdokoli: klíče SSH, přihlašovací údaje ke cloudu a k nástrojům, vaše svazky klíčů, data prohlížečů, Mail, Zprávy, Poznámky, vlastní data Cmdru a každý soubor s privátním klíčem. Jejich názvy se ale k vašemu poskytovateli dostat můžou.} windows {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, Windows credentials, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.} other {Some contents stay home whatever anyone asks: SSH keys, cloud and tool credentials, your keyrings, browser data, email data, Cmdr’s own data, and any file holding a private key. Their names can still reach your provider.}}",
+  "ai.cloudConsent.askCmdr.protectedContents": "{platform, select, macos {Některý obsah zůstává doma, ať si o něj říká kdokoli: klíče SSH, přihlašovací údaje ke cloudu a k nástrojům, vaše svazky klíčů, data prohlížečů, Mail, Zprávy, Poznámky, vlastní data Cmdru a každý soubor s privátním klíčem. Jejich názvy se ale k vašemu poskytovateli dostat můžou.} windows {Některý obsah zůstává doma, ať si o něj říká kdokoli: klíče SSH, přihlašovací údaje ke cloudu a k nástrojům, přihlašovací údaje systému Windows, data prohlížečů, e‑mailová data, vlastní data Cmdru a každý soubor s privátním klíčem. Jejich názvy se ale k vašemu poskytovateli dostat můžou.} other {Některý obsah zůstává doma, ať si o něj říká kdokoli: klíče SSH, přihlašovací údaje ke cloudu a k nástrojům, vaše klíčenky, data prohlížečů, e‑mailová data, vlastní data Cmdru a každý soubor s privátním klíčem. Jejich názvy se ale k vašemu poskytovateli dostat můžou.}}",
   "@ai.cloudConsent.askCmdr.protectedContents": {
-    "sourceHash": "048633f"
+    "sourceHash": "a533066"
   },
   "ai.cloudConsent.askCmdr.actions": "V chatu, který jste zahájili, může Ask Cmdr aplikaci také ovládat za vás: přejít do složky, vybírat, řadit, otevírat záložky a dialogová okna a připojit místo, které jste si uložili. Při kopírování, přesunu, komprimování, mazání, přejmenování a odvolání operace se pokaždé otevře dialogové okno nebo editor, kde to potvrdíte, a dokud to neuděláte, nic se nestane. Před otevřením souboru, změnou nastavení (kromě vzhledu Cmdru), ukončením, vysunutím disku, odstraněním serveru a změnou indexování se vás nejdřív zeptá. Vytvoření pojmenované složky nebo souboru a označení souborů značkami proběhnou hned a bez ptaní; změnu značek můžete odvolat. Přejmenování a úklid, které připraví jako plán, čekají na vaše schválení.",
   "@ai.cloudConsent.askCmdr.actions": {
@@ -159,13 +159,13 @@
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "95b18ac"
   },
-  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Vaše chaty v panelu Ask Cmdr zůstávají na vašem Macu, v místní databázi, kterou můžete otevřít a přečíst.} windows {Your Ask Cmdr chats stay on your PC, in a local database you can open and read.} other {Your Ask Cmdr chats stay on your computer, in a local database you can open and read.}}",
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "{platform, select, macos {Vaše chaty v panelu Ask Cmdr zůstávají na vašem Macu, v místní databázi, kterou můžete otevřít a přečíst.} windows {Vaše chaty v panelu Ask Cmdr zůstávají na vašem počítači, v místní databázi, kterou můžete otevřít a přečíst.} other {Vaše chaty v panelu Ask Cmdr zůstávají na vašem počítači, v místní databázi, kterou můžete otevřít a přečíst.}}",
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
-    "sourceHash": "283cdd7"
+    "sourceHash": "9557acc"
   },
-  "ai.cloudConsent.logsNote": "{platform, select, macos {Pokud v nastavení Pokročilé zapnete „Protokolovat volání modelu AI“, Cmdr navíc ukládá každý požadavek a odpověď do složky na vašem Macu. Tyto protokoly volání zůstávají místně a nikdy se nikam neodesílají.} windows {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your PC. Those call logs stay local, never sent anywhere.} other {If you turn on “Log AI model calls” in Advanced settings, Cmdr also saves each request and reply to a folder on your computer. Those call logs stay local, never sent anywhere.}}",
+  "ai.cloudConsent.logsNote": "{platform, select, macos {Pokud v nastavení Pokročilé zapnete „Protokolovat volání modelu AI“, Cmdr navíc ukládá každý požadavek a odpověď do složky na vašem Macu. Tyto protokoly volání zůstávají místně a nikdy se nikam neodesílají.} windows {Pokud v nastavení Pokročilé zapnete „Protokolovat volání modelu AI“, Cmdr navíc ukládá každý požadavek a odpověď do složky na vašem počítači. Tyto protokoly volání zůstávají místně a nikdy se nikam neodesílají.} other {Pokud v nastavení Pokročilé zapnete „Protokolovat volání modelu AI“, Cmdr navíc ukládá každý požadavek a odpověď do složky na vašem počítači. Tyto protokoly volání zůstávají místně a nikdy se nikam neodesílají.}}",
   "@ai.cloudConsent.logsNote": {
-    "sourceHash": "0178d1c"
+    "sourceHash": "e34c082"
   },
   "ai.cloudConsent.turnOffAnyTime": "Vypnout to můžete kdykoli a Cmdr okamžitě zastaví odesílání. Vaše služba, klíč i chaty zůstanou tak, jak jsou.",
   "@ai.cloudConsent.turnOffAnyTime": {
@@ -531,29 +531,29 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.title": "{platform, select, macos {{op, select, save {Klíč API se nepodařilo uložit: svazek klíčů v macOS odepřel přístup} other {Uložený klíč API se nepodařilo přečíst: svazek klíčů v macOS odepřel přístup}}} windows {{op, select, save {Couldn’t save your API key: Credential Manager denied access} other {Couldn’t read your saved API key: Credential Manager denied access}}} other {{op, select, save {Klíč API se nepodařilo uložit: systémová klíčenka odepřela přístup} other {Uložený klíč API se nepodařilo přečíst: systémová klíčenka odepřela přístup}}}}",
+  "ai.secretError.title": "{platform, select, macos {{op, select, save {Klíč API se nepodařilo uložit: svazek klíčů v macOS odepřel přístup} other {Uložený klíč API se nepodařilo přečíst: svazek klíčů v macOS odepřel přístup}}} windows {{op, select, save {Klíč API se nepodařilo uložit: Správce přihlašovacích údajů odepřel přístup} other {Uložený klíč API se nepodařilo přečíst: Správce přihlašovacích údajů odepřel přístup}}} other {{op, select, save {Klíč API se nepodařilo uložit: systémová klíčenka odepřela přístup} other {Uložený klíč API se nepodařilo přečíst: systémová klíčenka odepřela přístup}}}}",
   "@ai.secretError.title": {
-    "sourceHash": "2b2ef89"
+    "sourceHash": "25b34c4"
   },
-  "ai.secretError.body": "{platform, select, macos {{op, select, save {Otevřete Klíčenku a zkontrolujte záznam „Cmdr“, nebo ho smažte a zkuste klíč uložit znovu.} other {Otevřete Klíčenku, najděte záznam „Cmdr“ a udělte přístup, nebo záznam smažte a zadejte klíč znovu.}}} windows {{op, select, save {Open Credential Manager, check the “Cmdr” entry under Windows Credentials, or remove it and try saving again.} other {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, or remove it and enter your key again.}}} other {Odemkněte klíčenku (v aplikaci Hesla a klíče nebo podobné) a zkuste to znovu.}}",
+  "ai.secretError.body": "{platform, select, macos {{op, select, save {Otevřete Klíčenku a zkontrolujte záznam „Cmdr“, nebo ho smažte a zkuste klíč uložit znovu.} other {Otevřete Klíčenku, najděte záznam „Cmdr“ a udělte přístup, nebo záznam smažte a zadejte klíč znovu.}}} windows {{op, select, save {Otevřete Správce přihlašovacích údajů a zkontrolujte záznam „Cmdr“ v části Přihlašovací údaje systému Windows, nebo ho odstraňte a zkuste klíč uložit znovu.} other {Otevřete Správce přihlašovacích údajů a najděte záznam „Cmdr“ v části Přihlašovací údaje systému Windows, nebo ho odstraňte a zadejte klíč znovu.}}} other {Odemkněte klíčenku (v aplikaci Hesla a klíče nebo podobné) a zkuste to znovu.}}",
   "@ai.secretError.body": {
-    "sourceHash": "8f1380e"
+    "sourceHash": "d65c5e3"
   },
   "ai.secretError.genericTitle": "{op, select, save {Klíč API se nepodařilo uložit.} other {Uložený klíč API se nepodařilo přečíst.}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "c343e42"
   },
-  "ai.secretError.genericBody": "{platform, select, macos {Zkontrolujte, že je systémová klíčenka dostupná, a zkuste to znovu. Pokud problém přetrvává, restartujte aplikaci.} windows {Check that Credential Manager is available, then try again. If it keeps happening, restart Cmdr.} other {Zkontrolujte, že je systémová klíčenka dostupná, a zkuste to znovu. Pokud problém přetrvává, restartujte aplikaci.}}",
+  "ai.secretError.genericBody": "{platform, select, macos {Zkontrolujte, že je systémová klíčenka dostupná, a zkuste to znovu. Pokud problém přetrvává, restartujte aplikaci.} windows {Zkontrolujte, že je Správce přihlašovacích údajů dostupný, a zkuste to znovu. Pokud se to bude opakovat, restartujte Cmdr.} other {Zkontrolujte, že je systémová klíčenka dostupná, a zkuste to znovu. Pokud problém přetrvává, restartujte aplikaci.}}",
   "@ai.secretError.genericBody": {
-    "sourceHash": "2ee417d"
+    "sourceHash": "9fc0702"
   },
   "ai.secretError.removeTitle": "Uložený klíč API se nepodařilo odstranit.",
   "@ai.secretError.removeTitle": {
     "sourceHash": "5986628"
   },
-  "ai.secretError.removeBody": "{platform, select, macos {Otevřete Klíčenku, najděte záznam „Cmdr“ a smažte ho tam.} windows {Open Credential Manager, find the “Cmdr” entry under Windows Credentials, and remove it there.} other {Odemkněte klíčenku (v aplikaci Hesla a klíče nebo podobné) a zkuste to znovu.}}",
+  "ai.secretError.removeBody": "{platform, select, macos {Otevřete Klíčenku, najděte záznam „Cmdr“ a smažte ho tam.} windows {Otevřete Správce přihlašovacích údajů, v části Přihlašovací údaje systému Windows najděte záznam „Cmdr“ a odstraňte ho tam.} other {Odemkněte klíčenku (v aplikaci Hesla a klíče nebo podobné) a zkuste to znovu.}}",
   "@ai.secretError.removeBody": {
-    "sourceHash": "4e3abe7"
+    "sourceHash": "3a85511"
   },
   "ai.managed.aiOff": "Vaše organizace vypnula AI v Cmdru.",
   "@ai.managed.aiOff": {
@@ -567,9 +567,9 @@
   "@ai.managed.hostNotAllowed": {
     "sourceHash": "845a19f"
   },
-  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Vaše organizace povoluje jen AI, která běží přímo na Macu, a tento Mac ji spustit nedokáže.} windows {Your organization allows only on-device AI, and this PC can’t run it.} other {Your organization allows only on-device AI, and this computer can’t run it.}}",
+  "ai.managed.localOnlyUnsupported": "{platform, select, macos {Vaše organizace povoluje jen AI, která běží přímo na Macu, a tento Mac ji spustit nedokáže.} windows {Vaše organizace povoluje jen AI, která běží přímo na počítači, a tento počítač ji spustit nedokáže.} other {Vaše organizace povoluje jen AI, která běží přímo na počítači, a tento počítač ji spustit nedokáže.}}",
   "@ai.managed.localOnlyUnsupported": {
-    "sourceHash": "b760ca4"
+    "sourceHash": "b468f8f"
   },
   "ai.managed.serviceNotAllowed": "nepovoleno vaší organizací",
   "@ai.managed.serviceNotAllowed": {

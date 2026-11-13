@@ -24,9 +24,9 @@
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "{platform, select, macos {Cmdr 需要「完全取用磁碟」權限才能監視你的「下載項目」資料夾。<settingsLink>開啟「系統設定」</settingsLink>} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "common.downloadsFdaHint": "{platform, select, macos {Cmdr 需要「完全取用磁碟」權限才能監視你的「下載項目」資料夾。<settingsLink>開啟「系統設定」</settingsLink>} other {Cmdr 無法監視你的「下載」資料夾。請確認這個資料夾存在，而且你可以開啟它。}}",
   "@common.downloadsFdaHint": {
-    "sourceHash": "315e1d8"
+    "sourceHash": "b54bf8b"
   },
   "common.sizeUnit.byte": "{count, plural, other {位元組}}",
   "@common.sizeUnit.byte": {

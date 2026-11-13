@@ -7,9 +7,9 @@
   "@adb.connect.openSettings": {
     "sourceHash": "3f94010"
   },
-  "adb.connect.serverUnreachable": "{platform, select, macos {Інструменти Android на цьому Mac не відповіли.} windows {The Android tools on this PC didn’t answer.} other {The Android tools on this computer didn’t answer.}}",
+  "adb.connect.serverUnreachable": "{platform, select, macos {Інструменти Android на цьому Mac не відповіли.} windows {Інструменти Android на цьому ПК не відповіли.} other {Інструменти Android на цьому компʼютері не відповіли.}}",
   "@adb.connect.serverUnreachable": {
-    "sourceHash": "b53716b"
+    "sourceHash": "0b8e427"
   },
   "adb.connect.deviceGone": "Ваш телефон більше не підʼєднано.",
   "@adb.connect.deviceGone": {
@@ -55,9 +55,9 @@
   "@adb.readiness.offline": {
     "sourceHash": "6061885"
   },
-  "adb.readiness.noPermissions": "{platform, select, macos {Цей Mac не може звʼязатися з вашим телефоном через USB. Спробуйте інший кабель або порт.} windows {This PC can’t reach your phone over USB. Try another cable or port.} other {This computer can’t reach your phone over USB. Try another cable or port.}}",
+  "adb.readiness.noPermissions": "{platform, select, macos {Цей Mac не може звʼязатися з вашим телефоном через USB. Спробуйте інший кабель або порт.} windows {Цей ПК не може звʼязатися з вашим телефоном через USB. Спробуйте інший кабель або порт.} other {Цей компʼютер не може звʼязатися з вашим телефоном через USB. Спробуйте інший кабель або порт.}}",
   "@adb.readiness.noPermissions": {
-    "sourceHash": "265d7ed"
+    "sourceHash": "30bcbc3"
   },
   "adb.hint.text": "Потрібна вся файлова система? Увімкніть «Налагодження USB».",
   "@adb.hint.text": {

@@ -9,7 +9,7 @@
   },
   "main.upgradeNudge": "{platform, select, macos {我们新增了入门引导选项。打开 Cmdr > 入门引导… 来查看。} other {我们新增了入门引导选项。打开命令面板并运行入门引导… 来查看。}}",
   "@main.upgradeNudge": {
-    "sourceHash": "439adfd"
+    "sourceHash": "b28cac1"
   },
   "main.dockPinNudge.title": "要把 Cmdr 留在程序坞里吗？",
   "@main.dockPinNudge.title": {
@@ -139,41 +139,41 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{platform, select, windows {{count, plural, one {Exit while an operation is running?} other {Exit while {countText} operations are running?}}} other {{count, plural, other {有 {countText} 项操作仍在进行，要退出吗？}}}}",
+  "main.quit.title": "{platform, select, windows {{count, plural, other {有 {countText} 项操作仍在进行，要退出吗？}}} other {{count, plural, other {有 {countText} 项操作仍在进行，要退出吗？}}}}",
   "@main.quit.title": {
-    "sourceHash": "2671a89"
+    "sourceHash": "a3f024b"
   },
   "main.quit.body": "已经完成的都会保留。正在写入的项目会就此停下，Cmdr 会把写了一半的文件清理掉。",
   "@main.quit.body": {
     "sourceHash": "79a69f9"
   },
-  "main.quit.countdown": "{platform, select, windows {{seconds, plural, one {Closing in {secondsText} second, so a restart or sign-out never waits on Cmdr.} other {Closing in {secondsText} seconds, so a restart or sign-out never waits on Cmdr.}}} other {{seconds, plural, other {将在 {secondsText} 秒后自动退出，这样系统重新启动或退出登录时就不用等 Cmdr。}}}}",
+  "main.quit.countdown": "{platform, select, windows {{seconds, plural, other {将在 {secondsText} 秒后自动关闭，这样系统重新启动或退出登录时就不用等 Cmdr。}}} other {{seconds, plural, other {将在 {secondsText} 秒后自动退出，这样系统重新启动或退出登录时就不用等 Cmdr。}}}}",
   "@main.quit.countdown": {
-    "sourceHash": "a389e0c"
+    "sourceHash": "e220441"
   },
-  "main.quit.countdownAria": "{platform, select, windows {Time until Cmdr closes on its own} other {Cmdr 自动退出前的剩余时间}}",
+  "main.quit.countdownAria": "{platform, select, windows {Cmdr 自动关闭前的剩余时间} other {Cmdr 自动退出前的剩余时间}}",
   "@main.quit.countdownAria": {
-    "sourceHash": "6b0b5c2"
+    "sourceHash": "c9dd122"
   },
   "main.quit.keepWorking": "继续工作",
   "@main.quit.keepWorking": {
     "sourceHash": "5ed03f2"
   },
-  "main.quit.quitNow": "{platform, select, windows {Exit now} other {立即退出}}",
+  "main.quit.quitNow": "{platform, select, windows {立即退出} other {立即退出}}",
   "@main.quit.quitNow": {
-    "sourceHash": "c96bcc8"
+    "sourceHash": "2895d9d"
   },
   "main.quit.operationsHeading": "仍在进行",
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "{platform, select, macos {Cmdr 需要更新版本的 Safari} other {Cmdr needs a newer WebKitGTK}}",
+  "main.oldWebkit.title": "{platform, select, macos {Cmdr 需要更新版本的 Safari} other {Cmdr 需要更新版本的 WebKitGTK}}",
   "@main.oldWebkit.title": {
-    "sourceHash": "03e502b"
+    "sourceHash": "760c868"
   },
-  "main.oldWebkit.body": "{platform, select, macos {Cmdr 的界面需要 Safari 15.4 或更高版本，而这台 Mac 上的版本更旧。打开“软件更新”，安装所有待处理的更新，通常就能解决。} other {Cmdr’s interface needs a newer WebKitGTK than this computer has. Install your system’s pending updates. That should sort it out.}}",
+  "main.oldWebkit.body": "{platform, select, macos {Cmdr 的界面需要 Safari 15.4 或更高版本，而这台 Mac 上的版本更旧。打开“软件更新”，安装所有待处理的更新，通常就能解决。} other {Cmdr 的界面需要比这台电脑上更新的 WebKitGTK。安装系统所有待处理的更新，通常就能解决。}}",
   "@main.oldWebkit.body": {
-    "sourceHash": "a7112ec"
+    "sourceHash": "200e524"
   },
   "main.oldMacos.title": "macOS {version} 上的 Cmdr",
   "@main.oldMacos.title": {

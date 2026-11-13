@@ -188,9 +188,9 @@
   "@operationLog.route.to": {
     "sourceHash": "55b2319"
   },
-  "operationLog.route.fromToTrash": "{platform, select, windows {From {from} to the Recycle Bin} other {De {from} vers la corbeille}}",
+  "operationLog.route.fromToTrash": "{platform, select, windows {De {from} vers la Corbeille} other {De {from} vers la corbeille}}",
   "@operationLog.route.fromToTrash": {
-    "sourceHash": "9eff97f"
+    "sourceHash": "2e133c1"
   },
   "operationLog.route.from": "De : {from}",
   "@operationLog.route.from": {
@@ -256,9 +256,9 @@
   "@operationLog.summary.delete": {
     "sourceHash": "97ec6b7"
   },
-  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {Moved {countText} item to the Recycle Bin} other {Moved {countText} items to the Recycle Bin}}} other {{count, plural, one {{countText} élément placé dans la corbeille} many {{countText} éléments placés dans la corbeille} other {{countText} éléments placés dans la corbeille}}}}",
+  "operationLog.summary.trash": "{platform, select, windows {{count, plural, one {{countText} élément déplacé vers la Corbeille} many {{countText} éléments déplacés vers la Corbeille} other {{countText} éléments déplacés vers la Corbeille}}} other {{count, plural, one {{countText} élément placé dans la corbeille} many {{countText} éléments placés dans la corbeille} other {{countText} éléments placés dans la corbeille}}}}",
   "@operationLog.summary.trash": {
-    "sourceHash": "34b4457"
+    "sourceHash": "2dea5c8"
   },
   "operationLog.summary.rename": "{count, plural, one {{countText} élément renommé} many {{countText} éléments renommés} other {{countText} éléments renommés}}",
   "@operationLog.summary.rename": {
@@ -349,9 +349,9 @@
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "8c0a534"
   },
-  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr closed before this operation finished, so it may not have recorded everything the operation did. Rolling back reaches only what it recorded.} other {Cmdr a quitté avant la fin de cette opération, il n’a donc peut-être pas enregistré tout ce qu’elle a fait. Un retour en arrière ne porte que sur ce que Cmdr a enregistré.}}",
+  "operationLog.rollback.interruptedNotice": "{platform, select, windows {Cmdr s’est fermé avant la fin de cette opération, il n’a donc peut-être pas enregistré tout ce qu’elle a fait. Un retour en arrière ne porte que sur ce que Cmdr a enregistré.} other {Cmdr a quitté avant la fin de cette opération, il n’a donc peut-être pas enregistré tout ce qu’elle a fait. Un retour en arrière ne porte que sur ce que Cmdr a enregistré.}}",
   "@operationLog.rollback.interruptedNotice": {
-    "sourceHash": "642e6fc"
+    "sourceHash": "da924aa"
   },
   "operationLog.rollback.partialRolledBack": "{count, plural, one {{countText} élément est revenu à son état d’origine.} many {{countText} éléments sont revenus à leur état d’origine.} other {{countText} éléments sont revenus à leur état d’origine.}}",
   "@operationLog.rollback.partialRolledBack": {

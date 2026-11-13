@@ -3,9 +3,9 @@
   "@settings.appearance.language.label": {
     "sourceHash": "a4fe652"
   },
-  "settings.appearance.language.description": "{platform, select, macos {選擇 Cmdr 使用的語言。「跟隨系統」會採用你 Mac 的語言。} windows {Choose the language Cmdr uses. “System default” follows your Windows display language.} other {Choose the language Cmdr uses. “System default” follows your system’s language.}}",
+  "settings.appearance.language.description": "{platform, select, macos {選擇 Cmdr 使用的語言。「跟隨系統」會採用你 Mac 的語言。} windows {選擇 Cmdr 使用的語言。「跟隨系統」會採用你的 Windows 顯示語言。} other {選擇 Cmdr 使用的語言。「跟隨系統」會採用你系統的語言。}}",
   "@settings.appearance.language.description": {
-    "sourceHash": "2dd7f63"
+    "sourceHash": "7ca0276"
   },
   "settings.appearance.language.opt.system": "跟隨系統",
   "@settings.appearance.language.opt.system": {
@@ -47,9 +47,9 @@
   "@settings.appearance.appColor.label": {
     "sourceHash": "b1107c8"
   },
-  "settings.appearance.appColor.description": "{platform, select, macos {想更改系統主題色，請到「系統設定 > 外觀」。} windows {To change your system accent color, go to Settings > Personalization > Colors.} other {To change your system accent color, go to your system appearance settings.}}",
+  "settings.appearance.appColor.description": "{platform, select, macos {想更改系統主題色，請到「系統設定 > 外觀」。} windows {想更改系統輔色，請到「設定 > 個人化 > 色彩」。} other {想更改系統輔色，請到你的系統外觀設定。}}",
   "@settings.appearance.appColor.description": {
-    "sourceHash": "7dc4ab7"
+    "sourceHash": "0045d05"
   },
   "settings.appearance.appColor.opt.system": "系統主題色",
   "@settings.appearance.appColor.opt.system": {
@@ -214,9 +214,9 @@
   "@settings.appearance.textSize.label": {
     "sourceHash": "d68761c"
   },
-  "settings.appearance.textSize.description": "{platform, select, macos {縮放整個 App 的文字和介面。與 macOS「輔助使用」的文字大小疊加，其中 100% 表示「與系統大小完全一致」。} other {Scales text and UI throughout the app.}}",
+  "settings.appearance.textSize.description": "{platform, select, macos {縮放整個 App 的文字和介面。與 macOS「輔助使用」的文字大小疊加，其中 100% 表示「與系統大小完全一致」。} other {縮放整個 App 的文字和介面。}}",
   "@settings.appearance.textSize.description": {
-    "sourceHash": "49a0a6b"
+    "sourceHash": "c460c56"
   },
   "settings.appearance.textSize.keywords": "文字, 字體, 字型, 字級, 大小, 放大, 縮小, 縮放, 比例, 輔助使用, 協助工具",
   "@settings.appearance.textSize.keywords": {
@@ -350,9 +350,9 @@
   "@settings.listing.showHiddenFiles.label": {
     "sourceHash": "b5ede7f"
   },
-  "settings.listing.showHiddenFiles.description": "{platform, select, macos {顯示以點開頭的檔案（如 .zshrc）以及系統標記為隱藏的項目。對兩個窗格都生效。} windows {顯示以點開頭的檔案（如 .zshrc）以及系統標記為隱藏的項目。對兩個窗格都生效。} other {Show dotfiles (like .bashrc) and items the system marks as hidden. Applies to both panes.}}",
+  "settings.listing.showHiddenFiles.description": "{platform, select, macos {顯示以點開頭的檔案（如 .zshrc）以及系統標記為隱藏的項目。對兩個窗格都生效。} windows {顯示以點開頭的檔案（如 .zshrc）以及系統標記為隱藏的項目。對兩個窗格都生效。} other {顯示以點開頭的檔案（如 .bashrc）以及系統標記為隱藏的項目。對兩個窗格都生效。}}",
   "@settings.listing.showHiddenFiles.description": {
-    "sourceHash": "8e77c67"
+    "sourceHash": "2526fb4"
   },
   "settings.listing.showHiddenFiles.keywords": "隱藏, 隱藏檔案, 點檔案, 不可見, 系統檔案, 顯示",
   "@settings.listing.showHiddenFiles.keywords": {
@@ -534,17 +534,17 @@
   "@settings.fileOperations.macOnlyFiles.keywords": {
     "sourceHash": "b668774"
   },
-  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {複製、移動和移到垃圾桶時略過確認}}",
+  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {複製、移動和刪除時略過確認} other {複製、移動和移到垃圾桶時略過確認}}",
   "@settings.fileOperations.skipConfirmation.label": {
-    "sourceHash": "6af6546"
+    "sourceHash": "f1b1b39"
   },
   "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {「複製」和「移動」會立刻把檔案放到另一個窗格，「刪除」會直接移到資源回收筒，不會先問你。這樣有點冒險，因為按一個鍵就馬上執行。永久刪除一定會先問你。} other {「複製」和「移動」會立刻把檔案放到另一個窗格，「刪除」會直接移到垃圾桶，不會先問你。這樣有點冒險，因為按一個鍵就馬上執行。永久刪除一定會先問你。}}",
   "@settings.fileOperations.skipConfirmation.explanation": {
     "sourceHash": "564f000"
   },
-  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {確認, 確認對話框, 對話方塊, 詢問, 複製, 移動, 垃圾桶, 刪除, 略過, 跳過, 點擊}}",
+  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {確認, 確認對話框, 對話方塊, 詢問, 複製, 移動, 資源回收筒, 回收筒, 刪除, 略過, 跳過, 點擊} other {確認, 確認對話框, 對話方塊, 詢問, 複製, 移動, 垃圾桶, 刪除, 略過, 跳過, 點擊}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
-    "sourceHash": "9f61258"
+    "sourceHash": "8179d90"
   },
   "settings.fileOperations.defaultConflictPolicy.label": "檔案已經存在時",
   "@settings.fileOperations.defaultConflictPolicy.label": {
@@ -566,9 +566,9 @@
   "@settings.fileOperations.keepProgressOpenWhenDone.description": {
     "sourceHash": "005448f"
   },
-  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, recycle bin} other {進度, 完成, 做完, 結束, 摘要, 總結, 結果, 報告, 統計, 留著, 不關, 保留, 視窗, 對話方塊, 複製, 移動, 刪除, 垃圾桶}}",
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {進度, 完成, 做完, 結束, 摘要, 總結, 結果, 報告, 統計, 留著, 不關, 保留, 視窗, 對話方塊, 複製, 移動, 刪除, 資源回收筒, 回收筒} other {進度, 完成, 做完, 結束, 摘要, 總結, 結果, 報告, 統計, 留著, 不關, 保留, 視窗, 對話方塊, 複製, 移動, 刪除, 垃圾桶}}",
   "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
-    "sourceHash": "978b2ff"
+    "sourceHash": "1f64fb0"
   },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "全部略過",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
@@ -1078,10 +1078,10 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {系統}}",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "sourceHash": "aed6b7a",
-    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list). Its sibling options (App 內, 兩者都用, 都不用) ARE translated."
+    "sourceHash": "24dac61",
+    "sameAsSourceJustification": "The macos and windows branches are the OS brand names macOS and Windows, kept verbatim in every language."
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "兩者都用",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
@@ -1155,18 +1155,18 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
     "sourceHash": "911b74b"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {當你的啟動磁碟可用空間不足時，要如何向你發出警告。} windows {How to warn you when your system drive runs low on free space.} other {How to warn you when your system disk runs low on free space.}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {當你的啟動磁碟可用空間不足時，要如何向你發出警告。} windows {當你的系統磁碟機可用空間不足時，要如何向你發出警告。} other {當你的系統磁碟可用空間不足時，要如何向你發出警告。}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
-    "sourceHash": "32b852d"
+    "sourceHash": "07714d7"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "App 內",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {系統}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "sourceHash": "aed6b7a",
-    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list). Its sibling options (App 內, 關閉) ARE translated."
+    "sourceHash": "24dac61",
+    "sameAsSourceJustification": "The macos and windows branches are the OS brand names macOS and Windows, kept verbatim in every language."
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "關閉",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
@@ -1180,9 +1180,9 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "sourceHash": "fd1382f"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {當可用空間低於啟動磁碟的這個百分比時發出警告。} windows {Warn when free space drops below this percent of your system drive.} other {Warn when free space drops below this percent of your system disk.}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {當可用空間低於啟動磁碟的這個百分比時發出警告。} windows {當可用空間低於系統磁碟機的這個百分比時發出警告。} other {當可用空間低於系統磁碟的這個百分比時發出警告。}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
-    "sourceHash": "9ed41b8"
+    "sourceHash": "b4d0378"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "磁碟, 空間, 閾值, 門檻, 百分比, 不足, 可用空間, 警告",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
@@ -1192,9 +1192,9 @@
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "{platform, select, windows {Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or select the run button to search.} other {在你輸入時自動執行檔名和正規表示式搜尋（停止輸入 1 秒後）。AI 搜尋因為會產生費用，所以總是等你按 Enter 鍵。關閉時，按 Enter 鍵或按一下執行按鈕來搜尋。}}",
+  "settings.search.autoApply.description": "{platform, select, windows {在你輸入時自動執行檔名和正規表示式搜尋（停止輸入 1 秒後）。AI 搜尋因為會產生費用，所以總是等你按 Enter 鍵。關閉時，按 Enter 鍵或選取執行按鈕來搜尋。} other {在你輸入時自動執行檔名和正規表示式搜尋（停止輸入 1 秒後）。AI 搜尋因為會產生費用，所以總是等你按 Enter 鍵。關閉時，按 Enter 鍵或按一下執行按鈕來搜尋。}}",
   "@settings.search.autoApply.description": {
-    "sourceHash": "19fcaf7"
+    "sourceHash": "b0f85fd"
   },
   "settings.search.autoApply.keywords": "搜尋, 自動, 套用, 即時, 立即, 去抖動, 防抖動, 檔名",
   "@settings.search.autoApply.keywords": {
@@ -1292,13 +1292,13 @@
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
   },
-  "settings.network.enabled.label": "{platform, select, windows {Turn on networking} other {啟用網路功能}}",
+  "settings.network.enabled.label": "{platform, select, windows {開啟網路功能} other {啟用網路功能}}",
   "@settings.network.enabled.label": {
-    "sourceHash": "10f5de9"
+    "sourceHash": "ecb8b03"
   },
-  "settings.network.enabled.description": "{platform, select, macos {在你的區域網路上探索 SMB 伺服器並連接它們。關閉時，Cmdr 仍可在已裝載的共享上讀寫檔案，但不會向 macOS 要求區域網路的存取權。} windows {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, and Windows won’t ask to let Cmdr through the firewall.} other {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares.}}",
+  "settings.network.enabled.description": "{platform, select, macos {在你的區域網路上探索 SMB 伺服器並連接它們。關閉時，Cmdr 仍可在已裝載的共享上讀寫檔案，但不會向 macOS 要求區域網路的存取權。} windows {在你的區域網路上探索 SMB 伺服器並連接它們。關閉時，Cmdr 仍可在已掛接的共享上讀寫檔案，而且 Windows 不會詢問是否讓 Cmdr 通過防火牆。} other {在你的區域網路上探索 SMB 伺服器並連接它們。關閉時，Cmdr 仍可在已掛載的共享上讀寫檔案。}}",
   "@settings.network.enabled.description": {
-    "sourceHash": "72a0854"
+    "sourceHash": "6994272"
   },
   "settings.network.enabled.keywords": "網路, 啟用, 已啟用, 探索, 區域網路, 本機, 權限",
   "@settings.network.enabled.keywords": {
@@ -1320,9 +1320,9 @@
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "{platform, select, macos {啟用後，Cmdr 會與 SMB 共享建立直接連線，讓檔案操作更快。系統裝載仍會保留，供 Finder 和其他 App 使用。} windows {When this is on, Cmdr establishes a direct connection to SMB shares for faster file operations. The system connection stays for File Explorer and other apps.} other {When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for your file manager and other apps.}}",
+  "settings.network.directSmbConnection.description": "{platform, select, macos {啟用後，Cmdr 會與 SMB 共享建立直接連線，讓檔案操作更快。系統裝載仍會保留，供 Finder 和其他 App 使用。} windows {開啟後，Cmdr 會與 SMB 共享建立直接連線，讓檔案操作更快。系統連線仍會保留，供檔案總管和其他 App 使用。} other {啟用後，Cmdr 會與 SMB 共享建立直接連線，讓檔案操作更快。系統掛載仍會保留，供你的檔案管理程式和其他 App 使用。}}",
   "@settings.network.directSmbConnection.description": {
-    "sourceHash": "44a5a6d"
+    "sourceHash": "429c68c"
   },
   "settings.network.directSmbConnection.keywords": "直接, 快速, 連線, 網路, 效能, 速度",
   "@settings.network.directSmbConnection.keywords": {
@@ -1332,9 +1332,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr 會加密自己建立的 SMB 共享資料夾連線，即使伺服器沒有要求也一樣，而且不會開啟連線無法加密的共享資料夾，包括你的 Mac 在沒有加密的情況下連上的共享資料夾。以訪客身分連線時無法加密，所以你需要登入。Cmdr 已經開著的連線會維持原樣，直到重新連線。} windows {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your PC connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.} other {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your computer connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.}}",
+  "settings.network.requireSmbEncryption.description": "{platform, select, macos {Cmdr 會加密自己建立的 SMB 共享資料夾連線，即使伺服器沒有要求也一樣，而且不會開啟連線無法加密的共享資料夾，包括你的 Mac 在沒有加密的情況下連上的共享資料夾。以訪客身分連線時無法加密，所以你需要登入。Cmdr 已經開著的連線會維持原樣，直到重新連線。} windows {Cmdr 會加密自己建立的 SMB 共享資料夾連線，即使伺服器沒有要求也一樣，而且不會開啟連線無法加密的共享資料夾，包括你的電腦在沒有加密的情況下連上的共享資料夾。以訪客身分連線時無法加密，所以你需要登入。Cmdr 已經開著的連線會維持原樣，直到重新連線。} other {Cmdr 會加密自己建立的 SMB 共享資料夾連線，即使伺服器沒有要求也一樣，而且不會開啟連線無法加密的共享資料夾，包括你的電腦在沒有加密的情況下連上的共享資料夾。以訪客身分連線時無法加密，所以你需要登入。Cmdr 已經開著的連線會維持原樣，直到重新連線。}}",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "8c27a6c"
+    "sourceHash": "26291fe"
   },
   "settings.network.requireSmbEncryption.keywords": "安全性, 安全, 隱私, 保護, 保密, 加密連線, 強制加密",
   "@settings.network.requireSmbEncryption.keywords": {
@@ -1444,9 +1444,9 @@
   "@settings.fileOperations.adbEnabled.label": {
     "sourceHash": "3651356"
   },
-  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {只要 Android 手機開啟了「USB 偵錯」，你就能存取它的整個檔案系統，包括 MTP 無法顯示的部分。這需要在這部 Mac 上安裝 Android 平台工具（也就是 adb 指令）。就算你沒安裝任何 Android 工具，開著這一項也不會有任何代價。} windows {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this PC. Leaving this on costs nothing if you have no Android tooling installed.} other {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this computer. Leaving this on costs nothing if you have no Android tooling installed.}}",
+  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {只要 Android 手機開啟了「USB 偵錯」，你就能存取它的整個檔案系統，包括 MTP 無法顯示的部分。這需要在這部 Mac 上安裝 Android 平台工具（也就是 adb 指令）。就算你沒安裝任何 Android 工具，開著這一項也不會有任何代價。} windows {只要 Android 手機開啟了「USB 偵錯」，你就能存取它的整個檔案系統，包括 MTP 無法顯示的部分。這需要在這台電腦上安裝 Android 平台工具（也就是 adb 指令）。就算你沒安裝任何 Android 工具，開著這一項也不會有任何代價。} other {只要 Android 手機開啟了「USB 偵錯」，你就能存取它的整個檔案系統，包括 MTP 無法顯示的部分。這需要在這台電腦上安裝 Android 平台工具（也就是 adb 指令）。就算你沒安裝任何 Android 工具，開著這一項也不會有任何代價。}}",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "a89c957"
+    "sourceHash": "4c92b52"
   },
   "settings.fileOperations.adbEnabled.keywords": "USB 偵錯, 偵錯, 開發人員選項, 手機, 裝置",
   "@settings.fileOperations.adbEnabled.keywords": {
@@ -1456,9 +1456,9 @@
   "@settings.fileOperations.adbBinaryPath.label": {
     "sourceHash": "a67fbbd"
   },
-  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {留空的話，Cmdr 會用一般的方式尋找 adb，包括 Android SDK 和 Homebrew 的安裝位置。如果你把平台工具放在別的地方，就在這裡填上它的路徑。} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
+  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {留空的話，Cmdr 會用一般的方式尋找 adb，包括 Android SDK 和 Homebrew 的安裝位置。如果你把平台工具放在別的地方，就在這裡填上它的路徑。} other {留空的話，Cmdr 會用一般的方式尋找 adb，包括 Android SDK 和你的 PATH。如果你把平台工具放在別的地方，就在這裡填上它的路徑。}}",
   "@settings.fileOperations.adbBinaryPath.description": {
-    "sourceHash": "940ff29"
+    "sourceHash": "e8cde17"
   },
   "settings.fileOperations.adbBinaryPath.keywords": "路徑, 執行檔, 二進位檔, 位置",
   "@settings.fileOperations.adbBinaryPath.keywords": {
@@ -1536,9 +1536,9 @@
   "@settings.viewer.showTextCursor.keywords": {
     "sourceHash": "1214804"
   },
-  "settings.developer.mcpEnabled.label": "{platform, select, windows {Turn on MCP server} other {啟用 MCP 伺服器}}",
+  "settings.developer.mcpEnabled.label": "{platform, select, windows {開啟 MCP 伺服器} other {啟用 MCP 伺服器}}",
   "@settings.developer.mcpEnabled.label": {
-    "sourceHash": "32b62ff"
+    "sourceHash": "a2e166c"
   },
   "settings.developer.mcpEnabled.description": "啟動一個 Model Context Protocol 伺服器，以整合 AI 助理。",
   "@settings.developer.mcpEnabled.description": {
@@ -1616,9 +1616,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "{platform, select, windows {Please turn this on to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats.} other {請開啟這一項，幫助我們在公開測試期間了解哪些功能重要。\n統計不會關聯到你的姓名或電子郵件，而是關聯到一個隨機識別碼。\nCmdr 絕不會傳送檔名、路徑、搜尋字詞或提示詞。\n關閉後，Cmdr 不會傳送任何統計。}}",
+  "settings.analytics.enabled.description": "{platform, select, windows {請開啟這一項，幫助我們在公開測試期間了解哪些功能重要。\n統計不會關聯到你的姓名或電子郵件，而是關聯到一個隨機識別碼。\nCmdr 絕不會傳送檔名、路徑、搜尋字詞或提示詞。\n關閉後，Cmdr 不會傳送任何統計。} other {請開啟這一項，幫助我們在公開測試期間了解哪些功能重要。\n統計不會關聯到你的姓名或電子郵件，而是關聯到一個隨機識別碼。\nCmdr 絕不會傳送檔名、路徑、搜尋字詞或提示詞。\n關閉後，Cmdr 不會傳送任何統計。}}",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "f5534ee"
+    "sourceHash": "2527a03"
   },
   "settings.analytics.enabled.keywords": "分析, 使用情況, 使用統計, 統計, 隱私, 遙測, 測試版, 追蹤, 停用",
   "@settings.analytics.enabled.keywords": {
@@ -1640,9 +1640,9 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "{platform, select, macos {當 Cmdr 當機或在背景遇到問題時，自動傳送一份報告。內含 App 版本、macOS 版本，以及程式碼中出問題的位置。絕不含檔名或個人資料。} windows {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Windows version, and where in the code the problem happened. Never file names or personal data.} other {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Linux distribution and version, and where in the code the problem happened. Never file names or personal data.}}",
+  "settings.updates.crashReports.description": "{platform, select, macos {當 Cmdr 當機或在背景遇到問題時，自動傳送一份報告。內含 App 版本、macOS 版本，以及程式碼中出問題的位置。絕不含檔名或個人資料。} windows {當 Cmdr 當機或在背景遇到問題時，自動傳送一份報告。內含 App 版本、Windows 版本，以及程式碼中出問題的位置。絕不含檔名或個人資料。} other {當 Cmdr 當機或在背景遇到問題時，自動傳送一份報告。內含 App 版本、Linux 發行版和版本，以及程式碼中出問題的位置。絕不含檔名或個人資料。}}",
   "@settings.updates.crashReports.description": {
-    "sourceHash": "e726766"
+    "sourceHash": "abfdc61"
   },
   "settings.updates.crashReports.keywords": "當機, 崩潰, 閃退, 報告, 隱私, 遙測, 錯誤, 臭蟲, 問題",
   "@settings.updates.crashReports.keywords": {
@@ -1736,9 +1736,9 @@
   "@settings.advanced.indexPauseFreeSpacePercent.label": {
     "sourceHash": "c6fe418"
   },
-  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {當啟動磁碟的可用空間低於這個百分比時，Cmdr 會暫停磁碟機索引，以免索引佔用你自己的檔案需要的空間。可用空間回升到比它高一個百分點後，索引會從中斷的地方繼續。無論「磁碟空間不足警告」是否開啟，這個設定都有效。} windows {Cmdr pauses drive indexing when free space on your system drive drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} other {Cmdr pauses drive indexing when free space on your system disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.}}",
+  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {當啟動磁碟的可用空間低於這個百分比時，Cmdr 會暫停磁碟機索引，以免索引佔用你自己的檔案需要的空間。可用空間回升到比它高一個百分點後，索引會從中斷的地方繼續。無論「磁碟空間不足警告」是否開啟，這個設定都有效。} windows {當系統磁碟機的可用空間低於這個百分比時，Cmdr 會暫停磁碟機索引，以免索引佔用你自己的檔案需要的空間。可用空間回升到比它高一個百分點後，索引會從中斷的地方繼續。無論「磁碟空間不足警告」是否開啟，這個設定都有效。} other {當系統磁碟的可用空間低於這個百分比時，Cmdr 會暫停磁碟機索引，以免索引佔用你自己的檔案需要的空間。可用空間回升到比它高一個百分點後，索引會從中斷的地方繼續。無論「磁碟空間不足警告」是否開啟，這個設定都有效。}}",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "4ee1cce"
+    "sourceHash": "bb41d41"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "磁碟, 空間, 已滿, 可用空間, 索引, 暫停, 儲存空間, 閾值, 門檻, 百分比, 不足",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
@@ -1800,9 +1800,9 @@
   "@settings.fileOperations.showAlreadyGoneToast.label": {
     "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or select “Never show this again” in the notice) to stop these notices.} other {如果你刪除的東西已經被其他 App 移走或刪除，Cmdr 會當作完成，並顯示一則簡短的提示。關閉這個選項（或在提示裡按一下「不要再顯示」），就能停止顯示這類提示。}}",
+  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {如果你刪除的東西已經被其他 App 移走或刪除，Cmdr 會當作完成，並顯示一則簡短的提示。關閉這個選項（或在提示裡選取「不要再顯示」），就能停止顯示這類提示。} other {如果你刪除的東西已經被其他 App 移走或刪除，Cmdr 會當作完成，並顯示一則簡短的提示。關閉這個選項（或在提示裡按一下「不要再顯示」），就能停止顯示這類提示。}}",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "9655e46"
+    "sourceHash": "72a3ead"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "消失, 不見了, 找不到, 移走, 通知, 提示, 彈出",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -1980,9 +1980,9 @@
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"
   },
-  "settings.advanced.logLlmCalls.description": "{platform, select, macos {為了方便除錯，把每次 AI 請求和回應存到本機資料夾（llm-logs）中。這些檔案會留在你的 Mac 上，其中包含 Cmdr 傳送給你的提供者的檔名和路徑。} windows {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your PC and include the file names and paths Cmdr sends to your provider.} other {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your computer and include the file names and paths Cmdr sends to your provider.}}",
+  "settings.advanced.logLlmCalls.description": "{platform, select, macos {為了方便除錯，把每次 AI 請求和回應存到本機資料夾（llm-logs）中。這些檔案會留在你的 Mac 上，其中包含 Cmdr 傳送給你的提供者的檔名和路徑。} windows {為了方便除錯，把每次 AI 請求和回應存到本機資料夾（llm-logs）中。這些檔案會留在你的電腦上，其中包含 Cmdr 傳送給你的提供者的檔名和路徑。} other {為了方便除錯，把每次 AI 請求和回應存到本機資料夾（llm-logs）中。這些檔案會留在你的電腦上，其中包含 Cmdr 傳送給你的提供者的檔名和路徑。}}",
   "@settings.advanced.logLlmCalls.description": {
-    "sourceHash": "86b3d34"
+    "sourceHash": "0f9361b"
   },
   "settings.advanced.logLlmCalls.keywords": "人工智慧, 記錄, 日誌, 偵錯, 請求, 要求, 回應, 提示詞",
   "@settings.advanced.logLlmCalls.keywords": {
@@ -1992,9 +1992,9 @@
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
   },
-  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {透過 Bonjour 解析網路服務的逾時。} other {Timeout for resolving network services found on your local network (mDNS).}}",
+  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {透過 Bonjour 解析網路服務的逾時。} other {解析在區域網路上找到的網路服務（mDNS）的逾時。}}",
   "@settings.advanced.serviceResolveTimeout.description": {
-    "sourceHash": "5cf231d"
+    "sourceHash": "cb44fa3"
   },
   "settings.advanced.serviceResolveTimeout.keywords": "解析, 逾時, 超時, 服務, 服務探索, 網路探索, 探索, 查詢, 區域網路, 本地網路, 等待",
   "@settings.advanced.serviceResolveTimeout.keywords": {
@@ -2764,9 +2764,9 @@
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "{platform, select, windows {Turn on networking, direct SMB connections, share cache, and timeouts.} other {啟用網路功能、直接 SMB 連線、共享快取和逾時。}}",
+  "settings.summary.smbNetworkShares": "{platform, select, windows {開啟網路功能、直接 SMB 連線、共享快取和逾時。} other {啟用網路功能、直接 SMB 連線、共享快取和逾時。}}",
   "@settings.summary.smbNetworkShares": {
-    "sourceHash": "10604ac"
+    "sourceHash": "47e037d"
   },
   "settings.summary.servers": "你已信任的 SSH 主機金鑰。",
   "@settings.summary.servers": {
@@ -2941,18 +2941,18 @@
   "@settings.sidebar.matchCount": {
     "sourceHash": "fb95dc1"
   },
-  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {開啟「系統設定」以更改系統主題色} windows {Open Windows Settings to change the system accent color} other {Open your system settings to change the system accent color}}",
+  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {開啟「系統設定」以更改系統主題色} windows {開啟「Windows 設定」以更改系統輔色} other {開啟你的系統設定以更改系統輔色}}",
   "@settings.appearance.themeColorSwatchAria": {
-    "sourceHash": "4cad022"
+    "sourceHash": "b76cab4"
   },
-  "settings.appearance.appColorHintPrefix": "{platform, select, macos {若要更改系統主題色，請前往} other {To change your system accent color, go to}}",
+  "settings.appearance.appColorHintPrefix": "{platform, select, macos {若要更改系統主題色，請前往} other {若要更改系統輔色，請前往}}",
   "@settings.appearance.appColorHintPrefix": {
-    "sourceHash": "748470a"
+    "sourceHash": "f06932f"
   },
-  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {你的系統外觀設定}}",
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {設定 > 個人化 > 色彩} other {你的系統外觀設定}}",
   "@settings.appearance.appColorHintLink": {
-    "sourceHash": "5c94206",
-    "sameAsSourceJustification": "“{systemSettings} > {appearance}”: a System Settings navigation path built from two OS-localised macOS-label tokens joined by “ > ”. The tokens are filled in by macOS itself (系統設定, 外觀 in Traditional Chinese), so the string carries no translatable text of its own."
+    "sourceHash": "551a3a4",
+    "sameAsSourceJustification": "The macos branch is two OS-supplied placeholders and the > path separator, with no translatable text."
   },
   "settings.appearance.datePreviewLabel": "預覽：",
   "@settings.appearance.datePreviewLabel": {
@@ -3187,17 +3187,17 @@
   "@settings.securityLog.enabled.label": {
     "sourceHash": "9f5e32e"
   },
-  "settings.securityLog.enabled.description": "{platform, select, macos {在這部 Mac 上保留一個小檔案，記下與安全性相關的變更和拒絕，例如雲端 AI 的同意、安裝的更新，或被 MCP 伺服器拒絕的 App。這個檔案不含檔名、內容或密碼，也絕不會離開你的 Mac。} windows {Keep a small file on this PC that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your PC.} other {Keep a small file on this computer that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your computer.}}",
+  "settings.securityLog.enabled.description": "{platform, select, macos {在這部 Mac 上保留一個小檔案，記下與安全性相關的變更和拒絕，例如雲端 AI 的同意、安裝的更新，或被 MCP 伺服器拒絕的 App。這個檔案不含檔名、內容或密碼，也絕不會離開你的 Mac。} windows {在這台電腦上保留一個小檔案，記下與安全性相關的變更和拒絕，例如雲端 AI 的同意、安裝的更新，或被 MCP 伺服器拒絕的 App。這個檔案不含檔名、內容或密碼，也絕不會離開你的電腦。} other {在這台電腦上保留一個小檔案，記下與安全性相關的變更和拒絕，例如雲端 AI 的同意、安裝的更新，或被 MCP 伺服器拒絕的 App。這個檔案不含檔名、內容或密碼，也絕不會離開你的電腦。}}",
   "@settings.securityLog.enabled.description": {
-    "sourceHash": "11361eb"
+    "sourceHash": "c0d2160"
   },
   "settings.securityLog.enabled.keywords": "安全性, 安全, 記錄, 日誌, 稽核, 事件, 存取, 隱私",
   "@settings.securityLog.enabled.keywords": {
     "sourceHash": "6f113c0"
   },
-  "settings.securityLog.showInFinder": "{platform, select, macos {在 Finder 中顯示} windows {Show in File Explorer} other {Show in file manager}}",
+  "settings.securityLog.showInFinder": "{platform, select, macos {在 Finder 中顯示} windows {在檔案總管中顯示} other {在檔案管理程式中顯示}}",
   "@settings.securityLog.showInFinder": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "settings.updates.showSecurityLog.keywords": "安全性, 記錄, 日誌, 稽核, 事件, 檔案, 開啟, 顯示, 資料夾, 位置",
   "@settings.updates.showSecurityLog.keywords": {
@@ -3261,9 +3261,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "14adb30"
   },
-  "settings.updates.emailPrivacyNote": "{platform, select, macos {只會存在你的 Mac 上。我們絕不會把它和你的使用統計一起傳送，所以那些統計無法被關聯到你本人。它只用來聯絡你，以及在你傳送報告時選擇性地附上。如果不想再收到電子郵件，請使用我們任何一封信裡的取消訂閱連結。} windows {Stored only on your PC. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.} other {Stored only on your computer. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.}}",
+  "settings.updates.emailPrivacyNote": "{platform, select, macos {只會存在你的 Mac 上。我們絕不會把它和你的使用統計一起傳送，所以那些統計無法被關聯到你本人。它只用來聯絡你，以及在你傳送報告時選擇性地附上。如果不想再收到電子郵件，請使用我們任何一封信裡的取消訂閱連結。} windows {只會存在你的電腦上。我們絕不會把它和你的使用統計一起傳送，所以那些統計無法被關聯到你本人。它只用來聯絡你，以及在你傳送報告時選擇性地附上。如果不想再收到電子郵件，請使用我們任何一封信裡的取消訂閱連結。} other {只會存在你的電腦上。我們絕不會把它和你的使用統計一起傳送，所以那些統計無法被關聯到你本人。它只用來聯絡你，以及在你傳送報告時選擇性地附上。如果不想再收到電子郵件，請使用我們任何一封信裡的取消訂閱連結。}}",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "cf92795"
+    "sourceHash": "d8146b0"
   },
   "settings.logging.openLogFile": "開啟記錄檔",
   "@settings.logging.openLogFile": {
@@ -3429,13 +3429,13 @@
   "@settings.network.trustedCertificates.keywords": {
     "sourceHash": "554a965"
   },
-  "settings.servers.trustedCertificates.description": "{platform, select, macos {macOS 不信任某個伺服器的憑證時，Cmdr 會先問你，再替你信任它，並把你的回答記在這裡。家用伺服器常常會自己製作憑證。} windows {When Windows doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.} other {When your system doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.}}",
+  "settings.servers.trustedCertificates.description": "{platform, select, macos {macOS 不信任某個伺服器的憑證時，Cmdr 會先問你，再替你信任它，並把你的回答記在這裡。家用伺服器常常會自己製作憑證。} windows {Windows 不信任某個伺服器的憑證時，Cmdr 會先問你，再替你信任它，並把你的回答記在這裡。家用伺服器常常會自己製作憑證。} other {你的系統不信任某個伺服器的憑證時，Cmdr 會先問你，再替你信任它，並把你的回答記在這裡。家用伺服器常常會自己製作憑證。}}",
   "@settings.servers.trustedCertificates.description": {
-    "sourceHash": "0b00c1e"
+    "sourceHash": "9eb44db"
   },
-  "settings.servers.trustedCertificates.empty": "{platform, select, macos {目前還沒有信任任何憑證。連線到 macOS 不信任的 WebDAV 伺服器時，Cmdr 會顯示它的憑證指紋並問你要不要信任。} windows {Nothing trusted yet. When you connect to a WebDAV server Windows doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.} other {Nothing trusted yet. When you connect to a WebDAV server your system doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.}}",
+  "settings.servers.trustedCertificates.empty": "{platform, select, macos {目前還沒有信任任何憑證。連線到 macOS 不信任的 WebDAV 伺服器時，Cmdr 會顯示它的憑證指紋並問你要不要信任。} windows {目前還沒有信任任何憑證。連線到 Windows 不信任的 WebDAV 伺服器時，Cmdr 會顯示它的憑證指紋並問你要不要信任。} other {目前還沒有信任任何憑證。連線到你的系統不信任的 WebDAV 伺服器時，Cmdr 會顯示它的憑證指紋並問你要不要信任。}}",
   "@settings.servers.trustedCertificates.empty": {
-    "sourceHash": "a3c2089"
+    "sourceHash": "da34116"
   },
   "settings.servers.trustedCertificates.confirmTitle": "要忘記這張憑證嗎？",
   "@settings.servers.trustedCertificates.confirmTitle": {
@@ -3525,13 +3525,13 @@
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },
-  "settings.dataWipe.card": "{platform, select, macos {你在這部 Mac 上的資料} windows {Your data on this PC} other {Your data on this computer}}",
+  "settings.dataWipe.card": "{platform, select, macos {你在這部 Mac 上的資料} windows {你在這台電腦上的資料} other {你在這台電腦上的資料}}",
   "@settings.dataWipe.card": {
-    "sourceHash": "e4b3cee"
+    "sourceHash": "3d21fb8"
   },
-  "settings.dataWipe.description": "{platform, select, macos {刪除 Cmdr 存在這部 Mac 上的所有東西：設定、已儲存的密碼、歷史記錄、索引和下載的模型。完成後 Cmdr 會結束。} windows {Delete everything Cmdr keeps on this PC: settings, saved passwords, histories, indexes, and downloaded models. Cmdr closes afterwards.} other {Delete everything Cmdr keeps on this computer: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.}}",
+  "settings.dataWipe.description": "{platform, select, macos {刪除 Cmdr 存在這部 Mac 上的所有東西：設定、已儲存的密碼、歷史記錄、索引和下載的模型。完成後 Cmdr 會結束。} windows {刪除 Cmdr 存在這台電腦上的所有東西：設定、已儲存的密碼、歷史記錄、索引和下載的模型。完成後 Cmdr 會關閉。} other {刪除 Cmdr 存在這台電腦上的所有東西：設定、已儲存的密碼、歷史記錄、索引和下載的模型。完成後 Cmdr 會結束。}}",
   "@settings.dataWipe.description": {
-    "sourceHash": "f1012f4"
+    "sourceHash": "7dc0c1c"
   },
   "settings.dataWipe.button": "刪除所有 Cmdr 資料",
   "@settings.dataWipe.button": {
@@ -3541,17 +3541,17 @@
   "@settings.updates.deleteAllData.keywords": {
     "sourceHash": "0ffb0f6"
   },
-  "settings.dataWipe.title": "{platform, select, macos {要刪除這部 Mac 上所有的 Cmdr 資料嗎？} windows {Delete all Cmdr data on this PC?} other {Delete all Cmdr data on this computer?}}",
+  "settings.dataWipe.title": "{platform, select, macos {要刪除這部 Mac 上所有的 Cmdr 資料嗎？} windows {要刪除這台電腦上所有的 Cmdr 資料嗎？} other {要刪除這台電腦上所有的 Cmdr 資料嗎？}}",
   "@settings.dataWipe.title": {
-    "sourceHash": "35db003"
+    "sourceHash": "63322b8"
   },
-  "settings.dataWipe.intro": "{platform, select, macos {Cmdr 會刪除它存在這部 Mac 上的所有東西，然後結束。這無法還原。} windows {Cmdr deletes everything it keeps on this PC, then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer, then quits. This can’t be undone.}}",
+  "settings.dataWipe.intro": "{platform, select, macos {Cmdr 會刪除它存在這部 Mac 上的所有東西，然後結束。這無法還原。} windows {Cmdr 會刪除它存在這台電腦上的所有東西，然後關閉。這無法還原。} other {Cmdr 會刪除它存在這台電腦上的所有東西，然後結束。這無法還原。}}",
   "@settings.dataWipe.intro": {
-    "sourceHash": "61ed875"
+    "sourceHash": "75dd0c6"
   },
-  "settings.dataWipe.introWithSize": "{platform, select, macos {Cmdr 會刪除它存在這部 Mac 上的所有東西（{sizeText}），然後結束。這無法還原。} windows {Cmdr deletes everything it keeps on this PC ({sizeText}), then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer ({sizeText}), then quits. This can’t be undone.}}",
+  "settings.dataWipe.introWithSize": "{platform, select, macos {Cmdr 會刪除它存在這部 Mac 上的所有東西（{sizeText}），然後結束。這無法還原。} windows {Cmdr 會刪除它存在這台電腦上的所有東西（{sizeText}），然後關閉。這無法還原。} other {Cmdr 會刪除它存在這台電腦上的所有東西（{sizeText}），然後結束。這無法還原。}}",
   "@settings.dataWipe.introWithSize": {
-    "sourceHash": "e5262e8"
+    "sourceHash": "8dacc9c"
   },
   "settings.dataWipe.goesHeading": "會刪除的內容",
   "@settings.dataWipe.goesHeading": {
@@ -3569,13 +3569,13 @@
   "@settings.dataWipe.goes.apiKeys": {
     "sourceHash": "146397c"
   },
-  "settings.dataWipe.goes.license": "{platform, select, macos {這部 Mac 上的授權。要再次啟用，請輸入購買通知信裡的授權碼。} windows {The license on this PC. To activate it again, enter the license key from your purchase email.} other {The license on this computer. To activate it again, enter the license key from your purchase email.}}",
+  "settings.dataWipe.goes.license": "{platform, select, macos {這部 Mac 上的授權。要再次啟用，請輸入購買通知信裡的授權碼。} windows {這台電腦上的授權。要再次啟用，請輸入購買通知信裡的授權碼。} other {這台電腦上的授權。要再次啟用，請輸入購買通知信裡的授權碼。}}",
   "@settings.dataWipe.goes.license": {
-    "sourceHash": "90b5b06"
+    "sourceHash": "12597d5"
   },
-  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {這部 Mac 上的授權，如果你啟用過的話。要再次啟用，請輸入購買通知信裡的授權碼。} windows {The license on this PC, if you activated one. To activate it again, enter the license key from your purchase email.} other {The license on this computer, if you activated one. To activate it again, enter the license key from your purchase email.}}",
+  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {這部 Mac 上的授權，如果你啟用過的話。要再次啟用，請輸入購買通知信裡的授權碼。} windows {這台電腦上的授權，如果你啟用過的話。要再次啟用，請輸入購買通知信裡的授權碼。} other {這台電腦上的授權，如果你啟用過的話。要再次啟用，請輸入購買通知信裡的授權碼。}}",
   "@settings.dataWipe.goes.licenseIfAny": {
-    "sourceHash": "db7f6f2"
+    "sourceHash": "93cc028"
   },
   "settings.dataWipe.goes.askCmdr": "Ask Cmdr 對話，以及 Cmdr 記住的關於你的事",
   "@settings.dataWipe.goes.askCmdr": {
@@ -3617,9 +3617,9 @@
   "@settings.dataWipe.cancel": {
     "sourceHash": "19766ed"
   },
-  "settings.dataWipe.confirm": "{platform, select, windows {Delete all and exit} other {全部刪除並結束}}",
+  "settings.dataWipe.confirm": "{platform, select, windows {全部刪除並結束} other {全部刪除並結束}}",
   "@settings.dataWipe.confirm": {
-    "sourceHash": "5efdab7"
+    "sourceHash": "8b73f1a"
   },
   "settings.dataWipe.deleting": "正在刪除⋯",
   "@settings.dataWipe.deleting": {
@@ -3641,9 +3641,9 @@
   "@settings.dataWipe.doneTitle": {
     "sourceHash": "18aa13d"
   },
-  "settings.dataWipe.doneMessage": "{platform, select, macos {Cmdr 存在這部 Mac 上的所有東西都已經刪除了。如果也想移除 App，請在 Cmdr 結束後把它移到垃圾桶。} windows {Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps after Cmdr closes.} other {Everything Cmdr kept on this computer is gone. To remove the app as well, uninstall it the way you installed it after Cmdr quits.}}",
+  "settings.dataWipe.doneMessage": "{platform, select, macos {Cmdr 存在這部 Mac 上的所有東西都已經刪除了。如果也想移除 App，請在 Cmdr 結束後把它移到垃圾桶。} windows {Cmdr 存在這台電腦上的所有東西都已經刪除了。如果也想移除 App，請在 Cmdr 關閉後，到「設定 > 應用程式」把它解除安裝。} other {Cmdr 存在這台電腦上的所有東西都已經刪除了。如果也想移除 App，請在 Cmdr 結束後，用你當初安裝它的方式把它解除安裝。}}",
   "@settings.dataWipe.doneMessage": {
-    "sourceHash": "a0d09dc"
+    "sourceHash": "a18fa9f"
   },
   "settings.dataWipe.partialTitle": "Cmdr 已刪除大部分的資料",
   "@settings.dataWipe.partialTitle": {
@@ -3653,17 +3653,17 @@
   "@settings.dataWipe.partialMessage": {
     "sourceHash": "24d0b58"
   },
-  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, other {「鑰匙圈存取」中名為「{itemName}」的 {countText} 個項目}}} windows {{count, plural, one {One item in Credential Manager named “{itemName}”} other {{countText} items in Credential Manager named “{itemName}”}}} other {{count, plural, one {One item in your keyring named “{itemName}”} other {{countText} items in your keyring named “{itemName}”}}}}",
+  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, other {「鑰匙圈存取」中名為「{itemName}」的 {countText} 個項目}}} windows {{count, plural, other {「認證管理員」中名為「{itemName}」的 {countText} 個項目}}} other {{count, plural, other {你的鑰匙圈中名為「{itemName}」的 {countText} 個項目}}}}",
   "@settings.dataWipe.leftover.secretItems": {
-    "sourceHash": "91321bb"
+    "sourceHash": "6cf1e9c"
   },
-  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {「鑰匙圈存取」中任何名為「{itemName}」的項目} windows {Any items in Credential Manager named “{itemName}”} other {Any items in your keyring named “{itemName}”}}",
+  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {「鑰匙圈存取」中任何名為「{itemName}」的項目} windows {「認證管理員」中任何名為「{itemName}」的項目} other {你的鑰匙圈中任何名為「{itemName}」的項目}}",
   "@settings.dataWipe.leftover.secretsUnreadable": {
-    "sourceHash": "e3b3312"
+    "sourceHash": "0e9e95b"
   },
-  "settings.dataWipe.quit": "{platform, select, windows {Exit Cmdr} other {結束 Cmdr}}",
+  "settings.dataWipe.quit": "{platform, select, windows {結束 Cmdr} other {結束 Cmdr}}",
   "@settings.dataWipe.quit": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "settings.askCmdr.forgetMemory.keywords": "忘記, 記憶, 清除, 刪除, 記住的事, 隱私",
   "@settings.askCmdr.forgetMemory.keywords": {

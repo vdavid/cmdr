@@ -27,9 +27,9 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "3f94010"
   },
-  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {Cmdr nemohl přečíst, které složky měly panely otevřené, takže začínají v domovské složce}}",
+  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr nemohl přečíst, které složky měly panely otevřené, takže začínají v uživatelské složce} other {Cmdr nemohl přečíst, které složky měly panely otevřené, takže začínají v domovské složce}}",
   "@stateRecovery.appStatus.title": {
-    "sourceHash": "521f5eb"
+    "sourceHash": "1f92563"
   },
   "stateRecovery.operationLog.title": "Cmdr nemohl přečíst vaši historii operací, takže historie začíná nanovo",
   "@stateRecovery.operationLog.title": {
@@ -111,17 +111,17 @@
   "@stateRecovery.credentials.title": {
     "sourceHash": "e4821b8"
   },
-  "stateRecovery.credentials.body": "{platform, select, windows {This happens after a move to a new PC. Cmdr asks for each password again the next time it needs it.} other {To se stává po přechodu na nový počítač. Cmdr se na každé heslo znovu zeptá, až ho bude příště potřebovat.}}",
+  "stateRecovery.credentials.body": "{platform, select, windows {To se stává po přechodu na nový počítač. Cmdr se na každé heslo znovu zeptá, až ho bude příště potřebovat.} other {To se stává po přechodu na nový počítač. Cmdr se na každé heslo znovu zeptá, až ho bude příště potřebovat.}}",
   "@stateRecovery.credentials.body": {
-    "sourceHash": "afac266"
+    "sourceHash": "c89f267"
   },
   "stateRecovery.keptCopy": "Cmdr ponechal starý soubor na cestě {path}.",
   "@stateRecovery.keptCopy": {
     "sourceHash": "634e87d"
   },
-  "stateRecovery.showInFinder": "{platform, select, macos {Zobrazit ve Finderu} windows {Show in File Explorer} other {Show in file manager}}",
+  "stateRecovery.showInFinder": "{platform, select, macos {Zobrazit ve Finderu} windows {Zobrazit v Průzkumníku souborů} other {Zobrazit ve správci souborů}}",
   "@stateRecovery.showInFinder": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "stateRecovery.dismiss": "Zavřít",
   "@stateRecovery.dismiss": {

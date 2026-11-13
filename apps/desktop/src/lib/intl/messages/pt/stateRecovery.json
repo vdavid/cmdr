@@ -27,9 +27,9 @@
   "@stateRecovery.license.openSettings": {
     "sourceHash": "3f94010"
   },
-  "stateRecovery.appStatus.title": "{platform, select, windows {Cmdr couldn’t read which folders your panes had open, so they start at your user folder} other {O Cmdr não conseguiu ler quais pastas estavam abertas nos seus painéis, então os painéis abrem na sua pasta pessoal}}",
+  "stateRecovery.appStatus.title": "{platform, select, windows {O Cmdr não conseguiu ler quais pastas estavam abertas nos seus painéis, então os painéis abrem na sua pasta de usuário} other {O Cmdr não conseguiu ler quais pastas estavam abertas nos seus painéis, então os painéis abrem na sua pasta pessoal}}",
   "@stateRecovery.appStatus.title": {
-    "sourceHash": "521f5eb"
+    "sourceHash": "1f92563"
   },
   "stateRecovery.operationLog.title": "O Cmdr não conseguiu ler seu Registro de operações, então o registro começa do zero",
   "@stateRecovery.operationLog.title": {
@@ -111,17 +111,17 @@
   "@stateRecovery.credentials.title": {
     "sourceHash": "e4821b8"
   },
-  "stateRecovery.credentials.body": "{platform, select, windows {This happens after a move to a new PC. Cmdr asks for each password again the next time it needs it.} other {Isso acontece depois de mudar para um computador novo. O Cmdr vai pedir cada senha de novo na próxima vez que precisar dela.}}",
+  "stateRecovery.credentials.body": "{platform, select, windows {Isso acontece depois de mudar para um PC novo. O Cmdr vai pedir cada senha de novo na próxima vez que precisar dela.} other {Isso acontece depois de mudar para um computador novo. O Cmdr vai pedir cada senha de novo na próxima vez que precisar dela.}}",
   "@stateRecovery.credentials.body": {
-    "sourceHash": "afac266"
+    "sourceHash": "c89f267"
   },
   "stateRecovery.keptCopy": "O Cmdr manteve o arquivo antigo em {path}.",
   "@stateRecovery.keptCopy": {
     "sourceHash": "634e87d"
   },
-  "stateRecovery.showInFinder": "{platform, select, macos {Mostrar no Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "stateRecovery.showInFinder": "{platform, select, macos {Mostrar no Finder} windows {Mostrar no Explorador de Arquivos} other {Mostrar no gerenciador de arquivos}}",
   "@stateRecovery.showInFinder": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "stateRecovery.dismiss": "Dispensar",
   "@stateRecovery.dismiss": {

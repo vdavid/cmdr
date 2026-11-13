@@ -172,9 +172,9 @@
   "@errorReporter.bundleSavedToast.dismiss": {
     "sourceHash": "48845bf"
   },
-  "errorReporter.bundleSavedToast.reveal": "{platform, select, macos {Hiển thị trong Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "errorReporter.bundleSavedToast.reveal": "{platform, select, macos {Hiển thị trong Finder} windows {Hiển thị trong File Explorer} other {Hiển thị trong trình quản lý tệp}}",
   "@errorReporter.bundleSavedToast.reveal": {
-    "sourceHash": "cc84938"
+    "sourceHash": "4d7fe91"
   },
   "errorReporter.autoSentToast.title": "Đã gửi báo cáo trục trặc",
   "@errorReporter.autoSentToast.title": {

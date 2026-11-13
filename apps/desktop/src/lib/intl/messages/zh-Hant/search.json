@@ -131,9 +131,9 @@
   "@search.coverage.line.failedRoots": {
     "sourceHash": "36c41ae"
   },
-  "search.coverage.line.denied": "{platform, select, macos {{count, plural, other {macOS 不讓 Cmdr 查看 {countText} 個資料夾裡面，所以結果裡沒有資料夾裡的東西。}}} windows {{count, plural, one {Windows didn’t let Cmdr look inside one folder, so nothing from it is in the results.} other {Windows didn’t let Cmdr look inside {countText} folders, so nothing from them is in the results.}}} other {{count, plural, one {Cmdr didn’t have permission to look inside one folder, so nothing from it is in the results.} other {Cmdr didn’t have permission to look inside {countText} folders, so nothing from them is in the results.}}}}",
+  "search.coverage.line.denied": "{platform, select, macos {{count, plural, other {macOS 不讓 Cmdr 查看 {countText} 個資料夾裡面，所以結果裡沒有資料夾裡的東西。}}} windows {{count, plural, other {Windows 不讓 Cmdr 查看 {countText} 個資料夾裡面，所以結果裡沒有資料夾裡的東西。}}} other {{count, plural, other {Cmdr 沒有權限查看 {countText} 個資料夾裡面，所以結果裡沒有資料夾裡的東西。}}}}",
   "@search.coverage.line.denied": {
-    "sourceHash": "c2b388f"
+    "sourceHash": "9078ca3"
   },
   "search.coverage.line.offLimits": "{count, plural, other {系統不對 Cmdr 開放 {countText} 個資料夾，所以結果裡沒有資料夾裡的東西。}}",
   "@search.coverage.line.offLimits": {

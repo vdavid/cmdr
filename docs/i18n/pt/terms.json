@@ -1092,7 +1092,12 @@
     "exceptions": {
       "settings.indexing.overriddenBadge": "Badge brevity: it renders only under the Indexação de disco toggle, so the short a indexação carries the drive."
     },
-    "decision": "`drive` is always `disco`"
+    "decision": "`drive` is always `disco`",
+    "windows": {
+      "chosen": "unidade",
+      "accept": ["unidades"],
+      "note": "Windows pt-BR names drives unidade (Dispositivos e unidades, Mapear unidade de rede); feminine. Only the windows branch."
+    }
   },
   "duplicate": {
     "chosen": "Duplicar",
@@ -1150,7 +1155,10 @@
       }
     ],
     "confidence": "confirmed",
-    "sources": "shipped pt catalog (driveIndex.menuEnable Ativar indexação…)"
+    "sources": "shipped pt catalog (driveIndex.menuEnable Ativar indexação…)",
+    "exceptions": {
+      "servers.hub.emptyMessage": "Turning on a computer or NAS is physical power, so ligar is right here, as the frozen macOS branch (ligue um Mac) already says."
+    }
   },
   "encoding": {
     "chosen": "codificação",
@@ -1715,7 +1723,11 @@
     "chosen": "item",
     "accept": ["itens"],
     "confidence": "confirmed",
-    "sources": "macOS Finder pt-BR (^0 itens)"
+    "sources": "macOS Finder pt-BR (^0 itens)",
+    "exceptions": {
+      "settings.dataWipe.leftover.secretItems": "Windows branch: Credential Manager calls one saved entry a credencial (Credenciais do Windows), as the @key asks for the store's own word.",
+      "settings.dataWipe.leftover.secretsUnreadable": "Windows branch: Credential Manager calls one saved entry a credencial (Credenciais do Windows), as the @key asks for the store's own word."
+    }
   },
   "just-now": {
     "accept": ["agora", "neste momento"],
@@ -1943,13 +1955,26 @@
     "accept": ["mov", "levad", "leva os", "leva de volta"],
     "forms": "progress Movendo; noun movimentação (Finder MV2_V1 Desfazer Movimentação); a rollback moving files back → levar de volta (Levado de volta), per put-back's three families",
     "confidence": "confirmed",
-    "sources": "macOS Finder pt-BR"
+    "sources": "macOS Finder pt-BR",
+    "exceptions": {
+      "stateRecovery.credentials.body": "Moving to a new computer is changing machines (mudar para), not moving files; matches the frozen other branch."
+    }
   },
   "move-to-trash": {
     "chosen": "Mover para o Lixo",
     "accept": ["para o Lixo"],
     "confidence": "confirmed",
-    "sources": "macOS Finder pt-BR (AL13, N153)"
+    "sources": "macOS Finder pt-BR (AL13, N153)",
+    "windows": {
+      "chosen": "Mover para a Lixeira",
+      "accept": ["para a Lixeira", "na Lixeira"],
+      "note": "Windows' Recycle Bin is a Lixeira (MS pt-BR), feminine."
+    },
+    "other": {
+      "chosen": "Mover para a Lixeira",
+      "accept": ["para a Lixeira", "para o Lixo"],
+      "note": "Linux-only other branches take Lixeira (Nautilus, Thunar, Dolphin pt-BR); an other branch macOS also reads keeps para o Lixo."
+    }
   },
   "name": {
     "chosen": "Nome",
@@ -2000,7 +2025,12 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (disco) + Total Commander pt-BR (discos de rede)",
-    "decision": "`drive` is always `disco`"
+    "decision": "`drive` is always `disco`",
+    "windows": {
+      "chosen": "unidade de rede",
+      "accept": ["unidades de rede"],
+      "note": "Windows pt-BR File Explorer: Mapear unidade de rede, Desconectar unidade de rede."
+    }
   },
   "network-share": {
     "chosen": "compartilhamento",
@@ -2012,7 +2042,11 @@
       }
     ],
     "confidence": "confirmed",
-    "sources": "macOS Finder pt-BR; MS terminology pt-BR; NetAuthAgent"
+    "sources": "macOS Finder pt-BR; MS terminology pt-BR; NetAuthAgent",
+    "exceptions": {
+      "errors.listing.noPermissionErrno.suggestion": "A shared folder here is pasta compartilhada, as the macOS branch already says; compartilhamento would name the SMB share itself.",
+      "errors.listing.permissionDenied.suggestion": "A shared folder here is pasta compartilhada, as the macOS branch already says; compartilhamento would name the SMB share itself."
+    }
   },
   "new-file": {
     "chosen": "Novo arquivo",
@@ -2280,7 +2314,10 @@
     "chosen": "caminho",
     "forms": "full path → caminho completo",
     "confidence": "high",
-    "sources": "macOS Finder pt-BR"
+    "sources": "macOS Finder pt-BR",
+    "exceptions": {
+      "settings.fileOperations.adbBinaryPath.description": "Other branch: PATH is the environment variable's literal name, not the path concept."
+    }
   },
   "pause": {
     "chosen": "Pausar",
@@ -2858,7 +2895,16 @@
       "errors.mount.mountRefused": "A NAS's own admin settings are configurações do servidor; Ajustes is only Cmdr's or Apple's window.",
       "errors.mount.unsupportedProtocol": "A NAS's own admin settings are configurações do servidor; Ajustes is only Cmdr's or Apple's window.",
       "servers.refusal.exportRefused": "The NFS server's own sharing settings are configurações de NFS do servidor; Ajustes is only Cmdr's or Apple's window.",
-      "servers.sheet.s3GcsKeyHelp": "Quotes Google Cloud console’s own pt-BR page, Configurações; Ajustes is only Cmdr’s or Apple’s window."
+      "servers.sheet.s3GcsKeyHelp": "Quotes Google Cloud console’s own pt-BR page, Configurações; Ajustes is only Cmdr’s or Apple’s window.",
+      "errors.listing.networkDown.suggestion": "The windows branch names Windows' own Settings app (Configurações > Rede e Internet, MS pt-BR), and the Linux branch the desktop's settings (GNOME and KDE pt-BR: Configurações); Ajustes stays Cmdr's and Apple's window.",
+      "errors.listing.diskFullErrno.suggestion": "The windows branch names Windows' own Settings app: Configurações > Sistema > Armazenamento (MS pt-BR).",
+      "errors.listing.storageFull.suggestion": "The windows branch names Windows' own Settings app: Configurações > Sistema > Armazenamento (MS pt-BR).",
+      "errors.listing.serverRefused.explanation": "The windows branch means a setting on the PC, which Windows pt-BR calls configuração; the other branch macOS reads keeps ajuste."
+    },
+    "windows": {
+      "chosen": "Configurações",
+      "accept": ["configurações", "Ajustes", "ajuste"],
+      "note": "Windows' own Settings app and its panes (Configurações > Personalização > Cores, Configurações > Aplicativos; MS pt-BR) and a firewall's configurações. Cmdr's own Settings window stays Ajustes in every branch."
     }
   },
   "share-menu": {
@@ -2907,7 +2953,12 @@
     "exceptions": {
       "errors.listing.authRequiredEauth.explanation": "The noun login here is the credential in use (o login atual), as MS pt-BR uses it; the verb stays iniciar a sessão."
     },
-    "decision": "Server pane, sign in, and forget"
+    "decision": "Server pane, sign in, and forget",
+    "windows": {
+      "chosen": "entrar",
+      "accept": ["entrar", "entre", "entra"],
+      "note": "Windows pt-BR sign-in is Entrar."
+    }
   },
   "sign-out": {
     "chosen": "Sessão encerrada",
@@ -3127,7 +3178,12 @@
     "chosen": "Ajustes do Sistema",
     "confidence": "confirmed",
     "sources": "macOS SystemSettings CFBundleName",
-    "note": "Usually a runtime token; never contract a preposition with it (em {system_settings})."
+    "note": "Usually a runtime token; never contract a preposition with it (em {system_settings}).",
+    "other": {
+      "chosen": "ajustes do sistema",
+      "accept": ["ajustes do seu sistema", "ajustes de aparência"],
+      "note": "Linux names no settings app, so the other branch says the system's settings generically, like settings.appearance.appColorHintLink."
+    }
   },
   "system-settings-pane": {
     "chosen": "Geral",
@@ -3151,7 +3207,10 @@
       }
     ],
     "confidence": "high",
-    "sources": "pt-BR convention; Safari pt-BR"
+    "sources": "pt-BR convention; Safari pt-BR",
+    "exceptions": {
+      "errors.listing.resourceBusy.suggestion": "The windows branch names a tab in Windows' Resource Monitor, which Windows pt-BR calls a guia (guia CPU), not a pane tab (aba)."
+    }
   },
   "tag": {
     "chosen": "etiqueta",
@@ -3436,7 +3495,10 @@
     "accept": ["usuários"],
     "forms": "user ID → ID de usuário; group ID → ID de grupo (masculine: o ID, esses IDs)",
     "confidence": "high",
-    "sources": "MS terminology pt-BR (user identifier → identificador de usuário / identificação de usuário; UID); shipped pt catalog (servers.sheet.username Nome de usuário, settings.advanced.warningBanner usuários avançados)"
+    "sources": "MS terminology pt-BR (user identifier → identificador de usuário / identificação de usuário; UID); shipped pt catalog (servers.sheet.username Nome de usuário, settings.advanced.warningBanner usuários avançados)",
+    "exceptions": {
+      "goToPath.dialog.inputPlaceholder": "C:\\Users is a literal example path the user types, not prose about a user; Windows paths keep the English folder name."
+    }
   },
   "username": {
     "chosen": "nome de usuário",
@@ -3877,5 +3939,150 @@
     "forms": "the macOS pane Users & Groups → Usuários e Grupos (keeps Apple’s capitals when named)",
     "confidence": "high",
     "sources": "macOS 27 live bundle UsersGroups.appex InfoPlist.loctable pt_BR CFBundleDisplayName “Usuários e Grupos”"
+  },
+  "file-explorer": {
+    "chosen": "Explorador de Arquivos",
+    "confidence": "high",
+    "sources": "Microsoft terminology pt-BR (File Explorer → Explorador de Arquivos; Windows Explorer is the older entry)",
+    "note": "Windows-only name; Microsoft capitalizes it. Masculine: no Explorador de Arquivos."
+  },
+  "file-manager": {
+    "chosen": "gerenciador de arquivos",
+    "confidence": "high",
+    "sources": "Thunar and Dolphin pt-BR (File Manager → Gerenciador de arquivos); MS pt-BR (file manager → gerenciador de arquivos); catalog commands.fileShowInFileManager.label"
+  },
+  "powershell": {
+    "chosen": "PowerShell",
+    "confidence": "confirmed",
+    "sources": "Microsoft keeps PowerShell in English in every locale",
+    "note": "Masculine: no PowerShell."
+  },
+  "user-folder": {
+    "chosen": "pasta de usuário",
+    "confidence": "tentative",
+    "sources": "no TBX entry; Windows pt-BR names C:\\Users as Usuários and Microsoft pt-BR docs say pasta de usuário for a profile folder",
+    "note": "Windows branch counterpart of pasta pessoal."
+  },
+  "internet": {
+    "chosen": "internet",
+    "confidence": "high",
+    "sources": "catalog licensing.error.networkHint (conexão com a internet); MS pt-BR Settings section Network & Internet → Rede e Internet"
+  },
+  "metadata": {
+    "chosen": "metadados",
+    "confidence": "high",
+    "sources": "MS pt-BR (metadata → metadados); Nautilus pt-BR (Metadata → Metadados)"
+  },
+  "software": {
+    "chosen": "software",
+    "accept": ["hardware"],
+    "confidence": "high",
+    "sources": "catalog errors.listing.connectionRefused.explanation (o software do servidor); MS pt-BR keeps software",
+    "note": "accept hardware: the concept's English also matches hardware, which pt keeps as hardware.",
+    "exceptions": {
+      "settings.network.smbConcurrency.description": "The hit is home NAS hardware; the pt sentence drops the word (O padrão de 10 é seguro para a maioria dos NAS domésticos)."
+    }
+  },
+  "desktop": {
+    "chosen": "Mesa",
+    "confidence": "confirmed",
+    "sources": "macOS Finder pt-BR (Desktop → Mesa, N5)",
+    "windows": {
+      "chosen": "área de trabalho",
+      "note": "MS pt-BR (desktop, the screen work area → área de trabalho)."
+    },
+    "other": {
+      "chosen": "área de trabalho",
+      "accept": ["ambiente de trabalho", "Mesa"],
+      "note": "Nautilus and Thunar pt-BR (Desktop → Área de trabalho); the desktop environment reads ambiente de trabalho."
+    }
+  },
+  "privacy-permission": {
+    "chosen": "acesso",
+    "accept": ["permiss", "conced", "impedi"],
+    "confidence": "tentative",
+    "sources": "catalog errors.listing.tccRestricted.explanation (o macOS ainda não concedeu acesso); macOS pt-BR Privacy & Security consent alerts speak of acesso",
+    "note": "Windows and Linux branches name file rights, so permissão reads right there."
+  },
+  "credential-manager": {
+    "chosen": "Gerenciador de Credenciais",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (Credential Manager → Gerenciador de Credenciais)",
+    "note": "Windows-only name; Microsoft capitalizes it. Masculine: no Gerenciador de Credenciais. One saved entry is uma credencial."
+  },
+  "app-closes": {
+    "chosen": "fechar",
+    "accept": ["fecha", "fechou", "fechar"],
+    "confidence": "tentative",
+    "sources": "MS terminology pt-BR (exit: To close software → sair; Exit on the taskbar menu → Fechar)",
+    "note": "Windows branch, Cmdr as subject: o Cmdr fecha; the action button stays Sair."
+  },
+  "appearance": {
+    "chosen": "Aparência",
+    "accept": ["aparência"],
+    "confidence": "high",
+    "sources": "catalog settings.section.appearance (Aparência); macOS Ajustes do Sistema > Aparência; Double Commander pt-BR"
+  },
+  "language": {
+    "chosen": "idioma",
+    "accept": ["idiomas", "linguagem"],
+    "confidence": "high",
+    "sources": "catalog settings.appearance.language.label (Idioma); MS pt-BR Language → Idioma; Double Commander pt-BR",
+    "forms": "Windows display language → idioma de exibição do Windows",
+    "note": "A natural or model language (linguagem natural, modelo de linguagem) is linguagem; the UI language is idioma."
+  },
+  "lock": {
+    "chosen": "bloquear",
+    "accept": ["bloque"],
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (lock → bloquear); catalog restic keys (bloqueia o backup)"
+  },
+  "linux-distribution": {
+    "chosen": "distribuição",
+    "accept": ["distribuições"],
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (distribution → distribuição); common pt-BR distribuição Linux"
+  },
+  "detect": {
+    "chosen": "detectar",
+    "accept": ["detect"],
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (detect → detectar)"
+  },
+  "open-beta": {
+    "chosen": "beta aberto",
+    "confidence": "high",
+    "sources": "catalog onboarding.stepBeta.analyticsLede (durante o beta aberto)"
+  },
+  "personal-data": {
+    "chosen": "dados pessoais",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (personal data → dados pessoais); catalog crashReporter.dialog.privacyNote",
+    "accept": ["dados pessoais", "privad", "informações"]
+  },
+  "prompt": {
+    "chosen": "prompt",
+    "accept": ["prompts", "solicita", "pedido", "aviso", "pergunt"],
+    "confidence": "high",
+    "sources": "catalog settings.analytics.enabled.description and settings.advanced.logLlmCalls.keywords (prompts); MS pt-BR prompt (audio) → prompt",
+    "note": "The AI-text sense stays prompt; a system or Cmdr dialog asking something is aviso or pergunta in prose."
+  },
+  "speed": {
+    "chosen": "velocidade",
+    "accept": ["rápid", "lent", "aceler"],
+    "confidence": "high",
+    "sources": "MS terminology pt-BR; catalog settings.fileOperations.keepProgressOpenWhenDone.keywords (velocidade)"
+  },
+  "theme": {
+    "chosen": "tema",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (theme → tema); catalog settings.appearance.appColor.opt.system (Cor do tema do sistema)"
+  },
+  "accent": {
+    "chosen": "acento",
+    "accept": ["destaque", "acentuad"],
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (accent color → cor de destaque)",
+    "note": "The Windows and Linux accent color is cor de destaque; the diacritic sense is acento."
   }
 }

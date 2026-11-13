@@ -1,7 +1,7 @@
 {
-  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Avsluta Cmdr}}",
+  "commands.appQuit.label": "{platform, select, windows {Avsluta Cmdr} other {Avsluta Cmdr}}",
   "@commands.appQuit.label": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "commands.appHide.label": "Göm Cmdr",
   "@commands.appHide.label": {
@@ -192,9 +192,9 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Öppnar ~/Downloads och markerar den senaste filen.}}",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Öppnar mappen Hämtade filer och markerar den senaste filen.} other {Öppnar ~/Downloads och markerar den senaste filen.}}",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "6b3fe83"
+    "sourceHash": "97b6bd4"
   },
   "commands.viewShowHidden.label": "Visa eller göm dolda filer",
   "@commands.viewShowHidden.label": {
@@ -320,21 +320,21 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Ångra flytt till papperskorgen}}",
+  "commands.editUndoTrash.label": "{platform, select, windows {Ångra radering} other {Ångra flytt till papperskorgen}}",
   "@commands.editUndoTrash.label": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {Ångra flytt av ”{name}” till papperskorgen}}",
+  "commands.editUndoTrash.one": "{platform, select, windows {Ångra radering av ”{name}”} other {Ångra flytt av ”{name}” till papperskorgen}}",
   "@commands.editUndoTrash.one": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {Ångra flytt av {countText} {count, plural, one {objekt} other {objekt}} till papperskorgen}}",
+  "commands.editUndoTrash.many": "{platform, select, windows {Ångra radering av {countText} {count, plural, one {objekt} other {objekt}}} other {Ångra flytt av {countText} {count, plural, one {objekt} other {objekt}} till papperskorgen}}",
   "@commands.editUndoTrash.many": {
-    "sourceHash": "69c4966"
+    "sourceHash": "39a5bbe"
   },
-  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Lägger tillbaka filerna du senast flyttade till papperskorgen}}",
+  "commands.editUndoTrash.description": "{platform, select, windows {Lägger tillbaka filerna du senast flyttade till Papperskorgen} other {Lägger tillbaka filerna du senast flyttade till papperskorgen}}",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "dca1b63"
+    "sourceHash": "6082058"
   },
   "commands.paneLeftVolumeChooser.label": "Öppna vänster volymväljare",
   "@commands.paneLeftVolumeChooser.label": {
@@ -464,9 +464,9 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Gå till hemmappen}}",
+  "commands.navGoHome.label": "{platform, select, windows {Gå till användarmappen} other {Gå till hemmappen}}",
   "@commands.navGoHome.label": {
-    "sourceHash": "74b2a8b"
+    "sourceHash": "0ae4c72"
   },
   "commands.errorPaneToggleTechnicalDetails.label": "Visa tekniska detaljer",
   "@commands.errorPaneToggleTechnicalDetails.label": {
@@ -832,21 +832,21 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Gå till papperskorgen}}",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Gå till Papperskorgen} other {Gå till papperskorgen}}",
   "@commands.fileGoToTrash.label": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
-  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Öppnar papperskorgen på enheten du bläddrar i}}",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Öppnar Papperskorgen på enheten du bläddrar i} other {Öppnar papperskorgen på enheten du bläddrar i}}",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "6496c25"
+    "sourceHash": "e4789d0"
   },
   "commands.dialogConfirm.label": "Bekräfta dialogen på skärmen",
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
-  "commands.fileShowInFileManager.label": "{platform, select, macos {Visa i Finder} windows {Show in File Explorer} other {Visa i filhanteraren}}",
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Visa i Finder} windows {Visa i Utforskaren} other {Visa i filhanteraren}}",
   "@commands.fileShowInFileManager.label": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "commands.fileOpenTerminalHere.label": "Öppna terminal här",
   "@commands.fileOpenTerminalHere.label": {
@@ -868,13 +868,13 @@
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.label": "{platform, select, macos {Visa info} windows {Properties} other {Filegenskaper}}",
+  "commands.fileGetInfo.label": "{platform, select, macos {Visa info} windows {Egenskaper} other {Filegenskaper}}",
   "@commands.fileGetInfo.label": {
-    "sourceHash": "91c64ca"
+    "sourceHash": "da65a65"
   },
   "commands.fileQuickLook.label": "{platform, select, macos {Överblick} other {Förhandsvisning}}",
   "@commands.fileQuickLook.label": {
-    "sourceHash": "f5616ce"
+    "sourceHash": "c3f57b4"
   },
   "commands.fileContextMenu.label": "Öppna snabbmeny",
   "@commands.fileContextMenu.label": {
@@ -928,9 +928,9 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "{platform, select, macos {Tar bort det sparade lösenordet för restic-säkerhetskopian du är i från nyckelringen och låser säkerhetskopian igen} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Tar bort det sparade lösenordet för restic-säkerhetskopian du är i från nyckelringen och låser säkerhetskopian igen} windows {Tar bort det sparade lösenordet för restic-säkerhetskopian du är i från Autentiseringshanteraren och låser säkerhetskopian igen} other {Tar bort det sparade lösenordet för restic-säkerhetskopian du är i från din nyckelring och låser säkerhetskopian igen}}",
   "@commands.resticForgetPassword.description": {
-    "sourceHash": "e51ac69"
+    "sourceHash": "0f616ca"
   },
   "commands.fileCopyShareLink.label": "Kopiera delningslänk (sju dagar)",
   "@commands.fileCopyShareLink.label": {

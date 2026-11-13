@@ -324,9 +324,9 @@
   "@multiRename.results.gone": {
     "sourceHash": "8aa255a"
   },
-  "multiRename.error.couldntWriteNames": "{platform, select, macos {Die Namensliste ließ sich nicht schreiben. Prüfe, ob auf deinem Startvolume noch Speicherplatz frei ist.} windows {Couldn’t write the names list. Check that your system drive has free space.} other {Couldn’t write the names list. Check that your system disk has free space.}}",
+  "multiRename.error.couldntWriteNames": "{platform, select, macos {Die Namensliste ließ sich nicht schreiben. Prüfe, ob auf deinem Startvolume noch Speicherplatz frei ist.} windows {Die Namensliste ließ sich nicht schreiben. Prüfe, ob auf deinem Systemlaufwerk noch Speicherplatz frei ist.} other {Die Namensliste ließ sich nicht schreiben. Prüfe, ob auf deinem Systemlaufwerk noch Speicherplatz frei ist.}}",
   "@multiRename.error.couldntWriteNames": {
-    "sourceHash": "bb5e415"
+    "sourceHash": "aee4df7"
   },
   "multiRename.resultsTooltip": "Bearbeite die neuen Namen in deinem Text-Editor und komm dann hierher zurück, um sie zu verwenden.",
   "@multiRename.resultsTooltip": {

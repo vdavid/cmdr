@@ -1,7 +1,7 @@
 {
-  "lowDiskSpace.toast.message": "{platform, select, macos {Din startskiva börjar få ont om utrymme: {freeText} ledigt ({percentText} %).} windows {Your system drive is running low on space: {freeText} free ({percentText}%).} other {Your system disk is running low on space: {freeText} free ({percentText}%).}}",
+  "lowDiskSpace.toast.message": "{platform, select, macos {Din startskiva börjar få ont om utrymme: {freeText} ledigt ({percentText} %).} windows {Din systemenhet börjar få ont om utrymme: {freeText} ledigt ({percentText} %).} other {Din systemdisk börjar få ont om utrymme: {freeText} ledigt ({percentText} %).}}",
   "@lowDiskSpace.toast.message": {
-    "sourceHash": "44b701f"
+    "sourceHash": "b8b69e6"
   },
   "lowDiskSpace.toast.disable": "Stäng av dessa aviseringar",
   "@lowDiskSpace.toast.disable": {
@@ -15,8 +15,8 @@
   "@lowDiskSpace.notification.title": {
     "sourceHash": "5b1f5bf"
   },
-  "lowDiskSpace.notification.body": "{platform, select, macos {{freeText} ledigt ({percentText} %) på din startskiva.} windows {{freeText} free ({percentText}%) on your system drive.} other {{freeText} free ({percentText}%) on your system disk.}}",
+  "lowDiskSpace.notification.body": "{platform, select, macos {{freeText} ledigt ({percentText} %) på din startskiva.} windows {{freeText} ledigt ({percentText} %) på din systemenhet.} other {{freeText} ledigt ({percentText} %) på din systemdisk.}}",
   "@lowDiskSpace.notification.body": {
-    "sourceHash": "b17ee43"
+    "sourceHash": "9869348"
   }
 }

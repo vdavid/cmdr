@@ -71,9 +71,9 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "{platform, select, macos {Cmdr потрібен «Повний доступ до диска», щоб стежити за вашою папкою «Викачане».} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "downloads.fda.message": "{platform, select, macos {Cmdr потрібен «Повний доступ до диска», щоб стежити за вашою папкою «Викачане».} other {Cmdr не може стежити за вашою папкою «Завантаження». Перевірте, чи ця папка існує і чи ви можете її відкрити.}}",
   "@downloads.fda.message": {
-    "sourceHash": "82c82c6"
+    "sourceHash": "dd37803"
   },
   "downloads.fda.dismiss": "Закрити",
   "@downloads.fda.dismiss": {
@@ -131,9 +131,9 @@
   "@downloads.shortcutRow.unavailable": {
     "sourceHash": "8882532"
   },
-  "downloads.shortcutRow.addModifier": "{platform, select, macos {Додайте клавішу-модифікатор (⌘, ⌃, ⌥ або ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Додайте клавішу-модифікатор (⌘, ⌃, ⌥ або ⇧)} windows {Додайте клавішу-модифікатор (Ctrl, Alt, Shift або Win)} other {Додайте клавішу-модифікатор (Ctrl, Alt, Shift або Super)}}",
   "@downloads.shortcutRow.addModifier": {
-    "sourceHash": "28a5ba2"
+    "sourceHash": "a56bd6c"
   },
   "downloads.toggleDescription.bound": "Натисніть {binding} у будь-якій програмі, щоб перейти до останнього викачаного файлу.",
   "@downloads.toggleDescription.bound": {

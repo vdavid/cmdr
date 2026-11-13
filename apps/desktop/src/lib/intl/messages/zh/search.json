@@ -131,9 +131,9 @@
   "@search.coverage.line.failedRoots": {
     "sourceHash": "36c41ae"
   },
-  "search.coverage.line.denied": "{platform, select, macos {{count, plural, other {macOS 不允许 Cmdr 查看 {countText} 个文件夹的内容，所以结果中没有其中的文件。}}} windows {{count, plural, one {Windows didn’t let Cmdr look inside one folder, so nothing from it is in the results.} other {Windows didn’t let Cmdr look inside {countText} folders, so nothing from them is in the results.}}} other {{count, plural, one {Cmdr didn’t have permission to look inside one folder, so nothing from it is in the results.} other {Cmdr didn’t have permission to look inside {countText} folders, so nothing from them is in the results.}}}}",
+  "search.coverage.line.denied": "{platform, select, macos {{count, plural, other {macOS 不允许 Cmdr 查看 {countText} 个文件夹的内容，所以结果中没有其中的文件。}}} windows {{count, plural, other {Windows 不允许 Cmdr 查看 {countText} 个文件夹的内容，所以结果中没有其中的文件。}}} other {{count, plural, other {Cmdr 没有权限查看 {countText} 个文件夹的内容，所以结果中没有其中的文件。}}}}",
   "@search.coverage.line.denied": {
-    "sourceHash": "c2b388f"
+    "sourceHash": "9078ca3"
   },
   "search.coverage.line.offLimits": "{count, plural, other {系统不向 Cmdr 开放 {countText} 个文件夹，所以结果中没有其中的文件。}}",
   "@search.coverage.line.offLimits": {

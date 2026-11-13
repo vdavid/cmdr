@@ -303,9 +303,9 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "f95b4a9"
   },
-  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {You’ve turned on AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Select “{nextLabel}” again to ignore this and go on.</strong>} other {Du hast KI aktiviert, aber keinen API-Schlüssel eingegeben. Die KI funktioniert dann nicht, und du siehst eine Warnung. Bitte korrigiere das oben.\n\n<strong>Klicke noch einmal auf „{nextLabel}“, um das zu ignorieren und fortzufahren.</strong>}}",
+  "onboarding.stepAi.missingKeyWarning": "{platform, select, windows {Du hast KI eingeschaltet, aber keinen API-Schlüssel eingegeben. Die KI funktioniert dann nicht, und du siehst eine Warnung. Bitte korrigiere das oben.\n\n<strong>Wähle noch einmal „{nextLabel}“ aus, um das zu ignorieren und fortzufahren.</strong>} other {Du hast KI aktiviert, aber keinen API-Schlüssel eingegeben. Die KI funktioniert dann nicht, und du siehst eine Warnung. Bitte korrigiere das oben.\n\n<strong>Klicke noch einmal auf „{nextLabel}“, um das zu ignorieren und fortzufahren.</strong>}}",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "b942278"
+    "sourceHash": "2856a6e"
   },
   "onboarding.stepAi.cloudConsentOffNote": "Cloud-KI bleibt ausgeschaltet, bis du sie erlaubst. Das geht auch später unter Einstellungen > KI.",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -395,17 +395,17 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "06ce4eb"
   },
-  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Absturzberichte sind ebenfalls aktiv: Wenn Cmdr abstürzt, schickt es die App-Version, deine macOS-Version und die Stelle im Code, an der es aufgehört hat.\nNie deine Dateien.\nBeides kannst du jederzeit in den Einstellungen ausschalten.} windows {Crash reports are on too: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.} other {Crash reports are on too: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.}}",
+  "onboarding.stepBeta.crashReportsNote": "{platform, select, macos {Absturzberichte sind ebenfalls aktiv: Wenn Cmdr abstürzt, schickt es die App-Version, deine macOS-Version und die Stelle im Code, an der es aufgehört hat.\nNie deine Dateien.\nBeides kannst du jederzeit in den Einstellungen ausschalten.} windows {Absturzberichte sind ebenfalls aktiv: Wenn Cmdr abstürzt, schickt es die App-Version, deine Windows-Version und die Stelle im Code, an der es aufgehört hat.\nNie deine Dateien.\nBeides kannst du jederzeit in den Einstellungen ausschalten.} other {Absturzberichte sind ebenfalls aktiv: Wenn Cmdr abstürzt, schickt es die App-Version, deine Linux-Distribution samt Version und die Stelle im Code, an der es aufgehört hat.\nNie deine Dateien.\nBeides kannst du jederzeit in den Einstellungen ausschalten.}}",
   "@onboarding.stepBeta.crashReportsNote": {
-    "sourceHash": "9be0be1"
+    "sourceHash": "55b9634"
   },
   "onboarding.stepBeta.analyticsManaged": "Deine Organisation hat die Nutzungsstatistiken ausgeschaltet.",
   "@onboarding.stepBeta.analyticsManaged": {
     "sourceHash": "49484ee"
   },
-  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Absturzberichte sind aktiv: Wenn Cmdr abstürzt, schickt es die App-Version, deine macOS-Version und die Stelle im Code, an der es aufgehört hat.\nNie deine Dateien.\nDie Absturzberichte kannst du jederzeit in den Einstellungen ausschalten.} windows {Crash reports are on: if Cmdr goes down, it sends the app version, your Windows version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.} other {Crash reports are on: if Cmdr goes down, it sends the app version, your Linux distribution and version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.}}",
+  "onboarding.stepBeta.crashReportsNoteAlone": "{platform, select, macos {Absturzberichte sind aktiv: Wenn Cmdr abstürzt, schickt es die App-Version, deine macOS-Version und die Stelle im Code, an der es aufgehört hat.\nNie deine Dateien.\nDie Absturzberichte kannst du jederzeit in den Einstellungen ausschalten.} windows {Absturzberichte sind aktiv: Wenn Cmdr abstürzt, schickt es die App-Version, deine Windows-Version und die Stelle im Code, an der es aufgehört hat.\nNie deine Dateien.\nDie Absturzberichte kannst du jederzeit in den Einstellungen ausschalten.} other {Absturzberichte sind aktiv: Wenn Cmdr abstürzt, schickt es die App-Version, deine Linux-Distribution samt Version und die Stelle im Code, an der es aufgehört hat.\nNie deine Dateien.\nDie Absturzberichte kannst du jederzeit in den Einstellungen ausschalten.}}",
   "@onboarding.stepBeta.crashReportsNoteAlone": {
-    "sourceHash": "5084dd0"
+    "sourceHash": "27d4b1b"
   },
   "onboarding.stepBeta.emailTitle": "In Kontakt bleiben (optional)",
   "@onboarding.stepBeta.emailTitle": {
@@ -427,13 +427,13 @@
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "5a1bca7"
   },
-  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {Der Anmeldeserver war gerade nicht erreichbar, du stehst also noch nicht auf der Liste. Deine Adresse ist auf diesem Mac gesichert: Klicke in einer Minute noch einmal auf „Sichern“, oder jederzeit unter Einstellungen › Updates & Datenschutz.} windows {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this PC: hit Save again in a minute, or any time from Settings › Updates & privacy.} other {Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this computer: hit Save again in a minute, or any time from Settings › Updates & privacy.}}",
+  "onboarding.stepBeta.signup.unreachable": "{platform, select, macos {Der Anmeldeserver war gerade nicht erreichbar, du stehst also noch nicht auf der Liste. Deine Adresse ist auf diesem Mac gesichert: Klicke in einer Minute noch einmal auf „Sichern“, oder jederzeit unter Einstellungen › Updates & Datenschutz.} windows {Der Anmeldeserver war gerade nicht erreichbar, du stehst also noch nicht auf der Liste. Deine Adresse ist auf diesem PC gesichert: Klicke in einer Minute noch einmal auf „Sichern“, oder jederzeit unter Einstellungen › Updates & Datenschutz.} other {Der Anmeldeserver war gerade nicht erreichbar, du stehst also noch nicht auf der Liste. Deine Adresse ist auf diesem Computer gesichert: Klicke in einer Minute noch einmal auf „Sichern“, oder jederzeit unter Einstellungen › Updates & Datenschutz.}}",
   "@onboarding.stepBeta.signup.unreachable": {
-    "sourceHash": "e4d8f67"
+    "sourceHash": "6032194"
   },
-  "onboarding.stepBeta.emailNote": "{platform, select, macos {Gib deine E-Mail-Adresse an, und ich melde mich ab und zu mit einer Frage oder einem Update.\nDie hier eingegebene E-Mail-Adresse wird nur auf deinem Mac gespeichert und nie mit deinen Nutzungsstatistiken verknüpft, die beiden sind bewusst zwei getrennte Teilsysteme.} windows {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your PC and it’s never connected to your usage stats, the two are intentionally two separate subsystems.} other {Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your computer and it’s never connected to your usage stats, the two are intentionally two separate subsystems.}}",
+  "onboarding.stepBeta.emailNote": "{platform, select, macos {Gib deine E-Mail-Adresse an, und ich melde mich ab und zu mit einer Frage oder einem Update.\nDie hier eingegebene E-Mail-Adresse wird nur auf deinem Mac gespeichert und nie mit deinen Nutzungsstatistiken verknüpft, die beiden sind bewusst zwei getrennte Teilsysteme.} windows {Gib deine E-Mail-Adresse an, und ich melde mich ab und zu mit einer Frage oder einem Update.\nDie hier eingegebene E-Mail-Adresse wird nur auf deinem PC gespeichert und nie mit deinen Nutzungsstatistiken verknüpft, die beiden sind bewusst zwei getrennte Teilsysteme.} other {Gib deine E-Mail-Adresse an, und ich melde mich ab und zu mit einer Frage oder einem Update.\nDie hier eingegebene E-Mail-Adresse wird nur auf deinem Computer gespeichert und nie mit deinen Nutzungsstatistiken verknüpft, die beiden sind bewusst zwei getrennte Teilsysteme.}}",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "0a793b1"
+    "sourceHash": "494fcbc"
   },
   "onboarding.stepBeta.terms.title": "Ach, und das hier bitte auch",
   "@onboarding.stepBeta.terms.title": {
@@ -459,9 +459,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "{platform, select, windows {You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, select the button below. All of these are optional, and the defaults are picked for your benefit.} other {Du hast dich für eine ausführliche Einrichtung entschieden, hier also ein paar schnelle Entscheidungen. Wenn dir das nicht so wichtig ist, klicke auf die Taste unten. All das ist optional, und die Standardwerte sind zu deinem Vorteil gewählt.}}",
+  "onboarding.stepOptional.lede": "{platform, select, windows {Du hast dich für eine ausführliche Einrichtung entschieden, hier also ein paar schnelle Entscheidungen. Wenn dir das nicht so wichtig ist, wähle unten die Schaltfläche aus. All das ist optional, und die Standardwerte sind zu deinem Vorteil gewählt.} other {Du hast dich für eine ausführliche Einrichtung entschieden, hier also ein paar schnelle Entscheidungen. Wenn dir das nicht so wichtig ist, klicke auf die Taste unten. All das ist optional, und die Standardwerte sind zu deinem Vorteil gewählt.}}",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "94c3a5a"
+    "sourceHash": "d0e9a13"
   },
   "onboarding.stepOptional.recommendedOn": "Empfohlen: an",
   "@onboarding.stepOptional.recommendedOn": {
@@ -475,13 +475,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "{platform, select, macos {Braucht einmal die Berechtigung „Lokales Netzwerk“} windows {Windows may ask to let Cmdr through its firewall} other {No permission needed}}",
+  "onboarding.stepOptional.networking.summary": "{platform, select, macos {Braucht einmal die Berechtigung „Lokales Netzwerk“} windows {Windows fragt vielleicht, ob Cmdr die Firewall passieren darf} other {Keine Berechtigung nötig}}",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "f49fbc6"
+    "sourceHash": "d902dfe"
   },
-  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Ist das <em>an</em>, kannst du dich mit SMB-Servern verbinden, etwa mit Firmennetzwerkfreigaben, einem heimischen NAS und Ähnlichem.\nDer einzige Haken ist ein macOS-Berechtigungsdialog, der auftaucht und dich um Erlaubnis für „Lokales Netzwerk“ bittet, sowie einer für „Eingehende Verbindungen annehmen“.\nBeide Dialoge sind harmlos, aber wenn du nicht weißt, was das ist, können sie beängstigend oder lästig wirken.} windows {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nWindows may ask once whether to let Cmdr through its firewall.} other {Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.}}",
+  "onboarding.stepOptional.networking.desc": "{platform, select, macos {Ist das <em>an</em>, kannst du dich mit SMB-Servern verbinden, etwa mit Firmennetzwerkfreigaben, einem heimischen NAS und Ähnlichem.\nDer einzige Haken ist ein macOS-Berechtigungsdialog, der auftaucht und dich um Erlaubnis für „Lokales Netzwerk“ bittet, sowie einer für „Eingehende Verbindungen annehmen“.\nBeide Dialoge sind harmlos, aber wenn du nicht weißt, was das ist, können sie beängstigend oder lästig wirken.} windows {Ist das <em>an</em>, kannst du dich mit SMB-Servern verbinden, etwa mit Firmennetzwerkfreigaben, einem heimischen NAS und Ähnlichem.\nWindows fragt vielleicht einmal, ob Cmdr die Firewall passieren darf.} other {Ist das <em>an</em>, kannst du dich mit SMB-Servern verbinden, etwa mit Firmennetzwerkfreigaben, einem heimischen NAS und Ähnlichem.}}",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "d473c62"
+    "sourceHash": "e479f6e"
   },
   "onboarding.stepOptional.indexing.title": "Laufwerksindizierung",
   "@onboarding.stepOptional.indexing.title": {
@@ -495,9 +495,9 @@
   "@onboarding.stepOptional.indexing.descIntro": {
     "sourceHash": "6b86a1f"
   },
-  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {Sofortige Suche über dein gesamtes Laufwerk. Stell dir Spotlight vor, nur noch schneller.} windows {Instant search of your whole drive. Think Windows Search, but much faster.} other {Instant search of your whole drive.}}",
+  "onboarding.stepOptional.indexing.benefit1": "{platform, select, macos {Sofortige Suche über dein gesamtes Laufwerk. Stell dir Spotlight vor, nur noch schneller.} windows {Sofortige Suche über dein gesamtes Laufwerk. Stell dir Windows Search vor, nur viel schneller.} other {Sofortige Suche über dein gesamtes Laufwerk.}}",
   "@onboarding.stepOptional.indexing.benefit1": {
-    "sourceHash": "5fa0e9f"
+    "sourceHash": "bfe626a"
   },
   "onboarding.stepOptional.indexing.benefit2": "Echtzeit-Ordnergrößen für dein gesamtes Laufwerk. Du weißt immer, wie viel in jedem Ordner steckt.",
   "@onboarding.stepOptional.indexing.benefit2": {
@@ -515,21 +515,21 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "{platform, select, windows {If you turn this on, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you turn it off, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).} other {Wenn du das aktivierst, sendet Cmdr bei jedem App-Start sowie einmal alle 24 Stunden eine winzige Netzwerkanfrage an einen zentralen Lizenzserver, und du erhältst immer die neuesten Updates.\nWenn du das deaktivierst, behältst du deine aktuelle Version, und Cmdr sendet überhaupt keine automatischen Netzwerkanfragen (bis auf regelmäßige Lizenzprüfungen, falls du eine gewerbliche Lizenz hast).}}",
+  "onboarding.stepOptional.updates.desc": "{platform, select, windows {Wenn du das einschaltest, sendet Cmdr bei jedem App-Start sowie einmal alle 24 Stunden eine winzige Netzwerkanfrage an einen zentralen Lizenzserver, und du erhältst immer die neuesten Updates.\nWenn du das ausschaltest, behältst du deine aktuelle Version, und Cmdr sendet überhaupt keine automatischen Netzwerkanfragen (bis auf regelmäßige Lizenzprüfungen, falls du eine gewerbliche Lizenz hast).} other {Wenn du das aktivierst, sendet Cmdr bei jedem App-Start sowie einmal alle 24 Stunden eine winzige Netzwerkanfrage an einen zentralen Lizenzserver, und du erhältst immer die neuesten Updates.\nWenn du das deaktivierst, behältst du deine aktuelle Version, und Cmdr sendet überhaupt keine automatischen Netzwerkanfragen (bis auf regelmäßige Lizenzprüfungen, falls du eine gewerbliche Lizenz hast).}}",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "e1a0582"
+    "sourceHash": "f030fea"
   },
   "onboarding.stepOptional.mtp.title": "MTP (Android-Handys, Kindles, Kameras)",
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {Verbindet Android-Handys und Ähnliches, unterdrückt den macOS-eigenen Prozess} other {Lets you connect Android phones and similar devices}}",
+  "onboarding.stepOptional.mtp.summary": "{platform, select, macos {Verbindet Android-Handys und Ähnliches, unterdrückt den macOS-eigenen Prozess} other {Verbindet Android-Handys und ähnliche Geräte}}",
   "@onboarding.stepOptional.mtp.summary": {
-    "sourceHash": "d5b9a6e"
+    "sourceHash": "b6bfad0"
   },
-  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Wenn du das aktivierst, kann sich Cmdr <strong>mit Android-Handys, Kindles, Kameras</strong>, manchen Musikplayern und jedem anderen Gerät verbinden, das die Protokolle MTP oder PTP unterstützt.\nDer Haken ist, dass macOS sich <em>ebenfalls</em> damit verbinden will (und meist scheitert, weshalb du nicht einfach mit dem Finder Fotos von Android-Handys kopieren kannst), sodass Cmdr diesen macOS-Prozess unterdrücken muss, solange es läuft.\nWenn du Cmdr beendest, wird das höflich wiederhergestellt.} windows {If you turn this on, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.} other {If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nYour desktop may also try to open these devices; if a device seems busy, unmount it in your file manager first.}}",
+  "onboarding.stepOptional.mtp.desc": "{platform, select, macos {Wenn du das aktivierst, kann sich Cmdr <strong>mit Android-Handys, Kindles, Kameras</strong>, manchen Musikplayern und jedem anderen Gerät verbinden, das die Protokolle MTP oder PTP unterstützt.\nDer Haken ist, dass macOS sich <em>ebenfalls</em> damit verbinden will (und meist scheitert, weshalb du nicht einfach mit dem Finder Fotos von Android-Handys kopieren kannst), sodass Cmdr diesen macOS-Prozess unterdrücken muss, solange es läuft.\nWenn du Cmdr beendest, wird das höflich wiederhergestellt.} windows {Wenn du das einschaltest, kann sich Cmdr <strong>mit Android-Handys, Kindles, Kameras</strong>, manchen Musikplayern und jedem anderen Gerät verbinden, das die Protokolle MTP oder PTP unterstützt.} other {Wenn du das aktivierst, kann sich Cmdr <strong>mit Android-Handys, Kindles, Kameras</strong>, manchen Musikplayern und jedem anderen Gerät verbinden, das die Protokolle MTP oder PTP unterstützt.\nDeine Arbeitsumgebung versucht vielleicht ebenfalls, diese Geräte zu öffnen; wenn ein Gerät in Benutzung zu sein scheint, hänge es zuerst in deinem Dateimanager aus.}}",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "8a60e7f"
+    "sourceHash": "ed865f5"
   },
   "onboarding.cloudPicker.listAria": "Cloud-KI-Anbieter",
   "@onboarding.cloudPicker.listAria": {

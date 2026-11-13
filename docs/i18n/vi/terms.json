@@ -259,7 +259,8 @@
   },
   "ask": {
     "exceptions": {
-      "askCmdr.tool.upgradeSmbToDirect.tried": "Asking Cmdr for a connection is a request, yêu cầu, not a question to the user"
+      "askCmdr.tool.upgradeSmbToDirect.tried": "Asking Cmdr for a connection is a request, yêu cầu, not a question to the user",
+      "errors.write.trashRefused.suggestion.notPermitted": "Windows branch: File Explorer asks for administrator permission, a request (xin quyền), not a question"
     },
     "accept": ["Ask Cmdr"],
     "chosen": "hỏi",
@@ -827,7 +828,12 @@
   "credentials": {
     "chosen": "thông tin đăng nhập",
     "confidence": "high",
-    "sources": "MS terminology"
+    "sources": "MS terminology",
+    "windows": {
+      "chosen": "thông tin xác thực",
+      "accept": ["thông tin đăng nhập"],
+      "note": "Credential Manager's own section name: Thông tin xác thực Windows (the app is Trình quản lý thông tin xác thực, already shipped); a generic sign-in in prose may stay thông tin đăng nhập. Tentative: no TBX entry for Windows Credentials, built from the shipped Credential Manager name"
+    }
   },
   "current-folder": {
     "chosen": "thư mục hiện tại",
@@ -1016,7 +1022,10 @@
     "confidence": "high",
     "decision": "Rà soát trôi thuật ngữ toàn catalog",
     "forms": "noun and verb alike: Đang tải về; a downloaded item → bản tải về; the Downloads folder → Tải về; re-download → tải lại; separable tải … về is fine in prose",
-    "sources": "macOS vi (Đang tải về, Xóa bản tải về)"
+    "sources": "macOS vi (Đang tải về, Xóa bản tải về)",
+    "exceptions": {
+      "commands.downloadsGoToLatest.description": "The windows branch names the Downloads folder as Windows vi shows it in File Explorer (Tải xuống); quoting the OS folder name wins over the tải về prose rule."
+    }
   },
   "drag": {
     "accept": ["thả"],
@@ -1228,9 +1237,25 @@
     "chosen": "tệp",
     "confidence": "high",
     "exceptions": {
-      "errors.git.missingObject.message": "English-sense: git's pack files are git jargon, kept English (`pack file`)."
+      "errors.git.missingObject.message": "English-sense: git's pack files are git jargon, kept English (`pack file`).",
+      "errors.git.gitDirPermissionDenied.suggestion": "Windows branch: the English file only appears in the app name File Explorer, which vi Windows keeps in English",
+      "errors.git.permissionDenied.suggestion": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.listing.authRequiredEneedauth.suggestion": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.listing.couldntReadUnknown.suggestion": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.listing.diskReadProblem.suggestion": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.listing.ioSerious.suggestion": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.listing.noPermissionErrno.suggestion": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.listing.notPermitted.suggestion": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.listing.notSupported.suggestion": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.listing.permissionDenied.suggestion": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.listing.staleConnection.suggestion": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.mutation.parentNotWritable": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.write.permissionDenied.suggestion.needsAdmin": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.write.trashRefused.suggestion.folderNotWritable": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows",
+      "errors.write.trashRefused.suggestion.notPermitted": "Windows branch: file only appears in the app name File Explorer, kept in English by vi Windows"
     },
-    "sources": "macOS/MS convention (tệp). Total Commander vi uses the older tập tin throughout (332 strings, no tệp), the folder-vs-directory kind of split; first-party vendors outrank it"
+    "sources": "macOS/MS convention (tệp). Total Commander vi uses the older tập tin throughout (332 strings, no tệp), the folder-vs-directory kind of split; first-party vendors outrank it",
+    "accept": ["File Explorer"]
   },
   "file-list": {
     "chosen": "danh sách tệp",
@@ -2334,7 +2359,10 @@
   "path": {
     "chosen": "đường dẫn",
     "confidence": "high",
-    "sources": "macOS AppKit"
+    "sources": "macOS AppKit",
+    "exceptions": {
+      "settings.fileOperations.adbBinaryPath.description": "PATH here is the environment variable name, kept verbatim, not a file path."
+    }
   },
   "pattern": {
     "chosen": "mẫu",
@@ -2848,7 +2876,10 @@
     "chosen": "máy chủ",
     "confidence": "high",
     "forms": "the switcher row and scope Máy chủ; \"in/from Servers\" (the view) → trong/từ danh sách Máy chủ (servers.sheet.addedToast); connect to a server → kết nối tới (prose); the AI-suggestion kind tags Add a server / Change server settings → Thêm một máy chủ / Sửa cài đặt máy chủ (Sửa, as Sửa máy chủ…, never đổi, which reads as swapping servers)",
-    "sources": "macOS AppKit (Servers → Máy chủ), Finder N84, GNOME"
+    "sources": "macOS AppKit (Servers → Máy chủ), Finder N84, GNOME",
+    "exceptions": {
+      "fileOperations.validation.pathNotAbsolute": "the windows branch's “server” sits inside the literal sample UNC path \\\\server\\share, which stays as typed"
+    }
   },
   "server-address": {
     "chosen": "địa chỉ",
@@ -3387,7 +3418,10 @@
     "chosen": "người dùng",
     "confidence": "high",
     "forms": "user ID → ID người dùng; group ID → ID nhóm",
-    "sources": "MS terminology (user ID, UID → ID người dùng); catalog (settings.json, errors.json)"
+    "sources": "MS terminology (user ID, UID → ID người dùng); catalog (settings.json, errors.json)",
+    "exceptions": {
+      "goToPath.dialog.inputPlaceholder": "the windows branch's “Users” is the literal sample path C:\\Users, which stays as typed"
+    }
   },
   "username": {
     "chosen": "tên người dùng",
@@ -3807,5 +3841,74 @@
     "confidence": "high",
     "forms": "a toggle command label → Bật/tắt <thing> (Bật/tắt tệp ẩn, Bật/tắt toàn màn hình); Turn X on or off rows use the same Bật/tắt",
     "sources": "catalog (23 shipped Bật/tắt labels, commands.viewShowHidden.label and siblings); MS terminology toggle → chuyển đổi is the generic verb, not the on/off label"
+  },
+  "file-explorer": {
+    "chosen": "File Explorer",
+    "confidence": "high",
+    "sources": "MS terminology (File Explorer → File Explorer); vi Windows keeps the app name in English",
+    "note": "Kept English like Finder; avoid the older Windows Explorer entries in the TBX",
+    "exceptions": {
+      "fileExplorer.pane.fileExplorerAriaLabel": "Names Cmdr's own file pane generically (Trình duyệt tệp), not the Windows app"
+    }
+  },
+  "credential-manager": {
+    "chosen": "Trình quản lý thông tin xác thực",
+    "accept": ["trình quản lý thông tin xác thực"],
+    "forms": "only in a platform select's windows branch, capitalized as the Windows app: trong Trình quản lý thông tin xác thực, khỏi Trình quản lý thông tin xác thực (macOS says chuỗi khóa, Linux kho khóa)",
+    "confidence": "tentative",
+    "sources": "ms TBX (Credential Manager → Bộ quản lí tín liệu, an old Windows-7-era form); current Windows vi Control Panel names it Trình quản lý thông tin xác thực (not in the pile, from Microsoft's vi terminology for credential → thông tin xác thực)"
+  },
+  "user-folder": {
+    "chosen": "thư mục người dùng",
+    "forms": "menu.go.home windows branch → Thư mục người dùng; Go to user folder → Đi tới thư mục người dùng; Open user folder → Mở thư mục người dùng",
+    "confidence": "tentative",
+    "sources": "catalog (shipped windows branches: thư mục người dùng của bạn); the pile has no user folder entry"
+  },
+  "app-closes": {
+    "chosen": "đóng",
+    "forms": "Cmdr closes afterwards → Sau đó Cmdr sẽ đóng; then closes → rồi đóng; after Cmdr closes → sau khi Cmdr đóng; only in a windows branch (macOS and Linux say thoát)",
+    "confidence": "high",
+    "sources": "ms (close → đóng); Windows vi says an app đóng"
+  },
+  "file-manager": {
+    "chosen": "trình quản lý tệp",
+    "accept": ["Trình quản lý tệp"],
+    "confidence": "high",
+    "sources": "ms TBX (file manager → trình quản lý tệp); Thunar and Dolphin (File Manager → Trình quản lí tệp, older lí spelling); catalog (Hiển thị trong trình quản lý tệp)"
+  },
+  "linux-distribution": {
+    "chosen": "bản phân phối",
+    "forms": "Linux distribution and version → bản phân phối và phiên bản Linux",
+    "confidence": "tentative",
+    "sources": "ms TBX (distribution → phân phối); standard vi Linux usage bản phân phối"
+  },
+  "detect": {
+    "chosen": "phát hiện",
+    "forms": "no system keyring detected → không phát hiện thấy kho khóa hệ thống",
+    "confidence": "high",
+    "sources": "ms TBX (detect → phát hiện); catalog"
+  },
+  "theme": {
+    "chosen": "giao diện",
+    "forms": "macOS theme color → màu giao diện hệ thống; the Windows and Linux accent color → màu chủ đề hệ thống",
+    "confidence": "tentative",
+    "sources": "catalog (macOS branch màu giao diện hệ thống); ms TBX (theme → chủ đề / Giao diện; accent color → màu chủ đề)"
+  },
+  "language": {
+    "chosen": "ngôn ngữ",
+    "forms": "Windows display language → ngôn ngữ hiển thị Windows",
+    "confidence": "high",
+    "sources": "catalog; Windows vi Settings (Ngôn ngữ hiển thị Windows)"
+  },
+  "personal-data": {
+    "chosen": "dữ liệu cá nhân",
+    "confidence": "high",
+    "sources": "catalog (settings.updates.crashReports.description macOS branch)",
+    "accept": ["thông tin riêng tư"]
+  },
+  "smb-negotiated-security": {
+    "chosen": "các thiết lập bảo mật đã thống nhất",
+    "confidence": "tentative",
+    "sources": "catalog (fileExplorer.network.osMountFallback.negotiationInvalid macOS branch)"
   }
 }

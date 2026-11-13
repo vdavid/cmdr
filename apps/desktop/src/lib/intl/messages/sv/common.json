@@ -24,9 +24,9 @@
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "{platform, select, macos {Cmdr behöver Full skivtillgång för att bevaka mappen Hämtade filer. <settingsLink>Öppna Systeminställningar</settingsLink>} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "common.downloadsFdaHint": "{platform, select, macos {Cmdr behöver Full skivtillgång för att bevaka mappen Hämtade filer. <settingsLink>Öppna Systeminställningar</settingsLink>} other {Cmdr kan inte bevaka mappen Hämtade filer. Kontrollera att mappen finns och att du kan öppna den.}}",
   "@common.downloadsFdaHint": {
-    "sourceHash": "315e1d8"
+    "sourceHash": "b54bf8b"
   },
   "common.sizeUnit.byte": "{count, plural, one {byte} other {byte}}",
   "@common.sizeUnit.byte": {

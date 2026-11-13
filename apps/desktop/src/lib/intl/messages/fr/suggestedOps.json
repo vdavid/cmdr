@@ -63,13 +63,13 @@
   "@suggestedOps.action.copy": {
     "sourceHash": "e21f935"
   },
-  "suggestedOps.action.trash": "{platform, select, windows {Delete} other {Placer dans la corbeille}}",
+  "suggestedOps.action.trash": "{platform, select, windows {Supprimer} other {Placer dans la corbeille}}",
   "@suggestedOps.action.trash": {
-    "sourceHash": "9adcdf3"
+    "sourceHash": "d4f0678"
   },
-  "suggestedOps.action.delete": "{platform, select, windows {Delete permanently} other {Supprimer}}",
+  "suggestedOps.action.delete": "{platform, select, windows {Supprimer définitivement} other {Supprimer}}",
   "@suggestedOps.action.delete": {
-    "sourceHash": "e2d0a54"
+    "sourceHash": "45efa80"
   },
   "suggestedOps.action.rename": "Renommer",
   "@suggestedOps.action.rename": {
@@ -96,13 +96,13 @@
   "@suggestedOps.approve.copy": {
     "sourceHash": "e10c490"
   },
-  "suggestedOps.approve.trash": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}}} other {Placer {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}} dans la corbeille}}",
+  "suggestedOps.approve.trash": "{platform, select, windows {Supprimer {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}} other {Placer {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}} dans la corbeille}}",
   "@suggestedOps.approve.trash": {
-    "sourceHash": "3c82946"
+    "sourceHash": "fa0db8d"
   },
-  "suggestedOps.approve.delete": "{platform, select, windows {Delete {countText} {count, plural, one {file} other {files}} permanently} other {Supprimer {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}}}",
+  "suggestedOps.approve.delete": "{platform, select, windows {Supprimer définitivement {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}} other {Supprimer {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}}}",
   "@suggestedOps.approve.delete": {
-    "sourceHash": "218cf04"
+    "sourceHash": "cfb3b70"
   },
   "suggestedOps.approve.rename": "Renommer {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}",
   "@suggestedOps.approve.rename": {
@@ -145,17 +145,17 @@
     "sourceHash": "66f4804",
     "sameAsSourceJustification": "“Archive” is the same word in French (feminine noun, terms.json archive); macOS Finder writes it verbatim."
   },
-  "suggestedOps.facts.trash": "{platform, select, windows {The Recycle Bin} other {Corbeille}}",
+  "suggestedOps.facts.trash": "{platform, select, windows {Corbeille} other {Corbeille}}",
   "@suggestedOps.facts.trash": {
-    "sourceHash": "4e42c6e"
+    "sourceHash": "7b1fc0a"
   },
   "suggestedOps.facts.severalFolders": "Plusieurs dossiers",
   "@suggestedOps.facts.severalFolders": {
     "sourceHash": "7c32950"
   },
-  "suggestedOps.reversible.trash": "{platform, select, windows {You can undo this: {count, plural, one {it goes} other {they go}} to the Recycle Bin} other {Vous pouvez annuler : {count, plural, one {le fichier est placé} many {les fichiers sont placés} other {les fichiers sont placés}} dans la corbeille}}",
+  "suggestedOps.reversible.trash": "{platform, select, windows {Vous pouvez annuler : {count, plural, one {le fichier est déplacé} many {les fichiers sont déplacés} other {les fichiers sont déplacés}} vers la Corbeille} other {Vous pouvez annuler : {count, plural, one {le fichier est placé} many {les fichiers sont placés} other {les fichiers sont placés}} dans la corbeille}}",
   "@suggestedOps.reversible.trash": {
-    "sourceHash": "55bf957"
+    "sourceHash": "e42e327"
   },
   "suggestedOps.reversible.moveBack": "Vous pouvez annuler : Cmdr peut remettre {count, plural, one {le fichier à sa place} many {les fichiers à leur place} other {les fichiers à leur place}}",
   "@suggestedOps.reversible.moveBack": {
@@ -181,13 +181,13 @@
   "@suggestedOps.irreversible.delete": {
     "sourceHash": "e32da9a"
   },
-  "suggestedOps.noTrash": "{platform, select, windows {This drive has no Recycle Bin} other {Ce disque n’a pas de corbeille}}",
+  "suggestedOps.noTrash": "{platform, select, windows {Ce lecteur n’a pas de Corbeille} other {Ce disque n’a pas de corbeille}}",
   "@suggestedOps.noTrash": {
-    "sourceHash": "38a6adc"
+    "sourceHash": "31f0f36"
   },
-  "suggestedOps.noTrashTooltip": "{platform, select, windows {The drive these files are on keeps no Recycle Bin, so approving this deletes them for good.} other {Le disque qui contient ces fichiers n’a pas de corbeille, donc si vous approuvez, ils seront supprimés définitivement.}}",
+  "suggestedOps.noTrashTooltip": "{platform, select, windows {Le lecteur qui contient ces fichiers n’a pas de Corbeille, donc si vous approuvez, ils seront supprimés définitivement.} other {Le disque qui contient ces fichiers n’a pas de corbeille, donc si vous approuvez, ils seront supprimés définitivement.}}",
   "@suggestedOps.noTrashTooltip": {
-    "sourceHash": "4327cb2"
+    "sourceHash": "e13c954"
   },
   "suggestedOps.irreversible.overwrite": "Cette opération est irréversible : elle remplace une archive existante",
   "@suggestedOps.irreversible.overwrite": {
@@ -438,9 +438,9 @@
   "@suggestedOps.server.sharesAffected": {
     "sourceHash": "390f931"
   },
-  "suggestedOps.indicatorTooltip": "{platform, select, windows {AI suggestions are waiting. Select to review them.} other {Des suggestions de l’IA vous attendent. Cliquez pour les examiner.}}",
+  "suggestedOps.indicatorTooltip": "{platform, select, windows {Des suggestions de l’IA vous attendent. Sélectionnez pour les examiner.} other {Des suggestions de l’IA vous attendent. Cliquez pour les examiner.}}",
   "@suggestedOps.indicatorTooltip": {
-    "sourceHash": "4508b0b"
+    "sourceHash": "3c813c4"
   },
   "suggestedOps.newNameTaken": "Ce nom est déjà pris",
   "@suggestedOps.newNameTaken": {

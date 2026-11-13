@@ -22,7 +22,12 @@
         "form": "акцент",
         "why": "macOS AppKit MenuCommands Accent → Акцент is the color sense; Siri's Акцент is a speech accent"
       }
-    ]
+    ],
+    "exceptions": {
+      "settings.appearance.appColor.description": "«accent color» is the system highlight color (Windows «колір елементів»), not a diacritic.",
+      "settings.appearance.appColorHintPrefix": "«accent color» is the system highlight color (Windows «колір елементів»), not a diacritic.",
+      "settings.appearance.themeColorSwatchAria": "«accent color» is the system highlight color (Windows «колір елементів»), not a diacritic."
+    }
   },
   "access": {
     "chosen": "доступ",
@@ -183,7 +188,13 @@
     "chosen": "інструмент",
     "accept": ["інструмент"],
     "confidence": "high",
-    "sources": "macOS live BlissReader (Tools → Інструменти); MS (Tools → Інструменти); DC (Tools → Інструменти)"
+    "sources": "macOS live BlissReader (Tools → Інструменти); MS (Tools → Інструменти); DC (Tools → Інструменти)",
+    "exceptions": {
+      "errors.listing.diskReadProblem.suggestion": "Windows Properties > Tools tab (Знаряддя) and a Linux disk tool (дискова утиліта), not an AI tool.",
+      "errors.listing.unexpectedSystemResponse.suggestion": "Windows Properties > Tools tab (Знаряддя) and a Linux disk tool (дискова утиліта), not an AI tool.",
+      "errors.listing.couldntReadUnknown.suggestion": "Windows Properties > Tools tab (Знаряддя) and a Linux disk tool (дискова утиліта), not an AI tool.",
+      "errors.listing.ioSerious.suggestion": "Windows Properties > Tools tab (Знаряддя) and a Linux disk tool (дискова утиліта), not an AI tool."
+    }
   },
   "alias": {
     "chosen": "псевдонім",
@@ -762,7 +773,12 @@
     "accept": ["клацн", "клаца", "натисн"],
     "confidence": "high",
     "sources": "macOS AppKit FontManager (Click to choose… → Клацніть, щоб вибрати…), Finder NE99 (click Enable → клацніть «Увімкнути»); live OBEXAgent (click OK → натисніть кнопку «OK»); MS (click → клацнути); Nautilus",
-    "note": "macOS writes клацнути for a mouse click on a row or a spot and натиснути for a button or a key; both pass."
+    "note": "macOS writes клацнути for a mouse click on a row or a spot and натиснути for a button or a key; both pass.",
+    "windows": {
+      "chosen": "вибрати",
+      "accept": ["вибер", "вибра", "клацн", "натисн"],
+      "note": "Windows' style says «select» for activating a control; the shipped Windows branches write «виберіть» (settings.search.autoRun…, «виберіть кнопку запуску»)."
+    }
   },
   "client": {
     "chosen": "клієнт",
@@ -1147,7 +1163,15 @@
         "form": "Стільниця",
         "why": "GNOME's word; macOS says Робочий стіл"
       }
-    ]
+    ],
+    "exceptions": {
+      "errors.listing.diskReadProblem.suggestion": "The Linux desktop environment (робоче середовище), not the Desktop folder; the Windows branch's «на робочому столі» is unaffected.",
+      "errors.listing.unexpectedSystemResponse.suggestion": "The Linux desktop environment (робоче середовище), not the Desktop folder.",
+      "errors.listing.couldntReadUnknown.suggestion": "The Linux desktop environment (робоче середовище), not the Desktop folder.",
+      "errors.listing.ioSerious.suggestion": "The Linux desktop environment (робоче середовище), not the Desktop folder.",
+      "mtp.ptpcameradDialog.explanation": "«your desktop» is the Linux desktop environment («робоче середовище»), not the Desktop folder.",
+      "onboarding.stepOptional.mtp.desc": "«your desktop» is the Linux desktop environment («робоче середовище»), not the Desktop folder."
+    }
   },
   "destination": {
     "chosen": "призначення",
@@ -1302,7 +1326,16 @@
         "form": "завантажити",
         "why": "MS/Windows wording, and it also means load; macOS writes викачати"
       }
-    ]
+    ],
+    "windows": {
+      "chosen": "завантажити",
+      "accept": ["завантаж"],
+      "note": "Windows' own verb and its Downloads folder name «Завантаження» (MS TBX download → завантажити)."
+    },
+    "exceptions": {
+      "common.downloadsFdaHint": "The `other` branch serves Windows and Linux, which both name the folder «Завантаження» (Windows' own name; GNOME's XDG folder).",
+      "downloads.fda.message": "The `other` branch serves Windows and Linux, which both name the folder «Завантаження» (Windows' own name; GNOME's XDG folder)."
+    }
   },
   "drag": {
     "chosen": "перетягнути",
@@ -1371,7 +1404,12 @@
         "why": "GNOME wording, lowercase; macOS writes Очистити Смітник"
       }
     ],
-    "note": "Added «Очистіть Смітник» (b08): the polite imperative in recovery bullets (errors.listing.diskFullErrno.suggestion, errors.listing.storageFull.suggestion). Drop it if another batch already added it."
+    "note": "Added «Очистіть Смітник» (b08): the polite imperative in recovery bullets (errors.listing.diskFullErrno.suggestion, errors.listing.storageFull.suggestion). Drop it if another batch already added it.",
+    "windows": {
+      "chosen": "Очистити кошик",
+      "accept": ["Очистити кошик", "Очистіть Кошик"],
+      "note": "Windows' Recycle Bin context-menu command; tentative label (no pile hit)."
+    }
   },
   "enable": {
     "chosen": "увімкнути",
@@ -1581,6 +1619,11 @@
     "exceptions": {
       "multiRename.reason.unreadable": "the preview row can be a file or a folder (the @key asks for a neutral word), so it says елемент",
       "onboarding.stepAi.table.selectWith": "The quoted example request names images, not files, which is how a person would phrase it."
+    },
+    "windows": {
+      "chosen": "файл",
+      "accept": ["файл", "Провідник"],
+      "note": "«Провідник» is Windows' name for File Explorer, which the file concept also matches."
     }
   },
   "file-handle": {
@@ -2301,7 +2344,12 @@
     "forms": "the store: Вʼязка ключів (short: вʼязка; locative у Вʼязці ключів); the Keychain Access app: «Ключар»; the remember checkbox: «Зберегти пароль у Вʼязці ключів» (macOS: «Зберегти пароль у вʼязці»)",
     "note": "The apostrophe is U+02BC. Apple names the app «Ключар», not a literal of Keychain Access. «вʼязц» covers the locative «у Вʼязці» (к→ц alternation), which «вʼязк» misses.",
     "confidence": "high",
-    "sources": "macOS live Keychain Access.app Localizable (Keychain Access → Ключар; Keychain: %@ → Вʼязка: %@); Resources (KeyChain → Вʼязка ключів); iCloudSettings (Keychain → Вʼязка); AMPDevices + DiskImages2 (Remember password in my keychain → Зберегти пароль у вʼязці)"
+    "sources": "macOS live Keychain Access.app Localizable (Keychain Access → Ключар; Keychain: %@ → Вʼязка: %@); Resources (KeyChain → Вʼязка ключів); iCloudSettings (Keychain → Вʼязка); AMPDevices + DiskImages2 (Remember password in my keychain → Зберегти пароль у вʼязці)",
+    "windows": {
+      "chosen": "Диспетчер облікових даних",
+      "accept": ["Диспетчер облікових даних", "Диспетчера облікових даних", "Диспетчері облікових даних"],
+      "note": "Windows' credential store (MS TBX Credential Manager → диспетчер облікових даних)."
+    }
   },
   "keyword": {
     "chosen": "ключове слово",
@@ -2674,7 +2722,10 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS Finder LocalizableMerged MV12 and AppKit SavePanel (Move → Перемістити); MS; Double Commander (Move → Перемістити)"
+    "sources": "macOS Finder LocalizableMerged MV12 and AppKit SavePanel (Move → Перемістити); MS; Double Commander (Move → Перемістити)",
+    "exceptions": {
+      "stateRecovery.credentials.body": "The user moving to a new PC («перенесення на новий ПК»), not moving files."
+    }
   },
   "move-to-trash": {
     "chosen": "Перемістити в Смітник",
@@ -2997,7 +3048,10 @@
     "accept": ["шлях"],
     "forms": "Copy path → Скопіювати шлях (Finder: Скопіювати як шлях)",
     "confidence": "high",
-    "sources": "macOS AppKit Accessibility (path → шлях); Finder MenuBar TCC-xb-ldB (Copy as Pathname → Скопіювати як шлях); MS; Double Commander"
+    "sources": "macOS AppKit Accessibility (path → шлях); Finder MenuBar TCC-xb-ldB (Copy as Pathname → Скопіювати як шлях); MS; Double Commander",
+    "exceptions": {
+      "settings.fileOperations.adbBinaryPath.description": "«PATH» is the environment variable, kept verbatim, not a file-system path string."
+    }
   },
   "pattern": {
     "chosen": "шаблон",
@@ -3039,8 +3093,13 @@
     "sources": "macOS Finder LocalizableMerged N30 (permission settings → привілеї; Sharing & Permissions → «Спільний доступ і привілеї»), InfoWindowPermissionsView 142 (Немає інформації про привілеї); live ErrnoErrors (Permission denied → Доступ заборонено); Dolphin (Permissions → Права доступу)",
     "windows": {
       "chosen": "дозволи",
-      "accept": ["дозвол"],
-      "note": "Windows' own word for file-system permissions (MS TBX permissions → дозволи; the Security tab lists Дозволи); only the windows branch takes it."
+      "accept": ["дозвол", "дозвіл"],
+      "note": "Windows' own word for file-system permissions (MS TBX permissions → дозволи; the Security tab lists Дозволи); only the windows branch takes it. «дозвіл» covers the singular (дозвіл адміністратора)."
+    },
+    "exceptions": {
+      "errors.listing.noPermissionErrno.explanation": "«doesn't have permission to access» reads «не має доступу», byte-identical with the macOS branch's frame; the Linux branch's second sentence says «не дозволено».",
+      "errors.listing.permissionDenied.explanation": "«doesn't have permission to access» reads «не має доступу», byte-identical with the macOS branch's frame; the Linux branch's second sentence says «не дозволено».",
+      "onboarding.stepOptional.networking.summary": "The Linux branch says no OS consent is needed («Дозвіл не потрібен»): the privacy-permission sense, not file-system rights."
     }
   },
   "personal-data": {
@@ -3854,7 +3913,10 @@
     "chosen": "сервер",
     "accept": ["сервер"],
     "confidence": "high",
-    "sources": "macOS AppKit Servers → «Сервери»; Finder Connect to Server… → «Підʼєднатися до сервера…»; MS server → «сервер»"
+    "sources": "macOS AppKit Servers → «Сервери»; Finder Connect to Server… → «Підʼєднатися до сервера…»; MS server → «сервер»",
+    "exceptions": {
+      "fileOperations.validation.pathNotAbsolute": "«\\\\server\\share» is a literal UNC path example, kept verbatim."
+    }
   },
   "server-address": {
     "chosen": "адреса сервера",
@@ -4763,7 +4825,10 @@
     "chosen": "користувач",
     "accept": ["користувач"],
     "confidence": "high",
-    "sources": "macOS live Resources Schema User → «Користувач», AccountsUISettings users → «користувачі»"
+    "sources": "macOS live Resources Schema User → «Користувач», AccountsUISettings users → «користувачі»",
+    "exceptions": {
+      "goToPath.dialog.inputPlaceholder": "«C:\\Users» is a literal sample path, kept verbatim."
+    }
   },
   "username": {
     "chosen": "імʼя користувача",
@@ -4955,5 +5020,67 @@
     "forms": "цей ПК не може",
     "confidence": "tentative",
     "sources": "MS terminology PC (the TBX has no “This PC”) → ПК; Windows names This PC Цей ПК"
+  },
+  "file-explorer": {
+    "chosen": "Провідник",
+    "accept": ["Провідник"],
+    "confidence": "high",
+    "sources": "MS TBX (File Explorer → Провідник Windows / Файловий провідник); Ukrainian Windows names the app Провідник",
+    "note": "Locative «у Провіднику». Windows-only name; the macOS branches say Finder.",
+    "exceptions": {
+      "fileExplorer.pane.fileExplorerAriaLabel": "Cmdr's own file panes (Файлові панелі), not Windows File Explorer."
+    }
+  },
+  "user-folder": {
+    "chosen": "папка користувача",
+    "accept": ["папк", "користувач"],
+    "confidence": "tentative",
+    "sources": "No TBX entry; Ukrainian Windows calls C:\\Users\\<name> the user's folder (папка користувача), matching MS's папка for folder",
+    "note": "Windows branch of the home-folder keys (errors.write.homeFolder*)."
+  },
+  "powershell": {
+    "chosen": "PowerShell",
+    "accept": ["PowerShell"],
+    "confidence": "high",
+    "sources": "Microsoft keeps the product name PowerShell untranslated; takes no case ending (у PowerShell)"
+  },
+  "credential-manager": {
+    "chosen": "Диспетчер облікових даних",
+    "accept": ["Диспетчер облікових даних", "Диспетчера облікових даних", "Диспетчері облікових даних"],
+    "confidence": "high",
+    "sources": "MS TBX (Credential Manager → диспетчер облікових даних)",
+    "note": "Capitalized as the app name; locative «у Диспетчері облікових даних»."
+  },
+  "app-closes": {
+    "chosen": "закритися",
+    "accept": ["закри"],
+    "confidence": "tentative",
+    "sources": "MS TBX (Exit/close → «Закрити»); no pile entry for an app closing as the subject",
+    "forms": "then closes → «а потім закриється»; Cmdr closes afterwards → «Після цього Cmdr закриється»"
+  },
+  "smb-negotiated-security": {
+    "chosen": "параметри безпеки, узгоджені з Cmdr",
+    "accept": ["параметри безпеки", "параметрів безпеки"],
+    "confidence": "tentative",
+    "sources": "the shipped macOS branch of fileExplorer.network.osMountFallback.negotiationInvalid; no pile entry"
+  },
+  "private-key": {
+    "chosen": "приватний ключ",
+    "accept": ["приватн"],
+    "confidence": "high",
+    "sources": "live Keychain Access (uk.lproj) «приватний ключ»; the shipped macOS branch of ai.cloudConsent.askCmdr.protectedContents",
+    "avoid": [
+      {
+        "form": "закритий ключ",
+        "why": "Microsoft's wording; Ukrainian macOS (Keychain Access) says приватний ключ"
+      }
+    ]
+  },
+  "privacy-permission": {
+    "chosen": "дозвіл",
+    "accept": ["дозвіл", "дозвол", "доступ"],
+    "confidence": "tentative",
+    "sources": "shipped macOS branches of onboarding.stepOptional.networking.summary/.desc («дозвіл «Локальна мережа»»); macOS consent alerts ask to «дозволити»",
+    "note": "An app's consent from the OS: Ukrainian macOS phrases it as access granted («надати доступ», «Повний доступ до диска») or a named «дозвіл». File-system rights stay привілеї (the permission concept)."
   }
 }

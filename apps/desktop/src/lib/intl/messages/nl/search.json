@@ -132,9 +132,9 @@
   "@search.coverage.line.failedRoots": {
     "sourceHash": "36c41ae"
   },
-  "search.coverage.line.denied": "{platform, select, macos {{count, plural, one {macOS liet Cmdr niet in één map kijken, dus er staat niets uit die map in de resultaten.} other {macOS liet Cmdr niet in {countText} mappen kijken, dus er staat niets uit die mappen in de resultaten.}}} windows {{count, plural, one {Windows didn’t let Cmdr look inside one folder, so nothing from it is in the results.} other {Windows didn’t let Cmdr look inside {countText} folders, so nothing from them is in the results.}}} other {{count, plural, one {Cmdr didn’t have permission to look inside one folder, so nothing from it is in the results.} other {Cmdr didn’t have permission to look inside {countText} folders, so nothing from them is in the results.}}}}",
+  "search.coverage.line.denied": "{platform, select, macos {{count, plural, one {macOS liet Cmdr niet in één map kijken, dus er staat niets uit die map in de resultaten.} other {macOS liet Cmdr niet in {countText} mappen kijken, dus er staat niets uit die mappen in de resultaten.}}} windows {{count, plural, one {Windows liet Cmdr niet in één map kijken, dus er staat niets uit die map in de resultaten.} other {Windows liet Cmdr niet in {countText} mappen kijken, dus er staat niets uit die mappen in de resultaten.}}} other {{count, plural, one {Cmdr had geen toestemming om in één map te kijken, dus er staat niets uit die map in de resultaten.} other {Cmdr had geen toestemming om in {countText} mappen te kijken, dus er staat niets uit die mappen in de resultaten.}}}}",
   "@search.coverage.line.denied": {
-    "sourceHash": "c2b388f"
+    "sourceHash": "9078ca3"
   },
   "search.coverage.line.offLimits": "{count, plural, one {Het systeem houdt één map gesloten voor Cmdr, dus er staat niets uit die map in de resultaten.} other {Het systeem houdt {countText} mappen gesloten voor Cmdr, dus er staat niets uit die mappen in de resultaten.}}",
   "@search.coverage.line.offLimits": {

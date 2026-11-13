@@ -71,9 +71,9 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "{platform, select, macos {Cmdr cần quyền truy cập đầy đủ vào ổ đĩa để theo dõi thư mục Tải về của bạn.} other {Cmdr can’t watch your Downloads folder. Check that the folder exists and that you can open it.}}",
+  "downloads.fda.message": "{platform, select, macos {Cmdr cần quyền truy cập đầy đủ vào ổ đĩa để theo dõi thư mục Tải về của bạn.} other {Cmdr không thể theo dõi thư mục tải về của bạn. Hãy kiểm tra xem thư mục đó có tồn tại không và bạn có mở được thư mục đó không.}}",
   "@downloads.fda.message": {
-    "sourceHash": "82c82c6"
+    "sourceHash": "dd37803"
   },
   "downloads.fda.dismiss": "Bỏ qua",
   "@downloads.fda.dismiss": {
@@ -131,9 +131,9 @@
   "@downloads.shortcutRow.unavailable": {
     "sourceHash": "8882532"
   },
-  "downloads.shortcutRow.addModifier": "{platform, select, macos {Thêm một phím bổ trợ (⌘, ⌃, ⌥, hoặc ⇧)} windows {Add a modifier (Ctrl, Alt, Shift, or Win)} other {Add a modifier (Ctrl, Alt, Shift, or Super)}}",
+  "downloads.shortcutRow.addModifier": "{platform, select, macos {Thêm một phím bổ trợ (⌘, ⌃, ⌥, hoặc ⇧)} windows {Thêm một phím bổ trợ (Ctrl, Alt, Shift, hoặc Win)} other {Thêm một phím bổ trợ (Ctrl, Alt, Shift, hoặc Super)}}",
   "@downloads.shortcutRow.addModifier": {
-    "sourceHash": "28a5ba2"
+    "sourceHash": "a56bd6c"
   },
   "downloads.toggleDescription.bound": "Nhấn {binding} từ bất kỳ ứng dụng nào để nhảy đến mục tải về gần đây nhất của bạn.",
   "@downloads.toggleDescription.bound": {

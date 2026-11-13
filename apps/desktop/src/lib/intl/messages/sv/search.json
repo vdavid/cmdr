@@ -131,9 +131,9 @@
   "@search.coverage.line.failedRoots": {
     "sourceHash": "36c41ae"
   },
-  "search.coverage.line.denied": "{platform, select, macos {{count, plural, one {macOS lät inte Cmdr titta in i en mapp, så inget därifrån finns bland resultaten.} other {macOS lät inte Cmdr titta in i {countText} mappar, så inget därifrån finns bland resultaten.}}} windows {{count, plural, one {Windows didn’t let Cmdr look inside one folder, so nothing from it is in the results.} other {Windows didn’t let Cmdr look inside {countText} folders, so nothing from them is in the results.}}} other {{count, plural, one {Cmdr didn’t have permission to look inside one folder, so nothing from it is in the results.} other {Cmdr didn’t have permission to look inside {countText} folders, so nothing from them is in the results.}}}}",
+  "search.coverage.line.denied": "{platform, select, macos {{count, plural, one {macOS lät inte Cmdr titta in i en mapp, så inget därifrån finns bland resultaten.} other {macOS lät inte Cmdr titta in i {countText} mappar, så inget därifrån finns bland resultaten.}}} windows {{count, plural, one {Windows lät inte Cmdr titta in i en mapp, så inget därifrån finns bland resultaten.} other {Windows lät inte Cmdr titta in i {countText} mappar, så inget därifrån finns bland resultaten.}}} other {{count, plural, one {Cmdr hade inte behörighet att titta in i en mapp, så inget därifrån finns bland resultaten.} other {Cmdr hade inte behörighet att titta in i {countText} mappar, så inget därifrån finns bland resultaten.}}}}",
   "@search.coverage.line.denied": {
-    "sourceHash": "c2b388f"
+    "sourceHash": "9078ca3"
   },
   "search.coverage.line.offLimits": "{count, plural, one {Systemet håller en mapp stängd för Cmdr, så inget därifrån finns bland resultaten.} other {Systemet håller {countText} mappar stängda för Cmdr, så inget därifrån finns bland resultaten.}}",
   "@search.coverage.line.offLimits": {
