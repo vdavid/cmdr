@@ -172,6 +172,13 @@ output: `docs/i18n/termbase.md` § Tooling; the translator-facing rules: `docs/i
   problems the patch adds. Writes through `JSON.stringify` then oxfmt, which reproduces an oxfmt-formatted termbase byte
   for byte (verified on every `terms.json` and `concepts.json`, 2026-11-13), so only the patched lines move. New IDs go
   last: the files aren't sorted, and the homemade scripts that re-sorted them churned hundreds of lines.
+- **`i18n-term.ts`** (`pnpm i18n:term`): every concept a word names, with its sense, boundaries, `distinct` neighbors'
+  senses, and each language's ruling (`rulingParts` in `i18n-termbase-lib.ts`, the brief's own renderer). `--key` shows
+  which concepts a key's English hits and which a `notMatch` keeps out.
+- **`i18n-pile.ts`** (+ `i18n-pile-lib.ts`, `pnpm i18n:pile`): the reference-pile recipes of
+  `docs/i18n/reference-pile/how-to-mine.md` as one lookup: macOS joined by key, every TBX sense with its definition, the
+  gettext catalogs by `msgid` with mnemonics ignored, Total Commander in reverse only (it has no English side). Reads
+  whole files (the 63 MB German TBX parses in about half a second), no index.
 - **`i18n-repo-lib.ts`**: git, the main clone (from `--git-common-dir`, so a worktree finds the pile without anyone
   naming the main clone's path), each tag's pile folders (`pt` → `pt-BR`), `--changed-since`'s merge-base English, and
   one-key-per-line list files. Every i18n CLI goes through it.

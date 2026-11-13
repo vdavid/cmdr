@@ -129,6 +129,45 @@ export function formsForBranch(term: Term, branch: 'macos' | 'windows' | 'other'
   return term
 }
 
+/** A ruling's form fields, one part each: accept, prose-only, forms, avoid, note, and the per-OS forms. */
+function formParts(term: Term): string[] {
+  const parts: string[] = []
+  if (term.accept?.length) parts.push(`accept: ${term.accept.join(', ')}`)
+  if (term.proseAccept?.length) parts.push(`prose only: ${term.proseAccept.join(', ')} (never in a name or label)`)
+  if (term.forms) parts.push(`forms: ${term.forms}`)
+  if (term.avoid?.length) parts.push(`avoid: ${term.avoid.map((a) => `${a.form} (${a.why})`).join('; ')}`)
+  if (term.note) parts.push(`note: ${term.note}`)
+  return [...parts, ...osFormsSummaries(term)]
+}
+
+/**
+ * A ruling as the brief and `pnpm i18n:term` print it, one part per field:
+ * `**chosen** (confidence)`, then accept, prose-only forms, forms, avoid, note,
+ * the per-OS forms, the exceptions `exceptionKeys` selects, and the decision
+ * pointer. Single-sourced so the two readers can't word a ruling differently.
+ */
+export function rulingParts(
+  term: Term,
+  {
+    exceptionKeys,
+    exceptionLabel = 'exceptions',
+    decision = true,
+  }: { exceptionKeys?: (key: string) => boolean; exceptionLabel?: string; decision?: boolean } = {},
+): string[] {
+  const parts = [`**${term.chosen}** (${term.confidence})`, ...formParts(term)]
+  if (exceptionKeys) {
+    const exceptions = Object.entries(term.exceptions ?? {}).filter(([key]) => exceptionKeys(key))
+    if (exceptions.length > 0) {
+      parts.push(`${exceptionLabel}: ${exceptions.map(([key, why]) => `\`${key}\` (${why})`).join('; ')}`)
+    }
+  }
+  if (decision) {
+    const pointers = decisionPointers(term.decision)
+    if (pointers.length > 0) parts.push(`decision: ${pointers.map((pointer) => `"${pointer}"`).join('; ')}`)
+  }
+  return parts
+}
+
 /** A term's `decision` pointers as a list, whichever shape the file uses. */
 export function decisionPointers(decision: unknown): string[] {
   if (typeof decision === 'string') return [decision]

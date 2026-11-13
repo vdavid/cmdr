@@ -53,6 +53,8 @@
     "i18n:brief": "node scripts/i18n-brief.ts",
     "i18n:apply": "node scripts/i18n-apply.ts",
     "i18n:apply-terms": "node scripts/i18n-apply-terms.ts",
+    "i18n:term": "node scripts/i18n-term.ts",
+    "i18n:pile": "node scripts/i18n-pile.ts",
     "analytics:defaults": "node scripts/gen-analytics-defaults.ts",
     "marketing:shots": "node scripts/marketing-shots.ts",
     "marketing:clips": "node scripts/marketing-clips.ts",

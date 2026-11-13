@@ -61,14 +61,13 @@ import type { MemoryIndex } from './i18n-brief-memory.ts'
 import {
   compileConcepts,
   coveredSpans,
-  decisionPointers,
   decisionsPath,
   englishMatchText,
   englishMatchTexts,
   extractDigest,
   loadConceptsFor,
   loadTerms,
-  osFormsSummaries,
+  rulingParts,
   parseDecisions,
   readTextIfPresent,
   resolveDocsRoot,
@@ -419,23 +418,14 @@ function keysSection(ctx: BriefContext): BriefSection {
 function rulingLine(ctx: BriefContext, tag: string, id: string): string {
   const term: Term | undefined = ctx.termbases.get(tag)?.[id]
   if (!term) return `- ${tag}: no ruling (mine the pile, then add one)`
-  const parts = [`**${term.chosen}** (${term.confidence})`]
-  if (term.accept?.length) parts.push(`accept: ${term.accept.join(', ')}`)
-  if (term.proseAccept?.length) parts.push(`prose only: ${term.proseAccept.join(', ')} (never in a name or label)`)
-  if (term.forms) parts.push(`forms: ${term.forms}`)
-  if (term.avoid?.length) parts.push(`avoid: ${term.avoid.map((a) => `${a.form} (${a.why})`).join('; ')}`)
-  if (term.note) parts.push(`note: ${term.note}`)
-  parts.push(...osFormsSummaries(term))
   // A blind run drops both: a batch key's exception names how it deviates, and
   // the decision it points at is withheld anyway.
-  if (!ctx.opts.excludeTargetValues) {
-    const exceptions = Object.entries(term.exceptions ?? {}).filter(([key]) => ctx.batch.has(key))
-    if (exceptions.length > 0) {
-      parts.push(`exceptions here: ${exceptions.map(([key, why]) => `\`${key}\` (${why})`).join('; ')}`)
-    }
-    const pointers = decisionPointers(term.decision)
-    if (pointers.length > 0) parts.push(`decision: ${pointers.map((pointer) => `"${pointer}"`).join('; ')}`)
-  }
+  const blind = ctx.opts.excludeTargetValues === true
+  const parts = rulingParts(term, {
+    exceptionLabel: 'exceptions here',
+    exceptionKeys: blind ? undefined : (key) => ctx.batch.has(key),
+    decision: !blind,
+  })
   return `- ${tag}: ${parts.join(' · ')}`
 }
 
