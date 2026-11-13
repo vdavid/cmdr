@@ -1,0 +1,6 @@
+{
+  "shortcuts.conflict.systemShortcut": {
+    "text": "{combo} wordt meestal door macOS gebruikt ({label}), dus bereikt de sneltoets Cmdr mogelijk nooit. Je kunt hem vrijmaken in Systeeminstellingen > Toetsenbord.",
+    "reason": "“dus bereikt het Cmdr” and “Je kunt het vrijmaken” pointed the pronoun `het` at `{combo}`; it now names “de sneltoets”, as the reworded English asks"
+  }
+}

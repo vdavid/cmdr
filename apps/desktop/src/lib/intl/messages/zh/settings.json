@@ -514,9 +514,9 @@
   "@settings.fileOperations.macOnlyFiles.label": {
     "sourceHash": "be693c6"
   },
-  "settings.fileOperations.macOnlyFiles.description": "拷贝、移动或压缩文件时跳过 .DS_Store 和 ._* 文件。",
+  "settings.fileOperations.macOnlyFiles.description": "拷贝、移动或压缩时跳过 .DS_Store 和 ._* 文件。",
   "@settings.fileOperations.macOnlyFiles.description": {
-    "sourceHash": "72d2492"
+    "sourceHash": "02578a7"
   },
   "settings.fileOperations.macOnlyFiles.opt.include": "包含",
   "@settings.fileOperations.macOnlyFiles.opt.include": {

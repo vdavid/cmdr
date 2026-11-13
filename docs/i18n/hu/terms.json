@@ -3569,7 +3569,12 @@
     "accept": ["parancs", "gyorsbillentyű", "billentyűparancs", "billentyűparanc", "paranc"],
     "forms": "Keyboard shortcuts (the Settings section) → Billentyűparancsok; no shortcut → Nincs billentyűparancs; a shortcut glyph takes no suffix, so name it with a base word: A Shift+F8 billentyűparanccsal",
     "confidence": "high",
-    "sources": "macOS (Billentyűparancsok)"
+    "sources": "macOS (Billentyűparancsok)",
+    "exceptions": {
+      "shortcuts.conflict.systemShortcut": "The {combo}: colon frame names the key itself, and the genderless ezt points back at it unambiguously; the macOS text is frozen, and its siblings keep the same frame.",
+      "shortcuts.conflict.takenByWindows": "Same {combo}: ezt … frame as the frozen shortcuts.conflict.systemShortcut and reservedByMacOs; Hungarian ezt carries no gender, so no noun is needed.",
+      "shortcuts.conflict.takenByLinuxDesktops": "Same {combo}: ezt … frame as the frozen shortcuts.conflict.systemShortcut and reservedByMacOs; Hungarian ezt carries no gender, so no noun is needed."
+    }
   },
   "show": {
     "chosen": "megjelenítés",

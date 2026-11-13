@@ -1,0 +1,10 @@
+{
+  "errors.write.trashRefused.message.ownedByAnotherUser": {
+    "text": "Otra cuenta de este Mac posee {count} de los elementos que elegiste, y en la carpeta que los contiene solo el propietario de un elemento puede moverlo.",
+    "reason": "“en su carpeta” read as the other account’s folder; it now says the folder holding the items, as the reworded English does"
+  },
+  "shortcuts.conflict.systemShortcut": {
+    "text": "macOS suele usar {combo} ({label}), así que puede que el atajo nunca llegue a Cmdr. Puedes liberarlo en Configuración del Sistema > Teclado.",
+    "reason": "“Puedes liberarla” pointed a feminine pronoun at `{combo}`, whose gender is unknown; it now names “el atajo”, as the reworded English asks"
+  }
+}

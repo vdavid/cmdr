@@ -167,3 +167,7 @@ German runs 20–35% longer than English. Look at these against the pseudolocale
 - **`Esc-Taste` / `Rücktaste`** (`settings.fileExplorer.typeToJump.mode.description`, `other` branch): the PC key-cap
   names (TBX Rücktaste), beside the macOS branch's `esc-Taste` / `Löschtaste (⌫)`; confirm the capital `Esc` reads right
   on Windows and Linux.
+- **`Besitzer` on Windows and Linux** (`errors.write.trashRefused.message.ownedByAnotherUser`): the `windows` and
+  `other` branches take the OS word `Besitzer` (TBX, Nautilus, Thunar) beside the macOS branch's `Eigentümer`, so they
+  read `besitzt … der Besitzer`; confirm the echo reads fine, and whether the generic masculine
+  `der Besitzer`/`der Eigentümer` should become `das Konto, dem ein Objekt gehört`.

@@ -2560,11 +2560,19 @@
     "chosen": "Eigentümer",
     "confidence": "high",
     "note": "The person who runs a server is not an owner in this sense: die Person, die den Server betreibt.",
-    "sources": "macOS Finder Get Info (Teilen & Zugriffsrechte)",
+    "sources": "macOS Finder Get Info (Teilen & Zugriffsrechte); Windows and Linux forms: MS TBX, Nautilus, Thunar (pnpm i18n:pile --term owner, 2026-11-13)",
     "exceptions": {
       "servers.hostKey.firstContactBody": "the person who runs a server is not an owner in this sense: die Person, die den Server betreibt",
       "servers.hostKey.changedBody": "the person who runs a server is not an owner in this sense: die Person, die den Server betreibt",
       "servers.certificate.changedBody": "the person who runs a server is not an owner in this sense: die Person, die den Server betreibt"
+    },
+    "windows": {
+      "chosen": "Besitzer",
+      "note": "Windows Properties > Security and the MS TBX say Besitzer (de/microsoft-terminology/GERMAN.tbx, every owner sense)."
+    },
+    "other": {
+      "chosen": "Besitzer",
+      "note": "Nautilus, Thunar, and Dolphin share Besitzer (de/gnome-nautilus/nautilus.po Owner, de/xfce-thunar/thunar.po Owner)."
     }
   },
   "package": {

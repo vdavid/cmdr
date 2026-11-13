@@ -1479,7 +1479,15 @@
       "menu.view.fullScreen": "The View-menu row shows on Windows and Linux only (macOS adds its own), so it takes the Windows and browser label 全屏 (MS TBX full screen → 全屏; Edge and Chrome zh-CN)."
     },
     "forms": "按 Esc 键退出全屏幕",
-    "sources": "macOS AppKit"
+    "sources": "macOS AppKit (全屏幕); MS TBX full screen → 全屏 / 全屏幕, Edge and Chrome zh-CN 全屏; Double Commander 全屏显示",
+    "windows": {
+      "chosen": "全屏",
+      "note": "Windows and the browsers say 全屏 (the same label as menu.view.fullScreen)."
+    },
+    "other": {
+      "chosen": "全屏",
+      "note": "Linux takes 全屏 too; the command label writes 全屏模式 where the English says full screen mode (KDE's Full Screen Mode; no zh Linux catalog in the pile has it, so tentative)."
+    }
   },
   "full-view": {
     "chosen": "完整",
@@ -3149,7 +3157,12 @@
     "chosen": "快捷键",
     "confidence": "high",
     "forms": "Keyboard shortcuts 键盘快捷键; key combination 按键组合",
-    "sources": "standard"
+    "sources": "standard",
+    "exceptions": {
+      "shortcuts.conflict.systemShortcut": "Chinese drops the subject: 因此可能永远传不到 Cmdr reads {combo} as what can't get through, with no pronoun to mis-point, so the English 'the shortcut' needs no noun.",
+      "shortcuts.conflict.takenByWindows": "Same zero-subject frame as shortcuts.conflict.systemShortcut (因此可能永远传不到 Cmdr).",
+      "shortcuts.conflict.takenByLinuxDesktops": "Same zero-subject frame as shortcuts.conflict.systemShortcut (因此可能永远传不到 Cmdr)."
+    }
   },
   "show": {
     "chosen": "显示",

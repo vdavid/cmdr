@@ -79,21 +79,21 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.bodyWithKeys": "Đây là dạng xem thô của tệp. Có lẽ bạn muốn xem <kindName>{category, select, image {hình ảnh} document {tài liệu} other {tệp {ext}}}</kindName> thật sự. Để làm vậy, hãy đóng cửa sổ này rồi nhấn <quickLookKey></quickLookKey> để mở Xem nhanh, hoặc nhấn <openKey></openKey> (hoặc bấm đúp vào tệp) để mở tệp bằng ứng dụng tương ứng.",
+  "viewer.binaryWarning.bodyWithKeys": "Đây là dạng xem thô của tệp. Có lẽ bạn muốn xem {category, select, image {<kindName>hình ảnh</kindName> thật sự} document {<kindName>tài liệu</kindName> thật sự} other {<kindName>tệp {ext}</kindName> thật sự}}. Để làm vậy, hãy đóng cửa sổ này rồi nhấn <quickLookKey></quickLookKey> để mở Xem nhanh, hoặc nhấn <openKey></openKey> (hoặc bấm đúp vào tệp) để mở tệp bằng ứng dụng tương ứng.",
   "@viewer.binaryWarning.bodyWithKeys": {
-    "sourceHash": "fd5cfb7"
+    "sourceHash": "b8f2b8b"
   },
-  "viewer.binaryWarning.bodyWithQuickLookKey": "Đây là dạng xem thô của tệp. Có lẽ bạn muốn xem <kindName>{category, select, image {hình ảnh} document {tài liệu} other {tệp {ext}}}</kindName> thật sự. Để làm vậy, hãy đóng cửa sổ này rồi nhấn <quickLookKey></quickLookKey> để mở Xem nhanh, hoặc bấm đúp vào tệp để mở tệp bằng ứng dụng tương ứng.",
+  "viewer.binaryWarning.bodyWithQuickLookKey": "Đây là dạng xem thô của tệp. Có lẽ bạn muốn xem {category, select, image {<kindName>hình ảnh</kindName> thật sự} document {<kindName>tài liệu</kindName> thật sự} other {<kindName>tệp {ext}</kindName> thật sự}}. Để làm vậy, hãy đóng cửa sổ này rồi nhấn <quickLookKey></quickLookKey> để mở Xem nhanh, hoặc bấm đúp vào tệp để mở tệp bằng ứng dụng tương ứng.",
   "@viewer.binaryWarning.bodyWithQuickLookKey": {
-    "sourceHash": "ed8bdcf"
+    "sourceHash": "ee3a485"
   },
-  "viewer.binaryWarning.bodyWithOpenKey": "Đây là dạng xem thô của tệp. Có lẽ bạn muốn xem <kindName>{category, select, image {hình ảnh} document {tài liệu} other {tệp {ext}}}</kindName> thật sự. Để làm vậy, hãy đóng cửa sổ này rồi nhấn <openKey></openKey> (hoặc bấm đúp vào tệp) để mở tệp bằng ứng dụng tương ứng.",
+  "viewer.binaryWarning.bodyWithOpenKey": "Đây là dạng xem thô của tệp. Có lẽ bạn muốn xem {category, select, image {<kindName>hình ảnh</kindName> thật sự} document {<kindName>tài liệu</kindName> thật sự} other {<kindName>tệp {ext}</kindName> thật sự}}. Để làm vậy, hãy đóng cửa sổ này rồi nhấn <openKey></openKey> (hoặc bấm đúp vào tệp) để mở tệp bằng ứng dụng tương ứng.",
   "@viewer.binaryWarning.bodyWithOpenKey": {
-    "sourceHash": "b219b68"
+    "sourceHash": "7325848"
   },
-  "viewer.binaryWarning.bodyWithoutKeys": "Đây là dạng xem thô của tệp. Có lẽ bạn muốn xem <kindName>{category, select, image {hình ảnh} document {tài liệu} other {tệp {ext}}}</kindName> thật sự. Để làm vậy, hãy đóng cửa sổ này rồi bấm đúp vào tệp để mở tệp bằng ứng dụng tương ứng.",
+  "viewer.binaryWarning.bodyWithoutKeys": "Đây là dạng xem thô của tệp. Có lẽ bạn muốn xem {category, select, image {<kindName>hình ảnh</kindName> thật sự} document {<kindName>tài liệu</kindName> thật sự} other {<kindName>tệp {ext}</kindName> thật sự}}. Để làm vậy, hãy đóng cửa sổ này rồi bấm đúp vào tệp để mở tệp bằng ứng dụng tương ứng.",
   "@viewer.binaryWarning.bodyWithoutKeys": {
-    "sourceHash": "610efa6"
+    "sourceHash": "6cc5695"
   },
   "viewer.binaryWarning.dismiss": "Đóng",
   "@viewer.binaryWarning.dismiss": {

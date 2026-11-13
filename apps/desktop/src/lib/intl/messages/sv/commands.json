@@ -244,9 +244,9 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "{platform, select, macos {Växla helskärmsläge} windows {Växla helskärmsläge} other {Toggle full screen mode}}",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Växla helskärmsläge} windows {Växla helskärm} other {Växla helskärmsläge}}",
   "@commands.viewToggleFullScreen.label": {
-    "sourceHash": "57789cb"
+    "sourceHash": "76055d3"
   },
   "commands.sortByName.label": "Sortera efter namn",
   "@commands.sortByName.label": {

@@ -1474,7 +1474,15 @@
       "menu.view.fullScreen": "A View-menu row only Windows and Linux show (AppKit adds its own on macOS), so it takes their word: Volledig scherm (MS terminology full screen → volledig scherm; Double Commander Volledig scherm)."
     },
     "forms": "noun schermvullende weergave, adjective schermvullend; Exit full screen on Escape → Schermvullende weergave uitschakelen met Escape",
-    "sources": "macOS AppKit (Enter Full Screen → Schakel schermvullende weergave in, Full Screen → Schermvullend)"
+    "sources": "macOS AppKit (Enter Full Screen → Schakel schermvullende weergave in, Full Screen → Schermvullend)",
+    "windows": {
+      "chosen": "volledig scherm",
+      "note": "Windows and the browsers say Volledig scherm (MS TBX full screen / full-screen mode → volledig scherm); Toggle → Volledig scherm aan/uit."
+    },
+    "other": {
+      "chosen": "volledig scherm",
+      "note": "Tentative: the pile's Linux catalogs have no full-screen string; MS TBX full-screen mode → volledig scherm and cross-platform Double Commander Volledig scherm agree."
+    }
   },
   "full-view": {
     "chosen": "Volledige weergave",

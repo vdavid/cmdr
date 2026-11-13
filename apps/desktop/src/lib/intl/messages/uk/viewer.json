@@ -79,21 +79,21 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.bodyWithKeys": "Це сирий вигляд файлу. Можливо, ви хотіли переглянути <kindName>{category, select, image {зображення} document {документ} other {файл {ext}}}</kindName> у звичайному вигляді. Для цього закрийте це вікно й натисніть <quickLookKey></quickLookKey>, щоб відкрити Швидкий перегляд, або натисніть <openKey></openKey> (чи двічі клацніть файл), щоб відкрити його у повʼязаній програмі.",
+  "viewer.binaryWarning.bodyWithKeys": "Це сирий вигляд файлу. Можливо, ви хотіли переглянути {category, select, image {<kindName>зображення</kindName>} document {<kindName>документ</kindName>} other {<kindName>файл {ext}</kindName>}} у звичайному вигляді. Для цього закрийте це вікно й натисніть <quickLookKey></quickLookKey>, щоб відкрити Швидкий перегляд, або натисніть <openKey></openKey> (чи двічі клацніть файл), щоб відкрити його у повʼязаній програмі.",
   "@viewer.binaryWarning.bodyWithKeys": {
-    "sourceHash": "fd5cfb7"
+    "sourceHash": "b8f2b8b"
   },
-  "viewer.binaryWarning.bodyWithQuickLookKey": "Це сирий вигляд файлу. Можливо, ви хотіли переглянути <kindName>{category, select, image {зображення} document {документ} other {файл {ext}}}</kindName> у звичайному вигляді. Для цього закрийте це вікно й натисніть <quickLookKey></quickLookKey>, щоб відкрити Швидкий перегляд, або двічі клацніть файл, щоб відкрити його у повʼязаній програмі.",
+  "viewer.binaryWarning.bodyWithQuickLookKey": "Це сирий вигляд файлу. Можливо, ви хотіли переглянути {category, select, image {<kindName>зображення</kindName>} document {<kindName>документ</kindName>} other {<kindName>файл {ext}</kindName>}} у звичайному вигляді. Для цього закрийте це вікно й натисніть <quickLookKey></quickLookKey>, щоб відкрити Швидкий перегляд, або двічі клацніть файл, щоб відкрити його у повʼязаній програмі.",
   "@viewer.binaryWarning.bodyWithQuickLookKey": {
-    "sourceHash": "ed8bdcf"
+    "sourceHash": "ee3a485"
   },
-  "viewer.binaryWarning.bodyWithOpenKey": "Це сирий вигляд файлу. Можливо, ви хотіли переглянути <kindName>{category, select, image {зображення} document {документ} other {файл {ext}}}</kindName> у звичайному вигляді. Для цього закрийте це вікно й натисніть <openKey></openKey> (або двічі клацніть файл), щоб відкрити його у повʼязаній програмі.",
+  "viewer.binaryWarning.bodyWithOpenKey": "Це сирий вигляд файлу. Можливо, ви хотіли переглянути {category, select, image {<kindName>зображення</kindName>} document {<kindName>документ</kindName>} other {<kindName>файл {ext}</kindName>}} у звичайному вигляді. Для цього закрийте це вікно й натисніть <openKey></openKey> (або двічі клацніть файл), щоб відкрити його у повʼязаній програмі.",
   "@viewer.binaryWarning.bodyWithOpenKey": {
-    "sourceHash": "b219b68"
+    "sourceHash": "7325848"
   },
-  "viewer.binaryWarning.bodyWithoutKeys": "Це сирий вигляд файлу. Можливо, ви хотіли переглянути <kindName>{category, select, image {зображення} document {документ} other {файл {ext}}}</kindName> у звичайному вигляді. Для цього закрийте це вікно й двічі клацніть файл, щоб відкрити його у повʼязаній програмі.",
+  "viewer.binaryWarning.bodyWithoutKeys": "Це сирий вигляд файлу. Можливо, ви хотіли переглянути {category, select, image {<kindName>зображення</kindName>} document {<kindName>документ</kindName>} other {<kindName>файл {ext}</kindName>}} у звичайному вигляді. Для цього закрийте це вікно й двічі клацніть файл, щоб відкрити його у повʼязаній програмі.",
   "@viewer.binaryWarning.bodyWithoutKeys": {
-    "sourceHash": "610efa6"
+    "sourceHash": "6cc5695"
   },
   "viewer.binaryWarning.dismiss": "Закрити",
   "@viewer.binaryWarning.dismiss": {

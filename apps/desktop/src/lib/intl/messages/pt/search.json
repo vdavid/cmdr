@@ -163,9 +163,9 @@
   "@search.coverage.line.uncovered.unavailable": {
     "sourceHash": "ea5ef3c"
   },
-  "search.coverage.line.uncovered.indexing": "{count, plural, one {O Cmdr ainda está indexando {drive} e não chegou a uma pasta, então esta busca a ignorou.} many {O Cmdr ainda está indexando {drive} e não chegou a {countText} pastas, então esta busca as ignorou.} other {O Cmdr ainda está indexando {drive} e não chegou a {countText} pastas, então esta busca as ignorou.}}",
+  "search.coverage.line.uncovered.indexing": "{count, plural, one {O Cmdr ainda está indexando {drive} e não chegou a esta pasta, então esta busca a ignorou.} many {O Cmdr ainda está indexando {drive} e não chegou a {countText} pastas, então esta busca as ignorou.} other {O Cmdr ainda está indexando {drive} e não chegou a {countText} pastas, então esta busca as ignorou.}}",
   "@search.coverage.line.uncovered.indexing": {
-    "sourceHash": "8e8cd2f"
+    "sourceHash": "c49ddbc"
   },
   "search.coverage.list.show": "Mostrar as pastas",
   "@search.coverage.list.show": {

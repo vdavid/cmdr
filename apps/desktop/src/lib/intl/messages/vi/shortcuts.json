@@ -104,21 +104,21 @@
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"
   },
-  "shortcuts.conflict.systemShortcut": "{combo} thường được macOS dùng ({label}), nên nó có thể không bao giờ đến được Cmdr. Bạn có thể giải phóng nó trong Cài đặt hệ thống > Bàn phím.",
+  "shortcuts.conflict.systemShortcut": "{combo} thường được macOS dùng ({label}), nên phím tắt này có thể không bao giờ đến được Cmdr. Bạn có thể giải phóng phím tắt này trong Cài đặt hệ thống > Bàn phím.",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "9ef197f"
+    "sourceHash": "bdcd845"
   },
-  "shortcuts.conflict.takenByWindows": "{combo} thường được Windows dùng ({label}), nên nó có thể không bao giờ đến được Cmdr.",
+  "shortcuts.conflict.takenByWindows": "{combo} thường được Windows dùng ({label}), nên phím tắt này có thể không bao giờ đến được Cmdr.",
   "@shortcuts.conflict.takenByWindows": {
-    "sourceHash": "4858bee"
+    "sourceHash": "ced2a90"
   },
-  "shortcuts.conflict.takenByLinuxDesktops": "Trên {desktops}, môi trường desktop thường giữ {combo} cho riêng mình, nên phím này có thể không bao giờ đến được Cmdr. Bạn có thể giải phóng phím này trong cài đặt bàn phím của môi trường desktop.",
+  "shortcuts.conflict.takenByLinuxDesktops": "Trên {desktops}, môi trường desktop thường giữ {combo} cho riêng mình, nên phím tắt này có thể không bao giờ đến được Cmdr. Bạn có thể giải phóng phím tắt này trong cài đặt bàn phím của môi trường desktop.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "11d35a9"
+    "sourceHash": "610146a"
   },
-  "shortcuts.conflict.opensMenuBarMenu": "{combo} mở menu {menu} trên thanh menu của Cmdr, nên phím này sẽ không đến được lệnh này trừ khi đang mở một hộp thoại.",
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} mở menu {menu} trên thanh menu của Cmdr, nên phím tắt này sẽ không đến được lệnh này trừ khi đang mở một hộp thoại.",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "sourceHash": "314244c"
+    "sourceHash": "f4b330a"
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {

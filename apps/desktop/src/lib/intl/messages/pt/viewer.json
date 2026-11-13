@@ -79,21 +79,21 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.bodyWithKeys": "Esta é a visualização bruta do arquivo. Talvez você prefira ver <kindName>{category, select, image {a imagem} document {o documento} other {o arquivo {ext}}}</kindName> de verdade. Para isso, feche esta janela e pressione <quickLookKey></quickLookKey> para abrir a Visualização rápida, ou pressione <openKey></openKey> (ou clique duas vezes no arquivo) para abri-lo no app associado.",
+  "viewer.binaryWarning.bodyWithKeys": "Esta é a visualização bruta do arquivo. Talvez você prefira ver {category, select, image {a <kindName>imagem</kindName> de verdade} document {o <kindName>documento</kindName> de verdade} other {o <kindName>arquivo {ext}</kindName> de verdade}}. Para isso, feche esta janela e pressione <quickLookKey></quickLookKey> para abrir a Visualização rápida, ou pressione <openKey></openKey> (ou clique duas vezes no arquivo) para abri-lo no app associado.",
   "@viewer.binaryWarning.bodyWithKeys": {
-    "sourceHash": "fd5cfb7"
+    "sourceHash": "b8f2b8b"
   },
-  "viewer.binaryWarning.bodyWithQuickLookKey": "Esta é a visualização bruta do arquivo. Talvez você prefira ver <kindName>{category, select, image {a imagem} document {o documento} other {o arquivo {ext}}}</kindName> de verdade. Para isso, feche esta janela e pressione <quickLookKey></quickLookKey> para abrir a Visualização rápida, ou clique duas vezes no arquivo para abri-lo no app associado.",
+  "viewer.binaryWarning.bodyWithQuickLookKey": "Esta é a visualização bruta do arquivo. Talvez você prefira ver {category, select, image {a <kindName>imagem</kindName> de verdade} document {o <kindName>documento</kindName> de verdade} other {o <kindName>arquivo {ext}</kindName> de verdade}}. Para isso, feche esta janela e pressione <quickLookKey></quickLookKey> para abrir a Visualização rápida, ou clique duas vezes no arquivo para abri-lo no app associado.",
   "@viewer.binaryWarning.bodyWithQuickLookKey": {
-    "sourceHash": "ed8bdcf"
+    "sourceHash": "ee3a485"
   },
-  "viewer.binaryWarning.bodyWithOpenKey": "Esta é a visualização bruta do arquivo. Talvez você prefira ver <kindName>{category, select, image {a imagem} document {o documento} other {o arquivo {ext}}}</kindName> de verdade. Para isso, feche esta janela e pressione <openKey></openKey> (ou clique duas vezes no arquivo) para abri-lo no app associado.",
+  "viewer.binaryWarning.bodyWithOpenKey": "Esta é a visualização bruta do arquivo. Talvez você prefira ver {category, select, image {a <kindName>imagem</kindName> de verdade} document {o <kindName>documento</kindName> de verdade} other {o <kindName>arquivo {ext}</kindName> de verdade}}. Para isso, feche esta janela e pressione <openKey></openKey> (ou clique duas vezes no arquivo) para abri-lo no app associado.",
   "@viewer.binaryWarning.bodyWithOpenKey": {
-    "sourceHash": "b219b68"
+    "sourceHash": "7325848"
   },
-  "viewer.binaryWarning.bodyWithoutKeys": "Esta é a visualização bruta do arquivo. Talvez você prefira ver <kindName>{category, select, image {a imagem} document {o documento} other {o arquivo {ext}}}</kindName> de verdade. Para isso, feche esta janela e clique duas vezes no arquivo para abri-lo no app associado.",
+  "viewer.binaryWarning.bodyWithoutKeys": "Esta é a visualização bruta do arquivo. Talvez você prefira ver {category, select, image {a <kindName>imagem</kindName> de verdade} document {o <kindName>documento</kindName> de verdade} other {o <kindName>arquivo {ext}</kindName> de verdade}}. Para isso, feche esta janela e clique duas vezes no arquivo para abri-lo no app associado.",
   "@viewer.binaryWarning.bodyWithoutKeys": {
-    "sourceHash": "610efa6"
+    "sourceHash": "6cc5695"
   },
   "viewer.binaryWarning.dismiss": "Fechar",
   "@viewer.binaryWarning.dismiss": {

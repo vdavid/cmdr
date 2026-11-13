@@ -244,9 +244,9 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "{platform, select, macos {Teljes képernyős mód ki-be} windows {Teljes képernyős mód ki-be} other {Toggle full screen mode}}",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Teljes képernyős mód ki-be} windows {Teljes képernyős mód ki-be} other {Teljes képernyős mód ki-be}}",
   "@commands.viewToggleFullScreen.label": {
-    "sourceHash": "57789cb"
+    "sourceHash": "76055d3"
   },
   "commands.sortByName.label": "Rendezés név szerint",
   "@commands.sortByName.label": {

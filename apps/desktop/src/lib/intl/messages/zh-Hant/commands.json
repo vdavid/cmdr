@@ -244,9 +244,9 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "{platform, select, macos {切換全螢幕} windows {切換全螢幕} other {Toggle full screen mode}}",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {切換全螢幕} windows {切換全螢幕} other {切換全螢幕模式}}",
   "@commands.viewToggleFullScreen.label": {
-    "sourceHash": "57789cb"
+    "sourceHash": "76055d3"
   },
   "commands.sortByName.label": "依名稱排序",
   "@commands.sortByName.label": {

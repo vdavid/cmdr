@@ -106,19 +106,19 @@
   },
   "shortcuts.conflict.systemShortcut": "Комбінацію {combo} зазвичай використовує macOS ({label}), тож до Cmdr вона може й не дійти. Звільнити її можна тут: Системні параметри > Клавіатура.",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "9ef197f"
+    "sourceHash": "bdcd845"
   },
   "shortcuts.conflict.takenByWindows": "Комбінацію {combo} зазвичай використовує Windows ({label}), тож до Cmdr вона може й не дійти.",
   "@shortcuts.conflict.takenByWindows": {
-    "sourceHash": "4858bee"
+    "sourceHash": "ced2a90"
   },
   "shortcuts.conflict.takenByLinuxDesktops": "Комбінацію {combo} зазвичай забирає собі робоче середовище ({desktops}), тож до Cmdr вона може й не дійти. Звільнити її можна в параметрах клавіатури вашого середовища.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "11d35a9"
+    "sourceHash": "610146a"
   },
   "shortcuts.conflict.opensMenuBarMenu": "Комбінація {combo} відкриває меню «{menu}» у смузі меню Cmdr, тож до цієї команди вона дійде, лише коли відкрито діалогове вікно.",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "sourceHash": "314244c"
+    "sourceHash": "f4b330a"
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {

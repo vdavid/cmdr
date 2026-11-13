@@ -107,21 +107,21 @@
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"
   },
-  "shortcuts.conflict.systemShortcut": "{combo} wordt meestal door macOS gebruikt ({label}), dus bereikt het Cmdr mogelijk nooit. Je kunt het vrijmaken in Systeeminstellingen > Toetsenbord.",
+  "shortcuts.conflict.systemShortcut": "{combo} wordt meestal door macOS gebruikt ({label}), dus bereikt de sneltoets Cmdr mogelijk nooit. Je kunt hem vrijmaken in Systeeminstellingen > Toetsenbord.",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "9ef197f"
+    "sourceHash": "bdcd845"
   },
-  "shortcuts.conflict.takenByWindows": "{combo} wordt meestal door Windows gebruikt ({label}), dus bereikt het Cmdr mogelijk nooit.",
+  "shortcuts.conflict.takenByWindows": "{combo} wordt meestal door Windows gebruikt ({label}), dus bereikt de sneltoets Cmdr mogelijk nooit.",
   "@shortcuts.conflict.takenByWindows": {
-    "sourceHash": "4858bee"
+    "sourceHash": "ced2a90"
   },
-  "shortcuts.conflict.takenByLinuxDesktops": "Op {desktops} wordt {combo} meestal door de werkomgeving zelf gebruikt, dus bereikt het Cmdr mogelijk nooit. Je kunt het vrijmaken in de toetsenbordinstellingen van je werkomgeving.",
+  "shortcuts.conflict.takenByLinuxDesktops": "Op {desktops} wordt {combo} meestal door de werkomgeving zelf gebruikt, dus bereikt de sneltoets Cmdr mogelijk nooit. Je kunt hem vrijmaken in de toetsenbordinstellingen van je werkomgeving.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "11d35a9"
+    "sourceHash": "610146a"
   },
-  "shortcuts.conflict.opensMenuBarMenu": "{combo} opent het menu ‘{menu}’ in de menubalk van Cmdr, dus bereikt het deze opdracht niet, tenzij er een dialoogvenster open is.",
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} opent het menu ‘{menu}’ in de menubalk van Cmdr, dus bereikt de sneltoets deze opdracht niet, tenzij er een dialoogvenster open is.",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "sourceHash": "314244c"
+    "sourceHash": "f4b330a"
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {

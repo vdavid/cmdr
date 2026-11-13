@@ -244,9 +244,9 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "{platform, select, macos {Activer ou désactiver le mode plein écran} windows {Activer ou désactiver le mode plein écran} other {Toggle full screen mode}}",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Activer ou désactiver le mode plein écran} windows {Activer ou désactiver le mode plein écran} other {Activer ou désactiver le mode plein écran}}",
   "@commands.viewToggleFullScreen.label": {
-    "sourceHash": "57789cb"
+    "sourceHash": "76055d3"
   },
   "commands.sortByName.label": "Trier par nom",
   "@commands.sortByName.label": {

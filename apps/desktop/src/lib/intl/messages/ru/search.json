@@ -163,9 +163,9 @@
   "@search.coverage.line.uncovered.unavailable": {
     "sourceHash": "ea5ef3c"
   },
-  "search.coverage.line.uncovered.indexing": "{count, plural, =1 {Cmdr еще индексирует диск {drive} и пока не дошел до одной папки, поэтому поиск ее пропустил.} one {Cmdr еще индексирует диск {drive} и пока не дошел до {countText} папки, поэтому поиск их пропустил.} few {Cmdr еще индексирует диск {drive} и пока не дошел до {countText} папок, поэтому поиск их пропустил.} many {Cmdr еще индексирует диск {drive} и пока не дошел до {countText} папок, поэтому поиск их пропустил.} other {Cmdr еще индексирует диск {drive} и пока не дошел до {countText} папки, поэтому поиск их пропустил.}}",
+  "search.coverage.line.uncovered.indexing": "{count, plural, =1 {Cmdr еще индексирует диск {drive} и пока не дошел до этой папки, поэтому поиск ее пропустил.} one {Cmdr еще индексирует диск {drive} и пока не дошел до {countText} папки, поэтому поиск их пропустил.} few {Cmdr еще индексирует диск {drive} и пока не дошел до {countText} папок, поэтому поиск их пропустил.} many {Cmdr еще индексирует диск {drive} и пока не дошел до {countText} папок, поэтому поиск их пропустил.} other {Cmdr еще индексирует диск {drive} и пока не дошел до {countText} папки, поэтому поиск их пропустил.}}",
   "@search.coverage.line.uncovered.indexing": {
-    "sourceHash": "8e8cd2f"
+    "sourceHash": "c49ddbc"
   },
   "search.coverage.list.show": "Показать папки",
   "@search.coverage.list.show": {

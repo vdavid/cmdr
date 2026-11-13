@@ -163,9 +163,9 @@
   "@search.coverage.line.uncovered.unavailable": {
     "sourceHash": "ea5ef3c"
   },
-  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr indiziert {drive} noch und hat einen Ordner bisher nicht erreicht, deshalb hat diese Suche ihn übersprungen.} other {Cmdr indiziert {drive} noch und hat {countText} Ordner bisher nicht erreicht, deshalb hat diese Suche sie übersprungen.}}",
+  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr indiziert {drive} noch und hat diesen Ordner bisher nicht erreicht, deshalb hat diese Suche ihn übersprungen.} other {Cmdr indiziert {drive} noch und hat {countText} Ordner bisher nicht erreicht, deshalb hat diese Suche sie übersprungen.}}",
   "@search.coverage.line.uncovered.indexing": {
-    "sourceHash": "8e8cd2f"
+    "sourceHash": "c49ddbc"
   },
   "search.coverage.list.show": "Ordner anzeigen",
   "@search.coverage.list.show": {

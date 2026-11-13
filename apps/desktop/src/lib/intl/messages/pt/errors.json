@@ -1657,9 +1657,9 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "{platform, select, macos {Outra conta deste Mac é dona de {count} dos itens que você escolheu, e a pasta deles só deixa o dono de cada item movê-lo.} windows {Another account on this PC owns {count} of the items you picked, and their folder lets only an item’s owner move it.} other {Another account on this computer owns {count} of the items you picked, and their folder lets only an item’s owner move it.}}",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "{platform, select, macos {Outra conta deste Mac é dona de {count} dos itens que você escolheu, e a pasta deles só deixa o dono de cada item movê-lo.} windows {Outra conta deste PC é dona de {count} dos itens que você escolheu, e a pasta deles só deixa o dono de cada item movê-lo.} other {Outra conta deste computador é dona de {count} dos itens que você escolheu, e a pasta deles só deixa o dono de cada item movê-lo.}}",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
-    "sourceHash": "50f2ce6"
+    "sourceHash": "b65d875"
   },
   "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {O Cmdr não pode colocar nada no Lixo deste disco, então deixou no lugar {count} dos itens que você escolheu.}}",
   "@errors.write.trashRefused.message.trashNotWritable": {

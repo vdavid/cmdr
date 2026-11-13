@@ -163,9 +163,9 @@
   "@search.coverage.line.uncovered.unavailable": {
     "sourceHash": "ea5ef3c"
   },
-  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr est en train d’indexer {drive} et n’a pas encore atteint un dossier, donc cette recherche l’a laissé de côté.} many {Cmdr est en train d’indexer {drive} et n’a pas encore atteint {countText} dossiers, donc cette recherche les a laissés de côté.} other {Cmdr est en train d’indexer {drive} et n’a pas encore atteint {countText} dossiers, donc cette recherche les a laissés de côté.}}",
+  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr est en train d’indexer {drive} et n’a pas encore atteint ce dossier, donc cette recherche l’a laissé de côté.} many {Cmdr est en train d’indexer {drive} et n’a pas encore atteint {countText} dossiers, donc cette recherche les a laissés de côté.} other {Cmdr est en train d’indexer {drive} et n’a pas encore atteint {countText} dossiers, donc cette recherche les a laissés de côté.}}",
   "@search.coverage.line.uncovered.indexing": {
-    "sourceHash": "8e8cd2f"
+    "sourceHash": "c49ddbc"
   },
   "search.coverage.list.show": "Afficher les dossiers",
   "@search.coverage.list.show": {

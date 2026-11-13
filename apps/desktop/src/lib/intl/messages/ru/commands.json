@@ -244,9 +244,9 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "{platform, select, macos {Переключить полноэкранный режим} windows {Переключить полноэкранный режим} other {Toggle full screen mode}}",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Переключить полноэкранный режим} windows {Переключить полноэкранный режим} other {Переключить полноэкранный режим}}",
   "@commands.viewToggleFullScreen.label": {
-    "sourceHash": "57789cb"
+    "sourceHash": "76055d3"
   },
   "commands.sortByName.label": "Сортировать по имени",
   "@commands.sortByName.label": {

@@ -11,9 +11,9 @@
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "332a220"
   },
-  "shortcuts.conflict.systemShortcut": "macOS suele usar {combo} ({label}), así que puede que nunca llegue a Cmdr. Puedes liberarla en Configuración del Sistema > Teclado.",
+  "shortcuts.conflict.systemShortcut": "macOS suele usar {combo} ({label}), así que puede que el atajo nunca llegue a Cmdr. Puedes liberarlo en Configuración del Sistema > Teclado.",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "3c00012"
+    "sourceHash": "fe16dbe"
   },
   "shortcuts.section.pressEscToClear": "Presiona ESC para borrar",
   "@shortcuts.section.pressEscToClear": {
@@ -51,8 +51,8 @@
   "@shortcuts.section.resetAllConfirm": {
     "sourceHash": "3267d39"
   },
-  "shortcuts.conflict.takenByLinuxDesktops": "En {desktops}, el escritorio suele reservarse {combo}, así que puede que nunca llegue a Cmdr. Puedes liberar esa combinación en la configuración de teclado de tu escritorio.",
+  "shortcuts.conflict.takenByLinuxDesktops": "En {desktops}, el escritorio suele reservarse {combo}, así que puede que el atajo nunca llegue a Cmdr. Puedes liberarlo en la configuración de teclado de tu escritorio.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "701c0f7"
+    "sourceHash": "458f0fd"
   }
 }

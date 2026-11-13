@@ -105,21 +105,21 @@
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"
   },
-  "shortcuts.conflict.systemShortcut": "macOS suele usar {combo} ({label}), así que puede que nunca llegue a Cmdr. Puedes liberarla en Ajustes del Sistema > Teclado.",
+  "shortcuts.conflict.systemShortcut": "macOS suele usar {combo} ({label}), así que puede que el atajo nunca llegue a Cmdr. Puedes liberarlo en Ajustes del Sistema > Teclado.",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "9ef197f"
+    "sourceHash": "bdcd845"
   },
-  "shortcuts.conflict.takenByWindows": "Windows suele usar {combo} ({label}), así que puede que nunca llegue a Cmdr.",
+  "shortcuts.conflict.takenByWindows": "Windows suele usar {combo} ({label}), así que puede que el atajo nunca llegue a Cmdr.",
   "@shortcuts.conflict.takenByWindows": {
-    "sourceHash": "4858bee"
+    "sourceHash": "ced2a90"
   },
-  "shortcuts.conflict.takenByLinuxDesktops": "En {desktops}, el escritorio suele reservarse {combo}, así que puede que nunca llegue a Cmdr. Puedes liberar esa combinación en los ajustes de teclado de tu escritorio.",
+  "shortcuts.conflict.takenByLinuxDesktops": "En {desktops}, el escritorio suele reservarse {combo}, así que puede que el atajo nunca llegue a Cmdr. Puedes liberarlo en los ajustes de teclado de tu escritorio.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "11d35a9"
+    "sourceHash": "610146a"
   },
-  "shortcuts.conflict.opensMenuBarMenu": "{combo} abre el menú {menu} de la barra de menús de Cmdr, así que no llegará a este comando salvo que haya un diálogo abierto.",
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} abre el menú {menu} de la barra de menús de Cmdr, así que el atajo no llegará a este comando salvo que haya un diálogo abierto.",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "sourceHash": "314244c"
+    "sourceHash": "f4b330a"
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {

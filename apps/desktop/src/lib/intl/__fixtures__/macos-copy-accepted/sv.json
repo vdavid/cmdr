@@ -1,0 +1,6 @@
+{
+  "shortcuts.conflict.systemShortcut": {
+    "text": "{combo} brukar vara upptagen av macOS ({label}), så genvägen når kanske aldrig fram till Cmdr. Du kan frigöra den i Systeminställningar > Tangentbord.",
+    "reason": "“så den når” pointed a gendered pronoun at `{combo}`; it now names “genvägen”, as the reworded English asks"
+  }
+}

@@ -105,21 +105,21 @@
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"
   },
-  "shortcuts.conflict.systemShortcut": "{combo} brukar vara upptagen av macOS ({label}), så den når kanske aldrig fram till Cmdr. Du kan frigöra den i Systeminställningar > Tangentbord.",
+  "shortcuts.conflict.systemShortcut": "{combo} brukar vara upptagen av macOS ({label}), så genvägen når kanske aldrig fram till Cmdr. Du kan frigöra den i Systeminställningar > Tangentbord.",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "9ef197f"
+    "sourceHash": "bdcd845"
   },
-  "shortcuts.conflict.takenByWindows": "{combo} brukar vara upptagen av Windows ({label}), så den når kanske aldrig fram till Cmdr.",
+  "shortcuts.conflict.takenByWindows": "{combo} brukar vara upptagen av Windows ({label}), så genvägen når kanske aldrig fram till Cmdr.",
   "@shortcuts.conflict.takenByWindows": {
-    "sourceHash": "4858bee"
+    "sourceHash": "ced2a90"
   },
-  "shortcuts.conflict.takenByLinuxDesktops": "I {desktops} brukar skrivbordsmiljön ta {combo} för egen del, så den når kanske aldrig fram till Cmdr. Du kan frigöra den i tangentbordsinställningarna för din skrivbordsmiljö.",
+  "shortcuts.conflict.takenByLinuxDesktops": "I {desktops} brukar skrivbordsmiljön ta {combo} för egen del, så genvägen når kanske aldrig fram till Cmdr. Du kan frigöra den i tangentbordsinställningarna för din skrivbordsmiljö.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "11d35a9"
+    "sourceHash": "610146a"
   },
-  "shortcuts.conflict.opensMenuBarMenu": "{combo} öppnar menyn {menu} i Cmdrs menyrad, så den når inte det här kommandot om inte en dialog är öppen.",
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} öppnar menyn {menu} i Cmdrs menyrad, så genvägen når inte det här kommandot om inte en dialog är öppen.",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "sourceHash": "314244c"
+    "sourceHash": "f4b330a"
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {

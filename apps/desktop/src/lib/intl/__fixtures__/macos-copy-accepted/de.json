@@ -1,0 +1,6 @@
+{
+  "shortcuts.conflict.systemShortcut": {
+    "text": "{combo} wird meist von macOS belegt ({label}) und erreicht Cmdr daher womöglich nie. Du kannst den Kurzbefehl in Systemeinstellungen > Tastatur freigeben.",
+    "reason": "„Du kannst sie … freigeben“ pointed the pronoun `sie` at `{combo}`, whose gender is unknown; it now names the noun, as the reworded English asks"
+  }
+}

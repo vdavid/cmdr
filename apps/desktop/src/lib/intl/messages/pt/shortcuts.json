@@ -105,21 +105,21 @@
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"
   },
-  "shortcuts.conflict.systemShortcut": "{combo} costuma ser usado pelo macOS ({label}), então pode nunca chegar ao Cmdr. Você pode liberá-lo em Ajustes do Sistema > Teclado.",
+  "shortcuts.conflict.systemShortcut": "O macOS costuma usar {combo} ({label}), então o atalho pode nunca chegar ao Cmdr. Você pode liberar o atalho em Ajustes do Sistema > Teclado.",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "9ef197f"
+    "sourceHash": "bdcd845"
   },
-  "shortcuts.conflict.takenByWindows": "{combo} costuma ser usado pelo Windows ({label}), então pode nunca chegar ao Cmdr.",
+  "shortcuts.conflict.takenByWindows": "O Windows costuma usar {combo} ({label}), então o atalho pode nunca chegar ao Cmdr.",
   "@shortcuts.conflict.takenByWindows": {
-    "sourceHash": "4858bee"
+    "sourceHash": "ced2a90"
   },
-  "shortcuts.conflict.takenByLinuxDesktops": "Em {desktops}, o ambiente de desktop costuma usar {combo} para si, então pode nunca chegar ao Cmdr. Você pode liberá-lo nas configurações de teclado do seu ambiente de desktop.",
+  "shortcuts.conflict.takenByLinuxDesktops": "Em {desktops}, o ambiente de desktop costuma usar {combo} para si, então o atalho pode nunca chegar ao Cmdr. Você pode liberar o atalho nas configurações de teclado do seu ambiente de desktop.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "11d35a9"
+    "sourceHash": "610146a"
   },
-  "shortcuts.conflict.opensMenuBarMenu": "{combo} abre o menu {menu} na barra de menus do Cmdr, então não vai chegar a este comando, a menos que uma caixa de diálogo esteja aberta.",
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} abre o menu {menu} na barra de menus do Cmdr, então o atalho não vai chegar a este comando, a menos que uma caixa de diálogo esteja aberta.",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "sourceHash": "314244c"
+    "sourceHash": "f4b330a"
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {

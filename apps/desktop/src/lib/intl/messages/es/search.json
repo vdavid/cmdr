@@ -163,9 +163,9 @@
   "@search.coverage.line.uncovered.unavailable": {
     "sourceHash": "ea5ef3c"
   },
-  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr sigue indexando {drive} y aún no ha llegado a una carpeta, así que esta búsqueda la ha omitido.} many {Cmdr sigue indexando {drive} y aún no ha llegado a {countText} carpetas, así que esta búsqueda las ha omitido.} other {Cmdr sigue indexando {drive} y aún no ha llegado a {countText} carpetas, así que esta búsqueda las ha omitido.}}",
+  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr sigue indexando {drive} y aún no ha llegado a esta carpeta, así que esta búsqueda la ha omitido.} many {Cmdr sigue indexando {drive} y aún no ha llegado a {countText} carpetas, así que esta búsqueda las ha omitido.} other {Cmdr sigue indexando {drive} y aún no ha llegado a {countText} carpetas, así que esta búsqueda las ha omitido.}}",
   "@search.coverage.line.uncovered.indexing": {
-    "sourceHash": "8e8cd2f"
+    "sourceHash": "c49ddbc"
   },
   "search.coverage.list.show": "Mostrar las carpetas",
   "@search.coverage.list.show": {

@@ -106,19 +106,19 @@
   },
   "shortcuts.conflict.systemShortcut": "{combo} 通常被 macOS 占用（{label}），因此可能永远传不到 Cmdr。你可以在“系统设置 > 键盘”中将它释放出来。",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "9ef197f"
+    "sourceHash": "bdcd845"
   },
   "shortcuts.conflict.takenByWindows": "{combo} 通常被 Windows 占用（{label}），因此可能永远传不到 Cmdr。",
   "@shortcuts.conflict.takenByWindows": {
-    "sourceHash": "4858bee"
+    "sourceHash": "ced2a90"
   },
   "shortcuts.conflict.takenByLinuxDesktops": "在 {desktops} 上，桌面环境通常会自己占用 {combo}，因此可能永远传不到 Cmdr。你可以在桌面环境的键盘设置中将它释放出来。",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "11d35a9"
+    "sourceHash": "610146a"
   },
-  "shortcuts.conflict.opensMenuBarMenu": "{combo} 会打开 Cmdr 菜单栏中的“{menu}”菜单，所以除非有对话框开着，否则它传不到这个命令。",
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} 会打开 Cmdr 菜单栏中的“{menu}”菜单，所以除非有对话框开着，否则这个快捷键传不到这个命令。",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "sourceHash": "314244c"
+    "sourceHash": "f4b330a"
   },
   "shortcuts.system.spotlight": "聚焦",
   "@shortcuts.system.spotlight": {

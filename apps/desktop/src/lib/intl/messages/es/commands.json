@@ -244,9 +244,9 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "{platform, select, macos {Entrar o salir de pantalla completa} windows {Entrar o salir de pantalla completa} other {Toggle full screen mode}}",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Entrar o salir de pantalla completa} windows {Entrar o salir de pantalla completa} other {Entrar o salir del modo de pantalla completa}}",
   "@commands.viewToggleFullScreen.label": {
-    "sourceHash": "57789cb"
+    "sourceHash": "76055d3"
   },
   "commands.sortByName.label": "Ordenar por nombre",
   "@commands.sortByName.label": {

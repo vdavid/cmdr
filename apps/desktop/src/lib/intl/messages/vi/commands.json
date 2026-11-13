@@ -244,9 +244,9 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "{platform, select, macos {Bật/tắt toàn màn hình} windows {Bật/tắt toàn màn hình} other {Toggle full screen mode}}",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Bật/tắt toàn màn hình} windows {Bật/tắt toàn màn hình} other {Bật/tắt chế độ toàn màn hình}}",
   "@commands.viewToggleFullScreen.label": {
-    "sourceHash": "57789cb"
+    "sourceHash": "76055d3"
   },
   "commands.sortByName.label": "Sắp xếp theo tên",
   "@commands.sortByName.label": {

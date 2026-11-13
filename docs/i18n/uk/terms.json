@@ -3944,7 +3944,8 @@
       "menu.volume.editFavoriteShortcut": "captures a single A–Z key for a favorite, not a key combination; «Призначити клавішу…» names exactly that",
       "fileExplorer.navigation.favoriteShortcutAriaLabel": "The @key asks for the same words as menu.volume.editFavoriteShortcut («Призначити клавішу…»): one A–Z key, not a combination, so «Клавіша для «{name}»».",
       "fileExplorer.navigation.favoriteShortcutSaveFailed": "Same single-key sense as menu.volume.editFavoriteShortcut, per the @key: «Не вдалося зберегти цю клавішу»."
-    }
+    },
+    "proseAccept": ["комбінац"]
   },
   "show": {
     "chosen": "Показати",

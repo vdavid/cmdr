@@ -79,21 +79,21 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.bodyWithKeys": "这是文件的原始视图。你可能更想查看实际的<kindName>{category, select, image {图像} document {文稿} other { {ext} 文件}}</kindName>。要这样做，请关闭这个窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
+  "viewer.binaryWarning.bodyWithKeys": "这是文件的原始视图。你可能更想查看{category, select, image {实际的<kindName>图像</kindName>} document {实际的<kindName>文稿</kindName>} other {实际的 <kindName>{ext} 文件</kindName>}}。要这样做，请关闭这个窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
   "@viewer.binaryWarning.bodyWithKeys": {
-    "sourceHash": "fd5cfb7"
+    "sourceHash": "b8f2b8b"
   },
-  "viewer.binaryWarning.bodyWithQuickLookKey": "这是文件的原始视图。你可能更想查看实际的<kindName>{category, select, image {图像} document {文稿} other { {ext} 文件}}</kindName>。要这样做，请关闭这个窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者双击文件，用关联的 App 打开它。",
+  "viewer.binaryWarning.bodyWithQuickLookKey": "这是文件的原始视图。你可能更想查看{category, select, image {实际的<kindName>图像</kindName>} document {实际的<kindName>文稿</kindName>} other {实际的 <kindName>{ext} 文件</kindName>}}。要这样做，请关闭这个窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者双击文件，用关联的 App 打开它。",
   "@viewer.binaryWarning.bodyWithQuickLookKey": {
-    "sourceHash": "ed8bdcf"
+    "sourceHash": "ee3a485"
   },
-  "viewer.binaryWarning.bodyWithOpenKey": "这是文件的原始视图。你可能更想查看实际的<kindName>{category, select, image {图像} document {文稿} other { {ext} 文件}}</kindName>。要这样做，请关闭这个窗口，然后按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
+  "viewer.binaryWarning.bodyWithOpenKey": "这是文件的原始视图。你可能更想查看{category, select, image {实际的<kindName>图像</kindName>} document {实际的<kindName>文稿</kindName>} other {实际的 <kindName>{ext} 文件</kindName>}}。要这样做，请关闭这个窗口，然后按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
   "@viewer.binaryWarning.bodyWithOpenKey": {
-    "sourceHash": "b219b68"
+    "sourceHash": "7325848"
   },
-  "viewer.binaryWarning.bodyWithoutKeys": "这是文件的原始视图。你可能更想查看实际的<kindName>{category, select, image {图像} document {文稿} other { {ext} 文件}}</kindName>。要这样做，请关闭这个窗口，然后双击文件，用关联的 App 打开它。",
+  "viewer.binaryWarning.bodyWithoutKeys": "这是文件的原始视图。你可能更想查看{category, select, image {实际的<kindName>图像</kindName>} document {实际的<kindName>文稿</kindName>} other {实际的 <kindName>{ext} 文件</kindName>}}。要这样做，请关闭这个窗口，然后双击文件，用关联的 App 打开它。",
   "@viewer.binaryWarning.bodyWithoutKeys": {
-    "sourceHash": "610efa6"
+    "sourceHash": "6cc5695"
   },
   "viewer.binaryWarning.dismiss": "关闭",
   "@viewer.binaryWarning.dismiss": {

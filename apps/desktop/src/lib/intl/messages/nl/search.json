@@ -164,9 +164,9 @@
   "@search.coverage.line.uncovered.unavailable": {
     "sourceHash": "ea5ef3c"
   },
-  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr is {drive} nog aan het indexeren en heeft één map nog niet bereikt, dus deze zoekopdracht sloeg hem over.} other {Cmdr is {drive} nog aan het indexeren en heeft {countText} mappen nog niet bereikt, dus deze zoekopdracht sloeg ze over.}}",
+  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr is {drive} nog aan het indexeren en heeft deze map nog niet bereikt, dus deze zoekopdracht sloeg hem over.} other {Cmdr is {drive} nog aan het indexeren en heeft {countText} mappen nog niet bereikt, dus deze zoekopdracht sloeg ze over.}}",
   "@search.coverage.line.uncovered.indexing": {
-    "sourceHash": "8e8cd2f"
+    "sourceHash": "c49ddbc"
   },
   "search.coverage.list.show": "Toon de mappen",
   "@search.coverage.list.show": {

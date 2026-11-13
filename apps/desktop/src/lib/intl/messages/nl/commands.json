@@ -246,9 +246,9 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "{platform, select, macos {Schermvullende weergave aan/uit} windows {Schermvullende weergave aan/uit} other {Toggle full screen mode}}",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Schermvullende weergave aan/uit} windows {Volledig scherm aan/uit} other {Volledig scherm aan/uit}}",
   "@commands.viewToggleFullScreen.label": {
-    "sourceHash": "57789cb"
+    "sourceHash": "76055d3"
   },
   "commands.sortByName.label": "Sorteer op naam",
   "@commands.sortByName.label": {

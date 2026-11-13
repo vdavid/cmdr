@@ -1606,7 +1606,10 @@
     "accept": ["zkratk", "zkratek", "zkratc"],
     "forms": "f.: Keyboard shortcuts (menu.help.keyboardShortcuts) → Klávesové zkratky; short form in tight labels → zkratka",
     "confidence": "high",
-    "sources": "macOS SystemSettings (Klávesová zkratka, Zkratky); Nautilus, Thunar (Klávesové zkratky); MS (klávesová zkratka); TC (Klávesové zkratky)"
+    "sources": "macOS SystemSettings (Klávesová zkratka, Zkratky); Nautilus, Thunar (Klávesové zkratky); MS (klávesová zkratka); TC (Klávesové zkratky)",
+    "exceptions": {
+      "shortcuts.conflict.systemShortcut": "frozen macOS text names the key as Kombinace {combo} and its pronoun-free verb needs no second noun; it stays byte for byte"
+    }
   },
   "show": {
     "chosen": "zobrazit",

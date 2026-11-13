@@ -165,7 +165,7 @@
   },
   "search.coverage.line.uncovered.indexing": "{count, plural, other {Cmdr vẫn đang lập chỉ mục {drive}, nên lần tìm kiếm này đã bỏ qua {countText} thư mục mà Cmdr chưa tới.}}",
   "@search.coverage.line.uncovered.indexing": {
-    "sourceHash": "8e8cd2f"
+    "sourceHash": "c49ddbc"
   },
   "search.coverage.list.show": "Hiển thị các thư mục",
   "@search.coverage.list.show": {

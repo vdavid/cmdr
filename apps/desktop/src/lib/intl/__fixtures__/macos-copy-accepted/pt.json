@@ -1,0 +1,6 @@
+{
+  "shortcuts.conflict.systemShortcut": {
+    "text": "O macOS costuma usar {combo} ({label}), então o atalho pode nunca chegar ao Cmdr. Você pode liberar o atalho em Ajustes do Sistema > Teclado.",
+    "reason": "“costuma ser usado” and “liberá-lo” agreed in the masculine with `{combo}`, whose gender is unknown; it now names “o atalho”, as the reworded English asks"
+  }
+}

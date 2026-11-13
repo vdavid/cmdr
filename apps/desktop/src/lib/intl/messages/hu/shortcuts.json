@@ -107,19 +107,19 @@
   },
   "shortcuts.conflict.systemShortcut": "{combo}: ezt általában a macOS használja ({label}), ezért lehet, hogy soha nem jut el a Cmdrhez. Itt szabadíthatod fel: Rendszerbeállítások > Billentyűzet.",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "9ef197f"
+    "sourceHash": "bdcd845"
   },
   "shortcuts.conflict.takenByWindows": "{combo}: ezt általában a Windows használja ({label}), ezért lehet, hogy soha nem jut el a Cmdrhez.",
   "@shortcuts.conflict.takenByWindows": {
-    "sourceHash": "4858bee"
+    "sourceHash": "ced2a90"
   },
   "shortcuts.conflict.takenByLinuxDesktops": "{combo}: ezt általában magának foglalja le az asztali környezet ({desktops}), ezért lehet, hogy soha nem jut el a Cmdrhez. Az asztali környezeted billentyűzetbeállításaiban felszabadíthatod.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "11d35a9"
+    "sourceHash": "610146a"
   },
   "shortcuts.conflict.opensMenuBarMenu": "{combo}: ez megnyit egy menüt a Cmdr menüsorában ({menu}), ezért csak akkor jut el ehhez a parancshoz, ha egy párbeszédablak nyitva van.",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "sourceHash": "314244c"
+    "sourceHash": "f4b330a"
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {

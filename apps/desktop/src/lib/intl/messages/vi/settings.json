@@ -512,9 +512,9 @@
   "@settings.fileOperations.macOnlyFiles.label": {
     "sourceHash": "be693c6"
   },
-  "settings.fileOperations.macOnlyFiles.description": "Bỏ qua các tệp .DS_Store và ._* khi sao chép, di chuyển hoặc nén tệp.",
+  "settings.fileOperations.macOnlyFiles.description": "Bỏ qua các tệp .DS_Store và ._* khi sao chép, di chuyển hoặc nén.",
   "@settings.fileOperations.macOnlyFiles.description": {
-    "sourceHash": "72d2492"
+    "sourceHash": "02578a7"
   },
   "settings.fileOperations.macOnlyFiles.opt.include": "Bao gồm",
   "@settings.fileOperations.macOnlyFiles.opt.include": {

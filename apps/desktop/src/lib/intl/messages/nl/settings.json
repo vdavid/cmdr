@@ -518,7 +518,7 @@
   },
   "settings.fileOperations.macOnlyFiles.description": "Slaat bij kopiëren, verplaatsen of comprimeren de bestanden .DS_Store en ._* over.",
   "@settings.fileOperations.macOnlyFiles.description": {
-    "sourceHash": "72d2492"
+    "sourceHash": "02578a7"
   },
   "settings.fileOperations.macOnlyFiles.opt.include": "Meenemen",
   "@settings.fileOperations.macOnlyFiles.opt.include": {

@@ -79,21 +79,21 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.bodyWithKeys": "Сейчас файл показан в необработанном виде. Возможно, вы хотели посмотреть <kindName>{category, select, image {изображение} document {документ} other {файл {ext}}}</kindName> в обычном виде. Для этого закройте окно и нажмите <quickLookKey></quickLookKey>, чтобы открыть Быстрый просмотр, или нажмите <openKey></openKey> (либо дважды нажмите на файл), чтобы открыть его в приложении по умолчанию.",
+  "viewer.binaryWarning.bodyWithKeys": "Сейчас файл показан в необработанном виде. Возможно, вы хотели посмотреть {category, select, image {<kindName>изображение</kindName>} document {<kindName>документ</kindName>} other {<kindName>файл {ext}</kindName>}} в обычном виде. Для этого закройте окно и нажмите <quickLookKey></quickLookKey>, чтобы открыть Быстрый просмотр, или нажмите <openKey></openKey> (либо дважды нажмите на файл), чтобы открыть его в приложении по умолчанию.",
   "@viewer.binaryWarning.bodyWithKeys": {
-    "sourceHash": "fd5cfb7"
+    "sourceHash": "b8f2b8b"
   },
-  "viewer.binaryWarning.bodyWithQuickLookKey": "Сейчас файл показан в необработанном виде. Возможно, вы хотели посмотреть <kindName>{category, select, image {изображение} document {документ} other {файл {ext}}}</kindName> в обычном виде. Для этого закройте окно и нажмите <quickLookKey></quickLookKey>, чтобы открыть Быстрый просмотр, или дважды нажмите на файл, чтобы открыть его в приложении по умолчанию.",
+  "viewer.binaryWarning.bodyWithQuickLookKey": "Сейчас файл показан в необработанном виде. Возможно, вы хотели посмотреть {category, select, image {<kindName>изображение</kindName>} document {<kindName>документ</kindName>} other {<kindName>файл {ext}</kindName>}} в обычном виде. Для этого закройте окно и нажмите <quickLookKey></quickLookKey>, чтобы открыть Быстрый просмотр, или дважды нажмите на файл, чтобы открыть его в приложении по умолчанию.",
   "@viewer.binaryWarning.bodyWithQuickLookKey": {
-    "sourceHash": "ed8bdcf"
+    "sourceHash": "ee3a485"
   },
-  "viewer.binaryWarning.bodyWithOpenKey": "Сейчас файл показан в необработанном виде. Возможно, вы хотели посмотреть <kindName>{category, select, image {изображение} document {документ} other {файл {ext}}}</kindName> в обычном виде. Для этого закройте окно и нажмите <openKey></openKey> (либо дважды нажмите на файл), чтобы открыть его в приложении по умолчанию.",
+  "viewer.binaryWarning.bodyWithOpenKey": "Сейчас файл показан в необработанном виде. Возможно, вы хотели посмотреть {category, select, image {<kindName>изображение</kindName>} document {<kindName>документ</kindName>} other {<kindName>файл {ext}</kindName>}} в обычном виде. Для этого закройте окно и нажмите <openKey></openKey> (либо дважды нажмите на файл), чтобы открыть его в приложении по умолчанию.",
   "@viewer.binaryWarning.bodyWithOpenKey": {
-    "sourceHash": "b219b68"
+    "sourceHash": "7325848"
   },
-  "viewer.binaryWarning.bodyWithoutKeys": "Сейчас файл показан в необработанном виде. Возможно, вы хотели посмотреть <kindName>{category, select, image {изображение} document {документ} other {файл {ext}}}</kindName> в обычном виде. Для этого закройте окно и дважды нажмите на файл, чтобы открыть его в приложении по умолчанию.",
+  "viewer.binaryWarning.bodyWithoutKeys": "Сейчас файл показан в необработанном виде. Возможно, вы хотели посмотреть {category, select, image {<kindName>изображение</kindName>} document {<kindName>документ</kindName>} other {<kindName>файл {ext}</kindName>}} в обычном виде. Для этого закройте окно и дважды нажмите на файл, чтобы открыть его в приложении по умолчанию.",
   "@viewer.binaryWarning.bodyWithoutKeys": {
-    "sourceHash": "610efa6"
+    "sourceHash": "6cc5695"
   },
   "viewer.binaryWarning.dismiss": "Закрыть",
   "@viewer.binaryWarning.dismiss": {

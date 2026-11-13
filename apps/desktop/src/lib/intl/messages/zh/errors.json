@@ -1656,9 +1656,9 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "{platform, select, macos {你选中的项目里有 {count} 个属于这台 Mac 上的另一个账户，而它们所在的文件夹只允许项目的所有者移动它。} windows {Another account on this PC owns {count} of the items you picked, and their folder lets only an item’s owner move it.} other {Another account on this computer owns {count} of the items you picked, and their folder lets only an item’s owner move it.}}",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "{platform, select, macos {你选中的项目里有 {count} 个属于这台 Mac 上的另一个账户，而它们所在的文件夹只允许项目的所有者移动它。} windows {你选中的项目里有 {count} 个属于这台电脑上的另一个账户，而它们所在的文件夹只允许项目的所有者移动它。} other {你选中的项目里有 {count} 个属于这台电脑上的另一个账户，而它们所在的文件夹只允许项目的所有者移动它。}}",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
-    "sourceHash": "50f2ce6"
+    "sourceHash": "b65d875"
   },
   "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {你选中的项目里有 {count} 个，因为这个驱动器上的废纸篓不让 Cmdr 放入任何东西，所以它们留在了原处。}}",
   "@errors.write.trashRefused.message.trashNotWritable": {

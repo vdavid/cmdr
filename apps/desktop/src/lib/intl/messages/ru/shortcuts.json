@@ -106,19 +106,19 @@
   },
   "shortcuts.conflict.systemShortcut": "Сочетание {combo} обычно занято macOS ({label}), поэтому может не доходить до Cmdr. Освободить его можно в разделе «Системные настройки» > «Клавиатура».",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "9ef197f"
+    "sourceHash": "bdcd845"
   },
   "shortcuts.conflict.takenByWindows": "Сочетание {combo} обычно занято Windows ({label}), поэтому может не доходить до Cmdr.",
   "@shortcuts.conflict.takenByWindows": {
-    "sourceHash": "4858bee"
+    "sourceHash": "ced2a90"
   },
   "shortcuts.conflict.takenByLinuxDesktops": "Сочетание {combo} обычно занимает сама рабочая среда ({desktops}), поэтому оно может не доходить до Cmdr. Освободить его можно в настройках клавиатуры вашей рабочей среды.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "11d35a9"
+    "sourceHash": "610146a"
   },
-  "shortcuts.conflict.opensMenuBarMenu": "Сочетание {combo} открывает меню «{menu}» в строке меню Cmdr, поэтому до этой команды оно дойдет, только когда открыто диалоговое окно.",
+  "shortcuts.conflict.opensMenuBarMenu": "Сочетание {combo} открывает меню «{menu}» в строке меню Cmdr, поэтому до этой команды сочетание дойдет, только когда открыто диалоговое окно.",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "sourceHash": "314244c"
+    "sourceHash": "f4b330a"
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {

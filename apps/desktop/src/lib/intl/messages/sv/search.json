@@ -163,9 +163,9 @@
   "@search.coverage.line.uncovered.unavailable": {
     "sourceHash": "ea5ef3c"
   },
-  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr indexerar fortfarande {drive} och har inte nått fram till en mapp än, så den här sökningen hoppade över den.} other {Cmdr indexerar fortfarande {drive} och har inte nått fram till {countText} mappar än, så den här sökningen hoppade över dem.}}",
+  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr indexerar fortfarande {drive} och har inte nått fram till den här mappen än, så den här sökningen hoppade över den.} other {Cmdr indexerar fortfarande {drive} och har inte nått fram till {countText} mappar än, så den här sökningen hoppade över dem.}}",
   "@search.coverage.line.uncovered.indexing": {
-    "sourceHash": "8e8cd2f"
+    "sourceHash": "c49ddbc"
   },
   "search.coverage.list.show": "Visa mapparna",
   "@search.coverage.list.show": {

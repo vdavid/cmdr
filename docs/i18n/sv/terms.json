@@ -1479,7 +1479,11 @@
     "decision": "Escape leaves full screen",
     "forms": "Lämna helskärmsläge; tog Cmdr ur helskärmsläget; the Windows and Linux View menu row and the browsers’ F11 → Helskärm (Edge, Chrome; MS terminology full screen → helskärm)",
     "sources": "macOS AppKit MenuCommands (Exit Full Screen → Lämna helskärmsläge)",
-    "accept": ["helskärm"]
+    "accept": ["helskärm"],
+    "windows": {
+      "chosen": "helskärm",
+      "note": "Windows and the browsers say Helskärm (MS TBX full screen → helskärm; Edge and Chrome F11); Toggle → Växla helskärm, matching menu.view.fullScreen. Linux keeps the base helskärmsläge, since its English says full screen mode (KDE Full Screen Mode); the pile's Linux catalogs have no full-screen string."
+    }
   },
   "full-view": {
     "chosen": "Fullständig",

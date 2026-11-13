@@ -3638,7 +3638,13 @@
     "chosen": "快速鍵",
     "confidence": "high",
     "forms": "keyboard shortcut → 鍵盤快速鍵, short 快速鍵",
-    "sources": "MS"
+    "sources": "MS",
+    "exceptions": {
+      "shortcuts.conflict.systemShortcut": "English's 'the shortcut' only replaces a pronoun for {combo}; Chinese keeps {combo} as the sentence topic and drops the subject (所以可能永遠傳不到 Cmdr), so no noun is needed. Frozen macOS text.",
+      "shortcuts.conflict.takenByWindows": "Same topic-drop as shortcuts.conflict.systemShortcut, kept identical in frame across the conflict family.",
+      "shortcuts.conflict.takenByLinuxDesktops": "Same topic-drop as shortcuts.conflict.systemShortcut, kept identical in frame across the conflict family.",
+      "shortcuts.conflict.opensMenuBarMenu": "Same topic-drop as shortcuts.conflict.systemShortcut, kept identical in frame across the conflict family."
+    }
   },
   "show": {
     "accept": ["跳出", "出現", "看得到", "看過"],

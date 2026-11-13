@@ -1,0 +1,6 @@
+{
+  "shortcuts.conflict.systemShortcut": {
+    "text": "{combo} est généralement pris par macOS ({label}), donc ce raccourci pourrait ne jamais atteindre Cmdr. Vous pouvez le libérer dans Réglages Système > Clavier.",
+    "reason": "« donc il pourrait » pointed the pronoun `il` at `{combo}`, whose gender is unknown; it now names the noun (« ce raccourci »), as the reworded English asks and the Linux and menu-bar siblings already do"
+  }
+}

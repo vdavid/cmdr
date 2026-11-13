@@ -163,9 +163,9 @@
   "@search.coverage.line.uncovered.unavailable": {
     "sourceHash": "ea5ef3c"
   },
-  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr ještě indexuje {drive} a na jednu složku zatím nedošla řada, takže ji toto hledání přeskočilo.} few {Cmdr ještě indexuje {drive} a na {countText} složky zatím nedošla řada, takže je toto hledání přeskočilo.} many {Cmdr ještě indexuje {drive} a na {countText} složky zatím nedošla řada, takže je toto hledání přeskočilo.} other {Cmdr ještě indexuje {drive} a na {countText} složek zatím nedošla řada, takže je toto hledání přeskočilo.}}",
+  "search.coverage.line.uncovered.indexing": "{count, plural, one {Cmdr ještě indexuje {drive} a na tuto složku zatím nedošla řada, takže ji toto hledání přeskočilo.} few {Cmdr ještě indexuje {drive} a na {countText} složky zatím nedošla řada, takže je toto hledání přeskočilo.} many {Cmdr ještě indexuje {drive} a na {countText} složky zatím nedošla řada, takže je toto hledání přeskočilo.} other {Cmdr ještě indexuje {drive} a na {countText} složek zatím nedošla řada, takže je toto hledání přeskočilo.}}",
   "@search.coverage.line.uncovered.indexing": {
-    "sourceHash": "8e8cd2f"
+    "sourceHash": "c49ddbc"
   },
   "search.coverage.list.show": "Zobrazit složky",
   "@search.coverage.list.show": {

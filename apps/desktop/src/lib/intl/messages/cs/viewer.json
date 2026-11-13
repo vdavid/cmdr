@@ -79,21 +79,21 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.bodyWithKeys": "Toto je surové zobrazení souboru. Možná bude lepší zobrazit skutečný <kindName>{category, select, image {obrázek} document {dokument} other {soubor {ext}}}</kindName>. Zavřete toto okno a stiskněte <quickLookKey></quickLookKey>, čímž otevřete Rychlý náhled, nebo stiskněte <openKey></openKey> (případně na soubor dvakrát klikněte) a otevřete ho v přiřazené aplikaci.",
+  "viewer.binaryWarning.bodyWithKeys": "Toto je surové zobrazení souboru. Možná bude lepší zobrazit {category, select, image {skutečný <kindName>obrázek</kindName>} document {skutečný <kindName>dokument</kindName>} other {skutečný <kindName>soubor {ext}</kindName>}}. Zavřete toto okno a stiskněte <quickLookKey></quickLookKey>, čímž otevřete Rychlý náhled, nebo stiskněte <openKey></openKey> (případně na soubor dvakrát klikněte) a otevřete ho v přiřazené aplikaci.",
   "@viewer.binaryWarning.bodyWithKeys": {
-    "sourceHash": "fd5cfb7"
+    "sourceHash": "b8f2b8b"
   },
-  "viewer.binaryWarning.bodyWithQuickLookKey": "Toto je surové zobrazení souboru. Možná bude lepší zobrazit skutečný <kindName>{category, select, image {obrázek} document {dokument} other {soubor {ext}}}</kindName>. Zavřete toto okno a stiskněte <quickLookKey></quickLookKey>, čímž otevřete Rychlý náhled, nebo na soubor dvakrát klikněte a otevřete ho v přiřazené aplikaci.",
+  "viewer.binaryWarning.bodyWithQuickLookKey": "Toto je surové zobrazení souboru. Možná bude lepší zobrazit {category, select, image {skutečný <kindName>obrázek</kindName>} document {skutečný <kindName>dokument</kindName>} other {skutečný <kindName>soubor {ext}</kindName>}}. Zavřete toto okno a stiskněte <quickLookKey></quickLookKey>, čímž otevřete Rychlý náhled, nebo na soubor dvakrát klikněte a otevřete ho v přiřazené aplikaci.",
   "@viewer.binaryWarning.bodyWithQuickLookKey": {
-    "sourceHash": "ed8bdcf"
+    "sourceHash": "ee3a485"
   },
-  "viewer.binaryWarning.bodyWithOpenKey": "Toto je surové zobrazení souboru. Možná bude lepší zobrazit skutečný <kindName>{category, select, image {obrázek} document {dokument} other {soubor {ext}}}</kindName>. Zavřete toto okno a stiskněte <openKey></openKey> (případně na soubor dvakrát klikněte) a otevřete ho v přiřazené aplikaci.",
+  "viewer.binaryWarning.bodyWithOpenKey": "Toto je surové zobrazení souboru. Možná bude lepší zobrazit {category, select, image {skutečný <kindName>obrázek</kindName>} document {skutečný <kindName>dokument</kindName>} other {skutečný <kindName>soubor {ext}</kindName>}}. Zavřete toto okno a stiskněte <openKey></openKey> (případně na soubor dvakrát klikněte) a otevřete ho v přiřazené aplikaci.",
   "@viewer.binaryWarning.bodyWithOpenKey": {
-    "sourceHash": "b219b68"
+    "sourceHash": "7325848"
   },
-  "viewer.binaryWarning.bodyWithoutKeys": "Toto je surové zobrazení souboru. Možná bude lepší zobrazit skutečný <kindName>{category, select, image {obrázek} document {dokument} other {soubor {ext}}}</kindName>. Zavřete toto okno a na soubor dvakrát klikněte a otevřete ho v přiřazené aplikaci.",
+  "viewer.binaryWarning.bodyWithoutKeys": "Toto je surové zobrazení souboru. Možná bude lepší zobrazit {category, select, image {skutečný <kindName>obrázek</kindName>} document {skutečný <kindName>dokument</kindName>} other {skutečný <kindName>soubor {ext}</kindName>}}. Zavřete toto okno a dvojitým kliknutím na soubor ho otevřete v přiřazené aplikaci.",
   "@viewer.binaryWarning.bodyWithoutKeys": {
-    "sourceHash": "610efa6"
+    "sourceHash": "6cc5695"
   },
   "viewer.binaryWarning.dismiss": "Zavřít",
   "@viewer.binaryWarning.dismiss": {

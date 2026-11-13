@@ -244,9 +244,9 @@
   "@commands.viewZoomOut.label": {
     "sourceHash": "bc7b631"
   },
-  "commands.viewToggleFullScreen.label": "{platform, select, macos {Vollbildmodus ein-/ausschalten} windows {Vollbildmodus ein-/ausschalten} other {Toggle full screen mode}}",
+  "commands.viewToggleFullScreen.label": "{platform, select, macos {Vollbildmodus ein-/ausschalten} windows {Vollbildmodus ein-/ausschalten} other {Vollbildmodus ein-/ausschalten}}",
   "@commands.viewToggleFullScreen.label": {
-    "sourceHash": "57789cb"
+    "sourceHash": "76055d3"
   },
   "commands.sortByName.label": "Nach Name sortieren",
   "@commands.sortByName.label": {

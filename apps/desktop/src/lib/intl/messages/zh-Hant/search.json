@@ -165,7 +165,7 @@
   },
   "search.coverage.line.uncovered.indexing": "{count, plural, other {Cmdr 仍在為 {drive} 建立索引，有 {countText} 個資料夾還沒處理到，所以這次搜尋略過了。}}",
   "@search.coverage.line.uncovered.indexing": {
-    "sourceHash": "8e8cd2f"
+    "sourceHash": "c49ddbc"
   },
   "search.coverage.list.show": "顯示這些資料夾",
   "@search.coverage.list.show": {

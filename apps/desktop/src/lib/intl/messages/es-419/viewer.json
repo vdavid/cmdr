@@ -91,16 +91,16 @@
   "@viewer.row.continuesLabel": {
     "sourceHash": "5d15326"
   },
-  "viewer.binaryWarning.bodyWithKeys": "Esta es la vista en bruto del archivo. Quizá prefieras verlo como <kindName>{category, select, image {imagen} document {documento} other {archivo {ext}}}</kindName>. Para hacerlo, cierra esta ventana y presiona <quickLookKey></quickLookKey> para abrir la Vista rápida, o presiona <openKey></openKey> (o haz doble clic en el archivo) para abrirlo en la app asociada.",
+  "viewer.binaryWarning.bodyWithKeys": "Esta es la vista en bruto del archivo. Quizá prefieras verlo como {category, select, image {<kindName>imagen</kindName>} document {<kindName>documento</kindName>} other {<kindName>archivo {ext}</kindName>}}. Para hacerlo, cierra esta ventana y presiona <quickLookKey></quickLookKey> para abrir la Vista rápida, o presiona <openKey></openKey> (o haz doble clic en el archivo) para abrirlo en la app asociada.",
   "@viewer.binaryWarning.bodyWithKeys": {
-    "sourceHash": "0053059"
+    "sourceHash": "fed2837"
   },
-  "viewer.binaryWarning.bodyWithQuickLookKey": "Esta es la vista en bruto del archivo. Quizá prefieras verlo como <kindName>{category, select, image {imagen} document {documento} other {archivo {ext}}}</kindName>. Para hacerlo, cierra esta ventana y presiona <quickLookKey></quickLookKey> para abrir la Vista rápida, o haz doble clic en el archivo para abrirlo en la app asociada.",
+  "viewer.binaryWarning.bodyWithQuickLookKey": "Esta es la vista en bruto del archivo. Quizá prefieras verlo como {category, select, image {<kindName>imagen</kindName>} document {<kindName>documento</kindName>} other {<kindName>archivo {ext}</kindName>}}. Para hacerlo, cierra esta ventana y presiona <quickLookKey></quickLookKey> para abrir la Vista rápida, o haz doble clic en el archivo para abrirlo en la app asociada.",
   "@viewer.binaryWarning.bodyWithQuickLookKey": {
-    "sourceHash": "3cda05c"
+    "sourceHash": "dc8224c"
   },
-  "viewer.binaryWarning.bodyWithOpenKey": "Esta es la vista en bruto del archivo. Quizá prefieras verlo como <kindName>{category, select, image {imagen} document {documento} other {archivo {ext}}}</kindName>. Para hacerlo, cierra esta ventana y presiona <openKey></openKey> (o haz doble clic en el archivo) para abrirlo en la app asociada.",
+  "viewer.binaryWarning.bodyWithOpenKey": "Esta es la vista en bruto del archivo. Quizá prefieras verlo como {category, select, image {<kindName>imagen</kindName>} document {<kindName>documento</kindName>} other {<kindName>archivo {ext}</kindName>}}. Para hacerlo, cierra esta ventana y presiona <openKey></openKey> (o haz doble clic en el archivo) para abrirlo en la app asociada.",
   "@viewer.binaryWarning.bodyWithOpenKey": {
-    "sourceHash": "961265e"
+    "sourceHash": "d292785"
   }
 }

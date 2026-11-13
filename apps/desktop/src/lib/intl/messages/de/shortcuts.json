@@ -105,21 +105,21 @@
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"
   },
-  "shortcuts.conflict.systemShortcut": "{combo} wird meist von macOS belegt ({label}) und erreicht Cmdr daher womöglich nie. Du kannst sie in Systemeinstellungen > Tastatur freigeben.",
+  "shortcuts.conflict.systemShortcut": "{combo} wird meist von macOS belegt ({label}) und erreicht Cmdr daher womöglich nie. Du kannst den Kurzbefehl in Systemeinstellungen > Tastatur freigeben.",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "9ef197f"
+    "sourceHash": "bdcd845"
   },
-  "shortcuts.conflict.takenByWindows": "{combo} wird meist von Windows belegt ({label}) und erreicht Cmdr daher womöglich nie.",
+  "shortcuts.conflict.takenByWindows": "{combo} wird meist von Windows belegt ({label}), daher erreicht der Kurzbefehl Cmdr womöglich nie.",
   "@shortcuts.conflict.takenByWindows": {
-    "sourceHash": "4858bee"
+    "sourceHash": "ced2a90"
   },
-  "shortcuts.conflict.takenByLinuxDesktops": "Unter {desktops} belegt die Arbeitsumgebung {combo} meist selbst, daher erreicht die Kombination Cmdr womöglich nie. In den Tastatureinstellungen deiner Arbeitsumgebung kannst du die Kombination freigeben.",
+  "shortcuts.conflict.takenByLinuxDesktops": "Unter {desktops} belegt die Arbeitsumgebung {combo} meist selbst, daher erreicht der Kurzbefehl Cmdr womöglich nie. Du kannst ihn in den Tastatureinstellungen deiner Arbeitsumgebung freigeben.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "11d35a9"
+    "sourceHash": "610146a"
   },
-  "shortcuts.conflict.opensMenuBarMenu": "{combo} öffnet das Menü „{menu}“ in der Menüleiste von Cmdr, daher erreicht die Kombination diesen Befehl nur, wenn ein Dialog geöffnet ist.",
+  "shortcuts.conflict.opensMenuBarMenu": "{combo} öffnet das Menü „{menu}“ in der Menüleiste von Cmdr, daher erreicht der Kurzbefehl diesen Befehl nur, wenn ein Dialog geöffnet ist.",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "sourceHash": "314244c"
+    "sourceHash": "f4b330a"
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {

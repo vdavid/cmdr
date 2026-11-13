@@ -514,7 +514,7 @@
   },
   "settings.fileOperations.macOnlyFiles.description": "Při kopírování, přesouvání nebo komprimování přeskočí soubory .DS_Store a ._*.",
   "@settings.fileOperations.macOnlyFiles.description": {
-    "sourceHash": "72d2492"
+    "sourceHash": "02578a7"
   },
   "settings.fileOperations.macOnlyFiles.opt.include": "Zahrnout",
   "@settings.fileOperations.macOnlyFiles.opt.include": {

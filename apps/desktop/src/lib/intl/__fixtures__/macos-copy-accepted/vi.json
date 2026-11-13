@@ -1,0 +1,6 @@
+{
+  "shortcuts.conflict.systemShortcut": {
+    "text": "{combo} thường được macOS dùng ({label}), nên phím tắt này có thể không bao giờ đến được Cmdr. Bạn có thể giải phóng phím tắt này trong Cài đặt hệ thống > Bàn phím.",
+    "reason": "“nên nó” could read as macOS (the nearer subject) rather than `{combo}`; it now names “phím tắt này”, as the reworded English asks"
+  }
+}

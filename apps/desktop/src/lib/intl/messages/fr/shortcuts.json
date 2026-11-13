@@ -104,21 +104,21 @@
   "@shortcuts.conflict.shiftLetter": {
     "sourceHash": "15f52bd"
   },
-  "shortcuts.conflict.systemShortcut": "{combo} est généralement pris par macOS ({label}), donc il pourrait ne jamais atteindre Cmdr. Vous pouvez le libérer dans Réglages Système > Clavier.",
+  "shortcuts.conflict.systemShortcut": "{combo} est généralement pris par macOS ({label}), donc ce raccourci pourrait ne jamais atteindre Cmdr. Vous pouvez le libérer dans Réglages Système > Clavier.",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "9ef197f"
+    "sourceHash": "bdcd845"
   },
-  "shortcuts.conflict.takenByWindows": "{combo} est généralement pris par Windows ({label}), donc il pourrait ne jamais atteindre Cmdr.",
+  "shortcuts.conflict.takenByWindows": "{combo} est généralement pris par Windows ({label}), donc ce raccourci pourrait ne jamais atteindre Cmdr.",
   "@shortcuts.conflict.takenByWindows": {
-    "sourceHash": "4858bee"
+    "sourceHash": "ced2a90"
   },
   "shortcuts.conflict.takenByLinuxDesktops": "Sur {desktops}, l’environnement de bureau prend généralement {combo} pour lui, donc ce raccourci pourrait ne jamais atteindre Cmdr. Vous pouvez le libérer dans les paramètres du clavier de votre environnement de bureau.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "11d35a9"
+    "sourceHash": "610146a"
   },
   "shortcuts.conflict.opensMenuBarMenu": "{combo} ouvre le menu {menu} de la barre des menus de Cmdr, donc ce raccourci n’atteindra cette commande que si une boîte de dialogue est ouverte.",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "sourceHash": "314244c"
+    "sourceHash": "f4b330a"
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {

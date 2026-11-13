@@ -1657,9 +1657,9 @@
   "@errors.write.trashRefused.message.folderNotWritable": {
     "sourceHash": "d2f7954"
   },
-  "errors.write.trashRefused.message.ownedByAnotherUser": "{platform, select, macos {你選的項目裡有 {count} 個屬於這部 Mac 上的另一個帳號，而它們所在的資料夾只允許項目的擁有者移動它。} windows {Another account on this PC owns {count} of the items you picked, and their folder lets only an item’s owner move it.} other {Another account on this computer owns {count} of the items you picked, and their folder lets only an item’s owner move it.}}",
+  "errors.write.trashRefused.message.ownedByAnotherUser": "{platform, select, macos {你選的項目裡有 {count} 個屬於這部 Mac 上的另一個帳號，而它們所在的資料夾只允許項目的擁有者移動它。} windows {你選的項目裡有 {count} 個屬於這台電腦上的另一個帳號，而它們所在的資料夾只允許項目的擁有者移動它。} other {你選的項目裡有 {count} 個屬於這台電腦上的另一個帳號，而它們所在的資料夾只允許項目的擁有者移動它。}}",
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
-    "sourceHash": "50f2ce6"
+    "sourceHash": "b65d875"
   },
   "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {你選的項目裡有 {count} 個，因為這個磁碟機上的垃圾桶不讓 Cmdr 放入任何東西，所以它們留在原處。}}",
   "@errors.write.trashRefused.message.trashNotWritable": {

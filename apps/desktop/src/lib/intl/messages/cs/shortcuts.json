@@ -106,19 +106,19 @@
   },
   "shortcuts.conflict.systemShortcut": "Kombinaci {combo} obvykle používá macOS ({label}), takže se do Cmdru možná vůbec nedostane. Uvolnit ji můžete v Nastavení systému > Klávesnice.",
   "@shortcuts.conflict.systemShortcut": {
-    "sourceHash": "9ef197f"
+    "sourceHash": "bdcd845"
   },
-  "shortcuts.conflict.takenByWindows": "Kombinaci {combo} obvykle používá Windows ({label}), takže se do Cmdru možná vůbec nedostane.",
+  "shortcuts.conflict.takenByWindows": "Kombinaci {combo} obvykle používá Windows ({label}), takže se tato zkratka do Cmdru možná vůbec nedostane.",
   "@shortcuts.conflict.takenByWindows": {
-    "sourceHash": "4858bee"
+    "sourceHash": "ced2a90"
   },
-  "shortcuts.conflict.takenByLinuxDesktops": "Kombinaci {combo} si obvykle bere pro sebe pracovní prostředí ({desktops}), takže se do Cmdru možná vůbec nedostane. Uvolnit ji můžete v nastavení klávesnice svého prostředí.",
+  "shortcuts.conflict.takenByLinuxDesktops": "Kombinaci {combo} si obvykle bere pro sebe pracovní prostředí ({desktops}), takže se tato zkratka do Cmdru možná vůbec nedostane. Uvolnit ji můžete v nastavení klávesnice svého prostředí.",
   "@shortcuts.conflict.takenByLinuxDesktops": {
-    "sourceHash": "11d35a9"
+    "sourceHash": "610146a"
   },
-  "shortcuts.conflict.opensMenuBarMenu": "Kombinace {combo} otevírá v řádku nabídek Cmdru nabídku {menu}, takže se k tomuto příkazu dostane, jen když je otevřené dialogové okno.",
+  "shortcuts.conflict.opensMenuBarMenu": "Kombinace {combo} otevírá v řádku nabídek Cmdru nabídku {menu}, takže se tato zkratka k tomuto příkazu dostane, jen když je otevřené dialogové okno.",
   "@shortcuts.conflict.opensMenuBarMenu": {
-    "sourceHash": "314244c"
+    "sourceHash": "f4b330a"
   },
   "shortcuts.system.spotlight": "Spotlight",
   "@shortcuts.system.spotlight": {
