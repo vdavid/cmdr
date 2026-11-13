@@ -13,6 +13,7 @@ import { join } from 'node:path'
 import { parseValuesFile, planApply, uncoveredKeys, writePlan } from './i18n-apply-lib.ts'
 import { sourceHash } from './i18n-catalog-lib.ts'
 import { parseApplyArgs } from './i18n-apply.ts'
+import { latestWorkDir, newWorkDir } from './i18n-repo-lib.ts'
 
 let root: string
 
@@ -213,6 +214,16 @@ describe('the values file and coverage', () => {
     expect(() => parseValuesFile({ '@a': { sameAsSourceJustification: 'x' } })).toThrow('gives no value')
   })
 
+  it('finds the newest run directory of a language, and none for a language without one', () => {
+    const work = join(root, 'work')
+    const first = newWorkDir('de', { root: work, now: new Date(2026, 10, 13, 2, 0, 0) })
+    const second = newWorkDir('de', { root: work, now: new Date(2026, 10, 13, 2, 0, 0) })
+    const later = newWorkDir('de', { root: work, now: new Date(2026, 10, 13, 2, 0, 5) })
+    expect(first).not.toBe(second)
+    expect(latestWorkDir('de', { root: work })).toBe(later)
+    expect(latestWorkDir('fr', { root: work })).toBeUndefined()
+  })
+
   it('lists expected keys the batch leaves out', () => {
     expect(uncoveredKeys(['a', 'b', 'c'], parseValuesFile({ a: 'x', c: 'y' }))).toEqual(['b'])
   })
@@ -224,6 +235,6 @@ describe('the values file and coverage', () => {
       dryRun: true,
     })
     expect(() => parseApplyArgs(['--lang', 'de,fr', '--values', 'v.json'])).toThrow('one locale')
-    expect(() => parseApplyArgs(['--lang', 'de'])).toThrow('--values')
+    expect(parseApplyArgs(['--lang', 'de']).values).toBeUndefined()
   })
 })

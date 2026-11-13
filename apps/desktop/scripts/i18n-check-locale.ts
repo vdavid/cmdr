@@ -14,13 +14,21 @@
  * It never ratchets a baseline or an allowlist (a scoped run can't see the other
  * locales, so shrink-wrapping would drop them): the full checks do that.
  *
+ * A batch scope (`--keys-file`, `--keys`, `--changed-since`, the brief's own
+ * selectors) narrows `stale` to the batch: a translator's batch is done when ITS
+ * keys are current, and the locale's other stale keys belong to other batches.
+ * Every other check stays locale-wide, since a batch can break them anywhere.
+ *
  * Exit 0 when every check is clean, 1 otherwise (a warn-class finding included:
  * a translator's batch isn't done while its locale carries one).
  */
 
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
-import { baseLanguageOf, listLocales } from './i18n-catalog-lib.ts'
+import { parseArgs } from 'node:util'
+import { BASE_LOCALE, baseLanguageOf, listLocales, loadCatalog } from './i18n-catalog-lib.ts'
+import { changedKeys, selectKeys } from './i18n-brief-select.ts'
+import { englishAt, keyPatternsFrom } from './i18n-repo-lib.ts'
 import { runAriaCheck } from './i18n-check-aria-label.ts'
 import { runCoverageCheck } from './i18n-check-coverage.ts'
 import { runDontTranslateCheck } from './i18n-check-dont-translate.ts'
@@ -49,20 +57,27 @@ function forTags(errors: readonly string[], tags: ReadonlySet<string>): string[]
   })
 }
 
+/** The stale step's name: scoped to a batch, it says how big the batch is. */
+function staleStepName(keys: ReadonlySet<string> | undefined): string {
+  if (keys === undefined) return 'stale'
+  return `stale (${String(keys.size)} batch ${keys.size === 1 ? 'key' : 'keys'})`
+}
+
 function inProcessSteps(
   tags: readonly string[],
   {
     messagesRoot,
     docsRoot,
     termAllowlistPath,
-  }: { messagesRoot?: string; docsRoot?: string; termAllowlistPath?: string },
+    keys,
+  }: { messagesRoot?: string; docsRoot?: string; termAllowlistPath?: string; keys?: ReadonlySet<string> },
 ): Step[] {
   const only = tags
   const wanted = new Set(tags)
   const withBases = new Set([...tags, ...tags.map(baseLanguageOf)])
   return [
     { name: 'parity', run: (write) => runParityCheck({ messagesRoot, write, only }) },
-    { name: 'stale', run: (write) => runStaleCheck({ messagesRoot, write, only }) },
+    { name: staleStepName(keys), run: (write) => runStaleCheck({ messagesRoot, write, only, keys }) },
     { name: 'icu', run: (write) => runIcuCheck({ messagesRoot, write, only }) },
     { name: 'platform-select', run: (write) => runPlatformSelectCheck({ messagesRoot, write, only }) },
     { name: 'plural', run: (write) => runPluralCheck({ messagesRoot, write, only }) },
@@ -148,12 +163,15 @@ export function runLocaleChecks({
   messagesRoot,
   docsRoot,
   termAllowlistPath,
+  keys,
   external = true,
   write = (line: string) => {
     console.log(line)
   },
 }: {
   tags: readonly string[]
+  /** a translator's batch: `stale` judges only these keys (every other check stays locale-wide) */
+  keys?: ReadonlySet<string>
   messagesRoot?: string
   docsRoot?: string
   /** the term-consistency allowlist (a fixture's own; default the real one) */
@@ -165,7 +183,7 @@ export function runLocaleChecks({
   const unknown = tags.filter((tag) => !available.includes(tag))
   if (unknown.length > 0) throw new Error(`No catalog for ${unknown.join(', ')} (have: ${available.join(', ')})`)
   const steps = [
-    ...inProcessSteps(tags, { messagesRoot, docsRoot, termAllowlistPath }),
+    ...inProcessSteps(tags, { messagesRoot, docsRoot, termAllowlistPath, keys }),
     ...(external ? externalSteps(tags) : []),
   ]
   let failed = 0
@@ -183,15 +201,47 @@ export function runLocaleChecks({
   return failed === 0 ? EXIT_CLEAN : 1
 }
 
-if (process.argv[1] && import.meta.filename === process.argv[1]) {
-  const tags = process.argv
-    .slice(2)
+/**
+ * Parses the CLI: locale tags (space- or comma-separated) and an optional batch scope, the same selectors
+ * `pnpm i18n:brief` takes (`--keys a.b,c.*`, `--keys-file <file>`, `--changed-since <ref>`; they narrow each other).
+ * @param argv `process.argv.slice(2)`
+ */
+export function parseCheckLocaleArgs(argv: string[]): {
+  tags: string[]
+  keys?: string
+  keysFile?: string
+  changedSince?: string
+} {
+  const { values, positionals } = parseArgs({
+    args: argv,
+    options: { keys: { type: 'string' }, 'keys-file': { type: 'string' }, 'changed-since': { type: 'string' } },
+    allowPositionals: true,
+  })
+  const tags = positionals
     .flatMap((arg) => arg.split(','))
     .map((tag) => tag.trim())
     .filter(Boolean)
+  if (tags.length === 0) {
+    throw new Error(
+      'Usage: pnpm i18n:check-locale <tag> [<tag>…] [--keys-file <file> | --keys <a,b> | --changed-since <ref>]',
+    )
+  }
+  return { tags, keys: values.keys, keysFile: values['keys-file'], changedSince: values['changed-since'] }
+}
+
+/** The batch the scope flags pick, in English order, or `undefined` for a locale-wide run. */
+function batchScope(args: ReturnType<typeof parseCheckLocaleArgs>): Set<string> | undefined {
+  const patterns = keyPatternsFrom(args)
+  if (!patterns && !args.changedSince) return undefined
+  const en = loadCatalog(BASE_LOCALE).messages
+  const changed = args.changedSince ? new Set(changedKeys(en, englishAt(args.changedSince))) : undefined
+  return new Set(selectKeys({ en, patterns, changed }))
+}
+
+if (process.argv[1] && import.meta.filename === process.argv[1]) {
   try {
-    if (tags.length === 0) throw new Error('Usage: pnpm i18n:check-locale <tag> [<tag>…]')
-    process.exit(runLocaleChecks({ tags }))
+    const args = parseCheckLocaleArgs(process.argv.slice(2))
+    process.exit(runLocaleChecks({ tags: args.tags, keys: batchScope(args) }))
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
     process.exit(EXIT_ERROR)

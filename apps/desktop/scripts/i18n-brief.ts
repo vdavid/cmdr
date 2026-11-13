@@ -14,7 +14,10 @@
  *   --include-stale                  also every key a target translated from older English (widens the batch)
  *   --exclude-target-values          blind run: withhold the batch's current translations and decisions
  *   --parallel                       several translators at once: shared-file writes go to proposals
- *   --out <file>                     write there instead of stdout
+ *   --out <file>                     write the brief there (`-`: stdout) instead of the run directory
+ *
+ * Each run makes a gitignored directory per language, `_ignored/i18n-work/<tag>/<timestamp>/`, holding the
+ * brief, `keys.txt` (the batch), and the translator's `values.json`; the header names it and the scoped check.
  *   --stats                          per-section size to stderr
  *   --messages-root <dir>, --docs-root <dir>   fixtures
  *
@@ -23,7 +26,7 @@
  * `docs/guides/i18n-translation.md`.
  */
 
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 import { BASE_LOCALE, listLocales, loadCatalog, resolveLocaleSource } from './i18n-catalog-lib.ts'
@@ -31,7 +34,9 @@ import { EXIT_ERROR } from './i18n-locale-check-lib.ts'
 import { buildBrief, renderBrief, roughTokens } from './i18n-brief-lib.ts'
 import { changedKeys, selectKeys, staleKeys } from './i18n-brief-select.ts'
 import { previousEnglish } from './i18n-brief-history.ts'
-import { englishAt, parseList, readListFile, repoRoots } from './i18n-repo-lib.ts'
+import { englishAt, keyPatternsFrom, newWorkDir, repoRoots } from './i18n-repo-lib.ts'
+import { BASELINE_RELATIVE_PATH, desktopPath, frozenKeysFor } from './i18n-macos-copy-baseline-lib.ts'
+import type { MacosCopyBaseline } from './i18n-macos-copy-baseline-lib.ts'
 
 /** The parsed flags. */
 export interface BriefArgs {
@@ -111,23 +116,13 @@ function resolveLangs(langFlag: string | undefined, messagesRoot?: string): stri
 }
 
 /**
- * The `--keys` patterns (comma-separated) plus the `--keys-file` ones (one per
- * line; blank lines and `#` comments skipped), or `undefined` when neither was passed.
- */
-function keyPatterns(args: BriefArgs): string[] | undefined {
-  const inline = parseList((args.keys ?? '').split(',').join('\n'))
-  const patterns = [...inline, ...(args.keysFile ? readListFile(args.keysFile) : [])]
-  return patterns.length > 0 ? patterns : undefined
-}
-
-/**
  * The batch, from whichever key selectors were passed, plus how to describe it in
  * the header. `--include-stale` widens it (a union, unlike the narrowing selectors)
  * with every key a target translated from older English.
  */
 function resolveKeys(args: BriefArgs, langs: readonly string[]) {
   const { messagesRoot, missing, changedSince: changedRef, includeStale } = args
-  const patterns = keyPatterns(args)
+  const patterns = keyPatternsFrom(args)
   if (!patterns && !changedRef && !missing && !includeStale)
     throw new Error('Pick keys: --keys, --keys-file, --missing, --changed-since <ref>, and/or --include-stale')
   const en = loadCatalog(BASE_LOCALE, messagesRoot).messages
@@ -166,6 +161,26 @@ function selectionLabel(args: BriefArgs, patterns: readonly string[] | undefined
     .join(' ')
 }
 
+/**
+ * One run directory per language (`newWorkDir`, one timestamp for the run), each holding `keys.txt`, the batch, so
+ * `pnpm i18n:apply` and the scoped `i18n:check-locale` read the same list the brief was built from.
+ */
+function runDirectories(langs: readonly string[], keys: readonly string[]): Record<string, string> {
+  const now = new Date()
+  const dirs: Record<string, string> = {}
+  for (const tag of langs) {
+    dirs[tag] = newWorkDir(tag, { now })
+    writeFileSync(join(dirs[tag], 'keys.txt'), `${keys.join('\n')}\n`)
+  }
+  return dirs
+}
+
+/** Each target's keys whose macOS text the frozen copy baseline holds. */
+function frozenMacosFor(langs: readonly string[]): Record<string, ReadonlySet<string>> {
+  const baseline = JSON.parse(readFileSync(desktopPath(BASELINE_RELATIVE_PATH), 'utf8')) as MacosCopyBaseline
+  return Object.fromEntries(langs.map((tag) => [tag, frozenKeysFor(baseline, tag)]))
+}
+
 /** One `--stats` line. */
 function statsLine(name: string, text: string): string {
   return `${name.padEnd(12)} ${String(text.length).padStart(7)} chars  ~${String(roughTokens(text)).padStart(6)} tokens`
@@ -182,6 +197,7 @@ function main(): void {
   }
 
   const { repoRoot, mainClone } = repoRoots()
+  const workDirs = runDirectories(langs, keys)
   const brief = buildBrief({
     langs,
     keys,
@@ -193,11 +209,18 @@ function main(): void {
     excludeTargetValues: args.excludeTargetValues,
     parallel: args.parallel,
     previousEnglish: previousEnglish({ keys, langs, messagesRoot }),
+    frozenMacos: messagesRoot === undefined ? frozenMacosFor(langs) : undefined,
+    workDirs,
   })
   const text = renderBrief(brief)
 
-  if (args.out) writeFileSync(args.out, text)
-  else process.stdout.write(text)
+  if (args.out === '-') process.stdout.write(text)
+  else {
+    const paths = args.out ? [args.out] : Object.values(workDirs).map((dir) => join(dir, 'brief.md'))
+    for (const path of paths) writeFileSync(path, text)
+    console.log(`Brief: ${paths.join(', ')}`)
+    for (const [tag, dir] of Object.entries(workDirs)) console.log(`${tag}: values go in ${join(dir, 'values.json')}`)
+  }
 
   if (args.stats) {
     for (const section of brief.sections) console.error(statsLine(section.name, section.text))

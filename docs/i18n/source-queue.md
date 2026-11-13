@@ -51,6 +51,9 @@ Process feedback (a translator's homemade scripts and workarounds) goes under it
   renders as "just closed" (`vừa đóng`), as its `commands.handler.noRecentlyClosedTabs` already does under an exception.
   Only vi deviates, and the concept's sense names recently closed tabs, so it stays a vi exception unless another locale
   does the same. (vi)
+- The pile lacks the KDE Frameworks catalogs (`kxmlgui`, `kconfigwidgets`), where KStandardAction labels like "Full
+  Screen Mode" live, so `i18n:pile` finds nothing for them and a Linux branch falls back to the base ruling. Add them to
+  the pile beside Dolphin. (de)
 
 ## Process feedback
 

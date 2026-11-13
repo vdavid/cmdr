@@ -7,7 +7,8 @@
  *   --lang <tag>              the catalog tag (`pt` mines `pt-BR/`, `zh-Hant` mines `zh-Hant/` + `zh-TW/`)
  *   --term "<English>"        forward: how each source translates it (repeatable)
  *   --target "<word>"         reverse: which English each source translates this way (repeatable)
- *   --key <message key>       forward, for each short branch of the key's English and each concept it hits
+ *   (Pass every lookup in one call: a worktree guard refuses a shell loop over this command.)
+ *   --key <message key>       (repeatable) forward, for each short branch of the key's English and each concept it hits
  *   --source macos,microsoft,linux,orthodox,git   only these sources (default: all)
  *   --limit <n>               hits per source and query (default 6; exact matches come first)
  *   --pile-root <dir>, --messages-root <dir>, --docs-root <dir>   fixtures
@@ -28,12 +29,28 @@ import { compileConcepts, englishMatchTexts, loadConceptsFor } from './i18n-term
 export interface PileArgs {
   lang: string
   queries: PileQuery[]
-  key?: string
+  keys: string[]
   sources: PileSource[]
   limit: number
   pileRoot?: string
   messagesRoot?: string
   docsRoot?: string
+}
+
+/** `--source a,b`, checked against the known sources; every source when absent. */
+function parseSources(flag: string | undefined): PileSource[] {
+  const sources = flag ? flag.split(',').map((source) => source.trim()) : [...PILE_SOURCES]
+  const unknown = sources.filter((source) => !PILE_SOURCES.includes(source as PileSource))
+  if (unknown.length > 0)
+    throw new Error(`Unknown source(s): ${unknown.join(', ')} (have: ${PILE_SOURCES.join(', ')}).`)
+  return sources as PileSource[]
+}
+
+/** `--limit <n>`, a positive whole number; 6 when absent. */
+function parseLimit(flag: string | undefined): number {
+  const limit = flag === undefined ? 6 : Number(flag)
+  if (!Number.isInteger(limit) || limit < 1) throw new Error('--limit takes a positive whole number.')
+  return limit
 }
 
 /**
@@ -47,7 +64,7 @@ export function parsePileArgs(argv: string[]): PileArgs {
       lang: { type: 'string' },
       term: { type: 'string', multiple: true },
       target: { type: 'string', multiple: true },
-      key: { type: 'string' },
+      key: { type: 'string', multiple: true },
       source: { type: 'string' },
       limit: { type: 'string' },
       'pile-root': { type: 'string' },
@@ -65,19 +82,15 @@ export function parsePileArgs(argv: string[]): PileArgs {
     ...(values.term ?? []).map((text) => ({ side: 'english' as const, text })),
     ...(values.target ?? []).map((text) => ({ side: 'target' as const, text })),
   ]
-  if (queries.length === 0 && !values.key)
+  if (queries.length === 0 && !values.key?.length)
     throw new Error('Pass --term "<English>", --target "<word>", or --key <key>.')
-  const sources = values.source ? values.source.split(',').map((source) => source.trim()) : [...PILE_SOURCES]
-  const unknown = sources.filter((source) => !PILE_SOURCES.includes(source as PileSource))
-  if (unknown.length > 0)
-    throw new Error(`Unknown source(s): ${unknown.join(', ')} (have: ${PILE_SOURCES.join(', ')}).`)
-  const limit = values.limit === undefined ? 6 : Number(values.limit)
-  if (!Number.isInteger(limit) || limit < 1) throw new Error('--limit takes a positive whole number.')
+  const sources = parseSources(values.source)
+  const limit = parseLimit(values.limit)
   return {
     lang,
     queries,
-    key: values.key,
-    sources: sources as PileSource[],
+    keys: values.key ?? [],
+    sources,
     limit,
     pileRoot: values['pile-root'],
     messagesRoot: values['messages-root'],
@@ -134,7 +147,7 @@ function main(): number {
     console.error(`No pile folder for ${args.lang} under ${root} (looked for ${missing.join(', ')}).`)
     return EXIT_ERROR
   }
-  const queries = [...args.queries, ...(args.key ? keyQueries(args.key, args) : [])]
+  const queries = [...args.queries, ...args.keys.flatMap((key) => keyQueries(key, args))]
   console.log(`# Reference pile for ${args.lang}: ${present.map((folder) => `${root}/${folder}/`).join(' + ')}`)
   console.log('`=` an exact match, `~` one that contains the words. Weigh macOS over Microsoft over the rest.')
   for (const query of queries) {

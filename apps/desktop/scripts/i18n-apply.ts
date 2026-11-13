@@ -5,9 +5,11 @@
  * stale list in the same step. Planning and validation live in `i18n-apply-lib.ts`.
  *
  *   --lang <tag>              exactly one locale (parallel translators never touch each other's files)
- *   --values <file.json>      key → value (string, per-OS branches, or null to drop an overlay fork),
+ *   --values <file.json>      key → value (string, per-OS branches, or null to drop an overlay fork); default:
+ *                             `values.json` in the language's newest run directory (`pnpm i18n:brief` makes it),
  *                             plus optional "@key": { "sameAsSourceJustification": "…" }
- *   --expect-keys <file>      keys the batch should cover, one per line (`#` comments); reports the gaps
+ *   --expect-keys <file>      keys the batch should cover, one per line (`#` comments); reports the gaps.
+ *                             Default: the `keys.txt` beside the values file, when there is one
  *   --changed-since <ref>     the same, for every English key changed since this branch left <ref>
  *   --dry-run                 validate and report, write nothing
  *   --messages-root <dir>     fixtures
@@ -16,22 +18,23 @@
  * is written then), 2 on a usage error. Process: `docs/i18n/translator-instructions.md`.
  */
 
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 import { BASE_LOCALE, loadCatalog } from './i18n-catalog-lib.ts'
 import { changedKeys } from './i18n-brief-select.ts'
 import { EXIT_CLEAN, EXIT_ERROR, EXIT_ISSUES } from './i18n-locale-check-lib.ts'
 import { BASELINE_RELATIVE_PATH, desktopPath } from './i18n-macos-copy-baseline-lib.ts'
 import type { MacosCopyBaseline } from './i18n-macos-copy-baseline-lib.ts'
-import { englishAt, readListFile } from './i18n-repo-lib.ts'
+import { englishAt, latestWorkDir, readListFile } from './i18n-repo-lib.ts'
 import { parseValuesFile, planApply, uncoveredKeys, writePlan } from './i18n-apply-lib.ts'
 import type { ApplyPlan } from './i18n-apply-lib.ts'
 
 /** The parsed flags. */
 export interface ApplyArgs {
   lang: string
-  values: string
+  /** the values file; `undefined` means the newest run directory's `values.json` */
+  values?: string
   expectKeys?: string
   changedSince?: string
   dryRun: boolean
@@ -63,7 +66,6 @@ export function parseApplyArgs(argv: string[]): ApplyArgs {
       'i18n:apply writes one locale per call, so parallel translators never share a file: pass one --lang.',
     )
   }
-  if (!values.values) throw new Error('Pass --values <file.json>.')
   return {
     lang,
     values: values.values,
@@ -74,10 +76,15 @@ export function parseApplyArgs(argv: string[]): ApplyArgs {
   }
 }
 
-/** The keys the batch is expected to cover, from `--expect-keys` and `--changed-since`, deduplicated. */
-function expectedKeys(args: ApplyArgs): string[] | undefined {
-  if (!args.expectKeys && !args.changedSince) return undefined
-  const listed = args.expectKeys ? readListFile(args.expectKeys) : []
+/**
+ * The keys the batch is expected to cover, from `--expect-keys` and `--changed-since`, deduplicated; with neither,
+ * the `keys.txt` the brief left beside the values file.
+ */
+function expectedKeys(args: ApplyArgs, valuesPath: string): string[] | undefined {
+  const beside = join(dirname(valuesPath), 'keys.txt')
+  const expectKeys = args.expectKeys ?? (!args.changedSince && existsSync(beside) ? beside : undefined)
+  if (!expectKeys && !args.changedSince) return undefined
+  const listed = expectKeys ? readListFile(expectKeys) : []
   const changed = args.changedSince
     ? changedKeys(loadCatalog(BASE_LOCALE, args.messagesRoot).messages, englishAt(args.changedSince, args.messagesRoot))
     : []
@@ -90,7 +97,11 @@ function loadBaseline(messagesRoot: string | undefined): MacosCopyBaseline | und
   return JSON.parse(readFileSync(desktopPath(BASELINE_RELATIVE_PATH), 'utf8')) as MacosCopyBaseline
 }
 
-function report(plan: ApplyPlan, args: ApplyArgs, expected: string[] | undefined): void {
+function report(
+  plan: ApplyPlan,
+  args: ApplyArgs,
+  { valuesPath, expected }: { valuesPath: string; expected?: string[] },
+): void {
   const where = join('messages', plan.tag)
   if (plan.refused.length > 0) {
     console.log(`Refused ${String(plan.refused.length)} value(s), so nothing was written to ${where}/:`)
@@ -105,7 +116,7 @@ function report(plan: ApplyPlan, args: ApplyArgs, expected: string[] | undefined
   }
   for (const note of plan.notes) console.log(`  · ${note}`)
   if (expected !== undefined) {
-    const gaps = uncoveredKeys(expected, parseValuesFile(JSON.parse(readFileSync(args.values, 'utf8'))))
+    const gaps = uncoveredKeys(expected, parseValuesFile(JSON.parse(readFileSync(valuesPath, 'utf8'))))
     if (gaps.length === 0) console.log(`Covers all ${String(expected.length)} expected key(s).`)
     else {
       console.log(`Not covered by this batch (${String(gaps.length)} of ${String(expected.length)}):`)
@@ -113,13 +124,30 @@ function report(plan: ApplyPlan, args: ApplyArgs, expected: string[] | undefined
     }
   }
   if (plan.refused.length === 0 && !args.dryRun && plan.writes.length > 0) {
-    console.log(`Next: pnpm i18n:check-locale ${plan.tag}`)
+    const keysFile = join(dirname(valuesPath), 'keys.txt')
+    const scope = existsSync(keysFile) ? ` --keys-file ${keysFile}` : ''
+    console.log(`Next: pnpm i18n:check-locale ${plan.tag}${scope}`)
   }
+}
+
+/** `values.json` in the language's newest run directory, the brief's default place for it. */
+function defaultValuesPath(lang: string): string {
+  const dir = latestWorkDir(lang)
+  if (dir === undefined) {
+    throw new Error(
+      `No run directory for ${lang} yet: run pnpm i18n:brief --lang ${lang} first, or pass --values <file>.`,
+    )
+  }
+  const path = join(dir, 'values.json')
+  if (!existsSync(path)) throw new Error(`No values file at ${path}: write your values there, or pass --values <file>.`)
+  return path
 }
 
 function main(): number {
   const args = parseApplyArgs(process.argv.slice(2))
-  const values = parseValuesFile(JSON.parse(readFileSync(args.values, 'utf8')))
+  const valuesPath = args.values ?? defaultValuesPath(args.lang)
+  console.log(`Values: ${valuesPath}`)
+  const values = parseValuesFile(JSON.parse(readFileSync(valuesPath, 'utf8')))
   const plan = planApply({
     tag: args.lang,
     values,
@@ -127,7 +155,7 @@ function main(): number {
     baseline: loadBaseline(args.messagesRoot),
   })
   if (plan.refused.length === 0 && !args.dryRun) writePlan(plan, args.messagesRoot)
-  report(plan, args, expectedKeys(args))
+  report(plan, args, { valuesPath, expected: expectedKeys(args, valuesPath) })
   return plan.refused.length > 0 ? EXIT_ISSUES : EXIT_CLEAN
 }
 

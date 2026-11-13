@@ -268,6 +268,22 @@ describe('buildBrief (fixture tree)', () => {
     expect(text).toContain('Bewerkingenwachtrij')
   })
 
+  it('names each language’s run directory, its values file, and the batch-scoped check command', () => {
+    const header = buildBrief({ ...opts, workDirs: { nl: '/work/nl/20261113-020000' } }).sections[0].text
+    expect(header).toContain('`/work/nl/20261113-020000/values.json`')
+    expect(header).toContain('`pnpm i18n:check-locale nl --keys-file /work/nl/20261113-020000/keys.txt`')
+  })
+
+  it('notes every key whose macOS text is frozen, plain values included, with the way to fix a wrong one', () => {
+    const keys = buildBrief({ ...opts, frozenMacos: { nl: new Set(['queue.title']) } }).sections.find(
+      (section) => section.name === 'keys',
+    )?.text
+    const titleBlock = keys?.split('\n- `queue.row.label`')[0] ?? ''
+    expect(titleBlock).toContain('Frozen macOS text (nl)')
+    expect(titleBlock).toContain('ACCEPTED_TRANSLATION_CHANGES')
+    expect(keys?.match(/Frozen macOS text/g)?.length).toBe(1)
+  })
+
   it('lists a per-OS block’s placeholders and tokens branch by branch, never the injected platform or a branch body', () => {
     const text = renderBrief(buildBrief({ ...opts, keys: ['queue.reveal', 'errors.queue.revealHint'] }))
     const notes = text.split('\n').filter((line) => line.startsWith('  - {'))

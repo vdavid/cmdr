@@ -95,6 +95,8 @@ export function staleReason(
 interface RunStaleCheckOptions {
   /** only these locales; every one when absent */
   only?: readonly string[]
+  /** only these keys (a translator's batch); every key when absent */
+  keys?: ReadonlySet<string>
   /** override the `messages/` root (for tests) */
   messagesRoot?: string
   /** escalate a stale finding from WARN (exit 1) to ERROR (exit 2) */
@@ -123,6 +125,7 @@ export function runStaleCheck(opts: RunStaleCheckOptions = {}): number {
     inspectLocale: ({ source, overrides, isOverlay, catalog, findings }) => {
       const sourceLabel = isOverlay ? overrides : 'English'
       for (const key of Object.keys(catalog.messages)) {
+        if (opts.keys && !opts.keys.has(key)) continue
         const reason = staleReason(key, source.messages, catalog.metadata[key], sourceLabel)
         if (reason !== null) findings.add(key, reason)
       }

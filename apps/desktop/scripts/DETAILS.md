@@ -180,8 +180,10 @@ output: `docs/i18n/termbase.md` § Tooling; the translator-facing rules: `docs/i
   gettext catalogs by `msgid` with mnemonics ignored, Total Commander in reverse only (it has no English side). Reads
   whole files (the 63 MB German TBX parses in about half a second), no index.
 - **`i18n-repo-lib.ts`**: git, the main clone (from `--git-common-dir`, so a worktree finds the pile without anyone
-  naming the main clone's path), each tag's pile folders (`pt` → `pt-BR`), `--changed-since`'s merge-base English, and
-  one-key-per-line list files. Every i18n CLI goes through it.
+  naming the main clone's path), the per-language, per-run working directories under `_ignored/i18n-work/`
+  (`newWorkDir`, `latestWorkDir`: the brief writes `keys.txt` there and `i18n:apply` reads `values.json` from the
+  newest), each tag's pile folders (`pt` → `pt-BR`), `--changed-since`'s merge-base English, and one-key-per-line list
+  files. Every i18n CLI goes through it.
 
 Decision: one locale per `i18n:apply` call. **Why:** a fan-out runs one translator per language at once, and a call that
 can only touch its own `messages/<tag>/` can't race another. Decision: a per-OS entry may omit branches, which keep what

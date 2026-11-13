@@ -8,7 +8,7 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { BASE_LOCALE, mergeCatalogFiles, readLocaleFiles, resolveMessagesRoot } from './i18n-catalog-lib.ts'
 
@@ -99,6 +99,49 @@ export function formatJson(paths: readonly string[]): boolean {
   if (paths.length === 0) return true
   const desktopDir = join(import.meta.dirname, '..')
   return spawnSync('pnpm', ['exec', 'oxfmt', ...paths], { cwd: desktopDir, stdio: 'ignore' }).status === 0
+}
+
+/**
+ * Where translator runs keep their files: `<checkout>/_ignored/i18n-work/`. Gitignored, so nothing there is committed
+ * or seen by the doc checks (a brief under `docs/` failed `docs-reachable`), and inside the checkout, so parallel
+ * translators in one session's shared scratchpad never collide.
+ */
+export function workRoot(): string {
+  return join(repoRoots().repoRoot, '_ignored', 'i18n-work')
+}
+
+/** A run's timestamp, sortable: `20261113-021530`. */
+function runStamp(now: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${String(now.getFullYear())}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
+}
+
+/**
+ * Makes a fresh per-language, per-run directory, `<root>/<label>/<timestamp>/` (a suffix when two runs share a
+ * second), and returns it. `label` is the tag, or the tags joined with `+`.
+ */
+export function newWorkDir(label: string, { root = workRoot(), now = new Date() } = {}): string {
+  const base = join(root, label, runStamp(now))
+  let dir = base
+  for (let n = 2; existsSync(dir); n++) dir = `${base}-${String(n)}`
+  mkdirSync(dir, { recursive: true })
+  return dir
+}
+
+/** The newest run directory for `label`, or `undefined` when there's none yet. */
+export function latestWorkDir(label: string, { root = workRoot() } = {}): string | undefined {
+  const dir = join(root, label)
+  if (!existsSync(dir)) return undefined
+  const runs = readdirSync(dir).filter((name) => /^\d{8}-\d{6}/.test(name))
+  // `-2` suffixes sort after their base stamp, which is the order they were made in.
+  const newest = runs.sort((a, b) => a.localeCompare(b, 'en', { numeric: true })).at(-1)
+  return newest === undefined ? undefined : join(dir, newest)
+}
+
+/** The keys a `--keys` value (comma-separated) and a `--keys-file` name, or `undefined` when neither was passed. */
+export function keyPatternsFrom({ keys, keysFile }: { keys?: string; keysFile?: string }): string[] | undefined {
+  const patterns = [...parseList((keys ?? '').split(',').join('\n')), ...(keysFile ? readListFile(keysFile) : [])]
+  return patterns.length > 0 ? patterns : undefined
 }
 
 /** `readListFile` over text already in hand. */

@@ -451,6 +451,17 @@ function frozenKeyDrift(
 }
 
 /**
+ * The keys whose macOS text `locale` must keep: every key the baseline froze for it, plus the collapsed-pair
+ * survivors and split keys that answer for a frozen one (`frozenMacosIssue` holds each). The brief notes them.
+ */
+export function frozenKeysFor(baseline: MacosCopyBaseline, locale: string): Set<string> {
+  const frozen = new Set(Object.hasOwn(baseline.locales, locale) ? Object.keys(baseline.locales[locale]) : [])
+  for (const pair of COLLAPSED_PAIRS) if (frozen.has(pair.mac)) frozen.add(pair.survivor)
+  for (const split of SPLIT_KEYS) if (frozen.has(split.from)) frozen.add(split.to)
+  return frozen
+}
+
+/**
  * Why `value`, written into `locale`'s own catalog for `key`, would move a frozen macOS text, or `null` when it
  * wouldn't (or the baseline holds nothing for that key there). The one-key form of {@link macosCopyDrift}, for a
  * writer that must refuse such a value before it lands (`i18n-apply-lib.ts`): a collapsed pair's survivor and a

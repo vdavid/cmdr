@@ -149,6 +149,9 @@ describe('lookUp', () => {
       ],
       limit: 6,
     })
+    expect(
+      parsePileArgs(['--lang', 'de', '--term', 'Trash', '--term', 'Full Screen Mode', '--key', 'a.b', '--key', 'c.d']),
+    ).toMatchObject({ queries: [{ text: 'Trash' }, { text: 'Full Screen Mode' }], keys: ['a.b', 'c.d'] })
     expect(() => parsePileArgs(['--lang', 'de'])).toThrow('--term')
     expect(() => parsePileArgs(['--lang', 'de', '--term', 'x', '--source', 'finder'])).toThrow('Unknown source')
     expect(() => parsePileArgs(['--lang', 'de', 'Move', 'to'])).toThrow('Quote a phrase')

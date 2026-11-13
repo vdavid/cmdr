@@ -55,6 +55,8 @@ import {
 } from './i18n-catalog-lib.ts'
 import type { Catalog } from './i18n-catalog-lib.ts'
 import { perOsNote } from './i18n-brief-per-os.ts'
+import { frozenMacosNote, pilePaths, workDirLines } from './i18n-brief-run.ts'
+import { pileFolders } from './i18n-repo-lib.ts'
 import { staleKeys } from './i18n-brief-select.ts'
 import { buildMemoryIndex, contentWords, isGenericWord, nearestKeys } from './i18n-brief-memory.ts'
 import type { MemoryIndex } from './i18n-brief-memory.ts'
@@ -76,7 +78,6 @@ import {
 } from './i18n-termbase-lib.ts'
 import type { Concept, DecisionSection, Term, Termbase } from './i18n-termbase-lib.ts'
 import { loadMechanicsRaw, mechanicsSummary } from './i18n-mechanics-lib.ts'
-import { pileFolders } from './i18n-repo-lib.ts'
 
 /** What to build a brief for. */
 export interface BriefOptions {
@@ -104,6 +105,16 @@ export interface BriefOptions {
    * (`concepts.json`, `source-queue.md`) to per-locale proposals instead.
    */
   parallel?: boolean
+  /**
+   * Target locale → the keys whose macOS text the frozen copy baseline holds (`frozenKeysFor`): `pnpm i18n:apply`
+   * refuses to move that text, so the brief says so on each, plain values included.
+   */
+  frozenMacos?: Readonly<Record<string, ReadonlySet<string>>>
+  /**
+   * Target locale → its run directory (`newWorkDir`), holding `keys.txt` (the batch) and, once the translator writes
+   * it, `values.json`. The header names both and the batch-scoped check.
+   */
+  workDirs?: Readonly<Record<string, string>>
 }
 
 /** One named section of the brief (`--stats` reports each). */
@@ -204,13 +215,6 @@ function placeholderNotes(key: string, value: string, metadata: Record<string, u
   return notes
 }
 
-/** A language's pile folders as the header names them: `<root>/pt-BR/`, or several joined. */
-function pilePaths(pileRootDir: string, tag: string): string {
-  return pileFolders(tag)
-    .map((folder) => `\`${join(pileRootDir, folder)}/\``)
-    .join(' + ')
-}
-
 function headerSection(ctx: BriefContext): BriefSection {
   const { opts } = ctx
   const docsRoot = resolveDocsRoot(opts.docsRoot)
@@ -235,6 +239,7 @@ function headerSection(ctx: BriefContext): BriefSection {
     lines.push(`- Reference pile: ${pilePaths(opts.pileRoot, tag)}, mined only for terms marked "no ruling".`)
   }
   lines.push(`- Mining recipes: \`${shown(join(docsRoot, 'reference-pile', 'how-to-mine.md'), opts.repoRoot)}\`.`)
+  lines.push(...workDirLines(opts.langs, opts.workDirs))
   if (opts.excludeTargetValues)
     lines.push("- Blind run: the batch keys' current translations and the decision excerpts are withheld.")
   if (ctx.staleOutside.length > 0) lines.push(staleOutsideLine(ctx.staleOutside))
@@ -399,6 +404,9 @@ function keysSection(ctx: BriefContext): BriefSection {
     if (typeof metadata?.description === 'string') lines.push(`  - Note: ${metadata.description}`)
     const perOs = perOsNote(value)
     if (perOs !== undefined) lines.push(`  - ${perOs}`)
+    const frozenTags = ctx.opts.langs.filter((tag) => ctx.opts.frozenMacos?.[tag]?.has(key))
+    const frozen = frozenMacosNote(frozenTags, perOs !== undefined)
+    if (frozen !== undefined) lines.push(`  - ${frozen}`)
     const notes = placeholderNotes(key, value, metadata)
     if (notes.length > 0) lines.push(`  - ${notes.join(' · ')}`)
     if (isSearchKeywordsKey(key)) lines.push(`  - ${KEYWORDS_NOTE}`)

@@ -16,15 +16,19 @@ typography, escalating source problems); they bind as much as these instructions
 new evidence, and then edit it in place (the old form moves to "avoid" with its reason). Where a ruling's form and the
 style guide disagree, the style guide's general rule wins unless the ruling says why it's an exception; flag it.
 
-- **Where to write**: put your values in one JSON file (key → value) and write them with
-  `pnpm i18n:apply --lang {{TAG}} --values <file.json>` in apps/desktop. It writes each value into its catalog file,
-  stamps the key as translated from the current English, and refuses the whole batch (changing nothing) when a value
-  breaks a placeholder, a tag, ICU, the per-OS block shape, the plural set, or the macOS text a Mac already reads; fix
-  what it names and run it again. A per-OS key can be given as `{ "windows": "…", "other": "…" }`: each branch you leave
-  out keeps the text that OS reads now, which is how the `macos` branch stays untouched. A deliberate identical value
-  takes `"@<key>": { "sameAsSourceJustification": "…" }` in the same file. `--dry-run` checks without writing, and
-  `--expect-keys <file>` (one key per line) lists the batch keys your file missed. A key the catalog doesn't have yet is
-  refused with the `sync-locale-keys.ts` call that adds it.
+- **Your files**: the brief's header names your run directory (`_ignored/i18n-work/{{TAG}}/<timestamp>/`, gitignored,
+  yours alone): the brief, `keys.txt` (the batch), and your `values.json`. Keep every working file there, never under
+  `docs/` (a stray file there fails `docs-reachable`) or in a shared scratchpad (another translator's file has the same
+  name).
+- **Where to write**: put your values in that `values.json` (key → value) and write them with
+  `pnpm i18n:apply --lang {{TAG}}` in apps/desktop, which reads it and checks it against `keys.txt`. It writes each
+  value into its catalog file, stamps the key as translated from the current English, and refuses the whole batch
+  (changing nothing) when a value breaks a placeholder, a tag, ICU, the per-OS block shape, the plural set, or the macOS
+  text a Mac already reads; fix what it names and run it again. A per-OS key can be given as
+  `{ "windows": "…", "other": "…" }`: each branch you leave out keeps the text that OS reads now, which is how the
+  `macos` branch stays untouched. A deliberate identical value takes `"@<key>": { "sameAsSourceJustification": "…" }` in
+  the same file. `--dry-run` checks without writing, and it lists the batch keys your file missed. A key the catalog
+  doesn't have yet is refused with the `sync-locale-keys.ts` call that adds it.
 - **Tools, not scripts**: the tools below cover writing and looking up. ❌ Never write your own script that writes a
   catalog or a termbase file, and never hand-edit one: the tools validate and keep the formatting, and a homemade writer
   does neither. When a tool can't do what you need, do the smallest manual step and say so under Process feedback
@@ -99,9 +103,10 @@ style guide disagree, the style guide's general rule wins unless the ruling says
   Total/Double Commander render it; reuse and cite, never guess. Two-pane concepts (pane, file list, command line) come
   from the orthodox pair. `pnpm i18n:pile --lang {{TAG}} --term "<English>"` (in apps/desktop) runs the lookups in one
   call from your worktree: macOS by key, every Microsoft sense with its definition, the Linux and orthodox catalogs;
-  `--target "<word>"` looks up in reverse, `--key <key>` takes a key's English. The pile lives only in the MAIN clone,
-  and the tool finds it, so never name that path in a shell loop. Recipes for what it doesn't cover (the live macOS
-  bundles, the style-guide PDFs): docs/i18n/reference-pile/how-to-mine.md.
+  `--target "<word>"` looks up in reverse, `--key <key>` takes a key's English. Each flag repeats, so put every lookup
+  in ONE call (a worktree guard refuses a shell loop over it). The pile lives only in the MAIN clone, and the tool finds
+  it, so never name that path in a command. Recipes for what it doesn't cover (the live macOS bundles, the style-guide
+  PDFs): docs/i18n/reference-pile/how-to-mine.md.
 - **Term lookup**: `pnpm i18n:term <word>` prints every concept the word names, each sense's definition and boundaries,
   and every language's ruling; `pnpm i18n:term --key <key>` shows which concepts a key's English hits and which a
   `notMatch` keeps out (the first question when the termbase check flags a key you think it misreads).
@@ -117,9 +122,11 @@ style guide disagree, the style guide's general rule wins unless the ruling says
   narrative, a dated story, or a second entry beside the old one. The file has a byte budget (`i18n-termbase` warns past
   it): distill first, and bump it when new decisions need room. Anything that applies beyond one language goes to
   docs/i18n/source-queue.md as a proposal to promote, never into this language's files.
-- **Check**: run `pnpm i18n:check-locale {{TAG}}` in `apps/desktop` (several tags work too). It prints one line per
-  clean check and the full report only for one that isn't; the batch is done when every line is a ✓. It's the one check
-  you need: `pnpm check --fast` runs most of the same checks across every locale but skips the termbase.
+- **Check**: run the scoped command the brief's header prints,
+  `pnpm i18n:check-locale {{TAG}} --keys-file <your run directory>/keys.txt`, in `apps/desktop`. It prints one line per
+  clean check and the full report only for one that isn't; `stale` judges only your batch, so the batch is done when
+  every line is a ✓. It's the one check you need: `pnpm check --fast` runs most of the same checks across every locale
+  but skips the termbase.
 - **Report**: your output may ship without human review, so translate only what you're confident in and flag every
   string where the context was insufficient. End with two sections, each "none" when it's empty:
   - **Source feedback**: `@key` descriptions that were insufficient, screenshots that were missing or unhelpful, English

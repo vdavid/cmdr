@@ -73,6 +73,33 @@ describe('runLocaleChecks (fixture tree)', () => {
     expect(text).toMatch(/✓ stale/)
   })
 
+  it('judges stale only over the batch when given one, so keys outside it never fail the batch', () => {
+    write(join(messagesRoot, 'en', 'a.json'), { 'a.open': 'Open {name} now', 'a.close': 'Close it' })
+    write(join(messagesRoot, 'sv', 'a.json'), {
+      'a.open': 'Öppna {name} nu',
+      '@a.open': { sourceHash: sourceHash('Open {name} now') },
+      'a.close': 'Stäng',
+      '@a.close': { sourceHash: sourceHash('Close') },
+    })
+    const lines: string[] = []
+    const scoped = (keys: string[]) =>
+      runLocaleChecks({
+        tags: ['sv'],
+        keys: new Set(keys),
+        messagesRoot,
+        docsRoot,
+        termAllowlistPath: join(root, 'no-allowlist.json'),
+        external: false,
+        write: (l) => void lines.push(l),
+      })
+    expect(scoped(['a.open'])).toBe(0)
+    expect(lines.join('\n')).toMatch(/✓ stale \(1 batch key\)/)
+    lines.length = 0
+    expect(scoped(['a.open', 'a.close'])).toBe(1)
+    expect(lines.join('\n')).toMatch(/✗ stale \(2 batch keys\)/)
+    expect(lines.join('\n')).toContain('a.close')
+  })
+
   it('takes several tags', () => {
     const { code, text } = run(['sv', 'de'])
     expect(code).toBe(1)

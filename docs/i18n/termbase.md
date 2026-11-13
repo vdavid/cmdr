@@ -227,7 +227,7 @@ A `###` section whose `##` parent also matches is left out, since the parent's b
 
 ## Tooling
 
-### `pnpm i18n:brief` (`apps/desktop/scripts/i18n-brief.ts`, assembly in `i18n-brief-lib.ts`, key selection in `i18n-brief-select.ts`, memory in `i18n-brief-memory.ts`, the per-OS key note in `i18n-brief-per-os.ts`)
+### `pnpm i18n:brief` (`apps/desktop/scripts/i18n-brief.ts`, assembly in `i18n-brief-lib.ts`, key selection in `i18n-brief-select.ts`, memory in `i18n-brief-memory.ts`, the per-OS key note in `i18n-brief-per-os.ts`, the run-directory and frozen-macOS notes in `i18n-brief-run.ts`)
 
 - `--lang nl` | `--lang nl,de` | `--lang all` (every full translation; overlays are refused).
 - Key selectors, which narrow each other when combined: `--keys a.b.c,servers.sheet.*` (exact keys or `*` globs; a
@@ -241,7 +241,12 @@ A `###` section whose `##` parent also matches is left out, since the parent's b
 - `--parallel`: several translators run at once. The instructions gain a block routing writes to shared files elsewhere:
   a new concept to `<tag>/concepts-proposed.json` (`pnpm i18n:apply-terms --proposed`), a `notMatch`, a source-queue
   proposal, or process feedback to the report. Each locale's own files can't race, so they stay as usual.
-- `--out <file>` (default stdout), `--stats` (chars and rough tokens per section, to stderr).
+- `--out <file>` (`-` for stdout), `--stats` (chars and rough tokens per section, to stderr). Without `--out`, the brief
+  goes into each language's run directory, `_ignored/i18n-work/<tag>/<timestamp>/` in the checkout (gitignored, so
+  neither git nor the doc checks see it, and per run, so parallel translators never share a file name), beside
+  `keys.txt`, the batch. The header names the directory, the `values.json` to write there, and the batch-scoped
+  `pnpm i18n:check-locale <tag> --keys-file <dir>/keys.txt`. A key whose macOS text the frozen copy baseline holds gets
+  a note saying so, plain values included, with the `ACCEPTED_TRANSLATION_CHANGES` path for a wrong one.
 - `--exclude-target-values`: a blind run for A/B tests. Withholds the batch keys' current translations and the decision
   excerpts (a section citing a batch key discusses exactly those translations), drops a ruling's batch-key `exceptions`
   and its `decision` pointer, and redacts the batch's shipped values, whole or clause by clause (10+ chars), wherever
@@ -294,6 +299,8 @@ about 2 s when most of the batch is stale (measured on sv, 2026-09-25).
 
 The translator's one write path into a catalog. `--lang <tag> --values <file.json>`, one locale per call.
 
+- `--values` defaults to `values.json` in the language's newest run directory, and the expected keys to the `keys.txt`
+  beside the values file.
 - The values file maps key → a string (the whole value), `{ "macos"?, "windows"?, "other"? }` (a per-OS value given
   branch by branch: a branch left out keeps what that OS reads in the catalog now), or `null` (an overlay drops its
   fork). `"@<key>": { "sameAsSourceJustification": "…" }` records a justification, ARB-style as in the catalogs.
@@ -341,7 +348,8 @@ The reference pile, from any worktree: the main clone comes from git's common di
   (Nautilus, Thunar, Dolphin, Double Commander, git) by `msgid`, mnemonics ignored. Exact matches (`=`) before ones that
   contain the words (`~`), grouped by source in authority order.
 - `--target "<word>"`: the reverse, by the translation, which also reads Total Commander (no English side).
-- `--key <key>`: `--term` for each branch of the key's English short enough to be a label, and each concept it hits.
+- `--key <key>` (repeatable): `--term` for each branch of the key's English short enough to be a label, and each concept
+  it hits. Every flag repeats, so one call takes a whole batch's lookups: a worktree guard refuses a shell loop.
 - `--source macos,microsoft,linux,orthodox,git`, `--limit <n>` (per source, default 6). Not covered: the live macOS
   bundles and the style-guide PDFs (`reference-pile/how-to-mine.md`).
 
