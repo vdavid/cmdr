@@ -56,9 +56,9 @@ Counts per table (rows marked "see WCAG section" aren't counted):
   standards requires it.
 
 **Risk of downgrade**: low. V1–V12 passed by ear on `main` (the silent-list failure the first agent run found is fixed
-and re-heard). What's unheard is outside the guide: C3 (the VoiceOver cursor moving Cmdr's cursor), already counted as a
-gap in 502.3.13. Since 0.53.0 the code under V1–V6, V9, and V11 changed (§ Re-hear, 2026-10-30); none of those changes
-contradicts a row, but they're unheard.
+and re-heard). C3 (the VoiceOver cursor moving Cmdr's cursor) works: David checked it by hand on 2026-11-05 (#453), so
+502.3.13 is "Supports". Since 0.53.0 the code under V1–V6, V9, and V11 changed (§ Re-hear, 2026-10-30); none of those
+changes contradicts a row, but they're unheard.
 
 Top gaps, each with its issue:
 
@@ -66,7 +66,7 @@ Top gaps, each with its issue:
    listbox, whose `aria-activedescendant` names the cursor row by a document-unique id; rows carry kind, position,
    marked state, and in Full view size and date; a per-pane live region says the pane and folder; ⌃F5 reaches the pane
    chrome. The inline rename field moved out of its option (#449, `a7b318620e`, released in 0.57.0). Left: Full view
-   isn't a table (#451), and the VoiceOver cursor moving onto a row (C3) is unheard (#453).
+   isn't a table (#451).
 2. **Cursors and status changes aren't announced** (#438, fixed 2026-10-15, heard in V4–V7): the Search result cursor,
    the Settings sidebar, empty folders, selection counts, the license key error, progress text.
 3. **Toasts are mouse-first** (#439, fixed 2026-10-15, heard in V9): focus didn't pause them, no key reached them, no
@@ -433,9 +433,9 @@ video, flashing, or time limits beyond toasts; native menu bar and context menus
 - **502.3.12 Focus cursor**: Supports. Dialog and settings focus is real DOM focus, and the Search cursor, the Settings
   sidebar selection (#438), and the file list cursor (#437, 2026-10-15; see 4.1.2) are exposed as
   `aria-activedescendant` on the focused element. V1 and V6 heard.
-- **502.3.13 Modification of focus cursor**: Partially supports. Assistive tech can move focus among standard controls,
-  and VoiceOver follows Cmdr's cursor (V1 heard); moving the VoiceOver cursor onto a file row likely doesn't move Cmdr's
-  cursor (unheard, C3 in § VoiceOver listening runs). #453.
+- **502.3.13 Modification of focus cursor**: Supports. Assistive tech can move focus among standard controls, VoiceOver
+  follows Cmdr's cursor (V1 heard), and moving the VoiceOver cursor onto a file row moves Cmdr's cursor (C3, checked by
+  David on 2026-11-05, #453).
 - **502.3.14 Event notification**: Supports. See WCAG 4.1.3. V4 heard.
 - **502.4 Platform accessibility features**: Not applicable. Applies to platforms.
 - **503.2 User preferences**: Supports. Honors system font, dark/light, accent color, Reduce transparency, Reduce
@@ -531,7 +531,7 @@ video, flashing, or time limits beyond toasts; native menu bar and context menus
 - **11.5.2.12 Execution of available actions**: Supports. See 508 502.3.11.
 - **11.5.2.13 Tracking of focus and selection attributes**: Supports. See 508 502.3.12; marked files are exposed as
   `aria-selected` in an `aria-multiselectable` listbox (#437, 2026-10-15). V1 and V3 heard.
-- **11.5.2.14 Modification of focus and selection attributes**: Partially supports. See 508 502.3.13. #453.
+- **11.5.2.14 Modification of focus and selection attributes**: Supports. See 508 502.3.13.
 - **11.5.2.15 Change notification**: Supports. See WCAG 4.1.3. V4 and V9 heard.
 - **11.5.2.16 Modifications of states and properties**: Supports. See 508 502.3.2.
 - **11.5.2.17 Modifications of values and text**: Supports. See 508 502.3.5 and 502.3.9.

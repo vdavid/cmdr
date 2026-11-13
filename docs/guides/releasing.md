@@ -287,6 +287,12 @@ check.
    - **CI is enabled**, since the CI gate and `land` wait on it. David sometimes disables it to save GHA minutes; if
      `gh workflow list --all` shows `CI` as `disabled_manually`, `gh workflow enable CI`, tell the user, and ask whether
      to disable it again after the release.
+   - **The last nightly run is green**:
+     `gh run list -R getcmdr/cmdr --workflow ci.yml --event schedule --limit 1 --json conclusion,url,createdAt`. The
+     nightly is the only run besides the release itself that builds the browser demo from `main` and runs its full suite
+     (`website-demo-e2e`), and the release's `demo` job runs that same suite, with `publish` waiting on it. A red
+     nightly therefore means a red release build: fix and land it first. (v0.61.0's first tag was aborted over five demo
+     tests the nightly had failed for two days, 2026-11-13.)
    - **No known exploitable vulnerability ships** (EU Cyber Resilience Act, Annex I Part I (2)(a)). List the open
      security gaps in the private tracker, the ones `docs/threat-model.md` calls "tracked privately":
      `gh issue list -R getcmdr/cmdr-reports --label security-gap --state open`. For each, read it and say whether this
@@ -1311,6 +1317,15 @@ Fix the cause, then run it again; it picks up where the release stands.
 - **"the finishing run failed again"**: it already re-ran the failed jobs once. Read the run; § Publish job failed but
   builds succeeded applies, as does § The attest or sbom job failed. ❌ Don't dispatch a fresh run by hand once
   `publish` has marked the release Latest: the guard refuses it. Re-run the failed jobs instead.
+
+### Notarization answers 403, "A required agreement is missing or has expired"
+
+Apple published a new developer agreement and the account holder hasn't accepted it, so it refuses every notarization
+for the team. The first `sign` job to reach `Bundle, sign, and notarize` fails and the other two are cancelled. David
+signs in at developer.apple.com/account and accepts the agreement in the banner (and any pending one under Business in
+App Store Connect). Then it's the flake path: `gh run rerun <id> --failed`, David approves "Review deployments" again (a
+re-run asks anew), and `release-finish.sh` runs again. Nothing was signed or published, so no abort. (v0.61.0,
+2026-11-13: accepted, re-run right away, passed.)
 
 ### Apple notarization is slow (the `sign` job times out)
 
