@@ -406,6 +406,8 @@ mod journal_landed_node_tests;
 #[cfg(test)]
 mod journal_row_shape_tests;
 #[cfg(test)]
+mod landed_node_undo_tests;
+#[cfg(test)]
 mod named_leaf_entry_tests;
 #[cfg(test)]
 mod named_leaf_undo_tests;

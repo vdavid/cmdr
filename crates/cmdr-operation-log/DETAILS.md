@@ -728,7 +728,12 @@ one an operation put there (§ "Where an item landed").
 
 Pinned by `crates/cmdr-operations/src/rollback/planner_tests/landed_node_tests.rs` (each inverse, with an identity and
 without), `journal_landed_node_tests.rs` (what each record point writes, read back off a real disk after the operation
-ended), and `transfer/move_op/move_journal_tests.rs::a_cross_fs_move_records_the_node_that_ends_up_at_the_final_path`.
+ended) with its `journal_landed_paths_tests.rs` (an extract out of a zip and, through the one-pass body, a compressed
+tar; a volume overwrite; a merge through either engine; a copy stopped after one file, which ends exactly as an
+unjournaled one does; a node read that fails, which records none and leaves the copy whole), `landed_node_undo_tests.rs`
+(undo on a real disk: a copy and a move undone; the same file saved over by a temp and a rename at the same size and
+date is kept under a row with a node and removed, as ever, under one without), and
+`transfer/move_op/move_journal_tests.rs::a_cross_fs_move_records_the_node_that_ends_up_at_the_final_path`.
 
 ### A trashed item must still be the one trashed
 

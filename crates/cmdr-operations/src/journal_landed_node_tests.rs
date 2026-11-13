@@ -319,6 +319,26 @@ async fn volume_transfer(
     dest: Arc<dyn Volume>,
     dest_path: &Path,
 ) {
+    volume_transfer_with(
+        engine,
+        op_id,
+        kind,
+        (source, sources),
+        (dest, dest_path),
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+}
+
+/// [`volume_transfer`] under `config`.
+async fn volume_transfer_with(
+    engine: &TestOperations,
+    op_id: &str,
+    kind: OpKind,
+    (source, sources): (Arc<dyn Volume>, &[PathBuf]),
+    (dest, dest_path): (Arc<dyn Volume>, &Path),
+    config: &VolumeCopyConfig,
+) {
     let state = Arc::new(
         engine
             .new_operation_state(Duration::ZERO)
@@ -326,13 +346,12 @@ async fn volume_transfer(
     );
     journal::open_volume_op(state.scope(), op_id, kind, Initiator::User, "share", Some("disk"), 0);
     let events = Arc::new(CollectorEventSink::new());
-    let config = VolumeCopyConfig::default();
     if kind == OpKind::Move {
-        move_volumes_with_progress(events, op_id, &state, source, sources, dest, dest_path, &config)
+        move_volumes_with_progress(events, op_id, &state, source, sources, dest, dest_path, config)
             .await
             .expect("volume move");
     } else {
-        copy_volumes_with_progress(events, op_id, &state, source, sources, dest, dest_path, &config)
+        copy_volumes_with_progress(events, op_id, &state, source, sources, dest, dest_path, config)
             .await
             .expect("volume copy");
     }
@@ -427,3 +446,6 @@ async fn a_copy_onto_a_share_records_no_node() {
         2
     );
 }
+
+#[path = "journal_landed_paths_tests.rs"]
+mod paths;
