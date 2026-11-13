@@ -8,7 +8,7 @@ never in Rust.
 - `system.md`: Ask Cmdr's system prompt (what it must carry, and the tests pinning each rule:
   `../chat/system_prompt.rs`).
 - `followup.md`: the opener of the turn an answered sweep earns.
-- `about_verdict.md`, `about_verdict_no_removal.md`: the card verdict's two system prompts (`../../about/verdict/prompt.rs` picks one per model class and fences the facts).
+- `about_verdict.md`, `about_verdict_no_removal.md`: the card verdict's two system prompts (`../../about/verdict/prompt.rs` picks one per model class and fences the facts; only `no_removal` ships). ❗ An edit to either reruns the real-model eval (`../../ai/about_verdict_eval_test.rs`) over the whole corpus.
 - `mod.rs`: the loader, `{{variable}}` substitution, and one typed function per prompt.
 
 ## Must-knows

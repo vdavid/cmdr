@@ -85,6 +85,10 @@ pub(crate) fn resolve_for_card(app: &AppHandle) -> Result<Ready, VerdictUnavaila
         local_allowed: VERDICT_ON_LOCAL,
     };
     let (resolved, provider, model) = decide(inputs, || resolve_agent_llm(app, AgentSlot::AboutThis))?;
+    // Still before anything is read for a model: the slot named the model, nothing more.
+    if !writes_verdicts(&model) {
+        return Err(VerdictUnavailable::ModelOff);
+    }
     let Some(meter) = ledger_meter(app, provider, model.clone()) else {
         // ❌ Never an unmetered call: without its ledger row the verdict doesn't run.
         log::warn!(target: "about", "the verdict's cost ledger isn't there; no verdict");
@@ -99,6 +103,21 @@ pub(crate) fn resolve_for_card(app: &AppHandle) -> Result<Ready, VerdictUnavaila
         call,
         meter,
     })
+}
+
+/// Model families that write no verdict: their takes failed the verdict eval's
+/// no-green-light bar under every prompt it tried, and no runtime filter can catch one
+/// (`docs/notes/about-verdict-eval.md`). Matched on the id's words in any provider's
+/// spelling (`claude-haiku-5-5`, an aggregator's `anthropic/claude-3.5-haiku`).
+const NO_VERDICT_FAMILIES: &[(&str, &str)] = &[("claude", "haiku")];
+
+/// Whether `model` writes the card's verdict. A family the eval never measured writes
+/// one; a family it measured below the bar doesn't.
+pub(crate) fn writes_verdicts(model: &str) -> bool {
+    let model = model.to_ascii_lowercase();
+    !NO_VERDICT_FAMILIES
+        .iter()
+        .any(|(maker, family)| model.contains(maker) && model.contains(family))
 }
 
 /// A meter onto `main.db`'s reserved `about_this` row, or `None` when the store or the
@@ -211,6 +230,18 @@ mod tests {
         };
         assert_eq!(decide(off, never), Err(VerdictUnavailable::TurnedOff));
         assert_eq!(decide(inputs("local"), never), Err(VerdictUnavailable::LocalOff));
+    }
+
+    /// A Haiku-class model writes no verdict in any provider's spelling of its id; the
+    /// classes that met the eval's bar, and a family it never measured, do.
+    #[test]
+    fn a_model_class_below_the_bar_writes_no_verdict() {
+        for model in ["claude-haiku-5-5", "Claude-Haiku-4-5", "anthropic/claude-3.5-haiku"] {
+            assert!(!writes_verdicts(model), "{model}");
+        }
+        for model in ["claude-sonnet-5-5", "claude-opus-5-5", "gpt-4.1-mini", "haiku-poet-7b"] {
+            assert!(writes_verdicts(model), "{model}");
+        }
     }
 
     /// The slot's refusals keep their type, and a local server that isn't running reads

@@ -24,21 +24,32 @@ use crate::agent::llm::types::{AgentMessage, AgentPart, AgentRole, ProviderTag};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PromptVariant {
     /// What it is, who owns it, and what removing it would cost.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "no class ships it (it failed the verdict eval's bar); the eval keeps measuring it, and a class that later passes flips back in `for_provider`"
+        )
+    )]
     WithRemoval,
     /// What it is and who owns it; removal is Cmdr's row alone.
     WithoutRemoval,
 }
 
 impl PromptVariant {
-    /// The variant a model class gets. A small local model paraphrases toward
-    /// reassurance, so it never words removal; a cloud model does until the eval says
-    /// otherwise.
+    /// The variant a model class gets: none words removal. Asked to, every cloud class the
+    /// verdict eval measured handed out green lights ("removing it would lose only the
+    /// download record"): Sonnet 19 and 9 times, Haiku 5 and 22, Opus once each, over two
+    /// rounds; without it, Sonnet and Opus held the bar (`docs/notes/about-verdict-eval.md`).
+    /// A small local model paraphrases toward reassurance more readily still. A class
+    /// that later meets the bar with the removal sentence flips here.
     pub(crate) fn for_provider(provider: ProviderTag) -> Self {
         match provider {
-            ProviderTag::Local => PromptVariant::WithoutRemoval,
-            ProviderTag::Anthropic | ProviderTag::OpenAi | ProviderTag::OpenAiResponses | ProviderTag::Gemini => {
-                PromptVariant::WithRemoval
-            }
+            ProviderTag::Local
+            | ProviderTag::Anthropic
+            | ProviderTag::OpenAi
+            | ProviderTag::OpenAiResponses
+            | ProviderTag::Gemini => PromptVariant::WithoutRemoval,
         }
     }
 
@@ -234,7 +245,7 @@ mod tests {
         );
         assert_eq!(
             PromptVariant::for_provider(ProviderTag::Anthropic),
-            PromptVariant::WithRemoval
+            PromptVariant::WithoutRemoval
         );
     }
 }

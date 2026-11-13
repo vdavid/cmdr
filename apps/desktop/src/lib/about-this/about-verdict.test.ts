@@ -113,7 +113,12 @@ describe('applyVerdictUpdate', () => {
 
 describe('unavailableShowsALine', () => {
   it('draws nothing for AI off, the person’s own off, and the local model’s default', () => {
-    const quiet: VerdictUnavailable[] = [{ kind: 'aiOff' }, { kind: 'turnedOff' }, { kind: 'localOff' }]
+    const quiet: VerdictUnavailable[] = [
+      { kind: 'aiOff' },
+      { kind: 'turnedOff' },
+      { kind: 'localOff' },
+      { kind: 'modelOff' },
+    ]
     for (const why of quiet) expect(unavailableShowsALine(why)).toBe(false)
     const said: VerdictUnavailable[] = [
       { kind: 'noCloudConsent' },

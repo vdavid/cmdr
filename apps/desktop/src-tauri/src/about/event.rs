@@ -124,6 +124,9 @@ pub enum VerdictUnavailable {
     TurnedOff,
     /// The local model writes no verdict until its answers are measured good.
     LocalOff,
+    /// The configured cloud model is of a class whose takes failed the verdict eval's
+    /// bar (`gate::writes_verdicts`), so it writes none. Draws nothing, like `localOff`.
+    ModelOff,
     /// Cloud AI is picked and not allowed (or allowed under older copy).
     NoCloudConsent,
     /// A cloud provider is picked but has no key or endpoint.

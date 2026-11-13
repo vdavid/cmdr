@@ -111,7 +111,7 @@ describe('the AI take', () => {
   })
 
   it('draws no block, and no line, for AI off, a person’s own off, or the local model’s default', async () => {
-    for (const why of [{ kind: 'turnedOff' }, { kind: 'localOff' }] as const) {
+    for (const why of [{ kind: 'turnedOff' }, { kind: 'localOff' }, { kind: 'modelOff' }] as const) {
       const target = await render(withVerdict(fixture('downloaded'), [{ type: 'verdictUnavailable', why }]))
       expect(target.querySelector('[data-verdict-slot]')).toBeNull()
       expect(target.textContent).not.toContain('AI take')

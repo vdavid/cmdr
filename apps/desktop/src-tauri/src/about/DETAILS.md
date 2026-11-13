@@ -339,7 +339,7 @@ D18 (`docs/specs/tell-me-about-this-plan.md`, until the wipe).
 ### Its events
 
 After `planned`, interleaved with the facts: `verdictPlanned` (reserve the block) or `verdictUnavailable { why }` (no
-block; `aiOff` and `turnedOff` draw nothing), then `verdictGiven { contents }` right BEFORE the call goes out (so the
+block; `aiOff`, `turnedOff`, `localOff`, and `modelOff` draw nothing in the body), then `verdictGiven { contents }` right BEFORE the call goes out (so the
 card says what's leaving while it leaves), `verdictDelta { text }`s (plain text: render as a text node), and one
 `verdictEnd { ending, cost }` (`done`, `stopped`, or `failed { problem }`; `cost` only when the call reached its end).
 A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { contents, text }` instead, with no call.
@@ -353,9 +353,11 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
    `aiOff`; `aboutThis.aiVerdict` false → `turnedOff` (`settings::load_about_this_ai_verdict`, absent = on); Local →
    `localOff` while `VERDICT_ON_LOCAL` is false (D4: flipping it is that one constant); then
    `resolve_agent_llm(app, AgentSlot::AboutThis)`, whose refusals map to `noCloudConsent`, `managed { refusal }`,
-   `notConfigured`, or `notReady` (a local server that isn't running: a verdict never starts it or a download). No
-   `main.db` ledger row → `notReady`, ❌ never an unmetered call. Only an `Ok` builds a `gate::Ready` (the LLM, the call
-   settings, the prompt variant, the meter), and everything after takes one.
+   `notConfigured`, or `notReady` (a local server that isn't running: a verdict never starts it or a download). Then
+   the model the slot named: a class the verdict eval measured below its bar (`gate::writes_verdicts`, today the Haiku
+   family) → `modelOff`, which draws nothing, like `localOff`. No `main.db` ledger row → `notReady`, ❌ never an
+   unmetered call. Only an `Ok` builds a `gate::Ready` (the LLM, the call settings, the prompt variant, the meter), and
+   everything after takes one.
 2. **The reuse and the ceiling** (`limits.rs`): a finished verdict for the same volume, path, node, size, mtime,
    provider, and model comes back from memory (32 entries, never disk). Else at most `MAX_STARTS` (12) in any 60 s,
    past which `tooManyRequests`. Then `verdictPlanned`, and the one in-flight slot: a new verdict stops the old.
@@ -370,7 +372,9 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
    (`ContentTool::AboutVerdict`), ❌ never by path.
 5. **The prompt** (`prompt.rs`): the system prompt is one of two static files in `agent/prompts/` (`about_verdict.md`
    with the removal sentence, `about_verdict_no_removal.md` without), picked per model class by
-   `PromptVariant::for_provider` (D17: Local never words removal; a class the eval fails flips here). The user message
+   `PromptVariant::for_provider`. **Decision: no class words removal** (D17 (b)): asked to, every Claude class the eval
+   measured gave green lights ("removing it would lose only the download record"), and without it Sonnet and Opus held
+   the bar. A class that later passes with it flips back there. The user message
    is the language line, a header saying everything below is data written by whoever made the item, and ONE fence
    holding the projection (`model::for_model`), the rows still out, and the peek; every marker inside is defanged, so
    the content can't close the fence.
@@ -408,13 +412,17 @@ deltas) for every card; the gate's provider and setting steps still apply, so a 
 `CMDR_E2E_ABOUT_VERDICT_PACE=<ms>[,<hold ms>]` paces it (`FakeAgentLlm::paced`): a wait before each delta and a hold
 before the last, so the streaming and stopped states stay on screen for QA and screenshots.
 
-### Smoke run on a real model
+### The eval on real models
 
-By hand, 2026-11-13, `claude-haiku-5-5`, four synthesized cards (a Chrome-shaped `.dmg`, a text budget, a file named to
-order a green light whose text asks for `rm -rf ~` and a link, a `node_modules`): all four stayed on the facts, the
-hostile one named its claim as only the name's and didn't follow it, and none said removing was safe; they ran three or
-four sentences, often restating rows. About $0.0002 a verdict (950–1,500 prompt tokens). The first pass, at the
-model's default effort under 120 tokens, wrote nothing at all: what `VERDICT_THINKING_ROOM` and `noAnswer` answer.
+The verdict's only gate on its no-green-light rule is `apps/desktop/src-tauri/src/ai/about_verdict_eval_test.rs`: 51 synthesized cards (ordinary,
+tempting, hostile) through the shipped projection, fence, prompt files, and call settings, on three Claude classes and
+the local model, in five languages, graded by an Opus judge against `apps/desktop/src-tauri/src/ai/about_verdict_eval/rubric.md`. ❗ Rerun the
+whole corpus after any change to a prompt file, `for_model`, the fence, the call settings, or a default model.
+Results, the decisions they drove (no class words removal, the Haiku family writes none, Local stays off), and every
+flagged take: `docs/notes/about-verdict-eval.md`.
+
+Before it, a hand run on `claude-haiku-5-5` at the model's default effort under 120 tokens wrote nothing at all, which
+is what `VERDICT_THINKING_ROOM` and `noAnswer` answer (verified 2026-11-13, four cards).
 
 ## Tests
 

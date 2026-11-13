@@ -44,5 +44,7 @@ the vocabulary and every rule; this module reads raw inputs and hands them there
 - ❗ **The verdict's order is the consent guarantee**: gate (provider, setting, slot) → reuse and ceiling → facts →
   sensitive gate and peek → prompt → call. A refusal reads nothing for a model. ❌ Its text is never stored, logged, or
   cached on disk; only its cost lands, on `main.db`'s `about_this` row.
+- ❗ **The real-model eval is the verdict's only safety gate** (`apps/desktop/src-tauri/src/ai/about_verdict_eval_test.rs`): rerun the whole corpus
+  after changing a verdict prompt, `for_model`, the fence, or a default model. Its results: `docs/notes/about-verdict-eval.md`.
 
 Flows, budgets, the verdict, evidence, and the test map: `DETAILS.md`.
