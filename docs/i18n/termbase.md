@@ -89,10 +89,11 @@ fork table `apps/desktop/scripts/i18n-en-overlays.test.ts` mirrors.
 - `notMatch` (optional): patterns in the same syntax as `match`. A key whose English hits one doesn't count for this
   concept, in the brief and the drift check alike. This is where an ENGLISH-sense exclusion goes ("come back" isn't the
   Back button, "apps like TextEdit" isn't the Like action), written once for every locale. A locale's `exceptions` are
-  only for deviations specific to that language. When no phrase tells the senses apart (the bare label `Archive` names
-  the zip noun in one key and archiving a chat in another), an entry can be `{ "key": "<message key>", "why": "…" }`
-  instead of a form: it excludes that one key, which must exist in the English catalog. An `exceptions` entry for that
-  key then turns stale, so drop it.
+  only for deviations specific to that language. A form with a capital letter (never a `=` one) matches case for case:
+  `Windows` keeps the OS name out of `window`, which still reads "close all windows". When no phrase tells the senses
+  apart (the bare label `Archive` names the zip noun in one key and archiving a chat in another), an entry can be
+  `{ "key": "<message key>", "why": "…" }` instead of a form: it excludes that one key, which must exist in the English
+  catalog. An `exceptions` entry for that key then turns stale, so drop it.
 - `sense` (required): one sentence, what this concept means in Cmdr. Split one English word into several concepts when
   it has several senses (`browse-file-picker` vs `browse-archive`), give each a `match` as specific as possible (they
   may overlap; the brief shows both), and link them with `distinct`.

@@ -2060,8 +2060,6 @@
     ],
     "confidence": "high",
     "exceptions": {
-      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "moving to a new PC or computer is the user switching machines (pasarte a), not a file move; the concept's notMatch covers only the Mac wording (queued)",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "moving to a new PC or computer is the user switching machines (pasarte a), not a file move; the concept's notMatch covers only the Mac wording (queued)",
       "suggestedOps.reversible.moveBack": "move it back → devolverlo a su sitio, the catalog's undo-a-move phrasing (commands.editUndoTrash.description)",
       "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "move back → devolver al lugar del que salieron, word for word from its sibling bodyUndoByMovingBack",
       "operationLog.rollback.rollbackableNoticeMoveBack": "move back → vuelven al lugar del que salieron, the bodyUndoByMovingBack phrasing",
@@ -3887,12 +3885,7 @@
     "accept": ["ventanas", "Ventana"],
     "forms": "the Window menu → Ventana; close this window → cierra esta ventana; the About window → la ventana Acerca de",
     "confidence": "high",
-    "sources": "macOS es (the Ventana menu; ventana ×72 in the pile); MS terminology (window → ventana)",
-    "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "the English matches the OS name Windows, not a window (queued for the concept's notMatch)",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "the English matches the OS name Windows, not a window (queued for the concept's notMatch)",
-      "shortcuts.conflict.takenByWindows": "the English matches the OS name Windows, not a window (queued for the concept's notMatch)"
-    }
+    "sources": "macOS es (the Ventana menu; ventana ×72 in the pile); MS terminology (window → ventana)"
   },
   "batch-rename": {
     "chosen": "Renombrado múltiple",

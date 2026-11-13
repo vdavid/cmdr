@@ -329,9 +329,13 @@ function escapeRegExp(text: string): string {
  * Compiles a concept's `match` forms into one predicate over English copy:
  * case-insensitive, whole-word (a letter or digit on either side breaks the
  * match, accented letters included), any whitespace run standing in for a space in
- * a phrase, and a trailing `*` meaning "this prefix".
+ * a phrase, and a trailing `*` meaning "this prefix". With `caseSensitive`, the
+ * word and phrase forms match case for case (a `=` form never compares case).
  */
-export function compileMatch(forms: readonly string[]): (text: string) => boolean {
+export function compileMatch(
+  forms: readonly string[],
+  { caseSensitive = false }: { caseSensitive?: boolean } = {},
+): (text: string) => boolean {
   const trimmed = forms.map((form) => straightQuotes(form.trim())).filter((form) => form.length > 0)
   const wholeValues = new Set(trimmed.filter((form) => form.startsWith('=')).map((form) => wholeValueOf(form.slice(1))))
   const alternatives = trimmed
@@ -341,7 +345,8 @@ export function compileMatch(forms: readonly string[]): (text: string) => boolea
       const body = (prefix ? form.slice(0, -1) : form).split(/\s+/).map(escapeRegExp).join('\\s+')
       return prefix ? body : `${body}(?![\\p{L}\\p{N}])`
     })
-  const re = alternatives.length > 0 ? new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives.join('|')})`, 'iu') : undefined
+  const flags = caseSensitive ? 'u' : 'iu'
+  const re = alternatives.length > 0 ? new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives.join('|')})`, flags) : undefined
   return (raw) => {
     const text = straightQuotes(raw)
     return (re?.test(text) ?? false) || (wholeValues.size > 0 && wholeValues.has(wholeValueOf(text)))
@@ -451,11 +456,28 @@ export function compileConcepts(concepts: Concepts): ConceptMatchers {
   for (const [id, concept] of Object.entries(concepts)) {
     const entries: unknown[] = Array.isArray(concept.notMatch) ? concept.notMatch : []
     const hits = compileMatch(Array.isArray(concept.match) ? concept.match : [])
-    const excluded = compileMatch(entries.filter((entry): entry is string => typeof entry === 'string'))
+    const forms = entries.filter((entry): entry is string => typeof entry === 'string')
+    const excluded = compileMatch(forms.filter((form) => !isCasedForm(form)))
+    const excludedCased = compileMatch(forms.filter(isCasedForm), { caseSensitive: true })
     const excludedKeys = new Set(entries.flatMap((entry) => notMatchKey(entry) ?? []))
-    matchers.set(id, (text, key) => hits(text) && !excluded(text) && !(key !== undefined && excludedKeys.has(key)))
+    matchers.set(
+      id,
+      (text, key) =>
+        hits(text) && !excluded(text) && !excludedCased(text) && !(key !== undefined && excludedKeys.has(key)),
+    )
   }
   return matchers
+}
+
+/**
+ * Whether a `notMatch` form matches case for case: it carries a capital letter
+ * and isn't a whole-value (`=`) form. That's how one English word with two senses
+ * told apart only by case is excluded: `Windows`, the OS, out of the `window`
+ * concept, which still reads "close all windows". Lowercase forms stay
+ * case-insensitive, as every `match` form is.
+ */
+export function isCasedForm(form: string): boolean {
+  return !form.trim().startsWith('=') && form !== form.toLowerCase()
 }
 
 /** The key a key-scoped `notMatch` entry names, or `undefined` for a form (or a malformed entry). */

@@ -124,6 +124,15 @@ describe('conceptsInText', () => {
     expect(conceptsInText(withNot, 'A math operation failed')).toEqual([])
     expect(conceptsInText(withNot, 'Operation')).toEqual([])
   })
+  it('reads a capitalized notMatch form case-sensitively: the OS "Windows" is out, app "windows" stays in', () => {
+    const window: Concepts = {
+      window: { en: 'window', match: ['window', 'windows'], notMatch: ['Windows'], sense: 's' },
+    }
+    expect(conceptsInText(window, 'Windows blocked Cmdr from this folder.')).toEqual([])
+    expect(conceptsInText(window, '{combo} is usually taken by Windows.')).toEqual([])
+    expect(conceptsInText(window, 'Close all windows')).toEqual(['window'])
+    expect(conceptsInText(window, 'Close the window')).toEqual(['window'])
+  })
   it('drops a concept for the one key a key-scoped notMatch names, and nowhere else', () => {
     const scoped: Concepts = {
       'archive-chat': {

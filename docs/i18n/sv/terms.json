@@ -781,9 +781,6 @@
   "desktop": {
     "chosen": "skrivbord",
     "confidence": "high",
-    "exceptions": {
-      "shortcuts.conflict.takenByLinuxDesktops": "A Linux desktop environment (GNOME, KDE Plasma), not the Desktop folder: skrivbordsmiljö."
-    },
     "forms": "the Desktop folder → Skrivbord; the Desktop & Dock pane → Skrivbord och Dock",
     "sources": "MS terminology (desktop → skrivbord); macOS Finder sidebar (Skrivbord)"
   },
@@ -1189,8 +1186,7 @@
     "chosen": "redigera",
     "confidence": "high",
     "exceptions": {
-      "operationLog.initiator.agentEdited": "Your edits to a proposal are dina ändringar; redigeringar reads as text editing.",
-      "settings.fileExplorer.typeToJump.mode.description": "pending a shared notMatch (docs/i18n/source-queue.md): Backspace edits it means the key changes the filter text: Backsteg ändrar filtret, as the macOS branch says."
+      "operationLog.initiator.agentEdited": "Your edits to a proposal are dina ändringar; redigeringar reads as text editing."
     },
     "forms": "the Edit menu Redigera; F4 Redigera i standardredigeraren; menu Öppna i redigeraren; Redigera server…",
     "sources": "macOS Finder (Redigera)"
@@ -2143,11 +2139,7 @@
     "chosen": "flytta",
     "confidence": "high",
     "forms": "button Flytta; progress Flyttar; the noun flytt, definite flytten",
-    "sources": "macOS Finder",
-    "exceptions": {
-      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "pending a shared notMatch (docs/i18n/source-queue.md): moving to a new PC or computer is the user switching machines (ett byte till en ny dator), not moving files.",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "pending a shared notMatch (docs/i18n/source-queue.md): moving to a new PC or computer is the user switching machines (ett byte till en ny dator), not moving files."
-    }
+    "sources": "macOS Finder"
   },
   "move-to-trash": {
     "accept": ["papperskorg"],
@@ -3508,10 +3500,7 @@
     "accept": ["slå på eller av", "visa eller göm"],
     "confidence": "high",
     "forms": "a two-state command name → Växla … (Växla markering, Växla helskärmsläge); the viewer’s on/off rows say Slå på eller av …; show/hide toggles say Visa eller göm …",
-    "sources": "catalog (commands.selectionToggle.label, commands.sortToggleOrder.label, commands.viewerToggleWordWrap.label)",
-    "exceptions": {
-      "settings.developer.verboseLogging.description": "this toggle names the Settings switch itself, which Swedish calls den här inställningen."
-    }
+    "sources": "catalog (commands.selectionToggle.label, commands.sortToggleOrder.label, commands.viewerToggleWordWrap.label)"
   },
   "token": {
     "chosen": "token",
@@ -3796,9 +3785,6 @@
     "forms": "the Window menu → Fönster; the About window → Om-fönstret",
     "sources": "macOS AppKit (Flytta fönstret till skrivbordet)",
     "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "pending a shared notMatch (docs/i18n/source-queue.md): Windows here is the OS name, not a window.",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "pending a shared notMatch (docs/i18n/source-queue.md): Windows here is the OS name, not a window.",
-      "shortcuts.conflict.takenByWindows": "pending a shared notMatch (docs/i18n/source-queue.md): Windows here is the OS name, not a window.",
       "shortcuts.system.windowMenu": "Windows names the Alt+Space menu systemmenyn (MS terminology: system menu → systemmeny), not a fönstermeny."
     }
   },

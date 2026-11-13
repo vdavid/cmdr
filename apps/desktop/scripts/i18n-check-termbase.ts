@@ -50,6 +50,7 @@ import {
   OS_FORM_BRANCHES,
   compileConcepts,
   formsForBranch,
+  isCasedForm,
   notMatchKey,
   conceptsPath,
   decisionsPath,
@@ -166,11 +167,16 @@ function matchErrors(at: string, match: unknown): string[] {
   return formErrors(at, 'match', match)
 }
 
-/** A `match` / `notMatch` list: strings, each non-empty and lowercase. */
+/**
+ * A `match` / `notMatch` list: strings, each non-empty and lowercase, except a
+ * `notMatch` form that's deliberately cased (`isCasedForm`: it matches case for case).
+ */
 function formErrors(at: string, field: 'match' | 'notMatch', forms: unknown): string[] {
   if (!isStringList(forms)) return [`${at}: "${field}" must be a list of strings`]
   return forms.flatMap((form) => [
-    ...(form !== form.toLowerCase() ? [`${at}: ${field} form "${form}" must be lowercase`] : []),
+    ...(form !== form.toLowerCase() && !(field === 'notMatch' && isCasedForm(form))
+      ? [`${at}: ${field} form "${form}" must be lowercase`]
+      : []),
     ...(form.replace(/^=/, '').trim().length === 0 ? [`${at}: ${field} has an empty form`] : []),
   ])
 }

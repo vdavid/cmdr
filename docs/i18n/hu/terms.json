@@ -2509,11 +2509,7 @@
     "accept": ["áthelyez", "helyezd át", "mozgat", "helyez", "mozg", "visszavi"],
     "forms": "label Áthelyezés; result áthelyezve; Move it instead → Helyezd át inkább; files being moved in prose → mozgat",
     "confidence": "high",
-    "sources": "macOS; ms",
-    "exceptions": {
-      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "English sense: “moving to a new PC/computer” is the user changing machines (átállás), not relocating files.",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "English sense: “moving to a new PC/computer” is the user changing machines (átállás), not relocating files."
-    }
+    "sources": "macOS; ms"
   },
   "move-to-trash": {
     "chosen": "Áthelyezés a Kukába",
@@ -3515,10 +3511,7 @@
     "accept": ["kijelöl", "kiválaszt", "válassz", "kijeloles", "jelöld ki", "jelölj ki", "jelöli ki"],
     "forms": "the menu and the action → Kijelölés; Select all → Összes kijelölése; Select files → Fájlok kijelölése; the dropdown placeholder (the user picks an option) → Válassz",
     "confidence": "high",
-    "sources": "macOS Finder (172.title Összes kijelölése); Nautilus (Kijelölés)",
-    "exceptions": {
-      "settings.fileViewer.suppressBinaryWarning.explanation": "English sense: the Windows branch “select” a banner button is Microsoft's word for clicking a control (válaszd a … gombot), not marking files."
-    }
+    "sources": "macOS Finder (172.title Összes kijelölése); Nautilus (Kijelölés)"
   },
   "send": {
     "chosen": "küldés",
@@ -4212,12 +4205,7 @@
     "chosen": "ablak",
     "forms": "the Window menu → Ablak; close this window → zárd be ezt az ablakot; the About window → Névjegyablak",
     "confidence": "high",
-    "sources": "macOS AppKit MenuCommands (Window → Ablak); catalog (24 keys)",
-    "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "English sense: “Windows” is the OS name, kept verbatim (a Windowsban), not a window.",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "English sense: “Windows” is the OS name, kept verbatim (a Windowsban), not a window.",
-      "shortcuts.conflict.takenByWindows": "English sense: “Windows” is the OS name, kept verbatim (a Windows), not a window."
-    }
+    "sources": "macOS AppKit MenuCommands (Window → Ablak); catalog (24 keys)"
   },
   "write": {
     "chosen": "kiírás",

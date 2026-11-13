@@ -1100,9 +1100,6 @@
   "desktop": {
     "chosen": "Schreibtisch",
     "confidence": "high",
-    "exceptions": {
-      "shortcuts.conflict.takenByLinuxDesktops": "a Linux desktop environment (GNOME, KDE Plasma, Xfce), not the macOS Desktop folder → Arbeitsumgebung (Xfce Thunar: Xfce-Arbeitsumgebung)"
-    },
     "forms": "the macOS Desktop folder → Schreibtisch; a Linux desktop environment is a different sense → Arbeitsumgebung (shortcuts.conflict.takenByLinuxDesktops)",
     "sources": "macOS Finder (Localizable, PreferencesWindow: Schreibtisch); catalog onboarding.json; Xfce Thunar (Xfce-Arbeitsumgebung) for the Linux sense; MS terminology desktop → Desktop (Windows only)"
   },
@@ -1253,8 +1250,7 @@
     "chosen": "bearbeiten",
     "confidence": "high",
     "exceptions": {
-      "operationLog.initiator.agentEdited": "your edits → deine Änderungen",
-      "settings.fileExplorer.typeToJump.mode.description": "editing the typed filter text → ändern (Mit der Rücktaste änderst du ihn), the same verb as the macOS branch's Löschtaste line"
+      "operationLog.initiator.agentEdited": "your edits → deine Änderungen"
     },
     "forms": "Edit server … → Server bearbeiten … (menu and palette byte-identical); editing arm → Archiv wird bearbeitet; archive edit → Archivbearbeitung",
     "sources": "standard German + MS terminology"
@@ -2269,8 +2265,6 @@
     "decision": "A move that could not be confirmed",
     "exceptions": {
       "errors.write.moveNotConfirmed.suggestion": "es points back at the move named in the title; Your originals haven’t moved → liegen noch dort, wo sie waren",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "moving to a new Mac, PC, or computer is switching machines, not Cmdr's Move command → der Umstieg auf einen neuen …",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "moving to a new Mac, PC, or computer is switching machines, not Cmdr's Move command → der Umstieg auf einen neuen …",
       "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "putting files back where they were is zurücklegen (style digest), like its sibling bodyUndoByMovingBack",
       "operationLog.rollback.rollbackableNoticeMoveBack": "putting files back where they were is zurücklegen (style digest), like rollbackConfirm.bodyUndoByMovingBack",
       "operationLog.tree.statusMovedBack": "moved back where it came from is zurücklegen (style digest): Zurückgelegt",
@@ -3908,11 +3902,6 @@
     "accept": ["Fenstern", "-fenster", "fenster"],
     "chosen": "Fenster",
     "confidence": "high",
-    "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "“Windows” here is the OS name, which stays verbatim, not a window",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "“Windows” here is the OS name, which stays verbatim, not a window",
-      "shortcuts.conflict.takenByWindows": "“Windows” here is the OS name, which stays verbatim, not a window"
-    },
     "forms": "invariant in the plural; Close window → Fenster schließen; the Window menu → Fenster",
     "sources": "macOS AppKit (Close Window → Fenster schließen); MS terminology (window → Fenster)"
   },

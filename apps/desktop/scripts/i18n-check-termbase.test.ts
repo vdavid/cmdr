@@ -54,12 +54,14 @@ describe('validateConcepts', () => {
     )
     const text = validateConcepts(
       {
-        a: { en: 'a', match: ['a'], notMatch: ['Upper'], sense: 's' },
+        a: { en: 'a', match: ['a'], notMatch: ['=Upper', 'Windows'], sense: 's' },
         b: { en: 'b', match: ['b'], notMatch: 'x', sense: 's' },
       },
       'c.json',
     ).join('\n')
-    expect(text).toMatch(/a: notMatch form "Upper" must be lowercase/)
+    // A capitalized form is legal in notMatch (it matches case-sensitively); a whole-value one never compares case.
+    expect(text).toMatch(/a: notMatch form "=Upper" must be lowercase/)
+    expect(text).not.toMatch(/"Windows"/)
     expect(text).toMatch(/b: "notMatch" must be a list of strings/)
   })
   it('accepts a key-scoped notMatch entry naming a real English key, with a reason', () => {

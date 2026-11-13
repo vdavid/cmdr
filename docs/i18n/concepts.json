@@ -757,7 +757,7 @@
     "distinct": ["dismiss", "cancel", "quit"],
     "en": "Close",
     "match": ["close", "closes", "closed", "closing"],
-    "notMatch": ["close its connection", "closed the connection", "stay closed", "its closing"],
+    "notMatch": ["close its connection", "closed the connection", "stay closed", "its closing", "closed to cmdr"],
     "sense": "Closing a window, dialog, tab, or file."
   },
   "cloud-ai": {
@@ -1070,7 +1070,7 @@
     "distinct": ["documents", "download"],
     "en": "Desktop",
     "match": ["desktop"],
-    "notMatch": ["desktop app"],
+    "notMatch": ["desktop app", "the desktop usually takes", "desktop’s keyboard settings"],
     "sense": "The macOS Desktop folder (named in lists of protected folders), and the Desktop & Dock settings pane."
   },
   "destination": {
@@ -1247,7 +1247,7 @@
     "distinct": ["rename", "text-editor"],
     "en": "edit",
     "match": ["edit", "edits", "editing", "edited"],
-    "notMatch": ["(⌫) edits it"],
+    "notMatch": ["(⌫) edits it", "backspace edits it"],
     "note": "Three senses share this English word: edit a file in an editor, edit an archive, and edit a saved server's settings (a form). Many locales split them, and the menu bar's Edit menu is Apple's own word.",
     "sense": "Opening a file in a text editor (F4), changing a zip's entries, or opening a form to change a saved item."
   },
@@ -2354,7 +2354,9 @@
       "move focus",
       "keys move between",
       "moves it up",
-      "↑↓ to move"
+      "↑↓ to move",
+      "moving to a new pc",
+      "moving to a new computer"
     ],
     "sense": "Relocating files to another folder (F6)."
   },
@@ -3335,7 +3337,7 @@
     "distinct": ["deselect", "choose"],
     "en": "select",
     "match": ["select", "selects", "selected", "selecting", "selection", "selections", "select all"],
-    "notMatch": ["and select the", "select a provider"],
+    "notMatch": ["and select the", "select a provider", "select “never show this warning again”"],
     "sense": "Marking files in a pane for an operation, and the resulting set."
   },
   "send": {
@@ -3368,7 +3370,7 @@
     "distinct": ["system-settings"],
     "en": "Settings",
     "match": ["settings", "setting"],
-    "notMatch": ["higher settings", "setting up", "setting it up"],
+    "notMatch": ["higher settings", "setting up", "setting it up", "desktop’s keyboard settings"],
     "sense": "Cmdr's Settings window and its sections."
   },
   "share-link": {
@@ -3925,7 +3927,7 @@
     "distinct": ["enable", "disable"],
     "en": "toggle",
     "match": ["toggle", "toggles", "toggling"],
-    "notMatch": ["toggle it on", "toggle it off"],
+    "notMatch": ["toggle it on", "toggle it off", "this toggle"],
     "sense": "Switching something between two states (a command label, a settings switch)."
   },
   "token": {
@@ -4209,7 +4211,7 @@
     "distinct": ["main-window", "pane", "dialog", "context-window"],
     "en": "window",
     "match": ["window", "windows"],
-    "notMatch": ["context window", "main window", "typing window"],
+    "notMatch": ["context window", "main window", "typing window", "Windows"],
     "sense": "An app window (a dialog window, the About window, the queue window, the window edge) and the Window menu."
   },
   "wizard": {

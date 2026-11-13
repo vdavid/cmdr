@@ -604,9 +604,6 @@
     "accept": ["关掉"],
     "chosen": "关闭",
     "confidence": "confirmed",
-    "exceptions": {
-      "search.coverage.line.offLimits": "\"keeps one folder closed to Cmdr\" is access, not closing a window: 系统不向 Cmdr 开放 (open to). 关闭 would read as the system shutting the folder."
-    },
     "forms": "button 关闭; \"close some apps\" in prose → 关掉",
     "sources": "macOS AppKit"
   },
@@ -1177,8 +1174,7 @@
     "confidence": "high",
     "exceptions": {
       "errors.git.corruptRepo.message": "\"edited outside git\" means changed by something else, rendered 改动过.",
-      "operationLog.initiator.agentEdited": "\"with your edits\" is the user's changes to the AI plan, rendered 修改.",
-      "settings.fileExplorer.typeToJump.mode.description": "\"Backspace edits it\" changes the typed filter text, not a file; rendered 修改, like the macos branch."
+      "operationLog.initiator.agentEdited": "\"with your edits\" is the user's changes to the AI plan, rendered 修改."
     },
     "forms": "F4 编辑; Edit server… → 编辑服务器…; the menu bar's Edit menu 编辑",
     "sources": "macOS"
@@ -2133,10 +2129,6 @@
     "chosen": "移动",
     "confidence": "high",
     "decision": "Standalone conflict prompt",
-    "exceptions": {
-      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "\"moving to a new PC / computer\" is the user switching machines, not a file move; rendered 换到新的电脑, like the macos branch's 换到新的 Mac.",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "\"moving to a new PC / computer\" is the user switching machines, not a file move; rendered 换到新的电脑, like the macos branch's 换到新的 Mac."
-    },
     "forms": "F6 移动; in a sentence with a destination 移动到“{destination}”; out of / into an archive 移出 / 移入; moving back 移回原处, a rollback's moving back 放回原处 / 放回原来的位置 (fileOperations.rollbackConfirm.bodyUndoByMovingBack); a file something moved away 已被移走",
     "note": "A progress line or conflict prompt naming the operation writes 移动到 so it matches the queue row's 正在移动; everyday prose may use Finder's contraction 移到 (移到废纸篓, 把 Cmdr 移到“应用程序”文件夹).",
     "sources": "macOS"
@@ -3797,11 +3789,6 @@
     ],
     "chosen": "窗口",
     "confidence": "high",
-    "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "The English hit is the OS name Windows, kept Latin; no window is meant.",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "The English hit is the OS name Windows, kept Latin; no window is meant.",
-      "shortcuts.conflict.takenByWindows": "The English hit is the OS name Windows, kept Latin; no window is meant."
-    },
     "sources": "macOS Finder (48) + AppKit (27); MS TBX; Nautilus, Thunar, Dolphin, Total/Double Commander; 20 catalog keys"
   },
   "word-wrap": {

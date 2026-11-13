@@ -1147,10 +1147,7 @@
         "form": "Стільниця",
         "why": "GNOME's word; macOS says Робочий стіл"
       }
-    ],
-    "exceptions": {
-      "shortcuts.conflict.takenByLinuxDesktops": "a Linux desktop environment (GNOME, KDE Plasma, Xfce), not the macOS Desktop folder → робоче середовище"
-    }
+    ]
   },
   "destination": {
     "chosen": "призначення",
@@ -2676,10 +2673,6 @@
         "why": "the GNOME/KDE wording; Finder says Перемістити"
       }
     ],
-    "exceptions": {
-      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "moving to a new Mac, PC, or computer is switching machines, not Cmdr's Move command → після переходу на новий …",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "moving to a new Mac, PC, or computer is switching machines, not Cmdr's Move command → після переходу на новий …"
-    },
     "confidence": "high",
     "sources": "macOS Finder LocalizableMerged MV12 and AppKit SavePanel (Move → Перемістити); MS; Double Commander (Move → Перемістити)"
   },
@@ -4887,12 +4880,7 @@
     "chosen": "вікно",
     "accept": ["вікн", "вікон"],
     "confidence": "high",
-    "sources": "macOS AppKit Window → «Вікно»; Finder New Window → «Нове вікно»",
-    "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "“Windows” here is the OS name, which stays verbatim, not a window",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "“Windows” here is the OS name, which stays verbatim, not a window",
-      "shortcuts.conflict.takenByWindows": "“Windows” here is the OS name, which stays verbatim, not a window"
-    }
+    "sources": "macOS AppKit Window → «Вікно»; Finder New Window → «Нове вікно»"
   },
   "wizard": {
     "chosen": "асистент",

@@ -1166,9 +1166,6 @@
     "chosen": "Bewerk",
     "confidence": "high",
     "decision": "Servers",
-    "exceptions": {
-      "settings.fileExplorer.typeToJump.mode.description": "Backspace edits the typed filter text: past het aan, the wording the macos branch already uses for Delete (⌫)."
-    },
     "forms": "F4, a file in an editor → Bewerk (Bewerk in standaardeditor); a zip's entries → bewerken (Bezig met archief bewerken); a form to change a saved item → Wijzig… (Wijzig server…); the menu bar's Edit menu → Wijzig (Apple's title)",
     "sources": "macOS Network.appex and AppKit (Edit… → Wijzig…), Double Commander (Bewerken)"
   },
@@ -2196,8 +2193,6 @@
     "confidence": "high",
     "decision": "Verplaatsen dat niet afkwam",
     "exceptions": {
-      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "Moving to a new PC or computer is the user switching machines, not a file move: de overstap naar een nieuwe pc / computer, as the macos branch.",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "Moving to a new PC or computer is the user switching machines, not a file move: de overstap naar een nieuwe pc / computer, as the macos branch.",
       "fileOperations.cancelRollback.stoppedMovingBack": "Moving back is the put-back concept: terugzetten.",
       "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Moving back is the put-back concept: zet … terug, as bodyUndoByMovingBack.",
       "operationLog.rollback.rollbackableNoticeMoveBack": "Moving back is the put-back concept: zet … terug.",
@@ -4047,9 +4042,6 @@
     "accept": ["vensters", "Venster"],
     "confidence": "high",
     "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "Windows here is the OS name, not a window.",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "Windows here is the OS name, not a window.",
-      "shortcuts.conflict.takenByWindows": "Windows here is the OS name, not a window.",
       "shortcuts.system.windowMenu": "The Alt+Space menu is Windows' own systeemmenu (MS terminology system menu → systeemmenu)."
     },
     "forms": "the Window menu is Venster; compounds close up (Over-venster keeps its hyphen after a capitalized name)",
@@ -4213,9 +4205,6 @@
   "desktop": {
     "chosen": "bureaublad",
     "confidence": "high",
-    "exceptions": {
-      "shortcuts.conflict.takenByLinuxDesktops": "A Linux desktop environment, not the Desktop folder: werkomgeving (Xfce Thunar: de Xfce-werkomgeving)."
-    },
     "forms": "the Desktop folder → Bureaublad; on the desktop → op het bureaublad",
     "sources": "macOS Finder (Bureaublad, Op bureaublad); MS terminology (Desktop → Bureaublad)"
   },

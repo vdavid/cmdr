@@ -2151,8 +2151,6 @@
     "exceptions": {
       "commands.editUndoTrash.description": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.mutation.trashRefused": "English-sense: moving to the trash is placer dans la corbeille.",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "English-sense: moving to a new computer is le passage à un nouvel ordinateur, not a file move.",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "English-sense: moving to a new computer is le passage à un nouvel ordinateur, not a file move.",
       "errors.write.fallback.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.write.ioError.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.write.permissionDenied.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
@@ -3158,8 +3156,7 @@
     "confidence": "high",
     "decision": "Réglages : sections et présentation",
     "exceptions": {
-      "servers.sheet.s3GcsKeyHelp": "Third-party UI: Google Cloud’s French console names Cloud Storage’s settings page Paramètres, so the hint quotes the vendor’s word (tentative).",
-      "shortcuts.conflict.takenByLinuxDesktops": "Linux-only text about the desktop’s own keyboard settings, which GNOME’s French UI calls Paramètres; Réglages names Cmdr’s window."
+      "servers.sheet.s3GcsKeyHelp": "Third-party UI: Google Cloud’s French console names Cloud Storage’s settings page Paramètres, so the hint quotes the vendor’s word (tentative)."
     },
     "forms": "Cmdr’s own window → les Réglages (Ouvrir les réglages, Activez-la dans les Réglages); breadcrumbs Réglages > IA, Réglages › Mises à jour et confidentialité (mirror EN’s separator); Apple’s app is Réglages Système",
     "sources": "macOS (Réglages Système CFBundleName)"
@@ -3929,11 +3926,6 @@
   "window": {
     "chosen": "fenêtre",
     "confidence": "high",
-    "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "English-sense: the windows branch names Windows, the OS, not a window.",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "English-sense: the windows branch names Windows, the OS, not a window.",
-      "shortcuts.conflict.takenByWindows": "English-sense: names Windows, the OS, not a window."
-    },
     "forms": "feminine (cette fenêtre); the Window menu → Fenêtre; a settings pane of Réglages Système is a sous-fenêtre",
     "sources": "macOS AppKit (réduire/agrandir la fenêtre) and Finder; catalog"
   },
@@ -4178,8 +4170,7 @@
       "commands.tagsToggleOrange.label": "Shipped slash form Activer/désactiver, which style.md forbids; a macOS-read fix waits in review-queue.md § Bascules.",
       "commands.tagsTogglePurple.label": "Shipped slash form Activer/désactiver, which style.md forbids; a macOS-read fix waits in review-queue.md § Bascules.",
       "commands.tagsToggleRed.label": "Shipped slash form Activer/désactiver, which style.md forbids; a macOS-read fix waits in review-queue.md § Bascules.",
-      "commands.tagsToggleYellow.label": "Shipped slash form Activer/désactiver, which style.md forbids; a macOS-read fix waits in review-queue.md § Bascules.",
-      "settings.developer.verboseLogging.description": "Toggles here means switches to a level (Passe … au niveau debug), not an on/off pair."
+      "commands.tagsToggleYellow.label": "Shipped slash form Activer/désactiver, which style.md forbids; a macOS-read fix waits in review-queue.md § Bascules."
     },
     "forms": "on/off state → Activer ou désactiver (le mode plein écran); visibility → Afficher ou masquer; file selection → sélectionner ou désélectionner, the command Inverser la sélection; never a slash (style.md)",
     "sources": "catalog (commands.viewerToggleWordWrap.label, commands.viewShowHidden.label, commands.tabTogglePin.label, commands.selectionToggle.label); MS terminology toggle → bascule (id 1088687) reads as jargon in a label"

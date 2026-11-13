@@ -202,10 +202,7 @@
     "accept": ["zavř", "zavír"],
     "forms": "button → Zavřít; Close tab → Zavřít záložku",
     "confidence": "high",
-    "sources": "macOS AppKit/Finder (Zavřít okno, Zavřít vše); DC; Dolphin; MS (Zavřít)",
-    "exceptions": {
-      "search.coverage.line.offLimits": "English \"keeps closed\" means off-limits (no access), not the close action; Czech says Systém do složky Cmdr nepouští"
-    }
+    "sources": "macOS AppKit/Finder (Zavřít okno, Zavřít vše); DC; Dolphin; MS (Zavřít)"
   },
   "column": {
     "chosen": "sloupec",
@@ -1065,11 +1062,7 @@
     "accept": ["přesun", "přesouv", "přesuň"],
     "forms": "command → Přesunout… (F6); Move here → Přesunout sem; progress → Přesouvání…; result → Přesunuto; noun → přesun",
     "confidence": "high",
-    "sources": "macOS Finder/AppKit (Přesunout, Přesouvání „^1“ do „^2“, Příprava přesunu); Total Commander (Přesunout F6); Double Commander (Přesunout); Thunar; MS",
-    "exceptions": {
-      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "moving to a new PC or computer is the user changing machines (přechod na nový počítač), not the F6 file move",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "moving to a new PC or computer is the user changing machines (přechod na nový počítač), not the F6 file move"
-    }
+    "sources": "macOS Finder/AppKit (Přesunout, Přesouvání „^1“ do „^2“, Příprava přesunu); Total Commander (Přesunout F6); Double Commander (Přesunout); Thunar; MS"
   },
   "move-to-trash": {
     "chosen": "přesunout do koše",
@@ -1983,12 +1976,7 @@
     "accept": ["okn", "oken"],
     "forms": "n.: v okně, pl. okna, gen. pl. oken; Window menu (menu.bar.window) → Okno",
     "confidence": "high",
-    "sources": "macOS AppKit/CoreTypes (Okno, Zavřít okno); Thunar; Dolphin; MS (okno)",
-    "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "Windows is the OS name here, not an app window",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "Windows is the OS name here, not an app window",
-      "shortcuts.conflict.takenByWindows": "Windows is the OS name here, not an app window"
-    }
+    "sources": "macOS AppKit/CoreTypes (Okno, Zavřít okno); Thunar; Dolphin; MS (okno)"
   },
   "write": {
     "chosen": "zápis",
@@ -4090,10 +4078,7 @@
     "accept": ["ploch"],
     "forms": "f.: the folder → Plocha; ke složce Plocha; files on your desktop → soubory na ploše",
     "confidence": "high",
-    "sources": "macOS Finder Localizable Desktop → Plocha; Dock, SystemSettings DesktopSettings Desktop → Plocha; live SecurityPrivacyExtension DESKTOP_FOLDER_* → na ploše",
-    "exceptions": {
-      "shortcuts.conflict.takenByLinuxDesktops": "a Linux desktop here is the desktop environment (pracovní prostředí: GNOME, KDE Plasma), not the Desktop folder"
-    }
+    "sources": "macOS Finder Localizable Desktop → Plocha; Dock, SystemSettings DesktopSettings Desktop → Plocha; live SecurityPrivacyExtension DESKTOP_FOLDER_* → na ploše"
   },
   "previous-next": {
     "chosen": "Další",

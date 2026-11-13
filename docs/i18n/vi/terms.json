@@ -553,9 +553,6 @@
   "close": {
     "chosen": "đóng",
     "confidence": "high",
-    "exceptions": {
-      "search.coverage.line.offLimits": "“keeps folders closed to Cmdr” is access, not closing a window, so it reads as the system never opening them (không bao giờ mở … cho Cmdr)"
-    },
     "sources": "macOS (Đóng)"
   },
   "cloud-ai": {
@@ -3487,12 +3484,7 @@
     "chosen": "cửa sổ",
     "confidence": "high",
     "forms": "the Window menu → Cửa sổ; close this window → đóng cửa sổ này",
-    "sources": "macOS AppKit (\"this button also has an action to zoom the window\" → \"… thu phóng cửa sổ\"), Finder menu bar Cửa sổ; catalog (11 of 11 keys)",
-    "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "the English names the OS Windows, not an app window; the vi keeps the name Windows",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "the English names the OS Windows, not an app window; the vi keeps the name Windows",
-      "shortcuts.conflict.takenByWindows": "the English names the OS Windows, not an app window; the vi keeps the name Windows"
-    }
+    "sources": "macOS AppKit (\"this button also has an action to zoom the window\" → \"… thu phóng cửa sổ\"), Finder menu bar Cửa sổ; catalog (11 of 11 keys)"
   },
   "word-wrap": {
     "accept": ["ngắt"],
@@ -3814,9 +3806,6 @@
     "chosen": "Bật/tắt",
     "confidence": "high",
     "forms": "a toggle command label → Bật/tắt <thing> (Bật/tắt tệp ẩn, Bật/tắt toàn màn hình); Turn X on or off rows use the same Bật/tắt",
-    "sources": "catalog (23 shipped Bật/tắt labels, commands.viewShowHidden.label and siblings); MS terminology toggle → chuyển đổi is the generic verb, not the on/off label",
-    "exceptions": {
-      "settings.developer.verboseLogging.description": "\"this toggle\" is the Settings switch itself (a noun), so mục này, as the sibling Settings descriptions say"
-    }
+    "sources": "catalog (23 shipped Bật/tắt labels, commands.viewShowHidden.label and siblings); MS terminology toggle → chuyển đổi is the generic verb, not the on/off label"
   }
 }

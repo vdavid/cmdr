@@ -917,10 +917,7 @@
     "accept": ["закр"],
     "forms": "button Закрыть; progress Закрытие; closed → закрыто",
     "confidence": "high",
-    "sources": "macOS Finder LocalizableMerged FR26 (Close → Закрыть); macOS 27.0 live sweep (Close → Закрыть 170×)",
-    "exceptions": {
-      "search.coverage.line.offLimits": "\"Keeps folders closed to Cmdr\" is access, not closing a window: «Система не пускает Cmdr в {countText} папки»."
-    }
+    "sources": "macOS Finder LocalizableMerged FR26 (Close → Закрыть); macOS 27.0 live sweep (Close → Закрыть 170×)"
   },
   "cloud-ai": {
     "chosen": "облачный ИИ",
@@ -1301,10 +1298,7 @@
     "accept": ["Рабочий стол", "Рабочего стола", "Рабочем столе", "Рабочему столу"],
     "forms": "the folder in prose: папка «Рабочий стол»; the settings pane Desktop & Dock → Рабочий стол и Dock",
     "confidence": "high",
-    "sources": "macOS Finder MenuBar 254.title and LocalizableMerged N5 (Desktop → Рабочий стол); macOS live (Desktop & Dock → Рабочий стол и Dock)",
-    "exceptions": {
-      "shortcuts.conflict.takenByLinuxDesktops": "A Linux desktop here is a desktop environment (GNOME, KDE Plasma, Xfce): «рабочая среда», not the Desktop folder. Tentative; no pile source (review-queue.md)."
-    }
+    "sources": "macOS Finder MenuBar 254.title and LocalizableMerged N5 (Desktop → Рабочий стол); macOS live (Desktop & Dock → Рабочий стол и Dock)"
   },
   "destination": {
     "chosen": "место назначения",
@@ -3109,9 +3103,7 @@
     "exceptions": {
       "fileOperations.rollbackConfirm.bodyUndoByMovingBackSelected": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says.",
       "operationLog.rollback.rollbackableNoticeMoveBack": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says.",
-      "operationLog.tree.statusMovedBack": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says. Status cell «Возвращено на место».",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "“Moving to a new PC / computer” is the user changing machines («переезд на новый компьютер»), not moving files; the concept's notMatch covers only “moving to a new Mac”.",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "“Moving to a new PC / computer” is the user changing machines («переезд на новый компьютер»), not moving files; the concept's notMatch covers only “moving to a new Mac”."
+      "operationLog.tree.statusMovedBack": "Moving back where things came from is a return: «вернуть на прежние места», as the shipped `fileOperations.rollbackConfirm.bodyUndoByMovingBack` says. Status cell «Возвращено на место»."
     }
   },
   "move-to-trash": {
@@ -4530,7 +4522,6 @@
     "sources": "TC menu: Mark → Выделение, Markierung umkehren → Инвертировать выделение, Auswahl reduzieren → Снять выделение, Auswahl temporär merken → Временно сохранить выделение; DC: Select All → Выделить всё, Selection → Выделение, Unselect mask → Снять выделение по маске; Nautilus: Select All → Выделить все, Invert Selection → Инвертировать выделение, %d item selected → Выделено %d объектов; Dolphin: Unselect All → Снять всё выделение; MS: select (mark items) → выделить, selection → выделение. Finder alone has AppKit FindPanel Select All → Выбрать все",
     "note": "Product-owner decision: Total Commander's vocabulary for marking files. Ticking operation-queue rows and picking a server, volume, or dropdown option is choose («выбрать»), listed under exceptions.",
     "exceptions": {
-      "settings.fileViewer.suppressBinaryWarning.explanation": "The windows branch's “select” is Windows' word for pressing a banner button, not marking files: «нажмите «…»», per the click ruling.",
       "commands.downloadsGoToLatest.description": "The command puts the cursor on the newest file and marks nothing: «поставить курсор на самый новый файл».",
       "commands.volumeSelect.label": "Picking a volume for the pane is choose: «Выбрать том».",
       "commands.volumeSelectByName.label": "Picking a volume by name is choose: «Выбрать том панели по имени».",
@@ -6111,12 +6102,7 @@
     "accept": ["окн", "окон"],
     "forms": "menu «Окно»; «Новое окно», «окно «О приложении»», «у края окна»; gen. pl. окон («перебор окон»)",
     "confidence": "high",
-    "sources": "AppKit MenuCommands: Window → Окно; Finder LocalizableMerged: New Window → Новое окно; DC: New Window → Новое окно; Thunar: Window → Окно; TC menu: Window → Окно программы",
-    "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "The windows branch names the OS Windows, not a window; the English match is the OS name.",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "The windows branch names the OS Windows, not a window; the English match is the OS name.",
-      "shortcuts.conflict.takenByWindows": "Names the OS Windows («занято Windows»), not a window; the English match is the OS name."
-    }
+    "sources": "AppKit MenuCommands: Window → Окно; Finder LocalizableMerged: New Window → Новое окно; DC: New Window → Новое окно; Thunar: Window → Окно; TC menu: Window → Окно программы"
   },
   "wizard": {
     "chosen": "мастер",

@@ -712,9 +712,6 @@
     "accept": ["關掉", "關著"],
     "chosen": "關閉",
     "confidence": "confirmed",
-    "exceptions": {
-      "search.coverage.line.offLimits": "Closed to Cmdr is access, not a window or file closing: 不對 Cmdr 開放 (not open to Cmdr) reads natural where 關閉/關著 would read as the folder being shut."
-    },
     "forms": "button and label → 關閉; advice (close some apps, close it) → 關掉; closed to everyone → 關著",
     "sources": "AP-TW = AP-HK, MS"
   },
@@ -2572,11 +2569,7 @@
     "chosen": "移動",
     "confidence": "high",
     "forms": "F6 and prose → 移動; move to X → 移到 X / 移至垃圾桶; move out of a device → 移出; moved away → 移走; move back → 移回原處; move them there → 移過去",
-    "sources": "AP-HK, MS, TC, DC",
-    "exceptions": {
-      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "moving to a new Mac, PC, or computer is switching machines → 換到新的 Mac / 電腦, not the Move command (pending a shared notMatch)",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "moving to a new Mac, PC, or computer is switching machines → 換到新的 Mac / 電腦, not the Move command (pending a shared notMatch)"
-    }
+    "sources": "AP-HK, MS, TC, DC"
   },
   "move-to-trash": {
     "chosen": "垃圾桶",
@@ -4425,12 +4418,7 @@
   "window": {
     "chosen": "視窗",
     "confidence": "confirmed",
-    "sources": "AP-TW = AP-HK, MS, universal",
-    "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "windows branch: the OS name Windows, not an app window (pending a shared notMatch)",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "windows branch: the OS name Windows, not an app window (pending a shared notMatch)",
-      "shortcuts.conflict.takenByWindows": "the OS name Windows, not an app window (pending a shared notMatch)"
-    }
+    "sources": "AP-TW = AP-HK, MS, universal"
   },
   "wizard": {
     "chosen": "精靈",

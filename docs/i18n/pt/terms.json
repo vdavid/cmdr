@@ -1943,11 +1943,7 @@
     "accept": ["mov", "levad", "leva os", "leva de volta"],
     "forms": "progress Movendo; noun movimentação (Finder MV2_V1 Desfazer Movimentação); a rollback moving files back → levar de volta (Levado de volta), per put-back's three families",
     "confidence": "confirmed",
-    "sources": "macOS Finder pt-BR",
-    "exceptions": {
-      "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "“Moving to a new PC/computer” is the user changing machines (passar para), not a file move.",
-      "errors.write.trashRefused.suggestion.trashNotWritableWithoutKey": "“Moving to a new PC/computer” is the user changing machines (passar para), not a file move."
-    }
+    "sources": "macOS Finder pt-BR"
   },
   "move-to-trash": {
     "chosen": "Mover para o Lixo",
@@ -2862,8 +2858,7 @@
       "errors.mount.mountRefused": "A NAS's own admin settings are configurações do servidor; Ajustes is only Cmdr's or Apple's window.",
       "errors.mount.unsupportedProtocol": "A NAS's own admin settings are configurações do servidor; Ajustes is only Cmdr's or Apple's window.",
       "servers.refusal.exportRefused": "The NFS server's own sharing settings are configurações de NFS do servidor; Ajustes is only Cmdr's or Apple's window.",
-      "servers.sheet.s3GcsKeyHelp": "Quotes Google Cloud console’s own pt-BR page, Configurações; Ajustes is only Cmdr’s or Apple’s window.",
-      "shortcuts.conflict.takenByLinuxDesktops": "A Linux desktop’s own keyboard settings, not Cmdr’s Settings: GNOME and KDE pt-BR call theirs configurações."
+      "servers.sheet.s3GcsKeyHelp": "Quotes Google Cloud console’s own pt-BR page, Configurações; Ajustes is only Cmdr’s or Apple’s window."
     }
   },
   "share-menu": {
@@ -3524,12 +3519,7 @@
     "chosen": "janela",
     "forms": "the Window menu → Janela; About window → Janela Sobre",
     "confidence": "high",
-    "sources": "macOS Finder pt-BR",
-    "exceptions": {
-      "errors.write.homeFolderRename.suggestion.isHomeWithKey": "The English hit is the OS name Windows, not a window.",
-      "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "The English hit is the OS name Windows, not a window.",
-      "shortcuts.conflict.takenByWindows": "The English hit is the OS name Windows, not a window."
-    }
+    "sources": "macOS Finder pt-BR"
   },
   "word-wrap": {
     "chosen": "quebra automática de linha",
@@ -3873,8 +3863,7 @@
     "confidence": "high",
     "sources": "MS terminology pt-BR (toggle → alternância / alternar); shipped pt catalog (Alternar seleção, Alternar arquivos ocultos)",
     "exceptions": {
-      "commands.tabTogglePin.label": "Pin and unpin are two verbs here: Fixar/desafixar names both states, which Alternar would hide.",
-      "settings.developer.verboseLogging.description": "“This toggle” is the switch itself as a noun (esta opção), not the act of toggling."
+      "commands.tabTogglePin.label": "Pin and unpin are two verbs here: Fixar/desafixar names both states, which Alternar would hide."
     }
   },
   "task-manager": {
