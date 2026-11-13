@@ -1,7 +1,7 @@
 //! Dir interning: every directory prefix stored once, forever, as a `dirs` row
 //! (`DETAILS.md` § Schema), and the walk back to a full path.
 
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 
 use super::{OperationLogStoreError, fold_name};
 
@@ -106,6 +106,33 @@ fn intern_one(
             row.get::<_, i64>(0)
         })?;
     Ok(id)
+}
+
+/// The interned id of the directory `path` on `volume_id`, or `None` when no
+/// operation ever recorded it. The read-only twin of [`intern_dir`]: the same
+/// walk, by the same EXACT names, inserting nothing. Each step is one lookup on
+/// the `dirs_identity` index.
+pub(crate) fn find_dir(conn: &Connection, volume_id: &str, path: &str) -> Result<Option<i64>, OperationLogStoreError> {
+    let mut stmt = conn.prepare_cached(
+        "SELECT dir_id FROM dirs
+         WHERE volume_id = ?1 AND IFNULL(parent_dir_id, 0) = ?2 AND name = ?3",
+    )?;
+    let mut step = |parent: i64, name: &str| {
+        stmt.query_row(rusqlite::params![volume_id, parent, name], |row| row.get::<_, i64>(0))
+            .optional()
+    };
+    // The volume root's row is named "" under no parent (0 stands in for NULL).
+    let Some(mut dir) = step(0, "")? else {
+        return Ok(None);
+    };
+    let (scheme_root, rest) = split_scheme_root(path);
+    for name in scheme_root.into_iter().chain(rest.split('/').filter(|c| !c.is_empty())) {
+        let Some(child) = step(dir, name)? else {
+            return Ok(None);
+        };
+        dir = child;
+    }
+    Ok(Some(dir))
 }
 
 /// Reconstruct a dir's full path by walking `parent_dir_id` to the volume root.

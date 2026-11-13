@@ -29,7 +29,7 @@ use unicode_normalization::UnicodeNormalization;
 pub use connection::open_read_connection;
 pub(crate) use connection::open_write_connection;
 pub use dirs::reconstruct_dir_path;
-pub(crate) use dirs::{intern_child_dir, intern_dir};
+pub(crate) use dirs::{find_dir, intern_child_dir, intern_dir};
 pub use migrations::{MIGRATIONS, Migration, run_migrations};
 pub(crate) use tree_indexes::{build_tree_item_indexes, tree_item_indexes_exist};
 
@@ -285,7 +285,7 @@ impl OperationLogStore {
 // ── Reads (used by the dump bin; the query API adds paged/filtered reads) ──
 
 /// Decode a stored token to a typed enum, or a [`OperationLogStoreError::Decode`].
-fn decode<T>(
+pub(super) fn decode<T>(
     value: String,
     parse: impl Fn(&str) -> Option<T>,
     column: &'static str,

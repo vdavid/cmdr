@@ -520,13 +520,20 @@ var surfaceGuardedCrates = []struct {
 		// which crosses into `bindings.ts`). `rollback_operation` and `execute_rollback`
 		// stay as their `None` wrappers on purpose: about 20 callers across both crates
 		// and the app's backend suites reverse a whole op and stay byte-identical.
+		//
+		// Raised 95 -> 97 on 2026-11-13 for "Tell me about this" (#1104): in `query`,
+		// `landed_at` (which operation put the node now at a path there) and its
+		// answer `LandedAt`. No existing read answers by where an item LANDED
+		// (search matches source names), and the rule that makes the answer honest,
+		// a row speaks only for the node it recorded, belongs beside the schema that
+		// stores the node rather than re-derived by a host from raw rows.
 		Name:       "cmdr-operation-log",
 		HandleType: "OperationLog",
 		Ceilings: surfaceCeilings{
 			RootPromises:   11,
 			HandleMethods:  7,
 			PublicModules:  7,
-			SubsystemItems: 95,
+			SubsystemItems: 97,
 		},
 	},
 	{

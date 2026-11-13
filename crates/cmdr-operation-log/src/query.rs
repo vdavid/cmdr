@@ -27,6 +27,11 @@
 //! interned dir prefixes of item rows to full paths so the frontend never sees a
 //! `dir_id`, except as the item tree's opaque row key ([`TreeRowKey`]).
 //!
+//! ## Where an item landed
+//!
+//! [`landed_at`] answers which operation put the node now at a path there, by the
+//! node, never by the name alone (`DETAILS.md` § "Where an item landed").
+//!
 //! ## The item tree
 //!
 //! [`operation_tree`] answers one window of an operation's tree with its selection
@@ -52,6 +57,9 @@ pub use crate::tree::view::{
     OperationTreeRequest, OperationTreeRow, OperationTreeView, TreeCheckbox, TreeRowKey, TreeRowRole, TreeSummaryView,
     TreeTally, UnexpandableReason,
 };
+
+mod landed;
+pub use landed::{LandedAt, landed_at};
 
 /// One window of `op_id`'s item tree (`None` for an unknown op): the rows under the
 /// request's expansion from its offset, with the selection normalized and counted.

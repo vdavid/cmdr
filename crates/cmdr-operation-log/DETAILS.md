@@ -1188,6 +1188,37 @@ same off the MCP task.
   counts; every label and the per-operation summary are composed frontend-side, so they localize per viewer. A
   pre-rendered English `summary` column would be unlocalizable the day it shipped.
 
+### Where an item landed (`src/query/landed.rs`)
+
+`landed_at(conn, volume_id, path, node)` answers which operation put the node now at a path there: the read behind the
+"Cmdr copied this from …" row of "Tell me about this" (`apps/desktop/src-tauri/src/about/`). Name search can't answer
+it: it matches SOURCE names, and where an item came from isn't where it is.
+
+- **A row speaks only for the node it recorded.** A path proves nothing: the file Cmdr copied to `Documents/report.pdf`
+  last month may have been replaced since by a download of the same name, and naming the copy there is a false statement
+  of where a file came from. So the caller brings the live node's `NodeIdentity` (the read never touches the disk), and
+  a row answers only when its `dest_inode` + `dest_birth_ns` equal it (§ "A landed item must still be the node that
+  landed" for who records them).
+- **Three answers, typed** (`LandedAt`): `ByOperation` (the NEWEST operation that landed this node: its kind, initiator,
+  end time, and the source's volume id and path), `NodeChangedSince` (rows land at the path with a node, and none is
+  this one), `NoRecord` (no row lands there, or only rows with no node: written before a kind recorded one, landed on a
+  filesystem with no lasting identity or on a remote volume, or pruned by retention). An older row for this node is
+  found behind newer rows for other nodes (the file left and came back).
+- **A rollback's rows never answer** (`rolls_back_op_id IS NULL`, as in the feed): they record no node, and the original
+  carries the story.
+- **Matching**: the item's folder by the EXACT names `dirs` interned (`store::find_dir`, the read-only twin of
+  `intern_dir`; a folder the journal never saw ends the read at once), its own name folded with `fold_name` as at
+  insert, plain b-tree equality, no collation. The fold can match a case twin's row; the node check discards it.
+- **Index-served**: `operation_items_dest_name` (the standalone partial index on `dest_name_folded`) finds the rows, the
+  `operations` key joins the header, and `dest_dir_id` filters. Pinned by `EXPLAIN QUERY PLAN`
+  (`query::landed::tests::the_lookup_is_index_served`). A name that lands in very many folders (`index.js`) reads that
+  many item rows to filter by folder; the tree's `operation_items_dest_dir` index leads with `op_id` and can't help. No
+  migration: add a `(dest_dir_id, dest_name_folded)` index only if a real journal shows this read slow.
+- **Bounded**: the 64 newest rows at the path. Older ones go unread, which reads the same as retention having pruned
+  them.
+- **Renamed after it landed** answers `NoRecord` at the new name: the read never searches for a node by itself (no index
+  on it, and a rename journals no node).
+
 ## Tree summary (`src/tree/`, `src/writer/tree_summary.rs`)
 
 The Operation log's item tree (#1033) opens any op, 2M items included, by reading a handful of rows: per (op, folder)
@@ -1472,13 +1503,16 @@ the write engine, whose `OperationVolumes` is its supertrait.
 
 ### The public surface is capped
 
-`index-crate-isolation` holds the surface to 11 root promises, 7 `OperationLog` methods, seven public modules, and 95
+`index-crate-isolation` holds the surface to 11 root promises, 7 `OperationLog` methods, seven public modules, and 97
 items in them, with no headroom: measured at the extraction, re-measured when the journal API took `OperationId`,
 tightened when the test-only accessors went behind `cfg(test)`, raised for the item tree's backfill (`tree_backfills`,
 and in `query` the backfill job, its four wire types, `BackfillRegistry`, `BackfillProgress`, and `UnbuiltReason`; start
 and cancel live on `TreeBackfill` and the registry, not the handle), and raised for the item tree's window (§ "The tree
 view"), whose request, answer, and selection vocabulary both hosts pass through, and raised for partial rollback
-(`rollback_operation_with_selection`, `execute_rollback_with_selection`, `SelectionRefusal`; § "Streaming + ordering")
+(`rollback_operation_with_selection`, `execute_rollback_with_selection`, `SelectionRefusal`; § "Streaming + ordering"),
+and raised by two for where an item landed (`query::landed_at` and its answer `LandedAt`; § "Where an item landed"): no
+other read answers by an item's DESTINATION, and the rule that keeps the answer honest (a row speaks only for the node
+it recorded) sits beside the schema that stores the node, where a host reading raw rows would have to re-derive it
 (`scripts/check/checks/index-crate-isolation-ceilings.go`). A helper only this crate's tests call stays `#[cfg(test)]`
 (`OperationLogStore::conn` and `schema_version`, `query::coverage_is_complete`), so the count promises nothing to no
 caller. By module:
@@ -1489,8 +1523,8 @@ caller. By module:
 - **`store`**: the DB path, `fold_name`, the error type, the row types, the migration ladder, and the low-level reads
   the IPC commands, the MCP tools, the dump tool, and the planner's app-side cells use.
 - **`query`**: the paged history read and indexed name search behind the IPC commands and MCP tools, the item tree's
-  backfill job and the registry the hosts drive (§ "Tree summary"), and its window (`operation_tree`) with its wire
-  types (§ "The tree view").
+  backfill job and the registry the hosts drive (§ "Tree summary"), its window (`operation_tree`) with its wire types (§
+  "The tree view"), and `landed_at` with its answer (§ "Where an item landed").
 - **`writer`** and **`capture`**: the writer thread and the journal the write engine records through.
 - **`types`**: the typed classification tokens, which cross IPC, and `OperationId` (with its `as_str`, and a
   `Borrow<str>` so an id-keyed map answers a wire row's text), which the journal API and the write engine's public verbs
