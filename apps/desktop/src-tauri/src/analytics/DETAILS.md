@@ -367,6 +367,17 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   window helper every entry point funnels through, so it counts all dozen of them and covers a new one for free. Why
   `surface` is a required first param and why `section` stays out: `apps/desktop/src/lib/settings/DETAILS.md` § "Every
   open funnels through `openSettingsWindow`".
+- `tell_me_about_used` (frontend, `#lib/about-this/about-analytics.ts`, once per card at its close, from
+  `about-this-state.svelte.ts`): `trigger` (the dispatch road, `DispatchSource`: `keyboard` / `menu` / `palette` /
+  `mcp` / …; on macOS the shortcut usually arrives as `menu`, since the menu bar's accelerator fires first, and the
+  context menu shares the menu bar's item id, so `menu` covers all three there), `target` (`file` / `folder` / `app` /
+  `package` / `symlink` / `archive_entry`, or `unknown` for a card closed before its plan), `volume_kind`,
+  `unavailable` (the `AboutUnavailable` token, or `none`), `settled` bool, `verdict` (`none` / `shown` / `cached` /
+  `stopped` / `failed` / `closed_early` / `unavailable`), `verdict_why` (the `VerdictUnavailable` kind or the
+  `VerdictProblem` token, or `none`), `action` (the `AboutAction` type, `goTo` for a row that took the pane somewhere,
+  or `none`), and `continued` bool. ❌ Never a path, name, URL, app, or the AI take's text. One event at the close,
+  because only then is it known whether the take finished and what the person did next; `verdict_why: modelOff`
+  against `localOff` is what says how many cards a model the eval hasn't passed leaves without a take.
 - `error_encountered` (backend, `apps/desktop/src-tauri/src/listing_host/events.rs`, the `AppHandle` wire's `emit_error`): `category` enum (from the
   ListingError); never the path/message/provider.
 - `first_index_started` / `first_index_home_covered` / `first_index_completed` (backend, `first_index.rs`): no props on

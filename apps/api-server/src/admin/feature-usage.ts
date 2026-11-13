@@ -114,6 +114,7 @@ export const featureUsageDefinitions: readonly FeatureUsageDefinition[] = [
     matches: [{ event: 'drop_received' }, { event: 'drag_out_completed' }],
     split: 'event',
   },
+  { id: 'ai-tell-me', name: 'Tell me about this', matches: [{ event: 'tell_me_about_used' }], split: 'verdict' },
   { id: 'ai-rename', name: 'AI rename', matches: suggestions('rename'), split: 'event' },
   {
     id: 'ai-batch',

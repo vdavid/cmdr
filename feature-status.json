@@ -191,8 +191,9 @@
     {
       "id": "ai-tell-me",
       "name": "Tell me about this",
-      "status": "planned",
-      "note": "Right-click any file for a quick AI explanation of what it is."
+      "status": "alpha",
+      "note": "A card for any file or folder: where it came from, what it really is, what owns it, and what removing it means. A short AI take joins it on the cloud models we've tested it on.",
+      "issueUrl": "https://github.com/getcmdr/cmdr/issues/1104"
     },
     {
       "id": "plugins",

@@ -11,7 +11,8 @@ import {
 } from './about-this-state.svelte'
 import { applyAboutEvent, emptyCard } from './about-card'
 
-const { started } = vi.hoisted(() => ({
+const { started, tracked } = vi.hoisted(() => ({
+  tracked: [] as { name: string; props: Record<string, unknown> }[],
   started: [] as {
     requestId: string
     onEvent: (event: AboutEvent) => void
@@ -30,6 +31,10 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
     }
     started.push(handle)
     return handle
+  },
+  trackEvent: (name: string, props: Record<string, unknown>) => {
+    tracked.push({ name, props })
+    return Promise.resolve()
   },
 }))
 
@@ -281,6 +286,35 @@ describe('the open card', () => {
     actFromCard({ type: 'moveToTrash' })
     await Promise.resolve()
     expect(seen).toHaveLength(1)
+  })
+})
+
+describe('the usage event', () => {
+  beforeEach(() => {
+    closeAboutThis()
+    tracked.length = 0
+  })
+
+  it('reports each card once, at its close, with the action that left it', () => {
+    openAboutThis(subject, { goTo: vi.fn(), act: vi.fn() }, { trigger: 'palette', volumeKind: 'local' })
+    const [run] = started.slice(-1)
+    run.onEvent(planned(run.requestId))
+    actFromCard({ type: 'moveToTrash' })
+    // A second close finds no card and reports nothing.
+    closeAboutThis()
+    expect(tracked).toHaveLength(1)
+    expect(tracked[0]).toEqual({
+      name: 'tell_me_about_used',
+      props: expect.objectContaining({ trigger: 'palette', target: 'file', action: 'moveToTrash', continued: false }),
+    })
+  })
+
+  it('reports the card a new open replaced, and nothing for a card no opener described', () => {
+    openAboutThis(subject, null, { trigger: 'menu', volumeKind: 'smb' })
+    openAboutThis({ ...subject, path: '/tmp/b.txt', name: 'b.txt' })
+    closeAboutThis()
+    expect(tracked.map((event) => event.props.trigger)).toEqual(['menu'])
+    expect(tracked[0].props).toEqual(expect.objectContaining({ target: 'unknown', action: 'none', volume_kind: 'smb' }))
   })
 })
 

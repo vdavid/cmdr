@@ -365,7 +365,7 @@ export const fileHandlers = {
   // The card is about the cursor entry, as Get info is, whatever the selection holds.
   'file.tellMeAbout': (hctx) =>
     withEntryUnderCursor(hctx, (entry) => {
-      openAboutThisFor(hctx.explorerRef, entry)
+      openAboutThisFor(hctx.explorerRef, entry, hctx.ctx.source)
     }),
 
   'cloud.makeOffline': (hctx) =>

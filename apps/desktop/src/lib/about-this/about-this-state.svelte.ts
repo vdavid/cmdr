@@ -17,6 +17,7 @@ import { tick } from 'svelte'
 import type { AboutAction } from '#lib/ipc/bindings.js'
 import { startAbout, type AboutRequestHandle } from '#lib/tauri-commands/index.js'
 import { applyAboutEvent, emptyCard, type AboutCardData, type AboutGoTarget, type AboutSubject } from './about-card'
+import { trackAboutUsed, type AboutExit, type AboutUsageContext } from './about-analytics'
 
 /** The context menu's grace (`menu/context_menu_facts.rs` `GRACE`): what answers inside it is there on frame one. */
 export const GRACE_MS = 100
@@ -47,6 +48,8 @@ export interface AboutHooks {
 let running: AboutRequestHandle | null = null
 /** The open card's hooks: the opener's, since only it knows the pane. */
 let hooks: AboutHooks | null = null
+/** What the open card reports when it closes; `null` for a card no opener described (the gallery's). */
+let usage: AboutUsageContext | null = null
 let graceOver = false
 let timers: ReturnType<typeof setTimeout>[] = []
 
@@ -63,10 +66,18 @@ function showIfReady(): void {
   if (card.unavailable !== null || card.settled || (graceOver && placed)) aboutThisState.shown = true
 }
 
-/** Opens the card for `subject`, closing any card already up. `openerHooks` do what its rows and actions ask. */
-export function openAboutThis(subject: AboutSubject, openerHooks: AboutHooks | null = null): void {
+/**
+ * Opens the card for `subject`, closing any card already up. `openerHooks` do what its rows and actions ask, and
+ * `usageContext` is what its `tell_me_about_used` event says about how it was opened (`about-analytics.ts`).
+ */
+export function openAboutThis(
+  subject: AboutSubject,
+  openerHooks: AboutHooks | null = null,
+  usageContext: AboutUsageContext | null = null,
+): void {
   closeAboutThis()
   hooks = openerHooks
+  usage = usageContext
   const handle = startAbout(subject, (event) => {
     const card = aboutThisState.card
     if (!card) return
@@ -91,7 +102,7 @@ export function openAboutThis(subject: AboutSubject, openerHooks: AboutHooks | n
 /** Closes the card, then takes the pane to `target` (Enter on a row that names a place). */
 export function goToFromCard(target: AboutGoTarget): void {
   const opener = hooks
-  closeAboutThis()
+  closeCard({ type: 'goTo' })
   opener?.goTo(target)
 }
 
@@ -106,7 +117,7 @@ export function goToFromCard(target: AboutGoTarget): void {
 export function actFromCard(action: AboutAction): void {
   const opener = hooks
   const subject = aboutThisState.card?.subject
-  closeAboutThis()
+  closeCard({ type: 'action', action: action.type })
   if (!subject || !opener) return
   void tick().then(() => {
     opener.act(action, subject)
@@ -123,9 +134,17 @@ export function stopAboutVerdict(): void {
 
 /** Closes the card and stops its gathering and its verdict. A no-op with no card up. */
 export function closeAboutThis(): void {
+  closeCard({ type: 'closed' })
+}
+
+/** Closes the card, reporting how the person left it (once per card: a second close finds no card). */
+function closeCard(exit: AboutExit): void {
+  const card = aboutThisState.card
+  if (card && usage) trackAboutUsed(card, usage, exit)
   if (running) void running.cancel()
   running = null
   hooks = null
+  usage = null
   clearTimers()
   graceOver = false
   aboutThisState.card = null

@@ -10,6 +10,7 @@
 import type { AboutAction, Location } from '#lib/ipc/bindings.js'
 import { openAboutThis } from '#lib/about-this/about-this-state.svelte.js'
 import type { AboutGoTarget, AboutSubject } from '#lib/about-this/about-card.js'
+import type { AboutTrigger } from '#lib/about-this/about-analytics.js'
 import { resolveLocationOrToast } from '#lib/file-explorer/navigation/navigate-and-select.js'
 import { capabilitiesFor } from '#lib/file-explorer/pane/volume-capabilities.js'
 import { getFocusedPaneVolumeId } from '#lib/file-explorer/pane/focused-pane-reads.js'
@@ -30,8 +31,8 @@ export interface AboutEntry {
   isDirectory: boolean
 }
 
-/** Opens the card about `entry`, the focused pane's cursor row. */
-export function openAboutThisFor(explorer: ExplorerAPI | undefined, entry: AboutEntry): void {
+/** Opens the card about `entry`, the focused pane's cursor row, from the road `trigger` (what its usage event reports). */
+export function openAboutThisFor(explorer: ExplorerAPI | undefined, entry: AboutEntry, trigger: AboutTrigger): void {
   const volumeId = getFocusedPaneVolumeId()
   const subject: AboutSubject = {
     path: entry.path,
@@ -40,14 +41,18 @@ export function openAboutThisFor(explorer: ExplorerAPI | undefined, entry: About
     iconId: entry.iconId,
     isDirectory: entry.isDirectory,
   }
-  openAboutThis(subject, {
-    goTo: (target) => {
-      goTo(explorer, volumeId, target)
+  openAboutThis(
+    subject,
+    {
+      goTo: (target) => {
+        goTo(explorer, volumeId, target)
+      },
+      act: (action, about) => {
+        detached(act(explorer, action, about))
+      },
     },
-    act: (action, about) => {
-      detached(act(explorer, action, about))
-    },
-  })
+    { trigger, volumeKind: capabilitiesFor(volumeId).kind },
+  )
 }
 
 /**

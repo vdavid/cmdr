@@ -46,12 +46,16 @@ function explorer(cursorPath: string = PATH) {
 }
 
 async function press(action: AboutAction, pane: ReturnType<typeof explorer>): Promise<void> {
-  openAboutThisFor(pane as unknown as ExplorerAPI, {
-    path: PATH,
-    filename: 'Tool.dmg',
-    iconId: 'ext:dmg',
-    isDirectory: false,
-  })
+  openAboutThisFor(
+    pane as unknown as ExplorerAPI,
+    {
+      path: PATH,
+      filename: 'Tool.dmg',
+      iconId: 'ext:dmg',
+      isDirectory: false,
+    },
+    'palette',
+  )
   const last = opened.at(-1)
   if (!last?.hooks) throw new Error('no card opened')
   last.hooks.act(action, last.subject)
