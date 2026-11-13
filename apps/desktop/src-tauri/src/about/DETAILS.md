@@ -354,8 +354,14 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
    `localOff` while `VERDICT_ON_LOCAL` is false (D4: flipping it is that one constant); then
    `resolve_agent_llm(app, AgentSlot::AboutThis)`, whose refusals map to `noCloudConsent`, `managed { refusal }`,
    `notConfigured`, or `notReady` (a local server that isn't running: a verdict never starts it or a download). Then
-   the model the slot named: a class the verdict eval measured below its bar (`gate::writes_verdicts`, today the Haiku
-   family) → `modelOff`, which draws nothing, like `localOff`. No `main.db` ledger row → `notReady`, ❌ never an
+   the model the slot named, against the eval's table (`gate::writes_verdicts`): only a model in `PASSED_THE_EVAL`, on
+   the provider it was measured through (a dated snapshot of its id counts), writes; a family in `FAILED_THE_EVAL`
+   (Haiku, in any provider's spelling) never does; anything else is unmeasured and follows `UNMEASURED_MODELS_WRITE`
+   (off). Each refusal is `modelOff`, which draws nothing, like `localOff`. **Decision: unmeasured means off** (the
+   lead's default, pending David): the bundled 3B model showed an unmeasured model can hand out green lights and follow
+   injections, and nothing at runtime would catch it. Letting unmeasured cloud models write on the no-removal prompt is
+   that one constant. Adding a model is one row, after the eval:
+   `docs/notes/about-verdict-eval.md` § Measuring a new model. No `main.db` ledger row → `notReady`, ❌ never an
    unmetered call. Only an `Ok` builds a `gate::Ready` (the LLM, the call settings, the prompt variant, the meter), and
    everything after takes one.
 2. **The reuse and the ceiling** (`limits.rs`): a finished verdict for the same volume, path, node, size, mtime,

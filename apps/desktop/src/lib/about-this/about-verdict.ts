@@ -119,8 +119,9 @@ export function verdictProblem(verdict: Extract<AboutVerdict, { status: 'planned
 /**
  * Whether the card shows anything for an unavailable verdict in its body. `aiOff` gets a quiet hint in the footer
  * instead, and `turnedOff`, `localOff`, and `modelOff` show nothing: the person chose the first, the second is every
- * Local user's default until the local model's answers are measured good, and the third is every card on a model class
- * the verdict eval measured below its bar, so a line about either on every card would be noise.
+ * Local user's default until the local model's answers are measured good, and the third is every card on a model the
+ * verdict eval didn't pass (measured below its bar, or never measured), so a line about either on every card would be
+ * noise.
  */
 export function unavailableShowsALine(why: VerdictUnavailable): boolean {
   switch (why.kind) {

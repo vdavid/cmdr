@@ -21047,7 +21047,7 @@ export type Sniffed = {
   kind: SniffedKind
   /**
    *  The exact format, as its usual extension (`png`, `mach`, `dmg`). `None`:
-   *  the bytes match no format Cmdr knows.
+   *  plain text (it has no one format), or bytes that match no format Cmdr knows.
    */
   format: string | null
 }
@@ -21066,7 +21066,7 @@ export type SniffedKind =
   | 'windowsProgram'
   // Other compiled code (Java, WebAssembly, Android).
   | 'otherCode'
-  // A script with an interpreter line.
+  // A script: bytes with an interpreter line, or a script's extension.
   | 'script'
   // An archive.
   | 'archive'
@@ -21084,7 +21084,10 @@ export type SniffedKind =
   | 'document'
   // A database.
   | 'database'
-  // Text, HTML included.
+  /**
+   *  Text, HTML and source code included: a known text format, or bytes that read
+   *  as UTF-8 or UTF-16.
+   */
   | 'text'
   // A format Cmdr recognizes and has no family for.
   | 'other'
@@ -23389,8 +23392,9 @@ export type VerdictUnavailable =
   // The local model writes no verdict until its answers are measured good.
   | { kind: 'localOff' }
   /**
-   *  The configured cloud model is of a class whose takes failed the verdict eval's
-   *  bar (`gate::writes_verdicts`), so it writes none. Draws nothing, like `localOff`.
+   *  The configured cloud model isn't one whose takes passed the verdict eval
+   *  (`gate::writes_verdicts`): it failed the bar, or nobody measured it. Draws
+   *  nothing, like `localOff`.
    */
   | { kind: 'modelOff' }
   // Cloud AI is picked and not allowed (or allowed under older copy).

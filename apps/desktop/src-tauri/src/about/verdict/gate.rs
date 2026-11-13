@@ -86,7 +86,7 @@ pub(crate) fn resolve_for_card(app: &AppHandle) -> Result<Ready, VerdictUnavaila
     };
     let (resolved, provider, model) = decide(inputs, || resolve_agent_llm(app, AgentSlot::AboutThis))?;
     // Still before anything is read for a model: the slot named the model, nothing more.
-    if !writes_verdicts(&model) {
+    if !writes_verdicts(provider, &model) {
         return Err(VerdictUnavailable::ModelOff);
     }
     let Some(meter) = ledger_meter(app, provider, model.clone()) else {
@@ -105,19 +105,55 @@ pub(crate) fn resolve_for_card(app: &AppHandle) -> Result<Ready, VerdictUnavaila
     })
 }
 
-/// Model families that write no verdict: their takes failed the verdict eval's
-/// no-green-light bar under every prompt it tried, and no runtime filter can catch one
-/// (`docs/notes/about-verdict-eval.md`). Matched on the id's words in any provider's
-/// spelling (`claude-haiku-5-5`, an aggregator's `anthropic/claude-3.5-haiku`).
-const NO_VERDICT_FAMILIES: &[(&str, &str)] = &[("claude", "haiku")];
+/// ❗ The models whose takes met the verdict eval's bar (zero green lights, zero followed
+/// injections) on the prompt and projection that ship, each on the provider it ran
+/// through: the call settings are that provider's. No runtime filter can catch a green
+/// light, so this table is the safety gate. Add a row only after the whole corpus ran on
+/// that model and every judge "yes" was read: `docs/notes/about-verdict-eval.md` §
+/// Measuring a new model. A dated snapshot of a listed id counts as it.
+const PASSED_THE_EVAL: &[(ProviderTag, &str)] = &[(ProviderTag::Anthropic, "claude-sonnet-5-5")];
 
-/// Whether `model` writes the card's verdict. A family the eval never measured writes
-/// one; a family it measured below the bar doesn't.
-pub(crate) fn writes_verdicts(model: &str) -> bool {
+/// Model families measured below the bar under every prompt tried: never a verdict, in
+/// any provider's spelling (`claude-haiku-5-5`, an aggregator's
+/// `anthropic/claude-3.5-haiku`), even with [`UNMEASURED_MODELS_WRITE`] on. The bundled
+/// local model failed too; [`VERDICT_ON_LOCAL`] keeps it off earlier in the gate.
+const FAILED_THE_EVAL: &[(&str, &str)] = &[("claude", "haiku")];
+
+/// ❗ Whether a model the eval never measured writes verdicts (any other provider, model,
+/// or route a person configures). Off: the bundled 3B model showed what an unmeasured
+/// model can do (29 green lights and 24 followed injections in 139 takes). Turning it on
+/// lets every unmeasured cloud model write on the no-removal prompt, and is this one
+/// line.
+const UNMEASURED_MODELS_WRITE: bool = false;
+
+/// Whether `model`, reached through `provider`, writes the card's verdict. The local
+/// model is decided earlier ([`VERDICT_ON_LOCAL`]).
+pub(crate) fn writes_verdicts(provider: ProviderTag, model: &str) -> bool {
+    model_writes(provider, model, UNMEASURED_MODELS_WRITE)
+}
+
+fn model_writes(provider: ProviderTag, model: &str, unmeasured_write: bool) -> bool {
+    if provider == ProviderTag::Local {
+        return true;
+    }
     let model = model.to_ascii_lowercase();
-    !NO_VERDICT_FAMILIES
+    let failed = FAILED_THE_EVAL
         .iter()
-        .any(|(maker, family)| model.contains(maker) && model.contains(family))
+        .any(|(maker, family)| model.contains(maker) && model.contains(family));
+    if failed {
+        return false;
+    }
+    let passed = PASSED_THE_EVAL.iter().any(|(on, id)| {
+        *on == provider
+            && model.strip_prefix(id).is_some_and(|rest| {
+                // The id itself, or a dated snapshot of it (`-20261001`).
+                rest.is_empty()
+                    || rest
+                        .strip_prefix('-')
+                        .is_some_and(|date| date.len() == 8 && date.bytes().all(|b| b.is_ascii_digit()))
+            })
+    });
+    passed || unmeasured_write
 }
 
 /// A meter onto `main.db`'s reserved `about_this` row, or `None` when the store or the
@@ -232,16 +268,42 @@ mod tests {
         assert_eq!(decide(inputs("local"), never), Err(VerdictUnavailable::LocalOff));
     }
 
-    /// A Haiku-class model writes no verdict in any provider's spelling of its id; the
-    /// classes that met the eval's bar, and a family it never measured, do.
+    /// Only a model the eval passed, on the provider it ran through, writes a verdict: a
+    /// dated snapshot of it too. A model it measured below the bar never does, in any
+    /// provider's spelling, and every model it never measured is off by default.
     #[test]
-    fn a_model_class_below_the_bar_writes_no_verdict() {
-        for model in ["claude-haiku-5-5", "Claude-Haiku-4-5", "anthropic/claude-3.5-haiku"] {
-            assert!(!writes_verdicts(model), "{model}");
+    fn only_a_model_the_eval_passed_writes_a_verdict() {
+        use ProviderTag::{Anthropic, Gemini, OpenAi};
+        for (provider, model) in [
+            (Anthropic, "claude-sonnet-5-5"),
+            (Anthropic, "claude-sonnet-5-5-20261001"),
+        ] {
+            assert!(writes_verdicts(provider, model), "{model}");
         }
-        for model in ["claude-sonnet-5-5", "claude-opus-5-5", "gpt-4.1-mini", "haiku-poet-7b"] {
-            assert!(writes_verdicts(model), "{model}");
+        for (provider, model) in [
+            (Anthropic, "claude-haiku-5-5"),
+            (Anthropic, "Claude-Haiku-4-5"),
+            (OpenAi, "anthropic/claude-3.5-haiku"),
+            // Measured on Anthropic's own API, with its call settings: an aggregator's
+            // route to the same model is another measurement.
+            (OpenAi, "anthropic/claude-sonnet-5.5"),
+            (Anthropic, "claude-sonnet-4-5"),
+            (Anthropic, "claude-sonnet-5-5-mini"),
+            (OpenAi, "gpt-4.1-mini"),
+            (Gemini, "gemini-2.5-flash"),
+        ] {
+            assert!(!writes_verdicts(provider, model), "{model}");
         }
+    }
+
+    /// The one switch for models nobody measured lets them write, and still never a model
+    /// the eval measured below the bar.
+    #[test]
+    fn letting_unmeasured_models_write_still_keeps_a_failed_one_off() {
+        assert!(model_writes(ProviderTag::OpenAi, "gpt-4.1-mini", true));
+        assert!(!model_writes(ProviderTag::OpenAi, "gpt-4.1-mini", false));
+        assert!(!model_writes(ProviderTag::Anthropic, "claude-haiku-5-5", true));
+        assert!(!model_writes(ProviderTag::OpenAi, "anthropic/claude-3.5-haiku", true));
     }
 
     /// The slot's refusals keep their type, and a local server that isn't running reads
