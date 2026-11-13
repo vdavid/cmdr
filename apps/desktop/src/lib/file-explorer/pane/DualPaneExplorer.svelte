@@ -1004,7 +1004,7 @@
         return goToRootFolder(deps, pane ?? focusedPane)
     }
 
-    export function getFileAndPathUnderCursor(): Promise<{ path: string; filename: string } | null> {
+    export function getFileAndPathUnderCursor(): Promise<{ path: string; filename: string; iconId: string } | null> {
         return paneCommands.getFileAndPathUnderCursor()
     }
 

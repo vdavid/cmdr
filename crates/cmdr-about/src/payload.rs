@@ -64,6 +64,25 @@ pub struct Signature {
     pub checked: ExecutableCheck,
 }
 
+impl Signature {
+    /// The signature as the host read it, with what a ticket can say settled
+    /// here: only a Developer ID (or an unrecognized) signature is the kind Apple
+    /// notarizes. Apple's own software and the Mac App Store's aren't notarized,
+    /// and unsigned or ad hoc code can't be, so for those a missing ticket is no
+    /// news and the ticket reads [`StapledTicket::DoesNotApply`].
+    pub fn read(signer: Signer, ticket: StapledTicket, checked: ExecutableCheck) -> Self {
+        let ticket = match signer {
+            Signer::DeveloperId { .. } | Signer::Unrecognized => ticket,
+            Signer::Unsigned | Signer::AdHoc | Signer::AppStore | Signer::Apple => StapledTicket::DoesNotApply,
+        };
+        Self {
+            signer,
+            ticket,
+            checked,
+        }
+    }
+}
+
 /// Who a signature names.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
@@ -99,6 +118,10 @@ pub enum StapledTicket {
     /// Cmdr didn't look: a disk image keeps its ticket inside its signature,
     /// where Cmdr doesn't read. ❌ Never worded as either answer.
     NotRead,
+    /// No ticket belongs on this kind of signature: Apple's own software and the
+    /// Mac App Store's aren't notarized, and unsigned or ad hoc code can't be.
+    /// Nothing to say ([`Signature::read`] decides it).
+    DoesNotApply,
 }
 
 /// Whether the main executable was compared against the signature it carries.
@@ -307,6 +330,29 @@ mod tests {
         assert_eq!(ImportanceBand::of_score(0.4), ImportanceBand::Medium);
         assert_eq!(ImportanceBand::of_score(0.399), ImportanceBand::Low);
         assert_eq!(ImportanceBand::of_score(0.0), ImportanceBand::Low);
+    }
+
+    #[test]
+    fn a_ticket_is_only_news_on_a_signature_apple_notarizes() {
+        let checked = ExecutableCheck::ExecutableMatches;
+        let developer = Signer::DeveloperId {
+            team: ItemText::new("T3SS3RA001"),
+            org: ItemText::new("Tessera Labs AB"),
+        };
+        assert_eq!(
+            Signature::read(developer, StapledTicket::Absent, checked).ticket,
+            StapledTicket::Absent
+        );
+        assert_eq!(
+            Signature::read(Signer::Unrecognized, StapledTicket::Present, checked).ticket,
+            StapledTicket::Present
+        );
+        for signer in [Signer::Apple, Signer::AppStore, Signer::AdHoc, Signer::Unsigned] {
+            assert_eq!(
+                Signature::read(signer, StapledTicket::Absent, checked).ticket,
+                StapledTicket::DoesNotApply
+            );
+        }
     }
 
     #[test]

@@ -51,7 +51,7 @@ import type { CommandHandlerContext, CommandHandlerRecord } from './types'
 const PRESSED_BY_A_PERSON = { initiator: 'user' } as const
 
 /** The file entry the focused pane's cursor sits on (path + filename). */
-type EntryUnderCursor = { path: string; filename: string }
+type EntryUnderCursor = { path: string; filename: string; iconId: string }
 
 /**
  * Reads the entry under the focused pane's cursor ONCE and, when present, runs
@@ -365,7 +365,12 @@ export const fileHandlers = {
   // The card is about the cursor entry, as Get info is, whatever the selection holds.
   'file.tellMeAbout': (hctx) =>
     withEntryUnderCursor(hctx, (entry) => {
-      openAboutThis({ path: entry.path, volumeId: getFocusedPaneVolumeId(), name: entry.filename })
+      openAboutThis({
+        path: entry.path,
+        volumeId: getFocusedPaneVolumeId(),
+        name: entry.filename,
+        iconId: entry.iconId,
+      })
     }),
 
   'cloud.makeOffline': (hctx) =>

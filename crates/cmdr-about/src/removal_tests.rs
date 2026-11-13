@@ -310,6 +310,26 @@ fn a_recorded_download_names_the_site_and_nothing_more() {
     assert_eq!(all(&from_address), [R::UserDocument]);
 }
 
+/// "Nothing Cmdr knows of made this" right above "macOS recorded this as
+/// downloaded from…" contradicts itself: a fallback speaks only when no fact
+/// names a consequence.
+#[test]
+fn a_fallback_never_sits_beside_a_real_consequence() {
+    let cards = [
+        settled_file(vec![chrome_download("https://example.com/Tool.dmg")]),
+        settled_file(vec![git(Fact::Known(GitStatus::Untracked))]),
+        settled_folder(vec![digest(FolderClass::Dependencies)]),
+        settled_file(vec![owned_by_id(OwnerPlace::ApplicationSupport, Some("Tessera"))]),
+    ];
+    for card in cards {
+        let row = all(&card);
+        assert!(
+            !row.iter().any(|line| matches!(line, R::UserDocument | R::CantTell)),
+            "{row:?}"
+        );
+    }
+}
+
 #[test]
 fn removing_a_link_leaves_what_it_points_at() {
     let mut link = card(Symlink, None, &local());

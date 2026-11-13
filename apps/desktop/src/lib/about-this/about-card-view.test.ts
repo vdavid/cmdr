@@ -43,6 +43,21 @@ describe('showsOnDisk', () => {
   })
 })
 
+describe('the gallery’s removal rows', () => {
+  // The crate's rule (`cmdr-about::removal`): "Nothing Cmdr knows of made this" and "Cmdr can't tell" are fallbacks,
+  // said only when no fact names a consequence. A fixture that puts one beside a real consequence (a recorded
+  // download, uncommitted work) previews a card the backend never sends, and the two lines contradict each other.
+  it('never sets a fallback beside a real consequence', () => {
+    for (const [id, card] of Object.entries(aboutThisFixtures)) {
+      const removal = card?.derived?.removal
+      if (!removal) continue
+      const all = [...removal.shown, ...removal.more]
+      const fallbacks = all.filter((line) => line.type === 'userDocument' || line.type === 'cantTell')
+      if (fallbacks.length > 0) expect(all, id).toHaveLength(1)
+    }
+  })
+})
+
 describe('a calm card', () => {
   it('shows a plain document with more known rows than unknown ones', () => {
     const tally = tallyRows(fixture('plain-document'))

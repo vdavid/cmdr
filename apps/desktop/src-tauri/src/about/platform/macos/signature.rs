@@ -97,11 +97,11 @@ fn read(path: &str, target: AboutTarget, extension: Option<&str>) -> Fact<Signat
     match basic_validity(&code) {
         Ok(()) => {}
         Err(UNSIGNED) => {
-            return Fact::Known(Signature {
-                signer: Signer::Unsigned,
+            return Fact::Known(Signature::read(
+                Signer::Unsigned,
                 ticket,
-                checked: ExecutableCheck::NotChecked(NotCheckedWhy::NothingToCheck),
-            });
+                ExecutableCheck::NotChecked(NotCheckedWhy::NothingToCheck),
+            ));
         }
         // A signature that doesn't hold together: Cmdr can't say whose it is.
         Err(_) => return Fact::unknown(UnknownWhy::Unparseable),
@@ -115,11 +115,7 @@ fn read(path: &str, target: AboutTarget, extension: Option<&str>) -> Fact<Signat
     } else {
         check_executable(path, is_bundle)
     };
-    Fact::Known(Signature {
-        signer,
-        ticket,
-        checked,
-    })
+    Fact::Known(Signature::read(signer, ticket, checked))
 }
 
 fn static_code(path: &str, is_directory: bool) -> Option<SecStaticCode> {
@@ -301,8 +297,8 @@ mod tests {
         assert_eq!(signature.signer, Signer::Apple);
         assert_eq!(
             signature.ticket,
-            StapledTicket::Absent,
-            "a bare executable carries no ticket"
+            StapledTicket::DoesNotApply,
+            "Apple's own tools aren't notarized, so a missing ticket is no news"
         );
         assert_eq!(signature.checked, ExecutableCheck::ExecutableMatches);
     }
@@ -317,6 +313,7 @@ mod tests {
             panic!("Calculator is signed");
         };
         assert_eq!(signature.signer, Signer::Apple);
+        assert_eq!(signature.ticket, StapledTicket::DoesNotApply);
         assert_eq!(signature.checked, ExecutableCheck::ExecutableMatches);
     }
 

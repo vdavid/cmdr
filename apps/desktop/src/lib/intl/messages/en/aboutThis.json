@@ -625,10 +625,10 @@
       "hasCount": { "description": "\"yes\" when a count is recorded." }
     }
   },
-  "aboutThis.importance.band": "{band, select, high {High} medium {Medium} low {Low} other {Low by design}}",
+  "aboutThis.importance.band": "{band, select, high {High} medium {Medium} low {Low} other {Not ranked}}",
   "@aboutThis.importance.band": {
-    "description": "Answer on the \"Importance\" row of the \"Tell me about this\" card: how important Cmdr's drive index scores the folder. \"Low by design\" is for folders that always score lowest (caches, build output, hidden system folders).",
-    "placeholders": { "band": { "description": "high, medium, low, or floored (lowest by design)." } }
+    "description": "Answer on the \"Importance\" row of the \"Tell me about this\" card: how important Cmdr's drive index scores the folder. \"Not ranked\" is for folders the ranking leaves out on purpose (caches, build output, hidden, system, and temporary folders, app data in the Library); it never says the contents don't matter.",
+    "placeholders": { "band": { "description": "high, medium, low, or floored (left out of the ranking)." } }
   },
   "aboutThis.importance.because": "Because of {reasons}",
   "@aboutThis.importance.because": {
@@ -667,17 +667,21 @@
   "@aboutThis.importance.reason.userContent": {
     "description": "One reason in the \"Because of …\" list on the Importance row: it sits among the user's own documents. Lowercase, joins a list."
   },
-  "aboutThis.importance.reason.nameDenylisted": "its name, which marks generated files",
-  "@aboutThis.importance.reason.nameDenylisted": {
-    "description": "One reason in the \"Because of …\" list on the Importance row of a folder scored lowest by design: its name (like \"node_modules\" or \"cache\") marks files a tool generates. Lowercase, joins a list."
+  "aboutThis.importance.floor.nameDenylisted": "Cmdr doesn’t rank folders whose name marks generated files",
+  "@aboutThis.importance.floor.nameDenylisted": {
+    "description": "Muted line on the \"Importance\" row of the \"Tell me about this\" card, under \"Not ranked\": Cmdr's folder ranking leaves this folder out because its name (like \"node_modules\" or \"cache\") marks files a tool generates. It describes Cmdr's ranking, never whether the folder's contents matter. No closing period."
   },
-  "aboutThis.importance.reason.hiddenOrSystem": "being hidden or part of the system",
-  "@aboutThis.importance.reason.hiddenOrSystem": {
-    "description": "One reason in the \"Because of …\" list on the Importance row of a folder scored lowest by design: it's hidden or a system folder. Lowercase, joins a list."
+  "aboutThis.importance.floor.hiddenOrSystem": "Cmdr doesn’t rank hidden, system, or temporary folders",
+  "@aboutThis.importance.floor.hiddenOrSystem": {
+    "description": "Muted line on the \"Importance\" row of the \"Tell me about this\" card, under \"Not ranked\": Cmdr's folder ranking leaves out hidden folders, the system's folders, app data in the Library, and temporary folders. It describes Cmdr's ranking, never whether the folder's contents matter. No closing period."
   },
-  "aboutThis.importance.reason.underFlooredAncestor": "sitting inside such a folder",
-  "@aboutThis.importance.reason.underFlooredAncestor": {
-    "description": "One reason in the \"Because of …\" list on the Importance row of a folder scored lowest by design: it sits inside a folder that scores lowest (a cache, build output). Lowercase, joins a list."
+  "aboutThis.importance.floor.underFlooredAncestor": "Cmdr doesn’t rank folders inside one it leaves out",
+  "@aboutThis.importance.floor.underFlooredAncestor": {
+    "description": "Muted line on the \"Importance\" row of the \"Tell me about this\" card, under \"Not ranked\": the folder sits inside one Cmdr's folder ranking leaves out (a cache, build output, a hidden folder). It describes Cmdr's ranking, never whether the folder's contents matter. No closing period."
+  },
+  "aboutThis.importance.floor.other": "Cmdr leaves folders like this out of its ranking",
+  "@aboutThis.importance.floor.other": {
+    "description": "Muted line on the \"Importance\" row of the \"Tell me about this\" card, under \"Not ranked\", for a reason Cmdr has no words for yet. It describes Cmdr's ranking, never whether the folder's contents matter. No closing period."
   },
   "aboutThis.importance.reason.other": "other signals",
   "@aboutThis.importance.reason.other": {

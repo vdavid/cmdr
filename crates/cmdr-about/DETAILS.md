@@ -219,7 +219,7 @@ and two workflow filters to stay honest.
 
 ## The public surface is capped
 
-11 root promises (one module per concern), 11 public modules, 119 items in them
+11 root promises (one module per concern), 11 public modules, 120 items in them
 (`scripts/check/checks/index-crate-isolation-ceilings.go`). The items are the wire types the card's events and the
 model's projection carry, and the handful of functions a host calls: `plan`, `AboutCard`, `download_fact`,
 `xdg_download_fact`, `usage_fact`, `redact_for_egress`, `real_type`, `consequences`, `headline`, `start_with`,
@@ -250,3 +250,9 @@ Raised 113 → 119 by the owner and importance rows:
   leave out an owner row nothing could answer.
 - **`ImportanceBand::of_score`**: where High and Medium start is a rule a person could argue; the host passes the stored
   score.
+
+Raised 119 → 120:
+
+- **`Signature::read`**: which signatures a notarization ticket is news on (Developer ID and unrecognized ones: Apple's
+  own software and the Mac App Store's aren't notarized, unsigned or ad hoc code can't be) is a rule a person could
+  argue, so the host builds every signature through it and the card words `DoesNotApply` as nothing.

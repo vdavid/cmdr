@@ -22,7 +22,7 @@
     import AboutPath from './AboutPath.svelte'
     import { copiedPath } from '#lib/utils/display-path.js'
     import { showsOnDisk, type RowView } from './about-card-view'
-    import { KIND_LABEL, ROW_LABEL, importanceReasonKey } from './about-words'
+    import { KIND_LABEL, ROW_LABEL, importanceFloorKey, importanceReasonKey } from './about-words'
 
     interface Props {
         row: RowView
@@ -269,9 +269,9 @@
                 {:else if signature.checked.type === 'notChecked' && signature.checked.why === 'checkUnavailable'}
                     <span class="line quiet">{t('aboutThis.signature.checkUnavailable')}</span>
                 {/if}
-                {#if signature.signer.type !== 'unsigned' && signature.ticket === 'present'}
+                {#if signature.ticket === 'present'}
                     <span class="line quiet">{t('aboutThis.signature.ticketPresent')}</span>
-                {:else if signature.signer.type !== 'unsigned' && signature.ticket === 'absent'}
+                {:else if signature.ticket === 'absent'}
                     <span class="line quiet">{t('aboutThis.signature.ticketAbsent')}</span>
                 {/if}
             {:else if row.fact?.kind === 'lastOpened' && row.fact.fact.state === 'known'}
@@ -292,7 +292,13 @@
                 {@const importance = row.fact.fact.value}
                 {@const reasons = [...new Set(importance.reasons.map((token) => tString(importanceReasonKey(token))))]}
                 <span class="line">{t('aboutThis.importance.band', { band: importance.band })}</span>
-                {#if reasons.length > 0}
+                {#if importance.band === 'floored'}
+                    <!-- What Cmdr's ranking leaves out, said as Cmdr's choice: "low" about a folder of app data must
+                         never read as "this doesn't matter". -->
+                    {#each importance.reasons as token (token)}
+                        <span class="line quiet">{t(importanceFloorKey(token))}</span>
+                    {/each}
+                {:else if reasons.length > 0}
                     <span class="line quiet">{t('aboutThis.importance.because', { reasons: formatConjunctionList(reasons) })}</span>
                 {/if}
                 {#if importance.visits !== null && importance.visits > 0}

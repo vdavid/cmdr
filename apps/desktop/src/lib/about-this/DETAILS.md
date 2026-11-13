@@ -25,10 +25,15 @@ The host is `routes/(main)/+layout.svelte` (beside the feedback dialog, inside i
 
 ## Layout
 
-Top to bottom: the title (a glyph by target and "About “name”", cut with a tooltip), the headline, the volume note, the
+Top to bottom: the title (the item's icon and "About “name”", cut with a tooltip), the headline, the volume note, the
 evidence sections in the plan's order, the verdict slot, What removing it means, and the footer (Close; the actions join
 it later). `ModalDialog` with `resizable` and `growDownward`, 34 rem wide, at most 85 vh, the body scrolling.
 
+- **The title icon** is the pane's own: the subject carries the entry's `iconId`, and the title reads the icon cache the
+  pane already filled (a folder's custom icon first, by path). ❌ Never a fetch from the card; a miss is the glyph by
+  target.
+- **A floored importance** reads "Not ranked" with Cmdr's reason as Cmdr's choice ("Cmdr doesn't rank hidden, system, or
+  temporary folders"), ❌ never "Low": on a folder of app data that would read as "this doesn't matter".
 - **Rows are `<dl>` groups**: a label column (8.5 rem) and the answer. Identity draws its own lines (Size for a file,
   Modified, Created, Other names past one hard link, Points to for a link); a folder's size is the `recursiveSize` row,
   never its own entry size. The size on disk joins the size only when it differs by at least 1 MB and 10%

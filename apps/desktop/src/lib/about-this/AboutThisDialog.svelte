@@ -14,6 +14,7 @@
     import Button from '#lib/ui/Button.svelte'
     import Icon from '#lib/ui/Icon.svelte'
     import { tooltip } from '#lib/tooltip/tooltip.js'
+    import { getCachedCustomFolderIcon, getCachedIcon, iconCacheVersion } from '#lib/icon-cache.js'
     import type { IconName } from '#lib/ui/icons/icon-map.js'
     import AboutHeadline from './AboutHeadline.svelte'
     import AboutRemoval from './AboutRemoval.svelte'
@@ -39,6 +40,16 @@
     }
 
     const target = $derived(card.plan?.target ?? 'file')
+    /**
+     * The icon the pane shows for the item (an app's own, a folder's custom one), from the icon cache the pane
+     * already filled. ❌ Never a fetch from here: a miss draws the glyph.
+     */
+    const iconUrl = $derived.by(() => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- reactive read: a late icon redraws the title.
+        $iconCacheVersion
+        const { iconId, path } = card.subject
+        return getCachedCustomFolderIcon(path) ?? (iconId !== null ? getCachedIcon(iconId) : undefined)
+    })
     const sections = $derived(sectionsOf(card))
     const name = $derived.by(() => {
         const identity = card.facts.identity
@@ -69,7 +80,9 @@
 >
     {#snippet title()}
         <span class="title"
-            ><span class="title-icon" aria-hidden="true"><Icon name={TARGET_ICON[target]} size={16} /></span><span class="title-text" use:tooltip={name}
+            ><span class="title-icon" aria-hidden="true"
+                >{#if iconUrl}<img src={iconUrl} alt="" width="16" height="16" />{:else}<Icon name={TARGET_ICON[target]} size={16} />{/if}</span
+            ><span class="title-text" use:tooltip={name}
                 >{t('aboutThis.dialog.title', { name })}</span
             ></span
         >

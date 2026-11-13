@@ -18,6 +18,11 @@ export interface AboutSubject {
   volumeId: string | null
   /** The pane's name for it, shown in the title from the first frame. */
   name: string
+  /**
+   * The pane's icon id for it (`FileEntry.iconId`), so the title shows the icon the pane shows (an app's own icon for
+   * an app). The pane already fetched it, so the card reads the icon cache and never fetches. `null`: a glyph.
+   */
+  iconId: string | null
 }
 
 /** One card, from its open to whatever has landed so far. */

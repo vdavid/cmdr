@@ -114,10 +114,10 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
    * the row the cursor just left. The entry's own `path` is the answer on every pane,
    * including search results, whose `currentPath` is an opaque `search-results://` URL.
    */
-  async function getFileAndPathUnderCursor(): Promise<{ path: string; filename: string } | null> {
+  async function getFileAndPathUnderCursor(): Promise<{ path: string; filename: string; iconId: string } | null> {
     const entry = await access.getPaneRef(access.getFocusedPane())?.refreshCursorEntry()
     if (!entry || entry.name === '..') return null
-    return { path: entry.path, filename: entry.name }
+    return { path: entry.path, filename: entry.name, iconId: entry.iconId }
   }
 
   /**

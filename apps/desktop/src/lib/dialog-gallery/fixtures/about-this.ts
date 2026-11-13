@@ -57,7 +57,7 @@ function card(name: string, path: string, stream: Stream): AboutCardData {
     })),
   ]
   if (stream.settled) events.push({ requestId: REQUEST, update: { type: 'factsSettled' } })
-  return events.reduce(applyAboutEvent, emptyCard(REQUEST, { path, volumeId: 'root', name }))
+  return events.reduce(applyAboutEvent, emptyCard(REQUEST, { path, volumeId: 'root', name, iconId: null }))
 }
 
 function plan(
@@ -99,10 +99,7 @@ const dmgHeadline: Headline = {
   size: { bytes: 412_318_720, atLeast: false },
   lead: { template: 'downloadedFrom', host: 'releases.tessera.example', by: 'Chrome', at: day('2026-03-02') },
 }
-const dmgRemoval = derived(dmgHeadline, [
-  { type: 'userDocument' },
-  { type: 'recordedDownload', host: 'releases.tessera.example' },
-])
+const dmgRemoval = derived(dmgHeadline, [{ type: 'recordedDownload', host: 'releases.tessera.example' }])
 
 const downloaded: Stream = {
   plan: plan('file', [
@@ -248,7 +245,7 @@ const folderHeadline: Headline = {
   size: { bytes: 48_211_904, atLeast: true },
   lead: { template: 'plain' },
 }
-const folderRemoval = derived(folderHeadline, [{ type: 'uncommittedWork' }, { type: 'userDocument' }])
+const folderRemoval = derived(folderHeadline, [{ type: 'uncommittedWork' }])
 
 const folder: Stream = {
   plan: plan('folder', [
@@ -536,22 +533,42 @@ const LINKED = 'notes.md'
 const linkedHeadline: Headline = {
   what: { type: 'file', kind: 'text', extension: 'md' },
   size: { bytes: 18_220, atLeast: false },
-  lead: { template: 'plain' },
+  lead: { template: 'downloadedFrom', host: 'notes.example', by: 'Safari', at: day('2026-11-11') },
 }
 const linkedRemoval = derived(
   linkedHeadline,
-  [{ type: 'untrackedNotInGit' }, { type: 'userDocument' }],
+  [{ type: 'untrackedNotInGit' }, { type: 'recordedDownload', host: 'notes.example' }],
   [{ type: 'otherNamesRemain', others: 1 }],
 )
 
 const hardLinked: Stream = {
   plan: plan('file', [
+    { section: 'origin', kinds: ['download'] },
     { section: 'nature', kinds: ['identity', 'realType'] },
     { section: 'context', kinds: ['git'] },
   ]),
   first: derived({ ...linkedHeadline, size: null }, [{ type: 'cantTell' }]),
   facts: [
     { fact: identity(LINKED, 18_220, '2026-11-11', { hardLinks: 2 }), derived: linkedRemoval },
+    {
+      fact: {
+        kind: 'download',
+        fact: {
+          state: 'known',
+          value: {
+            sources: {
+              state: 'known',
+              value: [
+                { type: 'web', site: { type: 'domain', host: 'notes.example' }, url: 'https://notes.example/export' },
+              ],
+            },
+            downloadedAt: day('2026-11-11'),
+            downloadedBy: 'Safari',
+          },
+        },
+      },
+      derived: linkedRemoval,
+    },
     {
       fact: {
         kind: 'realType',
@@ -597,7 +614,7 @@ export const aboutThisFixtures: Record<string, AboutCardData | undefined> = {
   remote: card(REMOTE, '/Volumes/Testnas/photos/IMG_2041.HEIC', remote),
   'more-consequences': card(LINKED, '/Users/test_user_1/notes/notes.md', hardLinked),
   unavailable: {
-    ...emptyCard(REQUEST, { path: '/Volumes/Gone/old.txt', volumeId: 'gone', name: 'old.txt' }),
+    ...emptyCard(REQUEST, { path: '/Volumes/Gone/old.txt', volumeId: 'gone', name: 'old.txt', iconId: null }),
     unavailable: 'notFound',
     settled: true,
   },

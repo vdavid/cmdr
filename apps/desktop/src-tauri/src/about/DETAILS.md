@@ -118,7 +118,7 @@ the log recorded THIS node landing there.
   `AppStore`, the Developer ID intermediate + leaf OIDs → `DeveloperId` with the team id and the leaf's summary minus
   Apple's fixed `Developer ID Application:` prefix and ` (TEAM)` suffix. Nothing parses a name to decide a kind.
 - **The ticket**: a bundle's `Contents/CodeResources` file (Slack: `codesign -dvvv` reports a stapled ticket and the
-  file is there, 2026-11-13); a bare executable can't carry one; a DMG keeps it inside its signature (`NotRead`).
+  file is there, 2026-11-13); a bare executable can't carry one; a DMG keeps it inside its signature (`NotRead`). The host builds every signature through `cmdr_about::payload::Signature::read`, which answers `DoesNotApply` for Apple's, the Mac App Store's, ad hoc, and unsigned code: a missing ticket there is no news.
 - **The bounded check**: `kSecCSDoNotValidateResources | kSecCSCheckAllArchitectures`, on its own
   pool job, waited for `CHECK_BUDGET` (600 ms) inside the row's 1 s. Measured on macOS 27.0.1, 2026-11-13, warm page
   cache, with a Swift spike over the same calls: Slack and Xcode under 1 ms (both thin, small main executables),

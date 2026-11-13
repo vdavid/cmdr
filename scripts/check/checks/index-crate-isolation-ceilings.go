@@ -741,11 +741,14 @@ var surfaceGuardedCrates = []struct {
 		// 113 → 119 (2026-11-13, the owner and importance rows): `OwnerQuestion`,
 		// its `of` and `answer`, `KnownApp`, `OwnerLookups`, and
 		// `ImportanceBand::of_score`, argued in that section.
+		//
+		// 119 → 120 (2026-11-13): `Signature::read`, which settles when a
+		// notarization ticket is news, argued in that section.
 		Name: "cmdr-about",
 		Ceilings: surfaceCeilings{
 			RootPromises:   11,
 			PublicModules:  11,
-			SubsystemItems: 119,
+			SubsystemItems: 120,
 		},
 	},
 }

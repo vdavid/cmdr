@@ -118,12 +118,21 @@ const IMPORTANCE_REASON: Record<string, MessageKey | undefined> = {
   extensionDiversity: 'aboutThis.importance.reason.extensionDiversity',
   projectRoot: 'aboutThis.importance.reason.projectRoot',
   userContent: 'aboutThis.importance.reason.userContent',
-  nameDenylisted: 'aboutThis.importance.reason.nameDenylisted',
-  hiddenOrSystem: 'aboutThis.importance.reason.hiddenOrSystem',
-  underFlooredAncestor: 'aboutThis.importance.reason.underFlooredAncestor',
 }
 
 /** The words for one importance reason token. */
 export function importanceReasonKey(token: string): MessageKey {
   return IMPORTANCE_REASON[token] ?? 'aboutThis.importance.reason.other'
+}
+
+/** Why the ranking leaves a folder out, by the scorer's floor token, said as Cmdr's choice. */
+const IMPORTANCE_FLOOR: Record<string, MessageKey | undefined> = {
+  nameDenylisted: 'aboutThis.importance.floor.nameDenylisted',
+  hiddenOrSystem: 'aboutThis.importance.floor.hiddenOrSystem',
+  underFlooredAncestor: 'aboutThis.importance.floor.underFlooredAncestor',
+}
+
+/** The sentence for one floor token. A token the scorer adds later reads as the general one. */
+export function importanceFloorKey(token: string): MessageKey {
+  return IMPORTANCE_FLOOR[token] ?? 'aboutThis.importance.floor.other'
 }

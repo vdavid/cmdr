@@ -420,9 +420,10 @@ Open questions for the review:
   {countText} times}}} other {}}
   - Where: Answer on the "Last opened" row of the "Tell me about this" card: the date the system recorded, and how many
     times it was opened when that's recorded. <date></date> becomes the date. No closing period.
-- `aboutThis.importance.band`: {band, select, high {High} medium {Medium} low {Low} other {Low by design}}
+- `aboutThis.importance.band`: {band, select, high {High} medium {Medium} low {Low} other {Not ranked}}
   - Where: Answer on the "Importance" row of the "Tell me about this" card: how important Cmdr's drive index scores the
-    folder. "Low by design" is for folders that always score lowest (caches, build output, hidden system folders).
+    folder. "Not ranked" is for folders the ranking leaves out on purpose (caches, build output, hidden, system, and
+    temporary folders, app data in the Library); it never says the contents don't matter.
 - `aboutThis.importance.because`: Because of {reasons}
   - Where: Muted second line on the "Importance" row of the "Tell me about this" card: the signals behind the score. No
     closing period.
@@ -447,15 +448,21 @@ Open questions for the review:
 - `aboutThis.importance.reason.userContent`: holding your own files
   - Where: One reason in the "Because of …" list on the Importance row: it sits among the user's own documents.
     Lowercase, joins a list.
-- `aboutThis.importance.reason.nameDenylisted`: its name, which marks generated files
-  - Where: One reason in the "Because of …" list on the Importance row of a folder scored lowest by design: its name
-    (like "node_modules" or "cache") marks files a tool generates. Lowercase, joins a list.
-- `aboutThis.importance.reason.hiddenOrSystem`: being hidden or part of the system
-  - Where: One reason in the "Because of …" list on the Importance row of a folder scored lowest by design: it's hidden
-    or a system folder. Lowercase, joins a list.
-- `aboutThis.importance.reason.underFlooredAncestor`: sitting inside such a folder
-  - Where: One reason in the "Because of …" list on the Importance row of a folder scored lowest by design: it sits
-    inside a folder that scores lowest (a cache, build output). Lowercase, joins a list.
+- `aboutThis.importance.floor.nameDenylisted`: Cmdr doesn’t rank folders whose name marks generated files
+  - Where: Muted line on the "Importance" row of the "Tell me about this" card, under "Not ranked": Cmdr's folder
+    ranking leaves this folder out because its name (like "node_modules" or "cache") marks files a tool generates. It
+    describes Cmdr's ranking, never whether the folder's contents matter. No closing period.
+- `aboutThis.importance.floor.hiddenOrSystem`: Cmdr doesn’t rank hidden, system, or temporary folders
+  - Where: Muted line on the "Importance" row of the "Tell me about this" card, under "Not ranked": Cmdr's folder
+    ranking leaves out hidden folders, the system's folders, app data in the Library, and temporary folders. It
+    describes Cmdr's ranking, never whether the folder's contents matter. No closing period.
+- `aboutThis.importance.floor.underFlooredAncestor`: Cmdr doesn’t rank folders inside one it leaves out
+  - Where: Muted line on the "Importance" row of the "Tell me about this" card, under "Not ranked": the folder sits
+    inside one Cmdr's folder ranking leaves out (a cache, build output, a hidden folder). It describes Cmdr's ranking,
+    never whether the folder's contents matter. No closing period.
+- `aboutThis.importance.floor.other`: Cmdr leaves folders like this out of its ranking
+  - Where: Muted line on the "Importance" row of the "Tell me about this" card, under "Not ranked", for a reason Cmdr
+    has no words for yet. It describes Cmdr's ranking, never whether the folder's contents matter. No closing period.
 - `aboutThis.importance.reason.other`: other signals
   - Where: One reason in the "Because of …" list on the Importance row, for a signal Cmdr has no words for yet.
     Lowercase, joins a list.

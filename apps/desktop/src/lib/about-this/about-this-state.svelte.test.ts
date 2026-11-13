@@ -60,7 +60,7 @@ function settled(requestId: string): AboutEvent {
   return { requestId, update: { type: 'factsSettled' } }
 }
 
-const subject = { path: '/tmp/a.txt', volumeId: 'root', name: 'a.txt' }
+const subject = { path: '/tmp/a.txt', volumeId: 'root', name: 'a.txt', iconId: null }
 
 describe('applyAboutEvent', () => {
   it('takes facts in any order once the plan is in', () => {
