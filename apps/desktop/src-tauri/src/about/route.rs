@@ -259,6 +259,15 @@ pub(crate) async fn gather_for(request: &AboutRequest, started: Started) -> Resu
             .answered_without_the_volume(UnknownWhy::RefusedInBackground);
         return Ok(placed(gathered, Asking::RefusedInBackground));
     }
+    // A local path whose parents link into a share: its `lstat` would reach the share,
+    // so a card Cmdr started asks it nothing, the same as a share's own path.
+    if started == Started::ByCmdr && drive_way == Way::Local && reaches_a_share_off_the_executor(&path).await {
+        log::debug!(target: "about", "a background card's path links into a share; not asking it");
+        let is_directory = is_directory(request, &resolved).await;
+        let gathered = through_gathered(Way::OsMountedShare, is_directory, &resolved, asked_drive, None)
+            .answered_without_the_volume(UnknownWhy::RefusedInBackground);
+        return Ok(placed(gathered, Asking::RefusedInBackground));
+    }
 
     // A path into an archive or git's history is a route's view, whatever drive
     // holds it. The lexical gate costs nothing; the route confirms on the pool.
@@ -456,6 +465,14 @@ async fn routed_on_pool(drive: &Asked, path: &str) -> Routed {
         Ok(Ok(routed)) => routed,
         Ok(Err(_)) | Err(_) => Routed::NoAnswer,
     }
+}
+
+/// [`super::probe::reaches_a_share`] on a blocking thread, at most [`PROBE_BUDGET`]:
+/// past it (a local disk that stopped answering) the path reads as unproven, so yes.
+async fn reaches_a_share_off_the_executor(path: &str) -> bool {
+    let owned = path.to_string();
+    let walk = tokio::task::spawn_blocking(move || super::probe::reaches_a_share(&owned));
+    !matches!(tokio::time::timeout(PROBE_BUDGET, walk).await, Ok(Ok(false)))
 }
 
 /// Runs the probe on the about pool and waits for it at most [`PROBE_BUDGET`].

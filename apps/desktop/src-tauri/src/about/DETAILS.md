@@ -323,6 +323,17 @@ card from the stream instead of sending it, and runs `model::gate_within` beside
   volume and no backup view (a restic repository can sit on a server): those rows answer `RefusedInBackground`, the
   index rows still run. A local disk answers in full. The decision sits before the route's confirm, which reads the
   drive.
+- **A local path whose parents link into a share counts as the share** (`probe::reaches_a_share`). The resolver places
+  `~/nas/report.pdf` (with `~/nas` → `/Volumes/naspi`) on the boot disk by its text, and the probe's `lstat` would then
+  reach the share through the parent's link. So a `ByCmdr` card walks the path from the root first: each component is
+  checked against the mount table (`getfsstat(MNT_NOWAIT)` / `/proc/mounts`, no call into any mount) before it's
+  `lstat`ed, and each link is read where it lives, on the local disk. A component under a mount that isn't a local disk
+  makes the card `RefusedInBackground` the way a share's own path does (index rows only, names-only gate). A link loop,
+  an unreadable mount table, or a walk past `PROBE_BUDGET` reads as a share: a background card that can't prove the
+  path local asks nothing. The item itself is never followed (it's `lstat`ed as itself). Residual: the walk `lstat`s
+  each LOCAL ancestor and `readlink`s each local link, both on the local disk; a person's own card (`ByPerson`) doesn't
+  walk, since its `lstat` reaching the share is what the person asked for. Tests: `probe.rs` (a link into a stand-in
+  share, absolute and relative, found with no `lstat` inside it).
 - **No pane, so no `isDirectory`**: an item reached through its volume is planned from the drive index's answer
   (`route::is_directory`, `dir_stats` on a blocking thread); one the index doesn't hold plans as a file.
 
