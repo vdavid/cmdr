@@ -285,14 +285,29 @@ pub fn resolve_verdict_call_settings(
     reply_tokens: u32,
 ) -> CallSettings {
     if provider == ProviderTag::Local || crate::test_mode::ask_cmdr_fake_active() {
+        return verdict_call_settings_for(ProviderTag::Local, model, None, reply_tokens);
+    }
+    let reported = crate::ai::model_capabilities::for_configured_cloud_model(app, model);
+    verdict_call_settings_for(provider, model, reported.as_ref(), reply_tokens)
+}
+
+/// [`resolve_verdict_call_settings`] once the provider's own word on `model` (`reported`, from
+/// its model list; `None` when that list never answered) is in hand. The verdict eval calls it
+/// with the real model list, so it measures the call a person's card makes.
+pub fn verdict_call_settings_for(
+    provider: ProviderTag,
+    model: &str,
+    reported: Option<&crate::ai::model_capabilities::ModelCapabilities>,
+    reply_tokens: u32,
+) -> CallSettings {
+    if provider == ProviderTag::Local {
         return CallSettings {
             effort: crate::agent::llm::ReasoningEffort::ProviderDefault,
             max_output_tokens: reply_tokens,
             model_reasons: None,
         };
     }
-    let reported = crate::ai::model_capabilities::for_configured_cloud_model(app, model);
-    let options = effort::effort_options(provider, model, reported.as_ref().map(|c| &c.reasoning));
+    let options = effort::effort_options(provider, model, reported.map(|c| &c.reasoning));
     verdict_call_settings(&options, reply_tokens)
 }
 
@@ -300,6 +315,9 @@ pub fn resolve_verdict_call_settings(
 /// Measured on `claude-haiku-5-5` (family table: reasons, can't turn off; a hand smoke run of
 /// four cards, 2026-11-13): at its default effort under a 120-token cap every call spent all 120
 /// thinking and wrote nothing; at Low with this room the four wrote 97–221 completion tokens.
+/// That's the case with no model list: Anthropic's list reports Haiku 5.5's `disabled` thinking
+/// mode, so a loaded list runs it with thinking off, while Sonnet and Opus 5.5 report none and
+/// take this room (`docs/notes/about-verdict-eval.md` § Method).
 const VERDICT_THINKING_ROOM: u32 = 2_000;
 
 /// Pure core of [`resolve_verdict_call_settings`].

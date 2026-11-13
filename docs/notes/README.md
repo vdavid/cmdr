@@ -19,6 +19,13 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   (#415). Before half only; its committed Criterion baseline sits beside it, and its driver is
   `scripts/transfer-baseline/`.
 
+**A model eval's regression record**, which a rerun compares against:
+
+- `about-verdict-eval.md`: what the "Tell me about this" card's AI take does on real models (three Claude classes and
+  the local model, five languages, an Opus judge), the evidence behind which prompt ships, which classes write no take,
+  and Local staying off, plus every flagged take per round in `about-verdict-eval/`. Read it before changing the
+  verdict's prompt, projection, or default model.
+
 **Dated records:**
 
 - `ci-gate-review-2026-11-05.md`: the adversarial review of the per-lane CI (lane markers, Rust test scope, runner
