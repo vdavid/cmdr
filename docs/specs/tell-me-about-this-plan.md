@@ -1152,3 +1152,32 @@ context-menu and menu-bar label, and the analytics event's props.
 19. The card draws only the rows `plan()` lists, `Planned` is the first event, and no row, section, or verdict block
     moves once drawn, except the verdict's downward growth while streaming and the one collapse of an all-routine
     section at `FactsSettled`. Nothing in the card animates under `prefers-reduced-motion`.
+
+## Lead's log (state a new lead needs; update at each milestone)
+
+- **Status (2026-11-13)**: M1–M7 done and pushed (PR #1166, light CI only). M8 running. David's call: build the WHOLE
+  feature (M9–M14 too), Opus agents only from M3's finish on. ❌ No `pnpm land` until David's explicit go, after his QA
+  and copy pass and the translators.
+- **Cadence between milestones**: wait for the agent's last commit, `git fetch origin main`, rebase,
+  `./scripts/check.sh --fast`, `./scripts/land.sh -no-wait`, then read the light CI run of the previous push
+  (`gh run list --branch worktree-tell-me-about-this`): it runs `svelte-tests` coverage (70% per file) and
+  `a11y-coverage`, which the local cadence doesn't.
+- **Waiting on David** (defaults in force): D12 (a new `cmdr-git` per-path status `pub`; also unlocks a cancelable
+  status walk and the commit author on `.git` portal rows), the D11 surface raise on `cmdr-operation-log` (95 → 97,
+  veto-able), D18 (automatic peek on Cloud), D17, D19, and every review item. His copy list:
+  `docs/specs/tell-me-about-this-copy.md`.
+- **Deviations that stuck**: off-macOS shortcut is `Ctrl+Shift+Enter` (verified in the Linux container); `.pkg` gets no
+  signature row; Linux draws no signature or default-app row; `NotIndexed` is Routine; a git-ignored item says only that
+  git can't bring it back (`IgnoredByGit`); Library data matches by bundle id only; the largest-files search has its own
+  800 ms budget.
+- **Translations block the final land**: CI fails `i18n-coverage` on the new keys (235 after M7). Order: David's copy
+  pass, then translator agents (`docs/guides/i18n-translation.md`), then land.
+- **Follow-up issues to file at close-out** (beyond the plan's M14 list): `VolumeManager::resolve` blocks the async
+  executor when an OS-mounted share's path names a zip or a `.git` portal path (bug; the card avoids it, other callers
+  don't); a folder-scoped search scans the whole index (400–860 ms on 8M rows); a dotfiles repo at `~` makes the git
+  status walk cover the whole home folder (the status column shares it); AirDrop provenance (quarantine agent
+  `sharingd`) unverified on a live transfer; the Linux default-app row; two Czech strings quote "Read-only" where the
+  label says "Jen ke čtení" (from `main`, translator's).
+- **Unseen in a real app so far**: the folder digest and app Library data with a real index (the E2E build runs none).
+  The lead checks both in the dev app before handing QA to David.
+- **Real-LLM budget**: about $10 on `ANTHROPIC_API_KEY_CMDR_DEV` (read with `secret`), most of it for M13.
