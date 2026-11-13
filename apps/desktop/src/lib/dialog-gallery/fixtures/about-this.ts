@@ -431,9 +431,9 @@ const hardLinked: Stream = {
         fact: {
           state: 'known',
           value: {
-            sniffed: { kind: 'unrecognized', format: null },
+            sniffed: { kind: 'text', format: null },
             claimed: { extension: 'md', kind: 'text' },
-            agreement: 'cantTell',
+            agreement: 'matches',
           },
         },
       },

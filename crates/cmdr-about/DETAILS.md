@@ -86,14 +86,22 @@ Not `ItemText`, on purpose:
 
 ## Real type
 
-`infer` (magic bytes, no `std` feature) plus the two formats it lacks: a UDIF disk image's `koly` trailer, which is the
-file's last 512 bytes (so the host reads a tail too, `TAIL_BYTES`), and a xar installer package's `xar!` header. A
-bundle is a folder and is never sniffed.
+`infer` (magic bytes, no `std` feature) plus what it lacks: a UDIF disk image's `koly` trailer, which is the file's last
+512 bytes (so the host reads a tail too, `TAIL_BYTES`), a xar installer package's `xar!` header, and plain text, which
+has no magic and is told by being text (`looks_like_text`: UTF-8, a character cut at the head's end allowed, or UTF-16
+behind its byte-order mark; no NUL; at most 1% control bytes besides tab, line ends, form feed, and escape). A bundle is
+a folder and is never sniffed.
 
 `TypeAgreement` is `Matches`, `Mismatch`, or `CantTell`. A mismatch needs both sides confident: recognized bytes and an
 extension with a claim. `agrees` is looser than equality where one format legitimately wears another's bytes (an office
-document or e-book is a zip; `m4a` is an MP4; a `.js` may start with an interpreter line; a `.so` may be Mach-O). Plain
-text has no magic, so a `.jpg` full of text is `CantTell`, never a mismatch.
+document or e-book is a zip; `m4a` is an MP4; a `.js` may start with an interpreter line and a `.sh` needn't have one; a
+`.so` may be Mach-O). So a `.txt`, `.md`, `.json`, or source file whose bytes are text `Matches` (the Kind row reads
+"Text, as its name says"), and a `.jpg` full of text is a `Mismatch`.
+
+- **Gotcha/Why**: without the text check, every plain text file was `CantTell`, the Kind row hedged "Text, going by its
+  name", and the verdict eval's models read the projection's `bytesAre: unrecognized, agreement: cantTell` as "its
+  contents don't match the extension" (`docs/notes/about-verdict-eval.md`). Regression test:
+  `plain_text_is_told_by_being_text`.
 
 ## The plan
 

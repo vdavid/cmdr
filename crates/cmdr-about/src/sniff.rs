@@ -1,7 +1,8 @@
 //! What a file's bytes are, against what its extension claims.
 //!
 //! Magic bytes through `infer`, plus the two it lacks: a disk image's `koly`
-//! trailer and an installer package's `xar!` header. A mismatch is reported only
+//! trailer and an installer package's `xar!` header, and plain text, told by
+//! being text (it has no magic). A mismatch is reported only
 //! when both sides are confident: bytes Cmdr recognizes AND an extension it has a
 //! claim for. A bundle is a folder, so it's never sniffed.
 
@@ -36,7 +37,7 @@ pub struct Sniffed {
     /// The family of formats.
     pub kind: SniffedKind,
     /// The exact format, as its usual extension (`png`, `mach`, `dmg`). `None`:
-    /// the bytes match no format Cmdr knows.
+    /// plain text (it has no one format), or bytes that match no format Cmdr knows.
     pub format: Option<String>,
 }
 
@@ -79,7 +80,7 @@ pub enum SniffedKind {
     WindowsProgram,
     /// Other compiled code (Java, WebAssembly, Android).
     OtherCode,
-    /// A script with an interpreter line.
+    /// A script: bytes with an interpreter line, or a script's extension.
     Script,
     /// An archive.
     Archive,
@@ -97,7 +98,8 @@ pub enum SniffedKind {
     Document,
     /// A database.
     Database,
-    /// Text, HTML included.
+    /// Text, HTML and source code included: a known text format, or bytes that read
+    /// as UTF-8 or UTF-16.
     Text,
     /// A format Cmdr recognizes and has no family for.
     Other,
@@ -122,11 +124,37 @@ pub(crate) fn sniff(head: &[u8], tail: Option<&[u8]>) -> Sniffed {
     }
     match infer::get(head) {
         Some(found) => known(kind_of(found.matcher_type(), found.extension()), found.extension()),
+        // Plain text has no magic number: it's told by being text, and has no exact
+        // format to name.
+        None if looks_like_text(head) => Sniffed {
+            kind: SniffedKind::Text,
+            format: None,
+        },
         None => Sniffed {
             kind: SniffedKind::Unrecognized,
             format: None,
         },
     }
+}
+
+/// Whether `head` reads as plain text: UTF-16 behind its byte-order mark, or UTF-8 (a
+/// character cut at the head's end included) with no NUL and at most one control byte in
+/// 100 besides tab, line ends, form feed, and escape (terminal colors in a log). Empty
+/// is nothing to tell by.
+fn looks_like_text(head: &[u8]) -> bool {
+    if head.starts_with(b"\xff\xfe") || head.starts_with(b"\xfe\xff") {
+        return head.len() > 2;
+    }
+    let utf8 = match std::str::from_utf8(head) {
+        Ok(_) => true,
+        // `error_len() == None`: the bytes end inside a character, where the head was cut.
+        Err(e) => e.error_len().is_none(),
+    };
+    let stray = head
+        .iter()
+        .filter(|&&b| (b < 0x20 && !matches!(b, b'\t' | b'\n' | b'\r' | 0x0c | 0x1b)) || b == 0x7f)
+        .count();
+    !head.is_empty() && utf8 && !head.contains(&0) && stray * 100 <= head.len()
 }
 
 /// A UDIF disk image ends in a 512-byte trailer that starts with `koly`.
@@ -178,8 +206,10 @@ pub(crate) fn claimed_kind(extension: &str) -> Option<SniffedKind> {
         "doc" | "docx" | "xls" | "xlsx" | "ppt" | "pptx" | "odt" | "ods" | "odp" | "rtf" | "epub" | "mobi"
         | "pages" | "numbers" | "key" => SniffedKind::Document,
         "sqlite" | "sqlite3" => SniffedKind::Database,
-        "txt" | "md" | "csv" | "json" | "xml" | "yml" | "yaml" | "toml" | "log" | "html" | "htm" | "css" | "js"
-        | "ts" | "rs" | "go" | "py" | "rb" | "c" | "h" | "swift" | "java" | "svg" => SniffedKind::Text,
+        "txt" | "md" | "markdown" | "csv" | "tsv" | "json" | "xml" | "yml" | "yaml" | "toml" | "ini" | "conf"
+        | "cfg" | "log" | "html" | "htm" | "css" | "scss" | "js" | "mjs" | "cjs" | "jsx" | "ts" | "tsx" | "svelte"
+        | "vue" | "rs" | "go" | "py" | "rb" | "php" | "c" | "h" | "cpp" | "cc" | "hpp" | "m" | "swift" | "kt"
+        | "java" | "sql" | "tex" | "svg" => SniffedKind::Text,
         _ => return None,
     };
     Some(kind)
@@ -197,8 +227,8 @@ fn agrees(claimed: SniffedKind, sniffed: SniffedKind) -> bool {
             (Audio, Video) | (Video, Audio)
             // Modern office documents and e-books are zip archives.
             | (Document, Archive)
-            // A text file may start with an interpreter line.
-            | (Text, Script)
+            // A text file may start with an interpreter line, and a script needn't.
+            | (Text, Script) | (Script, Text)
             // A shared library is a program of whichever OS built it.
             | (Elf, MachO) | (MachO, Elf)
         )
@@ -268,10 +298,57 @@ mod tests {
         assert_eq!(kind(&elf()), SniffedKind::Elf);
         assert_eq!(kind(SHELL), SniffedKind::Script);
         assert_eq!(kind(b"SQLite format 3\0"), SniffedKind::Database);
-        assert_eq!(kind(b"just some words"), SniffedKind::Unrecognized);
+        assert_eq!(kind(b"\x01\x02\0\x03"), SniffedKind::Unrecognized);
         assert_eq!(kind(b""), SniffedKind::Unrecognized);
         assert_eq!(sniff(PNG, None).format.as_deref(), Some("png"));
+    }
+
+    /// Plain text has no magic number, so it's told by being text: UTF-8 (a character
+    /// the head cut in half included) or UTF-16 with its byte-order mark, with no NUL
+    /// and hardly a control byte. Regression: without this, every `.txt`, `.md`, and
+    /// source file read `cantTell`, and the verdict eval's models took that for "the
+    /// contents don't match the name".
+    #[test]
+    fn plain_text_is_told_by_being_text() {
+        assert_eq!(kind(b"just some words\n"), SniffedKind::Text);
+        assert_eq!(
+            kind("# Notes\n\n- \u{e9}t\u{e9}, \u{65e5}\u{672c}\t\x1b[1mbold\r\n".as_bytes()),
+            SniffedKind::Text
+        );
+        assert_eq!(kind(b"{\"a\": [1, 2]}"), SniffedKind::Text);
+        // The head ends mid-character: still text.
+        let cut = "\u{65e5}\u{672c}".as_bytes();
+        assert_eq!(kind(&cut[..cut.len() - 1]), SniffedKind::Text);
+        assert_eq!(kind(b"\xff\xfeh\0i\0"), SniffedKind::Text);
+        assert_eq!(kind(b"\xfe\xff\0h\0i"), SniffedKind::Text);
         assert_eq!(sniff(b"just some words", None).format, None);
+        // A NUL, broken UTF-8 before the head's end, or a run of control bytes isn't text.
+        assert_eq!(kind(b"words\0and more"), SniffedKind::Unrecognized);
+        assert_eq!(kind(b"caf\xe9 au lait"), SniffedKind::Unrecognized);
+        assert_eq!(kind(b"\x01\x02\x03\x04 header"), SniffedKind::Unrecognized);
+    }
+
+    #[test]
+    fn a_text_file_agrees_with_a_text_name_and_not_with_a_picture_name() {
+        for extension in ["txt", "md", "json", "rs", "ts", "tsx", "svelte", "csv"] {
+            let found = real_type(b"fn main() {}\n", None, Some(extension));
+            assert_eq!(found.agreement, TypeAgreement::Matches, "{extension}");
+        }
+        // A script with no interpreter line is still a script.
+        assert_eq!(
+            real_type(b"echo hi\n", None, Some("sh")).agreement,
+            TypeAgreement::Matches
+        );
+        assert_eq!(
+            real_type(b"hello", None, Some("jpg")).agreement,
+            TypeAgreement::Mismatch
+        );
+        // Text under a name Cmdr has no claim for is text, with nothing to agree with.
+        let bare = real_type(b"hello", None, Some("xyz"));
+        assert_eq!(
+            (bare.sniffed.kind, bare.agreement),
+            (SniffedKind::Text, TypeAgreement::CantTell)
+        );
     }
 
     #[test]
@@ -340,9 +417,9 @@ mod tests {
 
     #[test]
     fn a_mismatch_needs_both_sides_confident() {
-        // Bytes Cmdr doesn't recognize: plain text has no magic.
+        // Bytes Cmdr doesn't recognize.
         assert_eq!(
-            real_type(b"hello", None, Some("jpg")).agreement,
+            real_type(b"\x01\x02\0\x03", None, Some("jpg")).agreement,
             TypeAgreement::CantTell
         );
         // An extension with no claim.
