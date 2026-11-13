@@ -310,7 +310,7 @@ importers:
         version: 1.0.20
       hono:
         specifier: ^4.12.30
-        version: 4.13.13
+        version: 4.13.16
     devDependencies:
       '@cloudflare/vitest-plugin':
         specifier: ^1.4.0
@@ -4544,8 +4544,8 @@ packages:
     resolution: {integrity: sha512-Ox1pJVrDCyGHMG9CFg1tmrRUMRPRsAWYc/PinY0XzJU4K7y7vjNoLKIQ7BR5UJMCxNN8EM1MNDmHWA/B3aZUuw==}
     engines: {node: '>=6'}
 
-  hono@4.13.13:
-    resolution: {integrity: sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA==}
+  hono@4.13.16:
+    resolution: {integrity: sha512-AOLOEhvrV+iH92xXCnFr/5+3KjPKcI3xP63XJtX5spAnkznPdHijlIsUTpi7/9EhWqrTCekw5c5zh1K+YsVw7A==}
     engines: {node: '>=16.9.0'}
 
   hookified@1.15.1:
@@ -11175,7 +11175,7 @@ snapshots:
 
   hex-rgb@4.3.0: {}
 
-  hono@4.13.13: {}
+  hono@4.13.16: {}
 
   hookified@1.15.1: {}
 

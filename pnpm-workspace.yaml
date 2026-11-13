@@ -124,3 +124,6 @@ peerDependencyRules:
     # installed Chrome through chrome-launcher, so it never downloads one
     # (checked 2026-11-11 by grepping the installed package).
     '@puppeteer/browsers>proxy-agent': '6'
+minimumReleaseAgeExclude:
+  # Renovate security update: hono@4.13.16
+  - hono@4.13.16
