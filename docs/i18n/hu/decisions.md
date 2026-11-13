@@ -566,3 +566,12 @@ Quoted when named; verb `engedélyezd a felhő-AI-t`. `oldalpanel` (tentative). 
 
 "X of Y" aria → `X kész ennyiből: Y` (a size can't take `-ból/-ből`). `Követés` (the viewer's tail toggle); rows reuse
 queue and log words.
+
+## A Windows- és Linux-ágak szavai (`errors.listing.*.suggestion`, `errors.write.homeFolder*`, `errors.write.*.trash`)
+
+- Windows: `Fájlkezelő`, `Feladatkezelő`, `Erőforrás-figyelő` (ms) > `Társított leírók` (ms handle → leíró, tentative),
+  `Start menü`, `Gépház > Hálózat és internet` / `Rendszer > Tárterület`, `Tulajdonságok` > `Biztonság` /
+  `Eszközök > Ellenőrzés`, `Lomtár ürítése`, the quoted checkbox `„Írásvédett”` beside prose `csak olvasható`.
+- PC → `a géped` / `ez a gép`, user folder → `felhasználói mappa` (tentative), `Windows-fiók`, `hálózati adapter`.
+- Linux: `egy terminálban`, `a fájlkezelődben`, `rendszerfigyelő app`, `Jogosultságok` lap (GNOME, KDE, Xfce), unmount →
+  `leválaszt`, mount → `csatol`, `GNOME Lemezek`, `a számítógéped`.

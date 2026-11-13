@@ -175,7 +175,8 @@
     "sources": "macOS AppKit (Engedélyezés, Engedélyezés mindenképp); AOSP SystemUI usb_debugging_allow = Engedélyezés; ms (allow → engedélyez)",
     "exceptions": {
       "ui.toolAsk.decline": "Don’t allow is the safe button, and the settled deny word is Elutasítás (macOS AppKit; askCmdr.renameReview.deny)",
-      "errors.write.trashRefused.message.folderNotWritable": "English sense: “isn’t allowed to change” is a file-system permission, not granting consent, so it takes the -hat/-het potential (nem módosíthatja)"
+      "errors.write.trashRefused.message.folderNotWritable": "English sense: “isn’t allowed to change” is a file-system permission, not granting consent, so it takes the -hat/-het potential (nem módosíthatja)",
+      "errors.write.trashRefused.message.notPermitted": "English sense: the Linux branch's “wasn’t allowed to touch” is a file-system refusal, not granting consent, so it takes the -hat/-het potential (nem férhetett hozzá)"
     }
   },
   "already-exists": {
@@ -1874,7 +1875,12 @@
     "accept": ["tárhely", "tárolás"],
     "forms": "S3 storage → S3-tárhely; storage provider → tárhelyszolgáltató; cold storage → offline tárolás (ms); storing logs → naplótárolás",
     "confidence": "high",
-    "sources": "catalog (fileExplorer.mtp.noStorage, fileExplorer.diskSpace.noLimitNote, telefontárhely); ms (storage → tár / tárterület; cold storage → offline tárolás)"
+    "sources": "catalog (fileExplorer.mtp.noStorage, fileExplorer.diskSpace.noLimitNote, telefontárhely); ms (storage → tár / tárterület; cold storage → offline tárolás)",
+    "windows": {
+      "chosen": "Tárterület",
+      "accept": ["tárhely", "tárolás"],
+      "note": "the Windows Settings page System > Storage: Gépház > Rendszer > Tárterület (ms TBX Storage → Tárterület); storage in prose stays tárhely"
+    }
   },
   "store": {
     "accept": ["tárolható", "tárolni", "ment"],
@@ -2993,7 +2999,12 @@
     "chosen": "tulajdonságai",
     "forms": "File properties → Fájl tulajdonságai",
     "confidence": "high",
-    "sources": "catalog; ms"
+    "sources": "catalog; ms",
+    "windows": {
+      "chosen": "Tulajdonságok",
+      "accept": ["tulajdonság"],
+      "note": "File Explorer's context-menu command and window, quoted as Windows shows it: válaszd a **Tulajdonságok** parancsot, a Tulajdonságok ablakában; its tabs Biztonság and Eszközök > Ellenőrzés (ms TBX Properties → Tulajdonságok, Security → Biztonság, Tools → Eszközök)"
+    }
   },
   "protocol": {
     "chosen": "protokoll",
@@ -3511,7 +3522,12 @@
     "accept": ["kijelöl", "kiválaszt", "válassz", "kijeloles", "jelöld ki", "jelölj ki", "jelöli ki"],
     "forms": "the menu and the action → Kijelölés; Select all → Összes kijelölése; Select files → Fájlok kijelölése; the dropdown placeholder (the user picks an option) → Válassz",
     "confidence": "high",
-    "sources": "macOS Finder (172.title Összes kijelölése); Nautilus (Kijelölés)"
+    "sources": "macOS Finder (172.title Összes kijelölése); Nautilus (Kijelölés)",
+    "windows": {
+      "chosen": "kijelölés",
+      "accept": ["kijelöl", "kiválaszt", "válassz", "válaszd", "jelöld ki", "jelölj ki"],
+      "note": "Windows prose says select for picking a command or option, where macOS says choose: válaszd a **Tulajdonságok** parancsot. Marking files stays kijelölés."
+    }
   },
   "send": {
     "chosen": "küldés",
@@ -3549,7 +3565,12 @@
     "accept": ["beállítás", "állít"],
     "forms": "a Settings path in a sentence → itt: Beállítások > AI (the path never takes a suffix); separators mirror English per key (> or ›)",
     "confidence": "high",
-    "sources": "macOS (Beállítások); ms"
+    "sources": "macOS (Beállítások); ms",
+    "windows": {
+      "chosen": "Gépház",
+      "accept": ["beállítás", "állít"],
+      "note": "the Windows Settings app is Gépház (ms TBX: Settings, “The app where people can find Windows and device settings” → Gépház), so a Windows Settings path reads itt: **Gépház > Hálózat és internet**; Cmdr's own Settings stay Beállítások"
+    }
   },
   "share-menu": {
     "chosen": "Megosztás",
@@ -4418,5 +4439,37 @@
     "forms": "ezen a gépen",
     "confidence": "tentative",
     "sources": "MS terminology PC (the TBX has no “This PC”) → PC; Windows names This PC Ez a gép"
+  },
+  "file-explorer": {
+    "chosen": "Fájlkezelő",
+    "accept": ["fájlkezelő"],
+    "forms": "capitalized as the Windows app: a Fájlkezelőben, a Fájlkezelőt; only in a platform select's windows branch. The generic kind of app stays lowercase (a fájlkezelődben, the Linux branch)",
+    "confidence": "high",
+    "sources": "ms (File Explorer → Fájlkezelő; the older Windows Explorer entry is not taken)"
+  },
+  "powershell": {
+    "chosen": "PowerShell",
+    "forms": "kept English; front-vowel suffix with no hyphen: a PowerShellben",
+    "confidence": "high",
+    "sources": "ms (PowerShell → PowerShell)"
+  },
+  "user-folder": {
+    "chosen": "felhasználói mappa",
+    "accept": ["felhasználói mapp"],
+    "forms": "your user folder → a felhasználói mappád; only in a platform select's windows branch (macOS and Linux say saját mappa)",
+    "confidence": "tentative",
+    "sources": "no pile hit (the ms TBX has no “user folder”; its home folder → kezdőmappa is the server sense). Built from Windows' Users folder name (Felhasználók) and ms user → felhasználó"
+  },
+  "empty-trash": {
+    "chosen": "Kuka ürítése",
+    "accept": ["ürítsd ki a kuk", "kuka ürít"],
+    "forms": "the command → Kuka ürítése; imperative in prose → Ürítsd ki a Kukát",
+    "confidence": "high",
+    "sources": "macOS Finder (Empty Trash → Kuka ürítése, AL10, N157); GNOME Nautilus; Xfce Thunar",
+    "windows": {
+      "chosen": "Lomtár ürítése",
+      "accept": ["ürítsd ki a lomtár"],
+      "note": "the Recycle Bin's context-menu command as Windows shows it (no pile hit for the full label; built from ms Recycle Bin → Lomtár and the Finder/GNOME ürítése frame, tentative)"
+    }
   }
 }

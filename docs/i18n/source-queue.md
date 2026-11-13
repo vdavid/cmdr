@@ -57,6 +57,19 @@ Process feedback (a translator's homemade scripts and workarounds) goes under it
 - The pile has no Windows shell label "This PC" (the Microsoft TBX lacks it), so the `windows` branches naming it rest
   on judgment and stay `tentative`. Source it from a localized Windows, or a Microsoft support page per language. (es,
   hu, vi)
+- `errors.listing.authRequiredEneedauth.suggestion`: the `other` branch serves macOS AND Linux but says "in Finder", so
+  a Linux user is sent to Finder. Give it a `macos` branch and a generic `other` ("in your file manager"). (hu)
+- Windows shell labels the pile can't confirm: "Associated Handles" (Resource Monitor), "Empty Recycle Bin", the
+  "Read-only" attribute checkbox, "Tools > Check", "user folder", and Settings > System > "Storage" have no exact TBX
+  hit, so every locale builds them from parts. Source them once from a localized Windows per language. (hu)
+- `allow` matches "wasn’t allowed to" / "isn’t allowed to" (a file-system refusal, not granting consent) in
+  `errors.write.trashRefused.message.notPermitted` and `…folderNotWritable`; hu carries two exceptions. Propose a
+  concept `notMatch` for both phrases. (hu)
+- `select` on Windows means "choose a command" (`select **Properties**`), which collides with the file-selection
+  `select` concept in every locale that splits the two; hu added a `windows` form. Consider a `notMatch` for "select **"
+  or a `choose` match in Windows branches. (hu)
+- No concept covers "system monitor app", "disk tool", "network adapter", "Resource Monitor", or "Start" (the Windows
+  menu), so each locale coins them unrecorded. (hu)
 
 ## Process feedback
 
@@ -65,4 +78,20 @@ Translators log here every script they wrote and every workaround they needed (t
 after each wave. Two locales logging the same kind of script is a missing tool: build it or fix the brief, then delete
 the entries (`docs/guides/multi-agent-refactors.md` § Fan-out sweeps).
 
-- None open.
+- The brief for 88 per-OS keys was 445 KB (about 110k tokens): too big for one read, and the Keys section alone needed
+  three. Each key repeats its English three times (the value, the word diff, and the English branches inside "now") and
+  two identical boilerplate bullets ("Per-OS value", "Frozen macOS text"). Print those two once per brief, drop the diff
+  when the only change is the per-OS wrap, and show only the branches to translate plus the frozen one. (hu)
+- Wrote a one-off `grep -v` / `gawk` filter to strip those lines from the brief so the keys fit in context. A
+  `--compact` brief would replace it. (hu)
+- The worktree guard refuses any compound shell command it can't verify (a heredoc, a `grep | sort | uniq` chain over
+  the catalog), so patch files went through the Write tool and a catalog lookup was retried as a plain `grep`. Say so in
+  the instructions, and offer a catalog search (`pnpm i18n:grep --lang hu <regex>`) for "how did we ship this word".
+  (hu)
+- Per-OS drift surfaced only at the check: 34 findings, nearly all from five causes (Windows `Properties`, `select`,
+  `Storage`, `Settings`, plus three English-sense mismatches). The brief could list, per ruled concept, "no `windows`
+  form yet" for concepts that hit a Windows branch, so the translator patches `terms.json` before applying. (hu)
+- `decisions.md` sat exactly at its byte budget, so one new entry needed a hand-edit of
+  `apps/desktop/scripts/i18n-termbase-baseline.json`; `i18n:apply-terms` could take a `--bump-decisions` flag. (hu)
+- The brief's "Translation memory" section (66 KB) went unread: for a per-OS batch the frozen `macos` branch is the
+  memory. Skip it when every key is a per-OS restale. (hu)

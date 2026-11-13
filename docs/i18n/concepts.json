@@ -723,7 +723,15 @@
       "isn't clear",
       "or not cleared",
       "to be cleared",
-      "usually clears it"
+      "usually clears it",
+      {
+        "key": "errors.write.fileLocked.suggestion",
+        "why": "the Windows branch clears a checkbox (the Read-only attribute), it doesn't empty a field or list"
+      },
+      {
+        "key": "errors.write.permissionDenied.suggestion.delete",
+        "why": "the Windows branch clears a checkbox (the Read-only attribute), it doesn't empty a field or list"
+      }
     ],
     "sense": "Emptying a field, a search, an index, or a list of recent items without deleting files."
   },
@@ -2051,7 +2059,8 @@
     "distinct": ["skip", "keep"],
     "en": "leave alone",
     "match": ["left alone", "leave alone", "leaves alone", "left where", "left in place", "left them"],
-    "sense": "Cmdr deliberately not touching files it can't be sure about during a rollback or undo."
+    "sense": "Cmdr deliberately not touching files it can't be sure about during a rollback or undo.",
+    "notMatch": ["best left alone"]
   },
   "level": {
     "distinct": ["threshold"],
@@ -2089,7 +2098,8 @@
     "distinct": ["quota", "threshold"],
     "en": "limit",
     "match": ["limit", "limits", "budget", "cap"],
-    "sense": "A cap: a file-system size limit, an AI step or time budget, a list length."
+    "sense": "A cap: a file-system size limit, an AI step or time budget, a list length.",
+    "notMatch": ["off-limits"]
   },
   "line": {
     "distinct": ["character", "row"],
