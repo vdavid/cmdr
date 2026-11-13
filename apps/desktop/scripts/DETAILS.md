@@ -156,6 +156,26 @@ inlines without a traceable import (today `@iconify-json/lucide`). The release w
 every other build leaves it unset, so the shipped app carries no SBOM. `docs/guides/releasing.md` § Provenance and SBOM
 attestations.
 
+## Translator tools
+
+What a translator agent runs, beside the brief (`pnpm i18n:brief`) and the check (`pnpm i18n:check-locale`). Flags and
+output: `docs/i18n/termbase.md` § Tooling; the translator-facing rules: `docs/i18n/translator-instructions.md`.
+
+- **`i18n-apply.ts`** (+ `-lib.ts`, `pnpm i18n:apply`): writes a values file into one locale's catalogs and stamps each
+  key from its source's current English. It plans the whole batch first and writes nothing when one value fails, judging
+  each with the ERROR-class checks' own pure functions (`parityDetail`, `icuError`, `platformSelectIssues`,
+  `platformPluralDetail`) plus `frozenMacosIssue` from the macOS baseline lib, so it can't disagree with
+  `i18n:check-locale`. Files are written in the shape `sync-locale-keys.ts` writes (`JSON.stringify`, two spaces),
+  through a temp file and a rename.
+- **`i18n-repo-lib.ts`**: git, the main clone (from `--git-common-dir`, so a worktree finds the pile without anyone
+  naming the main clone's path), each tag's pile folders (`pt` → `pt-BR`), `--changed-since`'s merge-base English, and
+  one-key-per-line list files. Every i18n CLI goes through it.
+
+Decision: one locale per `i18n:apply` call. **Why:** a fan-out runs one translator per language at once, and a call that
+can only touch its own `messages/<tag>/` can't race another. Decision: a per-OS entry may omit branches, which keep what
+that OS reads now. **Why:** the `macos` branch must stay byte for byte (`macos-copy-unchanged.test.ts`), and the
+homemade scripts each retyped it, or rebuilt it from helpers, to change the other two.
+
 ## Key decisions
 
 - **Pure helpers in `instance-id.ts`, side effects in `tauri-wrapper.ts`.** The sanitizer, identifier composer,

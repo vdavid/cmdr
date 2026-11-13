@@ -23,23 +23,15 @@
  * `docs/guides/i18n-translation.md`.
  */
 
-import { execFileSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { parseArgs } from 'node:util'
-import {
-  BASE_LOCALE,
-  listLocales,
-  loadCatalog,
-  mergeCatalogFiles,
-  readLocaleFiles,
-  resolveLocaleSource,
-  resolveMessagesRoot,
-} from './i18n-catalog-lib.ts'
+import { BASE_LOCALE, listLocales, loadCatalog, resolveLocaleSource } from './i18n-catalog-lib.ts'
 import { EXIT_ERROR } from './i18n-locale-check-lib.ts'
 import { buildBrief, renderBrief, roughTokens } from './i18n-brief-lib.ts'
 import { changedKeys, selectKeys, staleKeys } from './i18n-brief-select.ts'
 import { previousEnglish } from './i18n-brief-history.ts'
+import { englishAt, parseList, readListFile, repoRoots } from './i18n-repo-lib.ts'
 
 /** The parsed flags. */
 export interface BriefArgs {
@@ -102,55 +94,10 @@ export function parseBriefArgs(argv: string[]): BriefArgs {
   }
 }
 
-/**
- * The commit `--changed-since <ref>` diffs against: where this branch left the
- * ref (`git merge-base <ref> HEAD`), not the ref's tip. Diffing against the tip
- * would also brief every key the ref changed after the split, which this branch
- * never touched.
- * @param runGit runs git with these args, returning trimmed stdout or `undefined` on failure
- */
-export function changeBase(ref: string, runGit: (args: string[]) => string | undefined): string {
-  const base = runGit(['merge-base', ref, 'HEAD'])
-  if (!base) throw new Error(`--changed-since: "${ref}" isn't a git ref here, or shares no history with HEAD`)
-  return base
-}
-
-/** Runs git in `cwd`, returning trimmed stdout, or `undefined` when git fails. */
-function git(cwd: string, args: string[]): string | undefined {
-  try {
-    return execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
-  } catch {
-    return undefined
-  }
-}
-
-/** The worktree's root, and the MAIN clone's root (where the gitignored reference pile lives). */
-function repoRoots(): { repoRoot: string; mainClone: string } {
-  const fallback = join(import.meta.dirname, '..', '..', '..')
-  const repoRoot = git(import.meta.dirname, ['rev-parse', '--show-toplevel']) ?? fallback
-  const common = git(import.meta.dirname, ['rev-parse', '--path-format=absolute', '--git-common-dir'])
-  return { repoRoot, mainClone: common ? dirname(common) : repoRoot }
-}
-
 /** Every locale the brief can target: full translations, not overlays or the base. */
 function fullTranslations(messagesRoot?: string): string[] {
   const available = listLocales(messagesRoot)
   return available.filter((tag) => tag !== BASE_LOCALE && !resolveLocaleSource(tag, available).isOverlay)
-}
-
-/**
- * The English messages where this branch left a git ref (`changeBase`). A catalog
- * file that didn't exist then contributes nothing.
- */
-function englishAt(ref: string, messagesRoot?: string): Record<string, string> {
-  const enDir = join(resolveMessagesRoot(messagesRoot), BASE_LOCALE)
-  const base = changeBase(ref, (args) => git(enDir, args))
-  const files: Record<string, Record<string, unknown>> = {}
-  for (const name of Object.keys(readLocaleFiles(BASE_LOCALE, messagesRoot))) {
-    const text = git(enDir, ['show', `${base}:./${name}`])
-    if (text !== undefined) files[name] = JSON.parse(text) as Record<string, unknown>
-  }
-  return mergeCatalogFiles(files).messages
 }
 
 /** The `--lang` locales, each checked to be a full translation. */
@@ -168,9 +115,8 @@ function resolveLangs(langFlag: string | undefined, messagesRoot?: string): stri
  * line; blank lines and `#` comments skipped), or `undefined` when neither was passed.
  */
 function keyPatterns(args: BriefArgs): string[] | undefined {
-  const inline = args.keys?.split(',') ?? []
-  const fromFile = args.keysFile ? readFileSync(args.keysFile, 'utf8').split('\n') : []
-  const patterns = [...inline, ...fromFile].map((p) => p.trim()).filter((p) => p.length > 0 && !p.startsWith('#'))
+  const inline = parseList((args.keys ?? '').split(',').join('\n'))
+  const patterns = [...inline, ...(args.keysFile ? readListFile(args.keysFile) : [])]
   return patterns.length > 0 ? patterns : undefined
 }
 

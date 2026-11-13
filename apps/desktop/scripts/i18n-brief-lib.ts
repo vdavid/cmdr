@@ -77,6 +77,7 @@ import {
 } from './i18n-termbase-lib.ts'
 import type { Concept, DecisionSection, Term, Termbase } from './i18n-termbase-lib.ts'
 import { loadMechanicsRaw, mechanicsSummary } from './i18n-mechanics-lib.ts'
+import { pileFolders } from './i18n-repo-lib.ts'
 
 /** What to build a brief for. */
 export interface BriefOptions {
@@ -204,14 +205,11 @@ function placeholderNotes(key: string, value: string, metadata: Record<string, u
   return notes
 }
 
-/**
- * The pile folder a language mines when it isn't the bare tag: Cmdr's `pt` ships
- * Brazilian, and the bare `pt/` pile is European (`docs/i18n/pt/style.md`).
- */
-const PILE_TAGS: Readonly<Record<string, string>> = { pt: 'pt-BR' }
-
-function pileTag(tag: string): string {
-  return PILE_TAGS[tag] ?? tag
+/** A language's pile folders as the header names them: `<root>/pt-BR/`, or several joined. */
+function pilePaths(pileRootDir: string, tag: string): string {
+  return pileFolders(tag)
+    .map((folder) => `\`${join(pileRootDir, folder)}/\``)
+    .join(' + ')
 }
 
 function headerSection(ctx: BriefContext): BriefSection {
@@ -225,8 +223,8 @@ function headerSection(ctx: BriefContext): BriefSection {
   ]
   if (ctx.multi) {
     lines.push(`- Style: each language's digest is below; its full \`<tag>/style.md\` is the elaboration.`)
-    const remapped = opts.langs.filter((tag) => pileTag(tag) !== tag)
-    const except = remapped.map((tag) => `${tag}: \`${join(opts.pileRoot, pileTag(tag))}/\``).join(', ')
+    const remapped = opts.langs.filter((tag) => pileFolders(tag).join() !== tag)
+    const except = remapped.map((tag) => `${tag}: ${pilePaths(opts.pileRoot, tag)}`).join(', ')
     lines.push(
       `- Reference pile: \`${join(opts.pileRoot, '<tag>')}/\`${except ? ` (${except})` : ''}, mined only for terms marked "no ruling".`,
     )
@@ -235,7 +233,7 @@ function headerSection(ctx: BriefContext): BriefSection {
     lines.push(
       `- Style: the digest below summarizes \`${shown(stylePath(tag, docsRoot), opts.repoRoot)}\`; read it in full too.`,
     )
-    lines.push(`- Reference pile: \`${join(opts.pileRoot, pileTag(tag))}/\`, mined only for terms marked "no ruling".`)
+    lines.push(`- Reference pile: ${pilePaths(opts.pileRoot, tag)}, mined only for terms marked "no ruling".`)
   }
   lines.push(`- Mining recipes: \`${shown(join(docsRoot, 'reference-pile', 'how-to-mine.md'), opts.repoRoot)}\`.`)
   if (opts.excludeTargetValues)

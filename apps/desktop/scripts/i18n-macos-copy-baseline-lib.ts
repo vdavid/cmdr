@@ -444,6 +444,30 @@ function frozenKeyDrift(
 }
 
 /**
+ * Why `value`, written into `locale`'s own catalog for `key`, would move a frozen macOS text, or `null` when it
+ * wouldn't (or the baseline holds nothing for that key there). The one-key form of {@link macosCopyDrift}, for a
+ * writer that must refuse such a value before it lands (`i18n-apply-lib.ts`): a collapsed pair's survivor and a
+ * split key answer for the frozen key they replace, and an accepted translation change is the text to match.
+ */
+export function frozenMacosIssue(
+  baseline: MacosCopyBaseline,
+  { locale, key, value }: { locale: string; key: string; value: string },
+  accepted: readonly AcceptedTranslationChange[] = ACCEPTED_TRANSLATION_CHANGES,
+): string | null {
+  const frozenKey =
+    COLLAPSED_PAIRS.find((pair) => pair.survivor === key)?.mac ??
+    SPLIT_KEYS.find((split) => split.to === key)?.from ??
+    key
+  const frozenValues = baseline.locales[locale] as Partial<Record<string, string>> | undefined
+  const frozen = frozenValues?.[frozenKey]
+  if (frozen === undefined) return null
+  const expected = expectedTextFrom(accepted)({ key: frozenKey, frozen, from: locale })
+  const actual = macosBranch(value)
+  if (rendersSame(key, expected, actual)) return null
+  return `the text macOS reads would change from ${JSON.stringify(expected)} to ${JSON.stringify(actual)}; a Mac already reads it, so keep it byte for byte (a wrong macOS text goes through ACCEPTED_TRANSLATION_CHANGES in scripts/i18n-macos-copy-baseline-lib.ts)`
+}
+
+/**
  * Every (locale, key) whose macOS text moved from `baseline`, as `locale key: expected → actual` lines, plus
  * anything wrong with the accepted translation changes themselves.
  * @param messagesRoot the catalogs to read; the shipped ones by default

@@ -89,7 +89,7 @@ const SOURCE_BOUND_META: ReadonlySet<string> = new Set(['reviewed', 'sameAsSourc
  * Restamps one `@key` block: the hash becomes `currentHash` and every source-bound
  * vouch is dropped. Rebuilt rather than mutated so field order stays stable.
  */
-function restampMeta(meta: Record<string, unknown>, currentHash: string): Record<string, unknown> {
+export function restampMeta(meta: Record<string, unknown>, currentHash: string): Record<string, unknown> {
   const kept = Object.entries(meta).filter(([field]) => !SOURCE_BOUND_META.has(field))
   return { ...Object.fromEntries(kept), sourceHash: currentHash }
 }
