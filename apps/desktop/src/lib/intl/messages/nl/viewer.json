@@ -381,7 +381,7 @@
   },
   "viewer.copyDialog.confirmMessage": "Veel tegelijk plakken kan andere apps vertragen. Probeer zoeken (<key></key>) om de selectie te verkleinen.",
   "@viewer.copyDialog.confirmMessage": {
-    "sourceHash": "084b649"
+    "sourceHash": "eba735c"
   },
   "viewer.copyDialog.cancel": "Annuleer",
   "@viewer.copyDialog.cancel": {
@@ -397,7 +397,7 @@
   },
   "viewer.copyDialog.refuseMessage": "Dat is groter dan de klembordlimiet van 100 MB. Probeer zoeken (<key></key>) om te vinden wat je nodig hebt, of bewaar de selectie als bestand.",
   "@viewer.copyDialog.refuseMessage": {
-    "sourceHash": "75d10d8"
+    "sourceHash": "c2958d0"
   },
   "viewer.reloadToast.grew": "Bestand op schijf gewijzigd. Opnieuw laden?",
   "@viewer.reloadToast.grew": {

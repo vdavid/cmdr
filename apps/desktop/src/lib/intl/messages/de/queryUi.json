@@ -78,7 +78,7 @@
   },
   "queryUi.empty.keysTip": "Tipp: <newChip></newChip> startet neu, <historyChip></historyChip> zeigt letzte Suchen.",
   "@queryUi.empty.keysTip": {
-    "sourceHash": "4638fd5"
+    "sourceHash": "cbc047b"
   },
   "queryUi.ai.cloudOff.body": "Cloud-KI ist ausgeschaltet. Erlaube sie unter Einstellungen > KI, um das hier zu nutzen.",
   "@queryUi.ai.cloudOff.body": {

@@ -29,7 +29,7 @@
   },
   "ai.toast.readyDescriptionWithKey": "试着新建一个文件夹（<key></key>），看看 AI 提供的名称建议。",
   "@ai.toast.readyDescriptionWithKey": {
-    "sourceHash": "a9e1361"
+    "sourceHash": "5285d4f"
   },
   "ai.toast.readyDescriptionWithoutKey": "试着新建一个文件夹，看看 AI 提供的名称建议。",
   "@ai.toast.readyDescriptionWithoutKey": {

@@ -29,7 +29,7 @@
   },
   "ai.toast.readyDescriptionWithKey": "Zkuste vytvořit novou složku (<key></key>) a uvidíte návrhy názvů od AI.",
   "@ai.toast.readyDescriptionWithKey": {
-    "sourceHash": "a9e1361"
+    "sourceHash": "5285d4f"
   },
   "ai.toast.readyDescriptionWithoutKey": "Zkuste vytvořit novou složku a uvidíte návrhy názvů od AI.",
   "@ai.toast.readyDescriptionWithoutKey": {

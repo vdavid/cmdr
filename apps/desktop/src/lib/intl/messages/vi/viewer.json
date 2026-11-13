@@ -378,7 +378,7 @@
   },
   "viewer.copyDialog.confirmMessage": "Dán một lượng lớn có thể làm chậm các ứng dụng khác. Hãy thử tìm kiếm (<key></key>) để thu hẹp vùng chọn.",
   "@viewer.copyDialog.confirmMessage": {
-    "sourceHash": "084b649"
+    "sourceHash": "eba735c"
   },
   "viewer.copyDialog.cancel": "Hủy",
   "@viewer.copyDialog.cancel": {
@@ -394,7 +394,7 @@
   },
   "viewer.copyDialog.refuseMessage": "Vùng chọn này lớn hơn giới hạn 100 MB của bảng nhớ tạm. Hãy thử tìm kiếm (<key></key>) để tìm thứ bạn cần hoặc lưu vùng chọn thành tệp.",
   "@viewer.copyDialog.refuseMessage": {
-    "sourceHash": "75d10d8"
+    "sourceHash": "c2958d0"
   },
   "viewer.reloadToast.grew": "Tệp đã thay đổi trên đĩa. Tải lại?",
   "@viewer.reloadToast.grew": {

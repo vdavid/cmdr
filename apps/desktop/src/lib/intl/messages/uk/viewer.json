@@ -377,7 +377,7 @@
   },
   "viewer.copyDialog.confirmMessage": "Вставлення великого обсягу тексту може сповільнити інші програми. Спробуйте пошук (<key></key>), щоб звузити вибране.",
   "@viewer.copyDialog.confirmMessage": {
-    "sourceHash": "084b649"
+    "sourceHash": "eba735c"
   },
   "viewer.copyDialog.cancel": "Скасувати",
   "@viewer.copyDialog.cancel": {
@@ -393,7 +393,7 @@
   },
   "viewer.copyDialog.refuseMessage": "Це більше за ліміт буфера обміну в 100 МБ. Спробуйте пошук (<key></key>), щоб знайти потрібне, або збережіть вибране як файл.",
   "@viewer.copyDialog.refuseMessage": {
-    "sourceHash": "75d10d8"
+    "sourceHash": "c2958d0"
   },
   "viewer.reloadToast.grew": "Файл змінився на диску. Перезавантажити?",
   "@viewer.reloadToast.grew": {

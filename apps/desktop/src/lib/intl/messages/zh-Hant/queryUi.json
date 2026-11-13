@@ -78,7 +78,7 @@
   },
   "queryUi.empty.keysTip": "提示：<newChip></newChip> 重新開始，<historyChip></historyChip> 顯示最近的搜尋。",
   "@queryUi.empty.keysTip": {
-    "sourceHash": "4638fd5"
+    "sourceHash": "cbc047b"
   },
   "queryUi.ai.cloudOff.body": "雲端 AI 已關閉。到「設定 > AI」允許使用後，就能使用 AI 模式。",
   "@queryUi.ai.cloudOff.body": {

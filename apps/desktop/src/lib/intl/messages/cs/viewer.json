@@ -380,7 +380,7 @@
   },
   "viewer.copyDialog.confirmMessage": "Vložení velkého množství dat může zpomalit ostatní aplikace. Zkuste výběr zúžit hledáním (<key></key>).",
   "@viewer.copyDialog.confirmMessage": {
-    "sourceHash": "084b649"
+    "sourceHash": "eba735c"
   },
   "viewer.copyDialog.cancel": "Zrušit",
   "@viewer.copyDialog.cancel": {
@@ -396,7 +396,7 @@
   },
   "viewer.copyDialog.refuseMessage": "Výběr je příliš velký, limit schránky je 100 MB. Zkuste hledáním (<key></key>) najít, co potřebujete, nebo uložte výběr jako soubor.",
   "@viewer.copyDialog.refuseMessage": {
-    "sourceHash": "75d10d8"
+    "sourceHash": "c2958d0"
   },
   "viewer.reloadToast.grew": "Soubor se na disku změnil. Znovu načíst?",
   "@viewer.reloadToast.grew": {

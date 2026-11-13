@@ -29,7 +29,7 @@
   },
   "ai.toast.readyDescriptionWithKey": "Hozz létre egy új mappát (<key></key>), és nézd meg az AI-alapú névjavaslatokat.",
   "@ai.toast.readyDescriptionWithKey": {
-    "sourceHash": "a9e1361"
+    "sourceHash": "5285d4f"
   },
   "ai.toast.readyDescriptionWithoutKey": "Hozz létre egy új mappát, és nézd meg az AI-alapú névjavaslatokat.",
   "@ai.toast.readyDescriptionWithoutKey": {

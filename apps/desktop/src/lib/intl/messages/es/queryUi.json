@@ -78,7 +78,7 @@
   },
   "queryUi.empty.keysTip": "Consejo: <newChip></newChip> empieza de cero, <historyChip></historyChip> muestra las búsquedas recientes.",
   "@queryUi.empty.keysTip": {
-    "sourceHash": "4638fd5"
+    "sourceHash": "cbc047b"
   },
   "queryUi.ai.cloudOff.body": "La IA en la nube está desactivada. Permítela en Ajustes > IA para usar esto.",
   "@queryUi.ai.cloudOff.body": {

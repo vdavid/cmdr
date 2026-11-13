@@ -79,7 +79,7 @@
   },
   "queryUi.empty.keysTip": "Mẹo: <newChip></newChip> để bắt đầu lại từ đầu, <historyChip></historyChip> để hiển thị tìm kiếm gần đây.",
   "@queryUi.empty.keysTip": {
-    "sourceHash": "4638fd5"
+    "sourceHash": "cbc047b"
   },
   "queryUi.ai.cloudOff.body": "AI đám mây đang tắt. Hãy cho phép trong Cài đặt > AI để dùng chế độ này.",
   "@queryUi.ai.cloudOff.body": {

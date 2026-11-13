@@ -379,7 +379,7 @@
   },
   "viewer.copyDialog.confirmMessage": "Вставка большого объема текста может замедлить другие приложения. Попробуйте сузить выделение с помощью поиска (<key></key>).",
   "@viewer.copyDialog.confirmMessage": {
-    "sourceHash": "084b649"
+    "sourceHash": "eba735c"
   },
   "viewer.copyDialog.cancel": "Отменить",
   "@viewer.copyDialog.cancel": {
@@ -395,7 +395,7 @@
   },
   "viewer.copyDialog.refuseMessage": "Это больше, чем позволяет ограничение буфера обмена (100 МБ). Попробуйте найти нужное с помощью поиска (<key></key>) или сохраните выделение как файл.",
   "@viewer.copyDialog.refuseMessage": {
-    "sourceHash": "75d10d8"
+    "sourceHash": "c2958d0"
   },
   "viewer.reloadToast.grew": "Файл изменен на диске. Перезагрузить?",
   "@viewer.reloadToast.grew": {

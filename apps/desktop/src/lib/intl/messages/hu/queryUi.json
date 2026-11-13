@@ -79,7 +79,7 @@
   },
   "queryUi.empty.keysTip": "Tipp: új keresést ezzel indíthatsz: <newChip></newChip>, a legutóbbi kereséseket pedig ezzel jelenítheted meg: <historyChip></historyChip>.",
   "@queryUi.empty.keysTip": {
-    "sourceHash": "4638fd5"
+    "sourceHash": "cbc047b"
   },
   "queryUi.ai.cloudOff.body": "A felhő-AI ki van kapcsolva. A használatához engedélyezd itt: Beállítások > AI.",
   "@queryUi.ai.cloudOff.body": {

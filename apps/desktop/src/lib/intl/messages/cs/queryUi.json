@@ -79,7 +79,7 @@
   },
   "queryUi.empty.keysTip": "Tip: <newChip></newChip> začne nové hledání, <historyChip></historyChip> zobrazí poslední hledání.",
   "@queryUi.empty.keysTip": {
-    "sourceHash": "4638fd5"
+    "sourceHash": "cbc047b"
   },
   "queryUi.ai.cloudOff.body": "Cloudová AI je vypnutá. Pro tento režim ji povolte v Nastavení > AI.",
   "@queryUi.ai.cloudOff.body": {

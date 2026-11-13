@@ -378,7 +378,7 @@
   },
   "viewer.copyDialog.confirmMessage": "Colar muita coisa de uma vez pode deixar outros apps mais lentos. Experimente a busca (<key></key>) para diminuir a seleção.",
   "@viewer.copyDialog.confirmMessage": {
-    "sourceHash": "084b649"
+    "sourceHash": "eba735c"
   },
   "viewer.copyDialog.cancel": "Cancelar",
   "@viewer.copyDialog.cancel": {
@@ -394,7 +394,7 @@
   },
   "viewer.copyDialog.refuseMessage": "Isso é maior que o limite de 100 MB da área de transferência. Experimente a busca (<key></key>) para encontrar o que você precisa, ou salve a seleção como arquivo.",
   "@viewer.copyDialog.refuseMessage": {
-    "sourceHash": "75d10d8"
+    "sourceHash": "c2958d0"
   },
   "viewer.reloadToast.grew": "O arquivo mudou no disco. Recarregar?",
   "@viewer.reloadToast.grew": {

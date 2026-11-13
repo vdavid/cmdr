@@ -77,7 +77,7 @@
   },
   "queryUi.empty.keysTip": "Порада: <newChip></newChip> починає пошук заново, <historyChip></historyChip> показує недавні пошуки.",
   "@queryUi.empty.keysTip": {
-    "sourceHash": "4638fd5"
+    "sourceHash": "cbc047b"
   },
   "queryUi.ai.cloudOff.body": "Хмарний ШІ вимкнено. Дозвольте його в Параметрах > ШІ, щоб користуватися цим режимом.",
   "@queryUi.ai.cloudOff.body": {

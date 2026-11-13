@@ -29,7 +29,7 @@
   },
   "ai.toast.readyDescriptionWithKey": "試試新增一個資料夾（<key></key>），看看 AI 建議的名稱。",
   "@ai.toast.readyDescriptionWithKey": {
-    "sourceHash": "a9e1361"
+    "sourceHash": "5285d4f"
   },
   "ai.toast.readyDescriptionWithoutKey": "試試新增一個資料夾，看看 AI 建議的名稱。",
   "@ai.toast.readyDescriptionWithoutKey": {

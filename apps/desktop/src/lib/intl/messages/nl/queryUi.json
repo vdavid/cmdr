@@ -79,7 +79,7 @@
   },
   "queryUi.empty.keysTip": "Tip: <newChip></newChip> begint opnieuw, <historyChip></historyChip> toont recente zoekopdrachten.",
   "@queryUi.empty.keysTip": {
-    "sourceHash": "4638fd5"
+    "sourceHash": "cbc047b"
   },
   "queryUi.ai.cloudOff.body": "Cloud-AI staat uit. Sta cloud-AI toe bij Instellingen > AI om dit te gebruiken.",
   "@queryUi.ai.cloudOff.body": {

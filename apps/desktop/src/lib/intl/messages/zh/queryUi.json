@@ -78,7 +78,7 @@
   },
   "queryUi.empty.keysTip": "提示：<newChip></newChip> 重新开始，<historyChip></historyChip> 显示最近的搜索。",
   "@queryUi.empty.keysTip": {
-    "sourceHash": "4638fd5"
+    "sourceHash": "cbc047b"
   },
   "queryUi.ai.cloudOff.body": "云端 AI 已关闭。在“设置 > AI”中允许使用后，即可使用 AI 模式。",
   "@queryUi.ai.cloudOff.body": {

@@ -377,7 +377,7 @@
   },
   "viewer.copyDialog.confirmMessage": "大量粘贴可能会拖慢其他 App。试试用搜索（<key></key>）来缩小范围。",
   "@viewer.copyDialog.confirmMessage": {
-    "sourceHash": "084b649"
+    "sourceHash": "eba735c"
   },
   "viewer.copyDialog.cancel": "取消",
   "@viewer.copyDialog.cancel": {
@@ -393,7 +393,7 @@
   },
   "viewer.copyDialog.refuseMessage": "这超过了 100 MB 的剪贴板上限。试试用搜索（<key></key>）找到你需要的内容，或者把所选内容保存为文件。",
   "@viewer.copyDialog.refuseMessage": {
-    "sourceHash": "75d10d8"
+    "sourceHash": "c2958d0"
   },
   "viewer.reloadToast.grew": "文件在磁盘上已变化。要重新加载吗？",
   "@viewer.reloadToast.grew": {

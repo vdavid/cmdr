@@ -78,7 +78,7 @@
   },
   "queryUi.empty.keysTip": "Astuce : <newChip></newChip> repart à zéro, <historyChip></historyChip> affiche les recherches récentes.",
   "@queryUi.empty.keysTip": {
-    "sourceHash": "4638fd5"
+    "sourceHash": "cbc047b"
   },
   "queryUi.ai.cloudOff.body": "L’IA dans le cloud est désactivée. Autorisez-la dans Réglages > IA pour utiliser cette fonction.",
   "@queryUi.ai.cloudOff.body": {

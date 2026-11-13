@@ -79,7 +79,7 @@
   },
   "queryUi.empty.keysTip": "Tips: <newChip></newChip> börjar om, <historyChip></historyChip> visar senaste sökningarna.",
   "@queryUi.empty.keysTip": {
-    "sourceHash": "4638fd5"
+    "sourceHash": "cbc047b"
   },
   "queryUi.ai.cloudOff.body": "Moln-AI är avstängt. Tillåt det i Inställningar > AI för att använda AI-läget.",
   "@queryUi.ai.cloudOff.body": {
