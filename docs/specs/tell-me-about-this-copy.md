@@ -5,10 +5,16 @@ Source of truth: `apps/desktop/src/lib/intl/messages/en/aboutThis.json` (plus th
 string changes there, change it here too, or regenerate this list. Where a value holds `{…}` or `<tag></tag>`, the
 placeholder or tag is filled in by the card (a date, a size, a path).
 
-Open questions for the review:
+The list below covers every key the branch adds, grouped by the surface it shows on (checked against the catalogs on
+2026-11-14: all 303 added or changed keys are here). The decisions behind the layout, with their evidence, are in
+`tell-me-about-this-review.md`.
 
-1. **The shortcut off macOS** is `Ctrl+Shift+Enter`, not the plan's `Ctrl+Shift+I` (the web inspector's chord on Linux
-   and Windows; plan D2). Fine, or another key?
+## Open questions, all in one place
+
+### The card
+
+1. **The shortcut off macOS** is `Ctrl+Shift+Enter`, not `Ctrl+Shift+I` (the web inspector's chord on Linux and
+   Windows). Fine, or another key?
 2. **The title** reads "About “name”", which sits close to "About Cmdr". Keep it, or "Tell me about “name”"?
 3. **"Nothing on record"** is the collapsed line for a section whose rows all came back as ordinary absences (a file you
    made: no download record, no copy by Cmdr). Right words?
@@ -27,15 +33,61 @@ Open questions for the review:
     it at that point in history, not a file on the disk, so there's nothing to remove here." Too technical?
 11. **A `.git` folder's removal line** ("It holds the repository's whole history. Removing it leaves the files but drops
     every commit that isn't pushed somewhere else, and Cmdr can't tell what's pushed.") is long. Shorter?
-12. **The footer shows three actions, not the plan's four**, plus "More" and Close: four real labels didn't fit the
-    card's default width (now 40 rem, from 34). On a downloaded file that puts Move to trash behind "More". Right?
+12. **The footer shows three actions, not four**, plus "More" and Close: four real labels didn't fit the card's default
+    width (now 40 rem, from 34). On a downloaded file that puts Move to trash behind "More". Right?
 13. **Single-key accelerators on the footer buttons** (O for Open, T for trash, …) aren't built. Wanted?
 14. **"Download page" and "Open"** are short fixed labels, with the site and the app in their tooltips (and in the rows
     above): "Open releases.example.com" and "Open with DiskImageMounter" got cut mid-word at the card's width. The page
     is the download record's last address, never the file's own, which would only download it again. Or the host on the
     button after all, with a wider card?
+15. **The context-menu and menu-bar label** is "Tell me about this", right below Get info, with no ellipsis (a dialog
+    follows, but it asks nothing). Right?
+
+### The AI take on the card
+
+16. **"AI wrote this"** as the label, or "AI take" (the setting's word)?
+17. **The cost isn't shown** (the backend sends it with each finished take: about $0.003 on Sonnet 5.5, $0.007 on Opus
+    5.5, per the eval). A quiet "about $0.003" after the text, a tooltip on the label, or nothing?
+18. **The Stop button has no shortcut**: it's a Tab stop in the card, and Esc closes the card (which stops the take
+    too). A dedicated chord would be a new command. Wanted?
+19. **The local model draws nothing** while it writes no take: no line on every Local card. A quiet "The on-device model
+    doesn't write a take yet" instead?
+20. **A cloud model Cmdr hasn't tested** (Haiku, OpenAI, Gemini, any other host) now gets one quiet line, no link: "Cmdr
+    writes AI takes only with models it’s tested for this, and your model isn’t one of them." Right words, and should it
+    name the models that do (Sonnet 5.5, Opus 5.5)? That list would need updating with every new measured model.
+21. **The AI-off hint** sits in the footer under the actions, on every card while AI is off. Too much? It could show
+    only on the first few cards.
+
+### The AI take's setting
+
+22. **"AI take"** is the working name for the verdict everywhere (the setting, the card's hints; the block itself says
+    "AI wrote this"). Right word, or "AI summary", "AI note"?
+23. **The switch says nothing about the local model**, which writes no take whatever the switch says, nor about an
+    untested cloud model. A line for those ("Your model doesn't write one yet"), or leave it?
+
+### What cloud AI gets (the consent disclosure)
+
+24. **A list, not one long sentence**: one line per kind, so a test can tie every field Cmdr sends to its line. Fine, or
+    too long a list for a fold people should read?
+25. **Nothing tells a cloud user why "Allow cloud AI" turned itself off** after this release's consent bump (version 2 →
+    3): the switch just reads off, with the fold open. A one-line "What Cmdr sends changed since you allowed it on
+    {date}" above the switch (the status already knows the old version and date)? Not built. Until they allow it again,
+    every cloud feature is off for them (Ask Cmdr, folder suggestions, search translations), and folder suggestions say
+    nothing about why: a release-notes line at least?
+
+### Outside the app
+
+26. **The `feature-status.json` note** (`ai-tell-me`, now `alpha`): "A card for any file or folder: where it came from,
+    what it really is, what owns it, and what removing it means. A short AI take joins it on the cloud models we've
+    tested it on." `roadmap.ts` and `features-page.ts` are untouched, for you to flip.
+27. **The analytics event** `tell_me_about_used` (one per card, at its close): how it was opened (`trigger`: palette,
+    keyboard, or menu; on macOS the shortcut and the context menu both arrive as menu), the kind of item and volume, how
+    the AI take ended and the typed reason it had none, the action taken, and whether it went on to Ask Cmdr. No path,
+    name, URL, or app. Enough, or too much?
 
 ## Strings
+
+### Command and menu
 
 - `commands.fileTellMeAbout.label`: Tell me about this
   - Where: Command name that opens Cmdr's own card about the file or folder under the cursor: where it came from, what
@@ -50,6 +102,9 @@ Open questions for the review:
     info". Opens Cmdr's own card about the file or folder under the cursor: where it came from, what it is, what it
     belongs to, and what removing it would mean. It must say the same words as the command palette entry
     (commands.fileTellMeAbout.label). A dialog follows, but it asks nothing, hence no ellipsis.
+
+### The card: frame and sections
+
 - `aboutThis.dialog.title`: About “{name}”
   - Where: Title of the "Tell me about this" card, a dialog that lists what Cmdr knows about one file or folder: where
     it came from, what it is, what it belongs to, and what removing it would mean. {name} is the item's file or folder
@@ -79,6 +134,9 @@ Open questions for the review:
 - `aboutThis.section.nothingOnRecord`: Nothing on record
   - Where: The one muted line a section of the "Tell me about this" card shows when none of its rows had anything
     recorded (for example no download record and no copy by Cmdr). Ordinary, not a warning. No closing period.
+
+### The card: the note at the top, and a card with no facts
+
 - `aboutThis.volumeNote.identityOnly`: On {volume}, Cmdr can see the name, size, and dates.
   - Where: Note at the top of the "Tell me about this" card when the item sits on a drive or server that only reports
     names, sizes, and dates (a phone, a network share). Said once instead of on every row.
@@ -107,6 +165,9 @@ Open questions for the review:
     seconds.
 - `aboutThis.unavailable.unreadable`: Cmdr couldn’t read anything about this item.
   - Where: The whole body of the "Tell me about this" card when reading the item stopped for another reason.
+
+### The card: row labels
+
 - `aboutThis.label.download`: Downloaded
   - Where: Row label on the "Tell me about this" card, left of what the operating system recorded about where the item
     was downloaded from. A past participle, like a form label.
@@ -164,6 +225,9 @@ Open questions for the review:
 - `aboutThis.label.unchanged`: Untouched
   - Where: Row label on the "Tell me about this" card for a folder, left of how much of it hasn't changed in a year.
     Short: one or two words.
+
+### The card: rows Cmdr can’t answer
+
 - `aboutThis.unknown.noRecord`: Nothing on record
   - Where: Muted one-line answer on a "Tell me about this" card row when nothing recorded this fact. Ordinary, not a
     warning. It doesn't say "never": no record isn't the same as it never happened. No closing period.
@@ -219,6 +283,9 @@ Open questions for the review:
 - `aboutThis.notApplicable.volumeHasNone`: This drive keeps no such record
   - Where: Muted one-line answer on a "Tell me about this" card row when the item's drive keeps no record of this kind
     at all (a phone has no download records). No closing period.
+
+### The card: where it came from
+
 - `aboutThis.download.noRecord`: No download record
   - Where: Muted one-line answer on the "Downloaded" row of the "Tell me about this" card when the system recorded no
     download for the item (most files a person made themselves). Ordinary, not a warning. No closing period.
@@ -284,6 +351,9 @@ Open questions for the review:
 - `aboutThis.cmdrOperation.copySource`: Copy where it came from
   - Where: Accessible name and hover hint of the copy button beside the original path on the "Cmdr's history" row. It
     copies the full path.
+
+### The card: what it is
+
 - `aboutThis.identity.onDisk`: <size></size> on disk
   - Where: Muted addition after the item's size on the "Tell me about this" card when the space it takes on the drive
     differs from its size. <size></size> becomes that size, for example "4 KB".
@@ -343,6 +413,9 @@ Open questions for the review:
     it.
 - `aboutThis.kind.unrecognized`: Contents Cmdr doesn’t know
   - Where: A kind of file on the "Tell me about this" card when the contents match no format Cmdr knows.
+
+### The card: the headline
+
 - `aboutThis.what.fileWithExtension`: .{extension} file
   - Where: What an item is, at the start of the one-line summary at the top of the "Tell me about this" card, when Cmdr
     knows only the file's extension. For example ".md file".
@@ -407,6 +480,9 @@ Open questions for the review:
   other {}}, last opened <date></date>
   - Where: The one-line summary at the top of the "Tell me about this" card when the system recorded when the item was
     last opened. <date></date> becomes that date. No closing period.
+
+### The card: apps and signatures
+
 - `aboutThis.bundle.named`: {hasVersion, select, yes {{name}, version {version}} other {{name}}}
   - Where: Answer on the "Bundle" row of the "Tell me about this" card: the name and version an app or package states
     about itself. No closing period.
@@ -451,6 +527,9 @@ Open questions for the review:
 - `aboutThis.signature.ticketAbsent`: No notarization ticket is stapled to it. macOS can also check with Apple online.
   - Where: Line on the Signature row of the "Tell me about this" card when the app carries no notarization ticket. The
     second sentence says that this alone doesn't mean it was never notarized.
+
+### The card: how it’s used, and where it sits
+
 - `aboutThis.lastOpened.noRecord`: No last-opened record
   - Where: Muted one-line answer on the "Last opened" row of the "Tell me about this" card when the system has no record
     of the item being opened. It doesn't mean it was never opened. No closing period.
@@ -510,6 +589,9 @@ Open questions for the review:
 - `aboutThis.importance.stale`: Scored before the latest changes
   - Where: Muted line on the "Importance" row of the "Tell me about this" card when the score is older than the drive
     index's latest update. No closing period.
+
+### The card: who owns it
+
 - `aboutThis.owner.byBundleId`: {app}
   - Where: Answer on the "Belongs to" row of the "Tell me about this" card when the folder is named after an installed
     app's identifier, so Cmdr is sure. Usually just the app's name; reorder only if your language needs words around it.
@@ -544,6 +626,9 @@ Open questions for the review:
 - `aboutThis.owner.ambiguous`: Several installed apps could own this, so Cmdr doesn’t pick one.
   - Where: Answer on the "Belongs to" row of the "Tell me about this" card when several apps match the folder's name (a
     vendor folder like "Google" or "Microsoft").
+
+### The card: git
+
 - `aboutThis.git.repo`: In <repo></repo>{hasBranch, select, yes {, on {branch}} other {, with no branch checked out}}
   - Where: Answer on the Git row of the "Tell me about this" card: the repository the item sits in, and its checked-out
     branch. <repo></repo> becomes the name of the repository's folder, like "cmdr" (its full path shows in a tooltip).
@@ -563,6 +648,9 @@ Open questions for the review:
 - `aboutThis.git.ignored`: Git ignores it
   - Where: Second line on the Git row of the "Tell me about this" card: an ignore rule covers the item. No closing
     period.
+
+### The card: folders (What’s inside) and an app’s data
+
 - `aboutThis.folderSize.known`: {coverage, select, lowerBound {At least <size></size>} other {<size></size>}} in {files,
   plural, one {one file} other {{filesText} files}} and {folders, plural, one {one folder}
   other {{foldersText} folders}}
@@ -681,6 +769,9 @@ Open questions for the review:
 - `aboutThis.ownerPlace.sandboxHome`: App home
   - Where: The Library folder an app's data sits in, shown muted beside it in the "Its data in your Library" list of the
     "Tell me about this" card. A sandboxed Linux app's own home folder (~/.var/app or ~/snap).
+
+### The card: what removing it means
+
 - `aboutThis.removal.uncommittedWork`: It has changes no commit holds, so git can’t bring those back.
   - Where: One line under "What removing it means" on the "Tell me about this" card: the item has uncommitted changes in
     git. A consequence, never advice.
@@ -848,8 +939,8 @@ button, and on a typical download it's the one behind "More".
 ### The AI take on the card
 
 Its own block right above "What removing it means", set apart from the fact rows by a quiet surface, shown only when the
-card gets a take. When it gets none, one quiet line in the same place says why (or nothing, for AI turned off by the
-person or the local model's default). AI off entirely: no block, one quiet hint in the footer.
+card gets a take. When it gets none, one quiet line in the same place says why (or nothing, for the take turned off by
+the person or the local model's default). AI off entirely: no block, one quiet hint in the footer.
 
 - `aboutThis.verdict.label`: AI wrote this
   - Where: The block's heading, so a model's sentence never passes for one of Cmdr's facts.
@@ -885,6 +976,10 @@ person or the local model's default). AI off entirely: no block, one quiet hint 
   - Where: In place of the block, with "Open AI settings" beside it, which opens Settings at the full disclosure. ❌ No
     one-click allow on the card.
 - `aboutThis.verdict.unavailable.notConfigured`: Add your AI provider’s key in Settings for a short AI take here.
+- `aboutThis.verdict.unavailable.modelOff`: Cmdr writes AI takes only with models it’s tested for this, and your model
+  isn’t one of them.
+  - Where: In place of the block, no link, when the picked cloud model isn't one the AI take's eval passed (the Haiku
+    family, or any model nobody measured).
 - `aboutThis.verdict.unavailable.notReady`: The local AI model isn’t running, so there’s no AI take this time.
 - `aboutThis.verdict.unavailable.tooManyRequests`: That’s a lot of AI takes in a minute. Try again in a moment.
 - `aboutThis.verdict.unavailable.openAiSettings`: Open AI settings
@@ -893,18 +988,6 @@ person or the local model's default). AI off entirely: no block, one quiet hint 
   - Where: Quiet line in the footer, under the actions, with "Open AI settings" beside it. Only when AI is off entirely.
 - The organization's refusal reuses `ai.managed.aiOff` / `ai.managed.cloudAiOff` / `ai.managed.hostNotAllowed`, as the
   other AI surfaces do.
-
-Open questions on these:
-
-1. **"AI wrote this"** as the label, or "AI take" (the setting's word)?
-2. **The cost isn't shown** (the backend sends it with each finished take, about $0.0002 on a small cloud model). A
-   quiet "about $0.0002" after the text, a tooltip on the label, or nothing?
-3. **The Stop button has no shortcut**: it's a Tab stop in the card, and Esc closes the card (which stops the take too).
-   A dedicated chord would be a new command. Wanted?
-4. **The local model draws nothing** while it writes no take (plan D4's default): no line on every Local card. A quiet
-   "The on-device model doesn't write a take yet" instead?
-5. **The AI-off hint** sits in the footer under the actions, on every card while AI is off. Too much? It could show only
-   on the first few cards.
 
 ### The AI take's setting (`settings.json`)
 
@@ -917,13 +1000,6 @@ A switch in Settings > AI > Provider, below the provider's own setup, shown only
   - Where: Under the label.
 - `settings.aboutThis.aiVerdict.keywords`: explain, verdict, summary, file info, what is this, describe
   - Where: Never shown: extra words Settings search matches.
-
-Open questions on these:
-
-1. **"AI take"** is the working name for the verdict everywhere (the setting, the card's hints; the block itself says
-   "AI wrote this"). Right word, or "AI summary", "AI note"?
-2. **The switch says nothing about the local model**, which writes no take yet (plan D4) whatever the switch says. A
-   line for Local ("The on-device model doesn't write one yet"), or leave it until the eval decides?
 
 ### Ask Cmdr's tool line (`askCmdr.json`)
 
@@ -976,11 +1052,3 @@ In the "What Cmdr sends" fold under Settings > AI > Provider and in onboarding's
 - `ai.cloudConsent.askCmdr.item.aboutThis`: When Cmdr looks up what a file or folder is, the same facts Tell me about
   this sends, without the look inside
   - Where: In Ask Cmdr's list, after the attachments line: the agent's lookup tool.
-
-Open questions on these:
-
-1. **A list, not the plan's one long sentence**: one line per kind, so a test can tie every field Cmdr sends to its
-   line. Fine, or too long a list for a fold people should read?
-2. **Nothing tells a cloud user why "Allow cloud AI" turned itself off** after this bump: the switch just reads off,
-   with the fold open. A one-line "What Cmdr sends changed since you allowed it on {date}" above the switch (the status
-   already knows the old version and date)? Not built.

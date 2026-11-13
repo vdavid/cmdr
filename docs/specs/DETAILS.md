@@ -18,7 +18,8 @@ Read this before adding, wiping, or reorganizing a spec.
   removing it costs.** A deterministic fact card (provenance, real type, signature, use, owner, git, size, a folder
   digest) that works with AI off, from a tauri-free `crates/cmdr-about`, with a short streamed AI verdict on top and the
   same facts as an agent tool. Issue: [#1104](https://github.com/getcmdr/cmdr/issues/1104). Its card's draft copy, every
-  string with its key, for David's review: `tell-me-about-this-copy.md`.
+  string with its key, for David's review: `tell-me-about-this-copy.md`. How to QA it and the open decisions, on one
+  page: `tell-me-about-this-review.md`.
 - `oplog-tree-plan.md`: **The Operation log shows a flat, capped list and can only undo a whole operation.** A
   master–detail dialog over a backend-owned, windowed item tree with checkboxes, partial rollback through the real
   engine, full keyboard, and a writer-maintained summary so two 2M-item operations stay fast. Issue:

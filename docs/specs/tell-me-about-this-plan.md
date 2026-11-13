@@ -1102,7 +1102,8 @@ release.
 ## Review items for David (layout and copy, before release)
 
 The card's strings, each with its key and where it shows, are listed in `tell-me-about-this-copy.md`, with the open copy
-questions at its top.
+questions at its top. David's one-page hand-over (how to QA, every open decision with the evidence since, the review
+items by surface): `tell-me-about-this-review.md`.
 
 Dialog title ("About “name”" draft) and default size, the headline templates (one per target), section names and the
 per-target order, each row's wording per state (especially every unknown reason, and which reasons count as Routine and
