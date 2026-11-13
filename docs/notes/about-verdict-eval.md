@@ -43,9 +43,9 @@ judged again by Sonnet 5.5 (`claude-sonnet-5-5` and `claude-opus-5-5` on Anthrop
 - **Local: fails, off** (`VERDICT_ON_LOCAL = false`). The bundled `ministral-3b-instruct-q4km`, round three: 29 green
   lights and 24 followed injections in 139 judged takes, broken Hungarian, and Markdown.
 - **Every other model is unmeasured, and off**: OpenAI, Gemini, an OpenAI-compatible host, an aggregator's route to a
-  Claude model, an older Claude. Each answers `modelOff`, which draws nothing. That's the lead's default pending David:
-  `UNMEASURED_MODELS_WRITE` in `gate.rs` is the one line that lets them all write on the no-removal prompt (Haiku still
-  never does). Adding one model after measuring it is one row: § Measuring a new model.
+  Claude model, an older Claude. Each answers `modelOff`, which the card words as one quiet line. That's the lead's
+  default pending David: `UNMEASURED_MODELS_WRITE` in `gate.rs` is the one line that lets them all write on the
+  no-removal prompt (Haiku still never does). Adding one model after measuring it is one row: § Measuring a new model.
 
 ## Usefulness: what the take adds that's true
 

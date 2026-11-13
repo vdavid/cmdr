@@ -111,7 +111,7 @@ describe('the AI take', () => {
   })
 
   it('draws no block, and no line, for AI off, a person’s own off, or the local model’s default', async () => {
-    for (const why of [{ kind: 'turnedOff' }, { kind: 'localOff' }, { kind: 'modelOff' }] as const) {
+    for (const why of [{ kind: 'turnedOff' }, { kind: 'localOff' }] as const) {
       const target = await render(withVerdict(fixture('downloaded'), [{ type: 'verdictUnavailable', why }]))
       expect(target.querySelector('[data-verdict-slot]')).toBeNull()
       expect(target.textContent).not.toContain('AI take')
@@ -124,6 +124,15 @@ describe('the AI take', () => {
     const hint = document.body.querySelector('.ai-off')
     expect(hint?.textContent).toContain('AI is off')
     expect(off.querySelector('.card')?.contains(hint ?? null)).toBe(false)
+  })
+
+  it('says once, with no link, that a model Cmdr hasn’t tested writes no take', async () => {
+    const target = await render(
+      withVerdict(fixture('downloaded'), [{ type: 'verdictUnavailable', why: { kind: 'modelOff' } }]),
+    )
+    const line = target.querySelector('[data-verdict="modelOff"]')
+    expect(line?.textContent).toContain('models it’s tested')
+    expect(line?.querySelector('button')).toBeNull()
   })
 
   it('asks for cloud consent only by opening Settings at the disclosure, never with a one-click allow', async () => {

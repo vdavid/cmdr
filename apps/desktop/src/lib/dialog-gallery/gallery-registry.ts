@@ -146,6 +146,7 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
       { id: 'verdict-no-consent', label: 'AI take: cloud AI needs allowing again' },
       { id: 'verdict-not-configured', label: 'AI take: no key set up' },
       { id: 'verdict-not-ready', label: 'AI take: local model not running' },
+      { id: 'verdict-model-off', label: 'AI take: a model Cmdr hasn’t tested for takes' },
       { id: 'verdict-managed', label: 'AI take: organization allows on-device AI only' },
       { id: 'verdict-too-many', label: 'AI take: too many in a minute' },
       { id: 'verdict-local-off', label: 'AI take: local model (none yet, nothing drawn)' },

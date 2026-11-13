@@ -339,7 +339,7 @@ D18 (`docs/specs/tell-me-about-this-plan.md`, until the wipe).
 ### Its events
 
 After `planned`, interleaved with the facts: `verdictPlanned` (reserve the block) or `verdictUnavailable { why }` (no
-block; `aiOff`, `turnedOff`, `localOff`, and `modelOff` draw nothing in the body), then `verdictGiven { contents }` right BEFORE the call goes out (so the
+block; `aiOff`, `turnedOff`, and `localOff` draw nothing in the body), then `verdictGiven { contents }` right BEFORE the call goes out (so the
 card says what's leaving while it leaves), `verdictDelta { text }`s (plain text: render as a text node), and one
 `verdictEnd { ending, cost }` (`done`, `stopped`, or `failed { problem }`; `cost` only when the call reached its end).
 A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { contents, text }` instead, with no call.
@@ -357,7 +357,7 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
    the model the slot named, against the eval's table (`gate::writes_verdicts`): only a model in `PASSED_THE_EVAL`, on
    the provider it was measured through (a dated snapshot of its id counts), writes; a family in `FAILED_THE_EVAL`
    (Haiku, in any provider's spelling) never does; anything else is unmeasured and follows `UNMEASURED_MODELS_WRITE`
-   (off). Each refusal is `modelOff`, which draws nothing, like `localOff`. **Decision: unmeasured means off** (the
+   (off). Each refusal is `modelOff`, which the card words as one quiet line. **Decision: unmeasured means off** (the
    lead's default, pending David): the bundled 3B model showed an unmeasured model can hand out green lights and follow
    injections, and nothing at runtime would catch it. Letting unmeasured cloud models write on the no-removal prompt is
    that one constant. Adding a model is one row, after the eval:

@@ -78,6 +78,8 @@
         {tString('aboutThis.verdict.unavailable.notConfigured')}
         <LinkButton onclick={openProviderSettings}>{tString('aboutThis.verdict.unavailable.openAiSettings')}</LinkButton>
     </p>
+{:else if verdict.why.kind === 'modelOff'}
+    <p class="unavailable" data-verdict="modelOff">{tString('aboutThis.verdict.unavailable.modelOff')}</p>
 {:else if verdict.why.kind === 'notReady'}
     <p class="unavailable" data-verdict="notReady">{tString('aboutThis.verdict.unavailable.notReady')}</p>
 {:else if verdict.why.kind === 'managed'}

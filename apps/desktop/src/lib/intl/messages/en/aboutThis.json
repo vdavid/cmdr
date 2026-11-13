@@ -1344,6 +1344,10 @@
   "@aboutThis.verdict.unavailable.notConfigured": {
     "description": "One quiet line on the \"Tell me about this\" card, in place of the AI take, when a cloud AI provider is picked but has no key or address set up. A link beside it opens Settings > AI."
   },
+  "aboutThis.verdict.unavailable.modelOff": "Cmdr writes AI takes only with models it’s tested for this, and your model isn’t one of them.",
+  "@aboutThis.verdict.unavailable.modelOff": {
+    "description": "One quiet line on the \"Tell me about this\" card, in place of the AI take, when the picked cloud AI model isn't one whose takes Cmdr has tested and found careful enough (it never measured it, or it measured it and the model made claims it shouldn't). The facts above still show in full. No link: there's nothing to fix in Settings unless the person picks a different model."
+  },
   "aboutThis.verdict.unavailable.notReady": "The local AI model isn’t running, so there’s no AI take this time.",
   "@aboutThis.verdict.unavailable.notReady": {
     "description": "One quiet line on the \"Tell me about this\" card, in place of the AI take, when the on-device AI model's server isn't running. The card never starts it."

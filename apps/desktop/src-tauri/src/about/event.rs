@@ -125,8 +125,8 @@ pub enum VerdictUnavailable {
     /// The local model writes no verdict until its answers are measured good.
     LocalOff,
     /// The configured cloud model isn't one whose takes passed the verdict eval
-    /// (`gate::writes_verdicts`): it failed the bar, or nobody measured it. Draws
-    /// nothing, like `localOff`.
+    /// (`gate::writes_verdicts`): it failed the bar, or nobody measured it. The
+    /// card says so in one quiet line.
     ModelOff,
     /// Cloud AI is picked and not allowed (or allowed under older copy).
     NoCloudConsent,

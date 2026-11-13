@@ -118,18 +118,18 @@ export function verdictProblem(verdict: Extract<AboutVerdict, { status: 'planned
 
 /**
  * Whether the card shows anything for an unavailable verdict in its body. `aiOff` gets a quiet hint in the footer
- * instead, and `turnedOff`, `localOff`, and `modelOff` show nothing: the person chose the first, the second is every
- * Local user's default until the local model's answers are measured good, and the third is every card on a model the
- * verdict eval didn't pass (measured below its bar, or never measured), so a line about either on every card would be
- * noise.
+ * instead, and `turnedOff` and `localOff` show nothing: the person chose the first, and the second is every Local
+ * user's default until the local model's answers are measured good, which a line on every card wouldn't change.
+ * `modelOff` (a cloud model the verdict eval didn't pass) gets its one muted line: that person picked a model and
+ * expects a take, and without the line the block's absence reads as a fault.
  */
 export function unavailableShowsALine(why: VerdictUnavailable): boolean {
   switch (why.kind) {
     case 'aiOff':
     case 'turnedOff':
     case 'localOff':
-    case 'modelOff':
       return false
+    case 'modelOff':
     case 'noCloudConsent':
     case 'notConfigured':
     case 'notReady':

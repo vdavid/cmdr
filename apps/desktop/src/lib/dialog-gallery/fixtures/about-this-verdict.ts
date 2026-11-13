@@ -100,6 +100,7 @@ export function aboutThisVerdictFixtures(bases: VerdictBases): Record<string, Ab
     'verdict-no-consent': on(downloaded, [unavailable({ kind: 'noCloudConsent' })]),
     'verdict-not-configured': on(downloaded, [unavailable({ kind: 'notConfigured' })]),
     'verdict-not-ready': on(downloaded, [unavailable({ kind: 'notReady' })]),
+    'verdict-model-off': on(downloaded, [unavailable({ kind: 'modelOff' })]),
     'verdict-managed': on(downloaded, [managed('cloudAiOff')]),
     'verdict-too-many': on(downloaded, [unavailable({ kind: 'tooManyRequests' })]),
     'verdict-local-off': on(downloaded, [unavailable({ kind: 'localOff' })]),

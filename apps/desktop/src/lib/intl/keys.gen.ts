@@ -263,6 +263,7 @@ export type MessageKey =
   | 'aboutThis.verdict.stop'
   | 'aboutThis.verdict.stopTooltip'
   | 'aboutThis.verdict.stopped'
+  | 'aboutThis.verdict.unavailable.modelOff'
   | 'aboutThis.verdict.unavailable.noCloudConsent'
   | 'aboutThis.verdict.unavailable.notConfigured'
   | 'aboutThis.verdict.unavailable.notReady'
