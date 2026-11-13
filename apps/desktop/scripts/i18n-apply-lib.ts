@@ -31,8 +31,8 @@
  * how a translator leaves the macOS branch alone without retyping it.
  */
 
-import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { parsePlatformSelect, pickPlatformBranch } from '../src/lib/intl/platform-select.ts'
 import type { PlatformSelectBranch } from '../src/lib/intl/platform-select.ts'
 import {
@@ -53,8 +53,16 @@ import { parityDetail } from './i18n-check-parity.ts'
 import { icuError } from './i18n-check-icu.ts'
 import { platformSelectIssues } from './i18n-check-platform-select.ts'
 import { platformPluralDetail } from './i18n-check-plural.ts'
-import { frozenMacosIssue } from './i18n-macos-copy-baseline-lib.ts'
-import type { MacosCopyBaseline } from './i18n-macos-copy-baseline-lib.ts'
+import {
+  acceptedChangesPath,
+  frozenMacosIssue,
+  loadAcceptedTranslationChanges,
+} from './i18n-macos-copy-baseline-lib.ts'
+import type {
+  AcceptedChangesFile,
+  AcceptedTranslationChange,
+  MacosCopyBaseline,
+} from './i18n-macos-copy-baseline-lib.ts'
 import { restampMeta } from './sync-locale-keys.ts'
 
 const BRANCH_NAMES: readonly PlatformSelectBranch[] = ['macos', 'windows', 'other']
@@ -62,8 +70,16 @@ const BRANCH_NAMES: readonly PlatformSelectBranch[] = ['macos', 'windows', 'othe
 /** A per-OS value given branch by branch; a branch left out keeps what that OS reads now. */
 export type BranchValues = Partial<Record<PlatformSelectBranch, string>>
 
-/** One key's entry in a values file: the whole value, its branches, or `null` (an overlay drops its fork). */
-export type ValueEntry = string | BranchValues | null
+/** `{ "keep": true }`: the translation already there still fits the new English, so stamp it as it is. */
+export interface KeepEntry {
+  keep: true
+}
+
+/**
+ * One key's entry in a values file: the whole value, its branches, `{ "keep": true }`, or `null` (an overlay drops its
+ * fork).
+ */
+export type ValueEntry = string | BranchValues | KeepEntry | null
 
 /** A parsed values file. */
 export interface ValuesFile {
@@ -71,55 +87,73 @@ export interface ValuesFile {
   values: Map<string, ValueEntry>
   /** key → the `@key.sameAsSourceJustification` to record */
   justifications: Map<string, string>
+  /** key → why its frozen macOS text changes (`@key.macosChangeReason`), recorded as an accepted change */
+  macosReasons: Map<string, string>
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
+/** Whether an entry is `{ "keep": true }`. */
+export function isKeep(entry: ValueEntry): entry is KeepEntry {
+  return isRecord(entry) && Object.keys(entry).length === 1 && (entry as Record<string, unknown>).keep === true
+}
+
+/** The `@key` fields a values file may carry, each a non-empty string. */
+const NOTE_FIELDS = ['sameAsSourceJustification', 'macosChangeReason'] as const
+
 /**
- * Reads a values file's JSON: `"key": "value"`, `"key": { "windows": "…" }`, or
- * `"key": null`, plus an optional ARB-style `"@key": { "sameAsSourceJustification": "…" }`,
+ * Reads a values file's JSON: `"key": "value"`, `"key": { "windows": "…" }`, `"key": { "keep": true }`, or
+ * `"key": null`, plus an optional ARB-style `"@key": { "sameAsSourceJustification": "…", "macosChangeReason": "…" }`,
  * the same shape the catalogs use.
  * @throws one line per malformed entry
  */
 export function parseValuesFile(raw: unknown): ValuesFile {
   if (!isRecord(raw)) throw new Error('The values file must be a JSON object of key → value.')
-  const values = new Map<string, ValueEntry>()
-  const justifications = new Map<string, string>()
+  const file: ValuesFile = { values: new Map(), justifications: new Map(), macosReasons: new Map() }
   const problems: string[] = []
   for (const [name, entry] of Object.entries(raw)) {
     if (isMetadataKey(name)) {
-      const justification = justificationOf(entry)
-      if (justification === undefined) problems.push(`${name}: ${JUSTIFICATION_SHAPE}`)
-      else justifications.set(name.slice(1), justification)
+      const notes = notesOf(entry)
+      if (notes === undefined) problems.push(`${name}: ${NOTE_SHAPE}`)
+      else {
+        if (notes.sameAsSourceJustification) file.justifications.set(name.slice(1), notes.sameAsSourceJustification)
+        if (notes.macosChangeReason) file.macosReasons.set(name.slice(1), notes.macosChangeReason)
+      }
       continue
     }
     const value = valueEntryOf(entry)
     if (value === undefined) problems.push(`${name}: ${VALUE_SHAPE}`)
-    else values.set(name, value)
+    else file.values.set(name, value)
   }
-  for (const key of justifications.keys()) {
-    if (!values.has(key)) problems.push(`@${key}: names a key the file gives no value for`)
+  for (const key of new Set([...file.justifications.keys(), ...file.macosReasons.keys()])) {
+    if (!file.values.has(key)) problems.push(`@${key}: names a key the file gives no value for`)
   }
   if (problems.length > 0) throw new Error(problems.join('\n'))
-  return { values, justifications }
+  return file
 }
 
-const JUSTIFICATION_SHAPE = 'a "@key" entry takes exactly one field, a non-empty "sameAsSourceJustification"'
+const NOTE_SHAPE =
+  'a "@key" entry takes "sameAsSourceJustification" and/or "macosChangeReason", each a non-empty string, and nothing else'
 const VALUE_SHAPE =
-  'the value must be a string, null, or a per-OS entry mapping "macos", "windows", or "other" to a string'
+  'the value must be a string, null, { "keep": true }, or a per-OS entry mapping "macos", "windows", or "other" to a string'
 
-/** A `@key` entry's justification, or `undefined` when the entry has any other shape. */
-function justificationOf(entry: unknown): string | undefined {
-  if (!isRecord(entry) || Object.keys(entry).length !== 1) return undefined
-  const justification = entry.sameAsSourceJustification
-  return typeof justification === 'string' && justification.trim() !== '' ? justification : undefined
+/** A `@key` entry's notes, or `undefined` when the entry has any other shape. */
+function notesOf(entry: unknown): Partial<Record<(typeof NOTE_FIELDS)[number], string>> | undefined {
+  if (!isRecord(entry) || Object.keys(entry).length === 0) return undefined
+  const fields = Object.entries(entry)
+  const wellFormed = fields.every(
+    ([field, text]) =>
+      (NOTE_FIELDS as readonly string[]).includes(field) && typeof text === 'string' && text.trim() !== '',
+  )
+  return wellFormed ? entry : undefined
 }
 
 /** A key's entry, or `undefined` when it's malformed. */
 function valueEntryOf(entry: unknown): ValueEntry | undefined {
   if (entry === null || typeof entry === 'string') return entry
   if (!isRecord(entry) || Object.keys(entry).length === 0) return undefined
+  if (isKeep(entry)) return { keep: true }
   const wellFormed = Object.entries(entry).every(
     ([branch, text]) => BRANCH_NAMES.includes(branch as PlatformSelectBranch) && typeof text === 'string',
   )
@@ -159,6 +193,13 @@ export interface ApplyPlan {
   files: Map<string, string>
   /** the batch's `@key` justifications, key → text */
   justifications: ReadonlyMap<string, string>
+  /**
+   * The locale's accepted macOS-text changes to write (`acceptedChangesPath`): key → the entry, or `null` to drop one a
+   * value returned to the frozen text. Empty when nothing frozen moves.
+   */
+  accepted: Map<string, AcceptedChangesFile[string] | null>
+  /** the locale's accepted-changes file, set on a clean plan */
+  acceptedPath?: string
 }
 
 /** The inputs of `planApply`. */
@@ -168,6 +209,8 @@ export interface ApplyOptions {
   messagesRoot?: string
   /** the frozen macOS copy; its check is skipped when absent (fixtures) */
   baseline?: MacosCopyBaseline
+  /** where the per-catalog accepted macOS-text changes live (`ACCEPTED_CHANGES_RELATIVE_DIR` by default) */
+  acceptedDir?: string
 }
 
 /** The catalog file an English key lives in (`settings.json`), from `en`'s own layout. */
@@ -244,6 +287,9 @@ interface PlanContext {
   /** area file → its working copy, for the files the batch touches */
   edited: Map<string, Record<string, unknown>>
   baseline: MacosCopyBaseline | undefined
+  /** every accepted change on disk, the frozen check's allowance; this locale's are what a write may replace */
+  acceptedChanges: readonly AcceptedTranslationChange[]
+  macosReasons: ReadonlyMap<string, string>
   plan: ApplyPlan
 }
 
@@ -273,6 +319,13 @@ function slotFor(ctx: PlanContext, key: string): KeySlot | string {
   return { fileName: englishFileOf(ctx.enFiles, key) ?? `${key.split('.')[0]}.json`, before: undefined }
 }
 
+/** `{ "keep": true }`: the value the catalog holds now, which the write restamps unchanged. */
+function keptValue(ctx: PlanContext, key: string, slot: KeySlot): string | Refusal {
+  if (slot.before === undefined) return { key, reason: `${ctx.tag} doesn't fork this key, so there's nothing to keep` }
+  ctx.plan.notes.push(`${key}: kept as is, stamped against the current ${ctx.isOverlay ? ctx.overrides : 'English'}`)
+  return slot.before
+}
+
 /** The value an entry resolves to: itself, or its branches assembled over what the catalog holds now. */
 function resolveValue(ctx: PlanContext, key: string, entry: string | BranchValues, slot: KeySlot): string | Refusal {
   if (typeof entry === 'string') return entry
@@ -283,11 +336,35 @@ function resolveValue(ctx: PlanContext, key: string, entry: string | BranchValue
   return assembled.value
 }
 
+/**
+ * The frozen macOS text rule for one value, recording what the accepted-changes file needs. The value is judged
+ * against the frozen text alone (this key's own accepted entry left out): unchanged, any old entry goes; changed with a
+ * reason in the file, or with the entry already accepting exactly this text, it lands and the entry is (re)written;
+ * changed with neither, it's refused. A reason on a value whose macOS text doesn't change is refused too.
+ */
+function frozenTextIssue(ctx: PlanContext, key: string, value: string): string | null {
+  if (!ctx.baseline) return null
+  const reason = ctx.macosReasons.get(key)
+  const others = ctx.acceptedChanges.filter((change) => change.locale !== ctx.tag || change.key !== key)
+  const own = ctx.acceptedChanges.find((change) => change.locale === ctx.tag && change.key === key)
+  const issue = frozenMacosIssue(ctx.baseline, { locale: ctx.tag, key, value }, others)
+  const text = pickPlatformBranch(value, 'macos')
+  if (issue === null) {
+    if (reason !== undefined)
+      return `macosChangeReason given, but the macOS text doesn't change from the frozen one: drop it`
+    if (own) ctx.plan.accepted.set(key, null)
+    return null
+  }
+  if (reason !== undefined) ctx.plan.accepted.set(key, { text, reason })
+  else if (own?.text !== text) return issue
+  return null
+}
+
 /** Every reason the resolved value can't land: the mechanics, then the overlay and macOS rules. */
 function landingIssues(ctx: PlanContext, key: string, value: string, justification: string | undefined): string[] {
   const sourceValue = ctx.source[key]
   const issues = valueIssues(ctx.tag, key, value, sourceValue)
-  const frozen = ctx.baseline ? frozenMacosIssue(ctx.baseline, { locale: ctx.tag, key, value }) : null
+  const frozen = frozenTextIssue(ctx, key, value)
   if (frozen !== null) issues.push(frozen)
   if (ctx.isOverlay && value === sourceValue) {
     issues.push(`identical to what it overrides (${ctx.overrides}): drop the fork with null instead`)
@@ -416,12 +493,20 @@ function planKey(ctx: PlanContext, key: string, entry: ValueEntry): void {
     planDrop(ctx, key, slot)
     return
   }
-  const value = resolveValue(ctx, key, entry, slot)
+  const value = isKeep(entry) ? keptValue(ctx, key, slot) : resolveValue(ctx, key, entry, slot)
   if (typeof value !== 'string') {
     ctx.plan.refused.push(value)
     return
   }
   const justification = ctx.plan.justifications.get(key)
+  if (isKeep(entry) && justification === undefined && stillEnglishBranches(ctx, key, value).length > 0) {
+    const branches = stillEnglishBranches(ctx, key, value).join(', ')
+    ctx.plan.refused.push({
+      key,
+      reason: `keep says the translation is current, but ${branches} is still English: translate it`,
+    })
+    return
+  }
   const issues = landingIssues(ctx, key, value, justification)
   if (issues.length > 0) {
     ctx.plan.refused.push({ key, reason: issues.join('; ') })
@@ -453,7 +538,7 @@ function renderFiles(ctx: PlanContext, dir: string): void {
  * Plans one batch for one locale: every refusal, and for a clean batch the new
  * text of each catalog file it touches. Reads only; `writePlan` writes.
  */
-export function planApply({ tag, values, messagesRoot, baseline }: ApplyOptions): ApplyPlan {
+export function planApply({ tag, values, messagesRoot, baseline, acceptedDir }: ApplyOptions): ApplyPlan {
   const root = resolveMessagesRoot(messagesRoot)
   const available = listLocales(root)
   if (tag === BASE_LOCALE) throw new Error(`Refusing to write the source locale '${BASE_LOCALE}'.`)
@@ -469,6 +554,7 @@ export function planApply({ tag, values, messagesRoot, baseline }: ApplyOptions)
     notes: [],
     files: new Map(),
     justifications: values.justifications,
+    accepted: new Map(),
   }
   const ctx: PlanContext = {
     tag,
@@ -481,10 +567,13 @@ export function planApply({ tag, values, messagesRoot, baseline }: ApplyOptions)
     localeFiles: readLocaleFiles(tag, root),
     edited: new Map(),
     baseline,
+    acceptedChanges: baseline ? loadAcceptedTranslationChanges(acceptedDir) : [],
+    macosReasons: values.macosReasons,
     plan,
   }
   for (const [key, entry] of values.values) planKey(ctx, key, entry)
   if (plan.refused.length === 0) renderFiles(ctx, join(root, tag))
+  if (plan.refused.length === 0) plan.acceptedPath = acceptedChangesPath(tag, acceptedDir)
   return plan
 }
 
@@ -492,12 +581,35 @@ export function planApply({ tag, values, messagesRoot, baseline }: ApplyOptions)
 export function writePlan(plan: ApplyPlan, messagesRoot?: string): void {
   if (plan.refused.length > 0) throw new Error('Refusing to write a plan with refusals.')
   const dir = join(resolveMessagesRoot(messagesRoot), plan.tag)
-  for (const [name, text] of plan.files) {
-    const path = join(dir, name)
-    const temp = `${path}.tmp-${String(process.pid)}`
-    writeFileSync(temp, text, 'utf8')
-    renameSync(temp, path)
+  for (const [name, text] of plan.files) writeAtomically(join(dir, name), text)
+  if (plan.accepted.size > 0 && plan.acceptedPath !== undefined) writeAcceptedChanges(plan.acceptedPath, plan.accepted)
+}
+
+/** Writes through a temp file and a rename, so a crash never leaves half a file. */
+function writeAtomically(path: string, text: string): void {
+  const temp = `${path}.tmp-${String(process.pid)}`
+  writeFileSync(temp, text, 'utf8')
+  renameSync(temp, path)
+}
+
+/**
+ * Merges a plan's accepted-change edits into the locale's file (keys sorted, so two runs never reorder it), and
+ * deletes the file once it holds nothing.
+ */
+function writeAcceptedChanges(path: string, edits: ReadonlyMap<string, AcceptedChangesFile[string] | null>): void {
+  const stored = existsSync(path) ? (JSON.parse(readFileSync(path, 'utf8')) as AcceptedChangesFile) : {}
+  const merged = new Map(Object.entries(stored))
+  for (const [key, entry] of edits) {
+    if (entry === null) merged.delete(key)
+    else merged.set(key, entry)
   }
+  if (merged.size === 0) {
+    if (existsSync(path)) unlinkSync(path)
+    return
+  }
+  mkdirSync(dirname(path), { recursive: true })
+  const sorted = Object.fromEntries([...merged].sort(([a], [b]) => a.localeCompare(b)))
+  writeAtomically(path, JSON.stringify(sorted, null, 2) + '\n')
 }
 
 /** The `expected` keys the batch gives no value for, in the order given. */

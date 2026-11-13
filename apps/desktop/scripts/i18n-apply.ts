@@ -115,19 +115,35 @@ function report(
     )
   }
   for (const note of plan.notes) console.log(`  · ${note}`)
-  if (expected !== undefined) {
-    const gaps = uncoveredKeys(expected, parseValuesFile(JSON.parse(readFileSync(valuesPath, 'utf8'))))
-    if (gaps.length === 0) console.log(`Covers all ${String(expected.length)} expected key(s).`)
-    else {
-      console.log(`Not covered by this batch (${String(gaps.length)} of ${String(expected.length)}):`)
-      for (const key of gaps) console.log(`  - ${key}`)
-    }
-  }
+  reportAccepted(plan, args.dryRun)
+  if (expected !== undefined) reportCoverage(expected, valuesPath)
   if (plan.refused.length === 0 && !args.dryRun && plan.writes.length > 0) {
     const keysFile = join(dirname(valuesPath), 'keys.txt')
     const scope = existsSync(keysFile) ? ` --keys-file ${keysFile}` : ''
     console.log(`Next: pnpm i18n:check-locale ${plan.tag}${scope}`)
   }
+}
+
+/** The accepted macOS-text changes a clean plan records (or drops). */
+function reportAccepted(plan: ApplyPlan, dryRun: boolean): void {
+  if (plan.refused.length > 0 || plan.accepted.size === 0) return
+  const kept = [...plan.accepted].map(([key, entry]) =>
+    entry === null ? `${key} (dropped: back to the frozen text)` : key,
+  )
+  console.log(
+    `${dryRun ? 'Would record' : 'Recorded'} the macOS text changes in ${plan.acceptedPath ?? ''}: ${kept.join(', ')}`,
+  )
+}
+
+/** The expected keys the values file gives no value for. */
+function reportCoverage(expected: readonly string[], valuesPath: string): void {
+  const gaps = uncoveredKeys(expected, parseValuesFile(JSON.parse(readFileSync(valuesPath, 'utf8'))))
+  if (gaps.length === 0) {
+    console.log(`Covers all ${String(expected.length)} expected key(s).`)
+    return
+  }
+  console.log(`Not covered by this batch (${String(gaps.length)} of ${String(expected.length)}):`)
+  for (const key of gaps) console.log(`  - ${key}`)
 }
 
 /** `values.json` in the language's newest run directory, the brief's default place for it. */

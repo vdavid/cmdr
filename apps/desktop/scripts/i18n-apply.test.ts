@@ -7,7 +7,7 @@
  * a per-OS entry that leaves `macos` out keeps the catalog's macOS text exactly.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { parseValuesFile, planApply, uncoveredKeys, writePlan } from './i18n-apply-lib.ts'
@@ -116,7 +116,7 @@ describe('planApply on a full translation', () => {
       baseline,
       values: parseValuesFile({ 'files.trash': { macos: 'Wegwerfen', windows: 'Löschen' } }),
     })
-    expect(moved.refused[0].reason).toContain('ACCEPTED_TRANSLATION_CHANGES')
+    expect(moved.refused[0].reason).toContain('macosChangeReason')
 
     const kept = planApply({
       tag: 'de',
@@ -125,6 +125,78 @@ describe('planApply on a full translation', () => {
       values: parseValuesFile({ 'files.trash': { windows: 'Löschen', other: 'In den Papierkorb legen' } }),
     })
     expect(kept.refused).toEqual([])
+  })
+
+  it('records a reasoned change to frozen macOS text in the locale’s own accepted file, and drops it when reverted', () => {
+    const baseline = { readme: '', locales: { de: { 'files.trash': 'In den Papierkorb legen' } } }
+    const acceptedDir = join(root, 'accepted')
+    const run = (values: Record<string, unknown>) => {
+      const plan = planApply({ tag: 'de', messagesRoot: root, baseline, acceptedDir, values: parseValuesFile(values) })
+      if (plan.refused.length === 0) writePlan(plan, root)
+      return plan
+    }
+    const plan = run({
+      'files.trash': { macos: 'In den Papierkorb werfen', windows: 'Löschen', other: 'In den Papierkorb legen' },
+      '@files.trash': { macosChangeReason: 'legen read as placing, not discarding' },
+    })
+    expect(plan.refused).toEqual([])
+    const accepted = () => JSON.parse(readFileSync(join(acceptedDir, 'de.json'), 'utf8')) as Record<string, unknown>
+    expect(accepted()).toEqual({
+      'files.trash': { text: 'In den Papierkorb werfen', reason: 'legen read as placing, not discarding' },
+    })
+    // Applying the accepted value again needs no second reason.
+    expect(
+      planApply({
+        tag: 'de',
+        messagesRoot: root,
+        baseline,
+        acceptedDir,
+        values: parseValuesFile({ 'files.trash': { windows: 'Entfernen' } }),
+      }).refused,
+    ).toEqual([])
+    // Back to the frozen text: the entry would now be a false requirement, so it goes.
+    run({ 'files.trash': { macos: 'In den Papierkorb legen' } })
+    expect(existsSync(join(acceptedDir, 'de.json'))).toBe(false)
+  })
+
+  it('refuses a macosChangeReason on a value whose macOS text doesn’t change', () => {
+    const baseline = { readme: '', locales: { de: { 'files.trash': 'In den Papierkorb legen' } } }
+    const plan = planApply({
+      tag: 'de',
+      messagesRoot: root,
+      baseline,
+      acceptedDir: join(root, 'accepted'),
+      values: parseValuesFile({ 'files.trash': { windows: 'Löschen' }, '@files.trash': { macosChangeReason: 'x' } }),
+    })
+    expect(plan.refused[0].reason).toContain('macOS text doesn')
+  })
+
+  it('keeps a translation as is: stamps it against the new English without retyping it', () => {
+    write('en', 'files.json', {
+      'files.copy': 'Copy {count} files',
+      'files.trash': PER_OS,
+      'files.title': 'Your files',
+    })
+    const plan = apply('de', { 'files.title': { keep: true } })
+    expect(plan.refused).toEqual([])
+    expect(read('de')['files.title']).toBe('Dateien')
+    expect(read('de')['@files.title']).toEqual({ sourceHash: sourceHash('Your files') })
+  })
+
+  it('refuses to keep a key with a branch still in English, or one an overlay doesn’t fork', () => {
+    const english = planApply({
+      tag: 'de',
+      messagesRoot: root,
+      values: parseValuesFile({ 'files.trash': { keep: true } }),
+    })
+    expect(english.refused[0].reason).toContain('still English')
+    write('en-GB', 'files.json', {})
+    const overlay = planApply({
+      tag: 'en-GB',
+      messagesRoot: root,
+      values: parseValuesFile({ 'files.title': { keep: true } }),
+    })
+    expect(overlay.refused[0].reason).toContain('nothing to keep')
   })
 
   it('refuses a per-OS entry naming a branch the source lacks', () => {

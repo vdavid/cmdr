@@ -26,9 +26,12 @@ style guide disagree, the style guide's general rule wins unless the ruling says
   (changing nothing) when a value breaks a placeholder, a tag, ICU, the per-OS block shape, the plural set, or the macOS
   text a Mac already reads; fix what it names and run it again. A per-OS key can be given as
   `{ "windows": "…", "other": "…" }`: each branch you leave out keeps the text that OS reads now, which is how the
-  `macos` branch stays untouched. A deliberate identical value takes `"@<key>": { "sameAsSourceJustification": "…" }` in
-  the same file. `--dry-run` checks without writing, and it lists the batch keys your file missed. A key the catalog
-  doesn't have yet is refused with the `sync-locale-keys.ts` call that adds it.
+  `macos` branch stays untouched. A translation that still fits a reworded English takes `{ "keep": true }`: it's
+  stamped as it is, never retyped (say so per key; a branch still in English can't be kept). A deliberate identical
+  value takes `"@<key>": { "sameAsSourceJustification": "…" }` in the same file. Invisible characters print as JSON
+  escapes in the brief and the tools' output (`\u00a0` a no-break space, `\u202f` a narrow one); write them the same way
+  in `values.json`, which keeps the exact character. `--dry-run` checks without writing, and it lists the batch keys
+  your file missed. A key the catalog doesn't have yet is refused with the `sync-locale-keys.ts` call that adds it.
 - **Tools, not scripts**: the tools below cover writing and looking up. ❌ Never write your own script that writes a
   catalog or a termbase file, and never hand-edit one: the tools validate and keep the formatting, and a homemade writer
   does neither. When a tool can't do what you need, do the smallest manual step and say so under Process feedback
@@ -55,12 +58,13 @@ style guide disagree, the style guide's general rule wins unless the ruling says
     `macos` branch (each key's note in the brief says which). A key that became per-OS kept its translation there, and
     `macos-copy-unchanged.test.ts` fails on any change. Your work is every branch still in English (all of them, for a
     new key); any other branch already in {{LANGUAGE}} whose English didn't change stays too.
-  - **A macOS text that's wrong** (a mistranslation, an outdated term, or macOS vocabulary where the English is neutral,
-    like `menu.window.minimize` as "Im Dock ablegen") is the one exception: fix it, and add an entry to
-    `ACCEPTED_TRANSLATION_CHANGES` in `apps/desktop/scripts/i18n-macos-copy-baseline-lib.ts` with this catalog's tag,
-    the key, the new macOS text exactly as the catalog spells it, and a one-line reason. That entry is what review
-    reads, so the reason says what was wrong. ❌ Never edit or regenerate the baseline, and ❌ never fix a macOS text
-    just to restyle it: a Mac user already reads it.
+  - **A macOS text that's wrong** (a mistranslation, an outdated term, macOS vocabulary where the English is neutral,
+    like `menu.window.minimize` as "Im Dock ablegen", or English reworded so the old text no longer fits) is the one
+    exception: give the new value with `"@<key>": { "macosChangeReason": "…" }` beside it in your values file, one line
+    saying what was wrong. `i18n:apply` records it as an accepted change in this catalog's own file (an overlay such as
+    es-419 keeps its own, so it needs its own reason), and that entry is what review reads. ❌ Never hand-edit those
+    files. ❌ Never edit or regenerate the baseline, and ❌ never fix a macOS text just to restyle it: a Mac user
+    already reads it.
   - **Where each OS's word lives** in the pile: `macos` mines `macOS/`; `windows` mines `microsoft-terminology/` (the
     TBX) and `microsoft-style-guides/`; `other` mines `gnome-nautilus/`, `kde-dolphin/`, and `xfce-thunar/`, taking the
     word they share, or the desktop-neutral one where they split (GNOME- or KDE-only words wait for per-desktop text).

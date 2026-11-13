@@ -22,8 +22,9 @@
  *    survivor key. Once the `.mac` key is gone, the survivor's macOS branch must
  *    equal the old `.mac` baseline value, and the two old keys are no longer read.
  *  - `ACCEPTED_TRANSLATION_CHANGES`: a translator's reviewed fix of a wrong frozen
- *    translation, keyed by catalog and key with the new macOS text and a reason.
- *    The catalog must then read exactly that text.
+ *    translation, keyed by catalog and key with the new macOS text and a reason,
+ *    one file per catalog in `__fixtures__/macos-copy-accepted/` (`pnpm i18n:apply`
+ *    writes them). The catalog must then read exactly that text.
  *  - `SPLIT_KEYS`: the reverse of a collapsed pair, a new key split off a frozen one for one case it
  *    used to word. The new key must exist, and its macOS branch must render the old
  *    key's frozen value (in every locale, so a Mac keeps its translation).

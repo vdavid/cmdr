@@ -339,14 +339,16 @@ shape edit made in place: a key placeholder becoming an empty key-cap tag (`{com
 `../shortcuts/DETAILS.md` § Shortcuts as text). Make the same edit in every locale, wording untouched, so parity holds,
 and leave the stale hash for a translator to review and restamp. `ACCEPTED_TRANSLATION_CHANGES` is the one way a
 non-English Mac text moves: a translator's reviewed fix of a wrong frozen translation, one entry per (catalog, key) with
-the new macOS text and a reason. It covers every locale resolving that key from that catalog (an inheriting overlay
-too), and it's a requirement, not an allowance: the catalog must read the entry's text, so an entry never applied is
-drift as well. The rule translators follow is `docs/i18n/translator-instructions.md` (Per-OS values).
-`apps/desktop/scripts/i18n-macos-copy-baseline.ts` writes it: the first write refuses an existing file, and
-`--add-missing` freezes a newly named key from today's catalogs while leaving every existing entry byte-identical. Add a
-key that way only BEFORE its catalog values change, or the baseline freezes the edit. ❌ Never edit or regenerate the
-baseline to get green: a red means a catalog edit changed what a Mac shows. Per-area English goldens
-(`*i18n-parity.test.ts`, `*.parity.test.ts`) run under `withPlatform('macos')` for the same reason.
+the new macOS text and a reason, stored one file per catalog in `__fixtures__/macos-copy-accepted/<tag>.json` so
+parallel translators never write one file, and written by `pnpm i18n:apply` from a values file's `macosChangeReason`. It
+covers every locale resolving that key from that catalog (an inheriting overlay too), and it's a requirement, not an
+allowance: the catalog must read the entry's text, so an entry never applied is drift as well. The rule translators
+follow is `docs/i18n/translator-instructions.md` (Per-OS values). `apps/desktop/scripts/i18n-macos-copy-baseline.ts`
+writes it: the first write refuses an existing file, and `--add-missing` freezes a newly named key from today's catalogs
+while leaving every existing entry byte-identical. Add a key that way only BEFORE its catalog values change, or the
+baseline freezes the edit. ❌ Never edit or regenerate the baseline to get green: a red means a catalog edit changed
+what a Mac shows. Per-area English goldens (`*i18n-parity.test.ts`, `*.parity.test.ts`) run under
+`withPlatform('macos')` for the same reason.
 
 ## The locale-aware formatting layer
 

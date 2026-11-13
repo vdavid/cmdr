@@ -22,9 +22,10 @@
  *    here even though each key on its own looks fine. That is the overlay failure
  *    mode, and it's worse than not forking at all.
  *
- * A platform block (`{platform, select, …}`) joins one group per branch, its
- * keys listed as `key (branch)`, so a `windows` branch meets every other key
- * saying the same English. A translating locale's branch still showing its `en`
+ * A platform block (`{platform, select, …}`) is compared per OS: each OS's groups
+ * hold what that OS reads (its branch listed as `key (branch)`), so a `windows`
+ * branch meets every other key Windows shows with the same English, and never the
+ * same key's `macos` branch, which a Windows user doesn't see. A translating locale's branch still showing its `en`
  * text is pending translation (the stale check's) and sits out; an English
  * overlay's unforked branch counts as what it renders (`pendingTranslationOf`).
  *
@@ -65,8 +66,9 @@
  * baselined locale would be a translation edit, which is the wrong answer whenever
  * the split is the honest one, and untriaged locales are exactly where those live.
  *
- * Run: `pnpm i18n:check-term-consistency` (desktop). Pass `--messages-root <dir>`
- * to point at a fixture (used by the tests).
+ * Run: `pnpm i18n:check-term-consistency` (desktop); `--list` names a baselined
+ * locale's divergent terms too. Pass `--messages-root <dir>` to point at a fixture
+ * (used by the tests).
  */
 
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -74,7 +76,6 @@ import { join } from 'node:path'
 import {
   BASE_LOCALE,
   isCheckedLocale,
-  branchReader,
   carriesSourceOn,
   isRawKey,
   layerCatalogs,
@@ -82,10 +83,13 @@ import {
   loadCatalog,
   pairPlatformBranches,
   pendingTranslationOf,
-  platformBranches,
+  RENDERED_PLATFORMS,
   resolveLocaleSource,
 } from './i18n-catalog-lib.ts'
+import type { RenderedPlatform } from './i18n-catalog-lib.ts'
+import { visibleJson } from './i18n-catalog-lib.ts'
 import type { Catalog } from './i18n-catalog-lib.ts'
+import { parsePlatformSelect } from '../src/lib/intl/platform-select.ts'
 import type { PlatformSelectBranch } from '../src/lib/intl/platform-select.ts'
 import { EXIT_CLEAN, EXIT_ERROR, EXIT_ISSUES } from './i18n-locale-check-lib.ts'
 
@@ -194,31 +198,44 @@ export function agreementProblems(source: Catalog): string[] {
 }
 
 /**
- * Every source value carried by two or more keys, mapped to its English and those
- * keys. Values shorter than two characters are skipped: a bare `/` or `%`
- * connector collides across unrelated surfaces and says nothing about terminology.
- * A key with `@key.agreesWith` groups only with keys that share both its English
- * AND its label, since agreeing with a different label is a different word.
+ * The branch of a value one OS reads, and its text: its own branch, `other` where the block has none for it, or the
+ * whole value (branch `null`) when it isn't a block.
  */
-function groupBySourceValue(source: Catalog): Map<string, { text: string; members: Member[] }> {
-  const groups = new Map<string, { text: string; members: Member[] }>()
-  for (const [key, value] of Object.entries(source.messages)) {
-    // A platform block is one term per branch: its `windows` text groups with the other keys saying the same.
-    for (const { name, text } of platformBranches(value)) {
+function readOn(value: string, os: RenderedPlatform): { branch: PlatformSelectBranch | null; text: string } {
+  const branches = parsePlatformSelect(value)
+  if (branches === null) return { branch: null, text: value }
+  const own = os === 'linux' ? undefined : branches[os]
+  return own === undefined ? { branch: 'other', text: branches.other } : { branch: os, text: own }
+}
+
+/**
+ * Every source value carried by two or more keys AS ONE OS READS THEM, mapped to its English, that OS, and those keys.
+ * Per OS because a reader only ever sees one OS's text: a per-OS key's `macos` and `windows` branches each take their
+ * own OS's word (a ruling's `windows` / `other` forms record it), so comparing them would flag the split the key exists
+ * for, while each branch still meets every other key that OS shows with the same English. Values shorter than two
+ * characters are skipped: a bare `/` or `%` connector collides across unrelated surfaces and says nothing about
+ * terminology. A key with `@key.agreesWith` groups only with keys that share both its English AND its label, since
+ * agreeing with a different label is a different word.
+ */
+function groupBySourceValue(source: Catalog): Map<string, { text: string; os: RenderedPlatform; members: Member[] }> {
+  const groups = new Map<string, { text: string; os: RenderedPlatform; members: Member[] }>()
+  for (const os of RENDERED_PLATFORMS) {
+    for (const [key, value] of Object.entries(source.messages)) {
+      const { branch, text } = readOn(value, os)
       const normalized = normalizeForComparison(text, key)
       if (normalized.length < 2) continue
       const label = agreesWith(source, key)
-      const groupKey = label === undefined ? normalized : `${normalized}\u0000${label}`
-      const member = { key, branch: name }
+      const groupKey = `${os}\u0000${normalized}${label === undefined ? '' : `\u0000${label}`}`
+      const member = { key, branch }
       const bucket = groups.get(groupKey)
       if (bucket) bucket.members.push(member)
-      else groups.set(groupKey, { text: normalized, members: [member] })
+      else groups.set(groupKey, { text: normalized, os, members: [member] })
     }
   }
   return groups
 }
 
-/** One key, or one branch of a key's platform block, in a group of same-English terms. */
+/** One key, or the branch of a key's platform block one OS reads, in a group of same-English terms. */
 interface Member {
   key: string
   branch: PlatformSelectBranch | null
@@ -243,8 +260,9 @@ export function findDivergences(
   isOverlay: boolean,
   english?: Record<string, string>,
 ): DivergenceFinding[] {
-  const findings: DivergenceFinding[] = []
-  for (const { text: normalizedSource, members } of groupBySourceValue(source).values()) {
+  // A split every OS shows (two plain keys) is found once per OS; one entry per distinct split is the finding.
+  const findings = new Map<string, DivergenceFinding>()
+  for (const { text: normalizedSource, os, members } of groupBySourceValue(source).values()) {
     if (members.length < 2) continue
 
     const byRendering = new Map<string, string[]>()
@@ -259,12 +277,7 @@ export function findDivergences(
       const pair = pairPlatformBranches(source.messages[key], effective).find(({ name }) => name === branch)
       if (pair === undefined) continue
       // A branch still carrying its English is pending translation: the stale check's.
-      if (
-        branch !== null &&
-        english?.[key] !== undefined &&
-        carriesSourceOn(english[key], effective, branchReader(branch))
-      )
-        continue
+      if (branch !== null && english?.[key] !== undefined && carriesSourceOn(english[key], effective, os)) continue
       const normalized = normalizeForComparison(pair.locale, key)
       const label = branch === null ? key : `${key} (${branch})`
       const bucket = byRendering.get(normalized)
@@ -273,12 +286,13 @@ export function findDivergences(
     }
 
     if (byRendering.size < 2) continue
-    findings.push({
-      source: normalizedSource,
-      renderings: [...byRendering].map(([value, renderedKeys]) => ({ value, keys: renderedKeys.sort() })),
-    })
+    const renderings = [...byRendering]
+      .map(([value, renderedKeys]) => ({ value, keys: renderedKeys.sort() }))
+      .sort((a, b) => a.value.localeCompare(b.value))
+    const finding = { source: normalizedSource, renderings }
+    findings.set(JSON.stringify(finding), finding)
   }
-  return findings.sort((a, b) => a.source.localeCompare(b.source))
+  return [...findings.values()].sort((a, b) => a.source.localeCompare(b.source))
 }
 
 /**
@@ -389,13 +403,54 @@ function allClearLine(outcomes: readonly LocaleOutcome[]): string {
   )
 }
 
+/** Prints each divergent term with its renderings and the keys behind each, so nobody greps to find one. */
+function divergenceLines(findings: readonly DivergenceFinding[], out: (line: string) => void): void {
+  for (const { source, renderings } of findings) {
+    out(`  - "${source}" renders ${String(renderings.length)} ways:`)
+    for (const { value, keys } of renderings) out(`      ${visibleJson(value)} ← ${keys.join(', ')}`)
+  }
+}
+
+/** A baselined locale's lines: its count against the baseline, and the terms when it grew or when asked. Returns 1 on growth. */
+function reportBaselined({
+  locale,
+  unallowed,
+  baseline,
+  listAll,
+  out,
+}: {
+  locale: string
+  unallowed: readonly DivergenceFinding[]
+  baseline: number
+  listAll: boolean
+  out: (line: string) => void
+}): number {
+  const count = unallowed.length
+  if (count > baseline) {
+    out(`${locale}: ${String(count)} divergent terms, up from the recorded ${String(baseline)} (not yet triaged).`)
+    out(`  - raise the baseline only with a reason, or fix the new divergence`)
+    divergenceLines(unallowed, out)
+    return 1
+  }
+  const trend = count < baseline ? ` (down from ${String(baseline)}; ratchet the baseline)` : ''
+  out(`${locale}: ${String(count)} divergent terms, not yet triaged${trend}.`)
+  if (listAll) divergenceLines(unallowed, out)
+  return 0
+}
+
 /**
- * Renders the report and returns the process exit code.
+ * Renders the report and returns the process exit code. A baselined locale's divergent terms are listed when its
+ * count grows (the new one is among them) or with `listAll` (a scoped `i18n:check-locale` run, `--list`); a repo-wide
+ * run keeps them to one line, so 300 untriaged findings don't train everyone to skip the check.
  *
  * @param outcomes per-locale results
  * @param write sink for one line at a time (default `console.log`)
  */
-export function report(outcomes: readonly LocaleOutcome[], write?: (line: string) => void): number {
+export function report(
+  outcomes: readonly LocaleOutcome[],
+  write?: (line: string) => void,
+  { listAll = false }: { listAll?: boolean } = {},
+): number {
   const out =
     write ??
     ((line: string) => {
@@ -409,15 +464,7 @@ export function report(outcomes: readonly LocaleOutcome[], write?: (line: string
   let issues = 0
   for (const { locale, unallowed, staleAllows, baseline } of outcomes) {
     if (baseline !== undefined) {
-      const count = unallowed.length
-      if (count > baseline) {
-        issues++
-        out(`${locale}: ${String(count)} divergent terms, up from the recorded ${String(baseline)} (not yet triaged).`)
-        out(`  - raise the baseline only with a reason, or fix the new divergence`)
-      } else {
-        const trend = count < baseline ? ` (down from ${String(baseline)}; ratchet the baseline)` : ''
-        out(`${locale}: ${String(count)} divergent terms, not yet triaged${trend}.`)
-      }
+      issues += reportBaselined({ locale, unallowed, baseline, listAll, out })
       issues += staleAllows.length
       for (const source of staleAllows) out(`  - stale allowlist entry: "${source}" no longer diverges; drop it`)
       continue
@@ -428,10 +475,7 @@ export function report(outcomes: readonly LocaleOutcome[], write?: (line: string
     }
     issues += unallowed.length + staleAllows.length
     out(`${locale}: ${String(unallowed.length)} unexplained divergent ${unallowed.length === 1 ? 'term' : 'terms'}`)
-    for (const { source, renderings } of unallowed) {
-      out(`  - "${source}" renders ${String(renderings.length)} ways:`)
-      for (const { value, keys } of renderings) out(`      ${JSON.stringify(value)} ← ${keys.join(', ')}`)
-    }
+    divergenceLines(unallowed, out)
     for (const source of staleAllows) {
       out(`  - stale allowlist entry: "${source}" no longer diverges; drop it`)
     }
@@ -470,7 +514,7 @@ function main(): void {
   const messagesRoot = rootFlag === -1 ? undefined : args[rootFlag + 1]
   const allowlist = loadAllowlist()
   const outcomes = inspectLocales({ messagesRoot, allowlist })
-  const code = report(outcomes)
+  const code = report(outcomes, undefined, { listAll: args.includes('--list') })
   if (!process.env.CI && messagesRoot === undefined) {
     for (const locale of shrinkWrap(outcomes, allowlist, ALLOWLIST_PATH)) {
       console.log(`(ratcheted the ${locale} baseline down)`)

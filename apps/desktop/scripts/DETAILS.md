@@ -166,7 +166,9 @@ output: `docs/i18n/termbase.md` § Tooling; the translator-facing rules: `docs/i
   each with the ERROR-class checks' own pure functions (`parityDetail`, `icuError`, `platformSelectIssues`,
   `platformPluralDetail`) plus `frozenMacosIssue` from the macOS baseline lib, so it can't disagree with
   `i18n:check-locale`. Files are written in the shape `sync-locale-keys.ts` writes (`JSON.stringify`, two spaces),
-  through a temp file and a rename.
+  through a temp file and a rename. A changed frozen macOS text lands only with a `macosChangeReason`, which it writes
+  into that catalog's own accepted-changes file (`src/lib/intl/__fixtures__/macos-copy-accepted/<tag>.json`), so
+  parallel translators never share one; `{ "keep": true }` restamps an unchanged translation without a retype.
 - **`i18n-apply-terms.ts`** (+ `-lib.ts`, `pnpm i18n:apply-terms`): patches `terms.json`, `concepts.json`, or a
   `concepts-proposed.json` and validates the result with `i18n-check-termbase.ts`'s own validators, refusing only the
   problems the patch adds. Writes through `JSON.stringify` then oxfmt, which reproduces an oxfmt-formatted termbase byte

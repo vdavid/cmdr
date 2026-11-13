@@ -9,11 +9,12 @@
  * `en`. So an overlay (`en-GB`) contributes every key, forked or inherited, and a
  * fork that vanishes or a base edit that leaks through both show up.
  */
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { IntlMessageFormat } from 'intl-messageformat'
 import { inheritableAncestors } from '../src/lib/intl/locale-inheritance.ts'
 import { pickPlatformBranch } from '../src/lib/intl/platform-select.ts'
-import { BASE_LOCALE, GENERATED_LOCALES, isRawKey, listLocales, loadCatalog } from './i18n-catalog-lib.ts'
+import { BASE_LOCALE, GENERATED_LOCALES, isRawKey, listLocales, loadCatalog, visibleJson } from './i18n-catalog-lib.ts'
 
 /** The baseline file, relative to `apps/desktop/`. */
 export const BASELINE_RELATIVE_PATH = 'src/lib/intl/__fixtures__/macos-copy-baseline.json'
@@ -238,15 +239,45 @@ export interface AcceptedTranslationChange {
   reason: string
 }
 
+/** Where the accepted translation changes live, one JSON file per catalog, relative to `apps/desktop/`. */
+export const ACCEPTED_CHANGES_RELATIVE_DIR = 'src/lib/intl/__fixtures__/macos-copy-accepted'
+
+/** One catalog's accepted changes on disk: key → the new macOS text and why. */
+export type AcceptedChangesFile = Record<string, { text: string; reason: string }>
+
+/** The accepted-changes file of one catalog (`de.json`). */
+export function acceptedChangesPath(locale: string, dir: string = desktopPath(ACCEPTED_CHANGES_RELATIVE_DIR)): string {
+  return join(dir, `${locale}.json`)
+}
+
 /**
- * Translations of the frozen macOS copy that a translator fixed on purpose, each reviewed in the
- * diff that adds it (#1125): a wrong or outdated term, or macOS vocabulary where the English is
- * neutral. The only legal way to move a non-English Mac text; the baseline itself stays frozen.
- * An entry is a REQUIREMENT, not an allowance: the catalog must read `text`, so an entry that was
- * never applied, or a value edited again afterwards, is drift too. English changes go in
- * `ACCEPTED_ENGLISH_CHANGES`.
+ * Every accepted translation change, read from the per-catalog files. One file per catalog so parallel translators
+ * never write the same file; `pnpm i18n:apply` writes them (`"@key": { "macosChangeReason": "…" }` in a values file),
+ * so nobody hand-edits one.
  */
-export const ACCEPTED_TRANSLATION_CHANGES: readonly AcceptedTranslationChange[] = []
+export function loadAcceptedTranslationChanges(
+  dir: string = desktopPath(ACCEPTED_CHANGES_RELATIVE_DIR),
+): AcceptedTranslationChange[] {
+  if (!existsSync(dir)) return []
+  return readdirSync(dir)
+    .filter((name) => name.endsWith('.json'))
+    .sort()
+    .flatMap((name) => {
+      const locale = name.slice(0, -'.json'.length)
+      const file = JSON.parse(readFileSync(join(dir, name), 'utf8')) as AcceptedChangesFile
+      return Object.entries(file).map(([key, { text, reason }]) => ({ locale, key, text, reason }))
+    })
+}
+
+/**
+ * Translations of the frozen macOS copy that a translator fixed on purpose, each reviewed in the diff that adds it
+ * (#1125): a wrong or outdated term, macOS vocabulary where the English is neutral, or English reworded so the frozen
+ * text no longer fits. The only legal way to move a non-English Mac text; the baseline itself stays frozen. An entry is
+ * a REQUIREMENT, not an allowance: the catalog must read `text`, so an entry that was never applied, or a value edited
+ * again afterwards, is drift too. English changes go in `ACCEPTED_ENGLISH_CHANGES`. Stored per catalog
+ * (`ACCEPTED_CHANGES_RELATIVE_DIR`); an overlay (`es-419`) that forks a frozen key carries its own.
+ */
+export const ACCEPTED_TRANSLATION_CHANGES: readonly AcceptedTranslationChange[] = loadAcceptedTranslationChanges()
 
 /**
  * The 14 `.mac`/`.other` pairs and the key each folds into. The survivor names
@@ -390,9 +421,7 @@ function collapsedPairDrift(
     const expected = expectedText({ key: pair.mac, frozen: expectedValues[pair.mac], from: survivor.from })
     const actual = macosBranch(survivor.value)
     if (!rendersSame(pair.survivor, expected, actual)) {
-      drift.push(
-        `${locale} ${pair.survivor} (was ${pair.mac}): ${JSON.stringify(expected)} → ${JSON.stringify(actual)}`,
-      )
+      drift.push(`${locale} ${pair.survivor} (was ${pair.mac}): ${visibleJson(expected)} → ${visibleJson(actual)}`)
     }
   }
   return { drift, retired }
@@ -416,9 +445,7 @@ function splitKeyDrift(
     const expected = expectedText({ key: split.from, frozen: expectedValues[split.from], from: resolved.from })
     const actual = macosBranch(resolved.value)
     if (!rendersSame(split.to, expected, actual)) {
-      drift.push(
-        `${locale} ${split.to} (split off ${split.from}): ${JSON.stringify(expected)} → ${JSON.stringify(actual)}`,
-      )
+      drift.push(`${locale} ${split.to} (split off ${split.from}): ${visibleJson(expected)} → ${visibleJson(actual)}`)
     }
   }
   return drift
@@ -445,7 +472,7 @@ function frozenKeyDrift(
     if (rendersSame(key, expected, actual)) continue
     const acceptedEnglish = ACCEPTED_ENGLISH_CHANGES[key]
     if (acceptedEnglish !== undefined && resolved.from === BASE_LOCALE && actual === acceptedEnglish) continue
-    drift.push(`${locale} ${key}: ${JSON.stringify(expected)} → ${JSON.stringify(actual)}`)
+    drift.push(`${locale} ${key}: ${visibleJson(expected)} → ${visibleJson(actual)}`)
   }
   return drift
 }
@@ -482,7 +509,7 @@ export function frozenMacosIssue(
   const expected = expectedTextFrom(accepted)({ key: frozenKey, frozen, from: locale })
   const actual = macosBranch(value)
   if (rendersSame(key, expected, actual)) return null
-  return `the text macOS reads would change from ${JSON.stringify(expected)} to ${JSON.stringify(actual)}; a Mac already reads it, so keep it byte for byte (a wrong macOS text goes through ACCEPTED_TRANSLATION_CHANGES in scripts/i18n-macos-copy-baseline-lib.ts)`
+  return `the text macOS reads would change from ${visibleJson(expected)} to ${visibleJson(actual)}; a Mac already reads it, so keep it byte for byte, or, if it's wrong or the reworded English no longer fits it, give the key a \`"@<key>": { "macosChangeReason": "…" }\` in the values file`
 }
 
 /**

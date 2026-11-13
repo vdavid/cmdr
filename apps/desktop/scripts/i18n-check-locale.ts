@@ -93,7 +93,7 @@ function inProcessSteps(
           allowlist: termConsistency.loadAllowlist(termAllowlistPath),
           only: withoutGeneratedLocales(only, write),
         })
-        return termConsistency.report(outcomes, write)
+        return termConsistency.report(outcomes, write, { listAll: true })
       },
     },
     {

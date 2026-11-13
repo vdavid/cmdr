@@ -280,7 +280,7 @@ describe('buildBrief (fixture tree)', () => {
     )?.text
     const titleBlock = keys?.split('\n- `queue.row.label`')[0] ?? ''
     expect(titleBlock).toContain('Frozen macOS text (nl)')
-    expect(titleBlock).toContain('ACCEPTED_TRANSLATION_CHANGES')
+    expect(titleBlock).toContain('macosChangeReason')
     expect(keys?.match(/Frozen macOS text/g)?.length).toBe(1)
   })
 

@@ -134,7 +134,7 @@
 
   "shortcuts.conflict.reservedByMacOs": "{combo} is reserved by macOS ({command}) and won’t reach Cmdr. Pick a different combo.",
   "@shortcuts.conflict.reservedByMacOs": {
-    "description": "Warning banner when the user tries to assign a shortcut that macOS owns (Hide, Quit, and the other app-menu keys). Shown on macOS only. Explains the shortcut can't reach the app. \"Cmdr\" and \"macOS\" are names; do not translate them. \"combo\" is a key combination like Command-H.",
+    "description": "Warning banner when the user tries to assign a shortcut that macOS owns (Hide, Quit, and the other app-menu keys). Shown on macOS only. Explains the shortcut can't reach the app. \"Cmdr\" and \"macOS\" are names; do not translate them. \"combo\" is a key combination like Command-H. {combo} is a run of key glyphs with no grammatical gender or number, so no word may agree with it: \"is reserved\" and \"won’t reach\" must read right whatever key it holds (name the noun, \"this shortcut\", where your language would otherwise agree a participle or pronoun with it).",
     "placeholders": {
       "combo": "the key combination the user pressed, shown as glyphs (e.g. ⌘H)",
       "command": "the name of the macOS command that already uses this combination (e.g. Hide Cmdr)"

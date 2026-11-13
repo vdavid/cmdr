@@ -316,9 +316,10 @@ its prerequisites; tasks without any can start any time. Order within a phase is
       `apps/desktop/scripts/i18n-macos-copy-baseline*.ts` and the `copy-proposal.json` it reads) stay through this task,
       since they keep translator agents off the `macos` branches; delete them at its end, plus `copy-proposal.json` if
       the generator is still its only code reader (the notes beside it cite it as evidence, so repoint those). A
-      translator who finds a WRONG `macos` translation fixes it with an entry in `ACCEPTED_TRANSLATION_CHANGES` (locale,
-      key, new text, reason) in `i18n-macos-copy-baseline-lib.ts`, never by touching the baseline: the rule is
-      `docs/i18n/translator-instructions.md` (Per-OS values). Review those entries before the test is deleted.
+      translator who finds a WRONG `macos` translation fixes it with an accepted change (`pnpm i18n:apply` with a
+      `macosChangeReason`, stored per catalog in `src/lib/intl/__fixtures__/macos-copy-accepted/`), never by touching
+      the baseline: the rule is `docs/i18n/translator-instructions.md` (Per-OS values). Review those entries before the
+      test is deleted.
     - **Releases are blocked until it's done**: `scripts/release.sh` runs `i18n-stale` strict, so every stale key fails
       the release.
 29. [S] Windows, lint half is a win. **Done**. `lib/path/grammar.ts` holds the grammar (drive and UNC roots, a shared

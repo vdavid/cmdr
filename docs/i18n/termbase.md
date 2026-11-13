@@ -299,6 +299,11 @@ about 2 s when most of the batch is stale (measured on sv, 2026-09-25).
 
 The translator's one write path into a catalog. `--lang <tag> --values <file.json>`, one locale per call.
 
+- `"key": { "keep": true }` stamps the translation already there against the new source, unchanged: the explicit,
+  per-key "still fits" (refused while a branch is still English, or for a key an overlay doesn't fork).
+- Every value it prints (a refusal, the brief's keys and current values) is JSON with invisible characters escaped
+  (`visibleJson`: a no-break space reads `\u00a0`), so two values that differ only there look different and paste back
+  exactly.
 - `--values` defaults to `values.json` in the language's newest run directory, and the expected keys to the `keys.txt`
   beside the values file.
 - The values file maps key → a string (the whole value), `{ "macos"?, "windows"?, "other"? }` (a per-OS value given
@@ -307,8 +312,10 @@ The translator's one write path into a catalog. `--lang <tag> --values <file.jso
 - The whole batch is planned first, and one refused value writes nothing. Refused: a key English lacks; a key a full
   translation's catalog lacks (it names the `sync-locale-keys.ts` call); placeholder/tag parity, ICU validity and
   raw-family apostrophes, the per-OS block shape, and plural coverage, each by the ERROR-class check's own function; a
-  `macos` text the frozen baseline holds (`frozenMacosIssue`; a fix goes through `ACCEPTED_TRANSLATION_CHANGES`); for an
-  overlay, a fork identical to what it overrides, or one carrying a justification.
+  `macos` text the frozen baseline holds (`frozenMacosIssue`), unless the values file gives the key
+  `"@<key>": { "macosChangeReason": "…" }`, which records an accepted change in the catalog's own
+  `src/lib/intl/__fixtures__/macos-copy-accepted/<tag>.json` (an overlay keeps its own; a value back at the frozen text
+  drops its entry); for an overlay, a fork identical to what it overrides, or one carrying a justification.
 - Stamping: `@key.sourceHash` becomes the hash of the source (`en`, or an overlay's layered base); a value or hash that
   moves drops `reviewed` and `sameAsSourceJustification`, as `--restamp` does. A per-OS value with a branch still
   byte-identical to English is written but keeps its old stamp, so it stays on the stale list, unless the file justifies

@@ -34,7 +34,7 @@ export function workDirLines(
 export function frozenMacosNote(tags: readonly string[], perOs: boolean): string | undefined {
   if (tags.length === 0) return undefined
   const what = perOs ? 'the branch macOS reads' : 'this whole value (macOS reads it)'
-  return `Frozen macOS text (${tags.join(', ')}): keep ${what} byte for byte. If it's wrong (a mistranslation, an outdated term) or its English was reworded so it no longer fits, fix it and add an \`ACCEPTED_TRANSLATION_CHANGES\` entry (tag, key, the new macOS text, a one-line reason) in apps/desktop/scripts/i18n-macos-copy-baseline-lib.ts; \`pnpm i18n:apply\` refuses the change until it's there.`
+  return `Frozen macOS text (${tags.join(', ')}): keep ${what} byte for byte. If it's wrong (a mistranslation, an outdated term) or its English was reworded so it no longer fits, give the new value with \`"@<key>": { "macosChangeReason": "…" }\` in your values file, and \`pnpm i18n:apply\` records it for this catalog (an overlay such as es-419 records its own); without the reason it refuses the change. If the text still fits, \`{ "keep": true }\` stamps it unchanged.`
 }
 
 /** A language's pile folders as the header names them: `<root>/pt-BR/`, or several joined. */

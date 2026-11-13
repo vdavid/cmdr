@@ -18,7 +18,7 @@
  */
 
 import { parseArgs } from 'node:util'
-import { BASE_LOCALE, loadCatalog } from './i18n-catalog-lib.ts'
+import { BASE_LOCALE, loadCatalog, visibleJson } from './i18n-catalog-lib.ts'
 import { EXIT_CLEAN, EXIT_ERROR } from './i18n-locale-check-lib.ts'
 import { PILE_SOURCES, lookUp, normalizeLabel, presentFolders } from './i18n-pile-lib.ts'
 import type { PileHit, PileQuery, PileSource } from './i18n-pile-lib.ts'
@@ -120,14 +120,14 @@ export function keyQueries(key: string, opts: { messagesRoot?: string; docsRoot?
 
 function hitLine(hit: PileHit): string {
   const detail = hit.detail ? `  [${hit.detail.length > 140 ? `${hit.detail.slice(0, 140)}…` : hit.detail}]` : ''
-  const pair = hit.english ? `${JSON.stringify(hit.english)} → ${JSON.stringify(hit.target)}` : hit.target
+  const pair = hit.english ? `${visibleJson(hit.english)} → ${visibleJson(hit.target)}` : hit.target
   return `  ${hit.exact ? '=' : '~'} ${pair}${detail}  (${hit.file})`
 }
 
 /** One query's report: hits grouped by source, capped, with what was left out counted. */
 export function renderQuery(query: PileQuery, hits: readonly PileHit[], limit: number): string[] {
   const arrow = query.side === 'english' ? 'English' : 'translation'
-  const lines = [`## ${JSON.stringify(query.text)} (by ${arrow})`]
+  const lines = [`## ${visibleJson(query.text)} (by ${arrow})`]
   if (hits.length === 0) lines.push('  no hits in any source')
   for (const source of PILE_SOURCES) {
     const ofSource = hits.filter((hit) => hit.source === source)

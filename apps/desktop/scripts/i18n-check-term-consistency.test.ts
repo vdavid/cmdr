@@ -107,6 +107,41 @@ describe('findDivergences: platform blocks', () => {
     ])
   })
 
+  it('compares what one OS shows: two OS branches of one key, each in its own OS’s word, are not a split', () => {
+    const english = cat({
+      'v.full':
+        '{platform, select, macos {Toggle full screen} windows {Toggle full screen} other {Toggle full screen mode}}',
+      'm.full': '{platform, select, macos {Enter full screen} windows {Toggle full screen} other {Full screen}}',
+    })
+    const nl = cat({
+      'v.full':
+        '{platform, select, macos {Schermvullende weergave aan/uit} windows {Volledig scherm aan/uit} other {Volledig scherm aan/uit}}',
+      'm.full':
+        '{platform, select, macos {Schermvullende weergave} windows {Volledig scherm aan/uit} other {Volledig scherm}}',
+    })
+    expect(findDivergences(english, nl, false, english.messages)).toEqual([])
+    // Windows still compares across keys: a second Windows name for the same English is a split.
+    const drifted = cat({
+      ...nl.messages,
+      'm.full': nl.messages['m.full'].replace('windows {Volledig scherm aan/uit}', 'windows {Schermvullend aan/uit}'),
+    })
+    expect(findDivergences(english, drifted, false, english.messages)).toEqual([
+      {
+        source: 'Toggle full screen',
+        renderings: [
+          { value: 'Schermvullend aan/uit', keys: ['m.full (windows)'] },
+          { value: 'Volledig scherm aan/uit', keys: ['v.full (windows)'] },
+        ],
+      },
+    ])
+  })
+
+  it('reports a split every OS shows once, not once per OS', () => {
+    const english = cat({ 'a.x': 'Copy', 'b.x': 'Copy' })
+    const de = cat({ 'a.x': 'Kopieren', 'b.x': 'Kopie' })
+    expect(findDivergences(english, de, false, english.messages)).toHaveLength(1)
+  })
+
   it('skips a branch still carrying its English, pending translation', () => {
     const de = cat({
       'a.trash': 'In den Papierkorb',
@@ -310,9 +345,20 @@ describe('report: the summary line has to be true', () => {
     expect(lines[lines.length - 1]).toBe('Term consistency: every locale names one thing one way (or says why not).')
   })
 
-  it('leaves the warn path alone: a grown baseline still exits non-zero', () => {
-    const { code } = linesFor([outcome('hu', 30, 28)])
+  it('leaves the warn path alone: a grown baseline still exits non-zero, and names every divergent term', () => {
+    const { code, lines } = linesFor([outcome('hu', 30, 28)])
     expect(code).toBe(1)
+    expect(lines.join('\n')).toContain('"term 29" renders 2 ways:')
+    expect(lines.join('\n')).toContain('"b" ← x.b')
+  })
+
+  it('names a baselined locale’s divergent terms when asked to list them, and stays quiet otherwise', () => {
+    const quiet: string[] = []
+    report([outcome('zh', 2, 2)], (line) => quiet.push(line))
+    expect(quiet.join('\n')).not.toContain('renders')
+    const listed: string[] = []
+    expect(report([outcome('zh', 2, 2)], (line) => listed.push(line), { listAll: true })).toBe(0)
+    expect(listed.join('\n')).toContain('"term 1" renders 2 ways:')
   })
 
   it('judges a baselined locale on what is still UNEXPLAINED, so one term can be triaged at a time', () => {

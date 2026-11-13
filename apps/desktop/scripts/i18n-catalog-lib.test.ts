@@ -19,6 +19,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import {
+  visibleJson,
   splitCatalogFile,
   mergeCatalogFiles,
   parseMessage,
@@ -42,6 +43,18 @@ import {
   formatPlatformBranches,
   visibleText,
 } from './i18n-catalog-lib.ts'
+
+describe('visibleJson', () => {
+  it('writes every invisible or space-like character as a JSON escape, so two values that differ by one show it', () => {
+    expect(visibleJson('100\u00a0MB')).toBe('"100\\u00a0MB"')
+    expect(visibleJson('Ja\u202f!')).toBe('"Ja\\u202f!"')
+    expect(visibleJson('a\u200bb\u00adc')).toBe('"a\\u200bb\\u00adc"')
+    expect(JSON.parse(visibleJson('x\u00a0y'))).toBe('x\u00a0y')
+  })
+  it('leaves ordinary text, the ellipsis, and typographic quotes alone', () => {
+    expect(visibleJson('Öffnen… „Datei“')).toBe('"Öffnen… „Datei“"')
+  })
+})
 
 describe('isMetadataKey', () => {
   it('flags @-prefixed keys only', () => {

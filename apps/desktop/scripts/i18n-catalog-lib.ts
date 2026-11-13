@@ -702,6 +702,25 @@ export function pendingTranslationOf(
 }
 
 /**
+ * Characters a reader can't tell apart from a space or from nothing: the no-break and narrow no-break spaces the
+ * typography rules require (French `!`, Czech one-letter prepositions), the other fixed-width spaces, zero-width
+ * marks, the soft hyphen, and the BOM.
+ */
+const INVISIBLE = /[\u00a0\u00ad\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f-\u2064\ufeff]/gu
+
+/**
+ * A value as JSON with every invisible character escaped (a no-break space prints as `\u00a0`), for anywhere a tool prints a value to
+ * compare or to copy: two values that differ only by a no-break space then look different, and pasting the string
+ * into a JSON values file keeps the exact character.
+ */
+export function visibleJson(value: string): string {
+  return JSON.stringify(value).replace(
+    INVISIBLE,
+    (char) => `\\u${char.codePointAt(0)?.toString(16).padStart(4, '0') ?? ''}`,
+  )
+}
+
+/**
  * Extracts the set of brace-token names (`{system_settings}`, `{path}`, …) from a
  * RAW (non-ICU) message. The raw error pipeline substitutes these by name with
  * `.replaceAll('{token}', value)`, so a translation MUST preserve the exact token

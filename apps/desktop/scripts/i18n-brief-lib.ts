@@ -51,6 +51,7 @@ import {
   platformBranches,
   rawTokens,
   resolveLocaleSource,
+  visibleJson,
   visibleLiterals,
 } from './i18n-catalog-lib.ts'
 import type { Catalog } from './i18n-catalog-lib.ts'
@@ -399,7 +400,7 @@ function keysSection(ctx: BriefContext): BriefSection {
   for (const key of ctx.opts.keys) {
     const value = ctx.en.messages[key]
     const metadata = key in ctx.en.metadata ? ctx.en.metadata[key] : undefined
-    lines.push(`- \`${key}\`: ${JSON.stringify(value)}`)
+    lines.push(`- \`${key}\`: ${visibleJson(value)}`)
     lines.push(...changeLines(ctx.opts.previousEnglish?.[key], value))
     if (typeof metadata?.description === 'string') lines.push(`  - Note: ${metadata.description}`)
     const perOs = perOsNote(value)
@@ -417,7 +418,7 @@ function keysSection(ctx: BriefContext): BriefSection {
     if (ctx.opts.excludeTargetValues) continue
     for (const tag of ctx.opts.langs) {
       const current = ctx.targets.get(tag)?.[key]
-      if (current !== undefined) lines.push(`  - ${tag} now: ${JSON.stringify(current)}`)
+      if (current !== undefined) lines.push(`  - ${tag} now: ${visibleJson(current)}`)
     }
   }
   return { name: 'keys', text: lines.join('\n') }
@@ -552,7 +553,7 @@ function overlaysSection(ctx: BriefContext): BriefSection {
       lines.push(`- It forks these batch keys; keep each fork's meaning in step with your new \`${base}\` value:`)
       // A blind run withholds the fork's value along with the base translation it mirrors.
       for (const key of forks) {
-        lines.push(`  - \`${key}\`${ctx.opts.excludeTargetValues ? '' : `: ${JSON.stringify(messages[key])}`}`)
+        lines.push(`  - \`${key}\`${ctx.opts.excludeTargetValues ? '' : `: ${visibleJson(messages[key])}`}`)
       }
     }
     const guard = OVERLAY_GUARDS[tag]
@@ -586,15 +587,15 @@ function memorySection(ctx: BriefContext): BriefSection {
         continue
       }
       shownKeys.add(other)
-      const en = JSON.stringify(ctx.en.messages[other])
+      const en = visibleJson(ctx.en.messages[other])
       if (!ctx.multi) {
-        lines.push(`- \`${other}\`: ${en} → ${JSON.stringify(targets[0][other])}`)
+        lines.push(`- \`${other}\`: ${en} → ${visibleJson(targets[0][other])}`)
         continue
       }
       lines.push(`- \`${other}\`: ${en}`)
       for (const tag of ctx.opts.langs) {
         const value = ctx.targets.get(tag)?.[other]
-        if (value !== undefined) lines.push(`  - ${tag}: ${JSON.stringify(value)}`)
+        if (value !== undefined) lines.push(`  - ${tag}: ${visibleJson(value)}`)
       }
     }
   }

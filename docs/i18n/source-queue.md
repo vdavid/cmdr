@@ -53,7 +53,10 @@ Process feedback (a translator's homemade scripts and workarounds) goes under it
   does the same. (vi)
 - The pile lacks the KDE Frameworks catalogs (`kxmlgui`, `kconfigwidgets`), where KStandardAction labels like "Full
   Screen Mode" live, so `i18n:pile` finds nothing for them and a Linux branch falls back to the base ruling. Add them to
-  the pile beside Dolphin. (de)
+  the pile beside Dolphin. (de, es, cs, hu, nl, vi, zh, zh-Hant)
+- The pile has no Windows shell label "This PC" (the Microsoft TBX lacks it), so the `windows` branches naming it rest
+  on judgment and stay `tentative`. Source it from a localized Windows, or a Microsoft support page per language. (es,
+  hu, vi)
 
 ## Process feedback
 
