@@ -222,6 +222,8 @@ var rustEmbeddedInputs = []string{
 	// `generate_context!` embeds the config merged with the target's `tauri.<os>.conf.json`.
 	"apps/desktop/src-tauri/tauri*.conf.json",
 	"apps/desktop/src-tauri/updater-backup.pub",
+	// `reveal/delivery_test.rs` embeds it to pin the `CFBundleDocumentTypes` claim sandboxed reveals need.
+	"apps/desktop/src-tauri/Info.plist",
 	"apps/website/public/mdm/**",
 	"apps/website/src/lib/trust-mdm.ts",
 	"crates/cmdr-menu/src/bar.rs",
