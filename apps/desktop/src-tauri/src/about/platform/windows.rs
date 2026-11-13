@@ -3,6 +3,7 @@
 
 use cmdr_about::card::OsCaps;
 use cmdr_about::fact::{AboutTarget, Fact, NotApplicableWhy, UnknownWhy};
+use cmdr_about::owner::KnownApp;
 use cmdr_about::payload::{AppRef, Signature, Usage};
 use cmdr_about::provenance::Download;
 
@@ -13,6 +14,7 @@ pub(crate) fn os_caps() -> OsCaps {
         use_history: false,
         code_signing: false,
         default_app: false,
+        install_receipts: false,
     }
 }
 
@@ -39,4 +41,16 @@ pub(crate) fn default_app(_path: &str) -> Fact<AppRef> {
 
 pub(crate) fn signature(_path: &str, _target: AboutTarget, _extension: Option<&str>) -> Fact<Signature> {
     Fact::NotApplicable(NotApplicableWhy::NoCodeSigningOnThisOs)
+}
+
+pub(crate) fn installed_apps() -> Vec<KnownApp> {
+    Vec::new()
+}
+
+pub(crate) fn app_with_id(_id: &str) -> Option<KnownApp> {
+    None
+}
+
+pub(crate) fn receipts(_path: &str) -> Result<Vec<String>, UnknownWhy> {
+    Err(UnknownWhy::NoRecord)
 }

@@ -3,7 +3,7 @@
 use crate::card::{AboutCard, AboutFact, Applied, OsCaps, PlanInput, VolumeCaps, plan};
 use crate::digest::{FolderClass, FolderDigest};
 use crate::fact::{AboutTarget, Fact, UnknownWhy};
-use crate::owner::{InstalledApp, OwnerClaim, OwnerPlace};
+use crate::owner::{InstalledApp, OwnerClaim, OwnerPlace, OwnerQuestion};
 use crate::payload::{GitContext, GitStatus, Identity, RecursiveSize, SizeCoverage, Usage};
 use crate::provenance::{Download, download_fact};
 use crate::sniff::real_type;
@@ -34,6 +34,7 @@ pub(crate) fn macos() -> OsCaps {
         use_history: true,
         code_signing: true,
         default_app: true,
+        install_receipts: true,
     }
 }
 
@@ -51,6 +52,8 @@ pub(crate) fn card(target: AboutTarget, extension: Option<&str>, caps: &VolumeCa
         contents_local: true,
         caps,
         os: &macos(),
+        owner: &OwnerQuestion::Receipt,
+        in_a_repo: true,
     }))
 }
 

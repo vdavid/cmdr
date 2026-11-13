@@ -1,6 +1,7 @@
 //! macOS: the quarantine and `kMDItemWhereFroms` xattrs, Spotlight's use history,
 //! LaunchServices' default app, and the Security framework's code signature.
 
+mod apps;
 mod signature;
 mod spotlight;
 
@@ -16,6 +17,7 @@ use cmdr_about::text::ItemText;
 use super::StatExtras;
 use super::unix::{XattrSyscalls, errno, executable, hard_links, physical_size, read_capped};
 
+pub(crate) use apps::{app_with_id, installed_apps, receipts};
 pub(crate) use signature::signature;
 pub(crate) use spotlight::last_opened;
 
@@ -24,6 +26,7 @@ pub(crate) fn os_caps() -> OsCaps {
         use_history: true,
         code_signing: true,
         default_app: true,
+        install_receipts: true,
     }
 }
 

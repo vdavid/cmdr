@@ -10955,7 +10955,10 @@ export type GetInfoError =
 export type GitContext = {
   // The repo's root folder.
   repoRoot: ItemText
-  // The checked-out branch. `None`: the head is detached.
+  /**
+   *  The checked-out branch. `None`: the head is detached, or the repo has no
+   *  commit yet.
+   */
   branch: ItemText | null
   /**
    *  The item's status in the repo. Unknown on its own, since reading it can
@@ -11538,8 +11541,11 @@ export type Importance = {
   // Whether the score predates the volume's latest recompute.
   stale: boolean
   /**
-   *  The strongest signals behind the score, as the scorer's own words
-   *  (`projectRoot`), strongest first.
+   *  The strongest signals behind the score, strongest first, as the scorer's
+   *  own camelCase tokens for the frontend to word: a signal (`projectMarker`,
+   *  `mtimeRecency`, `visitActivity`, `lastUsed`, `extensionDiversity`), a path
+   *  class (`projectRoot`, `userContent`), or for a floored folder why it floors
+   *  (`nameDenylisted`, `hiddenOrSystem`, `underFlooredAncestor`).
    */
   reasons: string[]
   /**
@@ -17163,11 +17169,6 @@ export type Rebuilder =
   | 'packageManager'
   // A build tool (build output).
   | 'buildTool'
-  /**
-   *  Unnamed: git ignores the folder, which is what a project does with output
-   *  a tool makes.
-   */
-  | 'ignoredByGit'
 
 // A single recent-path entry, persisted verbatim.
 export type RecentPathEntry = {
@@ -17395,6 +17396,12 @@ export type RemovalConsequence =
   | { type: 'uncommittedWork' }
   // It's in a repo and git doesn't track it, so git can't bring it back.
   | { type: 'untrackedNotInGit' }
+  /**
+   *  Git ignores it, so git can't bring it back. ❌ Never read as "a tool can
+   *  recreate this": a project ignores its `data/` and its secrets as readily as
+   *  its build output.
+   */
+  | { type: 'ignoredByGit' }
   // Nothing Cmdr knows of made it or can recreate it.
   | { type: 'userDocument' }
   // It's an app; removing it leaves its data in the Library.

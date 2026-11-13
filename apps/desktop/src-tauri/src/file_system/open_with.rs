@@ -103,11 +103,23 @@ mod imp {
     /// re-queried).
     static EXT_CACHE: LazyLock<Mutex<HashMap<String, CacheEntry>>> = LazyLock::new(Default::default);
 
+    /// Bumped each time the set of apps may have changed, so a cache elsewhere (the
+    /// "Tell me about this" card's installed-apps scan) knows to rebuild without a
+    /// second observer.
+    static APPS_GENERATION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
     /// Clears the candidate cache. Called from the NSWorkspace notification observer
     /// when an app launches or terminates.
     fn invalidate_cache() {
         let mut cache = EXT_CACHE.lock_ignore_poison();
         cache.clear();
+        APPS_GENERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// How many times the observer has seen the set of apps change. A cache of
+    /// installed apps rebuilds when this moves on from the value it was built at.
+    pub fn apps_changed_generation() -> u64 {
+        APPS_GENERATION.load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// Subscribes to `NSWorkspaceDidLaunchApplicationNotification` and
@@ -464,8 +476,8 @@ mod imp {
 
 #[cfg(target_os = "macos")]
 pub use imp::{
-    app_icon_data_url, compute_open_with_choices, installed_app_path, open_paths_with, pick_app_via_open_panel,
-    read_app_display_name, read_bundle_identifier, start_invalidation_observer,
+    app_icon_data_url, apps_changed_generation, compute_open_with_choices, installed_app_path, open_paths_with,
+    pick_app_via_open_panel, read_app_display_name, read_bundle_identifier, start_invalidation_observer,
 };
 
 #[cfg(not(target_os = "macos"))]

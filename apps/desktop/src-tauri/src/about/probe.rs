@@ -15,6 +15,7 @@ use cmdr_fs::file_extension::{is_listed_package, needs_package_lookup};
 use cmdr_fs::volume::NodeIdentity;
 
 use super::event::AboutUnavailable;
+use super::git::{RepoAround, repo_around};
 use super::platform;
 
 /// What the probe learned.
@@ -36,6 +37,9 @@ pub(crate) struct Probe {
     /// asked about. `None` for an archive's entry, and on a filesystem that keeps
     /// no birth time.
     pub(crate) node: Option<NodeIdentity>,
+    /// The git repo around it, looked for here so the plan knows whether it has a
+    /// git row. Only on a local disk, never for an archive's entry.
+    pub(crate) repo: RepoAround,
 }
 
 /// Looks at `path`, which the resolver placed on a local volume.
@@ -51,14 +55,20 @@ pub(crate) fn probe(path: &str) -> Result<Probe, AboutUnavailable> {
         .unwrap_or_else(|| path.to_string());
     let target = target_of(fs_path, &name, &metadata);
     let extras = platform::stat_extras(&metadata);
+    let on_local_disk = sits_on_a_local_disk(path);
     Ok(Probe {
         target,
         extension: (target != AboutTarget::Folder).then(|| extension_of(&name)).flatten(),
         is_executable: metadata.is_file() && extras.executable,
         contents_local: !extras.online_only,
-        on_local_disk: sits_on_a_local_disk(path),
+        on_local_disk,
         identity: Fact::Known(identity(fs_path, &name, &metadata, extras)),
         node: NodeIdentity::of(&metadata),
+        repo: if on_local_disk {
+            repo_around(fs_path, metadata.is_dir())
+        } else {
+            RepoAround::None
+        },
     })
 }
 
@@ -82,6 +92,7 @@ fn inside_an_archive(path: &Path) -> Option<Probe> {
         on_local_disk: sits_on_a_local_disk(&archive.to_string_lossy()),
         identity: Fact::unknown(UnknownWhy::VolumeCantTell),
         node: None,
+        repo: RepoAround::None,
     })
 }
 

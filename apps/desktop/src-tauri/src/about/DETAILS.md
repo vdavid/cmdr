@@ -50,7 +50,12 @@ David's consent. So the card's first commit, in one go:
 `route::gather_for` resolves through `crate::location::resolve` (a miss is `unavailable`), then `route::reach`:
 
 - **`Local`** (a live `VolumeKind::Local`): `probe` on the about pool under `PROBE_BUDGET` (1.5 s; past it,
-  `Unreachable`). The probe is one `lstat`, a mount-table read, and for a dotted folder one `NSURLIsPackageKey` lookup.
+  `Unreachable`). The probe is one `lstat`, a mount-table read, for a dotted folder one `NSURLIsPackageKey` lookup,
+  and on a local disk the look for a repo around the item (`git::repo_around`, through the app's repo cache), so the
+  plan knows whether it has a git row.
+  - The route also asks `OwnerQuestion::of(path, home)` (pure, no IO), so the plan knows whether it has an owner row,
+    and places the item in the index (`index::IndexPlace`: the index id, which isn't always the volume's, and the
+    importance store's path for it).
   - The mount table must call the item's mount a local disk (`mount_is_local_disk`). A path whose parent chain reaches a
     share through a symlink resolves to the boot volume and isn't local: it answers identity only.
   - A path inside an archive (`lstat` fails, `confirm_archive_boundary` holds) is an `ArchiveEntry` with identity
@@ -63,7 +68,9 @@ David's consent. So the card's first commit, in one go:
 ## Jobs and budgets
 
 `jobs::GATHERED` is what this host answers: identity (from the probe), real type, bundle, signature, download, Cmdr's
-own history, last opened, default app. Every other kind is trimmed from the plan until its job exists. Each row has `ROW_BUDGET` (1 s)
+own history, last opened, default app, importance, the owner, git, and a folder's whole size. A folder's digest and an
+app's Library data are trimmed from the plan until their jobs exist, and so is any row whose store isn't there
+(`jobs::Sources`: no operation log, no index place). Each row has `ROW_BUDGET` (1 s)
 from the start of the gathering; a row still out then lands `Unknown(TimedOut)` and its job's late answer is dropped.
 The `about_facts` pool (4 target, 12 max workers) bounds how many threads a dead mount can strand.
 
@@ -122,10 +129,60 @@ the log recorded THIS node landing there.
   checked (`NotSupported`).
 - **`pkg` isn't planned**: a xar signature isn't code the API reads (crate DETAILS § The plan).
 
-## Not yet gathered
+## Git
 
-Git, importance, recursive size, the owner, a folder's digest, and an app's Library data
-come from the op log, `cmdr-git`, and the index. Each joins `GATHERED` with its job; nothing else changes.
+`git.rs`. Root and branch from `cmdr_git::repo_info` (on the handle the probe's look found); the status from
+`cmdr_git::list_status` on its own pool job, waited for `STATUS_BUDGET` (600 ms) inside the row. Past it the root and
+branch stand with the status `Unknown(TimedOut)`; the walk runs on and fills the repo's status cache, so the next card
+answers at once. A cold walk is about 70 ms on a 50,000-file repo (`crates/cmdr-git/DETAILS.md` § Performance).
+
+- **What the list proves** (`status_of`): it holds CHANGED entries only, so a clean tracked file, an ignored one, and one
+  git never saw are all absent: `Unknown(NotInStatus)` (Routine), ❌ never `Clean`. A file's own `untracked` entry is
+  `Untracked`; any other change (modified, a staged add or delete, a rename, a conflict) is `Tracked(Modified)`, worded
+  from the side that never understates a loss. A folder with any tracked change under it holds uncommitted work; one
+  with only untracked entries is `NotInStatus`, since nothing says whether git tracks the rest of it.
+- **Decision: no new `cmdr-git` read.** That crate's surface is capped and a per-path status (index lookup plus the
+  exclude check) needs David's say-so. With one, `Tracked(Clean)` and `Ignored` light up (the vocabulary and the removal
+  rules already hold them) and only `status_of`'s source changes.
+- **Gotcha: a cancelled card can't stop a cold walk.** The walk's stop flag is internal to `cmdr-git`; a cancel drops the
+  answer and the thread finishes the walk (bounded by the pool's ceiling). The per-path read above would remove the walk
+  altogether.
+- **The relative path** canonicalizes the item's PARENT and keeps its name, so a symlink is asked about as itself.
+
+## The owner
+
+`owner.rs` answers the lookups `cmdr_about::owner::OwnerQuestion::answer` asks for, through `AppSource` (the OS's, or a
+test's fixed answers); the rules are in `crates/cmdr-about/DETAILS.md` § The owner.
+
+- **Installed apps**, macOS (`platform/macos/apps.rs`): every `.app` at the top of `/Applications`,
+  `/Applications/Utilities`, `/System/Applications`, `/System/Applications/Utilities`, and `~/Applications`, with
+  Finder's name, the bundle id, `CFBundleName`, and the folder name. Cached, rebuilt when
+  `open_with::apps_changed_generation` moves (the same `NSWorkspace` launch and terminate observer the "Open with" cache
+  uses) or after 30 minutes, for an install the observer can't see. ❌ Never per card. Linux: the `.desktop` entries in
+  the system, user, flatpak, and snapd folders (`Name=` and the desktop id; snapd's `<snap>_<app>` also answers to the
+  snap's name), aged out after 30 minutes.
+- **An id elsewhere on this disk**: macOS asks LaunchServices (`installed_app_path`) and refuses an answer under
+  `/Volumes` or in a `.Trash`: LaunchServices also knows apps on backup disks, mounted images, and thrown away. Linux
+  looks for the flatpak or snap install folder. **Decision/Why**: the app-folder scan alone calls a helper app under
+  `/Library/Application Support` (Adobe's, for one) "not installed", and its container "left over"; another volume's app
+  still never counts.
+- **Receipts** (macOS only, `OsCaps::install_receipts`): `pkgutil --file-info <path>` through `crate::subprocess` in the
+  C locale under 800 ms. Its exit code is 0 whether a receipt lists the path or not (macOS 27.0.1, 2026-11-13), so the
+  answer is the report's `pkgid:` fields, ❌ never its wording; a non-zero exit is `Unparseable`, the deadline
+  `TimedOut`.
+
+## Size and importance
+
+`index.rs`, databases only.
+
+- **Recursive size**: `index().dir_stats(index id, path)`, its flags verbatim (`recursive_size_complete` false is
+  `LowerBound`, `recursive_size_stale` is `ExactButStale`), and `updating` from the folder's pending writes OR a walk on,
+  above, or below it (`IndexStatusResponse::walk_affects` over the index status's walked roots). No stats is
+  `Unknown(NotIndexed)`.
+- **Importance** (folders): `tools::resources::importance::snapshot_path_on` with the store path from
+  `location::store_path::to_store_path`. A score's band is `ImportanceBand::of_score`, `stale` when it predates the
+  volume's latest recompute, the top three positive signals as tokens, and the visit count from the stored signals; a
+  floored folder is `Floored` with its floor reason; unscored is `Unknown(NotIndexed)`.
 
 ## Tests
 
@@ -135,5 +192,9 @@ mid-way leaves no late event and skips a queued job; a row past its budget lands
 a cancel before the plan sends nothing; routing sends no share item, link-reached mount, or online-only file's bytes to
 a local job; a file copied in through the engine's real copy path streams its `cmdrOperation` with source and date, and
 the same file saved over afterwards reads `NodeChangedSince`. `history/tests.rs` covers the wording and every way of
-not knowing over a scratch journal. `registry.rs` tests the tombstone and run ownership; `signature.rs` tests Apple's tools, a plain file, and
+not knowing over a scratch journal. Through the session too: a fixture home's `Application Support/com.eltima.cmd1`
+reads Commander One installed, `Slack` probably Slack, `Google` ambiguous (a fake app list, ❌ never the real
+`~/Library`); a plain document plans no owner or git row; a modified repo file streams `Tracked(Modified)` on `main`.
+`git_tests.rs` pins what the status list proves over a real repo, and a walk past its budget; `owner_tests.rs`,
+`index.rs`, and `platform/macos/apps.rs` the lookups and mappings. `registry.rs` tests the tombstone and run ownership; `signature.rs` tests Apple's tools, a plain file, and
 a tampered copy of `/bin/ls`.

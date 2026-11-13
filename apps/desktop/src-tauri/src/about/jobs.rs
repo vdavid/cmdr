@@ -15,15 +15,35 @@ use cmdr_about::payload::Bundle;
 use cmdr_about::sniff::{HEAD_BYTES, RealType, TAIL_BYTES, real_type};
 use cmdr_about::text::ItemText;
 
+use cmdr_about::owner::OwnerQuestion;
+
+use super::git::git_fact;
 use super::history::{History, cmdr_operation};
+use super::index::{IndexPlace, importance_fact, recursive_size_fact};
+use super::owner::{AppSource, owner_fact};
 use super::platform;
 use super::probe::Probe;
 use crate::file_system::framework_pool::note_activity;
 
-/// The rows this host gathers. The rest of the vocabulary (git, importance,
-/// sizes, the owner, a folder's digest, an app's data) comes from other stores,
-/// and the plan leaves those rows out until their jobs exist.
-pub(crate) const GATHERED: [FactKind; 8] = [
+/// A folder, an app, or a package: what git and the index see as a folder.
+fn is_folder_like(target: AboutTarget) -> bool {
+    matches!(
+        target,
+        AboutTarget::Folder | AboutTarget::AppBundle | AboutTarget::Package
+    )
+}
+
+/// Unix seconds now, for the importance explanation's recency terms.
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |since| since.as_secs())
+}
+
+/// The rows this host gathers. The rest of the vocabulary (a folder's digest, an
+/// app's data in the Library) comes from the index too, and the plan leaves those
+/// rows out until their jobs exist.
+pub(crate) const GATHERED: [FactKind; 12] = [
     FactKind::Identity,
     FactKind::RealType,
     FactKind::Bundle,
@@ -32,7 +52,40 @@ pub(crate) const GATHERED: [FactKind; 8] = [
     FactKind::CmdrOperation,
     FactKind::LastOpened,
     FactKind::DefaultApp,
+    FactKind::Importance,
+    FactKind::Owner,
+    FactKind::Git,
+    FactKind::RecursiveSize,
 ];
+
+/// Where a local card's stores and lookups come from, decided before the plan. A
+/// store that isn't there leaves its row out of the plan (`route::local_gathered`),
+/// since a row with no job would never settle.
+#[derive(Clone)]
+pub(crate) struct Sources {
+    /// Cmdr's own operation log. `None`: no history row.
+    pub(crate) history: Option<History>,
+    /// Where the item sits in the drive index. `None`: no size or importance row.
+    pub(crate) index: Option<IndexPlace>,
+    /// What the item's path says about its owner.
+    pub(crate) owner: OwnerQuestion,
+    /// Where the owner row's lookups come from.
+    pub(crate) apps: AppSource,
+}
+
+impl Sources {
+    /// No store at all, and a path that names no owner: the identity and OS rows
+    /// only.
+    #[cfg(test)]
+    pub(crate) fn none() -> Self {
+        Self {
+            history: None,
+            index: None,
+            owner: OwnerQuestion::Nothing,
+            apps: AppSource::of_the_os(),
+        }
+    }
+}
 
 /// The largest `Info.plist` Cmdr parses. A real one is a few KB; anything this
 /// size is no description worth reading, and the bytes are the bundle author's.
@@ -45,22 +98,21 @@ const MAX_INFO_PLIST_BYTES: u64 = 1024 * 1024;
 pub(crate) const ROW_BUDGET: Duration = Duration::from_secs(1);
 
 /// The jobs for `plan`'s rows on a local item. Identity isn't one: the probe
-/// already answered it. `history` is where Cmdr's own log is read from; without
-/// it the plan has no such row (`route::local_gathered`).
+/// already answered it.
 pub(crate) fn local_jobs(
     plan: &AboutPlan,
     path: &str,
     probe: &Probe,
-    history: Option<&History>,
+    sources: &Sources,
 ) -> Vec<(FactKind, Job<AboutFact>)> {
     plan.kinds()
         .into_iter()
         .filter(|kind| *kind != FactKind::Identity)
-        .filter_map(|kind| job(kind, path.to_string(), probe, history).map(|job| (kind, job)))
+        .filter_map(|kind| job(kind, path.to_string(), probe, sources).map(|job| (kind, job)))
         .collect()
 }
 
-fn job(kind: FactKind, path: String, probe: &Probe, history: Option<&History>) -> Option<Job<AboutFact>> {
+fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources) -> Option<Job<AboutFact>> {
     let target = probe.target;
     let extension = probe.extension.clone();
     // Each job names its call first, so a worker that never comes back says which
@@ -91,20 +143,38 @@ fn job(kind: FactKind, path: String, probe: &Probe, history: Option<&History>) -
             AboutFact::DefaultApp(platform::default_app(&path))
         }),
         FactKind::CmdrOperation => {
-            let history = history?.clone();
+            let history = sources.history.clone()?;
             let node = probe.node;
             Box::new(move || {
                 note_activity("read the operation log", "cmdrOperation");
                 AboutFact::CmdrOperation(cmdr_operation(&history, &path, node))
             })
         }
-        FactKind::Identity
-        | FactKind::Importance
-        | FactKind::Owner
-        | FactKind::Git
-        | FactKind::RecursiveSize
-        | FactKind::FolderDigest
-        | FactKind::AppData => return None,
+        FactKind::Owner => {
+            let question = sources.owner.clone();
+            let apps = sources.apps;
+            Box::new(move || AboutFact::Owner(owner_fact(&question, &path, apps)))
+        }
+        FactKind::Git => {
+            let repo = probe.repo.clone();
+            let is_folder = is_folder_like(target);
+            Box::new(move || AboutFact::Git(git_fact(&repo, Path::new(&path), is_folder)))
+        }
+        FactKind::RecursiveSize => {
+            let place = sources.index.clone()?;
+            Box::new(move || {
+                note_activity("read the index's folder size", "recursiveSize");
+                AboutFact::RecursiveSize(recursive_size_fact(&place))
+            })
+        }
+        FactKind::Importance => {
+            let place = sources.index.clone().filter(IndexPlace::scores)?;
+            Box::new(move || {
+                note_activity("read the importance store", "importance");
+                AboutFact::Importance(importance_fact(&place, now_secs()))
+            })
+        }
+        FactKind::Identity | FactKind::FolderDigest | FactKind::AppData => return None,
     };
     Some(job)
 }

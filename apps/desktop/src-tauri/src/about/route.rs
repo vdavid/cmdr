@@ -17,12 +17,17 @@ use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::VolumeError;
 
 use super::event::{AboutRequest, AboutUnavailable};
+use cmdr_about::owner::OwnerQuestion;
+
 use super::history::History;
-use super::jobs::{GATHERED, local_jobs};
+use super::index::IndexPlace;
+use super::jobs::{GATHERED, Sources, local_jobs};
+use super::owner::AppSource;
 use super::platform;
 use super::probe::{Probe, probe};
 use super::session::{Gathered, PROBE_BUDGET};
 use crate::location::resolve::{LocationInput, LocationMiss, VolumeFacts, resolve};
+use crate::location::store_path::to_store_path;
 use crate::tools::resources::volumes::VolumeKind;
 
 /// How long a remote volume may take to describe one item. The metadata call of
@@ -73,8 +78,21 @@ pub(crate) async fn gather_for(request: &AboutRequest) -> Result<Gathered, About
     match reach(resolved.kind, resolved.live) {
         Reach::Local => {
             let probed = probe_on_pool(path.clone()).await?;
-            let history = History::of_the_app(&resolved.location.volume_id);
-            Ok(local_gathered(&path, probed, volume_name, platform::os_caps(), history))
+            let home = dirs::home_dir().map(|home| home.to_string_lossy().into_owned());
+            let sources = Sources {
+                history: History::of_the_app(&resolved.location.volume_id),
+                index: Some(IndexPlace {
+                    index_id: resolved.index.volume_id.clone(),
+                    path: path.clone(),
+                    importance: to_store_path(&path, &resolved.root)
+                        .map(|store_path| (resolved.location.volume_id.clone(), store_path)),
+                    data_dir: crate::config::standalone_app_data_dir(),
+                }),
+                // No home folder (a sandboxed test runner) names no Library places.
+                owner: home.map_or(OwnerQuestion::Nothing, |home| OwnerQuestion::of(&path, &home)),
+                apps: AppSource::of_the_os(),
+            };
+            Ok(local_gathered(&path, probed, volume_name, platform::os_caps(), sources))
         }
         Reach::ThroughTheVolume => {
             let volume = crate::file_system::volume::manager::get_volume_manager()
@@ -118,15 +136,15 @@ async fn probe_on_pool(path: String) -> Result<Probe, AboutUnavailable> {
 /// symlink in its parent chain leads to a share), answer identity only: nothing
 /// reads their bytes, xattrs, or frameworks from here.
 ///
-/// `history` is where Cmdr's own operation log is read from. `None` (the log
-/// isn't open) leaves that row out of the plan: a row with no job would never
-/// settle.
+/// `sources` says where the stores are. One that isn't there (the operation log
+/// didn't open, the index has no place for the path) leaves its row out of the
+/// plan: a row with no job would never settle.
 pub(crate) fn local_gathered(
     path: &str,
     probed: Probe,
     volume_name: ItemText,
     os: OsCaps,
-    history: Option<History>,
+    sources: Sources,
 ) -> Gathered {
     let reads_locally = probed.on_local_disk && probed.target != AboutTarget::ArchiveEntry;
     let caps = if reads_locally {
@@ -141,10 +159,20 @@ pub(crate) fn local_gathered(
         contents_local: probed.contents_local,
         caps: &caps,
         os: &os,
+        owner: &sources.owner,
+        in_a_repo: probed.repo.is_some(),
     });
-    plan.retain_kinds(|kind| GATHERED.contains(&kind) && (kind != FactKind::CmdrOperation || history.is_some()));
+    plan.retain_kinds(|kind| {
+        GATHERED.contains(&kind)
+            && match kind {
+                FactKind::CmdrOperation => sources.history.is_some(),
+                FactKind::RecursiveSize => sources.index.is_some(),
+                FactKind::Importance => sources.index.as_ref().is_some_and(IndexPlace::scores),
+                _ => true,
+            }
+    });
     let jobs = if reads_locally {
-        local_jobs(&plan, path, &probed, history.as_ref())
+        local_jobs(&plan, path, &probed, &sources)
     } else {
         Vec::new()
     };
@@ -179,6 +207,9 @@ pub(crate) fn remote_gathered(entry: &FileEntry, volume_name: ItemText) -> Gathe
         contents_local: false,
         caps: &caps,
         os: &platform::os_caps(),
+        // Nothing reads the OS or a repo through another volume yet.
+        owner: &OwnerQuestion::Nothing,
+        in_a_repo: false,
     });
     plan.retain_kinds(|kind| GATHERED.contains(&kind));
     let seconds = |at: Option<u64>| at.and_then(|at| i64::try_from(at).ok());

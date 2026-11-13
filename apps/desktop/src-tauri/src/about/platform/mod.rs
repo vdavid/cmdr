@@ -6,7 +6,8 @@
 //! the about pool's 8 MB-stack threads, ❌ never the async executor or rayon.
 
 use cmdr_about::card::OsCaps;
-use cmdr_about::fact::{AboutTarget, Fact};
+use cmdr_about::fact::{AboutTarget, Fact, UnknownWhy};
+use cmdr_about::owner::KnownApp;
 use cmdr_about::payload::{AppRef, Signature, Usage};
 use cmdr_about::provenance::Download;
 
@@ -37,6 +38,9 @@ const _: fn(&str) -> Fact<Download> = download;
 const _: fn(&str) -> Fact<Usage> = last_opened;
 const _: fn(&str) -> Fact<AppRef> = default_app;
 const _: fn(&str, AboutTarget, Option<&str>) -> Fact<Signature> = signature;
+const _: fn() -> Vec<KnownApp> = installed_apps;
+const _: fn(&str) -> Option<KnownApp> = app_with_id;
+const _: fn(&str) -> Result<Vec<String>, UnknownWhy> = receipts;
 
 /// What this OS keeps about any item, for the plan.
 pub(crate) use imp::os_caps;
@@ -60,3 +64,15 @@ pub(crate) use imp::default_app;
 /// The code signature the item carries, and whether its main executable matches
 /// it (one bounded check, resources never hashed). ❌ Never deep validation.
 pub(crate) use imp::signature;
+
+/// The apps in the OS's app folders (macOS) or its desktop entries (Linux), from
+/// a cached scan: ❌ never a scan per card. ❌ Never an app on another volume.
+pub(crate) use imp::installed_apps;
+
+/// The app with this id elsewhere on this computer's own disk (a helper under
+/// `/Library`, a flatpak), or `None`. ❌ Never one on another volume or thrown away.
+pub(crate) use imp::app_with_id;
+
+/// The package ids of the installer receipts that list the path, under a
+/// deadline. Only asked on an OS whose `OsCaps::install_receipts` is on.
+pub(crate) use imp::receipts;

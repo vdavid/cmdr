@@ -106,6 +106,11 @@ and `OsCaps`, all known before any job. It returns the sections in display order
   exit code, so the row could only say Cmdr can't tell.
 - **`retain_kinds`** trims a plan to the kinds a host gathers, under the same rule (an emptied section goes, Removal
   stays). For a host that answers a subset; the note is the volume's and stays.
+- **The owner row** is planned only when the path can name an owner (`PlanInput::owner`, from `OwnerQuestion::of`), and
+  a receipt question only on an OS that keeps receipts (`OsCaps::install_receipts`). **The git row** only when the
+  host's look before the plan found a repo around the item (`PlanInput::in_a_repo`). Why: a document in `~/Documents`
+  outside every repo would otherwise draw two rows that can only say "nothing", which is the wall of unknowns the card
+  must not be.
 - **An archive entry** has no owner, repo, or operation of its own; its download row is the archive's.
 - **The note**: none when the volume answers everything, `IdentityOnly` when it answers nothing more, `SomeFacts` in
   between. `Unreachable` is the host's to set when its health check runs out.
@@ -132,6 +137,47 @@ and `rank` follows it; the card shows the top two.
 - **The fallback**: `UserDocument` only when the evidence rows the plan has (owner, git, download) all settled with an
   answer or a Routine absence; `CantTell` while one is pending, failed for a Notable reason, answered `VolumeCantTell`,
   or when the plan has none of them, and always for an archive entry.
+
+## The owner
+
+`OwnerQuestion::of(path, home)` reads the path alone; `answer(&OwnerLookups)` settles it with what the host looked up.
+Each claim keeps how Cmdr knows (`ByBundleId`, `ByName`, `InstalledBy`, `Homebrew`, `InsideApp`) so the card and a model
+word certainty honestly. `home` is a parameter, so a fixture home never touches the real `~/Library`.
+
+- **Certain by id**:
+  `~/Library/{Containers, Application Scripts, Caches, HTTPStorages, WebKit, Saved Application State, Logs, Preferences, Application Support}/<reverse-DNS id>`
+  (a `.plist`, `.savedState`, or `.binarycookies` suffix dropped), `Group Containers/{group.<id>, <TEAM>.<id>}`, and on
+  Linux `~/.var/app/<id>` and `~/snap/<name>`. Anything deeper belongs to the same app. ❌ Nothing reads inside a
+  container: the name is the whole answer.
+- **Probable by name**: `Application Support/<Name>` and Linux's `~/.config`, `~/.local/share`, `~/.cache` children. An
+  app's own name (display name, `CFBundleName`, bundle folder, desktop id; case-folded) wins; failing that a vendor's
+  name in front of an app's (`Google` → Google Chrome). Several matches are `Ambiguous`, ❌ never a pick. No match is
+  `LibraryNameMatchesNoApp` (Notable) in the Library and `NoInstalledAppMatches` (Routine) elsewhere.
+- **By receipt**: outside home under `/Library`, `/usr/local`, `/opt`. One package id is the claim (`com.apple.*` is
+  part of macOS); several all Apple's is part of macOS (Apple's own packages share folders like
+  `/Library/Application Support/Apple`, verified on macOS 27.0.1 with `pkgutil --file-info`, 2026-11-13); two vendors'
+  is `Ambiguous`; none is `NoRecord`.
+- **By path**: a Homebrew `Cellar/<name>` or `Caskroom/<name>` under `/opt/homebrew`, `/usr/local`, or
+  `/home/linuxbrew/.linuxbrew`; anything inside an `.app` bundle is that app's (the bundle itself isn't inside one).
+- **Not claimed**: dot-folders in home (`~/.npm`, `~/.cargo`), plain names in Library folders other than
+  `Application Support`, anything else. A curated tool table is a follow-up.
+
+Resolving an id, in order:
+
+1. An installed app whose id is the folder's or a dot-prefix of it (`ai.perplexity.mac` owns
+   `ai.perplexity.mac.PerplexityRichNotification`, an extension's container), the longest; ids compare ignoring ASCII
+   case, as LaunchServices does.
+2. A group container's id names a team's shared data, not an app, so it also matches apps whose ids extend it; several
+   are `Ambiguous`.
+3. The app with that id elsewhere on this computer's own disk (`OwnerLookups::app_with_id`: a helper under `/Library`).
+4. Else `NotInstalled` ("left over from an app that isn't installed"), **except** for a group id or Apple's own
+   (`com.apple.*`), which are `LibraryNameMatchesNoApp`. **Decision/Why**: macOS keeps many of its services outside the
+   app folders and a group id is no app's id, so calling those "left over" would invite deleting data something live
+   uses. A wrong "left over" is the worst answer this row can give.
+
+**Decision: "installed" never counts an app on another volume**, and step 3 exists because the app-folder scan alone
+calls a helper app under `/Library/Application Support` "not installed". The host keeps the scan to the app folders and
+filters `app_with_id` to this disk outside the Trash (`apps/desktop/src-tauri/src/about/DETAILS.md` § The owner).
 
 ## Headline
 
@@ -173,7 +219,7 @@ and two workflow filters to stay honest.
 
 ## The public surface is capped
 
-11 root promises (one module per concern), 11 public modules, 113 items in them
+11 root promises (one module per concern), 11 public modules, 119 items in them
 (`scripts/check/checks/index-crate-isolation-ceilings.go`). The items are the wire types the card's events and the
 model's projection carry, and the handful of functions a host calls: `plan`, `AboutCard`, `download_fact`,
 `xdg_download_fact`, `usage_fact`, `redact_for_egress`, `real_type`, `consequences`, `headline`, `start_with`,
@@ -194,3 +240,13 @@ Raised 110 → 113 by the host's first milestone, none of them wire types:
   can answer) out of the crate. No constructor: the host spells its three fields out.
 - **`AboutPlan::retain_kinds`**: a host that gathers a subset of the kinds trims the plan under the plan's own rule
   (emptied sections go, Removal stays), instead of rebuilding sections and restating that rule.
+
+Raised 113 → 119 by the owner and importance rows:
+
+- **`OwnerQuestion` with `of` and `answer`, `KnownApp`, `OwnerLookups`**: which Library folder names an app by id, which
+  by name, when a vendor's name is ambiguous, and when an unmatched id may be called "left over" are rules a person
+  could argue (§ The owner), so they live here as two pure steps; the host only answers the lookups it's asked for. The
+  lookups are closures so a Homebrew path never costs an app scan, and the question is a type of its own so the plan can
+  leave out an owner row nothing could answer.
+- **`ImportanceBand::of_score`**: where High and Medium start is a rule a person could argue; the host passes the stored
+  score.

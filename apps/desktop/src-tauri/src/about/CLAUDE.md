@@ -9,7 +9,8 @@ the vocabulary and every rule; this module reads raw inputs and hands them there
 - `route.rs` (resolve, then reach by volume), `probe.rs` (the one `lstat` before the plan), `jobs.rs` (a job per row),
   `session.rs` (plan, grace, late answers, budgets), `pool.rs` (`about_facts`).
 - `platform/`: per-OS seam for xattrs, Spotlight, default app, code signature, `stat` extras.
-- `history.rs`: Cmdr's own history, one read of the operation log.
+- `history.rs`: Cmdr's own history, one read of the operation log. `git.rs`: the repo, branch, and status.
+  `index.rs`: a folder's size and importance, from the index. `owner.rs`: the owner row's lookups.
 
 ## Must-knows
 
@@ -26,6 +27,10 @@ the vocabulary and every rule; this module reads raw inputs and hands them there
   file saved over since is `NodeChangedSince`, ❌ never the operation. It reads the database, never the disk.
 - ❌ **Log a fact's kind and outcome, never its value** (URL, sender, path): logs ride error reports.
 - ❗ **xattrs are read capped** (`read_capped`: size first, refuse past 64 KB). An online-only file plans no byte read.
+- ❌ **Git's status list holds CHANGED entries only**: absent is `NotInStatus`, ❌ never "clean". The walk has its own
+  budget inside the row (`STATUS_BUDGET`); the root and branch stand without it.
+- ❌ **The owner row never opens a container and never counts another volume's app as installed**: the app scan is
+  cached (rebuilt on `open_with`'s app-change generation), ❌ never per card.
 - ❗ **A signer is named from code requirements, never a certificate name**; the executable check has its own budget
   and a miss is `NotChecked(TimedOut)`, ❌ never a pass.
 

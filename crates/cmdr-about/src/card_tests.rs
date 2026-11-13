@@ -13,6 +13,8 @@ fn plan_of(target: AboutTarget, extension: Option<&str>, caps: &VolumeCaps) -> A
         contents_local: true,
         caps,
         os: &macos(),
+        owner: &OwnerQuestion::Receipt,
+        in_a_repo: true,
     })
 }
 
@@ -207,6 +209,8 @@ fn a_signature_is_planned_only_for_what_can_carry_one() {
             contents_local: true,
             caps: &local(),
             os: &macos(),
+            owner: &OwnerQuestion::Receipt,
+            in_a_repo: true,
         })
         .has(K::Signature)
     };
@@ -239,6 +243,7 @@ fn an_os_without_use_history_or_signing_plans_neither_row_and_adds_no_note() {
         use_history: false,
         code_signing: false,
         default_app: false,
+        install_receipts: false,
     };
     let plan = plan(PlanInput {
         target: File,
@@ -247,6 +252,8 @@ fn an_os_without_use_history_or_signing_plans_neither_row_and_adds_no_note() {
         contents_local: true,
         caps: &local(),
         os: &linux,
+        owner: &OwnerQuestion::Receipt,
+        in_a_repo: true,
     });
     assert!(!plan.has(K::LastOpened));
     assert!(!plan.has(K::Signature));
@@ -266,6 +273,8 @@ fn an_online_only_file_plans_no_row_that_reads_its_bytes() {
         contents_local: false,
         caps: &local(),
         os: &macos(),
+        owner: &OwnerQuestion::Receipt,
+        in_a_repo: true,
     });
     assert!(!plan.has(K::RealType));
     assert!(!plan.has(K::Signature));
@@ -286,6 +295,51 @@ fn keeping_only_the_answered_rows_drops_emptied_sections_and_keeps_removal() {
     );
 }
 
+// ── The owner and git rows ──────────────────────────────────────────────────
+
+fn context_plan(owner: &OwnerQuestion, in_a_repo: bool, os: &OsCaps) -> AboutPlan {
+    plan(PlanInput {
+        target: File,
+        extension: Some("txt"),
+        is_executable: false,
+        contents_local: true,
+        caps: &local(),
+        os,
+        owner,
+        in_a_repo,
+    })
+}
+
+/// A plain document outside every repo has nothing to say about an owner or git,
+/// so neither row is drawn: the card stays short.
+#[test]
+fn a_document_no_path_rule_claims_and_no_repo_holds_has_no_context_rows() {
+    let plan = context_plan(&OwnerQuestion::Nothing, false, &macos());
+    assert!(!plan.has(K::Owner));
+    assert!(!plan.has(K::Git));
+    assert!(plan.sections.iter().all(|planned| planned.section != Section::Context));
+}
+
+#[test]
+fn a_path_that_names_an_owner_or_sits_in_a_repo_plans_its_row() {
+    let in_app_data = OwnerQuestion::BundleId {
+        id: "com.example.tool".to_string(),
+        place: crate::owner::OwnerPlace::Containers,
+    };
+    assert!(context_plan(&in_app_data, false, &macos()).has(K::Owner));
+    assert!(context_plan(&OwnerQuestion::Nothing, true, &macos()).has(K::Git));
+}
+
+#[test]
+fn a_receipt_question_plans_an_owner_row_only_where_the_os_keeps_receipts() {
+    assert!(context_plan(&OwnerQuestion::Receipt, false, &macos()).has(K::Owner));
+    let linux = OsCaps {
+        install_receipts: false,
+        ..macos()
+    };
+    assert!(!context_plan(&OwnerQuestion::Receipt, false, &linux).has(K::Owner));
+}
+
 // ── Plan invariants ─────────────────────────────────────────────────────────
 
 fn every_plan() -> Vec<AboutPlan> {
@@ -300,6 +354,8 @@ fn every_plan() -> Vec<AboutPlan> {
                     contents_local: true,
                     caps: &caps,
                     os: &macos(),
+                    owner: &OwnerQuestion::Receipt,
+                    in_a_repo: true,
                 }));
             }
         }

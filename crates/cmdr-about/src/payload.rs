@@ -183,8 +183,11 @@ pub struct Importance {
     pub band: ImportanceBand,
     /// Whether the score predates the volume's latest recompute.
     pub stale: bool,
-    /// The strongest signals behind the score, as the scorer's own words
-    /// (`projectRoot`), strongest first.
+    /// The strongest signals behind the score, strongest first, as the scorer's
+    /// own camelCase tokens for the frontend to word: a signal (`projectMarker`,
+    /// `mtimeRecency`, `visitActivity`, `lastUsed`, `extensionDiversity`), a path
+    /// class (`projectRoot`, `userContent`), or for a floored folder why it floors
+    /// (`nameDenylisted`, `hiddenOrSystem`, `underFlooredAncestor`).
     pub reasons: Vec<String>,
     /// How many times a Cmdr pane visited the folder. `None`: the score keeps no
     /// visit count.
@@ -205,13 +208,30 @@ pub enum ImportanceBand {
     Floored,
 }
 
+impl ImportanceBand {
+    /// The band a stored `0.0..=1.0` score falls in. `High` starts where Ask Cmdr
+    /// calls a folder hot (0.7), so the card and the agent agree on what matters
+    /// most; `Medium` covers the next 0.3. A floored folder has no score and is
+    /// [`ImportanceBand::Floored`] by its own rule, never by this.
+    pub fn of_score(score: f64) -> ImportanceBand {
+        if score >= 0.7 {
+            ImportanceBand::High
+        } else if score >= 0.4 {
+            ImportanceBand::Medium
+        } else {
+            ImportanceBand::Low
+        }
+    }
+}
+
 /// The git repo around an item.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GitContext {
     /// The repo's root folder.
     pub repo_root: ItemText,
-    /// The checked-out branch. `None`: the head is detached.
+    /// The checked-out branch. `None`: the head is detached, or the repo has no
+    /// commit yet.
     pub branch: Option<ItemText>,
     /// The item's status in the repo. Unknown on its own, since reading it can
     /// mean walking the whole worktree while the root and branch are cheap.
@@ -278,6 +298,16 @@ pub enum SizeCoverage {
 mod tests {
     use super::*;
     use crate::fact::UnknownWhy;
+
+    #[test]
+    fn a_score_falls_in_its_band_at_the_edges() {
+        assert_eq!(ImportanceBand::of_score(1.0), ImportanceBand::High);
+        assert_eq!(ImportanceBand::of_score(0.7), ImportanceBand::High);
+        assert_eq!(ImportanceBand::of_score(0.699), ImportanceBand::Medium);
+        assert_eq!(ImportanceBand::of_score(0.4), ImportanceBand::Medium);
+        assert_eq!(ImportanceBand::of_score(0.399), ImportanceBand::Low);
+        assert_eq!(ImportanceBand::of_score(0.0), ImportanceBand::Low);
+    }
 
     #[test]
     fn no_last_used_date_is_no_record_never_never() {

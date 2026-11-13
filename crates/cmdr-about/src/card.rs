@@ -9,7 +9,7 @@ use serde::Serialize;
 
 use crate::digest::{AppData, FolderDigest};
 use crate::fact::{AboutTarget, Fact, FactKind, UnknownWhy};
-use crate::owner::OwnerClaim;
+use crate::owner::{OwnerClaim, OwnerQuestion};
 use crate::payload::{AppRef, Bundle, GitContext, Identity, Importance, RecursiveSize, Signature, Usage};
 use crate::provenance::{CmdrOperation, Download};
 use crate::sniff::RealType;
@@ -161,6 +161,9 @@ pub struct OsCaps {
     pub code_signing: bool,
     /// Cmdr can ask the OS which app opens an item.
     pub default_app: bool,
+    /// The OS keeps installer receipts that say which package put a file where it
+    /// is (`pkgutil` on macOS).
+    pub install_receipts: bool,
 }
 
 /// What the host knows about an item before any job runs.
@@ -180,6 +183,12 @@ pub struct PlanInput<'a> {
     pub caps: &'a VolumeCaps,
     /// What the OS keeps about it.
     pub os: &'a OsCaps,
+    /// What its path says about an owner ([`OwnerQuestion::of`]). A path that names
+    /// none (a document in `~/Documents`) has no owner row: nothing could answer it.
+    pub owner: &'a OwnerQuestion,
+    /// Whether a git repo sits around it, from the host's look before the plan. An
+    /// item outside every repo has no git row.
+    pub in_a_repo: bool,
 }
 
 /// A section of the card.
@@ -295,7 +304,14 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
         contents_local,
         caps,
         os,
+        owner,
+        in_a_repo,
     } = input;
+    let owner_can_answer = match owner {
+        OwnerQuestion::Nothing => false,
+        OwnerQuestion::Receipt => os.install_receipts,
+        OwnerQuestion::BundleId { .. } | OwnerQuestion::Name { .. } | OwnerQuestion::Answered(_) => true,
+    };
     let is_bundle = matches!(target, AppBundle | Package);
     let is_folder_like = matches!(target, Folder | AppBundle | Package);
     let extension = extension.map(str::to_ascii_lowercase);
@@ -318,8 +334,8 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
         FactKind::LastOpened => matches!(target, File | AppBundle | Package) && caps.system && os.use_history,
         FactKind::DefaultApp => matches!(target, File | Package) && caps.system && os.default_app,
         FactKind::Importance => target == Folder && caps.index,
-        FactKind::Owner => target != ArchiveEntry && caps.system,
-        FactKind::Git => target != ArchiveEntry && caps.git,
+        FactKind::Owner => target != ArchiveEntry && caps.system && owner_can_answer,
+        FactKind::Git => target != ArchiveEntry && caps.git && in_a_repo,
         FactKind::RecursiveSize => is_folder_like && caps.index,
         FactKind::FolderDigest => target == Folder && caps.index,
         FactKind::AppData => target == AppBundle && caps.index && caps.system,

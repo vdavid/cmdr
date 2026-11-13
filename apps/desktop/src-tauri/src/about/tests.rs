@@ -13,6 +13,7 @@ use cmdr_about::text::ItemText;
 use tokio_util::sync::CancellationToken;
 
 use super::event::AboutUpdate;
+use super::jobs::Sources;
 use super::probe::{Probe, probe};
 use super::route::{Reach, local_gathered, reach, remote_gathered};
 use super::session::{AboutSink, Gathered, Submit, Timing, run};
@@ -69,6 +70,7 @@ fn macos() -> OsCaps {
         use_history: true,
         code_signing: true,
         default_app: true,
+        install_receipts: true,
     }
 }
 
@@ -115,7 +117,7 @@ fn local(path: &std::path::Path) -> Gathered {
         probed,
         ItemText::new("Macintosh HD"),
         super::platform::os_caps(),
-        None,
+        Sources::none(),
     )
 }
 
@@ -260,7 +262,7 @@ fn a_symlink_is_about_the_link_and_reads_nothing_through_it() {
             probed,
             ItemText::new("Macintosh HD"),
             macos(),
-            None,
+            Sources::none(),
         );
         assert!(
             gathered.jobs.iter().all(|(kind, _)| *kind == FactKind::Download),
@@ -321,7 +323,7 @@ fn a_local_looking_path_on_a_network_mount_runs_no_local_job() {
         probed,
         ItemText::new("Macintosh HD"),
         macos(),
-        None,
+        Sources::none(),
     );
     assert!(gathered.jobs.is_empty());
     assert_eq!(gathered.plan.kinds(), [FactKind::Identity]);
@@ -337,13 +339,14 @@ fn an_online_only_file_reads_none_of_its_bytes() {
         on_local_disk: true,
         identity: Fact::unknown(UnknownWhy::NoRecord),
         node: None,
+        repo: super::git::RepoAround::None,
     };
     let gathered = local_gathered(
         "/Users/someone/Library/CloudStorage/x.dmg",
         probed,
         ItemText::new("Macintosh HD"),
         macos(),
-        None,
+        Sources::none(),
     );
     let jobs: Vec<FactKind> = gathered.jobs.iter().map(|(kind, _)| *kind).collect();
     assert!(!jobs.contains(&FactKind::RealType));
@@ -544,10 +547,13 @@ fn with_history(path: &std::path::Path, log: &cmdr_operations::testing::TestOper
         probed,
         ItemText::new("Macintosh HD"),
         super::platform::os_caps(),
-        Some(super::history::History {
-            db: log.db().to_path_buf(),
-            volume_id: cmdr_fs::volume::DEFAULT_VOLUME_ID.to_string(),
-        }),
+        Sources {
+            history: Some(super::history::History {
+                db: log.db().to_path_buf(),
+                volume_id: cmdr_fs::volume::DEFAULT_VOLUME_ID.to_string(),
+            }),
+            ..Sources::none()
+        },
     )
 }
 
@@ -617,6 +623,127 @@ async fn a_file_cmdr_copied_says_where_from_until_it_is_replaced() {
         "{:?}",
         replaced.facts()
     );
+}
+
+// ── Where it sits: the owner and the repo ───────────────────────────────────
+
+fn fake_installed_apps() -> Vec<cmdr_about::owner::KnownApp> {
+    let app = |name: &str, id: &str| cmdr_about::owner::KnownApp {
+        name: name.to_string(),
+        id: Some(id.to_string()),
+        other_names: Vec::new(),
+    };
+    vec![
+        app("Commander One", "com.eltima.cmd1"),
+        app("Slack", "com.tinyspeck.slackmacgap"),
+        app("Google Chrome", "com.google.Chrome"),
+        app("Google Drive", "com.google.drivefs"),
+    ]
+}
+
+/// A card for `path` whose owner is asked against `home`, a fixture home, with a
+/// fake list of installed apps: ❌ never the real `~/Library`.
+fn in_a_fixture_home(path: &std::path::Path, home: &std::path::Path) -> Gathered {
+    let path = path.to_string_lossy().into_owned();
+    let probed = probe(&path).expect("the fixture is there");
+    local_gathered(
+        &path,
+        probed,
+        ItemText::new("Macintosh HD"),
+        macos(),
+        Sources {
+            owner: cmdr_about::owner::OwnerQuestion::of(&path, &home.to_string_lossy()),
+            apps: super::owner::AppSource {
+                installed: fake_installed_apps,
+                with_id: |_| None,
+                receipts: |_| Ok(Vec::new()),
+            },
+            ..Sources::none()
+        },
+    )
+}
+
+fn owner_of(recorder: &Recorder) -> Fact<cmdr_about::owner::OwnerClaim> {
+    recorder
+        .facts()
+        .into_iter()
+        .find_map(|fact| match fact {
+            AboutFact::Owner(owner) => Some(owner),
+            _ => None,
+        })
+        .expect("the owner row lands")
+}
+
+#[tokio::test]
+async fn library_folders_answer_their_owner_through_the_card() {
+    use cmdr_about::owner::{InstalledApp, OwnerClaim, OwnerPlace};
+    let home = TestDir::new("about-owner-home");
+    let support = home.join("Library/Application Support");
+    for name in ["com.eltima.cmd1", "Slack", "Google"] {
+        std::fs::create_dir_all(support.join(name)).expect("make the fixture");
+    }
+
+    let by_id = gather(in_a_fixture_home(&support.join("com.eltima.cmd1"), &home), quick()).await;
+    assert_well_formed(&by_id.updates());
+    assert_eq!(
+        owner_of(&by_id),
+        Fact::Known(OwnerClaim::ByBundleId {
+            bundle_id: ItemText::new("com.eltima.cmd1"),
+            place: OwnerPlace::ApplicationSupport,
+            app: InstalledApp::Installed {
+                name: ItemText::new("Commander One")
+            },
+        })
+    );
+    let by_name = gather(in_a_fixture_home(&support.join("Slack"), &home), quick()).await;
+    assert_eq!(
+        owner_of(&by_name),
+        Fact::Known(OwnerClaim::ByName {
+            app: ItemText::new("Slack"),
+            place: OwnerPlace::ApplicationSupport,
+        })
+    );
+    let vendor = gather(in_a_fixture_home(&support.join("Google"), &home), quick()).await;
+    assert_eq!(owner_of(&vendor), Fact::unknown(UnknownWhy::Ambiguous));
+}
+
+/// A document no path rule claims and no repo holds has neither row: the card
+/// stays short.
+#[test]
+fn a_plain_document_plans_no_owner_or_git_row() {
+    let home = TestDir::new("about-plain-home");
+    let documents = home.join("Documents");
+    std::fs::create_dir_all(&documents).expect("make the fixture");
+    let file = documents.join("notes.txt");
+    std::fs::write(&file, "plain words").expect("write the fixture");
+    let gathered = in_a_fixture_home(&file, &home);
+    assert!(!gathered.plan.has(FactKind::Owner));
+    assert!(!gathered.plan.has(FactKind::Git));
+}
+
+#[tokio::test]
+async fn a_modified_repo_file_answers_uncommitted_work_with_its_branch() {
+    use cmdr_about::payload::{GitStatus, TrackedState};
+    let dir = TestDir::new("about-git-card");
+    let _repo = cmdr_git::test_fixtures::Fixture::init(dir.to_path_buf());
+    let file = dir.join("notes.txt");
+    std::fs::write(&file, "before").expect("write the fixture");
+    cmdr_git::test_fixtures::git_cli(&dir, &["add", "."]);
+    cmdr_git::test_fixtures::git_cli(&dir, &["commit", "-q", "-m", "first"]);
+    std::fs::write(&file, "after").expect("edit the fixture");
+
+    let recorder = gather(local(&file), quick()).await;
+    assert_well_formed(&recorder.updates());
+    let git = recorder
+        .facts()
+        .into_iter()
+        .find_map(|fact| match fact {
+            AboutFact::Git(Fact::Known(git)) => Some(git),
+            _ => None,
+        })
+        .expect("the git row lands known");
+    assert_eq!(git.branch, Some(ItemText::new("main")));
+    assert_eq!(git.status, Fact::Known(GitStatus::Tracked(TrackedState::Modified)));
 }
 
 /// Without a log to read, the card plans no history row: a row with no job

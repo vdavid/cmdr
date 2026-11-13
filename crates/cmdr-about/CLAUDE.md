@@ -8,7 +8,8 @@ inputs and hands them here. No fact depends on a model.
 
 - **`fact.rs`**: `Fact<T>` (known, unknown, not applicable, pending), `UnknownWhy` and its `Prominence`, `FactKind`,
   `AboutTarget`. **`text.rs`**: `ItemText`, `model_text`.
-- **`payload.rs`, `owner.rs`, `digest.rs`**: what each fact carries.
+- **`payload.rs`, `digest.rs`**: what each fact carries. **`owner.rs`**: the owner claim, plus `OwnerQuestion` (what a
+  path names, then how the host's lookups settle it).
 - **`provenance.rs`** (quarantine, WhereFroms, xdg, `redact_for_egress`), **`sniff.rs`** (magic bytes against the
   extension): decoders of attacker-written bytes.
 - **`card.rs`**: `plan`, `AboutPlan`, `AboutFact`, `AboutCard`. **`removal.rs`**, **`headline.rs`**: derived from a
@@ -29,6 +30,8 @@ inputs and hands them here. No fact depends on a model.
   truncated address can be a piece of its user info.
 - ❗ **A signature is never "verified"**: unless `checked` is `ExecutableMatches`, the wording is "carries a signature
   from".
+- ❌ **"Left over from an app that isn't installed" is never said of a group container or a `com.apple.*` id**: macOS
+  keeps services outside the app folders, and a wrong "left over" invites deleting live data. `DETAILS.md` § The owner.
 - ❗ **The plan decides the rows, before any job.** A row that can't apply is left out, ❌ never drawn as
   `NotApplicable`. `AboutCard::apply` refuses a fact the plan has no row for.
 - ❗ **Prominence is decided here** and rides on the wire inside `Unknown`; ❌ the UI never decides what's worth a

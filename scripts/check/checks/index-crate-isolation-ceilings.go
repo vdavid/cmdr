@@ -737,11 +737,15 @@ var surfaceGuardedCrates = []struct {
 		//
 		// 110 → 113 (2026-11-13, the app host): `OsCaps`, `usage_fact`, and
 		// `AboutPlan::retain_kinds`, argued in that section.
+		//
+		// 113 → 119 (2026-11-13, the owner and importance rows): `OwnerQuestion`,
+		// its `of` and `answer`, `KnownApp`, `OwnerLookups`, and
+		// `ImportanceBand::of_score`, argued in that section.
 		Name: "cmdr-about",
 		Ceilings: surfaceCeilings{
 			RootPromises:   11,
 			PublicModules:  11,
-			SubsystemItems: 113,
+			SubsystemItems: 119,
 		},
 	},
 }
