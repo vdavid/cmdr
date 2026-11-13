@@ -158,8 +158,8 @@ Cmdr off, so it carries its own "contents stay home" line.
   `settings.json` and calls `cloud_ai_consent_revoke_pending_changed`. `RevokePending::load` reads it fresh on every
   check, so the "no" holds at once and the retry only makes the store catch up.
 - **Turning it off stops cloud AI immediately.** `revoke_cloud_ai_consent` clears the record, then cancels every
-  in-flight Ask Cmdr turn (`agent::chat::cancel::cancel_all`, rail and wake) and every folder-suggestion stream
-  (`stream_registry::cancel_all`). A held "no" does the same. Translate calls are one-shot and short: they finish, and
+  in-flight Ask Cmdr turn (`agent::chat::cancel::cancel_all`, rail and wake), every folder-suggestion stream
+  (`stream_registry::cancel_all`), and the card verdict in flight (`about::stop_verdicts`). A held "no" does the same. Translate calls are one-shot and short: they finish, and
   the next one refuses. `ai.provider` is untouched.
 - **The connection check is gated too.** `check_ai_connection` carries no user data, but it reaches the service, so
   without consent it answers `cloud_consent_missing: true` and sends nothing. It's gated whatever `ai.provider` says:
@@ -208,8 +208,8 @@ How the organization's MDM profile (`managed_policy/DETAILS.md`, the canonical k
   frontend logs `Managed` and `Cancelled` at info (`#lib/ai/local-ai-error.ts`).
   `DisableCloudAI` leaves all of that alone.
 - **A change while running.** `managed_policy`'s `apply_change` calls `managed::apply_policy_change`: ANY narrowing of
-  the AI policy cancels every in-flight Ask Cmdr turn and suggestion stream (the same `stop_in_flight_calls` a consent
-  revoke runs), `DisableAI` arriving also stops `llama-server` and cancels a model download, and the wake readiness
+  the AI policy cancels every in-flight Ask Cmdr turn, suggestion stream, and "Tell me about this" verdict
+  (`about::stop_verdicts`; the same `stop_in_flight_calls` a consent revoke runs), `DisableAI` arriving also stops `llama-server` and cancels a model download, and the wake readiness
   is refreshed. It doesn't work out which call talks to which host: the event is rare, and the next request
   re-resolves and gets the typed reason.
 - **The picker.** `cloud_ai_host_verdicts(base_urls)` answers per URL with the same decision, as the refusal itself

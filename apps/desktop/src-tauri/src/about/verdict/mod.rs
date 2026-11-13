@@ -185,14 +185,19 @@ pub(crate) async fn run(verdict: VerdictRun<'_>, decision: Decision, watched: &W
                     usage.prompt_tokens,
                     usage.completion_tokens
                 );
-                verdict.limits.remember(key, Finished { contents, text });
-                watched.send_verdict(
-                    &card,
-                    AboutUpdate::VerdictEnd {
-                        ending: VerdictEnding::Done,
-                        cost,
-                    },
-                );
+                // A reasoning model can spend its whole reply on thinking and say nothing
+                // (Haiku 5.5 at its default effort under a 120-token cap, the smoke run of
+                // 2026-11-13): that's no verdict, ❌ never an empty "done", nor one cached.
+                // Its input was still billed, so the cost rides along.
+                let ending = if text.trim().is_empty() {
+                    VerdictEnding::Failed {
+                        problem: VerdictProblem::NoAnswer,
+                    }
+                } else {
+                    verdict.limits.remember(key, Finished { contents, text });
+                    VerdictEnding::Done
+                };
+                watched.send_verdict(&card, AboutUpdate::VerdictEnd { ending, cost });
                 return;
             }
             Some(Ok(AgentDelta::ReasoningTick | AgentDelta::KeepAlive | AgentDelta::ToolCallStarted { .. })) => {}

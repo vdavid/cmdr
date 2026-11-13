@@ -36,6 +36,12 @@
   your Desktop first.", "Next, the contents of vo-test."). Cost: about 31 tokens of prefix. The fixed overhead
   re-measured at 2,114 (system) + 4,275 (declarations) = 6,389 against the then-pinned 6,263, inside `cost_tests.rs`'s ±10%.
 
+- **Decision: the card verdict has two whole prompt files, not one with a conditional.** Why: whether the model words
+  what removing an item would cost is the one place it can hand out a green light, and the verdict eval decides it per
+  model class. Two static files keep each byte-identical (cacheable) and reviewable as the text that ships;
+  `about::verdict::prompt::PromptVariant::for_provider` picks one. The fence around the item's facts is built in Rust
+  (`about/verdict/prompt.rs`), beside its defanging, for the same reason the memory fence lives in `chat/context`.
+
 ## Not here
 
 - The digest a wake opens with is DATA (`llm::types::WakeDigest`), rendered from structure on purpose (its folder

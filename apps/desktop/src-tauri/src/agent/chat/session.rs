@@ -297,6 +297,9 @@ pub fn resolve_verdict_call_settings(
 }
 
 /// What a verdict's thinking may spend before its reply, on a model that can't stop thinking.
+/// Measured on `claude-haiku-5-5` (family table: reasons, can't turn off; a hand smoke run of
+/// four cards, 2026-11-13): at its default effort under a 120-token cap every call spent all 120
+/// thinking and wrote nothing; at Low with this room the four wrote 97–221 completion tokens.
 const VERDICT_THINKING_ROOM: u32 = 2_000;
 
 /// Pure core of [`resolve_verdict_call_settings`].

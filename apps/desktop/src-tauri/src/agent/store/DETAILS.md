@@ -221,6 +221,16 @@ cached thread costs what it does. Rows metered before v14 read 0. `conversation_
 share (`cache_read_tokens`) to the footer tooltip and the settings spend list; writes stay backend-only (they only
 explain a surcharge, which `cost_micros` already holds).
 
+## v15: the reserved about-this thread
+
+A second ledger row, origin `about_this`, empty title, for what the "Tell me about this" card's verdicts spend
+(`about/DETAILS.md` § The verdict). Same reason as v8: a verdict is never stored, so it has no thread to meter onto, and
+`cost_meter.conversation_id` can't be NULL. Every ledger row is named in `ConversationOrigin::LEDGERS`, and both hide
+filters (`list_conversations`, `search_conversations`) exclude the whole list, written `origin IS NULL OR origin NOT IN
+(…)` (a bare `NOT IN` answers NULL for the common NULL origin and would empty the list). A new ledger joins both filters
+by joining `LEDGERS`. The wake loop's daily ceiling counts the two proactive origins only, so a verdict's spend never
+holds a wake back; it still shows in the day's total (`cost_summary`).
+
 ## No auto-retention in v1
 
 Transcripts are small (spec §3), so there's no pruning yet. When real sizes exist, the operation log's

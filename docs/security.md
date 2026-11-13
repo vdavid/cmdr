@@ -296,9 +296,9 @@ this" (its card's facts, below), and Ask Cmdr (detailed below). Local AI sends n
   `ai::cloud_consent::has_current_cloud_consent` for Cloud before the key or endpoint, and `AiBackend::remote` is
   private to `ai/`, so no code path builds a cloud backend around the check. An absent, stale, or unreadable record, or
   a held "no", refuses. The connection check (`GET /models`) is gated too. Turning it off cancels in-flight Ask Cmdr
-  turns and suggestion streams at once. The disclosure (`ai.cloudConsent.*`) enumerates exactly what egresses and what
-  the agent can do; bump `CLOUD_AI_CONSENT_VERSION` when that set changes so users re-accept. MCP can't flip it. Depth:
-  `apps/desktop/src-tauri/src/ai/DETAILS.md` § Cloud AI consent.
+  turns, suggestion streams, and the card's AI take at once. The disclosure (`ai.cloudConsent.*`) enumerates exactly
+  what egresses and what the agent can do; bump `CLOUD_AI_CONSENT_VERSION` when that set changes so users re-accept. MCP
+  can't flip it. Depth: `apps/desktop/src-tauri/src/ai/DETAILS.md` § Cloud AI consent.
 - **An organization's policy comes before consent.** `resolve_backend` asks the managed policy first (AI off, on-device
   only, or a cloud host list), the LLM client re-asks before every request and at every redirect hop, and no consent the
   user gives can override it. Canonical: `apps/desktop/src-tauri/src/managed_policy/DETAILS.md`.
@@ -316,7 +316,10 @@ this" (its card's facts, below), and Ask Cmdr (detailed below). Local AI sends n
   path, size, dates, and owner, with every other row `protected`. The card's AI take may also send a short look inside a
   file through `inspect_file`'s core and its gate, minus a photo's location. Each kind has its own line in the
   disclosure, and a test maps every field the projection can emit to one: canonical `crates/cmdr-about/DETAILS.md` § The
-  model's projection.
+  model's projection. The take itself resolves its slot before anything is read for it (a refusal reads no file and
+  sends nothing), fences the projection and the look as data, calls with no tools, and is never stored or logged (not in
+  `main.db`, `cmdr.log`, or `llm-logs/`); only its cost is metered. Canonical:
+  `apps/desktop/src-tauri/src/about/DETAILS.md` § The verdict.
 
 Ask Cmdr is the widest of these, so the rest of this section is its detail. Ask Cmdr also has its own on/off switch
 (`askCmdr.enabled`); that's a feature switch, not consent.

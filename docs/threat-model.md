@@ -333,8 +333,10 @@ risk.
   typed question, or a proposal, and no tool answers for them; a turn Cmdr started only reads and proposes; one gate
   refuses sensitive paths and private keys; the memory folder is jailed, capped, and fenced in the prompt; no tool
   returns raw file bytes; a card's facts leave through one projection that keeps a download's host only, drops every raw
-  path, sanitizes every string the item wrote, and for a protected path keeps name-level facts only (`docs/security.md`
-  § Cloud AI egress, § AI API keys).
+  path, sanitizes every string the item wrote, and for a protected path keeps name-level facts only; the card's AI take
+  calls with no tools, reads the projection and its look inside from ONE fence the content can't close, renders as plain
+  text, and drives no action, so a hostile item can at most make it say something false (`docs/security.md` § Cloud AI
+  egress, § AI API keys).
 - **Residual risk**:
   - **Prompt injection is mitigated, not solved.** Injected text can make the agent read more than the user meant (and
     so send it to the provider), start or propose a harmful operation (which a person still has to confirm), or save a

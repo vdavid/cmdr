@@ -190,6 +190,9 @@ pub enum VerdictProblem {
     Overloaded,
     /// The organization's policy refused the request on its way out.
     Managed,
+    /// The call ended with no text (a reasoning model that spent its whole reply
+    /// thinking). Its input was still billed: `verdictEnd` carries the cost.
+    NoAnswer,
     /// Anything else the provider answered.
     Other,
 }

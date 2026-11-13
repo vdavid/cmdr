@@ -660,6 +660,32 @@ async fn a_provider_failure_ends_typed() {
     assert_eq!(world.metered.load(Ordering::SeqCst), 0);
 }
 
+/// A call that ends with no text is no verdict: it ends `noAnswer` with its cost, and
+/// nothing is cached for a reopen.
+#[tokio::test]
+async fn a_call_that_says_nothing_ends_with_no_answer() {
+    let card = text_file("notes.txt", "x\n");
+    let world = World::new();
+    let limits = Limits::default();
+    for _ in 0..2 {
+        let (recorder, watched) = recorded();
+        let token = CancellationToken::new();
+        let verdict = verdict_for(&card, &token, &limits, &world);
+        let facts = async { play_facts(&watched, &card, true) };
+        tokio::join!(facts, run(verdict, Ok(world.ready(says(&[]))), &watched));
+        let Some(AboutUpdate::VerdictEnd {
+            ending: VerdictEnding::Failed {
+                problem: VerdictProblem::NoAnswer,
+            },
+            cost: Some(_),
+        }) = recorder.updates().last()
+        else {
+            panic!("an empty answer is no verdict: {:?}", recorder.updates());
+        };
+    }
+    assert_eq!(world.calls.load(Ordering::SeqCst), 2, "nothing empty was reused");
+}
+
 /// The Stop command stops the card's own verdict and no other.
 #[test]
 fn the_stop_command_stops_only_that_cards_verdict() {

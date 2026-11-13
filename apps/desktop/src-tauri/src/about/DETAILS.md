@@ -33,20 +33,13 @@ returns without gathering. A second start under a live id cancels the first. `RE
 returning it would only echo it. Whether the item is a file, folder, app, or link comes from the probe's `lstat` (or
 the volume's metadata), never from what the pane believed.
 
-## Wiring the card's frontend (first steps for whoever builds it)
+## Wiring `about_stop_verdict` (first step for the verdict block)
 
-`about_start` is registered (dispatch-only, raw invoke, beside `stream_folder_suggestions`). `about_cancel` is built and
-tested but NOT registered: `desktop-ipc-unused` refuses a typed command with no caller, and its allowlist needs
-David's consent. So the card's first commit, in one go:
-
-1. Add `crate::about::commands::about_cancel` to the `cfg(all())` `typed` list in `ipc.rs`'s `ipc_command_manifest!`,
-   and drop its `#[cfg_attr(not(test), expect(dead_code, …))]` in `commands.rs`.
-2. `pnpm bindings:regen` (from `apps/desktop`): `commands.aboutCancel` appears beside the already exported
-   `AboutEvent`.
-3. A new `about.ts` in `apps/desktop/src/lib/tauri-commands/`, exported from the barrel: a start that mints the request id
-   (`crypto.randomUUID()`), opens a `Channel<AboutEvent>`, and raw-invokes `about_start` with `{ request: { requestId,
-   path, volumeId }, onEvent }` (the `cmdr/no-raw-tauri-invoke` opt-out, as `streamFolderSuggestions` in `settings.ts`
-   does), and a cancel through `commands.aboutCancel`. The card's state slice is its caller, so the check passes.
+`about_start` is registered dispatch-only (raw invoke, a `Channel`), `about_cancel` typed. `about_stop_verdict` is built
+and tested but NOT registered: `desktop-ipc-unused` refuses a typed command with no caller. The verdict block's first
+commit, in one go: add `crate::about::commands::about_stop_verdict` to the `cfg(all())` `typed` list in `ipc.rs` beside
+`about_cancel`, drop its `#[cfg_attr(not(test), expect(dead_code, …))]`, `pnpm bindings:regen`, and call
+`commands.aboutStopVerdict(requestId)` from a wrapper in `apps/desktop/src/lib/tauri-commands/about.ts`.
 
 ## Routing
 
@@ -341,7 +334,103 @@ Tests: `lookup.rs` (a row still out at the deadline is named and `pending`; a st
 real gate in `apps/desktop/src-tauri/src/tools/tests/about_item_tests.rs` (facts on a user turn, `directModeOff`, the direct read logged by tool,
 a wake making zero calls to a share Cmdr dials, a protected path and a link into one).
 
+## The verdict
+
+`verdict/`. Two or three plain sentences a model writes from the card's projection and a small look inside the file,
+streamed on the card's own channel beside the facts. The prompt and its safety reasoning: plan D3, D4, D8, D13, D17,
+D18 (`docs/specs/tell-me-about-this-plan.md`, until the wipe).
+
+### Its events
+
+After `planned`, interleaved with the facts: `verdictPlanned` (reserve the block) or `verdictUnavailable { why }` (no
+block; `aiOff` and `turnedOff` draw nothing), then `verdictGiven { contents }` right BEFORE the call goes out (so the
+card says what's leaving while it leaves), `verdictDelta { text }`s (plain text: render as a text node), and one
+`verdictEnd { ending, cost }` (`done`, `stopped`, or `failed { problem }`; `cost` only when the call reached its end).
+A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { contents, text }` instead, with no call.
+`watched.rs` tees the card's sink: it forwards every fact update, keeps the card as it stands, and wakes the verdict on
+`planned` (only after `planned` is on the channel, so the verdict's first word always follows it) and on
+`factsSettled`. A closed card (its token tripped) hears nothing more, not even `verdictEnd`.
+
+### The order, which is the consent guarantee
+
+1. **The gate** (`gate::resolve_for_card`, on a blocking thread beside the card's placing): `ai.provider` off →
+   `aiOff`; `aboutThis.aiVerdict` false → `turnedOff` (`settings::load_about_this_ai_verdict`, absent = on); Local →
+   `localOff` while `VERDICT_ON_LOCAL` is false (D4: flipping it is that one constant); then
+   `resolve_agent_llm(app, AgentSlot::AboutThis)`, whose refusals map to `noCloudConsent`, `managed { refusal }`,
+   `notConfigured`, or `notReady` (a local server that isn't running: a verdict never starts it or a download). No
+   `main.db` ledger row → `notReady`, ❌ never an unmetered call. Only an `Ok` builds a `gate::Ready` (the LLM, the call
+   settings, the prompt variant, the meter), and everything after takes one.
+2. **The reuse and the ceiling** (`limits.rs`): a finished verdict for the same volume, path, node, size, mtime,
+   provider, and model comes back from memory (32 entries, never disk). Else at most `MAX_STARTS` (12) in any 60 s,
+   past which `tooManyRequests`. Then `verdictPlanned`, and the one in-flight slot: a new verdict stops the old.
+3. **The facts**: it waits for `factsSettled` or `FACTS_CAP` (1.5 s from the start), whichever first, and the user
+   message names the rows still out (`stillGathering`; their facts read `pending`).
+4. **The sensitive gate and the look inside**: `model::gate_within` (as the agent tool), then, only for a file on a
+   local disk whose bytes are there (`session::ItemReach::bytes_readable`, set by the route), ONE `inspect_path` call
+   on its own thread under `PEEK_BUDGET` (2 s), cut by `peek::shape` to 40 lines / 2,000 characters, a PDF's title and
+   first page, 20 archive names, or a photo's make, model, lens, and date. ❌ `Peek::CameraDetails` has no field for
+   GPS, so the location can't leave (D8). A folder (its digest is the look), an item reached through its volume, or an
+   online-only file gets none. A protected path gets none and logs the refusal by tool and reason
+   (`ContentTool::AboutVerdict`), ❌ never by path.
+5. **The prompt** (`prompt.rs`): the system prompt is one of two static files in `agent/prompts/` (`about_verdict.md`
+   with the removal sentence, `about_verdict_no_removal.md` without), picked per model class by
+   `PromptVariant::for_provider` (D17: Local never words removal; a class the eval fails flips here). The user message
+   is the language line, a header saying everything below is data written by whoever made the item, and ONE fence
+   holding the projection (`model::for_model`), the rows still out, and the peek; every marker inside is defanged, so
+   the content can't close the fence.
+6. **The call**: `AgentLlm::respond` with no tools, built with no LLM log context (`into_unlogged_llm`: the prompt holds
+   a path and facts, the answer is untrusted). `resolve_verdict_call_settings`: a 120-token reply, thinking off where
+   the model can stop, else its lowest level with 2,000 tokens of room (evidence on `VERDICT_THINKING_ROOM`).
+
+**Worst case, stated**: with no tools the model can't act; a hostile item can at most make the block say something
+false or reassuring in plain text. That's why the actions, the removal row, and "Continue in Ask Cmdr" never depend on
+the verdict's text, and why there's no runtime phrase filter (it would miss a paraphrase and every other language).
+
+### Stopping it
+
+- `about_cancel` (the card closed) trips the card's token, and the verdict's token is its child.
+- `about_stop_verdict(requestId)` stops the verdict alone; the card stays and the text so far stands (`stopped`).
+- `ai::cloud_consent::stop_in_flight_calls` (a revoke, a held "no", a narrowing managed policy) calls
+  `about::stop_verdicts`, which stops the one in flight. The LLM client's own per-request policy check is the backstop.
+- Quitting: `about::cancel_all` trips every card's token.
+
+### Its cost
+
+A finished call meters through `agent::pricing::price_call` + `record_cost` onto the reserved `about_this` conversation
+row (store migration v15, `ConversationOrigin::AboutThis`), on a blocking thread. The row holds cost only: ❌ no text,
+prompt, or path reaches `main.db`. It's hidden from the session list and search with the quiet-wakes row
+(`ConversationOrigin::LEDGERS`) and outside the wake loop's daily ceiling. An unpriced model records `priced = false`,
+shown unknown, never $0. **A stopped or failed call reports no usage** (the provider's usage rides the stream's `End`,
+which a dropped stream never reaches, the same as a stopped rail turn: `agent/chat/DETAILS.md` § Reporting what a turn
+cost), so nothing is metered for it and its `verdictEnd` carries no cost. A call that ends with no text (a reasoning
+model that spent its reply thinking) ends `failed { noAnswer }` WITH its cost, and isn't cached.
+
+### The E2E fake
+
+Under `CMDR_E2E_ASK_CMDR_FAKE`, `AgentSlot::AboutThis` plays `e2e_fake::ABOUT_THIS_FAKE_VERDICT` (fixed text, four
+deltas) for every card; the gate's provider and setting steps still apply, so a spec sets `ai.provider` to `cloud`.
+`CMDR_E2E_ABOUT_VERDICT_PACE=<ms>[,<hold ms>]` paces it (`FakeAgentLlm::paced`): a wait before each delta and a hold
+before the last, so the streaming and stopped states stay on screen for QA and screenshots.
+
+### Smoke run on a real model
+
+By hand, 2026-11-13, `claude-haiku-5-5`, four synthesized cards (a Chrome-shaped `.dmg`, a text budget, a file named to
+order a green light whose text asks for `rm -rf ~` and a link, a `node_modules`): all four stayed on the facts, the
+hostile one named its claim as only the name's and didn't follow it, and none said removing was safe; they ran three or
+four sentences, often restating rows. About $0.0002 a verdict (950–1,500 prompt tokens). The first pass, at the
+model's default effort under 120 tokens, wrote nothing at all: what `VERDICT_THINKING_ROOM` and `noAnswer` answer.
+
 ## Tests
+
+`verdict/tests.rs` drives the verdict over a recorded channel with the fake LLM and a counting reader: the order
+(`verdictPlanned` before the facts settle, `verdictGiven` before the first delta, the cost at the end), every gate
+refusal reading no file and calling no model, the cap naming rows still out, Stop and a revoke ending `stopped` with
+the card open, a closed card hearing nothing, a reopen reusing from memory, the 13th start refused, a protected item
+going out name-level with nothing read, a folder read never, a provider failure and an empty answer ending typed.
+`verdict/peek_tests.rs` runs the real `inspect_file` core (GPS never leaves, the window's caps, a protected file, a read
+past its budget); `prompt.rs` the fence (a marker in a name can't close it); `limits.rs` the ceiling, the one slot, the
+cache; `gate.rs` the refusal map and the ledger row holding cost only. The revoke and narrowing paths:
+`ai/cloud_consent.rs` and `ai/managed.rs` tests. Pool starvation: `tests.rs::a_slow_card_cant_starve_the_next_cards_rows`.
 
 `through_tests.rs` runs a card reached through its volume end to end: the `Way` table, a scripted share whose every
 call waits (the card plans at once, says it stopped once, settles inside the budget, and the next card asks it nothing),

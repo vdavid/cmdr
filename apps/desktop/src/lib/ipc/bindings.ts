@@ -23348,6 +23348,11 @@ export type VerdictProblem =
   | 'overloaded'
   // The organization's policy refused the request on its way out.
   | 'managed'
+  /**
+   *  The call ended with no text (a reasoning model that spent its whole reply
+   *  thinking). Its input was still billed: `verdictEnd` carries the cost.
+   */
+  | 'noAnswer'
   // Anything else the provider answered.
   | 'other'
 
