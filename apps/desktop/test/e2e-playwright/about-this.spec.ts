@@ -22,7 +22,6 @@
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import { execFileSync } from 'child_process'
 import { waitBudget } from './wait-budget.js'
 import { test, expect } from './fixtures.js'
 import {
@@ -35,6 +34,7 @@ import {
   pressKey,
 } from './helpers.js'
 import { defaultKey } from './helpers/registry-keys.js'
+import { buildAboutFixtures, writeDownloadRecord, type AboutFixtureTree } from '../e2e-shared/about-fixtures.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 type PageLike = TauriPage | BrowserPageAdapter
@@ -60,73 +60,6 @@ const PNG = Buffer.from(
   'hex',
 )
 
-/** A binary plist (`bplist00`) holding one array of short ASCII strings, as Chrome writes `kMDItemWhereFroms`. */
-function bplistOfStrings(strings: string[]): Buffer {
-  const objects: Buffer[] = []
-  // Object 0: the array, referencing objects 1..n with one-byte refs.
-  objects.push(Buffer.from([0xa0 | strings.length, ...strings.map((_, i) => i + 1)]))
-  for (const s of strings) {
-    const bytes = Buffer.from(s, 'ascii')
-    // Lengths past 14 take the extended form: 0x5F, then an int object (0x10 = one byte).
-    const head = bytes.length < 15 ? Buffer.from([0x50 | bytes.length]) : Buffer.from([0x5f, 0x10, bytes.length])
-    objects.push(Buffer.concat([head, bytes]))
-  }
-  const header = Buffer.from('bplist00', 'ascii')
-  const offsets: number[] = []
-  let at = header.length
-  for (const o of objects) {
-    offsets.push(at)
-    at += o.length
-  }
-  const offsetTableStart = at
-  const offsetSize = offsetTableStart > 0xff ? 2 : 1
-  const table = Buffer.alloc(offsets.length * offsetSize)
-  offsets.forEach((o, i) => {
-    if (offsetSize === 1) table.writeUInt8(o, i)
-    else table.writeUInt16BE(o, i * 2)
-  })
-  const trailer = Buffer.alloc(32)
-  trailer.writeUInt8(offsetSize, 6)
-  trailer.writeUInt8(1, 7) // object ref size
-  trailer.writeBigUInt64BE(BigInt(objects.length), 8)
-  trailer.writeBigUInt64BE(0n, 16) // top object
-  trailer.writeBigUInt64BE(BigInt(offsetTableStart), 24)
-  return Buffer.concat([header, ...objects, table, trailer])
-}
-
-/**
- * Sets a `user.*` xattr on Linux. The container has no `attr` package, so this goes through Perl's
- * `syscall` (Perl is part of `build-essential`): `setxattr` is 188 on x86_64 and 5 on aarch64.
- */
-function setLinuxUserXattr(file: string, name: string, value: string): void {
-  const number = process.arch === 'arm64' ? 5 : 188
-  execFileSync('perl', [
-    '-e',
-    `my ($p, $n, $v) = @ARGV; my $r = syscall(${String(number)}, $p, $n, $v, length($v), 0); exit($r == 0 ? 0 : 1)`,
-    '--',
-    file,
-    name,
-    value,
-  ])
-}
-
-/** Writes the OS's download record onto `file`, the way a browser leaves it. */
-function writeDownloadRecord(file: string): void {
-  if (process.platform === 'darwin') {
-    const whereFroms = bplistOfStrings([FILE_URL, PAGE_URL]).toString('hex')
-    execFileSync('xattr', ['-wx', 'com.apple.metadata:kMDItemWhereFroms', whereFroms, file])
-    const seconds = Math.floor(Date.parse('2026-03-02T12:00:00Z') / 1000).toString(16)
-    execFileSync('xattr', [
-      '-w',
-      'com.apple.quarantine',
-      `0081;${seconds};Chrome;0E0B8C55-0000-4000-8000-ABOUTTHIS000`,
-      file,
-    ])
-  } else {
-    setLinuxUserXattr(file, 'user.xdg.origin.url', FILE_URL)
-  }
-}
-
 function fixtureDir(): string {
   return path.join(getFixtureRoot(), DIR)
 }
@@ -137,7 +70,11 @@ function buildFixture(): void {
   fs.mkdirSync(path.join(fixtureDir(), FOLDER), { recursive: true })
   fs.writeFileSync(path.join(fixtureDir(), FOLDER, 'q1.txt'), 'first quarter\n')
   fs.writeFileSync(path.join(fixtureDir(), FILE), PNG)
-  writeDownloadRecord(path.join(fixtureDir(), FILE))
+  writeDownloadRecord(path.join(fixtureDir(), FILE), {
+    fileUrl: FILE_URL,
+    pageUrl: PAGE_URL,
+    at: '2026-03-02T12:00:00Z',
+  })
   fs.writeFileSync(path.join(fixtureDir(), TOOL), '#!/bin/sh\necho hi\n', { mode: 0o755 })
 }
 
@@ -284,5 +221,81 @@ test.describe('Tell me about this', () => {
       fs.rmSync(config, { recursive: true, force: true })
       fs.rmSync(entry, { force: true })
     }
+  })
+})
+
+/**
+ * The footer's actions, on the QA fixture tree (`e2e-shared/about-fixtures.ts`), built where the harness points the
+ * card's home (`CMDR_ABOUT_FIXTURE_HOME` = `<fixture root>/about-this-qa/home`), so its fake Library reads like a real
+ * one. Each action closes the card first, so the assertions read where focus and the pane went.
+ */
+test.describe('Tell me about this: the next actions', () => {
+  let qa: AboutFixtureTree
+
+  test.beforeAll(() => {
+    qa = buildAboutFixtures(path.join(getFixtureRoot(), 'about-this-qa'))
+  })
+  test.afterAll(() => {
+    fs.rmSync(path.join(getFixtureRoot(), 'about-this-qa'), { recursive: true, force: true })
+  })
+
+  async function cursorName(tauriPage: PageLike): Promise<string> {
+    return tauriPage.evaluate<string>(
+      `document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')?.getAttribute('data-filename') ?? ''`,
+    )
+  }
+
+  /**
+   * Presses a footer action from the keyboard's side: focus it (it's in the Tab order), then activate it. A synthetic
+   * Enter has no default action on a button, so the activation is the button's own `click()`, which is what a real Enter
+   * on a focused button fires.
+   */
+  async function pressAction(tauriPage: PageLike, selector: string): Promise<void> {
+    const found = await tauriPage.evaluate<boolean>(`(() => {
+      const button = document.querySelector(${JSON.stringify(`${CARD} :is(${selector}) button`)})
+      if (!button) return false
+      button.focus()
+      if (document.activeElement !== button) return false
+      button.click()
+      return true
+    })()`)
+    expect(found).toBe(true)
+  }
+
+  test('Move to trash opens the delete dialog for the item, and cancelling leaves it in place', async ({
+    tauriPage,
+  }) => {
+    await openDir(tauriPage, path.dirname(qa.plainDocument), path.basename(qa.plainDocument))
+    await pressKey(tauriPage, defaultKey('file.tellMeAbout'))
+    await waitForSettledCard(tauriPage)
+    // Never the first action, and never focused on open.
+    const first = await tauriPage.evaluate<string | null>(
+      `document.querySelector('${CARD} [data-about-actions] [data-action]')?.getAttribute('data-action') ?? null`,
+    )
+    expect(first).not.toBe('moveToTrash')
+    expect(await tauriPage.evaluate<boolean>(`!!document.activeElement?.closest('[data-about-actions]')`)).toBe(false)
+
+    await pressAction(tauriPage, '[data-action="moveToTrash"], [data-action="delete"]')
+    await tauriPage.waitForSelector('[data-dialog-id="delete-confirmation"]', waitBudget(5000))
+    // The card closed first, and the dialog names this one item.
+    expect(await tauriPage.count(CARD)).toBe(0)
+    expect(await tauriPage.textContent('[data-dialog-id="delete-confirmation"]')).toContain(
+      path.basename(qa.plainDocument),
+    )
+    await dismissOverlay(tauriPage)
+    expect(fs.existsSync(qa.plainDocument)).toBe(true)
+  })
+
+  test('a file in an app’s data reveals the app in the pane, with the cursor on it', async ({ tauriPage }) => {
+    // TextEdit is part of every macOS, so its `Application Support` folder always has an installed owner.
+    test.skip(process.platform !== 'darwin', 'revealing an app bundle is a macOS owner')
+    await openDir(tauriPage, path.dirname(qa.insideAppSupport), path.basename(qa.insideAppSupport))
+    await pressKey(tauriPage, defaultKey('file.tellMeAbout'))
+    await waitForSettledCard(tauriPage)
+    expect(await rowText(tauriPage, 'owner')).toContain('TextEdit')
+
+    await pressAction(tauriPage, '[data-action="revealOwner"]')
+    await expect.poll(async () => tauriPage.count(CARD), { timeout: waitBudget(3000) }).toBe(0)
+    await expect.poll(async () => cursorName(tauriPage), { timeout: waitBudget(5000) }).toBe('TextEdit.app')
   })
 })

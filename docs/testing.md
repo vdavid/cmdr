@@ -934,6 +934,11 @@ E2E test hooks split along two axes:
   the organization's managed preferences (MDM policy). The macOS lane points every shard at `managed-prefs.plist` in its
   data dir, which doesn't exist (no policy) until `managed-policy.spec.ts` writes it; the app watches the file and
   re-reads it on change. `apps/desktop/src-tauri/src/managed_policy/DETAILS.md` § Testing.
+- **`CMDR_ABOUT_FIXTURE_HOME`** (debug and `playwright-e2e` builds only, never a plain release): the folder the "Tell me
+  about this" card reads as home, so the QA fixture folder's fake `Library/Application Support/…` reads like the
+  person's real one with no write into `~/Library` (the QA fixture script,
+  `apps/desktop/test/e2e-shared/about-fixtures.ts`). It moves only the card's owner row and its app-folder action;
+  `test_mode::about_fixture_home`.
 - **`CMDR_PLAYWRIGHT_SOCKET`**: Override the plugin's Unix socket path (one socket per shard).
 - **`CMDR_SHOTS_PID` / `CMDR_SHOTS_OUT_DIR` / `CMDR_SHOTS_BROWSE_ROOT`**: read by the marketing capture's spec, never by
   the app, so they stay out of `crate::test_mode`. The orchestrator passes its own app pid (nothing exposes it over the
