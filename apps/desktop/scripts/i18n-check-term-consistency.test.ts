@@ -136,6 +136,24 @@ describe('findDivergences: platform blocks', () => {
     ])
   })
 
+  it('reads `other` where a block has no branch for the OS: Linux always, Windows when `windows` is missing', () => {
+    const english = cat({
+      'a.del': '{platform, select, macos {Move to Trash} other {Delete}}',
+      'b.del': 'Delete',
+    })
+    const de = cat({ 'a.del': '{platform, select, macos {In den Papierkorb} other {Entfernen}}', 'b.del': 'Löschen' })
+    // Windows and Linux both read a.del's `other`, so one finding, labelled with the branch they read.
+    expect(findDivergences(english, de, false, english.messages)).toEqual([
+      {
+        source: 'Delete',
+        renderings: [
+          { value: 'Entfernen', keys: ['a.del (other)'] },
+          { value: 'Löschen', keys: ['b.del'] },
+        ],
+      },
+    ])
+  })
+
   it('reports a split every OS shows once, not once per OS', () => {
     const english = cat({ 'a.x': 'Copy', 'b.x': 'Copy' })
     const de = cat({ 'a.x': 'Kopieren', 'b.x': 'Kopie' })

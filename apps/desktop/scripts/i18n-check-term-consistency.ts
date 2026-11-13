@@ -204,8 +204,19 @@ export function agreementProblems(source: Catalog): string[] {
 function readOn(value: string, os: RenderedPlatform): { branch: PlatformSelectBranch | null; text: string } {
   const branches = parsePlatformSelect(value)
   if (branches === null) return { branch: null, text: value }
-  const own = os === 'linux' ? undefined : branches[os]
-  return own === undefined ? { branch: 'other', text: branches.other } : { branch: os, text: own }
+  const own = OWN_BRANCH[os]
+  const text = own === undefined ? undefined : branches[own]
+  return own === undefined || text === undefined ? { branch: 'other', text: branches.other } : { branch: own, text }
+}
+
+/**
+ * The branch an OS reads before falling back to `other`, by name: the OS vocabulary (`RenderedPlatform`) and the
+ * catalog's branch names (`PlatformSelectBranch`) differ, and Linux has no branch of its own, it reads `other`.
+ */
+const OWN_BRANCH: Readonly<Record<RenderedPlatform, PlatformSelectBranch | undefined>> = {
+  macos: 'macos',
+  windows: 'windows',
+  linux: undefined,
 }
 
 /**
