@@ -51,14 +51,19 @@ questions are at its top). The eval's full evidence: `docs/notes/about-verdict-e
 - **Which models write a take**: Sonnet 5.5 and Opus 5.5 on Anthropic (`PASSED_THE_EVAL`). Both have more question 3–4
   flags (minor inventions) than the bar's literal two; at 831 takes per class they sit at a third of the bar's rate, and
   the eval agent added them on that reading. **Every unmeasured model is off** (OpenAI, Gemini, other hosts, older
-  Claudes) and now says so in one quiet line. Letting them write is one constant (`UNMEASURED_MODELS_WRITE`).
+  Claudes) and now says so in one quiet line. Letting them write is one constant (`UNMEASURED_MODELS_WRITE`); measuring
+  them is #1190.
 - **The removal row can fall below the fold** when a take shows on a long card: the take sits right above it by design,
   so the model's sentence always has Cmdr's own removal line next to it. A taller default, or accept it?
 - **Folder suggestions stay silent after the consent bump**: every cloud user allows cloud AI again once (version 2 →
   3), and until then folder suggestions, Ask Cmdr, and AI search are off with no word why. A one-line "what changed"
-  above the switch, a release-notes line, or both?
-- Still waiting from the plan: a `cmdr-git` per-path status (so a clean file reads "Committed, no changes" and the
-  removal row can say git brings it back), and the `cmdr-operation-log` surface raise (95 → 97, veto-able).
+  above the switch, a release-notes line, or both? (#1191)
+- **A `cmdr-git` per-path status** (#1188), so a clean file reads "Committed, no changes" and the removal row can say
+  git brings it back. Default until you say yes: without it.
+- **The `cmdr-operation-log` surface raise** (95 → 97) for "which operation put this file here". Default: in, veto-able.
+- **An inspector that follows the cursor** beside the dialog (#1181).
+
+The other follow-ups filed from this effort: #1175–#1180, #1182–#1187, and #1189 (the eval's two cleanups).
 
 ## Review items by surface
 

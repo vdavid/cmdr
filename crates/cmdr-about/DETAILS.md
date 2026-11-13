@@ -73,9 +73,9 @@ Not `ItemText`, on purpose:
   corroborated by forensics write-ups that query `LSQuarantineAgentName = 'sharingd'` (0xmachos "Quarantine
   Introduction", 2019; DFIR.REPORT "Revisiting macOS Forensics: Quarantine Data"), checked 2026-11-13; no AirDrop record
   exists on the dev Mac (its `QuarantineEventsV2` holds Chrome, Firefox, qBittorrent, and Homebrew only). ⚠️ The
-  WhereFroms shape (the sender's name as the one entry) is still unverified on a live transfer.
+  WhereFroms shape (the sender's name as the one entry) is still unverified on a live transfer (#1185).
 - **Linux**: `user.xdg.origin.url` and `user.xdg.referrer.url`, each one address as plain text (Chromium writes them;
-  Firefox not verified).
+  Firefox not verified, #1185).
 - **Egress** (`redact_for_egress`): a web source leaves as `Site { host }`; a numeric address as `IpAddress` (the URL
   parser reads `http://2130706433/` as IPv4, so a bare number can't pose as a name); `data:` and `blob:` as
   `InlineData`; `file:` as `LocalFile`; Mail and AirDrop as their kind. An IDN leaves as punycode. Why host only: real
@@ -112,7 +112,7 @@ and `OsCaps`, all known before any job. It returns the sections in display order
   new backend changes no rule here. `everything` is a local disk; `identity_only` is a phone and the default for any
   volume whose capabilities aren't mapped yet.
 - **`OsCaps` is apart from `VolumeCaps`** so an OS limit never reads as a volume one: Linux has no Spotlight, no code
-  signing, and (for now) no default-app lookup, and its disk still gets no note. The host sets all three on macOS.
+  signing, and no default-app lookup yet (#1186), and its disk still gets no note. The host sets all three on macOS.
 - **An online-only file** (`contents_local: false`, a cloud drive evicted it) plans no row that reads its bytes: the
   real type and the signature. Reading them would download it. Its xattrs are metadata and stay.
 - **Each kind sits in exactly one section** (`rows_of`): Origin (download, Cmdr operation), Nature (identity, real type,
@@ -191,7 +191,7 @@ word certainty honestly. `home` is a parameter, so a fixture home never touches 
 - **By path**: a Homebrew `Cellar/<name>` or `Caskroom/<name>` under `/opt/homebrew`, `/usr/local`, or
   `/home/linuxbrew/.linuxbrew`; anything inside an `.app` bundle is that app's (the bundle itself isn't inside one).
 - **Not claimed**: dot-folders in home (`~/.npm`, `~/.cargo`), plain names in Library folders other than
-  `Application Support`, anything else. A curated tool table is a follow-up.
+  `Application Support`, anything else. A curated tool table is #1179.
 
 Resolving an id, in order:
 
@@ -333,7 +333,7 @@ host injects `submit` (its framework pool), `collect(deadline, late)` returns wh
 out, and each later answer goes to `late` on the thread that produced it. The switch from `ready` to `late` happens
 under the lock jobs deliver under, so an answer lands in exactly one place
 (`no_answer_is_lost_or_delivered_twice_around_the_deadline`). `CancelGathering` makes queued jobs skip their work and
-drops late answers. The menu keeps its own copy; unifying the two is a follow-up, not a reason to touch the menu.
+drops late answers. The menu keeps its own copy; unifying the two is #1178, not a reason to touch the menu.
 
 A worker stuck in a framework call is lost, never interrupted: a deadline bounds the collector's wait, and the host
 pool's ceiling bounds the threads a dead mount can hold.

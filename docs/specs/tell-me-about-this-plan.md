@@ -1173,12 +1173,15 @@ context-menu and menu-bar label, and the analytics event's props.
   800 ms budget.
 - **Translations block the final land**: CI fails `i18n-coverage` on the new keys (235 after M7). Order: David's copy
   pass, then translator agents (`docs/guides/i18n-translation.md`), then land.
-- **Follow-up issues to file at close-out** (beyond the plan's M14 list): `VolumeManager::resolve` blocks the async
-  executor when an OS-mounted share's path names a zip or a `.git` portal path (bug; the card avoids it, other callers
-  don't); a folder-scoped search scans the whole index (400–860 ms on 8M rows); a dotfiles repo at `~` makes the git
-  status walk cover the whole home folder (the status column shares it); AirDrop provenance (quarantine agent
-  `sharingd`) unverified on a live transfer; the Linux default-app row; two Czech strings quote "Read-only" where the
-  label says "Jen ke čtení" (from `main`, translator's).
+- **Follow-up issues, filed in M14**: #1178 menu engine, #1179 dot-folder table, #1180 subtree histogram, #1181
+  inspector, #1182 `resolve` on the executor, #1183 scoped search, #1184 dotfiles repo, #1185 AirDrop and Firefox
+  records, #1186 Linux default app, #1187 Czech labels, #1188 git per-path status (D12), #1189 eval cleanups, #1190 more
+  models measured, #1191 the silence after the consent bump (plus #1175–#1177 from earlier). The list as it stood
+  (beyond the plan's M14 list): `VolumeManager::resolve` blocks the async executor when an OS-mounted share's path names
+  a zip or a `.git` portal path (bug; the card avoids it, other callers don't); a folder-scoped search scans the whole
+  index (400–860 ms on 8M rows); a dotfiles repo at `~` makes the git status walk cover the whole home folder (the
+  status column shares it); AirDrop provenance (quarantine agent `sharingd`) unverified on a live transfer; the Linux
+  default-app row; two Czech strings quote "Read-only" where the label says "Jen ke čtení" (from `main`, translator's).
 - **Unseen in a real app so far**: the folder digest and app Library data with a real index (the E2E build runs none).
   The lead checks both in the dev app before handing QA to David.
 - **Real-LLM budget**: about $10 on `ANTHROPIC_API_KEY_CMDR_DEV` (read with `secret`), most of it for M13.
