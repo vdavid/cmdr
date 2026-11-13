@@ -15,6 +15,7 @@ import AboutRemoval from './AboutRemoval.svelte'
 import AboutDigest from './AboutDigest.svelte'
 import AboutAppData from './AboutAppData.svelte'
 import AboutPlaceList from './AboutPlaceList.svelte'
+import AboutActions from './AboutActions.svelte'
 import { aboutThisFixtures } from '#lib/dialog-gallery/fixtures/about-this.js'
 import { expectNoA11yViolations } from '#lib/test-a11y.js'
 
@@ -137,6 +138,12 @@ describe('the card’s parts on their own', () => {
       },
     ]
     await expectNoA11yViolations(mountInto(AboutPlaceList, { items, onGoTo: () => {} }))
+  })
+
+  it('the footer actions, shown ones and the More button', async () => {
+    const actions = aboutThisFixtures.downloaded?.derived?.actions ?? null
+    expect(actions?.more.length).toBeGreaterThan(0)
+    await expectNoA11yViolations(mountInto(AboutActions, { actions, onAct: () => {} }))
   })
 
   it('the removal list with its More button', async () => {

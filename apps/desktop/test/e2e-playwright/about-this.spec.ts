@@ -78,12 +78,16 @@ function buildFixture(): void {
   fs.writeFileSync(path.join(fixtureDir(), TOOL), '#!/bin/sh\necho hi\n', { mode: 0o755 })
 }
 
-/** The person's own desktop entry and the app's folder under `~/.config`, as an installed Linux app leaves them. */
+/**
+ * The person's own desktop entry and the app's folder under `~/.config`, as an installed Linux app leaves them. The
+ * entry goes where the app scan reads them (the real home's `.local/share/applications`); the folder goes in the home
+ * the card reads (`CMDR_ABOUT_FIXTURE_HOME`, which both harnesses point at the QA tree's `home/`).
+ */
 function linuxAppFixture(): { entry: string; config: string } {
-  const home = os.homedir()
+  const cardHome = process.env.CMDR_ABOUT_FIXTURE_HOME ?? path.join(getFixtureRoot(), 'about-this-qa', 'home')
   return {
-    entry: path.join(home, '.local/share/applications', `${DESKTOP_ID}.desktop`),
-    config: path.join(home, '.config', DESKTOP_ID),
+    entry: path.join(os.homedir(), '.local/share/applications', `${DESKTOP_ID}.desktop`),
+    config: path.join(cardHome, '.config', DESKTOP_ID),
   }
 }
 

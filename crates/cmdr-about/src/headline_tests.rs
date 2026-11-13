@@ -263,6 +263,21 @@ fn a_library_folder_leads_with_its_app_or_that_the_app_is_gone() {
     );
 }
 
+/// A cache reads as one in the headline too, so it agrees with the removal row
+/// ("its app writes it again") right below.
+#[test]
+fn an_apps_cache_is_headlined_as_its_cache() {
+    let mut cache = card(Folder, None, &local());
+    land(&mut cache, owned_by_id(OwnerPlace::Caches, Some("Safari")));
+    assert_eq!(
+        headline(&cache).lead,
+        HeadlineLead::CacheOfApp {
+            app: text("Safari"),
+            certainty: Certainty::Certain
+        }
+    );
+}
+
 #[test]
 fn an_app_is_headlined_with_its_version_and_whole_size() {
     let mut app = card(AppBundle, Some("app"), &local());

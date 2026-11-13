@@ -4,7 +4,7 @@
  * tree under its fixture root.
  *
  * ```sh
- * pnpm about:fixtures            # builds <repo>/_ignored/about-this-qa (git-ignored)
+ * pnpm about:fixtures            # builds /tmp/cmdr-about-this-qa
  * pnpm about:fixtures /tmp/qa    # or anywhere else
  * ```
  *
@@ -19,7 +19,6 @@
 import fs from 'fs'
 import path from 'path'
 import { execFileSync } from 'child_process'
-import { fileURLToPath } from 'url'
 
 /** The items the tree holds, by what each exercises, as absolute paths. */
 export interface AboutFixtureTree {
@@ -139,10 +138,22 @@ function diskImageBytes(): Buffer {
   return Buffer.concat([body, trailer])
 }
 
-/** A 64-bit Mach-O header (what a program is), padded: the card says it isn't the picture its name claims. */
-function programBytes(): Buffer {
+/**
+ * A real program under a picture's name, the way a fake "wallpaper" arrives: the OS's own `true`, with its signature
+ * stripped on macOS, so the card reads it as an unsigned program whose contents contradict its name. Falls back to a
+ * bare Mach-O header where neither tool is there.
+ */
+function writeProgram(dest: string): void {
+  fs.mkdirSync(path.dirname(dest), { recursive: true })
+  const source = ['/usr/bin/true', '/bin/true'].find((candidate) => fs.existsSync(candidate))
+  if (source) {
+    fs.copyFileSync(source, dest)
+    fs.chmodSync(dest, 0o755)
+    if (process.platform === 'darwin') execFileSync('codesign', ['--remove-signature', dest])
+    return
+  }
   const header = Buffer.from('cffaedfe0c000001000000000200000000000000', 'hex')
-  return Buffer.concat([header, Buffer.alloc(48 * 1024, 0x90)])
+  write(dest, Buffer.concat([header, Buffer.alloc(48 * 1024, 0x90)]), 0o755)
 }
 
 /** A real (empty-entry) ZIP: what the bidi-named "picture" really is. */
@@ -330,7 +341,7 @@ export function buildAboutFixtures(root: string): AboutFixtureTree {
     at: '2026-03-02T14:20:00Z',
   })
   // A program wearing a picture's name, executable, downloaded too.
-  write(tree.executableNamedJpg, programBytes(), 0o755)
+  writeProgram(tree.executableNamedJpg)
   writeDownloadRecord(tree.executableNamedJpg, {
     fileUrl: 'https://cdn.free-wallpapers.example/hd/beach-sunset.jpg',
     pageUrl: 'https://free-wallpapers.example/beach',
@@ -373,10 +384,14 @@ export function buildAboutFixtures(root: string): AboutFixtureTree {
   return tree
 }
 
-/** `<repo>/_ignored/about-this-qa`: `_ignored/` is git-ignored at any depth. */
+/**
+ * `/tmp/cmdr-about-this-qa`, the same path on macOS and Linux. ❗ Outside every repo on purpose: inside Cmdr's own
+ * checkout every card grew a "Git: in cmdr" row, and the fixture repo's files read as the checkout's (Cmdr's repo
+ * cache answers the outer repo for a nested one it hasn't opened yet). The one cost: `/tmp` is a temporary folder, so
+ * a folder's importance reads "Not ranked".
+ */
 function defaultRoot(): string {
-  const here = path.dirname(fileURLToPath(import.meta.url))
-  return path.resolve(here, '..', '..', '..', '..', '_ignored', 'about-this-qa')
+  return path.join('/tmp', 'cmdr-about-this-qa')
 }
 
 if (process.argv[1]?.endsWith('about-fixtures.ts')) {

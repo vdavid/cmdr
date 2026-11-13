@@ -26,8 +26,8 @@ use crate::provenance::WhereFrom;
 use crate::text::ItemText;
 
 /// How many actions show before "More". Three, plus "More" and Close, keep the
-/// footer on one line at the card's default width with real labels ("Open with
-/// Preview", "Show in Finder", "Open github.com"); four pushed it past it.
+/// footer on one line at the card's default width ("Open", "Show in Finder",
+/// "Show TextEdit"); four pushed it past it.
 pub(crate) const SHOWN_ACTIONS: usize = 3;
 
 /// What the item's volume lets the card's actions do, filled by the host per
@@ -82,7 +82,7 @@ pub enum AboutAction {
     /// Opens the page the item was recorded as downloaded from.
     OpenDownloadPage {
         /// The site's host, lowercased, punycode when not plain ASCII: what the
-        /// button shows before the press.
+        /// button's tooltip names before the press.
         host: String,
         /// The whole address, parsed and written back out, `http` or `https`
         /// only.

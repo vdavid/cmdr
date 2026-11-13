@@ -49,7 +49,7 @@ pub(crate) fn recursive_size_fact(place: &IndexPlace) -> Fact<RecursiveSize> {
                 .map(|status| status.walked_roots)
                 .unwrap_or_default();
             let walk_moves_it = IndexStatusResponse::walk_affects(&walked, &place.path);
-            Fact::Known(recursive_size_of(&stats, walk_moves_it))
+            recursive_size_of(&stats, walk_moves_it).into_fact()
         }
         Ok(None) => Fact::unknown(UnknownWhy::NotIndexed),
         Err(error) => {

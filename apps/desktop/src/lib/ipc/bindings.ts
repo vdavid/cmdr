@@ -6702,7 +6702,7 @@ export type AccessNotice =
  *  in the target's fixed order.
  */
 export type Actions = {
-  // At most [`SHOWN_ACTIONS`], never starting with a removal.
+  // At most three, never starting with a removal.
   shown: AboutAction[]
   // The rest.
   more: AboutAction[]
@@ -11434,6 +11434,17 @@ export type HeadlineLead =
   // It's an installed app's data.
   | {
       template: 'dataOfApp'
+      // The app.
+      app: ItemText
+      // How sure the match is.
+      certainty: Certainty
+    }
+  /**
+   *  It's an installed app's cache (`Library/Caches`, `~/.cache`): said as a
+   *  cache, so the headline agrees with the removal row below it.
+   */
+  | {
+      template: 'cacheOfApp'
       // The app.
       app: ItemText
       // How sure the match is.

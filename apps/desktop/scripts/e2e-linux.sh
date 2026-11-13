@@ -737,7 +737,8 @@ else
             export CMDR_E2E_START_PATH
             CMDR_E2E_START_PATH=$(npx tsx -e "import { createFixtures } from \"./test/e2e-shared/fixtures.js\"; console.log(createFixtures())" | tail -1)
             echo "Fixtures at: $CMDR_E2E_START_PATH"
-            # The "Tell me about this" card's home folder: about-this.spec.ts builds its QA
+            # The home folder of the "Tell me about this" card (no apostrophes in here: this
+            # whole block is one single-quoted bash -c string): about-this.spec.ts builds its QA
             # tree there (e2e-shared/about-fixtures.ts), with a fake Library of its own. The
             # macOS harness sets the same, in e2e-playwright-app.go.
             export CMDR_ABOUT_FIXTURE_HOME="$CMDR_E2E_START_PATH/about-this-qa/home"

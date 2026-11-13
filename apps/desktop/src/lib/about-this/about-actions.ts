@@ -10,11 +10,11 @@ import { tString } from '#lib/intl/messages.svelte.js'
 export function actionLabel(action: AboutAction): string {
   switch (action.type) {
     case 'openWithDefaultApp':
-      return tString('aboutThis.action.open', { app: action.app })
+      return tString('aboutThis.action.open')
     case 'showInFileManager':
       return tString('aboutThis.action.showInFileManager')
     case 'openDownloadPage':
-      return tString('aboutThis.action.downloadPage', { host: action.host })
+      return tString('aboutThis.action.downloadPage')
     case 'revealOwner':
       return tString('aboutThis.action.revealOwner', { app: action.app })
     case 'goToAppFolder':
@@ -28,9 +28,17 @@ export function actionLabel(action: AboutAction): string {
   }
 }
 
-/** The tooltip that says, in full, where a press goes before it happens. Only the download page has one. */
+/**
+ * The tooltip that says where a press goes before it happens (on hover and on keyboard focus): the site a download
+ * page opens, and the app Open opens with.
+ */
 export function actionTooltip(action: AboutAction): string | null {
-  return action.type === 'openDownloadPage'
-    ? tString('aboutThis.action.downloadPageTooltip', { host: action.host })
-    : null
+  switch (action.type) {
+    case 'openDownloadPage':
+      return tString('aboutThis.action.downloadPageTooltip', { host: action.host })
+    case 'openWithDefaultApp':
+      return tString('aboutThis.action.openTooltip', { app: action.app })
+    default:
+      return null
+  }
 }

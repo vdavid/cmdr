@@ -757,11 +757,14 @@ var surfaceGuardedCrates = []struct {
 		// card's next actions): the `actions` module (`AboutAction`, `Actions`,
 		// `ActionCaps` with `none`, `RemoveBy`, `actions`) and
 		// `OwnerQuestion::app_folder_above`, argued in that section.
+		//
+		// 139 → 140 (2026-11-13): `RecursiveSize::into_fact`, which reads a lower
+		// bound with nothing counted as not indexed, argued in that section.
 		Name: "cmdr-about",
 		Ceilings: surfaceCeilings{
 			RootPromises:   12,
 			PublicModules:  12,
-			SubsystemItems: 139,
+			SubsystemItems: 140,
 		},
 	},
 }

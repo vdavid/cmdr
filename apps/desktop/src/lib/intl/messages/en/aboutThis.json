@@ -8,27 +8,26 @@
   "@aboutThis.dialog.close": {
     "description": "Button at the bottom right of the \"Tell me about this\" card. Closes it; nothing else happens."
   },
-  "aboutThis.action.open": "Open with {app}",
+  "aboutThis.action.open": "Open",
   "@aboutThis.action.open": {
-    "description": "Button in the footer of the \"Tell me about this\" card. Opens the file in the app the system opens it with, the same as pressing Enter on it in the file list (the card closes first). Short control label.",
+    "description": "Button in the footer of the \"Tell me about this\" card. Opens the file in the app the system opens it with (the card's \"Opens with\" row names it), the same as pressing Enter on it in the file list; the card closes first. Short control label."
+  },
+  "aboutThis.action.openTooltip": "Opens it with {app}, as Enter does.",
+  "@aboutThis.action.openTooltip": {
+    "description": "Tooltip on the \"Open\" button of the \"Tell me about this\" card: which app opens the item, and that it's the same as pressing Enter on it in the file list.",
     "placeholders": { "app": { "description": "The app's name, for example \"Preview\"." } }
   },
   "aboutThis.action.showInFileManager": "{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}",
   "@aboutThis.action.showInFileManager": {
     "description": "Button in the footer of the \"Tell me about this\" card. Closes the card and shows the item in the system's file manager. Each branch names its own: \"Finder\" is the macOS app name and stays verbatim; the Windows branch names File Explorer, in the name Microsoft gives it in your language; the Linux branch says file manager, generically. Use the same words as commands.fileShowInFileManager.label. Short control label."
   },
-  "aboutThis.action.downloadPage": "Open {host}",
+  "aboutThis.action.downloadPage": "Download page",
   "@aboutThis.action.downloadPage": {
-    "description": "Button in the footer of the \"Tell me about this\" card, shown for a downloaded file. Opens the web page the file was recorded as downloaded from, in the browser. The host is shown on the button on purpose, so the person sees which site opens before pressing. Short control label.",
-    "placeholders": {
-      "host": {
-        "description": "The website's host name, exactly as recorded, for example \"github.com\". Never translated."
-      }
-    }
+    "description": "Button in the footer of the \"Tell me about this\" card, shown for a downloaded file. Opens the web page the file was recorded as downloaded from, in the browser. Its tooltip (shown on hover and on keyboard focus) names the site, and the card's \"Downloaded\" row above names it too. A noun phrase on a button, like a link's text. Short control label."
   },
   "aboutThis.action.downloadPageTooltip": "Opens {host} in your browser: the page this was recorded as downloaded from.",
   "@aboutThis.action.downloadPageTooltip": {
-    "description": "Tooltip on the \"Open {host}\" button of the \"Tell me about this\" card. It says which site opens before the press, in full, even when the button had to shorten it. \"Recorded\": the download record is the file's own claim, not something Cmdr checked.",
+    "description": "Tooltip on the \"Download page\" button of the \"Tell me about this\" card, shown on hover and on keyboard focus, so the person sees which site opens before pressing. \"Recorded\": the download record is the file's own claim, not something Cmdr checked.",
     "placeholders": {
       "host": { "description": "The website's host name, for example \"github.com\". Never translated." }
     }
@@ -581,6 +580,16 @@
       "what": { "description": "What the item is, usually \"Folder\"." },
       "sizeShown": { "description": "\"exact\", \"atLeast\", or none." },
       "app": { "description": "The app's name, for example \"Slack\"." },
+      "certainty": { "description": "\"certain\" or \"probable\"." }
+    }
+  },
+  "aboutThis.headline.cacheOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>} other {}}, {certainty, select, probable {probably {app}’s cache} other {{app}’s cache}}",
+  "@aboutThis.headline.cacheOfApp": {
+    "description": "The one-line summary at the top of the \"Tell me about this\" card for a folder in Library > Caches that belongs to an installed app: files the app saved to work faster, and writes again. \"probably\" when Cmdr matched it by the folder's name only. No closing period.",
+    "placeholders": {
+      "what": { "description": "What the item is, usually \"Folder\"." },
+      "sizeShown": { "description": "\"exact\", \"atLeast\", or none." },
+      "app": { "description": "The app's name, for example \"Safari\"." },
       "certainty": { "description": "\"certain\" or \"probable\"." }
     }
   },

@@ -91,21 +91,14 @@
         display: flex;
         flex: 1 1 auto;
         flex-wrap: nowrap;
-        gap: var(--spacing-sm);
+        gap: var(--spacing-md);
         min-width: 0;
     }
 
+    /* ❌ No shrinking or ellipsis: a label is whole or the row drops below (the footer's own rule). */
     .action {
         display: inline-flex;
-        min-width: 0;
-        max-width: 14rem;
-    }
-
-    .action :global(button) {
-        min-width: 0;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        flex: none;
         white-space: nowrap;
     }
 

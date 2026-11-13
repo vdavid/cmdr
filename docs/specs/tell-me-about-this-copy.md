@@ -30,8 +30,10 @@ Open questions for the review:
 12. **The footer shows three actions, not the plan's four**, plus "More" and Close: four real labels didn't fit the
     card's default width (now 40 rem, from 34). On a downloaded file that puts Move to trash behind "More". Right?
 13. **Single-key accelerators on the footer buttons** (O for Open, T for trash, …) aren't built. Wanted?
-14. **"Open {host}"** names the page's site on the button (the download record's last address, the page, never the
-    file's own, which would only download it again). Clear, or "Go to the download page" with the host in the tooltip?
+14. **"Download page" and "Open"** are short fixed labels, with the site and the app in their tooltips (and in the rows
+    above): "Open releases.example.com" and "Open with DiskImageMounter" got cut mid-word at the card's width. The page
+    is the download record's last address, never the file's own, which would only download it again. Or the host on the
+    button after all, with a wider card?
 
 ## Strings
 
@@ -384,6 +386,10 @@ Open questions for the review:
   other {}}, {certainty, select, probable {probably {app}’s data} other {{app}’s data}}
   - Where: The one-line summary at the top of the "Tell me about this" card for a folder that holds an installed app's
     data. "probably" when Cmdr matched it by the folder's name only. No closing period.
+- `aboutThis.headline.cacheOfApp`: {what}{sizeShown, select, exact {, <size></size>} atLeast {, at least <size></size>}
+  other {}}, {certainty, select, probable {probably {app}’s cache} other {{app}’s cache}}
+  - Where: The one-line summary at the top of the card for a folder in Library > Caches that belongs to an installed app
+    ("Folder, 524 kB, Safari’s cache"), so it agrees with the removal line below it. No closing period.
 - `aboutThis.headline.dataOfMissingApp`: {what}{sizeShown, select, exact {, <size></size>} atLeast {, at least
   <size></size>} other {}}, named after {bundleId}, an app that isn’t installed
   - Where: The one-line summary at the top of the "Tell me about this" card for a Library folder named after an app that
@@ -792,17 +798,19 @@ Open questions for the review:
 Shown left of Close: up to three, the rest behind "More", in one fixed order per item. Move to trash is never the first
 button, and on a typical download it's the one behind "More".
 
-- `aboutThis.action.open`: Open with {app}
-  - Where: Button in the footer of the "Tell me about this" card. Opens the file in the app the system opens it with,
-    the same as pressing Enter on it in the file list (the card closes first). Short control label.
+- `aboutThis.action.open`: Open
+  - Where: Button in the footer of the "Tell me about this" card. Opens the file in the app the system opens it with
+    (the "Opens with" row names it), the same as pressing Enter on it in the file list. Short control label.
+- `aboutThis.action.openTooltip`: Opens it with {app}, as Enter does.
+  - Where: Tooltip on the "Open" button: which app opens the item.
 - `aboutThis.action.showInFileManager`: Show in Finder (Windows: Show in File Explorer; Linux: Show in file manager)
   - Where: Button in the footer of the card. Closes the card and shows the item in the system's file manager. Same words
     as the "Show in Finder" command.
-- `aboutThis.action.downloadPage`: Open {host}
+- `aboutThis.action.downloadPage`: Download page
   - Where: Button in the footer of the card, for a downloaded file. Opens the web page the file was recorded as
-    downloaded from. The host is on the button on purpose, so the person sees which site opens before pressing.
+    downloaded from. Its tooltip names the site, and so does the "Downloaded" row above.
 - `aboutThis.action.downloadPageTooltip`: Opens {host} in your browser: the page this was recorded as downloaded from.
-  - Where: Tooltip on the "Open {host}" button. Says which site opens, in full, even when the button had to shorten it.
+  - Where: Tooltip on the "Download page" button, on hover and on keyboard focus, so the site is named before the press.
 - `aboutThis.action.revealOwner`: Show {app}
   - Where: Button in the footer of the card, for an item that belongs to an installed app. Closes the card and shows the
     app in the file list, with the cursor on it.

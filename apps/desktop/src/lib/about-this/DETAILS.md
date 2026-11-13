@@ -95,9 +95,12 @@ buttons, the rest in a house `Menu` under "More". Which actions, their order, an
   that row isn't the item any more.
 - **Keyboard**: Tab from the body reaches each action, then "More", then Close. ❌ No action takes focus on open, and
   removal is never the first button (Rust). Single-key accelerators are a review item, not built.
-- **Decision: the 40 rem default width** fits three real labels ("Open with DiskImageMounter", "Show in Finder", "Open
-  releases.example.com"), "More", and Close on one line. A narrower card (resized) drops the actions to a row of their
-  own above Close: `ModalDialog`'s own footer rule, never a squeezed label.
+- **Decision: the 40 rem default width** fits three labels, "More", and Close on one line. **Decision: the labels are
+  short and fixed** ("Open", "Download page"), with the app and the site in the tooltip (hover and keyboard focus) and
+  in the rows above ("Opens with", "Downloaded"): "Open with DiskImageMounter" and "Open releases.example.com" cut to
+  "Open with DiskImage…" in the first screenshots, and a label whose host is cut hides the very thing it's there to
+  show. A narrower card (resized) drops the actions to a row of their own above Close: `ModalDialog`'s own footer rule,
+  ❌ never a squeezed or ellipsized label.
 - **The footer can grow as facts land** (Open appears when the default app answers, the download page with the record):
   on a local disk both answer inside the grace, so the first frame already has them. ❌ Nothing in the body moves for
   it.

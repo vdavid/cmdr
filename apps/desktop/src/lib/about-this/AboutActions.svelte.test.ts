@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushSync, mount, tick, unmount } from 'svelte'
 import type { AboutAction } from '#lib/ipc/bindings.js'
 import AboutThisDialog from './AboutThisDialog.svelte'
+import { actionTooltip } from './about-actions'
 import { aboutThisFixtures } from '#lib/dialog-gallery/fixtures/about-this.js'
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
@@ -44,9 +45,11 @@ describe('the footer actions', () => {
   it('a downloaded disk image shows open, reveal, and its page, with trash behind More', async () => {
     const target = await render('downloaded')
     expect(footerActions(target)).toEqual(['openWithDefaultApp', 'showInFileManager', 'openDownloadPage', 'more'])
-    const page = target.querySelector('[data-action="openDownloadPage"]')
-    // The host is on the button before the press.
-    expect(page?.textContent).toContain('tessera.example')
+    expect(target.querySelector('[data-action="openDownloadPage"]')?.textContent).toContain('Download page')
+    // The site is said before the press: in the tooltip, on hover and on keyboard focus.
+    expect(
+      actionTooltip({ type: 'openDownloadPage', host: 'tessera.example', url: 'https://tessera.example/download' }),
+    ).toContain('tessera.example')
   })
 
   it('a plain document shows its three, trash last', async () => {

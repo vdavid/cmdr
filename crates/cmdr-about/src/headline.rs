@@ -10,7 +10,7 @@ use serde::Serialize;
 
 use crate::card::AboutCard;
 use crate::fact::{AboutTarget, Fact};
-use crate::owner::{Certainty, InstalledApp, OwnerClaim};
+use crate::owner::{Certainty, InstalledApp, OwnerClaim, OwnerPlace};
 use crate::payload::{SizeCoverage, SnapshotKind};
 use crate::provenance::{LandedBy, WebSite, WhereFrom};
 use crate::sniff::{SniffedKind, TypeAgreement};
@@ -114,6 +114,14 @@ pub enum HeadlineLead {
     },
     /// It's an installed app's data.
     DataOfApp {
+        /// The app.
+        app: ItemText,
+        /// How sure the match is.
+        certainty: Certainty,
+    },
+    /// It's an installed app's cache (`Library/Caches`, `~/.cache`): said as a
+    /// cache, so the headline agrees with the removal row below it.
+    CacheOfApp {
         /// The app.
         app: ItemText,
         /// How sure the match is.
@@ -241,15 +249,26 @@ fn lead(card: &AboutCard) -> HeadlineLead {
         Some(WhereFrom::AirDrop { .. }) => return HeadlineLead::ReceivedByAirDrop { at },
         Some(WhereFrom::Web { .. } | WhereFrom::Other { .. }) | None => {}
     }
+    let of_app = |app: &ItemText, place: OwnerPlace, certainty| {
+        if place == OwnerPlace::Caches {
+            HeadlineLead::CacheOfApp {
+                app: app.clone(),
+                certainty,
+            }
+        } else {
+            HeadlineLead::DataOfApp {
+                app: app.clone(),
+                certainty,
+            }
+        }
+    };
     match known(&card.owner) {
         Some(OwnerClaim::ByBundleId {
             app: InstalledApp::Installed { name, .. },
+            place,
             ..
         }) => {
-            return HeadlineLead::DataOfApp {
-                app: name.clone(),
-                certainty: Certainty::Certain,
-            };
+            return of_app(name, *place, Certainty::Certain);
         }
         Some(OwnerClaim::ByBundleId {
             bundle_id,
@@ -260,11 +279,8 @@ fn lead(card: &AboutCard) -> HeadlineLead {
                 bundle_id: bundle_id.clone(),
             };
         }
-        Some(OwnerClaim::ByName { app, .. }) => {
-            return HeadlineLead::DataOfApp {
-                app: app.clone(),
-                certainty: Certainty::Probable,
-            };
+        Some(OwnerClaim::ByName { app, place, .. }) => {
+            return of_app(app, *place, Certainty::Probable);
         }
         // An installer's or Homebrew's claim, and a file inside an app, are context
         // for their own row: they don't say why the item is here in a few words.

@@ -232,9 +232,9 @@ is never used), and `lead`, whose variant is the template key.
 
 Lead priority: a portal entry's snapshot (`FromGitHistory`), an archive's entry's archive (`InsideArchive`: the
 archive's download site is the row's to tell, never the entry's lead), a recorded download site, a Cmdr operation, Mail
-or AirDrop (never naming the person), an owning app or that the app is gone, a downloading app alone, last opened,
-`Plain`. It never carries a removal consequence. A plain document's headline is kind, size, and last opened, from
-identity and use alone.
+or AirDrop (never naming the person), an owning app (its cache as `CacheOfApp`, so it agrees with the removal row) or
+that the app is gone, a downloading app alone, last opened, `Plain`. It never carries a removal consequence. A plain
+document's headline is kind, size, and last opened, from identity and use alone.
 
 ## Next actions
 
@@ -250,16 +250,17 @@ reaches it.
 - **Decision: removal is never first, and alone it sits behind "More"** (a phone's file: nothing but Delete). Why: the
   first button is where a hurried press lands, and the deterministic removal row above it is what the person should read
   first. It goes through the app's delete dialog, which asks.
-- **Decision: three shown, not four.** At the card's default width, real labels ("Open with DiskImageMounter", "Show in
-  Finder", "Open releases.example.com") plus "More" and Close fill the footer; a fourth wrapped it. On a typical
-  download, Move to trash is the one behind "More", which also keeps it furthest from the hand.
+- **Decision: three shown, not four.** At the card's default width, three labels ("Open", "Show in Finder", "Download
+  page") plus "More" and Close fill the footer; a fourth wrapped it (QA screenshots, 2026-11-13). On a typical download,
+  Move to trash is the one behind "More", which also keeps it furthest from the hand.
 - **The download page is the record's LAST web address**: Chrome and Safari write the file's own address first and the
   page after it, and opening the file's address only downloads it again.
 - **`web_page` is the only way an address becomes an action**: re-parsed by `url`, `http` or `https` only, a plain
   lowercase DNS host (punycode for an IDN, so a look-alike shows as `xn--…` on the button), no user info (a link with
   `apple.com@evil.example` is a disguise), no IP literal (it names no site the person could recognize). Written back out
   by the parser. ❌ Never a `file:`, `smb:` (it mounts a stranger's share), `javascript:`, or an app's own scheme (it
-  launches whatever registered it). The host shows the host on the button before the press.
+  launches whatever registered it). The card names the site before the press: in the button's tooltip (hover and
+  keyboard focus), and in the download row above it.
 - **The owning app is revealed only where Cmdr knows its bundle's path** (`InstalledApp::Installed.path`,
   `OwnerClaim::ByName.app_path`, `InsideApp.app_path`: raw paths, never shown). A Linux desktop entry has none, so a
   Linux owner gets no reveal.
@@ -368,3 +369,9 @@ Raised 132 → 139 (and 11 → 12 modules and root promises) by the card's next 
   module of its own: `card` must not import the modules that read it, as with `removal` and `headline`.
 - **`OwnerQuestion::app_folder_above`**: which folder is "the app's data" is the owner rule's own geometry.
 - `web_page` and `SHOWN_ACTIONS` stay `pub(crate)`: a host gets whole actions, never a half-checked address.
+
+Raised 139 → 140:
+
+- **`RecursiveSize::into_fact`**: when a folder's size is worth stating. A lower bound with nothing counted (no file,
+  folder, or byte) is the index not having listed it yet, so it's `NotIndexed`; stated, it read "at least 0 bytes in 0
+  files and 0 folders", which on an empty folder is wrong (QA screenshots, 2026-11-13).

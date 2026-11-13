@@ -92,6 +92,12 @@
                 params={{ ...base, app: lead.app, certainty: lead.certainty }}
                 snippets={{ size }}
             />
+        {:else if lead.template === 'cacheOfApp'}
+            <Trans
+                key="aboutThis.headline.cacheOfApp"
+                params={{ ...base, app: lead.app, certainty: lead.certainty }}
+                snippets={{ size }}
+            />
         {:else if lead.template === 'dataOfMissingApp'}
             <Trans key="aboutThis.headline.dataOfMissingApp" params={{ ...base, bundleId: lead.bundleId }} snippets={{ size }} />
         {:else if lead.template === 'downloadedBy'}

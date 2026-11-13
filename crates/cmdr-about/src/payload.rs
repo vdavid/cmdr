@@ -8,7 +8,7 @@
 
 use serde::Serialize;
 
-use crate::fact::Fact;
+use crate::fact::{Fact, UnknownWhy};
 use crate::text::ItemText;
 
 /// The item itself, as its volume describes it.
@@ -175,12 +175,12 @@ const SAVE_IS_THE_USE_SECS: i64 = 2;
 /// count, an open was counted, and the date stands.
 pub fn usage_fact(last_used: Option<i64>, use_count: Option<u64>, modified: Option<i64>) -> Fact<Usage> {
     let Some(last_used) = last_used else {
-        return Fact::unknown(crate::fact::UnknownWhy::NoRecord);
+        return Fact::unknown(UnknownWhy::NoRecord);
     };
     let is_the_save =
         use_count.is_none() && modified.is_some_and(|modified| (last_used - modified).abs() <= SAVE_IS_THE_USE_SECS);
     if is_the_save {
-        return Fact::unknown(crate::fact::UnknownWhy::NoRecord);
+        return Fact::unknown(UnknownWhy::NoRecord);
     }
     Fact::Known(Usage {
         last_opened: last_used,
@@ -338,6 +338,21 @@ pub struct RecursiveSize {
     pub has_symlinks: bool,
 }
 
+impl RecursiveSize {
+    /// The size as the card's fact. A lower bound with nothing counted (no
+    /// file, no folder, no byte) is the index not having listed the folder yet,
+    /// so it's `NotIndexed`: "at least 0 bytes in 0 files and 0 folders" says
+    /// nothing, and on an empty folder it reads as wrong.
+    pub fn into_fact(self) -> Fact<RecursiveSize> {
+        let nothing_counted = self.logical == 0 && self.files == 0 && self.folders == 0;
+        if self.coverage == SizeCoverage::LowerBound && nothing_counted {
+            Fact::unknown(UnknownWhy::NotIndexed)
+        } else {
+            Fact::Known(self)
+        }
+    }
+}
+
 /// How much of a subtree a size covers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -354,7 +369,6 @@ pub enum SizeCoverage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fact::UnknownWhy;
 
     #[test]
     fn a_score_falls_in_its_band_at_the_edges() {
@@ -387,6 +401,33 @@ mod tests {
                 StapledTicket::DoesNotApply
             );
         }
+    }
+
+    #[test]
+    fn a_lower_bound_with_nothing_counted_is_not_indexed_and_anything_counted_stands() {
+        let size = |logical, files, folders, coverage| RecursiveSize {
+            logical,
+            physical: logical,
+            files,
+            folders,
+            coverage,
+            updating: false,
+            has_symlinks: false,
+        };
+        assert_eq!(
+            size(0, 0, 0, SizeCoverage::LowerBound).into_fact(),
+            Fact::unknown(UnknownWhy::NotIndexed)
+        );
+        // An empty folder the index did list is a real zero.
+        assert_eq!(
+            size(0, 0, 0, SizeCoverage::Exact).into_fact(),
+            Fact::Known(size(0, 0, 0, SizeCoverage::Exact))
+        );
+        // A folder of empty folders is something counted.
+        assert_eq!(
+            size(0, 0, 2, SizeCoverage::LowerBound).into_fact(),
+            Fact::Known(size(0, 0, 2, SizeCoverage::LowerBound))
+        );
     }
 
     #[test]
