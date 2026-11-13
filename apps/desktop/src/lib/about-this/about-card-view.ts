@@ -6,7 +6,7 @@
  * come from the plan. The one layout decision is the collapse, which reads only that typed prominence.
  */
 
-import type { AboutFact, FactKind, Section } from '#lib/ipc/bindings.js'
+import type { AboutFact, FactKind, Identity, Section } from '#lib/ipc/bindings.js'
 import type { AboutCardData } from './about-card'
 
 /** One planned row: its answer, or `null` while it's pending. */
@@ -68,4 +68,18 @@ export function tallyRows(card: AboutCardData): RowTally {
     }
   }
   return tally
+}
+
+/** Below this, a size on disk that differs from the size is block rounding, not news. */
+const ON_DISK_MIN_DIFFERENCE = 1_000_000
+
+/**
+ * Whether the size line adds what the item takes on disk: only when it differs enough to mean something (a sparse or
+ * compressed file, blocks shared with a clone), never for the few KB of block rounding every small file has.
+ */
+export function showsOnDisk(identity: Pick<Identity, 'logicalSize' | 'physicalSize'>): boolean {
+  const { logicalSize, physicalSize } = identity
+  if (logicalSize === null || physicalSize === null) return false
+  const difference = Math.abs(physicalSize - logicalSize)
+  return difference >= ON_DISK_MIN_DIFFERENCE && difference >= logicalSize / 10
 }

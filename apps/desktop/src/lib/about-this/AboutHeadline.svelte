@@ -13,9 +13,11 @@
 
     interface Props {
         headline: Headline | null
+        /** The facts have settled: the second line it held for a longer headline goes, with the other reservations. */
+        settled: boolean
     }
 
-    const { headline }: Props = $props()
+    const { headline, settled }: Props = $props()
 
     function whatText(what: Headline['what']): string {
         switch (what.type) {
@@ -47,7 +49,7 @@
     )
 </script>
 
-<p class="headline" data-headline>
+<p class="headline" class:reserving={!settled} data-headline>
     {#if headline && base}
         {@const lead = headline.lead}
         {@const bytes = headline.size?.bytes ?? null}
@@ -107,9 +109,12 @@
 <style>
     .headline {
         margin: 0;
-        min-height: calc(2 * var(--font-line-height-normal) * 1em);
         font-size: var(--font-size-md);
         color: var(--color-text-primary);
+    }
+
+    .headline.reserving {
+        min-height: calc(2 * var(--font-line-height-normal) * 1em);
     }
 
     .skeleton {

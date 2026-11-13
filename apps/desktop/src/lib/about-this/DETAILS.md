@@ -31,10 +31,12 @@ it later). `ModalDialog` with `resizable` and `growDownward`, 34 rem wide, at mo
 
 - **Rows are `<dl>` groups**: a label column (8.5 rem) and the answer. Identity draws its own lines (Size for a file,
   Modified, Created, Other names past one hard link, Points to for a link); a folder's size is the `recursiveSize` row,
-  never its own entry size.
-- **No movement**: the headline reserves two lines; rows whose usual answer takes two lines (download, Cmdr's history,
-  signature, owner, git, importance) reserve two until `factsSettled`; the removal list reserves two. At the settle the
-  reservations go and an all-routine section collapses to its heading plus "Nothing on record", in the same frame.
+  never its own entry size. The size on disk joins the size only when it differs by at least 1 MB and 10%
+  (`showsOnDisk`): every small file takes a few KB more for block rounding, which isn't news.
+- **No movement**: the headline, the removal list, and rows whose usual answer takes two lines (download, Cmdr's
+  history, signature, owner, git, importance) reserve two lines until `factsSettled`. At the settle the reservations go
+  and an all-routine section collapses to its heading plus "Nothing on record", in the same frame. **Decision**: the
+  headline's second line goes too, since a one-line headline over a blank line read as a gap on every plain card.
   Pending rows are a static bar (no shimmer at all, so `prefers-reduced-motion` has nothing to stop).
 - **Prominence is the wire's**: `AboutAbsence` draws a Routine unknown (or a not-applicable) as one muted line and a
   Notable one as a sentence with a quiet mark. A row-specific absence word (`ROW_UNKNOWN`) wins over the generic one.
@@ -51,7 +53,7 @@ Every string the item reported arrives through `model_text` (`ItemText`) and ren
 text node. A download source shows its host only (punycode stays punycode, as the wire has it); the whole address is
 behind a Copy button (`WhereFrom.url`), and opening it is a later action. Mail's sender and subject, an AirDrop name,
 the downloading app, a signer, a branch, and paths render the same way. Paths go through `AboutPath` (ellipsis plus a
-tooltip with the full text, and Copy).
+tooltip with the full text); the row puts its Copy button at the end of the line (`.with-copy`), never mid-sentence.
 
 ## Tests
 

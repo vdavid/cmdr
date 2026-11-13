@@ -263,7 +263,7 @@ Open questions for the review:
 - `aboutThis.realType.matches`: {kind}, as its name says
   - Where: Answer on the "Kind" row of the "Tell me about this" card when the file's contents match what its extension
     says. No closing period.
-- `aboutThis.realType.mismatch`: Its contents are {kind}, and its name ends in .{extension}.
+- `aboutThis.realType.mismatch`: The contents say {kind}, while the name ends in .{extension}.
   - Where: Answer on the "Kind" row of the "Tell me about this" card when the file's contents are a different kind than
     its extension says (for example a program named like a photo). Shown with a warning mark.
 - `aboutThis.realType.byName`: {kind}, going by its name

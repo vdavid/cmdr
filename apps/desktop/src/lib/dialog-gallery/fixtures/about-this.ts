@@ -231,7 +231,14 @@ const plainDocument: Stream = {
 
 // ── Still filling: the same document a moment after it opened ──────────────────
 
-const stillFilling: Stream = { ...plainDocument, facts: plainDocument.facts.slice(0, 2), settled: false }
+// Last opened hasn't landed, so the headline can't lead with it yet, and the removal row can't call it the person's
+// own while a row is out.
+const fillingDerived = derived({ ...docHeadline, lead: { template: 'plain' } }, [{ type: 'cantTell' }])
+const stillFilling: Stream = {
+  ...plainDocument,
+  facts: plainDocument.facts.slice(0, 2).map((landing) => ({ ...landing, derived: fillingDerived })),
+  settled: false,
+}
 
 // ── A folder in a repo: size, importance, git ──────────────────────────────────
 

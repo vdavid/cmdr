@@ -93,9 +93,9 @@ describe('the card’s parts on their own', () => {
   })
 
   it('the headline, pending and known', async () => {
-    await expectNoA11yViolations(mountInto(AboutHeadline, { headline: null }))
+    await expectNoA11yViolations(mountInto(AboutHeadline, { headline: null, settled: false }))
     const headline = aboutThisFixtures.downloaded?.derived?.headline ?? null
-    await expectNoA11yViolations(mountInto(AboutHeadline, { headline }))
+    await expectNoA11yViolations(mountInto(AboutHeadline, { headline, settled: true }))
   })
 
   it('the removal list with its More button', async () => {

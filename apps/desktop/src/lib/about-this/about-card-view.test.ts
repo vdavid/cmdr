@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { aboutThisFixtures } from '#lib/dialog-gallery/fixtures/about-this.js'
-import { sectionsOf, tallyRows } from './about-card-view'
+import { sectionsOf, showsOnDisk, tallyRows } from './about-card-view'
 
 function fixture(id: string) {
   const card = aboutThisFixtures[id]
@@ -31,6 +31,15 @@ describe('sectionsOf', () => {
     const rows = sectionsOf(fixture('still-filling')).flatMap((view) => view.rows)
     expect(rows.find((row) => row.kind === 'lastOpened')?.fact).toBeNull()
     expect(rows.find((row) => row.kind === 'identity')?.fact).not.toBeNull()
+  })
+})
+
+describe('showsOnDisk', () => {
+  it('leaves out block rounding and keeps a real difference', () => {
+    expect(showsOnDisk({ logicalSize: 18, physicalSize: 4096 })).toBe(false)
+    expect(showsOnDisk({ logicalSize: 412_318_720, physicalSize: 412_319_744 })).toBe(false)
+    expect(showsOnDisk({ logicalSize: 10_737_418_240, physicalSize: 52_428_800 })).toBe(true)
+    expect(showsOnDisk({ logicalSize: null, physicalSize: 4096 })).toBe(false)
   })
 })
 

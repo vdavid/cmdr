@@ -20,7 +20,8 @@
     import Icon from '#lib/ui/Icon.svelte'
     import AboutAbsence from './AboutAbsence.svelte'
     import AboutPath from './AboutPath.svelte'
-    import type { RowView } from './about-card-view'
+    import { copiedPath } from '#lib/utils/display-path.js'
+    import { showsOnDisk, type RowView } from './about-card-view'
     import { KIND_LABEL, ROW_LABEL, importanceReasonKey } from './about-words'
 
     interface Props {
@@ -85,12 +86,10 @@
             <dd>
                 {#if identity}
                     {#if identity.logicalSize !== null}
-                        <Size bytes={identity.logicalSize} />{#if identity.physicalSize !== null && identity.physicalSize !== identity.logicalSize}
-                            <span class="quiet">
-                                ·
-                                {#snippet onDisk(_content: Snippet)}<Size bytes={identity.physicalSize} />{/snippet}
-                                <Trans key="aboutThis.identity.onDisk" snippets={{ size: onDisk }} />
-                            </span>{/if}
+                        <Size bytes={identity.logicalSize} />{#if showsOnDisk(identity)}
+                            {#snippet onDisk(_content: Snippet)}<Size bytes={identity.physicalSize} />{/snippet}
+                            <span class="quiet"> · <Trans key="aboutThis.identity.onDisk" snippets={{ size: onDisk }} /></span
+                            >{/if}
                     {:else}
                         <AboutAbsence kind="identity" unknown={{ why: 'volumeCantTell', prominence: 'routine' }} />
                     {/if}
@@ -127,7 +126,12 @@
     {#if identity?.symlinkTarget}
         <div class="row">
             <dt>{t('aboutThis.label.pointsTo')}</dt>
-            <dd><AboutPath path={identity.symlinkTarget} copyLabel={tString('aboutThis.identity.copyLinkTarget')} /></dd>
+            <dd class="with-copy">
+                <span class="line-text"><AboutPath path={identity.symlinkTarget} /></span><CopyButton
+                    text={identity.symlinkTarget}
+                    label={tString('aboutThis.identity.copyLinkTarget')}
+                />
+            </dd>
         </div>
     {/if}
 {:else}
@@ -200,16 +204,15 @@
                 </span>
                 {#if op.sourcePath}
                     {@const sourcePath = op.sourcePath}
-                    {#snippet source(_content: Snippet)}<AboutPath
-                            path={sourcePath}
-                            copyLabel={tString('aboutThis.cmdrOperation.copySource')}
-                        />{/snippet}
-                    <span class="line quiet">
-                        <Trans
-                            key="aboutThis.cmdrOperation.from"
-                            params={{ volume: op.sourceVolume ?? '', hasVolume: op.sourceVolume ? 'yes' : 'no' }}
-                            snippets={{ source }}
-                        />
+                    {#snippet source(_content: Snippet)}<AboutPath path={sourcePath} />{/snippet}
+                    <span class="line quiet with-copy">
+                        <span class="line-text"
+                            ><Trans
+                                key="aboutThis.cmdrOperation.from"
+                                params={{ volume: op.sourceVolume ?? '', hasVolume: op.sourceVolume ? 'yes' : 'no' }}
+                                snippets={{ source }}
+                            /></span
+                        ><CopyButton text={copiedPath(sourcePath)} label={tString('aboutThis.cmdrOperation.copySource')} />
                     </span>
                 {/if}
             {:else if row.fact?.kind === 'realType' && row.fact.fact.state === 'known'}
@@ -326,16 +329,15 @@
                 {/if}
             {:else if row.fact?.kind === 'git' && row.fact.fact.state === 'known'}
                 {@const git = row.fact.fact.value}
-                {#snippet repo(_content: Snippet)}<AboutPath
-                        path={git.repoRoot}
-                        copyLabel={tString('aboutThis.git.copyRepo')}
-                    />{/snippet}
-                <span class="line">
-                    <Trans
-                        key="aboutThis.git.repo"
-                        params={{ branch: git.branch ?? '', hasBranch: git.branch ? 'yes' : 'no' }}
-                        snippets={{ repo }}
-                    />
+                {#snippet repo(_content: Snippet)}<AboutPath path={git.repoRoot} />{/snippet}
+                <span class="line with-copy">
+                    <span class="line-text"
+                        ><Trans
+                            key="aboutThis.git.repo"
+                            params={{ branch: git.branch ?? '', hasBranch: git.branch ? 'yes' : 'no' }}
+                            snippets={{ repo }}
+                        /></span
+                    ><CopyButton text={copiedPath(git.repoRoot)} label={tString('aboutThis.git.copyRepo')} />
                 </span>
                 <span class="line">
                     {#if git.status.state === 'known'}
@@ -409,6 +411,17 @@
 
     .line {
         display: block;
+    }
+
+    /* A line whose Copy button sits at its end, after the words wrap. */
+    .with-copy {
+        display: flex;
+        gap: var(--spacing-xs);
+        align-items: flex-start;
+    }
+
+    .line-text {
+        min-width: 0;
     }
 
     .quiet {

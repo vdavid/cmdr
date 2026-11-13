@@ -79,7 +79,7 @@
         {#if card.unavailable}
             <p class="unavailable">{t(UNAVAILABLE[card.unavailable])}</p>
         {:else}
-            <AboutHeadline headline={card.derived?.headline ?? null} />
+            <AboutHeadline headline={card.derived?.headline ?? null} settled={card.settled} />
 
             {#if card.plan?.volumeNote}
                 <p class="volume-note">
