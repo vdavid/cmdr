@@ -4,7 +4,9 @@ Just-in-time execution plan for [#1104](https://github.com/getcmdr/cmdr/issues/1
 folder (where it came from, what it really is, what owns it, how it's used, what removing it costs), with a **short AI
 verdict** streamed in on top of the facts. David's direction (2026-11-11): the thick deterministic part works with AI
 off; the LLM adds two or three sentences. Built by sequential agents, one per milestone, in the single worktree
-`.claude/worktrees/tell-me-about-this`; the lead lands the whole feature as one piece at the end.
+`.claude/worktrees/tell-me-about-this`. The branch is pushed at green milestones with `pnpm land -no-wait` only (a light
+CI run, nothing reaches `main`). ❌ No milestone agent and no lead runs a full `pnpm land`: David cuts a release first,
+and the whole feature lands as one piece only on his explicit go.
 
 Read the issue with its comments first. Then this plan in full. Every milestone agent also reads the `CLAUDE.md` (and
 the `DETAILS.md` where the plan points) of each directory it touches.
@@ -62,10 +64,13 @@ the `DETAILS.md` where the plan points) of each directory it touches.
 What already exists and what each milestone reuses. Symbols named here are for `codegraph_explore`; don't re-derive
 them.
 
-- **Slow-fact model**: `menu/context_menu_facts.rs` (`FactKind`, `Fact`, `Gathering`, `start_with`, `GRACE` = 100 ms,
-  `CancelGathering`, a `LateSink`) plus `context_menu_live.rs`. Its core is already AppKit-free and unit-tested with
-  plain threads. The new crate's engine copies its shape, generic over the fact type; ❌ don't refactor the menu onto it
-  in this effort (a follow-up issue may unify them).
+- **Slow-fact model**: `menu/context_menu_facts.rs` (`FactKind`, `Fact`, `Gathering`, the private
+  `start_with(jobs, submit)` behind the public `start(FactsRequest)`, `GRACE` = 100 ms, `CancelGathering`, a `LateSink`)
+  plus `context_menu_live.rs`. Its pool is
+  `PoolConfig { name: "menu_facts", target_workers: 6, max_workers: 24, wedged_after: 10 s }`: a worker stuck in a
+  framework call is LOST (never interrupted), so a "budget" is how long the collector waits, never how long the thread
+  works. Its core is already AppKit-free and unit-tested with plain threads. The new crate's engine copies its shape,
+  generic over the fact type; ❌ don't refactor the menu onto it in this effort (a follow-up issue may unify them).
 - **Default app / installed apps**: `file_system/open_with.rs` (`installed_app_path(bundle_id)`,
   `read_app_display_name`, `read_bundle_identifier`, `app_icon_data_url`, an invalidation observer). `default_app.rs`
   launches; the card only reads.
@@ -98,32 +103,51 @@ them.
   Owner mapping for what's honest.
 - **Index**: `Index::list_children`, `dir_stats`, `dir_stats_batch` (`crates/cmdr-index/src/indexing/handle/mod.rs`).
   `entries` stores name, sizes, mtime, inode (indexed `idx_inode`), NO content hash and no size index. The app's
-  coverage builder is `tools/read/listing/source.rs::coverage` (with `IndexStatusResponse::walk_affects` for
-  `sizeIsUpdating`).
+  coverage builder is `tools/read/listing/source.rs::coverage`, `pub(super)` today (the host needs it widened to
+  `pub(crate)`, or a shared home), with `IndexStatusResponse::walk_affects` (`cmdr-index` `indexing/events`) for
+  `sizeIsUpdating` and `SizeStats::from_dir_stats` in `tools/read/listing.rs`.
 - **Importance**: `ImportanceIndex` (`importance/read/`), `classify.rs` (`PathClass`, `floors_by_path`: caches, build
   output, `node_modules`, hidden/system), visits in `visits-{id}.db`. The agent's reads are `tools/read/importance.rs`
-  over `tools::resources::importance::snapshot_*`, with store-path translation via `crate::location::store_path`.
+  over `tools::resources::importance::snapshot_path_on(data_dir, volume_id, path, now_secs)` (sync SQLite: call it off
+  the async worker), with store-path translation via `crate::location::store_path::{to_store_path, from_store_path}`.
 - **Operation log**: `crates/cmdr-operation-log/src/query.rs` searches by SOURCE name (`source_name_folded`), not by
-  where an item landed. `operation_items` has `dest_dir_id`, `dest_name_folded` (indexed), and since v4 `dest_inode` +
-  `dest_birth_ns`, "which node an item landed as". That's what makes an honest provenance query possible (M3).
-- **Git**: `crates/cmdr-git` (`RepoCache`, the cached `status.rs` walk) via the app's `file_system/git/wiring.rs`. Every
-  `gix` call on `spawn_blocking`; the surface is capped (11 root promises, no headroom): ask before a new `pub`.
+  where an item landed. `operation_items` has `dest_dir_id` and `dest_name_folded` (standalone index
+  `operation_items_dest_name`; the v6 `operation_items_dest_dir` index leads with `op_id`, so it can't serve a cross-op
+  lookup). Since v4 there are `dest_inode` + `dest_birth_ns` ("which node an item landed as"), BUT (verified 2026-11-13,
+  `crates/cmdr-operations/src/journal.rs`) only `record_trashed` fills them: every copy, move, extract, and volume leaf
+  records `None`. So today no copy row can prove it's the node at a path; M3 adds the recording (see D11). The crate's
+  surface sits at its ceiling (95 subsystem items, no headroom); a new read raises it through the documented carve-out
+  (`scripts/check/checks/DETAILS.md` § "Allowlist consent").
+- **Git**: `crates/cmdr-git` via the app's `file_system/git/wiring.rs`. The public status API is
+  `list_status(&RepoHandle, dir) -> Vec<EntryStatus>` over a full-repo walk cached by `.git/index` mtime (`RepoCache` is
+  internal to `GitPortal`). It lists CHANGED entries only: a clean tracked file is absent, and the walk doesn't enable
+  gix's ignored emission (`untracked_files(Files)` only), so "absent" can mean clean, ignored, or outside the repo. A
+  cache miss is a full worktree walk (seconds on a big repo). Every `gix` call on `spawn_blocking`; the surface is
+  capped (11 root promises, no headroom): a per-path status is a new `pub` and needs David's say-so (D12).
 - **Locations**: `crate::location::resolve` (`LocationInput`, `LocationMiss`); a miss is a typed answer.
 - **`inspect_file` core**: `tools/read/inspect/mod.rs::inspect_path_with(path, &TextAsk, cancel, extract)`, with
   `path_gate` first and the private-key prescan, archives, PDFs, materialized remote files, and the runner's
   `PATH_TIMEOUT`.
 - **LLM seam**: `AgentLlm::respond(system, tools, messages, CallSettings, cancel)` is one cold streaming call
   (`agent/llm/mod.rs`); `resolve_agent_llm(app, AgentSlot)` (`agent/chat/session.rs`) returns the fake under
-  `CMDR_E2E_ASK_CMDR_FAKE=1`, else a genai backend through `ai::manager::resolve_backend_with_model`. It does NOT check
+  `CMDR_E2E_ASK_CMDR_FAKE=1` (`e2e_fake::scripted_fake_llm(slot)`, scripted per slot), else a genai backend through
+  `ai::manager::resolve_backend_with_model` with the model override `askCmdr.interactiveModel`. `AgentSlot` is
+  `Rail | Wake` only, so as written the verdict would run on Ask Cmdr's chosen chat model (D13). It does NOT check
   `askCmdr.enabled` (`admit_send` does that for the rail).
 - **Cost meter**: `agent/store/query.rs::record_cost`, keyed `(day, conversation_id, provider, model)` with
   `conversation_id NOT NULL`; `quiet_wakes_conversation` is the reserved-row precedent (migration v8,
-  `ConversationOrigin::QuietWakes`). The wake loop's daily ceiling filters by origin, so a new origin stays out of it.
-  Folder suggestions and translation are NOT metered today; the verdict will be.
-- **Commands**: `file.getInfo` (⌘I on macOS, `Alt+Enter` elsewhere) opens the OS panel. Registry data in
-  `apps/desktop/src/lib/commands/sources/file-list.ts`; native rows in `crates/cmdr-menu/src/context/file.rs` and
-  `bar.rs`, ids in `ids.rs`; `shortcuts-store.ts` `menuCommands`. `⌘⇧I` and `Ctrl+Shift+I` are free in the default
-  keymap (`crates/cmdr-menu/src/registry_default_keys.tsv`); `⌘⌥I` is the multi-rename dialog's Match case.
+  `ConversationOrigin::QuietWakes`). The wake loop's daily ceiling (`proactive_tokens_for_day`) counts only
+  `Notification` + `QuietWakes`, so a new origin stays out of it. The session list and search hide the reserved row by
+  matching `QuietWakes`' token alone (`store/query.rs` list, `store/search.rs`): a new reserved origin must join both
+  filters or it shows up as a thread. Folder suggestions and translation are NOT metered today; the verdict will be.
+- **Consent revoke**: `revoke_cloud_ai_consent` and a held "no" call `ai/cloud_consent.rs::stop_in_flight_calls`, which
+  cancels `agent::chat::cancel::cancel_all()` and `ai::stream_registry::cancel_all()`, nothing else. A verdict stops on
+  revoke only if its registry joins that function.
+- **Commands**: `file.getInfo` (⌘I on macOS, `Alt+Enter` elsewhere, `needsCapability: 'getInfo'`) opens the OS panel.
+  Registry data in `apps/desktop/src/lib/commands/sources/file-list.ts`; native rows in
+  `crates/cmdr-menu/src/context/file.rs` and `bar.rs`, ids in `ids.rs`; `shortcuts-store.ts` `menuCommands`. `⌘⇧I` and
+  `Ctrl+Shift+I` are free in the default keymap (`crates/cmdr-menu/src/registry_default_keys.tsv`); `⌘⌥I` is the
+  multi-rename dialog's Match case.
 - **Ask Cmdr frontend**: `ask-cmdr-trigger.svelte.ts` exports `openRail`, `newChat`, `addAttachments(refs)`,
   `requestComposerFocus`. Attachments cross as path + kind only.
 - **Consent copy**: `messages/en/ai.json` `ai.cloudConsent.*`, the Ask Cmdr items under
@@ -226,14 +250,26 @@ rule has a test, docs pair written, no app change.
 
 1. `apps/desktop/src-tauri/src/about/` with `C.md` + `D.md`. Commands (thin, registered in the `ipc.rs` manifest,
    `async`, off the IPC thread): `about_start(request, channel) -> AboutRequestId` and `about_cancel(id)`. A per-request
-   registry like `ai/stream_registry.rs` (cancel one, cancel all on app quit).
-2. Location first: `crate::location::resolve`; a miss is a typed `AboutEvent::Unavailable(LocationMiss…)`.
+   registry like `ai/stream_registry.rs` (cancel one, cancel all on app quit). **The request id is minted by the
+   frontend** (a UUID in `AboutRequest`), so a card closed before `about_start` resolves can still cancel, and the
+   registry treats a cancel for an id it hasn't seen yet as a tombstone that the later start honors. Every `AboutEvent`
+   carries the id; the state slice drops any event whose id isn't the open card's (a quick close-and-reopen on another
+   file must never show the first file's facts).
+2. Location first: `crate::location::resolve`; a miss is a typed `AboutEvent::Unavailable(LocationMiss…)`. **Route by
+   volume from this milestone on**, ❌ never by path prefix: only a path whose volume is the boot/local disk
+   (`VolumeManager::mount_id_for_path` answers no network or device mount) gets the jobs below. Every other volume
+   answers identity through the volume's own deadline-wrapped `metadata` and leaves the rest `Unknown(VolumeCantTell)`
+   until M6 fills its table. Without this, M2–M5 would run `MDItem`, `getxattr`, and a 64 KB read against a
+   Finder-mounted SMB path that "looks local".
 3. Jobs for a local, OS-visible path (macOS first, Linux arms where cheap): identity (`stat`/`lstat`, birth time,
    `nlink`), real type (64 KB head read, `cmdr-about::sniff`), bundle/package (`packages.rs`, `Info.plist`), signature
    (Security framework, framework pool, budget 1 s), default app (`open_with.rs`), Spotlight (`MDItemCopyAttributes` for
    last-used, use count, creator, on the framework pool with an autoreleasepool; `NoRecord` on null), provenance xattrs
    (macOS quarantine + WhereFroms; Linux `user.xdg.*`).
-4. A new pool config beside the menu's (`name: "about_facts"`), so a wedged card can't starve the context menu.
+4. A new pool config beside the menu's (`name: "about_facts"`, its own small `max_workers` ceiling), so a wedged card
+   can't starve the context menu. A job past its budget is reported `Unknown(TimedOut)` and its thread may stay lost
+   until the call returns: the ceiling, not the budget, is what bounds the leak. `PoolConfig` is `pub(crate)` in
+   `file_system/framework_pool.rs`; the host reuses it, ❌ no second pool type.
 5. `pnpm bindings:regen`; a typed `tauri-commands/about.ts` wrapper.
 
 **Intentions**: get the streaming pipe right end to end before the expensive facts arrive: first frame by the grace,
@@ -246,8 +282,8 @@ calls need the 8 MB-stack pool, never rayon. Don't touch `menu/` code.
 
 **Test plan**: Rust unit tests for job selection per target and volume kind; an integration test over a `TestDir` with
 xattrs written by the test (`xattr` crate) asserting each fact's shape, including `Unknown(NoRecord)` and a quarantine
-on a fresh file; a test that `about_cancel` stops queued jobs and drops late answers. `cargo nextest run` the new tests,
-`clippy`.
+on a fresh file; a test that `about_cancel` stops queued jobs and drops late answers; a cancel that arrives BEFORE its
+start (the tombstone); a non-local volume id runs no local job. `cargo nextest run` the new tests, `clippy`.
 
 **DONE**: calling the command from a test harness on a downloaded file streams identity, type, provenance, signature,
 default app, and last-used in any order, then `FactsSettled`; a cancel mid-way leaves no late events.
@@ -262,21 +298,31 @@ confident guess.
 
 **Scope**
 
-1. **Op-log provenance** (`crates/cmdr-operation-log`): a new read, `landed_at(conn, volume_id, path, identity)` → the
-   newest op whose item LANDED at that path (dest dir resolved through `dirs` + `dest_name_folded`, index-served: add an
-   `EXPLAIN QUERY PLAN` test as `build_search_query`'s tests do), and only when `dest_inode` + `dest_birth_ns` match the
-   current node's identity (`cmdr_fs::volume::NodeIdentity`). No identity recorded, or a mismatch, is
-   `Unknown(NodeChangedSince)` / `Unknown(NoRecord)`, ❌ never the op. Return kind (copy, move, extract, …), time,
-   initiator, source path and volume. Its own migration only if an index is truly missing (DURABLE ladder rules). Host
-   side through `operation_log_host/`.
-2. **Git**: status for the path and repo/branch through the existing `RepoCache` wiring; `Ignored` is a first-class
-   answer (it's a strong "this is build output" hint). Ask David before any new `cmdr-git` `pub`.
-3. **Importance**: reuse `tools::resources::importance::snapshot_path_on` and the store-path translation; staleness as
+1. **Record the landed node first** (`crates/cmdr-operations/src/journal.rs`, per D11): a copy, cross-FS move, or
+   extract whose dest is the LOCAL volume records `dest_identity` with one `lstat` after landing, as `record_trashed`
+   does; a remote dest stays `None` (❌ no extra round trip per file on SMB/MTP). ⚠️ `rollback/inverse.rs` already
+   checks `same_node` whenever a row carries an identity, so this ALSO changes how a copy's undo verifies its target: a
+   safety gain, but read `crates/cmdr-operation-log/DETAILS.md` § rollback and add undo tests (copy undone → removed;
+   copy replaced since → skipped) in the same commit. Rows from before have NULL and stay `NoRecord`.
+2. **Op-log provenance** (`crates/cmdr-operation-log`): a new read, `landed_at(conn, volume_id, path, identity)` → the
+   newest op whose item LANDED at that path (dest dir resolved through `dirs` + `dest_name_folded` via the standalone
+   `operation_items_dest_name` index: add an `EXPLAIN QUERY PLAN` test as `build_search_query`'s tests do; raise the
+   crate's surface ceiling for the read and its answer type with the reason in its `DETAILS.md` § "The public surface is
+   capped"), and only when `dest_inode` + `dest_birth_ns` match the current node's identity
+   (`cmdr_fs::volume::NodeIdentity`). No identity recorded, or a mismatch, is `Unknown(NodeChangedSince)` /
+   `Unknown(NoRecord)`, ❌ never the op. Return kind (copy, move, extract, …), time, initiator, source path and volume.
+   Its own migration only if an index is truly missing (DURABLE ladder rules). Host side through `operation_log_host/`.
+3. **Git**: repo root and branch through `repo_info`; the path's status per D12. `list_status` alone can't tell clean
+   from ignored from outside-the-repo (absent in all three), so `Tracked { clean }` and `Ignored` need the per-path read
+   D12 asks for; until David says yes, the row answers what `list_status` proves (`Modified`, `Untracked`, …) and a
+   typed `Unknown(NotInStatus)` otherwise, ❌ never "clean" from absence. A cold cache is a full walk: its own job with
+   a budget, `Unknown(TimedOut)` past it, the walk's `stop` flag set on cancel.
+4. **Importance**: reuse `tools::resources::importance::snapshot_path_on` and the store-path translation; staleness as
    `tools/read/importance.rs` reports it. Cmdr visit count if `ImportanceIndex` already exposes it; else skip the row
    (no ceiling raise for it).
-4. **Recursive size** for folders: `dir_stats` with the app's `coverage` builder and `walk_affects`, flags verbatim. A
+5. **Recursive size** for folders: `dir_stats` with the app's `coverage` builder and `walk_affects`, flags verbatim. A
    file's own size is identity, not this.
-5. **Owner mapping** (§ below), pure parts in `cmdr-about::owner`, lookups in the host.
+6. **Owner mapping** (§ below), pure parts in `cmdr-about::owner`, lookups in the host.
 
 **Owner mapping: what's honest** (the spike's answer to the issue's open question)
 
@@ -308,14 +354,18 @@ model can phrase certainty honestly and the removal line can lean on it.
 prunes whole ops, so an old copy simply has no record: `NoRecord`, fine. The `dirs` table identity became the EXACT name
 in v3; read its DETAILS before querying. `pkgutil` is a subprocess: `crate::subprocess` with a deadline, and its exit
 code is the answer, never its stderr wording (`error-string-match`). Importance: never a syscall on an SMB/MTP mount;
-MTP has no importance at all.
+MTP has no importance at all. `installed_app_path` is a LaunchServices call and the installed-apps scan reads every
+`Info.plist`: both on the framework pool, the scan cached, ❌ never per card. LaunchServices can answer an app on a
+backup disk or a mounted DMG: count "installed" only under the scanned app folders.
 
-**Test plan**: op-log query tests in the crate (copy landed → found; file replaced since → not found; renamed after
-landing → not found at the new name; index-served plan). Owner classifier table tests (pure), including vendor ambiguity
-and `group.` prefixes. Host tests with a fake installed-apps list. `cargo nextest run` for both crates, `clippy`.
+**Test plan**: journal tests in `cmdr-operations` (a local copy records the landed identity; a remote dest records none;
+a copy's undo skips a since-replaced dest). Op-log query tests in the crate (copy landed → found; file replaced since →
+not found; renamed after landing → not found at the new name; a NULL-identity row → `NoRecord`; index-served plan).
+Owner classifier table tests (pure), including vendor ambiguity and `group.` prefixes. Host tests with a fake
+installed-apps list. `cargo nextest run` for the three crates, `clippy`.
 
-**DONE**: a file Cmdr copied in shows "You copied this from <place> on <date>";
-`~/Library/Application Support/ com.eltima.cmd1` resolves to Commander One with its install state; `Slack` resolves as
+**DONE**: a file Cmdr copied in (after this milestone) shows "You copied this from <place> on <date>";
+`~/Library/Application Support/com.eltima.cmd1` resolves to Commander One with its install state; `Slack` resolves as
 probable; `Google` is ambiguous.
 
 ---
@@ -325,7 +375,9 @@ probable; `Google` is ambiguous.
 **Scope**
 
 1. Command `file.tellMeAbout` ("Tell me about this"): `COMMAND_IDS`, a `sources/file-list.ts` entry
-   (`showInPalette: true`, `BLOCKED_BY_DIALOGS`, default keys
+   (`showInPalette: true`, `BLOCKED_BY_DIALOGS`, NO `needsCapability`: unlike `getInfo` the card answers on every
+   volume, degrading per M6; on a virtual row with no real path, the search-results and portal arms of M6 decide, and
+   until M6 the card says what it can't tell, default keys
    `{ macos: ['⌘⇧I'], windows: ['Ctrl+Shift+I'], linux: ['Ctrl+Shift+I'] }`, pending decision D2), a handler in
    `routes/(main)/command-handlers/file-handlers.ts` (on the entry under the cursor, as `file.getInfo` does), the
    four-places menu wiring (`cmdr-menu` `ids.rs` + `bar.rs` File menu next to Get Info, the context row in
@@ -342,9 +394,13 @@ probable; `Google` is ambiguous.
    path row offers reveal/copy. a11y: rows are a description list (`<dl>`), pending rows `aria-busy`, ❌ no live region
    per fact (it would chatter); one polite announcement when facts settle.
 5. Analytics hook point only (the event lands in M10).
-6. Playwright spec `about-this.spec.ts`: a fixture file the harness writes with quarantine + WhereFroms xattrs; open by
-   shortcut, palette, and context menu path; assert the provenance row (host shown), the type row, a folder's size row,
-   Esc closes and focus returns. Read `test/e2e-playwright/CLAUDE.md` first.
+6. Playwright spec `about-this.spec.ts` (the suite runs on macOS AND Linux Docker): a fixture file the harness writes
+   with the OS's provenance xattrs (macOS quarantine + WhereFroms; Linux `user.xdg.origin.url`, which needs a backing
+   filesystem with user xattrs: verify the container's fixture dir has them, overlayfs and recent tmpfs do); the key
+   from `defaultKey('file.tellMeAbout')`, ❌ never a literal ⌘; open by shortcut, palette, and context menu path (the
+   context row is native AppKit/GTK: drive it the way existing specs drive a context-menu command); assert the
+   provenance row (host shown), the type row, a folder's size row, Esc closes and focus returns. Read
+   `test/e2e-playwright/CLAUDE.md` first.
 
 **Intentions**: keyboard-first, instant, calm. The draft layout is David's to review (see § Review items); make the
 defaults good rather than final. The dialog must be MCP-observable through the soft-dialog registry (whatever a user can
@@ -411,8 +467,9 @@ extend the Playwright spec with a folder.
 3. Linux: provenance from `user.xdg.*`, default app from the existing Linux path in `open_with.rs`/`default_app.rs`
    (verify what it answers), signature `NotApplicable(NoCodeSigningOnThisOs)`, owner mapping's Linux arms (M3). Windows
    paths compile but aren't a target.
-4. Linux E2E: add an `about-this` case to `test/e2e-linux` (read its `C.md`): provenance via `setfattr`, no signature
-   row, Esc closes.
+4. Linux E2E: the Playwright spec already runs in the Linux container (M4); extend it with the Linux-only assertions
+   (`NotApplicable` signature row, the `.desktop` owner arm). Add a `test/e2e-linux` case only if that suite covers
+   something Playwright can't (read its `C.md` first; don't duplicate).
 
 **Landmines**: `src-tauri/CLAUDE.md` two-layer timeouts; `importance` and index reads never touch the mount; `inspect`'s
 materialize path is NOT used for facts (it pulls up to 256 MiB). A Finder-mounted SMB path still looks local: route by
@@ -440,14 +497,20 @@ honesty contract all land together, and a mistake is a privacy bug.
    `load: Load::Deferred`, `ctx_params` for cancel), schema closed with `additionalProperties: false` (`path` + optional
    `volumeId`), handler over the same host jobs with a collect deadline (it answers settled facts plus `pending` kinds
    named, never waits forever), rail label (`ask-cmdr-tool-label-keys.ts` + `messages/en/askCmdr.json`), the wire
-   fixture (`UPDATE_SNAPSHOT=1` over `tests/tool_snapshot_tests.rs`, read the diff). No contents: the tool never peeks.
+   fixture (`UPDATE_SNAPSHOT=1` over `tools/tests/tool_snapshot_tests.rs`, read the diff). No contents: the tool never
+   peeks.
 3. `tools/CLAUDE.md` + `DETAILS.md`: the read-handler rule gains its third live-filesystem exception (`about_item`'s
    bounded metadata reads), said in the must-know and in the catalog.
-4. Consent: a new item `ai.cloudConsent.askCmdr.item.aboutThis` (draft: "When you ask Cmdr about a file or folder: where
-   it came from (the download site and page, without the link's private parts), the app that made or owns it, its code
-   signature, and its git status"), wired into both disclosure surfaces (settings and onboarding) the way the other
-   items are; `CLOUD_AI_CONSENT_VERSION` → `3`; `docs/security.md` § Cloud AI egress; `agent/CLAUDE.md`'s egress
-   must-know; the `ai/DETAILS.md` § Cloud AI consent list. Read `ai/DETAILS.md` § Cloud AI consent first.
+4. Consent: TWO items in the one bump, because the facts leave by two doors. (a) A top-level item beside
+   `ai.cloudConsent.folderSuggestions` for the verdict (M8), which runs with Ask Cmdr OFF (D5) and so can't hide under
+   the "Ask Cmdr, when you chat…" heading: draft `ai.cloudConsent.aboutThis` ("<b>Tell me about this</b>: where the item
+   came from (the download site and page, without the link's private parts), the app that made or owns it, its code
+   signature, its git status, and a short look inside a file"). (b) `ai.cloudConsent.askCmdr.item.aboutThis` for the
+   `about_item` tool (same kinds, no contents: the tool never peeks). Wire both into both disclosure surfaces (settings
+   and onboarding) the way the other items are. Adding (a) here, before M8 exists, is deliberate: the branch doesn't
+   land until the whole feature does, and a second bump in M8 would make users re-consent twice;
+   `CLOUD_AI_CONSENT_VERSION` → `3`; `docs/security.md` § Cloud AI egress; `agent/CLAUDE.md`'s egress must-know; the
+   `ai/DETAILS.md` § Cloud AI consent list. Read `ai/DETAILS.md` § Cloud AI consent first.
 
 **Landmines**: `every_known_tool_has_an_ask_cmdr_rail_label`; deferred `brief` is in the cached prefix (keep it short);
 every schema property needs a `type` (llama-server refuses otherwise). A tool reaching the live FS is new: the handler
@@ -470,8 +533,10 @@ cost metering, cancellation, and the local-model quality call.
 
 **Scope**
 
-1. Gate: verdict runs only when `ai.provider` is `local` or `cloud`, the slot resolves (`resolve_agent_llm`; a refusal
-   maps to a typed `VerdictUnavailable(Off | NoCloudConsent | NotConfigured | Managed | …)` the card words), and the
+1. Gate: verdict runs only when `ai.provider` is `local` or `cloud`, the slot resolves (`resolve_agent_llm` with a new
+   `AgentSlot::AboutThis` per D13, which skips the `askCmdr.interactiveModel` override and gets its own E2E fake arm in
+   `scripted_fake_llm`; a refusal maps to a typed
+   `VerdictUnavailable(Off | NoCloudConsent | NotConfigured | Managed | …)` the card words), and the
    `aboutThis.aiVerdict` setting is on (new registry setting per `docs/guides/adding-a-new-setting.md`, default per D3).
    AI Off shows no verdict block at all, only a quiet one-line hint where to turn AI on (review item).
 2. Start after `FactsSettled` or a 1.5 s cap, whichever first (grounded, not blocked forever by a slow fact).
@@ -485,13 +550,15 @@ cost metering, cancellation, and the local-model quality call.
    a green light. Stream deltas to the card; `about_cancel` fires the token. The local model's context is small
    (`ai.localContextSize`): keep the user message under ~1,500 tokens.
 5. Cost: a migration in `agent/store/migrations.rs` adds one reserved conversation row with a new
-   `ConversationOrigin::AboutThis` (the `quiet_wakes` precedent: hidden from the session list, outside the wake
-   ceiling's origin filter), and the verdict meters through `agent::pricing::price_call` + `record_cost` against it.
-   Unknown price → `priced = false`, shown "unknown", never $0. The card shows nothing about cost (review item: a small
-   cost line?).
-6. The E2E fake: `e2e_fake.rs` gains a verdict script (`by_prompt` on a marker in the verdict system prompt), so the
-   Playwright spec asserts a streamed verdict with zero network.
-7. Revoking cloud consent cancels in-flight verdicts too (register them where `revoke_cloud_ai_consent` cancels).
+   `ConversationOrigin::AboutThis` (the `quiet_wakes` precedent: outside the wake ceiling's origin filter, and hidden
+   from the session list and search by ADDING its token to both hide filters, which today match `QuietWakes` alone, plus
+   the rail's thread-icon set; a test that the session list and search never return it), and the verdict meters through
+   `agent::pricing::price_call` + `record_cost` against it. Unknown price → `priced = false`, shown "unknown", never $0.
+   The card shows nothing about cost (review item: a small cost line?).
+6. The E2E fake: `e2e_fake.rs::scripted_fake_llm` gains an `AboutThis` arm (a fixed streamed verdict), so the Playwright
+   spec asserts a streamed verdict with zero network.
+7. Revoking cloud consent (and a held "no") cancels in-flight verdicts too: `ai/cloud_consent.rs::stop_in_flight_calls`
+   calls the about registry's `cancel_all` beside the two it calls today, with a test.
 
 **Real-LLM testing (worth it here, about $3 of the $10)**: an `#[ignore]` eval test beside
 `client_real_anthropic_test.rs` over ~12 synthesized cards (a Chrome-downloaded `.dmg`, an uninstalled app's container,
@@ -563,7 +630,8 @@ Cmdr with the item attached.
    curated dot-folder tool table, a subtree kind histogram, an inspector that follows the cursor (if D1 picks the
    dialog), and whatever the reviews defer.
 
-**DONE**: green `--only-slow`, docs audited, follow-ups filed, the lead runs the close-out reviews.
+**DONE**: green `--only-slow`, docs audited, follow-ups filed, the branch pushed with `pnpm land -no-wait`, the lead
+runs the close-out reviews. The final `pnpm land` waits for David's go after his release.
 
 ## Open decisions for David (each has a default so execution isn't blocked)
 
@@ -591,6 +659,23 @@ Cmdr with the item attached.
 - **D10 – Download URL on the card.** **Default: the site's host on the card, the full URL behind copy and open** (it's
   the user's own data locally; only the model gets the redacted form).
 
+- **D11 – Op-log provenance needs the landed node recorded.** Today only trashed items record which node they landed as,
+  so a strict identity check finds no copy at all. (a) Record `dest_identity` for local-dest copies, moves, and extracts
+  from now on (one `lstat` per landed file; rollback starts verifying copy targets by node too); older rows and remote
+  dests answer `NoRecord`. (b) Also accept older/remote rows whose recorded size + landed mtime match the node, shown as
+  "probably", like D9. (c) Cut the row. **Recommendation and default: (a)**: honest, and it hardens undo. (b) is a
+  reasonable add-on if David wants the row to light up for history from before the release.
+- **D12 – Git per-path status.** `list_status` can't tell clean, ignored, and outside-the-repo apart. (a) One new
+  `cmdr-git` root promise (a per-path status: index lookup plus the exclude check, no walk), ceiling 11 → 12. (b) Ship
+  without it: only changed/untracked states, `Ignored` and "clean" unknown. **Recommendation: (a)**, since "ignored" is
+  the strongest build-output hint the removal line has. **Default until David answers: (b)**, because the crate's
+  must-know says a new `pub` needs his say-so.
+- **D13 – Which model writes the verdict.** `resolve_agent_llm` applies Ask Cmdr's `askCmdr.interactiveModel` override,
+  which may be a large, pricier chat model. (a) A new `AgentSlot::AboutThis` that uses the `ai/` provider's configured
+  model (what folder suggestions use). (b) Reuse the rail slot. (c) A dedicated `aboutThis.model` setting.
+  **Recommendation and default: (a)**: same chokepoint, consent, managed policy, and fake, and D3's "well under a cent"
+  stays true.
+
 ## Review items for David (layout and copy, before release)
 
 Dialog title ("About “name”" draft), section names and order, each row's wording per state (especially every unknown
@@ -615,7 +700,8 @@ look while streaming and when stopped, the cost line (shown or not), action labe
    never $0; cancel and consent revoke both stop it.
 9. Nothing reads inside another app's container.
 10. `cmdr-about` has no `tauri`, `tauri-specta`, or `cmdr` in its tree and sits at its surface ceiling.
-11. The op-log provenance claim requires a matching node identity.
+11. The op-log provenance claim requires a matching node identity (or, only if D11 picked (b), a size + mtime match
+    worded as "probably"); a NULL identity is `NoRecord`, never the op.
 12. `about_item` and the card read the same host jobs; the tool never peeks at contents.
 13. Every new string is English with an `@key` description, untranslated; every action has a keyboard path.
 14. No milestone tags outside this plan.
