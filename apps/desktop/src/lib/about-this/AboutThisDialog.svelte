@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
     import { onMount } from 'svelte'
-    import type { AboutTarget } from '#lib/ipc/bindings.js'
+    import type { AboutAction, AboutTarget } from '#lib/ipc/bindings.js'
     import { t } from '#lib/intl/messages.svelte.js'
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
     import Button from '#lib/ui/Button.svelte'
@@ -16,6 +16,7 @@
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { getCachedCustomFolderIcon, getCachedIcon, iconCacheVersion } from '#lib/icon-cache.js'
     import type { IconName } from '#lib/ui/icons/icon-map.js'
+    import AboutActions from './AboutActions.svelte'
     import AboutHeadline from './AboutHeadline.svelte'
     import AboutRemoval from './AboutRemoval.svelte'
     import AboutRow from './AboutRow.svelte'
@@ -28,9 +29,11 @@
         onClose: () => void
         /** Enter on a row that names a place (a folder's child, an app's Library folder): close, then go there. */
         onGoTo: (target: AboutGoTarget) => void
+        /** A footer action: close, then do it. */
+        onAct: (action: AboutAction) => void
     }
 
-    const { card, onClose, onGoTo }: Props = $props()
+    const { card, onClose, onGoTo, onAct }: Props = $props()
 
     const TARGET_ICON: Record<AboutTarget, IconName> = {
         file: 'file',
@@ -85,7 +88,7 @@
     resizable
     growDownward
     onclose={onClose}
-    containerStyle="width: 34rem; max-height: 85vh;"
+    containerStyle="width: 40rem; max-height: 85vh;"
 >
     {#snippet title()}
         <span class="title"
@@ -141,6 +144,9 @@
     </div>
     <p class="sr-only" aria-live="polite">{announcement}</p>
 
+    {#snippet footerLeading()}
+        <AboutActions actions={card.unavailable ? null : (card.derived?.actions ?? null)} {onAct} />
+    {/snippet}
     {#snippet footer()}
         <Button variant="secondary" onclick={onClose}>{t('aboutThis.dialog.close')}</Button>
     {/snippet}

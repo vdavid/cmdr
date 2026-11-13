@@ -8,10 +8,11 @@ these facts and decides none of them.
 
 Modules import downward only, which is what keeps `module-cycles` green:
 
-- `text` (no imports) → `fact` → `payload`, `owner`, `provenance`, `sniff` → `digest` → `card` → `removal`, `headline`.
+- `text` (no imports) → `fact` → `payload`, `owner`, `provenance`, `sniff` → `digest` → `card` → `removal`, `headline`,
+  `actions`.
 - `gather` imports nothing from the crate: it's generic over the job key and the answer.
-- `removal::consequences` and `headline::headline` are free functions over `&AboutCard`, never methods on it, because
-  `card` must not import the modules that read it.
+- `removal::consequences`, `headline::headline`, and `actions::actions` are free functions over `&AboutCard`, never
+  methods on it, because `card` must not import the modules that read it.
 
 ## Coverage: `Fact<T>`
 
@@ -235,6 +236,37 @@ or AirDrop (never naming the person), an owning app or that the app is gone, a d
 `Plain`. It never carries a removal consequence. A plain document's headline is kind, size, and last opened, from
 identity and use alone.
 
+## Next actions
+
+`actions(&AboutCard, &ActionCaps)` returns the footer: `shown` (at most `SHOWN_ACTIONS`, 3) and `more`, each in one
+fixed order per target, recomputed with every landing like the headline. The facts say where there's somewhere to go;
+`ActionCaps` (the host's, per way of reaching the item) says what the volume lets an action do. Nothing a model writes
+reaches it.
+
+- **Order**: a file or package: open, show in the file manager, the download page, the owning app, the app's data
+  folder. A folder: show, owner, app folder. An app: show, the download page. A symlink: show, owner, app folder. An
+  archive's entry: the archive's download page only. Removal (`MoveToTrash`, or `Delete` on a volume with no Trash)
+  always last.
+- **Decision: removal is never first, and alone it sits behind "More"** (a phone's file: nothing but Delete). Why: the
+  first button is where a hurried press lands, and the deterministic removal row above it is what the person should read
+  first. It goes through the app's delete dialog, which asks.
+- **Decision: three shown, not four.** At the card's default width, real labels ("Open with DiskImageMounter", "Show in
+  Finder", "Open releases.example.com") plus "More" and Close fill the footer; a fourth wrapped it. On a typical
+  download, Move to trash is the one behind "More", which also keeps it furthest from the hand.
+- **The download page is the record's LAST web address**: Chrome and Safari write the file's own address first and the
+  page after it, and opening the file's address only downloads it again.
+- **`web_page` is the only way an address becomes an action**: re-parsed by `url`, `http` or `https` only, a plain
+  lowercase DNS host (punycode for an IDN, so a look-alike shows as `xn--…` on the button), no user info (a link with
+  `apple.com@evil.example` is a disguise), no IP literal (it names no site the person could recognize). Written back out
+  by the parser. ❌ Never a `file:`, `smb:` (it mounts a stranger's share), `javascript:`, or an app's own scheme (it
+  launches whatever registered it). The host shows the host on the button before the press.
+- **The owning app is revealed only where Cmdr knows its bundle's path** (`InstalledApp::Installed.path`,
+  `OwnerClaim::ByName.app_path`, `InsideApp.app_path`: raw paths, never shown). A Linux desktop entry has none, so a
+  Linux owner gets no reveal.
+- **The app's data folder** is `OwnerQuestion::app_folder_above(path, home)`: the owned Library or XDG folder the item
+  sits strictly inside, so a file deep in `Application Support/Slack` offers "Go to Slack's data". The folder itself
+  gets none (it's already there).
+
 ## The gathering engine
 
 The shape of `apps/desktop/src-tauri/src/menu/context_menu_facts.rs`, generic: jobs are `(key, FnOnce() -> answer)`, the
@@ -326,3 +358,13 @@ Raised 129 → 132 by items Cmdr reaches through their volume:
   plain file on the disk, and its removal row as the person's own document.
 - **`Download::of_archive`**: an archive's entry always names its archive, with the archive's record or why there's
   none. Whether an entry's row may say "nothing recorded" or must name the archive is a rule a person could argue.
+
+Raised 132 → 139 (and 11 → 12 modules and root promises) by the card's next actions (§ Next actions):
+
+- **The `actions` module: `AboutAction` and `Actions`** (wire types: the footer the card draws), **`ActionCaps` with
+  `none`, and `RemoveBy`** (what the host knows about the volume before any job), and **`actions`**. Which actions show,
+  in what order, which wait behind "More", and which addresses may be opened are rules a person could argue, and the
+  footer must never depend on anything a model writes, so they live here, beside the removal row they sit under. A
+  module of its own: `card` must not import the modules that read it, as with `removal` and `headline`.
+- **`OwnerQuestion::app_folder_above`**: which folder is "the app's data" is the owner rule's own geometry.
+- `web_page` and `SHOWN_ACTIONS` stay `pub(crate)`: a host gets whole actions, never a half-checked address.

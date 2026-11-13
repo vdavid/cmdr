@@ -102,7 +102,10 @@ const siteHeadline: Headline = {
   size: { bytes: siteSize.logical, atLeast: false },
   lead: { template: 'plain' },
 }
-const siteRemoval = derived(siteHeadline, [{ type: 'uncommittedWork' }])
+const siteRemoval = derived(siteHeadline, [{ type: 'uncommittedWork' }], [], {
+  shown: [{ type: 'showInFileManager' }, { type: 'moveToTrash' }],
+  more: [],
+})
 
 const site: Stream = {
   plan: folderPlan(['git']),
@@ -355,7 +358,10 @@ const appHeadline: Headline = {
   size: { bytes: appSize.logical, atLeast: false },
   lead: { template: 'lastOpened', at: day('2026-11-12') },
 }
-const appRemoval = derived(appHeadline, [{ type: 'removesApp', dataLeft: { state: 'known', value: appData } }])
+const appRemoval = derived(appHeadline, [{ type: 'removesApp', dataLeft: { state: 'known', value: appData } }], [], {
+  shown: [{ type: 'showInFileManager' }, { type: 'moveToTrash' }],
+  more: [],
+})
 
 const app: Stream = {
   plan: plan('appBundle', [

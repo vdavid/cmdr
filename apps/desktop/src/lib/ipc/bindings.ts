@@ -6475,6 +6475,63 @@ export const events = {
 }
 
 /* Types */
+// One thing the card's footer can do.
+export type AboutAction =
+  /**
+   *  Opens the item the way Enter in the pane does (its default app), so
+   *  whatever the pane would ask or refuse, the card does too.
+   */
+  | {
+      type: 'openWithDefaultApp'
+      // The app that opens it.
+      app: ItemText
+    }
+  // Shows the item in the OS's file manager.
+  | { type: 'showInFileManager' }
+  // Opens the page the item was recorded as downloaded from.
+  | {
+      type: 'openDownloadPage'
+      /**
+       *  The site's host, lowercased, punycode when not plain ASCII: what the
+       *  button shows before the press.
+       */
+      host: string
+      /**
+       *  The whole address, parsed and written back out, `http` or `https`
+       *  only.
+       */
+      url: string
+    }
+  // Shows the app the item belongs to, in the pane.
+  | {
+      type: 'revealOwner'
+      // The app's name.
+      app: ItemText
+      // The app bundle's path: raw, ❌ never shown.
+      path: string
+    }
+  /**
+   *  Opens the app-data folder the item sits inside, where the app keeps the
+   *  rest of its data.
+   */
+  | {
+      type: 'goToAppFolder'
+      /**
+       *  The app, when Cmdr knows which one is installed. `None`: the folder
+       *  is an app's, by its place, and Cmdr can't name an installed one.
+       */
+      app: ItemText | null
+      // The folder: raw, ❌ never shown.
+      path: string
+    }
+  // Moves the item to the Trash, through the delete dialog.
+  | { type: 'moveToTrash' }
+  /**
+   *  Deletes the item for good on a volume with no Trash, through the delete
+   *  dialog.
+   */
+  | { type: 'delete' }
+
 /**
  *  One message on a card's channel. Every one carries its request's id, so the
  *  card drops whatever isn't for the item it shows now.
@@ -6639,6 +6696,17 @@ export type AccessNotice =
   | { kind: 'smbDirectSignatureRefused'; volumeId: string }
   // An offered update didn't carry Cmdr's signature, so nothing was installed.
   | { kind: 'updateNotGenuine'; version: string; check: SignatureCheck }
+
+/**
+ *  The footer's actions: the ones that show, and the rest behind "More", each
+ *  in the target's fixed order.
+ */
+export type Actions = {
+  // At most [`SHOWN_ACTIONS`], never starting with a removal.
+  shown: AboutAction[]
+  // The rest.
+  more: AboutAction[]
+}
 
 // Active settings snapshot cached at startup for inclusion in crash reports.
 export type ActiveSettings = {
@@ -9200,6 +9268,8 @@ export type Derived = {
   headline: Headline
   // What removing it would mean.
   removal: Removal
+  // What the footer offers next.
+  actions: Actions
 }
 
 /**
@@ -12160,6 +12230,11 @@ export type InstalledApp =
       type: 'installed'
       // The app's name.
       name: ItemText
+      /**
+       *  Where the app is, for the card's reveal action: raw, ❌ never shown.
+       *  `None`: the lookup didn't say.
+       */
+      path: string | null
     }
   // No app with that id sits in the app folders: the data is left over.
   | { type: 'notInstalled' }
@@ -16170,6 +16245,11 @@ export type OwnerClaim =
       app: ItemText
       // Which app-data folder the path sits in.
       place: OwnerPlace
+      /**
+       *  Where the app is, for the card's reveal action: raw, ❌ never shown.
+       *  `None`: the lookup didn't say.
+       */
+      appPath: string | null
     }
   // Certain: an installer receipt lists the path.
   | {
@@ -16192,6 +16272,11 @@ export type OwnerClaim =
       type: 'insideApp'
       // The app's name.
       app: ItemText
+      /**
+       *  The app bundle's path, for the card's reveal action: raw, ❌ never
+       *  shown.
+       */
+      appPath: string
     }
 
 // Which app-data folder an owned path sits in.

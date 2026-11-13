@@ -23,7 +23,7 @@ import { pathCrossesArchiveBoundary } from './archive-paths'
 import { paneOffersTrash } from './trash-availability'
 import { checkTransferDestinationGuard } from './transfer-entry'
 import { answeringDialogOpen, operationStartIsBlocked, refuseOpening } from './operation-start-gate'
-import { readPressedRows } from './pressed-rows'
+import { readCursorRow, readPressedRows, type PressedRows } from './pressed-rows'
 import { duplicateInPlace } from './duplicate-command'
 import { passesHomeFolderGuard } from './home-folder-guard'
 import { openRenameAsMove } from './rename-as-move'
@@ -463,9 +463,40 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * reads its trash affordance off the live volume list: a search covers one volume
    * and it need not be the boot drive, so neither can be assumed.
    */
+  /**
+   * The snapshot rows a delete acts on: the selection, else the cursor row, or the cursor row alone (whatever is
+   * selected) when the press names one item (`cursorPath`), and only while it's that item. `null` when there's nothing.
+   */
+  function snapshotDeleteEntries(
+    snapshotId: string,
+    sourcePaneRef: FilePaneAPI | undefined,
+    cursorPath: string | undefined,
+  ): { entries: ReturnType<typeof resolveSnapshotEntries>; hasSelection: boolean } | null {
+    const selectedIndices = cursorPath === undefined ? (sourcePaneRef?.getSelectedIndices() ?? []) : []
+    const hasSelection = selectedIndices.length > 0
+    const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
+    // Both the cursor and a selected index can point past the end (clamping is
+    // best-effort in the search-results keyboard path, and a cross-snapshot
+    // delete shortens `entries` under a live selection), so the resolver drops
+    // what it can't find and we bail on an empty result.
+    const entries = resolveSnapshotEntries(snapshotId, selectedIndices, cursorIndex)
+    if (cursorPath !== undefined && (entries.length !== 1 || entries[0].path !== cursorPath)) {
+      log.warn('openDeleteFromSearchResults: the cursor row is no longer the item the press named, bailing')
+      return null
+    }
+    if (entries.length === 0) {
+      log.warn(
+        'openDeleteFromSearchResults: nothing to delete (hasSelection={hasSelection}, cursorIndex={idx}), bailing',
+        { hasSelection, idx: cursorIndex },
+      )
+      return null
+    }
+    return { entries, hasSelection }
+  }
+
   async function openDeleteFromSearchResults(
     sourcePane: 'left' | 'right',
-    { permanent, initiator, guard, mcpRequestId }: OpenDeleteDialogArgs,
+    { permanent, initiator, guard, mcpRequestId, cursorPath }: OpenDeleteDialogArgs,
   ): Promise<boolean> {
     const sourcePaneRef = access.getPaneRef(sourcePane)
     const snapshotId = snapshotIdFromPanePath(sourcePaneRef?.getCurrentPath() ?? '')
@@ -478,21 +509,9 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       log.warn('openDeleteFromSearchResults: snapshot {id} not found, bailing', { id: snapshotId })
       return false
     }
-    const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
-    const hasSelection = selectedIndices.length > 0
-    const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
-    // Both the cursor and a selected index can point past the end (clamping is
-    // best-effort in the search-results keyboard path, and a cross-snapshot
-    // delete shortens `entries` under a live selection), so the resolver drops
-    // what it can't find and we bail on an empty result.
-    const entries = resolveSnapshotEntries(snapshotId, selectedIndices, cursorIndex)
-    if (entries.length === 0) {
-      log.warn(
-        'openDeleteFromSearchResults: nothing to delete (hasSelection={hasSelection}, cursorIndex={idx}), bailing',
-        { hasSelection, idx: cursorIndex },
-      )
-      return false
-    }
+    const pressed = snapshotDeleteEntries(snapshotId, sourcePaneRef, cursorPath)
+    if (!pressed) return false
+    const { entries, hasSelection } = pressed
 
     const sourceItems: DeleteSourceItem[] = entries.map((entry) => ({
       name: entry.name,
@@ -540,15 +559,21 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * selection renumbers them, and the old row numbers would offer to delete the neighbor.
    * `readPressedRows` waits out a busy folder and re-reads the press from the pane each attempt.
    */
-  async function readDeleteRows(sourcePaneRef: FilePaneAPI, listingId: string, mcpRequestId: string | undefined) {
+  async function readDeleteRows(
+    sourcePaneRef: FilePaneAPI,
+    listingId: string,
+    { mcpRequestId, cursorPath }: Pick<OpenDeleteDialogArgs, 'mcpRequestId' | 'cursorPath'>,
+  ) {
+    const read = ({ backendRows, expectedSequence }: PressedRows) =>
+      getSelectionEntries(listingId, access.getShowHiddenFiles(), backendRows, expectedSequence)
     let pressed
     try {
-      pressed = await readPressedRows(
-        sourcePaneRef,
-        ({ backendRows, expectedSequence }) =>
-          getSelectionEntries(listingId, access.getShowHiddenFiles(), backendRows, expectedSequence),
-        { cursorFallback: true, mcpRequestId },
-      )
+      // A press about one item (the "Tell me about this" card's Move to Trash) reads the cursor row alone, whatever is
+      // selected, so a selection elsewhere in the pane is never what goes.
+      pressed =
+        cursorPath === undefined
+          ? await readPressedRows(sourcePaneRef, read, { cursorFallback: true, mcpRequestId })
+          : await readCursorRow(sourcePaneRef, read, { mcpRequestId })
     } catch (error) {
       log.warn('openDeleteDialog: getSelectionEntries threw, bailing. error={error}', {
         error,
@@ -560,6 +585,11 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       return null
     }
     const entries = pressed.value
+    if (cursorPath !== undefined && (entries.length !== 1 || entries[0].path !== cursorPath)) {
+      // The row under the cursor isn't the item the press was about any more (a watcher moved it): nothing goes.
+      log.warn('openDeleteDialog: the cursor row is no longer the item the press named, bailing')
+      return null
+    }
     const validEntries = entries.filter((e) => e.name !== '..')
     if (validEntries.length === 0) {
       log.warn(
@@ -612,7 +642,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     }
 
     if (!sourcePaneRef) return false
-    const rows = await readDeleteRows(sourcePaneRef, listingId, mcpRequestId)
+    const rows = await readDeleteRows(sourcePaneRef, listingId, args)
     if (!rows) return false
     const { validEntries, hasSelection } = rows
     log.debug('openDeleteDialog: opening delete confirmation. {count} {entriesNoun}, sourceVolId={volId}', {

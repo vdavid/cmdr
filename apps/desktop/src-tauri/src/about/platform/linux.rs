@@ -162,6 +162,7 @@ fn known_app(id: String, name: Option<String>) -> KnownApp {
         name: name.unwrap_or_else(|| id.clone()),
         id: Some(id),
         other_names,
+        path: None,
     }
 }
 
@@ -201,6 +202,7 @@ pub(crate) fn app_with_id(id: &str) -> Option<KnownApp> {
         name: id.to_string(),
         id: Some(id.to_string()),
         other_names: Vec::new(),
+        path: None,
     })
 }
 

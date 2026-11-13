@@ -11,6 +11,8 @@
  * already there and the dialog opens at its size. `SHOW_ANYWAY_MS` caps the wait for a plan that's slow to come.
  */
 
+import { tick } from 'svelte'
+import type { AboutAction } from '#lib/ipc/bindings.js'
 import { startAbout, type AboutRequestHandle } from '#lib/tauri-commands/index.js'
 import { applyAboutEvent, emptyCard, type AboutCardData, type AboutGoTarget, type AboutSubject } from './about-card'
 
@@ -29,9 +31,20 @@ interface AboutThisState {
 /** The card. Read it; change it only through `openAboutThis` / `closeAboutThis`. */
 export const aboutThisState: AboutThisState = $state({ card: null, shown: false })
 
+/**
+ * What the card's rows and actions do, which only the opener knows (the pane, its explorer). Both run AFTER the card
+ * closes, so focus lands where the action went.
+ */
+export interface AboutHooks {
+  /** Takes the pane to a place a row names (a folder's child, an app's Library folder). */
+  goTo: (target: AboutGoTarget) => void
+  /** Does one of the footer's actions for the card's subject. */
+  act: (action: AboutAction, subject: AboutSubject) => void
+}
+
 let running: AboutRequestHandle | null = null
-/** Where the open card's rows take the pane: the opener's, since only it knows the pane. */
-let goTo: ((target: AboutGoTarget) => void) | null = null
+/** The open card's hooks: the opener's, since only it knows the pane. */
+let hooks: AboutHooks | null = null
 let graceOver = false
 let timers: ReturnType<typeof setTimeout>[] = []
 
@@ -47,13 +60,10 @@ function showIfReady(): void {
   if (card.unavailable !== null || card.settled || (graceOver && card.plan !== null)) aboutThisState.shown = true
 }
 
-/**
- * Opens the card for `subject`, closing any card already up. `onGoTo` takes the pane to a place a row names (a
- * folder's child, an app's Library folder).
- */
-export function openAboutThis(subject: AboutSubject, onGoTo: ((target: AboutGoTarget) => void) | null = null): void {
+/** Opens the card for `subject`, closing any card already up. `openerHooks` do what its rows and actions ask. */
+export function openAboutThis(subject: AboutSubject, openerHooks: AboutHooks | null = null): void {
   closeAboutThis()
-  goTo = onGoTo
+  hooks = openerHooks
   const handle = startAbout(subject, (event) => {
     const card = aboutThisState.card
     if (!card) return
@@ -77,16 +87,34 @@ export function openAboutThis(subject: AboutSubject, onGoTo: ((target: AboutGoTa
 
 /** Closes the card, then takes the pane to `target` (Enter on a row that names a place). */
 export function goToFromCard(target: AboutGoTarget): void {
-  const go = goTo
+  const opener = hooks
   closeAboutThis()
-  go?.(target)
+  opener?.goTo(target)
+}
+
+/**
+ * Closes the card, then does `action` for its subject (a footer button or a "More" row). Closing first is what puts
+ * focus where the action went: the pane, the delete dialog, Finder, the browser.
+ *
+ * ❗ The action waits for the card to be GONE (`tick()`), not only closed in state: until its dialog unmounts it's
+ * still in the open-dialogs inventory, and the delete flow refuses to start behind an open dialog ("Something else is
+ * open here").
+ */
+export function actFromCard(action: AboutAction): void {
+  const opener = hooks
+  const subject = aboutThisState.card?.subject
+  closeAboutThis()
+  if (!subject || !opener) return
+  void tick().then(() => {
+    opener.act(action, subject)
+  })
 }
 
 /** Closes the card and stops its gathering. A no-op with no card up. */
 export function closeAboutThis(): void {
   if (running) void running.cancel()
   running = null
-  goTo = null
+  hooks = null
   clearTimers()
   graceOver = false
   aboutThisState.card = null

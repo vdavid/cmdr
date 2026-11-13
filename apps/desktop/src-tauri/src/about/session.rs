@@ -10,6 +10,7 @@ use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use cmdr_about::actions::ActionCaps;
 use cmdr_about::card::{AboutCard, AboutFact, AboutPlan, Applied};
 use cmdr_about::fact::{Fact, FactKind, UnknownWhy};
 use cmdr_about::gather::{Job, Task, start_with};
@@ -48,6 +49,8 @@ pub(crate) struct Gathered {
     pub(crate) jobs: Vec<(FactKind, Job<AboutFact>)>,
     /// What a row still out at the budget means.
     pub(crate) reach: Watch,
+    /// What the item's volume lets the footer's actions do.
+    pub(crate) actions: ActionCaps,
 }
 
 /// What a row still out at its budget means, by how the card reaches the item.
@@ -76,6 +79,8 @@ pub(crate) struct Timing {
 /// The card as it's being filled, shared with the late route.
 struct Session {
     state: Mutex<State>,
+    /// What the item's volume lets the footer's actions do, for every derive.
+    actions: ActionCaps,
     sink: Arc<dyn AboutSink>,
     cancel: CancellationToken,
     settled: Notify,
@@ -112,7 +117,7 @@ impl Session {
         }
         state.answered.insert(kind);
         log::debug!(target: "about", "{kind:?} landed: {outcome}");
-        let derived = derive(&state.card);
+        let derived = derive(&state.card, &self.actions);
         self.send(AboutUpdate::Fact { fact, derived });
         self.settle_if_complete(&mut state);
     }
@@ -131,7 +136,7 @@ impl Session {
             let kind = fact.kind();
             log::debug!(target: "about", "{kind:?} landed: unknown ({why:?})");
             state.answered.insert(kind);
-            let derived = derive(&state.card);
+            let derived = derive(&state.card, &self.actions);
             self.send(AboutUpdate::Fact { fact, derived });
         }
         self.settle_if_complete(state);
@@ -174,11 +179,12 @@ impl Session {
     }
 }
 
-/// The headline and removal row for the card as it stands.
-fn derive(card: &AboutCard) -> Derived {
+/// The headline, removal row, and actions for the card as it stands.
+fn derive(card: &AboutCard, actions: &ActionCaps) -> Derived {
     Derived {
         headline: headline(card),
         removal: consequences(card),
+        actions: cmdr_about::actions::actions(card, actions),
     }
 }
 
@@ -226,6 +232,7 @@ pub(crate) async fn run(
         ready,
         jobs,
         reach,
+        actions,
     } = gathered;
     let card = AboutCard::new(&plan);
     let session = Arc::new(Session {
@@ -234,6 +241,7 @@ pub(crate) async fn run(
             answered: BTreeSet::new(),
             done: false,
         }),
+        actions,
         sink,
         cancel: cancel.clone(),
         settled: Notify::new(),
@@ -241,7 +249,7 @@ pub(crate) async fn run(
     if cancel.is_cancelled() {
         return;
     }
-    let derived = derive(&session.state.lock_ignore_poison().card);
+    let derived = derive(&session.state.lock_ignore_poison().card, &session.actions);
     session.send(AboutUpdate::Planned { plan, derived });
     for fact in ready {
         session.land(fact);

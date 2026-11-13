@@ -34,6 +34,9 @@ pub enum OwnerClaim {
         app: ItemText,
         /// Which app-data folder the path sits in.
         place: OwnerPlace,
+        /// Where the app is, for the card's reveal action: raw, ❌ never shown.
+        /// `None`: the lookup didn't say.
+        app_path: Option<String>,
     },
     /// Certain: an installer receipt lists the path.
     InstalledBy {
@@ -53,6 +56,9 @@ pub enum OwnerClaim {
     InsideApp {
         /// The app's name.
         app: ItemText,
+        /// The app bundle's path, for the card's reveal action: raw, ❌ never
+        /// shown.
+        app_path: String,
     },
 }
 
@@ -74,6 +80,9 @@ pub enum InstalledApp {
     Installed {
         /// The app's name.
         name: ItemText,
+        /// Where the app is, for the card's reveal action: raw, ❌ never shown.
+        /// `None`: the lookup didn't say.
+        path: Option<String>,
     },
     /// No app with that id sits in the app folders: the data is left over.
     NotInstalled,
@@ -158,6 +167,9 @@ pub struct KnownApp {
     pub id: Option<String>,
     /// Other names it answers to: `CFBundleName`, the bundle folder's name.
     pub other_names: Vec<String>,
+    /// Where it is (an app bundle's path), for the card's reveal action. `None`:
+    /// the lookup didn't say, or there's no bundle to show (a Linux desktop entry).
+    pub path: Option<String>,
 }
 
 /// What the host can look up for [`OwnerQuestion::answer`]. Each is asked only
@@ -224,9 +236,10 @@ impl OwnerQuestion {
     /// touches the real one).
     pub fn of(path: &str, home: &str) -> OwnerQuestion {
         let path = path.trim_end_matches('/');
-        if let Some(app) = inside_an_app(path) {
+        if let Some((app, app_path)) = inside_an_app(path) {
             return OwnerQuestion::Answered(OwnerClaim::InsideApp {
                 app: ItemText::new(app),
+                app_path: app_path.to_string(),
             });
         }
         if let Some(claim) = homebrew(path) {
@@ -239,6 +252,32 @@ impl OwnerQuestion {
             return OwnerQuestion::Receipt;
         }
         OwnerQuestion::Nothing
+    }
+
+    /// The app-data folder `path` sits strictly INSIDE (`~/Library/Application
+    /// Support/Slack` for a file deep in it), with `home` as in [`Self::of`]: the
+    /// place the card's "go to the app's data" action opens. `None` for the
+    /// folder itself, and for a path no app-data folder holds.
+    pub fn app_folder_above(path: &str, home: &str) -> Option<String> {
+        let path = path.trim_end_matches('/');
+        let home = home.trim_end_matches('/');
+        let in_home = under(path, home)?;
+        let (base, folders): (String, Vec<&str>) = match under(in_home, "Library") {
+            Some(_) => (
+                format!("{home}/Library"),
+                LIBRARY_PLACES.iter().map(|(folder, _)| *folder).collect(),
+            ),
+            None => (
+                home.to_string(),
+                HOME_PLACES.iter().map(|(folder, _)| *folder).collect(),
+            ),
+        };
+        let relative = under(path, &base)?;
+        folders.into_iter().find_map(|folder| {
+            let name = child_of(relative, folder)?;
+            let owned = format!("{base}/{folder}/{name}");
+            (path.len() > owned.len()).then_some(owned)
+        })
     }
 
     /// The owner, settled from what `lookups` answers.
@@ -273,16 +312,27 @@ fn under<'a>(path: &'a str, root: &str) -> Option<&'a str> {
     rest.strip_prefix('/')
 }
 
-/// The app bundle the path sits INSIDE (never the bundle itself), named by its
-/// folder.
-fn inside_an_app(path: &str) -> Option<&str> {
+/// The app bundle the path sits INSIDE (never the bundle itself): its name (the
+/// folder's, without `.app`) and the bundle's path.
+fn inside_an_app(path: &str) -> Option<(&str, &str)> {
     let components: Vec<&str> = path.split('/').collect();
     let (_item, parents) = components.split_last()?;
-    parents.iter().find_map(|component| {
-        let stem_len = component.len().checked_sub(4)?;
-        let (stem, extension) = (component.get(..stem_len)?, component.get(stem_len..)?);
-        (!stem.is_empty() && extension.eq_ignore_ascii_case(".app")).then_some(stem)
-    })
+    let mut end = 0;
+    for component in parents {
+        end += component.len();
+        let stem = component
+            .len()
+            .checked_sub(4)
+            .and_then(|stem_len| Some((component.get(..stem_len)?, component.get(stem_len..)?)))
+            .filter(|(stem, extension)| !stem.is_empty() && extension.eq_ignore_ascii_case(".app"))
+            .map(|(stem, _)| stem);
+        if let Some(stem) = stem {
+            return path.get(..end).map(|bundle| (stem, bundle));
+        }
+        // The separator after this component.
+        end += 1;
+    }
+    None
 }
 
 fn homebrew(path: &str) -> Option<OwnerClaim> {
@@ -412,6 +462,7 @@ pub(crate) fn belongs_to(id: &str, app_id: &str) -> bool {
 fn installed(app: &KnownApp) -> InstalledApp {
     InstalledApp::Installed {
         name: ItemText::new(&app.name),
+        path: app.path.clone(),
     }
 }
 
@@ -491,6 +542,7 @@ fn by_name(name: &str, place: OwnerPlace, in_library: bool, apps: &[KnownApp]) -
         [app] => Fact::Known(OwnerClaim::ByName {
             app: ItemText::new(&app.name),
             place,
+            app_path: app.path.clone(),
         }),
         [] if in_library => Fact::unknown(UnknownWhy::LibraryNameMatchesNoApp),
         [] => Fact::unknown(UnknownWhy::NoInstalledAppMatches),

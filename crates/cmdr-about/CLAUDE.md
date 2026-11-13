@@ -13,7 +13,8 @@ inputs and hands them here. No fact depends on a model.
 - **`provenance.rs`** (quarantine, WhereFroms, xdg, `redact_for_egress`), **`sniff.rs`** (magic bytes against the
   extension): decoders of attacker-written bytes.
 - **`card.rs`**: `plan`, `AboutPlan`, `AboutFact`, `AboutCard`. **`removal.rs`**, **`headline.rs`**: derived from a
-  card. **`gather.rs`**: the grace-then-late engine. **`fuzzing.rs`**: the fuzz target's property seam.
+  card. **`actions.rs`**: the footer's next actions. **`gather.rs`**: the grace-then-late engine. **`fuzzing.rs`**: the
+  fuzz target's property seam.
 
 ## Must-knows
 
@@ -28,6 +29,7 @@ inputs and hands them here. No fact depends on a model.
   `http(s)` address leaves as its kind with no text. ❌ No second redaction.
 - ❗ **Decoders cap first** (64 KB xattr, 16 entries) and parse the WHOLE entry before any cut: a host read from a
   truncated address can be a piece of its user info.
+- ❗ **The footer is the facts'** (`actions`): removal never first; only `web_page` turns an address into an action.
 - ❗ **A signature is never "verified"**: unless `checked` is `ExecutableMatches`, the wording is "carries a signature
   from".
 - ❌ **"Left over from an app that isn't installed" is never said of a group container or a `com.apple.*` id**: macOS
@@ -36,8 +38,8 @@ inputs and hands them here. No fact depends on a model.
   `NotApplicable`. `AboutCard::apply` refuses a fact the plan has no row for.
 - ❗ **Prominence is decided here** and rides on the wire inside `Unknown`; ❌ the UI never decides what's worth a
   sentence.
-- ❗ **The wire is one-way**: types serialize (`camelCase`) and export through specta, pinned to the app's exact
-  version. Nothing deserializes. Doc comments land in `bindings.ts`.
+- ❗ **The wire is one-way**: types serialize (`camelCase`) through specta, pinned to the app's version; doc comments
+  land in `bindings.ts`.
 - ❌ **No English.** The headline and the removal row are typed parts plus a template key; the frontend words them.
 - ❌ **No OS `cfg`, no filesystem call, no `tauri`**: every decoder takes bytes and runs the same everywhere. A deadline
   in `gather` bounds how long the collector waits, never how long a job works.

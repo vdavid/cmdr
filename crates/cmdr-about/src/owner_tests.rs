@@ -7,6 +7,7 @@ fn app(name: &str, id: &str) -> KnownApp {
         name: name.to_string(),
         id: Some(id.to_string()),
         other_names: Vec::new(),
+        path: Some(app_path(name)),
     }
 }
 
@@ -52,6 +53,11 @@ fn owner_of(path: &str) -> Fact<OwnerClaim> {
     answer(&OwnerQuestion::of(path, HOME))
 }
 
+/// Where the test apps sit.
+fn app_path(name: &str) -> String {
+    format!("/Applications/{name}.app")
+}
+
 fn by_id(id: &str, place: OwnerPlace, app: Option<&str>) -> Fact<OwnerClaim> {
     Fact::Known(OwnerClaim::ByBundleId {
         bundle_id: ItemText::new(id),
@@ -59,6 +65,7 @@ fn by_id(id: &str, place: OwnerPlace, app: Option<&str>) -> Fact<OwnerClaim> {
         app: match app {
             Some(name) => InstalledApp::Installed {
                 name: ItemText::new(name),
+                path: Some(app_path(name)),
             },
             None => InstalledApp::NotInstalled,
         },
@@ -69,6 +76,7 @@ fn probably(app: &str, place: OwnerPlace) -> Fact<OwnerClaim> {
     Fact::Known(OwnerClaim::ByName {
         app: ItemText::new(app),
         place,
+        app_path: Some(app_path(app)),
     })
 }
 
@@ -205,7 +213,15 @@ fn anything_inside_an_app_bundle_is_that_apps_and_the_bundle_itself_isnt_inside(
     assert_eq!(
         owner_of("/Applications/Slack.app/Contents/Resources/app.asar"),
         Fact::Known(OwnerClaim::InsideApp {
-            app: ItemText::new("Slack")
+            app: ItemText::new("Slack"),
+            app_path: "/Applications/Slack.app".to_string(),
+        })
+    );
+    assert_eq!(
+        owner_of("/Users/jane/Applications/Tools/Big Tool.APP/Contents/MacOS/tool"),
+        Fact::Known(OwnerClaim::InsideApp {
+            app: ItemText::new("Big Tool"),
+            app_path: "/Users/jane/Applications/Tools/Big Tool.APP".to_string(),
         })
     );
     assert_eq!(
@@ -301,6 +317,7 @@ fn an_app_installed_outside_the_app_folders_is_installed() {
             name: "Creative Cloud".to_string(),
             id: Some(id.to_string()),
             other_names: Vec::new(),
+            path: Some(app_path("Creative Cloud")),
         })
     };
     assert_eq!(
@@ -445,7 +462,38 @@ fn a_claim_says_how_cmdr_knows_on_the_wire() {
         serde_json::to_value(&claim).expect("a claim serializes"),
         serde_json::json!({
             "state": "known",
-            "value": { "type": "byName", "app": "Slack", "place": "applicationSupport" }
+            "value": {
+                "type": "byName",
+                "app": "Slack",
+                "place": "applicationSupport",
+                "appPath": "/Applications/Slack.app"
+            }
         })
     );
+}
+
+#[test]
+fn the_app_folder_above_is_the_owned_folder_for_what_sits_inside_it() {
+    let above = |path: &str| OwnerQuestion::app_folder_above(path, HOME);
+    assert_eq!(
+        above(&format!("{HOME}/Library/Application Support/Slack/Cache/data_1")).as_deref(),
+        Some("/Users/jane/Library/Application Support/Slack")
+    );
+    assert_eq!(
+        above(&format!("{HOME}/Library/Caches/com.example.tool/blob")).as_deref(),
+        Some("/Users/jane/Library/Caches/com.example.tool")
+    );
+    assert_eq!(
+        above(&format!("{HOME}/.config/tool/settings.toml")).as_deref(),
+        Some("/Users/jane/.config/tool")
+    );
+    // The folder itself, the place above it, and anything elsewhere: no folder to go to.
+    for path in [
+        format!("{HOME}/Library/Application Support/Slack"),
+        format!("{HOME}/Library/Application Support"),
+        format!("{HOME}/Documents/report.pdf"),
+        "/Library/Application Support/Slack/x".to_string(),
+    ] {
+        assert_eq!(above(&path), None, "{path}");
+    }
 }

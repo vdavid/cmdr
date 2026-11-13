@@ -75,6 +75,24 @@ The table (`route::caps_for`, pinned by `through_tests.rs::each_way_asks_only_wh
 - **`Snapshot`** (a restic view): identity only.
 - **`Offline`**: `unavailable { noVolumeAtPath }`.
 
+### What the footer's actions may do, by way
+
+`route::action_caps(way, volume, path, home)` fills `cmdr_about::actions::ActionCaps` once, before any job, and the
+session hands it to every derive (pinned by the `through_tests.rs` action-caps tests):
+
+- **Show in the file manager**: `Local` and `OsMountedShare` only, where the OS sees the path itself.
+- **Remove**: only on a volume that takes writes (`Volume::is_writable`); `Trash` where it keeps one
+  (`Volume::has_trash`), else `Delete`. Both open the pane's delete dialog, which asks.
+- **❌ Neither** for `Archive`, `GitHistory`, `Snapshot`, or `Offline`: an entry inside a zip has no Trash and Finder
+  can't show it; git's history and a backup snapshot are read-only views.
+- **The app's data folder**: `Local` only, from `OwnerQuestion::app_folder_above` and the home folder.
+- **A card whose volume already stopped answering** (`Gathered::silenced`) gets no actions: a reveal or a delete
+  dialog on a dead share would wait as long as it does.
+
+**The home folder** (`route::home_folder`) is the person's, or in a dev or E2E build `CMDR_ABOUT_FIXTURE_HOME`
+(`test_mode::about_fixture_home`), so the QA fixture folder's fake `Library` reads like the real one without a write
+into it. It moves only the owner row's and the app-folder action's idea of home.
+
 ### A volume that stops answering
 
 **Decision: a card reached through its volume is planned from the pane, before the volume is asked anything.** The

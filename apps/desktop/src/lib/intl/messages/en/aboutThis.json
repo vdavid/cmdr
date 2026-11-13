@@ -8,6 +8,61 @@
   "@aboutThis.dialog.close": {
     "description": "Button at the bottom right of the \"Tell me about this\" card. Closes it; nothing else happens."
   },
+  "aboutThis.action.open": "Open with {app}",
+  "@aboutThis.action.open": {
+    "description": "Button in the footer of the \"Tell me about this\" card. Opens the file in the app the system opens it with, the same as pressing Enter on it in the file list (the card closes first). Short control label.",
+    "placeholders": { "app": { "description": "The app's name, for example \"Preview\"." } }
+  },
+  "aboutThis.action.showInFileManager": "{platform, select, macos {Show in Finder} windows {Show in File Explorer} other {Show in file manager}}",
+  "@aboutThis.action.showInFileManager": {
+    "description": "Button in the footer of the \"Tell me about this\" card. Closes the card and shows the item in the system's file manager. Each branch names its own: \"Finder\" is the macOS app name and stays verbatim; the Windows branch names File Explorer, in the name Microsoft gives it in your language; the Linux branch says file manager, generically. Use the same words as commands.fileShowInFileManager.label. Short control label."
+  },
+  "aboutThis.action.downloadPage": "Open {host}",
+  "@aboutThis.action.downloadPage": {
+    "description": "Button in the footer of the \"Tell me about this\" card, shown for a downloaded file. Opens the web page the file was recorded as downloaded from, in the browser. The host is shown on the button on purpose, so the person sees which site opens before pressing. Short control label.",
+    "placeholders": {
+      "host": {
+        "description": "The website's host name, exactly as recorded, for example \"github.com\". Never translated."
+      }
+    }
+  },
+  "aboutThis.action.downloadPageTooltip": "Opens {host} in your browser: the page this was recorded as downloaded from.",
+  "@aboutThis.action.downloadPageTooltip": {
+    "description": "Tooltip on the \"Open {host}\" button of the \"Tell me about this\" card. It says which site opens before the press, in full, even when the button had to shorten it. \"Recorded\": the download record is the file's own claim, not something Cmdr checked.",
+    "placeholders": {
+      "host": { "description": "The website's host name, for example \"github.com\". Never translated." }
+    }
+  },
+  "aboutThis.action.revealOwner": "Show {app}",
+  "@aboutThis.action.revealOwner": {
+    "description": "Button in the footer of the \"Tell me about this\" card, for an item that belongs to an installed app (its data, or a file inside the app). Closes the card and shows the app in the file list, with the cursor on it. Short control label.",
+    "placeholders": { "app": { "description": "The app's name, for example \"Slack\"." } }
+  },
+  "aboutThis.action.appFolder": "Go to {app}’s data",
+  "@aboutThis.action.appFolder": {
+    "description": "Button in the footer of the \"Tell me about this\" card, for an item deep inside an app's data folder (for example in Library > Application Support > Slack). Closes the card and opens that folder in the file list, where the app keeps the rest of its data. Short control label.",
+    "placeholders": { "app": { "description": "The app's name, for example \"Slack\"." } }
+  },
+  "aboutThis.action.appFolderUnnamed": "Go to the app’s data",
+  "@aboutThis.action.appFolderUnnamed": {
+    "description": "The same button as aboutThis.action.appFolder, when Cmdr can't name the app the folder belongs to (it isn't installed). Closes the card and opens the app-data folder the item sits in. Short control label."
+  },
+  "aboutThis.action.trash": "{platform, select, windows {Move to the Recycle Bin…} other {Move to trash…}}",
+  "@aboutThis.action.trash": {
+    "description": "Button in the footer of the \"Tell me about this\" card. Closes the card and opens Cmdr's usual delete dialog for this one item, which asks before anything moves. The ellipsis says a question follows. Use the same words as fileOperations.delete.trashSwitch, plus the ellipsis. Short control label."
+  },
+  "aboutThis.action.delete": "Delete…",
+  "@aboutThis.action.delete": {
+    "description": "Button in the footer of the \"Tell me about this\" card, on a drive with no trash (a phone, a server). Closes the card and opens Cmdr's usual delete dialog for this one item, which asks before anything is deleted. The ellipsis says a question follows. Short control label."
+  },
+  "aboutThis.action.more": "More",
+  "@aboutThis.action.more": {
+    "description": "Button in the footer of the \"Tell me about this\" card that opens a short menu with the rest of the card's actions (the ones that don't fit beside the others). Short control label."
+  },
+  "aboutThis.action.moreMenu": "More actions",
+  "@aboutThis.action.moreMenu": {
+    "description": "Screen-reader name of the menu the \"More\" button opens on the \"Tell me about this\" card: the card's remaining actions."
+  },
   "aboutThis.dialog.lookingUp": "Looking this up",
   "@aboutThis.dialog.lookingUp": {
     "description": "Screen-reader text on a row of the \"Tell me about this\" card whose answer hasn't arrived yet (it shows a gray placeholder bar). Short, no closing period."

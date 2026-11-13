@@ -4,6 +4,8 @@
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::Duration;
 
+#[cfg(target_os = "macos")]
+use cmdr_about::actions::{AboutAction, ActionCaps, RemoveBy};
 use cmdr_about::card::{AboutFact, OsCaps};
 use cmdr_about::fact::{AboutTarget, Fact, FactKind, UnknownWhy};
 use cmdr_about::gather::{Job, Task};
@@ -158,9 +160,39 @@ async fn a_downloaded_disk_image_streams_the_plan_then_each_fact_then_settles() 
     std::fs::write(&file, b"not really a disk image").expect("write the fixture");
     write_chrome_download(&file);
 
-    let recorder = gather(local(&file), quick()).await;
+    let caps = ActionCaps {
+        file_manager: true,
+        removal: Some(RemoveBy::Trash),
+        app_folder: None,
+    };
+    let recorder = gather(
+        Gathered {
+            actions: caps,
+            ..local(&file)
+        },
+        quick(),
+    )
+    .await;
     let updates = recorder.updates();
     assert_well_formed(&updates);
+    // The footer comes with every landing, from the facts: the page the file was
+    // downloaded from (the record's last address, never the file's own), and Move
+    // to Trash last.
+    let last_actions = updates.iter().rev().find_map(|update| match update {
+        AboutUpdate::Fact { derived, .. } => Some(derived.actions.clone()),
+        _ => None,
+    });
+    let last_actions = last_actions.expect("facts landed");
+    let offered: Vec<AboutAction> = last_actions.shown.into_iter().chain(last_actions.more).collect();
+    assert!(
+        offered.iter().any(|action| matches!(
+            action,
+            AboutAction::OpenDownloadPage { host, url }
+                if host == "example.org" && url == "https://example.org/download"
+        )),
+        "{offered:?}"
+    );
+    assert_eq!(offered.last(), Some(&AboutAction::MoveToTrash));
     let facts = recorder.facts();
     assert_eq!(
         kinds(&facts),
@@ -631,6 +663,7 @@ fn fake_installed_apps() -> Vec<cmdr_about::owner::KnownApp> {
         name: name.to_string(),
         id: Some(id.to_string()),
         other_names: Vec::new(),
+        path: None,
     };
     vec![
         app("Commander One", "com.eltima.cmd1"),
@@ -690,7 +723,8 @@ async fn library_folders_answer_their_owner_through_the_card() {
             bundle_id: ItemText::new("com.eltima.cmd1"),
             place: OwnerPlace::ApplicationSupport,
             app: InstalledApp::Installed {
-                name: ItemText::new("Commander One")
+                name: ItemText::new("Commander One"),
+                path: None,
             },
         })
     );
@@ -700,6 +734,7 @@ async fn library_folders_answer_their_owner_through_the_card() {
         Fact::Known(OwnerClaim::ByName {
             app: ItemText::new("Slack"),
             place: OwnerPlace::ApplicationSupport,
+            app_path: None,
         })
     );
     let vendor = gather(in_a_fixture_home(&support.join("Google"), &home), quick()).await;

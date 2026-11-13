@@ -5,6 +5,7 @@
 
 import type {
   AboutEvent,
+  Actions,
   AboutFact,
   AboutPlan,
   Derived,
@@ -30,8 +31,16 @@ export function notable(why: UnknownWhy): Fact<never> {
   return { state: 'unknown', value: { why, prominence: 'notable' } }
 }
 
-export function derived(headline: Headline, shown: RemovalConsequence[], more: RemovalConsequence[] = []): Derived {
-  return { headline, removal: { shown, more } }
+/** No footer actions: what a card derives before any fact lands on a volume that allows none. */
+export const NO_ACTIONS: Actions = { shown: [], more: [] }
+
+export function derived(
+  headline: Headline,
+  shown: RemovalConsequence[],
+  more: RemovalConsequence[] = [],
+  actions: Actions = NO_ACTIONS,
+): Derived {
+  return { headline, removal: { shown, more }, actions }
 }
 
 export interface Stream {

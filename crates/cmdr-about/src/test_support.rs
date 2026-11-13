@@ -115,7 +115,10 @@ pub(crate) fn owned_by_id(place: OwnerPlace, app: Option<&str>) -> AboutFact {
         bundle_id: text("com.example.tool"),
         place,
         app: match app {
-            Some(name) => InstalledApp::Installed { name: text(name) },
+            Some(name) => InstalledApp::Installed {
+                name: text(name),
+                path: None,
+            },
             None => InstalledApp::NotInstalled,
         },
     }))

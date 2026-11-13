@@ -251,6 +251,7 @@ fn a_library_folder_leads_with_its_app_or_that_the_app_is_gone() {
         AboutFact::Owner(Fact::Known(OwnerClaim::ByName {
             app: text("Slack"),
             place: OwnerPlace::ApplicationSupport,
+            app_path: None,
         })),
     );
     assert_eq!(

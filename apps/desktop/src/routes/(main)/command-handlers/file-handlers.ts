@@ -26,9 +26,7 @@ import { capabilitiesFor } from '#lib/file-explorer/pane/volume-capabilities.js'
 import { pathInsideArchive } from '#lib/file-explorer/pane/archive-paths.js'
 import { openInEditorOrExplain } from '#lib/file-explorer/pane/editor-open.js'
 import { openGetInfoOrExplain } from '#lib/file-explorer/pane/get-info-open.js'
-import { openAboutThis } from '#lib/about-this/about-this-state.svelte.js'
-import { resolveLocationOrToast } from '#lib/file-explorer/navigation/navigate-and-select.js'
-import { lastName, parentOrRoot } from '#lib/path/grammar.js'
+import { openAboutThisFor } from './about-this-opener'
 import { resolveTerminalFolder } from '#lib/open-terminal/terminal-target.js'
 import { getShowVirtualGitPortal } from '#lib/settings/reactive-settings.svelte.js'
 import { openTerminalHereForFolder } from '#lib/open-terminal/open-terminal-here.js'
@@ -40,7 +38,6 @@ import { trackEvent } from '#lib/tauri-commands/index.js'
 import { editServerInView } from '#lib/file-explorer/network/servers-hub-actions.js'
 import { forgetResticPassword } from '#lib/file-explorer/restic/forget-password.js'
 import type { CommandArgs } from '#lib/commands/index.js'
-import type { Location } from '#lib/ipc/bindings.js'
 import { detached } from './detached'
 import { confirmDialogForMcp } from '../mcp-dialog-confirm'
 import type { CommandHandlerContext, CommandHandlerRecord } from './types'
@@ -368,38 +365,7 @@ export const fileHandlers = {
   // The card is about the cursor entry, as Get info is, whatever the selection holds.
   'file.tellMeAbout': (hctx) =>
     withEntryUnderCursor(hctx, (entry) => {
-      const volumeId = getFocusedPaneVolumeId()
-      const subject = {
-        path: entry.path,
-        volumeId,
-        name: entry.filename,
-        iconId: entry.iconId,
-        isDirectory: entry.isDirectory,
-      }
-      openAboutThis(subject, (target) => {
-        // A row of the card names a place on the item's own volume: a folder opens, a file shows in its folder with the
-        // cursor on it. A search result's row is a real file on whatever drive holds it, so its place resolves first.
-        const explorer = hctx.explorerRef
-        if (!explorer) return
-        const path = target.isFolder ? target.path : parentOrRoot(target.path)
-        const go = (to: Location): void => {
-          explorer.navigate({
-            pane: explorer.getFocusedPane(),
-            to: { goTo: to },
-            source: 'user',
-            ...(target.isFolder ? {} : { selectName: lastName(target.path) }),
-          })
-        }
-        if (capabilitiesFor(volumeId).kind !== 'search-results') {
-          go({ volumeId, path })
-          return
-        }
-        detached(
-          resolveLocationOrToast(path).then((location) => {
-            if (location) go(location)
-          }),
-        )
-      })
+      openAboutThisFor(hctx.explorerRef, entry)
     }),
 
   'cloud.makeOffline': (hctx) =>

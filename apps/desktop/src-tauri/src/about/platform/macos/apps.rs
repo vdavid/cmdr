@@ -104,6 +104,7 @@ fn known_app(path: &Path) -> KnownApp {
         name: read_app_display_name(path),
         id: read_bundle_identifier(path),
         other_names,
+        path: Some(path.to_string_lossy().into_owned()),
     }
 }
 
@@ -129,6 +130,7 @@ pub(crate) fn app_with_id(id: &str) -> Option<KnownApp> {
         name: read_app_display_name(&path),
         id: Some(id.to_string()),
         other_names: Vec::new(),
+        path: Some(path.to_string_lossy().into_owned()),
     })
 }
 

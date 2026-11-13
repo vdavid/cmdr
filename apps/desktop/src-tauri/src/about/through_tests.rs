@@ -18,7 +18,9 @@ use cmdr_fs::volume::{InMemoryVolume, Volume, VolumeError};
 use tokio::sync::Semaphore;
 
 use super::event::AboutUpdate;
-use super::route::{Way, caps_for, hinted_target, snapshot_of, through_plan};
+use cmdr_about::actions::{ActionCaps, RemoveBy};
+
+use super::route::{Way, action_caps, caps_for, hinted_target, snapshot_of, through_plan};
 use super::session::{Timing, Watch};
 use super::tests::{LONG, assert_well_formed, gather};
 use super::through::{ArchiveRecord, Asked, DownloadFrom, MAX_STUCK_PER_VOLUME, STUCK, Through, category_segment};
@@ -478,4 +480,107 @@ async fn a_file_in_a_branch_snapshot_names_the_branch_and_when_it_last_changed()
     });
     assert_eq!(removal, Some(vec![RemovalConsequence::InGitHistory]));
     cmdr_git::test_fixtures::cleanup(&repo);
+}
+
+// ── What the footer's actions can do, by way ────────────────────────────────
+
+/// A volume that answers nothing but whether it takes writes and keeps a Trash.
+struct Shelf {
+    root: PathBuf,
+    writable: bool,
+    trash: bool,
+}
+
+impl Volume for Shelf {
+    fn name(&self) -> &str {
+        "shelf"
+    }
+
+    fn root(&self) -> &Path {
+        &self.root
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(cmdr_fs::volume::ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move { Err(VolumeError::NotFound(path.display().to_string())) })
+    }
+
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async move { Err(VolumeError::NotFound(path.display().to_string())) })
+    }
+
+    fn is_writable(&self) -> bool {
+        self.writable
+    }
+
+    fn has_trash(&self) -> bool {
+        self.trash
+    }
+}
+
+fn shelf(writable: bool, trash: bool) -> Shelf {
+    Shelf {
+        root: PathBuf::from("/"),
+        writable,
+        trash,
+    }
+}
+
+#[test]
+fn removal_is_offered_only_where_the_volume_takes_writes_and_named_by_its_trash() {
+    let removal = |way, volume: &Shelf| action_caps(way, volume, "/a/b.txt", None).removal;
+    assert_eq!(removal(Way::Local, &shelf(true, true)), Some(RemoveBy::Trash));
+    assert_eq!(
+        removal(Way::OsMountedShare, &shelf(true, false)),
+        Some(RemoveBy::Delete)
+    );
+    assert_eq!(removal(Way::Device, &shelf(true, false)), Some(RemoveBy::Delete));
+    assert_eq!(removal(Way::Server, &shelf(false, false)), None);
+    // A view is never removed from the card, however writable what's under it is.
+    for way in [Way::Archive, Way::GitHistory, Way::Snapshot, Way::Offline] {
+        assert_eq!(
+            action_caps(way, &shelf(true, true), "/a/b.txt", None),
+            ActionCaps::none()
+        );
+    }
+}
+
+#[test]
+fn only_a_path_the_os_sees_can_be_shown_in_its_file_manager() {
+    for (way, shows) in [
+        (Way::Local, true),
+        (Way::OsMountedShare, true),
+        (Way::Server, false),
+        (Way::Device, false),
+        (Way::Archive, false),
+        (Way::GitHistory, false),
+    ] {
+        assert_eq!(
+            action_caps(way, &shelf(true, true), "/a/b.txt", None).file_manager,
+            shows,
+            "{way:?}"
+        );
+    }
+}
+
+#[test]
+fn the_app_folder_comes_from_the_home_it_is_given_and_only_on_a_local_disk() {
+    let inside = "/fixture/home/Library/Application Support/com.example.tool/state.json";
+    let local = action_caps(Way::Local, &shelf(true, true), inside, Some("/fixture/home"));
+    assert_eq!(
+        local.app_folder.as_deref(),
+        Some("/fixture/home/Library/Application Support/com.example.tool")
+    );
+    let share = action_caps(Way::OsMountedShare, &shelf(true, true), inside, Some("/fixture/home"));
+    assert_eq!(share.app_folder, None);
 }

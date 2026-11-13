@@ -27,6 +27,11 @@ Open questions for the review:
     it at that point in history, not a file on the disk, so there's nothing to remove here." Too technical?
 11. **A `.git` folder's removal line** ("It holds the repository's whole history. Removing it leaves the files but drops
     every commit that isn't pushed somewhere else, and Cmdr can't tell what's pushed.") is long. Shorter?
+12. **The footer shows three actions, not the plan's four**, plus "More" and Close: four real labels didn't fit the
+    card's default width (now 40 rem, from 34). On a downloaded file that puts Move to trash behind "More". Right?
+13. **Single-key accelerators on the footer buttons** (O for Open, T for trash, …) aren't built. Wanted?
+14. **"Open {host}"** names the page's site on the button (the download record's last address, the page, never the
+    file's own, which would only download it again). Clear, or "Go to the download page" with the host in the tooltip?
 
 ## Strings
 
@@ -781,3 +786,38 @@ Open questions for the review:
   there’s nothing to remove here.
   - Where: The line under "What removing it means" on the "Tell me about this" card for a file inside git's history view
     (a past version kept by git). A fact, never advice.
+
+### The footer's actions
+
+Shown left of Close: up to three, the rest behind "More", in one fixed order per item. Move to trash is never the first
+button, and on a typical download it's the one behind "More".
+
+- `aboutThis.action.open`: Open with {app}
+  - Where: Button in the footer of the "Tell me about this" card. Opens the file in the app the system opens it with,
+    the same as pressing Enter on it in the file list (the card closes first). Short control label.
+- `aboutThis.action.showInFileManager`: Show in Finder (Windows: Show in File Explorer; Linux: Show in file manager)
+  - Where: Button in the footer of the card. Closes the card and shows the item in the system's file manager. Same words
+    as the "Show in Finder" command.
+- `aboutThis.action.downloadPage`: Open {host}
+  - Where: Button in the footer of the card, for a downloaded file. Opens the web page the file was recorded as
+    downloaded from. The host is on the button on purpose, so the person sees which site opens before pressing.
+- `aboutThis.action.downloadPageTooltip`: Opens {host} in your browser: the page this was recorded as downloaded from.
+  - Where: Tooltip on the "Open {host}" button. Says which site opens, in full, even when the button had to shorten it.
+- `aboutThis.action.revealOwner`: Show {app}
+  - Where: Button in the footer of the card, for an item that belongs to an installed app. Closes the card and shows the
+    app in the file list, with the cursor on it.
+- `aboutThis.action.appFolder`: Go to {app}’s data
+  - Where: Button in the footer of the card, for an item deep inside an app's data folder (Library > Application
+    Support > Slack). Opens that folder, where the app keeps the rest of its data.
+- `aboutThis.action.appFolderUnnamed`: Go to the app’s data
+  - Where: The same button, when Cmdr can't name the app the folder belongs to (it isn't installed).
+- `aboutThis.action.trash`: Move to trash… (Windows: Move to the Recycle Bin…)
+  - Where: Button in the footer of the card. Closes the card and opens Cmdr's usual delete dialog for this one item,
+    which asks before anything moves. The ellipsis says a question follows.
+- `aboutThis.action.delete`: Delete…
+  - Where: Button in the footer of the card, on a drive with no trash (a phone, a server). Opens the usual delete dialog
+    for this one item, which asks first.
+- `aboutThis.action.more`: More
+  - Where: Button in the footer of the card that opens a short menu with the rest of its actions.
+- `aboutThis.action.moreMenu`: More actions
+  - Where: Screen-reader name of the menu the "More" button opens.

@@ -8,7 +8,7 @@
  * Raw data on purpose: this module is dev-only. Every host, name, and path is made up (❌ no real download tokens).
  */
 
-import type { Headline } from '#lib/ipc/bindings.js'
+import type { Actions, Headline } from '#lib/ipc/bindings.js'
 import { emptyCard, type AboutCardData } from '#lib/about-this/about-card.js'
 import { REQUEST, card, day, derived, identity, notable, plan, routine, type Stream } from './about-this-stream'
 import { aboutThisFolderFixtures } from './about-this-folders'
@@ -22,7 +22,14 @@ const dmgHeadline: Headline = {
   size: { bytes: 412_318_720, atLeast: false },
   lead: { template: 'downloadedFrom', host: 'releases.tessera.example', by: 'Chrome', at: day('2026-03-02') },
 }
-const dmgRemoval = derived(dmgHeadline, [{ type: 'recordedDownload', host: 'releases.tessera.example' }])
+const dmgRemoval = derived(dmgHeadline, [{ type: 'recordedDownload', host: 'releases.tessera.example' }], [], {
+  shown: [
+    { type: 'openWithDefaultApp', app: 'DiskImageMounter' },
+    { type: 'showInFileManager' },
+    { type: 'openDownloadPage', host: 'tessera.example', url: 'https://tessera.example/download' },
+  ],
+  more: [{ type: 'moveToTrash' }],
+})
 
 const downloaded: Stream = {
   plan: plan('file', [
@@ -111,7 +118,10 @@ const docHeadline: Headline = {
   size: { bytes: 2_183_412, atLeast: false },
   lead: { template: 'lastOpened', at: day('2026-10-02') },
 }
-const docRemoval = derived(docHeadline, [{ type: 'userDocument' }])
+const docRemoval = derived(docHeadline, [{ type: 'userDocument' }], [], {
+  shown: [{ type: 'openWithDefaultApp', app: 'Numbers' }, { type: 'showInFileManager' }, { type: 'moveToTrash' }],
+  more: [],
+})
 
 const plainDocument: Stream = {
   plan: plan('file', [
@@ -310,11 +320,16 @@ const remoteHeadline: Headline = {
   lead: { template: 'plain' },
 }
 
+const remoteActions: Actions = { shown: [], more: [{ type: 'delete' }] }
+
 const remote: Stream = {
   plan: plan('file', [{ section: 'nature', kinds: ['identity'] }], { volume: 'Testnas', limit: 'identityOnly' }),
-  first: derived({ ...remoteHeadline, size: null }, [{ type: 'cantTell' }]),
+  first: derived({ ...remoteHeadline, size: null }, [{ type: 'cantTell' }], [], remoteActions),
   facts: [
-    { fact: identity(REMOTE, 3_604_480, '2026-07-14'), derived: derived(remoteHeadline, [{ type: 'cantTell' }]) },
+    {
+      fact: identity(REMOTE, 3_604_480, '2026-07-14'),
+      derived: derived(remoteHeadline, [{ type: 'cantTell' }], [], remoteActions),
+    },
   ],
   settled: true,
 }

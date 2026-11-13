@@ -37,7 +37,7 @@ async function render(id: string): Promise<HTMLElement> {
   if (!card) throw new Error(`no fixture ${id}`)
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mounted = mount(AboutThisDialog, { target, props: { card, onClose: () => {}, onGoTo: () => {} } })
+  mounted = mount(AboutThisDialog, { target, props: { card, onClose: () => {}, onGoTo: () => {}, onAct: () => {} } })
   flushSync()
   await tick()
   return target
@@ -149,7 +149,7 @@ describe('what a card reached through its volume says', () => {
   it('a share that stopped answering says so once, at the top, and each row quietly', async () => {
     const target = await render('stopped-answering')
     expect(target.textContent).toContain('Naspolya stopped answering')
-    expect(target.textContent?.split('stopped answering').length).toBe(2)
+    expect(target.textContent.split('stopped answering').length).toBe(2)
     expect(target.textContent).toContain('No answer from the drive')
   })
 

@@ -204,16 +204,16 @@ pub fn consequences(card: &AboutCard) -> Removal {
             InstalledApp::NotInstalled => found.push(RemovalConsequence::LeftoverOfUninstalledApp {
                 bundle_id: bundle_id.clone(),
             }),
-            InstalledApp::Installed { name } if *place == OwnerPlace::Caches => {
+            InstalledApp::Installed { name, .. } if *place == OwnerPlace::Caches => {
                 cache_owner = Some(name.clone());
                 owned_cache = true;
             }
-            InstalledApp::Installed { name } => found.push(RemovalConsequence::AppData {
+            InstalledApp::Installed { name, .. } => found.push(RemovalConsequence::AppData {
                 app: name.clone(),
                 certainty: Certainty::Certain,
             }),
         },
-        Some(OwnerClaim::ByName { app, place }) if *place == OwnerPlace::Caches => {
+        Some(OwnerClaim::ByName { app, place, .. }) if *place == OwnerPlace::Caches => {
             cache_owner = Some(app.clone());
             owned_cache = true;
         }
@@ -221,7 +221,7 @@ pub fn consequences(card: &AboutCard) -> Removal {
             app: app.clone(),
             certainty: Certainty::Probable,
         }),
-        Some(OwnerClaim::InsideApp { app }) => found.push(RemovalConsequence::AppData {
+        Some(OwnerClaim::InsideApp { app, .. }) => found.push(RemovalConsequence::AppData {
             app: app.clone(),
             certainty: Certainty::Certain,
         }),

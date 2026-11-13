@@ -30,6 +30,7 @@
 #[cfg(test)]
 use cmdr_about as _;
 
+pub mod actions;
 pub mod card;
 pub mod digest;
 pub mod fact;

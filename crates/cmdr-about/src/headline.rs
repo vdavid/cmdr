@@ -243,7 +243,7 @@ fn lead(card: &AboutCard) -> HeadlineLead {
     }
     match known(&card.owner) {
         Some(OwnerClaim::ByBundleId {
-            app: InstalledApp::Installed { name },
+            app: InstalledApp::Installed { name, .. },
             ..
         }) => {
             return HeadlineLead::DataOfApp {

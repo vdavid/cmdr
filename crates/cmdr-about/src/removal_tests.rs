@@ -264,6 +264,7 @@ fn an_installed_apps_data_says_how_sure_the_match_is() {
     let by_name = settled_folder(vec![AboutFact::Owner(Fact::Known(OwnerClaim::ByName {
         app: text("Slack"),
         place: OwnerPlace::ApplicationSupport,
+        app_path: None,
     }))]);
     assert_eq!(
         all(&by_name),

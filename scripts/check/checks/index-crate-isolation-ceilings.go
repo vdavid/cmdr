@@ -752,11 +752,16 @@ var surfaceGuardedCrates = []struct {
 		//
 		// 129 → 132 (2026-11-13, items reached through their volume): `GitSnapshot`,
 		// `SnapshotKind`, and `Download::of_archive`, argued in that section.
+		//
+		// 11 → 12 modules and root promises, 132 → 139 items (2026-11-13, the
+		// card's next actions): the `actions` module (`AboutAction`, `Actions`,
+		// `ActionCaps` with `none`, `RemoveBy`, `actions`) and
+		// `OwnerQuestion::app_folder_above`, argued in that section.
 		Name: "cmdr-about",
 		Ceilings: surfaceCeilings{
-			RootPromises:   11,
-			PublicModules:  11,
-			SubsystemItems: 132,
+			RootPromises:   12,
+			PublicModules:  12,
+			SubsystemItems: 139,
 		},
 	},
 }

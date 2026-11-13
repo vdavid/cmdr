@@ -59,7 +59,7 @@
     import FeedbackDialog from '#lib/feedback/FeedbackDialog.svelte'
     import { closeFeedbackDialog, feedbackFlow } from '#lib/feedback/feedback-flow.svelte.js'
     import AboutThisDialog from '#lib/about-this/AboutThisDialog.svelte'
-    import { aboutThisState, closeAboutThis, goToFromCard } from '#lib/about-this/about-this-state.svelte.js'
+    import { aboutThisState, actFromCard, closeAboutThis, goToFromCard } from '#lib/about-this/about-this-state.svelte.js'
     import DialogBoundary from '#lib/ui/boundary/DialogBoundary.svelte'
     import SignInSheet from '#lib/servers/SignInSheet.svelte'
     import { closeSignInSheet, currentSignInRequest } from '#lib/servers/sign-in-sheet-state.svelte.js'
@@ -372,7 +372,7 @@
 <!-- "Tell me about this": on screen once its first frame is worth drawing (`about-this-state.svelte.ts`). -->
 <DialogBoundary name="tellMeAboutThis" onClose={closeAboutThis}>
     {#if aboutThisState.card && aboutThisState.shown}
-        <AboutThisDialog card={aboutThisState.card} onClose={closeAboutThis} onGoTo={goToFromCard} />
+        <AboutThisDialog card={aboutThisState.card} onClose={closeAboutThis} onGoTo={goToFromCard} onAct={actFromCard} />
     {/if}
 </DialogBoundary>
 <!-- The one sign-in sheet. Every credential ask in the app opens THIS one

@@ -10,6 +10,7 @@ fn app(name: &str, id: &str) -> KnownApp {
         name: name.to_string(),
         id: Some(id.to_string()),
         other_names: Vec::new(),
+        path: None,
     }
 }
 
@@ -52,7 +53,8 @@ fn a_bundle_id_folder_resolves_to_its_app_and_says_it_is_installed() {
             bundle_id: ItemText::new("com.eltima.cmd1"),
             place: OwnerPlace::ApplicationSupport,
             app: InstalledApp::Installed {
-                name: ItemText::new("Commander One")
+                name: ItemText::new("Commander One"),
+                path: None,
             },
         })
     );
@@ -65,6 +67,7 @@ fn an_app_named_folder_is_probable_and_a_vendors_is_ambiguous() {
         Fact::Known(OwnerClaim::ByName {
             app: ItemText::new("Slack"),
             place: OwnerPlace::ApplicationSupport,
+            app_path: None,
         })
     );
     assert_eq!(

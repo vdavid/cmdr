@@ -1,5 +1,6 @@
 //! The card's wire: one request in, a stream of events out.
 
+use cmdr_about::actions::Actions;
 use cmdr_about::card::{AboutFact, AboutPlan};
 use cmdr_about::headline::Headline;
 use cmdr_about::removal::Removal;
@@ -80,6 +81,8 @@ pub struct Derived {
     pub headline: Headline,
     /// What removing it would mean.
     pub removal: Removal,
+    /// What the footer offers next.
+    pub actions: Actions,
 }
 
 /// Why a card can't be gathered.

@@ -29,8 +29,9 @@ The host is `routes/(main)/+layout.svelte` (beside the feedback dialog, inside i
 ## Layout
 
 Top to bottom: the title (the item's icon and "About “name”", cut with a tooltip), the headline, the volume note, the
-evidence sections in the plan's order, the verdict slot, What removing it means, and the footer (Close; the actions join
-it later). `ModalDialog` with `resizable` and `growDownward`, 34 rem wide, at most 85 vh, the body scrolling.
+evidence sections in the plan's order, the verdict slot, What removing it means, and the footer (the actions on the
+left, Close on the right). `ModalDialog` with `resizable` and `growDownward`, 40 rem wide, at most 85 vh, the body
+scrolling.
 
 - **The title icon** is the pane's own: the subject carries the entry's `iconId`, and the title reads the icon cache the
   pane already filled (a folder's custom icon first, by path). ❌ Never a fetch from the card; a miss is the glyph by
@@ -77,6 +78,30 @@ it later). `ModalDialog` with `resizable` and `growDownward`, 34 rem wide, at mo
 - **a11y**: pending rows carry `aria-busy`; one polite live region reads the headline's text once, at `factsSettled`; ❌
   no live region per fact.
 
+## The footer's actions
+
+`AboutActions` draws `derived.actions` in `ModalDialog`'s `footerLeading`, with Close in `footer`: the shown ones as
+buttons, the rest in a house `Menu` under "More". Which actions, their order, and the split are Rust's
+(`crates/cmdr-about/DETAILS.md` § Next actions); the words are `about-actions.ts`.
+
+- **Every action leaves the card**, so a press calls `actFromCard`: it closes the card (cancelling the gathering), then
+  hands the action to the opener's `act` hook (`apps/desktop/src/routes/(main)/command-handlers/about-this-opener.ts`).
+  Focus lands where the action went: the pane, the delete dialog, Finder, the browser.
+- **What each does, through the pane's own path**: Open is `openItemUnderCursor` (Enter's chain, so a downloaded app
+  gets whatever the pane would ask), only while the cursor is still on the item; Show in Finder is `showInFinder`; the
+  download page is `openExternalUrl` with the address Rust re-parsed; the owning app and the app's data folder are a
+  `navigate()` (resolved to their volume first: an app is on the boot disk); Move to trash and Delete are
+  `openDeleteDialog({ cursorPath })`, which reads the cursor row alone (❌ never the selection) and opens nothing when
+  that row isn't the item any more.
+- **Keyboard**: Tab from the body reaches each action, then "More", then Close. ❌ No action takes focus on open, and
+  removal is never the first button (Rust). Single-key accelerators are a review item, not built.
+- **Decision: the 40 rem default width** fits three real labels ("Open with DiskImageMounter", "Show in Finder", "Open
+  releases.example.com"), "More", and Close on one line. A narrower card (resized) drops the actions to a row of their
+  own above Close: `ModalDialog`'s own footer rule, never a squeezed label.
+- **The footer can grow as facts land** (Open appears when the default app answers, the download page with the record):
+  on a local disk both answer inside the grace, so the first frame already has them. ❌ Nothing in the body moves for
+  it.
+
 ## Item strings
 
 Every string the item reported arrives through `model_text` (`ItemText`) and renders through `t()` params or `{…}`: a
@@ -93,6 +118,9 @@ tooltip with the full text); the row puts its Copy button at the end of the line
 - `about-card-view.test.ts`: section order, the collapse only at the settle and never over a Notable reason, the shared
   reason of a collapsed section, the calm-card budget (the gallery's plain document has more known rows than unknown
   ones), and that no fixture sets a fallback removal line beside a real one.
+- `AboutActions.svelte.test.ts`: the footer over the gallery's cards (what shows, what waits behind "More", removal
+  never first, no action focused on open, a press reaching the opener). `about-this-opener.test.ts` (beside the opener):
+  what each action does once the card closed.
 - `AboutDigest.svelte.test.ts`: What's inside on a big folder, `node_modules`, an empty and an unlisted folder, an app's
   Library data, and that each place row hands `onGoTo` the right target.
 - `AboutThisDialog.a11y.test.ts`: axe over the gallery's cards and each part, the `<dl>`, `aria-busy`, body focus, and

@@ -305,6 +305,24 @@ pub fn wake_fake_script() -> WakeFakeScript {
     }
 }
 
+/// `CMDR_ABOUT_FIXTURE_HOME` points the "Tell me about this" card's home folder at
+/// a fixture home, so the QA fixture folder's fake `Library/Application Support/…`
+/// reads the way the person's real one does, ❌ with no write into the real
+/// `~/Library` (`apps/desktop/test/e2e-shared/about-fixtures.ts`). It only moves
+/// which folder the card's owner row and app-folder action read as home; nothing
+/// else in the app sees it. Honored in dev and E2E builds only, like the fake
+/// LLM: a release build always reads the real home.
+pub fn about_fixture_home() -> Option<PathBuf> {
+    about_fixture_home_from(ABOUT_FIXTURE_HOME_HONORED, std::env::var_os("CMDR_ABOUT_FIXTURE_HOME"))
+}
+
+const ABOUT_FIXTURE_HOME_HONORED: bool = cfg!(any(debug_assertions, feature = "playwright-e2e"));
+
+/// Pure core of [`about_fixture_home`], so a test can read the release arm.
+fn about_fixture_home_from(honored: bool, value: Option<std::ffi::OsString>) -> Option<PathBuf> {
+    value.filter(|value| honored && !value.is_empty()).map(PathBuf::from)
+}
+
 /// Whether the app may adopt network mounts that were already on the machine when
 /// it launched.
 ///
@@ -525,6 +543,17 @@ mod tests {
         assert!(!ask_cmdr_fake_from(false, true));
         assert!(!ask_cmdr_fake_from(true, false));
         assert!(ask_cmdr_fake_from(true, true));
+    }
+
+    #[test]
+    fn a_release_build_reads_the_real_home_for_the_about_card() {
+        let home = || Some(std::ffi::OsString::from("/tmp/fixture-home"));
+        assert_eq!(about_fixture_home_from(false, home()), None);
+        assert_eq!(about_fixture_home_from(true, Some(std::ffi::OsString::new())), None);
+        assert_eq!(
+            about_fixture_home_from(true, home()),
+            Some(PathBuf::from("/tmp/fixture-home"))
+        );
     }
 
     /// Test mode reads exactly `"1"`. Anything else is off. This guards the

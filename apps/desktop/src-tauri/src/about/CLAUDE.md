@@ -25,11 +25,12 @@ the vocabulary and every rule; this module reads raw inputs and hands them there
 - ❗ **`planned` is always first** (or `unavailable` alone), then facts in any order (with at most one
   `volumeStoppedAnswering` among them), then `factsSettled`. A kind outside the plan never goes out; `GATHERED` and
   `through::answers` trim the plan to the rows a job answers.
-- ❗ **Every `fact` event carries `derived` (headline + removal)**, recomputed on landing: the card never derives them.
+- ❗ **Every `fact` carries `derived` (headline, removal, actions)**, recomputed on landing. What an action may do is
+  `route::action_caps`, by `Way`.
 - ❗ **Cancel is `about_cancel`, ❌ never a dropped channel** (`send` succeeds after the handler is gone). The frontend
   mints the id; a cancel before its start leaves a tombstone the start honors.
-- ❌ **No framework call on rayon or the executor**: jobs and the probe run on the `about_facts` pool. A budget bounds
-  the wait, the pool ceiling bounds lost threads.
+- ❌ **No framework call on rayon or the executor**: the `about_facts` pool. A budget bounds the wait, the ceiling the
+  lost threads.
 - ❌ **Cmdr's history credits only the node the log recorded landing** (`landed_at` matches inode + birth time): a
   file saved over since is `NodeChangedSince`, ❌ never the operation. It reads the database, never the disk.
 - ❌ **Log a fact's kind and outcome, never its value** (URL, sender, path): logs ride error reports.

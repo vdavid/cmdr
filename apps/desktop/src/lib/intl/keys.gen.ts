@@ -3,6 +3,17 @@
 
 /** Every key present in `messages/en/*.json`. A wrong key is a typecheck error. */
 export type MessageKey =
+  | 'aboutThis.action.appFolder'
+  | 'aboutThis.action.appFolderUnnamed'
+  | 'aboutThis.action.delete'
+  | 'aboutThis.action.downloadPage'
+  | 'aboutThis.action.downloadPageTooltip'
+  | 'aboutThis.action.more'
+  | 'aboutThis.action.moreMenu'
+  | 'aboutThis.action.open'
+  | 'aboutThis.action.revealOwner'
+  | 'aboutThis.action.showInFileManager'
+  | 'aboutThis.action.trash'
   | 'aboutThis.appData.notLookedIn'
   | 'aboutThis.appData.summary'
   | 'aboutThis.bundle.named'

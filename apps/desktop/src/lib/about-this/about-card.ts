@@ -66,6 +66,13 @@ function isPlanned(plan: AboutPlan, kind: FactKind): boolean {
   return plan.sections.some((section) => section.kinds.includes(kind))
 }
 
+/** The volume stopped answering. The note's slot is the plan's own, there from the first frame: only its words change. */
+function volumeStopped(card: AboutCardData): AboutCardData {
+  const note = card.plan?.volumeNote
+  if (card.plan === null || card.settled || !note || note.limit === 'unreachable') return card
+  return { ...card, plan: { ...card.plan, volumeNote: { ...note, limit: 'unreachable' } } }
+}
+
 /**
  * Folds one event into the card. Returns the same object when the event changes nothing, so a caller can skip a
  * render.
@@ -89,12 +96,8 @@ export function applyAboutEvent(card: AboutCardData, event: AboutEvent): AboutCa
         derived: update.derived,
       }
     }
-    case 'volumeStoppedAnswering': {
-      // The note's slot is the plan's own, there from the first frame: only its words change.
-      const note = card.plan?.volumeNote
-      if (card.plan === null || card.settled || !note || note.limit === 'unreachable') return card
-      return { ...card, plan: { ...card.plan, volumeNote: { ...note, limit: 'unreachable' } } }
-    }
+    case 'volumeStoppedAnswering':
+      return volumeStopped(card)
     case 'factsSettled':
       if (card.plan === null || card.settled) return card
       return { ...card, settled: true }

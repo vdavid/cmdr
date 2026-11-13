@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AboutEvent, AboutFact, AboutPlan, Derived } from '#lib/ipc/bindings.js'
-import { aboutThisState, openAboutThis, closeAboutThis, GRACE_MS, SHOW_ANYWAY_MS } from './about-this-state.svelte'
+import {
+  aboutThisState,
+  actFromCard,
+  openAboutThis,
+  closeAboutThis,
+  GRACE_MS,
+  SHOW_ANYWAY_MS,
+} from './about-this-state.svelte'
 import { applyAboutEvent, emptyCard } from './about-card'
 
 const { started } = vi.hoisted(() => ({
@@ -28,6 +35,7 @@ const plan: AboutPlan = {
 const derived: Derived = {
   headline: { what: { type: 'file', kind: null, extension: null }, size: null, lead: { template: 'plain' } },
   removal: { shown: [{ type: 'cantTell' }], more: [] },
+  actions: { shown: [], more: [] },
 }
 
 const identity: AboutFact = {
@@ -177,6 +185,29 @@ describe('the open card', () => {
     second.onEvent(planned(second.requestId))
     expect(aboutThisState.card?.subject.name).toBe('b.txt')
     expect(aboutThisState.card?.plan).toEqual(plan)
+  })
+
+  it('closes the card before an action runs, so focus lands where the action went', async () => {
+    const seen: { open: boolean; type: string; path: string }[] = []
+    openAboutThis(subject, {
+      goTo: vi.fn(),
+      act: (action, about) => {
+        seen.push({ open: aboutThisState.card !== null, type: action.type, path: about.path })
+      },
+    })
+    const [run] = started
+    actFromCard({ type: 'moveToTrash' })
+    expect(run.cancel).toHaveBeenCalledOnce()
+    // The action waits for the dialog to unmount: until then the delete flow would see it still open.
+    expect(seen).toEqual([])
+    await vi.waitFor(() => {
+      expect(seen).toHaveLength(1)
+    })
+    expect(seen).toEqual([{ open: false, type: 'moveToTrash', path: subject.path }])
+    // With no card up, nothing acts.
+    actFromCard({ type: 'moveToTrash' })
+    await Promise.resolve()
+    expect(seen).toHaveLength(1)
   })
 })
 

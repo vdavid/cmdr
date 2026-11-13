@@ -12,6 +12,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
+use cmdr_about::actions::{ActionCaps, RemoveBy};
 use cmdr_about::card::{AboutFact, OsCaps, PlanInput, VolumeCaps, VolumeLimit, plan};
 use cmdr_about::fact::{AboutTarget, FactKind, UnknownWhy};
 use cmdr_about::owner::OwnerQuestion;
@@ -173,15 +174,73 @@ pub(crate) async fn gather_for(request: &AboutRequest) -> Result<Gathered, About
         }
     }
 
-    match drive_way {
-        Way::Local => local_card(&resolved, path).await,
-        _ => Ok(through_gathered(drive_way, request, &resolved, asked_drive, None)),
+    let actions = action_caps(drive_way, drive.as_ref(), &path, home_folder().as_deref());
+    let gathered = match drive_way {
+        Way::Local => local_card(&resolved, path).await?,
+        _ => through_gathered(drive_way, request, &resolved, asked_drive, None),
+    };
+    // A volume already known not to answer gets no actions: a reveal or a delete
+    // dialog there would wait as long as it does.
+    let silent = gathered
+        .plan
+        .volume_note
+        .as_ref()
+        .is_some_and(|note| note.limit == VolumeLimit::Unreachable);
+    let actions = if silent { ActionCaps::none() } else { actions };
+    Ok(Gathered { actions, ..gathered })
+}
+
+/// The person's home folder, which names the Library places the owner row and
+/// the app-folder action read. A dev or E2E build may point it at a fixture home
+/// (`test_mode::about_fixture_home`), so the QA fixture folder's fake `Library`
+/// reads like a real one ❌ without a write into the real one.
+fn home_folder() -> Option<String> {
+    crate::test_mode::about_fixture_home()
+        .or_else(dirs::home_dir)
+        .map(|home| home.to_string_lossy().into_owned())
+}
+
+/// What the footer's actions can do on an item reached `way`, on `volume`.
+///
+/// - Show in the file manager: only where the OS sees the path itself (a local
+///   disk, a share the OS mounted).
+/// - Remove: only on a volume that takes writes; to the Trash where it keeps
+///   one, else for good. Both go through the delete dialog, which asks first.
+/// - ❌ Neither for a view (an archive's entry, git's history, a backup
+///   snapshot) or a volume that isn't there.
+/// - The app-data folder: only on a local disk, from the path alone.
+pub(crate) fn action_caps(way: Way, volume: &dyn Volume, path: &str, home: Option<&str>) -> ActionCaps {
+    let removal = || {
+        volume.is_writable().then(|| {
+            if volume.has_trash() {
+                RemoveBy::Trash
+            } else {
+                RemoveBy::Delete
+            }
+        })
+    };
+    match way {
+        Way::Local => ActionCaps {
+            file_manager: true,
+            removal: removal(),
+            app_folder: home.and_then(|home| OwnerQuestion::app_folder_above(path, home)),
+        },
+        Way::OsMountedShare => ActionCaps {
+            file_manager: true,
+            removal: removal(),
+            app_folder: None,
+        },
+        Way::Server | Way::Device => ActionCaps {
+            removal: removal(),
+            ..ActionCaps::none()
+        },
+        Way::Archive | Way::GitHistory | Way::Snapshot | Way::Offline => ActionCaps::none(),
     }
 }
 
 async fn local_card(resolved: &ResolvedLocation, path: String) -> Result<Gathered, AboutUnavailable> {
     let probed = probe_on_pool(path.clone()).await?;
-    let home = dirs::home_dir().map(|home| home.to_string_lossy().into_owned());
+    let home = home_folder();
     let sources = Sources {
         history: History::of_the_app(&resolved.location.volume_id),
         index: Some(index_place(resolved, &path)),
@@ -311,6 +370,7 @@ pub(crate) fn local_gathered(
         ready: vec![AboutFact::Identity(probed.identity)],
         jobs,
         reach: Watch::EachRow,
+        actions: ActionCaps::none(),
     }
 }
 
@@ -400,6 +460,7 @@ pub(crate) fn through_plan(way: Way, name: &str, is_directory: bool, caps: &Volu
         // A view's rows read one file or repo on the drive: one that's slow is
         // slow by itself. A volume's identity is its health check.
         reach: if is_view { Watch::EachRow } else { Watch::TheVolume },
+        actions: ActionCaps::none(),
     };
     if !volume_answers {
         log::debug!(target: "about", "the item's volume is still holding earlier calls; not asking it again");
