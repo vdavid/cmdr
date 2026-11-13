@@ -51,6 +51,13 @@ Lead's guardrails, learned the hard way:
 A different shape from the refactor loop above: many independent agents each handle a slice of a long list (e.g. one doc
 per language). Hard-won rules:
 
+- **Pilot ONE agent before fanning out.** Run it alone, then read what it built and what it worked around (its report's
+  Process feedback, and the scripts it left in the scratchpad), fix the tooling or the brief, and only then start the
+  rest. **Why:** 13 translators each rebuilt a catalog write-back script on 2026-11-12 (about 850 lines in all) and none
+  reported it, because to an agent a script is ordinary work and no single agent can see the pattern.
+- **After the first wave, look for homemade tooling.** List the scratchpad (and each agent's Process feedback, which
+  translators log in `docs/i18n/source-queue.md`): two agents writing the same kind of script is a missing tool. Build
+  it before the next wave, rather than letting every agent pay for it again.
 - **Cap concurrency at ~3 subagents.** The Anthropic API rate-limits aggressively; a 14-agent burst gets throttled and
   agents silently finish partial. Keep ~3 in flight; queue the rest. Batch size per agent (3 vs 10 items) is separate
   and can stay large once concurrency is capped.

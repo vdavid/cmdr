@@ -294,8 +294,9 @@ function parallelNote(ctx: BriefContext): string {
     'Other translators work at the same time, so leave the shared files alone:',
     '',
     `- A new concept: write it to docs/i18n/${tag}/concepts-proposed.json (the concepts.json schema, a new ID), never to docs/i18n/concepts.json. The lead merges it.`,
-    '- A `notMatch` for an existing concept, or a source-queue proposal: put it in your Source feedback section only, never in docs/i18n/concepts.json or docs/i18n/source-queue.md. The lead applies it.',
-    `- Your own locale's files (its catalog, terms.json, decisions.md, review-queue.md) and \`sync-locale-keys.ts ${tag} --restamp\` stay as above: nobody else writes them.`,
+    `- A new concept through the tool: \`pnpm i18n:apply-terms --lang ${tag} --proposed --patch <file>\`.`,
+    '- A `notMatch` for an existing concept, a source-queue proposal, or process feedback: put it in your report only, never in docs/i18n/concepts.json or docs/i18n/source-queue.md. The lead applies it.',
+    `- Your own locale's files (its catalog through \`pnpm i18n:apply --lang ${tag}\`, terms.json through \`pnpm i18n:apply-terms --lang ${tag}\`, decisions.md, review-queue.md) stay as above: nobody else writes them.`,
   ].join('\n')
 }
 
@@ -520,8 +521,8 @@ function termsSection(ctx: BriefContext): BriefSection {
  * The regional overlays of the target languages (`es-419` over `es`): which batch
  * keys each already forks, and how to keep a fork in step. An overlay's fork is
  * checked against the base value it overrides, so a base edit leaves it stale, and
- * its hash is the hash of that base value, which `sync-locale-keys.ts --restamp`
- * computes. Empty when no target language has an overlay.
+ * its hash is the hash of that base value, which `pnpm i18n:apply` stamps when it
+ * writes the fork. Empty when no target language has an overlay.
  */
 /** The overlays with a drift test that sweeps the base for the forms they replace. */
 const OVERLAY_GUARDS: Readonly<Partial<Record<string, { forms: string; test: string }>>> = {
@@ -551,7 +552,7 @@ function overlaysSection(ctx: BriefContext): BriefSection {
       guard
         ? `- A new or changed \`${base}\` value that uses a ${guard.forms} needs a \`${tag}\` fork, or \`scripts/${guard.test}\` fails (docs/i18n/${tag}/style.md lists the forms).`
         : `- A new or changed \`${base}\` value that uses a form \`${tag}\` replaces needs a fork there too (docs/i18n/${tag}/style.md lists the forms).`,
-      `- Stamp every fork you write or update with \`node scripts/sync-locale-keys.ts ${tag} --restamp <key>\` (in apps/desktop): it records the hash of the \`${base}\` value the fork overrides.`,
+      `- Write a fork with \`pnpm i18n:apply --lang ${tag} --values <file>\` (in apps/desktop), a separate call from your \`${base}\` one: it stamps the hash of the \`${base}\` value the fork overrides, refuses a fork identical to it, and drops one given \`null\`.`,
     )
   }
   return { name: 'overlays', text: lines.join('\n') }

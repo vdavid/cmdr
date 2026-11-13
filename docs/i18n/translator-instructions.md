@@ -16,13 +16,19 @@ typography, escalating source problems); they bind as much as these instructions
 new evidence, and then edit it in place (the old form moves to "avoid" with its reason). Where a ruling's form and the
 style guide disagree, the style guide's general rule wins unless the ruling says why it's an exception; flag it.
 
-- **Where to write**: edit each value in place in apps/desktop/src/lib/intl/messages/{{TAG}}/<area>.json. Then stamp
-  what you translated as current: in apps/desktop, run
-  `node scripts/sync-locale-keys.ts {{TAG}} --restamp <key> --restamp <key> …` (one `--restamp` per key; it only moves a
-  hash that's out of date). A key that arrived as a fresh English skeleton already carries the current hash, so
-  restamping it changes nothing; it matters for a key whose English changed under an existing translation. It clears
-  `reviewed` and `sameAsSourceJustification` on the keys it moves, so add a justification after restamping, never
-  before.
+- **Where to write**: put your values in one JSON file (key → value) and write them with
+  `pnpm i18n:apply --lang {{TAG}} --values <file.json>` in apps/desktop. It writes each value into its catalog file,
+  stamps the key as translated from the current English, and refuses the whole batch (changing nothing) when a value
+  breaks a placeholder, a tag, ICU, the per-OS block shape, the plural set, or the macOS text a Mac already reads; fix
+  what it names and run it again. A per-OS key can be given as `{ "windows": "…", "other": "…" }`: each branch you leave
+  out keeps the text that OS reads now, which is how the `macos` branch stays untouched. A deliberate identical value
+  takes `"@<key>": { "sameAsSourceJustification": "…" }` in the same file. `--dry-run` checks without writing, and
+  `--expect-keys <file>` (one key per line) lists the batch keys your file missed. A key the catalog doesn't have yet is
+  refused with the `sync-locale-keys.ts` call that adds it.
+- **Tools, not scripts**: the tools below cover writing and looking up. ❌ Never write your own script that writes a
+  catalog or a termbase file, and never hand-edit one: the tools validate and keep the formatting, and a homemade writer
+  does neither. When a tool can't do what you need, do the smallest manual step and say so under Process feedback
+  (below).
 - **Search keywords** (`settings.*.keywords`): a hidden, comma-separated list Settings search matches, never shown.
   Search already matches the setting's label and description, so write OTHER words a user of your language might type:
   synonyms, everyday words, the related idea, any count, not a 1:1 translation. Term rulings, avoid-lists, and brand
@@ -62,7 +68,9 @@ style guide disagree, the style guide's general rule wins unless the ruling says
   - **Rulings**: a `terms.json` ruling may carry `windows` and `other` forms, and the brief prints them. When a branch's
     OS names a ruled concept differently from the base ruling, add that OS's form (docs/i18n/termbase.md, `terms.json`
     schema) with sources from that OS's folder.
-  - **Done**: once every branch is in {{LANGUAGE}}, restamp the key as above; that's what takes it off the stale list.
+  - **Done**: once every branch is in {{LANGUAGE}}. `i18n:apply` writes a half-done key but leaves its stamp, so it
+    stays on the stale list and the output names the branches still in English; a branch that's right as English needs a
+    `sameAsSourceJustification` in your values file.
   - **A plain value** (no select) shows on every OS. Use the word the OSes share in {{LANGUAGE}}; where they split, keep
     the macOS term and log the key in docs/i18n/source-queue.md as needing a per-OS value.
 - **Uncontrolled inserts**: {message}, {reason}, and a raw {path} carry text Cmdr doesn't control. Make the sentence
@@ -87,14 +95,23 @@ style guide disagree, the style guide's general rule wins unless the ruling says
   translated, Spotlight isn't); (2) each OS's own term in its branch (Per-OS values above), and in a plain value the
   macOS Finder term where the OSes split; (3) let brands inflect by PRONUNCIATION ("Cmdrben", "Cmdrs").
 - **Reference pile (mandatory for "no ruling" terms)**: for every term the brief marks "no ruling" and every content
-  word it lists under "No concept yet", mine the pile at the header's path (it lives only in the MAIN clone, never your
-  worktree) for how macOS, Microsoft, Nautilus/Thunar/Dolphin, and Total/Double Commander render it; reuse and cite,
-  never guess. Two-pane concepts (pane, file list, command line) come from the orthodox pair. Recipes:
-  docs/i18n/reference-pile/how-to-mine.md.
-- **Write back** what you settle: a ruling to docs/i18n/{{TAG}}/terms.json (chosen, sources, confidence, plus
-  accept/proseAccept/forms/avoid), a new concept to docs/i18n/concepts.json, an English-sense exclusion to that
-  concept's "notMatch", a language-specific boundary to the term's "exceptions" with the reason, and anything only a
-  native reviewer can settle to docs/i18n/{{TAG}}/review-queue.md.
+  word it lists under "No concept yet", mine the pile for how macOS, Microsoft, Nautilus/Thunar/Dolphin, and
+  Total/Double Commander render it; reuse and cite, never guess. Two-pane concepts (pane, file list, command line) come
+  from the orthodox pair. `pnpm i18n:pile --lang {{TAG}} --term "<English>"` (in apps/desktop) runs the lookups in one
+  call from your worktree: macOS by key, every Microsoft sense with its definition, the Linux and orthodox catalogs;
+  `--target "<word>"` looks up in reverse, `--key <key>` takes a key's English. The pile lives only in the MAIN clone,
+  and the tool finds it, so never name that path in a shell loop. Recipes for what it doesn't cover (the live macOS
+  bundles, the style-guide PDFs): docs/i18n/reference-pile/how-to-mine.md.
+- **Term lookup**: `pnpm i18n:term <word>` prints every concept the word names, each sense's definition and boundaries,
+  and every language's ruling; `pnpm i18n:term --key <key>` shows which concepts a key's English hits and which a
+  `notMatch` keeps out (the first question when the termbase check flags a key you think it misreads).
+- **Write back** what you settle with `pnpm i18n:apply-terms --lang {{TAG}} --patch <file.json>`: a JSON file of concept
+  ID → the fields to change (chosen, sources, confidence, plus accept/proseAccept/forms/avoid/note). Each field you give
+  replaces the stored one and `null` deletes it; `exceptions` merges key by key; a list may be
+  `{ "add": […], "remove": […] }`. It refuses a patch that breaks the termbase schema and keeps the file's formatting. A
+  new concept goes to docs/i18n/concepts.json (`--concepts`), an English-sense exclusion to that concept's "notMatch"
+  (`--concepts`, also a key-scoped `{ "key", "why" }`), a language-specific boundary to the term's "exceptions" with the
+  reason, and anything only a native reviewer can settle to docs/i18n/{{TAG}}/review-queue.md.
 - **decisions.md holds distilled rulings only**: "X over Y because Z", citing the keys in backticks in its heading, at
   most ~3 lines. When a ruling changes, edit or replace its entry and delete what it supersedes; never append a
   narrative, a dated story, or a second entry beside the old one. The file has a byte budget (`i18n-termbase` warns past
@@ -104,6 +121,10 @@ style guide disagree, the style guide's general rule wins unless the ruling says
   clean check and the full report only for one that isn't; the batch is done when every line is a ✓. It's the one check
   you need: `pnpm check --fast` runs most of the same checks across every locale but skips the termbase.
 - **Report**: your output may ship without human review, so translate only what you're confident in and flag every
-  string where the context was insufficient. End with a **Source feedback** section: `@key` descriptions that were
-  insufficient, screenshots that were missing or unhelpful, English that was ambiguous or inconsistent, and proposed
-  cross-language rules (log each in docs/i18n/source-queue.md too), or "none".
+  string where the context was insufficient. End with two sections, each "none" when it's empty:
+  - **Source feedback**: `@key` descriptions that were insufficient, screenshots that were missing or unhelpful, English
+    that was ambiguous or inconsistent, and proposed cross-language rules. Log each in docs/i18n/source-queue.md too.
+  - **Process feedback**: every script you wrote (even a one-off lookup) and why, every workaround (a command a guard
+    refused, a manual step a tool couldn't take, an instruction that didn't fit), and what would have saved you the
+    time. Log each under `## Process feedback` in docs/i18n/source-queue.md too. Two translators writing the same script
+    is a missing tool, and only the lead can see that pattern, so leave nothing out because it felt routine.

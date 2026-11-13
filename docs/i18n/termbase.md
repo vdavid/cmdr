@@ -239,8 +239,8 @@ A `###` section whose `##` parent also matches is left out, since the parent's b
   older English, the stale check's definition. Without it, the header names those keys so an English edit committed
   beside the batch isn't missed.
 - `--parallel`: several translators run at once. The instructions gain a block routing writes to shared files elsewhere:
-  a new concept to `<tag>/concepts-proposed.json`, a `notMatch` or a source-queue proposal to the report's Source
-  feedback. Each locale's own files can't race, so they stay as usual.
+  a new concept to `<tag>/concepts-proposed.json` (`pnpm i18n:apply-terms --proposed`), a `notMatch`, a source-queue
+  proposal, or process feedback to the report. Each locale's own files can't race, so they stay as usual.
 - `--out <file>` (default stdout), `--stats` (chars and rough tokens per section, to stderr).
 - `--exclude-target-values`: a blind run for A/B tests. Withholds the batch keys' current translations and the decision
   excerpts (a section citing a batch key discusses exactly those translations), drops a ruling's batch-key `exceptions`
@@ -271,7 +271,7 @@ Sections, each selected by the batch:
    which branch macOS reads (its translation stays).
    - Regional overlays, when a target language has one (`es-419` for `es`): the batch keys it already forks (values
      withheld in a blind run), that a value using a form it replaces needs a fork, and the
-     `sync-locale-keys.ts <overlay> --restamp <key>` that stamps a fork with the hash of the base value it overrides.
+     `pnpm i18n:apply --lang <overlay>` call that writes a fork stamped with the hash of the base value it overrides.
 6. Terms in play: every concept whose `match` hits (and `notMatch` doesn't) a batch key's English. The sense, note, and
    hit keys print once; then one line per language with chosen / accept / prose only / forms / avoid / note /
    confidence, the `exceptions` for batch keys, and the `decision` heading, or "no ruling". Then up to eight `distinct`
@@ -289,6 +289,61 @@ Sections, each selected by the batch:
 
 Deterministic (no time, RNG, or model; the change diff reads committed history only): about 4 s for a 36-key batch, plus
 about 2 s when most of the batch is stale (measured on sv, 2026-09-25).
+
+### `pnpm i18n:apply` (`apps/desktop/scripts/i18n-apply.ts`, logic in `i18n-apply-lib.ts`)
+
+The translator's one write path into a catalog. `--lang <tag> --values <file.json>`, one locale per call.
+
+- The values file maps key → a string (the whole value), `{ "macos"?, "windows"?, "other"? }` (a per-OS value given
+  branch by branch: a branch left out keeps what that OS reads in the catalog now), or `null` (an overlay drops its
+  fork). `"@<key>": { "sameAsSourceJustification": "…" }` records a justification, ARB-style as in the catalogs.
+- The whole batch is planned first, and one refused value writes nothing. Refused: a key English lacks; a key a full
+  translation's catalog lacks (it names the `sync-locale-keys.ts` call); placeholder/tag parity, ICU validity and
+  raw-family apostrophes, the per-OS block shape, and plural coverage, each by the ERROR-class check's own function; a
+  `macos` text the frozen baseline holds (`frozenMacosIssue`; a fix goes through `ACCEPTED_TRANSLATION_CHANGES`); for an
+  overlay, a fork identical to what it overrides, or one carrying a justification.
+- Stamping: `@key.sourceHash` becomes the hash of the source (`en`, or an overlay's layered base); a value or hash that
+  moves drops `reviewed` and `sameAsSourceJustification`, as `--restamp` does. A per-OS value with a branch still
+  byte-identical to English is written but keeps its old stamp, so it stays on the stale list, unless the file justifies
+  it.
+- Files are written in the canonical `JSON.stringify` shape `sync-locale-keys.ts` writes, through a temp file and a
+  rename; a file in any other shape is refused. A new overlay fork lands in English order.
+- `--expect-keys <file>` (one key per line, `#` comments) and `--changed-since <ref>` list the expected keys the batch
+  didn't cover; `--dry-run` writes nothing. Exit 1 on a refusal, 2 on a usage error.
+
+### `pnpm i18n:apply-terms` (`apps/desktop/scripts/i18n-apply-terms.ts`, logic in `i18n-apply-terms-lib.ts`)
+
+Patches one termbase file: `--lang <tag>` (its `terms.json`), `--concepts` (`concepts.json`), or
+`--lang <tag> --proposed` (its `concepts-proposed.json`), each with `--patch <file.json>`.
+
+- The patch maps concept ID → the fields to change, or `null` to delete the entry. A field's value replaces the stored
+  one and `null` deletes it; `exceptions` merges key by key (`null` drops one); a list field may be
+  `{ "add": […], "remove": […] }` (an `avoid` entry is removed by its `form`). A new ID goes last; nothing is re-sorted.
+- The result is checked with this check's own validators, and the patch is refused only for problems it adds.
+- A `--concepts` edit that turns locale `exceptions` stale (a new `notMatch` usually does) lists them and refuses;
+  `--drop-stale-exceptions` drops them across the locales in the same write.
+- Written through `JSON.stringify` then oxfmt, which reproduces an oxfmt-formatted file byte for byte. `--dry-run`.
+
+### `pnpm i18n:term` (`apps/desktop/scripts/i18n-term.ts`)
+
+- `pnpm i18n:term <word|concept-id> [--lang <tag>[,…]]`: every concept the word names (its ID, a `match` form, or its
+  headword), each with its sense, note, `match` and `notMatch`, every `distinct` neighbor's sense, and one ruling line
+  per language (the brief's own renderer, `rulingParts`). Default: every locale with a `terms.json`.
+- `--key <key>`: the concepts a key's English hits, and those a `notMatch` keeps out.
+
+### `pnpm i18n:pile` (`apps/desktop/scripts/i18n-pile.ts`, logic in `i18n-pile-lib.ts`)
+
+The reference pile, from any worktree: the main clone comes from git's common dir, and a tag's folders from
+`pileFolders` in `i18n-repo-lib.ts` (`pt` → `pt-BR/`, `zh-Hant` → `zh-Hant/` + `zh-TW/`).
+
+- `--lang <tag> --term "<English>"` (repeatable): macOS strings joined by key against `en/macOS/` (a value still English
+  in the target is skipped), every Microsoft TBX sense with its definition and region, and the gettext catalogs
+  (Nautilus, Thunar, Dolphin, Double Commander, git) by `msgid`, mnemonics ignored. Exact matches (`=`) before ones that
+  contain the words (`~`), grouped by source in authority order.
+- `--target "<word>"`: the reverse, by the translation, which also reads Total Commander (no English side).
+- `--key <key>`: `--term` for each branch of the key's English short enough to be a label, and each concept it hits.
+- `--source macos,microsoft,linux,orthodox,git`, `--limit <n>` (per source, default 6). Not covered: the live macOS
+  bundles and the style-guide PDFs (`reference-pile/how-to-mine.md`).
 
 ### `pnpm i18n:check-termbase` (`apps/desktop/scripts/i18n-check-termbase.ts`, Go check `desktop-i18n-termbase`)
 
@@ -366,6 +421,8 @@ key in a note or an `exceptions` reason must be a real key. Mechanism: `scripts/
 doc-citation check".
 
 ## Writing back during translation
+
+Every write below goes through `pnpm i18n:apply-terms` (§ Tooling), never a hand edit or a script.
 
 - New concept: add it to `concepts.json`. When several agents work in parallel (a fan-out across locales), each adds its
   new concepts to `<tag>/concepts-proposed.json` instead (same schema), and one agent merges them into `concepts.json`

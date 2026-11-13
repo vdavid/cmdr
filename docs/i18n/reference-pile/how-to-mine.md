@@ -5,6 +5,11 @@ reinvent the search each time. Triangulate a term across every source the langua
 sources and a confidence in the per-language style guide (`docs/i18n/<tag>/style.md`). Structure and provenance of the
 pile: `README.md` and `inventory.md`.
 
+**Start with the tool.** `pnpm i18n:pile --lang <tag> --term "<English>"` (in `apps/desktop`, from any worktree) runs
+the macOS, Microsoft, gettext, and Total Commander recipes below in one call, with the traps they guard against built in
+(`--target` reverses it, `--key` takes a key's English; `docs/i18n/termbase.md` § Tooling). The recipes stay for what it
+doesn't cover (the live macOS bundles, the style-guide PDFs, the legal RTFs) and for reading a hit in context.
+
 First check which sources your language has: `ls <tag>/` (a source is absent if its subdir is missing). Run everything
 below from `_ignored/i18n/`.
 

@@ -135,9 +135,25 @@ describe('planApply on a full translation', () => {
     expect(plan.refused[0].reason).toContain('plain value')
   })
 
-  it('notes a branch still in English', () => {
+  it('writes a half-translated per-OS key but leaves its stamp, so it stays on the stale list until every branch is done', () => {
     const plan = apply('de', { 'files.trash': { windows: 'Löschen' } })
     expect(plan.notes).toContain("files.trash: still English in other: the key stays stale until they're done")
+    expect(read('de')['files.trash']).toBe(
+      '{platform, select, macos {In den Papierkorb legen} windows {Löschen} other {Move to Trash}}',
+    )
+    expect(read('de')['@files.trash']).toEqual({ sourceHash: sourceHash('In den Papierkorb') })
+    expect(plan.writes[0].restamped).toBe(false)
+  })
+
+  it('stamps a per-OS key with an English branch when the file justifies it', () => {
+    apply('de', {
+      'files.trash': { windows: 'Löschen' },
+      '@files.trash': { sameAsSourceJustification: 'Linux desktops keep the English label here.' },
+    })
+    expect(read('de')['@files.trash']).toEqual({
+      sourceHash: sourceHash(PER_OS),
+      sameAsSourceJustification: 'Linux desktops keep the English label here.',
+    })
   })
 
   it('drops the source-bound vouches when the value changes, and records a justification from the file', () => {

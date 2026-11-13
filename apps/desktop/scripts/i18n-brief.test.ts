@@ -417,12 +417,12 @@ describe('buildBrief (fixture tree)', () => {
     expect(terms).not.toContain('The file work Cmdr performs.')
   })
 
-  it('names the overlay forks a batch touches, and how to restamp them against the parent', () => {
+  it('names the overlay forks a batch touches, and how to write and stamp them against the parent', () => {
     const overlays = buildBrief(opts).sections.find((section) => section.name === 'overlays')?.text ?? ''
     expect(overlays).toContain('nl-BE')
     expect(overlays).toContain('`queue.title`')
     expect(overlays).not.toContain('`queue.row.label`')
-    expect(overlays).toContain('sync-locale-keys.ts nl-BE --restamp')
+    expect(overlays).toContain('pnpm i18n:apply --lang nl-BE')
     const de = buildBrief({ ...opts, langs: ['de'] }).sections.map((section) => section.name)
     expect(de).not.toContain('overlays')
   })

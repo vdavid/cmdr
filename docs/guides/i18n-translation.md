@@ -129,6 +129,9 @@ jq, `msggrep`, `pdftotext`, `.lng`).
 > you can't assume the path, resolve the main clone with `git worktree list | head -1` (its first column is the main
 > checkout) and mine `<that path>/_ignored/i18n/<tag>/`. A "no reference pile present" conclusion is almost always this
 > worktree trap, not a genuinely missing pile — re-check the main-clone absolute path before deciding it's gone.
+> `pnpm i18n:pile --lang <tag> --term "<English>"` (in `apps/desktop`) resolves the main clone by itself and runs the
+> per-source recipes in one call, so a translator never names that path in a shell loop (a worktree harness guard
+> rejects those).
 
 For each term or convention: triangulate across every source the language has, pick the most native-sounding fit for
 Cmdr's voice, then record it as a `terms.json` entry (`chosen`, `sources`, `confidence`, plus `accept` / `forms` /
@@ -327,9 +330,10 @@ or the next contributor re-litigates them. `docs/i18n/en-GB/style.md` is the wor
 
 Don't record a `sameAsSourceJustification` on an overlay key. `gen-locale-skeleton.ts` refuses an overlay tag outright,
 since it mirrors the entire `en` catalog, and `sync-locale-keys.ts` adds no keys to an overlay for the same reason: a
-new English key needs no work here, the variant inherits the base language's translation. Its `--restamp <key>` does
-reach an overlay's forks, stamping the hash of the value each one overrides. Full rules, and what each check does:
-`i18n.md` § Overlay catalogs.
+new English key needs no work here, the variant inherits the base language's translation. Write a fork with
+`pnpm i18n:apply --lang <overlay> --values <file>`: it stamps the hash of the value the fork overrides, refuses one
+identical to it, and drops one given `null`. `--restamp <key>` reaches an overlay's forks the same way. Full rules, and
+what each check does: `i18n.md` § Overlay catalogs.
 
 ## New feature → add strings and translate to ALL languages
 
@@ -353,10 +357,11 @@ The routine maintenance loop, run for every change that adds or edits user-facin
    When you re-translate a key, update its `@key.sourceHash` in the same edit. **When an `en` edit doesn't change the
    meaning** ("is larger" → "may be larger", where every locale already used a modal form), the translations are still
    accurate and only the stored hash needs to catch up. Refresh it with
-   `node apps/desktop/scripts/sync-locale-keys.ts --restamp <key>` (repeatable, applies across every locale). Check each
-   locale's value first: this is the one command that clears a warning without a translation changing, so it belongs in
-   its own commit with the per-locale reasoning in the message. It drops `reviewed` and `sameAsSourceJustification` on
-   the keys it touches: both vouched for the old English and have to be re-earned.
+   `node apps/desktop/scripts/sync-locale-keys.ts --restamp <key>` (repeatable, applies across every locale;
+   `--restamp-file <file>` takes one key per line). Check each locale's value first: this is the one command that clears
+   a warning without a translation changing, so it belongs in its own commit with the per-locale reasoning in the
+   message. It drops `reviewed` and `sameAsSourceJustification` on the keys it touches: both vouched for the old English
+   and have to be re-earned.
 4. **Human-review (optional)** the changed strings and set `@key.reviewed: true` again if a reviewer is available (the
    stale check reset it when the source changed). Not a gate — the re-translated strings ship without it.
 
@@ -366,10 +371,11 @@ one branch's English leaves every branch translated but the key stale; the brief
 English shows which branch moved, and only that one is redone. Work it branch by branch under
 `docs/i18n/translator-instructions.md` (Per-OS values): translate only the English branches, each in its own OS's words,
 and leave the `macos` branch alone (`macos-copy-unchanged.test.ts` holds it; a WRONG macOS text has one reviewed way
-out, `ACCEPTED_TRANSLATION_CHANGES`, under that same Per-OS values rule). The stale hash is whole-value, so restamp
-(`--restamp <key>`) only once EVERY branch is in the language; a half-translated key stays on the worklist. A collapsed
-`.mac`/`.other` pair is the same: its survivor key's `macos` branch is the old `.mac` translation. The brief's per-key
-"Per-OS value" note names each branch's OS and pile folders.
+out, `ACCEPTED_TRANSLATION_CHANGES`, under that same Per-OS values rule). The stale hash is whole-value, so a key is
+stamped only once EVERY branch is in the language; a half-translated key stays on the worklist (`pnpm i18n:apply` writes
+it and leaves the stamp, naming the branches still English). A collapsed `.mac`/`.other` pair is the same: its survivor
+key's `macos` branch is the old `.mac` translation. The brief's per-key "Per-OS value" note names each branch's OS and
+pile folders.
 
 ### Write placeholder strings to be restructurable
 
@@ -441,7 +447,15 @@ grammar, native typography, escalating source problems). Those live in `docs/i18
 **Closing the loop.** Every translator report ends with a Source feedback section (weak descriptions, missing
 screenshots, ambiguous English, proposed cross-language rules), and each item also lands in `docs/i18n/source-queue.md`.
 The lead resolves the queue with David (fixing the English, the description, or the shared docs) and deletes each entry
-once it's resolved. A locale's own files never carry a workaround for an English problem.
+once it's resolved. A locale's own files never carry a workaround for an English problem. The report's second section,
+Process feedback, lists every script the translator wrote and every workaround it needed, and lands under that heading
+in the same queue: the lead reads it after each wave, since two translators writing the same script is a missing tool
+(`docs/guides/multi-agent-refactors.md` § Fan-out sweeps).
+
+**The tools a translator runs** (in `apps/desktop`; flags in `docs/i18n/termbase.md` § Tooling): `pnpm i18n:brief`
+(read), `pnpm i18n:apply` (write values, stamped and validated), `pnpm i18n:apply-terms` (write the termbase),
+`pnpm i18n:term` (a word's senses and rulings), `pnpm i18n:pile` (the reference pile), and `pnpm i18n:check-locale`
+(check). The instructions forbid homemade catalog- or termbase-writing scripts.
 
 Pick the shape by batch size. Sizes are `--stats` on the migrated `nl` termbase, 2026-09-24.
 
@@ -457,8 +471,10 @@ Pick the shape by batch size. Sizes are `--stats` on the migrated `nl` termbase,
   doesn't settle a question.
 
 The translator's loop, per batch: read the brief, then the full `docs/i18n/<tag>/style.md`, and follow the brief's
-Instructions section (mine the pile for "no ruling" and "No concept yet" terms, translate, write back, run the checks).
-Nothing else is required reading.
+Instructions section (mine the pile for "no ruling" and "No concept yet" terms with `pnpm i18n:pile`, translate into a
+values file, write it with `pnpm i18n:apply`, record what it settled with `pnpm i18n:apply-terms`, run the checks).
+Nothing else is required reading. Pilot one translator before fanning out (`docs/guides/multi-agent-refactors.md` §
+Fan-out sweeps).
 
 (Measured 2026-09-23: a coding agent translated four keys into ten languages inline, opened no style guide or termbase,
 and passed every check anyway. The checks catch mechanics, not voice.)
@@ -471,7 +487,7 @@ the path, rather than inlining ten briefs into prompts. The whole handoff prompt
 ```
 You are translating UI strings for Cmdr, a file manager for macOS, Windows, and Linux, into [LANGUAGE]. Your brief is at [BRIEF PATH]: read it,
 then docs/i18n/[TAG]/style.md, and follow the brief's Instructions and Principles sections. Report every string you
-flagged, and end with the Source feedback section the instructions describe.
+flagged, and end with the Source feedback and Process feedback sections the instructions describe.
 ```
 
 The instructions' "uncontrolled inserts" and "fragment keys" items come from the catalog audit: they're the two highest

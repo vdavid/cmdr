@@ -147,14 +147,14 @@ The shape:
   generator and any locale skeleton write it; the `desktop-i18n-stale` check compares the stored hash against the
   current source value's hash and flags a translation whose source has since changed as STALE. Deterministic and
   git-independent (survives rebases/reformats); not present in `en` (the source has no source). **Only a human-judged
-  act refreshes it.** A translator stamps it when they re-translate; `sync-locale-keys.ts` carries a kept key's whole
-  `@key` block across untouched, so routine key propagation can't clear a warning nobody answered. The one exception is
-  explicit: `sync-locale-keys.ts --restamp <key>`, for an `en` edit that left every translation accurate. See
-  `docs/guides/i18n-translation.md` § New feature. **Release-strict gate:** the stale check is warn-only in normal
-  `pnpm check` (a maintenance signal, not a daily-dev build breaker), but at release time it escalates a stale finding
-  to a build-failing ERROR. The release flow (`scripts/release.sh`) sets `CMDR_I18N_STALE_STRICT=1` before its
-  `pnpm check i18n-stale`, so a release can NOT ship a stale translation: the fix lands first. The gate fires locally in
-  `scripts/release.sh`, not a GitHub workflow; see `docs/guides/releasing.md`.
+  act refreshes it.** A translator's `pnpm i18n:apply` stamps it as it writes the re-translation; `sync-locale-keys.ts`
+  carries a kept key's whole `@key` block across untouched, so routine key propagation can't clear a warning nobody
+  answered. The one exception is explicit: `sync-locale-keys.ts --restamp <key>`, for an `en` edit that left every
+  translation accurate. See `docs/guides/i18n-translation.md` § New feature. **Release-strict gate:** the stale check is
+  warn-only in normal `pnpm check` (a maintenance signal, not a daily-dev build breaker), but at release time it
+  escalates a stale finding to a build-failing ERROR. The release flow (`scripts/release.sh`) sets
+  `CMDR_I18N_STALE_STRICT=1` before its `pnpm check i18n-stale`, so a release can NOT ship a stale translation: the fix
+  lands first. The gate fires locally in `scripts/release.sh`, not a GitHub workflow; see `docs/guides/releasing.md`.
 - `reviewed` (non-`en` locales only): an OPTIONAL boolean human sign-off (principle 6: a human reviewed this translated
   copy). Reset to absent/`false` by a human when the stale check reports that `sourceHash` changed, because a
   re-translation needs a fresh review. NOT a gate: no check requires `reviewed: true` to pass. The stale check only

@@ -4,6 +4,7 @@ Translators log English-side problems here while translating: ambiguous or incon
 description, a missing screenshot, or a rule every language should follow. One bullet per item, at most two lines: the
 key(s), what's wrong, the suggested fix. The lead fixes the English, the description, or the shared docs (promoting a
 rule into `translation-principles.md` or `translator-instructions.md`), then deletes the entry; git keeps the history.
+Process feedback (a translator's homemade scripts and workarounds) goes under its own heading at the end.
 
 ## Open
 
@@ -96,3 +97,12 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   Windows/browsers 全屏; consider a per-OS value. (zh)
 - `shortcuts.system.windowMenu` / `securityScreen`: same open question as es/sv (Windows never names them); zh-Hant
   wrote tentative descriptive forms. (zh-Hant)
+
+## Process feedback
+
+Translators log here every script they wrote and every workaround they needed (the report's Process feedback section,
+`translator-instructions.md`): one bullet per item, the tool or step that was missing, and the locale. The lead reads it
+after each wave. Two locales logging the same kind of script is a missing tool: build it or fix the brief, then delete
+the entries (`docs/guides/multi-agent-refactors.md` § Fan-out sweeps).
+
+- None open.

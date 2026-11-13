@@ -298,18 +298,29 @@ function landingIssues(ctx: PlanContext, key: string, value: string, justificati
   return issues
 }
 
-/** Notes on a value that lands but leaves work: branches still English, or a whole value identical to English. */
-function workLeftNotes(ctx: PlanContext, key: string, value: string, justification: string | undefined): string[] {
+/**
+ * The branches of a translating locale's value still byte-identical to English's
+ * same branch: pending translation, as the judging checks read them. An overlay
+ * forks on purpose, so it has none.
+ */
+function stillEnglishBranches(ctx: PlanContext, key: string, value: string): PlatformSelectBranch[] {
   if (ctx.isOverlay) return []
   const englishBranches = parsePlatformSelect(ctx.english[key])
-  const stillEnglish = platformBranches(value).flatMap(({ name, text }) =>
+  return platformBranches(value).flatMap(({ name, text }) =>
     name !== null && englishBranches?.[name] === text ? [name] : [],
   )
+}
+
+/** Notes on a value that lands but leaves work: branches still English, or a whole value identical to English. */
+function workLeftNotes(
+  ctx: PlanContext,
+  { key, value, stillEnglish, justification }: WriteRequest & { stillEnglish: readonly string[] },
+): string[] {
   const notes: string[] = []
-  if (stillEnglish.length > 0) {
+  if (stillEnglish.length > 0 && justification === undefined) {
     notes.push(`${key}: still English in ${stillEnglish.join(', ')}: the key stays stale until they're done`)
   }
-  if (value === ctx.english[key] && justification === undefined) {
+  if (!ctx.isOverlay && value === ctx.english[key] && justification === undefined) {
     notes.push(`${key}: identical to English; add "@${key}": { "sameAsSourceJustification": "…" } if that's deliberate`)
   }
   return notes
@@ -334,20 +345,34 @@ function planDrop(ctx: PlanContext, key: string, slot: KeySlot): void {
   ctx.plan.writes.push({ key, file: slot.fileName, before: slot.before, after: null, restamped: false })
 }
 
+/** One value to write, resolved and judged. */
+interface WriteRequest {
+  key: string
+  value: string
+  slot: KeySlot
+  justification?: string
+}
+
 /**
  * Writes the value and its `@key` into the working copy: stamped with the
  * source's hash, the source-bound vouches dropped when the value or hash moved,
  * and the file's justification on top. An unchanged, current key is left alone.
+ *
+ * `holdStamp` keeps the stored hash while a per-OS branch is still English: the
+ * stale check's worklist is the only thing that says a half-translated key still
+ * owes work (`docs/guides/i18n-translation.md`, a key whose English became a
+ * per-OS value), so a stamp would hide it. A justification in the file lifts it.
  */
 function planWrite(
   ctx: PlanContext,
-  { key, value, slot, justification }: { key: string; value: string; slot: KeySlot; justification?: string },
+  { key, value, slot, justification, holdStamp }: WriteRequest & { holdStamp: boolean },
 ): void {
   const metaKey = `@${key}`
   const file = workingFile(ctx, slot.fileName)
   const stored = file[metaKey]
   const meta = isRecord(stored) ? stored : {}
-  const hash = sourceHash(ctx.source[key])
+  const current = sourceHash(ctx.source[key])
+  const hash = holdStamp && typeof meta.sourceHash === 'string' ? meta.sourceHash : current
   const restamped = meta.sourceHash !== hash
   const valueMoved = slot.before !== value
   const justificationMoved = justification !== undefined && justification !== meta.sameAsSourceJustification
@@ -402,8 +427,10 @@ function planKey(ctx: PlanContext, key: string, entry: ValueEntry): void {
     ctx.plan.refused.push({ key, reason: issues.join('; ') })
     return
   }
-  ctx.plan.notes.push(...workLeftNotes(ctx, key, value, justification))
-  planWrite(ctx, { key, value, slot, justification })
+  const stillEnglish = stillEnglishBranches(ctx, key, value)
+  const request: WriteRequest = { key, value, slot, justification }
+  ctx.plan.notes.push(...workLeftNotes(ctx, { ...request, stillEnglish }))
+  planWrite(ctx, { ...request, holdStamp: stillEnglish.length > 0 && justification === undefined })
 }
 
 /** The new text of every touched file, or a refusal per file that isn't in the canonical shape. */
