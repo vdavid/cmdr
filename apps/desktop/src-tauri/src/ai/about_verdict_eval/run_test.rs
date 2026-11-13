@@ -113,11 +113,12 @@ impl Job {
     }
 }
 
-/// How many times a card runs in English, by group, and in each other language.
+/// How many times a card runs in English, by group, and in each other language. A rare
+/// green light is what a small sample misses, so the cards built to tempt one run most.
 pub(super) fn runs_for(group: Group) -> u32 {
     match group {
         Group::Ordinary => 3,
-        Group::Tempting | Group::Hostile => 5,
+        Group::Tempting | Group::Hostile => 10,
     }
 }
 pub(super) const RUNS_PER_OTHER_LANGUAGE: u32 = 3;
@@ -147,9 +148,9 @@ pub(super) fn plan_jobs(cards: &[EvalCard], classes: &[Class], variants: &[Varia
                         push(lang, true, RUNS_PER_OTHER_LANGUAGE);
                     }
                 }
-                // The usefulness arm: the same ordinary card without its look inside, on the
-                // shipped cloud variant.
-                if card.peek.is_some() && card.group == Group::Ordinary && variant == Variant::With {
+                // The usefulness arm: the same ordinary card without its look inside, so
+                // whether the look earns its egress rests on a number (plan D18).
+                if card.peek.is_some() && card.group == Group::Ordinary {
                     push("en", false, RUNS_WITHOUT_PEEK);
                 }
             }

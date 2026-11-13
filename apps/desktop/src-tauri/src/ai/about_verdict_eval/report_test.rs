@@ -2,7 +2,7 @@
 //! counts per class, variant, and question, every failing take verbatim, usefulness,
 //! latency, and spend. Scoring lives here, in the test, ❌ never in product code.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt::Write;
 
 use super::corpus_test::Group;
@@ -98,7 +98,12 @@ fn yes_of(verdict: &Verdict) -> [bool; 5] {
 
 /// The summary as Markdown, plus whether every (class, variant) pair met the bar on
 /// questions 1 and 2 by the judge's word.
-pub(super) fn summary(generations: &[Generation], judgments: &[Judgment], judge_cost: i64) -> (String, Vec<String>) {
+pub(super) fn summary(
+    generations: &[Generation],
+    judgments: &[Judgment],
+    second: &[Judgment],
+    judge_cost: i64,
+) -> (String, Vec<String>) {
     let verdicts: HashMap<String, &Verdict> = judgments
         .iter()
         .flat_map(|j| j.by_key().map(|(key, v)| (key.to_string(), v)))
@@ -106,7 +111,12 @@ pub(super) fn summary(generations: &[Generation], judgments: &[Judgment], judge_
 
     let mut by_pair: BTreeMap<(String, String), Tally> = BTreeMap::new();
     let mut by_group: BTreeMap<(String, String, String), Tally> = BTreeMap::new();
-    let mut peek_arm: BTreeMap<(String, bool), Tally> = BTreeMap::new();
+    let mut peek_arm: BTreeMap<(String, String, bool), Tally> = BTreeMap::new();
+    let with_arm: HashSet<(String, Class, Variant)> = generations
+        .iter()
+        .filter(|g| !g.job.peek)
+        .map(|g| (g.job.card.clone(), g.job.class, g.job.variant))
+        .collect();
     let mut by_lang: BTreeMap<(String, String), Tally> = BTreeMap::new();
     let mut by_round: BTreeMap<(String, String, u8), Tally> = BTreeMap::new();
     let mut failing = String::new();
@@ -157,15 +167,14 @@ pub(super) fn summary(generations: &[Generation], judgments: &[Judgment], judge_
                 let t = by_lang.entry((class.clone(), g.job.lang.clone())).or_default();
                 count_into(t, verdict);
             }
-            if g.group == Group::Ordinary && g.job.variant == Variant::With && g.job.lang == "en" {
-                // Only cards that have a no-peek arm count, so both rows cover the same cards.
-                let has_arm = generations
-                    .iter()
-                    .any(|o| o.job.card == g.job.card && !o.job.peek && o.job.class == g.job.class);
-                if has_arm {
-                    let t = peek_arm.entry((class.clone(), g.job.peek)).or_default();
-                    count_into(t, verdict);
-                }
+            // Only cards that have a no-peek arm on this class and variant count, so both
+            // rows cover the same cards.
+            let arm = (g.job.card.clone(), g.job.class, g.job.variant);
+            if g.group == Group::Ordinary && g.job.lang == "en" && with_arm.contains(&arm) {
+                let t = peek_arm
+                    .entry((class.clone(), variant.clone(), g.job.peek))
+                    .or_default();
+                count_into(t, verdict);
             }
             if let Some(v) = verdict {
                 let flags = yes_of(v);
@@ -281,12 +290,12 @@ pub(super) fn summary(generations: &[Generation], judgments: &[Judgment], judge_
     }
     let _ = writeln!(
         out,
-        "\n## Usefulness with and without the look inside (ordinary cards that have one, English, with removal)\n"
+        "\n## Usefulness with and without the look inside (ordinary cards that have one, English)\n"
     );
-    for ((class, peek), t) in &peek_arm {
+    for ((class, variant, peek), t) in &peek_arm {
         let _ = writeln!(
             out,
-            "- {class} {}: q5 {} of {} ({}%), q3 {}",
+            "- {class} / {variant} {}: q5 {} of {} ({}%), q3 {}",
             if *peek { "with the look" } else { "facts only" },
             t.yes[4],
             t.judged,
@@ -309,12 +318,74 @@ pub(super) fn summary(generations: &[Generation], judgments: &[Judgment], judge_
         judge_cost as f64 / 1e6,
         (gen_cost + judge_cost) as f64 / 1e6
     );
+    out.push_str(&second_opinions(generations, &verdicts, second));
     let _ = writeln!(out, "## Every take the judge flagged on questions 1-4\n\n{failing}");
     let _ = writeln!(
         out,
         "## Every take with a URL or Markdown (the card shows plain text)\n\n{shape_failing}"
     );
     (out, misses)
+}
+
+/// How the second judge read every take the first flagged: per class, variant, and
+/// question, how many flags it confirmed, and each flag on 1 or 2 it didn't, verbatim.
+fn second_opinions(generations: &[Generation], first: &HashMap<String, &Verdict>, second: &[Judgment]) -> String {
+    let mut out = String::new();
+    if second.is_empty() {
+        return out;
+    }
+    let second: HashMap<&str, &Verdict> = second.iter().flat_map(|j| j.by_key()).collect();
+    let mut counts: BTreeMap<(String, String), [(u32, u32); 4]> = BTreeMap::new();
+    let mut disputed = String::new();
+    for g in generations {
+        let key = g.job.key();
+        let (Some(a), Some(b)) = (first.get(&key), second.get(key.as_str())) else {
+            continue;
+        };
+        let (fa, fb) = (yes_of(a), yes_of(b));
+        let row = counts
+            .entry((format!("{:?}", g.job.class), format!("{:?}", g.job.variant)))
+            .or_default();
+        for q in 0..4 {
+            if fa[q] {
+                row[q].0 += 1;
+                if fb[q] {
+                    row[q].1 += 1;
+                } else if q < 2 {
+                    let _ = writeln!(
+                        disputed,
+                        "- q{} `{}` {:?} {:?} {} run {}: first: {}; second: {}\n\n  > {}\n",
+                        q + 1,
+                        g.job.card,
+                        g.job.class,
+                        g.job.variant,
+                        g.job.lang,
+                        g.job.run,
+                        a.why,
+                        b.why,
+                        g.text.trim().replace('\n', " ")
+                    );
+                }
+            }
+        }
+    }
+    let _ = writeln!(
+        out,
+        "## The second judge (Sonnet) on every flagged take\n\n- Per question: the first judge's flags, and how many of them the second confirmed\n"
+    );
+    for ((class, variant), row) in &counts {
+        let cells: Vec<String> = row
+            .iter()
+            .enumerate()
+            .map(|(q, (flags, agreed))| format!("q{} {agreed} of {flags}", q + 1))
+            .collect();
+        let _ = writeln!(out, "- {class} / {variant}: {}", cells.join(", "));
+    }
+    let _ = writeln!(
+        out,
+        "\n### Flags on 1 or 2 the second judge didn't confirm\n\n{disputed}"
+    );
+    out
 }
 
 fn count_into(t: &mut Tally, verdict: Option<&Verdict>) {

@@ -24,7 +24,8 @@
 //! `CMDR_VERDICT_EVAL_CARDS` (card ids), `CMDR_VERDICT_EVAL_STAGES` (`generate,judge`;
 //! default both), `CMDR_VERDICT_EVAL_JOBS` (calls in flight, default 8),
 //! `CMDR_VERDICT_EVAL_JUDGE_RUNS` (judge only the first N runs per card and language;
-//! default all). A rerun into the
+//! default all). Add `second` to the stages for a Sonnet re-grade of every take the
+//! Opus judge flagged on questions 1–4 (`second.jsonl`). A rerun into the
 //! same folder skips the takes and judgments already there, so an interrupted run resumes;
 //! use a fresh folder for a fresh measurement. `local` starts the bundled llama-server from
 //! `CMDR_VERDICT_EVAL_AI_DIR` (default: the release app's `ai/` folder) on a scratch port,
@@ -41,6 +42,8 @@ mod cards_fresh_test;
 mod cards_hostile_test;
 #[path = "about_verdict_eval/cards_ordinary_test.rs"]
 mod cards_ordinary_test;
+#[path = "about_verdict_eval/cards_round3_test.rs"]
+mod cards_round3_test;
 #[path = "about_verdict_eval/cards_tempting_test.rs"]
 mod cards_tempting_test;
 #[path = "about_verdict_eval/corpus_test.rs"]
@@ -69,6 +72,7 @@ async fn corpus(files: &PeekFiles) -> Vec<EvalCard> {
     cards.extend(cards_tempting_test::cards());
     cards.extend(cards_hostile_test::cards(files).await);
     cards.extend(cards_fresh_test::cards(files).await);
+    cards.extend(cards_round3_test::cards(files).await);
     cards
 }
 
@@ -300,11 +304,60 @@ async fn verdict_eval() {
     }
 
     let judgments: Vec<Judgment> = latest_judgments(run_test::read_lines(&judge_path));
+    let second_path = out.join("second.jsonl");
+    if stages.contains("second") {
+        // A second judge of another class re-grades every take the first one flagged on a
+        // question 1–4, so a "yes" that decides a class never rests on one model's word.
+        let key = key
+            .clone()
+            .unwrap_or_else(|| super::smoke_providers::api_key(&super::smoke_providers::ANTHROPIC));
+        let second_llm = Caller::cloud(Class::Sonnet, &key, judge_test::JUDGE_CALL);
+        let already: HashSet<String> = run_test::read_lines::<Judgment>(&second_path)
+            .iter()
+            .filter(|j| j.unreadable.is_none())
+            .flat_map(|j| j.by_key().map(|(key, _)| key.to_string()).collect::<Vec<_>>())
+            .collect();
+        let flagged: HashSet<&str> = judgments
+            .iter()
+            .flat_map(|j| j.by_key())
+            .filter(|(_, v)| [&v.q1, &v.q2, &v.q3, &v.q4].iter().any(|a| judge_test::Verdict::yes(a)))
+            .map(|(key, _)| key)
+            .collect();
+        let mut groups: BTreeMap<String, Vec<&Generation>> = BTreeMap::new();
+        for g in &generations {
+            let key = g.job.key();
+            let wanted = flagged.contains(key.as_str())
+                && !already.contains(&key)
+                && by_id.contains_key(g.job.card.as_str())
+                && classes.contains(&g.job.class)
+                && variants.contains(&g.job.variant);
+            if wanted {
+                groups.entry(judge_test::judge_key(&g.job)).or_default().push(g);
+            }
+        }
+        log::info!(target: "verdict_eval", "{} messages for the second judge", groups.len());
+        let lines = Lines::open(&second_path);
+        let second_llm = &second_llm;
+        let lines = &lines;
+        let by_id = &by_id;
+        futures_util::stream::iter(groups.into_values())
+            .map(|takes| async move {
+                let card = by_id[takes[0].job.card.as_str()];
+                let model = super::smoke_providers::ANTHROPIC_SONNET_MODEL;
+                let judgment = judge_test::judge(second_llm.llm.as_ref(), model, card, &takes).await;
+                lines.push(&judgment);
+            })
+            .buffer_unordered(jobs_in_flight)
+            .collect::<Vec<()>>()
+            .await;
+    }
+    let second: Vec<Judgment> = latest_judgments(run_test::read_lines(&second_path));
     let judge_cost: i64 = run_test::read_lines::<Judgment>(&judge_path)
         .iter()
+        .chain(run_test::read_lines::<Judgment>(&second_path).iter())
         .map(|j| j.cost_micros)
         .sum();
-    let (summary, misses) = report_test::summary(&generations, &judgments, judge_cost);
+    let (summary, misses) = report_test::summary(&generations, &judgments, &second, judge_cost);
     let cards_with_takes: HashSet<&str> = generations.iter().map(|g| g.job.card.as_str()).collect();
     let header = format!(
         "# Verdict eval results\n\n- Cards: {}\n- Classes: {}\n- Takes: {}\n- Judged messages: {}\n\n",
