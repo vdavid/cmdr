@@ -19,7 +19,7 @@ use std::sync::Arc;
 
 use super::super::super::conflict::ApplyToAll;
 use super::super::super::event_sinks::OperationEventSink;
-use super::super::super::journal;
+use super::super::super::journal_landed;
 use super::super::super::ledger::WrittenFile;
 use super::super::super::state::WriteOperationState;
 use super::super::super::types::VolumeCopyConfig;
@@ -56,7 +56,7 @@ pub(super) struct CopyTaskSuccess {
     pub(super) created_dirs: Vec<PathBuf>,
     /// The landed files' own modified times, read back here in the task (so the
     /// driver loop never awaits the destination) when the operation journals.
-    pub(super) landed: journal::LandedTimes,
+    pub(super) landed: journal_landed::LandedReadBack,
     /// The top-level source this task copied, and how many children a deep
     /// merge skipped in its subtree. `skipped_count == 0` means the whole
     /// subtree landed durably, so the out-of-zip move op may drop it from the
@@ -312,9 +312,16 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskEnd, Box<Cop
         // overwrite (a swap's landing ran inside the write).
         Ok(bytes) => Ok(CopyTaskEnd::Landed(CopyTaskSuccess {
             landed: if state.journal_volumes.is_some() {
-                journal::LandedTimes::read_back(&*dest_volume, &dest_path, by_leaves, &created_files).await
+                journal_landed::LandedReadBack::read_back(
+                    state.scope(),
+                    &*dest_volume,
+                    &dest_path,
+                    by_leaves,
+                    &created_files,
+                )
+                .await
             } else {
-                journal::LandedTimes::default()
+                journal_landed::LandedReadBack::default()
             },
             recorded_path: dest_path,
             source_is_dir: by_leaves,

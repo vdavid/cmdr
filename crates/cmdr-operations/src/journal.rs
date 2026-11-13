@@ -7,12 +7,11 @@
 //! operation that opened with nothing to journal to (or never opened), and never
 //! fails the operation.
 
-use std::collections::{BTreeMap, HashMap};
-use std::ffi::OsStr;
+use std::fs::Metadata;
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
-use cmdr_fs::volume::{DEFAULT_VOLUME_ID, LandedModified, NodeIdentity, Volume};
+use cmdr_fs::volume::{DEFAULT_VOLUME_ID, LandedModified, NodeIdentity};
 use cmdr_operation_log::capture::FinalizeInputs;
 use cmdr_operation_log::types::RowRole;
 use cmdr_operation_log::types::{
@@ -20,7 +19,8 @@ use cmdr_operation_log::types::{
 };
 use cmdr_operation_log::writer::{JournalItem, OpenOperation};
 
-use super::ledger::{WrittenFile, WrittenIdentity};
+use super::journal_landed::LandedReadBack;
+use super::ledger::WrittenFile;
 use super::scope::OpScope;
 use super::types::{WriteOperationError, WriteOperationType};
 use cmdr_operation_log::types::{SearchCoverage, SearchCoverageReason};
@@ -90,7 +90,7 @@ pub(super) fn now_secs() -> i64 {
 
 /// The mtime of `meta` in whole seconds since the epoch, or `None` if the
 /// platform can't report it.
-pub(super) fn mtime_secs(meta: &std::fs::Metadata) -> Option<i64> {
+pub(super) fn mtime_secs(meta: &Metadata) -> Option<i64> {
     meta.modified()
         .ok()
         .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
@@ -165,8 +165,11 @@ pub(super) fn open_volume_op(
 }
 
 /// Record one local `rollback_unit` row: a copied / cross-FS-moved file (with a
-/// dest), a deleted file (no dest), or a trashed / renamed / same-FS-moved
-/// top-level item. `seq` is assigned by the journal in recording order.
+/// dest), a deleted file (no dest), or a renamed / same-FS-moved top-level item.
+/// `landed` is the node the item landed as at `dest`
+/// ([`landed_node`](super::journal_landed::landed_node)), `None`
+/// where there's no dest or the caller can't vouch for one. `seq` is assigned by
+/// the journal in recording order.
 #[allow(clippy::too_many_arguments, reason = "the natural fields of a journal row")]
 pub(super) fn record_local_leaf(
     scope: &OpScope,
@@ -177,6 +180,7 @@ pub(super) fn record_local_leaf(
     mtime: Option<i64>,
     overwrote: bool,
     outcome: ItemOutcome,
+    landed: Option<NodeIdentity>,
 ) {
     record_row(
         scope,
@@ -189,7 +193,7 @@ pub(super) fn record_local_leaf(
         mtime,
         overwrote,
         outcome,
-        None,
+        landed,
     );
 }
 
@@ -268,7 +272,7 @@ pub(super) fn record_volume_leaf(
 /// `dest_root`), its source rebased onto `source_root` from the tail under
 /// `dest_root`, carrying the size the leaf was written with. Each leaf's mtime is
 /// the landed file's own: what its write reported (`WrittenFile::landed_modified`),
-/// else what `landed` read back ([`LandedTimes`]), else `None`. `overwrote` applies to the whole source's leaves — op-wide rollback
+/// else what `landed` read back ([`LandedReadBack`]), else `None`. `overwrote` applies to the whole source's leaves — op-wide rollback
 /// eligibility is the OR of these, so marking a source that overwrote anything is
 /// honest (deleting the copies can't restore an overwritten original). The created
 /// directories are journaled separately, after all files, via
@@ -283,7 +287,7 @@ pub(super) fn record_volume_transfer_source(
     source_is_dir: bool,
     created_files: &[WrittenFile],
     file_size: Option<i64>,
-    landed: &LandedTimes,
+    landed: &LandedReadBack,
     overwrote: bool,
 ) {
     if source_is_dir {
@@ -295,124 +299,37 @@ pub(super) fn record_volume_transfer_source(
             } else {
                 source_root.join(rel)
             };
-            record_volume_leaf(
+            record_row(
                 scope,
                 EntryType::File,
+                RowRole::RollbackUnit,
                 source_volume_id,
                 &source_leaf,
                 Some((dest_volume_id, &leaf.path)),
                 leaf.identity.recorded_size().and_then(|size| i64::try_from(size).ok()),
                 match leaf.landed_modified {
                     LandedModified::Known(secs) => secs.and_then(|secs| i64::try_from(secs).ok()),
-                    LandedModified::Unknown => landed.of(&leaf.path),
+                    LandedModified::Unknown => landed.modified(&leaf.path),
                 },
                 overwrote,
                 ItemOutcome::Done,
+                landed.node(&leaf.path),
             );
         }
     } else {
-        record_volume_leaf(
+        record_row(
             scope,
             EntryType::File,
+            RowRole::RollbackUnit,
             source_volume_id,
             source_root,
             Some((dest_volume_id, dest_root)),
             file_size,
-            landed.of(dest_root),
+            landed.modified(dest_root),
             overwrote,
             ItemOutcome::Done,
+            landed.node(dest_root),
         );
-    }
-}
-
-/// The modified times a volume transfer's landed files report, read back from the
-/// destination right after one top-level source lands, so each row's snapshot is
-/// size AND mtime. Size alone passed a file edited in place at the same length (a
-/// VM disk image, a SQLite database, a re-saved document), and undoing the copy
-/// deleted it with the user's edits (#519).
-///
-/// The landed file's OWN time, never the source's: a destination that doesn't keep
-/// the source's date (WebDAV, an Android phone over MTP) would drift on every file.
-/// ❗ It must be the time the undo's recheck reads, `get_metadata`: a FILE source
-/// asks exactly that, and a DIRECTORY source takes what each write reported
-/// (`WrittenFile::landed_modified`) and lists only the folders holding a file whose
-/// write reported nothing, which the `Volume` contract makes agree with
-/// `get_metadata` (`conformance::assert_landed_time_agrees_with_get_metadata`). On
-/// S3 a listing is the upload time and a HEAD the source's date, so every write
-/// there reports, and an undo of a folder copy reverses it (#651).
-///
-/// The cost is bounded per SOURCE, never per file: a FILE source asks one
-/// `get_metadata`, a DIRECTORY source at most one `list_directory` per destination
-/// folder its unreported files landed in. Only a transfer that journals reads
-/// anything back, and a stopped or failed source doesn't (`Default`, so a stop never
-/// waits on the share): its rows keep what the writes reported, or the size-only
-/// check. A file the read-back can't place, or a backend that reports no mtime,
-/// records `None`, which `verify_snapshot` skips over.
-// DEFAULT-OK: empty means "nothing read back", and every lookup then answers `None`,
-// the size-only check the row had before; it claims no time for any file.
-#[derive(Debug, Default)]
-pub(crate) struct LandedTimes(HashMap<PathBuf, i64>);
-
-impl LandedTimes {
-    /// Read back the landed times of one top-level source: `landed` for a FILE
-    /// source, every `files` entry whose write reported none for a DIRECTORY
-    /// source.
-    pub(crate) async fn read_back(
-        dest: &dyn Volume,
-        landed: &Path,
-        source_is_dir: bool,
-        files: &[WrittenFile],
-    ) -> Self {
-        let mut times = HashMap::new();
-        if !source_is_dir {
-            if let Some(secs) = dest
-                .get_metadata(landed)
-                .await
-                .ok()
-                .and_then(|entry| entry.modified_at)
-                .and_then(|secs| i64::try_from(secs).ok())
-            {
-                times.insert(landed.to_path_buf(), secs);
-            }
-            return Self(times);
-        }
-        // Each folder's landed files by name. A listed name is only ever matched
-        // against these, never joined onto a path.
-        let mut by_folder: BTreeMap<&Path, HashMap<&OsStr, &WrittenFile>> = BTreeMap::new();
-        for file in files
-            .iter()
-            .filter(|file| file.landed_modified == LandedModified::Unknown)
-        {
-            if let (Some(folder), Some(name)) = (file.path.parent(), file.path.file_name()) {
-                by_folder.entry(folder).or_default().insert(name, file);
-            }
-        }
-        for (folder, wanted) in by_folder {
-            let Ok(entries) = dest.list_directory(folder, None).await else {
-                continue;
-            };
-            for entry in &entries {
-                let Some(file) = wanted.get(OsStr::new(&entry.name)) else {
-                    continue;
-                };
-                // What landed has to be what's listed: a link for a link this
-                // transfer carried, a plain file for anything else.
-                let is_what_landed = if matches!(file.identity, WrittenIdentity::VolumeLink { .. }) {
-                    entry.is_symlink
-                } else {
-                    !entry.is_directory && !entry.is_symlink
-                };
-                if is_what_landed && let Some(secs) = entry.modified_at.and_then(|secs| i64::try_from(secs).ok()) {
-                    times.insert(file.path.clone(), secs);
-                }
-            }
-        }
-        Self(times)
-    }
-
-    /// The landed mtime read back for `path`, if one was.
-    pub(crate) fn of(&self, path: &Path) -> Option<i64> {
-        self.0.get(path).copied()
     }
 }
 

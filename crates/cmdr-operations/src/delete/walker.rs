@@ -154,6 +154,7 @@ pub(crate) fn delete_files_with_progress_inner(
                 None,
                 false,
                 cmdr_operation_log::types::ItemOutcome::Done,
+                None,
             ),
             // Gone between the scan and its unlink: its absence is what this delete
             // is for, so carry on (`already_gone.rs`). No journal row: we removed nothing.

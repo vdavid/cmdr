@@ -99,7 +99,7 @@ pub async fn assert_write_from_stream_keeps_the_source_date(volume: &dyn Volume,
 /// answer: the write's own report when it gives one
 /// ([`LandedModified::Known`]), else the
 /// listing of `dest`'s folder, the one read a folder copy's files are read back
-/// with (`cmdr-operations`' `journal::LandedTimes`).
+/// with (`cmdr-operations`' `journal_landed::LandedReadBack`).
 ///
 /// **Why this one is worth a shared assertion.** The two reads look like the
 /// same question, and on S3 they aren't: a listing's `LastModified` is the

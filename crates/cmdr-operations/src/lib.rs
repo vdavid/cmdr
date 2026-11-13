@@ -99,6 +99,7 @@ pub mod host;
 mod human_wait;
 mod in_flight_temps;
 mod journal;
+mod journal_landed;
 mod journal_search;
 mod leaf_validation;
 mod local_disk;
@@ -400,6 +401,8 @@ mod approved_op_parity_tests;
 mod journal_capture_tests;
 #[cfg(test)]
 mod journal_capture_volume_tests;
+#[cfg(test)]
+mod journal_landed_node_tests;
 #[cfg(test)]
 mod journal_row_shape_tests;
 #[cfg(test)]

@@ -13,7 +13,9 @@
 //! in-flight ledgers record".
 
 use std::fs::Metadata;
-use std::path::{Path, PathBuf};
+#[cfg(test)]
+use std::path::Path;
+use std::path::PathBuf;
 
 use cmdr_fs::file_identity::FileId;
 
@@ -25,7 +27,7 @@ use super::types::RecoveredOriginal;
 /// One destination path this operation put on disk, with the identity a reversal
 /// rechecks before removing it or renaming it back.
 ///
-/// Build one through [`WrittenFile::local`] or [`WrittenFile::volume`]: each
+/// Build one through [`WrittenFile::local_stat`] or [`WrittenFile::volume`]: each
 /// names the kind of write it describes, and neither can produce a local entry
 /// missing its node id.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -36,7 +38,7 @@ pub(crate) struct WrittenFile {
     pub(crate) identity: WrittenIdentity,
     /// The landed modified time the write reported for `path`
     /// ([`LandedModified`]), which the operation log records instead of reading
-    /// it back (`journal::LandedTimes`). ❗ The journal's, never the in-flight
+    /// it back (`journal_landed::LandedReadBack`). ❗ The journal's, never the in-flight
     /// reversal's: that one rechecks [`Self::identity`] alone (see
     /// [`WrittenIdentity`] for why no mtime goes there).
     pub(crate) landed_modified: LandedModified,
@@ -45,7 +47,9 @@ pub(crate) struct WrittenFile {
 impl WrittenFile {
     /// A local entry, snapshotted from the path itself with `symlink_metadata`
     /// (so a symlink describes the LINK, never its target). A stat that fails
-    /// lands [`WrittenIdentity::Unverifiable`].
+    /// lands [`WrittenIdentity::Unverifiable`]. The engine's record points hold
+    /// that `lstat` already and share it with the journal ([`Self::local_stat`]).
+    #[cfg(test)]
     pub(crate) fn local(path: PathBuf) -> Self {
         let identity = WrittenIdentity::at_local_path(&path);
         Self {
@@ -55,10 +59,11 @@ impl WrittenFile {
         }
     }
 
-    /// A local entry whose metadata the caller already holds — the same snapshot
-    /// [`WrittenFile::local`] takes, without the second stat. A same-FS move
-    /// passes the SOURCE's metadata: the rename carries the node id across, so it
-    /// describes the landed entry exactly.
+    /// A local entry from the `symlink_metadata` the caller holds of it (so a
+    /// symlink describes the LINK, never its target); `None`, a stat that failed,
+    /// lands [`WrittenIdentity::Unverifiable`]. A same-FS move passes the SOURCE's
+    /// metadata: the rename carries the node id across, so it describes the landed
+    /// entry exactly.
     pub(crate) fn local_stat(path: PathBuf, meta: Option<&Metadata>) -> Self {
         Self {
             path,
@@ -154,6 +159,7 @@ impl WrittenIdentity {
     /// The identity of the entry at `path`, read with `symlink_metadata` so a
     /// symlink describes itself rather than whatever it points at. The recheck
     /// must stat the same way, or a copied link that dangles reads as absent.
+    #[cfg(test)]
     pub(crate) fn at_local_path(path: &Path) -> Self {
         Self::of_stat(std::fs::symlink_metadata(path).ok().as_ref())
     }

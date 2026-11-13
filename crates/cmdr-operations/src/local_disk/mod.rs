@@ -163,6 +163,32 @@ pub(crate) fn filesystem_at(path: &Path) -> Option<cmdr_fs::filesystem_kind::Fil
     }
 }
 
+/// Whether the filesystem holding `path` keeps a node's inode and birth time for
+/// as long as the node lives, so the pair still names it when the operation log
+/// is read back months later (`cmdr_fs::volume::NodeIdentity`).
+///
+/// An allowlist of the disk formats that store both. Not FAT32 or exFAT, which
+/// derive the inode from the file's first cluster
+/// (`FilesystemKind::has_stable_inodes`); not a network or FUSE mount, whose
+/// numbers are the server's or the driver's to change; not NTFS, which reaches a
+/// Mac or a Linux box through drivers that differ on both. A wrong "no" costs a
+/// row its node check and nothing else; a wrong "yes" would make an undo refuse
+/// every item it landed there.
+pub(crate) fn keeps_node_identity(path: &Path) -> bool {
+    use cmdr_fs::filesystem_kind::FilesystemKind;
+    filesystem_at(path).is_some_and(|filesystem| {
+        matches!(
+            filesystem.kind,
+            FilesystemKind::Apfs
+                | FilesystemKind::HfsPlus
+                | FilesystemKind::Ext4
+                | FilesystemKind::Btrfs
+                | FilesystemKind::Xfs
+                | FilesystemKind::Zfs
+        )
+    })
+}
+
 /// Tells the panes about a create on the local disk.
 pub(crate) fn patch_listings_after(listings: &dyn ListingHost, volume_id: &str, parent: &Path, event: MutationEvent) {
     #[cfg(not(target_family = "wasm"))]

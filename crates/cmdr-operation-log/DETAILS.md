@@ -35,7 +35,7 @@ browser demo, where `std`'s clock and tokio's timer trap; natively each is the s
 - **A multi-operation undo reverses NEWEST FIRST** (`undo_order`): a later rename batch can take a name an earlier one
   freed. Callers pass ids in APPLY order.
 - **Rollback FAILS SAFE** (data-safety-critical): recheck each item against its snapshot AND its restore target (a copy:
-  its original; a trash: the node it landed as); drift, unverifiable, or occupied target ⇒ SKIP (→
+  its original; any row that recorded one: the node it landed as); drift, unverifiable, or occupied target ⇒ SKIP (→
   `partially_rolled_back`), never operate, and a restore-move never overwrites. `verify_snapshot` + `SkipReason` +
   `SkipTally` are SHARED with the in-flight reversals (`crates/cmdr-operations/src/reversal.rs`): ❌ don't fork them.
   `rolling_back` guards double-rollback and the retention race.
@@ -170,16 +170,16 @@ appended step). The shape and its non-obvious choices (the fourth, `operation_tr
   `rolls_back_op_id`). The plain name `skip_reason` stays free for a future "why did the OPERATION skip this item". No
   index: read per row, never filtered on. The nullable `dest_inode` + `dest_birth_ns` pair (v4) is the
   `cmdr_fs::volume::NodeIdentity` the item landed as at its dest, both set or both NULL, the inode bit-cast to a signed
-  integer; only a trash writes it (§ "A trashed item must still be the one trashed"). The nullable `tags_before` +
-  `tags_after` BLOB pair (v5) is a tag write's Finder-tags value around the write, both set or both NULL, only on a
-  `tag` op's rows (§ "A tag write restores the exact prior value"). Directories the op created are **first-class `dir`
-  rows** sequenced after their contents, so a `seq DESC` rollback removes files before the dirs that held them. Names
-  are indexed folded (search) and, unlike dirs, **not interned** — a b-tree handles the massive duplication across a
-  large op fine, and names must stay directly queryable. The nullable `self_dir_id` (v6) is a DIR row's own folder on
-  the op's tree axis (§ "Tree summary"). Indexes: `(op_id, seq)`, `(source_name_folded)`, partial `(dest_name_folded)`,
-  and `(op_id, source_dir_id, source_name_folded)` plus partial `(op_id, dest_dir_id, dest_name_folded)`, which serve
-  "this folder's files of this op, in name order" and which the writer builds after open, outside the ladder (§ "Tree
-  summary").
+  integer; a trash writes it, and a copy or move onto a local disk (§ "A landed item must still be the node that
+  landed"). The nullable `tags_before` + `tags_after` BLOB pair (v5) is a tag write's Finder-tags value around the
+  write, both set or both NULL, only on a `tag` op's rows (§ "A tag write restores the exact prior value"). Directories
+  the op created are **first-class `dir` rows** sequenced after their contents, so a `seq DESC` rollback removes files
+  before the dirs that held them. Names are indexed folded (search) and, unlike dirs, **not interned** — a b-tree
+  handles the massive duplication across a large op fine, and names must stay directly queryable. The nullable
+  `self_dir_id` (v6) is a DIR row's own folder on the op's tree axis (§ "Tree summary"). Indexes: `(op_id, seq)`,
+  `(source_name_folded)`, partial `(dest_name_folded)`, and `(op_id, source_dir_id, source_name_folded)` plus partial
+  `(op_id, dest_dir_id, dest_name_folded)`, which serve "this folder's files of this op, in name order" and which the
+  writer builds after open, outside the ladder (§ "Tree summary").
 
 ## The writer (`writer.rs`)
 
@@ -292,9 +292,10 @@ for any ordinary-sized op. The frontend side of this contract lives in
 
 ### Per-kind record points and granularity
 
-Each point is where the op already stats the item, so journaling is near-zero marginal cost (no new syscalls). The row
-SHAPES below (which side each row's source and dest sit on, created-in-place folder rows, a folder unit's `size` being
-its inode length) are pinned through the real capture paths, resolved to full paths, in
+Each point is where the op already stats the item, so journaling is near-zero marginal cost (no new syscalls, but for
+the one `lstat` per file a volume transfer onto a local disk reads its landed node with). The row SHAPES below (which
+side each row's source and dest sit on, created-in-place folder rows, a folder unit's `size` being its inode length) are
+pinned through the real capture paths, resolved to full paths, in
 `crates/cmdr-operations/src/journal_row_shape_tests.rs`. Three facts a reader of rows trips on:
 
 - **Dest presence**: every `rollback_unit` row carries a dest except a delete's (source only). A `search_only` leaf
@@ -309,13 +310,13 @@ its inode length) are pinned through the real capture paths, resolved to full pa
 The per-kind record points:
 
 - **copy** — per-leaf `rollback_unit` rows at `transfer/copy/single_item.rs` (right where each file commits to the
-  `CopyTransaction`, carrying the free source `mtime` + the overwrite flag), plus the **created-directory rows** from
-  `CopyTransaction::created_dirs`. Files record during the op, dirs after, so dir `seq` > their contents' `seq` the
-  rollback engine removes files before dirs. The dir rows land on EVERY terminal path, not only the successful one — a
-  canceled copy keeps the directories it created, and without their rows a reversal puts every file back and leaves the
-  destination's empty skeleton standing. `copy/mod.rs` routes all its terminal arms through one
-  `commit_journaling_created_dirs`, so the next arm added can't forget; `volume/copy.rs` journals once post-loop, before
-  it branches on the terminal state.
+  `CopyTransaction`, carrying the free source `mtime`, the overwrite flag, and the node it landed as, off the ledger's
+  own `lstat`), plus the **created-directory rows** from `CopyTransaction::created_dirs`. Files record during the op,
+  dirs after, so dir `seq` > their contents' `seq` the rollback engine removes files before dirs. The dir rows land on
+  EVERY terminal path, not only the successful one — a canceled copy keeps the directories it created, and without their
+  rows a reversal puts every file back and leaves the destination's empty skeleton standing. `copy/mod.rs` routes all
+  its terminal arms through one `commit_journaling_created_dirs`, so the next arm added can't forget; `volume/copy.rs`
+  journals once post-loop, before it branches on the terminal state.
 - **delete** — per-leaf at `delete/walker.rs` and `delete/volume_walker.rs`, one row per file, deliberately (a 1M-file
   delete journals ~1M rows on the order of tens-to-~150 MB — leaf search is the requirement, and retention (§
   "Retention") manages the cost, NOT a row cap). Delete is never rollbackable, so these rows exist purely for "when did
@@ -600,8 +601,9 @@ it), feeding a `partially_rolled_back` result.
 (`crates/cmdr-operations/src/reversal.rs`, and `transfer/DETAILS.md` § "What a reversal does with that identity").
 `verify_snapshot`, `SnapshotVerdict`, `SkipReason`, and `SkipTally` have one definition each: a user shouldn't meet two
 answers to "did this file change". The in-flight side reports its verdicts on the `write-cancelled` event rather than
-storing them, and adds a local-only node-id check of its own. This path's node check is narrower: only a trashed item
-carries one (§ "A trashed item must still be the one trashed"). ❌ Don't fork any of them.
+storing them, and adds a local-only node-id check of its own (`dev+ino`, good for the minutes a transfer runs). This
+path's node check is the row's recorded `NodeIdentity` (§ "A landed item must still be the node that landed"). ❌ Don't
+fork any of them.
 
 1. **Snapshot recheck** (`verify_snapshot`). The item must still match the size/mtime the journal recorded. Every
    recorded field must have a present, equal live value; a recorded field whose live counterpart is absent (an MTP/SMB
@@ -609,7 +611,7 @@ carries one (§ "A trashed item must still be the one trashed"). ❌ Don't fork 
    recorded field that differs ⇒ **Drift** — skip. This is why a leaf that recorded only `size` (a volume leaf whose
    landed mtime wasn't read back) still verifies on size, while an item whose only field (mtime) is absent live is
    skipped. Directories aren't cheaply verifiable, so a dir's recheck is existence-only, plus the node check when the
-   row recorded one (a trash).
+   row recorded one (a trash, a same-filesystem move).
 2. **Pinned non-destructive restore.** A restore-move (move/trash/rename undo) NEVER overwrites: if the restore target
    is occupied by a DIFFERENT entry it skips (`RestoreTargetOccupied`). The one exception is a **self-collision**
    (`src/rollback/self_collision.rs`): restoring `dog.JPG` → `dog.jpg` on a case-insensitive volume sees the target
@@ -685,6 +687,49 @@ original is there, a file, at the recorded size.
 Pinned by `crates/cmdr-operations/src/rollback/planner_tests/copy_original_tests.rs`. Copy cells that want their copies
 removed seed the originals with `Rig::put_originals`.
 
+### A landed item must still be the node that landed
+
+A row's snapshot is a size and a date, and a folder's is existence alone. Both can match a stranger: a file saved over
+the copy by an app that writes a temp and renames it, a download that reuses the name, a folder made where the moved one
+used to be. Undoing a copy would delete that stranger, and undoing a move would carry it off to the source. So a row
+records WHICH node landed (`dest_identity`, a `cmdr_fs::volume::NodeIdentity`: inode plus birth time), and every inverse
+asks `landed_node_holds` (`rollback/inverse.rs`) before it acts on what landed: `remove_file_if_unchanged`,
+`remove_dir_if_empty`, and `restore_move` alike. The same identity is what lets "Tell me about this" say an item is the
+one an operation put there (§ "Where an item landed").
+
+- **A different node ⇒ `Drift`**, and the stranger stays. A volume that can't report one ⇒ `UnverifiablePrecondition`; a
+  failed stat ⇒ `Failed`. One `lstat` (`Volume::node_identity`), only on the row's own item, never a walk. The node
+  check runs before the snapshot check, and after the "already gone" one, so a copy that's gone stays an idempotent
+  `AlreadyGone`.
+- **A row with no identity keeps exactly the checks it had**: files size + mtime, folders existence. That's every row
+  from before a kind recorded one, every row landed where no lasting identity exists, and a row whose `lstat` failed at
+  record time. Refusing them would make every older operation un-undoable.
+- **Who records it** (`cmdr-operations`, `journal_landed.rs`): a trash (below); a local copy and a staged (cross-FS)
+  move, per file, off the `lstat` the in-flight ledger already takes of each landed file; a same-filesystem move, per
+  top-level item, off the `lstat` of the source it already holds (a rename carries the node across); a volume transfer
+  onto a local disk (a download off a share or a phone, an extract out of an archive), one `lstat` per landed file, read
+  back after its dates went on. Not: a folder the operation created (its row is source == dest, and its undo is "remove
+  if empty"); a folder MERGED into one that was already there (the node at the destination is the old folder's); a
+  rename, a create, a compress; anything a stopped or failed volume source left (it reads nothing back).
+- **Only on a filesystem that keeps the pair for good** (`local_disk::keeps_node_identity`: APFS, HFS+, ext4, Btrfs,
+  XFS, ZFS), decided once per operation (`OpScope::records_landed_nodes`). FAT32 and exFAT derive the inode from a
+  file's first cluster (`FilesystemKind::has_stable_inodes`), a network or FUSE mount's numbers are the server's or the
+  driver's to change, and a wrong "yes" would make an undo refuse everything it landed there. A destination that isn't a
+  local disk (`Volume::mount_class`) is never asked: ❌ no call per file on a share, a server, or a phone.
+- **A staged move records the node while the file sits in staging**, and the rename into place keeps it. When phase 3
+  resolves a conflict and the file lands elsewhere (§ "A staged write records where the file will LIVE"), the row names
+  a path whose node isn't the recorded one, so the node check is a second guard behind the not-rollbackable flag.
+- **What it costs an undo, on purpose**: a landed file later REPLACED by an identical one (restored from a backup,
+  re-downloaded, saved by an app that swaps files) no longer counts as the operation's, even at the same size and date.
+  It's skipped as `Drift`, where a row without an identity would have removed or moved it.
+- **Inode plus birth time, no device number.** `st_dev` follows the order disks attached, so it can change across a
+  reboot or a replug while the node stays put, which would strand every older undo on an external drive. The path
+  already names the volume. Both fields survive a rename.
+
+Pinned by `crates/cmdr-operations/src/rollback/planner_tests/landed_node_tests.rs` (each inverse, with an identity and
+without), `journal_landed_node_tests.rs` (what each record point writes, read back off a real disk after the operation
+ended), and `transfer/move_op/move_journal_tests.rs::a_cross_fs_move_records_the_node_that_ends_up_at_the_final_path`.
+
 ### A trashed item must still be the one trashed
 
 The Trash hands a freed name to the next item trashed under it. Trash `~/Work/Invoices`, empty it from the Trash, and a
@@ -693,19 +738,18 @@ trashed via Finder, `rm -rf`'d from the Trash, then a second same-name folder tr
 in-Trash path with a new inode and birth time, while the first had kept its inode on the way in; 2026-10-20). A
 path-only check moved that stranger back to `~/Work/` and credited a restore (#535).
 
-So the trash records WHICH node landed, and the restore moves back only that node:
+So the trash records WHICH node landed, and the restore moves back only that node (the rule every landed row follows,
+above; the Trash is where it was first needed):
 
 - **Recording.** `journal::record_trashed` (`cmdr-operations`) reads one `lstat` of the in-Trash path right after
   `trashItemAtURL` returns it, and stores `NodeIdentity::of` that on the row (`dest_identity`). Both trash paths (the
   batch and `trash_single_journaled`) go through it. Never the source: the Trash, or a File Provider behind it, may land
   a different node than the one trashed, and the in-Trash node is what the undo will find.
-- **Restoring.** `restore_move` asks `same_node` (`Volume::node_identity`, one `lstat` on `LocalPosixVolume`) before the
-  snapshot check, for files and folders alike: a size and date can match by chance. A different node ⇒ `Drift`, and the
-  stranger stays in the Trash. A volume that can't report one ⇒ `UnverifiablePrecondition`; a failed stat ⇒ `Failed`.
-  Only the top-level item, never a walk.
-- **Inode plus birth time, no device number.** `st_dev` follows the order disks attached, so it can change across a
-  reboot or a replug while the node stays put, which would strand every older trash undo on an external drive. The path
-  already names the volume. Both fields survive a rename, which is all a trip into and out of the Trash is.
+- **Restoring.** `restore_move` asks `landed_node_holds` before the snapshot check, for files and folders alike. A
+  different node ⇒ `Drift`, and the stranger stays in the Trash. Only the top-level item, never a walk.
+- **No filesystem allowlist here**: `record_trashed` records on any disk that reports a birth time. ⚠️ Unverified
+  whether a FAT32 or exFAT disk's Trash keeps the pair across a remount; if it doesn't, an undo there skips as `Drift`
+  (safe, but it restores nothing).
 - **Rows from before v4 carry no identity** and keep the old checks (folders: existence; files: size + mtime), so the
   stranger case stays open for them. Refusing them would make every older trash un-undoable. Same for a row whose
   `lstat` failed at record time, or a filesystem with no birth time (`NodeIdentity::of` answers `None`).
@@ -752,9 +796,9 @@ The op kind + item entry-type map to one of four inverse actions (`inverse_actio
 created-in-place override below and is the ONE per-item decision: the reversal acts on it and the dispatch summary
 (`summarize_inverse`) names it, so the queue row can't say "move back" for a folder the reversal removes:
 
-- **copy** → file: `RemoveCopyIfOriginalStays` (delete the copied dest if it still matches the snapshot AND its original
-  is still there, § "A copy's original must still be there"); dir: the created dir is `RemoveDirIfEmpty`. A copy of a
-  whole tree removes its copied files, then its created dirs.
+- **copy** → file: `RemoveCopyIfOriginalStays` (delete the copied dest if it's still the node that landed, still matches
+  the snapshot, AND its original is still there, § "A copy's original must still be there"); dir: the created dir is
+  `RemoveDirIfEmpty`. A copy of a whole tree removes its copied files, then its created dirs.
 - **create_file / compress** (`archive_edit`) → `RemoveFileIfUnchanged` (delete the created file / net-new archive only
   if unchanged — a later zip-edit drifts the archive, so it's left untouched).
 - **create_folder** → `RemoveDirIfEmpty` (remove only if still empty — a file added since ⇒ keep, partial).
@@ -1037,9 +1081,10 @@ rollback reverses the whole tree rather than skipping its contents. The byte cou
 returns what it piped, off a size hint the walker's `list_directory` already paid for, and `CreatedPaths` carries a
 `WrittenFile` per destination (`crates/cmdr-operations/src/ledger.rs`) so it rides through to the row (`journal.rs`).
 
-**Each leaf also records the landed file's OWN mtime** (`journal::LandedTimes` and `record_volume_transfer_source` in
-`crates/cmdr-operations/src/journal.rs`). Size alone passed a file edited in place at the same length (a VM disk image,
-a SQLite database, a re-saved document), and undoing the copy deleted it with the user's edits (#519).
+**Each leaf also records the landed file's OWN mtime** (`LandedReadBack` in
+`crates/cmdr-operations/src/journal_landed.rs`, `record_volume_transfer_source` in `journal.rs`). Size alone passed a
+file edited in place at the same length (a VM disk image, a SQLite database, a re-saved document), and undoing the copy
+deleted it with the user's edits (#519).
 
 - **The destination's own time, ❌ never the source's.** A destination that doesn't keep the source's date (WebDAV on
   Apache, an Android phone over MTP) would differ from a read-time capture on every leaf, flipping each one to `Drift`,

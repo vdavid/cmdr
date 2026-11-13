@@ -550,6 +550,10 @@ pub(in crate::transfer) fn copy_single_item(
             create_symlink(&actual_dest)?;
         }
 
+        // Snapshot the link that landed, so a reversal (the in-flight one, and an
+        // undo from history) can tell it apart from anything that replaced it
+        // since. One `lstat` on a path just written, shared by both.
+        let landed_meta = fs::symlink_metadata(&actual_dest).ok();
         crate::journal::record_local_leaf(
             state.scope(),
             cmdr_operation_log::types::EntryType::File,
@@ -559,10 +563,9 @@ pub(in crate::transfer) fn copy_single_item(
             source_mtime,
             needs_safe_overwrite,
             cmdr_operation_log::types::ItemOutcome::Done,
+            crate::journal_landed::landed_node(state.scope(), &actual_dest, landed_meta.as_ref()),
         );
-        // Snapshot the link that landed, so a reversal can tell it apart from
-        // anything that replaced it since. One `lstat` on a path just written.
-        transaction.record_file(WrittenFile::local(actual_dest));
+        transaction.record_file(WrittenFile::local_stat(actual_dest, landed_meta.as_ref()));
         record_file_done(
             &progress_ctx,
             source,
@@ -761,6 +764,10 @@ pub(in crate::transfer) fn copy_single_item(
         // We use `write_weight` rather than the strategy's returned byte count
         // so the per-file milestone matches the scan's `total_bytes` exactly
         // even when a clonefile reports 0 copied bytes.
+        // Snapshot the file that landed, so a reversal (the in-flight one, and an
+        // undo from history) can tell it apart from anything that replaced it
+        // since. One `lstat` on a path just written, shared by both.
+        let landed_meta = fs::symlink_metadata(&actual_dest).ok();
         crate::journal::record_local_leaf(
             state.scope(),
             cmdr_operation_log::types::EntryType::File,
@@ -770,10 +777,9 @@ pub(in crate::transfer) fn copy_single_item(
             source_mtime,
             needs_safe_overwrite,
             cmdr_operation_log::types::ItemOutcome::Done,
+            crate::journal_landed::landed_node(state.scope(), &actual_dest, landed_meta.as_ref()),
         );
-        // Snapshot the file that landed, so a reversal can tell it apart from
-        // anything that replaced it since. One `lstat` on a path just written.
-        transaction.record_file(WrittenFile::local(actual_dest.clone()));
+        transaction.record_file(WrittenFile::local_stat(actual_dest.clone(), landed_meta.as_ref()));
         record_file_done(
             &progress_ctx,
             source,

@@ -436,9 +436,14 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                 // ids (dir source: rebased from `landed_path`, the
                                 // dest dir root). Created dirs journal post-loop.
                                 if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
-                                    let landed =
-                                        journal::LandedTimes::read_back(&*dest_volume, &landed_path, true, &files)
-                                            .await;
+                                    let landed = crate::journal_landed::LandedReadBack::read_back(
+                                        state.scope(),
+                                        &*dest_volume,
+                                        &landed_path,
+                                        true,
+                                        &files,
+                                    )
+                                    .await;
                                     journal::record_volume_transfer_source(
                                         state.scope(),
                                         src_vol,
@@ -456,8 +461,14 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                 created_dirs.lock_ignore_poison().extend(dirs);
                             } else {
                                 if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
-                                    let landed =
-                                        journal::LandedTimes::read_back(&*dest_volume, &landed_path, false, &[]).await;
+                                    let landed = crate::journal_landed::LandedReadBack::read_back(
+                                        state.scope(),
+                                        &*dest_volume,
+                                        &landed_path,
+                                        false,
+                                        &[],
+                                    )
+                                    .await;
                                     journal::record_volume_transfer_source(
                                         state.scope(),
                                         src_vol,
@@ -554,7 +565,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                         None,
                                         // A stopped source reads nothing back:
                                         // a stop never waits on the share.
-                                        &journal::LandedTimes::default(),
+                                        &crate::journal_landed::LandedReadBack::default(),
                                         created.any_overwrote(),
                                     );
                                 }

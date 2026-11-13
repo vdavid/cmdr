@@ -30,6 +30,10 @@ pub(crate) struct OpScope {
     /// operation that never opened one (a queued op cancelled before it ran, a
     /// direct-call test), whose record points then journal nothing.
     journal: OnceLock<OpJournal>,
+    /// Whether this operation's rows record which node each item landed as,
+    /// decided once from the destination's filesystem
+    /// ([`Self::records_landed_nodes`]).
+    landed_nodes: OnceLock<bool>,
     /// Holds this operation's next safe-overwrite between its two renames,
     /// once its test arms it.
     #[cfg(test)]
@@ -49,6 +53,7 @@ impl OpScope {
             stores,
             operation_log,
             journal: OnceLock::new(),
+            landed_nodes: OnceLock::new(),
             #[cfg(test)]
             aside_park: Default::default(),
         }
@@ -91,6 +96,14 @@ impl OpScope {
     /// This operation's journal, once it opened one.
     pub(super) fn journal(&self) -> Option<&OpJournal> {
         self.journal.get()
+    }
+
+    /// Whether this operation's rows record which node each item landed as.
+    /// `destination_keeps_nodes` answers for the destination's filesystem and is
+    /// asked at most once per operation, and never for one that journals nothing:
+    /// an operation has one destination, and the answer can cost a `statfs`.
+    pub(super) fn records_landed_nodes(&self, destination_keeps_nodes: impl FnOnce() -> bool) -> bool {
+        self.journal().is_some() && *self.landed_nodes.get_or_init(destination_keeps_nodes)
     }
 
     /// The test seam that parks this operation's next safe-overwrite with the

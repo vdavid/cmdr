@@ -196,7 +196,7 @@ fn open_destination(work: &mut Workload, operation: CostedOperation, same_accoun
 }
 
 /// The landed files' own modified times, read back for the operation log once
-/// each selected item lands (`cmdr-operations`' `journal::LandedTimes`): a HEAD per
+/// each selected item lands (`cmdr-operations`' `journal_landed::LandedReadBack`): a HEAD per
 /// selected file. A file inside a selected folder costs nothing: its upload or
 /// server copy reports the date it stored, so no folder is listed for it.
 /// Counted with recording on, the default; with it off, nothing is read back.

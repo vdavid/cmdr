@@ -32,7 +32,8 @@ The full text of each, with its why: DETAILS § "Must-knows, in full".
 - **EVERY local write lands via `overwrite::stage_and_land_file`**, its destination announced (`host::Announced`). ❌
   Only a `temp` leftover goes on sight.
 - **Every mutation journals through its `OpScope`**, a VOLUME op with its REAL volume id. ❌ No rotation temp in
-  `in_flight_temps`.
+  `in_flight_temps`. A landed row's node (`journal_landed.rs`) is read AFTER the item's last date write, ❌ never by a
+  stat that can fail the op.
 - **A drive that LEFT is the mount table's answer**, ❌ never an errno.
 - **Copy reserves `total_bytes`**, ❌ never `dedup_bytes`; NSURL only on a `statvfs` shortfall.
 - **❌ The `types` floor `use`s no sibling.** `LifecycleStatus` is the ONE lifecycle answer.
