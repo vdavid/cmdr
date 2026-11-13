@@ -2995,7 +2995,12 @@
     "exceptions": {
       "servers.sheet.s3GcsKeyHelp": "Google Cloud’s own Spanish console names that page Configuración; a third-party label is quoted from its own UI."
     },
-    "decision": "Ask Cmdr"
+    "decision": "Ask Cmdr",
+    "windows": {
+      "chosen": "Configuración",
+      "accept": ["configuración", "ajuste"],
+      "note": "the Windows Settings app is Configuración (ms TBX Settings → Configuración), so a Windows Settings path reads **Configuración > Red e Internet**, **Configuración > Sistema > Almacenamiento**; a server's or PC's settings in a windows branch → la configuración (del servidor). Cmdr's own Settings stay Ajustes in every branch (Tus ajustes piden …)"
+    }
   },
   "share-menu": {
     "chosen": "Compartir",
@@ -4086,5 +4091,60 @@
     "forms": "the macOS folder → Escritorio; a Linux desktop environment (GNOME, KDE Plasma) in prose → el escritorio, lowercase (tu escritorio, los ajustes de teclado de tu escritorio)",
     "confidence": "high",
     "sources": "macOS Finder (Escritorio); GNOME Nautilus (Ir a la carpeta del escritorio, archivo de escritorio)"
+  },
+  "file-explorer": {
+    "chosen": "Explorador de archivos",
+    "accept": ["explorador de archivos"],
+    "forms": "capitalized as the Windows app, with the article: el Explorador de archivos, en el Explorador de archivos; only in a platform select's windows branch. The generic kind of app is gestor de archivos (concept file-manager)",
+    "confidence": "high",
+    "sources": "ms TBX (File Explorer → Explorador de archivos; the older Explorador de Windows entry is not taken)"
+  },
+  "file-manager": {
+    "chosen": "gestor de archivos",
+    "accept": ["gestores de archivos"],
+    "forms": "lowercase, the generic kind of app (the Linux branch): tu gestor de archivos, en el gestor de archivos",
+    "confidence": "high",
+    "sources": "Xfce Thunar and KDE Dolphin (File Manager → Gestor de archivos); catalog (commands.fileShowInFileManager.label, menu.file.showInFileManager)"
+  },
+  "powershell": {
+    "chosen": "PowerShell",
+    "forms": "kept English, no article: En PowerShell, ejecuta …",
+    "confidence": "high",
+    "sources": "ms TBX (PowerShell → PowerShell)"
+  },
+  "user-folder": {
+    "chosen": "carpeta de usuario",
+    "accept": ["Carpeta de usuario"],
+    "forms": "your user folder → tu carpeta de usuario; only in a platform select's windows branch (macOS and Linux say carpeta de inicio)",
+    "confidence": "tentative",
+    "sources": "no pile hit (the ms TBX has no “user folder”; its home folder → carpeta particular is the server sense). Built from Windows' Users folder name (Usuarios) and ms user → usuario"
+  },
+  "empty-trash": {
+    "chosen": "Vaciar la papelera",
+    "accept": ["Vacía la papelera", "Vaciar papelera"],
+    "forms": "imperative in prose → Vacía la papelera; Finder's menu command → Vaciar papelera",
+    "confidence": "high",
+    "sources": "macOS Finder (Empty Trash → Vaciar papelera, AL10, N157); GNOME Nautilus, Xfce Thunar, KDE Dolphin (Vaciar la papelera)",
+    "windows": {
+      "chosen": "Vaciar Papelera de reciclaje",
+      "accept": ["Vacía la Papelera de reciclaje"],
+      "note": "the Recycle Bin's context-menu command as Windows shows it (no pile hit for the full label; built from ms Recycle Bin → Papelera de reciclaje and Windows' es label, tentative); imperative in prose → Vacía la Papelera de reciclaje"
+    }
+  },
+  "internet": {
+    "chosen": "internet",
+    "forms": "lowercase in prose: tu conexión a internet",
+    "confidence": "high",
+    "sources": "catalog (conexión a internet, 13 uses); macOS es writes it both ways",
+    "windows": {
+      "chosen": "Internet",
+      "note": "capitalized only inside the Windows Settings page name Red e Internet (ms TBX Network & Internet → Red e Internet)"
+    }
+  },
+  "metadata": {
+    "chosen": "metadatos",
+    "forms": "plural, masculine: los metadatos",
+    "confidence": "high",
+    "sources": "ms TBX (metadata → metadatos); GNOME Nautilus (Metadatos); catalog (errors.listing.attributeNotFound.*)"
   }
 }

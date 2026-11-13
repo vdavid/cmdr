@@ -61,15 +61,44 @@ Process feedback (a translator's homemade scripts and workarounds) goes under it
   a Linux user is sent to Finder. Give it a `macos` branch and a generic `other` ("in your file manager"). (hu)
 - Windows shell labels the pile can't confirm: "Associated Handles" (Resource Monitor), "Empty Recycle Bin", the
   "Read-only" attribute checkbox, "Tools > Check", "user folder", and Settings > System > "Storage" have no exact TBX
-  hit, so every locale builds them from parts. Source them once from a localized Windows per language. (hu)
+  hit, so every locale builds them from parts. Source them once from a localized Windows per language. (hu, de)
 - `allow` matches "wasn’t allowed to" / "isn’t allowed to" (a file-system refusal, not granting consent) in
   `errors.write.trashRefused.message.notPermitted` and `…folderNotWritable`; hu carries two exceptions. Propose a
-  concept `notMatch` for both phrases. (hu)
+  concept `notMatch` for both phrases. (hu, de: `…noPermissionErrno.explanation`, `…permissionDenied.explanation` too)
 - `select` on Windows means "choose a command" (`select **Properties**`), which collides with the file-selection
   `select` concept in every locale that splits the two; hu added a `windows` form. Consider a `notMatch` for "select **"
   or a `choose` match in Windows branches. (hu)
 - No concept covers "system monitor app", "disk tool", "network adapter", "Resource Monitor", or "Start" (the Windows
-  menu), so each locale coins them unrecorded. (hu)
+  menu), so each locale coins them unrecorded. (hu, de)
+- English senses the Windows and Linux branches add to macOS-shaped concepts: `ai-tool` hits "**Tools > Check**" (a
+  Properties tab), `desktop` hits the Windows desktop and "your desktop’s disk tool" (a Linux desktop environment),
+  `tab` hits Resource Monitor's "CPU tab", and `scan` hits "scan it for problems". Propose `notMatch`es or concepts.
+  (de)
+- `errors.listing.notEnoughMemory.suggestion`: the note keeps "Ctrl+Shift+Esc" as-is, but a German keyboard reads
+  Strg+Umschalt+Esc (French and others differ too). Say whether key names may localize in a Windows branch. (de)
+- The disk-check keys (`errors.listing.diskReadProblem.suggestion` and three siblings) call "GNOME Disks" a product
+  name, but GNOME localizes the app's name (de "Laufwerke"). Say whether the Linux branch keeps the English name. (de)
+- A new ruling for `file-explorer` flags `fileExplorer.pane.fileExplorerAriaLabel` ("File explorer", Cmdr's own pane
+  area) in every locale; add that key to the concept's `notMatch`. (de)
+- `app-closes` matched "Cmdr closed the connection" (the four `*negotiationInvalid` error keys), so any locale with a
+  ruling drifted there; added `closed the connection` to its `notMatch`. (hu)
+- English-sense mismatches in per-OS branches: `path` hits "your PATH" (the environment variable,
+  `settings.fileOperations.adbBinaryPath.description`), `unplug` hits "Nothing gets disconnected"
+  (`fileExplorer.network.browser.removeHostConfirm`), and `system-settings` hits the generic "your system settings"
+  (`settings.appearance.themeColorSwatchAria`). hu carries an exception and an `accept`; propose `notMatch`es. (hu)
+- `settings.appearance.appColorHintPrefix` has one `other` branch for Windows and Linux, but its link
+  (`appColorHintLink`) is a Settings path on Windows and a noun phrase on Linux, so the prefix can't end in the colon a
+  path wants. Give the prefix a `windows` branch, or make it one sentence with a link tag. (hu)
+- "System disk" (Linux) and "system drive" (Windows) have no concept: they ride on `startup-disk`, and no Linux catalog
+  in the pile names a system disk. Also unconfirmed Windows labels: "Settings > Personalization > Colors", "Settings >
+  Apps", and "Windows display language". (hu)
+- `fileExplorer.network.browser.refreshHint`: Windows' input-neutral "select here" has no natural rendering where the
+  target is the hint text itself; say what "here" is ("select this hint") in the description. (hu)
+- `file` matches the app name "File Explorer", so a locale whose Windows name has no file word (sv `Utforskaren`) drifts
+  on every Windows branch naming it; sv carries six exceptions. Add "File Explorer" to `file`'s `notMatch`. (sv)
+- `software`'s sense covers "the hardware they run on", so a first ruling (sv `programvara`) drifts on "hardware-level"
+  keys (`errors.listing.deviceProblem.explanation`, `…diskReadProblem.explanation`) and on
+  `settings.network.smbConcurrency.description`; split hardware into its own concept. (sv)
 
 ## Process feedback
 
@@ -81,7 +110,8 @@ the entries (`docs/guides/multi-agent-refactors.md` § Fan-out sweeps).
 - The brief for 88 per-OS keys was 445 KB (about 110k tokens): too big for one read, and the Keys section alone needed
   three. Each key repeats its English three times (the value, the word diff, and the English branches inside "now") and
   two identical boilerplate bullets ("Per-OS value", "Frozen macOS text"). Print those two once per brief, drop the diff
-  when the only change is the per-OS wrap, and show only the branches to translate plus the frozen one. (hu)
+  when the only change is the per-OS wrap, and show only the branches to translate plus the frozen one. (hu, de: read in
+  nine chunks, no script)
 - Wrote a one-off `grep -v` / `gawk` filter to strip those lines from the brief so the keys fit in context. A
   `--compact` brief would replace it. (hu)
 - The worktree guard refuses any compound shell command it can't verify (a heredoc, a `grep | sort | uniq` chain over
@@ -90,8 +120,15 @@ the entries (`docs/guides/multi-agent-refactors.md` § Fan-out sweeps).
   (hu)
 - Per-OS drift surfaced only at the check: 34 findings, nearly all from five causes (Windows `Properties`, `select`,
   `Storage`, `Settings`, plus three English-sense mismatches). The brief could list, per ruled concept, "no `windows`
-  form yet" for concepts that hit a Windows branch, so the translator patches `terms.json` before applying. (hu)
+  form yet" for concepts that hit a Windows branch, so the translator patches `terms.json` before applying. (hu, de: 17
+  findings from six causes)
+- `pnpm i18n:apply-terms --help` exits with "Unknown option", and the brief doesn't show the `avoid` entry shape
+  (`{ form, why }`), so the patch needed a look at a neighbor ruling first. Add `--help` with the field shapes. (de)
+- A "no ruling" concept that only a Windows or Linux branch uses (`file-explorer`, `task-manager`, `user-folder`) never
+  fails the check, so skipping its ruling goes unnoticed; the check could warn when a translated branch hits one. (de)
 - `decisions.md` sat exactly at its byte budget, so one new entry needed a hand-edit of
   `apps/desktop/scripts/i18n-termbase-baseline.json`; `i18n:apply-terms` could take a `--bump-decisions` flag. (hu)
 - The brief's "Translation memory" section (66 KB) went unread: for a per-OS batch the frozen `macos` branch is the
   memory. Skip it when every key is a per-OS restale. (hu)
+- A 30-key per-OS brief (1,144 lines, about 69k tokens) is over the Read tool's 25k-token cap, so `limit: 1200` alone is
+  refused and the read needs `allow_large: true`; say so in the lead's prompt, or trim the brief. (sv)

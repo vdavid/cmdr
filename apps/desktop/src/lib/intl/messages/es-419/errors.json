@@ -7,9 +7,21 @@
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "6a1ed4a"
   },
+  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Cierra algunas apps para liberar memoria, sobre todo las que usan muchos recursos (navegadores con muchas pestañas, editores, apps multimedia)\n- Revisa el uso de memoria en el **Monitor de Actividad** (búscalo en Spotlight)\n- Vuelve a abrir esta carpeta para reintentarlo} windows {Esto es lo que puedes probar:\n- Cierra algunas apps para liberar memoria, sobre todo las que usan muchos recursos (navegadores con muchas pestañas, editores, apps multimedia)\n- Revisa el uso de memoria en el **Administrador de tareas** (presiona Ctrl+Shift+Esc)\n- Vuelve a abrir esta carpeta para reintentarlo} other {Esto es lo que puedes probar:\n- Cierra algunas apps para liberar memoria, sobre todo las que usan muchos recursos (navegadores con muchas pestañas, editores, apps multimedia)\n- Revisa el uso de memoria en tu monitor del sistema\n- Vuelve a abrir esta carpeta para reintentarlo}}",
+  "@errors.listing.notEnoughMemory.suggestion": {
+    "sourceHash": "b45b6f5"
+  },
   "errors.listing.resourceBusy.explanation": "Cmdr no pudo acceder a `{path}` porque otra app o proceso lo está usando en exclusiva ahora mismo. Suele ser algo temporal.",
   "@errors.listing.resourceBusy.explanation": {
     "sourceHash": "bc57ce5"
+  },
+  "errors.listing.networkDown.explanation": "{platform, select, macos {La conexión de red de tu Mac está caída, así que Cmdr no puede acceder a este volumen. Puede que el Wi-Fi esté desconectado, que un cable Ethernet esté desenchufado o que la interfaz de red esté desactivada.} windows {La conexión de red de tu PC está caída, así que Cmdr no puede acceder a este volumen. Puede que el Wi-Fi esté desconectado, que un cable Ethernet esté desenchufado o que el adaptador de red esté desactivado.} other {La conexión de red de tu computadora está caída, así que Cmdr no puede acceder a este volumen. Puede que el Wi-Fi esté desconectado, que un cable Ethernet esté desenchufado o que la interfaz de red esté desactivada.}}",
+  "@errors.listing.networkDown.explanation": {
+    "sourceHash": "cac0566"
+  },
+  "errors.listing.networkDown.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Comprueba el estado del Wi-Fi o el Ethernet en **{system_settings} > Red**\n- Si usas Wi-Fi, prueba a apagarlo y encenderlo de nuevo\n- En la Terminal, ejecuta `ping google.com` para probar tu conexión\n- Vuelve a abrir esta carpeta cuando recuperes la conexión} windows {Esto es lo que puedes probar:\n- Comprueba el estado del Wi-Fi o el Ethernet en **Configuración > Red e Internet**\n- Si usas Wi-Fi, prueba a apagarlo y encenderlo de nuevo\n- En PowerShell, ejecuta `ping google.com` para probar tu conexión\n- Vuelve a abrir esta carpeta cuando recuperes la conexión} other {Esto es lo que puedes probar:\n- Comprueba el estado del Wi-Fi o el Ethernet en la configuración de red de tu sistema\n- Si usas Wi-Fi, prueba a apagarlo y encenderlo de nuevo\n- En un terminal, ejecuta `ping google.com` para probar tu conexión\n- Vuelve a abrir esta carpeta cuando recuperes la conexión}}",
+  "@errors.listing.networkDown.suggestion": {
+    "sourceHash": "419383f"
   },
   "errors.listing.networkConnectionDropped.title": "Se cortó la conexión de red",
   "@errors.listing.networkConnectionDropped.title": {
@@ -43,25 +55,37 @@
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "86801fb"
   },
+  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Sal de esta carpeta y vuelve a entrar\n- Si es una unidad de red, prueba a desmontarla y volver a montarla en el Finder\n- Comprueba que el servidor que aloja esta carpeta esté en marcha\n- En la Terminal, ejecuta `mount` para ver los volúmenes montados actualmente} windows {Esto es lo que puedes probar:\n- Sal de esta carpeta y vuelve a entrar\n- Si es una unidad de red, prueba a desconectarla y volver a conectarla en el Explorador de archivos\n- Comprueba que el servidor que aloja esta carpeta esté en marcha\n- En PowerShell, ejecuta `net use` para ver tus unidades de red conectadas} other {Esto es lo que puedes probar:\n- Sal de esta carpeta y vuelve a entrar\n- Si es una unidad de red, prueba a desmontarla y volver a montarla en tu administrador de archivos\n- Comprueba que el servidor que aloja esta carpeta esté en marcha\n- En un terminal, ejecuta `mount` para ver los volúmenes montados actualmente}}",
+  "@errors.listing.staleConnection.suggestion": {
+    "sourceHash": "aed1925"
+  },
   "errors.listing.lockUnavailable.explanation": "El sistema se quedó sin bloqueos de archivos. Los bloqueos de archivos son la forma en que las apps coordinan el acceso a archivos compartidos (para evitar que dos apps escriban en el mismo archivo a la vez). Quedarse sin ellos suele significar que demasiadas apps acceden a archivos a la vez.",
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "91ab2e3"
   },
-  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Cierra algunas apps, sobre todo las que trabajan con muchos archivos (editores, IDE, herramientas de respaldo)\n- En la Terminal, ejecuta `lsof | wc -l` para ver cuántos archivos hay abiertos entre todas las apps\n- Si el problema sigue, puedes subir el límite con `ulimit -n 4096` en la Terminal\n- Vuelve a abrir esta carpeta para reintentarlo} windows {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In a terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in a terminal\n- Navigate here again to retry}}",
+  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Cierra algunas apps, sobre todo las que trabajan con muchos archivos (editores, IDE, herramientas de respaldo)\n- En la Terminal, ejecuta `lsof | wc -l` para ver cuántos archivos hay abiertos entre todas las apps\n- Si el problema sigue, puedes subir el límite con `ulimit -n 4096` en la Terminal\n- Vuelve a abrir esta carpeta para reintentarlo} windows {Esto es lo que puedes probar:\n- Cierra algunas apps, sobre todo las que trabajan con muchos archivos (editores, IDE, herramientas de respaldo)\n- Si sigue pasando, reinicia tu PC\n- Vuelve a abrir esta carpeta para reintentarlo} other {Esto es lo que puedes probar:\n- Cierra algunas apps, sobre todo las que trabajan con muchos archivos (editores, IDE, herramientas de respaldo)\n- En un terminal, ejecuta `lsof | wc -l` para ver cuántos archivos hay abiertos entre todas las apps\n- Si el problema sigue, puedes subir el límite con `ulimit -n 4096` en un terminal\n- Vuelve a abrir esta carpeta para reintentarlo}}",
   "@errors.listing.lockUnavailable.suggestion": {
-    "sourceHash": "7ccace0"
+    "sourceHash": "fc70cf3"
   },
   "errors.listing.cancelledErrno.explanation": "La operación se canceló antes de poder terminar.",
   "@errors.listing.cancelledErrno.explanation": {
     "sourceHash": "9370972"
   },
-  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS impidió a Cmdr acceder a `{path}`. Normalmente significa que la carpeta está protegida por las políticas de seguridad de macOS, o que Cmdr aún no tiene los permisos necesarios.} windows {Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.} other {Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it.}}",
+  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS impidió a Cmdr acceder a `{path}`. Normalmente significa que la carpeta está protegida por las políticas de seguridad de macOS, o que Cmdr aún no tiene los permisos necesarios.} windows {Windows impidió a Cmdr acceder a `{path}`. Normalmente significa que la carpeta está protegida por Windows, o que tu cuenta no tiene permiso para abrirla.} other {A Cmdr no se le permitió acceder a `{path}`. Normalmente significa que los permisos de la carpeta no lo permiten, o que la protege una política de seguridad (como SELinux o AppArmor).}}",
   "@errors.listing.notPermitted.explanation": {
-    "sourceHash": "9587977"
+    "sourceHash": "25519fd"
+  },
+  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Abre **{system_settings} > {privacy_and_security} > {files_and_folders}** y concede acceso a Cmdr\n- Si es una carpeta protegida por el sistema, puede que necesites conceder a Cmdr **{full_disk_access}** en {privacy_and_security}\n- En la Terminal, ejecuta `ls -la` en esta ruta para revisar la propiedad y los permisos} windows {Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en el Explorador de archivos: haz clic con el botón derecho en ella, selecciona **Propiedades** y mira en **Seguridad**\n- Si es una carpeta del sistema, puede que Windows la mantenga cerrada a propósito\n- En PowerShell, ejecuta `icacls \"<folder-path>\"` para ver quién tiene acceso} other {Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en tu administrador de archivos: abre sus propiedades y mira en **Permisos**\n- Si es una carpeta del sistema, puede que hagan falta permisos de administrador\n- En un terminal, ejecuta `ls -la` en esta ruta para revisar la propiedad y los permisos}}",
+  "@errors.listing.notPermitted.suggestion": {
+    "sourceHash": "ca0dbc1"
   },
   "errors.listing.pathNotFoundErrno.explanation": "Cmdr no pudo encontrar `{path}`. Puede que se haya movido, renombrado o eliminado mientras Cmdr intentaba acceder a ella.",
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "c11be9a"
+  },
+  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Abre **{system_settings} > {privacy_and_security} > {files_and_folders}** y concede acceso a Cmdr\n- Revisa los permisos de la carpeta en el Finder: haz clic derecho, elige Obtener información y mira en Compartir y permisos\n- Si es una carpeta compartida, pide a quien la posee que actualice los permisos\n- En la Terminal, ejecuta `ls -la` en esta ruta para ver los permisos actuales} windows {Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en el Explorador de archivos: haz clic con el botón derecho en ella, selecciona **Propiedades** y mira en **Seguridad**\n- Si es una carpeta compartida, pide a quien la posee que actualice los permisos\n- En PowerShell, ejecuta `icacls \"<folder-path>\"` para ver los permisos actuales} other {Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en tu administrador de archivos: abre sus propiedades y mira en **Permisos**\n- Si es una carpeta compartida, pide a quien la posee que actualice los permisos\n- En un terminal, ejecuta `ls -la` en esta ruta para ver los permisos actuales}}",
+  "@errors.listing.noPermissionErrno.suggestion": {
+    "sourceHash": "c8cce33"
   },
   "errors.listing.notAFolder.explanation": "Cmdr esperaba que `{path}` fuera una carpeta, pero es un archivo. Esto puede pasar si algo se renombró o reemplazó hace poco.",
   "@errors.listing.notAFolder.explanation": {
@@ -71,17 +95,21 @@
   "@errors.listing.isAFolderErrno.explanation": {
     "sourceHash": "04d874b"
   },
-  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Libera espacio moviendo o eliminando archivos que ya no necesites\n- Vacía el basurero (haz clic derecho en el ícono del basurero del Dock)\n- En la Terminal, ejecuta `df -h` para ver cuánto espacio queda en cada volumen\n- Revisa **{system_settings} > General > Almacenamiento** para ver un desglose de qué ocupa espacio} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Libera espacio moviendo o eliminando archivos que ya no necesites\n- Vacía el basurero (haz clic derecho en el ícono del basurero del Dock)\n- En la Terminal, ejecuta `df -h` para ver cuánto espacio queda en cada volumen\n- Revisa **{system_settings} > General > Almacenamiento** para ver un desglose de qué ocupa espacio} windows {Esto es lo que puedes probar:\n- Libera espacio moviendo o eliminando archivos que ya no necesites\n- Vacía la Papelera de reciclaje (haz clic con el botón derecho en ella en el escritorio y selecciona **Vaciar Papelera de reciclaje**)\n- Revisa **Configuración > Sistema > Almacenamiento** para ver un desglose de qué ocupa espacio} other {Esto es lo que puedes probar:\n- Libera espacio moviendo o eliminando archivos que ya no necesites\n- Vacía el basurero en tu administrador de archivos\n- En un terminal, ejecuta `df -h` para ver cuánto espacio queda en cada volumen}}",
   "@errors.listing.diskFullErrno.suggestion": {
-    "sourceHash": "df4db4c"
+    "sourceHash": "0832775"
   },
   "errors.listing.readOnlyVolumeErrno.explanation": "Este volumen está montado como de solo lectura, así que Cmdr no puede hacer cambios en él. Puede ser porque el dispositivo tiene un interruptor físico de protección contra escritura, porque la imagen de disco se montó como solo lectura, o porque el sistema de archivos no admite escritura.",
   "@errors.listing.readOnlyVolumeErrno.explanation": {
     "sourceHash": "4313e68"
   },
-  "errors.listing.connectionRefused.explanation": "{platform, select, macos {El servidor rechazó la conexión de forma activa. Normalmente significa que el software del servidor (por ejemplo, un servicio SMB o NFS) no está en marcha, o que está configurado para rechazar conexiones desde este Mac.} windows {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.} other {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this computer.}}",
+  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Prueba otro enfoque, o usa el Finder para esta operación. Si trabajas con un disco externo, puede que tenga un formato de sistema de archivos con limitaciones (por ejemplo, FAT32 no puede almacenar archivos de 4 GiB o más).} windows {Prueba otro enfoque, o usa el Explorador de archivos para esta operación. Si trabajas con un disco externo, puede que tenga un formato de sistema de archivos con limitaciones (por ejemplo, FAT32 no puede almacenar archivos de 4 GiB o más).} other {Prueba otro enfoque, o usa tu administrador de archivos para esta operación. Si trabajas con un disco externo, puede que tenga un formato de sistema de archivos con limitaciones (por ejemplo, FAT32 no puede almacenar archivos de 4 GiB o más).}}",
+  "@errors.listing.notSupportedErrno.suggestion": {
+    "sourceHash": "f59688b"
+  },
+  "errors.listing.connectionRefused.explanation": "{platform, select, macos {El servidor rechazó la conexión de forma activa. Normalmente significa que el software del servidor (por ejemplo, un servicio SMB o NFS) no está en marcha, o que está configurado para rechazar conexiones desde este Mac.} windows {El servidor rechazó la conexión de forma activa. Normalmente significa que el software del servidor (por ejemplo, un servicio SMB o NFS) no está en marcha, o que está configurado para rechazar conexiones desde este PC.} other {El servidor rechazó la conexión de forma activa. Normalmente significa que el software del servidor (por ejemplo, un servicio SMB o NFS) no está en marcha, o que está configurado para rechazar conexiones desde esta computadora.}}",
   "@errors.listing.connectionRefused.explanation": {
-    "sourceHash": "e294194"
+    "sourceHash": "3db01f6"
   },
   "errors.listing.symlinkLoopErrno.explanation": "Cmdr encontró una cadena circular de enlaces simbólicos (accesos directos que apuntan a otros accesos directos) en `{path}`. Seguir estos enlaces lleva en círculo, así que Cmdr no puede llegar al archivo o la carpeta reales.",
   "@errors.listing.symlinkLoopErrno.explanation": {
@@ -95,21 +123,25 @@
   "@errors.listing.authRequiredEauth.suggestion": {
     "sourceHash": "19539f5"
   },
-  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator} other {Esto es lo que puedes probar:\n- Desconecta y vuelve a conectar el volumen en el Finder\n- Ingresa tu usuario y contraseña cuando se te pidan\n- Si no tienes claras las credenciales, consúltalo con quien administre el servidor}}",
+  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Esto es lo que puedes probar:\n- Desconecta la unidad de red en el Explorador de archivos y vuelve a conectarla\n- Ingresa tu usuario y contraseña cuando se te pidan\n- Si no tienes claras las credenciales, consúltalo con quien administre el servidor} other {Esto es lo que puedes probar:\n- Desconecta y vuelve a conectar el volumen en el Finder\n- Ingresa tu usuario y contraseña cuando se te pidan\n- Si no tienes claras las credenciales, consúltalo con quien administre el servidor}}",
   "@errors.listing.authRequiredEneedauth.suggestion": {
-    "sourceHash": "7d285da"
+    "sourceHash": "cbbff19"
   },
   "errors.listing.attributeNotFound.explanation": "Cmdr intentó leer un atributo de archivo (metadatos adicionales como etiquetas o permisos) que no existe en este elemento. Esto puede pasar cuando el sistema de archivos no admite atributos extendidos, o cuando se eliminó el atributo.",
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "db13232"
   },
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Puede que este sistema de archivos no admita los metadatos que Cmdr necesita. Prueba la operación en otro volumen, o copia primero el archivo al disco interno de tu Mac.} windows {Puede que este sistema de archivos no admita los metadatos que Cmdr necesita. Prueba la operación en otro volumen, o copia primero el archivo al disco interno de tu PC.} other {Puede que este sistema de archivos no admita los metadatos que Cmdr necesita. Prueba la operación en otro volumen, o copia primero el archivo al disco interno de tu computadora.}}",
+  "@errors.listing.attributeNotFound.suggestion": {
+    "sourceHash": "e573b3e"
+  },
   "errors.listing.diskReadProblem.explanation": "Cmdr se topó con un problema de lectura a nivel de hardware en `{path}`. Significa que el disco o el dispositivo tuvieron problemas para leer los datos, lo que puede ser un problema pasajero o una señal de un disco que está empezando a fallar.",
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "a2c3002"
   },
-  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Comprueba que el disco o el dispositivo sigan bien conectados\n- Abre la **Utilidad de Discos** (búscala en Spotlight) y ejecuta **Primera ayuda** en este volumen\n- Si sigue pasando, haz un respaldo de tus datos cuanto antes. El disco puede estar desarrollando sectores defectuosos o empezando a desgastarse.} windows {Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.} other {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.}}",
+  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Comprueba que el disco o el dispositivo sigan bien conectados\n- Abre la **Utilidad de Discos** (búscala en Spotlight) y ejecuta **Primera ayuda** en este volumen\n- Si sigue pasando, haz un respaldo de tus datos cuanto antes. El disco puede estar desarrollando sectores defectuosos o empezando a desgastarse.} windows {Esto es lo que puedes probar:\n- Comprueba que la unidad o el dispositivo sigan bien conectados\n- En el Explorador de archivos, haz clic con el botón derecho en la unidad, selecciona **Propiedades** y luego **Herramientas > Comprobar** para analizarla en busca de problemas\n- Si sigue pasando, haz un respaldo de tus datos cuanto antes. La unidad puede estar desarrollando sectores defectuosos o empezando a desgastarse.} other {Esto es lo que puedes probar:\n- Comprueba que el disco o el dispositivo sigan bien conectados\n- Comprueba el sistema de archivos con la herramienta de discos de tu escritorio (por ejemplo, Discos de GNOME)\n- Si sigue pasando, haz un respaldo de tus datos cuanto antes. El disco puede estar desarrollando sectores defectuosos o empezando a desgastarse.}}",
   "@errors.listing.diskReadProblem.suggestion": {
-    "sourceHash": "13395c2"
+    "sourceHash": "7365a2c"
   },
   "errors.listing.unexpectedSystemResponse.explanation": "El sistema devolvió una respuesta inesperada para esta operación. Esto puede pasar cuando el sistema de archivos de un volumen tiene inconsistencias, o cuando el volumen está en un estado inusual.",
   "@errors.listing.unexpectedSystemResponse.explanation": {
@@ -135,13 +167,17 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "c11be9a"
   },
-  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` está en un recurso compartido de red, y la cuenta con la que te conectaste no tiene permiso para abrirla. El servidor rechaza la solicitud antes de que macOS intervenga, así que no es una opción de privacidad de tu Mac.} windows {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.} other {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your computer can change that.}}",
-  "@errors.listing.remotePermissionDenied.explanation": {
-    "sourceHash": "c91fb65"
+  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Abre **{system_settings} > {privacy_and_security} > {files_and_folders}** y concede acceso a Cmdr\n- Revisa los permisos de la carpeta en el Finder: haz clic derecho en la carpeta, elige Obtener información y mira en Compartir y permisos\n- Si es una carpeta compartida, pide a quien la posee que actualice los permisos\n- En la Terminal, ejecuta `ls -la` en la ruta para ver los permisos actuales} windows {Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en el Explorador de archivos: haz clic con el botón derecho en la carpeta, selecciona **Propiedades** y mira en **Seguridad**\n- Si es una carpeta compartida, pide a quien la posee que actualice los permisos\n- En PowerShell, ejecuta `icacls \"<folder-path>\"` para ver los permisos actuales} other {Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en tu administrador de archivos: abre sus propiedades y mira en **Permisos**\n- Si es una carpeta compartida, pide a quien la posee que actualice los permisos\n- En un terminal, ejecuta `ls -la` en la ruta para ver los permisos actuales}}",
+  "@errors.listing.permissionDenied.suggestion": {
+    "sourceHash": "ac4e518"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en el servidor, y con qué cuenta montaste el recurso compartido\n- Algunas carpetas pertenecen a la cuenta de sistema del propio servidor (`lost+found` en un recurso compartido de Linux, por ejemplo) y siguen cerradas para todos los demás\n- Para conectarte como otra persona, expulsa el recurso compartido y vuelve a montarlo con esas credenciales} windows {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials} other {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, unmount the share and mount it again with those credentials}}",
+  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` está en un recurso compartido de red, y la cuenta con la que te conectaste no tiene permiso para abrirla. El servidor rechaza la solicitud antes de que macOS intervenga, así que no es una opción de privacidad de tu Mac.} windows {`{path}` está en un recurso compartido de red, y la cuenta con la que te conectaste no tiene permiso para abrirla. El servidor rechaza la solicitud, así que nada en tu PC puede cambiarlo.} other {`{path}` está en un recurso compartido de red, y la cuenta con la que te conectaste no tiene permiso para abrirla. El servidor rechaza la solicitud, así que nada en tu computadora puede cambiarlo.}}",
+  "@errors.listing.remotePermissionDenied.explanation": {
+    "sourceHash": "bcf2654"
+  },
+  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en el servidor, y con qué cuenta montaste el recurso compartido\n- Algunas carpetas pertenecen a la cuenta de sistema del propio servidor (`lost+found` en un recurso compartido de Linux, por ejemplo) y siguen cerradas para todos los demás\n- Para conectarte como otra persona, expulsa el recurso compartido y vuelve a montarlo con esas credenciales} windows {Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en el servidor, y con qué cuenta conectaste el recurso compartido\n- Algunas carpetas pertenecen a la cuenta de sistema del propio servidor (`lost+found` en un recurso compartido de Linux, por ejemplo) y siguen cerradas para todos los demás\n- Para conectarte como otra persona, desconecta el recurso compartido y vuelve a conectarlo con esas credenciales} other {Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en el servidor, y con qué cuenta montaste el recurso compartido\n- Algunas carpetas pertenecen a la cuenta de sistema del propio servidor (`lost+found` en un recurso compartido de Linux, por ejemplo) y siguen cerradas para todos los demás\n- Para conectarte como otra persona, desmonta el recurso compartido y vuelve a montarlo con esas credenciales}}",
   "@errors.listing.remotePermissionDenied.suggestion": {
-    "sourceHash": "bdfd2d5"
+    "sourceHash": "659f51a"
   },
   "errors.listing.cancelled.explanation": "La operación se canceló antes de poder terminar.",
   "@errors.listing.cancelled.explanation": {
@@ -167,9 +203,9 @@
   "@errors.listing.readOnly.explanation": {
     "sourceHash": "947bbfd"
   },
-  "errors.listing.storageFull.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Libera espacio moviendo o eliminando archivos que ya no necesites\n- Vacía el basurero (haz clic derecho en el ícono del basurero del Dock)\n- En la Terminal, ejecuta `df -h` para ver cuánto espacio queda en cada volumen} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {Esto es lo que puedes probar:\n- Libera espacio moviendo o eliminando archivos que ya no necesites\n- Vacía el basurero (haz clic derecho en el ícono del basurero del Dock)\n- En la Terminal, ejecuta `df -h` para ver cuánto espacio queda en cada volumen} windows {Esto es lo que puedes probar:\n- Libera espacio moviendo o eliminando archivos que ya no necesites\n- Vacía la Papelera de reciclaje (haz clic con el botón derecho en ella en el escritorio y selecciona **Vaciar Papelera de reciclaje**)\n- Revisa **Configuración > Sistema > Almacenamiento** para ver cuánto espacio queda} other {Esto es lo que puedes probar:\n- Libera espacio moviendo o eliminando archivos que ya no necesites\n- Vacía el basurero en tu administrador de archivos\n- En un terminal, ejecuta `df -h` para ver cuánto espacio queda en cada volumen}}",
   "@errors.listing.storageFull.suggestion": {
-    "sourceHash": "bbbdfd3"
+    "sourceHash": "0e2bd0f"
   },
   "errors.listing.connectionTimedOut.title": "Se agotó el tiempo de espera de la conexión",
   "@errors.listing.connectionTimedOut.title": {
@@ -178,6 +214,10 @@
   "errors.listing.connectionTimedOut.explanation": "Cmdr intentó acceder a este recurso pero la conexión no respondió a tiempo. Normalmente significa que el servidor o el dispositivo tardan en responder, o que la conexión de red es inestable.",
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "ebb6f29"
+  },
+  "errors.listing.notSupported.suggestion": "{platform, select, macos {Prueba otro enfoque, o usa el Finder para esta operación.} windows {Prueba otro enfoque, o usa el Explorador de archivos para esta operación.} other {Prueba otro enfoque, o usa tu administrador de archivos para esta operación.}}",
+  "@errors.listing.notSupported.suggestion": {
+    "sourceHash": "89aea12"
   },
   "errors.listing.deletePending.explanation": "`{path}` está de salida. El servidor lo marcó para eliminarlo, pero otro identificador abierto lo mantiene mientras ese identificador no se cierre.",
   "@errors.listing.deletePending.explanation": {
@@ -291,9 +331,9 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "eb64b82"
   },
-  "errors.provider.appBased.serious": "{platform, select, windows {This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages} other {Esta carpeta la administra **{name}**. Esto es lo que puedes probar:\n- Sal de {app} y vuelve a abrirlo\n- Cierra sesión y vuelve a iniciarla en {app}\n- Consulta la página de estado de {name} por si hay caídas}}",
+  "errors.provider.appBased.serious": "{platform, select, windows {Esta carpeta la administra **{name}**. Esto es lo que puedes probar:\n- Cierra {app} y vuelve a abrirlo\n- Cierra sesión y vuelve a iniciarla en {app}\n- Consulta la página de estado de {name} por si hay caídas} other {Esta carpeta la administra **{name}**. Esto es lo que puedes probar:\n- Sal de {app} y vuelve a abrirlo\n- Cierra sesión y vuelve a iniciarla en {app}\n- Consulta la página de estado de {name} por si hay caídas}}",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "fc019ac"
+    "sourceHash": "52c2dfd"
   },
   "errors.write.sourceNotFound.title": "No se pudo encontrar el archivo",
   "@errors.write.sourceNotFound.title": {
@@ -311,9 +351,9 @@
   "@errors.write.sourceNotFound.message.delete": {
     "sourceHash": "47495fd"
   },
-  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {The file or folder you tried to move to the Recycle Bin no longer exists.} other {El archivo o la carpeta que intentaste mover al basurero ya no existe.}}",
+  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {El archivo o la carpeta que intentaste mover a la Papelera de reciclaje ya no existe.} other {El archivo o la carpeta que intentaste mover al basurero ya no existe.}}",
   "@errors.write.sourceNotFound.message.trash": {
-    "sourceHash": "e52396a"
+    "sourceHash": "b9a26b1"
   },
   "errors.write.noLongerConnected.message": "El teléfono o servidor que contiene estos archivos ya no está conectado, así que no cambió nada.",
   "@errors.write.noLongerConnected.message": {
@@ -331,9 +371,9 @@
   "@errors.write.symlinkLoop.title": {
     "sourceHash": "76fafe1"
   },
-  "errors.write.cancelled.title.trash": "{platform, select, windows {Move to the Recycle Bin canceled} other {Movimiento al basurero cancelado}}",
+  "errors.write.cancelled.title.trash": "{platform, select, windows {Movimiento a la Papelera de reciclaje cancelado} other {Movimiento al basurero cancelado}}",
   "@errors.write.cancelled.title.trash": {
-    "sourceHash": "71aa327"
+    "sourceHash": "a3cf96c"
   },
   "errors.write.cancelled.message.copy": "Se canceló la operación de copia.",
   "@errors.write.cancelled.message.copy": {
@@ -347,9 +387,9 @@
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "4b07f81"
   },
-  "errors.write.cancelled.message.trash": "{platform, select, windows {The move to the Recycle Bin was canceled.} other {Se canceló el movimiento al basurero.}}",
+  "errors.write.cancelled.message.trash": "{platform, select, windows {Se canceló el movimiento a la Papelera de reciclaje.} other {Se canceló el movimiento al basurero.}}",
   "@errors.write.cancelled.message.trash": {
-    "sourceHash": "b7bf28f"
+    "sourceHash": "0b9d43d"
   },
   "errors.write.deviceDisconnected.message.copy": "Se desconectó el dispositivo durante la copia.",
   "@errors.write.deviceDisconnected.message.copy": {
@@ -363,9 +403,9 @@
   "@errors.write.deviceDisconnected.message.delete": {
     "sourceHash": "2aebb6b"
   },
-  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {The device was disconnected during the move to the Recycle Bin.} other {Se desconectó el dispositivo durante el movimiento al basurero.}}",
+  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {Se desconectó el dispositivo durante el movimiento a la Papelera de reciclaje.} other {Se desconectó el dispositivo durante el movimiento al basurero.}}",
   "@errors.write.deviceDisconnected.message.trash": {
-    "sourceHash": "2763c2b"
+    "sourceHash": "c37240d"
   },
   "errors.write.deviceDisconnected.sided.destination.copy": "{volumeName} se desconectó después de que Cmdr copiara {done} de {total} archivos ahí. Tus originales siguen intactos donde estaban, así que no perdiste nada.",
   "@errors.write.deviceDisconnected.sided.destination.copy": {
@@ -395,13 +435,13 @@
   "@errors.write.moveNotConfirmed.message.unnamed": {
     "sourceHash": "38c7a18"
   },
-  "errors.write.trashNotSupported.title": "{platform, select, windows {Recycle Bin not supported} other {El basurero no se admite}}",
+  "errors.write.trashNotSupported.title": "{platform, select, windows {La Papelera de reciclaje no se admite} other {El basurero no se admite}}",
   "@errors.write.trashNotSupported.title": {
-    "sourceHash": "a38a186"
+    "sourceHash": "cb54590"
   },
-  "errors.write.trashNotSupported.message": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Este volumen no admite el basurero.}}",
+  "errors.write.trashNotSupported.message": "{platform, select, windows {Este volumen no tiene Papelera de reciclaje.} other {Este volumen no admite el basurero.}}",
   "@errors.write.trashNotSupported.message": {
-    "sourceHash": "227ac08"
+    "sourceHash": "f583675"
   },
   "errors.write.connectionInterrupted.message": "La conexión se interrumpió.",
   "@errors.write.connectionInterrupted.message": {
@@ -419,9 +459,9 @@
   "@errors.write.readError.title.delete": {
     "sourceHash": "bebd330"
   },
-  "errors.write.readError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {No se pudo mover al basurero}}",
+  "errors.write.readError.title.trash": "{platform, select, windows {No se pudo mover a la Papelera de reciclaje} other {No se pudo mover al basurero}}",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "638f092"
+    "sourceHash": "953a646"
   },
   "errors.write.readError.message": "No se pudo leer del origen.",
   "@errors.write.readError.message": {
@@ -439,21 +479,21 @@
   "@errors.write.writeError.title.delete": {
     "sourceHash": "bebd330"
   },
-  "errors.write.writeError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {No se pudo mover al basurero}}",
+  "errors.write.writeError.title.trash": "{platform, select, windows {No se pudo mover a la Papelera de reciclaje} other {No se pudo mover al basurero}}",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "638f092"
+    "sourceHash": "953a646"
   },
   "errors.write.writeError.message": "No se pudo escribir en el destino.",
   "@errors.write.writeError.message": {
     "sourceHash": "15a7a1e"
   },
-  "errors.write.trashRefused.title": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {No se pudo mover al basurero}}",
+  "errors.write.trashRefused.title": "{platform, select, windows {No se pudo mover a la Papelera de reciclaje} other {No se pudo mover al basurero}}",
   "@errors.write.trashRefused.title": {
-    "sourceHash": "638f092"
+    "sourceHash": "953a646"
   },
-  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS no dejó que Cmdr tocara {count} de los elementos que elegiste.} windows {Windows wouldn’t let Cmdr touch {count} of the items you picked.} other {Cmdr wasn’t allowed to touch {count} of the items you picked.}}",
+  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS no dejó que Cmdr tocara {count} de los elementos que elegiste.} windows {Windows no dejó que Cmdr tocara {count} de los elementos que elegiste.} other {A Cmdr no se le permitió tocar {count} de los elementos que elegiste.}}",
   "@errors.write.trashRefused.message.notPermitted": {
-    "sourceHash": "3987197"
+    "sourceHash": "4ccf7bc"
   },
   "errors.write.trashRefused.message.locked": "macOS no mueve elementos bloqueados, así que dejó en su lugar {count} de los elementos que elegiste.",
   "@errors.write.trashRefused.message.locked": {
@@ -467,25 +507,29 @@
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "febdfdd"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {Cmdr no puede poner nada en el basurero de esta unidad, así que dejó en su lugar {count} de los elementos que elegiste.}}",
+  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {Cmdr no puede poner nada en la Papelera de reciclaje de esta unidad, así que dejó en su lugar {count} de los elementos que elegiste.} other {Cmdr no puede poner nada en el basurero de esta unidad, así que dejó en su lugar {count} de los elementos que elegiste.}}",
   "@errors.write.trashRefused.message.trashNotWritable": {
-    "sourceHash": "efef3e6"
+    "sourceHash": "5e156d7"
   },
-  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS no encontró un basurero para {count} de los elementos que elegiste.} windows {Windows couldn’t find a Recycle Bin for {count} of the items you picked.} other {Cmdr couldn’t find a trash for {count} of the items you picked.}}",
+  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS no encontró un basurero para {count} de los elementos que elegiste.} windows {Windows no encontró una Papelera de reciclaje para {count} de los elementos que elegiste.} other {Cmdr no encontró un basurero para {count} de los elementos que elegiste.}}",
   "@errors.write.trashRefused.message.noTrashForVolume": {
-    "sourceHash": "e7da662"
+    "sourceHash": "4b56093"
   },
-  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS no movió al basurero {count} de los elementos que elegiste.} windows {Windows wouldn’t move {count} of the items you picked to the Recycle Bin.} other {Cmdr couldn’t move {count} of the items you picked to the trash.}}",
+  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS no movió al basurero {count} de los elementos que elegiste.} windows {Windows no movió a la Papelera de reciclaje {count} de los elementos que elegiste.} other {Cmdr no pudo mover al basurero {count} de los elementos que elegiste.}}",
   "@errors.write.trashRefused.message.other": {
-    "sourceHash": "866cfc2"
+    "sourceHash": "55d0fe7"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Puede que los elementos estén en un lugar que macOS se reserva. A veces el Finder sí puede moverlos, porque puede pedirte la contraseña.} windows {The items may sit somewhere Windows keeps to itself. File Explorer can sometimes still move them, since it can ask for administrator permission.} other {The items may sit somewhere only an administrator can change. Check the folder’s permissions, or ask whoever manages this computer.}}",
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Puede que los elementos estén en un lugar que macOS se reserva. A veces el Finder sí puede moverlos, porque puede pedirte la contraseña.} windows {Puede que los elementos estén en un lugar que Windows se reserva. A veces el Explorador de archivos sí puede moverlos, porque puede pedir permiso de administrador.} other {Puede que los elementos estén en un lugar que solo un administrador puede cambiar. Revisa los permisos de la carpeta, o pregunta a quien administre esta computadora.}}",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "be011a2"
+    "sourceHash": "d122209"
   },
-  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Revisa los detalles técnicos de abajo para ver lo que informó macOS.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
+  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {Para moverlos, necesitas permiso para cambiar su carpeta. El Finder muestra quién puede hacerlo en Obtener información de la carpeta, en la sección “Compartir y permisos”.} windows {Para moverlos, necesitas permiso para cambiar su carpeta. El Explorador de archivos muestra quién puede hacerlo en las Propiedades de la carpeta, en “Seguridad”.} other {Para moverlos, necesitas permiso para cambiar su carpeta. Tu administrador de archivos muestra quién puede hacerlo en las propiedades de la carpeta, en “Permisos”.}}",
+  "@errors.write.trashRefused.suggestion.folderNotWritable": {
+    "sourceHash": "9186b13"
+  },
+  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Revisa los detalles técnicos de abajo para ver lo que informó macOS.} windows {Revisa los detalles técnicos de abajo para ver lo que informó Windows.} other {Revisa los detalles técnicos de abajo para ver el motivo exacto.}}",
   "@errors.write.trashRefused.suggestion.other": {
-    "sourceHash": "50e2862"
+    "sourceHash": "7b659e1"
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr tampoco tiene acceso completo al disco en este Mac, que es una causa habitual. El aviso “Sin acceso completo al disco” de la barra de título te lleva a esa decisión.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
@@ -503,9 +547,9 @@
   "@errors.write.ioError.title.delete": {
     "sourceHash": "bebd330"
   },
-  "errors.write.ioError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {No se pudo mover al basurero}}",
+  "errors.write.ioError.title.trash": "{platform, select, windows {No se pudo mover a la Papelera de reciclaje} other {No se pudo mover al basurero}}",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "638f092"
+    "sourceHash": "953a646"
   },
   "errors.write.ioError.message.copy": "No se pudo copiar el archivo.",
   "@errors.write.ioError.message.copy": {
@@ -519,21 +563,21 @@
   "@errors.write.ioError.message.delete": {
     "sourceHash": "9f44ce0"
   },
-  "errors.write.ioError.message.trash": "{platform, select, windows {Couldn’t move the file to the Recycle Bin.} other {No se pudo mover el archivo al basurero.}}",
+  "errors.write.ioError.message.trash": "{platform, select, windows {No se pudo mover el archivo a la Papelera de reciclaje.} other {No se pudo mover el archivo al basurero.}}",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "73950a9"
+    "sourceHash": "d2b612f"
   },
   "errors.write.permissionDenied.title": "No se pudo acceder a esta ubicación",
   "@errors.write.permissionDenied.title": {
     "sourceHash": "aa564ce"
   },
-  "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {No tienes permiso para mover archivos al basurero aquí.}}",
+  "errors.write.permissionDenied.message.trash": "{platform, select, windows {No tienes permiso para mover archivos a la Papelera de reciclaje aquí.} other {No tienes permiso para mover archivos al basurero aquí.}}",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "5dc863d"
+    "sourceHash": "655b0a1"
   },
-  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Comprueba que tengas acceso de escritura a la carpeta superior. Puede que el archivo esté bloqueado. Desbloquéalo en el Finder (Obtener información > desmarca Bloqueado) y vuelve a intentarlo.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Comprueba que tengas acceso de escritura a la carpeta superior. Puede que el archivo esté protegido. Revisa sus permisos (por ejemplo, con chmod o tu administrador de archivos) y vuelve a intentarlo.}}",
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Comprueba que tengas acceso de escritura a la carpeta superior. Puede que el archivo esté bloqueado. Desbloquéalo en el Finder (Obtener información > desmarca Bloqueado) y vuelve a intentarlo.} windows {Comprueba que tengas acceso de escritura a la carpeta superior. Puede que el archivo sea de solo lectura: en el Explorador de archivos, abre sus Propiedades, desmarca “Solo lectura” y vuelve a intentarlo.} other {Comprueba que tengas acceso de escritura a la carpeta superior. Puede que el archivo esté protegido. Revisa sus permisos (por ejemplo, con chmod o tu administrador de archivos) y vuelve a intentarlo.}}",
   "@errors.write.permissionDenied.suggestion.delete": {
-    "sourceHash": "68523ac"
+    "sourceHash": "8382dc9"
   },
   "errors.write.destinationFull.message": "El destino se quedó sin espacio antes de que se escribiera todo.",
   "@errors.write.destinationFull.message": {
@@ -547,13 +591,33 @@
   "@errors.write.destinationNotWritable.noPermission.message": {
     "sourceHash": "d160d62"
   },
-  "errors.write.fileLocked.suggestion": "{platform, select, macos {Desbloquéalo en el Finder (Obtener información > desmarca Bloqueado) y vuelve a intentarlo.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Puede que el archivo esté protegido. Revisa sus permisos (por ejemplo, con chmod o tu administrador de archivos) y vuelve a intentarlo.}}",
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Desbloquéalo en el Finder (Obtener información > desmarca Bloqueado) y vuelve a intentarlo.} windows {Puede que el archivo sea de solo lectura. En el Explorador de archivos, abre sus Propiedades, desmarca “Solo lectura” y vuelve a intentarlo.} other {Puede que el archivo esté protegido. Revisa sus permisos (por ejemplo, con chmod o tu administrador de archivos) y vuelve a intentarlo.}}",
   "@errors.write.fileLocked.suggestion": {
-    "sourceHash": "c1d975c"
+    "sourceHash": "875784f"
   },
   "errors.write.deletePending.message": "El archivo en {path} está de salida. El servidor lo marcó para eliminarlo, pero otro identificador abierto lo mantiene mientras ese identificador no se cierre.",
   "@errors.write.deletePending.message": {
     "sourceHash": "5ff91b5"
+  },
+  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Oye, tu carpeta de inicio vive justo donde está. Si la mueves, la próxima vez que inicies sesión tu Mac te buscará en el lugar equivocado.} windows {Oye, tu carpeta de usuario vive justo donde está. Si la mueves, la próxima vez que inicies sesión Windows te buscará en el lugar equivocado.} other {Oye, tu carpeta de inicio vive justo donde está. Si la mueves, la próxima vez que inicies sesión tu computadora te buscará en el lugar equivocado.}}",
+  "@errors.write.homeFolderMove.message.isHome": {
+    "sourceHash": "7d7c2ff"
+  },
+  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {No puedes mover <code>{path}</code> porque tu carpeta de inicio está ahí dentro, y tu Mac espera encontrarla justo donde está.} windows {No puedes mover <code>{path}</code> porque tu carpeta de usuario está ahí dentro, y Windows espera encontrarla justo donde está.} other {No puedes mover <code>{path}</code> porque tu carpeta de inicio está ahí dentro, y tu computadora espera encontrarla justo donde está.}}",
+  "@errors.write.homeFolderMove.message.holdsHome": {
+    "sourceHash": "a280586"
+  },
+  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {Si quieres tener tus archivos en otro lugar, entra en ella, elige lo que necesites y muévelo. Tu Mac te lo agradecerá.} windows {Si quieres tener tus archivos en otro lugar, entra en ella, elige lo que necesites y muévelo. Tu PC te lo agradecerá.} other {Si quieres tener tus archivos en otro lugar, entra en ella, elige lo que necesites y muévelo. Tu computadora te lo agradecerá.}}",
+  "@errors.write.homeFolderMove.suggestion.isHome": {
+    "sourceHash": "6018b27"
+  },
+  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Oye, tu Mac conoce tu carpeta de inicio por este nombre. Si la renombras, no te encontrará la próxima vez que inicies sesión.} windows {Oye, Windows conoce tu carpeta de usuario por este nombre. Si la renombras, no te encontrará la próxima vez que inicies sesión.} other {Oye, tu computadora conoce tu carpeta de inicio por este nombre. Si la renombras, no te encontrará la próxima vez que inicies sesión.}}",
+  "@errors.write.homeFolderRename.message.isHome": {
+    "sourceHash": "57750e1"
+  },
+  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {No puedes renombrar <code>{path}</code> porque tu carpeta de inicio está ahí dentro, y tu Mac espera encontrarla exactamente en esta ruta.} windows {No puedes renombrar <code>{path}</code> porque tu carpeta de usuario está ahí dentro, y Windows espera encontrarla exactamente en esta ruta.} other {No puedes renombrar <code>{path}</code> porque tu carpeta de inicio está ahí dentro, y tu computadora espera encontrarla exactamente en esta ruta.}}",
+  "@errors.write.homeFolderRename.message.holdsHome": {
+    "sourceHash": "30fb7a1"
   },
   "errors.write.sourceChanged.title": "Este archivo cambió durante la copia",
   "@errors.write.sourceChanged.title": {
@@ -643,6 +707,10 @@
   "@errors.write.landingNotRecorded.message": {
     "sourceHash": "32eb6d4"
   },
+  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Inténtalo de nuevo. Si sigue pasando, comprueba que el disco de tu Mac tiene espacio libre y luego reinicia Cmdr.} windows {Inténtalo de nuevo. Si sigue pasando, comprueba que tu PC tiene espacio libre y luego reinicia Cmdr.} other {Inténtalo de nuevo. Si sigue pasando, comprueba que el disco de tu computadora tiene espacio libre y luego reinicia Cmdr.}}",
+  "@errors.write.landingNotRecorded.suggestion": {
+    "sourceHash": "8cdc112"
+  },
   "errors.write.newDataKeptAt.title": "Tu archivo nuevo quedó con otro nombre",
   "@errors.write.newDataKeptAt.title": {
     "sourceHash": "1c51b7d"
@@ -691,9 +759,9 @@
   "@errors.write.fallback.title.delete": {
     "sourceHash": "bebd330"
   },
-  "errors.write.fallback.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {No se pudo mover al basurero}}",
+  "errors.write.fallback.title.trash": "{platform, select, windows {No se pudo mover a la Papelera de reciclaje} other {No se pudo mover al basurero}}",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "638f092"
+    "sourceHash": "953a646"
   },
   "errors.write.fallback.message.copy": "Algo salió mal al copiar.",
   "@errors.write.fallback.message.copy": {
@@ -707,9 +775,13 @@
   "@errors.write.fallback.message.delete": {
     "sourceHash": "2a93095"
   },
-  "errors.write.fallback.message.trash": "{platform, select, windows {Something went wrong while moving to the Recycle Bin.} other {Algo salió mal al mover al basurero.}}",
+  "errors.write.fallback.message.trash": "{platform, select, windows {Algo salió mal al mover a la Papelera de reciclaje.} other {Algo salió mal al mover al basurero.}}",
   "@errors.write.fallback.message.trash": {
-    "sourceHash": "d9e4203"
+    "sourceHash": "bd69d8e"
+  },
+  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr no puede escribir en “{path}”. Revisa los permisos de la carpeta en el Finder.} windows {Cmdr no puede escribir en “{path}”. Revisa los permisos de la carpeta en el Explorador de archivos.} other {Cmdr no puede escribir en “{path}”. Revisa los permisos de la carpeta en tu administrador de archivos.}}",
+  "@errors.mutation.parentNotWritable": {
+    "sourceHash": "5ec550d"
   },
   "errors.mutation.volumeGone": "Ese volumen ya no está disponible, así que no cambió nada.",
   "@errors.mutation.volumeGone": {
@@ -742,6 +814,10 @@
   "errors.volume.sourceChanged": "El archivo “{path}” cambió mientras Cmdr hacía la copia, así que Cmdr no guardó nada. Vuelve a intentarlo para copiar la versión nueva.",
   "@errors.volume.sourceChanged": {
     "sourceHash": "899c296"
+  },
+  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS todavía está usando algo ahí. Espera un minuto y vuelve a intentarlo.} windows {Windows todavía está usando algo ahí. Espera un minuto y vuelve a intentarlo.} other {Esta computadora todavía está usando algo ahí. Espera un minuto y vuelve a intentarlo.}}",
+  "@errors.eject.unmountRefusedBySystem": {
+    "sourceHash": "2588fa8"
   },
   "errors.write.sourcesSpanVolumes.title": "Parte de tu selección está dentro de un respaldo, un archivo comprimido o un historial de git",
   "@errors.write.sourcesSpanVolumes.title": {
@@ -779,13 +855,13 @@
   "@errors.volume.passwordRejected": {
     "sourceHash": "5d54870"
   },
-  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {Este volumen no tiene basurero, así que solo se puede eliminar permanentemente.}}",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {Este volumen no tiene Papelera de reciclaje, así que solo se puede eliminar permanentemente.} other {Este volumen no tiene basurero, así que solo se puede eliminar permanentemente.}}",
   "@errors.mutation.trashNotSupported": {
-    "sourceHash": "74a7d84"
+    "sourceHash": "0061d43"
   },
-  "errors.mutation.trashRefused": "{platform, select, macos {macOS no permitió mover esto al basurero.} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Trash.}}",
+  "errors.mutation.trashRefused": "{platform, select, macos {macOS no permitió mover esto al basurero.} windows {Windows no permitió mover esto a la Papelera de reciclaje.} other {Cmdr no pudo mover esto al basurero.}}",
   "@errors.mutation.trashRefused": {
-    "sourceHash": "732097b"
+    "sourceHash": "1244599"
   },
   "errors.serverRequest.unreachable": "Cmdr no pudo conectar con su servidor. Comprueba tu conexión a internet e inténtalo de nuevo.",
   "@errors.serverRequest.unreachable": {
@@ -815,9 +891,9 @@
   "@errors.eject.unexpected": {
     "sourceHash": "fa2c0b0"
   },
-  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr no pudo acceder a “{server}”. Comprueba que esté encendido y en la misma red que esta computadora.}}",
+  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr no pudo acceder a “{server}”. Comprueba que esté encendido y en la misma red que este PC.} other {Cmdr no pudo acceder a “{server}”. Comprueba que esté encendido y en la misma red que esta computadora.}}",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "15b4163"
+    "sourceHash": "5500cd2"
   },
   "errors.mount.timeout": "Cmdr esperó, pero “{server}” no respondió a tiempo. Comprueba que esté encendido y accesible, y vuelve a intentarlo.",
   "@errors.mount.timeout": {
@@ -831,25 +907,25 @@
   "@errors.mount.cancelled": {
     "sourceHash": "34b895b"
   },
-  "errors.mount.unsupportedProtocol": "{platform, select, windows {This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.} other {Esta computadora y “{server}” no tienen ninguna versión de SMB en común. Activa SMB 2 o posterior en la configuración del servidor y vuelve a intentarlo.}}",
+  "errors.mount.unsupportedProtocol": "{platform, select, windows {Este PC y “{server}” no tienen ninguna versión de SMB en común. Activa SMB 2 o posterior en la configuración del servidor y vuelve a intentarlo.} other {Esta computadora y “{server}” no tienen ninguna versión de SMB en común. Activa SMB 2 o posterior en la configuración del servidor y vuelve a intentarlo.}}",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "39328ea"
+    "sourceHash": "dee8dbc"
   },
   "errors.mount.mountRefused": "Tienes la sesión iniciada en “{server}”, pero el servidor no permitió abrir “{share}”. Revisa la configuración del recurso compartido en el servidor y vuelve a intentarlo.",
   "@errors.mount.mountRefused": {
     "sourceHash": "436a557"
   },
-  "errors.mount.mountMissing": "{platform, select, windows {Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.} other {Tu computadora indicó que “{share}” en “{server}” estaba conectado, pero nunca apareció. Vuelve a intentarlo.}}",
+  "errors.mount.mountMissing": "{platform, select, windows {Tu PC indicó que “{share}” en “{server}” estaba conectado, pero nunca apareció. Vuelve a intentarlo.} other {Tu computadora indicó que “{share}” en “{server}” estaba conectado, pero nunca apareció. Vuelve a intentarlo.}}",
   "@errors.mount.mountMissing": {
-    "sourceHash": "8eae6e6"
+    "sourceHash": "0e5a041"
   },
   "errors.mount.unexpected": "Algo salió mal al conectar con “{share}” en “{server}”. Vuelve a intentarlo en un momento.",
   "@errors.mount.unexpected": {
     "sourceHash": "ba78ecd"
   },
-  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr no pudo acceder a “{server}”. Comprueba que esté encendido y en la misma red que esta computadora.}}",
+  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr no pudo acceder a “{server}”. Comprueba que esté encendido y en la misma red que este PC.} other {Cmdr no pudo acceder a “{server}”. Comprueba que esté encendido y en la misma red que esta computadora.}}",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "15b4163"
+    "sourceHash": "5500cd2"
   },
   "errors.shareList.timeout": "Cmdr esperó, pero “{server}” no respondió a tiempo. Vuelve a intentarlo en un momento.",
   "@errors.shareList.timeout": {
@@ -898,9 +974,9 @@
   "@errors.write.namedLeavesRefused.message.routeCannotName": {
     "sourceHash": "ccd9d14"
   },
-  "errors.listing.serverRefused.explanation": "{platform, select, windows {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.} other {Esta carpeta está en un servidor, y la cuenta con la que te conectaste no tiene permiso para abrirla. Lo decide el servidor, así que ninguna opción de esta computadora lo cambia.}}",
+  "errors.listing.serverRefused.explanation": "{platform, select, windows {Esta carpeta está en un servidor, y la cuenta con la que te conectaste no tiene permiso para abrirla. Lo decide el servidor, así que ninguna configuración de este PC lo cambia.} other {Esta carpeta está en un servidor, y la cuenta con la que te conectaste no tiene permiso para abrirla. Lo decide el servidor, así que ninguna opción de esta computadora lo cambia.}}",
   "@errors.listing.serverRefused.explanation": {
-    "sourceHash": "a78cb55"
+    "sourceHash": "3fe4df5"
   },
   "errors.write.permissionDenied.suggestion.server": "El servidor lo rechazó para la cuenta con la que te conectaste. Revisa los permisos de la carpeta en el servidor o conéctate con una cuenta que tenga acceso.",
   "@errors.write.permissionDenied.suggestion.server": {

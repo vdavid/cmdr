@@ -3,9 +3,9 @@
   "@settings.appearance.language.label": {
     "sourceHash": "a4fe652"
   },
-  "settings.appearance.language.description": "{platform, select, macos {Válaszd ki, milyen nyelvet használjon a Cmdr. A „Rendszer szerinti” a Mac nyelvét követi.} windows {Choose the language Cmdr uses. “System default” follows your Windows display language.} other {Choose the language Cmdr uses. “System default” follows your system’s language.}}",
+  "settings.appearance.language.description": "{platform, select, macos {Válaszd ki, milyen nyelvet használjon a Cmdr. A „Rendszer szerinti” a Mac nyelvét követi.} windows {Válaszd ki, milyen nyelvet használjon a Cmdr. A „Rendszer szerinti” a Windows megjelenítési nyelvét követi.} other {Válaszd ki, milyen nyelvet használjon a Cmdr. A „Rendszer szerinti” a rendszered nyelvét követi.}}",
   "@settings.appearance.language.description": {
-    "sourceHash": "2dd7f63"
+    "sourceHash": "7ca0276"
   },
   "settings.appearance.language.opt.system": "Rendszer szerinti",
   "@settings.appearance.language.opt.system": {
@@ -47,9 +47,9 @@
   "@settings.appearance.appColor.label": {
     "sourceHash": "b1107c8"
   },
-  "settings.appearance.appColor.description": "{platform, select, macos {A rendszer témaszínének módosításához nyisd meg a Rendszerbeállítások > Megjelenés panelt.} windows {To change your system accent color, go to Settings > Personalization > Colors.} other {To change your system accent color, go to your system appearance settings.}}",
+  "settings.appearance.appColor.description": "{platform, select, macos {A rendszer témaszínének módosításához nyisd meg a Rendszerbeállítások > Megjelenés panelt.} windows {A rendszer kiemelőszínének módosításához nyisd meg a Gépház > Személyre szabás > Színek oldalt.} other {A rendszer kiemelőszínének módosításához nyisd meg a rendszer megjelenési beállításait.}}",
   "@settings.appearance.appColor.description": {
-    "sourceHash": "7dc4ab7"
+    "sourceHash": "0045d05"
   },
   "settings.appearance.appColor.opt.system": "Rendszer témaszíne",
   "@settings.appearance.appColor.opt.system": {
@@ -214,9 +214,9 @@
   "@settings.appearance.textSize.label": {
     "sourceHash": "d68761c"
   },
-  "settings.appearance.textSize.description": "{platform, select, macos {Az app egészében méretezi a szöveget és a felületet. A macOS kisegítő lehetőségek szövegméretével együtt hat, ahol a 100% „pontosan a rendszerméretet” jelenti.} other {Scales text and UI throughout the app.}}",
+  "settings.appearance.textSize.description": "{platform, select, macos {Az app egészében méretezi a szöveget és a felületet. A macOS kisegítő lehetőségek szövegméretével együtt hat, ahol a 100% „pontosan a rendszerméretet” jelenti.} other {Az app egészében méretezi a szöveget és a felületet.}}",
   "@settings.appearance.textSize.description": {
-    "sourceHash": "49a0a6b"
+    "sourceHash": "c460c56"
   },
   "settings.appearance.textSize.keywords": "szöveg, méret, szövegméret, betűméret, betűtípus, betű, nagyobb, kisebb, kisegítő lehetőségek, nagyítás, méretezés",
   "@settings.appearance.textSize.keywords": {
@@ -350,9 +350,9 @@
   "@settings.listing.showHiddenFiles.label": {
     "sourceHash": "b5ede7f"
   },
-  "settings.listing.showHiddenFiles.description": "{platform, select, macos {Megmutatja a ponttal kezdődő fájlokat (például .zshrc) és azokat az elemeket, amelyeket a rendszer rejtettként jelöl. Mindkét panelre vonatkozik.} windows {Megmutatja a ponttal kezdődő fájlokat (például .zshrc) és azokat az elemeket, amelyeket a rendszer rejtettként jelöl. Mindkét panelre vonatkozik.} other {Show dotfiles (like .bashrc) and items the system marks as hidden. Applies to both panes.}}",
+  "settings.listing.showHiddenFiles.description": "{platform, select, macos {Megmutatja a ponttal kezdődő fájlokat (például .zshrc) és azokat az elemeket, amelyeket a rendszer rejtettként jelöl. Mindkét panelre vonatkozik.} windows {Megmutatja a ponttal kezdődő fájlokat (például .zshrc) és azokat az elemeket, amelyeket a rendszer rejtettként jelöl. Mindkét panelre vonatkozik.} other {Megmutatja a ponttal kezdődő fájlokat (például .bashrc) és azokat az elemeket, amelyeket a rendszer rejtettként jelöl. Mindkét panelre vonatkozik.}}",
   "@settings.listing.showHiddenFiles.description": {
-    "sourceHash": "8e77c67"
+    "sourceHash": "2526fb4"
   },
   "settings.listing.showHiddenFiles.keywords": "rejtett, elrejtett, pontfájl, ponttal kezdődő, láthatatlan, rendszer, rendszerfájl, megjelenítés",
   "@settings.listing.showHiddenFiles.keywords": {
@@ -534,17 +534,17 @@
   "@settings.fileOperations.macOnlyFiles.keywords": {
     "sourceHash": "b668774"
   },
-  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Skip confirmation for copy, move, and delete} other {Megerősítés kihagyása másoláskor, áthelyezéskor és Kukába helyezéskor}}",
+  "settings.fileOperations.skipConfirmation.label": "{platform, select, windows {Megerősítés kihagyása másoláskor, áthelyezéskor és törléskor} other {Megerősítés kihagyása másoláskor, áthelyezéskor és Kukába helyezéskor}}",
   "@settings.fileOperations.skipConfirmation.label": {
-    "sourceHash": "6af6546"
+    "sourceHash": "f1b1b39"
   },
   "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {A Másolás és az Áthelyezés azonnal a másik panelre másol, illetve helyez át, a Törlés pedig kérdés nélkül a Lomtárba helyez. Kicsit kockázatos, mert egyetlen billentyűleütés rögtön végrehajtja a műveletet. Végleges törlés előtt a Cmdr mindig rákérdez.} other {A Másolás és az Áthelyezés azonnal a másik panelre másol, illetve helyez át, a Törlés pedig kérdés nélkül a Kukába helyez. Kicsit kockázatos, mert egyetlen billentyűleütés rögtön végrehajtja a műveletet. Végleges törlés előtt a Cmdr mindig rákérdez.}}",
   "@settings.fileOperations.skipConfirmation.explanation": {
     "sourceHash": "564f000"
   },
-  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {megerősítés, párbeszédablak, rákérdezés, kérdés, másolás, áthelyezés, kuka, törlés, kihagyás, átugrás, kattintás}}",
+  "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {megerősítés, párbeszédablak, rákérdezés, kérdés, másolás, áthelyezés, lomtár, törlés, kihagyás, átugrás, kattintás} other {megerősítés, párbeszédablak, rákérdezés, kérdés, másolás, áthelyezés, kuka, törlés, kihagyás, átugrás, kattintás}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
-    "sourceHash": "9f61258"
+    "sourceHash": "8179d90"
   },
   "settings.fileOperations.defaultConflictPolicy.label": "Ha a fájl már létezik",
   "@settings.fileOperations.defaultConflictPolicy.label": {
@@ -566,9 +566,9 @@
   "@settings.fileOperations.keepProgressOpenWhenDone.description": {
     "sourceHash": "005448f"
   },
-  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {progress, done, finished, complete, summary, result, report, stay, keep, close, window, dialog, copy, move, delete, recycle bin} other {kész, befejezve, vége, összegzés, összefoglaló, eredmény, jelentés, statisztika, sebesség, marad, nyitva, ablak, párbeszédablak, másolás, áthelyezés, törlés, kuka}}",
+  "settings.fileOperations.keepProgressOpenWhenDone.keywords": "{platform, select, windows {kész, befejezve, vége, összegzés, összefoglaló, eredmény, jelentés, statisztika, sebesség, marad, nyitva, ablak, párbeszédablak, másolás, áthelyezés, törlés, lomtár} other {kész, befejezve, vége, összegzés, összefoglaló, eredmény, jelentés, statisztika, sebesség, marad, nyitva, ablak, párbeszédablak, másolás, áthelyezés, törlés, kuka}}",
   "@settings.fileOperations.keepProgressOpenWhenDone.keywords": {
-    "sourceHash": "978b2ff"
+    "sourceHash": "1f64fb0"
   },
   "settings.fileOperations.defaultConflictPolicy.opt.skip": "Átugrás",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
@@ -1078,10 +1078,10 @@
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
+  "settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {Rendszer}}",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.macos": {
-    "sourceHash": "aed6b7a",
-    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
+    "sourceHash": "24dac61",
+    "sameAsSourceJustification": "The macos and windows branches are the brand names macOS and Windows, kept verbatim; the Linux branch is translated."
   },
   "settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": "Mindkettő",
   "@settings.behavior.fileSystemWatching.downloadsNotifications.opt.both": {
@@ -1155,18 +1155,18 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": {
     "sourceHash": "911b74b"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {Hogyan figyelmeztessen, amikor az indítólemezeden kevés a szabad hely.} windows {How to warn you when your system drive runs low on free space.} other {How to warn you when your system disk runs low on free space.}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "{platform, select, macos {Hogyan figyelmeztessen, amikor az indítólemezeden kevés a szabad hely.} windows {Hogyan figyelmeztessen, amikor a rendszermeghajtódon kevés a szabad hely.} other {Hogyan figyelmeztessen, amikor a rendszerlemezeden kevés a szabad hely.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": {
-    "sourceHash": "32b852d"
+    "sourceHash": "07714d7"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": "Appon belül",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.inApp": {
     "sourceHash": "a2de156"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {System}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": "{platform, select, macos {macOS} windows {Windows} other {Rendszer}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.macos": {
-    "sourceHash": "aed6b7a",
-    "sameAsSourceJustification": "Brand name; kept verbatim in every locale (do-not-translate list)."
+    "sourceHash": "24dac61",
+    "sameAsSourceJustification": "The macos and windows branches are the brand names macOS and Windows, kept verbatim; the Linux branch is translated."
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": "Ki",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off": {
@@ -1180,9 +1180,9 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "sourceHash": "fd1382f"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Figyelmeztessen, amikor a szabad hely az indítólemezed ekkora százaléka alá esik.} windows {Warn when free space drops below this percent of your system drive.} other {Warn when free space drops below this percent of your system disk.}}",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "{platform, select, macos {Figyelmeztessen, amikor a szabad hely az indítólemezed ekkora százaléka alá esik.} windows {Figyelmeztessen, amikor a szabad hely a rendszermeghajtód ekkora százaléka alá esik.} other {Figyelmeztessen, amikor a szabad hely a rendszerlemezed ekkora százaléka alá esik.}}",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
-    "sourceHash": "9ed41b8"
+    "sourceHash": "b4d0378"
   },
   "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": "lemez, lemezterület, szabad hely, küszöb, százalék, kevés, figyelmeztetés",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.keywords": {
@@ -1192,9 +1192,9 @@
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "{platform, select, windows {Run filename and regex searches automatically as you type (1 second after you stop). AI searches always wait for Enter, since they cost money. When off, press Enter or select the run button to search.} other {A fájlnév- és regex-kereséseket automatikusan futtatja gépelés közben (1 másodperccel azután, hogy abbahagytad). Az AI-keresések mindig az Enterre várnak, mivel pénzbe kerülnek. Ha ki van kapcsolva, nyomd meg az Entert, vagy kattints a futtatás gombra a kereséshez.}}",
+  "settings.search.autoApply.description": "{platform, select, windows {A fájlnév- és regex-kereséseket automatikusan futtatja gépelés közben (1 másodperccel azután, hogy abbahagytad). Az AI-keresések mindig az Enterre várnak, mivel pénzbe kerülnek. Ha ki van kapcsolva, nyomd meg az Entert, vagy válaszd a futtatás gombot a kereséshez.} other {A fájlnév- és regex-kereséseket automatikusan futtatja gépelés közben (1 másodperccel azután, hogy abbahagytad). Az AI-keresések mindig az Enterre várnak, mivel pénzbe kerülnek. Ha ki van kapcsolva, nyomd meg az Entert, vagy kattints a futtatás gombra a kereséshez.}}",
   "@settings.search.autoApply.description": {
-    "sourceHash": "19fcaf7"
+    "sourceHash": "b0f85fd"
   },
   "settings.search.autoApply.keywords": "keresés, automatikus, alkalmazás, élő, azonnali, gépelés közben, pergésmentesítés, fájlnév",
   "@settings.search.autoApply.keywords": {
@@ -1292,13 +1292,13 @@
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
   },
-  "settings.network.enabled.label": "{platform, select, windows {Turn on networking} other {Hálózatkezelés bekapcsolása}}",
+  "settings.network.enabled.label": "{platform, select, windows {Hálózatkezelés bekapcsolása} other {Hálózatkezelés bekapcsolása}}",
   "@settings.network.enabled.label": {
-    "sourceHash": "10f5de9"
+    "sourceHash": "ecb8b03"
   },
-  "settings.network.enabled.description": "{platform, select, macos {SMB-szerverek felderítése a helyi hálózaton, és kapcsolódás hozzájuk. Ha ki van kapcsolva, a Cmdr a már csatolt megosztásokon továbbra is tud fájlokat olvasni és írni, de nem kéri a macOS-tól a Helyi hálózat hozzáférést.} windows {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, and Windows won’t ask to let Cmdr through the firewall.} other {Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares.}}",
+  "settings.network.enabled.description": "{platform, select, macos {SMB-szerverek felderítése a helyi hálózaton, és kapcsolódás hozzájuk. Ha ki van kapcsolva, a Cmdr a már csatolt megosztásokon továbbra is tud fájlokat olvasni és írni, de nem kéri a macOS-tól a Helyi hálózat hozzáférést.} windows {SMB-szerverek felderítése a helyi hálózaton, és kapcsolódás hozzájuk. Ha ki van kapcsolva, a Cmdr a már csatolt megosztásokon továbbra is tud fájlokat olvasni és írni, és a Windows nem kérdezi meg, hogy átengedje-e a Cmdrt a tűzfalon.} other {SMB-szerverek felderítése a helyi hálózaton, és kapcsolódás hozzájuk. Ha ki van kapcsolva, a Cmdr a már csatolt megosztásokon továbbra is tud fájlokat olvasni és írni.}}",
   "@settings.network.enabled.description": {
-    "sourceHash": "72a0854"
+    "sourceHash": "6994272"
   },
   "settings.network.enabled.keywords": "hálózat, hálózatkezelés, bekapcsolás, engedélyezés, felderítés, helyi hálózat, engedély",
   "@settings.network.enabled.keywords": {
@@ -1320,9 +1320,9 @@
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "{platform, select, macos {Ha be van kapcsolva, a Cmdr közvetlenül kapcsolódik az SMB-megosztásokhoz, így gyorsabbak a fájlműveletek. A rendszercsatolás megmarad a Findernek és más appoknak.} windows {When this is on, Cmdr establishes a direct connection to SMB shares for faster file operations. The system connection stays for File Explorer and other apps.} other {When enabled, Cmdr establishes a direct connection to SMB shares for faster file operations. The system mount stays for your file manager and other apps.}}",
+  "settings.network.directSmbConnection.description": "{platform, select, macos {Ha be van kapcsolva, a Cmdr közvetlenül kapcsolódik az SMB-megosztásokhoz, így gyorsabbak a fájlműveletek. A rendszercsatolás megmarad a Findernek és más appoknak.} windows {Ha be van kapcsolva, a Cmdr közvetlenül kapcsolódik az SMB-megosztásokhoz, így gyorsabbak a fájlműveletek. A rendszerkapcsolat megmarad a Fájlkezelőnek és más appoknak.} other {Ha be van kapcsolva, a Cmdr közvetlenül kapcsolódik az SMB-megosztásokhoz, így gyorsabbak a fájlműveletek. A rendszercsatolás megmarad a fájlkezelődnek és más appoknak.}}",
   "@settings.network.directSmbConnection.description": {
-    "sourceHash": "44a5a6d"
+    "sourceHash": "429c68c"
   },
   "settings.network.directSmbConnection.keywords": "közvetlen, gyors, kapcsolat, kapcsolódás, csatlakozás, hálózat, teljesítmény, sebesség",
   "@settings.network.directSmbConnection.keywords": {
@@ -1332,9 +1332,9 @@
   "@settings.network.requireSmbEncryption.label": {
     "sourceHash": "4519b09"
   },
-  "settings.network.requireSmbEncryption.description": "{platform, select, macos {A Cmdr akkor is titkosítja az SMB-megosztásokhoz nyitott kapcsolatait, ha a szerver nem kéri, és nem nyit meg olyan megosztást, amelynek a kapcsolata nem titkosítható, azt sem, amelyhez a Mac-ed titkosítás nélkül csatlakozott. A vendégkapcsolatok nem titkosíthatók, ezért be kell jelentkezned. A Cmdr már megnyitott kapcsolatai változatlanok maradnak, amíg újra nem csatlakoznak.} windows {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your PC connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.} other {Cmdr encrypts its connections to SMB shares, even when the server doesn’t ask for it, and doesn’t open a share whose connection can’t encrypt, including one your computer connected to without encryption. Guest connections can’t be encrypted, so you’ll need to sign in. Connections Cmdr already has open stay as they are until they reconnect.}}",
+  "settings.network.requireSmbEncryption.description": "{platform, select, macos {A Cmdr akkor is titkosítja az SMB-megosztásokhoz nyitott kapcsolatait, ha a szerver nem kéri, és nem nyit meg olyan megosztást, amelynek a kapcsolata nem titkosítható, azt sem, amelyhez a Mac-ed titkosítás nélkül csatlakozott. A vendégkapcsolatok nem titkosíthatók, ezért be kell jelentkezned. A Cmdr már megnyitott kapcsolatai változatlanok maradnak, amíg újra nem csatlakoznak.} windows {A Cmdr akkor is titkosítja az SMB-megosztásokhoz nyitott kapcsolatait, ha a szerver nem kéri, és nem nyit meg olyan megosztást, amelynek a kapcsolata nem titkosítható, azt sem, amelyhez a géped titkosítás nélkül csatlakozott. A vendégkapcsolatok nem titkosíthatók, ezért be kell jelentkezned. A Cmdr már megnyitott kapcsolatai változatlanok maradnak, amíg újra nem csatlakoznak.} other {A Cmdr akkor is titkosítja az SMB-megosztásokhoz nyitott kapcsolatait, ha a szerver nem kéri, és nem nyit meg olyan megosztást, amelynek a kapcsolata nem titkosítható, azt sem, amelyhez a számítógéped titkosítás nélkül csatlakozott. A vendégkapcsolatok nem titkosíthatók, ezért be kell jelentkezned. A Cmdr már megnyitott kapcsolatai változatlanok maradnak, amíg újra nem csatlakoznak.}}",
   "@settings.network.requireSmbEncryption.description": {
-    "sourceHash": "8c27a6c"
+    "sourceHash": "26291fe"
   },
   "settings.network.requireSmbEncryption.keywords": "titkosít, titkosított, rejtjelezés, biztonság, biztonságos, adatvédelem, védelem",
   "@settings.network.requireSmbEncryption.keywords": {
@@ -1444,9 +1444,9 @@
   "@settings.fileOperations.adbEnabled.label": {
     "sourceHash": "3651356"
   },
-  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {Eléred egy olyan Android-telefon teljes fájlrendszerét, amelyen be van kapcsolva az USB-hibakeresés; az MTP ezt nem mutatja meg. Ehhez kell az Android platform tools csomag (az „adb” parancs) ezen a Macen. Ha nincs telepítve Android-fejlesztőeszköz, nem kerül semmibe, ha bekapcsolva hagyod.} windows {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this PC. Leaving this on costs nothing if you have no Android tooling installed.} other {Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this computer. Leaving this on costs nothing if you have no Android tooling installed.}}",
+  "settings.fileOperations.adbEnabled.description": "{platform, select, macos {Eléred egy olyan Android-telefon teljes fájlrendszerét, amelyen be van kapcsolva az USB-hibakeresés; az MTP ezt nem mutatja meg. Ehhez kell az Android platform tools csomag (az „adb” parancs) ezen a Macen. Ha nincs telepítve Android-fejlesztőeszköz, nem kerül semmibe, ha bekapcsolva hagyod.} windows {Eléred egy olyan Android-telefon teljes fájlrendszerét, amelyen be van kapcsolva az USB-hibakeresés; az MTP ezt nem mutatja meg. Ehhez kell az Android platform tools csomag (az „adb” parancs) ezen a gépen. Ha nincs telepítve Android-fejlesztőeszköz, nem kerül semmibe, ha bekapcsolva hagyod.} other {Eléred egy olyan Android-telefon teljes fájlrendszerét, amelyen be van kapcsolva az USB-hibakeresés; az MTP ezt nem mutatja meg. Ehhez kell az Android platform tools csomag (az „adb” parancs) ezen a számítógépen. Ha nincs telepítve Android-fejlesztőeszköz, nem kerül semmibe, ha bekapcsolva hagyod.}}",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "a89c957"
+    "sourceHash": "4c92b52"
   },
   "settings.fileOperations.adbEnabled.keywords": "usb-hibakeresés, hibakeresés, fejlesztői beállítások, telefon, eszköz",
   "@settings.fileOperations.adbEnabled.keywords": {
@@ -1456,9 +1456,9 @@
   "@settings.fileOperations.adbBinaryPath.label": {
     "sourceHash": "a67fbbd"
   },
-  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Hagyd üresen, és a Cmdr a szokásos módon keresi az adb-t, többek között az Android SDK-ban és a Homebrew-ban. Adj meg másik elérési utat, ha a platform tools csomagot külön helyen tartod.} other {Leave this empty and Cmdr looks for adb the usual way, including the Android SDK and your PATH. Point it somewhere else if you keep the platform tools in their own place.}}",
+  "settings.fileOperations.adbBinaryPath.description": "{platform, select, macos {Hagyd üresen, és a Cmdr a szokásos módon keresi az adb-t, többek között az Android SDK-ban és a Homebrew-ban. Adj meg másik elérési utat, ha a platform tools csomagot külön helyen tartod.} other {Hagyd üresen, és a Cmdr a szokásos módon keresi az adb-t, többek között az Android SDK-ban és a PATH-ban. Adj meg másik elérési utat, ha a platform tools csomagot külön helyen tartod.}}",
   "@settings.fileOperations.adbBinaryPath.description": {
-    "sourceHash": "940ff29"
+    "sourceHash": "e8cde17"
   },
   "settings.fileOperations.adbBinaryPath.keywords": "útvonal, elérési út, bináris, program, hely",
   "@settings.fileOperations.adbBinaryPath.keywords": {
@@ -1536,9 +1536,9 @@
   "@settings.viewer.showTextCursor.keywords": {
     "sourceHash": "1214804"
   },
-  "settings.developer.mcpEnabled.label": "{platform, select, windows {Turn on MCP server} other {MCP-szerver bekapcsolása}}",
+  "settings.developer.mcpEnabled.label": "{platform, select, windows {MCP-szerver bekapcsolása} other {MCP-szerver bekapcsolása}}",
   "@settings.developer.mcpEnabled.label": {
-    "sourceHash": "32b62ff"
+    "sourceHash": "a2e166c"
   },
   "settings.developer.mcpEnabled.description": "Model Context Protocol szervert indít az AI-asszisztens integrációhoz.",
   "@settings.developer.mcpEnabled.description": {
@@ -1617,9 +1617,9 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "{platform, select, windows {Please turn this on to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats.} other {Kérlek, kapcsold be, hogy lássuk, mely funkciók számítanak a nyílt béta alatt.\nA statisztika nem a nevedhez vagy az e-mail-címedhez kötődik, hanem egy véletlenszerű azonosítóhoz.\nA Cmdr sosem küld fájlneveket, útvonalakat, keresési kifejezéseket vagy promptokat.\nKikapcsolva a Cmdr semmilyen statisztikát nem küld.}}",
+  "settings.analytics.enabled.description": "{platform, select, windows {Kérlek, kapcsold be, hogy lássuk, mely funkciók számítanak a nyílt béta alatt.\nA statisztika nem a nevedhez vagy az e-mail-címedhez kötődik, hanem egy véletlenszerű azonosítóhoz.\nA Cmdr sosem küld fájlneveket, útvonalakat, keresési kifejezéseket vagy promptokat.\nKikapcsolva a Cmdr semmilyen statisztikát nem küld.} other {Kérlek, kapcsold be, hogy lássuk, mely funkciók számítanak a nyílt béta alatt.\nA statisztika nem a nevedhez vagy az e-mail-címedhez kötődik, hanem egy véletlenszerű azonosítóhoz.\nA Cmdr sosem küld fájlneveket, útvonalakat, keresési kifejezéseket vagy promptokat.\nKikapcsolva a Cmdr semmilyen statisztikát nem küld.}}",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "f5534ee"
+    "sourceHash": "2527a03"
   },
   "settings.analytics.enabled.keywords": "analitika, használat, használati statisztika, statisztika, adatvédelem, telemetria, béta, követés, kikapcsolás, leiratkozás",
   "@settings.analytics.enabled.keywords": {
@@ -1641,9 +1641,9 @@
   "@settings.updates.crashReports.label": {
     "sourceHash": "2b8f06d"
   },
-  "settings.updates.crashReports.description": "{platform, select, macos {Automatikusan elküld egy jelentést, ha a Cmdr váratlanul bezárul, vagy a háttérben problémába ütközik. Tartalmazza az app verzióját, a macOS verzióját, és hogy a kód melyik része ütközött a problémába. Fájlneveket vagy személyes adatokat soha.} windows {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Windows version, and where in the code the problem happened. Never file names or personal data.} other {Automatically send a report when Cmdr crashes or runs into a problem in the background. Includes app version, Linux distribution and version, and where in the code the problem happened. Never file names or personal data.}}",
+  "settings.updates.crashReports.description": "{platform, select, macos {Automatikusan elküld egy jelentést, ha a Cmdr váratlanul bezárul, vagy a háttérben problémába ütközik. Tartalmazza az app verzióját, a macOS verzióját, és hogy a kód melyik része ütközött a problémába. Fájlneveket vagy személyes adatokat soha.} windows {Automatikusan elküld egy jelentést, ha a Cmdr váratlanul bezárul, vagy a háttérben problémába ütközik. Tartalmazza az app verzióját, a Windows verzióját, és hogy a kód melyik része ütközött a problémába. Fájlneveket vagy személyes adatokat soha.} other {Automatikusan elküld egy jelentést, ha a Cmdr váratlanul bezárul, vagy a háttérben problémába ütközik. Tartalmazza az app verzióját, a Linux-disztribúciót és annak verzióját, és hogy a kód melyik része ütközött a problémába. Fájlneveket vagy személyes adatokat soha.}}",
   "@settings.updates.crashReports.description": {
-    "sourceHash": "e726766"
+    "sourceHash": "abfdc61"
   },
   "settings.updates.crashReports.keywords": "összeomlás, összeomlási jelentés, jelentés, adatvédelem, telemetria, hiba, programhiba",
   "@settings.updates.crashReports.keywords": {
@@ -1737,9 +1737,9 @@
   "@settings.advanced.indexPauseFreeSpacePercent.label": {
     "sourceHash": "c6fe418"
   },
-  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {A Cmdr szünetelteti a meghajtó indexelését, ha az indítólemezeden a szabad hely e százalék alá csökken, hogy az index ne foglalja el a helyet a saját fájljaid elől. Az indexelés ott folytatódik, ahol abbamaradt, amint a szabad hely egy százalékponttal e határ fölé emelkedik. Ez attól függetlenül működik, hogy a „Kevés lemezterület figyelmeztetés” be van-e kapcsolva.} windows {Cmdr pauses drive indexing when free space on your system drive drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.} other {Cmdr pauses drive indexing when free space on your system disk drops below this percent, so the index doesn’t take the room your own files need. Indexing picks up where it left off once free space climbs one point above it. This works whether the “Low disk space warning” is on or off.}}",
+  "settings.advanced.indexPauseFreeSpacePercent.description": "{platform, select, macos {A Cmdr szünetelteti a meghajtó indexelését, ha az indítólemezeden a szabad hely e százalék alá csökken, hogy az index ne foglalja el a helyet a saját fájljaid elől. Az indexelés ott folytatódik, ahol abbamaradt, amint a szabad hely egy százalékponttal e határ fölé emelkedik. Ez attól függetlenül működik, hogy a „Kevés lemezterület figyelmeztetés” be van-e kapcsolva.} windows {A Cmdr szünetelteti a meghajtó indexelését, ha a rendszermeghajtódon a szabad hely e százalék alá csökken, hogy az index ne foglalja el a helyet a saját fájljaid elől. Az indexelés ott folytatódik, ahol abbamaradt, amint a szabad hely egy százalékponttal e határ fölé emelkedik. Ez attól függetlenül működik, hogy a „Kevés lemezterület figyelmeztetés” be van-e kapcsolva.} other {A Cmdr szünetelteti a meghajtó indexelését, ha a rendszerlemezeden a szabad hely e százalék alá csökken, hogy az index ne foglalja el a helyet a saját fájljaid elől. Az indexelés ott folytatódik, ahol abbamaradt, amint a szabad hely egy százalékponttal e határ fölé emelkedik. Ez attól függetlenül működik, hogy a „Kevés lemezterület figyelmeztetés” be van-e kapcsolva.}}",
   "@settings.advanced.indexPauseFreeSpacePercent.description": {
-    "sourceHash": "4ee1cce"
+    "sourceHash": "bb41d41"
   },
   "settings.advanced.indexPauseFreeSpacePercent.keywords": "lemez, lemezterület, hely, tele, megtelt, szabad hely, tárhely, küszöb, százalék, kevés, szünet, leállítás",
   "@settings.advanced.indexPauseFreeSpacePercent.keywords": {
@@ -1801,9 +1801,9 @@
   "@settings.fileOperations.showAlreadyGoneToast.label": {
     "sourceHash": "c7626c3"
   },
-  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {When you delete something another app already moved or deleted, Cmdr treats it as done and shows a short notice saying so. Turn this off (or select “Never show this again” in the notice) to stop these notices.} other {Ha olyasmit törölsz, amit egy másik app már áthelyezett vagy törölt, a Cmdr késznek tekinti, és egy rövid értesítésben jelzi ezt. Kapcsold ki ezt (vagy kattints az értesítés „Soha ne jelenjen meg újra” gombjára), hogy leállítsd ezeket az értesítéseket.}}",
+  "settings.fileOperations.showAlreadyGoneToast.description": "{platform, select, windows {Ha olyasmit törölsz, amit egy másik app már áthelyezett vagy törölt, a Cmdr késznek tekinti, és egy rövid értesítésben jelzi ezt. Kapcsold ki ezt (vagy válaszd az értesítés „Soha ne jelenjen meg újra” gombját), hogy leállítsd ezeket az értesítéseket.} other {Ha olyasmit törölsz, amit egy másik app már áthelyezett vagy törölt, a Cmdr késznek tekinti, és egy rövid értesítésben jelzi ezt. Kapcsold ki ezt (vagy kattints az értesítés „Soha ne jelenjen meg újra” gombjára), hogy leállítsd ezeket az értesítéseket.}}",
   "@settings.fileOperations.showAlreadyGoneToast.description": {
-    "sourceHash": "9655e46"
+    "sourceHash": "72a3ead"
   },
   "settings.fileOperations.showAlreadyGoneToast.keywords": "hiányzik, eltűnt, nincs meg, értesítés, buborék, figyelmeztetés, áthelyezve, törölve",
   "@settings.fileOperations.showAlreadyGoneToast.keywords": {
@@ -1981,9 +1981,9 @@
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"
   },
-  "settings.advanced.logLlmCalls.description": "{platform, select, macos {Elmenti minden AI-kérést és -választ egy helyi mappába (llm-logs) hibakereséshez. Ezek a fájlok a Mac-eden maradnak, és tartalmazzák azokat a fájlneveket és útvonalakat, amiket a Cmdr elküld a szolgáltatódnak.} windows {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your PC and include the file names and paths Cmdr sends to your provider.} other {Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your computer and include the file names and paths Cmdr sends to your provider.}}",
+  "settings.advanced.logLlmCalls.description": "{platform, select, macos {Elmenti minden AI-kérést és -választ egy helyi mappába (llm-logs) hibakereséshez. Ezek a fájlok a Mac-eden maradnak, és tartalmazzák azokat a fájlneveket és útvonalakat, amiket a Cmdr elküld a szolgáltatódnak.} windows {Elmenti minden AI-kérést és -választ egy helyi mappába (llm-logs) hibakereséshez. Ezek a fájlok a gépeden maradnak, és tartalmazzák azokat a fájlneveket és útvonalakat, amiket a Cmdr elküld a szolgáltatódnak.} other {Elmenti minden AI-kérést és -választ egy helyi mappába (llm-logs) hibakereséshez. Ezek a fájlok a számítógépeden maradnak, és tartalmazzák azokat a fájlneveket és útvonalakat, amiket a Cmdr elküld a szolgáltatódnak.}}",
   "@settings.advanced.logLlmCalls.description": {
-    "sourceHash": "86b3d34"
+    "sourceHash": "0f9361b"
   },
   "settings.advanced.logLlmCalls.keywords": "ai, napló, naplózás, hibakeresés, kérés, válasz, prompt, utasítás",
   "@settings.advanced.logLlmCalls.keywords": {
@@ -1993,9 +1993,9 @@
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
   },
-  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {Időtúllépés a hálózati szolgáltatások Bonjour-on keresztüli feloldásához.} other {Timeout for resolving network services found on your local network (mDNS).}}",
+  "settings.advanced.serviceResolveTimeout.description": "{platform, select, macos {Időtúllépés a hálózati szolgáltatások Bonjour-on keresztüli feloldásához.} other {Időtúllépés a helyi hálózaton talált hálózati szolgáltatások (mDNS) feloldásához.}}",
   "@settings.advanced.serviceResolveTimeout.description": {
-    "sourceHash": "5cf231d"
+    "sourceHash": "cb44fa3"
   },
   "settings.advanced.serviceResolveTimeout.keywords": "feloldás, időtúllépés, időkorlát, szolgáltatás, szolgáltatáskeresés, hálózatfelderítés, felderítés, keresés, kikeresés, helyi hálózat, várakozás, várakozási idő",
   "@settings.advanced.serviceResolveTimeout.keywords": {
@@ -2766,9 +2766,9 @@
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "{platform, select, windows {Turn on networking, direct SMB connections, share cache, and timeouts.} other {Hálózatkezelés bekapcsolása, közvetlen SMB-kapcsolatok, megosztásgyorsítótár és időtúllépések.}}",
+  "settings.summary.smbNetworkShares": "{platform, select, windows {Hálózatkezelés bekapcsolása, közvetlen SMB-kapcsolatok, megosztásgyorsítótár és időtúllépések.} other {Hálózatkezelés bekapcsolása, közvetlen SMB-kapcsolatok, megosztásgyorsítótár és időtúllépések.}}",
   "@settings.summary.smbNetworkShares": {
-    "sourceHash": "10604ac"
+    "sourceHash": "47e037d"
   },
   "settings.summary.servers": "A megbízhatónak tekintett SSH-szerverkulcsok.",
   "@settings.summary.servers": {
@@ -2943,18 +2943,18 @@
   "@settings.sidebar.matchCount": {
     "sourceHash": "fb95dc1"
   },
-  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {A Rendszerbeállítások megnyitása a rendszer témaszínének módosításához} windows {Open Windows Settings to change the system accent color} other {Open your system settings to change the system accent color}}",
+  "settings.appearance.themeColorSwatchAria": "{platform, select, macos {A Rendszerbeállítások megnyitása a rendszer témaszínének módosításához} windows {A Gépház megnyitása a rendszer kiemelőszínének módosításához} other {A rendszerbeállítások megnyitása a rendszer kiemelőszínének módosításához}}",
   "@settings.appearance.themeColorSwatchAria": {
-    "sourceHash": "4cad022"
+    "sourceHash": "b76cab4"
   },
-  "settings.appearance.appColorHintPrefix": "{platform, select, macos {A rendszer témaszínének módosításához nyisd meg:} other {To change your system accent color, go to}}",
+  "settings.appearance.appColorHintPrefix": "{platform, select, macos {A rendszer témaszínének módosításához nyisd meg:} other {A rendszer kiemelőszínének módosításához nyisd meg}}",
   "@settings.appearance.appColorHintPrefix": {
-    "sourceHash": "748470a"
+    "sourceHash": "f06932f"
   },
-  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {Settings > Personalization > Colors} other {a rendszer megjelenési beállításait}}",
+  "settings.appearance.appColorHintLink": "{platform, select, macos {{systemSettings} > {appearance}} windows {a Gépház > Személyre szabás > Színek oldalt} other {a rendszer megjelenési beállításait}}",
   "@settings.appearance.appColorHintLink": {
-    "sourceHash": "5c94206",
-    "sameAsSourceJustification": "Placeholder-only path '{systemSettings} > {appearance}': both parts are already-localized inserts (Rendszerbeállítások / Megjelenés), the '> ' arrow is the neutral path separator. No literal text to translate. Listed as kept-verbatim in glossary (settings pass)."
+    "sourceHash": "551a3a4",
+    "sameAsSourceJustification": "The macos branch is placeholders only ({systemSettings} > {appearance}), which macOS supplies already localized."
   },
   "settings.appearance.datePreviewLabel": "Előnézet:",
   "@settings.appearance.datePreviewLabel": {
@@ -3189,17 +3189,17 @@
   "@settings.securityLog.enabled.label": {
     "sourceHash": "9f5e32e"
   },
-  "settings.securityLog.enabled.description": "{platform, select, macos {Egy kis fájlban rögzíti ezen a Macen a biztonsági szempontból fontos változásokat és elutasításokat, például a felhő-AI-hoz adott hozzájárulást, egy telepített frissítést vagy egy appot, amelyet az MCP-szerver visszautasított. A fájl nem tartalmaz se fájlnevet, se tartalmat, se jelszót, és sosem kerül ki erről a Macről.} windows {Keep a small file on this PC that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your PC.} other {Keep a small file on this computer that notes security-relevant changes and refusals, like cloud AI consent, an installed update, or an app turned away from the MCP server. It holds no file names, contents, or passwords, and it never leaves your computer.}}",
+  "settings.securityLog.enabled.description": "{platform, select, macos {Egy kis fájlban rögzíti ezen a Macen a biztonsági szempontból fontos változásokat és elutasításokat, például a felhő-AI-hoz adott hozzájárulást, egy telepített frissítést vagy egy appot, amelyet az MCP-szerver visszautasított. A fájl nem tartalmaz se fájlnevet, se tartalmat, se jelszót, és sosem kerül ki erről a Macről.} windows {Egy kis fájlban rögzíti ezen a gépen a biztonsági szempontból fontos változásokat és elutasításokat, például a felhő-AI-hoz adott hozzájárulást, egy telepített frissítést vagy egy appot, amelyet az MCP-szerver visszautasított. A fájl nem tartalmaz se fájlnevet, se tartalmat, se jelszót, és sosem kerül ki erről a gépről.} other {Egy kis fájlban rögzíti ezen a számítógépen a biztonsági szempontból fontos változásokat és elutasításokat, például a felhő-AI-hoz adott hozzájárulást, egy telepített frissítést vagy egy appot, amelyet az MCP-szerver visszautasított. A fájl nem tartalmaz se fájlnevet, se tartalmat, se jelszót, és sosem kerül ki erről a számítógépről.}}",
   "@settings.securityLog.enabled.description": {
-    "sourceHash": "11361eb"
+    "sourceHash": "c0d2160"
   },
   "settings.securityLog.enabled.keywords": "biztonság, biztonsági, napló, ellenőrzés, audit, rögzítés, események, hozzáférés, adatvédelem",
   "@settings.securityLog.enabled.keywords": {
     "sourceHash": "6f113c0"
   },
-  "settings.securityLog.showInFinder": "{platform, select, macos {Megjelenítés a Finderben} windows {Show in File Explorer} other {Show in file manager}}",
+  "settings.securityLog.showInFinder": "{platform, select, macos {Megjelenítés a Finderben} windows {Megjelenítés a Fájlkezelőben} other {Megjelenítés a fájlkezelőben}}",
   "@settings.securityLog.showInFinder": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "settings.updates.showSecurityLog.keywords": "biztonság, biztonsági napló, napló, audit, események, fájl, megnyitás, megjelenítés, mutatás, mappa, hely, helye",
   "@settings.updates.showSecurityLog.keywords": {
@@ -3262,9 +3262,9 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "14adb30"
   },
-  "settings.updates.emailPrivacyNote": "{platform, select, macos {Csak a Mac-eden tárolódik. Sosem küldjük el a használati statisztikáddal együtt, így az nem köthető vissza hozzád. Csak kapcsolatfelvételre és egy általad küldött jelentéshez való opcionális csatolásra használjuk. Hogy ne kapj több e-mailt, használd a leiratkozási linket bármelyik üzenetünkben.} windows {Stored only on your PC. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.} other {Stored only on your computer. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.}}",
+  "settings.updates.emailPrivacyNote": "{platform, select, macos {Csak a Mac-eden tárolódik. Sosem küldjük el a használati statisztikáddal együtt, így az nem köthető vissza hozzád. Csak kapcsolatfelvételre és egy általad küldött jelentéshez való opcionális csatolásra használjuk. Hogy ne kapj több e-mailt, használd a leiratkozási linket bármelyik üzenetünkben.} windows {Csak a gépeden tárolódik. Sosem küldjük el a használati statisztikáddal együtt, így az nem köthető vissza hozzád. Csak kapcsolatfelvételre és egy általad küldött jelentéshez való opcionális csatolásra használjuk. Hogy ne kapj több e-mailt, használd a leiratkozási linket bármelyik üzenetünkben.} other {Csak a számítógépeden tárolódik. Sosem küldjük el a használati statisztikáddal együtt, így az nem köthető vissza hozzád. Csak kapcsolatfelvételre és egy általad küldött jelentéshez való opcionális csatolásra használjuk. Hogy ne kapj több e-mailt, használd a leiratkozási linket bármelyik üzenetünkben.}}",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "cf92795"
+    "sourceHash": "d8146b0"
   },
   "settings.logging.openLogFile": "Naplófájl megnyitása",
   "@settings.logging.openLogFile": {
@@ -3430,13 +3430,13 @@
   "@settings.network.trustedCertificates.keywords": {
     "sourceHash": "554a965"
   },
-  "settings.servers.trustedCertificates.description": "{platform, select, macos {Ha a macOS nem tekinti megbízhatónak egy szerver tanúsítványát, a Cmdr rákérdez, mielőtt helyetted megbízhatónak tekintené, és itt jegyzi meg a válaszodat. Az otthoni szerverek gyakran maguk készítik a tanúsítványukat.} windows {When Windows doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.} other {When your system doesn’t trust a server’s certificate, Cmdr asks before it trusts it for you, and remembers your answer here. Home servers often make their own.}}",
+  "settings.servers.trustedCertificates.description": "{platform, select, macos {Ha a macOS nem tekinti megbízhatónak egy szerver tanúsítványát, a Cmdr rákérdez, mielőtt helyetted megbízhatónak tekintené, és itt jegyzi meg a válaszodat. Az otthoni szerverek gyakran maguk készítik a tanúsítványukat.} windows {Ha a Windows nem tekinti megbízhatónak egy szerver tanúsítványát, a Cmdr rákérdez, mielőtt helyetted megbízhatónak tekintené, és itt jegyzi meg a válaszodat. Az otthoni szerverek gyakran maguk készítik a tanúsítványukat.} other {Ha a rendszered nem tekinti megbízhatónak egy szerver tanúsítványát, a Cmdr rákérdez, mielőtt helyetted megbízhatónak tekintené, és itt jegyzi meg a válaszodat. Az otthoni szerverek gyakran maguk készítik a tanúsítványukat.}}",
   "@settings.servers.trustedCertificates.description": {
-    "sourceHash": "0b00c1e"
+    "sourceHash": "9eb44db"
   },
-  "settings.servers.trustedCertificates.empty": "{platform, select, macos {Még nincs megbízhatónak tekintett tanúsítvány. Amikor olyan WebDAV-szerverre kapcsolódsz, amelyet a macOS nem tekint megbízhatónak, a Cmdr megmutatja a tanúsítványa ujjlenyomatát, és rákérdez.} windows {Nothing trusted yet. When you connect to a WebDAV server Windows doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.} other {Nothing trusted yet. When you connect to a WebDAV server your system doesn’t trust, Cmdr shows you its certificate’s fingerprint and asks.}}",
+  "settings.servers.trustedCertificates.empty": "{platform, select, macos {Még nincs megbízhatónak tekintett tanúsítvány. Amikor olyan WebDAV-szerverre kapcsolódsz, amelyet a macOS nem tekint megbízhatónak, a Cmdr megmutatja a tanúsítványa ujjlenyomatát, és rákérdez.} windows {Még nincs megbízhatónak tekintett tanúsítvány. Amikor olyan WebDAV-szerverre kapcsolódsz, amelyet a Windows nem tekint megbízhatónak, a Cmdr megmutatja a tanúsítványa ujjlenyomatát, és rákérdez.} other {Még nincs megbízhatónak tekintett tanúsítvány. Amikor olyan WebDAV-szerverre kapcsolódsz, amelyet a rendszered nem tekint megbízhatónak, a Cmdr megmutatja a tanúsítványa ujjlenyomatát, és rákérdez.}}",
   "@settings.servers.trustedCertificates.empty": {
-    "sourceHash": "a3c2089"
+    "sourceHash": "da34116"
   },
   "settings.servers.trustedCertificates.confirmTitle": "Elfelejted ezt a tanúsítványt?",
   "@settings.servers.trustedCertificates.confirmTitle": {
@@ -3526,13 +3526,13 @@
   "@settings.fileExplorer.quickFilterIntroSeen.keywords": {
     "sourceHash": "c02e93d"
   },
-  "settings.dataWipe.card": "{platform, select, macos {Az adataid ezen a Macen} windows {Your data on this PC} other {Your data on this computer}}",
+  "settings.dataWipe.card": "{platform, select, macos {Az adataid ezen a Macen} windows {Az adataid ezen a gépen} other {Az adataid ezen a számítógépen}}",
   "@settings.dataWipe.card": {
-    "sourceHash": "e4b3cee"
+    "sourceHash": "3d21fb8"
   },
-  "settings.dataWipe.description": "{platform, select, macos {Töröld mindazt, amit a Cmdr ezen a Macen tárol: a beállításokat, a mentett jelszavakat, az előzményeket, az indexeket és a letöltött modelleket. Utána a Cmdr kilép.} windows {Delete everything Cmdr keeps on this PC: settings, saved passwords, histories, indexes, and downloaded models. Cmdr closes afterwards.} other {Delete everything Cmdr keeps on this computer: settings, saved passwords, histories, indexes, and downloaded models. Cmdr quits afterwards.}}",
+  "settings.dataWipe.description": "{platform, select, macos {Töröld mindazt, amit a Cmdr ezen a Macen tárol: a beállításokat, a mentett jelszavakat, az előzményeket, az indexeket és a letöltött modelleket. Utána a Cmdr kilép.} windows {Töröld mindazt, amit a Cmdr ezen a gépen tárol: a beállításokat, a mentett jelszavakat, az előzményeket, az indexeket és a letöltött modelleket. Utána a Cmdr bezárul.} other {Töröld mindazt, amit a Cmdr ezen a számítógépen tárol: a beállításokat, a mentett jelszavakat, az előzményeket, az indexeket és a letöltött modelleket. Utána a Cmdr kilép.}}",
   "@settings.dataWipe.description": {
-    "sourceHash": "f1012f4"
+    "sourceHash": "7dc0c1c"
   },
   "settings.dataWipe.button": "A Cmdr összes adatának törlése",
   "@settings.dataWipe.button": {
@@ -3542,17 +3542,17 @@
   "@settings.updates.deleteAllData.keywords": {
     "sourceHash": "0ffb0f6"
   },
-  "settings.dataWipe.title": "{platform, select, macos {Törlöd a Cmdr összes adatát erről a Macről?} windows {Delete all Cmdr data on this PC?} other {Delete all Cmdr data on this computer?}}",
+  "settings.dataWipe.title": "{platform, select, macos {Törlöd a Cmdr összes adatát erről a Macről?} windows {Törlöd a Cmdr összes adatát erről a gépről?} other {Törlöd a Cmdr összes adatát erről a számítógépről?}}",
   "@settings.dataWipe.title": {
-    "sourceHash": "35db003"
+    "sourceHash": "63322b8"
   },
-  "settings.dataWipe.intro": "{platform, select, macos {A Cmdr töröl mindent, amit ezen a Macen tárol, aztán kilép. Ezt nem lehet visszavonni.} windows {Cmdr deletes everything it keeps on this PC, then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer, then quits. This can’t be undone.}}",
+  "settings.dataWipe.intro": "{platform, select, macos {A Cmdr töröl mindent, amit ezen a Macen tárol, aztán kilép. Ezt nem lehet visszavonni.} windows {A Cmdr töröl mindent, amit ezen a gépen tárol, aztán bezárul. Ezt nem lehet visszavonni.} other {A Cmdr töröl mindent, amit ezen a számítógépen tárol, aztán kilép. Ezt nem lehet visszavonni.}}",
   "@settings.dataWipe.intro": {
-    "sourceHash": "61ed875"
+    "sourceHash": "75dd0c6"
   },
-  "settings.dataWipe.introWithSize": "{platform, select, macos {A Cmdr töröl mindent, amit ezen a Macen tárol ({sizeText}), aztán kilép. Ezt nem lehet visszavonni.} windows {Cmdr deletes everything it keeps on this PC ({sizeText}), then closes. This can’t be undone.} other {Cmdr deletes everything it keeps on this computer ({sizeText}), then quits. This can’t be undone.}}",
+  "settings.dataWipe.introWithSize": "{platform, select, macos {A Cmdr töröl mindent, amit ezen a Macen tárol ({sizeText}), aztán kilép. Ezt nem lehet visszavonni.} windows {A Cmdr töröl mindent, amit ezen a gépen tárol ({sizeText}), aztán bezárul. Ezt nem lehet visszavonni.} other {A Cmdr töröl mindent, amit ezen a számítógépen tárol ({sizeText}), aztán kilép. Ezt nem lehet visszavonni.}}",
   "@settings.dataWipe.introWithSize": {
-    "sourceHash": "e5262e8"
+    "sourceHash": "8dacc9c"
   },
   "settings.dataWipe.goesHeading": "Ami törlődik",
   "@settings.dataWipe.goesHeading": {
@@ -3570,13 +3570,13 @@
   "@settings.dataWipe.goes.apiKeys": {
     "sourceHash": "146397c"
   },
-  "settings.dataWipe.goes.license": "{platform, select, macos {A licenc ezen a Macen. Ha újra aktiválnád, add meg a licenckulcsot a vásárlási e-mailedből.} windows {The license on this PC. To activate it again, enter the license key from your purchase email.} other {The license on this computer. To activate it again, enter the license key from your purchase email.}}",
+  "settings.dataWipe.goes.license": "{platform, select, macos {A licenc ezen a Macen. Ha újra aktiválnád, add meg a licenckulcsot a vásárlási e-mailedből.} windows {A licenc ezen a gépen. Ha újra aktiválnád, add meg a licenckulcsot a vásárlási e-mailedből.} other {A licenc ezen a számítógépen. Ha újra aktiválnád, add meg a licenckulcsot a vásárlási e-mailedből.}}",
   "@settings.dataWipe.goes.license": {
-    "sourceHash": "90b5b06"
+    "sourceHash": "12597d5"
   },
-  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {A licenc ezen a Macen, ha aktiváltál licencet. Ha újra aktiválnád, add meg a licenckulcsot a vásárlási e-mailedből.} windows {The license on this PC, if you activated one. To activate it again, enter the license key from your purchase email.} other {The license on this computer, if you activated one. To activate it again, enter the license key from your purchase email.}}",
+  "settings.dataWipe.goes.licenseIfAny": "{platform, select, macos {A licenc ezen a Macen, ha aktiváltál licencet. Ha újra aktiválnád, add meg a licenckulcsot a vásárlási e-mailedből.} windows {A licenc ezen a gépen, ha aktiváltál licencet. Ha újra aktiválnád, add meg a licenckulcsot a vásárlási e-mailedből.} other {A licenc ezen a számítógépen, ha aktiváltál licencet. Ha újra aktiválnád, add meg a licenckulcsot a vásárlási e-mailedből.}}",
   "@settings.dataWipe.goes.licenseIfAny": {
-    "sourceHash": "db7f6f2"
+    "sourceHash": "93cc028"
   },
   "settings.dataWipe.goes.askCmdr": "Ask Cmdr-csevegések és mindaz, amire a Cmdr emlékszik rólad",
   "@settings.dataWipe.goes.askCmdr": {
@@ -3618,9 +3618,9 @@
   "@settings.dataWipe.cancel": {
     "sourceHash": "19766ed"
   },
-  "settings.dataWipe.confirm": "{platform, select, windows {Delete all and exit} other {Minden törlése és kilépés}}",
+  "settings.dataWipe.confirm": "{platform, select, windows {Minden törlése és kilépés} other {Minden törlése és kilépés}}",
   "@settings.dataWipe.confirm": {
-    "sourceHash": "5efdab7"
+    "sourceHash": "8b73f1a"
   },
   "settings.dataWipe.deleting": "Törlés…",
   "@settings.dataWipe.deleting": {
@@ -3642,9 +3642,9 @@
   "@settings.dataWipe.doneTitle": {
     "sourceHash": "18aa13d"
   },
-  "settings.dataWipe.doneMessage": "{platform, select, macos {Minden, amit a Cmdr ezen a Macen tárolt, eltűnt. Ha az appot is eltávolítanád, a Cmdr kilépése után helyezd át a Kukába.} windows {Everything Cmdr kept on this PC is gone. To remove the app as well, uninstall it in Settings > Apps after Cmdr closes.} other {Everything Cmdr kept on this computer is gone. To remove the app as well, uninstall it the way you installed it after Cmdr quits.}}",
+  "settings.dataWipe.doneMessage": "{platform, select, macos {Minden, amit a Cmdr ezen a Macen tárolt, eltűnt. Ha az appot is eltávolítanád, a Cmdr kilépése után helyezd át a Kukába.} windows {Minden, amit a Cmdr ezen a gépen tárolt, eltűnt. Ha az appot is eltávolítanád, miután a Cmdr bezárult, távolítsd el itt: Gépház > Alkalmazások.} other {Minden, amit a Cmdr ezen a számítógépen tárolt, eltűnt. Ha az appot is eltávolítanád, a Cmdr kilépése után távolítsd el ugyanúgy, ahogy telepítetted.}}",
   "@settings.dataWipe.doneMessage": {
-    "sourceHash": "a0d09dc"
+    "sourceHash": "a18fa9f"
   },
   "settings.dataWipe.partialTitle": "A Cmdr törölte az adatai nagy részét",
   "@settings.dataWipe.partialTitle": {
@@ -3654,17 +3654,17 @@
   "@settings.dataWipe.partialMessage": {
     "sourceHash": "24d0b58"
   },
-  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, one {Egy „{itemName}” nevű elem a Kulcskarika-elérés appban} other {{countText} „{itemName}” nevű elem a Kulcskarika-elérés appban}}} windows {{count, plural, one {One item in Credential Manager named “{itemName}”} other {{countText} items in Credential Manager named “{itemName}”}}} other {{count, plural, one {One item in your keyring named “{itemName}”} other {{countText} items in your keyring named “{itemName}”}}}}",
+  "settings.dataWipe.leftover.secretItems": "{platform, select, macos {{count, plural, one {Egy „{itemName}” nevű elem a Kulcskarika-elérés appban} other {{countText} „{itemName}” nevű elem a Kulcskarika-elérés appban}}} windows {{count, plural, one {Egy „{itemName}” nevű elem a Hitelesítőadat-kezelőben} other {{countText} „{itemName}” nevű elem a Hitelesítőadat-kezelőben}}} other {{count, plural, one {Egy „{itemName}” nevű elem a kulcstartódban} other {{countText} „{itemName}” nevű elem a kulcstartódban}}}}",
   "@settings.dataWipe.leftover.secretItems": {
-    "sourceHash": "91321bb"
+    "sourceHash": "6cf1e9c"
   },
-  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {Az esetleges „{itemName}” nevű elemek a Kulcskarika-elérés appban} windows {Any items in Credential Manager named “{itemName}”} other {Any items in your keyring named “{itemName}”}}",
+  "settings.dataWipe.leftover.secretsUnreadable": "{platform, select, macos {Az esetleges „{itemName}” nevű elemek a Kulcskarika-elérés appban} windows {Az esetleges „{itemName}” nevű elemek a Hitelesítőadat-kezelőben} other {Az esetleges „{itemName}” nevű elemek a kulcstartódban}}",
   "@settings.dataWipe.leftover.secretsUnreadable": {
-    "sourceHash": "e3b3312"
+    "sourceHash": "0e9e95b"
   },
-  "settings.dataWipe.quit": "{platform, select, windows {Exit Cmdr} other {Kilépés a Cmdrből}}",
+  "settings.dataWipe.quit": "{platform, select, windows {Kilépés a Cmdrből} other {Kilépés a Cmdrből}}",
   "@settings.dataWipe.quit": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "settings.askCmdr.forgetMemory.keywords": "elfelejtés, felejtés, memória, törlés, kitörlés, emlékszik, megjegyzett, adatvédelem",
   "@settings.askCmdr.forgetMemory.keywords": {

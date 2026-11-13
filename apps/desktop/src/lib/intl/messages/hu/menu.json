@@ -71,9 +71,9 @@
   "@menu.app.cliCommandHomebrew": {
     "sourceHash": "cc4c0fd"
   },
-  "menu.app.settings": "{platform, select, windows {Settings} other {Beállítások…}}",
+  "menu.app.settings": "{platform, select, windows {Beállítások} other {Beállítások…}}",
   "@menu.app.settings": {
-    "sourceHash": "7a04083"
+    "sourceHash": "7af8e23"
   },
   "menu.app.services": "Szolgáltatások",
   "@menu.app.services": {
@@ -147,9 +147,9 @@
   "@menu.context.showInFolder": {
     "sourceHash": "da47876"
   },
-  "menu.file.showInFileManager": "{platform, select, macos {Megjelenítés a Finderben} windows {Show in File Explorer} other {Megjelenítés a fájlkezelőben}}",
+  "menu.file.showInFileManager": "{platform, select, macos {Megjelenítés a Finderben} windows {Megjelenítés a Fájlkezelőben} other {Megjelenítés a fájlkezelőben}}",
   "@menu.file.showInFileManager": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "menu.file.openTerminalHere": "Terminál megnyitása itt",
   "@menu.file.openTerminalHere": {
@@ -175,17 +175,17 @@
   "@menu.edit.redo": {
     "sourceHash": "7427398"
   },
-  "menu.edit.undoTrash": "{platform, select, windows {Undo delete} other {Kukába helyezés visszavonása}}",
+  "menu.edit.undoTrash": "{platform, select, windows {Törlés visszavonása} other {Kukába helyezés visszavonása}}",
   "@menu.edit.undoTrash": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "menu.edit.undoTrashOne": "{platform, select, windows {Undo delete of “{name}”} other {„{name}” Kukába helyezésének visszavonása}}",
+  "menu.edit.undoTrashOne": "{platform, select, windows {„{name}” törlésének visszavonása} other {„{name}” Kukába helyezésének visszavonása}}",
   "@menu.edit.undoTrashOne": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "menu.edit.undoTrashMany": "{platform, select, windows {Undo delete of {countText} items} other {{countText} elem Kukába helyezésének visszavonása}}",
+  "menu.edit.undoTrashMany": "{platform, select, windows {{countText} elem törlésének visszavonása} other {{countText} elem Kukába helyezésének visszavonása}}",
   "@menu.edit.undoTrashMany": {
-    "sourceHash": "bb9192a"
+    "sourceHash": "4ad492a"
   },
   "menu.edit.cut": "Kivágás",
   "@menu.edit.cut": {
@@ -400,9 +400,9 @@
   "@menu.go.rootFolder": {
     "sourceHash": "6d92528"
   },
-  "menu.go.home": "{platform, select, windows {User folder} other {Saját}}",
+  "menu.go.home": "{platform, select, windows {Felhasználói mappa} other {Saját}}",
   "@menu.go.home": {
-    "sourceHash": "3a78695"
+    "sourceHash": "4ff1502"
   },
   "menu.go.goToPath": "Ugrás mappához…",
   "@menu.go.goToPath": {
@@ -656,13 +656,13 @@
   "@menu.volume.ejectBusy": {
     "sourceHash": "e2145a6"
   },
-  "menu.volume.detachShare": "{platform, select, macos {Kiadás ({name})} windows {Disconnect ({name})} other {Unmount ({name})}}",
+  "menu.volume.detachShare": "{platform, select, macos {Kiadás ({name})} windows {Leválasztás ({name})} other {Leválasztás ({name})}}",
   "@menu.volume.detachShare": {
-    "sourceHash": "913d6ea"
+    "sourceHash": "458748f"
   },
-  "menu.volume.detachShareBusy": "{platform, select, macos {Kiadás ({name}) (foglalt)} windows {Disconnect ({name}) (busy)} other {Unmount ({name}) (busy)}}",
+  "menu.volume.detachShareBusy": "{platform, select, macos {Kiadás ({name}) (foglalt)} windows {Leválasztás ({name}) (foglalt)} other {Leválasztás ({name}) (foglalt)}}",
   "@menu.volume.detachShareBusy": {
-    "sourceHash": "e2145a6"
+    "sourceHash": "d3578bf"
   },
   "menu.volume.ejectAll": "Összes kiadása",
   "@menu.volume.ejectAll": {

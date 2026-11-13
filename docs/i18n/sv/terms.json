@@ -184,7 +184,8 @@
       "errors.write.trashRefused.message.folderNotWritable": "English sense: “isn’t allowed to change” is a file-system permission, not granting consent, so it takes få (får inte ändra)"
     },
     "forms": "button Tillåt / Tillåt alla; switch label Tillåt moln-AI; Android's own button quoted bare: tryck på Tillåt",
-    "sources": "macOS TCC.framework (REQUEST_ACCESS_ALLOW = Tillåt), MS terminology (allow → tillåta), AOSP SystemUI usb_debugging_allow = Tillåt"
+    "sources": "macOS TCC.framework (REQUEST_ACCESS_ALLOW = Tillåt), MS terminology (allow → tillåta), AOSP SystemUI usb_debugging_allow = Tillåt",
+    "accept": ["får inte", "fick inte"]
   },
   "already-exists": {
     "accept": ["finns det redan", "redan finns"],
@@ -1368,7 +1369,13 @@
     "exceptions": {
       "askCmdr.renameReview.title": "Granska namnbyten: namnbyte already implies files, and the title is the settled one.",
       "menu.bar.file": "Apple's menu-bar title for File is Arkiv.",
-      "viewer.error.noPath": "File path is sökväg; a fil- prefix adds nothing."
+      "viewer.error.noPath": "File path is sökväg; a fil- prefix adds nothing.",
+      "errors.listing.authRequiredEneedauth.suggestion": "the windows branch's only File is the app name File Explorer → Utforskaren",
+      "errors.listing.couldntReadUnknown.suggestion": "the windows branch's only File is the app name File Explorer → Utforskaren",
+      "errors.listing.diskReadProblem.suggestion": "the windows branch's only File is the app name File Explorer → Utforskaren",
+      "errors.listing.noPermissionErrno.suggestion": "the windows branch's only File is the app name File Explorer → Utforskaren",
+      "errors.listing.notPermitted.suggestion": "the windows branch's only File is the app name File Explorer → Utforskaren",
+      "errors.listing.staleConnection.suggestion": "the windows branch's only File is the app name File Explorer → Utforskaren"
     },
     "forms": "filen, filer; the menu-bar File menu is Arkiv",
     "sources": "macOS, MS, GNOME"
@@ -3686,7 +3693,7 @@
     "sources": "AOSP SettingsLib values-sv enable_adb (read 2026-09-07)"
   },
   "user": {
-    "accept": ["användaren", "användar-ID"],
+    "accept": ["användaren", "användar-ID", "användarkonto"],
     "chosen": "användare",
     "confidence": "high",
     "forms": "användaren, användare; user ID → användar-ID, group ID → grupp-ID (hyphen after the acronym)",
@@ -3972,5 +3979,56 @@
     "accept": ["dator"],
     "confidence": "tentative",
     "sources": "MS terminology PC (the TBX has no “This PC”) → PC; Windows names This PC Den här datorn; same noun as this-computer"
+  },
+  "file-explorer": {
+    "chosen": "Utforskaren",
+    "confidence": "high",
+    "forms": "always definite, capitalized as Windows names it: i Utforskaren",
+    "sources": "MS terminology SWEDISH.tbx (File Explorer → Utforskaren), 2026-11-13",
+    "exceptions": {
+      "fileExplorer.pane.fileExplorerAriaLabel": "the generic pane name (a file explorer), not Windows' File Explorer app; keeps Filhanterare"
+    }
+  },
+  "file-manager": {
+    "chosen": "filhanterare",
+    "confidence": "high",
+    "forms": "the Linux branch's generic app → din filhanterare",
+    "sources": "kde-dolphin, xfce-thunar (File Manager → Filhanterare), 2026-11-13"
+  },
+  "powershell": {
+    "chosen": "PowerShell",
+    "confidence": "high",
+    "forms": "uninflected: i PowerShell",
+    "sources": "MS terminology SWEDISH.tbx (PowerShell kept English), 2026-11-13"
+  },
+  "empty-trash": {
+    "chosen": "töm papperskorgen",
+    "confidence": "high",
+    "forms": "Finder's command Töm papperskorgen; Linux branch Töm papperskorgen i din filhanterare",
+    "sources": "macOS Finder LocalizableMerged (Empty Trash → Töm papperskorgen); gnome-nautilus, kde-dolphin, 2026-11-13"
+  },
+  "metadata": {
+    "chosen": "metadata",
+    "confidence": "high",
+    "forms": "plural agreement like data: de metadata",
+    "sources": "MS terminology SWEDISH.tbx; gnome-nautilus (Metadata), 2026-11-13"
+  },
+  "software": {
+    "chosen": "programvara",
+    "confidence": "high",
+    "forms": "compound serverprogramvara",
+    "sources": "MS terminology SWEDISH.tbx (software → programvara); gnome-nautilus, xfce-thunar, 2026-11-13",
+    "accept": ["program", "maskinvar"],
+    "exceptions": {
+      "errors.listing.deviceProblem.explanation": "hardware-level → på maskinvarunivå; the concept's hardware sense, no software word",
+      "errors.listing.diskReadProblem.explanation": "hardware-level → på maskinvarunivå; the concept's hardware sense, no software word",
+      "settings.network.smbConcurrency.description": "server resources → serverresurser; no software word in the sentence"
+    }
+  },
+  "internet": {
+    "chosen": "internet",
+    "confidence": "high",
+    "forms": "lowercase in prose; the Windows Settings section quotes Nätverk och Internet",
+    "sources": "MS terminology SWEDISH.tbx (Network & Internet → Nätverk och Internet); catalog ai.translateError.unavailable.body, 2026-11-13"
   }
 }

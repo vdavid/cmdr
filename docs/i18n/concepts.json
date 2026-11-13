@@ -237,7 +237,8 @@
     "en": "Cmdr closes",
     "match": ["cmdr closes", "cmdr closed", "closing cmdr", "then closes", "closes afterwards", "closing in"],
     "note": "Not a window or dialog closing: use the verb Windows uses when an app closes.",
-    "sense": "Cmdr itself shutting down, narrated with Cmdr as the subject in the Windows branch (\"then closes\", \"Cmdr closed unexpectedly\")."
+    "sense": "Cmdr itself shutting down, narrated with Cmdr as the subject in the Windows branch (\"then closes\", \"Cmdr closed unexpectedly\").",
+    "notMatch": ["closed the connection"]
   },
   "app-switcher": {
     "distinct": ["volume-switcher"],

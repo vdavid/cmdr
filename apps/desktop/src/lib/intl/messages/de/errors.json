@@ -19,9 +19,9 @@
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "ff103cd"
   },
-  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Schließe einige Apps, um Arbeitsspeicher freizugeben, vor allem ressourcenhungrige (Browser mit vielen Tabs, Editoren, Medien-Apps)\n- Prüfe die Speicherauslastung in der **Aktivitätsanzeige** (in Spotlight danach suchen)\n- Navigiere erneut hierher, um es noch einmal zu versuchen} windows {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Task Manager** (press Ctrl+Shift+Esc)\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in your system monitor app\n- Navigate here again to retry}}",
+  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Schließe einige Apps, um Arbeitsspeicher freizugeben, vor allem ressourcenhungrige (Browser mit vielen Tabs, Editoren, Medien-Apps)\n- Prüfe die Speicherauslastung in der **Aktivitätsanzeige** (in Spotlight danach suchen)\n- Navigiere erneut hierher, um es noch einmal zu versuchen} windows {Das kannst du versuchen:\n- Schließe einige Apps, um Arbeitsspeicher freizugeben, vor allem ressourcenhungrige (Browser mit vielen Tabs, Editoren, Medien-Apps)\n- Prüfe die Speicherauslastung im **Task-Manager** (drücke Ctrl+Shift+Esc)\n- Navigiere erneut hierher, um es noch einmal zu versuchen} other {Das kannst du versuchen:\n- Schließe einige Apps, um Arbeitsspeicher freizugeben, vor allem ressourcenhungrige (Browser mit vielen Tabs, Editoren, Medien-Apps)\n- Prüfe die Speicherauslastung in deiner Systemüberwachung\n- Navigiere erneut hierher, um es noch einmal zu versuchen}}",
   "@errors.listing.notEnoughMemory.suggestion": {
-    "sourceHash": "d05a4e4"
+    "sourceHash": "5b716f4"
   },
   "errors.listing.resourceBusy.title": "Ressource ausgelastet",
   "@errors.listing.resourceBusy.title": {
@@ -31,9 +31,9 @@
   "@errors.listing.resourceBusy.explanation": {
     "sourceHash": "18a07d9"
   },
-  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {Warte einen Moment und navigiere dann erneut hierher. Wenn es immer wieder passiert, prüfe, welche App die Datei geöffnet hält (führe im Terminal `lsof +D <folder-path>` aus, um zu sehen, welche Prozesse diesen Ordner verwenden).} windows {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the folder open: in **Resource Monitor** (search for it in Start), open the CPU tab and search **Associated Handles** for the folder’s name.} other {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in a terminal, run `lsof +D <folder-path>` to see which processes are using this folder).}}",
+  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {Warte einen Moment und navigiere dann erneut hierher. Wenn es immer wieder passiert, prüfe, welche App die Datei geöffnet hält (führe im Terminal `lsof +D <folder-path>` aus, um zu sehen, welche Prozesse diesen Ordner verwenden).} windows {Warte einen Moment und navigiere dann erneut hierher. Wenn es immer wieder passiert, prüfe, welche App den Ordner geöffnet hält: Öffne im **Ressourcenmonitor** (im Startmenü danach suchen) die Registerkarte „CPU“ und suche unter **Zugeordnete Handles** nach dem Namen des Ordners.} other {Warte einen Moment und navigiere dann erneut hierher. Wenn es immer wieder passiert, prüfe, welche App die Datei geöffnet hält (führe in einem Terminal `lsof +D <folder-path>` aus, um zu sehen, welche Prozesse diesen Ordner verwenden).}}",
   "@errors.listing.resourceBusy.suggestion": {
-    "sourceHash": "fa266e6"
+    "sourceHash": "31ef425"
   },
   "errors.listing.temporarilyUnavailable.title": "Vorübergehend nicht verfügbar",
   "@errors.listing.temporarilyUnavailable.title": {
@@ -43,21 +43,21 @@
   "@errors.listing.temporarilyUnavailable.explanation": {
     "sourceHash": "2193876"
   },
-  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {Navigiere erneut hierher, um es noch einmal zu versuchen. Das klärt sich meist von selbst. Wenn es immer wieder passiert, ist das System vielleicht stark ausgelastet. Prüfe die **Aktivitätsanzeige** auf Apps, die viele Ressourcen verbrauchen.} windows {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Task Manager** for apps consuming a lot of resources.} other {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check your system monitor app for apps consuming a lot of resources.}}",
+  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {Navigiere erneut hierher, um es noch einmal zu versuchen. Das klärt sich meist von selbst. Wenn es immer wieder passiert, ist das System vielleicht stark ausgelastet. Prüfe die **Aktivitätsanzeige** auf Apps, die viele Ressourcen verbrauchen.} windows {Navigiere erneut hierher, um es noch einmal zu versuchen. Das klärt sich meist von selbst. Wenn es immer wieder passiert, ist das System vielleicht stark ausgelastet. Prüfe den **Task-Manager** auf Apps, die viele Ressourcen verbrauchen.} other {Navigiere erneut hierher, um es noch einmal zu versuchen. Das klärt sich meist von selbst. Wenn es immer wieder passiert, ist das System vielleicht stark ausgelastet. Prüfe deine Systemüberwachung auf Apps, die viele Ressourcen verbrauchen.}}",
   "@errors.listing.temporarilyUnavailable.suggestion": {
-    "sourceHash": "1ec4aef"
+    "sourceHash": "a677915"
   },
   "errors.listing.networkDown.title": "Netzwerk ist offline",
   "@errors.listing.networkDown.title": {
     "sourceHash": "399ab40"
   },
-  "errors.listing.networkDown.explanation": "{platform, select, macos {Die Netzwerkverbindung deines Macs ist offline, daher kann Cmdr dieses Volume nicht erreichen. Vielleicht ist WLAN getrennt, ein Ethernet-Kabel abgezogen oder die Netzwerkschnittstelle deaktiviert.} windows {Your PC’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network adapter is disabled.} other {Your computer’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.}}",
+  "errors.listing.networkDown.explanation": "{platform, select, macos {Die Netzwerkverbindung deines Macs ist offline, daher kann Cmdr dieses Volume nicht erreichen. Vielleicht ist WLAN getrennt, ein Ethernet-Kabel abgezogen oder die Netzwerkschnittstelle deaktiviert.} windows {Die Netzwerkverbindung deines PCs ist offline, daher kann Cmdr dieses Volume nicht erreichen. Vielleicht ist WLAN getrennt, ein Ethernet-Kabel abgezogen oder der Netzwerkadapter deaktiviert.} other {Die Netzwerkverbindung deines Computers ist offline, daher kann Cmdr dieses Volume nicht erreichen. Vielleicht ist WLAN getrennt, ein Ethernet-Kabel abgezogen oder die Netzwerkschnittstelle deaktiviert.}}",
   "@errors.listing.networkDown.explanation": {
-    "sourceHash": "179f8bb"
+    "sourceHash": "e5fcd3d"
   },
-  "errors.listing.networkDown.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe den WLAN- oder Ethernet-Status in **{system_settings} > Netzwerk**\n- Schalte WLAN, falls du es nutzt, einmal aus und wieder ein\n- Führe im Terminal `ping google.com` aus, um deine Verbindung zu testen\n- Navigiere erneut hierher, sobald du wieder online bist} windows {Here’s what to try:\n- Check Wi-Fi or Ethernet status in **Settings > Network & internet**\n- If you’re on Wi-Fi, try turning it off and on again\n- In PowerShell, run `ping google.com` to test your connection\n- Navigate here again once you’re back online} other {Here’s what to try:\n- Check Wi-Fi or Ethernet status in your system’s network settings\n- If you’re on Wi-Fi, try turning it off and on again\n- In a terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online}}",
+  "errors.listing.networkDown.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe den WLAN- oder Ethernet-Status in **{system_settings} > Netzwerk**\n- Schalte WLAN, falls du es nutzt, einmal aus und wieder ein\n- Führe im Terminal `ping google.com` aus, um deine Verbindung zu testen\n- Navigiere erneut hierher, sobald du wieder online bist} windows {Das kannst du versuchen:\n- Prüfe den WLAN- oder Ethernet-Status unter **Einstellungen > Netzwerk und Internet**\n- Schalte WLAN, falls du es nutzt, einmal aus und wieder ein\n- Führe in PowerShell `ping google.com` aus, um deine Verbindung zu testen\n- Navigiere erneut hierher, sobald du wieder online bist} other {Das kannst du versuchen:\n- Prüfe den WLAN- oder Ethernet-Status in den Netzwerkeinstellungen deines Systems\n- Schalte WLAN, falls du es nutzt, einmal aus und wieder ein\n- Führe in einem Terminal `ping google.com` aus, um deine Verbindung zu testen\n- Navigiere erneut hierher, sobald du wieder online bist}}",
   "@errors.listing.networkDown.suggestion": {
-    "sourceHash": "bf4b517"
+    "sourceHash": "1712df1"
   },
   "errors.listing.networkConnectionDropped.title": "Netzwerkverbindung abgebrochen",
   "@errors.listing.networkConnectionDropped.title": {
@@ -91,9 +91,9 @@
   "@errors.listing.connectionReset.explanation": {
     "sourceHash": "3ccfa1c"
   },
-  "errors.listing.connectionReset.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob der Server läuft\n- Versuche im Terminal `ping <hostname>`, um zu testen, ob der Server erreichbar ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen} windows {Here’s what to try:\n- Check that the server is running\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry}}",
+  "errors.listing.connectionReset.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob der Server läuft\n- Versuche im Terminal `ping <hostname>`, um zu testen, ob der Server erreichbar ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen} windows {Das kannst du versuchen:\n- Prüfe, ob der Server läuft\n- Versuche in PowerShell `ping <hostname>`, um zu testen, ob der Server erreichbar ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen} other {Das kannst du versuchen:\n- Prüfe, ob der Server läuft\n- Versuche in einem Terminal `ping <hostname>`, um zu testen, ob der Server erreichbar ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen}}",
   "@errors.listing.connectionReset.suggestion": {
-    "sourceHash": "d980663"
+    "sourceHash": "85ce28a"
   },
   "errors.listing.connectionTimedOutErrno.title": "Zeitüberschreitung der Verbindung",
   "@errors.listing.connectionTimedOutErrno.title": {
@@ -103,9 +103,9 @@
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "c088c41"
   },
-  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob das Gerät oder der Server eingeschaltet und erreichbar ist\n- Prüfe deine WLAN- oder Ethernet-Verbindung\n- Versuche im Terminal `ping <hostname>`, um die Verbindung zu testen\n- Navigiere erneut hierher, um es noch einmal zu versuchen} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry}}",
+  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob das Gerät oder der Server eingeschaltet und erreichbar ist\n- Prüfe deine WLAN- oder Ethernet-Verbindung\n- Versuche im Terminal `ping <hostname>`, um die Verbindung zu testen\n- Navigiere erneut hierher, um es noch einmal zu versuchen} windows {Das kannst du versuchen:\n- Prüfe, ob das Gerät oder der Server eingeschaltet und erreichbar ist\n- Prüfe deine WLAN- oder Ethernet-Verbindung\n- Versuche in PowerShell `ping <hostname>`, um die Verbindung zu testen\n- Navigiere erneut hierher, um es noch einmal zu versuchen} other {Das kannst du versuchen:\n- Prüfe, ob das Gerät oder der Server eingeschaltet und erreichbar ist\n- Prüfe deine WLAN- oder Ethernet-Verbindung\n- Versuche in einem Terminal `ping <hostname>`, um die Verbindung zu testen\n- Navigiere erneut hierher, um es noch einmal zu versuchen}}",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
-    "sourceHash": "230ef64"
+    "sourceHash": "446063f"
   },
   "errors.listing.hostDown.title": "Host ist offline",
   "@errors.listing.hostDown.title": {
@@ -115,9 +115,9 @@
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "e175712"
   },
-  "errors.listing.hostDown.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob der Host eingeschaltet und mit dem Netzwerk verbunden ist\n- Versuche im Terminal `ping <hostname>`, um zu testen, ob er erreichbar ist\n- Prüfe bei einem NAS oder Server die Verwaltungsoberfläche\n- Navigiere erneut hierher, sobald der Host wieder da ist} windows {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In PowerShell, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back} other {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In a terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back}}",
+  "errors.listing.hostDown.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob der Host eingeschaltet und mit dem Netzwerk verbunden ist\n- Versuche im Terminal `ping <hostname>`, um zu testen, ob er erreichbar ist\n- Prüfe bei einem NAS oder Server die Verwaltungsoberfläche\n- Navigiere erneut hierher, sobald der Host wieder da ist} windows {Das kannst du versuchen:\n- Prüfe, ob der Host eingeschaltet und mit dem Netzwerk verbunden ist\n- Versuche in PowerShell `ping <hostname>`, um zu testen, ob er erreichbar ist\n- Prüfe bei einem NAS oder Server die Verwaltungsoberfläche\n- Navigiere erneut hierher, sobald der Host wieder da ist} other {Das kannst du versuchen:\n- Prüfe, ob der Host eingeschaltet und mit dem Netzwerk verbunden ist\n- Versuche in einem Terminal `ping <hostname>`, um zu testen, ob er erreichbar ist\n- Prüfe bei einem NAS oder Server die Verwaltungsoberfläche\n- Navigiere erneut hierher, sobald der Host wieder da ist}}",
   "@errors.listing.hostDown.suggestion": {
-    "sourceHash": "7a8ecd8"
+    "sourceHash": "238aad1"
   },
   "errors.listing.staleConnection.title": "Veraltete Verbindung",
   "@errors.listing.staleConnection.title": {
@@ -127,9 +127,9 @@
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Navigiere weg von diesem Ordner und wieder zurück\n- Hänge dieses Netzlaufwerk im Finder aus und binde es erneut ein\n- Prüfe, ob der Server läuft, der diesen Ordner bereitstellt\n- Führe im Terminal `mount` aus, um die aktuell eingebundenen Volumes zu sehen} windows {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try disconnecting it and connecting it again in File Explorer\n- Check that the server hosting this folder is running\n- In PowerShell, run `net use` to see your connected network drives} other {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in your file manager\n- Check that the server hosting this folder is running\n- In a terminal, run `mount` to see currently mounted volumes}}",
+  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Navigiere weg von diesem Ordner und wieder zurück\n- Hänge dieses Netzlaufwerk im Finder aus und binde es erneut ein\n- Prüfe, ob der Server läuft, der diesen Ordner bereitstellt\n- Führe im Terminal `mount` aus, um die aktuell eingebundenen Volumes zu sehen} windows {Das kannst du versuchen:\n- Navigiere weg von diesem Ordner und wieder zurück\n- Trenne dieses Netzlaufwerk im Datei-Explorer und verbinde es erneut\n- Prüfe, ob der Server läuft, der diesen Ordner bereitstellt\n- Führe in PowerShell `net use` aus, um deine verbundenen Netzlaufwerke zu sehen} other {Das kannst du versuchen:\n- Navigiere weg von diesem Ordner und wieder zurück\n- Hänge dieses Netzlaufwerk in deinem Dateimanager aus und binde es erneut ein\n- Prüfe, ob der Server läuft, der diesen Ordner bereitstellt\n- Führe in einem Terminal `mount` aus, um die aktuell eingebundenen Volumes zu sehen}}",
   "@errors.listing.staleConnection.suggestion": {
-    "sourceHash": "73de81d"
+    "sourceHash": "0264ba5"
   },
   "errors.listing.lockUnavailable.title": "Keine Dateisperre verfügbar",
   "@errors.listing.lockUnavailable.title": {
@@ -139,9 +139,9 @@
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "154df3c"
   },
-  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Schließe einige Apps, vor allem solche, die mit vielen Dateien arbeiten (Editoren, IDEs, Backup-Tools)\n- Führe im Terminal `lsof | wc -l` aus, um zu sehen, wie viele Dateien über alle Apps hinweg geöffnet sind\n- Wenn das Problem bestehen bleibt, kannst du das Limit im Terminal mit `ulimit -n 4096` erhöhen\n- Navigiere erneut hierher, um es noch einmal zu versuchen} windows {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In a terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in a terminal\n- Navigate here again to retry}}",
+  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Schließe einige Apps, vor allem solche, die mit vielen Dateien arbeiten (Editoren, IDEs, Backup-Tools)\n- Führe im Terminal `lsof | wc -l` aus, um zu sehen, wie viele Dateien über alle Apps hinweg geöffnet sind\n- Wenn das Problem bestehen bleibt, kannst du das Limit im Terminal mit `ulimit -n 4096` erhöhen\n- Navigiere erneut hierher, um es noch einmal zu versuchen} windows {Das kannst du versuchen:\n- Schließe einige Apps, vor allem solche, die mit vielen Dateien arbeiten (Editoren, IDEs, Backup-Tools)\n- Wenn es immer wieder passiert, starte deinen PC neu\n- Navigiere erneut hierher, um es noch einmal zu versuchen} other {Das kannst du versuchen:\n- Schließe einige Apps, vor allem solche, die mit vielen Dateien arbeiten (Editoren, IDEs, Backup-Tools)\n- Führe in einem Terminal `lsof | wc -l` aus, um zu sehen, wie viele Dateien über alle Apps hinweg geöffnet sind\n- Wenn das Problem bestehen bleibt, kannst du das Limit in einem Terminal mit `ulimit -n 4096` erhöhen\n- Navigiere erneut hierher, um es noch einmal zu versuchen}}",
   "@errors.listing.lockUnavailable.suggestion": {
-    "sourceHash": "a9f23bd"
+    "sourceHash": "1fa1762"
   },
   "errors.listing.cancelledErrno.title": "Abgebrochen",
   "@errors.listing.cancelledErrno.title": {
@@ -159,13 +159,13 @@
   "@errors.listing.notPermitted.title": {
     "sourceHash": "8ec5f4b"
   },
-  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS hat Cmdr den Zugriff auf `{path}` verwehrt. Das bedeutet meist, dass der Ordner durch Sicherheitsrichtlinien von macOS geschützt ist oder Cmdr noch nicht die nötigen Berechtigungen erhalten hat.} windows {Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.} other {Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it.}}",
+  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS hat Cmdr den Zugriff auf `{path}` verwehrt. Das bedeutet meist, dass der Ordner durch Sicherheitsrichtlinien von macOS geschützt ist oder Cmdr noch nicht die nötigen Berechtigungen erhalten hat.} windows {Windows hat Cmdr den Zugriff auf `{path}` verwehrt. Das bedeutet meist, dass der Ordner von Windows geschützt ist oder dein Konto keine Berechtigung hat, den Ordner zu öffnen.} other {Cmdr durfte nicht auf `{path}` zugreifen. Das bedeutet meist, dass die Zugriffsrechte des Ordners es nicht erlauben oder eine Sicherheitsrichtlinie (etwa SELinux oder AppArmor) den Ordner schützt.}}",
   "@errors.listing.notPermitted.explanation": {
-    "sourceHash": "e28dd0e"
+    "sourceHash": "9f159af"
   },
-  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Öffne **{system_settings} > {privacy_and_security} > {files_and_folders}** und gewähre Cmdr Zugriff\n- Wenn es ein systemgeschützter Ordner ist, musst du Cmdr unter {privacy_and_security} eventuell **{full_disk_access}** gewähren\n- Führe im Terminal `ls -la` für diesen Pfad aus, um Eigentümer und Zugriffsrechte zu prüfen} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If it’s a system folder, Windows may keep it off-limits on purpose\n- In PowerShell, run `icacls \"<folder-path>\"` to see who has access} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a system folder, it may need administrator rights\n- In a terminal, run `ls -la` on this path to check ownership and permissions}}",
+  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Öffne **{system_settings} > {privacy_and_security} > {files_and_folders}** und gewähre Cmdr Zugriff\n- Wenn es ein systemgeschützter Ordner ist, musst du Cmdr unter {privacy_and_security} eventuell **{full_disk_access}** gewähren\n- Führe im Terminal `ls -la` für diesen Pfad aus, um Eigentümer und Zugriffsrechte zu prüfen} windows {Das kannst du versuchen:\n- Prüfe die Berechtigungen des Ordners im Datei-Explorer: klicke ihn mit der rechten Maustaste an, wähle **Eigenschaften** und sieh unter **Sicherheit** nach\n- Wenn es ein Systemordner ist, hält Windows ihn vielleicht absichtlich unter Verschluss\n- Führe in PowerShell `icacls \"<folder-path>\"` aus, um zu sehen, wer Zugriff hat} other {Das kannst du versuchen:\n- Prüfe die Zugriffsrechte des Ordners in deinem Dateimanager: öffne die Eigenschaften des Ordners und sieh unter **Zugriffsrechte** nach\n- Wenn es ein Systemordner ist, sind dafür vielleicht Administratorrechte nötig\n- Führe in einem Terminal `ls -la` für diesen Pfad aus, um Besitzer und Zugriffsrechte zu prüfen}}",
   "@errors.listing.notPermitted.suggestion": {
-    "sourceHash": "2926956"
+    "sourceHash": "367f19a"
   },
   "errors.listing.pathNotFoundErrno.title": "Pfad nicht gefunden",
   "@errors.listing.pathNotFoundErrno.title": {
@@ -175,21 +175,21 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob der Pfad richtig geschrieben ist\n- Stelle bei einem Netzlaufwerk sicher, dass es verbunden und die Freigabe erreichbar ist\n- Navigiere zum übergeordneten Ordner und suche das Objekt dort\n- Führe im Terminal `ls -la` für den übergeordneten Ordner aus, um zu sehen, was dort liegt} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
+  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob der Pfad richtig geschrieben ist\n- Stelle bei einem Netzlaufwerk sicher, dass es verbunden und die Freigabe erreichbar ist\n- Navigiere zum übergeordneten Ordner und suche das Objekt dort\n- Führe im Terminal `ls -la` für den übergeordneten Ordner aus, um zu sehen, was dort liegt} windows {Das kannst du versuchen:\n- Prüfe, ob der Pfad richtig geschrieben ist\n- Stelle bei einem Netzlaufwerk sicher, dass es verbunden und die Freigabe erreichbar ist\n- Navigiere zum übergeordneten Ordner und suche das Objekt dort\n- Führe in PowerShell `dir` im übergeordneten Ordner aus, um zu sehen, was dort liegt} other {Das kannst du versuchen:\n- Prüfe, ob der Pfad richtig geschrieben ist\n- Stelle bei einem Netzlaufwerk sicher, dass es verbunden und die Freigabe erreichbar ist\n- Navigiere zum übergeordneten Ordner und suche das Objekt dort\n- Führe in einem Terminal `ls -la` für den übergeordneten Ordner aus, um zu sehen, was dort liegt}}",
   "@errors.listing.pathNotFoundErrno.suggestion": {
-    "sourceHash": "8a51477"
+    "sourceHash": "eabe5b2"
   },
   "errors.listing.noPermissionErrno.title": "Keine Berechtigung",
   "@errors.listing.noPermissionErrno.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr hat keine Berechtigung, auf `{path}` zuzugreifen. macOS steuert, welche Apps auf welche Ordner zugreifen dürfen, und Cmdr hat für diesen noch keinen Zugriff erhalten.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
+  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr hat keine Berechtigung, auf `{path}` zuzugreifen. macOS steuert, welche Apps auf welche Ordner zugreifen dürfen, und Cmdr hat für diesen noch keinen Zugriff erhalten.} windows {Cmdr hat keine Berechtigung, auf `{path}` zuzugreifen. Dein Windows-Konto darf diesen Ordner nicht öffnen.} other {Cmdr hat keine Berechtigung, auf `{path}` zuzugreifen. Dein Benutzerkonto darf diesen Ordner nicht öffnen.}}",
   "@errors.listing.noPermissionErrno.explanation": {
-    "sourceHash": "3871273"
+    "sourceHash": "08a2f03"
   },
-  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Öffne **{system_settings} > {privacy_and_security} > {files_and_folders}** und gewähre Cmdr Zugriff\n- Prüfe die Zugriffsrechte des Ordners im Finder: klicke ihn mit der rechten Maustaste an, wähle „Informationen“ und sieh unter „Teilen & Zugriffsrechte“ nach\n- Bitte bei einem freigegebenen Ordner den Eigentümer, die Zugriffsrechte zu aktualisieren\n- Führe im Terminal `ls -la` für diesen Pfad aus, um die aktuellen Zugriffsrechte zu sehen} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on this path to see the current permissions}}",
+  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Öffne **{system_settings} > {privacy_and_security} > {files_and_folders}** und gewähre Cmdr Zugriff\n- Prüfe die Zugriffsrechte des Ordners im Finder: klicke ihn mit der rechten Maustaste an, wähle „Informationen“ und sieh unter „Teilen & Zugriffsrechte“ nach\n- Bitte bei einem freigegebenen Ordner den Eigentümer, die Zugriffsrechte zu aktualisieren\n- Führe im Terminal `ls -la` für diesen Pfad aus, um die aktuellen Zugriffsrechte zu sehen} windows {Das kannst du versuchen:\n- Prüfe die Berechtigungen des Ordners im Datei-Explorer: klicke ihn mit der rechten Maustaste an, wähle **Eigenschaften** und sieh unter **Sicherheit** nach\n- Bitte bei einem freigegebenen Ordner den Besitzer, die Berechtigungen zu aktualisieren\n- Führe in PowerShell `icacls \"<folder-path>\"` aus, um die aktuellen Berechtigungen zu sehen} other {Das kannst du versuchen:\n- Prüfe die Zugriffsrechte des Ordners in deinem Dateimanager: öffne die Eigenschaften des Ordners und sieh unter **Zugriffsrechte** nach\n- Bitte bei einem freigegebenen Ordner den Besitzer, die Zugriffsrechte zu aktualisieren\n- Führe in einem Terminal `ls -la` für diesen Pfad aus, um die aktuellen Zugriffsrechte zu sehen}}",
   "@errors.listing.noPermissionErrno.suggestion": {
-    "sourceHash": "4b513ef"
+    "sourceHash": "d1ce430"
   },
   "errors.listing.alreadyExistsErrno.title": "Existiert bereits",
   "@errors.listing.alreadyExistsErrno.title": {
@@ -247,9 +247,9 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Gib Speicher frei, indem du Dateien bewegst oder löschst, die du nicht mehr brauchst\n- Leere den Papierkorb (klicke das Papierkorb-Symbol im Dock mit der rechten Maustaste an)\n- Führe im Terminal `df -h` aus, um zu sehen, wie viel Speicher auf jedem Volume frei ist\n- Sieh unter **{system_settings} > Allgemein > Speicher** nach, was Speicher belegt} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Gib Speicher frei, indem du Dateien bewegst oder löschst, die du nicht mehr brauchst\n- Leere den Papierkorb (klicke das Papierkorb-Symbol im Dock mit der rechten Maustaste an)\n- Führe im Terminal `df -h` aus, um zu sehen, wie viel Speicher auf jedem Volume frei ist\n- Sieh unter **{system_settings} > Allgemein > Speicher** nach, was Speicher belegt} windows {Das kannst du versuchen:\n- Gib Speicher frei, indem du Dateien bewegst oder löschst, die du nicht mehr brauchst\n- Leere den Papierkorb (klicke ihn auf dem Desktop mit der rechten Maustaste an und wähle **Papierkorb leeren**)\n- Sieh unter **Einstellungen > System > Speicher** nach, was Speicher belegt} other {Das kannst du versuchen:\n- Gib Speicher frei, indem du Dateien bewegst oder löschst, die du nicht mehr brauchst\n- Leere den Papierkorb in deinem Dateimanager\n- Führe in einem Terminal `df -h` aus, um zu sehen, wie viel Speicher auf jedem Volume frei ist}}",
   "@errors.listing.diskFullErrno.suggestion": {
-    "sourceHash": "f2eb27b"
+    "sourceHash": "bba2927"
   },
   "errors.listing.readOnlyVolumeErrno.title": "Schreibgeschütztes Volume",
   "@errors.listing.readOnlyVolumeErrno.title": {
@@ -271,9 +271,9 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "a0ca28f"
   },
-  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Versuche einen anderen Weg oder nutze für diesen Vorgang den Finder. Wenn du mit einem externen Laufwerk arbeitest, ist es vielleicht mit einem Dateisystem formatiert, das Einschränkungen hat (zum Beispiel kann FAT32 keine Dateien ab 4 GiB speichern).} windows {Try a different approach, or use File Explorer for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).} other {Try a different approach, or use your file manager for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).}}",
+  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Versuche einen anderen Weg oder nutze für diesen Vorgang den Finder. Wenn du mit einem externen Laufwerk arbeitest, ist es vielleicht mit einem Dateisystem formatiert, das Einschränkungen hat (zum Beispiel kann FAT32 keine Dateien ab 4 GiB speichern).} windows {Versuche einen anderen Weg oder nutze für diesen Vorgang den Datei-Explorer. Wenn du mit einem externen Laufwerk arbeitest, ist es vielleicht mit einem Dateisystem formatiert, das Einschränkungen hat (zum Beispiel kann FAT32 keine Dateien ab 4 GiB speichern).} other {Versuche einen anderen Weg oder nutze für diesen Vorgang deinen Dateimanager. Wenn du mit einem externen Laufwerk arbeitest, ist es vielleicht mit einem Dateisystem formatiert, das Einschränkungen hat (zum Beispiel kann FAT32 keine Dateien ab 4 GiB speichern).}}",
   "@errors.listing.notSupportedErrno.suggestion": {
-    "sourceHash": "8fea918"
+    "sourceHash": "c5735be"
   },
   "errors.listing.networkUnreachable.title": "Netzwerk nicht erreichbar",
   "@errors.listing.networkUnreachable.title": {
@@ -283,21 +283,21 @@
   "@errors.listing.networkUnreachable.explanation": {
     "sourceHash": "d3c1975"
   },
-  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe deine WLAN- oder Ethernet-Verbindung\n- Stelle sicher, dass du im richtigen Netzwerk bist (zum Beispiel dein Büro-WLAN oder VPN)\n- Versuche im Terminal `ping <hostname>`, um zu testen, ob der Server erreichbar ist\n- Navigiere erneut hierher, sobald du verbunden bist} windows {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected} other {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected}}",
+  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe deine WLAN- oder Ethernet-Verbindung\n- Stelle sicher, dass du im richtigen Netzwerk bist (zum Beispiel dein Büro-WLAN oder VPN)\n- Versuche im Terminal `ping <hostname>`, um zu testen, ob der Server erreichbar ist\n- Navigiere erneut hierher, sobald du verbunden bist} windows {Das kannst du versuchen:\n- Prüfe deine WLAN- oder Ethernet-Verbindung\n- Stelle sicher, dass du im richtigen Netzwerk bist (zum Beispiel dein Büro-WLAN oder VPN)\n- Versuche in PowerShell `ping <hostname>`, um zu testen, ob der Server erreichbar ist\n- Navigiere erneut hierher, sobald du verbunden bist} other {Das kannst du versuchen:\n- Prüfe deine WLAN- oder Ethernet-Verbindung\n- Stelle sicher, dass du im richtigen Netzwerk bist (zum Beispiel dein Büro-WLAN oder VPN)\n- Versuche in einem Terminal `ping <hostname>`, um zu testen, ob der Server erreichbar ist\n- Navigiere erneut hierher, sobald du verbunden bist}}",
   "@errors.listing.networkUnreachable.suggestion": {
-    "sourceHash": "7feb3cb"
+    "sourceHash": "75cc2f7"
   },
   "errors.listing.connectionRefused.title": "Verbindung abgelehnt",
   "@errors.listing.connectionRefused.title": {
     "sourceHash": "1a28032"
   },
-  "errors.listing.connectionRefused.explanation": "{platform, select, macos {Der Server hat die Verbindung aktiv abgelehnt. Das bedeutet meist, dass die Serversoftware (zum Beispiel ein SMB- oder NFS-Dienst) nicht läuft oder so eingerichtet ist, dass sie Verbindungen von diesem Mac ablehnt.} windows {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.} other {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this computer.}}",
+  "errors.listing.connectionRefused.explanation": "{platform, select, macos {Der Server hat die Verbindung aktiv abgelehnt. Das bedeutet meist, dass die Serversoftware (zum Beispiel ein SMB- oder NFS-Dienst) nicht läuft oder so eingerichtet ist, dass sie Verbindungen von diesem Mac ablehnt.} windows {Der Server hat die Verbindung aktiv abgelehnt. Das bedeutet meist, dass die Serversoftware (zum Beispiel ein SMB- oder NFS-Dienst) nicht läuft oder so eingerichtet ist, dass sie Verbindungen von diesem PC ablehnt.} other {Der Server hat die Verbindung aktiv abgelehnt. Das bedeutet meist, dass die Serversoftware (zum Beispiel ein SMB- oder NFS-Dienst) nicht läuft oder so eingerichtet ist, dass sie Verbindungen von diesem Computer ablehnt.}}",
   "@errors.listing.connectionRefused.explanation": {
-    "sourceHash": "88e1ac7"
+    "sourceHash": "75e0ad7"
   },
-  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob der Server läuft und sein Dateifreigabedienst aktiv ist\n- Überprüfe, ob Serveradresse und Port stimmen\n- Versuche im Terminal `ping <hostname>`, um zu prüfen, ob der Server überhaupt erreichbar ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen} windows {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In PowerShell, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In a terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry}}",
+  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob der Server läuft und sein Dateifreigabedienst aktiv ist\n- Überprüfe, ob Serveradresse und Port stimmen\n- Versuche im Terminal `ping <hostname>`, um zu prüfen, ob der Server überhaupt erreichbar ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen} windows {Das kannst du versuchen:\n- Prüfe, ob der Server läuft und sein Dateifreigabedienst aktiv ist\n- Überprüfe, ob Serveradresse und Port stimmen\n- Versuche in PowerShell `ping <hostname>`, um zu prüfen, ob der Server überhaupt erreichbar ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen} other {Das kannst du versuchen:\n- Prüfe, ob der Server läuft und sein Dateifreigabedienst aktiv ist\n- Überprüfe, ob Serveradresse und Port stimmen\n- Versuche in einem Terminal `ping <hostname>`, um zu prüfen, ob der Server überhaupt erreichbar ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen}}",
   "@errors.listing.connectionRefused.suggestion": {
-    "sourceHash": "17decc3"
+    "sourceHash": "aebd280"
   },
   "errors.listing.symlinkLoopErrno.title": "Symlink-Schleife",
   "@errors.listing.symlinkLoopErrno.title": {
@@ -307,17 +307,17 @@
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "4157be6"
   },
-  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Führe im Terminal `ls -la` für diesen Pfad aus, um zu sehen, wohin die symbolischen Verknüpfungen zeigen\n- Finde und korrigiere die Verknüpfung, die die Schleife erzeugt\n- Wenn du nicht sicher bist, welche Verknüpfung das Problem ist, folge ihnen einzeln mit `readlink <path>`} windows {Here’s what to try:\n- In PowerShell, run `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in this folder to see where the links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one} other {Here’s what to try:\n- In a terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`}}",
+  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Führe im Terminal `ls -la` für diesen Pfad aus, um zu sehen, wohin die symbolischen Verknüpfungen zeigen\n- Finde und korrigiere die Verknüpfung, die die Schleife erzeugt\n- Wenn du nicht sicher bist, welche Verknüpfung das Problem ist, folge ihnen einzeln mit `readlink <path>`} windows {Das kannst du versuchen:\n- Führe in PowerShell `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in diesem Ordner aus, um zu sehen, wohin die Verknüpfungen zeigen\n- Finde und korrigiere die Verknüpfung, die die Schleife erzeugt\n- Wenn du nicht sicher bist, welche Verknüpfung das Problem ist, folge ihnen einzeln} other {Das kannst du versuchen:\n- Führe in einem Terminal `ls -la` für diesen Pfad aus, um zu sehen, wohin die symbolischen Verknüpfungen zeigen\n- Finde und korrigiere die Verknüpfung, die die Schleife erzeugt\n- Wenn du nicht sicher bist, welche Verknüpfung das Problem ist, folge ihnen einzeln mit `readlink <path>`}}",
   "@errors.listing.symlinkLoopErrno.suggestion": {
-    "sourceHash": "eed9a5a"
+    "sourceHash": "9b5c2d2"
   },
   "errors.listing.nameTooLongErrno.title": "Name zu lang",
   "@errors.listing.nameTooLongErrno.title": {
     "sourceHash": "de4bc1d"
   },
-  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {Der Datei- oder Ordnername überschreitet das Limit des Systems (255 Zeichen auf den meisten Mac-Volumes). Das kann auch passieren, wenn der vollständige Pfad (alle Ordner zusammen) die maximale Pfadlänge des Systems überschreitet.} windows {The file or folder name exceeds the system’s limit (255 characters for one name on NTFS). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.} other {The file or folder name exceeds the system’s limit (255 bytes on most Linux file systems). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.}}",
+  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {Der Datei- oder Ordnername überschreitet das Limit des Systems (255 Zeichen auf den meisten Mac-Volumes). Das kann auch passieren, wenn der vollständige Pfad (alle Ordner zusammen) die maximale Pfadlänge des Systems überschreitet.} windows {Der Datei- oder Ordnername überschreitet das Limit des Systems (255 Zeichen für einen Namen auf NTFS). Das kann auch passieren, wenn der vollständige Pfad (alle Ordner zusammen) die maximale Pfadlänge des Systems überschreitet.} other {Der Datei- oder Ordnername überschreitet das Limit des Systems (255 Bytes auf den meisten Linux-Dateisystemen). Das kann auch passieren, wenn der vollständige Pfad (alle Ordner zusammen) die maximale Pfadlänge des Systems überschreitet.}}",
   "@errors.listing.nameTooLongErrno.explanation": {
-    "sourceHash": "8b9a6ff"
+    "sourceHash": "c0846c4"
   },
   "errors.listing.nameTooLongErrno.suggestion": "Benenne das Objekt mit einem kürzeren Namen um. Wenn der Name sinnvoll aussieht, ist vielleicht der vollständige Pfad (mit allen übergeordneten Ordnern) zu lang. Versuche, das Objekt an einen kürzeren Pfad zu bewegen.",
   "@errors.listing.nameTooLongErrno.suggestion": {
@@ -331,9 +331,9 @@
   "@errors.listing.hostUnreachable.explanation": {
     "sourceHash": "184b0fc"
   },
-  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob der Host eingeschaltet und im selben Netzwerk ist\n- Stelle sicher, dass das VPN verbunden ist, falls du es zum Erreichen brauchst\n- Versuche im Terminal `ping <hostname>`, um die Verbindung zu testen\n- Navigiere erneut hierher, sobald der Host erreichbar ist} windows {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable} other {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable}}",
+  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob der Host eingeschaltet und im selben Netzwerk ist\n- Stelle sicher, dass das VPN verbunden ist, falls du es zum Erreichen brauchst\n- Versuche im Terminal `ping <hostname>`, um die Verbindung zu testen\n- Navigiere erneut hierher, sobald der Host erreichbar ist} windows {Das kannst du versuchen:\n- Prüfe, ob der Host eingeschaltet und im selben Netzwerk ist\n- Stelle sicher, dass das VPN verbunden ist, falls du es zum Erreichen brauchst\n- Versuche in PowerShell `ping <hostname>`, um die Verbindung zu testen\n- Navigiere erneut hierher, sobald der Host erreichbar ist} other {Das kannst du versuchen:\n- Prüfe, ob der Host eingeschaltet und im selben Netzwerk ist\n- Stelle sicher, dass das VPN verbunden ist, falls du es zum Erreichen brauchst\n- Versuche in einem Terminal `ping <hostname>`, um die Verbindung zu testen\n- Navigiere erneut hierher, sobald der Host erreichbar ist}}",
   "@errors.listing.hostUnreachable.suggestion": {
-    "sourceHash": "c222f76"
+    "sourceHash": "d595833"
   },
   "errors.listing.folderNotEmpty.title": "Ordner nicht leer",
   "@errors.listing.folderNotEmpty.title": {
@@ -355,9 +355,9 @@
   "@errors.listing.quotaExceeded.explanation": {
     "sourceHash": "b9b0b0e"
   },
-  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Gib Speicher frei, indem du Dateien auf diesem Volume entfernst, die du nicht mehr brauchst\n- Bitte deine Systemadministration, dein Kontingent zu erhöhen\n- Führe im Terminal `quota` aus, um deine aktuelle Nutzung und das Limit zu sehen} windows {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota} other {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In a terminal, run `quota` to see your current usage and limit}}",
+  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Gib Speicher frei, indem du Dateien auf diesem Volume entfernst, die du nicht mehr brauchst\n- Bitte deine Systemadministration, dein Kontingent zu erhöhen\n- Führe im Terminal `quota` aus, um deine aktuelle Nutzung und das Limit zu sehen} windows {Das kannst du versuchen:\n- Gib Speicher frei, indem du Dateien auf diesem Volume entfernst, die du nicht mehr brauchst\n- Bitte deine Systemadministration, dein Kontingent zu erhöhen} other {Das kannst du versuchen:\n- Gib Speicher frei, indem du Dateien auf diesem Volume entfernst, die du nicht mehr brauchst\n- Bitte deine Systemadministration, dein Kontingent zu erhöhen\n- Führe in einem Terminal `quota` aus, um deine aktuelle Nutzung und das Limit zu sehen}}",
   "@errors.listing.quotaExceeded.suggestion": {
-    "sourceHash": "1b5f0df"
+    "sourceHash": "9ad0632"
   },
   "errors.listing.authRequiredEauth.title": "Anmeldung erforderlich",
   "@errors.listing.authRequiredEauth.title": {
@@ -379,9 +379,9 @@
   "@errors.listing.authRequiredEneedauth.explanation": {
     "sourceHash": "b4e86e5"
   },
-  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator} other {Das kannst du versuchen:\n- Trenne das Volume im Finder und verbinde es erneut\n- Gib deinen Benutzernamen und dein Passwort ein, wenn du dazu aufgefordert wirst\n- Wenn du dir bei den Anmeldedaten nicht sicher bist, wende dich an die Administration des Servers}}",
+  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Das kannst du versuchen:\n- Trenne das Netzlaufwerk im Datei-Explorer und verbinde es erneut\n- Gib deinen Benutzernamen und dein Passwort ein, wenn du dazu aufgefordert wirst\n- Wenn du dir bei den Anmeldedaten nicht sicher bist, wende dich an die Administration des Servers} other {Das kannst du versuchen:\n- Trenne das Volume im Finder und verbinde es erneut\n- Gib deinen Benutzernamen und dein Passwort ein, wenn du dazu aufgefordert wirst\n- Wenn du dir bei den Anmeldedaten nicht sicher bist, wende dich an die Administration des Servers}}",
   "@errors.listing.authRequiredEneedauth.suggestion": {
-    "sourceHash": "a90b520"
+    "sourceHash": "64621a8"
   },
   "errors.listing.devicePoweredOff.title": "Gerät ausgeschaltet",
   "@errors.listing.devicePoweredOff.title": {
@@ -403,9 +403,9 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee39dd8"
   },
-  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Dieses Dateisystem unterstützt vielleicht die Metadaten nicht, die Cmdr braucht. Versuche den Vorgang auf einem anderen Volume oder kopiere die Datei zuerst auf die interne Festplatte deines Macs.} windows {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your PC’s internal drive first.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Dieses Dateisystem unterstützt vielleicht die Metadaten nicht, die Cmdr braucht. Versuche den Vorgang auf einem anderen Volume oder kopiere die Datei zuerst auf die interne Festplatte deines Macs.} windows {Dieses Dateisystem unterstützt vielleicht die Metadaten nicht, die Cmdr braucht. Versuche den Vorgang auf einem anderen Volume oder kopiere die Datei zuerst auf das interne Laufwerk deines PCs.} other {Dieses Dateisystem unterstützt vielleicht die Metadaten nicht, die Cmdr braucht. Versuche den Vorgang auf einem anderen Volume oder kopiere die Datei zuerst auf die interne Festplatte deines Computers.}}",
   "@errors.listing.attributeNotFound.suggestion": {
-    "sourceHash": "463ee44"
+    "sourceHash": "e8c2492"
   },
   "errors.listing.diskReadProblem.title": "Problem beim Lesen der Festplatte",
   "@errors.listing.diskReadProblem.title": {
@@ -415,9 +415,9 @@
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
-  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob die Festplatte oder das Gerät noch richtig verbunden ist\n- Öffne das **Festplattendienstprogramm** (in Spotlight danach suchen) und führe für dieses Volume die **Erste Hilfe** aus\n- Wenn das immer wieder passiert, sichere deine Daten so bald wie möglich. Die Festplatte entwickelt vielleicht defekte Sektoren oder verschleißt.} windows {Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.} other {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.}}",
+  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob die Festplatte oder das Gerät noch richtig verbunden ist\n- Öffne das **Festplattendienstprogramm** (in Spotlight danach suchen) und führe für dieses Volume die **Erste Hilfe** aus\n- Wenn das immer wieder passiert, sichere deine Daten so bald wie möglich. Die Festplatte entwickelt vielleicht defekte Sektoren oder verschleißt.} windows {Das kannst du versuchen:\n- Prüfe, ob das Laufwerk oder das Gerät noch richtig verbunden ist\n- Klicke das Laufwerk im Datei-Explorer mit der rechten Maustaste an, wähle **Eigenschaften** und dann **Tools > Prüfen**, um es auf Probleme zu prüfen\n- Wenn das immer wieder passiert, sichere deine Daten so bald wie möglich. Das Laufwerk entwickelt vielleicht defekte Sektoren oder verschleißt.} other {Das kannst du versuchen:\n- Prüfe, ob die Festplatte oder das Gerät noch richtig verbunden ist\n- Prüfe das Dateisystem mit dem Festplattenwerkzeug deiner Arbeitsumgebung (zum Beispiel GNOME Disks)\n- Wenn das immer wieder passiert, sichere deine Daten so bald wie möglich. Die Festplatte entwickelt vielleicht defekte Sektoren oder verschleißt.}}",
   "@errors.listing.diskReadProblem.suggestion": {
-    "sourceHash": "614a5fe"
+    "sourceHash": "11fa23f"
   },
   "errors.listing.unexpectedSystemResponse.title": "Unerwartete Antwort des Systems",
   "@errors.listing.unexpectedSystemResponse.title": {
@@ -427,9 +427,9 @@
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "a834896"
   },
-  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Navigiere erneut hierher, um es noch einmal zu versuchen\n- Wenn das immer wieder passiert, öffne das **Festplattendienstprogramm** (in Spotlight danach suchen) und führe für dieses Volume die **Erste Hilfe** aus, um das Dateisystem auf Probleme zu prüfen} windows {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check** to look for file system problems} other {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool (for example, GNOME Disks)}}",
+  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Navigiere erneut hierher, um es noch einmal zu versuchen\n- Wenn das immer wieder passiert, öffne das **Festplattendienstprogramm** (in Spotlight danach suchen) und führe für dieses Volume die **Erste Hilfe** aus, um das Dateisystem auf Probleme zu prüfen} windows {Das kannst du versuchen:\n- Navigiere erneut hierher, um es noch einmal zu versuchen\n- Wenn das immer wieder passiert, klicke das Laufwerk im Datei-Explorer mit der rechten Maustaste an, wähle **Eigenschaften** und dann **Tools > Prüfen**, um das Dateisystem auf Probleme zu prüfen} other {Das kannst du versuchen:\n- Navigiere erneut hierher, um es noch einmal zu versuchen\n- Wenn das immer wieder passiert, prüfe das Dateisystem mit dem Festplattenwerkzeug deiner Arbeitsumgebung (zum Beispiel GNOME Disks)}}",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
-    "sourceHash": "f63d225"
+    "sourceHash": "5a0ffb5"
   },
   "errors.listing.deviceProblem.title": "Geräteproblem",
   "@errors.listing.deviceProblem.title": {
@@ -451,9 +451,9 @@
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "bade4a7"
   },
-  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob die Festplatte oder das Gerät noch verbunden ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen\n- Wenn das immer wieder passiert, öffne das **Festplattendienstprogramm** und führe für dieses Volume die **Erste Hilfe** aus} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
+  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob die Festplatte oder das Gerät noch verbunden ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen\n- Wenn das immer wieder passiert, öffne das **Festplattendienstprogramm** und führe für dieses Volume die **Erste Hilfe** aus} windows {Das kannst du versuchen:\n- Prüfe, ob das Laufwerk oder das Gerät noch verbunden ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen\n- Wenn das immer wieder passiert, klicke das Laufwerk im Datei-Explorer mit der rechten Maustaste an, wähle **Eigenschaften** und dann **Tools > Prüfen**} other {Das kannst du versuchen:\n- Prüfe, ob die Festplatte oder das Gerät noch verbunden ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen\n- Wenn das immer wieder passiert, prüfe das Dateisystem mit dem Festplattenwerkzeug deiner Arbeitsumgebung}}",
   "@errors.listing.couldntReadUnknown.suggestion": {
-    "sourceHash": "5155626"
+    "sourceHash": "625375f"
   },
   "errors.listing.notFound.title": "Pfad nicht gefunden",
   "@errors.listing.notFound.title": {
@@ -463,9 +463,9 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.notFound.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob der Pfad richtig geschrieben ist\n- Stelle bei einem Netzlaufwerk sicher, dass es verbunden und die Freigabe erreichbar ist\n- Navigiere zum übergeordneten Ordner und suche das Objekt dort\n- Führe im Terminal `ls -la` für den übergeordneten Ordner aus, um zu sehen, was dort liegt} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
+  "errors.listing.notFound.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob der Pfad richtig geschrieben ist\n- Stelle bei einem Netzlaufwerk sicher, dass es verbunden und die Freigabe erreichbar ist\n- Navigiere zum übergeordneten Ordner und suche das Objekt dort\n- Führe im Terminal `ls -la` für den übergeordneten Ordner aus, um zu sehen, was dort liegt} windows {Das kannst du versuchen:\n- Prüfe, ob der Pfad richtig geschrieben ist\n- Stelle bei einem Netzlaufwerk sicher, dass es verbunden und die Freigabe erreichbar ist\n- Navigiere zum übergeordneten Ordner und suche das Objekt dort\n- Führe in PowerShell `dir` im übergeordneten Ordner aus, um zu sehen, was dort liegt} other {Das kannst du versuchen:\n- Prüfe, ob der Pfad richtig geschrieben ist\n- Stelle bei einem Netzlaufwerk sicher, dass es verbunden und die Freigabe erreichbar ist\n- Navigiere zum übergeordneten Ordner und suche das Objekt dort\n- Führe in einem Terminal `ls -la` für den übergeordneten Ordner aus, um zu sehen, was dort liegt}}",
   "@errors.listing.notFound.suggestion": {
-    "sourceHash": "8a51477"
+    "sourceHash": "eabe5b2"
   },
   "errors.listing.tccRestricted.title": "Dieser Ordner ist von macOS eingeschränkt",
   "@errors.listing.tccRestricted.title": {
@@ -483,13 +483,13 @@
   "@errors.listing.permissionDenied.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr hat keine Berechtigung, auf `{path}` zuzugreifen. macOS steuert, welche Apps auf welche Ordner zugreifen dürfen, und Cmdr hat für diesen noch keinen Zugriff erhalten.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
+  "errors.listing.permissionDenied.explanation": "{platform, select, macos {Cmdr hat keine Berechtigung, auf `{path}` zuzugreifen. macOS steuert, welche Apps auf welche Ordner zugreifen dürfen, und Cmdr hat für diesen noch keinen Zugriff erhalten.} windows {Cmdr hat keine Berechtigung, auf `{path}` zuzugreifen. Dein Windows-Konto darf diesen Ordner nicht öffnen.} other {Cmdr hat keine Berechtigung, auf `{path}` zuzugreifen. Dein Benutzerkonto darf diesen Ordner nicht öffnen.}}",
   "@errors.listing.permissionDenied.explanation": {
-    "sourceHash": "3871273"
+    "sourceHash": "08a2f03"
   },
-  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Öffne **{system_settings} > {privacy_and_security} > {files_and_folders}** und gewähre Cmdr Zugriff\n- Prüfe die Zugriffsrechte des Ordners im Finder: klicke den Ordner mit der rechten Maustaste an, wähle „Informationen“ und sieh unter „Teilen & Zugriffsrechte“ nach\n- Bitte bei einem freigegebenen Ordner den Eigentümer, die Zugriffsrechte zu aktualisieren\n- Führe im Terminal `ls -la` für den Pfad aus, um die aktuellen Zugriffsrechte zu sehen} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click the folder, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on the path to see the current permissions}}",
+  "errors.listing.permissionDenied.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Öffne **{system_settings} > {privacy_and_security} > {files_and_folders}** und gewähre Cmdr Zugriff\n- Prüfe die Zugriffsrechte des Ordners im Finder: klicke den Ordner mit der rechten Maustaste an, wähle „Informationen“ und sieh unter „Teilen & Zugriffsrechte“ nach\n- Bitte bei einem freigegebenen Ordner den Eigentümer, die Zugriffsrechte zu aktualisieren\n- Führe im Terminal `ls -la` für den Pfad aus, um die aktuellen Zugriffsrechte zu sehen} windows {Das kannst du versuchen:\n- Prüfe die Berechtigungen des Ordners im Datei-Explorer: klicke den Ordner mit der rechten Maustaste an, wähle **Eigenschaften** und sieh unter **Sicherheit** nach\n- Bitte bei einem freigegebenen Ordner den Besitzer, die Berechtigungen zu aktualisieren\n- Führe in PowerShell `icacls \"<folder-path>\"` aus, um die aktuellen Berechtigungen zu sehen} other {Das kannst du versuchen:\n- Prüfe die Zugriffsrechte des Ordners in deinem Dateimanager: öffne die Eigenschaften des Ordners und sieh unter **Zugriffsrechte** nach\n- Bitte bei einem freigegebenen Ordner den Besitzer, die Zugriffsrechte zu aktualisieren\n- Führe in einem Terminal `ls -la` für den Pfad aus, um die aktuellen Zugriffsrechte zu sehen}}",
   "@errors.listing.permissionDenied.suggestion": {
-    "sourceHash": "3450aff"
+    "sourceHash": "7015505"
   },
   "errors.listing.objectStoreRefused.title": "Dein Speicheranbieter hat den Zugriff verweigert",
   "@errors.listing.objectStoreRefused.title": {
@@ -507,13 +507,13 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` liegt auf einer Netzwerkfreigabe, und das Konto, mit dem du verbunden bist, hat keine Berechtigung, den Ordner zu öffnen. Der Server lehnt die Anfrage ab, bevor macOS überhaupt beteiligt ist, es liegt also nicht an einer Datenschutzeinstellung auf deinem Mac.} windows {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your PC can change that.} other {`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down, so nothing on your computer can change that.}}",
+  "errors.listing.remotePermissionDenied.explanation": "{platform, select, macos {`{path}` liegt auf einer Netzwerkfreigabe, und das Konto, mit dem du verbunden bist, hat keine Berechtigung, den Ordner zu öffnen. Der Server lehnt die Anfrage ab, bevor macOS überhaupt beteiligt ist, es liegt also nicht an einer Datenschutzeinstellung auf deinem Mac.} windows {`{path}` liegt auf einer Netzwerkfreigabe, und das Konto, mit dem du verbunden bist, hat keine Berechtigung, den Ordner zu öffnen. Der Server lehnt die Anfrage ab, daran lässt sich auf deinem PC nichts ändern.} other {`{path}` liegt auf einer Netzwerkfreigabe, und das Konto, mit dem du verbunden bist, hat keine Berechtigung, den Ordner zu öffnen. Der Server lehnt die Anfrage ab, daran lässt sich auf deinem Computer nichts ändern.}}",
   "@errors.listing.remotePermissionDenied.explanation": {
-    "sourceHash": "d8463b0"
+    "sourceHash": "dec659d"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe die Zugriffsrechte des Ordners auf dem Server und das Konto, mit dem du die Freigabe eingebunden hast\n- Manche Ordner gehören dem Systemkonto des Servers selbst (etwa `lost+found` auf einer Linux-Freigabe) und bleiben für alle anderen verschlossen\n- Um dich als jemand anderes anzumelden, wirf die Freigabe aus und binde sie mit diesen Anmeldedaten erneut ein} windows {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you connected the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, disconnect the share and connect it again with those credentials} other {Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, unmount the share and mount it again with those credentials}}",
+  "errors.listing.remotePermissionDenied.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe die Zugriffsrechte des Ordners auf dem Server und das Konto, mit dem du die Freigabe eingebunden hast\n- Manche Ordner gehören dem Systemkonto des Servers selbst (etwa `lost+found` auf einer Linux-Freigabe) und bleiben für alle anderen verschlossen\n- Um dich als jemand anderes anzumelden, wirf die Freigabe aus und binde sie mit diesen Anmeldedaten erneut ein} windows {Das kannst du versuchen:\n- Prüfe die Zugriffsrechte des Ordners auf dem Server und das Konto, mit dem du die Freigabe verbunden hast\n- Manche Ordner gehören dem Systemkonto des Servers selbst (etwa `lost+found` auf einer Linux-Freigabe) und bleiben für alle anderen verschlossen\n- Um dich als jemand anderes anzumelden, trenne die Freigabe und verbinde sie mit diesen Anmeldedaten erneut} other {Das kannst du versuchen:\n- Prüfe die Zugriffsrechte des Ordners auf dem Server und das Konto, mit dem du die Freigabe eingebunden hast\n- Manche Ordner gehören dem Systemkonto des Servers selbst (etwa `lost+found` auf einer Linux-Freigabe) und bleiben für alle anderen verschlossen\n- Um dich als jemand anderes anzumelden, hänge die Freigabe aus und binde sie mit diesen Anmeldedaten erneut ein}}",
   "@errors.listing.remotePermissionDenied.suggestion": {
-    "sourceHash": "3e6497d"
+    "sourceHash": "8481dce"
   },
   "errors.listing.phoneRefused.title": "Dieses Telefon hält diesen Ordner privat",
   "@errors.listing.phoneRefused.title": {
@@ -531,9 +531,9 @@
   "@errors.listing.serverRefused.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.serverRefused.explanation": "{platform, select, windows {This folder is on a server, and the account you connected with doesn’t have permission to open it. The server makes that call, so no setting on this PC changes it.} other {Dieser Ordner liegt auf einem Server, und das Konto, mit dem du verbunden bist, hat keine Berechtigung, den Ordner zu öffnen. Das entscheidet der Server, deshalb ändert keine Einstellung auf diesem Computer etwas daran.}}",
+  "errors.listing.serverRefused.explanation": "{platform, select, windows {Dieser Ordner liegt auf einem Server, und das Konto, mit dem du verbunden bist, hat keine Berechtigung, den Ordner zu öffnen. Das entscheidet der Server, deshalb ändert keine Einstellung auf diesem PC etwas daran.} other {Dieser Ordner liegt auf einem Server, und das Konto, mit dem du verbunden bist, hat keine Berechtigung, den Ordner zu öffnen. Das entscheidet der Server, deshalb ändert keine Einstellung auf diesem Computer etwas daran.}}",
   "@errors.listing.serverRefused.explanation": {
-    "sourceHash": "bba853c"
+    "sourceHash": "c21c3d5"
   },
   "errors.listing.serverRefused.suggestion": "Das kannst du versuchen:\n- Prüfe die Zugriffsrechte des Ordners auf dem Server\n- Manche Ordner gehören dem Systemkonto des Servers selbst und bleiben für alle anderen verschlossen\n- Verbinde dich mit einem Konto, das Zugriff hat",
   "@errors.listing.serverRefused.suggestion": {
@@ -631,9 +631,9 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.storageFull.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Gib Speicher frei, indem du Dateien bewegst oder löschst, die du nicht mehr brauchst\n- Leere den Papierkorb (klicke das Papierkorb-Symbol im Dock mit der rechten Maustaste an)\n- Führe im Terminal `df -h` aus, um zu sehen, wie viel Speicher auf jedem Volume frei ist} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** to see how much space is left} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "errors.listing.storageFull.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Gib Speicher frei, indem du Dateien bewegst oder löschst, die du nicht mehr brauchst\n- Leere den Papierkorb (klicke das Papierkorb-Symbol im Dock mit der rechten Maustaste an)\n- Führe im Terminal `df -h` aus, um zu sehen, wie viel Speicher auf jedem Volume frei ist} windows {Das kannst du versuchen:\n- Gib Speicher frei, indem du Dateien bewegst oder löschst, die du nicht mehr brauchst\n- Leere den Papierkorb (klicke ihn auf dem Desktop mit der rechten Maustaste an und wähle **Papierkorb leeren**)\n- Sieh unter **Einstellungen > System > Speicher** nach, wie viel Speicher frei ist} other {Das kannst du versuchen:\n- Gib Speicher frei, indem du Dateien bewegst oder löschst, die du nicht mehr brauchst\n- Leere den Papierkorb in deinem Dateimanager\n- Führe in einem Terminal `df -h` aus, um zu sehen, wie viel Speicher auf jedem Volume frei ist}}",
   "@errors.listing.storageFull.suggestion": {
-    "sourceHash": "101099b"
+    "sourceHash": "c04afed"
   },
   "errors.listing.connectionTimedOut.title": "Zeitüberschreitung der Verbindung",
   "@errors.listing.connectionTimedOut.title": {
@@ -643,9 +643,9 @@
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "15d3054"
   },
-  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob das Gerät oder der Server eingeschaltet und erreichbar ist\n- Prüfe deine WLAN- oder Ethernet-Verbindung\n- Versuche im Terminal `ping <hostname>`, um zu testen, ob der Server erreichbar ist\n- Versuche es noch einmal} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Try again} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Try again}}",
+  "errors.listing.connectionTimedOut.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob das Gerät oder der Server eingeschaltet und erreichbar ist\n- Prüfe deine WLAN- oder Ethernet-Verbindung\n- Versuche im Terminal `ping <hostname>`, um zu testen, ob der Server erreichbar ist\n- Versuche es noch einmal} windows {Das kannst du versuchen:\n- Prüfe, ob das Gerät oder der Server eingeschaltet und erreichbar ist\n- Prüfe deine WLAN- oder Ethernet-Verbindung\n- Versuche in PowerShell `ping <hostname>`, um zu testen, ob der Server erreichbar ist\n- Versuche es noch einmal} other {Das kannst du versuchen:\n- Prüfe, ob das Gerät oder der Server eingeschaltet und erreichbar ist\n- Prüfe deine WLAN- oder Ethernet-Verbindung\n- Versuche in einem Terminal `ping <hostname>`, um zu testen, ob der Server erreichbar ist\n- Versuche es noch einmal}}",
   "@errors.listing.connectionTimedOut.suggestion": {
-    "sourceHash": "f474938"
+    "sourceHash": "4e58263"
   },
   "errors.listing.notSupported.title": "Nicht unterstützt",
   "@errors.listing.notSupported.title": {
@@ -655,9 +655,9 @@
   "@errors.listing.notSupported.explanation": {
     "sourceHash": "d074574"
   },
-  "errors.listing.notSupported.suggestion": "{platform, select, macos {Versuche einen anderen Weg oder nutze für diesen Vorgang den Finder.} windows {Try a different approach, or use File Explorer for this operation.} other {Try a different approach, or use your file manager for this operation.}}",
+  "errors.listing.notSupported.suggestion": "{platform, select, macos {Versuche einen anderen Weg oder nutze für diesen Vorgang den Finder.} windows {Versuche einen anderen Weg oder nutze für diesen Vorgang den Datei-Explorer.} other {Versuche einen anderen Weg oder nutze für diesen Vorgang deinen Dateimanager.}}",
   "@errors.listing.notSupported.suggestion": {
-    "sourceHash": "d4e3965"
+    "sourceHash": "626b662"
   },
   "errors.listing.deletePending.title": "Datei wird entfernt",
   "@errors.listing.deletePending.title": {
@@ -727,9 +727,9 @@
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
-  "errors.listing.ioSerious.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob die Festplatte oder das Gerät noch verbunden ist\n- Versuche es noch einmal\n- Wenn das immer wieder passiert, führe für dieses Volume **Festplattendienstprogramm > Erste Hilfe** aus} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Try again\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Try again\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
+  "errors.listing.ioSerious.suggestion": "{platform, select, macos {Das kannst du versuchen:\n- Prüfe, ob die Festplatte oder das Gerät noch verbunden ist\n- Versuche es noch einmal\n- Wenn das immer wieder passiert, führe für dieses Volume **Festplattendienstprogramm > Erste Hilfe** aus} windows {Das kannst du versuchen:\n- Prüfe, ob das Laufwerk oder das Gerät noch verbunden ist\n- Versuche es noch einmal\n- Wenn das immer wieder passiert, klicke das Laufwerk im Datei-Explorer mit der rechten Maustaste an, wähle **Eigenschaften** und dann **Tools > Prüfen**} other {Das kannst du versuchen:\n- Prüfe, ob die Festplatte oder das Gerät noch verbunden ist\n- Versuche es noch einmal\n- Wenn das immer wieder passiert, prüfe das Dateisystem mit dem Festplattenwerkzeug deiner Arbeitsumgebung}}",
   "@errors.listing.ioSerious.suggestion": {
-    "sourceHash": "6e83ebb"
+    "sourceHash": "059416c"
   },
   "errors.listing.isADirectory.title": "Das ist ein Ordner, keine Datei",
   "@errors.listing.isADirectory.title": {
@@ -847,9 +847,9 @@
   "@errors.git.permissionDenied.message": {
     "sourceHash": "53012e9"
   },
-  "errors.git.permissionDenied.suggestion": "{platform, select, macos {Öffne **{system_settings} > {privacy_and_security} > {files_and_folders}** und gewähre Cmdr Zugriff auf den Ordner.} windows {Check that your account can read this repo’s `.git` folder: in File Explorer, right-click it, select **Properties**, and look under **Security**.} other {Check that your account can read this repo’s `.git` folder. In a terminal, `ls -la .git` shows its owner and mode.}}",
+  "errors.git.permissionDenied.suggestion": "{platform, select, macos {Öffne **{system_settings} > {privacy_and_security} > {files_and_folders}** und gewähre Cmdr Zugriff auf den Ordner.} windows {Prüfe, ob dein Konto den `.git`-Ordner dieses Repos lesen darf: Klicke ihn im Datei-Explorer mit der rechten Maustaste an, wähle **Eigenschaften** und sieh unter **Sicherheit** nach.} other {Prüfe, ob dein Konto den `.git`-Ordner dieses Repos lesen darf. In einem Terminal zeigt `ls -la .git` Besitzer und Modus des Ordners.}}",
   "@errors.git.permissionDenied.suggestion": {
-    "sourceHash": "7396b5a"
+    "sourceHash": "aef68dd"
   },
   "errors.git.bareRepo.title": "Bare-Repos werden noch nicht unterstützt",
   "@errors.git.bareRepo.title": {
@@ -907,9 +907,9 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {Öffne **{system_settings} > {privacy_and_security} > {files_and_folders}** und gewähre Cmdr Zugriff. Im Terminal zeigt `ls -la .git` den aktuellen Eigentümer und Modus.} windows {Check that your account can read this folder: in File Explorer, right-click the `.git` folder, select **Properties**, and look under **Security**. In PowerShell, `icacls .git` shows who has access.} other {Check that your account can read the `.git` folder. In a terminal, `ls -la .git` shows the current owner and mode.}}",
+  "errors.git.gitDirPermissionDenied.suggestion": "{platform, select, macos {Öffne **{system_settings} > {privacy_and_security} > {files_and_folders}** und gewähre Cmdr Zugriff. Im Terminal zeigt `ls -la .git` den aktuellen Eigentümer und Modus.} windows {Prüfe, ob dein Konto diesen Ordner lesen darf: Klicke den `.git`-Ordner im Datei-Explorer mit der rechten Maustaste an, wähle **Eigenschaften** und sieh unter **Sicherheit** nach. In PowerShell zeigt `icacls .git`, wer Zugriff hat.} other {Prüfe, ob dein Konto den `.git`-Ordner lesen darf. In einem Terminal zeigt `ls -la .git` den aktuellen Besitzer und Modus.}}",
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "sourceHash": "b091738"
+    "sourceHash": "7081e9a"
   },
   "errors.git.volumeGone.title": "Das Laufwerk mit diesem Repo ist nicht mehr da",
   "@errors.git.volumeGone.title": {
@@ -1157,9 +1157,9 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "{platform, select, windows {This folder is managed by **{name}**. Here’s what to try:\n- Close and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages} other {Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Beende {app} und öffne die App erneut\n- Melde dich von {app} ab und wieder an\n- Prüfe die Statusseite von {name} auf Störungen}}",
+  "errors.provider.appBased.serious": "{platform, select, windows {Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Schließe {app} und öffne die App erneut\n- Melde dich von {app} ab und wieder an\n- Prüfe die Statusseite von {name} auf Störungen} other {Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Beende {app} und öffne die App erneut\n- Melde dich von {app} ab und wieder an\n- Prüfe die Statusseite von {name} auf Störungen}}",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "5a4e14e"
+    "sourceHash": "79006a7"
   },
   "errors.write.sourceNotFound.title": "Datei nicht gefunden",
   "@errors.write.sourceNotFound.title": {
@@ -1177,9 +1177,9 @@
   "@errors.write.sourceNotFound.message.delete": {
     "sourceHash": "cb0ab8f"
   },
-  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {The file or folder you tried to move to the Recycle Bin no longer exists.} other {Die Datei oder der Ordner, die du in den Papierkorb bewegen wolltest, existiert nicht mehr.}}",
+  "errors.write.sourceNotFound.message.trash": "{platform, select, windows {Die Datei oder der Ordner, die du in den Papierkorb bewegen wolltest, existiert nicht mehr.} other {Die Datei oder der Ordner, die du in den Papierkorb bewegen wolltest, existiert nicht mehr.}}",
   "@errors.write.sourceNotFound.message.trash": {
-    "sourceHash": "dbc0bbe"
+    "sourceHash": "31f9dd7"
   },
   "errors.write.sourceNotFound.suggestion": "Sie wurde vielleicht bewegt, umbenannt oder gelöscht. Versuche, die Dateiliste zu aktualisieren.",
   "@errors.write.sourceNotFound.suggestion": {
@@ -1301,9 +1301,9 @@
   "@errors.write.cancelled.title.delete": {
     "sourceHash": "546aac1"
   },
-  "errors.write.cancelled.title.trash": "{platform, select, windows {Move to the Recycle Bin canceled} other {Bewegen in den Papierkorb abgebrochen}}",
+  "errors.write.cancelled.title.trash": "{platform, select, windows {Bewegen in den Papierkorb abgebrochen} other {Bewegen in den Papierkorb abgebrochen}}",
   "@errors.write.cancelled.title.trash": {
-    "sourceHash": "52a8954"
+    "sourceHash": "97c84cd"
   },
   "errors.write.cancelled.message.copy": "Das Kopieren wurde abgebrochen.",
   "@errors.write.cancelled.message.copy": {
@@ -1317,9 +1317,9 @@
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
   },
-  "errors.write.cancelled.message.trash": "{platform, select, windows {The move to the Recycle Bin was canceled.} other {Das Bewegen in den Papierkorb wurde abgebrochen.}}",
+  "errors.write.cancelled.message.trash": "{platform, select, windows {Das Bewegen in den Papierkorb wurde abgebrochen.} other {Das Bewegen in den Papierkorb wurde abgebrochen.}}",
   "@errors.write.cancelled.message.trash": {
-    "sourceHash": "9585f1b"
+    "sourceHash": "7e76a39"
   },
   "errors.write.cancelled.suggestion": "Du kannst es erneut versuchen, sobald du bereit bist.",
   "@errors.write.cancelled.suggestion": {
@@ -1341,9 +1341,9 @@
   "@errors.write.deviceDisconnected.message.delete": {
     "sourceHash": "195562e"
   },
-  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {The device was disconnected during the move to the Recycle Bin.} other {Das Gerät wurde während des Bewegens in den Papierkorb getrennt.}}",
+  "errors.write.deviceDisconnected.message.trash": "{platform, select, windows {Das Gerät wurde während des Bewegens in den Papierkorb getrennt.} other {Das Gerät wurde während des Bewegens in den Papierkorb getrennt.}}",
   "@errors.write.deviceDisconnected.message.trash": {
-    "sourceHash": "9d5a47a"
+    "sourceHash": "bdadd25"
   },
   "errors.write.deviceDisconnected.suggestion": "Stelle sicher, dass das Gerät richtig verbunden ist, und versuche es erneut.",
   "@errors.write.deviceDisconnected.suggestion": {
@@ -1381,13 +1381,13 @@
   "@errors.write.moveNotConfirmed.suggestion": {
     "sourceHash": "4d7fedc"
   },
-  "errors.write.trashNotSupported.title": "{platform, select, windows {Recycle Bin not supported} other {Papierkorb nicht unterstützt}}",
+  "errors.write.trashNotSupported.title": "{platform, select, windows {Papierkorb nicht unterstützt} other {Papierkorb nicht unterstützt}}",
   "@errors.write.trashNotSupported.title": {
-    "sourceHash": "af90a02"
+    "sourceHash": "fc24baf"
   },
-  "errors.write.trashNotSupported.message": "{platform, select, windows {This volume doesn’t have a Recycle Bin.} other {Dieses Volume unterstützt keinen Papierkorb.}}",
+  "errors.write.trashNotSupported.message": "{platform, select, windows {Dieses Volume hat keinen Papierkorb.} other {Dieses Volume unterstützt keinen Papierkorb.}}",
   "@errors.write.trashNotSupported.message": {
-    "sourceHash": "911688a"
+    "sourceHash": "63875e3"
   },
   "errors.write.trashNotSupported.suggestion": "Nutze {deletePermanentlyKey}, um stattdessen endgültig zu löschen.",
   "@errors.write.trashNotSupported.suggestion": {
@@ -1509,9 +1509,9 @@
   "@errors.write.readError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.readError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Bewegen in den Papierkorb nicht möglich}}",
+  "errors.write.readError.title.trash": "{platform, select, windows {Bewegen in den Papierkorb nicht möglich} other {Bewegen in den Papierkorb nicht möglich}}",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.readError.message": "Aus der Quelle ließ sich nicht lesen.",
   "@errors.write.readError.message": {
@@ -1533,9 +1533,9 @@
   "@errors.write.writeError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.writeError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Bewegen in den Papierkorb nicht möglich}}",
+  "errors.write.writeError.title.trash": "{platform, select, windows {Bewegen in den Papierkorb nicht möglich} other {Bewegen in den Papierkorb nicht möglich}}",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.writeError.message": "Ins Ziel ließ sich nicht schreiben.",
   "@errors.write.writeError.message": {
@@ -1641,13 +1641,13 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "77cff09"
   },
-  "errors.write.trashRefused.title": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Bewegen in den Papierkorb nicht möglich}}",
+  "errors.write.trashRefused.title": "{platform, select, windows {Bewegen in den Papierkorb nicht möglich} other {Bewegen in den Papierkorb nicht möglich}}",
   "@errors.write.trashRefused.title": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
-  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS hat Cmdr {count} der ausgewählten Objekte nicht anfassen lassen.} windows {Windows wouldn’t let Cmdr touch {count} of the items you picked.} other {Cmdr wasn’t allowed to touch {count} of the items you picked.}}",
+  "errors.write.trashRefused.message.notPermitted": "{platform, select, macos {macOS hat Cmdr {count} der ausgewählten Objekte nicht anfassen lassen.} windows {Windows hat Cmdr {count} der ausgewählten Objekte nicht anfassen lassen.} other {Cmdr durfte {count} der ausgewählten Objekte nicht anfassen.}}",
   "@errors.write.trashRefused.message.notPermitted": {
-    "sourceHash": "57a38d7"
+    "sourceHash": "6ea1348"
   },
   "errors.write.trashRefused.message.locked": "macOS bewegt keine geschützten Objekte und hat deshalb {count} der ausgewählten Objekte an Ort und Stelle gelassen.",
   "@errors.write.trashRefused.message.locked": {
@@ -1661,33 +1661,33 @@
   "@errors.write.trashRefused.message.ownedByAnotherUser": {
     "sourceHash": "b65d875"
   },
-  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {The Recycle Bin on this drive doesn’t let Cmdr put anything in it, so {count} of the items you picked stayed where they were.} other {Cmdr darf nichts in den Papierkorb auf diesem Laufwerk legen und hat deshalb {count} der ausgewählten Objekte an Ort und Stelle gelassen.}}",
+  "errors.write.trashRefused.message.trashNotWritable": "{platform, select, windows {Cmdr darf nichts in den Papierkorb auf diesem Laufwerk legen und hat deshalb {count} der ausgewählten Objekte an Ort und Stelle gelassen.} other {Cmdr darf nichts in den Papierkorb auf diesem Laufwerk legen und hat deshalb {count} der ausgewählten Objekte an Ort und Stelle gelassen.}}",
   "@errors.write.trashRefused.message.trashNotWritable": {
-    "sourceHash": "024ef04"
+    "sourceHash": "c3d5e1e"
   },
-  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS hat für {count} der ausgewählten Objekte keinen Papierkorb gefunden.} windows {Windows couldn’t find a Recycle Bin for {count} of the items you picked.} other {Cmdr couldn’t find a trash for {count} of the items you picked.}}",
+  "errors.write.trashRefused.message.noTrashForVolume": "{platform, select, macos {macOS hat für {count} der ausgewählten Objekte keinen Papierkorb gefunden.} windows {Windows hat für {count} der ausgewählten Objekte keinen Papierkorb gefunden.} other {Cmdr hat für {count} der ausgewählten Objekte keinen Papierkorb gefunden.}}",
   "@errors.write.trashRefused.message.noTrashForVolume": {
-    "sourceHash": "702ae17"
+    "sourceHash": "07e7834"
   },
-  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS hat {count} der ausgewählten Objekte nicht in den Papierkorb bewegt.} windows {Windows wouldn’t move {count} of the items you picked to the Recycle Bin.} other {Cmdr couldn’t move {count} of the items you picked to the trash.}}",
+  "errors.write.trashRefused.message.other": "{platform, select, macos {macOS hat {count} der ausgewählten Objekte nicht in den Papierkorb bewegt.} windows {Windows hat {count} der ausgewählten Objekte nicht in den Papierkorb bewegt.} other {Cmdr konnte {count} der ausgewählten Objekte nicht in den Papierkorb bewegen.}}",
   "@errors.write.trashRefused.message.other": {
-    "sourceHash": "6f71e12"
+    "sourceHash": "cdd735e"
   },
-  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Die Objekte liegen vielleicht an einem Ort, den macOS für sich behält. Der Finder kann sie manchmal trotzdem bewegen, weil er nach deinem Passwort fragen kann.} windows {The items may sit somewhere Windows keeps to itself. File Explorer can sometimes still move them, since it can ask for administrator permission.} other {The items may sit somewhere only an administrator can change. Check the folder’s permissions, or ask whoever manages this computer.}}",
+  "errors.write.trashRefused.suggestion.notPermitted": "{platform, select, macos {Die Objekte liegen vielleicht an einem Ort, den macOS für sich behält. Der Finder kann sie manchmal trotzdem bewegen, weil er nach deinem Passwort fragen kann.} windows {Die Objekte liegen vielleicht an einem Ort, den Windows für sich behält. Der Datei-Explorer kann sie manchmal trotzdem bewegen, weil er nach Administratorberechtigungen fragen kann.} other {Die Objekte liegen vielleicht an einem Ort, der sich nur mit Administratorrechten ändern lässt. Prüfe die Zugriffsrechte des Ordners oder frag die Person, die diesen Computer verwaltet.}}",
   "@errors.write.trashRefused.suggestion.notPermitted": {
-    "sourceHash": "2ef3e96"
+    "sourceHash": "ad6373b"
   },
   "errors.write.trashRefused.suggestion.locked": "Um sie zu bewegen, hebe zuerst den Schutz im Finder auf: „Informationen“, dann das Häkchen bei „Geschützt“ entfernen.",
   "@errors.write.trashRefused.suggestion.locked": {
     "sourceHash": "ece70f5"
   },
-  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {Um sie zu bewegen, brauchst du die Berechtigung, ihren Ordner zu ändern. Wer das darf, zeigt der Finder in den „Informationen“ des Ordners unter „Teilen & Zugriffsrechte“.} windows {To move them, you need permission to change their folder. File Explorer shows who can in the folder’s Properties, under Security.} other {To move them, you need permission to change their folder. Your file manager shows who can in the folder’s properties, under Permissions.}}",
+  "errors.write.trashRefused.suggestion.folderNotWritable": "{platform, select, macos {Um sie zu bewegen, brauchst du die Berechtigung, ihren Ordner zu ändern. Wer das darf, zeigt der Finder in den „Informationen“ des Ordners unter „Teilen & Zugriffsrechte“.} windows {Um sie zu bewegen, brauchst du die Berechtigung, ihren Ordner zu ändern. Wer das darf, zeigt der Datei-Explorer in den „Eigenschaften“ des Ordners unter „Sicherheit“.} other {Um sie zu bewegen, brauchst du die Berechtigung, ihren Ordner zu ändern. Wer das darf, zeigt dein Dateimanager in den Eigenschaften des Ordners unter „Zugriffsrechte“.}}",
   "@errors.write.trashRefused.suggestion.folderNotWritable": {
-    "sourceHash": "8614665"
+    "sourceHash": "1f3b45d"
   },
-  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Der Finder kann sie trotzdem bewegen, nachdem er nach einem Administratorpasswort gefragt hat.} windows {An administrator can still move them. Ask whoever manages this PC.} other {An administrator can still move them, for example with sudo in a terminal.}}",
+  "errors.write.trashRefused.suggestion.ownedByAnotherUser": "{platform, select, macos {Der Finder kann sie trotzdem bewegen, nachdem er nach einem Administratorpasswort gefragt hat.} windows {Ein Administratorkonto kann sie trotzdem bewegen. Frag die Person, die diesen PC verwaltet.} other {Ein Administratorkonto kann sie trotzdem bewegen, zum Beispiel mit sudo in einem Terminal.}}",
   "@errors.write.trashRefused.suggestion.ownedByAnotherUser": {
-    "sourceHash": "6a8fbff"
+    "sourceHash": "b2708c6"
   },
   "errors.write.trashRefused.suggestion.trashNotWritableWithKey": "{platform, select, macos {Das kann passieren, wenn sich die Zugriffsrechte des Papierkorbordners ändern, zum Beispiel nach dem Umstieg auf einen neuen Mac. Endgültig löschen kannst du die Objekte trotzdem mit {deletePermanentlyKey}.} windows {Das kann passieren, wenn sich die Zugriffsrechte des Papierkorbs ändern, zum Beispiel nach dem Umstieg auf einen neuen PC. Endgültig löschen kannst du die Objekte trotzdem mit {deletePermanentlyKey}.} other {Das kann passieren, wenn sich die Zugriffsrechte des Papierkorbordners ändern, zum Beispiel nach dem Umstieg auf einen neuen Computer. Endgültig löschen kannst du die Objekte trotzdem mit {deletePermanentlyKey}.}}",
   "@errors.write.trashRefused.suggestion.trashNotWritableWithKey": {
@@ -1705,9 +1705,9 @@
   "@errors.write.trashRefused.suggestion.noTrashForVolumeWithoutKey": {
     "sourceHash": "d582f73"
   },
-  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Sieh dir unten die technischen Details an, um zu sehen, was macOS gemeldet hat.} windows {Check the technical details below for what Windows reported.} other {Check the technical details below for the exact reason.}}",
+  "errors.write.trashRefused.suggestion.other": "{platform, select, macos {Sieh dir unten die technischen Details an, um zu sehen, was macOS gemeldet hat.} windows {Sieh dir unten die technischen Details an, um zu sehen, was Windows gemeldet hat.} other {Sieh dir unten die technischen Details an, um den genauen Grund zu sehen.}}",
   "@errors.write.trashRefused.suggestion.other": {
-    "sourceHash": "b61b3c1"
+    "sourceHash": "76a78a7"
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr hat auf diesem Mac außerdem keinen Festplattenvollzugriff, was eine häufige Ursache ist. Der Hinweis „Kein Festplattenvollzugriff“ in der Titelleiste bringt dich zu dieser Entscheidung.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
@@ -1725,9 +1725,9 @@
   "@errors.write.ioError.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.ioError.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Bewegen in den Papierkorb nicht möglich}}",
+  "errors.write.ioError.title.trash": "{platform, select, windows {Bewegen in den Papierkorb nicht möglich} other {Bewegen in den Papierkorb nicht möglich}}",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.ioError.message.copy": "Die Datei ließ sich nicht kopieren.",
   "@errors.write.ioError.message.copy": {
@@ -1741,9 +1741,9 @@
   "@errors.write.ioError.message.delete": {
     "sourceHash": "9e79007"
   },
-  "errors.write.ioError.message.trash": "{platform, select, windows {Couldn’t move the file to the Recycle Bin.} other {Die Datei ließ sich nicht in den Papierkorb bewegen.}}",
+  "errors.write.ioError.message.trash": "{platform, select, windows {Die Datei ließ sich nicht in den Papierkorb bewegen.} other {Die Datei ließ sich nicht in den Papierkorb bewegen.}}",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "948e289"
+    "sourceHash": "490dd97"
   },
   "errors.write.ioError.suggestion": "Versuche es erneut. Wenn das Problem bestehen bleibt, sieh dir die technischen Details unten an.",
   "@errors.write.ioError.suggestion": {
@@ -1765,21 +1765,21 @@
   "@errors.write.permissionDenied.message.delete": {
     "sourceHash": "0c03fc4"
   },
-  "errors.write.permissionDenied.message.trash": "{platform, select, windows {You don’t have permission to move files to the Recycle Bin here.} other {Du hast keine Berechtigung, hier Dateien in den Papierkorb zu bewegen.}}",
+  "errors.write.permissionDenied.message.trash": "{platform, select, windows {Du hast keine Berechtigung, hier Dateien in den Papierkorb zu bewegen.} other {Du hast keine Berechtigung, hier Dateien in den Papierkorb zu bewegen.}}",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "cca028a"
+    "sourceHash": "7d53afa"
   },
-  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Prüfe, ob du Schreibzugriff auf den übergeordneten Ordner hast. Die Datei ist vielleicht geschützt. Hebe den Schutz im Finder auf („Informationen“ > Häkchen bei „Geschützt“ entfernen) und versuche es erneut.} windows {Check that you have write access to the parent folder. The file may be read-only: in File Explorer, open its Properties, clear “Read-only”, and try again.} other {Prüfe, ob du Schreibzugriff auf den übergeordneten Ordner hast. Die Datei ist vielleicht geschützt. Prüfe ihre Zugriffsrechte (z. B. per chmod oder über deinen Dateimanager) und versuche es erneut.}}",
+  "errors.write.permissionDenied.suggestion.delete": "{platform, select, macos {Prüfe, ob du Schreibzugriff auf den übergeordneten Ordner hast. Die Datei ist vielleicht geschützt. Hebe den Schutz im Finder auf („Informationen“ > Häkchen bei „Geschützt“ entfernen) und versuche es erneut.} windows {Prüfe, ob du Schreibzugriff auf den übergeordneten Ordner hast. Die Datei ist vielleicht schreibgeschützt: Öffne im Datei-Explorer die Eigenschaften der Datei, entferne das Häkchen bei „Schreibgeschützt“ und versuche es erneut.} other {Prüfe, ob du Schreibzugriff auf den übergeordneten Ordner hast. Die Datei ist vielleicht geschützt. Prüfe ihre Zugriffsrechte (z. B. per chmod oder über deinen Dateimanager) und versuche es erneut.}}",
   "@errors.write.permissionDenied.suggestion.delete": {
-    "sourceHash": "1e6e123"
+    "sourceHash": "89a73d1"
   },
   "errors.write.permissionDenied.suggestion.default": "Prüfe, ob du Schreibzugriff auf den Zielordner hast. Du musst vielleicht das Gerät entsperren oder die Ordner-Zugriffsrechte ändern.",
   "@errors.write.permissionDenied.suggestion.default": {
     "sourceHash": "ec02093"
   },
-  "errors.write.permissionDenied.message.named": "{platform, select, macos {Dein macOS-Benutzer kann {folder} nicht ändern.} windows {Your Windows account can’t change {folder}.} other {Your user account can’t change {folder}.}}",
+  "errors.write.permissionDenied.message.named": "{platform, select, macos {Dein macOS-Benutzer kann {folder} nicht ändern.} windows {Dein Windows-Konto kann {folder} nicht ändern.} other {Dein Benutzerkonto kann {folder} nicht ändern.}}",
   "@errors.write.permissionDenied.message.named": {
-    "sourceHash": "0ffd79b"
+    "sourceHash": "7c12395"
   },
   "errors.write.permissionDenied.suggestion.phone": "Android reserviert diesen Ort für das System und seine Apps. Deine Fotos, Downloads und anderen Dateien liegen im gemeinsamen Speicher des Telefons. Versuche es also mit einem Ordner dort.",
   "@errors.write.permissionDenied.suggestion.phone": {
@@ -1793,13 +1793,13 @@
   "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
     "sourceHash": "31deca5"
   },
-  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzerkonto Zugriff zu geben, wähle den Ordner im Finder aus, öffne „Informationen“ und sieh unter „Teilen & Zugriffsrechte“ nach.} windows {Changing it needs administrator rights. To give your own account access, open the folder’s Properties in File Explorer and look under “Security”.} other {Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzerkonto Zugriff zu geben, ändere die Zugriffsrechte des Ordners (z. B. per chmod) und versuche es erneut.}}",
+  "errors.write.permissionDenied.suggestion.needsAdmin": "{platform, select, macos {Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzerkonto Zugriff zu geben, wähle den Ordner im Finder aus, öffne „Informationen“ und sieh unter „Teilen & Zugriffsrechte“ nach.} windows {Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzerkonto Zugriff zu geben, öffne im Datei-Explorer die Eigenschaften des Ordners und sieh unter „Sicherheit“ nach.} other {Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzerkonto Zugriff zu geben, ändere die Zugriffsrechte des Ordners (z. B. per chmod) und versuche es erneut.}}",
   "@errors.write.permissionDenied.suggestion.needsAdmin": {
-    "sourceHash": "674192a"
+    "sourceHash": "3425cc6"
   },
-  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS selbst schützt dieses Objekt, daran ändern auch Administratorrechte nichts. Vielleicht ist es geschützt: Wähle es im Finder aus, öffne „Informationen“ und entferne das Häkchen bei „Geschützt“.} windows {Windows protects this one itself, so administrator rights alone won’t change it. System files usually belong to Windows and are best left alone.} other {Das System selbst schützt dieses Objekt, daran ändern auch Administratorrechte nichts. Vielleicht trägt es ein Schutz-Flag, das zuerst entfernt werden muss.}}",
+  "errors.write.permissionDenied.suggestion.systemProtected": "{platform, select, macos {macOS selbst schützt dieses Objekt, daran ändern auch Administratorrechte nichts. Vielleicht ist es geschützt: Wähle es im Finder aus, öffne „Informationen“ und entferne das Häkchen bei „Geschützt“.} windows {Windows selbst schützt dieses Objekt, daran ändern Administratorrechte allein nichts. Systemdateien gehören meist zu Windows und bleiben am besten unangetastet.} other {Das System selbst schützt dieses Objekt, daran ändern auch Administratorrechte nichts. Vielleicht trägt es ein Schutz-Flag, das zuerst entfernt werden muss.}}",
   "@errors.write.permissionDenied.suggestion.systemProtected": {
-    "sourceHash": "64a71c8"
+    "sourceHash": "b1780bc"
   },
   "errors.write.permissionDenied.message.sourceCopy": "Du hast keine Berechtigung, dieses Objekt zu lesen, deshalb lässt es sich nicht kopieren.",
   "@errors.write.permissionDenied.message.sourceCopy": {
@@ -1917,9 +1917,9 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "84925b0"
   },
-  "errors.write.fileLocked.suggestion": "{platform, select, macos {Hebe den Schutz im Finder auf („Informationen“ > Häkchen bei „Geschützt“ entfernen) und versuche es erneut.} windows {The file may be read-only. In File Explorer, open its Properties, clear “Read-only”, and try again.} other {Die Datei ist vielleicht geschützt. Prüfe ihre Zugriffsrechte (z. B. per chmod oder über deinen Dateimanager) und versuche es erneut.}}",
+  "errors.write.fileLocked.suggestion": "{platform, select, macos {Hebe den Schutz im Finder auf („Informationen“ > Häkchen bei „Geschützt“ entfernen) und versuche es erneut.} windows {Die Datei ist vielleicht schreibgeschützt. Öffne im Datei-Explorer die Eigenschaften der Datei, entferne das Häkchen bei „Schreibgeschützt“ und versuche es erneut.} other {Die Datei ist vielleicht geschützt. Prüfe ihre Zugriffsrechte (z. B. per chmod oder über deinen Dateimanager) und versuche es erneut.}}",
   "@errors.write.fileLocked.suggestion": {
-    "sourceHash": "8f84de5"
+    "sourceHash": "2e9f5c6"
   },
   "errors.write.deletePending.title": "Datei wird entfernt",
   "@errors.write.deletePending.title": {
@@ -1985,17 +1985,17 @@
   "@errors.write.mountedVolumeInside.suggestion.move": {
     "sourceHash": "a5d37f6"
   },
-  "errors.write.homeFolder.title": "{platform, select, windows {Please don’t delete your user folder} other {Bitte lösch deinen persönlichen Ordner nicht}}",
+  "errors.write.homeFolder.title": "{platform, select, windows {Bitte lösch deinen Benutzerordner nicht} other {Bitte lösch deinen persönlichen Ordner nicht}}",
   "@errors.write.homeFolder.title": {
-    "sourceHash": "6005e89"
+    "sourceHash": "d7a7939"
   },
-  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hey, you can’t delete your own user folder.} other {Hey, deinen eigenen persönlichen Ordner kannst du nicht löschen.}}",
+  "errors.write.homeFolder.message.isHome": "{platform, select, windows {Hey, deinen eigenen Benutzerordner kannst du nicht löschen.} other {Hey, deinen eigenen persönlichen Ordner kannst du nicht löschen.}}",
   "@errors.write.homeFolder.message.isHome": {
-    "sourceHash": "16ee6cd"
+    "sourceHash": "a5d7a8a"
   },
-  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {You can’t delete <code>{path}</code> because it contains your user folder, and you can’t delete your user folder.} other {<code>{path}</code> lässt sich nicht löschen, weil darin dein persönlicher Ordner liegt, und den kannst du nicht löschen.}}",
+  "errors.write.homeFolder.message.holdsHome": "{platform, select, windows {<code>{path}</code> lässt sich nicht löschen, weil darin dein Benutzerordner liegt, und den kannst du nicht löschen.} other {<code>{path}</code> lässt sich nicht löschen, weil darin dein persönlicher Ordner liegt, und den kannst du nicht löschen.}}",
   "@errors.write.homeFolder.message.holdsHome": {
-    "sourceHash": "4ad5896"
+    "sourceHash": "f11f80f"
   },
   "errors.write.homeFolder.suggestion.isHome": "Wenn du alle deine Dateien loswerden willst, geh hinein, wähl alles aus und lösch es. Klingt aber trotzdem nach einer ziemlich schlechten Idee.",
   "@errors.write.homeFolder.suggestion.isHome": {
@@ -2005,37 +2005,37 @@
   "@errors.write.homeFolder.suggestion.holdsHome": {
     "sourceHash": "4893921"
   },
-  "errors.write.homeFolderMove.title": "{platform, select, windows {Please don’t move your user folder} other {Bitte beweg deinen persönlichen Ordner nicht}}",
+  "errors.write.homeFolderMove.title": "{platform, select, windows {Bitte beweg deinen Benutzerordner nicht} other {Bitte beweg deinen persönlichen Ordner nicht}}",
   "@errors.write.homeFolderMove.title": {
-    "sourceHash": "f5db2db"
+    "sourceHash": "df34b54"
   },
-  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Hey, dein persönlicher Ordner gehört genau dorthin, wo er ist. Bewegst du ihn, sucht dein Mac dich bei der nächsten Anmeldung am falschen Ort.} windows {Hey, your user folder lives right where it is. Move it, and Windows will look for you in the wrong place next time you sign in.} other {Hey, your home folder lives right where it is. Move it, and your computer will look for you in the wrong place next time you log in.}}",
+  "errors.write.homeFolderMove.message.isHome": "{platform, select, macos {Hey, dein persönlicher Ordner gehört genau dorthin, wo er ist. Bewegst du ihn, sucht dein Mac dich bei der nächsten Anmeldung am falschen Ort.} windows {Hey, dein Benutzerordner gehört genau dorthin, wo er ist. Bewegst du ihn, sucht Windows dich bei der nächsten Anmeldung am falschen Ort.} other {Hey, dein persönlicher Ordner gehört genau dorthin, wo er ist. Bewegst du ihn, sucht dein Computer dich bei der nächsten Anmeldung am falschen Ort.}}",
   "@errors.write.homeFolderMove.message.isHome": {
-    "sourceHash": "17b0b0b"
+    "sourceHash": "575bc91"
   },
-  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {<code>{path}</code> lässt sich nicht bewegen, weil darin dein persönlicher Ordner liegt, und dein Mac erwartet ihn genau dort, wo er ist.} windows {You can’t move <code>{path}</code> because your user folder is in there, and Windows expects to find it right where it is.} other {You can’t move <code>{path}</code> because your home folder is in there, and your computer expects to find it right where it is.}}",
+  "errors.write.homeFolderMove.message.holdsHome": "{platform, select, macos {<code>{path}</code> lässt sich nicht bewegen, weil darin dein persönlicher Ordner liegt, und dein Mac erwartet ihn genau dort, wo er ist.} windows {<code>{path}</code> lässt sich nicht bewegen, weil darin dein Benutzerordner liegt, und Windows erwartet ihn genau dort, wo er ist.} other {<code>{path}</code> lässt sich nicht bewegen, weil darin dein persönlicher Ordner liegt, und dein Computer erwartet ihn genau dort, wo er ist.}}",
   "@errors.write.homeFolderMove.message.holdsHome": {
-    "sourceHash": "c43a8e6"
+    "sourceHash": "870f337"
   },
-  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {Wenn du deine Dateien woanders haben willst, geh hinein, wähl aus, was du brauchst, und beweg das. Dein Mac wird es dir danken.} windows {If you want your files somewhere else, go in there, pick what you need, and move that. Your PC will thank you.} other {If you want your files somewhere else, go in there, pick what you need, and move that. Your computer will thank you.}}",
+  "errors.write.homeFolderMove.suggestion.isHome": "{platform, select, macos {Wenn du deine Dateien woanders haben willst, geh hinein, wähl aus, was du brauchst, und beweg das. Dein Mac wird es dir danken.} windows {Wenn du deine Dateien woanders haben willst, geh hinein, wähl aus, was du brauchst, und beweg das. Dein PC wird es dir danken.} other {Wenn du deine Dateien woanders haben willst, geh hinein, wähl aus, was du brauchst, und beweg das. Dein Computer wird es dir danken.}}",
   "@errors.write.homeFolderMove.suggestion.isHome": {
-    "sourceHash": "580bee6"
+    "sourceHash": "01b6088"
   },
   "errors.write.homeFolderMove.suggestion.holdsHome": "Wenn du ein paar Dateien bewegen willst, sei ein bisschen genauer und wähl sie von innen aus.",
   "@errors.write.homeFolderMove.suggestion.holdsHome": {
     "sourceHash": "a766ab5"
   },
-  "errors.write.homeFolderRename.title": "{platform, select, windows {Please don’t rename your user folder} other {Bitte benenne deinen persönlichen Ordner nicht um}}",
+  "errors.write.homeFolderRename.title": "{platform, select, windows {Bitte benenne deinen Benutzerordner nicht um} other {Bitte benenne deinen persönlichen Ordner nicht um}}",
   "@errors.write.homeFolderRename.title": {
-    "sourceHash": "ec47bfe"
+    "sourceHash": "8775009"
   },
-  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Hey, dein Mac kennt deinen persönlichen Ordner unter genau diesem Namen. Benennst du ihn um, findet dein Mac dich bei der nächsten Anmeldung nicht mehr.} windows {Hey, Windows knows your user folder by this name. Rename it, and it won’t find you next time you sign in.} other {Hey, your computer knows your home folder by this name. Rename it, and it won’t find you next time you log in.}}",
+  "errors.write.homeFolderRename.message.isHome": "{platform, select, macos {Hey, dein Mac kennt deinen persönlichen Ordner unter genau diesem Namen. Benennst du ihn um, findet dein Mac dich bei der nächsten Anmeldung nicht mehr.} windows {Hey, Windows kennt deinen Benutzerordner unter genau diesem Namen. Benennst du ihn um, findet Windows dich bei der nächsten Anmeldung nicht mehr.} other {Hey, dein Computer kennt deinen persönlichen Ordner unter genau diesem Namen. Benennst du ihn um, findet dein Computer dich bei der nächsten Anmeldung nicht mehr.}}",
   "@errors.write.homeFolderRename.message.isHome": {
-    "sourceHash": "fd78f2f"
+    "sourceHash": "7e7be74"
   },
-  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {<code>{path}</code> lässt sich nicht umbenennen, weil darin dein persönlicher Ordner liegt, und dein Mac erwartet ihn genau unter diesem Pfad.} windows {You can’t rename <code>{path}</code> because your user folder is in there, and Windows expects to find it at this exact path.} other {You can’t rename <code>{path}</code> because your home folder is in there, and your computer expects to find it at this exact path.}}",
+  "errors.write.homeFolderRename.message.holdsHome": "{platform, select, macos {<code>{path}</code> lässt sich nicht umbenennen, weil darin dein persönlicher Ordner liegt, und dein Mac erwartet ihn genau unter diesem Pfad.} windows {<code>{path}</code> lässt sich nicht umbenennen, weil darin dein Benutzerordner liegt, und Windows erwartet ihn genau unter diesem Pfad.} other {<code>{path}</code> lässt sich nicht umbenennen, weil darin dein persönlicher Ordner liegt, und dein Computer erwartet ihn genau unter diesem Pfad.}}",
   "@errors.write.homeFolderRename.message.holdsHome": {
-    "sourceHash": "b09f296"
+    "sourceHash": "51b7f8f"
   },
   "errors.write.homeFolderRename.suggestion.isHomeWithKey": "{platform, select, macos {Wenn du wirklich einen neuen Namen brauchst, hat macOS dafür einen behutsamen Weg unter „Benutzer:innen & Gruppen“. Ein schnelles {renameKey} ist das allerdings nicht.} windows {Windows hat keinen sicheren eingebauten Weg, diesen Ordner umzubenennen, also lass ihn am besten, wie er ist.} other {Wenn du wirklich einen neuen Namen brauchst, geht das behutsam mit usermod und Administratorrechten, angemeldet mit einem anderen Benutzerkonto. Ein schnelles {renameKey} ist das allerdings nicht.}}",
   "@errors.write.homeFolderRename.suggestion.isHomeWithKey": {
@@ -2069,9 +2069,9 @@
   "@errors.write.landingNotRecorded.message": {
     "sourceHash": "6ca4881"
   },
-  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Versuche es noch einmal. Wenn es wieder passiert, prüfe, ob auf der Festplatte deines Macs noch Speicherplatz frei ist, und starte Cmdr dann neu.} windows {Try again. If it keeps happening, check that your PC has free space, then restart Cmdr.} other {Try again. If it keeps happening, check that your computer’s disk has free space, then restart Cmdr.}}",
+  "errors.write.landingNotRecorded.suggestion": "{platform, select, macos {Versuche es noch einmal. Wenn es wieder passiert, prüfe, ob auf der Festplatte deines Macs noch Speicherplatz frei ist, und starte Cmdr dann neu.} windows {Versuche es noch einmal. Wenn es wieder passiert, prüfe, ob auf deinem PC noch Speicherplatz frei ist, und starte Cmdr dann neu.} other {Versuche es noch einmal. Wenn es wieder passiert, prüfe, ob auf der Festplatte deines Computers noch Speicherplatz frei ist, und starte Cmdr dann neu.}}",
   "@errors.write.landingNotRecorded.suggestion": {
-    "sourceHash": "e99aa6e"
+    "sourceHash": "98864f9"
   },
   "errors.write.newDataKeptAt.title": "Deine neue Datei liegt unter einem anderen Namen",
   "@errors.write.newDataKeptAt.title": {
@@ -2145,9 +2145,9 @@
   "@errors.write.fallback.title.delete": {
     "sourceHash": "b1165b2"
   },
-  "errors.write.fallback.title.trash": "{platform, select, windows {Couldn’t move to the Recycle Bin} other {Bewegen in den Papierkorb nicht möglich}}",
+  "errors.write.fallback.title.trash": "{platform, select, windows {Bewegen in den Papierkorb nicht möglich} other {Bewegen in den Papierkorb nicht möglich}}",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "44e3a2e"
+    "sourceHash": "f9058f1"
   },
   "errors.write.fallback.message.copy": "Beim Kopieren ist etwas Unerwartetes passiert.",
   "@errors.write.fallback.message.copy": {
@@ -2161,9 +2161,9 @@
   "@errors.write.fallback.message.delete": {
     "sourceHash": "9a08b89"
   },
-  "errors.write.fallback.message.trash": "{platform, select, windows {Something went wrong while moving to the Recycle Bin.} other {Beim Bewegen in den Papierkorb ist etwas Unerwartetes passiert.}}",
+  "errors.write.fallback.message.trash": "{platform, select, windows {Beim Bewegen in den Papierkorb ist etwas Unerwartetes passiert.} other {Beim Bewegen in den Papierkorb ist etwas Unerwartetes passiert.}}",
   "@errors.write.fallback.message.trash": {
-    "sourceHash": "63f8393"
+    "sourceHash": "ba7128f"
   },
   "errors.write.fallback.suggestion": "Versuche es erneut, oder sieh dir die technischen Details unten für weitere Informationen an.",
   "@errors.write.fallback.suggestion": {
@@ -2177,9 +2177,9 @@
   "@errors.mutation.cantRenameVolumeRoot": {
     "sourceHash": "0845c57"
   },
-  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr kann nicht in „{path}“ schreiben. Prüfe die Zugriffsrechte des Ordners im Finder.} windows {Cmdr can’t write into “{path}”. Check the folder’s permissions in File Explorer.} other {Cmdr can’t write into “{path}”. Check the folder’s permissions in your file manager.}}",
+  "errors.mutation.parentNotWritable": "{platform, select, macos {Cmdr kann nicht in „{path}“ schreiben. Prüfe die Zugriffsrechte des Ordners im Finder.} windows {Cmdr kann nicht in „{path}“ schreiben. Prüfe die Berechtigungen des Ordners im Datei-Explorer.} other {Cmdr kann nicht in „{path}“ schreiben. Prüfe die Zugriffsrechte des Ordners in deinem Dateimanager.}}",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "e0a7ad6"
+    "sourceHash": "23a1c44"
   },
   "errors.mutation.fileLocked": "Dieses Objekt ist geschützt. Hebe den Schutz im Finder unter „Informationen“ auf und versuche es dann erneut.",
   "@errors.mutation.fileLocked": {
@@ -2341,13 +2341,13 @@
   "@errors.volume.passwordRejected": {
     "sourceHash": "fe9b44a"
   },
-  "errors.mutation.trashNotSupported": "{platform, select, windows {This volume has no Recycle Bin, so the only way is to delete permanently.} other {Dieses Volume hat keinen Papierkorb, deshalb kannst du hier nur endgültig löschen.}}",
+  "errors.mutation.trashNotSupported": "{platform, select, windows {Dieses Volume hat keinen Papierkorb, deshalb kannst du hier nur endgültig löschen.} other {Dieses Volume hat keinen Papierkorb, deshalb kannst du hier nur endgültig löschen.}}",
   "@errors.mutation.trashNotSupported": {
-    "sourceHash": "525ef25"
+    "sourceHash": "519075e"
   },
-  "errors.mutation.trashRefused": "{platform, select, macos {macOS wollte das nicht in den Papierkorb bewegen.} windows {Windows wouldn’t move this to the Recycle Bin.} other {Cmdr couldn’t move this to the Trash.}}",
+  "errors.mutation.trashRefused": "{platform, select, macos {macOS wollte das nicht in den Papierkorb bewegen.} windows {Windows wollte das nicht in den Papierkorb bewegen.} other {Cmdr konnte das nicht in den Papierkorb bewegen.}}",
   "@errors.mutation.trashRefused": {
-    "sourceHash": "7a6d1a5"
+    "sourceHash": "7ad59d2"
   },
   "errors.serverRequest.unreachable": "Cmdr hat seinen Server nicht erreicht. Prüfe deine Internetverbindung und versuche es noch einmal.",
   "@errors.serverRequest.unreachable": {
@@ -2429,9 +2429,9 @@
   "@errors.eject.unmountRefusedByDiskImage": {
     "sourceHash": "1fa3d53"
   },
-  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS verwendet dort noch etwas. Warte eine Minute, dann versuche es erneut.} windows {Windows is still using something there. Wait a minute, then try again.} other {This computer is still using something there. Wait a minute, then try again.}}",
+  "errors.eject.unmountRefusedBySystem": "{platform, select, macos {macOS verwendet dort noch etwas. Warte eine Minute, dann versuche es erneut.} windows {Windows verwendet dort noch etwas. Warte eine Minute, dann versuche es erneut.} other {Dieser Computer verwendet dort noch etwas. Warte eine Minute, dann versuche es erneut.}}",
   "@errors.eject.unmountRefusedBySystem": {
-    "sourceHash": "9b066c9"
+    "sourceHash": "d9f40b9"
   },
   "errors.eject.unmountRefusedByCmdr": "Cmdr selbst verwendet dort noch etwas. Warte einen Moment und versuche es erneut, oder sende einen Fehlerbericht, wenn das immer wieder passiert.",
   "@errors.eject.unmountRefusedByCmdr": {
@@ -2449,9 +2449,9 @@
   "@errors.eject.unexpected": {
     "sourceHash": "2978e2a"
   },
-  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr konnte „{server}“ nicht erreichen. Prüfe, ob der Server eingeschaltet und im selben Netzwerk wie dieser Computer ist.}}",
+  "errors.mount.hostUnreachable": "{platform, select, windows {Cmdr konnte „{server}“ nicht erreichen. Prüfe, ob der Server eingeschaltet und im selben Netzwerk wie dieser PC ist.} other {Cmdr konnte „{server}“ nicht erreichen. Prüfe, ob der Server eingeschaltet und im selben Netzwerk wie dieser Computer ist.}}",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "45ac92c"
+    "sourceHash": "5e2f5c7"
   },
   "errors.mount.timeout": "Cmdr hat gewartet, aber „{server}“ hat nicht rechtzeitig geantwortet. Prüfe, ob der Server eingeschaltet und erreichbar ist, und versuche es dann erneut.",
   "@errors.mount.timeout": {
@@ -2481,17 +2481,17 @@
   "@errors.mount.cancelled": {
     "sourceHash": "bc771b3"
   },
-  "errors.mount.unsupportedProtocol": "{platform, select, windows {This PC and “{server}” have no SMB version in common. Turn on SMB 2 or later in the server’s settings, then try again.} other {Dieser Computer und „{server}“ haben keine gemeinsame SMB-Version. Schalte in den Einstellungen des Servers SMB 2 oder neuer ein und versuche es dann erneut.}}",
+  "errors.mount.unsupportedProtocol": "{platform, select, windows {Dieser PC und „{server}“ haben keine gemeinsame SMB-Version. Schalte in den Einstellungen des Servers SMB 2 oder neuer ein und versuche es dann erneut.} other {Dieser Computer und „{server}“ haben keine gemeinsame SMB-Version. Schalte in den Einstellungen des Servers SMB 2 oder neuer ein und versuche es dann erneut.}}",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "8afe4cb"
+    "sourceHash": "b7d61a2"
   },
   "errors.mount.mountRefused": "Du bist bei „{server}“ angemeldet, aber der Server hat das Öffnen von „{share}“ abgelehnt. Prüfe die Einstellungen der Freigabe auf dem Server und versuche es dann erneut.",
   "@errors.mount.mountRefused": {
     "sourceHash": "6cf694d"
   },
-  "errors.mount.mountMissing": "{platform, select, windows {Your PC said “{share}” on “{server}” was connected, but it never showed up. Try again.} other {Dein Computer hat „{share}“ auf „{server}“ als verbunden gemeldet, aber die Freigabe ist nie aufgetaucht. Versuche es erneut.}}",
+  "errors.mount.mountMissing": "{platform, select, windows {Dein PC hat „{share}“ auf „{server}“ als verbunden gemeldet, aber die Freigabe ist nie aufgetaucht. Versuche es erneut.} other {Dein Computer hat „{share}“ auf „{server}“ als verbunden gemeldet, aber die Freigabe ist nie aufgetaucht. Versuche es erneut.}}",
   "@errors.mount.mountMissing": {
-    "sourceHash": "72ab946"
+    "sourceHash": "9d2f8d5"
   },
   "errors.mount.gvfsMissing": "Zum Verbinden mit Netzwerkfreigaben braucht Linux GVFS. Installiere das Paket gvfs-smb deiner Distribution und versuche es dann erneut.",
   "@errors.mount.gvfsMissing": {
@@ -2501,9 +2501,9 @@
   "@errors.mount.unexpected": {
     "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr couldn’t reach “{server}”. Check that it’s turned on and on the same network as this PC.} other {Cmdr konnte „{server}“ nicht erreichen. Prüfe, ob der Server eingeschaltet und im selben Netzwerk wie dieser Computer ist.}}",
+  "errors.shareList.hostUnreachable": "{platform, select, windows {Cmdr konnte „{server}“ nicht erreichen. Prüfe, ob der Server eingeschaltet und im selben Netzwerk wie dieser PC ist.} other {Cmdr konnte „{server}“ nicht erreichen. Prüfe, ob der Server eingeschaltet und im selben Netzwerk wie dieser Computer ist.}}",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "45ac92c"
+    "sourceHash": "5e2f5c7"
   },
   "errors.shareList.timeout": "Cmdr hat gewartet, aber „{server}“ hat nicht rechtzeitig geantwortet. Versuche es gleich noch einmal.",
   "@errors.shareList.timeout": {

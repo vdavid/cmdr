@@ -2854,7 +2854,10 @@
     "accept": ["elérési út"],
     "forms": "a runtime path sits after a colon or in a neutral slot (A legközelebbi hely, ahová ugorhatsz: {dir}.), never suffixed",
     "confidence": "high",
-    "sources": "ms (path → útvonal)"
+    "sources": "ms (path → útvonal)",
+    "exceptions": {
+      "settings.fileOperations.adbBinaryPath.description": "The English hit is PATH, the environment variable, kept verbatim (a PATH-ban); the sentence's file path is elérési utat."
+    }
   },
   "pattern": {
     "chosen": "minta",
@@ -3716,7 +3719,17 @@
     "chosen": "indítólemez",
     "forms": "your startup disk → az indítólemezed",
     "confidence": "high",
-    "sources": "macOS (Startup Disk = Indítólemez)"
+    "sources": "macOS (Startup Disk = Indítólemez)",
+    "windows": {
+      "chosen": "rendszermeghajtó",
+      "accept": ["rendszermeghajt"],
+      "note": "the Windows system drive: a rendszermeghajtód, a rendszermeghajtódon (ms TBX system drive → rendszermeghajtó)"
+    },
+    "other": {
+      "chosen": "rendszerlemez",
+      "accept": ["rendszerlemez"],
+      "note": "the Linux system disk: a rendszerlemezed, a rendszerlemezeden. No pile hit for system disk; built from rendszer + lemez (where English says disk → lemez), tentative"
+    }
   },
   "status": {
     "chosen": "állapot",
@@ -4054,7 +4067,7 @@
   },
   "unplug": {
     "chosen": "kihúz",
-    "accept": ["húzd ki", "leválaszt", "megszakad", "csatlakoz", "választva"],
+    "accept": ["húzd ki", "leválaszt", "megszakad", "csatlakoz", "választva", "választ le"],
     "forms": "Unplug it once it's idle → Húzd ki, amikor már nincs használatban.; unplug and replug → húzd ki és dugd vissza; a drive that went away → leválasztódott; plugged in → csatlakozik / csatlakoztatva",
     "confidence": "tentative",
     "sources": "colloquial; no direct pile hit for unplug"
@@ -4471,5 +4484,19 @@
       "accept": ["ürítsd ki a lomtár"],
       "note": "the Recycle Bin's context-menu command as Windows shows it (no pile hit for the full label; built from ms Recycle Bin → Lomtár and the Finder/GNOME ürítése frame, tentative)"
     }
+  },
+  "credential-manager": {
+    "chosen": "Hitelesítőadat-kezelő",
+    "accept": ["hitelesítőadat-kezelő"],
+    "forms": "capitalized as the Windows app and store: a Hitelesítőadat-kezelőben, a Hitelesítőadat-kezelőből; only in a platform select's windows branch (macOS says kulcskarika, Linux kulcstartó)",
+    "confidence": "high",
+    "sources": "ms (Credential Manager → Hitelesítőadat-kezelő)"
+  },
+  "app-closes": {
+    "chosen": "bezárul",
+    "accept": ["bezárult"],
+    "forms": "Cmdr closes afterwards → Utána a Cmdr bezárul; then closes → aztán bezárul; after Cmdr closes → miután a Cmdr bezárult; only in a platform select's windows branch (macOS and Linux say kilép)",
+    "confidence": "tentative",
+    "sources": "catalog (quit unexpectedly → váratlanul bezárult); ms (close → bezár); no TBX entry for an app closing by itself"
   }
 }

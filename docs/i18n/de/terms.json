@@ -135,10 +135,15 @@
     },
     "decision": "Ask Cmdr (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)",
     "forms": "tool-call status lines: doing → passive present ({Objekt} wird/werden {Partizip}), done → the same minus wird/werden; the subject stays nominative so the pair stays parallel (Ein Ordner wird aufgelistet / Ein Ordner aufgelistet)",
-    "sources": "no direct source; picked for approachability"
+    "sources": "no direct source; picked for approachability",
+    "windows": {
+      "chosen": "Werkzeug",
+      "accept": ["Werkzeuge", "Tools"],
+      "note": "The Tools tab of a drive's Properties window is quoted as German Windows shows it: **Eigenschaften**, dann **Tools > Prüfen** (ms TBX Tools → Tools; the Prüfen button under Fehlerüberprüfung is built from Windows itself, no exact pile hit)."
+    }
   },
   "allow": {
-    "accept": ["erlaubt", "erlaubst", "Erlaube", "Erlaubnis", "durfte"],
+    "accept": ["erlaubt", "erlaubst", "Erlaube", "Erlaubnis", "durfte", "darf"],
     "avoid": [
       {
         "form": "zulassen",
@@ -1101,7 +1106,16 @@
     "chosen": "Schreibtisch",
     "confidence": "high",
     "forms": "the macOS Desktop folder → Schreibtisch; a Linux desktop environment is a different sense → Arbeitsumgebung (shortcuts.conflict.takenByLinuxDesktops)",
-    "sources": "macOS Finder (Localizable, PreferencesWindow: Schreibtisch); catalog onboarding.json; Xfce Thunar (Xfce-Arbeitsumgebung) for the Linux sense; MS terminology desktop → Desktop (Windows only)"
+    "sources": "macOS Finder (Localizable, PreferencesWindow: Schreibtisch); catalog onboarding.json; Xfce Thunar (Xfce-Arbeitsumgebung) for the Linux sense; MS terminology desktop → Desktop (Windows only)",
+    "windows": {
+      "chosen": "Desktop",
+      "note": "German Windows keeps Desktop for the desktop the Recycle Bin sits on (auf dem Desktop); Schreibtisch is macOS only."
+    },
+    "other": {
+      "chosen": "Arbeitsumgebung",
+      "accept": ["Schreibtisch"],
+      "note": "A Linux branch means the desktop environment (your desktop's disk tool → das Festplattenwerkzeug deiner Arbeitsumgebung), as shortcuts.conflict.takenByLinuxDesktops already says."
+    }
   },
   "destination": {
     "chosen": "Ziel",
@@ -3159,7 +3173,10 @@
     "decision": "Indexing run-kind headers + hour-scale ETA",
     "forms": "Laufwerk wird durchsucht …; Scanning … → Wird durchsucht …; fresh scan → neuer Durchlauf; rescan → erneuter Durchlauf; the drive scan as an event → Laufwerksdurchlauf; run-kind headers Erster/Erneuter vollständiger Durchlauf",
     "note": "Indexing this drive … (the drive-node tooltip) is the index sense: Indizierung.",
-    "sources": "macOS (durchsuchen); Double Commander uses Suche"
+    "sources": "macOS (durchsuchen); Double Commander uses Suche",
+    "exceptions": {
+      "errors.listing.diskReadProblem.suggestion": "the Windows branch scans a drive for problems with Windows' error checking, a check and not a file walk: auf Probleme prüfen"
+    }
   },
   "scope": {
     "accept": ["Suchen in"],
@@ -3503,7 +3520,10 @@
     "accept": ["Tabs"],
     "chosen": "Tab",
     "confidence": "high",
-    "sources": "macOS, MS terminology"
+    "sources": "macOS, MS terminology",
+    "exceptions": {
+      "errors.listing.resourceBusy.suggestion": "the Windows branch names a tab of Windows' Resource Monitor, which German Windows calls a Registerkarte; Cmdr's own tabs stay Tab"
+    }
   },
   "tag": {
     "accept": ["Tags"],
@@ -4423,5 +4443,74 @@
     "accept": ["PC"],
     "confidence": "tentative",
     "sources": "MS terminology PC (the TBX has no “This PC”) → PC (m.); Windows names This PC Dieser PC"
+  },
+  "file-explorer": {
+    "chosen": "Datei-Explorer",
+    "confidence": "high",
+    "forms": "masculine, takes the article: im Datei-Explorer, der Datei-Explorer",
+    "avoid": [
+      {
+        "form": "Windows-Explorer",
+        "why": "the older name; the TBX lists it beside Datei-Explorer, and the concept asks for the current one"
+      }
+    ],
+    "sources": "MS TBX (File Explorer → Datei-Explorer; pnpm i18n:pile --term \"File Explorer\", 2026-11-13)",
+    "exceptions": {
+      "fileExplorer.pane.fileExplorerAriaLabel": "names Cmdr's own two-pane area, not the Windows app: Dateimanager"
+    }
+  },
+  "task-manager": {
+    "chosen": "Task-Manager",
+    "confidence": "high",
+    "forms": "masculine: im Task-Manager, den Task-Manager",
+    "sources": "MS TBX (Task Manager → Task-Manager); catalog shortcuts.system.taskManager"
+  },
+  "powershell": {
+    "chosen": "PowerShell",
+    "confidence": "high",
+    "forms": "no article: in PowerShell",
+    "sources": "Microsoft keeps the product name in English (@key notes of the errors.listing.* Windows branches)"
+  },
+  "file-manager": {
+    "chosen": "Dateimanager",
+    "confidence": "high",
+    "forms": "your file manager → dein Dateimanager, in deinem Dateimanager",
+    "note": "Thunar and Dolphin title themselves Dateiverwaltung, but the catalog already ships Dateimanager (menu.file.showInFileManager, onboarding.stepFda.firstAsk.explain), and the catalog outranks the pile.",
+    "sources": "catalog (Im Dateimanager anzeigen, 6 hits); pile: Thunar and Dolphin Dateiverwaltung, MS TBX Datei-Manager"
+  },
+  "properties": {
+    "chosen": "Eigenschaften",
+    "confidence": "high",
+    "accept": ["Dateieigenschaften"],
+    "forms": "Windows: File Explorer's command and window, quoted: wähle **Eigenschaften**, unter **Sicherheit**; Linux: die Eigenschaften des Ordners, tab **Zugriffsrechte**; the command label on Linux → Dateieigenschaften",
+    "sources": "MS TBX (Properties → Eigenschaften, Security → Sicherheit); Nautilus, Thunar, Dolphin (Eigenschaften); Nautilus and Thunar Permissions → Zugriffsrechte (Dolphin: Berechtigungen)"
+  },
+  "empty-trash": {
+    "chosen": "Papierkorb entleeren",
+    "confidence": "high",
+    "accept": ["Leere den Papierkorb"],
+    "sources": "macOS Finder (Empty Trash → Papierkorb entleeren, AL10, N157)",
+    "windows": {
+      "chosen": "Papierkorb leeren",
+      "accept": ["Leere den Papierkorb"],
+      "note": "The Recycle Bin's context-menu command as German Windows shows it. No exact pile hit for the full label: built from MS TBX Recycle Bin → Papierkorb and the leeren verb Nautilus, Thunar, and Dolphin share (tentative)."
+    },
+    "other": {
+      "chosen": "Papierkorb leeren",
+      "accept": ["Leere den Papierkorb"],
+      "note": "Nautilus, Thunar, and Dolphin share Papierkorb leeren (de/gnome-nautilus/nautilus.po, de/xfce-thunar/thunar.po, de/kde-dolphin/dolphin.po)."
+    }
+  },
+  "metadata": {
+    "chosen": "Metadaten",
+    "confidence": "high",
+    "sources": "MS TBX (metadata → Metadaten); Nautilus (Metadaten); catalog errors.listing.attributeNotFound.explanation"
+  },
+  "user-folder": {
+    "chosen": "Benutzerordner",
+    "confidence": "tentative",
+    "forms": "masculine: dein Benutzerordner, deinen Benutzerordner",
+    "note": "The folder under C:\\Benutzer. No pile hit (the TBX has no user folder); Benutzerordner is also what Finder's Go > Home says, so the word is familiar on both systems.",
+    "sources": "no pile hit (pnpm i18n:pile --term \"user folder\", 2026-11-13); built from MS TBX user → Benutzer and folder → Ordner"
   }
 }

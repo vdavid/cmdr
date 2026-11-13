@@ -1,7 +1,7 @@
 {
-  "commands.appQuit.label": "{platform, select, windows {Exit Cmdr} other {Kilépés a Cmdrből}}",
+  "commands.appQuit.label": "{platform, select, windows {Kilépés a Cmdrből} other {Kilépés a Cmdrből}}",
   "@commands.appQuit.label": {
-    "sourceHash": "b3455b4"
+    "sourceHash": "af7cf85"
   },
   "commands.appHide.label": "Cmdr elrejtése",
   "@commands.appHide.label": {
@@ -192,9 +192,9 @@
   "@commands.downloadsGoToLatest.label": {
     "sourceHash": "492d0b6"
   },
-  "commands.downloadsGoToLatest.description": "{platform, select, windows {Opens your Downloads folder and selects the most recent file.} other {Megnyitja a ~/Downloads mappát, és kijelöli a legutóbbi fájlt.}}",
+  "commands.downloadsGoToLatest.description": "{platform, select, windows {Megnyitja a Letöltések mappát, és kijelöli a legutóbbi fájlt.} other {Megnyitja a ~/Downloads mappát, és kijelöli a legutóbbi fájlt.}}",
   "@commands.downloadsGoToLatest.description": {
-    "sourceHash": "6b3fe83"
+    "sourceHash": "97b6bd4"
   },
   "commands.viewShowHidden.label": "Rejtett fájlok ki-be",
   "@commands.viewShowHidden.label": {
@@ -320,21 +320,21 @@
   "@commands.appFocusNotifications.description": {
     "sourceHash": "8157823"
   },
-  "commands.editUndoTrash.label": "{platform, select, windows {Undo delete} other {Kukába helyezés visszavonása}}",
+  "commands.editUndoTrash.label": "{platform, select, windows {Törlés visszavonása} other {Kukába helyezés visszavonása}}",
   "@commands.editUndoTrash.label": {
-    "sourceHash": "c6fea33"
+    "sourceHash": "66d6520"
   },
-  "commands.editUndoTrash.one": "{platform, select, windows {Undo delete of “{name}”} other {„{name}” Kukába helyezésének visszavonása}}",
+  "commands.editUndoTrash.one": "{platform, select, windows {„{name}” törlésének visszavonása} other {„{name}” Kukába helyezésének visszavonása}}",
   "@commands.editUndoTrash.one": {
-    "sourceHash": "45494c8"
+    "sourceHash": "0541a57"
   },
-  "commands.editUndoTrash.many": "{platform, select, windows {Undo delete of {countText} {count, plural, one {item} other {items}}} other {{countText} {count, plural, one {elem} other {elem}} Kukába helyezésének visszavonása}}",
+  "commands.editUndoTrash.many": "{platform, select, windows {{countText} {count, plural, one {elem} other {elem}} törlésének visszavonása} other {{countText} {count, plural, one {elem} other {elem}} Kukába helyezésének visszavonása}}",
   "@commands.editUndoTrash.many": {
-    "sourceHash": "69c4966"
+    "sourceHash": "39a5bbe"
   },
-  "commands.editUndoTrash.description": "{platform, select, windows {Puts back the files you last moved to the Recycle Bin} other {Visszahelyezi a legutóbb a Kukába helyezett fájlokat}}",
+  "commands.editUndoTrash.description": "{platform, select, windows {Visszahelyezi a legutóbb a Lomtárba helyezett fájlokat} other {Visszahelyezi a legutóbb a Kukába helyezett fájlokat}}",
   "@commands.editUndoTrash.description": {
-    "sourceHash": "dca1b63"
+    "sourceHash": "6082058"
   },
   "commands.paneLeftVolumeChooser.label": "Bal oldali kötetválasztó megnyitása",
   "@commands.paneLeftVolumeChooser.label": {
@@ -464,9 +464,9 @@
   "@commands.navGoToRoot.label": {
     "sourceHash": "3822d7b"
   },
-  "commands.navGoHome.label": "{platform, select, windows {Go to user folder} other {Ugrás a saját mappára}}",
+  "commands.navGoHome.label": "{platform, select, windows {Ugrás a felhasználói mappára} other {Ugrás a saját mappára}}",
   "@commands.navGoHome.label": {
-    "sourceHash": "74b2a8b"
+    "sourceHash": "0ae4c72"
   },
   "commands.errorPaneToggleTechnicalDetails.label": "Technikai részletek megjelenítése",
   "@commands.errorPaneToggleTechnicalDetails.label": {
@@ -832,21 +832,21 @@
   "@commands.fileDeletePermanently.label": {
     "sourceHash": "280b10c"
   },
-  "commands.fileGoToTrash.label": "{platform, select, windows {Go to Recycle Bin} other {Ugrás a Kukába}}",
+  "commands.fileGoToTrash.label": "{platform, select, windows {Ugrás a Lomtárba} other {Ugrás a Kukába}}",
   "@commands.fileGoToTrash.label": {
-    "sourceHash": "5332858"
+    "sourceHash": "687dada"
   },
-  "commands.fileGoToTrash.description": "{platform, select, windows {Opens the Recycle Bin of the drive you’re browsing} other {Megnyitja annak a meghajtónak a Kukáját, amelyet éppen böngészel}}",
+  "commands.fileGoToTrash.description": "{platform, select, windows {Megnyitja annak a meghajtónak a Lomtárát, amelyet éppen böngészel} other {Megnyitja annak a meghajtónak a Kukáját, amelyet éppen böngészel}}",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "6496c25"
+    "sourceHash": "e4789d0"
   },
   "commands.dialogConfirm.label": "Képernyőn megjelenő párbeszédablak megerősítése",
   "@commands.dialogConfirm.label": {
     "sourceHash": "fef0684"
   },
-  "commands.fileShowInFileManager.label": "{platform, select, macos {Megjelenítés a Finderben} windows {Show in File Explorer} other {Megjelenítés a fájlkezelőben}}",
+  "commands.fileShowInFileManager.label": "{platform, select, macos {Megjelenítés a Finderben} windows {Megjelenítés a Fájlkezelőben} other {Megjelenítés a fájlkezelőben}}",
   "@commands.fileShowInFileManager.label": {
-    "sourceHash": "c2a9c77"
+    "sourceHash": "21f1ff1"
   },
   "commands.fileOpenTerminalHere.label": "Terminál megnyitása itt",
   "@commands.fileOpenTerminalHere.label": {
@@ -868,13 +868,13 @@
   "@commands.fileCopyFilename.label": {
     "sourceHash": "5cdf7f8"
   },
-  "commands.fileGetInfo.label": "{platform, select, macos {Infó megjelenítése} windows {Properties} other {Fájl tulajdonságai}}",
+  "commands.fileGetInfo.label": "{platform, select, macos {Infó megjelenítése} windows {Tulajdonságok} other {Fájl tulajdonságai}}",
   "@commands.fileGetInfo.label": {
-    "sourceHash": "91c64ca"
+    "sourceHash": "da65a65"
   },
   "commands.fileQuickLook.label": "{platform, select, macos {Gyorsnézet} other {Előnézet}}",
   "@commands.fileQuickLook.label": {
-    "sourceHash": "f5616ce"
+    "sourceHash": "c3f57b4"
   },
   "commands.fileContextMenu.label": "Helyi menü megnyitása",
   "@commands.fileContextMenu.label": {
@@ -928,9 +928,9 @@
   "@commands.resticForgetPassword.label": {
     "sourceHash": "8065fcb"
   },
-  "commands.resticForgetPassword.description": "{platform, select, macos {Eltávolítja a kulcskarikából annak a restic biztonsági mentésnek a mentett jelszavát, amelyben éppen vagy, és újra lezárja a biztonsági mentést} windows {Removes the saved password of the restic backup you’re in from Credential Manager, and locks the backup again} other {Removes the saved password of the restic backup you’re in from your keyring, and locks the backup again}}",
+  "commands.resticForgetPassword.description": "{platform, select, macos {Eltávolítja a kulcskarikából annak a restic biztonsági mentésnek a mentett jelszavát, amelyben éppen vagy, és újra lezárja a biztonsági mentést} windows {Eltávolítja a Hitelesítőadat-kezelőből annak a restic biztonsági mentésnek a mentett jelszavát, amelyben éppen vagy, és újra lezárja a biztonsági mentést} other {Eltávolítja a kulcstartódból annak a restic biztonsági mentésnek a mentett jelszavát, amelyben éppen vagy, és újra lezárja a biztonsági mentést}}",
   "@commands.resticForgetPassword.description": {
-    "sourceHash": "e51ac69"
+    "sourceHash": "0f616ca"
   },
   "commands.fileCopyShareLink.label": "Megosztási link másolása (hét nap)",
   "@commands.fileCopyShareLink.label": {

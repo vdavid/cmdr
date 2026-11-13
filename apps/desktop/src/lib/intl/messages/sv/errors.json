@@ -19,9 +19,9 @@
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "ff103cd"
   },
-  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Så här kan du prova:\n- Stäng några appar för att frigöra minne, särskilt sådana som drar mycket resurser (webbläsare med många flikar, redigerare, mediaappar)\n- Kontrollera minnesanvändningen i **Aktivitetskontroll** (sök efter den i Spotlight)\n- Gå hit igen för att försöka på nytt} windows {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in **Task Manager** (press Ctrl+Shift+Esc)\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps to free up memory, especially ones using lots of resources (browsers with many tabs, editors, media apps)\n- Check memory usage in your system monitor app\n- Navigate here again to retry}}",
+  "errors.listing.notEnoughMemory.suggestion": "{platform, select, macos {Så här kan du prova:\n- Stäng några appar för att frigöra minne, särskilt sådana som drar mycket resurser (webbläsare med många flikar, redigerare, mediaappar)\n- Kontrollera minnesanvändningen i **Aktivitetskontroll** (sök efter den i Spotlight)\n- Gå hit igen för att försöka på nytt} windows {Så här kan du prova:\n- Stäng några appar för att frigöra minne, särskilt sådana som drar mycket resurser (webbläsare med många flikar, redigerare, mediaappar)\n- Kontrollera minnesanvändningen i **Aktivitetshanteraren** (tryck på Ctrl+Shift+Esc)\n- Gå hit igen för att försöka på nytt} other {Så här kan du prova:\n- Stäng några appar för att frigöra minne, särskilt sådana som drar mycket resurser (webbläsare med många flikar, redigerare, mediaappar)\n- Kontrollera minnesanvändningen i din systemövervakare\n- Gå hit igen för att försöka på nytt}}",
   "@errors.listing.notEnoughMemory.suggestion": {
-    "sourceHash": "d05a4e4"
+    "sourceHash": "5b716f4"
   },
   "errors.listing.resourceBusy.title": "Resursen är upptagen",
   "@errors.listing.resourceBusy.title": {
@@ -31,9 +31,9 @@
   "@errors.listing.resourceBusy.explanation": {
     "sourceHash": "18a07d9"
   },
-  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {Vänta en stund och gå sedan hit igen. Om det fortsätter, kontrollera vilken app som kan hålla filen öppen (kör `lsof +D <folder-path>` i Terminal för att se vilka processer som använder den här mappen).} windows {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the folder open: in **Resource Monitor** (search for it in Start), open the CPU tab and search **Associated Handles** for the folder’s name.} other {Wait a moment, then navigate here again. If it keeps happening, check which app might be holding the file open (in a terminal, run `lsof +D <folder-path>` to see which processes are using this folder).}}",
+  "errors.listing.resourceBusy.suggestion": "{platform, select, macos {Vänta en stund och gå sedan hit igen. Om det fortsätter, kontrollera vilken app som kan hålla filen öppen (kör `lsof +D <folder-path>` i Terminal för att se vilka processer som använder den här mappen).} windows {Vänta en stund och gå sedan hit igen. Om det fortsätter, kontrollera vilken app som kan hålla mappen öppen: öppna **Resursövervakaren** (sök efter den på Start), gå till fliken CPU och sök efter mappens namn under **Associerade referenser**.} other {Vänta en stund och gå sedan hit igen. Om det fortsätter, kontrollera vilken app som kan hålla filen öppen (kör `lsof +D <folder-path>` i en terminal för att se vilka processer som använder den här mappen).}}",
   "@errors.listing.resourceBusy.suggestion": {
-    "sourceHash": "fa266e6"
+    "sourceHash": "31ef425"
   },
   "errors.listing.temporarilyUnavailable.title": "Tillfälligt otillgänglig",
   "@errors.listing.temporarilyUnavailable.title": {
@@ -43,21 +43,21 @@
   "@errors.listing.temporarilyUnavailable.explanation": {
     "sourceHash": "2193876"
   },
-  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {Gå hit igen för att försöka på nytt. Det här brukar lösa sig av sig självt. Om det fortsätter kan systemet vara hårt belastat. Kontrollera **Aktivitetskontroll** efter appar som drar mycket resurser.} windows {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check **Task Manager** for apps consuming a lot of resources.} other {Navigate here again to retry. This usually resolves on its own. If it keeps happening, the system might be under heavy load. Check your system monitor app for apps consuming a lot of resources.}}",
+  "errors.listing.temporarilyUnavailable.suggestion": "{platform, select, macos {Gå hit igen för att försöka på nytt. Det här brukar lösa sig av sig självt. Om det fortsätter kan systemet vara hårt belastat. Kontrollera **Aktivitetskontroll** efter appar som drar mycket resurser.} windows {Gå hit igen för att försöka på nytt. Det här brukar lösa sig av sig självt. Om det fortsätter kan systemet vara hårt belastat. Kontrollera **Aktivitetshanteraren** efter appar som drar mycket resurser.} other {Gå hit igen för att försöka på nytt. Det här brukar lösa sig av sig självt. Om det fortsätter kan systemet vara hårt belastat. Kontrollera din systemövervakare efter appar som drar mycket resurser.}}",
   "@errors.listing.temporarilyUnavailable.suggestion": {
-    "sourceHash": "1ec4aef"
+    "sourceHash": "a677915"
   },
   "errors.listing.networkDown.title": "Nätverket är nere",
   "@errors.listing.networkDown.title": {
     "sourceHash": "399ab40"
   },
-  "errors.listing.networkDown.explanation": "{platform, select, macos {Din Macs nätverksanslutning är nere, så Cmdr kan inte nå den här volymen. Det kan betyda att Wi-Fi är frånkopplat, att en Ethernet-kabel är urdragen, eller att nätverksgränssnittet är inaktiverat.} windows {Your PC’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network adapter is disabled.} other {Your computer’s network connection is down, so Cmdr can’t reach this volume. This could mean Wi-Fi is disconnected, an Ethernet cable is unplugged, or the network interface is disabled.}}",
+  "errors.listing.networkDown.explanation": "{platform, select, macos {Din Macs nätverksanslutning är nere, så Cmdr kan inte nå den här volymen. Det kan betyda att Wi-Fi är frånkopplat, att en Ethernet-kabel är urdragen, eller att nätverksgränssnittet är inaktiverat.} windows {Din dators nätverksanslutning är nere, så Cmdr kan inte nå den här volymen. Det kan betyda att Wi-Fi är frånkopplat, att en Ethernet-kabel är urdragen, eller att nätverkskortet är inaktiverat.} other {Din dators nätverksanslutning är nere, så Cmdr kan inte nå den här volymen. Det kan betyda att Wi-Fi är frånkopplat, att en Ethernet-kabel är urdragen, eller att nätverksgränssnittet är inaktiverat.}}",
   "@errors.listing.networkDown.explanation": {
-    "sourceHash": "179f8bb"
+    "sourceHash": "e5fcd3d"
   },
-  "errors.listing.networkDown.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera status för Wi-Fi eller Ethernet i **{system_settings} > Nätverk**\n- Om du är på Wi-Fi, prova att stänga av det och slå på det igen\n- Kör `ping google.com` i Terminal för att testa anslutningen\n- Gå hit igen när du är online igen} windows {Here’s what to try:\n- Check Wi-Fi or Ethernet status in **Settings > Network & internet**\n- If you’re on Wi-Fi, try turning it off and on again\n- In PowerShell, run `ping google.com` to test your connection\n- Navigate here again once you’re back online} other {Here’s what to try:\n- Check Wi-Fi or Ethernet status in your system’s network settings\n- If you’re on Wi-Fi, try turning it off and on again\n- In a terminal, run `ping google.com` to test your connection\n- Navigate here again once you’re back online}}",
+  "errors.listing.networkDown.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera status för Wi-Fi eller Ethernet i **{system_settings} > Nätverk**\n- Om du är på Wi-Fi, prova att stänga av det och slå på det igen\n- Kör `ping google.com` i Terminal för att testa anslutningen\n- Gå hit igen när du är online igen} windows {Så här kan du prova:\n- Kontrollera status för Wi-Fi eller Ethernet i **Inställningar > Nätverk och Internet**\n- Om du är på Wi-Fi, prova att stänga av det och slå på det igen\n- Kör `ping google.com` i PowerShell för att testa anslutningen\n- Gå hit igen när du är online igen} other {Så här kan du prova:\n- Kontrollera status för Wi-Fi eller Ethernet i systemets nätverksinställningar\n- Om du är på Wi-Fi, prova att stänga av det och slå på det igen\n- Kör `ping google.com` i en terminal för att testa anslutningen\n- Gå hit igen när du är online igen}}",
   "@errors.listing.networkDown.suggestion": {
-    "sourceHash": "bf4b517"
+    "sourceHash": "1712df1"
   },
   "errors.listing.networkConnectionDropped.title": "Nätverksanslutningen bröts",
   "@errors.listing.networkConnectionDropped.title": {
@@ -91,9 +91,9 @@
   "@errors.listing.connectionReset.explanation": {
     "sourceHash": "3ccfa1c"
   },
-  "errors.listing.connectionReset.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att servern är igång\n- Prova `ping <hostname>` i Terminal för att testa om servern går att nå\n- Gå hit igen för att försöka på nytt} windows {Here’s what to try:\n- Check that the server is running\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again to retry}}",
+  "errors.listing.connectionReset.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att servern är igång\n- Prova `ping <hostname>` i Terminal för att testa om servern går att nå\n- Gå hit igen för att försöka på nytt} windows {Så här kan du prova:\n- Kontrollera att servern är igång\n- Prova `ping <hostname>` i PowerShell för att testa om servern går att nå\n- Gå hit igen för att försöka på nytt} other {Så här kan du prova:\n- Kontrollera att servern är igång\n- Prova `ping <hostname>` i en terminal för att testa om servern går att nå\n- Gå hit igen för att försöka på nytt}}",
   "@errors.listing.connectionReset.suggestion": {
-    "sourceHash": "d980663"
+    "sourceHash": "85ce28a"
   },
   "errors.listing.connectionTimedOutErrno.title": "Anslutningen nådde tidsgränsen",
   "@errors.listing.connectionTimedOutErrno.title": {
@@ -103,9 +103,9 @@
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "c088c41"
   },
-  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att enheten eller servern är påslagen och går att nå\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Prova `ping <hostname>` i Terminal för att testa anslutningen\n- Gå hit igen för att försöka på nytt} windows {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the device or server is powered on and reachable\n- Check your Wi-Fi or Ethernet connection\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again to retry}}",
+  "errors.listing.connectionTimedOutErrno.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att enheten eller servern är påslagen och går att nå\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Prova `ping <hostname>` i Terminal för att testa anslutningen\n- Gå hit igen för att försöka på nytt} windows {Så här kan du prova:\n- Kontrollera att enheten eller servern är påslagen och går att nå\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Prova `ping <hostname>` i PowerShell för att testa anslutningen\n- Gå hit igen för att försöka på nytt} other {Så här kan du prova:\n- Kontrollera att enheten eller servern är påslagen och går att nå\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Prova `ping <hostname>` i en terminal för att testa anslutningen\n- Gå hit igen för att försöka på nytt}}",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
-    "sourceHash": "230ef64"
+    "sourceHash": "446063f"
   },
   "errors.listing.hostDown.title": "Värden är nere",
   "@errors.listing.hostDown.title": {
@@ -115,9 +115,9 @@
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "e175712"
   },
-  "errors.listing.hostDown.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att värden är påslagen och ansluten till nätverket\n- Prova `ping <hostname>` i Terminal för att testa om den går att nå\n- Om det är en NAS eller server, kontrollera dess hanteringsgränssnitt\n- Gå hit igen när värden är tillbaka} windows {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In PowerShell, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back} other {Here’s what to try:\n- Check that the host is powered on and connected to the network\n- In a terminal, try `ping <hostname>` to test if it’s reachable\n- If it’s a NAS or server, check its management interface\n- Navigate here again once the host is back}}",
+  "errors.listing.hostDown.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att värden är påslagen och ansluten till nätverket\n- Prova `ping <hostname>` i Terminal för att testa om den går att nå\n- Om det är en NAS eller server, kontrollera dess hanteringsgränssnitt\n- Gå hit igen när värden är tillbaka} windows {Så här kan du prova:\n- Kontrollera att värden är påslagen och ansluten till nätverket\n- Prova `ping <hostname>` i PowerShell för att testa om den går att nå\n- Om det är en NAS eller server, kontrollera dess hanteringsgränssnitt\n- Gå hit igen när värden är tillbaka} other {Så här kan du prova:\n- Kontrollera att värden är påslagen och ansluten till nätverket\n- Prova `ping <hostname>` i en terminal för att testa om den går att nå\n- Om det är en NAS eller server, kontrollera dess hanteringsgränssnitt\n- Gå hit igen när värden är tillbaka}}",
   "@errors.listing.hostDown.suggestion": {
-    "sourceHash": "7a8ecd8"
+    "sourceHash": "238aad1"
   },
   "errors.listing.staleConnection.title": "Inaktuell anslutning",
   "@errors.listing.staleConnection.title": {
@@ -127,9 +127,9 @@
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Så här kan du prova:\n- Navigera bort från den här mappen och kom tillbaka\n- Om det här är en nätverksenhet, prova att avmontera och montera om den i Finder\n- Kontrollera att servern som är värd för den här mappen är igång\n- Kör `mount` i Terminal för att se vilka volymer som är monterade just nu} windows {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try disconnecting it and connecting it again in File Explorer\n- Check that the server hosting this folder is running\n- In PowerShell, run `net use` to see your connected network drives} other {Here’s what to try:\n- Navigate away from this folder and come back\n- If this is a network drive, try unmounting and remounting it in your file manager\n- Check that the server hosting this folder is running\n- In a terminal, run `mount` to see currently mounted volumes}}",
+  "errors.listing.staleConnection.suggestion": "{platform, select, macos {Så här kan du prova:\n- Navigera bort från den här mappen och kom tillbaka\n- Om det här är en nätverksenhet, prova att avmontera och montera om den i Finder\n- Kontrollera att servern som är värd för den här mappen är igång\n- Kör `mount` i Terminal för att se vilka volymer som är monterade just nu} windows {Så här kan du prova:\n- Navigera bort från den här mappen och kom tillbaka\n- Om det här är en nätverksenhet, prova att koppla från den och ansluta den igen i Utforskaren\n- Kontrollera att servern som är värd för den här mappen är igång\n- Kör `net use` i PowerShell för att se dina anslutna nätverksenheter} other {Så här kan du prova:\n- Navigera bort från den här mappen och kom tillbaka\n- Om det här är en nätverksenhet, prova att avmontera och montera om den i din filhanterare\n- Kontrollera att servern som är värd för den här mappen är igång\n- Kör `mount` i en terminal för att se vilka volymer som är monterade just nu}}",
   "@errors.listing.staleConnection.suggestion": {
-    "sourceHash": "73de81d"
+    "sourceHash": "0264ba5"
   },
   "errors.listing.lockUnavailable.title": "Inget fillås tillgängligt",
   "@errors.listing.lockUnavailable.title": {
@@ -139,9 +139,9 @@
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "154df3c"
   },
-  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Så här kan du prova:\n- Stäng några appar, särskilt sådana som arbetar med många filer (redigerare, IDE:er, säkerhetskopieringsverktyg)\n- Kör `lsof | wc -l` i Terminal för att se hur många filer som är öppna i alla appar tillsammans\n- Om problemet fortsätter kan du höja gränsen med `ulimit -n 4096` i Terminal\n- Gå hit igen för att försöka på nytt} windows {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- If it keeps happening, restart your PC\n- Navigate here again to retry} other {Here’s what to try:\n- Close some apps, especially ones that work with many files (editors, IDEs, backup tools)\n- In a terminal, run `lsof | wc -l` to see how many files are open across all apps\n- If the problem keeps happening, you can raise the limit with `ulimit -n 4096` in a terminal\n- Navigate here again to retry}}",
+  "errors.listing.lockUnavailable.suggestion": "{platform, select, macos {Så här kan du prova:\n- Stäng några appar, särskilt sådana som arbetar med många filer (redigerare, IDE:er, säkerhetskopieringsverktyg)\n- Kör `lsof | wc -l` i Terminal för att se hur många filer som är öppna i alla appar tillsammans\n- Om problemet fortsätter kan du höja gränsen med `ulimit -n 4096` i Terminal\n- Gå hit igen för att försöka på nytt} windows {Så här kan du prova:\n- Stäng några appar, särskilt sådana som arbetar med många filer (redigerare, IDE:er, säkerhetskopieringsverktyg)\n- Om det fortsätter, starta om datorn\n- Gå hit igen för att försöka på nytt} other {Så här kan du prova:\n- Stäng några appar, särskilt sådana som arbetar med många filer (redigerare, IDE:er, säkerhetskopieringsverktyg)\n- Kör `lsof | wc -l` i en terminal för att se hur många filer som är öppna i alla appar tillsammans\n- Om problemet fortsätter kan du höja gränsen med `ulimit -n 4096` i en terminal\n- Gå hit igen för att försöka på nytt}}",
   "@errors.listing.lockUnavailable.suggestion": {
-    "sourceHash": "a9f23bd"
+    "sourceHash": "1fa1762"
   },
   "errors.listing.cancelledErrno.title": "Avbruten",
   "@errors.listing.cancelledErrno.title": {
@@ -159,13 +159,13 @@
   "@errors.listing.notPermitted.title": {
     "sourceHash": "8ec5f4b"
   },
-  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS blockerade Cmdr från att komma åt `{path}`. Det betyder oftast att mappen skyddas av macOS säkerhetspolicyer, eller att Cmdr inte fått rätt behörigheter än.} windows {Windows blocked Cmdr from accessing `{path}`. This usually means the folder is protected by Windows, or your account doesn’t have permission to open it.} other {Cmdr wasn’t allowed to access `{path}`. This usually means the folder’s permissions don’t allow it, or a security policy (like SELinux or AppArmor) protects it.}}",
+  "errors.listing.notPermitted.explanation": "{platform, select, macos {macOS blockerade Cmdr från att komma åt `{path}`. Det betyder oftast att mappen skyddas av macOS säkerhetspolicyer, eller att Cmdr inte fått rätt behörigheter än.} windows {Windows blockerade Cmdr från att komma åt `{path}`. Det betyder oftast att mappen skyddas av Windows, eller att ditt konto inte har behörighet att öppna den.} other {Cmdr fick inte komma åt `{path}`. Det betyder oftast att mappens behörigheter inte tillåter det, eller att en säkerhetspolicy (som SELinux eller AppArmor) skyddar mappen.}}",
   "@errors.listing.notPermitted.explanation": {
-    "sourceHash": "e28dd0e"
+    "sourceHash": "9f159af"
   },
-  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Om det här är en systemskyddad mapp kan du behöva ge Cmdr **{full_disk_access}** under {privacy_and_security}\n- Kör `ls -la` på den här sökvägen i Terminal för att kontrollera ägare och behörigheter} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If it’s a system folder, Windows may keep it off-limits on purpose\n- In PowerShell, run `icacls \"<folder-path>\"` to see who has access} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a system folder, it may need administrator rights\n- In a terminal, run `ls -la` on this path to check ownership and permissions}}",
+  "errors.listing.notPermitted.suggestion": "{platform, select, macos {Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Om det här är en systemskyddad mapp kan du behöva ge Cmdr **{full_disk_access}** under {privacy_and_security}\n- Kör `ls -la` på den här sökvägen i Terminal för att kontrollera ägare och behörigheter} windows {Så här kan du prova:\n- Kontrollera mappens behörigheter i Utforskaren: högerklicka på den, välj **Egenskaper**, och titta under **Säkerhet**\n- Om det här är en systemmapp kan Windows ha spärrat den med flit\n- Kör `icacls \"<folder-path>\"` i PowerShell för att se vem som har åtkomst} other {Så här kan du prova:\n- Kontrollera mappens behörigheter i din filhanterare: öppna mappens egenskaper och titta under **Rättigheter**\n- Om det här är en systemmapp kan den kräva administratörsbehörighet\n- Kör `ls -la` på den här sökvägen i en terminal för att kontrollera ägare och behörigheter}}",
   "@errors.listing.notPermitted.suggestion": {
-    "sourceHash": "2926956"
+    "sourceHash": "367f19a"
   },
   "errors.listing.pathNotFoundErrno.title": "Sökvägen hittades inte",
   "@errors.listing.pathNotFoundErrno.title": {
@@ -175,21 +175,21 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att den delade mappen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `ls -la` på den överordnade mappen i Terminal för att se vad som finns där} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
+  "errors.listing.pathNotFoundErrno.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att den delade mappen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `ls -la` på den överordnade mappen i Terminal för att se vad som finns där} windows {Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att den delade mappen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `dir` i den överordnade mappen i PowerShell för att se vad som finns där} other {Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att den delade mappen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `ls -la` på den överordnade mappen i en terminal för att se vad som finns där}}",
   "@errors.listing.pathNotFoundErrno.suggestion": {
-    "sourceHash": "8a51477"
+    "sourceHash": "eabe5b2"
   },
   "errors.listing.noPermissionErrno.title": "Ingen behörighet",
   "@errors.listing.noPermissionErrno.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr har inte behörighet att komma åt `{path}`. macOS styr vilka appar som får komma åt vilka mappar, och Cmdr har inte fått åtkomst till den här än.} windows {Cmdr doesn’t have permission to access `{path}`. Your Windows account isn’t allowed to open this folder.} other {Cmdr doesn’t have permission to access `{path}`. Your user account isn’t allowed to open this folder.}}",
+  "errors.listing.noPermissionErrno.explanation": "{platform, select, macos {Cmdr har inte behörighet att komma åt `{path}`. macOS styr vilka appar som får komma åt vilka mappar, och Cmdr har inte fått åtkomst till den här än.} windows {Cmdr har inte behörighet att komma åt `{path}`. Ditt Windows-konto får inte öppna den här mappen.} other {Cmdr har inte behörighet att komma åt `{path}`. Ditt användarkonto får inte öppna den här mappen.}}",
   "@errors.listing.noPermissionErrno.explanation": {
-    "sourceHash": "3871273"
+    "sourceHash": "08a2f03"
   },
-  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Kontrollera mappens behörigheter i Finder: högerklicka på den, välj Visa info, och titta under Delning och behörigheter\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `ls -la` på den här sökvägen i Terminal för att se de aktuella behörigheterna} windows {Here’s what to try:\n- Check the folder’s permissions in File Explorer: right-click it, select **Properties**, and look under **Security**\n- If this is a shared folder, ask the owner to update permissions\n- In PowerShell, run `icacls \"<folder-path>\"` to see the current permissions} other {Here’s what to try:\n- Check the folder’s permissions in your file manager: open its properties and look under **Permissions**\n- If this is a shared folder, ask the owner to update permissions\n- In a terminal, run `ls -la` on this path to see the current permissions}}",
+  "errors.listing.noPermissionErrno.suggestion": "{platform, select, macos {Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Kontrollera mappens behörigheter i Finder: högerklicka på den, välj Visa info, och titta under Delning och behörigheter\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `ls -la` på den här sökvägen i Terminal för att se de aktuella behörigheterna} windows {Så här kan du prova:\n- Kontrollera mappens behörigheter i Utforskaren: högerklicka på den, välj **Egenskaper**, och titta under **Säkerhet**\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `icacls \"<folder-path>\"` i PowerShell för att se de aktuella behörigheterna} other {Så här kan du prova:\n- Kontrollera mappens behörigheter i din filhanterare: öppna mappens egenskaper och titta under **Rättigheter**\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `ls -la` på den här sökvägen i en terminal för att se de aktuella behörigheterna}}",
   "@errors.listing.noPermissionErrno.suggestion": {
-    "sourceHash": "4b513ef"
+    "sourceHash": "d1ce430"
   },
   "errors.listing.alreadyExistsErrno.title": "Finns redan",
   "@errors.listing.alreadyExistsErrno.title": {
@@ -247,9 +247,9 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "3915993"
   },
-  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm papperskorgen (högerklicka på papperskorgssymbolen i Dock)\n- Kör `df -h` i Terminal för att se hur mycket utrymme som är kvar på varje volym\n- Kontrollera **{system_settings} > Allmänt > Lagring** för en översikt över vad som använder utrymme} windows {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Recycle Bin (right-click it on the desktop and select **Empty Recycle Bin**)\n- Check **Settings > System > Storage** for a breakdown of what’s using space} other {Here’s what to try:\n- Free up space by moving or deleting files you no longer need\n- Empty the Trash in your file manager\n- In a terminal, run `df -h` to see how much space is left on each volume}}",
+  "errors.listing.diskFullErrno.suggestion": "{platform, select, macos {Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm papperskorgen (högerklicka på papperskorgssymbolen i Dock)\n- Kör `df -h` i Terminal för att se hur mycket utrymme som är kvar på varje volym\n- Kontrollera **{system_settings} > Allmänt > Lagring** för en översikt över vad som använder utrymme} windows {Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm Papperskorgen (högerklicka på den på skrivbordet och välj **Töm Papperskorgen**)\n- Kontrollera **Inställningar > System > Lagring** för en översikt över vad som använder utrymme} other {Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm papperskorgen i din filhanterare\n- Kör `df -h` i en terminal för att se hur mycket utrymme som är kvar på varje volym}}",
   "@errors.listing.diskFullErrno.suggestion": {
-    "sourceHash": "f2eb27b"
+    "sourceHash": "bba2927"
   },
   "errors.listing.readOnlyVolumeErrno.title": "Skrivskyddad volym",
   "@errors.listing.readOnlyVolumeErrno.title": {
@@ -271,9 +271,9 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "a0ca28f"
   },
-  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Prova ett annat sätt, eller använd Finder för den här åtgärden. Om du arbetar med en extern enhet kan den vara formaterad med ett filsystem som har begränsningar (till exempel kan FAT32 inte lagra filer på 4 GiB eller större).} windows {Try a different approach, or use File Explorer for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).} other {Try a different approach, or use your file manager for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).}}",
+  "errors.listing.notSupportedErrno.suggestion": "{platform, select, macos {Prova ett annat sätt, eller använd Finder för den här åtgärden. Om du arbetar med en extern enhet kan den vara formaterad med ett filsystem som har begränsningar (till exempel kan FAT32 inte lagra filer på 4 GiB eller större).} windows {Prova ett annat sätt, eller använd Utforskaren för den här åtgärden. Om du arbetar med en extern enhet kan den vara formaterad med ett filsystem som har begränsningar (till exempel kan FAT32 inte lagra filer på 4 GiB eller större).} other {Prova ett annat sätt, eller använd din filhanterare för den här åtgärden. Om du arbetar med en extern enhet kan den vara formaterad med ett filsystem som har begränsningar (till exempel kan FAT32 inte lagra filer på 4 GiB eller större).}}",
   "@errors.listing.notSupportedErrno.suggestion": {
-    "sourceHash": "8fea918"
+    "sourceHash": "c5735be"
   },
   "errors.listing.networkUnreachable.title": "Nätverket går inte att nå",
   "@errors.listing.networkUnreachable.title": {
@@ -283,21 +283,21 @@
   "@errors.listing.networkUnreachable.explanation": {
     "sourceHash": "d3c1975"
   },
-  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Se till att du är på rätt nätverk (till exempel kontorets Wi-Fi eller VPN)\n- Prova `ping <hostname>` i Terminal för att testa om servern går att nå\n- Gå hit igen när du är ansluten} windows {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In PowerShell, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected} other {Here’s what to try:\n- Check your Wi-Fi or Ethernet connection\n- Make sure you’re on the right network (for example, your office Wi-Fi or VPN)\n- In a terminal, try `ping <hostname>` to test if the server is reachable\n- Navigate here again once you’re connected}}",
+  "errors.listing.networkUnreachable.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Se till att du är på rätt nätverk (till exempel kontorets Wi-Fi eller VPN)\n- Prova `ping <hostname>` i Terminal för att testa om servern går att nå\n- Gå hit igen när du är ansluten} windows {Så här kan du prova:\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Se till att du är på rätt nätverk (till exempel kontorets Wi-Fi eller VPN)\n- Prova `ping <hostname>` i PowerShell för att testa om servern går att nå\n- Gå hit igen när du är ansluten} other {Så här kan du prova:\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Se till att du är på rätt nätverk (till exempel kontorets Wi-Fi eller VPN)\n- Prova `ping <hostname>` i en terminal för att testa om servern går att nå\n- Gå hit igen när du är ansluten}}",
   "@errors.listing.networkUnreachable.suggestion": {
-    "sourceHash": "7feb3cb"
+    "sourceHash": "75cc2f7"
   },
   "errors.listing.connectionRefused.title": "Anslutningen nekades",
   "@errors.listing.connectionRefused.title": {
     "sourceHash": "1a28032"
   },
-  "errors.listing.connectionRefused.explanation": "{platform, select, macos {Servern nekade aktivt anslutningen. Det betyder oftast att serverprogramvaran (till exempel en SMB- eller NFS-tjänst) inte är igång, eller att den är konfigurerad att avvisa anslutningar från den här datorn.} windows {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this PC.} other {The server actively refused the connection. This usually means the server software (for example, an SMB or NFS service) isn’t running, or it’s configured to reject connections from this computer.}}",
+  "errors.listing.connectionRefused.explanation": "{platform, select, macos {Servern nekade aktivt anslutningen. Det betyder oftast att serverprogramvaran (till exempel en SMB- eller NFS-tjänst) inte är igång, eller att den är konfigurerad att avvisa anslutningar från den här datorn.} windows {Servern nekade aktivt anslutningen. Det betyder oftast att serverprogramvaran (till exempel en SMB- eller NFS-tjänst) inte är igång, eller att den är konfigurerad att avvisa anslutningar från den här datorn.} other {Servern nekade aktivt anslutningen. Det betyder oftast att serverprogramvaran (till exempel en SMB- eller NFS-tjänst) inte är igång, eller att den är konfigurerad att avvisa anslutningar från den här datorn.}}",
   "@errors.listing.connectionRefused.explanation": {
-    "sourceHash": "88e1ac7"
+    "sourceHash": "75e0ad7"
   },
-  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att servern är igång och att dess fildelningstjänst är aktiv\n- Kontrollera att serveradressen och porten stämmer\n- Prova `ping <hostname>` i Terminal för att se om servern går att nå över huvud taget\n- Gå hit igen för att försöka på nytt} windows {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In PowerShell, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry} other {Here’s what to try:\n- Check that the server is running and its file sharing service is active\n- Verify the server address and port are correct\n- In a terminal, try `ping <hostname>` to check if the server is reachable at all\n- Navigate here again to retry}}",
+  "errors.listing.connectionRefused.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att servern är igång och att dess fildelningstjänst är aktiv\n- Kontrollera att serveradressen och porten stämmer\n- Prova `ping <hostname>` i Terminal för att se om servern går att nå över huvud taget\n- Gå hit igen för att försöka på nytt} windows {Så här kan du prova:\n- Kontrollera att servern är igång och att dess fildelningstjänst är aktiv\n- Kontrollera att serveradressen och porten stämmer\n- Prova `ping <hostname>` i PowerShell för att se om servern går att nå över huvud taget\n- Gå hit igen för att försöka på nytt} other {Så här kan du prova:\n- Kontrollera att servern är igång och att dess fildelningstjänst är aktiv\n- Kontrollera att serveradressen och porten stämmer\n- Prova `ping <hostname>` i en terminal för att se om servern går att nå över huvud taget\n- Gå hit igen för att försöka på nytt}}",
   "@errors.listing.connectionRefused.suggestion": {
-    "sourceHash": "17decc3"
+    "sourceHash": "aebd280"
   },
   "errors.listing.symlinkLoopErrno.title": "Symlänksloop",
   "@errors.listing.symlinkLoopErrno.title": {
@@ -307,17 +307,17 @@
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "4157be6"
   },
-  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kör `ls -la` på den här sökvägen i Terminal för att se vart de symboliska länkarna pekar\n- Hitta och åtgärda länken som skapar loopen\n- Om du är osäker på vilken länk som är problemet, följ dem en i taget med `readlink <path>`} windows {Here’s what to try:\n- In PowerShell, run `Get-ChildItem -Force | Select-Object Name, LinkType, Target` in this folder to see where the links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one} other {Here’s what to try:\n- In a terminal, run `ls -la` on this path to see where the symbolic links point\n- Find and fix the link that creates the loop\n- If you’re not sure which link is the problem, follow them one by one with `readlink <path>`}}",
+  "errors.listing.symlinkLoopErrno.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kör `ls -la` på den här sökvägen i Terminal för att se vart de symboliska länkarna pekar\n- Hitta och åtgärda länken som skapar loopen\n- Om du är osäker på vilken länk som är problemet, följ dem en i taget med `readlink <path>`} windows {Så här kan du prova:\n- Kör `Get-ChildItem -Force | Select-Object Name, LinkType, Target` i den här mappen i PowerShell för att se vart länkarna pekar\n- Hitta och åtgärda länken som skapar loopen\n- Om du är osäker på vilken länk som är problemet, följ dem en i taget} other {Så här kan du prova:\n- Kör `ls -la` på den här sökvägen i en terminal för att se vart de symboliska länkarna pekar\n- Hitta och åtgärda länken som skapar loopen\n- Om du är osäker på vilken länk som är problemet, följ dem en i taget med `readlink <path>`}}",
   "@errors.listing.symlinkLoopErrno.suggestion": {
-    "sourceHash": "eed9a5a"
+    "sourceHash": "9b5c2d2"
   },
   "errors.listing.nameTooLongErrno.title": "Namnet är för långt",
   "@errors.listing.nameTooLongErrno.title": {
     "sourceHash": "de4bc1d"
   },
-  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {Fil- eller mappnamnet överskrider systemets gräns (255 tecken på de flesta Mac-volymer). Det kan också hända när hela sökvägen (alla mappar tillsammans) överskrider systemets maximala sökvägslängd.} windows {The file or folder name exceeds the system’s limit (255 characters for one name on NTFS). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.} other {The file or folder name exceeds the system’s limit (255 bytes on most Linux file systems). This can also happen when the full path (all folders combined) exceeds the system’s maximum path length.}}",
+  "errors.listing.nameTooLongErrno.explanation": "{platform, select, macos {Fil- eller mappnamnet överskrider systemets gräns (255 tecken på de flesta Mac-volymer). Det kan också hända när hela sökvägen (alla mappar tillsammans) överskrider systemets maximala sökvägslängd.} windows {Fil- eller mappnamnet överskrider systemets gräns (255 tecken för ett namn på NTFS). Det kan också hända när hela sökvägen (alla mappar tillsammans) överskrider systemets maximala sökvägslängd.} other {Fil- eller mappnamnet överskrider systemets gräns (255 byte på de flesta Linux-filsystem). Det kan också hända när hela sökvägen (alla mappar tillsammans) överskrider systemets maximala sökvägslängd.}}",
   "@errors.listing.nameTooLongErrno.explanation": {
-    "sourceHash": "8b9a6ff"
+    "sourceHash": "c0846c4"
   },
   "errors.listing.nameTooLongErrno.suggestion": "Byt namn på objektet till ett kortare namn. Om namnet ser rimligt ut kan hela sökvägen (inklusive alla överordnade mappar) vara för lång. Prova att flytta objektet till en kortare sökväg.",
   "@errors.listing.nameTooLongErrno.suggestion": {
@@ -331,9 +331,9 @@
   "@errors.listing.hostUnreachable.explanation": {
     "sourceHash": "184b0fc"
   },
-  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att värden är påslagen och på samma nätverk\n- Om du behöver en VPN för att nå den, se till att VPN:en är ansluten\n- Prova `ping <hostname>` i Terminal för att testa anslutningen\n- Gå hit igen när värden går att nå} windows {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In PowerShell, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable} other {Here’s what to try:\n- Check that the host is powered on and on the same network\n- If you need a VPN to reach it, make sure the VPN is connected\n- In a terminal, try `ping <hostname>` to test connectivity\n- Navigate here again once the host is reachable}}",
+  "errors.listing.hostUnreachable.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att värden är påslagen och på samma nätverk\n- Om du behöver en VPN för att nå den, se till att VPN:en är ansluten\n- Prova `ping <hostname>` i Terminal för att testa anslutningen\n- Gå hit igen när värden går att nå} windows {Så här kan du prova:\n- Kontrollera att värden är påslagen och på samma nätverk\n- Om du behöver en VPN för att nå den, se till att VPN:en är ansluten\n- Prova `ping <hostname>` i PowerShell för att testa anslutningen\n- Gå hit igen när värden går att nå} other {Så här kan du prova:\n- Kontrollera att värden är påslagen och på samma nätverk\n- Om du behöver en VPN för att nå den, se till att VPN:en är ansluten\n- Prova `ping <hostname>` i en terminal för att testa anslutningen\n- Gå hit igen när värden går att nå}}",
   "@errors.listing.hostUnreachable.suggestion": {
-    "sourceHash": "c222f76"
+    "sourceHash": "d595833"
   },
   "errors.listing.folderNotEmpty.title": "Mappen är inte tom",
   "@errors.listing.folderNotEmpty.title": {
@@ -355,9 +355,9 @@
   "@errors.listing.quotaExceeded.explanation": {
     "sourceHash": "b9b0b0e"
   },
-  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {Så här kan du prova:\n- Frigör utrymme genom att ta bort filer du inte längre behöver på den här volymen\n- Be din systemadministratör att höja din kvot\n- Kör `quota` i Terminal för att se din nuvarande användning och gräns} windows {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota} other {Here’s what to try:\n- Free up space by removing files you no longer need on this volume\n- Ask your system administrator to increase your quota\n- In a terminal, run `quota` to see your current usage and limit}}",
+  "errors.listing.quotaExceeded.suggestion": "{platform, select, macos {Så här kan du prova:\n- Frigör utrymme genom att ta bort filer du inte längre behöver på den här volymen\n- Be din systemadministratör att höja din kvot\n- Kör `quota` i Terminal för att se din nuvarande användning och gräns} windows {Så här kan du prova:\n- Frigör utrymme genom att ta bort filer du inte längre behöver på den här volymen\n- Be din systemadministratör att höja din kvot} other {Så här kan du prova:\n- Frigör utrymme genom att ta bort filer du inte längre behöver på den här volymen\n- Be din systemadministratör att höja din kvot\n- Kör `quota` i en terminal för att se din nuvarande användning och gräns}}",
   "@errors.listing.quotaExceeded.suggestion": {
-    "sourceHash": "1b5f0df"
+    "sourceHash": "9ad0632"
   },
   "errors.listing.authRequiredEauth.title": "Autentisering krävs",
   "@errors.listing.authRequiredEauth.title": {
@@ -379,9 +379,9 @@
   "@errors.listing.authRequiredEneedauth.explanation": {
     "sourceHash": "b4e86e5"
   },
-  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Here’s what to try:\n- Disconnect the network drive in File Explorer and connect it again\n- Enter your username and password when prompted\n- If you’re not sure about the credentials, check with the server’s administrator} other {Så här kan du prova:\n- Koppla från och anslut volymen igen i Finder\n- Ange ditt användarnamn och lösenord när du blir tillfrågad\n- Om du är osäker på inloggningsuppgifterna, hör med serverns administratör}}",
+  "errors.listing.authRequiredEneedauth.suggestion": "{platform, select, windows {Så här kan du prova:\n- Koppla från nätverksenheten i Utforskaren och anslut den igen\n- Ange ditt användarnamn och lösenord när du blir tillfrågad\n- Om du är osäker på inloggningsuppgifterna, hör med serverns administratör} other {Så här kan du prova:\n- Koppla från och anslut volymen igen i Finder\n- Ange ditt användarnamn och lösenord när du blir tillfrågad\n- Om du är osäker på inloggningsuppgifterna, hör med serverns administratör}}",
   "@errors.listing.authRequiredEneedauth.suggestion": {
-    "sourceHash": "a90b520"
+    "sourceHash": "64621a8"
   },
   "errors.listing.devicePoweredOff.title": "Enheten är avstängd",
   "@errors.listing.devicePoweredOff.title": {
@@ -403,9 +403,9 @@
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee39dd8"
   },
-  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Det här filsystemet kanske inte stöder de metadata Cmdr behöver. Prova åtgärden på en annan volym, eller kopiera filen till din Macs interna disk först.} windows {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your PC’s internal drive first.} other {This file system may not support the metadata Cmdr needs. Try the operation on a different volume, or copy the file to your computer’s internal drive first.}}",
+  "errors.listing.attributeNotFound.suggestion": "{platform, select, macos {Det här filsystemet kanske inte stöder de metadata Cmdr behöver. Prova åtgärden på en annan volym, eller kopiera filen till din Macs interna disk först.} windows {Det här filsystemet kanske inte stöder de metadata Cmdr behöver. Prova åtgärden på en annan volym, eller kopiera filen till din dators interna disk först.} other {Det här filsystemet kanske inte stöder de metadata Cmdr behöver. Prova åtgärden på en annan volym, eller kopiera filen till din dators interna disk först.}}",
   "@errors.listing.attributeNotFound.suggestion": {
-    "sourceHash": "463ee44"
+    "sourceHash": "e8c2492"
   },
   "errors.listing.diskReadProblem.title": "Problem att läsa från disken",
   "@errors.listing.diskReadProblem.title": {
@@ -415,9 +415,9 @@
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
-  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ordentligt ansluten\n- Öppna **Skivverktyg** (sök efter det i Spotlight) och kör **Skivkontroll** på den här volymen\n- Om det här fortsätter, säkerhetskopiera dina data så snart som möjligt. Disken kan vara på väg att utveckla skadade sektorer eller börja slitas ut.} windows {Here’s what to try:\n- Check that the drive or device is still properly connected\n- In File Explorer, right-click the drive, select **Properties**, then **Tools > Check** to scan it for problems\n- If this keeps happening, back up your data as soon as possible. The drive may be developing bad sectors or starting to wear out.} other {Here’s what to try:\n- Check that the disk or device is still properly connected\n- Check the file system with your desktop’s disk tool (for example, GNOME Disks)\n- If this keeps happening, back up your data as soon as possible. The disk may be developing bad sectors or starting to wear out.}}",
+  "errors.listing.diskReadProblem.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ordentligt ansluten\n- Öppna **Skivverktyg** (sök efter det i Spotlight) och kör **Skivkontroll** på den här volymen\n- Om det här fortsätter, säkerhetskopiera dina data så snart som möjligt. Disken kan vara på väg att utveckla skadade sektorer eller börja slitas ut.} windows {Så här kan du prova:\n- Kontrollera att enheten fortfarande är ordentligt ansluten\n- Högerklicka på enheten i Utforskaren, välj **Egenskaper** och sedan **Verktyg > Kontrollera** för att söka igenom den efter problem\n- Om det här fortsätter, säkerhetskopiera dina data så snart som möjligt. Enheten kan vara på väg att utveckla skadade sektorer eller börja slitas ut.} other {Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ordentligt ansluten\n- Kontrollera filsystemet med skrivbordsmiljöns diskverktyg (till exempel GNOME Disks)\n- Om det här fortsätter, säkerhetskopiera dina data så snart som möjligt. Disken kan vara på väg att utveckla skadade sektorer eller börja slitas ut.}}",
   "@errors.listing.diskReadProblem.suggestion": {
-    "sourceHash": "614a5fe"
+    "sourceHash": "11fa23f"
   },
   "errors.listing.unexpectedSystemResponse.title": "Oväntat systemsvar",
   "@errors.listing.unexpectedSystemResponse.title": {
@@ -427,9 +427,9 @@
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "a834896"
   },
-  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {Så här kan du prova:\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, öppna **Skivverktyg** (sök efter det i Spotlight) och kör **Skivkontroll** på den här volymen för att kontrollera filsystemet} windows {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check** to look for file system problems} other {Here’s what to try:\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool (for example, GNOME Disks)}}",
+  "errors.listing.unexpectedSystemResponse.suggestion": "{platform, select, macos {Så här kan du prova:\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, öppna **Skivverktyg** (sök efter det i Spotlight) och kör **Skivkontroll** på den här volymen för att kontrollera filsystemet} windows {Så här kan du prova:\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, högerklicka på enheten i Utforskaren, välj **Egenskaper** och sedan **Verktyg > Kontrollera** för att kontrollera filsystemet} other {Så här kan du prova:\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, kontrollera filsystemet med skrivbordsmiljöns diskverktyg (till exempel GNOME Disks)}}",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
-    "sourceHash": "f63d225"
+    "sourceHash": "5a0ffb5"
   },
   "errors.listing.deviceProblem.title": "Problem med enheten",
   "@errors.listing.deviceProblem.title": {
@@ -451,9 +451,9 @@
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "bade4a7"
   },
-  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, öppna **Skivverktyg** och kör **Skivkontroll** på den här volymen} windows {Here’s what to try:\n- Check that the drive or device is still connected\n- Navigate here again to retry\n- If this keeps happening, right-click the drive in File Explorer, select **Properties**, then **Tools > Check**} other {Here’s what to try:\n- Check that the disk or device is still connected\n- Navigate here again to retry\n- If this keeps happening, check the file system with your desktop’s disk tool}}",
+  "errors.listing.couldntReadUnknown.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, öppna **Skivverktyg** och kör **Skivkontroll** på den här volymen} windows {Så här kan du prova:\n- Kontrollera att enheten fortfarande är ansluten\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, högerklicka på enheten i Utforskaren, välj **Egenskaper** och sedan **Verktyg > Kontrollera**} other {Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, kontrollera filsystemet med skrivbordsmiljöns diskverktyg}}",
   "@errors.listing.couldntReadUnknown.suggestion": {
-    "sourceHash": "5155626"
+    "sourceHash": "625375f"
   },
   "errors.listing.notFound.title": "Sökvägen hittades inte",
   "@errors.listing.notFound.title": {
@@ -463,9 +463,9 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "bfb9636"
   },
-  "errors.listing.notFound.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att den delade mappen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `ls -la` på den överordnade mappen i Terminal för att se vad som finns där} windows {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In PowerShell, run `dir` in the parent folder to see what’s there} other {Here’s what to try:\n- Check that the path is spelled correctly\n- If this is on a network drive, make sure it’s connected and the share is accessible\n- Navigate to the parent folder and look for the item there\n- In a terminal, run `ls -la` on the parent folder to see what’s there}}",
+  "errors.listing.notFound.suggestion": "{platform, select, macos {Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att den delade mappen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `ls -la` på den överordnade mappen i Terminal för att se vad som finns där} windows {Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att den delade mappen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `dir` i den överordnade mappen i PowerShell för att se vad som finns där} other {Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att den delade mappen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `ls -la` på den överordnade mappen i en terminal för att se vad som finns där}}",
   "@errors.listing.notFound.suggestion": {
-    "sourceHash": "8a51477"
+    "sourceHash": "eabe5b2"
   },
   "errors.listing.tccRestricted.title": "Den här mappen är begränsad av macOS",
   "@errors.listing.tccRestricted.title": {
