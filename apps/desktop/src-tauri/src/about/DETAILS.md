@@ -30,6 +30,21 @@ returns without gathering. A second start under a live id cancels the first. `RE
 returning it would only echo it. Whether the item is a file, folder, app, or link comes from the probe's `lstat` (or
 the volume's metadata), never from what the pane believed.
 
+## Wiring the card's frontend (first steps for whoever builds it)
+
+`about_start` is registered (dispatch-only, raw invoke, beside `stream_folder_suggestions`). `about_cancel` is built and
+tested but NOT registered: `desktop-ipc-unused` refuses a typed command with no caller, and its allowlist needs
+David's consent. So the card's first commit, in one go:
+
+1. Add `crate::about::commands::about_cancel` to the `cfg(all())` `typed` list in `ipc.rs`'s `ipc_command_manifest!`,
+   and drop its `#[cfg_attr(not(test), expect(dead_code, …))]` in `commands.rs`.
+2. `pnpm bindings:regen` (from `apps/desktop`): `commands.aboutCancel` appears beside the already exported
+   `AboutEvent`.
+3. A new `about.ts` in `apps/desktop/src/lib/tauri-commands/`, exported from the barrel: a start that mints the request id
+   (`crypto.randomUUID()`), opens a `Channel<AboutEvent>`, and raw-invokes `about_start` with `{ request: { requestId,
+   path, volumeId }, onEvent }` (the `cmdr/no-raw-tauri-invoke` opt-out, as `streamFolderSuggestions` in `settings.ts`
+   does), and a cancel through `commands.aboutCancel`. The card's state slice is its caller, so the check passes.
+
 ## Routing
 
 `route::gather_for` resolves through `crate::location::resolve` (a miss is `unavailable`), then `route::reach`:
