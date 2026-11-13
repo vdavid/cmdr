@@ -157,7 +157,9 @@ fn write_chrome_download(path: &std::path::Path) {
 async fn a_downloaded_disk_image_streams_the_plan_then_each_fact_then_settles() {
     let dir = TestDir::new("about-download");
     let file = dir.as_ref().join("tool-1.2.dmg");
-    std::fs::write(&file, b"not really a disk image").expect("write the fixture");
+    // Bytes Cmdr can't place (no trailer read, not text): its type stays `cantTell`, so
+    // the footer is a plain download's.
+    std::fs::write(&file, b"\0\x01not really a disk image").expect("write the fixture");
     write_chrome_download(&file);
 
     let caps = ActionCaps {

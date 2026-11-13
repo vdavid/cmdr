@@ -209,7 +209,7 @@ pub(crate) fn claimed_kind(extension: &str) -> Option<SniffedKind> {
         "txt" | "md" | "markdown" | "csv" | "tsv" | "json" | "xml" | "yml" | "yaml" | "toml" | "ini" | "conf"
         | "cfg" | "log" | "html" | "htm" | "css" | "scss" | "js" | "mjs" | "cjs" | "jsx" | "ts" | "tsx" | "svelte"
         | "vue" | "rs" | "go" | "py" | "rb" | "php" | "c" | "h" | "cpp" | "cc" | "hpp" | "m" | "swift" | "kt"
-        | "java" | "sql" | "tex" | "svg" => SniffedKind::Text,
+        | "java" | "sql" | "tex" | "ics" | "vcf" | "srt" | "svg" => SniffedKind::Text,
         _ => return None,
     };
     Some(kind)
