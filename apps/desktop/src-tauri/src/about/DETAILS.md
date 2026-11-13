@@ -62,8 +62,8 @@ David's consent. So the card's first commit, in one go:
 
 ## Jobs and budgets
 
-`jobs::GATHERED` is what this host answers: identity (from the probe), real type, bundle, signature, download, last
-opened, default app. Every other kind is trimmed from the plan until its job exists. Each row has `ROW_BUDGET` (1 s)
+`jobs::GATHERED` is what this host answers: identity (from the probe), real type, bundle, signature, download, Cmdr's
+own history, last opened, default app. Every other kind is trimmed from the plan until its job exists. Each row has `ROW_BUDGET` (1 s)
 from the start of the gathering; a row still out then lands `Unknown(TimedOut)` and its job's late answer is dropped.
 The `about_facts` pool (4 target, 12 max workers) bounds how many threads a dead mount can strand.
 
@@ -77,6 +77,29 @@ The `about_facts` pool (4 target, 12 max workers) bounds how many threads a dead
   `cmdr_about::payload::usage_fact`, which reads a date sitting on the last save as `NoRecord` (Spotlight stamps a file
   an app writes; evidence in the crate's DETAILS).
 - **Default app**: `URLForApplicationToOpenURL:`, named through `open_with::read_app_display_name`.
+- **Cmdr's own history**: one read of `operation-log.db` (§ Cmdr's own history).
+
+## Cmdr's own history
+
+`history.rs`. The row says which Cmdr operation put the item where it is ("Copied from Naspolya on …"), and only when
+the log recorded THIS node landing there.
+
+- **The node comes from the probe's `lstat`** (`Probe::node`, inode + birth time), and `cmdr_operation_log::query::landed_at`
+  matches it against the row's recorded `dest_inode` + `dest_birth_ns`. A file saved over since, by a temp and a
+  rename as most apps save, is a new node: `Unknown(NodeChangedSince)` (Notable), ❌ never the operation. No row, a row
+  with no node (written before nodes were kept, a remote destination, FAT), or a pruned op is `Unknown(NoRecord)`
+  (Routine). The rule lives beside the schema (`crates/cmdr-operation-log/DETAILS.md` § "Where an item landed"); this
+  module only words the answer.
+- **The database only, never the disk**: its own read connection on the about pool, through
+  `operation_log_host::db_path()`. No log open (a failed start) leaves the row out of the plan, since a row with no job
+  would never settle; no file yet is `NoRecord`; a file that isn't a journal is `Unparseable`, logged by kind only.
+- **Asked under two volume ids**: the local engine journals every OS-visible path under the local disk's id, whichever
+  volume the pane showed it on, and the volume engine under the destination volume's own (an extract onto an external
+  disk). The newest operation across both wins, then `NodeChangedSince`, then `NoRecord`.
+- **Wording**: an extract is journaled as a copy whose source path runs through an archive, so a copy from a path with
+  an archive component and something after it reads `Extract`. An agent plan the person edited is still Ask Cmdr's.
+  The source volume is named only when it differs from the row's and is still registered (a lookup, no call to it); the
+  source path is always there.
 
 ## The code signature
 
@@ -101,7 +124,7 @@ The `about_facts` pool (4 target, 12 max workers) bounds how many threads a dead
 
 ## Not yet gathered
 
-Cmdr's own operation history, git, importance, recursive size, the owner, a folder's digest, and an app's Library data
+Git, importance, recursive size, the owner, a folder's digest, and an app's Library data
 come from the op log, `cmdr-git`, and the index. Each joins `GATHERED` with its job; nothing else changes.
 
 ## Tests
@@ -110,5 +133,7 @@ come from the op log, `cmdr-git`, and the index. Each joins `GATHERED` with its 
 test) streams `planned`, each fact, and `factsSettled`; a plain file's download row is `Unknown(NoRecord)`; a cancel
 mid-way leaves no late event and skips a queued job; a row past its budget lands `TimedOut` and its late answer drops;
 a cancel before the plan sends nothing; routing sends no share item, link-reached mount, or online-only file's bytes to
-a local job. `registry.rs` tests the tombstone and run ownership; `signature.rs` tests Apple's tools, a plain file, and
+a local job; a file copied in through the engine's real copy path streams its `cmdrOperation` with source and date, and
+the same file saved over afterwards reads `NodeChangedSince`. `history/tests.rs` covers the wording and every way of
+not knowing over a scratch journal. `registry.rs` tests the tombstone and run ownership; `signature.rs` tests Apple's tools, a plain file, and
 a tampered copy of `/bin/ls`.

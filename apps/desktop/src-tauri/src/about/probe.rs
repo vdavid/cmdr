@@ -12,6 +12,7 @@ use cmdr_about::fact::{AboutTarget, Fact, UnknownWhy};
 use cmdr_about::payload::Identity;
 use cmdr_about::text::ItemText;
 use cmdr_fs::file_extension::{is_listed_package, needs_package_lookup};
+use cmdr_fs::volume::NodeIdentity;
 
 use super::event::AboutUnavailable;
 use super::platform;
@@ -31,6 +32,10 @@ pub(crate) struct Probe {
     /// it isn't.
     pub(crate) on_local_disk: bool,
     pub(crate) identity: Fact<Identity>,
+    /// Which node the item is, off the same `lstat`: what Cmdr's own history is
+    /// asked about. `None` for an archive's entry, and on a filesystem that keeps
+    /// no birth time.
+    pub(crate) node: Option<NodeIdentity>,
 }
 
 /// Looks at `path`, which the resolver placed on a local volume.
@@ -53,6 +58,7 @@ pub(crate) fn probe(path: &str) -> Result<Probe, AboutUnavailable> {
         contents_local: !extras.online_only,
         on_local_disk: sits_on_a_local_disk(path),
         identity: Fact::Known(identity(fs_path, &name, &metadata, extras)),
+        node: NodeIdentity::of(&metadata),
     })
 }
 
@@ -75,6 +81,7 @@ fn inside_an_archive(path: &Path) -> Option<Probe> {
         contents_local: false,
         on_local_disk: sits_on_a_local_disk(&archive.to_string_lossy()),
         identity: Fact::unknown(UnknownWhy::VolumeCantTell),
+        node: None,
     })
 }
 

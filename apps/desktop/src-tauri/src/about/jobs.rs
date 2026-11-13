@@ -15,19 +15,21 @@ use cmdr_about::payload::Bundle;
 use cmdr_about::sniff::{HEAD_BYTES, RealType, TAIL_BYTES, real_type};
 use cmdr_about::text::ItemText;
 
+use super::history::{History, cmdr_operation};
 use super::platform;
 use super::probe::Probe;
 use crate::file_system::framework_pool::note_activity;
 
-/// The rows this host gathers. The rest of the vocabulary (Cmdr's own history,
-/// git, importance, sizes, the owner, a folder's digest, an app's data) comes from
-/// other stores, and the plan leaves those rows out until their jobs exist.
-pub(crate) const GATHERED: [FactKind; 7] = [
+/// The rows this host gathers. The rest of the vocabulary (git, importance,
+/// sizes, the owner, a folder's digest, an app's data) comes from other stores,
+/// and the plan leaves those rows out until their jobs exist.
+pub(crate) const GATHERED: [FactKind; 8] = [
     FactKind::Identity,
     FactKind::RealType,
     FactKind::Bundle,
     FactKind::Signature,
     FactKind::Download,
+    FactKind::CmdrOperation,
     FactKind::LastOpened,
     FactKind::DefaultApp,
 ];
@@ -43,16 +45,22 @@ const MAX_INFO_PLIST_BYTES: u64 = 1024 * 1024;
 pub(crate) const ROW_BUDGET: Duration = Duration::from_secs(1);
 
 /// The jobs for `plan`'s rows on a local item. Identity isn't one: the probe
-/// already answered it.
-pub(crate) fn local_jobs(plan: &AboutPlan, path: &str, probe: &Probe) -> Vec<(FactKind, Job<AboutFact>)> {
+/// already answered it. `history` is where Cmdr's own log is read from; without
+/// it the plan has no such row (`route::local_gathered`).
+pub(crate) fn local_jobs(
+    plan: &AboutPlan,
+    path: &str,
+    probe: &Probe,
+    history: Option<&History>,
+) -> Vec<(FactKind, Job<AboutFact>)> {
     plan.kinds()
         .into_iter()
         .filter(|kind| *kind != FactKind::Identity)
-        .filter_map(|kind| job(kind, path.to_string(), probe).map(|job| (kind, job)))
+        .filter_map(|kind| job(kind, path.to_string(), probe, history).map(|job| (kind, job)))
         .collect()
 }
 
-fn job(kind: FactKind, path: String, probe: &Probe) -> Option<Job<AboutFact>> {
+fn job(kind: FactKind, path: String, probe: &Probe, history: Option<&History>) -> Option<Job<AboutFact>> {
     let target = probe.target;
     let extension = probe.extension.clone();
     // Each job names its call first, so a worker that never comes back says which
@@ -82,8 +90,15 @@ fn job(kind: FactKind, path: String, probe: &Probe) -> Option<Job<AboutFact>> {
             note_activity("URLForApplicationToOpenURL", "defaultApp");
             AboutFact::DefaultApp(platform::default_app(&path))
         }),
+        FactKind::CmdrOperation => {
+            let history = history?.clone();
+            let node = probe.node;
+            Box::new(move || {
+                note_activity("read the operation log", "cmdrOperation");
+                AboutFact::CmdrOperation(cmdr_operation(&history, &path, node))
+            })
+        }
         FactKind::Identity
-        | FactKind::CmdrOperation
         | FactKind::Importance
         | FactKind::Owner
         | FactKind::Git

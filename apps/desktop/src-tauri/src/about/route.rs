@@ -10,13 +10,14 @@ use std::path::Path;
 use std::time::Duration;
 
 use cmdr_about::card::{AboutFact, AboutPlan, OsCaps, PlanInput, VolumeCaps, plan};
-use cmdr_about::fact::{AboutTarget, Fact};
+use cmdr_about::fact::{AboutTarget, Fact, FactKind};
 use cmdr_about::payload::Identity;
 use cmdr_about::text::ItemText;
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::VolumeError;
 
 use super::event::{AboutRequest, AboutUnavailable};
+use super::history::History;
 use super::jobs::{GATHERED, local_jobs};
 use super::platform;
 use super::probe::{Probe, probe};
@@ -72,7 +73,8 @@ pub(crate) async fn gather_for(request: &AboutRequest) -> Result<Gathered, About
     match reach(resolved.kind, resolved.live) {
         Reach::Local => {
             let probed = probe_on_pool(path.clone()).await?;
-            Ok(local_gathered(&path, probed, volume_name, platform::os_caps()))
+            let history = History::of_the_app(&resolved.location.volume_id);
+            Ok(local_gathered(&path, probed, volume_name, platform::os_caps(), history))
         }
         Reach::ThroughTheVolume => {
             let volume = crate::file_system::volume::manager::get_volume_manager()
@@ -115,7 +117,17 @@ async fn probe_on_pool(path: String) -> Result<Probe, AboutUnavailable> {
 /// An archive entry, and an item whose mount isn't a local disk after all (a
 /// symlink in its parent chain leads to a share), answer identity only: nothing
 /// reads their bytes, xattrs, or frameworks from here.
-pub(crate) fn local_gathered(path: &str, probed: Probe, volume_name: ItemText, os: OsCaps) -> Gathered {
+///
+/// `history` is where Cmdr's own operation log is read from. `None` (the log
+/// isn't open) leaves that row out of the plan: a row with no job would never
+/// settle.
+pub(crate) fn local_gathered(
+    path: &str,
+    probed: Probe,
+    volume_name: ItemText,
+    os: OsCaps,
+    history: Option<History>,
+) -> Gathered {
     let reads_locally = probed.on_local_disk && probed.target != AboutTarget::ArchiveEntry;
     let caps = if reads_locally {
         VolumeCaps::everything(volume_name)
@@ -130,9 +142,9 @@ pub(crate) fn local_gathered(path: &str, probed: Probe, volume_name: ItemText, o
         caps: &caps,
         os: &os,
     });
-    plan.retain_kinds(|kind| GATHERED.contains(&kind));
+    plan.retain_kinds(|kind| GATHERED.contains(&kind) && (kind != FactKind::CmdrOperation || history.is_some()));
     let jobs = if reads_locally {
-        local_jobs(&plan, path, &probed)
+        local_jobs(&plan, path, &probed, history.as_ref())
     } else {
         Vec::new()
     };

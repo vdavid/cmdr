@@ -110,7 +110,13 @@ fn assert_well_formed(updates: &[AboutUpdate]) {
 fn local(path: &std::path::Path) -> Gathered {
     let path = path.to_string_lossy().into_owned();
     let probed = probe(&path).expect("the fixture is there");
-    local_gathered(&path, probed, ItemText::new("Macintosh HD"), super::platform::os_caps())
+    local_gathered(
+        &path,
+        probed,
+        ItemText::new("Macintosh HD"),
+        super::platform::os_caps(),
+        None,
+    )
 }
 
 // ── A real file on this disk ────────────────────────────────────────────────
@@ -249,7 +255,13 @@ fn a_symlink_is_about_the_link_and_reads_nothing_through_it() {
             panic!("identity is known");
         };
         assert_eq!(identity.symlink_target, Some(ItemText::new("/nowhere/at/all")));
-        let gathered = local_gathered(&link.to_string_lossy(), probed, ItemText::new("Macintosh HD"), macos());
+        let gathered = local_gathered(
+            &link.to_string_lossy(),
+            probed,
+            ItemText::new("Macintosh HD"),
+            macos(),
+            None,
+        );
         assert!(
             gathered.jobs.iter().all(|(kind, _)| *kind == FactKind::Download),
             "a link plans no row that would follow it"
@@ -304,7 +316,13 @@ fn a_local_looking_path_on_a_network_mount_runs_no_local_job() {
     std::fs::write(&file, "x").expect("write the fixture");
     let mut probed = probe(&file.to_string_lossy()).expect("the fixture is there");
     probed.on_local_disk = false;
-    let gathered = local_gathered(&file.to_string_lossy(), probed, ItemText::new("Macintosh HD"), macos());
+    let gathered = local_gathered(
+        &file.to_string_lossy(),
+        probed,
+        ItemText::new("Macintosh HD"),
+        macos(),
+        None,
+    );
     assert!(gathered.jobs.is_empty());
     assert_eq!(gathered.plan.kinds(), [FactKind::Identity]);
 }
@@ -318,12 +336,14 @@ fn an_online_only_file_reads_none_of_its_bytes() {
         contents_local: false,
         on_local_disk: true,
         identity: Fact::unknown(UnknownWhy::NoRecord),
+        node: None,
     };
     let gathered = local_gathered(
         "/Users/someone/Library/CloudStorage/x.dmg",
         probed,
         ItemText::new("Macintosh HD"),
         macos(),
+        None,
     );
     let jobs: Vec<FactKind> = gathered.jobs.iter().map(|(kind, _)| *kind).collect();
     assert!(!jobs.contains(&FactKind::RealType));
@@ -466,4 +486,147 @@ async fn a_cancel_before_the_plan_sends_nothing() {
     cancel.cancel();
     run(local(&file), sink, cancel, on_threads(), quick()).await;
     assert!(recorder.updates().is_empty());
+}
+
+// ── Cmdr's own history ──────────────────────────────────────────────────────
+
+/// Copies `source` into `into` through the engine's real copy path, journaling
+/// into `log`, and waits until the copy settled and its rows are on disk.
+#[cfg(target_os = "macos")]
+async fn copy_with_cmdr(
+    log: &cmdr_operations::testing::TestOperationLog,
+    root: &std::path::Path,
+    source: &std::path::Path,
+    into: &std::path::Path,
+) {
+    use cmdr_fs::ignore_poison::IgnorePoison;
+    use cmdr_fs::volume::Volume;
+    use cmdr_operations::testing::CollectorEventSink;
+
+    let engine = crate::operations_host::test_engine_journaling_into(log);
+    let disk = || -> Arc<dyn Volume> {
+        Arc::new(cmdr_local::LocalPosixVolume::local_folder(
+            "Disk",
+            root,
+            crate::volume_host::host(),
+        ))
+    };
+    let events = Arc::new(CollectorEventSink::new());
+    cmdr_operations::testing::copy_between_volumes(
+        &engine,
+        Arc::clone(&events) as Arc<dyn cmdr_operations::OperationEventSink>,
+        "about-history-source".to_string(),
+        disk(),
+        vec![source.to_path_buf()],
+        "about-history-dest".to_string(),
+        disk(),
+        into.to_path_buf(),
+        cmdr_operations::VolumeCopyConfig::default(),
+        cmdr_operation_log::types::Initiator::User,
+        None,
+    )
+    .await
+    .expect("the copy starts");
+    crate::test_support::wait_until_async(LONG, "the copy to settle", || {
+        !events.settled.lock_ignore_poison().is_empty()
+    })
+    .await;
+    assert!(events.errors.lock_ignore_poison().is_empty(), "the copy ran clean");
+    log.writer().flush_blocking().expect("the journal flushes");
+}
+
+#[cfg(target_os = "macos")]
+fn with_history(path: &std::path::Path, log: &cmdr_operations::testing::TestOperationLog) -> Gathered {
+    let path = path.to_string_lossy().into_owned();
+    let probed = probe(&path).expect("the fixture is there");
+    local_gathered(
+        &path,
+        probed,
+        ItemText::new("Macintosh HD"),
+        super::platform::os_caps(),
+        Some(super::history::History {
+            db: log.db().to_path_buf(),
+            volume_id: cmdr_fs::volume::DEFAULT_VOLUME_ID.to_string(),
+        }),
+    )
+}
+
+#[cfg(target_os = "macos")]
+fn cmdr_operation_of(recorder: &Recorder) -> Fact<cmdr_about::provenance::CmdrOperation> {
+    recorder
+        .facts()
+        .into_iter()
+        .find_map(|fact| match fact {
+            AboutFact::CmdrOperation(fact) => Some(fact),
+            _ => None,
+        })
+        .expect("the history row lands")
+}
+
+/// A file Cmdr copied says where from and when; the same name holding another
+/// file afterwards says it was replaced, never that Cmdr copied it.
+#[cfg(target_os = "macos")]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_file_cmdr_copied_says_where_from_until_it_is_replaced() {
+    use cmdr_about::provenance::{LandedBy, StartedBy};
+
+    let dir = TestDir::new("about-history");
+    let source = dir.as_ref().join("from/report.pdf");
+    let into = dir.as_ref().join("to");
+    std::fs::create_dir_all(source.parent().expect("a folder")).expect("mk from");
+    std::fs::create_dir_all(&into).expect("mk to");
+    std::fs::write(&source, b"the report").expect("write the fixture");
+    let log = cmdr_operations::testing::TestOperationLog::new("about-history-log");
+    let before = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("after 1970")
+        .as_secs() as i64;
+
+    copy_with_cmdr(&log, dir.as_ref(), &source, &into).await;
+    let copy = into.join("report.pdf");
+
+    let recorder = gather(with_history(&copy, &log), quick()).await;
+    assert_well_formed(&recorder.updates());
+    let Fact::Known(operation) = cmdr_operation_of(&recorder) else {
+        panic!("Cmdr copied this very file: {:?}", recorder.facts());
+    };
+    assert_eq!(operation.kind, LandedBy::Copy);
+    assert_eq!(operation.initiator, StartedBy::You);
+    assert_eq!(operation.source_path, Some(ItemText::new(&source.to_string_lossy())));
+    assert_eq!(operation.source_volume, None, "the same disk");
+    assert!(operation.at >= before, "{} is when the copy ran", operation.at);
+    // The original was never landed by Cmdr.
+    let original = gather(with_history(&source, &log), quick()).await;
+    assert!(matches!(
+        cmdr_operation_of(&original),
+        Fact::Unknown(unknown) if unknown.why() == UnknownWhy::NoRecord
+    ));
+
+    // An app saves over the copy the way most do: a new file renamed into place.
+    let fresh = into.join("report.pdf.tmp");
+    std::fs::write(&fresh, b"the report").expect("write the replacement");
+    std::fs::rename(&fresh, &copy).expect("replace the copy");
+
+    let replaced = gather(with_history(&copy, &log), quick()).await;
+    assert_well_formed(&replaced.updates());
+    assert!(
+        matches!(
+            cmdr_operation_of(&replaced),
+            Fact::Unknown(unknown) if unknown.why() == UnknownWhy::NodeChangedSince
+        ),
+        "{:?}",
+        replaced.facts()
+    );
+}
+
+/// Without a log to read, the card plans no history row: a row with no job
+/// would never settle.
+#[test]
+fn a_card_with_no_log_to_read_plans_no_history_row() {
+    let dir = TestDir::new("about-no-history");
+    let file = dir.as_ref().join("notes.txt");
+    std::fs::write(&file, "plain words").expect("write the fixture");
+    let gathered = local(&file);
+    assert!(!gathered.plan.has(FactKind::CmdrOperation));
+    assert!(gathered.jobs.iter().all(|(kind, _)| *kind != FactKind::CmdrOperation));
 }

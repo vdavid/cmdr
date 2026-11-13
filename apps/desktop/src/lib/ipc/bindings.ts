@@ -8337,8 +8337,9 @@ export type CmdrOperation = {
   // Where the item came from. `None`: the operation made it new.
   sourcePath: ItemText | null
   /**
-   *  The volume it came from, by name. `None`: the same volume, or the
-   *  operation made it new.
+   *  The volume it came from, by name. `None`: the same volume, the operation
+   *  made it new, or a volume that isn't connected now (its path still names
+   *  it).
    */
   sourceVolume: ItemText | null
 }
@@ -12466,6 +12467,8 @@ export type LandedBy =
   | 'extract'
   // Compressed into this archive.
   | 'compress'
+  // Moved to the Trash, where it is now.
+  | 'trash'
 
 /**
  *  Successful resolution: the path to surface plus the pre-split parent dir +

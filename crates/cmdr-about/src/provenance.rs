@@ -62,8 +62,9 @@ pub struct CmdrOperation {
     pub initiator: StartedBy,
     /// Where the item came from. `None`: the operation made it new.
     pub source_path: Option<ItemText>,
-    /// The volume it came from, by name. `None`: the same volume, or the
-    /// operation made it new.
+    /// The volume it came from, by name. `None`: the same volume, the operation
+    /// made it new, or a volume that isn't connected now (its path still names
+    /// it).
     pub source_volume: Option<ItemText>,
 }
 
@@ -83,6 +84,8 @@ pub enum LandedBy {
     Extract,
     /// Compressed into this archive.
     Compress,
+    /// Moved to the Trash, where it is now.
+    Trash,
 }
 
 /// Who started a Cmdr operation.

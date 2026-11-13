@@ -9,6 +9,7 @@ the vocabulary and every rule; this module reads raw inputs and hands them there
 - `route.rs` (resolve, then reach by volume), `probe.rs` (the one `lstat` before the plan), `jobs.rs` (a job per row),
   `session.rs` (plan, grace, late answers, budgets), `pool.rs` (`about_facts`).
 - `platform/`: per-OS seam for xattrs, Spotlight, default app, code signature, `stat` extras.
+- `history.rs`: Cmdr's own history, one read of the operation log.
 
 ## Must-knows
 
@@ -21,6 +22,8 @@ the vocabulary and every rule; this module reads raw inputs and hands them there
   mints the id; a cancel before its start leaves a tombstone the start honors.
 - ❌ **No framework call on rayon or the executor**: jobs and the probe run on the `about_facts` pool. A budget bounds
   the wait, the pool ceiling bounds lost threads.
+- ❌ **Cmdr's history credits only the node the log recorded landing** (`landed_at` matches inode + birth time): a
+  file saved over since is `NodeChangedSince`, ❌ never the operation. It reads the database, never the disk.
 - ❌ **Log a fact's kind and outcome, never its value** (URL, sender, path): logs ride error reports.
 - ❗ **xattrs are read capped** (`read_capped`: size first, refuse past 64 KB). An online-only file plans no byte read.
 - ❗ **A signer is named from code requirements, never a certificate name**; the executable check has its own budget

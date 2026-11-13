@@ -6,6 +6,7 @@
 
 pub(crate) mod commands;
 mod event;
+mod history;
 mod jobs;
 mod platform;
 mod pool;
