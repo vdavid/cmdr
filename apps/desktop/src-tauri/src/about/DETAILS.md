@@ -129,7 +129,10 @@ once and the note says it stopped. That bounds a dead share to two stranded pool
 last opened, default app, importance, the owner, git, a folder's whole size, its digest, and an app's Library data. A
 row whose store isn't there is trimmed from the plan (`jobs::Sources`: no operation log, no index place, no home). Each row has `ROW_BUDGET` (1 s)
 from the start of the gathering; a row still out then lands `Unknown(TimedOut)` and its job's late answer is dropped.
-The `about_facts` pool (4 target, 12 max workers) bounds how many threads a dead mount can strand.
+The `about_facts` pool (4 target, 12 max workers) bounds how many threads a dead mount can strand. Its
+`spare_after` (250 ms) stops a worker that's slow on one job from counting toward the four, so one card's slow rows (or
+the agent's burst of lookups) can't make the next card's quick rows queue past their budget; how the pool grows:
+`apps/desktop/src-tauri/src/file_system/DETAILS.md` § Threading.
 
 - **Real type**: the first 64 KB and, past that, the last 512 bytes (`TAIL_BYTES`: a DMG is told by its `koly`
   trailer), into `cmdr_about::sniff::real_type`.

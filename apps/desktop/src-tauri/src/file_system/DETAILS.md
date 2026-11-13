@@ -568,6 +568,20 @@ pooled and hard-capped or they accumulate (21-23 of them in the 2026-07-31 wedge
 Linux too, where a dead mount wedges a thread the same way. `src/icons/` (a separate top-level
 module) follows the same rule for `fetch_path_icons`.
 
+How it grows (`Inner::needs_worker`): a submit adds a thread when the queue holds more jobs than idle workers AND fewer
+than `target_workers` are available, never past `max_workers` for the pool's whole life.
+
+- **Idle workers are counted against the queue**, ❌ never "any worker idle": a burst submitted at once otherwise saw the
+  one worker it had just spawned (not yet on its job) as idle and queued every later job behind it, so a card's dozen
+  rows ran one at a time (found 2026-11-13, a host test for the card pool).
+- **A wedged worker** (`wedged_after`, on one job) stops counting and is reported once by the call it last named.
+- **`spare_after`** (optional, the card's `about_facts` pool only) lets a worker merely SLOW on one job stop counting
+  too, so the next caller's quick jobs get threads instead of queueing behind a cold git walk or a receipt lookup. Why:
+  with four workers held by one card's slow rows, the next card's rows all timed out at their 1 s budget
+  (`about::tests::a_slow_card_cant_starve_the_next_cards_rows`). The ceiling still bounds what a dead mount can strand,
+  and the threads stay for the process's life, so a pool that sets it grows to `max_workers` under sustained slow load.
+  The other pools keep `None`: their callers ask one batch at a time.
+
 ## Watcher threading
 
 The listing watch's handler runs on notify-rs's debouncer thread (Linux) or the blocking pool (macOS's FSEvents pump

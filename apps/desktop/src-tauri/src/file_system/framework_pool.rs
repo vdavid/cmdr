@@ -42,6 +42,12 @@ pub(crate) struct PoolConfig {
     /// A worker on the same job for longer than this counts as lost, so a
     /// replacement may be spawned (still within `max_workers`).
     pub wedged_after: Duration,
+    /// A worker on the same job for longer than this stops counting toward
+    /// `target_workers`, so the next submit may add a thread (still within
+    /// `max_workers`) instead of queueing behind it. For a pool whose jobs are
+    /// mostly quick and sometimes slow, so one slow job can't starve the next
+    /// caller's quick ones. `None`: only a wedge frees a slot.
+    pub spare_after: Option<Duration>,
 }
 
 pub(crate) struct Pool {
@@ -221,6 +227,20 @@ impl Inner {
             .count()
     }
 
+    /// Workers that no longer count toward `target_workers`: lost in a wedge, or
+    /// past `spare_after` on one job.
+    fn held_count(&self, state: &State) -> usize {
+        let held_after = self
+            .config
+            .spare_after
+            .map_or(self.config.wedged_after, |spare| spare.min(self.config.wedged_after));
+        state
+            .workers
+            .iter()
+            .filter(|worker| worker.busy_since.is_some_and(|started| started.elapsed() >= held_after))
+            .count()
+    }
+
     /// True when the queued job has nobody to run it soon and the ceiling allows
     /// one more thread.
     fn needs_worker(&self, state: &State) -> bool {
@@ -228,12 +248,20 @@ impl Inner {
             return false;
         }
         // An idle worker will pick the job up on the `notify_one` below; growing
-        // past what the load needs is exactly the waste we're removing.
-        if state.workers.iter().any(|worker| worker.busy_since.is_none()) {
+        // past what the load needs is exactly the waste we're removing. ❗ Count them
+        // against the queue, not just "any idle": a burst submitted at once would
+        // otherwise see the one worker it just spawned as idle (it hasn't picked up
+        // yet) and queue every later job behind it, one at a time.
+        let idle = state
+            .workers
+            .iter()
+            .filter(|worker| worker.busy_since.is_none())
+            .count();
+        if idle >= state.jobs.len() {
             return false;
         }
-        let healthy = state.workers.len() - self.wedged_count(state);
-        healthy < self.config.target_workers
+        let available = state.workers.len() - self.held_count(state);
+        available < self.config.target_workers
     }
 
     fn spawn_worker(self: &Arc<Self>, index: usize) {
@@ -295,6 +323,7 @@ mod tests {
             target_workers: target,
             max_workers: max,
             wedged_after: Duration::from_millis(50),
+            spare_after: None,
         }
     }
 
@@ -433,6 +462,79 @@ mod tests {
     #[test]
     fn noting_an_activity_off_the_pool_is_a_no_op() {
         note_activity("stat", "/somewhere");
+    }
+
+    /// With `spare_after`, a quick job submitted behind slow ones gets a thread of its
+    /// own and runs while they're still out, and the ceiling still holds however
+    /// many slow ones pile up.
+    #[test]
+    fn a_quick_job_isnt_queued_behind_slow_ones() {
+        let pool = Pool::new(PoolConfig {
+            wedged_after: Duration::from_secs(60),
+            spare_after: Some(Duration::from_millis(20)),
+            ..config(2, 6)
+        });
+        let (release_tx, release_rx) = mpsc::channel::<()>();
+        let release_rx = Arc::new(Mutex::new(release_rx));
+        // One at a time: a job submitted before the last one's worker picked it up finds
+        // that worker idle and queues behind it.
+        for started in 1..=2 {
+            let release_rx = Arc::clone(&release_rx);
+            pool.submit(Box::new(move || {
+                let _ = release_rx.lock_ignore_poison().recv();
+            }));
+            wait_until(WAIT, "the slow job started", || pool.busy_count() == started);
+        }
+        let started = Instant::now();
+        wait_until(WAIT, "the slow jobs are past spare_after", || {
+            started.elapsed() >= Duration::from_millis(20)
+        });
+
+        let ran = Arc::new(AtomicUsize::new(0));
+        let ran_in_job = Arc::clone(&ran);
+        pool.submit(Box::new(move || {
+            ran_in_job.fetch_add(1, Ordering::SeqCst);
+        }));
+        wait_until(WAIT, "the quick job ran beside the slow ones", || {
+            ran.load(Ordering::SeqCst) == 1
+        });
+        assert_eq!(pool.busy_count(), 2, "the slow ones are still out");
+
+        // Slow job after slow job, each submitted once the ones before are past
+        // `spare_after`: every submit may grow the pool, and it stops at the ceiling.
+        for _ in 0..20 {
+            let release_rx = Arc::clone(&release_rx);
+            pool.submit(Box::new(move || {
+                let _ = release_rx.lock_ignore_poison().recv();
+            }));
+            let submitted = Instant::now();
+            wait_until(WAIT, "the jobs out are past spare_after", || {
+                submitted.elapsed() >= Duration::from_millis(25)
+            });
+            assert!(pool.worker_count() <= 6, "never past the ceiling");
+        }
+        assert_eq!(pool.worker_count(), 6, "it grew to the ceiling and stopped");
+        drop(release_tx);
+    }
+
+    /// Without `spare_after`, a quick job waits behind slow ones until one finishes or
+    /// wedges: the shape the other pools keep.
+    #[test]
+    fn without_spare_after_a_quick_job_waits_its_turn() {
+        let pool = Pool::new(PoolConfig {
+            wedged_after: Duration::from_secs(60),
+            ..config(1, 4)
+        });
+        let (release_tx, release_rx) = mpsc::channel::<()>();
+        pool.submit(Box::new(move || {
+            let _ = release_rx.recv();
+        }));
+        wait_until(WAIT, "the slow job started", || pool.busy_count() == 1);
+        pool.submit(Box::new(|| {}));
+        assert_eq!(pool.worker_count(), 1);
+        assert_eq!(pool.queue_len(), 1);
+        drop(release_tx);
+        wait_until(WAIT, "the queue drained", || pool.queue_len() == 0);
     }
 
     /// One job at a time needs one thread, not `available_parallelism()` of them.

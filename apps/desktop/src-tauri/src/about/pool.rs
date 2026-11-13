@@ -12,11 +12,19 @@ use crate::file_system::framework_pool::{Pool, PoolConfig};
 /// stops answering can hold for the process's life. A job past its budget is
 /// reported `TimedOut` while its thread may stay lost until the call returns, so
 /// it's this ceiling, ❌ not the budget, that bounds the leak.
-const POOL: PoolConfig = PoolConfig {
+///
+/// ❗ `spare_after` is what keeps one slow lookup from starving the next card: a
+/// worker 250 ms into one job (a cold git walk, a receipt lookup, a search on a
+/// busy machine) stops counting, so the next card's quick rows get threads of
+/// their own instead of queueing behind it and missing their budgets. Most rows
+/// answer in a few milliseconds; 250 ms is past every quick one and well inside a
+/// row's second. The ceiling still bounds a wedged volume.
+pub(super) const POOL: PoolConfig = PoolConfig {
     name: "about_facts",
     target_workers: 4,
     max_workers: 12,
     wedged_after: Duration::from_secs(10),
+    spare_after: Some(Duration::from_millis(250)),
 };
 
 static ABOUT_POOL: LazyLock<Pool> = LazyLock::new(|| Pool::new(POOL));

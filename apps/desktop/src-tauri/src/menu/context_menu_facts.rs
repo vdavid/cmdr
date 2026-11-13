@@ -49,6 +49,7 @@ const POOL: PoolConfig = PoolConfig {
     target_workers: 6,
     max_workers: 24,
     wedged_after: Duration::from_secs(10),
+    spare_after: None,
 };
 
 static FACT_POOL: LazyLock<Pool> = LazyLock::new(|| Pool::new(POOL));

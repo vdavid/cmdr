@@ -791,3 +791,66 @@ fn a_card_with_no_log_to_read_plans_no_history_row() {
     assert!(!gathered.plan.has(FactKind::CmdrOperation));
     assert!(gathered.jobs.iter().all(|(kind, _)| *kind != FactKind::CmdrOperation));
 }
+
+/// ❗ One card's slow lookups can't starve the next card: with the card pool's real
+/// sizing, every worker it grows to by default held inside a call that hasn't answered,
+/// the next card's rows still get threads and land inside their budgets, never
+/// `TimedOut`.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_slow_card_cant_starve_the_next_cards_rows() {
+    use crate::file_system::framework_pool::Pool;
+    let pool = Arc::new(Pool::new(super::pool::POOL));
+    let (release_tx, release_rx) = mpsc::channel::<()>();
+    let release_rx = Arc::new(Mutex::new(release_rx));
+    // One at a time, so each lands on a thread of its own: the first card's slow calls
+    // hold every worker the pool grows to by default.
+    for held in 1..=super::pool::POOL.target_workers {
+        let release_rx = Arc::clone(&release_rx);
+        pool.submit(Box::new(move || {
+            let _ = release_rx
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .recv();
+        }));
+        wait_until(LONG, "the slow call started", || pool.busy_count() == held);
+    }
+    let held_since = std::time::Instant::now();
+    let spare_after = super::pool::POOL.spare_after.expect("the card pool frees slots");
+    wait_until(LONG, "the slow calls are past spare_after", || {
+        held_since.elapsed() >= spare_after
+    });
+
+    // The next card: a real plan whose every row answers at once, so only waiting for a
+    // thread could make one miss its budget.
+    let dir = TestDir::new("about-unstarved");
+    let file = dir.as_ref().join("notes.txt");
+    std::fs::write(&file, "plain words").expect("write the fixture");
+    let mut gathered = local(&file);
+    let mut answers = cmdr_about::card::AboutCard::new(&gathered.plan);
+    for ready in &gathered.ready {
+        let _ = answers.apply(ready.clone());
+    }
+    gathered.jobs = answers
+        .settle_pending(UnknownWhy::NoRecord)
+        .into_iter()
+        .map(|answer| {
+            let kind = answer.kind();
+            let job: Job<AboutFact> = Box::new(move || answer);
+            (kind, job)
+        })
+        .collect();
+    assert!(gathered.jobs.len() >= 3, "a card's burst of rows");
+    let next = Arc::clone(&pool);
+    let submit: Submit = Arc::new(move |task: Task| next.submit(task));
+    let recorder = Arc::new(Recorder::default());
+    let sink: Arc<dyn AboutSink> = Arc::clone(&recorder) as Arc<dyn AboutSink>;
+    run(gathered, sink, CancellationToken::new(), submit, Timing::CARD).await;
+
+    assert_well_formed(&recorder.updates());
+    let facts = serde_json::to_string(&recorder.facts()).expect("facts serialize");
+    assert!(
+        !facts.contains("timedOut"),
+        "a row starved behind the slow card: {facts}"
+    );
+    drop(release_tx);
+}

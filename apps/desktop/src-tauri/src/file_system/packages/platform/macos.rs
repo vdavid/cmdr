@@ -19,6 +19,7 @@ static LOOKUP_POOL: LazyLock<Pool> = LazyLock::new(|| {
         target_workers: 1,
         max_workers: 4,
         wedged_after: Duration::from_secs(10),
+        spare_after: None,
     })
 });
 
