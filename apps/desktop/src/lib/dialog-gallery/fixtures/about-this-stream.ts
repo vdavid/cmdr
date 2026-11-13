@@ -89,7 +89,7 @@ export function identity(
   name: string,
   size: number | null,
   modified: string,
-  extra: { hardLinks?: number; symlinkTarget?: string } = {},
+  extra: { hardLinks?: number; symlinkTarget?: string; nameHidReordering?: boolean } = {},
 ): AboutFact {
   return {
     kind: 'identity',
@@ -97,6 +97,7 @@ export function identity(
       state: 'known',
       value: {
         name,
+        nameHidReordering: extra.nameHidReordering ?? false,
         logicalSize: size,
         physicalSize: size === null ? null : Math.ceil(size / 4096) * 4096,
         created: day(modified) - 86_400 * 3,

@@ -279,3 +279,47 @@ fn ask_cmdr_comes_after_the_facts_own_next_steps_and_before_removal_only_when_it
     // Off: the same facts, no Ask Cmdr.
     assert!(!all(&actions(&file_with(vec![default_app("TextEdit")]), &everywhere())).contains(&A::ContinueInAskCmdr));
 }
+
+const MACH_O: &[u8] = b"\xcf\xfa\xed\xfe\x0c\0\0\x01";
+
+/// A program named like a photo, with Preview as the photo's default app.
+fn disguised(type_landed: bool) -> AboutCard {
+    let mut liar = card(AboutTarget::File, Some("jpg"), &local());
+    land(&mut liar, default_app("Preview"));
+    if type_landed {
+        land(&mut liar, crate::test_support::sniffed(MACH_O, Some("jpg")));
+        land_no_records(&mut liar);
+    }
+    liar
+}
+
+#[test]
+fn a_program_named_like_a_photo_never_leads_with_open_it_waits_behind_more() {
+    let offered = actions(&disguised(true), &everywhere());
+    assert_eq!(offered.shown, [A::ShowInFileManager, A::MoveToTrash]);
+    assert_eq!(offered.more, [A::OpenWithDefaultApp { app: text("Preview") }]);
+
+    // A real photo with the same default app leads with Open.
+    let mut photo = card(AboutTarget::File, Some("jpg"), &local());
+    land(&mut photo, default_app("Preview"));
+    land(
+        &mut photo,
+        crate::test_support::sniffed(b"\xff\xd8\xff\xe0\0\x10JFIF\0", Some("jpg")),
+    );
+    land_no_records(&mut photo);
+    assert_eq!(
+        actions(&photo, &everywhere()).shown.first(),
+        Some(&A::OpenWithDefaultApp { app: text("Preview") })
+    );
+}
+
+#[test]
+fn open_waits_for_the_type_check_so_it_never_shows_first_and_then_moves() {
+    let offered = all(&actions(&disguised(false), &everywhere()));
+    assert!(
+        !offered
+            .iter()
+            .any(|action| matches!(action, A::OpenWithDefaultApp { .. })),
+        "{offered:?}"
+    );
+}

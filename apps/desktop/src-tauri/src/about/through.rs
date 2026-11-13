@@ -339,6 +339,7 @@ pub(crate) fn identity_of(entry: &FileEntry) -> Identity {
     let is_dir = entry.is_directory;
     Identity {
         name: ItemText::new(&entry.name),
+        name_hid_reordering: cmdr_about::text::hides_reordering(&entry.name),
         logical_size: if is_dir { None } else { entry.size },
         physical_size: if is_dir { None } else { entry.physical_size },
         created: seconds(entry.created_at),

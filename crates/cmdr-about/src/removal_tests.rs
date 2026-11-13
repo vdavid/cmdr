@@ -396,6 +396,7 @@ fn removing_a_link_leaves_what_it_points_at() {
 fn other_names_keep_the_content_reachable() {
     let twin = settled_file(vec![AboutFact::Identity(Fact::Known(Identity {
         name: text("backup.bin"),
+        name_hid_reordering: false,
         logical_size: Some(10),
         physical_size: Some(10),
         created: None,

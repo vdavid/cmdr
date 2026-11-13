@@ -55,6 +55,7 @@ const identity: AboutFact = {
     state: 'known',
     value: {
       name: 'a.txt',
+      nameHidReordering: false,
       logicalSize: 12,
       physicalSize: 4096,
       created: 1,

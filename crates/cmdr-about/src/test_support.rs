@@ -71,6 +71,7 @@ pub(crate) fn land_no_records(card: &mut AboutCard) {
 pub(crate) fn identity(name: &str, bytes: u64) -> AboutFact {
     AboutFact::Identity(Fact::Known(Identity {
         name: text(name),
+        name_hid_reordering: false,
         logical_size: Some(bytes),
         physical_size: Some(bytes),
         created: Some(1_750_000_000),

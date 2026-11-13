@@ -60,6 +60,12 @@ describe('the footer actions', () => {
     expect(footerActions(target)).toEqual(['openWithDefaultApp', 'showInFileManager', 'moveToTrash'])
   })
 
+  it('a program named like a photo keeps Open behind More, as Rust derives it', async () => {
+    const target = await render('mismatch')
+    expect(footerActions(target)).toEqual(['showInFileManager', 'moveToTrash', 'more'])
+    expect(aboutThisFixtures.mismatch?.derived?.actions.more).toEqual([{ type: 'openWithDefaultApp', app: 'Preview' }])
+  })
+
   it('never puts a removal first, and a card that can only delete hides it behind More', async () => {
     for (const id of Object.keys(aboutThisFixtures)) {
       const target = await render(id)

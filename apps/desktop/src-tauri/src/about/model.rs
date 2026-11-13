@@ -134,6 +134,7 @@ mod tests {
             target: AboutTarget::File,
             identity: Some(Fact::Known(Identity {
                 name: ItemText::new("id_ed25519"),
+                name_hid_reordering: false,
                 logical_size: Some(1_500_000),
                 physical_size: None,
                 created: None,

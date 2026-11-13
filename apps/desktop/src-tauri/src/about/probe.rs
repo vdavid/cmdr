@@ -216,6 +216,7 @@ fn identity(path: &Path, name: &str, metadata: &std::fs::Metadata, extras: platf
     let is_dir = metadata.is_dir();
     Identity {
         name: ItemText::new(name),
+        name_hid_reordering: cmdr_about::text::hides_reordering(name),
         // A folder's own entry size says nothing about what it holds.
         logical_size: (!is_dir).then_some(metadata.len()),
         physical_size: if is_dir { None } else { extras.physical_size },

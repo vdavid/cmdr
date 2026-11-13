@@ -11800,6 +11800,13 @@ export type Identity = {
   // Its name.
   name: ItemText
   /**
+   *  The name as the item has it held a character that changes the order text
+   *  shows in (a bidirectional override, [`crate::text::hides_reordering`]),
+   *  which [`Self::name`] no longer has. Elsewhere the name may show a different
+   *  ending, so the card says so once.
+   */
+  nameHidReordering: boolean
+  /**
    *  What the files claim to be, in bytes. `None`: the volume reports no size
    *  for it (a folder's own size is [`RecursiveSize`]).
    */

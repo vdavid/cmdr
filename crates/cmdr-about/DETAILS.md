@@ -44,6 +44,11 @@ dropped past 400 characters so an extension survives), plus U+061C and the line 
 start a row of their own in plain text. `ItemText::new` is the only constructor, so a payload field typed `ItemText`
 can't hold an unsanitized string.
 
+**A name that hid a direction override says so** (`Identity::name_hid_reordering`, from `hides_reordering` on the raw
+name). Dropping the character shows the name's real ending everywhere Cmdr shows it, but other apps still show the
+disguise (`invoice<U+202E>fdp.command` reads as a PDF in some), so the card says once, in a Name row, that it hid one.
+Only reordering characters count: a dropped control character changes no ending.
+
 Not `ItemText`, on purpose:
 
 - A `path` on a digest child or a Library folder: the exact path, for navigating. A sanitized path can name another
@@ -248,6 +253,10 @@ reaches it.
   folder. A folder: show, owner, app folder. An app: show, the download page. A symlink: show, owner, app folder. An
   archive's entry: the archive's download page only. Then `ContinueInAskCmdr`, every target, only while the host says
   Ask Cmdr is on (`ActionCaps::ask_cmdr`). Removal (`MoveToTrash`, or `Delete` on a volume with no Trash) always last.
+- **Decision: a file whose bytes and name disagree never leads with Open** (`TypeAgreement::Mismatch`, a Mac program
+  named `.jpg`): Open heads "More", and while the type row is still pending Open isn't offered at all, so it never shows
+  first and then moves. Why: the disguise is what the type row exists to catch, and opening it shouldn't be the leading
+  suggestion (lead's review of the fixture cards, 2026-11-13).
 - **Decision: removal is never first, and alone it sits behind "More"** (a phone's file: nothing but Delete). Why: the
   first button is where a hurried press lands, and the deterministic removal row above it is what the person should read
   first. It goes through the app's delete dialog, which asks.
@@ -277,7 +286,10 @@ answers the sensitive gate and the words. Each row keeps its coverage (`{ "state
 the card's prominence stays home. Numbers carry `*Human` twins with any uncertainty inside the string (`≥ 2.3 GB` over a
 lower bound), as every tool result does (`apps/desktop/src-tauri/src/tools/DETAILS.md` § Numbers arrive already spoken).
 The removal row comes along, derived from the projected card, so a model restates Cmdr's consequences instead of
-inventing its own.
+inventing its own. **Decision: it's the first field after the target and path**, before the rows: on a real-model try
+(2026-11-13) "what is this folder?" came back without what removing it would cost, with `removal` last, behind a
+folder's long child lists. A field's place in the JSON is the cheapest nudge there is; the agent tool's description asks
+for it too.
 
 - **Kept**: the target, the path (through `model_text`) and every `ItemText` as is: name, sizes, dates, hard links, a
   link's target; the real type (Cmdr's tokens plus the extension); bundle id, name, version; signer with team, ticket,
@@ -425,3 +437,10 @@ Raised 12 → 13 modules and root promises, 140 → 146 items, by the egress lin
   and the crate needs no zone or unit table. A struct, not two positional flags that mean opposite things.
 - **`AboutDisclosure`**: a wire token per consent line, exported to `bindings.ts` so the frontend's disclosure is a
   `Record` over it.
+
+Raised 146 → 147 items:
+
+- **`text::hides_reordering`**: whether a raw name holds a direction override (the characters `model_text` drops for
+  reordering text), which the host sets on `Identity::name_hid_reordering`. Which characters reorder text is the
+  sanitizer's own rule; a host copy of the set would drift from what `model_text` drops, and the card would stop saying
+  why a name's ending changed.

@@ -765,11 +765,15 @@ var surfaceGuardedCrates = []struct {
 		// egress line): the `model` module (`ModelCard`, `AboutCard::for_model`,
 		// `ProtectedReason`, `Speak`, `SpokenSize`, `AboutDisclosure`), the one
 		// projection of a card for a model, argued in that section.
+		//
+		// 146 → 147 (2026-11-13): `text::hides_reordering`, whether a name hid a
+		// direction override the sanitizer dropped, so the card can say so once,
+		// argued in that section.
 		Name: "cmdr-about",
 		Ceilings: surfaceCeilings{
 			RootPromises:   13,
 			PublicModules:  13,
-			SubsystemItems: 146,
+			SubsystemItems: 147,
 		},
 	},
 }

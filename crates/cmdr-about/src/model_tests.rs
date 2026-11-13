@@ -74,6 +74,7 @@ fn empty(target: AboutTarget) -> AboutCard {
 fn identity(name: &str) -> Fact<Identity> {
     Fact::Known(Identity {
         name: text(name),
+        name_hid_reordering: false,
         logical_size: Some(412_000_000),
         physical_size: Some(412_004_352),
         created: Some(1_772_400_000),
@@ -707,4 +708,24 @@ fn a_kind_mix_count_is_a_token_and_a_number() {
         serde_json::to_value(ModelKindCount::of(&kinds)).expect("serializes"),
         json!({ "kind": "image", "count": 2 })
     );
+}
+
+#[test]
+fn a_name_that_hid_a_reordering_character_says_so_and_a_plain_one_carries_nothing_extra() {
+    let raw = "invoice\u{202E}fdp.command";
+    let Some(Fact::Known(plain_identity)) = downloaded_dmg().identity else {
+        panic!("the fixture has a known identity");
+    };
+    let mut card = downloaded_dmg();
+    card.identity = Some(Fact::Known(Identity {
+        name: text(raw),
+        name_hid_reordering: crate::text::hides_reordering(raw),
+        ..plain_identity
+    }));
+    let told = json_of(&card, "/Users/test_user_1/Downloads/invoice.command", None);
+    assert_eq!(told["identity"]["value"]["name"], "invoicefdp.command");
+    assert_eq!(told["identity"]["value"]["nameHidReordering"], true);
+
+    let plain = json_of(&downloaded_dmg(), "/Users/test_user_1/Downloads/Tool.dmg", None);
+    assert!(plain["identity"]["value"].get("nameHidReordering").is_none());
 }

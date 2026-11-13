@@ -1371,5 +1371,13 @@
   "aboutThis.continueInAskCmdr.draft": "Tell me more about this.",
   "@aboutThis.continueInAskCmdr.draft": {
     "description": "The question \"Continue in Ask Cmdr\" on the \"Tell me about this\" card types into Ask Cmdr's message box, unsent, with the item attached. The person can edit it before sending. Written as the person speaking to the assistant, in their own voice. Always this same sentence: it never quotes anything from the card."
+  },
+  "aboutThis.label.name": "Name",
+  "@aboutThis.label.name": {
+    "description": "Row label on the \"Tell me about this\" card, in \"What it is\", shown only when the item's name hides a character that changes the order text shows in. Short label."
+  },
+  "aboutThis.identity.nameHidReordering": "Its name hides a character that flips the text’s direction, so in other apps it can seem to end differently. Cmdr shows it without that character.",
+  "@aboutThis.identity.nameHidReordering": {
+    "description": "The \"Name\" row on the \"Tell me about this\" card, shown only when the item's real name holds an invisible character that reverses the order the text shows in (a Unicode direction override), a trick that makes a program look like, say, a PDF in some apps. Cmdr dropped the character everywhere it shows the name, so the title and rows show its real ending. Plain words, no jargon like \"Unicode\" or \"bidi\"."
   }
 }

@@ -15,11 +15,24 @@ pub const MAX_ITEM_TEXT_CHARS: usize = 400;
 /// bidirectional mark or override (`cod\u{202E}fdp.command` shows a person a PDF),
 /// or a line or paragraph separator that would start a row of its own.
 fn is_unsafe_char(c: char) -> bool {
-    c.is_control()
-        || matches!(
-            c,
-            '\u{061C}' | '\u{200E}' | '\u{200F}' | '\u{2028}' | '\u{2029}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}'
-        )
+    c.is_control() || reorders_text(c) || matches!(c, '\u{2028}' | '\u{2029}')
+}
+
+/// Whether `c` changes the order text shows in: a bidirectional mark, embedding,
+/// override, or isolate.
+fn reorders_text(c: char) -> bool {
+    matches!(
+        c,
+        '\u{061C}' | '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}'
+    )
+}
+
+/// Whether `raw` hides a character that changes the order it shows in, which
+/// [`model_text`] drops. Elsewhere (Finder, a browser, a mail) such a name can
+/// show a different ending than the one it has: `cod\u{202E}fdp.command` reads as
+/// a PDF there and is a program.
+pub fn hides_reordering(raw: &str) -> bool {
+    raw.chars().any(reorders_text)
 }
 
 /// `text` as plain, bounded text: no control or bidirectional-override characters,
@@ -68,6 +81,15 @@ mod tests {
     fn what_would_make_a_name_read_as_something_else_is_dropped() {
         assert_eq!(model_text("cod\u{202E}fdp.command"), "codfdp.command");
         assert_eq!(model_text("a\nb\u{2066}c\u{2028}d\u{061C}e\u{0}"), "abcde");
+    }
+
+    #[test]
+    fn a_name_that_hides_a_reordering_character_says_so_and_a_plain_one_doesnt() {
+        assert!(hides_reordering("cod\u{202E}fdp.command"));
+        assert!(hides_reordering("a\u{2067}b"));
+        assert!(!hides_reordering("report.pdf"));
+        // A control character is dropped too, but it doesn't reorder anything.
+        assert!(!hides_reordering("a\nb\u{0}"));
     }
 
     #[test]

@@ -122,6 +122,11 @@ Open questions for the review:
 - `aboutThis.label.otherNames`: Other names
   - Where: Row label on the "Tell me about this" card, left of how many other names (hard links) point to the same file
     contents.
+- `aboutThis.label.name`: Name
+  - Where: Row label, first in "What it is", shown only when the name hides a direction-override character.
+- `aboutThis.identity.nameHidReordering`: Its name hides a character that flips the text’s direction, so in other apps
+  it can seem to end differently. Cmdr shows it without that character.
+  - Where: That row, with a quiet warning mark. Said once; the title and every row show the real ending.
 - `aboutThis.label.pointsTo`: Points to
   - Where: Row label on the "Tell me about this" card for a symbolic link, left of the place the link points to.
 - `aboutThis.label.realType`: Kind

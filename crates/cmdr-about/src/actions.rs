@@ -5,7 +5,7 @@
 //! anything a model wrote. The host says what the item's volume lets an action
 //! do ([`ActionCaps`]); the facts say whether there's somewhere to go.
 //!
-//! Two rules hold by construction:
+//! Three rules hold by construction:
 //!
 //! - **Removing is never first.** It's always the last action, and when nothing
 //!   else comes before it, it sits behind "More", so it's never the button a
@@ -15,6 +15,11 @@
 //!   written back out by the URL parser, with its host shown before the press.
 //!   An item's download record is attacker-writable: a `file:`, `smb:`, or an
 //!   app's own scheme would launch whatever registered it.
+//! - **A file whose bytes and name disagree never leads with Open.** A program
+//!   named `holiday.jpg` is the disguise the type row exists to catch, so
+//!   opening it isn't the suggestion the card puts first: Open waits behind
+//!   "More", and until the type check lands it isn't offered at all, so it
+//!   never shows first and then moves.
 
 use serde::Serialize;
 use url::{Host, Url};
@@ -23,6 +28,7 @@ use crate::card::AboutCard;
 use crate::fact::{AboutTarget, Fact};
 use crate::owner::{InstalledApp, OwnerClaim};
 use crate::provenance::WhereFrom;
+use crate::sniff::TypeAgreement;
 use crate::text::ItemText;
 
 /// How many actions show before "More". Three, plus "More" and Close, keep the
@@ -138,7 +144,11 @@ pub struct Actions {
 /// volume allows. Callable at any moment: an action whose fact is still pending
 /// isn't there yet.
 pub fn actions(card: &AboutCard, caps: &ActionCaps) -> Actions {
-    let open = open_with(card);
+    let (open, open_behind_more) = match type_check(card) {
+        TypeCheck::Pending => (None, None),
+        TypeCheck::Disagrees => (None, open_with(card)),
+        TypeCheck::Fine => (open_with(card), None),
+    };
     let download = download_page(card);
     let owner = reveal_owner(card);
     let folder = caps.app_folder.clone().map(|path| AboutAction::GoToAppFolder {
@@ -172,8 +182,31 @@ pub fn actions(card: &AboutCard, caps: &ActionCaps) -> Actions {
     } else {
         all.len().min(SHOWN_ACTIONS)
     };
-    let more = all.split_off(shown_count);
+    let mut more = all.split_off(shown_count);
+    // A disguised file's Open heads "More": reachable, never the button a press
+    // lands on.
+    if let Some(open) = open_behind_more {
+        more.insert(0, open);
+    }
     Actions { shown: all, more }
+}
+
+/// What the type row says about leading with Open.
+enum TypeCheck {
+    /// The row is planned and hasn't landed: Open waits for it.
+    Pending,
+    /// The bytes aren't what the name says.
+    Disagrees,
+    /// They agree, Cmdr can't tell, or the card has no type row.
+    Fine,
+}
+
+fn type_check(card: &AboutCard) -> TypeCheck {
+    match &card.real_type {
+        Some(Fact::Pending) => TypeCheck::Pending,
+        Some(Fact::Known(real)) if real.agreement == TypeAgreement::Mismatch => TypeCheck::Disagrees,
+        _ => TypeCheck::Fine,
+    }
 }
 
 /// Open, when the OS named the app that opens it.

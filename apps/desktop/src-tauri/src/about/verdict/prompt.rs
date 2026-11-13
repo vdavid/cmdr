@@ -142,6 +142,7 @@ mod tests {
             target: AboutTarget::File,
             identity: Some(Fact::Known(Identity {
                 name: ItemText::new(name),
+                name_hid_reordering: false,
                 logical_size: Some(10),
                 physical_size: None,
                 created: None,

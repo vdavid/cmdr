@@ -122,6 +122,11 @@ pub struct ModelCard {
     path: ItemText,
     #[serde(skip_serializing_if = "Option::is_none")]
     contents_stay_home: Option<ProtectedReason>,
+    /// What removing it would mean, as Cmdr works it out from the rows below.
+    /// First among the facts on purpose: a model reading "what is this?" past a
+    /// folder's long child lists answered without it (a real-model try,
+    /// 2026-11-13), and it's the row a person most needs passed on.
+    removal: Vec<ModelRemoval>,
     #[serde(skip_serializing_if = "Option::is_none")]
     identity: Option<ModelFact<ModelIdentity>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -152,7 +157,6 @@ pub struct ModelCard {
     app_data: Option<ModelFact<ModelAppData>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     git_snapshot: Option<ModelFact<ModelSnapshot>>,
-    removal: Vec<ModelRemoval>,
 }
 
 impl AboutCard {
@@ -311,6 +315,10 @@ fn spoken_bytes(bytes: Option<u64>, speak: &dyn Speak) -> Option<String> {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ModelIdentity {
     name: ItemText,
+    /// Only when true: the name hid a character that reorders text, so it may
+    /// read differently elsewhere (part of the name's disclosure line).
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    name_hid_reordering: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     logical_size: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -337,6 +345,7 @@ impl ModelIdentity {
     fn of(identity: &Identity, speak: &dyn Speak) -> Self {
         let Identity {
             name,
+            name_hid_reordering,
             logical_size,
             physical_size,
             created,
@@ -346,6 +355,7 @@ impl ModelIdentity {
         } = identity;
         Self {
             name: name.clone(),
+            name_hid_reordering: *name_hid_reordering,
             logical_size: *logical_size,
             logical_size_human: spoken_bytes(*logical_size, speak),
             physical_size: *physical_size,

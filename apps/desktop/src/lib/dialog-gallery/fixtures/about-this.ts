@@ -180,7 +180,11 @@ const liarHeadline: Headline = {
   size: { bytes: 88_064, atLeast: false },
   lead: { template: 'receivedByAirDrop', at: day('2026-11-01') },
 }
-const liarRemoval = derived(liarHeadline, [{ type: 'userDocument' }])
+// A program named like a photo: Rust holds Open back behind "More" (`cmdr_about::actions`).
+const liarRemoval = derived(liarHeadline, [{ type: 'userDocument' }], [], {
+  shown: [{ type: 'showInFileManager' }, { type: 'moveToTrash' }],
+  more: [{ type: 'openWithDefaultApp', app: 'Preview' }],
+})
 
 const mismatch: Stream = {
   plan: plan('file', [
@@ -254,6 +258,49 @@ const mismatch: Stream = {
     {
       fact: { kind: 'defaultApp', fact: { state: 'known', value: { name: 'Preview', id: 'com.apple.Preview' } } },
       derived: liarRemoval,
+    },
+  ],
+  settled: true,
+}
+
+// ── A name hiding a direction override ─────────────────────────────────────────
+
+// Its real name is `invoice<U+202E>fdp.command`: some apps show it ending in `.pdf`. The wire carries it without the
+// character, and says it had one.
+const DISGUISED = 'invoicefdp.command'
+const disguisedHeadline: Headline = {
+  what: { type: 'file', kind: 'script', extension: 'command' },
+  size: { bytes: 412, atLeast: false },
+  lead: { template: 'plain' },
+}
+const disguisedRemoval = derived(disguisedHeadline, [{ type: 'userDocument' }], [], {
+  shown: [{ type: 'showInFileManager' }, { type: 'moveToTrash' }],
+  more: [],
+})
+
+const disguisedName: Stream = {
+  plan: plan('file', [
+    { section: 'origin', kinds: ['download', 'cmdrOperation'] },
+    { section: 'nature', kinds: ['identity', 'realType'] },
+  ]),
+  first: derived(disguisedHeadline, [{ type: 'cantTell' }]),
+  facts: [
+    { fact: identity(DISGUISED, 412, '2026-11-12', { nameHidReordering: true }), derived: disguisedRemoval },
+    { fact: { kind: 'download', fact: routine('noRecord') }, derived: disguisedRemoval },
+    { fact: { kind: 'cmdrOperation', fact: routine('noRecord') }, derived: disguisedRemoval },
+    {
+      fact: {
+        kind: 'realType',
+        fact: {
+          state: 'known',
+          value: {
+            sniffed: { kind: 'script', format: null },
+            claimed: { extension: 'command', kind: 'script' },
+            agreement: 'matches',
+          },
+        },
+      },
+      derived: disguisedRemoval,
     },
   ],
   settled: true,
@@ -418,6 +465,7 @@ export const aboutThisFixtures: Record<string, AboutCardData | undefined> = {
   ...aboutThisFolderFixtures,
   ...aboutThisDegradedFixtures,
   mismatch: card(LIAR, `/Users/test_user_1/Desktop/${LIAR}`, mismatch),
+  'disguised-name': card(DISGUISED, `/Users/test_user_1/Downloads/${DISGUISED}`, disguisedName),
   'notable-a': card('Google', '/Users/test_user_1/Library/Application Support/Google', notableA),
   'notable-b': card('Tessera Helper', '/Users/test_user_1/Library/Application Support/Tessera Helper', notableB),
   remote: card(REMOTE, '/Volumes/Testnas/photos/IMG_2041.HEIC', remote),

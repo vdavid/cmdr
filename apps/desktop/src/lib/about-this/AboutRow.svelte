@@ -93,6 +93,19 @@
     {@const fact = row.fact?.kind === 'identity' ? row.fact.fact : null}
     {@const identity = fact?.state === 'known' ? fact.value : null}
     {@const isFolderLike = target === 'folder' || target === 'appBundle' || target === 'package'}
+    {#if identity?.nameHidReordering}
+        <!-- Said once, first: the title and every row show the name without the hidden character. -->
+        <div class="row" data-row-kind="name">
+            <dt>{t('aboutThis.label.name')}</dt>
+            <dd>
+                <span class="notable"
+                    ><span class="mark" aria-hidden="true"><Icon name="circle-alert" size={12} /></span>{t(
+                        'aboutThis.identity.nameHidReordering',
+                    )}</span
+                >
+            </dd>
+        </div>
+    {/if}
     {#if !isFolderLike}
         <div class="row" aria-busy={pending} data-row-kind="size">
             <dt>{t('aboutThis.label.size')}</dt>

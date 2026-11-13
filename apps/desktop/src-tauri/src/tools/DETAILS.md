@@ -629,7 +629,10 @@ serializes a fact.
   properties. A model finds it from the brief alone: asked "What is this folder: …/node_modules? What would removing it
   cost?", `claude-haiku-5-5` called `tool_details` for it, then `use_tool`, and answered from the result (verified with
   `agent/llm/live_smoke_test.rs::smoke_anthropic_what_is_this_folder`, real handler, 2026-11-13). It didn't speak to
-  the removal cost there, which the result carries as `removal`: the AI take's prompt work (and its eval) owns that.
+  the removal cost there, though the result carried it as `removal`, last, behind the folder's child lists. So, cheaply:
+  `removal` now leads the projection's rows (`crates/cmdr-about/DETAILS.md` § The model's projection), and the `desc`
+  (loaded on demand, outside the cached prefix) asks the agent to pass it on whenever it says what an item is; the
+  `brief` already names removal. Not re-run on a real model yet: the eval does that.
 - **Gotcha**: an item reached through its volume (a share, a phone) is planned before the volume answers, from the
   drive index's word on whether it's a folder; one the index doesn't hold plans as a file.
 

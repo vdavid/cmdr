@@ -173,6 +173,25 @@ describe('the card’s parts on their own', () => {
   })
 })
 
+describe('a name hiding a direction override', () => {
+  it('says so once, in What it is, and shows the name without the character', async () => {
+    const target = await render('disguised-name')
+    const rows = target.querySelectorAll('[data-row-kind="name"]')
+    expect(rows).toHaveLength(1)
+    expect(rows[0].textContent).toContain('hides a character that flips the text’s direction')
+    expect(rows[0].closest('section')?.getAttribute('data-section')).toBe('nature')
+    expect(target.querySelector('#about-this-title')?.textContent ?? document.body.textContent).toContain(
+      'invoicefdp.command',
+    )
+    await expectNoA11yViolations(target)
+  })
+
+  it('says nothing on a plain name', async () => {
+    const target = await render('plain-document')
+    expect(target.querySelector('[data-row-kind="name"]')).toBeNull()
+  })
+})
+
 describe('what a card reached through its volume says', () => {
   it('a share that stopped answering says so once, at the top, and each row quietly', async () => {
     const target = await render('stopped-answering')
