@@ -3,7 +3,7 @@ use crate::card::AboutFact;
 use crate::fact::UnknownWhy;
 use crate::owner::OwnerPlace;
 use crate::payload::Bundle;
-use crate::provenance::{CmdrOperation, Initiator, download_fact};
+use crate::provenance::{CmdrOperation, StartedBy, download_fact};
 use crate::test_support::{
     card, chrome_download, identity, land, land_no_records, last_opened, local, owned_by_id, phone, sniffed, text,
     total,
@@ -121,7 +121,7 @@ fn a_cmdr_copy_leads_when_no_site_is_recorded() {
         AboutFact::CmdrOperation(Fact::Known(CmdrOperation {
             kind: LandedBy::Copy,
             at: 1_760_000_000,
-            initiator: Initiator::You,
+            initiator: StartedBy::You,
             source_path: Some(text("/films/Trip.mkv")),
             source_volume: Some(text("Naspolya")),
         })),

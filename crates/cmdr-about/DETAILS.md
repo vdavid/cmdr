@@ -172,17 +172,21 @@ and two workflow filters to stay honest.
 
 ## The public surface is capped
 
-11 root promises (one module per concern), 11 public modules, 112 items in them
+11 root promises (one module per concern), 11 public modules, 113 items in them
 (`scripts/check/checks/index-crate-isolation-ceilings.go`). The items are the wire types the card's events and the
 model's projection carry, and the handful of functions a host calls: `plan`, `AboutCard`, `download_fact`,
-`xdg_download_fact`, `redact_for_egress`, `real_type`, `consequences`, `headline`, `start_with`, `model_text`. The
-decoders' pieces (`parse_quarantine`, `decode_where_froms`, `classify_sources`, `sniff`) are `pub(crate)`: a host gets
-whole facts, never half-decoded records.
+`xdg_download_fact`, `usage_fact`, `redact_for_egress`, `real_type`, `consequences`, `headline`, `start_with`,
+`model_text`. The decoders' pieces (`parse_quarantine`, `decode_where_froms`, `classify_sources`, `sniff`) are
+`pub(crate)`: a host gets whole facts, never half-decoded records.
 
 A new public item is a new thing every surface of the card can say (the dialog, the agent tool, the model's projection,
 the consent copy that lists what leaves). Argue it here before raising the ceiling.
 
-Raised 110 → 112 by the host's first milestone, both plan inputs rather than wire types:
+Raised 110 → 113 by the host's first milestone, none of them wire types:
+
+- **`usage_fact`**: Spotlight stamps `kMDItemLastUsedDate` on a file an app WRITES (a file `echo` just wrote has one
+  equal to its creation, macOS 27.0.1, `mdls`, 2026-11-13), so a date on the last change with no use count is the save,
+  read as `NoRecord`. Which Spotlight record counts as "last opened" is a rule a person could argue, so it lives here.
 
 - **`OsCaps`**: what the OS keeps about any item. Folding it into `VolumeCaps` would make a Linux disk's card open with
   "On this disk, Cmdr can see…", a volume limit that isn't one; a host-side filter would move a rule (which rows an OS

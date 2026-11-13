@@ -51,7 +51,7 @@ pub struct Bundle {
 ///
 /// ❌ Never worded "verified" or "trusted": a signature blob can be copied onto a
 /// tampered binary, and the bundle's resources are never hashed. Unless
-/// [`Signature::checked`] is [`SignatureCheck::ExecutableMatches`], the card says
+/// [`Signature::checked`] is [`ExecutableCheck::ExecutableMatches`], the card says
 /// "carries a signature from".
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -61,7 +61,7 @@ pub struct Signature {
     /// Whether a notarization ticket is stapled to the item.
     pub ticket: StapledTicket,
     /// Whether the main executable was compared against the signature.
-    pub checked: SignatureCheck,
+    pub checked: ExecutableCheck,
 }
 
 /// Who a signature names.
@@ -104,7 +104,7 @@ pub enum StapledTicket {
 /// Whether the main executable was compared against the signature it carries.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(tag = "type", content = "why", rename_all = "camelCase")]
-pub enum SignatureCheck {
+pub enum ExecutableCheck {
     /// The executable matches its signature. Resources weren't hashed.
     ExecutableMatches,
     /// The executable doesn't match the signature it carries.
@@ -136,6 +136,33 @@ pub struct Usage {
     pub last_opened: i64,
     /// How many times it was opened. `None`: Spotlight recorded no count.
     pub use_count: Option<u64>,
+}
+
+/// How far apart Spotlight's last-used date and the last change may sit and still
+/// be one event: the save that wrote the file.
+const SAVE_IS_THE_USE_SECS: i64 = 2;
+
+/// The last-opened fact from what Spotlight keeps: `kMDItemLastUsedDate`,
+/// `kMDItemUseCount`, and the item's modification date.
+///
+/// Spotlight stamps a last-used date on a file an app WRITES, opened or not (a
+/// file `echo` wrote a moment ago has one equal to its creation; verified on
+/// macOS 27.0.1 with `mdls`, 2026-11-13). So a date that sits on the last change
+/// with no use count is the save, ❌ never "last opened": `NoRecord`. With a use
+/// count, an open was counted, and the date stands.
+pub fn usage_fact(last_used: Option<i64>, use_count: Option<u64>, modified: Option<i64>) -> Fact<Usage> {
+    let Some(last_used) = last_used else {
+        return Fact::unknown(crate::fact::UnknownWhy::NoRecord);
+    };
+    let is_the_save =
+        use_count.is_none() && modified.is_some_and(|modified| (last_used - modified).abs() <= SAVE_IS_THE_USE_SECS);
+    if is_the_save {
+        return Fact::unknown(crate::fact::UnknownWhy::NoRecord);
+    }
+    Fact::Known(Usage {
+        last_opened: last_used,
+        use_count,
+    })
 }
 
 /// An app, as the OS names it.
@@ -245,4 +272,37 @@ pub enum SizeCoverage {
     ExactButStale,
     /// Some folder was never listed, so the real size is at least this.
     LowerBound,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fact::UnknownWhy;
+
+    #[test]
+    fn no_last_used_date_is_no_record_never_never() {
+        assert_eq!(usage_fact(None, None, Some(100)), Fact::unknown(UnknownWhy::NoRecord));
+    }
+
+    /// A file an app just wrote carries a last-used date equal to its change: the
+    /// save, not an open.
+    #[test]
+    fn a_last_used_date_on_the_last_save_with_no_count_is_no_record() {
+        assert_eq!(
+            usage_fact(Some(1_000), None, Some(1_001)),
+            Fact::unknown(UnknownWhy::NoRecord)
+        );
+        assert_eq!(
+            usage_fact(Some(1_000), None, Some(998)),
+            Fact::unknown(UnknownWhy::NoRecord)
+        );
+    }
+
+    #[test]
+    fn a_counted_open_or_a_date_apart_from_the_save_stands() {
+        let known = |last_opened, use_count| Fact::Known(Usage { last_opened, use_count });
+        assert_eq!(usage_fact(Some(1_000), Some(2), Some(1_000)), known(1_000, Some(2)));
+        assert_eq!(usage_fact(Some(5_000), None, Some(1_000)), known(5_000, None));
+        assert_eq!(usage_fact(Some(5_000), None, None), known(5_000, None));
+    }
 }

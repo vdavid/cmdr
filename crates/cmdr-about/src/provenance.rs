@@ -59,7 +59,7 @@ pub struct CmdrOperation {
     /// When it finished.
     pub at: i64,
     /// Who started it.
-    pub initiator: Initiator,
+    pub initiator: StartedBy,
     /// Where the item came from. `None`: the operation made it new.
     pub source_path: Option<ItemText>,
     /// The volume it came from, by name. `None`: the same volume, or the
@@ -88,7 +88,7 @@ pub enum LandedBy {
 /// Who started a Cmdr operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub enum Initiator {
+pub enum StartedBy {
     /// The person, in Cmdr's own UI.
     You,
     /// Ask Cmdr, on the person's behalf.

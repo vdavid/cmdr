@@ -711,7 +711,7 @@ var surfaceGuardedCrates = []struct {
 			RootPromises:   13,
 			HandleMethods:  18,
 			PublicModules:  10,
-			SubsystemItems: 112,
+			SubsystemItems: 113,
 		},
 	},
 	{
@@ -728,13 +728,13 @@ var surfaceGuardedCrates = []struct {
 		// a new thing every surface of the card can say, so it's argued in that
 		// DETAILS first.
 		//
-		// 110 → 112 (2026-11-13, the app host): `OsCaps` and
-		// `AboutPlan::retain_kinds`, two plan inputs, argued in that section.
+		// 110 → 113 (2026-11-13, the app host): `OsCaps`, `usage_fact`, and
+		// `AboutPlan::retain_kinds`, argued in that section.
 		Name: "cmdr-about",
 		Ceilings: surfaceCeilings{
 			RootPromises:   11,
 			PublicModules:  11,
-			SubsystemItems: 112,
+			SubsystemItems: 113,
 		},
 	},
 }
