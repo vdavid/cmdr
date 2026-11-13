@@ -903,6 +903,10 @@ export type {
   McpServerOutcome,
 } from './settings'
 
+// "Tell me about this": the card's stream and cancel
+export { startAbout } from './about'
+export type { AboutRequestHandle } from './about'
+
 // Tab context menu
 export { showTabContextMenu, onTabContextAction } from './tab'
 

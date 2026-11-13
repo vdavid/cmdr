@@ -88,6 +88,8 @@ pub const COPY_FILENAME_ID: &str = "copy_filename";
 /// Edit > Undo move to trash: the trash toast's Undo, reachable from the menu bar.
 pub const UNDO_TRASH_ID: &str = "undo_trash";
 pub const GET_INFO_ID: &str = "get_info";
+/// File > Tell me about this: Cmdr's own card about the item under the cursor, on every OS.
+pub const TELL_ME_ABOUT_ID: &str = "tell_me_about";
 pub const QUICK_LOOK_ID: &str = "quick_look";
 pub const RENAME_ID: &str = "rename";
 
@@ -468,6 +470,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         COPY_FILENAME_ID => Some(("file.copyFilename", CommandScope::FileScoped)),
         UNDO_TRASH_ID => Some(("edit.undoTrash", CommandScope::FileScoped)),
         GET_INFO_ID => Some(("file.getInfo", CommandScope::FileScoped)),
+        TELL_ME_ABOUT_ID => Some(("file.tellMeAbout", CommandScope::FileScoped)),
         QUICK_LOOK_ID => Some(("file.quickLook", CommandScope::FileScoped)),
         // Intercepted by on_menu_event before this lookup (like cut/copy/paste): main window →
         // execute-command, non-main → native selectAll: so ⌘A still works in text fields there.
@@ -581,6 +584,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "file.copyFilename" => Some(COPY_FILENAME_ID),
         "edit.undoTrash" => Some(UNDO_TRASH_ID),
         "file.getInfo" => Some(GET_INFO_ID),
+        "file.tellMeAbout" => Some(TELL_ME_ABOUT_ID),
         "file.quickLook" => Some(QUICK_LOOK_ID),
         "selection.selectAll" => Some(SELECT_ALL_ID),
         "selection.deselectAll" => Some(DESELECT_ALL_ID),

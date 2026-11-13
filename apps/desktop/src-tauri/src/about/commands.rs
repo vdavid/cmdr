@@ -66,15 +66,8 @@ pub async fn about_start(request: AboutRequest, on_event: Channel<AboutEvent>) {
 
 /// Stops the card's gathering: queued jobs skip their work, and nothing more is
 /// sent. A cancel that arrives before its start makes that start a no-op.
-///
-/// Registered in the typed bindings together with the card's frontend wrapper,
-/// its first caller: `desktop-ipc-unused` refuses a typed command nothing calls.
 #[tauri::command]
 #[specta::specta]
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "registered with the card's frontend wrapper, its first caller")
-)]
 pub fn about_cancel(request_id: String) {
     REGISTRY.cancel(&request_id);
 }

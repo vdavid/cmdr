@@ -3163,6 +3163,11 @@ export const commands = {
    */
   revokeCloudAiConsent: () => typedError<null, CloudAiConsentWriteError>(__TAURI_INVOKE('revoke_cloud_ai_consent')),
   /**
+   *  Stops the card's gathering: queued jobs skip their work, and nothing more is
+   *  sent. A cancel that arrives before its start makes that start a no-op.
+   */
+  aboutCancel: (requestId: string) => __TAURI_INVOKE<void>('about_cancel', { requestId }),
+  /**
    *  Tell the cloud gates that a held "no" (`ai.cloudConsentRevokePending`) was just set or let go
    *  of. No value crosses: the gates read `settings.json` themselves, so the frontend calls this
    *  right after saving it. A newly held "no" stops in-flight calls exactly like a revoke.
@@ -11264,7 +11269,7 @@ export type HeadlineLead =
       // When.
       at: number
       // The volume it came from. `None`: the same volume, or made new.
-      source_volume: ItemText | null
+      sourceVolume: ItemText | null
     }
   // The OS recorded it as a Mail attachment.
   | {
@@ -11290,7 +11295,7 @@ export type HeadlineLead =
   | {
       template: 'dataOfMissingApp'
       // The bundle id it's named after.
-      bundle_id: ItemText
+      bundleId: ItemText
     }
   // The OS recorded which app downloaded it, and not from where.
   | {
@@ -12087,9 +12092,9 @@ export type Installer =
   | {
       type: 'receipt'
       // The receipt's package id.
-      pkg_id: ItemText
+      pkgId: ItemText
       // Whether the id is Apple's own: part of macOS.
-      part_of_os: boolean
+      partOfOs: boolean
     }
   // Homebrew.
   | {
@@ -16071,7 +16076,7 @@ export type OwnerClaim =
   | {
       type: 'byBundleId'
       // The id in the path.
-      bundle_id: ItemText
+      bundleId: ItemText
       // Which app-data folder the path sits in.
       place: OwnerPlace
       // The app that id belongs to, when one is installed.
@@ -16092,9 +16097,9 @@ export type OwnerClaim =
   | {
       type: 'installedBy'
       // The receipt's package id.
-      pkg_id: ItemText
+      pkgId: ItemText
       // Whether the id is Apple's own (`com.apple.*`: part of macOS).
-      part_of_os: boolean
+      partOfOs: boolean
     }
   // Certain: the path sits in a Homebrew cellar or caskroom.
   | {
@@ -17408,7 +17413,7 @@ export type RemovalConsequence =
   | {
       type: 'removesApp'
       // The app's Library folders, or why Cmdr can't tell.
-      data_left: Fact<AppData>
+      dataLeft: Fact<AppData>
     }
   // It's an installed app's data.
   | {
@@ -17428,7 +17433,7 @@ export type RemovalConsequence =
   | {
       type: 'leftoverOfUninstalledApp'
       // The bundle id the folder is named after.
-      bundle_id: ItemText
+      bundleId: ItemText
     }
   /**
    *  The OS recorded where it was downloaded from. ❌ Never "you can get it

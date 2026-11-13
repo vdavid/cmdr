@@ -520,6 +520,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
             ("menu.file.quit", PerOs { macos: "Quit Cmdr", windows: "Exit Cmdr", other: "Quit Cmdr" }),
             ("menu.file.rename", All("Rename")),
             ("menu.file.showInFileManager", PerOs { macos: "Show in Finder", windows: "Show in File Explorer", other: "Show in file manager" }),
+            ("menu.file.tellMeAbout", All("Tell me about this")),
             ("menu.file.view", All("View")),
             ("menu.go.addToFavorites", All("Add to favorites")),
             ("menu.go.back", All("Back")),

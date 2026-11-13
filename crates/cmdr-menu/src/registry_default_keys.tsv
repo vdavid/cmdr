@@ -40,6 +40,7 @@ macos	file.multiRename	⌃M
 macos	file.showInFinder	⌘⌥O
 macos	file.openTerminalHere	F9
 macos	file.getInfo	⌘I
+macos	file.tellMeAbout	⌘⇧I
 macos	file.quickLook	⇧Space
 macos	file.copyPath	⌘⌥C
 macos	file.copyFilename	
@@ -123,6 +124,7 @@ windows	file.deletePermanently	Shift+F8
 windows	file.rename	F2
 windows	file.multiRename	Ctrl+M
 windows	file.showInFinder	Ctrl+Shift+E
+windows	file.tellMeAbout	Ctrl+Shift+Enter
 windows	file.copyPath	Ctrl+Shift+C
 windows	file.copyFilename	
 windows	edit.undoTrash	
@@ -200,6 +202,7 @@ linux	file.deletePermanently	Shift+F8
 linux	file.rename	F2
 linux	file.multiRename	Ctrl+M
 linux	file.showInFinder	Ctrl+Shift+E
+linux	file.tellMeAbout	Ctrl+Shift+Enter
 linux	file.copyPath	Ctrl+Shift+C
 linux	file.copyFilename	
 linux	edit.undoTrash	

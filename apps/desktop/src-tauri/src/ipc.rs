@@ -371,6 +371,7 @@ macro_rules! ipc_command_manifest {
                     crate::ai::cloud_consent::cloud_ai_consent_status,
                     crate::ai::cloud_consent::accept_cloud_ai_consent,
                     crate::ai::cloud_consent::revoke_cloud_ai_consent,
+                    crate::about::commands::about_cancel,
                     crate::ai::cloud_consent::cloud_ai_consent_revoke_pending_changed,
                     crate::system_memory::get_system_memory_info,
                     crate::system_strings::get_localized_system_strings,

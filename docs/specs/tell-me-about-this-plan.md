@@ -1009,8 +1009,13 @@ release.
 - **D1 – Surface.** (a) A resizable modal dialog over the panes, like Get Info but ours. (b) A non-modal inspector panel
   that follows the cursor. **Recommendation and default: (a)**: it has every house primitive (focus trap, registry, MCP
   observability, gallery), and (b) can grow from the same state slice later.
-- **D2 – Shortcut.** **Default: `⌘⇧I` on macOS, `Ctrl+Shift+I` on Windows and Linux** (beside Get Info's `⌘I` /
-  `Alt+Enter`; `Alt+Shift+Enter` is taken by Calculate folder sizes). Changes if the Linux inspector claims it.
+- **D2 – Shortcut.** **Default: `⌘⇧I` on macOS, `Ctrl+Shift+Enter` on Windows and Linux** (beside Get Info's `⌘I` /
+  `Alt+Enter` and the context menu's `Ctrl+Enter`; `Alt+Shift+Enter` is taken by Calculate folder sizes). Not
+  `Ctrl+Shift+I` there: it's the web inspector's chord in WebKitGTK and WebView2, which
+  `routes/(main)/global-keydown.ts` already names and suppresses in production. A release or E2E build has no inspector
+  (`tauri build` without the `devtools` feature, `scripts/e2e-linux.sh`), but a `pnpm dev` build on Linux or Windows
+  does, and the binding would take it from whoever is debugging (decided 2026-11-13 from the code, not from a run in the
+  container).
 - **D3 – Verdict start.** (a) Streams in automatically when AI is on, with a setting to turn it off. (b) A "Get a short
   AI take" button. **Recommendation and default: (a), setting default on**: the issue's design, and a verdict costs well
   under a cent on a small cloud model. M13 measures how often the verdict says something the rows don't; if that's rare,

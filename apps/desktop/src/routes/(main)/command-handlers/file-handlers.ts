@@ -2,7 +2,7 @@
  * File-action handlers: the viewer / rename / copy / move / new-folder/file /
  * delete dialog openers, the dialog-less Duplicate, the MCP `dialog.confirm`, and the
  * get-entry-under-cursor-then-act arms (edit / show in Finder / copy filename /
- * get info / the cloud offline pair). The repeated "read the entry under the
+ * get info / tell me about this / the cloud offline pair). The repeated "read the entry under the
  * cursor, act on it if present" shape is the `withEntryUnderCursor` helper, so the
  * cursor read happens once per arm. The copy-path and copy-filename arms sit
  * outside it: they act on the whole SELECTION first (`copySelectionOr`), and
@@ -26,6 +26,7 @@ import { capabilitiesFor } from '#lib/file-explorer/pane/volume-capabilities.js'
 import { pathInsideArchive } from '#lib/file-explorer/pane/archive-paths.js'
 import { openInEditorOrExplain } from '#lib/file-explorer/pane/editor-open.js'
 import { openGetInfoOrExplain } from '#lib/file-explorer/pane/get-info-open.js'
+import { openAboutThis } from '#lib/about-this/about-this-state.svelte.js'
 import { resolveTerminalFolder } from '#lib/open-terminal/terminal-target.js'
 import { getShowVirtualGitPortal } from '#lib/settings/reactive-settings.svelte.js'
 import { openTerminalHereForFolder } from '#lib/open-terminal/open-terminal-here.js'
@@ -360,6 +361,12 @@ export const fileHandlers = {
   },
 
   'file.getInfo': (hctx) => withEntryUnderCursor(hctx, (entry) => openGetInfoOrExplain(entry.path)),
+
+  // The card is about the cursor entry, as Get info is, whatever the selection holds.
+  'file.tellMeAbout': (hctx) =>
+    withEntryUnderCursor(hctx, (entry) => {
+      openAboutThis({ path: entry.path, volumeId: getFocusedPaneVolumeId(), name: entry.filename })
+    }),
 
   'cloud.makeOffline': (hctx) =>
     withEntryUnderCursor(hctx, async (entry) => {

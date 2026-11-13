@@ -23,7 +23,7 @@ const SHOWN: usize = 2;
 /// Declared from the one that hurts most to the one that hurts least, which is
 /// the order [`consequences`] returns them in.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum RemovalConsequence {
     /// It holds changes no commit has.
     UncommittedWork,
@@ -116,7 +116,7 @@ impl RemovalConsequence {
 
 /// What installed an item.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum Installer {
     /// An installer package, by its receipt.
     Receipt {

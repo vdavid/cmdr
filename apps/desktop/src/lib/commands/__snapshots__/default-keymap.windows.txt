@@ -113,6 +113,7 @@ file.copyFilename
 file.copyShareLink	
 file.copyShareLinkOneDay	
 file.copyShareLinkOneHour	
+file.tellMeAbout	Ctrl+Shift+Enter
 file.contextMenu	Shift+F10, Ctrl+Enter
 restic.forgetPassword	
 selection.toggle	Space

@@ -30,7 +30,7 @@ pub struct Headline {
 
 /// What the item is, for the headline's first words.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum HeadlineWhat {
     /// A file.
     File {
@@ -70,7 +70,7 @@ pub struct HeadlineSize {
 
 /// The strongest origin or use fact. The variant is the template key.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(tag = "template", rename_all = "camelCase")]
+#[serde(tag = "template", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum HeadlineLead {
     /// The OS recorded it as downloaded from a site.
     DownloadedFrom {

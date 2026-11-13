@@ -1,0 +1,148 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AboutEvent, AboutFact, AboutPlan, Derived } from '#lib/ipc/bindings.js'
+
+const started: { requestId: string; onEvent: (event: AboutEvent) => void; cancel: ReturnType<typeof vi.fn> }[] = []
+
+vi.mock('#lib/tauri-commands/index.js', () => ({
+  startAbout: (_path: string, _volumeId: string | null, onEvent: (event: AboutEvent) => void) => {
+    const handle = { requestId: `req-${String(started.length + 1)}`, onEvent, cancel: vi.fn(() => Promise.resolve()) }
+    started.push(handle)
+    return handle
+  },
+}))
+
+const { aboutThisState, openAboutThis, closeAboutThis } = await import('./about-this-state.svelte')
+const { applyAboutEvent, emptyCard } = await import('./about-card')
+
+const plan: AboutPlan = {
+  target: 'file',
+  sections: [
+    { section: 'origin', kinds: ['download'] },
+    { section: 'nature', kinds: ['identity', 'realType'] },
+    { section: 'removal', kinds: [] },
+  ],
+  volumeNote: null,
+}
+
+const derived: Derived = {
+  headline: { what: { type: 'file', kind: null, extension: null }, size: null, lead: { template: 'plain' } },
+  removal: { shown: [{ type: 'cantTell' }], more: [] },
+}
+
+const identity: AboutFact = {
+  kind: 'identity',
+  fact: {
+    state: 'known',
+    value: {
+      name: 'a.txt',
+      logicalSize: 12,
+      physicalSize: 4096,
+      created: 1,
+      modified: 2,
+      hardLinks: 1,
+      symlinkTarget: null,
+    },
+  },
+}
+const noDownload: AboutFact = {
+  kind: 'download',
+  fact: { state: 'unknown', value: { why: 'noRecord', prominence: 'routine' } },
+}
+
+function planned(requestId: string): AboutEvent {
+  return { requestId, update: { type: 'planned', plan, derived } }
+}
+function fact(requestId: string, f: AboutFact): AboutEvent {
+  return { requestId, update: { type: 'fact', fact: f, derived } }
+}
+function settled(requestId: string): AboutEvent {
+  return { requestId, update: { type: 'factsSettled' } }
+}
+
+const subject = { path: '/tmp/a.txt', volumeId: 'root', name: 'a.txt' }
+
+describe('applyAboutEvent', () => {
+  it('takes facts in any order once the plan is in', () => {
+    let card = emptyCard('r', subject)
+    card = applyAboutEvent(card, planned('r'))
+    card = applyAboutEvent(card, fact('r', noDownload))
+    card = applyAboutEvent(card, fact('r', identity))
+    expect(card.facts.identity).toEqual(identity)
+    expect(card.facts.download).toEqual(noDownload)
+    expect(card.settled).toBe(false)
+    card = applyAboutEvent(card, settled('r'))
+    expect(card.settled).toBe(true)
+  })
+
+  it('ignores a fact outside the plan', () => {
+    let card = applyAboutEvent(emptyCard('r', subject), planned('r'))
+    const git: AboutFact = { kind: 'git', fact: { state: 'pending' } }
+    const after = applyAboutEvent(card, fact('r', git))
+    expect(after).toBe(card)
+    card = after
+    expect(card.facts.git).toBeUndefined()
+  })
+
+  it('ignores a fact before the plan, and another request’s events', () => {
+    const card = emptyCard('r', subject)
+    expect(applyAboutEvent(card, fact('r', identity))).toBe(card)
+    expect(applyAboutEvent(card, planned('other'))).toBe(card)
+  })
+
+  it('ignores anything after the facts settled', () => {
+    let card = applyAboutEvent(emptyCard('r', subject), planned('r'))
+    card = applyAboutEvent(card, settled('r'))
+    expect(applyAboutEvent(card, fact('r', identity))).toBe(card)
+  })
+
+  it('reads unavailable as the whole answer', () => {
+    const card = applyAboutEvent(emptyCard('r', subject), {
+      requestId: 'r',
+      update: { type: 'unavailable', why: 'notFound' },
+    })
+    expect(card.unavailable).toBe('notFound')
+    expect(card.settled).toBe(true)
+    expect(applyAboutEvent(card, planned('r'))).toBe(card)
+  })
+})
+
+describe('the open card', () => {
+  beforeEach(() => {
+    closeAboutThis()
+    started.length = 0
+  })
+
+  it('shows the card at once and fills it from its own channel', () => {
+    openAboutThis(subject)
+    expect(aboutThisState.card?.plan).toBeNull()
+    const [run] = started
+    run.onEvent(planned(run.requestId))
+    run.onEvent(fact(run.requestId, identity))
+    expect(aboutThisState.card?.facts.identity).toEqual(identity)
+  })
+
+  it('cancels on close, and a late event after close changes nothing', () => {
+    openAboutThis(subject)
+    const [run] = started
+    run.onEvent(planned(run.requestId))
+    closeAboutThis()
+    expect(run.cancel).toHaveBeenCalledOnce()
+    run.onEvent(fact(run.requestId, identity))
+    expect(aboutThisState.card).toBeNull()
+  })
+
+  it('never shows the first item’s facts after a reopen on another item', () => {
+    openAboutThis(subject)
+    const [first] = started
+    openAboutThis({ ...subject, path: '/tmp/b.txt', name: 'b.txt' })
+    const [, second] = started
+    expect(first.cancel).toHaveBeenCalledOnce()
+    first.onEvent(planned(first.requestId))
+    first.onEvent(fact(first.requestId, identity))
+    expect(aboutThisState.card?.plan).toBeNull()
+    expect(aboutThisState.card?.facts.identity).toBeUndefined()
+    second.onEvent(planned(second.requestId))
+    expect(aboutThisState.card?.subject.name).toBe('b.txt')
+    expect(aboutThisState.card?.plan).toEqual(plan)
+  })
+})

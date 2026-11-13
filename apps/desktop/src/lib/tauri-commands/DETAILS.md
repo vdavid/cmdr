@@ -121,6 +121,10 @@ commands, and notable non-obvious placements.
   `guessNfsIdentity` (always answers, falling back to this Mac's ids), plus `knownNfsPlaceOf`, the saved place's uid,
   groups, and start folder an edit form prefills from (by the backend's `volumeId`). The model:
   `crates/cmdr-nfs/DETAILS.md`.
+- **`about.ts`**: "Tell me about this": `startAbout(path, volumeId, onEvent)` mints the request id, opens a
+  `Channel<AboutEvent>`, and raw-invokes `about_start` (a channel specta can't describe); the handle's `cancel` calls
+  the typed `aboutCancel`. ❌ Never stop a card by dropping the channel. The card's state slice is the one caller
+  (`../about-this/CLAUDE.md`).
 - **`licensing.ts`**: license status, activation, expiry, server validation.
 - **`settings.ts`**: port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands.
   `cloudAiHostVerdicts(baseUrls)` answers each URL with the policy's own `ManagedAiRefusal | null` (local, no request).
@@ -229,6 +233,7 @@ commands, and notable non-obvious placements.
 - WebDAV servers → `webdav.ts`.
 - S3 accounts → `s3.ts`.
 - NFS servers → `nfs.ts`.
+- "Tell me about this" (the card's stream and cancel) → `about.ts`.
 - Licensing → `licensing.ts`.
 - Settings/AI → `settings.ts`.
 - Clipboard file operations (copy/cut/paste files via system clipboard) → `clipboard-files.ts`.

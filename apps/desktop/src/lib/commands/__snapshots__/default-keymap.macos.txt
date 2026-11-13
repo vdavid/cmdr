@@ -119,6 +119,7 @@ file.copyShareLink
 file.copyShareLinkOneDay	
 file.copyShareLinkOneHour	
 file.getInfo	⌘I
+file.tellMeAbout	⌘⇧I
 file.quickLook	⇧Space
 file.contextMenu	⌃Enter
 cloud.makeOffline	

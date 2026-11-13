@@ -103,7 +103,7 @@ pub enum StartedBy {
 /// One recorded source. Raw and local-only: [`redact_for_egress`] is what a model
 /// gets.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum WhereFrom {
     /// An `http` or `https` address.
     Web {
@@ -136,7 +136,7 @@ pub enum WhereFrom {
 
 /// The site of a web source.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum WebSite {
     /// A host name: lowercased, an international name in its punycode form
     /// (`xn--…`), so a look-alike can't pass for another site.
@@ -166,7 +166,7 @@ pub enum OtherSource {
 /// What of a source may leave the machine: a web source's host name, and for
 /// everything else its kind with no text.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum EgressSource {
     /// A website, by host name alone.
     Site {

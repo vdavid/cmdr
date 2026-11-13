@@ -66,7 +66,7 @@ pub struct Signature {
 
 /// Who a signature names.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum Signer {
     /// No signature at all.
     Unsigned,

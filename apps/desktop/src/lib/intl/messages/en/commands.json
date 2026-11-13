@@ -1063,6 +1063,15 @@
     "description": "Command name (macOS) that opens the file's info panel. The macOS branch \"Get info\" matches the macOS Finder term; reuse the localized macOS wording for that menu item. The Windows branch names Windows' own Properties dialog, and the Linux branch the file's properties, generically. Appears in the command palette. The screenshot shows the macOS wording.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "commands.fileTellMeAbout.label": "Tell me about this",
+  "@commands.fileTellMeAbout.label": {
+    "description": "Command name that opens Cmdr's own card about the file or folder under the cursor: where it came from, what it really is, what it belongs to, how it's used, and what removing it would mean. A friendly, conversational request, as if asking a person. Appears in the command palette, the File menu, and the right-click menu, right below Get info.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.fileTellMeAbout.description": "Shows where the item came from, what it is, and what removing it would mean",
+  "@commands.fileTellMeAbout.description": {
+    "description": "Longer help text for the \"Tell me about this\" command, shown as a secondary line in the command palette. \"Item\" is a file or a folder."
+  },
   "commands.fileQuickLook.label": "{platform, select, macos {Quick look} other {Preview}}",
   "@commands.fileQuickLook.label": {
     "description": "Command name (macOS) that previews the selected file with Quick Look. In the macOS branch, \"Quick Look\" is the macOS feature name; reuse the localized macOS wording. The other branch (Windows and Linux) is a generic preview. Appears in the command palette. The screenshot shows the macOS wording.",

@@ -478,6 +478,21 @@ export const fileListCommands: CommandSource[] = [
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
+    id: 'file.tellMeAbout',
+    nameKey: 'commands.fileTellMeAbout.label',
+    descriptionKey: 'commands.fileTellMeAbout.description',
+    scope: 'Main window/File list',
+    // No `needsCapability`: unlike Get info, the card answers on every volume, saying
+    // what a volume can't tell.
+    showInPalette: true,
+    keywords: ['info', 'details', 'where from', 'downloaded', 'what is this', 'owner'],
+    // Beside Get info's `⌘I` / `Alt+Enter`. Off macOS `Ctrl+Shift+I` is the web inspector's chord
+    // (WebKitGTK and WebView2, `global-keydown.ts`), so the card takes `Ctrl+Shift+Enter` there, next
+    // to Get info's `Alt+Enter` and the context menu's `Ctrl+Enter`.
+    shortcuts: { macos: ['⌘⇧I'], windows: ['Ctrl+Shift+Enter'], linux: ['Ctrl+Shift+Enter'] },
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+  },
+  {
     id: 'file.quickLook',
     nameKey: 'commands.fileQuickLook.label',
     scope: 'Main window/File list',

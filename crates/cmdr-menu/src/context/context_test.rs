@@ -155,6 +155,7 @@ slot ICloudEviction
 slot FileProvider
 separator
 item get_info menu.file.getInfo [own]
+item tell_me_about menu.file.tellMeAbout [own]
 item quick_look menu.file.quickLook
 slot Services
 ";
@@ -203,10 +204,13 @@ item favorites_add_context menu.context.addToFavorites
 separator
 item media_index_add_folder menu.mediaIndex.addFolder
 item media_index_exclude_folder menu.mediaIndex.excludeFolder
+separator
+item tell_me_about menu.file.tellMeAbout [own]
 ";
 
 /// Windows and Linux have none of the macOS rows and no slot (no OS hook to fill one); a folder
-/// has no Open group and no share link, and gets favorites and the image-search group.
+/// has no Open group and no share link, and gets favorites and the image-search group. Tell me
+/// about this ends the menu on every OS.
 #[test]
 fn a_windows_or_linux_folder_row_has_no_mac_rows() {
     let facts = FileMenuFacts {

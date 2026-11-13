@@ -16,7 +16,7 @@ use crate::ids::{
     FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_PARENT_ID, INVERT_SELECTION_ID, OPEN_ID, OPEN_TERMINAL_HERE_ID,
     QUICK_LOOK_ID, RENAME_ID, SELECT_ALL_ID, SELECT_FILES_ID, SELECT_SAME_KIND_ID, SHARE_LINK_ONE_DAY_ID,
     SHARE_LINK_ONE_HOUR_ID, SHARE_LINK_SEVEN_DAYS_ID, SHARE_LINK_SUBMENU_ID, SHOW_IN_FINDER_ID,
-    SHOW_SEARCH_RESULT_IN_FOLDER_ID, TOGGLE_SELECTION_ID,
+    SHOW_SEARCH_RESULT_IN_FOLDER_ID, TELL_ME_ABOUT_ID, TOGGLE_SELECTION_ID,
 };
 use crate::labels::{LabelText, SameKindTarget, same_kind_label};
 use crate::spec::Platform;
@@ -285,6 +285,12 @@ pub fn file_menu(facts: &FileMenuFacts<'_>, platform: Platform) -> Vec<ContextRo
 
         rows.push(ContextRow::Separator);
         rows.push(command(GET_INFO_ID, "menu.file.getInfo"));
+    } else {
+        rows.push(ContextRow::Separator);
+    }
+    // Right below Get info, and on every OS: the card is Cmdr's own.
+    rows.push(command(TELL_ME_ABOUT_ID, "menu.file.tellMeAbout"));
+    if mac {
         rows.push(plain(QUICK_LOOK_ID, ContextLabel::key("menu.file.quickLook"), true));
         // Last, where Finder puts it, on the same fact as Share: a service takes file URLs.
         if pane.can_share {

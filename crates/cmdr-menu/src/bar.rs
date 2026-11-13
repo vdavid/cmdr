@@ -52,9 +52,10 @@ use crate::ids::{
     SELECT_MENU_ID, SELECT_SAME_KIND_ID, SERVERS_CONNECT_ID, SERVERS_SHOW_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID,
     SHOW_IN_FINDER_ID, SORT_ASCENDING_ID, SORT_BY_ADDED_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MENU_ID,
     SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SUGGESTED_OPS_ID, SWAP_PANES_ID,
-    SWITCH_PANE_ID, TAB_MENU_ID, UNDO_TRASH_ID, VIEW_FULL_SCREEN_ID, VIEW_MENU_ID, VIEW_MODE_BRIEF_LEFT_ID,
-    VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEW_ZOOM_75_ID, VIEW_ZOOM_100_ID,
-    VIEW_ZOOM_125_ID, VIEW_ZOOM_150_ID, VIEW_ZOOM_IN_ID, VIEW_ZOOM_OUT_ID, WINDOW_MENU_ID,
+    SWITCH_PANE_ID, TAB_MENU_ID, TELL_ME_ABOUT_ID, UNDO_TRASH_ID, VIEW_FULL_SCREEN_ID, VIEW_MENU_ID,
+    VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID,
+    VIEW_ZOOM_75_ID, VIEW_ZOOM_100_ID, VIEW_ZOOM_125_ID, VIEW_ZOOM_150_ID, VIEW_ZOOM_IN_ID, VIEW_ZOOM_OUT_ID,
+    WINDOW_MENU_ID,
 };
 use crate::spec::SortCheck::{self, Column, Order};
 use crate::spec::ViewMode;
@@ -326,6 +327,12 @@ pub const MENU_BAR: &[BarMenu] = &[
             // `get_info` and `quick_look` capabilities (the app's `menu/capability_rows_test.rs`
             // keeps the two in step).
             macos_only(item(GET_INFO_ID, "menu.file.getInfo", cmd_or_ctrl!("I"))),
+            // Cmdr's own card, so on every OS, unlike the two macOS panels around it.
+            item(
+                TELL_ME_ABOUT_ID,
+                "menu.file.tellMeAbout",
+                split("Cmd+Shift+I", "Ctrl+Shift+Enter", "Ctrl+Shift+Enter"),
+            ),
             // Shift+Space, not plain Space: AppKit consumes modifier accelerators before the webview
             // can, so the menu fires. Plain Space was dead, eaten by the webview's selection toggle
             // before AppKit's menu dispatcher saw it.

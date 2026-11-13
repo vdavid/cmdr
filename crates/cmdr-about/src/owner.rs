@@ -16,7 +16,7 @@ use crate::text::ItemText;
 
 /// The app or installer an item belongs to.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum OwnerClaim {
     /// Certain: the path names a bundle id (`~/Library/Containers/<id>`).
     ByBundleId {
@@ -68,7 +68,7 @@ pub enum Certainty {
 
 /// Whether the app a bundle id names is installed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
-#[serde(tag = "type", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum InstalledApp {
     /// It is.
     Installed {

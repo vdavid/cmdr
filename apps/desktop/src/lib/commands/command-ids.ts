@@ -277,6 +277,7 @@ export const COMMAND_IDS = [
   'file.copyShareLinkOneDay',
   'file.copyShareLinkOneHour',
   'file.getInfo',
+  'file.tellMeAbout',
   'file.quickLook',
   'file.contextMenu',
   'cloud.makeOffline',

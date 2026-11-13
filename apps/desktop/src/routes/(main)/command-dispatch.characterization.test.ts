@@ -51,6 +51,10 @@ const m = vi.hoisted(() => ({
   quickLookOpen: vi.fn<(...a: unknown[]) => Promise<boolean>>(() => Promise.resolve(true)),
   quickLookClose: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   getInfo: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
+  startAbout: vi.fn<(...a: unknown[]) => { requestId: string; cancel: () => Promise<void> }>(() => ({
+    requestId: 'about-1',
+    cancel: () => Promise.resolve(),
+  })),
   // `#lib/text-editor` reads the report, so a plain open has to come back as one.
   openInEditor: vi.fn<(...a: unknown[]) => Promise<unknown>>(() =>
     Promise.resolve({ outcome: 'opened', openedInName: null, otherEditorsInstalled: null }),
@@ -187,6 +191,7 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
   quickLookOpen: (...a: unknown[]) => m.quickLookOpen(...a),
   quickLookClose: (...a: unknown[]) => m.quickLookClose(...a),
   getInfo: (...a: unknown[]) => m.getInfo(...a),
+  startAbout: (...a: unknown[]) => m.startAbout(...a),
   openInEditor: (...a: unknown[]) => m.openInEditor(...a),
   syncMenuShowHidden: (...a: unknown[]) => m.syncMenuShowHidden(...a),
   readClipboardText: () => m.readClipboardText(),
@@ -237,8 +242,8 @@ describe('characterization — id partition self-check', () => {
     for (const id of EXEMPT_IDS) expect(COMMAND_IDS).toContain(id)
   })
 
-  it('dispatchable set is exactly 150 ids', () => {
-    expect(DISPATCHABLE_IDS).toHaveLength(152)
+  it('dispatchable set is exactly 153 ids', () => {
+    expect(DISPATCHABLE_IDS).toHaveLength(153)
   })
 
   it('dispatchable ∪ exempt = COMMAND_IDS, disjoint', () => {
@@ -473,6 +478,13 @@ describe('characterization — entry-under-cursor arms', () => {
     explorer.getFileAndPathUnderCursor.mockReturnValue(ENTRY)
     await handleCommandExecute('file.getInfo', makeCtx(explorer))
     expect(getInfo).toHaveBeenCalledExactlyOnceWith(ENTRY.path)
+  })
+
+  it('file.tellMeAbout → startAbout(path, focused volume), about the cursor entry', async () => {
+    const explorer = makeExplorerSpy()
+    explorer.getFileAndPathUnderCursor.mockReturnValue(ENTRY)
+    await handleCommandExecute('file.tellMeAbout', makeCtx(explorer))
+    expect(m.startAbout).toHaveBeenCalledExactlyOnceWith(ENTRY.path, m.getVolumeId(), expect.any(Function))
   })
 
   it('file.copyCurrentDirectoryPath → copyToClipboard(focused pane path) + the copied-path toast', async () => {
