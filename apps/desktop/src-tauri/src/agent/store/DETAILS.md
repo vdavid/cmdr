@@ -175,9 +175,9 @@ reserved id, through the same `ON CONFLICT (day, conversation_id, provider, mode
 with `priced = priced AND excluded.priced` so one unpriced quiet wake makes the reserved total an honest lower bound.
 Fold and delete share one transaction, so a crash between them cannot drop the spend.
 
-**Why an origin token rather than a fixed id.** `list_conversations` hides the row by `origin IS NOT 'quiet_wakes'`
-(`IS NOT`, because `<>` answers NULL for the common NULL origin and would empty the list), and M2's thread icon reads
-the same token set, so one vocabulary covers both. A fixed id would also have to be negative to avoid colliding with
+**Why an origin token rather than a fixed id.** `list_conversations` and search hide the row by its token (with the
+other ledger rows, § v15), and the rail's thread icon reads origins too (`origin === 'notification'` only), so one
+vocabulary covers both. A fixed id would also have to be negative to avoid colliding with
 `INTEGER PRIMARY KEY` allocation, which then hands the next real thread id `0`.
 
 The title is empty on purpose: nothing renders this row, so an English string would be untranslated copy frozen in the
