@@ -358,7 +358,11 @@ async function emptyClosedTabHistory(main: TauriPage): Promise<void> {
   await closeOtherTabs()
   await mcpCall('set_setting', { id: CLOSED_TAB_HISTORY_SIZE, value: 1 })
   for (const pane of PANES) {
-    await mcpCall('tab', { pane, action: 'reopen' })
+    // A pane with nothing to reopen changes no pane state, so the MCP tool reports the action as
+    // unacknowledged ("outcome unknown") rather than done. That's the state this helper is after,
+    // and the toast it raised is dismissed below. Regression: a fresh data dir's right pane has no
+    // closed tab, and the throw ended the main pass 199 surfaces early.
+    await mcpCall('tab', { pane, action: 'reopen' }).catch(() => {})
   }
   await mcpCall('set_setting', { id: CLOSED_TAB_HISTORY_SIZE, value: CLOSED_TAB_HISTORY_DEFAULT })
   // A pane whose history was already empty answered its reopen with this very toast.

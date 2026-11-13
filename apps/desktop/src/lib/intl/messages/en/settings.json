@@ -592,7 +592,8 @@
     "description": "Settings description under the label, naming the user's paste key. Explains that this controls pasting non-file clipboard content (like a screenshot or copied text) into the current folder as a new file. When no key pastes, the row reads \"settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey\" instead.",
     "placeholders": {
       "combo": "the user’s own paste key, as key glyphs or key names (⌘V on a Mac, Ctrl+V on Windows and Linux); never a word"
-    }
+    },
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": "What pasting does in a folder when the clipboard holds text, an image, or a PDF instead of copied files.",
   "@settings.fileOperations.pasteClipboardAsFile.descriptionWithoutKey": {
@@ -653,7 +654,8 @@
   },
   "settings.fileOperations.skipConfirmation.explanation": "{platform, select, windows {Copy and Move go into the other pane right away, and Delete moves to the Recycle Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.} other {Copy and Move go into the other pane right away, and Delete moves to the trash without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.}}",
   "@settings.fileOperations.skipConfirmation.explanation": {
-    "description": "Help text under the skip-confirmation switch. \"Copy\", \"Move\", and \"Delete\" are Cmdr’s commands by the names its command palette shows (commands.fileCopy.label, commands.fileMove.label, commands.fileDelete.label); use the same names. It names commands, not keys, because the user can rebind each. \"A bit risky\" is a gentle, friendly caution, not an alarm: keep the tone light. \"the other pane\" = the second file list of the two-pane window. The Windows branch names the Recycle Bin (use your language's Windows name for it); the other branch (macOS and Linux) says \"the trash\" (use that OS's localized name). The screenshot shows the macOS wording."
+    "description": "Help text under the skip-confirmation switch. \"Copy\", \"Move\", and \"Delete\" are Cmdr’s commands by the names its command palette shows (commands.fileCopy.label, commands.fileMove.label, commands.fileDelete.label); use the same names. It names commands, not keys, because the user can rebind each. \"A bit risky\" is a gentle, friendly caution, not an alarm: keep the tone light. \"the other pane\" = the second file list of the two-pane window. The Windows branch names the Recycle Bin (use your language's Windows name for it); the other branch (macOS and Linux) says \"the trash\" (use that OS's localized name). The screenshot shows the macOS wording.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.skipConfirmation.keywords": "{platform, select, windows {confirm, confirmation, dialog, ask, copy, move, recycle bin, delete, skip, clicks} other {confirm, confirmation, dialog, ask, copy, move, trash, delete, skip, clicks}}",
   "@settings.fileOperations.skipConfirmation.keywords": {
@@ -2070,7 +2072,8 @@
   },
   "settings.fileViewer.suppressBinaryWarning.explanation": "{platform, select, macos {Cmdr’s file viewer shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that Quick Look or opening it in the associated app is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.} windows {Cmdr’s file viewer shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that opening it in the associated app is probably what you wanted. Turn this on (or select “Never show this warning again” in the banner) to suppress the warning for good.} other {Cmdr’s file viewer shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that opening it in the associated app is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.}}",
   "@settings.fileViewer.suppressBinaryWarning.explanation": {
-    "description": "Help text for the suppress-binary-warning toggle. It names what the banner suggests, not keys, because the user can rebind each. \"Cmdr\" is the product name (keep it); \"Quick Look\" is the macOS preview feature name, in the macOS branch only (use your language's macOS name for it). \"UTF-8\" and \"PDF\" are standard names; keep them. The quoted “Never show this warning again” must match the file viewer's actual banner button copy; translate it consistently with that button. The screenshot shows the macOS wording."
+    "description": "Help text for the suppress-binary-warning toggle. It names what the banner suggests, not keys, because the user can rebind each. \"Cmdr\" is the product name (keep it); \"Quick Look\" is the macOS preview feature name, in the macOS branch only (use your language's macOS name for it). \"UTF-8\" and \"PDF\" are standard names; keep them. The quoted “Never show this warning again” must match the file viewer's actual banner button copy; translate it consistently with that button. The screenshot shows the macOS wording.",
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileViewer.suppressBinaryWarning.keywords": "viewer, binary, image, raw, warning, banner, quick look",
   "@settings.fileViewer.suppressBinaryWarning.keywords": {
@@ -2086,7 +2089,8 @@
     "description": "Help text for the suppress-Quick-Look-hint toggle (macOS only), naming the user's Quick Look key. When no key opens Quick Look, the row reads \"settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey\" instead. \"Space\" is the keyboard key; use the locale's key name. \"Cmdr\" is the product name (keep it); \"Finder\" and \"Quick Look\" are macOS feature names (use the OS's localized names). \"toast\" = a small transient notification. The quoted “Don't show again” must match the actual toast button copy; translate it consistently with that button.",
     "placeholders": {
       "combo": "the user’s own Quick Look key, as macOS key glyphs (⇧Space by default); never a word"
-    }
+    },
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": "Cmdr uses Space to toggle file selection, where Finder uses it for Quick Look. Each time you press Space in the file list, Cmdr shows a one-paragraph reminder of this difference. Turn this on (or click “Don’t show again” in the toast) to suppress the reminder for good.",
   "@settings.fileExplorer.suppressQuickLookHint.descriptionWithoutKey": {
@@ -2148,7 +2152,8 @@
     "description": "Help text for the closed-tab-history-size setting, naming the user's key for reopening a closed tab. When no key does, the row reads \"settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey\" instead. “Reopen closed tab” is a Cmdr command name; translate consistently with that command. \"pane\" is one of the two file lists.",
     "placeholders": {
       "combo": "the user’s own key for reopening a closed tab, as key glyphs or key names (⌘⇧T on a Mac, Ctrl+Shift+T on Windows and Linux); never a word"
-    }
+    },
+    "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": "How many recently closed tabs to keep per pane for “Reopen closed tab”. Higher values let you reopen further back in history; lower values free up memory sooner. Only applies to tabs closed in the current session.",
   "@settings.fileExplorer.tabs.closedTabHistorySize.descriptionWithoutKey": {
@@ -2687,7 +2692,8 @@
     "description": "Help text for the “Suppress the text editor hint” switch (settings.behavior.textEditorHintSeen.label), naming the user’s key for editing a file. When no key edits files, the row reads \"settings.behavior.textEditorHintSeen.descriptionWithoutKey\" instead.",
     "placeholders": {
       "combo": "the user’s own key for opening a file in the editor, as a key name (F4 by default); never a word"
-    }
+    },
+    "screenshot": "settings-advanced.png"
   },
   "settings.behavior.textEditorHintSeen.descriptionWithoutKey": "The first time Cmdr opens a file in the default editor while another editor is installed, it mentions that you can pick a different one. Turn this off to see the hint once more.",
   "@settings.behavior.textEditorHintSeen.descriptionWithoutKey": {

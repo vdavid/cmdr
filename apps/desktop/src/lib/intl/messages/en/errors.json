@@ -2874,8 +2874,7 @@
   "errors.write.fileInUse.suggestion": "Close it there and try again. If nothing seems to have it open, wait a moment: the server may be busy with it.",
   "@errors.write.fileInUse.title": {
     "description": "Title of the copy, move, or delete error dialog when a file on a network share can’t be used because something else has it open and won’t share it. Plain text. Short, like a heading.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-file_in_use.png"
   },
   "@errors.write.fileInUse.message": {
     "description": "Body of the copy, move, or delete error dialog when a file on a network share (SMB) is open somewhere else, so the server refused this operation. The holder can be another app on this Mac, another computer on the network, or the server’s own software (an indexer, a thumbnail maker). Plain text. Names the file, because a move involves two (the one being moved and the one at the destination) and the reader has to know which one this is.",
@@ -2884,13 +2883,11 @@
         "description": "The full path of the file that is open somewhere else, inserted verbatim. Do not translate or reformat it."
       }
     },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-file_in_use.png"
   },
   "@errors.write.fileInUse.suggestion": {
     "description": "Recovery suggestion under the message when a file on a network share is open somewhere else. The dialog shows a Try again button beside it, which is the “try again” this sentence means. The second sentence covers a server that briefly holds files itself while it indexes them. Plain text.",
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-file_in_use.png"
   },
   "errors.write.sourceInColdStorage.title": "This file is archived",
   "errors.write.sourceInColdStorage.message": "The file at {path} is archived, so it can’t be read until it’s restored.",
@@ -3044,8 +3041,7 @@
     "placeholders": {
       "renameKey": "the key that runs Cmdr’s rename command right now, e.g. \"F2\"; the user can rebind it. A key glyph or key name, never a word."
     },
-    "screenshot": "error-message-example.png",
-    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+    "screenshot": "transfer-error-home_folder-rename.png"
   },
   "errors.write.homeFolderRename.suggestion.isHomeWithoutKey": "{platform, select, macos {If you really need a new name, macOS has a careful way to do it in Users & Groups. It’s not a quick rename, though.} windows {Windows has no safe built-in way to rename it, so it’s best left as it is.} other {If you really need a new name, an administrator can do it carefully with usermod, signed in as another user. It’s not a quick rename, though.}}",
   "@errors.write.homeFolderRename.suggestion.isHomeWithoutKey": {

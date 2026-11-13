@@ -288,7 +288,8 @@
   },
   "commands.viewToggleFullScreen.label": "{platform, select, macos {Toggle full screen} windows {Toggle full screen} other {Toggle full screen mode}}",
   "@commands.viewToggleFullScreen.label": {
-    "description": "Command name that puts the main window into full screen (filling the whole display, no title bar or taskbar), or takes it back out. Appears in the command palette and the keyboard-shortcuts list. Each OS has its own branch, so use that OS's own term for full screen in your language: the macOS branch takes macOS's (its View menu's \"Enter Full Screen\"), the windows branch Windows' and the browsers' (Edge and Chrome: \"Full screen\", the same term as menu.view.fullScreen), and the other branch (Linux) the term the Linux desktops use (KDE's \"Full Screen Mode\", GNOME's \"Fullscreen\"), which in many languages matches Windows'. \"Toggle\" matches the other on/off commands such as commands.viewShowHidden.label."
+    "description": "Command name that puts the main window into full screen (filling the whole display, no title bar or taskbar), or takes it back out. Appears in the command palette and the keyboard-shortcuts list. Each OS has its own branch, so use that OS's own term for full screen in your language: the macOS branch takes macOS's (its View menu's \"Enter Full Screen\"), the windows branch Windows' and the browsers' (Edge and Chrome: \"Full screen\", the same term as menu.view.fullScreen), and the other branch (Linux) the term the Linux desktops use (KDE's \"Full Screen Mode\", GNOME's \"Fullscreen\"), which in many languages matches Windows'. \"Toggle\" matches the other on/off commands such as commands.viewShowHidden.label.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.sortByName.label": "Sort by name",
   "@commands.sortByName.label": {
@@ -774,27 +775,33 @@
   },
   "commands.viewerSearch.label": "Search in the file",
   "@commands.viewerSearch.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does in the file viewer window. It opens the viewer's find bar, which searches the text of the open file. Read-only (the key can’t be rebound)."
+    "description": "Row in the Keyboard shortcuts list: what the key does in the file viewer window. It opens the viewer's find bar, which searches the text of the open file. Read-only (the key can’t be rebound).",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.viewerToggleSearchRegex.label": "Turn regex search on or off",
   "@commands.viewerToggleSearchRegex.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does while the file viewer's find bar is open. It switches the search between plain text and a regular expression (a text pattern). Read-only (the key can’t be rebound). \"Regex\" is the usual short word for regular expression."
+    "description": "Row in the Keyboard shortcuts list: what the key does while the file viewer's find bar is open. It switches the search between plain text and a regular expression (a text pattern). Read-only (the key can’t be rebound). \"Regex\" is the usual short word for regular expression.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.viewerToggleSearchCase.label": "Turn case-sensitive search on or off",
   "@commands.viewerToggleSearchCase.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does while the file viewer's find bar is open. It switches whether the search tells capital and small letters apart. Read-only (the key can’t be rebound)."
+    "description": "Row in the Keyboard shortcuts list: what the key does while the file viewer's find bar is open. It switches whether the search tells capital and small letters apart. Read-only (the key can’t be rebound).",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.searchNewQuery.label": "Start a new search",
   "@commands.searchNewQuery.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does while the Search or Select files dialog is open. It clears the query, the filters, and the results, so the user can start over. Read-only (the key can’t be rebound)."
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Search or Select files dialog is open. It clears the query, the filters, and the results, so the user can start over. Read-only (the key can’t be rebound).",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.searchToggleRecent.label": "Show or hide recent searches",
   "@commands.searchToggleRecent.label": {
-    "description": "Row in the Keyboard shortcuts list: what the key does while the Search or Select files dialog is open. It opens or closes the dropdown of recently run queries. Read-only (the key can’t be rebound)."
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Search or Select files dialog is open. It opens or closes the dropdown of recently run queries. Read-only (the key can’t be rebound).",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.searchModeByNumber.label": "Switch to the search mode with that number",
   "@commands.searchModeByNumber.label": {
-    "description": "Row in the Keyboard shortcuts list, describing what the number keys do while the Search or Select files dialog is open: each one switches to the search mode in that position (AI, Filename, Regex) and puts the cursor back in the query field. Read-only (the keys can't be rebound), so this is a description of the behavior rather than a command name. It sits in a one-line row beside command names: keep it a short verb phrase, at most about 50 characters, with no final period."
+    "description": "Row in the Keyboard shortcuts list, describing what the number keys do while the Search or Select files dialog is open: each one switches to the search mode in that position (AI, Filename, Regex) and puts the cursor back in the query field. Read-only (the keys can't be rebound), so this is a description of the behavior rather than a command name. It sits in a one-line row beside command names: keep it a short verb phrase, at most about 50 characters, with no final period.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.multiRenameOpenPresets.label": "Open the presets menu",
   "@commands.multiRenameOpenPresets.label": {

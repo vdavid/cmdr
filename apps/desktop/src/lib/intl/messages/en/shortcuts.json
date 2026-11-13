@@ -73,8 +73,7 @@
   "shortcuts.scope.searchDialog": "Search and Select files",
   "@shortcuts.scope.searchDialog": {
     "description": "Group heading in the Keyboard shortcuts list for keys that work inside the two query dialogs: Search (finds files on the drive) and Select files (selects files in a pane by a pattern). A short section title, at most about 40 characters. Reuse the words of those dialogs' titles (search.dialog.title, selection.dialog.title.add) where they join naturally. Where they don't (for example one title is a noun and the other a verb phrase), a short noun heading that names both is fine, such as \"Search and file selection\".",
-    "screenshot": "settings-keyboard-shortcuts.png",
-    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
 
   "shortcuts.scope.favoritesMenu": "Favorites menu",
