@@ -99,7 +99,9 @@ overrides:
   # Cross-major, only under `@lhci/cli` (Lighthouse CI) via `get-uri`, whose latest
   # release still asks for `basic-ftp` 5. 6's only break is refusing a separate FTP
   # transfer host, and lhci never fetches over FTP.
-  basic-ftp@5: ^6.2.1
+  # At least 6.2.4: earlier 6.x crash on a hostile listing or a CR/LF in a password
+  # (GHSA-5pm8-86m8-9m6r, GHSA-r4jh-29pc-gfqr).
+  basic-ftp@5: ^6.2.4
 
 # pnpm 11 requires explicit per-package build-script approval. The legacy
 # `pnpm.onlyBuiltDependencies` field in package.json is ignored.
