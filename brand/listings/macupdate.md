@@ -4,10 +4,12 @@ Live: https://cmdr.macupdate.com/ (accepted from the 2026-09-18 v0.46.0 submissi
 through). Submission form: https://member.macupdate.com/content/submit (needs a MacUpdate member account). The same form
 creates and modifies a listing: type `Cmdr` into "Modify an existing listing?" at the top to load this one.
 
-Status: **v0.55.0 prepared 2026-10-22, not submitted yet** (the fields below are what goes in). Before it, v0.53.0 was
-submitted 2026-10-15 with the reviewer pinged the same day; the live page showed v0.46.0 then, and the v0.47.0 and
-v0.49.0 updates were prepared but never submitted. v0.54.0 got no submission of its own, so the v0.55.0 Version changes
-cover both. Neither release made the Description false, so it's unchanged since v0.53.0.
+Status: **v0.61.0 prepared 2026-11-13, not submitted yet** (the fields below are what goes in). Before it, v0.53.0 was
+submitted 2026-10-15 with the reviewer pinged the same day; the live page showed v0.46.0 then. The v0.47.0, v0.49.0, and
+v0.55.0 updates were prepared but never submitted, and v0.54.0 and v0.56.0–v0.60.0 got none, so the v0.61.0 Version
+changes end with highlights from v0.54.0–v0.60.0. The Description changed in three places since v0.53.0, each for a
+feature v0.61.0 graduated out of alpha: NFS joins "More servers", restic backups get a bullet, and the built-in chat
+reads "beta version".
 
 ❗ **A submission sits unreviewed until David pings a MacUpdate reviewer directly.** The v0.46.0 one only went through
 after a ping, and the earlier ones never did. The contact is in the vault's directory blitz plan (MacUpdate entry), so
@@ -40,7 +42,7 @@ the Price field and the note to the review team instead.
 - **Product page URL**: `https://getcmdr.com`
 - **Purchase URL**: `https://getcmdr.com/pricing`
 - **Developer support URL**: `https://github.com/getcmdr/cmdr/issues`
-- **Version number**: `0.55.0`
+- **Version number**: `0.61.0`
 - **Price**: leave empty (their hint says empty means free). Cmdr is free for personal use; commercial licenses are sold
   on the purchase URL and explained to the review team below.
 
@@ -103,8 +105,12 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
     than the macOS client. Copies within a share happen in-place on the server.
   </li>
   <li>
-    <strong>More servers:</strong> Full support for SFTP, WebDAV (Nextcloud and others), and S3 servers (AWS, R2, B2,
-    and more), including cost estimates for S3 transfers.
+    <strong>More servers:</strong> Full support for SFTP, NFS, WebDAV (Nextcloud and others), and S3 servers (AWS, R2,
+    B2, and more), including cost estimates for S3 transfers.
+  </li>
+  <li>
+    <strong>Backups:</strong> Browse restic backups on any drive or server like folders: open any snapshot read-only and
+    copy files out.
   </li>
   <li>
     <strong>Indexing:</strong> (Optional) Keeps a (local&amp;private) full index of your disk to display live folder
@@ -127,7 +133,7 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
   </li>
   <li>
     <strong>Built-in chat:</strong> You can ask "Why is my Downloads folder so big?", "Summarize these three docs", etc.
-    (alpha version)
+    (beta version)
   </li>
   <li><strong>Natural-language search:</strong> "Find my tax report from last year" just works.</li>
   <li><strong>Smart selection:</strong> "Select all screenshots in this folder" selects your screenshots.</li>
@@ -156,62 +162,75 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
 
 ### Version changes
 
-Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers v0.54.0
-and v0.55.0 (no patches in either), since v0.54.0 never got a submission of its own. MacUpdate takes `<p>` in this field
-too, so the data-safety sweep gets one line of context above its Fixed list.
+Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers v0.61.0
+in full (no patches), minus its Linux-only entries, and ends with one list of highlights from v0.54.0–v0.60.0, since
+none of those got a submission. MacUpdate takes `<p>` in this field too.
 
 ```html
 <h5>New</h5>
 <ul>
   <li>
-    Browse restic backups on any drive or server like folders: unlock a repo once, open any snapshot read-only, and copy
-    files out to restore them. (alpha)
+    Roll back only the items you check: the Operation log lists your operations beside a checkbox tree of each one's
+    items, with "Roll back selected" and "Roll back the rest". Works days later too.
   </li>
-  <li>Markdown files open formatted in the viewer, with pictures and links you can follow with Back and Forward.</li>
   <li>
-    Type "cmdr ." in a terminal to open that folder in Cmdr. Homebrew installs the command, or add it from the menu.
+    When a server drops mid-transfer (a NAS reboot, a router restart), the file carries on from where it stopped once
+    the share is back: downloads from SMB, SFTP, NFS, S3, and WebDAV, and uploads to SMB.
   </li>
-  <li>Remember your choice for files that already exist in the copy and move dialog, contributed by Jiri Slovacek.</li>
-  <li>Escape cancels a running transfer, and Space pauses it.</li>
-  <li>Drag waiting operations in the queue to reorder them.</li>
-  <li>WebDAV trusts a NAS's self-signed certificate on first use, and you manage it in Settings.</li>
-  <li>Settings &gt; Updates &amp; privacy &gt; Delete all Cmdr data removes everything Cmdr keeps on your Mac.</li>
-  <li>An optional box sends the past five hours of redacted logs with your feedback.</li>
+  <li>Drop an image from Chrome, Safari, or Mail into Cmdr to copy it.</li>
+  <li>Copy from cameras and other USB devices that can't read a file in parts.</li>
+  <li>Search and Selection lists load more results as you scroll, up to 10,000.</li>
+  <li>An empty-looking folder says how many hidden items it holds, and how to show them.</li>
+  <li>Go back and forward with ⌥← and ⌥→.</li>
 </ul>
 <h5>Improved</h5>
 <ul>
   <li>
-    Copies, moves, deletes, compressions, and zip edits wait out a dropped server, then finish and clean up their temp
-    files once it's back.
+    Copying and moving thousands of small files onto a local disk is many times faster, and Cmdr still makes sure every
+    file is safely on the drive before it reports "done".
   </li>
-  <li>Search Settings, the command palette, and shortcuts in any language, accents optional.</li>
-  <li>Zips holding password-protected entries can be edited, and those entries keep their password.</li>
-  <li>Cmdr asks once before moving Locked items.</li>
-  <li>A wrong archive or backup password shows right under the field.</li>
+  <li>The viewer and running copies keep going through a dropped SMB connection.</li>
+  <li>A key you bound yourself wins over a default, and messages show shortcuts as key caps with your own keys.</li>
+  <li>Browsing a phone stays responsive during a copy, on any cable.</li>
+  <li>An operation a crash cut off shows as "Didn't finish", and rolls back as far as its record proves.</li>
+  <li>Clearer messages when a file is open somewhere else, and when the trash refuses items.</li>
+  <li>Nine features graduated to stable and eight to beta, SMB shares and Android phones among them.</li>
 </ul>
 <h5>Fixed</h5>
-<p>A big data-safety sweep fixed dozens of rare ways an operation could lose or damage files. The main ones:</p>
+<p>About 30 fixes. The main ones:</p>
 <ul>
-  <li>
-    Deleting a folder on an external drive, phone, server, or Windows share could also delete what its symlinks pointed
-    to.
-  </li>
-  <li>Deleting, overwriting, or moving a folder could empty a drive mounted inside it.</li>
-  <li>An Overwrite cut off by a crash or a dropped share could lose both the original and the new file.</li>
-  <li>A file that changed size mid-copy, or an upload cut off by a network drop, could land truncated.</li>
-  <li>Actions right after a folder change, a quick filter, or a sort sometimes hit the neighboring file.</li>
-  <li>Undo could delete the only copy left of a file, or a file edited since.</li>
-  <li>Settings, shortcuts, favorites, and saved servers got wiped when Cmdr couldn't read their file at launch.</li>
-  <li>Copying small files to older Samba NASes dropped the connection.</li>
-  <li>Cmdr crashed when a drive or share disappeared while it read a file there.</li>
+  <li>A move between drives deleted the originals after the destination drive was unplugged.</li>
+  <li>⌘⌫, F8, and other file-moving keys acted on your files while you typed in a text field.</li>
+  <li>Letter shortcuts went dead on Russian, Greek, Hebrew, and other non-Latin keyboard layouts.</li>
+  <li>A second Cmdr icon showed up in the Dock after Restart on an update.</li>
+  <li>"Show in Finder" from Firefox, Chrome, and App Store apps only brought Cmdr forward.</li>
+  <li>A copy's time left jumped to hours on a run of tiny files.</li>
+  <li>Heavy download activity stalled listings and SMB transfers.</li>
+  <li>The Search dialog closed when a file showed up twice in the index.</li>
 </ul>
 <h5>Security</h5>
 <ul>
-  <li>Error reports hide every path, name, server, and account.</li>
-  <li>The license key lives in the Keychain.</li>
-  <li>Cmdr warns before sending a WebDAV password to an http address, and tries https first.</li>
-  <li>SFTP refuses a host key marked revoked in known_hosts.</li>
-  <li>A local security event log, and an alert when Cmdr turns away a fake update.</li>
+  <li>
+    AI tools can't read more mail, browser, and password manager data (Thunderbird, Outlook, Vivaldi, Opera, Bitwarden,
+    1Password).
+  </li>
+</ul>
+<h5>Also new since v0.53.0</h5>
+<ul>
+  <li>Browse restic backups on any drive or server like folders, read-only, and copy files out.</li>
+  <li>Open a NAS's NFS shares directly, with no system mount.</li>
+  <li>Encrypted SMB connections (AES-128 and AES-256), and DFS links inside SMB shares.</li>
+  <li>Copies to and from SMB shares keep Finder tags, comments, and custom icons.</li>
+  <li>Multi-rename puts a photo's capture date, a camera model, or a song's artist and track in file names.</li>
+  <li>Sort by date created, added, or modified.</li>
+  <li>The viewer shows Markdown, and images, HEIC, and PDFs on every server and phone.</li>
+  <li>Big Android folders list up to 10x faster.</li>
+  <li>"Open in Cmdr" in Finder's right-click menu, and "Eject all".</li>
+  <li>
+    Ask Cmdr (optional AI) shows every step it takes, got a redesigned suggestions dialog, and searches past chats.
+  </li>
+  <li>Ukrainian and Czech translations.</li>
+  <li>A big data-safety sweep fixed dozens of rare ways an operation could lose or damage files.</li>
 </ul>
 ```
 
@@ -245,7 +264,7 @@ macOS 12 Monterey or later, both Apple Silicon and Intel. macOS 10.15 Catalina a
 For an update, keep it short:
 
 ```
-Hi folks! Thanks for listing Cmdr! This is the v0.55.0 update: new version number, version changes (covering v0.54.0 and v0.55.0), and fresh screenshots. Thanks!
+Hi folks! Thanks for listing Cmdr! This is the v0.61.0 update: new version number, version changes (v0.61.0, plus highlights since v0.53.0), a slightly updated description (NFS and restic backups added), and fresh screenshots. Thanks!
 
 David
 ```

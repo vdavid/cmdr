@@ -29,9 +29,17 @@ certificate, and the data-safety sweep add to what's there without contradicting
 the cap, adding any of them means cutting something else. The Features box "Command line interface" stays unchecked: the
 new `cmdr <path>` command only opens a folder in the app, which isn't what that box promises.
 
-**Not yet submitted** (edited 2026-11-11): Ukrainian and Czech raised the language count, so the Localization line and
-the Supported languages field below changed. The description stays the same length. The live page keeps the old count
-until the next edit goes in. The `copy-language-count` check keeps the count here equal to the shipped catalogs.
+**Not yet submitted** (edited 2026-11-11 and 2026-11-13, one edit to send):
+
+- Ukrainian and Czech raised the language count (2026-11-11), so the Localization line and the Supported languages field
+  below changed. The live page keeps the old count until this edit goes in. The `copy-language-count` check keeps the
+  count here equal to the shipped catalogs.
+- v0.61.0 (2026-11-13) graduated NFS out of alpha (`feature-status.json`: beta), so "More servers" now names it: five
+  characters, which the cap had room for (2,997 of 3,000 after it). Restic backups graduated to beta too and would fit
+  the list, but there's no room left without cutting something, so they stay out. No line became false: v0.56.0–v0.61.0
+  added to what's there (partial rollback, transfers that carry on after an outage, SMB encryption, the faster
+  small-file copy) without contradicting it. SFTP is stable now, which only changed the FTP Client note under
+  Application type.
 
 ## Main info
 
@@ -71,7 +79,7 @@ Extra features:
 
 - Phones: Android phones, Kindles, and cameras over MTP and PTP, up to 4x faster than Android File Transfer. Also ADB over USB, and iPhones natively.
 - SMB: Network drives over a custom SMB implementation, 4–200x faster than the macOS client. Copies within a share happen on the server. For small files and listing dirs, it's waay faster than Finder!
-- More servers: SFTP, WebDAV (Nextcloud and others), and S3 (AWS, R2, B2, and more), with cost estimates for S3 transfers.
+- More servers: SFTP, NFS, WebDAV (Nextcloud and others), and S3 (AWS, R2, B2, and more), with cost estimates for S3 transfers.
 - Git: Browse Git history, branches, worktrees, and stashes like normal folders.
 - Cloud: Supports "Copy Dropbox link", "Share with Google Drive", etc.
 - Indexing: (Optional) Keeps a fully local index of your disk for live folder sizes and near-instant search.
@@ -114,8 +122,8 @@ Current tags: `total-commander`, `ai`, `finder-alternative`, `built-in-file-mana
 Check **File Manager**, **File Search Utility** (the full-disk index and instant search), and **File Archiver** (zip,
 tar, and 7z browsing and extraction, zip writing). They ask for two to three per app, so those three fill it.
 
-Leave unchecked: File Compressor, File Sync Tool, FTP Client (Cmdr speaks SFTP but no plain FTP, and SFTP is still
-alpha; the three above describe it better).
+Leave unchecked: File Compressor, File Sync Tool, FTP Client (Cmdr speaks SFTP but no plain FTP, and the three above
+describe it better).
 
 ## Features
 
@@ -163,7 +171,13 @@ Leave unchecked, deliberately:
 
 ## Note about your changes
 
-Their optional box for the reviewing admin. For the v0.53.0 edit:
+Their optional box for the reviewing admin. For the v0.61.0 edit (prepared 2026-11-13, not submitted yet):
+
+```
+Hi! A small refresh for v0.61.0: Cmdr now speaks 17 languages (Ukrainian and Czech added to the list), and NFS joined the supported servers. Thanks!
+```
+
+The note that went with the v0.53.0 edit:
 
 ```
 Hi! I've refreshed the description for v0.53.0: Cmdr now works with VoiceOver, got multi-rename and S3 support, and speaks 15 languages (Russian added to the list). Thanks! <!-- language-count-ignore: 15 (as sent) -->
@@ -192,7 +206,7 @@ Also, my ask from last time (if it's not done already): Cmdr is source-available
 
 So they don't get re-litigated at the next edit pass:
 
-- **The full description sits at 2,992 of their 3,000-character cap** (measured 2026-10-22). Every addition has to be
+- **The full description sits at 2,997 of their 3,000-character cap** (measured 2026-11-13). Every addition has to be
   paid for by a cut, so measure before and after; the form rejects an over-long one outright. Nothing in v0.46.0 made
   the description false (no feature graduated out of alpha, no claim broke, and the description names no prices), so
   that release changed nothing here, per `docs/guides/releasing.md` § "Refreshing the app-directory listings".
