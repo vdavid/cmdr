@@ -21,7 +21,7 @@ function words(headline: Headline | null, settled = true): string {
   document.body.appendChild(target)
   mounted = mount(AboutHeadline, { target, props: { headline, settled } })
   flushSync()
-  return (target.textContent ?? '').replace(/\s+/g, ' ').trim()
+  return target.textContent.replace(/\s+/g, ' ').trim()
 }
 
 function reset(): void {

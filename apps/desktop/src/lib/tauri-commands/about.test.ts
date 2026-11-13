@@ -5,6 +5,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AboutEvent } from '#lib/ipc/bindings.js'
+import { startAbout } from './about'
 
 const { invoked, aboutCancel, channels } = vi.hoisted(() => ({
   invoked: [] as { command: string; args: Record<string, unknown> }[],
@@ -27,8 +28,6 @@ vi.mock('@tauri-apps/api/core', () => ({
   },
 }))
 vi.mock('#lib/ipc/bindings.js', () => ({ commands: { aboutCancel } }))
-
-const { startAbout } = await import('./about')
 
 const item = { path: '/Users/test_user_1/Downloads/Tool.dmg', volumeId: 'root', isDirectory: false }
 
