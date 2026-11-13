@@ -38,6 +38,12 @@ pub(crate) async fn look_up(candidates: Vec<String>) -> Option<Vec<(String, bool
     tokio::time::timeout(LOOKUP_BUDGET, rx).await.ok()?.ok()
 }
 
+/// The seam's name for [`is_package_to_macos`]: one blocking NSURL read, for a
+/// caller already on an 8 MB-stack pool thread.
+pub(crate) fn is_package_to_the_os(path: &str) -> bool {
+    is_package_to_macos(path)
+}
+
 /// Whether macOS presents the folder at `path` as one item
 /// (`NSURLIsPackageKey`). `false` for a missing path, a file, or a failed read:
 /// the row then stays a folder.

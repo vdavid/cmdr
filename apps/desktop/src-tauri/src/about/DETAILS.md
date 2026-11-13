@@ -1,0 +1,99 @@
+# About this (host) details
+
+The app side of "Tell me about this" (#1104). The vocabulary, the plan, and every rule live in
+`crates/cmdr-about/DETAILS.md`; this file covers how the host gathers and streams.
+
+## The stream
+
+`about_start(request, onEvent)` returns at once and spawns the gathering. Every message is
+`AboutEvent { requestId, update }`, and `update` is one of:
+
+- `planned { plan, derived }`: first, before any job is submitted. The plan is `cmdr_about::card::plan` trimmed by
+  `jobs::GATHERED`, so the card reserves every row from frame one.
+- `fact { fact, derived }`: one per row, in any order. The probe's identity lands right after `planned`; the jobs that
+  answer inside `session::GRACE` (100 ms, the context menu's) land next; later ones land one by one.
+- `factsSettled`: once, when every planned row has its answer. Nothing about facts follows.
+- `unavailable { why }`: instead of all of the above, when the path can't be placed or described
+  (`AboutUnavailable`).
+
+**Decision: `derived` rides every `planned` and `fact` event.** `headline` and `consequences` are free functions over
+the card, and both change as facts land (a size arrives, a download host arrives, the removal row moves from `CantTell`
+to `UserDocument`). Sending them beside each fact keeps them current atomically with the fact that changed them, and the
+frontend never runs a rule. A separate `derived` event would let the card render one state with the other's headline
+for a frame. They're a few hundred bytes.
+
+**Decision: the frontend mints the request id.** A card closed before `about_start` resolves can still cancel. The
+registry treats a cancel for an id it hasn't seen as a tombstone (60 s, at most 256), and the start that follows
+returns without gathering. A second start under a live id cancels the first. `REGISTRY.finish` removes only its own run.
+
+**Decision: `about_start` returns nothing, and the request carries no target hint.** The id is the frontend's, so
+returning it would only echo it. Whether the item is a file, folder, app, or link comes from the probe's `lstat` (or
+the volume's metadata), never from what the pane believed.
+
+## Routing
+
+`route::gather_for` resolves through `crate::location::resolve` (a miss is `unavailable`), then `route::reach`:
+
+- **`Local`** (a live `VolumeKind::Local`): `probe` on the about pool under `PROBE_BUDGET` (1.5 s; past it,
+  `Unreachable`). The probe is one `lstat`, a mount-table read, and for a dotted folder one `NSURLIsPackageKey` lookup.
+  - The mount table must call the item's mount a local disk (`mount_is_local_disk`). A path whose parent chain reaches a
+    share through a symlink resolves to the boot volume and isn't local: it answers identity only.
+  - A path inside an archive (`lstat` fails, `confirm_archive_boundary` holds) is an `ArchiveEntry` with identity
+    `Unknown(VolumeCantTell)` until the archive arm reads its listing.
+  - `SF_DATALESS` (an evicted cloud file) sets `contents_local: false`, so the plan has no real-type or signature row.
+- **`ThroughTheVolume`** (every other kind, and a local volume that isn't registered): `Volume::get_metadata` under
+  `REMOTE_BUDGET` (2 s). `VolumeCaps::identity_only` gives the card its volume note. A symlink reads as what the
+  volume resolved it to, since no remote metadata carries a link target.
+
+## Jobs and budgets
+
+`jobs::GATHERED` is what this host answers: identity (from the probe), real type, bundle, signature, download, last
+opened, default app. Every other kind is trimmed from the plan until its job exists. Each row has `ROW_BUDGET` (1 s)
+from the start of the gathering; a row still out then lands `Unknown(TimedOut)` and its job's late answer is dropped.
+The `about_facts` pool (4 target, 12 max workers) bounds how many threads a dead mount can strand.
+
+- **Real type**: the first 64 KB and, past that, the last 512 bytes (`TAIL_BYTES`: a DMG is told by its `koly`
+  trailer), into `cmdr_about::sniff::real_type`.
+- **Bundle**: the top-level `Contents/Info.plist` (or a root `Info.plist`), refused past 1 MB before parsing.
+- **Download**: macOS `kMDItemWhereFroms` + `com.apple.quarantine`, Linux `user.xdg.origin.url` +
+  `user.xdg.referrer.url`. `platform/unix.rs::read_capped` asks the size first and never reads past 64 KB; one past the
+  cap goes to the decoder as an oversized buffer, which it reads as unparseable.
+- **Last opened**: `MDItemCopyAttribute` for `kMDItemLastUsedDate` and `kMDItemUseCount`, through
+  `cmdr_about::payload::usage_fact`, which reads a date sitting on the last save as `NoRecord` (Spotlight stamps a file
+  an app writes; evidence in the crate's DETAILS).
+- **Default app**: `URLForApplicationToOpenURL:`, named through `open_with::read_app_display_name`.
+
+## The code signature
+
+`platform/macos/signature.rs`. Read with the Security framework, never `codesign`:
+
+- **Unsigned**: `SecStaticCodeCheckValidity` with `kSecCSBasicValidateOnly` answers `errSecCSUnsigned`.
+- **Who signed it**: `kSecCodeSignatureAdhoc` in the flags is `AdHoc`; otherwise three code requirements evaluated
+  against the signature alone (basic validation, no network): `anchor apple` → `Apple`, the Mac App Store leaf OID →
+  `AppStore`, the Developer ID intermediate + leaf OIDs → `DeveloperId` with the team id and the leaf's summary minus
+  Apple's fixed `Developer ID Application:` prefix and ` (TEAM)` suffix. Nothing parses a name to decide a kind.
+- **The ticket**: a bundle's `Contents/CodeResources` file (Slack: `codesign -dvvv` reports a stapled ticket and the
+  file is there, 2026-11-13); a bare executable can't carry one; a DMG keeps it inside its signature (`NotRead`).
+- **The bounded check**: `kSecCSDoNotValidateResources | kSecCSCheckAllArchitectures`, on its own
+  pool job, waited for `CHECK_BUDGET` (600 ms) inside the row's 1 s. Measured on macOS 27.0.1, 2026-11-13, warm page
+  cache, with a Swift spike over the same calls: Slack and Xcode under 1 ms (both thin, small main executables),
+  IntelliJ 8 ms, Warp's 401 MB executable 915 ms. So the check holds its budget for ordinary apps and an outsized
+  executable reads "carries a signature from" with `NotChecked(TimedOut)`. Without `kSecCSCheckAllArchitectures`, a
+  byte flipped in a universal binary's x86_64 slice passed on an arm64 Mac; with it the copy fails
+  `errSecCSSignatureFailed`, which is `ExecutableDiffers`. A DMG's signature covers the whole image, so it's never
+  checked (`NotSupported`).
+- **`pkg` isn't planned**: a xar signature isn't code the API reads (crate DETAILS § The plan).
+
+## Not yet gathered
+
+Cmdr's own operation history, git, importance, recursive size, the owner, a folder's digest, and an app's Library data
+come from the op log, `cmdr-git`, and the index. Each joins `GATHERED` with its job; nothing else changes.
+
+## Tests
+
+`tests.rs` runs the session with plain threads and a recording sink: a Chrome-shaped download (xattrs written by the
+test) streams `planned`, each fact, and `factsSettled`; a plain file's download row is `Unknown(NoRecord)`; a cancel
+mid-way leaves no late event and skips a queued job; a row past its budget lands `TimedOut` and its late answer drops;
+a cancel before the plan sends nothing; routing sends no share item, link-reached mount, or online-only file's bytes to
+a local job. `registry.rs` tests the tombstone and run ownership; `signature.rs` tests Apple's tools, a plain file, and
+a tampered copy of `/bin/ls`.

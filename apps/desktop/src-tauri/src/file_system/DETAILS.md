@@ -563,7 +563,9 @@ can consume deep stack frames through FileProvider override chains (iCloud, Drop
 stack; running them on rayon would also starve the pool, which should stay reserved for CPU-bound work.
 
 A per-call `std::thread::scope` isn't good enough on its own: those calls can block forever, so the threads have to be
-pooled and hard-capped or they accumulate (21-23 of them in the 2026-07-31 wedge). `src/icons/` (a separate top-level
+pooled and hard-capped or they accumulate (21-23 of them in the 2026-07-31 wedge). The pool compiles on every OS: the
+"Tell me about this" card (`apps/desktop/src-tauri/src/about/pool.rs`) runs its `lstat`, xattr, and file reads on its own `about_facts` pool on
+Linux too, where a dead mount wedges a thread the same way. `src/icons/` (a separate top-level
 module) follows the same rule for `fetch_path_icons`.
 
 ## Watcher threading

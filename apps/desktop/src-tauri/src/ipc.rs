@@ -585,6 +585,9 @@ macro_rules! ipc_command_manifest {
                     // calls these on raw invoke with the documented eslint opt-out.
                     crate::ai::suggestions::stream_folder_suggestions,
                     crate::ai::suggestions::cancel_folder_suggestions,
+                    // "Tell me about this" streams its card over a `Channel<AboutEvent>`, same
+                    // blocker; `AboutEvent` itself is exported below through `.typ`.
+                    crate::about::commands::about_start,
                     // Return BundleManifest, whose serde-elided optional fields specta can't export
                     // as one unified command return type.
                     crate::commands::error_reporter::prepare_error_report_preview,
@@ -1017,6 +1020,9 @@ pub fn builder() -> Builder<tauri::Wry> {
         // Reaches the frontend through the platform init script, not a command
         // (`platform/frontend.rs`); exported so `#lib/platform` types what it reads.
         .typ::<crate::platform::PlatformCapabilities>()
+        // What `about_start` streams over its channel, which specta can't describe from the
+        // command: exported so the card's state slice types every event.
+        .typ::<crate::about::AboutEvent>()
         // Typed events. Each registered struct derives `tauri_specta::Event`;
         // its kebab-cased name is the wire event name and its TS type + a typed
         // `events.<name>.listen(...)` helper are generated into `bindings.ts`.

@@ -1,5 +1,6 @@
 //! A long-lived, bounded pool of 8 MB-stack OS threads for synchronous macOS
-//! framework calls.
+//! framework calls, and on every OS for blocking reads that can hang on a dead
+//! mount (the "Tell me about this" card's `about_facts` pool).
 //!
 //! See `file_system/CLAUDE.md`: NSURL / File Provider lookups make synchronous XPC
 //! round-trips through provider override chains, so they need a big stack and must

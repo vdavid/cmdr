@@ -6,8 +6,8 @@ pub mod cloud_actions;
 pub mod default_app;
 #[cfg(target_os = "macos")]
 pub mod file_provider_actions;
-/// A bounded pool of 8 MB-stack OS threads for synchronous macOS framework calls.
-#[cfg(target_os = "macos")]
+/// A bounded pool of 8 MB-stack OS threads for synchronous macOS framework calls, and on
+/// every OS for blocking reads that can hang on a dead mount ("Tell me about this").
 pub(crate) mod framework_pool;
 // Ungated: `get_info` answers with its error type on every platform.
 pub mod get_info;

@@ -1,0 +1,29 @@
+# About this (host)
+
+Gathers the "Tell me about this" card (#1104) and streams it over a `Channel<AboutEvent>`. `crates/cmdr-about` owns
+the vocabulary and every rule; this module reads raw inputs and hands them there.
+
+## Module map
+
+- `commands.rs` (`about_start`, `about_cancel`), `event.rs` (the wire), `registry.rs` (cancel, tombstones, quit).
+- `route.rs` (resolve, then reach by volume), `probe.rs` (the one `lstat` before the plan), `jobs.rs` (a job per row),
+  `session.rs` (plan, grace, late answers, budgets), `pool.rs` (`about_facts`).
+- `platform/`: per-OS seam for xattrs, Spotlight, default app, code signature, `stat` extras.
+
+## Must-knows
+
+- ❌ **Route by volume, never by path prefix.** Only a live local volume whose mount is a local disk gets local jobs;
+  anything else answers identity through `Volume::get_metadata` under a deadline. A Finder SMB path looks local.
+- ❗ **`planned` is always first** (or `unavailable` alone), then facts in any order, then `factsSettled`. A kind outside
+  the plan never goes out; `GATHERED` trims the plan to the rows a job answers.
+- ❗ **Every `fact` event carries `derived` (headline + removal)**, recomputed on landing: the card never derives them.
+- ❗ **Cancel is `about_cancel`, ❌ never a dropped channel** (`send` succeeds after the handler is gone). The frontend
+  mints the id; a cancel before its start leaves a tombstone the start honors.
+- ❌ **No framework call on rayon or the executor**: jobs and the probe run on the `about_facts` pool. A budget bounds
+  the wait, the pool ceiling bounds lost threads.
+- ❌ **Log a fact's kind and outcome, never its value** (URL, sender, path): logs ride error reports.
+- ❗ **xattrs are read capped** (`read_capped`: size first, refuse past 64 KB). An online-only file plans no byte read.
+- ❗ **A signer is named from code requirements, never a certificate name**; the executable check has its own budget
+  and a miss is `NotChecked(TimedOut)`, ❌ never a pass.
+
+Flows, budgets, the signature and Spotlight evidence, and the test map: `DETAILS.md`.

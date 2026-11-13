@@ -173,6 +173,10 @@ pub fn on_run_event(app: &AppHandle<Wry>, event: tauri::RunEvent) {
             // no longer exists is work nobody asked for.
             search::cancel_all_live_runs();
 
+            // Stop every "Tell me about this" card's gathering. Its pool threads are
+            // detached; this keeps a queued job from starting a read nobody will see.
+            crate::about::cancel_all();
+
             // Restore ptpcamerad before exit so we don't leave the system
             // with the daemon disabled after Cmdr closes
             #[cfg(target_os = "macos")]

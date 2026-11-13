@@ -5,3 +5,8 @@
 pub(crate) async fn look_up(_candidates: Vec<String>) -> Option<Vec<(String, bool)>> {
     Some(Vec::new())
 }
+
+/// No package concept beyond the list.
+pub(crate) fn is_package_to_the_os(_path: &str) -> bool {
+    false
+}

@@ -29,6 +29,8 @@ mod ipc;
 
 mod logging;
 
+/// "Tell me about this": gathers a file or folder's fact card. See its `CLAUDE.md`.
+mod about;
 mod adb;
 pub mod agent;
 mod ai;
