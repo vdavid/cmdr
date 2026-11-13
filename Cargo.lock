@@ -1568,6 +1568,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmdr-about"
+version = "0.0.0"
+dependencies = [
+ "cmdr-about",
+ "infer",
+ "plist",
+ "serde",
+ "serde_json",
+ "specta",
+ "url",
+]
+
+[[package]]
 name = "cmdr-adb"
 version = "0.0.0"
 dependencies = [

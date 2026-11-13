@@ -120,9 +120,9 @@ Writing them:
   (recents), `cmdr-http` (proxy routing), `cmdr-listing` (pane listings), `cmdr-collation` (file-name order),
   `cmdr-sort` (sort vocabulary), `cmdr-brief-columns` (Brief columns), `cmdr-local` (local disk), `cmdr-media-meta`
   (media tags), `cmdr-menu` (menu bar data), `cmdr-operation-log` (mutation journal, rollback planner),
-  `cmdr-operations` (the write engine), `cmdr-platform-cfg` (platform cfgs), `cmdr-viewer` (the viewer),
-  `cmdr-multi-rename` (⌃M), `cmdr-update-trust`, `cmdr-listing-wasm` (the listing engine in a browser), and two dev CLIs
-  carry no `tauri`, enforced by `index-crate-isolation`; plus `fsevent-stream` (our FSEvents fork).
+  `cmdr-operations` (write engine), `cmdr-platform-cfg` (platform cfgs), `cmdr-viewer` (viewer), `cmdr-multi-rename`
+  (⌃M), `cmdr-about` (item facts), `cmdr-update-trust`, `cmdr-listing-wasm` (listing engine in a browser), and two dev
+  CLIs carry no `tauri`, enforced by `index-crate-isolation`; plus `fsevent-stream` (our FSEvents fork).
 - `brand/`: brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
   `docs/business/README.md` (pricing, licensing, product facts), `docs/specs/DETAILS.md` (big design docs; open work is

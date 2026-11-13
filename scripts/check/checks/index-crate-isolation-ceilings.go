@@ -714,4 +714,24 @@ var surfaceGuardedCrates = []struct {
 			SubsystemItems: 110,
 		},
 	},
+	{
+		// Measured 2026-11-13, when the crate was written, and set to exactly what
+		// it exposes, with no headroom. Argued in `crates/cmdr-about/DETAILS.md` §
+		// "The public surface is capped".
+		//
+		// Eleven root promises, one module per concern: the coverage vocabulary
+		// (`fact`), what each fact carries (`payload`, `owner`, `digest`), the pure
+		// rules (`provenance`, `sniff`, `removal`, `headline`, `card`), sanitized
+		// text (`text`), and the gathering engine (`gather`). The module items are
+		// the wire types the card's IPC events and the model's projection carry,
+		// plus the handful of functions a host calls with raw inputs. A new item is
+		// a new thing every surface of the card can say, so it's argued in that
+		// DETAILS first.
+		Name: "cmdr-about",
+		Ceilings: surfaceCeilings{
+			RootPromises:   11,
+			PublicModules:  11,
+			SubsystemItems: 110,
+		},
+	},
 }

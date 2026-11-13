@@ -421,13 +421,13 @@ All under `apps/desktop/src-tauri/src/`.
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
 `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`, `cmdr-restic`, `cmdr-http`, `cmdr-listing`,
 `cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-media-meta`, `cmdr-menu`, `cmdr-operation-log`,
-`cmdr-operations`, `cmdr-recents`, `cmdr-search`, `cmdr-viewer`, `cmdr-multi-rename`, `cmdr-platform-cfg`, and
-`cmdr-update-trust` carry no `tauri` dependency and no reach into the app, and neither do `cmdr-listing-wasm` and the
-two dev CLIs; `index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public surface of
-`cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-mtp`, `cmdr-git`,
+`cmdr-operations`, `cmdr-recents`, `cmdr-search`, `cmdr-viewer`, `cmdr-multi-rename`, `cmdr-platform-cfg`, `cmdr-about`,
+and `cmdr-update-trust` carry no `tauri` dependency and no reach into the app, and neither do `cmdr-listing-wasm` and
+the two dev CLIs; `index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public surface
+of `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-nfs`, `cmdr-mtp`, `cmdr-git`,
 `cmdr-restic`, `cmdr-listing`, `cmdr-collation`, `cmdr-sort`, `cmdr-brief-columns`, `cmdr-local`, `cmdr-operation-log`,
-`cmdr-operations`, `cmdr-recents`, `cmdr-search`, `cmdr-multi-rename`, and `cmdr-platform-cfg` at the numbers their
-audits landed on. The vendored fork is an ordinary member.
+`cmdr-operations`, `cmdr-recents`, `cmdr-search`, `cmdr-multi-rename`, `cmdr-platform-cfg`, and `cmdr-about` at the
+numbers their audits landed on. The vendored fork is an ordinary member.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
@@ -481,6 +481,9 @@ audits landed on. The vendored fork is an ordinary member.
 - `crates/cmdr-recents/`: the rules of a most-recently-used list (newest first, dedupe, cap, unique ids), pure `Vec`
   work every recents list keeps; the app's `src-tauri/src/recents/` persists each one. See
   `crates/cmdr-recents/CLAUDE.md`
+- `crates/cmdr-about/`: the fact card behind "Tell me about this": the coverage vocabulary (`Fact`, typed unknowns), the
+  pure rules (download-record decoding and its egress redaction, magic-byte type, which rows a card has, what removal
+  costs, the headline), and the grace-then-late gathering engine. No host yet. See `crates/cmdr-about/CLAUDE.md`
 - `crates/cmdr-menu/`: the menu bar as data: both platforms' rows, the item ids and their commands, the enabled-state
   fold, and what a click asks for. The desktop's `menu/` builds native menus from it; the browser demo draws the macOS
   bar from it through `cmdr-listing-wasm`. See `crates/cmdr-menu/CLAUDE.md`

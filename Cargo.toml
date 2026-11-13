@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "apps/desktop/src-tauri",
+  "crates/cmdr-about",
   "crates/cmdr-adb",
   "crates/cmdr-archive",
   "crates/cmdr-brief-columns",

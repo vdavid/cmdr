@@ -1,0 +1,41 @@
+[package]
+name = "cmdr-about"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[features]
+# Exposes `fuzzing`, the property seam the fuzz target in `fuzz/` (repo root)
+# calls. On in this crate's own dev builds (the self dev-dependency below), so
+# clippy and the tests cover it.
+fuzzing = []
+
+[dependencies]
+# Every fact, reason, and plan is a wire shape: the card's IPC events and the
+# model's projection carry them in the frontend's camelCase words.
+serde = { version = "1", features = ["derive"] }
+# Type export for the Rust↔TS bindings. Pinned to the EXACT version the app uses:
+# two `specta` crates in one graph would make these `Type` impls stop satisfying
+# `tauri-specta`.
+specta = { version = "=2.0.0-rc.24", features = ["derive"] }
+# Magic-byte detection for the real-type row. Without `std`: the crate only sniffs
+# a buffer the host read, and `std` adds file helpers plus the `cfb` reader.
+infer = { version = "0.22.0", default-features = false }
+# `kMDItemWhereFroms` is a binary property list.
+plist = { version = "1.10.3", default-features = false }
+# A download source's host, the one part of it that may leave the machine: the
+# WHATWG parser lowercases it, answers an IDN as punycode, and tells an IP
+# literal from a name.
+url = "2"
+
+[dev-dependencies]
+cmdr-about = { path = ".", features = ["fuzzing"] }
+# The wire-word tests read each shape's serialized form.
+serde_json = "1"

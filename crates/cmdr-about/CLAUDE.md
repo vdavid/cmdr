@@ -1,0 +1,46 @@
+# cmdr-about
+
+"Tell me about this": the facts Cmdr states about a file or folder, and every rule a person could argue about (what a
+quarantine field means, what counts as a type mismatch, what removal costs). Pure and tauri-free; the app gathers raw
+inputs and hands them here. No fact depends on a model.
+
+## Module map
+
+- **`fact.rs`**: `Fact<T>` (known, unknown, not applicable, pending), `UnknownWhy` and its `Prominence`, `FactKind`,
+  `AboutTarget`. **`text.rs`**: `ItemText`, `model_text`.
+- **`payload.rs`, `owner.rs`, `digest.rs`**: what each fact carries.
+- **`provenance.rs`** (quarantine, WhereFroms, xdg, `redact_for_egress`), **`sniff.rs`** (magic bytes against the
+  extension): decoders of attacker-written bytes.
+- **`card.rs`**: `plan`, `AboutPlan`, `AboutFact`, `AboutCard`. **`removal.rs`**, **`headline.rs`**: derived from a
+  card. **`gather.rs`**: the grace-then-late engine. **`fuzzing.rs`**: the fuzz target's property seam.
+
+## Must-knows
+
+- ❌ **No empty string, zero, or `false` for "don't know".** A fact is a `Fact`; a field Cmdr may not know is a nested
+  `Fact`; an `Option` is a definite "the record has none", and its doc says which. `NoRecord` is never "never".
+- ❌ **No "safe to delete", anywhere.** `RemovalConsequence` has no reassuring variant and must never gain one;
+  `RecordedDownload` is never "you can get it again". `CantTell` is a valid answer.
+- ❗ **What an item says about itself is a claim.** Every such string is an `ItemText` (the only constructor sanitizes),
+  so a row or the projection can't receive one that skipped `model_text`. ❌ Never a plain `String` for a name, signer,
+  agent, or branch. A `path` field is the exception: raw, for navigating, ❌ never shown.
+- ❗ **A download source leaves the machine as its host only**, through `redact_for_egress`; everything that isn't an
+  `http(s)` address leaves as its kind with no text. ❌ No second redaction.
+- ❗ **Decoders cap first** (64 KB xattr, 16 entries) and parse the WHOLE entry before any cut: a host read from a
+  truncated address can be a piece of its user info.
+- ❗ **A signature is never "verified"**: unless `checked` is `ExecutableMatches`, the wording is "carries a signature
+  from".
+- ❗ **The plan decides the rows, before any job.** A row that can't apply is left out, ❌ never drawn as
+  `NotApplicable`. `AboutCard::apply` refuses a fact the plan has no row for.
+- ❗ **Prominence is decided here** and rides on the wire inside `Unknown`; ❌ the UI never decides what's worth a
+  sentence.
+- ❗ **The wire is one-way**: types serialize (`camelCase`) and export through specta, pinned to the app's exact
+  version. Nothing deserializes. Doc comments land in `bindings.ts`.
+- ❌ **No English.** The headline and the removal row are typed parts plus a template key; the frontend words them.
+- ❌ **No OS `cfg`, no filesystem call, no `tauri`**: every decoder takes bytes and runs the same everywhere. A deadline
+  in `gather` bounds how long the collector waits, never how long a job works.
+- ❗ **Every fuzz assertion has a mutant on record** (`fuzz/fuzz_targets/about_provenance.mutants.json`); the seam's
+  checks never call the predicate they guard.
+- The public surface is capped by `index-crate-isolation`.
+
+Design, the plan table, the removal and headline rules, and evidence: `DETAILS.md`. Read it before any non-trivial work
+here.
