@@ -10,7 +10,7 @@ describe('globalGoToLatestDescription', () => {
   })
 
   it('tracks a rebound combo', () => {
-    expect(globalGoToLatestDescription('\u{2318}\u{21E7}K')).toContain('\u{2318}\u{21E7}K')
+    expect(globalGoToLatestDescription('\u{2318}\u{21E7}K')).toContain('\u{21E7}\u{2318}K')
   })
 
   it('shows the binding the way the shortcut row does, so Windows reads Win', () => {

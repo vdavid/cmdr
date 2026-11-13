@@ -435,14 +435,33 @@ describe('canonical vs display forms', () => {
     expect(formatKeyCombo(makeKeyEvent({ key: 'PageUp' }))).toBe('PageUp')
   })
 
-  it('renders macOS glyphs for display, keeping the modifier prefix', () => {
+  it('renders macOS glyphs for display', () => {
     setMacOS(true)
     expect(toDisplayShortcut('Enter')).toBe('↩')
     expect(toDisplayShortcut('⌘Backspace')).toBe('⌘⌫')
-    expect(toDisplayShortcut('⌘⌥Escape')).toBe('⌘⌥⎋')
     expect(toDisplayShortcut('PageDown')).toBe('PgDn')
-    expect(toDisplayShortcut('⌘⇧P')).toBe('⌘⇧P')
     expect(toDisplayShortcut('')).toBe('')
+  })
+
+  it('shows macOS modifiers in the menu bar order (⌃⌥⇧⌘), whatever order they are stored in', () => {
+    setMacOS(true)
+    expect(toDisplayShortcut('⌘⇧P')).toBe('⇧⌘P')
+    expect(toDisplayShortcut('⌘⇧.')).toBe('⇧⌘.')
+    expect(toDisplayShortcut('⌘⌥Escape')).toBe('⌥⌘⎋')
+    expect(toDisplayShortcut('⌘⌃⌥J')).toBe('⌃⌥⌘J')
+    expect(toDisplayShortcut('⌘⌃⌥⇧K')).toBe('⌃⌥⇧⌘K')
+    expect(toDisplayShortcut('⌥⇧=')).toBe('⌥⇧=')
+    expect(toDisplayShortcut('⇧F8')).toBe('⇧F8')
+    // Only modifiers held so far, as the capture field shows mid-press.
+    expect(toDisplayShortcut('⌘⇧')).toBe('⇧⌘')
+    expect(toDisplayShortcut(toDisplayShortcut('⌘⇧P'))).toBe('⇧⌘P')
+  })
+
+  it('restores the stored modifier order from a displayed or Apple-ordered combo', () => {
+    setMacOS(true)
+    expect(toCanonicalShortcut('⇧⌘P')).toBe('⌘⇧P')
+    expect(toCanonicalShortcut('⌃⌥⇧⌘K')).toBe('⌘⌃⌥⇧K')
+    expect(toCanonicalShortcut(toDisplayShortcut('⌘⌥Backspace'))).toBe('⌘⌥Backspace')
   })
 
   it('uses the familiar abbreviations off macOS', () => {
@@ -475,7 +494,7 @@ describe('canonical vs display forms', () => {
     setMacOS(true)
     expect(toCanonicalShortcut('↩')).toBe('Enter')
     expect(toCanonicalShortcut('⌘⌫')).toBe('⌘Backspace')
-    expect(toCanonicalShortcut('⌥⌘⎋')).toBe('⌥⌘Escape')
+    expect(toCanonicalShortcut('⌥⌘⎋')).toBe('⌘⌥Escape')
     expect(toCanonicalShortcut('PgUp')).toBe('PageUp')
     expect(toCanonicalShortcut('Ctrl+Esc')).toBe('Ctrl+Escape')
     expect(toCanonicalShortcut('⌘A')).toBe('⌘A')

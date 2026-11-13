@@ -9,7 +9,8 @@
  *   `frontend_shortcut_to_accelerator` parses. Platform-neutral WORD forms:
  *   `Enter`, `Backspace`, `Escape`, `PageUp`.
  * - **Display** (`toDisplayShortcut`) turns that into what a Mac user expects to
- *   read (`↩`, `⌫`, `⎋`). Rendering only, never stored or compared.
+ *   read (`↩`, `⌫`, `⎋`, and modifiers in the menu bar's `⌃⌥⇧⌘` order). Rendering
+ *   only, never stored or compared.
  *
  * Keeping the symbols out of the canonical form is load-bearing: a combo spelled
  * `↩` can never be looked up from a keypress, can never clash with `Enter` in
@@ -166,14 +167,34 @@ const SUPER_TOKEN = /(^|\+)Super(?=\+|$)/
 const WIN_TOKEN = /(^|\+)Win(?=\+|$)/
 
 /**
- * Render a canonical combo the way this platform's users read it: `⌘Backspace`
- * shows as `⌘⌫` on macOS, `Escape` as `Esc` elsewhere, and `Super+E` as `Win+E`
- * on Windows. Display only — never store, compare, or dispatch the result.
- * Idempotent, so wrapping an already-displayed value is harmless.
+ * The macOS modifier glyphs in the two orders they're written in. Canonical is the order
+ * `formatKeyCombo` emits (`modifierTokens`); display is the order the macOS menu bar and
+ * Apple's style guide use, so a key cap reads the same as the menu item beside it.
+ */
+const MAC_CANONICAL_MODIFIER_ORDER = '⌘⌃⌥⇧'
+const MAC_DISPLAY_MODIFIER_ORDER = '⌃⌥⇧⌘'
+const MAC_MODIFIER_PREFIX = /^[⌘⌃⌥⇧]+/u
+
+/** Rewrite a combo's leading macOS modifier glyphs in `order`. A combo with none (every Windows and Linux one) is untouched. */
+function orderMacModifiers(shortcut: string, order: string): string {
+  return shortcut.replace(MAC_MODIFIER_PREFIX, (prefix) =>
+    Array.from(order)
+      .filter((glyph) => prefix.includes(glyph))
+      .join(''),
+  )
+}
+
+/**
+ * Render a canonical combo the way this platform's users read it: `⌘⇧Backspace`
+ * shows as `⇧⌘⌫` on macOS (key glyph, modifiers in the menu bar's order), `Escape`
+ * as `Esc` elsewhere, and `Super+E` as `Win+E` on Windows. Display only — never
+ * store, compare, or dispatch the result. Idempotent, so wrapping an
+ * already-displayed value is harmless.
  */
 export function toDisplayShortcut(shortcut: string): string {
   if (!shortcut) return shortcut
-  return toDisplayModifiers(mapKeyName(shortcut, isMacOS() ? macDisplayKeyNames : nonMacDisplayKeyNames))
+  const named = mapKeyName(shortcut, isMacOS() ? macDisplayKeyNames : nonMacDisplayKeyNames)
+  return toDisplayModifiers(orderMacModifiers(named, MAC_DISPLAY_MODIFIER_ORDER))
 }
 
 /**
@@ -186,9 +207,10 @@ export function toDisplayModifiers(shortcut: string): string {
 }
 
 /**
- * The canonical spelling of a combo that may carry a display or legacy key name
- * (`⌘⌫` → `⌘Backspace`, Windows' `Win+E` → `Super+E`). Used to heal persisted
- * shortcuts on load and to read back the key filter's displayed value. Idempotent.
+ * The canonical spelling of a combo that may carry a display or legacy key name, or
+ * macOS modifiers in display order (`⇧⌘⌫` → `⌘⇧Backspace`, Windows' `Win+E` →
+ * `Super+E`). Used to heal persisted shortcuts on load and to read back the key
+ * filter's displayed value. Idempotent.
  *
  * Also heals a Shift-only key POSITION (`⇧8`, `Shift+=`), which no keypress
  * produces since typed symbols are named by their character (`formatKeyCombo`).
@@ -198,7 +220,8 @@ export function toCanonicalShortcut(shortcut: string): string {
   if (!shortcut) return shortcut
   const shiftOnly = /^(?:⇧|Shift\+)(.)$/u.exec(shortcut)?.[1]
   if (shiftOnly !== undefined && shiftOnly in usShiftedCharacter) return usShiftedCharacter[shiftOnly]
-  return mapKeyName(shortcut, displayToCanonicalKeyNames).replace(WIN_TOKEN, '$1Super')
+  const named = mapKeyName(shortcut, displayToCanonicalKeyNames).replace(WIN_TOKEN, '$1Super')
+  return orderMacModifiers(named, MAC_CANONICAL_MODIFIER_ORDER)
 }
 
 /**

@@ -288,7 +288,10 @@ the normal translation loop (`docs/guides/i18n-translation.md` § New feature): 
 translating locale lists the key, and its translator works it branch by branch. `i18n-platform-vocabulary.test.ts`
 (`apps/desktop/scripts/`) fails a `windows` or `other` branch of an `en` block that names a macOS thing (Finder,
 Keychain, ⌘, a `{system_settings}` token) or the other OS's word (Trash, Quit, or Terminal on Windows; Recycle Bin or
-"disconnect" on Linux); a branch that keeps a macOS word on purpose goes in its `EXCEPTIONS`, with the reason.
+"disconnect" on Linux); a branch that keeps a macOS word on purpose goes in its `EXCEPTIONS`, with the reason. It also
+fails ANY plain `en` value that types a macOS key glyph (⌘, ⌥, ⌃, ⇧): a key in a sentence is a key cap tag or a
+`{combo}` param (`../shortcuts/DETAILS.md` § Shortcuts as text), and a sentence naming the glyphs themselves keeps them
+in its `macos` branch.
 
 - **Windows reads `other` only by decision.** A block with no `windows` branch says "Windows reads what Linux reads".
   Where Windows keeps the macOS text while Linux differs, write `macos` and `windows` as two equal branches, so Windows

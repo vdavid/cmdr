@@ -273,10 +273,12 @@ declares, `shortcuts.json` persists, `shortcut-dispatch` keys its map by, `confl
 
 `toDisplayShortcut(combo)` is the display layer, applied at render time only: `⌘Backspace` → `⌘⌫`, `Enter` → `↩`,
 `Escape` → `⎋` / `Esc`, `PageUp` → `PgUp`, and on Windows the `Super` token → `Win` (`docs/style-guide.md` § "Platform
-vocabulary"; Linux keeps `Super`, the stored token everywhere). It's idempotent, so wrapping an already-displayed value
-is safe. Its consumers are the reactive readers (`reactive-shortcuts.svelte.ts` returns display form, since everything
-reading it renders to a user), `ShortcutChip`, `ShortcutsList`, the Settings editor's pills and conflict banner, the
-F-key bar, and `shortcutAsText`. Anything that COMPARES or DISPATCHES a combo reads `getEffectiveShortcuts` instead.
+vocabulary"; Linux keeps `Super`, the stored token everywhere). On macOS it also reorders the modifier glyphs from the
+stored `⌘⌃⌥⇧` to the menu bar's `⌃⌥⇧⌘` (`⌘⇧.` shows as `⇧⌘.`), so a key cap reads like the menu item for the same
+command. It's idempotent, so wrapping an already-displayed value is safe. Its consumers are the reactive readers
+(`reactive-shortcuts.svelte.ts` returns display form, since everything reading it renders to a user), `ShortcutChip`,
+`ShortcutsList`, the Settings editor's pills and conflict banner, the F-key bar, and `shortcutAsText`. Anything that
+COMPARES or DISPATCHES a combo reads `getEffectiveShortcuts` instead.
 
 A keypress can mean more than one combo, and `keyComboCandidates(event)` lists them, most specific first:
 
@@ -321,12 +323,13 @@ exact combo, then only the Latin position (through the same typing guard), so `�
 claims like any `⌘V` (`routes/(main)/DETAILS.md` § Native-menu and input-focus interactions). How dispatch picks among
 the candidates is under "Local handlers" below (`resolveKeyCombo`).
 
-`toCanonicalShortcut(combo)` is the inverse of `toDisplayShortcut`, and only four places call it: `initializeShortcuts`
-(healing a `shortcuts.json` written before the vocabulary was unified), `setShortcut` / `addShortcut` (canonicalizing at
-the store boundary, so MCP writes land in the same vocabulary as a Settings capture), and the Settings key-filter box
-reading back what it shows. It also heals a Shift-only key POSITION (`⇧8`, the old `selection.invert` default, which no
-keypress produces any more) to the character the US keycap it was named after types (`*`); the load dedupes what that
-folds together.
+`toCanonicalShortcut(combo)` is the inverse of `toDisplayShortcut` (key name and macOS modifier order both, so an
+Apple-ordered `⇧⌘P` written through MCP lands as the `⌘⇧P` a keypress produces), and only four places call it:
+`initializeShortcuts` (healing a `shortcuts.json` written before the vocabulary was unified), `setShortcut` /
+`addShortcut` (canonicalizing at the store boundary, so MCP writes land in the same vocabulary as a Settings capture),
+and the Settings key-filter box reading back what it shows. It also heals a Shift-only key POSITION (`⇧8`, the old
+`selection.invert` default, which no keypress produces any more) to the character the US keycap it was named after types
+(`*`); the load dedupes what that folds together.
 
 **Why the split matters.** With glyphs in the canonical form, three things break silently and independently: central
 dispatch can never fire a word-form binding (`lookupCommand('↩')` misses `'Enter'`), conflict detection and the

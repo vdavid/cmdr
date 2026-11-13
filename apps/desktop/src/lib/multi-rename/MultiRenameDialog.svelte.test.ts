@@ -746,7 +746,7 @@ describe('MultiRenameDialog', () => {
       chip?.focus()
       const tip = await shownTooltip(chip)
       expect(tip?.querySelector('.head')?.textContent).toContain('Match case')
-      expect(tip?.querySelector('.head .shortcut-chip')?.textContent).toContain('⌘⌥I')
+      expect(tip?.querySelector('.head .shortcut-chip')?.textContent).toContain('⌥⌘I')
       expect(tip?.querySelector('.setup')?.textContent.trim()).toBe('Replacing photo with pic in Photo photo.jpg:')
       const [on, off] = [...(tip?.querySelectorAll('.results .example') ?? [])]
       const pieces = (line: Element) => [...line.children].map((p) => [p.textContent, p.classList.contains('marked')])
