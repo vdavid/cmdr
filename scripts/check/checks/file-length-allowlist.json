@@ -54,7 +54,7 @@
       "reason": "TODO: split out the stop ledger into `ask-cmdr-stops.svelte.ts`: `PendingStop`, `pendingStops`, `stopsAwaitingId`, `settledRuns`, `matchStopsToTerminals`, `findStopFor`, `withdrawStop`, `settlePendingStop`, and `applyToStoppedTurn` (~200 lines), which decide which turn a terminal or a late event belongs to after a Stop. It needs the reducer's `resolveRound` / `applyToolFinished` / `applyUserPersisted` / `stampAnswer`, so move those round helpers into an `ask-cmdr-rounds-live.ts` both import, leaving this file the send path and the reducer."
     },
     "apps/desktop/src/lib/dialog-gallery/gallery-registry.ts": {
-      "lines": 808,
+      "lines": 890,
       "reason": "a flat registry: one row per soft dialog and its states, so its length tracks the dialog count rather than logic worth splitting"
     },
     "apps/desktop/src/lib/file-explorer/navigation/VolumeBreadcrumb.svelte.test.ts": {

@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AboutEvent, AboutFact, AboutPlan, Derived } from '#lib/ipc/bindings.js'
+import { aboutThisState, openAboutThis, closeAboutThis, GRACE_MS, SHOW_ANYWAY_MS } from './about-this-state.svelte'
+import { applyAboutEvent, emptyCard } from './about-card'
 
-const started: { requestId: string; onEvent: (event: AboutEvent) => void; cancel: ReturnType<typeof vi.fn> }[] = []
+const { started } = vi.hoisted(() => ({
+  started: [] as { requestId: string; onEvent: (event: AboutEvent) => void; cancel: ReturnType<typeof vi.fn> }[],
+}))
 
 vi.mock('#lib/tauri-commands/index.js', () => ({
   startAbout: (_path: string, _volumeId: string | null, onEvent: (event: AboutEvent) => void) => {
@@ -10,9 +14,6 @@ vi.mock('#lib/tauri-commands/index.js', () => ({
     return handle
   },
 }))
-
-const { aboutThisState, openAboutThis, closeAboutThis } = await import('./about-this-state.svelte')
-const { applyAboutEvent, emptyCard } = await import('./about-card')
 
 const plan: AboutPlan = {
   target: 'file',
@@ -119,6 +120,38 @@ describe('the open card', () => {
     run.onEvent(planned(run.requestId))
     run.onEvent(fact(run.requestId, identity))
     expect(aboutThisState.card?.facts.identity).toEqual(identity)
+  })
+
+  it('shows the card on the first frame after the grace, with what answered inside it', () => {
+    vi.useFakeTimers()
+    try {
+      openAboutThis(subject)
+      const [run] = started
+      run.onEvent(planned(run.requestId))
+      expect(aboutThisState.shown).toBe(false)
+      vi.advanceTimersByTime(GRACE_MS)
+      expect(aboutThisState.shown).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('waits past the grace for a slow plan, and shows anyway after the cap', () => {
+    vi.useFakeTimers()
+    try {
+      openAboutThis(subject)
+      vi.advanceTimersByTime(GRACE_MS)
+      expect(aboutThisState.shown).toBe(false)
+      const [run] = started
+      run.onEvent(planned(run.requestId))
+      expect(aboutThisState.shown).toBe(true)
+
+      openAboutThis({ ...subject, path: '/tmp/slow' })
+      vi.advanceTimersByTime(SHOW_ANYWAY_MS)
+      expect(aboutThisState.shown).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('cancels on close, and a late event after close changes nothing', () => {

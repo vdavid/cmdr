@@ -57,6 +57,11 @@ export const SOFT_DIALOG_REGISTRY = [
   },
   { id: 'alert', whileOpen: BLOCKS_OPERATIONS },
   {
+    id: 'tell-me-about-this',
+    description: 'Tell me about this: what Cmdr knows about the item under the cursor, and what removing it would mean',
+    whileOpen: BLOCKS_OPERATIONS,
+  },
+  {
     id: 'multi-rename',
     description: 'Renames many files at once with a name mask, like Total Commander’s Multi-Rename Tool',
     whileOpen: BLOCKS_OPERATIONS,

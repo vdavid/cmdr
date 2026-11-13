@@ -109,6 +109,28 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     ],
   },
 
+  // ── Tell me about this ────────────────────────────────────────────────────
+  {
+    dialogId: 'tell-me-about-this',
+    label: 'Tell me about this',
+    hostWindow: 'main',
+    status: 'ready',
+    note: 'Each state is a recorded stream of the backend’s events folded through the card’s own reducer. Copy buttons really copy.',
+    states: [
+      { id: 'downloaded', label: 'Downloaded disk image (every origin fact)' },
+      { id: 'plain-document', label: 'Plain document (calm card, origin collapsed)' },
+      { id: 'still-filling', label: 'Still filling (pending rows)' },
+      { id: 'folder', label: 'Folder in a repo (size, importance, git)' },
+      { id: 'app', label: 'App (bundle, signature, ticket)' },
+      { id: 'mismatch', label: 'Program named like a photo (AirDrop, Cmdr copy)' },
+      { id: 'notable-a', label: 'Notable unknowns, part 1' },
+      { id: 'notable-b', label: 'Notable unknowns, part 2' },
+      { id: 'remote', label: 'On a NAS (volume note)' },
+      { id: 'more-consequences', label: 'Hard link, untracked (More consequences)' },
+      { id: 'unavailable', label: 'Unavailable (item gone)' },
+    ],
+  },
+
   // ── File operations ───────────────────────────────────────────────────────
   {
     dialogId: 'delete-confirmation',
