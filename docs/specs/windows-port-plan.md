@@ -284,8 +284,8 @@ its prerequisites; tasks without any can start any time. Order within a phase is
     dialog's and the viewer's keys as fixed registry commands (macOS recent searches moved to `⌘Y`); a user's own
     binding beats a default; Quit and `F11` full screen off macOS, with Hide, Hide others, and Show all behind
     `appMenu`; a per-OS reserved-keys table for Settings' warning; `Win` as Windows's name for `Super`; and every hint
-    and message naming the live key, or a keyless variant. What needs a real machine is on task 55's list. The plan
-    (`docs/specs/platform-keymap-plan.md`) goes once this lands. Needs 24.
+    and message naming the live key, or a keyless variant. What needs a real machine is on task 55's list. The mechanism
+    and its rejected alternatives: `apps/desktop/src/lib/commands/DETAILS.md` § "Default keys per platform". Needs 24.
     - **macOS hand checks David owes**: with the search dialog open, `⌘H` hides Cmdr and `⌘Y` shows recent searches;
       Toggle full screen from the palette enters AppKit's native full screen (same Space, the green button's state, and
       Escape and the View menu item both leave it).

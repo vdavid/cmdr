@@ -218,6 +218,22 @@ Decision: refuse at the type level (template-literal types) and by throwing at l
 ⌘ and ⌃ both on Ctrl, so `⌘D` and `⌃D` landed on one key with nobody deciding; with the refusals that mistake can't be
 written. The helpers write the off-macOS arms in canonical `Ctrl+Alt+Shift+Super` order whatever the authored order.
 
+Considered and not taken, so nobody re-derives them:
+
+- **A Mac list plus optional `windows` / `linux` overrides, a missing arm converted.** The smallest diff, but it keeps
+  macOS the base and the others derived, and a new `⌘X` silently becomes `Ctrl+X` with nobody deciding: the mechanical
+  translation `docs/design-principles.md` § "Platform-native, not generic" rules out. That rule survives only as
+  `cmdOrCtrl`, a word the author types on purpose.
+- **Three keymap files keyed by command id.** One table per OS, easy to diff against Total Commander, but it splits a
+  command's keys from the command, makes every new command a four-file change, and leaves two near-identical Windows and
+  Linux tables to drift. The per-OS snapshot below gives the same one-table view, generated.
+- **Rust owns the defaults and the frontend reads them.** One source for menu and registry, but registry data would
+  cross IPC away from its commands, and capability-restricted windows would need a new read path. The parity test gives
+  the same guarantee.
+- **The bar's accelerators generated from the registry.** `cmdr-menu` builds standalone (the wasm demo consumes it), the
+  bar leaves some keys out per OS on purpose (GTK takes the F-keys before the webview), and its snapshot is a reviewed
+  artifact. A parity test with a short, reasoned exception list keeps both.
+
 ### The default keymap snapshot
 
 `default-keymap.test.ts` renders the default keys a user gets on each OS into `__snapshots__/default-keymap.macos.txt`,

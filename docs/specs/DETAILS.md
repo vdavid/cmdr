@@ -14,11 +14,6 @@ Read this before adding, wiping, or reorganizing a spec.
 
 ## The specs
 
-- `platform-keymap-plan.md`: **Windows and Linux get the Mac keymap, mechanically converted.** Three default lists per
-  command (one per platform) with no conversion at read time, conflict and vocabulary tests per platform, a
-  registry-to-menu-bar parity test, the AltGr guard, the off-macOS key bugs, Quit and full screen. Issues:
-  [#1102](https://github.com/getcmdr/cmdr/issues/1102), [#1110](https://github.com/getcmdr/cmdr/issues/1110),
-  [#1114](https://github.com/getcmdr/cmdr/issues/1114).
 - `oplog-tree-plan.md`: **The Operation log shows a flat, capped list and can only undo a whole operation.** A
   master–detail dialog over a backend-owned, windowed item tree with checkboxes, partial rollback through the real
   engine, full keyboard, and a writer-maintained summary so two 2M-item operations stay fast. Issue:
