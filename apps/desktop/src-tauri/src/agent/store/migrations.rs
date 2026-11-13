@@ -112,6 +112,11 @@ pub const MIGRATIONS: &[Migration] = &[
         description: "cost_meter.cache_read_tokens/cache_write_tokens: the prompt-cache share of each prompt",
         up: migrate_v14_cost_meter_cache_tokens,
     },
+    Migration {
+        version: 15,
+        description: "the reserved about-this thread, which holds what \"Tell me about this\" verdicts spent",
+        up: migrate_v15_about_this_thread,
+    },
 ];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a fresh DB
@@ -611,4 +616,24 @@ fn migrate_v14_cost_meter_cache_tokens(tx: &Transaction<'_>) -> rusqlite::Result
         "ALTER TABLE cost_meter ADD COLUMN cache_read_tokens INTEGER NOT NULL DEFAULT 0;
          ALTER TABLE cost_meter ADD COLUMN cache_write_tokens INTEGER NOT NULL DEFAULT 0;",
     )
+}
+
+/// Version 15: one reserved conversation row with origin `about_this`, which holds what the
+/// "Tell me about this" card's verdicts spent. A verdict is never stored (not its text, its
+/// prompt, or its path), so it has no thread of its own to meter onto, and
+/// `cost_meter.conversation_id` is `NOT NULL` for the upsert's sake (see
+/// [`migrate_v8_quiet_wakes_thread`], the precedent). Empty title for the same reason as v8:
+/// nothing renders it. The session list and search hide it by its token
+/// (`ConversationOrigin::LEDGERS`), and the wake loop's daily ceiling never counts it.
+fn migrate_v15_about_this_thread(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|since| since.as_secs() as i64)
+        .unwrap_or(0);
+    tx.execute(
+        "INSERT INTO conversations (title, created_at, updated_at, archived, origin)
+         VALUES ('', ?1, ?1, 0, 'about_this')",
+        rusqlite::params![now],
+    )?;
+    Ok(())
 }

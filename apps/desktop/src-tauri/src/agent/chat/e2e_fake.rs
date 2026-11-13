@@ -41,7 +41,52 @@ pub(super) fn scripted_fake_llm(slot: AgentSlot) -> FakeAgentLlm {
     match slot {
         AgentSlot::Rail => FakeAgentLlm::by_prompt(rail_fake_turn),
         AgentSlot::Wake => FakeAgentLlm::script(vec![say(&["I had ", "a look at ", "what changed."])]),
+        AgentSlot::AboutThis => about_this_fake(),
     }
+}
+
+/// The verdict the card streams under the fake: fixed text, the same for every item (a spec
+/// asserts on it), in several deltas so streaming shows. `CMDR_E2E_ABOUT_VERDICT_PACE` slows it
+/// down ([`about_verdict_pace`]), so a person can see each state held still.
+pub(crate) const ABOUT_THIS_FAKE_VERDICT: [&str; 4] = [
+    "This is a test verdict ",
+    "from the test assistant. ",
+    "It read only the facts above, ",
+    "and it can't tell what depends on this.",
+];
+
+fn about_this_fake() -> FakeAgentLlm {
+    // Answers every call the same way, however many cards open.
+    let fake = FakeAgentLlm::by_prompt(|_messages| say(&ABOUT_THIS_FAKE_VERDICT));
+    match std::env::var("CMDR_E2E_ABOUT_VERDICT_PACE")
+        .ok()
+        .as_deref()
+        .and_then(about_verdict_pace)
+    {
+        Some(pace) => fake.paced(pace),
+        None => fake,
+    }
+}
+
+/// What `CMDR_E2E_ABOUT_VERDICT_PACE` asks of the verdict's fake: `<ms>` waits that long before
+/// each delta, `<ms>,<hold ms>` also holds before the last one, so the streaming and stopped
+/// states hold still for a screenshot or a person's QA. Only this fake reads it, and the fake
+/// itself needs `CMDR_E2E_ASK_CMDR_FAKE` in a dev or E2E build. Anything that doesn't parse
+/// reads as no pacing.
+fn about_verdict_pace(value: &str) -> Option<crate::agent::llm::fake::Pace> {
+    let mut parts = value.split(',').map(str::trim);
+    let per_delta = parts.next()?.parse::<u64>().ok()?;
+    let hold = match parts.next() {
+        None => 0,
+        Some(hold) => hold.parse::<u64>().ok()?,
+    };
+    if parts.next().is_some() {
+        return None;
+    }
+    Some(crate::agent::llm::fake::Pace {
+        per_delta: std::time::Duration::from_millis(per_delta),
+        hold_before_last: std::time::Duration::from_millis(hold),
+    })
 }
 
 /// What a rail message starting with this plays: [`rail_fake_turn`]'s tool-running turn.
@@ -249,6 +294,48 @@ fn proposing_wake_fake() -> FakeAgentLlm {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_verdict_pace_reads_a_wait_and_an_optional_hold() {
+        use std::time::Duration;
+        let pace = about_verdict_pace("300, 20000").expect("parses");
+        assert_eq!(pace.per_delta, Duration::from_millis(300));
+        assert_eq!(pace.hold_before_last, Duration::from_millis(20_000));
+        assert_eq!(
+            about_verdict_pace("50").expect("parses").hold_before_last,
+            Duration::ZERO
+        );
+        assert_eq!(about_verdict_pace("slow"), None);
+        assert_eq!(about_verdict_pace("1,2,3"), None);
+    }
+
+    /// The verdict's fake says the same fixed verdict to every card, in several deltas.
+    #[tokio::test]
+    async fn the_verdicts_fake_streams_its_fixed_text() {
+        use futures_util::StreamExt;
+        let fake = scripted_fake_llm(AgentSlot::AboutThis);
+        let stream = crate::agent::llm::AgentLlm::respond(
+            &fake,
+            "sys",
+            &[],
+            &[],
+            crate::agent::llm::CallSettings::default(),
+            tokio_util::sync::CancellationToken::new(),
+        )
+        .await
+        .expect("starts");
+        let texts: Vec<String> = stream
+            .filter_map(|delta| async move {
+                match delta {
+                    Ok(crate::agent::llm::AgentDelta::Text(text)) => Some(text),
+                    _ => None,
+                }
+            })
+            .collect()
+            .await;
+        assert_eq!(texts.concat(), ABOUT_THIS_FAKE_VERDICT.concat());
+        assert!(texts.len() > 1);
+    }
 
     /// The rail fake's tool turn plays its rounds by what the prompt holds, and every other
     /// message keeps the one-line reply `ask-cmdr.spec.ts` counts.

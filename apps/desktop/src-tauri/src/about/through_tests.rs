@@ -133,6 +133,12 @@ fn kinds_in_order(updates: &[AboutUpdate]) -> Vec<String> {
             AboutUpdate::VolumeStoppedAnswering => "stopped".to_string(),
             AboutUpdate::FactsSettled => "settled".to_string(),
             AboutUpdate::Unavailable { .. } => "unavailable".to_string(),
+            AboutUpdate::VerdictPlanned
+            | AboutUpdate::VerdictUnavailable { .. }
+            | AboutUpdate::VerdictGiven { .. }
+            | AboutUpdate::VerdictDelta { .. }
+            | AboutUpdate::VerdictEnd { .. }
+            | AboutUpdate::VerdictFromEarlier { .. } => "verdict".to_string(),
         })
         .collect()
 }

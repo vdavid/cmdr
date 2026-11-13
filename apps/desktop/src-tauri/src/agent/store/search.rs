@@ -192,7 +192,7 @@ pub fn search_conversations(
         return Ok(Vec::new());
     };
     let words = query_words(query);
-    let hidden = ConversationOrigin::QuietWakes.as_token();
+    let [quiet_wakes, about_this] = ConversationOrigin::LEDGERS.map(ConversationOrigin::as_token);
 
     // Every thread's header: a few hundred short rows, read once, so title matches and the
     // recency tie-break need no second trip.
@@ -205,9 +205,10 @@ pub fn search_conversations(
     let mut headers: HashMap<i64, Header> = HashMap::new();
     {
         let mut stmt = conn.prepare_cached(
-            "SELECT id, title, updated_at, archived, origin FROM conversations WHERE origin IS NOT ?1",
+            "SELECT id, title, updated_at, archived, origin FROM conversations \
+             WHERE origin IS NULL OR origin NOT IN (?1, ?2)",
         )?;
-        let mut rows = stmt.query(rusqlite::params![hidden])?;
+        let mut rows = stmt.query(rusqlite::params![quiet_wakes, about_this])?;
         while let Some(row) = rows.next()? {
             headers.insert(
                 row.get(0)?,

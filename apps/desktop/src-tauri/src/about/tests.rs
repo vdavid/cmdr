@@ -496,7 +496,7 @@ async fn a_cancel_that_beats_its_start_makes_the_start_send_nothing() {
     });
     let request_id = "about-test-tombstone".to_string();
     super::commands::about_cancel(request_id.clone());
-    super::commands::about_start(
+    super::commands::start(
         super::event::AboutRequest {
             request_id,
             path: file.to_string_lossy().into_owned(),
@@ -504,8 +504,8 @@ async fn a_cancel_that_beats_its_start_makes_the_start_send_nothing() {
             is_directory: Some(false),
         },
         channel,
-    )
-    .await;
+        || panic!("a start its cancel beat asks no gate"),
+    );
     assert_eq!(sent.load(std::sync::atomic::Ordering::SeqCst), 0);
 }
 

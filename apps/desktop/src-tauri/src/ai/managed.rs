@@ -90,6 +90,19 @@ mod tests {
         );
     }
 
+    /// A narrowing policy stops the card's verdict in flight too, through the same
+    /// `stop_in_flight_calls` a consent revoke runs.
+    #[test]
+    fn a_narrowing_stops_the_cards_verdict() {
+        let verdict = tokio_util::sync::CancellationToken::new();
+        let _claim = crate::about::verdict::limits::LIMITS.claim("managed-narrowing-test", verdict.clone());
+        stop(&stops_for(
+            &ManagedPolicy::default(),
+            &testing::forcing(&[DISABLE_CLOUD_AI]),
+        ));
+        assert!(verdict.is_cancelled());
+    }
+
     #[test]
     fn narrowing_stops_calls_and_only_ai_off_stops_the_local_model() {
         let none = ManagedPolicy::default();

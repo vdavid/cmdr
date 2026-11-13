@@ -92,6 +92,28 @@ fn load_true_flag<R: tauri::Runtime>(app: &tauri::AppHandle<R>, parse: fn(&str) 
     parse(&contents)
 }
 
+/// Whether the "Tell me about this" card writes its AI verdict (`aboutThis.aiVerdict`), read
+/// fresh on every card. ❗ Unlike the gates above, absent means ON: the registry default is
+/// `true` and the switch is the person's way to turn off a feature they never had to opt into.
+/// Only a real JSON `false` turns it off; an unreadable file reads as the default. The verdict
+/// still passes every AI gate after this one, so "on" here never means a call by itself.
+pub fn load_about_this_ai_verdict<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> bool {
+    let Ok(data_dir) = crate::config::resolved_app_data_dir(app) else {
+        return true;
+    };
+    let Ok(contents) = fs::read_to_string(data_dir.join("settings.json")) else {
+        return true;
+    };
+    parse_about_this_ai_verdict(&contents)
+}
+
+fn parse_about_this_ai_verdict(contents: &str) -> bool {
+    serde_json::from_str::<serde_json::Value>(contents)
+        .ok()
+        .and_then(|json| json.get("aboutThis.aiVerdict").and_then(serde_json::Value::as_bool))
+        != Some(false)
+}
+
 /// Whether `key` holds a real JSON `true`.
 fn parse_true_flag(contents: &str, key: &str) -> bool {
     serde_json::from_str::<serde_json::Value>(contents)
@@ -103,6 +125,16 @@ fn parse_true_flag(contents: &str, key: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The verdict's switch defaults on, and only a real `false` turns it off.
+    #[test]
+    fn the_verdict_switch_reads_on_unless_it_is_a_real_false() {
+        assert!(parse_about_this_ai_verdict("{}"));
+        assert!(parse_about_this_ai_verdict("not json"));
+        assert!(parse_about_this_ai_verdict(r#"{"aboutThis.aiVerdict": true}"#));
+        assert!(parse_about_this_ai_verdict(r#"{"aboutThis.aiVerdict": "false"}"#));
+        assert!(!parse_about_this_ai_verdict(r#"{"aboutThis.aiVerdict": false}"#));
+    }
 
     /// The legacy held "no" maps Ask Cmdr off, so only the value the frontend wrote (a JSON `true`)
     /// counts. Anything else, including a stringly `"true"` from a hand edit, leaves the store record

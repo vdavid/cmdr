@@ -21,6 +21,7 @@ mod registry;
 mod route;
 mod session;
 mod through;
+pub(crate) mod verdict;
 
 #[cfg(test)]
 mod tests;
@@ -36,7 +37,14 @@ pub(crate) fn model_for_test(card: &cmdr_about::card::AboutCard, path: &str) -> 
     model::for_model(card, path, model::gate(path, model::GateReach::NamesOnly))
 }
 
-/// Stops every card's gathering: the app is quitting.
+/// Stops the card verdict in flight and leaves its card open: cloud AI turned off, or the
+/// organization's policy narrowed (`ai::cloud_consent::stop_in_flight_calls`). Returns how
+/// many it stopped.
+pub(crate) fn stop_verdicts() -> usize {
+    verdict::stop_all()
+}
+
+/// Stops every card's gathering, verdicts included: the app is quitting.
 pub(crate) fn cancel_all() {
     let stopped = registry::REGISTRY.cancel_all();
     if stopped > 0 {

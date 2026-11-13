@@ -185,7 +185,16 @@ impl AboutSink for Kept {
                     let _ = kept.card.apply(fact);
                 }
             }
-            AboutUpdate::VolumeStoppedAnswering | AboutUpdate::FactsSettled | AboutUpdate::Unavailable { .. } => {}
+            // The agent's lookup never asks for a verdict, so none of those arrive here.
+            AboutUpdate::VolumeStoppedAnswering
+            | AboutUpdate::FactsSettled
+            | AboutUpdate::Unavailable { .. }
+            | AboutUpdate::VerdictPlanned
+            | AboutUpdate::VerdictUnavailable { .. }
+            | AboutUpdate::VerdictGiven { .. }
+            | AboutUpdate::VerdictDelta { .. }
+            | AboutUpdate::VerdictEnd { .. }
+            | AboutUpdate::VerdictFromEarlier { .. } => {}
         }
         true
     }

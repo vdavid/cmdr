@@ -51,6 +51,19 @@ pub(crate) struct Gathered {
     pub(crate) reach: Watch,
     /// What the item's volume lets the footer's actions do.
     pub(crate) actions: ActionCaps,
+    /// What the verdict may read of the item, decided where the card was placed.
+    pub(crate) item: ItemReach,
+}
+
+/// What the verdict may do with the item beyond its facts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) struct ItemReach {
+    /// Which node the item is (the probe's `lstat`), so a reopen on the same node can
+    /// reuse a finished verdict. `None` for an item reached through its volume.
+    pub(crate) node: Option<cmdr_fs::volume::NodeIdentity>,
+    /// A file on a local disk whose bytes are there (not an online-only cloud file,
+    /// not behind a link into a share): the only item the verdict may look inside.
+    pub(crate) bytes_readable: bool,
 }
 
 /// What a row still out at its budget means, by how the card reaches the item.
@@ -243,6 +256,7 @@ pub(crate) async fn run(
         jobs,
         reach,
         actions,
+        item: _,
     } = gathered;
     let card = AboutCard::new(&plan);
     let session = Arc::new(Session {

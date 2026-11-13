@@ -29,7 +29,7 @@ use super::model::GateReach;
 use super::owner::AppSource;
 use super::platform;
 use super::probe::{Probe, probe, sits_on_a_local_disk};
-use super::session::{Gathered, PROBE_BUDGET, Watch};
+use super::session::{Gathered, ItemReach, PROBE_BUDGET, Watch};
 use super::through::{self, ArchiveRecord, Asked, DownloadFrom, STUCK, SnapshotPath, Through};
 use crate::file_system::volume::manager::{get_volume_manager, path_routes_over_its_parent};
 use crate::location::Location;
@@ -520,12 +520,17 @@ pub(crate) fn local_gathered(
     } else {
         Vec::new()
     };
+    let item = ItemReach {
+        node: probed.node,
+        bytes_readable: probed.on_local_disk && probed.contents_local && probed.target == AboutTarget::File,
+    };
     Gathered {
         plan,
         ready: vec![AboutFact::Identity(probed.identity)],
         jobs,
         reach: Watch::EachRow,
         actions: ActionCaps::none(),
+        item,
     }
 }
 
@@ -617,6 +622,7 @@ pub(crate) fn through_plan(way: Way, name: &str, is_directory: bool, caps: &Volu
         // slow by itself. A volume's identity is its health check.
         reach: if is_view { Watch::EachRow } else { Watch::TheVolume },
         actions: ActionCaps::none(),
+        item: ItemReach::default(),
     };
     if !volume_answers {
         log::debug!(target: "about", "the item's volume is still holding earlier calls; not asking it again");

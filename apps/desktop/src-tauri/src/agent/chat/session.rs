@@ -50,20 +50,46 @@ impl ResolvedAgentLlm {
             ResolvedAgentLlm::Fake(fake) => Box::new(fake),
         }
     }
+
+    /// Builds the boxed `AgentLlm` with NO logging context, so nothing of the call reaches
+    /// `llm-logs/` whatever `logLlmCalls` says. For the card's verdict, which is never stored:
+    /// its prompt carries an item's path and facts, and its answer is untrusted text.
+    pub fn into_unlogged_llm(self) -> Box<dyn AgentLlm> {
+        match self {
+            ResolvedAgentLlm::Genai(backend) => Box::new(GenaiAgentLlm::new(backend)),
+            ResolvedAgentLlm::Fake(fake) => Box::new(fake),
+        }
+    }
 }
 
-/// Who is asking for an LLM. The two slots share one provider, one key, and one model, so
-/// this changes NOTHING on the real path.
+/// Who is asking for an LLM. Every slot shares one provider and one key; the rail and a wake
+/// also share one model.
 ///
-/// ⚠️ It exists for the E2E fake, which must not answer a wake the way it answers the rail: the
-/// rail's specs assert on the scripted reply's exact text, so one shared script would make a
-/// wake's thread indistinguishable from a rail thread and would tie the two suites together.
+/// ⚠️ The rail/wake split exists for the E2E fake, which must not answer a wake the way it
+/// answers the rail: the rail's specs assert on the scripted reply's exact text, so one shared
+/// script would make a wake's thread indistinguishable from a rail thread and would tie the two
+/// suites together.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AgentSlot {
     /// A message the user sent in the chat rail.
     Rail,
     /// A turn the wake loop started on its own.
     Wake,
+    /// The "Tell me about this" card's verdict: two or three sentences, no tools. ❗ It takes the
+    /// `ai/` provider's own model and skips `askCmdr.interactiveModel`, which may be a large chat
+    /// model: a verdict is a small call made every time a card opens (what folder suggestions
+    /// use too).
+    AboutThis,
+}
+
+impl AgentSlot {
+    /// The model override this slot reads, fresh: the rail's and a wake's own choice, or none.
+    fn model_override(self, app: &AppHandle) -> Option<String> {
+        match self {
+            AgentSlot::Rail | AgentSlot::Wake => crate::settings::load_ask_cmdr_interactive_model(app),
+            AgentSlot::AboutThis => None,
+        }
+    }
 }
 
 /// Why the slot can't resolve to an LLM. Decided before a thread exists, so it never reaches the
@@ -146,7 +172,7 @@ pub fn resolve_agent_llm(
             "fake".to_string(),
         ));
     }
-    let model_override = crate::settings::load_ask_cmdr_interactive_model(app);
+    let model_override = slot.model_override(app);
     let backend = slot_backend(crate::ai::manager::resolve_backend_with_model(
         app,
         model_override.as_deref(),
@@ -246,6 +272,56 @@ pub fn resolve_call_settings(app: &AppHandle, provider: ProviderTag, model: &str
 /// default is high, so it gets High's room rather than thinking inside the base slot).
 pub fn resolve_wake_call_settings(app: &AppHandle, provider: ProviderTag, model: &str) -> CallSettings {
     call_settings_for(app, provider, model, |_| effort::EffortChoice::Recommended)
+}
+
+/// The "Tell me about this" verdict's call: a reply of `reply_tokens`, thinking as little as
+/// the model allows. A model that reasons and can stop is asked not to; one that can't stop
+/// thinks at its lowest level, with room for that beside the reply; one known not to reason
+/// is asked for none (an explicit level 400s there).
+pub fn resolve_verdict_call_settings(
+    app: &AppHandle,
+    provider: ProviderTag,
+    model: &str,
+    reply_tokens: u32,
+) -> CallSettings {
+    if provider == ProviderTag::Local || crate::test_mode::ask_cmdr_fake_active() {
+        return CallSettings {
+            effort: crate::agent::llm::ReasoningEffort::ProviderDefault,
+            max_output_tokens: reply_tokens,
+            model_reasons: None,
+        };
+    }
+    let reported = crate::ai::model_capabilities::for_configured_cloud_model(app, model);
+    let options = effort::effort_options(provider, model, reported.as_ref().map(|c| &c.reasoning));
+    verdict_call_settings(&options, reply_tokens)
+}
+
+/// What a verdict's thinking may spend before its reply, on a model that can't stop thinking.
+const VERDICT_THINKING_ROOM: u32 = 2_000;
+
+/// Pure core of [`resolve_verdict_call_settings`].
+fn verdict_call_settings(options: &effort::EffortOptions, reply_tokens: u32) -> CallSettings {
+    use crate::agent::llm::ReasoningEffort;
+    match options.reasons {
+        Some(true) if options.can_turn_off => CallSettings {
+            effort: ReasoningEffort::Off,
+            max_output_tokens: reply_tokens,
+            model_reasons: Some(true),
+        },
+        Some(true) => CallSettings {
+            effort: options
+                .levels
+                .first()
+                .map_or(ReasoningEffort::ProviderDefault, |level| level.effort()),
+            max_output_tokens: reply_tokens + VERDICT_THINKING_ROOM,
+            model_reasons: Some(true),
+        },
+        reasons => CallSettings {
+            effort: ReasoningEffort::ProviderDefault,
+            max_output_tokens: reply_tokens,
+            model_reasons: reasons,
+        },
+    }
 }
 
 fn call_settings_for(
@@ -440,6 +516,43 @@ pub fn local_offset() -> FixedOffset {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The verdict thinks as little as each model allows, and only a model that can't stop
+    /// thinking gets room for it beside the reply.
+    #[test]
+    fn the_verdict_thinks_as_little_as_the_model_allows() {
+        use crate::agent::llm::ReasoningEffort;
+        let options = |reasons, can_turn_off, levels: Vec<effort::EffortLevel>| effort::EffortOptions {
+            reasons,
+            levels,
+            can_turn_off,
+            recommended: None,
+            source: None,
+        };
+        let off = verdict_call_settings(&options(Some(true), true, vec![effort::EffortLevel::Low]), 120);
+        assert_eq!((off.effort, off.max_output_tokens), (ReasoningEffort::Off, 120));
+        let low = verdict_call_settings(
+            &options(
+                Some(true),
+                false,
+                vec![effort::EffortLevel::Low, effort::EffortLevel::High],
+            ),
+            120,
+        );
+        assert_eq!(low.effort, ReasoningEffort::Low);
+        assert!(low.max_output_tokens > 120);
+        let plain = verdict_call_settings(&options(Some(false), false, Vec::new()), 120);
+        assert_eq!(
+            (plain.effort, plain.max_output_tokens, plain.model_reasons),
+            (ReasoningEffort::ProviderDefault, 120, Some(false))
+        );
+        let unknown = verdict_call_settings(&options(None, false, Vec::new()), 120);
+        assert_eq!(
+            unknown.effort,
+            ReasoningEffort::ProviderDefault,
+            "never an explicit level"
+        );
+    }
 
     /// A slot refusal reaches the rail as its OWN wire kind: a missing cloud consent must not
     /// read as "set up a provider" to somebody whose provider is set up.

@@ -58,7 +58,18 @@ token_enum! {
         /// own rather than masquerading as a wake thread, because the session list hides it
         /// by exactly this token and the rail's thread icon reads the same set.
         QuietWakes => "quiet_wakes",
+        /// The one reserved row, created by migration v15 and never shown: it holds what "Tell me
+        /// about this" verdicts spent. The verdict has no thread (it's never stored), so its cost
+        /// meters onto this row, and nothing but the cost meter ever reads it. Outside the wake
+        /// loop's daily ceiling, which counts the two proactive origins only.
+        AboutThis => "about_this",
     }
+}
+
+impl ConversationOrigin {
+    /// The reserved ledger rows: cost totals, never conversations. The session list and search
+    /// hide every one, by token, so a new ledger joins both by joining this list.
+    pub const LEDGERS: [ConversationOrigin; 2] = [ConversationOrigin::QuietWakes, ConversationOrigin::AboutThis];
 }
 
 token_enum! {

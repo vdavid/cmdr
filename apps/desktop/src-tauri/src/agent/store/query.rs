@@ -164,16 +164,17 @@ const CONVERSATION_COLUMNS: &str = "id, title, created_at, updated_at, archived,
 /// Conversations newest-activity first, paged. `include_archived = false` filters the
 /// archived flag; the `conversations_updated` index serves the order.
 ///
-/// The reserved `quiet_wakes` ledger row is filtered out either way — it is a cost total, not a
-/// conversation, and `include_archived` is about threads the user set aside, not bookkeeping. ⚠️
-/// `IS NOT`, ❌ never `<>`: the common case is a NULL origin, which `<>` answers NULL to.
+/// The reserved ledger rows (`ConversationOrigin::LEDGERS`) are filtered out either way — each is
+/// a cost total, not a conversation, and `include_archived` is about threads the user set aside,
+/// not bookkeeping. ⚠️ The `IS NULL OR` half is load-bearing: the common case is a NULL origin,
+/// which `NOT IN` alone answers NULL to.
 pub fn list_conversations(
     conn: &Connection,
     limit: u32,
     offset: u32,
     include_archived: bool,
 ) -> Result<Vec<ConversationRow>, AgentStoreError> {
-    let visible = "origin IS NOT ?3";
+    let visible = "(origin IS NULL OR origin NOT IN (?3, ?4))";
     let where_sql = if include_archived {
         format!("WHERE {visible}")
     } else {
@@ -184,11 +185,8 @@ pub fn list_conversations(
          ORDER BY updated_at DESC, id DESC LIMIT ?1 OFFSET ?2"
     );
     let mut stmt = conn.prepare_cached(&sql)?;
-    let mut rows = stmt.query(rusqlite::params![
-        limit,
-        offset,
-        ConversationOrigin::QuietWakes.as_token()
-    ])?;
+    let [quiet_wakes, about_this] = ConversationOrigin::LEDGERS.map(ConversationOrigin::as_token);
+    let mut rows = stmt.query(rusqlite::params![limit, offset, quiet_wakes, about_this])?;
     let mut out = Vec::new();
     while let Some(row) = rows.next()? {
         out.push(map_conversation_row(row)?);
@@ -203,13 +201,24 @@ pub fn list_conversations(
 /// so it is present on every store this build opens; the `Err` is for a DB somebody edited by
 /// hand, and its callers keep the thread rather than lose its cost record.
 pub fn quiet_wakes_conversation(conn: &Connection) -> Result<i64, AgentStoreError> {
+    ledger_conversation(conn, ConversationOrigin::QuietWakes)
+}
+
+/// The id of the reserved thread that holds what "Tell me about this" verdicts spent. Created
+/// by migration v15; the `Err` is for a DB somebody edited by hand, and the verdict then
+/// refuses to start rather than run unmetered.
+pub fn about_this_conversation(conn: &Connection) -> Result<i64, AgentStoreError> {
+    ledger_conversation(conn, ConversationOrigin::AboutThis)
+}
+
+fn ledger_conversation(conn: &Connection, origin: ConversationOrigin) -> Result<i64, AgentStoreError> {
     let mut stmt = conn.prepare_cached("SELECT id FROM conversations WHERE origin = ?1 ORDER BY id LIMIT 1")?;
-    let mut rows = stmt.query(rusqlite::params![ConversationOrigin::QuietWakes.as_token()])?;
+    let mut rows = stmt.query(rusqlite::params![origin.as_token()])?;
     match rows.next()? {
         Some(row) => Ok(row.get(0)?),
         None => Err(AgentStoreError::Decode {
             column: "origin",
-            value: ConversationOrigin::QuietWakes.as_token().to_string(),
+            value: origin.as_token().to_string(),
         }),
     }
 }

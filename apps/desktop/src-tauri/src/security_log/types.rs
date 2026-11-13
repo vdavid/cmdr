@@ -150,6 +150,9 @@ pub enum ContentTool {
     /// `about_item`: no contents, but what Cmdr's Full Disk Access reads about an item (where it
     /// was downloaded from, when it was last opened), which a process without it can't.
     AboutItem,
+    /// The "Tell me about this" card's verdict, whose short look inside a file goes through
+    /// `inspect_file`'s core and its gate.
+    AboutVerdict,
 }
 
 /// Why an AI tool wasn't given a file's contents.

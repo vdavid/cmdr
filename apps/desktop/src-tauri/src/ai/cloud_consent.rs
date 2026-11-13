@@ -249,16 +249,18 @@ pub async fn cloud_ai_consent_revoke_pending_changed(app: AppHandle) {
     announce_change(&app);
 }
 
-/// Cancel every in-flight AI call: running Ask Cmdr turns and suggestion streams. `reason` labels
+/// Cancel every in-flight AI call: running Ask Cmdr turns, suggestion streams, and the "Tell me
+/// about this" verdict. `reason` labels
 /// the log line. Translate calls are one-shot requests of a few seconds and aren't tracked: they
 /// finish, and the next one refuses. Also what a narrowing managed policy runs (`super::managed`).
 pub(super) fn stop_in_flight_calls(reason: &str) {
     let turns = crate::agent::chat::cancel::cancel_all();
     let streams = super::stream_registry::cancel_all();
-    if turns + streams > 0 {
+    let verdicts = crate::about::stop_verdicts();
+    if turns + streams + verdicts > 0 {
         log::info!(
             target: LOG_TARGET,
-            "{reason}: stopped {turns} Ask Cmdr turn(s) and {streams} suggestion stream(s)"
+            "{reason}: stopped {turns} Ask Cmdr turn(s), {streams} suggestion stream(s), and {verdicts} card verdict(s)"
         );
     }
 }
@@ -304,6 +306,16 @@ mod tests {
 
     fn no_policy() -> ManagedPolicy {
         ManagedPolicy::default()
+    }
+
+    /// Turning cloud AI off (or a held "no") stops the card's verdict in flight beside the
+    /// turns and the suggestion streams.
+    #[test]
+    fn a_revoke_stops_the_cards_verdict() {
+        let verdict = tokio_util::sync::CancellationToken::new();
+        let _claim = crate::about::verdict::limits::LIMITS.claim("cloud-consent-revoke-test", verdict.clone());
+        stop_in_flight_calls("a test revoke");
+        assert!(verdict.is_cancelled());
     }
 
     /// A policy that rules out every cloud host closes the gate over a consent the store still

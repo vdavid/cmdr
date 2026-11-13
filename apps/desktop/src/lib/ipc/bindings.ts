@@ -3163,8 +3163,9 @@ export const commands = {
    */
   revokeCloudAiConsent: () => typedError<null, CloudAiConsentWriteError>(__TAURI_INVOKE('revoke_cloud_ai_consent')),
   /**
-   *  Stops the card's gathering: queued jobs skip their work, and nothing more is
-   *  sent. A cancel that arrives before its start makes that start a no-op.
+   *  Stops the card's gathering and its verdict: queued jobs skip their work, and
+   *  nothing more is sent. A cancel that arrives before its start makes that start a
+   *  no-op.
    */
   aboutCancel: (requestId: string) => __TAURI_INVOKE<void>('about_cancel', { requestId }),
   /**
@@ -6675,7 +6676,11 @@ export type AboutUnavailable =
  *  What happened on a card's request.
  *
  *  `planned` always comes first (or `unavailable`, instead of everything), then
- *  one `fact` per landing in any order, then `factsSettled` once.
+ *  one `fact` per landing in any order, then `factsSettled` once. The verdict's
+ *  events interleave with the facts after `planned`: `verdictPlanned` or
+ *  `verdictUnavailable` first, right after `planned`; then `verdictGiven`,
+ *  `verdictDelta`s, and one `verdictEnd` (or one `verdictFromEarlier` instead of
+ *  those three).
  */
 export type AboutUpdate =
   /**
@@ -6710,6 +6715,55 @@ export type AboutUpdate =
       type: 'unavailable'
       // Why.
       why: AboutUnavailable
+    }
+  // The card gets a verdict: reserve its block. Right after `planned`.
+  | { type: 'verdictPlanned' }
+  // The card gets no verdict, and why. Right after `planned`.
+  | {
+      type: 'verdictUnavailable'
+      // Why.
+      why: VerdictUnavailable
+    }
+  /**
+   *  The verdict's call is about to go out with this look inside the item, so the
+   *  card can say what's leaving while it leaves. Before the first delta.
+   */
+  | {
+      type: 'verdictGiven'
+      // What of the item's contents rides with the facts.
+      contents: VerdictContents
+    }
+  /**
+   *  The next piece of the verdict's text. Plain text, ❌ never Markdown or markup:
+   *  render it as a text node.
+   */
+  | {
+      type: 'verdictDelta'
+      // The text to append.
+      text: string
+    }
+  // The verdict ended. Nothing more about it follows.
+  | {
+      type: 'verdictEnd'
+      // How it ended.
+      ending: VerdictEnding
+      /**
+       *  What the call cost, when the provider reported it. A stopped or failed
+       *  call reports nothing, so there is nothing to show.
+       */
+      cost: VerdictCost | null
+    }
+  /**
+   *  A verdict this item already got in this session, unchanged since (same path,
+   *  node, size, and modification time): no call was made. Instead of
+   *  `verdictGiven`, the deltas, and `verdictEnd`.
+   */
+  | {
+      type: 'verdictFromEarlier'
+      // What of the item's contents that verdict was given.
+      contents: VerdictContents
+      // The whole text. Plain text, like a delta.
+      text: string
     }
 
 /**
@@ -8892,6 +8946,13 @@ export type ConversationOrigin =
    *  by exactly this token and the rail's thread icon reads the same set.
    */
   | 'quietWakes'
+  /**
+   *  The one reserved row, created by migration v15 and never shown: it holds what "Tell me
+   *  about this" verdicts spent. The verdict has no thread (it's never stored), so its cost
+   *  meters onto this row, and nothing but the cost meter ever reads it. Outside the wake
+   *  loop's daily ceiling, which counts the two proactive origins only.
+   */
+  | 'aboutThis'
 
 // A conversation header row. Wire type (the thread list).
 export type ConversationRow = {
@@ -23222,6 +23283,99 @@ export type ValidationError =
   | { kind: 'nameTooLong'; bytes: number; max: number }
   // Full path exceeds the maximum byte length.
   | { kind: 'pathTooLong'; bytes: number; max: number }
+
+// What of the item's contents rides with the facts to the model.
+export type VerdictContents =
+  /**
+   *  The facts only: a folder (its digest is the look inside), an item on a
+   *  volume Cmdr doesn't read bytes from, or a file whose contents gave nothing.
+   */
+  | 'none'
+  // The first lines of a text file.
+  | 'firstLines'
+  // A PDF's title and first page.
+  | 'firstPage'
+  // The names of an archive's first entries.
+  | 'entryNames'
+  // A photo's camera details, ❌ never its location.
+  | 'cameraDetails'
+  /**
+   *  The item is somewhere Cmdr keeps contents home (credentials, a browser
+   *  profile, mail): name-level facts only, and nothing from inside.
+   */
+  | 'protected'
+
+// What one verdict cost, as the cost meter recorded it.
+export type VerdictCost = {
+  // Input tokens, the cached share included.
+  promptTokens: number
+  // Output tokens.
+  completionTokens: number
+  // Micro-USD; 0 on the local model. Only meaningful when `priced`.
+  costMicros: number
+  // False when the model isn't in the price table: show "unknown", ❌ never $0.
+  priced: boolean
+}
+
+// How a verdict ended.
+export type VerdictEnding =
+  // The model finished.
+  | { kind: 'done' }
+  /**
+   *  Stopped before the end (Stop, cloud AI turned off, a policy change); the
+   *  text so far stands.
+   */
+  | { kind: 'stopped' }
+  // The provider couldn't answer.
+  | {
+      kind: 'failed'
+      // What went wrong, by kind.
+      problem: VerdictProblem
+    }
+
+/**
+ *  What kept the provider from answering, classified by its typed error, ❌ never
+ *  by its wording.
+ */
+export type VerdictProblem =
+  // The key was refused, or none is set.
+  | 'authFailed'
+  // Rate-limited, out of quota, or the plan lacks the model.
+  | 'rateLimited'
+  // Couldn't reach the provider, or it timed out.
+  | 'unreachable'
+  // The provider is overloaded right now.
+  | 'overloaded'
+  // The organization's policy refused the request on its way out.
+  | 'managed'
+  // Anything else the provider answered.
+  | 'other'
+
+/**
+ *  Why a card gets no verdict. The card words each one; with `aiOff` and
+ *  `turnedOff` it draws no block at all.
+ */
+export type VerdictUnavailable =
+  // `ai.provider` is off.
+  | { kind: 'aiOff' }
+  // The person turned the verdict off (`aboutThis.aiVerdict`).
+  | { kind: 'turnedOff' }
+  // The local model writes no verdict until its answers are measured good.
+  | { kind: 'localOff' }
+  // Cloud AI is picked and not allowed (or allowed under older copy).
+  | { kind: 'noCloudConsent' }
+  // A cloud provider is picked but has no key or endpoint.
+  | { kind: 'notConfigured' }
+  // The local model's server isn't running. A verdict never starts it.
+  | { kind: 'notReady' }
+  // The organization's policy refuses it.
+  | {
+      kind: 'managed'
+      // The policy's reason.
+      refusal: ManagedAiRefusal
+    }
+  // Too many verdicts started in the last minute: try again in a moment.
+  | { kind: 'tooManyRequests' }
 
 /**
  *  Result of verifying a license key without persisting it.

@@ -83,7 +83,40 @@ function volumeStopped(card: AboutCardData): AboutCardData {
  */
 export function applyAboutEvent(card: AboutCardData, event: AboutEvent): AboutCardData {
   if (event.requestId !== card.requestId || card.unavailable !== null) return card
-  const update = event.update
+  // The card doesn't draw a verdict block yet, so the verdict's events change nothing.
+  if (isVerdictUpdate(event.update)) return card
+  return applyFactUpdate(card, event.update)
+}
+
+type AboutUpdate = AboutEvent['update']
+type VerdictUpdate = Extract<
+  AboutUpdate,
+  {
+    type:
+      | 'verdictPlanned'
+      | 'verdictUnavailable'
+      | 'verdictGiven'
+      | 'verdictDelta'
+      | 'verdictEnd'
+      | 'verdictFromEarlier'
+  }
+>
+type FactUpdate = Exclude<AboutUpdate, VerdictUpdate>
+
+const VERDICT_UPDATES: ReadonlySet<AboutUpdate['type']> = new Set<VerdictUpdate['type']>([
+  'verdictPlanned',
+  'verdictUnavailable',
+  'verdictGiven',
+  'verdictDelta',
+  'verdictEnd',
+  'verdictFromEarlier',
+])
+
+function isVerdictUpdate(update: AboutUpdate): update is VerdictUpdate {
+  return VERDICT_UPDATES.has(update.type)
+}
+
+function applyFactUpdate(card: AboutCardData, update: FactUpdate): AboutCardData {
   switch (update.type) {
     case 'planned':
       if (card.plan !== null) return card

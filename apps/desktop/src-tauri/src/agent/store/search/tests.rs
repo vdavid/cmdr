@@ -128,6 +128,14 @@ fn paging_tiles_the_ranked_list() {
 }
 
 #[test]
+fn the_reserved_about_this_row_never_matches() {
+    let conn = migrated_conn();
+    let reserved = crate::agent::store::about_this_conversation(&conn).expect("reserved row");
+    rename_conversation(&conn, reserved, "kiwi ledger").expect("rename");
+    assert!(search_ids(&conn, "kiwi").is_empty());
+}
+
+#[test]
 fn the_reserved_quiet_wakes_row_never_matches() {
     let conn = migrated_conn();
     let reserved = crate::agent::store::quiet_wakes_conversation(&conn).expect("reserved row");

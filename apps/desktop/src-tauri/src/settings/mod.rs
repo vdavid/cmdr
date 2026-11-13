@@ -9,7 +9,8 @@ mod restricted_shortcuts;
 mod plugin_store_tests;
 
 pub use ai_gates::{
-    AskCmdrSwitch, load_ask_cmdr_consent_revoke_pending, load_ask_cmdr_switch, load_cloud_consent_revoke_pending,
+    AskCmdrSwitch, load_about_this_ai_verdict, load_ask_cmdr_consent_revoke_pending, load_ask_cmdr_switch,
+    load_cloud_consent_revoke_pending,
 };
 pub use ask_cmdr::{
     load_ai_reasoning_efforts, load_ask_cmdr_chat_memory_size, load_ask_cmdr_interactive_model,

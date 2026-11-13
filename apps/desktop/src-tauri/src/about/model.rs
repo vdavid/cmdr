@@ -40,6 +40,20 @@ impl Gate {
     pub(crate) fn protected(self) -> Option<ProtectedReason> {
         self.0
     }
+
+    /// The sensitive gate's own reason, for the security log's refusal line. `None` when
+    /// the item isn't protected, or when the gate couldn't finish (failing closed isn't a
+    /// rule saying no, so there's no rule to log).
+    pub(crate) fn refusal(self) -> Option<Protected> {
+        match self.0? {
+            ProtectedReason::Credentials => Some(Protected::Credentials),
+            ProtectedReason::BrowserData => Some(Protected::BrowserData),
+            ProtectedReason::MessageStore => Some(Protected::MessageStore),
+            ProtectedReason::CmdrData => Some(Protected::CmdrData),
+            ProtectedReason::PrivateKey => Some(Protected::PrivateKey),
+            ProtectedReason::Unresolved => None,
+        }
+    }
 }
 
 /// Checks `path` for a model. Blocking with [`GateReach::FollowLinks`] (a

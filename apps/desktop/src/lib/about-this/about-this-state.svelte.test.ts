@@ -83,6 +83,21 @@ describe('applyAboutEvent', () => {
     expect(card.settled).toBe(true)
   })
 
+  it('leaves the card as it is on every verdict event', () => {
+    const card = applyAboutEvent(emptyCard('r', subject), planned('r'))
+    const updates: AboutEvent['update'][] = [
+      { type: 'verdictPlanned' },
+      { type: 'verdictUnavailable', why: { kind: 'noCloudConsent' } },
+      { type: 'verdictGiven', contents: 'firstLines' },
+      { type: 'verdictDelta', text: 'Some words.' },
+      { type: 'verdictEnd', ending: { kind: 'done' }, cost: null },
+      { type: 'verdictFromEarlier', contents: 'none', text: 'Earlier words.' },
+    ]
+    for (const update of updates) {
+      expect(applyAboutEvent(card, { requestId: 'r', update })).toBe(card)
+    }
+  })
+
   it('ignores a fact outside the plan', () => {
     let card = applyAboutEvent(emptyCard('r', subject), planned('r'))
     const git: AboutFact = { kind: 'git', fact: { state: 'pending' } }

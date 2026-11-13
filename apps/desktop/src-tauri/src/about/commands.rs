@@ -1,14 +1,16 @@
-//! The card's two commands. Pass-throughs: every decision is in `cmdr-about` and
-//! the session.
+//! The card's commands. Pass-throughs: every decision is in `cmdr-about`, the
+//! session, and the verdict.
 
 use std::sync::Arc;
 
+use tauri::AppHandle;
 use tauri::ipc::Channel;
 
-use super::event::{AboutEvent, AboutRequest, AboutUpdate};
+use super::event::{AboutEvent, AboutRequest, AboutUpdate, VerdictUnavailable};
 use super::registry::REGISTRY;
 use super::route::{Started, gather_for};
 use super::session::{AboutSink, Submit, Timing, run};
+use super::verdict::{self, VerdictRun, Watched};
 
 /// A card's channel, stamping each update with its request id.
 struct ChannelSink {
@@ -28,34 +30,67 @@ impl AboutSink for ChannelSink {
 }
 
 /// Starts gathering the card for `request`, streaming `planned`, each fact, and
-/// `factsSettled` (or one `unavailable`) over `on_event`. Returns at once; the
-/// gathering runs until it settles or `about_cancel` stops it.
+/// `factsSettled` (or one `unavailable`) over `on_event`, and beside them the
+/// verdict's events. Returns at once; the gathering runs until it settles and the
+/// verdict ends, or `about_cancel` stops both.
 ///
 /// ❗ Cancel with `about_cancel`, ❌ never by dropping the channel: a `Channel`'s
 /// `send` still succeeds after the webview's handler is gone (`ai/CLAUDE.md`).
 #[tauri::command]
-pub async fn about_start(request: AboutRequest, on_event: Channel<AboutEvent>) {
+pub async fn about_start(app: AppHandle, request: AboutRequest, on_event: Channel<AboutEvent>) {
+    start(request, on_event, move || verdict::gate::resolve_for_card(&app));
+}
+
+/// [`about_start`] with the verdict's gate injected, so a test runs it without an app.
+pub(super) fn start(
+    request: AboutRequest,
+    on_event: Channel<AboutEvent>,
+    gate: impl FnOnce() -> verdict::Decision + Send + 'static,
+) {
     let Some(registered) = REGISTRY.register(&request.request_id) else {
         // The card closed before this start arrived.
         return;
     };
-    let sink: Arc<dyn AboutSink> = Arc::new(ChannelSink {
+    let channel: Arc<dyn AboutSink> = Arc::new(ChannelSink {
         request_id: request.request_id.clone(),
         channel: on_event,
     });
+    let watched = Arc::new(Watched::new(channel));
     tauri::async_runtime::spawn(async move {
         let token = registered.token.clone();
+        // The verdict's gate (its setting, then the slot) resolves beside the card's
+        // placing, so its answer is ready on the card's first frame. It reads
+        // `settings.json` and `main.db`, so off the executor.
+        let decision = tokio::task::spawn_blocking(gate);
         tokio::select! {
             () = token.cancelled() => {}
             placed = gather_for(&request, Started::ByPerson) => match placed {
                 Ok(placed) => {
+                    let decision = decision.await.unwrap_or(Err(VerdictUnavailable::NotReady));
+                    let verdict = VerdictRun {
+                        request_id: request.request_id.clone(),
+                        volume_id: placed.location.volume_id.clone(),
+                        path: placed.location.path.clone(),
+                        gate_reach: placed.asking.gate_reach(),
+                        item: placed.gathered.item,
+                        card: token.clone(),
+                        locale: crate::intl::active_locale(),
+                        limits: &verdict::limits::LIMITS,
+                        read: verdict::peek::inspect_reader(),
+                        facts_cap: verdict::FACTS_CAP,
+                    };
                     let submit: Submit = Arc::new(super::pool::submit);
-                    run(placed.gathered, sink, token, submit, Timing::CARD).await;
+                    let sink: Arc<dyn AboutSink> = Arc::clone(&watched) as Arc<dyn AboutSink>;
+                    let facts = async {
+                        run(placed.gathered, sink, token.clone(), submit, Timing::CARD).await;
+                        watched.finish();
+                    };
+                    tokio::join!(facts, verdict::run(verdict, decision, &watched));
                 }
                 Err(no_card) => {
                     let why = no_card.why;
                     log::debug!(target: "about", "card unavailable: {why:?}");
-                    let _ = sink.send(AboutUpdate::Unavailable { why });
+                    let _ = AboutSink::send(watched.as_ref(), AboutUpdate::Unavailable { why });
                 }
             },
         }
@@ -63,10 +98,28 @@ pub async fn about_start(request: AboutRequest, on_event: Channel<AboutEvent>) {
     });
 }
 
-/// Stops the card's gathering: queued jobs skip their work, and nothing more is
-/// sent. A cancel that arrives before its start makes that start a no-op.
+/// Stops the card's gathering and its verdict: queued jobs skip their work, and
+/// nothing more is sent. A cancel that arrives before its start makes that start a
+/// no-op.
 #[tauri::command]
 #[specta::specta]
 pub fn about_cancel(request_id: String) {
     REGISTRY.cancel(&request_id);
+}
+
+/// Stops the card's verdict alone and leaves the card open: its facts are done, and
+/// the text so far stands with a `stopped` ending.
+#[tauri::command]
+#[specta::specta]
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "registered with the verdict block's first caller, which `desktop-ipc-unused` requires"
+    )
+)]
+pub fn about_stop_verdict(request_id: String) {
+    if !verdict::limits::LIMITS.stop(&request_id) {
+        log::debug!(target: "about", "no verdict in flight for that card to stop");
+    }
 }
