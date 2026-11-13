@@ -261,7 +261,10 @@ const toc = [
         getcmdr.com counts visits with Umami, which runs on Cmdr's own server in Finland and uses no cookies. It also
         uses PostHog (EU cloud) for visit recordings and heatmaps, kept in memory only, so it sets no cookie either.
         Download links go through <code>api.getcmdr.com</code>, which counts each download with its country, referring
-        site, and browser, and a daily-salted IP hash it removes after 90 days. The browser demo (on the home page
+        site, and browser, and a daily-salted IP hash it removes after 90 days. When the site's security policy blocks a request, the
+        browser tells <code>api.getcmdr.com</code> the page and the address it blocked, without their query strings. The
+        server keeps a one-way hash of the visitor's IP address for up to a day, until a second visitor hits the same
+        block. The browser demo (on the home page
         and at <a href="/demo/">getcmdr.com/demo</a>) runs Cmdr's interface on sample files inside the page: it loads
         only its own files and sends nothing about what you do in it.
     </p>
@@ -691,8 +694,8 @@ const toc = [
             (<a href="#mdm">central management</a>).
         </li>
         <li>
-            <strong>Signing keys</strong>: the Apple signing keys are GitHub secrets in a protected environment that
-            only signed release tags reach. The GitHub account that controls them signs in with two-factor
+            <strong>Signing keys</strong>: the Apple signing keys are GitHub secrets in a protected environment that only signed release tags reach,
+            and each release waits there until the maintainer approves it, before anything is signed. The GitHub account that controls them signs in with two-factor
             authentication, using hardware security keys. The update signing key isn't on GitHub at all: the
             maintainer signs each update on his own Mac, and the release workflow checks those signatures before it
             publishes. Every signing key also has an encrypted backup outside GitHub.
@@ -767,6 +770,12 @@ const toc = [
             blocking it.
         </li>
         <li>
+            Cmdr's <code>Info.plist</code> says it can show any file or folder, at the lowest rank, so it never appears
+            under "Open With" and never becomes the default app for anything. It's there so "Show in Finder" from a
+            sandboxed app, like a browser download or an App Store app, can reach Cmdr once the user turns on "Let other
+            apps show files in Cmdr".
+        </li>
+        <li>
             Cmdr's <code>Info.plist</code> sets one environment variable, <code>MallocLargeCache=0</code>, which turns
             off a macOS memory cache to keep Cmdr's memory use down.
         </li>
@@ -814,7 +823,8 @@ const toc = [
             deletes, renames, and anything else sensitive wait for the user to confirm, and plans it prepares wait for
             approval. A password the user types into the chat to unlock an archive or a backup goes to the provider
             with the message. Some contents never reach the provider, whatever anyone asks: SSH keys, cloud and tool
-            credentials, keychains, browser data, Mail, Messages, Notes, Cmdr's own data, and any file holding a
+            credentials, keychains, password manager data (Bitwarden and 1Password), browser data, Mail, Thunderbird,
+            Outlook, Messages, Notes, Cmdr's own data, and any file holding a
             private key. Their names still can.
         </li>
         <li>

@@ -186,7 +186,7 @@ const wcagA: CriterionRow[] = [
     level: 'A',
     conformance: 'supports',
     remark:
-      'Moving content is limited to activity indicators like spinners, which stop under the macOS Reduce motion setting. The live view of a running copy stops following when the user scrolls.',
+      'Moving content is limited to activity indicators like spinners, and a brief fade and slide (about 0.2 seconds) when a secondary window such as Settings opens or closes. Both stop under the macOS Reduce motion setting. The live view of a running copy stops following when the user scrolls.',
   },
   {
     id: '2.3.1',
@@ -673,10 +673,9 @@ const section508Ch5: CriterionRow[] = [
   {
     id: '502.3.13',
     name: 'Modification of focus cursor',
-    conformance: 'partially-supports',
+    conformance: 'supports',
     remark:
-      "Assistive technology can move focus between standard controls, and VoiceOver follows Cmdr's cursor as the arrow keys move it through the file list. Moving the VoiceOver cursor onto a file with VoiceOver's own keys likely doesn't move Cmdr's cursor.",
-    issues: [453],
+      "Assistive technology can move focus between standard controls. VoiceOver follows Cmdr's cursor as the arrow keys move it through the file list, and moving the VoiceOver cursor onto a file with VoiceOver's own keys moves Cmdr's cursor too.",
   },
   {
     id: '502.3.14',
@@ -954,9 +953,8 @@ const enClause11: CriterionRow[] = [
   {
     id: '11.5.2.14',
     name: 'Modification of focus and selection attributes',
-    conformance: 'partially-supports',
+    conformance: 'supports',
     remark: 'See Section 508 502.3.13.',
-    issues: [453],
   },
   {
     id: '11.5.2.15',
@@ -1087,10 +1085,6 @@ export const gapIssues: { number: number; title: string }[] = [
   {
     number: 451,
     title: "The Full view's columns aren't a table, and tabs aren't tied to the file list they show",
-  },
-  {
-    number: 453,
-    title: "Moving the VoiceOver cursor onto a file may not move Cmdr's cursor",
   },
   {
     number: 454,

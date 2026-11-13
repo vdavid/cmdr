@@ -780,6 +780,18 @@ export const roadmapSections: RoadmapSection[] = [
               'The real Cmdr at <a href="/">getcmdr.com</a> and <a href="/demo">/demo</a>, how cool is that.',
             done: true,
           },
+          {
+            date: '(Nov 10)',
+            title: 'Partial operation rollbacks',
+            description: 'New op log UI, better tested functionality, alpha → beta state.',
+            done: true,
+          },
+          {
+            date: '(Nov 12)',
+            title: 'Linux+Windows shortcuts',
+            description: 'Sensible defaults for PC keyboards.',
+            done: true,
+          },
         ],
       },
     ],

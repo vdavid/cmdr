@@ -18,7 +18,7 @@
  */
 
 /** The release and date the page's claims were checked against. */
-export const verifiedAgainst = { version: '0.60.0', date: '2026-11-06' }
+export const verifiedAgainst = { version: '0.61.0', date: '2026-11-13' }
 
 export interface NetworkConnection {
   id: string
@@ -55,7 +55,7 @@ export const networkConnections: NetworkConnection[] = [
       '<code>api.getcmdr.com/heartbeat</code>. They stay in our own database there; no third party gets them.',
     when: 'At most once every three hours while the app is open. Feature events wait on the Mac and go with the next send.',
     sends:
-      "A random install id created on the Mac (not linked to a name, email, or license), app version, macOS version, CPU architecture, how long the app ran, the features used (with when, and coarse details like the kind of drive), every on/off and number setting plus a fixed list of choice settings (like light or dark mode), whether Full Disk Access is granted, and whether an organization manages the Mac. No file names, paths, file contents, search terms, or AI prompts. Settings are picked by type in code, so a text setting is left out unless it's on the fixed list. Feature details are kept free of names by code review, not by an automatic filter.",
+      "A random install id created on the Mac (not linked to a name, email, or license), app version, macOS version, CPU architecture, how long the app ran, whether Cmdr was installed with Homebrew or another way, the features used (with when, and coarse details like the kind of drive or how an action ended), every on/off and number setting plus a fixed list of choice settings (like light or dark mode), whether Full Disk Access is granted, and whether an organization manages the Mac. The server adds the country Cloudflare works out from the connection, and doesn't keep the IP address. No file names, paths, file contents, search terms, or AI prompts. Settings are picked by type in code, so a text setting is left out unless it's on the fixed list. Feature details are kept free of names by code review, not by an automatic filter.",
     control:
       '<strong>On by default</strong> during the open beta, from the first launch. The first-launch setup explains it, and the user can\'t skip that step. Turn off with Settings &gt; Updates &amp; privacy &gt; "Send usage stats". When it\'s off, nothing is sent. IT can turn it off for everyone with <code>DisableUsageStats</code>.',
   },
@@ -75,7 +75,7 @@ export const networkConnections: NetworkConnection[] = [
     destination: '<code>api.getcmdr.com/error-report</code>',
     when: 'When the user picks Help &gt; Send error report, which shows a preview first. Automatic sending exists but is off by default.',
     sends:
-      "A zip with the recent part of the app's log, the app and macOS version, the Mac's model, CPU, memory, and free disk space, the same diagnostics id as crash reports, and the user's note. Before it leaves the Mac, Cmdr replaces file and folder names in every path with placeholders, keeping only the extension and common folder names like Documents. A name repeated on the same log line as its path is replaced too, and so are server names, share names, and user names. Each placeholder is the same throughout one report, so the logs still show which lines are about the same file, but it can't be matched across reports. Error codes (errno, SMB, and SFTP status codes) stay as they are; an error message from another system is cleaned the same way and cut at 200 characters. Cmdr's own state (open panes, running operations, connected volumes) goes as structured fields, not free text. <strong>Known gap</strong>: a file name that macOS, a server, or a third-party library writes on its own, with no path on the same line, can get through. Names in Cmdr's own log lines are always replaced.",
+      "A zip with the recent part of the app's log, the app and macOS version, the Mac's model, CPU, memory, and free disk space, the same diagnostics id as crash reports, about 20 settings that change what Cmdr does (like how it handles name conflicts, whether SMB encryption is required, the language, and light or dark mode), as on/off values, numbers, and fixed choices only, so none can hold a path or a name, and the user's note. Before it leaves the Mac, Cmdr replaces file and folder names in every path with placeholders, keeping only the extension and common folder names like Documents. A name repeated on the same log line as its path is replaced too, and so are server names, share names, and user names. Each placeholder is the same throughout one report, so the logs still show which lines are about the same file, but it can't be matched across reports. Error codes (errno, SMB, and SFTP status codes) stay as they are; an error message from another system is cleaned the same way and cut at 200 characters. Cmdr's own state (open panes, running operations, connected volumes) goes as structured fields, not free text. <strong>Known gap</strong>: a file name that macOS, a server, or a third-party library writes on its own, with no path on the same line, can get through. Names in Cmdr's own log lines are always replaced.",
     control:
       'Sent by hand only, by default. Automatic sending is Settings &gt; Updates &amp; privacy &gt; "Send error reports automatically", off by default. IT can turn off both kinds for everyone with <code>DisableCrashAndErrorReports</code>.',
     devTodo:
@@ -179,7 +179,7 @@ export interface DataLocation {
 export const dataLocations: DataLocation[] = [
   {
     name: 'Cloudflare (Workers, D1, R2, KV, Analytics Engine)',
-    what: 'The API server. Its database holds download records, update checks, usage stats, crash reports, feedback, error-report notes and reply-to addresses, and the list of issued licenses. Its file storage holds error-report zips, a daily backup of the license list, and the release files that <code>download.getcmdr.com</code> serves. Its key-value store holds license keys, the hashed device ids each license was checked from, and blog like counts. Analytics Engine counts devices per license.',
+    what: 'The API server. Its database holds download records, update checks, usage stats, crash reports, feedback, error-report notes and reply-to addresses, and the list of issued licenses. Its file storage holds error-report zips, a daily backup of the license list, and the release files that <code>download.getcmdr.com</code> serves. Its key-value store holds license keys, the hashed device ids each license was checked from, blog like counts, and, for up to a day, hashed IP addresses from blocked-request reports on the website. Analytics Engine counts devices per license.',
     where:
       "US company. The database, the error-report storage, and the release files are stored in Cloudflare's EU jurisdiction. The API code and the KV key-value store (license activation codes) run on Cloudflare's global network, so each request is handled at the Cloudflare data center nearest the user, which can be outside the EU. The transfer relies on the EU-US Data Privacy Framework, with the Standard Contractual Clauses in Cloudflare's data processing agreement as a backup.",
     inEu: 'partly',
@@ -261,7 +261,10 @@ export interface RetentionRule {
  */
 export const serverRetention: RetentionRule[] = [
   { what: 'Update checks', rule: 'Deleted after seven days. Daily totals per version are kept.' },
-  { what: 'Usage stats (heartbeats and feature events)', rule: 'Deleted after two years.' },
+  {
+    what: 'Usage stats (heartbeats and feature events)',
+    rule: "Deleted after two years. One summary line per install (the day it was first seen, its country, and whether it came through Homebrew) stays until that install's last usage stats are deleted.",
+  },
   {
     what: 'Download records',
     rule: 'IP hash and browser user agent removed after 90 days. Version, architecture, country, referrer, link code, and browser family (like Safari) are kept.',
@@ -284,6 +287,10 @@ export const serverRetention: RetentionRule[] = [
     rule: 'Buyer email and license record kept with no time limit, and so are the daily backups of the license list.',
   },
   { what: 'Blog likes', rule: "A per-post pseudonym made from the visitor's hashed IP, kept with no time limit." },
+  {
+    what: 'Blocked-request reports from the website',
+    rule: 'The hashed IP address is deleted when a second visitor hits the same block, or after a day, by an expiry on the entry itself.',
+  },
   { what: 'Website visit recordings (PostHog)', rule: 'Deleted after 30 days, by a setting in PostHog.' },
   {
     what: 'Website visits (Umami)',

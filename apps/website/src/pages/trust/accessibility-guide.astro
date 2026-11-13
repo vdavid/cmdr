@@ -26,7 +26,7 @@ const toc = [
 <LegalLayout
     title="Accessibility guide"
     description="Cmdr's accessibility features and how to turn them on: keyboard-only use, VoiceOver, text size and zoom, light and dark mode, Increase contrast, Differentiate without color, Show borders, Reduce motion, and Reduce transparency. Plus the known gaps, and how to get help."
-    lastUpdated="2026-10-15"
+    lastUpdated="2026-11-13"
 >
     <DevTodo>
         Draft copy, written by an agent: review all of it. Also decide whether to promise a reply time in "Get help".
@@ -56,9 +56,24 @@ const toc = [
         <li>
             <strong>Every command works from the keyboard</strong>: most have a shortcut, the rest are in the command
             palette, and Help &gt; Keyboard shortcuts lists them all in one window. You can add or change the
-            shortcut of almost any command in Settings &gt; Keyboard shortcuts; a few find keys, like ⌘F, stay fixed.
-            In the main window, a shortcut needs a modifier key other than Shift alone, since plain letters and
-            digits, and Shift with a letter, type into the file list.
+            shortcut of almost any command in Settings &gt; Keyboard shortcuts. Keys that belong to one dialog or window
+            stay fixed, and Settings marks them "Fixed": the arrow keys, the keys of the Search dialog, the Operation
+            log, and the queue window, and ⌘F for finding in Ask Cmdr and the file viewer. In the main window, a
+            shortcut needs a modifier key other than Shift alone, since plain letters and digits, and Shift with a
+            letter, type into the file list.
+        </li>
+        <li>
+            <strong>Typing in a text field is safe</strong>: while a text field has focus, like the path bar or a
+            rename, the keys that trash, delete, or move files do nothing to your files, and ⌘⌫ deletes text. ⌘↑ and ⌘↓
+            move the caret to the start and end of the field.
+        </li>
+        <li>
+            <strong>Go back and forward</strong>: ⌘[ and ⌘], or ⌥← and ⌥→ (Option-arrow), in the file list and the file
+            viewer.
+        </li>
+        <li>
+            <strong>Operation log</strong>: ⌘⌥L opens it. → or Enter moves to an operation's items, Space checks an
+            item, ⌘A and ⇧⌘A check and uncheck all, and ⌘Enter rolls back.
         </li>
         <li>
             <strong>Command palette</strong>: press ⌘⇧P (Command-Shift-P) and type to find any command by name.
@@ -182,7 +197,8 @@ const toc = [
     <ul>
         <li>
             <strong>Reduce motion</strong>: turn it on in System Settings &gt; Accessibility &gt; Display, and Cmdr's
-            activity indicators, like spinners, stop moving. Cmdr has no flashing content, and no audio or video.
+            activity indicators, like spinners, stop moving, and Settings, the file viewer, and the other secondary
+            windows open and close without their fade and slide. Cmdr has no flashing content, and no audio or video.
         </li>
         <li>
             <strong>Reduce transparency</strong>: turn it on in the same place, and Cmdr's frosted-glass surfaces turn

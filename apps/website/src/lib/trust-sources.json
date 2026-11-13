@@ -33,6 +33,7 @@
       "page": "/trust",
       "anchor": "network",
       "paths": [
+        "apps/api-server/src/website/**",
         "apps/desktop/src-tauri/src/managed_policy/egress.rs",
         "apps/desktop/src-tauri/src/server_request.rs",
         "apps/desktop/src-tauri/tauri*.conf.json",
@@ -234,6 +235,7 @@
       "page": "/trust",
       "anchor": "permissions",
       "paths": [
+        "apps/desktop/src-tauri/src/reveal/**",
         "apps/desktop/src-tauri/Entitlements.plist",
         "apps/desktop/src-tauri/Info.plist",
         "apps/desktop/src/lib/onboarding/**",
@@ -257,6 +259,7 @@
       "page": "/trust",
       "anchor": "ai",
       "paths": [
+        "apps/desktop/src/lib/intl/messages/en/ai.json",
         "apps/desktop/src/lib/settings/definitions/ai.ts",
         "apps/desktop/src/lib/settings/cloud-providers.ts",
         "apps/desktop/src-tauri/src/ai/**",
@@ -384,7 +387,16 @@
     {
       "page": "/trust/development",
       "anchor": "review",
-      "paths": [".github/rulesets/**", "scripts/land/**", ".github/workflows/ci.yml", "AGENTS.md"]
+      "paths": [
+        ".github/workflows/sensitive-path-approval.yml",
+        ".github/workflows/sensitive-paths.txt",
+        "scripts/slow-checks-fixer/**",
+        "scripts/report-triage/**",
+        ".github/rulesets/**",
+        "scripts/land/**",
+        ".github/workflows/ci.yml",
+        "AGENTS.md"
+      ]
     },
     {
       "page": "/trust/development",
@@ -425,6 +437,8 @@
       "page": "/trust/development",
       "anchor": "release",
       "paths": [
+        ".github/rulesets/**",
+        "docs/threat-model.md",
         ".github/workflows/release.yml",
         ".github/workflows/release-pipeline.yml",
         ".github/release-signers",
@@ -482,6 +496,8 @@
       "page": "/trust/accessibility",
       "anchor": "notes",
       "paths": [
+        "apps/desktop/src-tauri/src/child_window_lifecycle/**",
+        "apps/desktop/src/lib/commands/command-registry.ts",
         "apps/desktop/src/lib/commands/sources/**",
         "apps/desktop/src/lib/file-explorer/**",
         "apps/desktop/src/lib/ui/**",
@@ -518,6 +534,10 @@
       "page": "/trust/accessibility-guide",
       "anchor": "keyboard",
       "paths": [
+        "apps/desktop/src/lib/commands/command-registry.ts",
+        "apps/desktop/src/lib/commands/__snapshots__/default-keymap.macos.txt",
+        "apps/desktop/src/routes/(main)/text-field-gate.ts",
+        "apps/desktop/src/routes/(main)/native-text-keys.ts",
         "apps/desktop/src/lib/commands/sources/**",
         "apps/desktop/src/lib/settings/sections/KeyboardShortcutsSection.svelte",
         "apps/desktop/src/lib/file-operations/**",
@@ -542,7 +562,11 @@
     {
       "page": "/trust/accessibility-guide",
       "anchor": "motion",
-      "paths": ["apps/desktop/src/app.css", "apps/desktop/src/lib/display-accessibility.ts"]
+      "paths": [
+        "apps/desktop/src-tauri/src/child_window_lifecycle/**",
+        "apps/desktop/src/app.css",
+        "apps/desktop/src/lib/display-accessibility.ts"
+      ]
     },
     {
       "page": "/trust/accessibility-guide",

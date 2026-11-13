@@ -182,7 +182,8 @@ const toc = [
     <h2 id="review">Review</h2>
     <p>
         Cmdr's development is AI-assisted. One person, David Veszelovszki, decides what to build and how it's
-        structured, owns every change that lands, and reviews everything users see: the interface, its text, and
+        structured, owns every change that lands (including the few an unattended agent makes, below), and reviews
+        everything users see: the interface, its text, and
         documents for people. Cmdr is a one-person company, so <strong>no second person reviews code changes</strong>.
     </p>
     <p>What stands in for a reviewer:</p>
@@ -190,6 +191,14 @@ const toc = [
         <li>
             The automated checks in the <a href="#test">test section</a>. GitHub won't let a change onto the main branch
             until they pass, and the branch's history can't be rewritten or deleted.
+        </li>
+        <li>
+            One unattended AI agent may land a fix by itself: when the nightly check run fails, it reruns a network blip
+            or fixes the cause. It runs as a restricted user on a separate Mac with no access to the maintainer's
+            accounts or keys, its commits are signed, and it needs the same green checks as any change. It can't push a
+            release tag. A change of its that touches the build and release pipeline, the checks themselves,
+            dependencies, update signing, or the website and server waits for the maintainer's approval, and GitHub
+            enforces that.
         </li>
         <li>
             The project's written engineering rules, which are public:
@@ -338,8 +347,9 @@ const toc = [
     <h2 id="release">Build and release</h2>
     <ul>
         <li>
-            <strong>Who can release</strong>: the maintainer, by pushing a signed version tag and then signing the
-            update on his Mac. He's the only person with write access to the repository.
+            <strong>Who can release</strong>: the maintainer, by pushing a signed version tag, approving the signing step on GitHub, and then signing the
+            update on his Mac. He's the only person with write access to the repository. One automated agent can land
+            fixes on the main branch (see <a href="#review">Review</a>), but it can't push a release tag.
         </li>
         <li>
             <strong>Signed tags</strong>: the maintainer signs each release tag locally with an SSH key. Before any
@@ -381,7 +391,9 @@ const toc = [
         </li>
         <li>
             <strong>Signing keys</strong>: Apple's signing and notarization credentials sit in a protected GitHub
-            environment that only release tags reach, and only after the tag's signature checks out. The
+            environment that only release tags reach, only after the tag's signature checks out, and only once the
+            maintainer approves that build's signing step. Nobody can skip the approval, administrators included, so a
+            pushed tag alone can't get a build signed. The
             update-signing key never reaches GitHub: the maintainer signs each update on his own Mac, and only after
             checking the build's provenance.
             <strong>Not in place</strong>: a reproducible build.
