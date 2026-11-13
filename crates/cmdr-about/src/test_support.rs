@@ -1,6 +1,6 @@
 //! Fixtures the card, headline, and removal tests share.
 
-use crate::card::{AboutCard, AboutFact, Applied, PlanInput, VolumeCaps, plan};
+use crate::card::{AboutCard, AboutFact, Applied, OsCaps, PlanInput, VolumeCaps, plan};
 use crate::digest::{FolderClass, FolderDigest};
 use crate::fact::{AboutTarget, Fact, UnknownWhy};
 use crate::owner::{InstalledApp, OwnerClaim, OwnerPlace};
@@ -28,6 +28,15 @@ pub(crate) fn mounted_share() -> VolumeCaps {
     }
 }
 
+/// macOS, which keeps use history, code signatures, and default apps.
+pub(crate) fn macos() -> OsCaps {
+    OsCaps {
+        use_history: true,
+        code_signing: true,
+        default_app: true,
+    }
+}
+
 /// A phone.
 pub(crate) fn phone() -> VolumeCaps {
     VolumeCaps::identity_only(text("Pixel 9"))
@@ -39,7 +48,9 @@ pub(crate) fn card(target: AboutTarget, extension: Option<&str>, caps: &VolumeCa
         target,
         extension,
         is_executable: false,
+        contents_local: true,
         caps,
+        os: &macos(),
     }))
 }
 

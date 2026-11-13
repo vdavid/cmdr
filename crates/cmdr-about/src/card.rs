@@ -150,6 +150,19 @@ impl VolumeCaps {
     }
 }
 
+/// What the OS Cmdr runs on keeps about any item, whatever volume it's on. Apart
+/// from [`VolumeCaps`] because a missing one is no limit of the volume's: a Linux
+/// disk answers everything a disk can, and the card's volume note stays quiet.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OsCaps {
+    /// The OS records when an item was last opened (Spotlight on macOS).
+    pub use_history: bool,
+    /// The OS has code signatures to read.
+    pub code_signing: bool,
+    /// Cmdr can ask the OS which app opens an item.
+    pub default_app: bool,
+}
+
 /// What the host knows about an item before any job runs.
 #[derive(Debug, Clone, Copy)]
 pub struct PlanInput<'a> {
@@ -159,8 +172,14 @@ pub struct PlanInput<'a> {
     pub extension: Option<&'a str>,
     /// Whether the item's executable bit is set.
     pub is_executable: bool,
+    /// Whether the item's bytes are on the disk. `false` for an online-only file
+    /// a cloud drive evicted: reading its bytes would download it, so nothing that
+    /// reads them (the real type, the signature) is planned.
+    pub contents_local: bool,
     /// What its volume can answer.
     pub caps: &'a VolumeCaps,
+    /// What the OS keeps about it.
+    pub os: &'a OsCaps,
 }
 
 /// A section of the card.
@@ -219,6 +238,18 @@ impl AboutPlan {
     pub fn has(&self, kind: FactKind) -> bool {
         self.sections.iter().any(|section| section.kinds.contains(&kind))
     }
+
+    /// Keeps only the rows `answered` says a job answers, for a host that
+    /// doesn't gather every kind yet. A section left with no row goes, as
+    /// [`plan`] leaves it out; [`Section::Removal`] stays. The note is the
+    /// volume's, so it stays too.
+    pub fn retain_kinds(&mut self, answered: impl Fn(FactKind) -> bool) {
+        for section in &mut self.sections {
+            section.kinds.retain(|kind| answered(*kind));
+        }
+        self.sections
+            .retain(|planned| planned.section == Section::Removal || !planned.kinds.is_empty());
+    }
 }
 
 /// What a volume can't answer, as parts the frontend words once at the top of the
@@ -247,7 +278,12 @@ pub enum VolumeLimit {
 
 /// Extensions whose files carry a code signature worth reading, beyond anything
 /// with its executable bit set.
-const SIGNED_EXTENSIONS: [&str; 4] = ["dmg", "pkg", "mpkg", "dylib"];
+///
+/// Not `pkg` / `mpkg`: an installer package's signature lives in its xar table
+/// of contents, which the code-signing API doesn't read, and `pkgutil` says
+/// "unsigned" and "invalid" with one exit code. A row that can only say "Cmdr
+/// can't tell" isn't drawn.
+const SIGNED_EXTENSIONS: [&str; 2] = ["dmg", "dylib"];
 
 /// The rows this target can answer on this volume, in display order.
 pub fn plan(input: PlanInput<'_>) -> AboutPlan {
@@ -256,7 +292,9 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
         target,
         extension,
         is_executable,
+        contents_local,
         caps,
+        os,
     } = input;
     let is_bundle = matches!(target, AppBundle | Package);
     let is_folder_like = matches!(target, Folder | AppBundle | Package);
@@ -270,15 +308,15 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
 
     let applies = |kind: FactKind| match kind {
         FactKind::Identity => true,
-        FactKind::RealType => target == File && caps.content,
+        FactKind::RealType => target == File && caps.content && contents_local,
         FactKind::Bundle => is_bundle && caps.system,
-        FactKind::Signature => signable && caps.system,
+        FactKind::Signature => signable && caps.system && os.code_signing && contents_local,
         // A symlink carries no record of its own, and an archive's entry answers with
         // the archive's.
         FactKind::Download => target != Symlink && caps.download_record,
         FactKind::CmdrOperation => target != ArchiveEntry && caps.operation_log,
-        FactKind::LastOpened => matches!(target, File | AppBundle | Package) && caps.system,
-        FactKind::DefaultApp => matches!(target, File | Package) && caps.system,
+        FactKind::LastOpened => matches!(target, File | AppBundle | Package) && caps.system && os.use_history,
+        FactKind::DefaultApp => matches!(target, File | Package) && caps.system && os.default_app,
         FactKind::Importance => target == Folder && caps.index,
         FactKind::Owner => target != ArchiveEntry && caps.system,
         FactKind::Git => target != ArchiveEntry && caps.git,

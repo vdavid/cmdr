@@ -58,8 +58,11 @@ Not `ItemText`, on purpose:
   refuses anything that doesn't start with `bplist00`, so the XML plist reader is never reached with these bytes.
 - **Mail** writes the sender, the subject, and a `message:` address. The first two are free text, so they're read by
   position: `Re: hello` parses as a URL with scheme `re`, which is why nothing here asks the URL parser what's text.
-- **AirDrop** is told by the quarantine agent `sharingd`, with the sender's name as the one entry. ⚠️ Not verified on a
-  live transfer: the host's first provenance test on macOS should confirm both, and this line gets its evidence then.
+- **AirDrop** is told by the quarantine agent `sharingd`, with the sender's name as the one entry. The agent is
+  corroborated by forensics write-ups that query `LSQuarantineAgentName = 'sharingd'` (0xmachos "Quarantine
+  Introduction", 2019; DFIR.REPORT "Revisiting macOS Forensics: Quarantine Data"), checked 2026-11-13; no AirDrop record
+  exists on the dev Mac (its `QuarantineEventsV2` holds Chrome, Firefox, qBittorrent, and Homebrew only). ⚠️ The
+  WhereFroms shape (the sender's name as the one entry) is still unverified on a live transfer.
 - **Linux**: `user.xdg.origin.url` and `user.xdg.referrer.url`, each one address as plain text (Chromium writes them;
   Firefox not verified).
 - **Egress** (`redact_for_egress`): a web source leaves as `Site { host }`; a numeric address as `IpAddress` (the URL
@@ -83,18 +86,26 @@ text has no magic, so a `.jpg` full of text is `CantTell`, never a mismatch.
 
 ## The plan
 
-`plan(PlanInput)` reads the target, the extension, the executable bit, and `VolumeCaps`, all known before any job. It
-returns the sections in display order with their rows, and the volume note.
+`plan(PlanInput)` reads the target, the extension, the executable bit, whether the bytes are on the disk, `VolumeCaps`,
+and `OsCaps`, all known before any job. It returns the sections in display order with their rows, and the volume note.
 
 - **`VolumeCaps` is a set of capabilities, not a volume kind.** The host maps each volume kind (and the OS) to one, so a
   new backend changes no rule here. `everything` is a local disk; `identity_only` is a phone and the default for any
   volume whose capabilities aren't mapped yet.
+- **`OsCaps` is apart from `VolumeCaps`** so an OS limit never reads as a volume one: Linux has no Spotlight, no code
+  signing, and (for now) no default-app lookup, and its disk still gets no note. The host sets all three on macOS.
+- **An online-only file** (`contents_local: false`, a cloud drive evicted it) plans no row that reads its bytes: the
+  real type and the signature. Reading them would download it. Its xattrs are metadata and stay.
 - **Each kind sits in exactly one section** (`rows_of`): Origin (download, Cmdr operation), Nature (identity, real type,
   bundle, signature, recursive size), Use (last opened, default app, importance), Context (owner, git, app data),
   Contents (folder digest), Removal (derived, no rows, always last).
 - **Order per target**: a folder leads with Contents, an app or package with Nature, everything else with Origin.
-- **Signature** is planned for bundles, packages, `dmg` / `pkg` / `mpkg` / `dylib`, and files with the executable bit. A
-  program behind another extension shows through the type row's mismatch.
+- **Signature** is planned for bundles, packages, `dmg` / `dylib`, and files with the executable bit. A program behind
+  another extension shows through the type row's mismatch. Not `pkg` / `mpkg`: an installer's signature sits in its xar
+  table of contents, which the code-signing API doesn't read, and `pkgutil` answers "unsigned" and "invalid" with one
+  exit code, so the row could only say Cmdr can't tell.
+- **`retain_kinds`** trims a plan to the kinds a host gathers, under the same rule (an emptied section goes, Removal
+  stays). For a host that answers a subset; the note is the volume's and stays.
 - **An archive entry** has no owner, repo, or operation of its own; its download row is the archive's.
 - **The note**: none when the volume answers everything, `IdentityOnly` when it answers nothing more, `SomeFacts` in
   between. `Unreachable` is the host's to set when its health check runs out.
@@ -161,7 +172,7 @@ and two workflow filters to stay honest.
 
 ## The public surface is capped
 
-11 root promises (one module per concern), 11 public modules, 110 items in them
+11 root promises (one module per concern), 11 public modules, 112 items in them
 (`scripts/check/checks/index-crate-isolation-ceilings.go`). The items are the wire types the card's events and the
 model's projection carry, and the handful of functions a host calls: `plan`, `AboutCard`, `download_fact`,
 `xdg_download_fact`, `redact_for_egress`, `real_type`, `consequences`, `headline`, `start_with`, `model_text`. The
@@ -170,3 +181,11 @@ whole facts, never half-decoded records.
 
 A new public item is a new thing every surface of the card can say (the dialog, the agent tool, the model's projection,
 the consent copy that lists what leaves). Argue it here before raising the ceiling.
+
+Raised 110 → 112 by the host's first milestone, both plan inputs rather than wire types:
+
+- **`OsCaps`**: what the OS keeps about any item. Folding it into `VolumeCaps` would make a Linux disk's card open with
+  "On this disk, Cmdr can see…", a volume limit that isn't one; a host-side filter would move a rule (which rows an OS
+  can answer) out of the crate. No constructor: the host spells its three fields out.
+- **`AboutPlan::retain_kinds`**: a host that gathers a subset of the kinds trims the plan under the plan's own rule
+  (emptied sections go, Removal stays), instead of rebuilding sections and restating that rule.

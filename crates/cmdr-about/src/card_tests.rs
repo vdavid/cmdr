@@ -1,6 +1,6 @@
 use super::*;
 use crate::fact::Prominence;
-use crate::test_support::{card, identity, land, local, mounted_share, phone, text};
+use crate::test_support::{card, identity, land, local, macos, mounted_share, phone, text};
 
 use AboutTarget::{AppBundle, ArchiveEntry, File, Folder, Package, Symlink};
 use FactKind as K;
@@ -10,7 +10,9 @@ fn plan_of(target: AboutTarget, extension: Option<&str>, caps: &VolumeCaps) -> A
         target,
         extension,
         is_executable: false,
+        contents_local: true,
         caps,
+        os: &macos(),
     })
 }
 
@@ -202,14 +204,19 @@ fn a_signature_is_planned_only_for_what_can_carry_one() {
             target,
             extension,
             is_executable,
+            contents_local: true,
             caps: &local(),
+            os: &macos(),
         })
         .has(K::Signature)
     };
     assert!(signed(AppBundle, Some("app"), false));
     assert!(signed(Package, Some("framework"), false));
     assert!(signed(File, Some("DMG"), false));
-    assert!(signed(File, Some("pkg"), false));
+    assert!(
+        !signed(File, Some("pkg"), false),
+        "an installer package's signature is one the code-signing API can't read"
+    );
     assert!(signed(File, None, true));
     // A program hiding behind a picture's name shows through the type row's
     // mismatch; with its executable bit set it's planned like any program.
@@ -219,6 +226,64 @@ fn a_signature_is_planned_only_for_what_can_carry_one() {
     assert!(!signed(Folder, None, false));
     assert!(!signed(Folder, None, true), "a folder's search bit is no program");
     assert!(!signed(Symlink, None, true));
+}
+
+// ── What the OS and the bytes allow ─────────────────────────────────────────
+
+/// Linux keeps no Spotlight, no code signatures, and (until its default-app
+/// lookup lands) no default app: those rows are left out, and the disk's note
+/// stays quiet, since the disk answers everything a disk can.
+#[test]
+fn an_os_without_use_history_or_signing_plans_neither_row_and_adds_no_note() {
+    let linux = OsCaps {
+        use_history: false,
+        code_signing: false,
+        default_app: false,
+    };
+    let plan = plan(PlanInput {
+        target: File,
+        extension: Some("dmg"),
+        is_executable: true,
+        contents_local: true,
+        caps: &local(),
+        os: &linux,
+    });
+    assert!(!plan.has(K::LastOpened));
+    assert!(!plan.has(K::Signature));
+    assert!(!plan.has(K::DefaultApp));
+    assert!(plan.has(K::RealType));
+    assert_eq!(plan.volume_note, None);
+}
+
+/// Reading an online-only file's bytes downloads it, so the rows that read them
+/// aren't planned.
+#[test]
+fn an_online_only_file_plans_no_row_that_reads_its_bytes() {
+    let plan = plan(PlanInput {
+        target: File,
+        extension: Some("dmg"),
+        is_executable: false,
+        contents_local: false,
+        caps: &local(),
+        os: &macos(),
+    });
+    assert!(!plan.has(K::RealType));
+    assert!(!plan.has(K::Signature));
+    assert!(plan.has(K::Download), "an xattr is metadata, kept for an evicted file");
+}
+
+#[test]
+fn keeping_only_the_answered_rows_drops_emptied_sections_and_keeps_removal() {
+    let mut plan = plan_of(File, Some("pdf"), &local());
+    plan.retain_kinds(|kind| matches!(kind, K::Identity | K::LastOpened));
+    assert_eq!(
+        sections(&plan),
+        [
+            (Section::Nature, vec![K::Identity]),
+            (Section::Use, vec![K::LastOpened]),
+            (Section::Removal, vec![]),
+        ]
+    );
 }
 
 // ── Plan invariants ─────────────────────────────────────────────────────────
@@ -232,7 +297,9 @@ fn every_plan() -> Vec<AboutPlan> {
                     target,
                     extension: Some("dmg"),
                     is_executable,
+                    contents_local: true,
                     caps: &caps,
+                    os: &macos(),
                 }));
             }
         }

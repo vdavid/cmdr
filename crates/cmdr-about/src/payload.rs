@@ -96,6 +96,9 @@ pub enum StapledTicket {
     Present,
     /// No ticket is stapled.
     Absent,
+    /// Cmdr didn't look: a disk image keeps its ticket inside its signature,
+    /// where Cmdr doesn't read. ❌ Never worded as either answer.
+    NotRead,
 }
 
 /// Whether the main executable was compared against the signature it carries.
