@@ -735,6 +735,9 @@ export interface SettingsValues {
   // A "no" to cloud AI the consent store hasn't recorded yet. Every Rust cloud gate reads it fresh
   // from `settings.json`, so the "no" holds before the store catches up (`cloud-consent.svelte.ts`).
   'ai.cloudConsentRevokePending': boolean
+  // Whether "Tell me about this" asks the AI for its short take. Read fresh backend-side on every
+  // card (`load_about_this_ai_verdict`, absent = on).
+  'aboutThis.aiVerdict': boolean
 
   // Ask Cmdr
   // The feature's plain on/off. Read fresh backend-side each send (`load_ask_cmdr_switch`); the

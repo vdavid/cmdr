@@ -238,6 +238,17 @@ afterEach(() => {
   }
 })
 
+describe('the "Tell me about this" AI take in Settings > AI > Provider', () => {
+  it('shows with a provider on, and not with AI off', async () => {
+    stubs.settings['ai.provider'] = 'off'
+    const target = await mountSection()
+    expect(target.textContent).not.toContain('AI take in')
+
+    await switchProvider('cloud')
+    expect(target.textContent).toContain('AI take in')
+  })
+})
+
 describe('Allow cloud AI in Settings > AI > Provider', () => {
   it('shows the switch on Cloud only: Local sends nothing off the Mac', async () => {
     stubs.settings['ai.provider'] = 'local'

@@ -135,6 +135,22 @@ export const aiSettings: SettingDefinitionSource[] = [
     },
   },
 
+  {
+    // Whether the "Tell me about this" card asks the AI for its short take. It grants no data
+    // flow: on Cloud, "Allow cloud AI" still gates every call, and the local model writes none
+    // until its answers are measured good (`about::verdict::gate::VERDICT_ON_LOCAL`). Read fresh
+    // backend-side on every card (`settings::load_about_this_ai_verdict`, absent = on), so no
+    // applier case. Not tied to Ask Cmdr's switch: the card is its own feature.
+    id: 'aboutThis.aiVerdict',
+    section: ['AI', 'Provider'],
+    labelKey: 'settings.aboutThis.aiVerdict.label',
+    descriptionKey: 'settings.aboutThis.aiVerdict.description',
+    keywordsKey: 'settings.aboutThis.aiVerdict.keywords',
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+
   // ========================================================================
   // AI › Ask Cmdr
   //

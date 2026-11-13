@@ -830,6 +830,25 @@ button, and on a typical download it's the one behind "More".
 - `aboutThis.action.moreMenu`: More actions
   - Where: Screen-reader name of the menu the "More" button opens.
 
+### The AI take's setting (`settings.json`)
+
+A switch in Settings > AI > Provider, below the provider's own setup, shown only while a provider is on. Default on.
+
+- `settings.aboutThis.aiVerdict.label`: AI take in “Tell me about this”
+  - Where: The switch's label.
+- `settings.aboutThis.aiVerdict.description`: When you open the card, AI writes two or three sentences from the facts it
+  shows. With cloud AI, the card's facts and a short look inside the file go to your provider each time.
+  - Where: Under the label.
+- `settings.aboutThis.aiVerdict.keywords`: explain, verdict, summary, file info, what is this, describe
+  - Where: Never shown: extra words Settings search matches.
+
+Open questions on these:
+
+1. **"AI take"** is the working name for the verdict everywhere (setting, the block's label to come). Right word, or "AI
+   summary", "AI note"?
+2. **The switch says nothing about the local model**, which writes no take yet (plan D4) whatever the switch says. A
+   line for Local ("The on-device model doesn't write one yet"), or leave it until the eval decides?
+
 ### Ask Cmdr's tool line (`askCmdr.json`)
 
 The rail's line while the agent looks an item up with `about_item`, the same facts as the card.

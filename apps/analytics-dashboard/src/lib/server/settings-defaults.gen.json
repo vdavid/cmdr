@@ -3041,6 +3041,7 @@
     }
   },
   "next": {
+    "aboutThis.aiVerdict": true,
     "advanced.diskSpaceChangeThreshold": 1,
     "advanced.dragThreshold": 5,
     "advanced.exitFullScreenOnEscape": true,
