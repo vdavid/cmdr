@@ -111,7 +111,10 @@ pub(crate) fn resolve_for_card(app: &AppHandle) -> Result<Ready, VerdictUnavaila
 /// light, so this table is the safety gate. Add a row only after the whole corpus ran on
 /// that model and every judge "yes" was read: `docs/notes/about-verdict-eval.md` §
 /// Measuring a new model. A dated snapshot of a listed id counts as it.
-const PASSED_THE_EVAL: &[(ProviderTag, &str)] = &[(ProviderTag::Anthropic, "claude-sonnet-5-5")];
+const PASSED_THE_EVAL: &[(ProviderTag, &str)] = &[
+    (ProviderTag::Anthropic, "claude-sonnet-5-5"),
+    (ProviderTag::Anthropic, "claude-opus-5-5"),
+];
 
 /// Model families measured below the bar under every prompt tried: never a verdict, in
 /// any provider's spelling (`claude-haiku-5-5`, an aggregator's
@@ -277,6 +280,7 @@ mod tests {
         for (provider, model) in [
             (Anthropic, "claude-sonnet-5-5"),
             (Anthropic, "claude-sonnet-5-5-20261001"),
+            (Anthropic, "claude-opus-5-5"),
         ] {
             assert!(writes_verdicts(provider, model), "{model}");
         }

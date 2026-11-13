@@ -420,12 +420,12 @@ before the last, so the streaming and stopped states stay on screen for QA and s
 
 ### The eval on real models
 
-The verdict's only gate on its no-green-light rule is `apps/desktop/src-tauri/src/ai/about_verdict_eval_test.rs`: 51 synthesized cards (ordinary,
-tempting, hostile) through the shipped projection, fence, prompt files, and call settings, on three Claude classes and
-the local model, in five languages, graded by an Opus judge against `apps/desktop/src-tauri/src/ai/about_verdict_eval/rubric.md`. ❗ Rerun the
-whole corpus after any change to a prompt file, `for_model`, the fence, the call settings, or a default model.
-Results, the decisions they drove (no class words removal, the Haiku family writes none, Local stays off), and every
-flagged take: `docs/notes/about-verdict-eval.md`.
+The verdict's only gate on its no-green-light rule is `apps/desktop/src-tauri/src/ai/about_verdict_eval_test.rs`: 68 synthesized cards (ordinary,
+tempting, hostile) through the shipped projection, fence, prompt files, and call settings, on real models, in five
+languages, graded by an Opus judge against `apps/desktop/src-tauri/src/ai/about_verdict_eval/rubric.md` with a Sonnet second judge on every flag. ❗ Rerun the
+whole corpus after any change to a prompt file, `for_model`, the fence, the call settings, or a default model. What it
+decided: no model words removal, only Sonnet 5.5 and Opus 5.5 (on Anthropic) write a take (`gate::PASSED_THE_EVAL`),
+the Haiku family never does, and Local stays off. Results and every flagged take: `docs/notes/about-verdict-eval.md`.
 
 Before it, a hand run on `claude-haiku-5-5` at the model's default effort under 120 tokens wrote nothing at all, which
 is what `VERDICT_THINKING_ROOM` and `noAnswer` answer (verified 2026-11-13, four cards).

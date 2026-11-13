@@ -469,17 +469,21 @@ fn old_installers_folder() -> EvalCard {
     let card = Item::folder(&path)
         .plan()
         .with(folder_identity(&path, 900, 800))
-        .with(total(3_900_000_000, 14, 0))
+        // The four files are the whole folder: a first draft listed three children of 14
+        // files and no subfolders, facts no folder can have, and both classes reasoned
+        // "the rest sits deeper", which the judge rightly flagged.
+        .with(total(3_392_000_000, 4, 0))
         .with(digest(
             &path,
             FolderClass::Plain,
             &[
+                ("PhotoSuite-2022.dmg", false, 3_100_000_000),
                 ("Tessera-1.9.dmg", false, 140_000_000),
                 ("Meetly-Installer-2023.dmg", false, 92_000_000),
                 ("drivers-scanner-v3.pkg", false, 60_000_000),
             ],
             &[("PhotoSuite-2022.dmg", false, 3_100_000_000)],
-            Some((3_900_000_000, 3_900_000_000)),
+            Some((3_392_000_000, 3_392_000_000)),
         ))
         .with(importance(ImportanceBand::Low, None))
         .settled();
