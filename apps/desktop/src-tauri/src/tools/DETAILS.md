@@ -626,7 +626,10 @@ serializes a fact.
   answers in full (a wake asking about the boot disk or an external one wakes no NAS).
 - **It never peeks**: contents stay `inspect_file`'s.
 - **Why `Load::Deferred`**: its `brief` (one line in the cached prefix) says when to call it; the schema is two
-  properties.
+  properties. A model finds it from the brief alone: asked "What is this folder: …/node_modules? What would removing it
+  cost?", `claude-haiku-5-5` called `tool_details` for it, then `use_tool`, and answered from the result (verified with
+  `agent/llm/live_smoke_test.rs::smoke_anthropic_what_is_this_folder`, real handler, 2026-11-13). It didn't speak to
+  the removal cost there, which the result carries as `removal`: the AI take's prompt work (and its eval) owns that.
 - **Gotcha**: an item reached through its volume (a share, a phone) is planned before the volume answers, from the
   drive index's word on whether it's a folder; one the index doesn't hold plans as a file.
 
