@@ -129,7 +129,7 @@ describe('what "Tell me about this" sends', () => {
       const lines = Array.from(section?.querySelectorAll('ul > li') ?? [], (li) => li.textContent)
       expect(lines).toHaveLength(Object.keys(ABOUT_THIS_DISCLOSURE).length + 1)
       expect(lines).toContain(
-        'The website it was recorded as downloaded from (the site’s name only, never the full link), when, and the app that downloaded it. For a Mail attachment or an AirDrop, only that it was one, never who sent it',
+        'The website it was recorded as downloaded from (the site’s main address only, like github.com, never a subdomain or the full link), when, and the app that downloaded it. For a Mail attachment or an AirDrop, only that it was one, never who sent it',
       )
       expect(lines.at(-1)).toContain('without its location')
       target.remove()
