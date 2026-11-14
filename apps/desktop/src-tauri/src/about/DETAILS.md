@@ -423,7 +423,9 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
 4. **The sensitive gate and the look inside**: `model::gate_within` (as the agent tool), then, only for a file on a
    local disk whose bytes are there (`session::ItemReach::bytes_readable`, set by the route), ONE `inspect_path` call
    on its own thread under `PEEK_BUDGET` (2 s), cut by `peek::shape` to 40 lines / 2,000 characters, a PDF's title and
-   first page, 20 archive names, or a photo's make, model, lens, and date. ❌ `Peek::CameraDetails` has no field for
+   first page, 20 archive names, or a photo's make, model, lens, and date. Every string goes through
+   `cmdr_about::text::shown_text` first, so a first line can't carry an instruction in invisible tag characters
+   (`the_window_drops_text_hidden_in_invisible_characters`). ❌ `Peek::CameraDetails` has no field for
    GPS, so the location can't leave (it adds nothing to "what is this file"). A folder (its digest is the look), an item reached through its volume, or an
    online-only file gets none. A protected path gets none and logs the refusal by tool and reason
    (`ContentTool::AboutVerdict`), ❌ never by path.
@@ -437,7 +439,10 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
    the content can't close the fence.
 6. **The call**: `AgentLlm::respond` with no tools, built with no LLM log context (`into_unlogged_llm`: the prompt holds
    a path and facts, the answer is untrusted). `resolve_verdict_call_settings`: a 120-token reply, thinking off where
-   the model can stop, else its lowest level with 2,000 tokens of room (evidence on `VERDICT_THINKING_ROOM`).
+   the model can stop, else its lowest level with 2,000 tokens of room (evidence on `VERDICT_THINKING_ROOM`). Each
+   text delta goes through `shown_text` before the card or the reuse cache sees it, so a steered model can't show a
+   reversed phrase through a direction override or hide text in tags (`the_takes_own_words_lose_what_would_disguise_them`).
+   Per delta: glue split across two deltas drops, which only ever shows an emoji apart.
 
 **Worst case, stated**: with no tools the model can't act; a hostile item can at most make the block say something
 false or reassuring in plain text. That's why the actions, the removal row, and "Continue in Ask Cmdr" never depend on

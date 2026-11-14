@@ -60,10 +60,11 @@ scrolling.
   list's `SHORT_ID_LENGTH`, the full id behind Copy), or stash entry, the repo by its folder's name, and when a commit
   last changed it.
 - **Rows are `<dl>` groups**: a label column (8.5 rem) and the answer. Identity draws its own lines (a Name line first,
-  only when the name hid a direction override (`nameHidReordering`, crate DETAILS § Text from the item), Size for a
-  file, Modified, Created, Other names past one hard link, Points to for a link); a folder's size is the `recursiveSize`
-  row, never its own entry size. The size on disk joins the size only when it differs by at least 1 MB and 10%
-  (`showsOnDisk`): every small file takes a few KB more for block rounding, which isn't news.
+  only when the name hid a direction override or invisible characters (`nameHid`, one note by kind via `NAME_HID`, crate
+  DETAILS § Text from the item), Size for a file, Modified, Created, Other names past one hard link, Points to for a
+  link); a folder's size is the `recursiveSize` row, never its own entry size. The size on disk joins the size only when
+  it differs by at least 1 MB and 10% (`showsOnDisk`): every small file takes a few KB more for block rounding, which
+  isn't news.
 - **No movement**: the headline, the removal list, and rows whose usual answer takes two lines (download, Cmdr's
   history, signature, owner, git, importance) reserve two lines until `factsSettled`. What's inside reserves its whole
   section (`CONTENTS_RESERVED_LINES`, 19: the summary, eight biggest, eight largest, the untouched share), pending or

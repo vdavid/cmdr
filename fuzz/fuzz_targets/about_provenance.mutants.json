@@ -7,7 +7,16 @@
       "find": "    c.is_control()",
       "replace": "    false",
       "input": "fuzz/seeds/about_provenance/quarantine-control-in-agent.txt",
-      "expect": "an item's text carries a control or bidirectional character"
+      "expect": "an item's text carries a control, bidirectional, or invisible character"
+    },
+    {
+      "property": "fuzz:about_provenance",
+      "why": "tag characters survive sanitizing, so a downloading app's name can show a person one thing and spell a hidden instruction to a model",
+      "file": "crates/cmdr-about/src/text.rs",
+      "find": "                | '\\u{E0000}'..='\\u{E0FFF}'",
+      "replace": "                | '\\u{E0000}'..='\\u{E0000}'",
+      "input": "fuzz/seeds/about_provenance/quarantine-invisible-in-agent.txt",
+      "expect": "an item's text carries a control, bidirectional, or invisible character"
     },
     {
       "property": "fuzz:about_provenance",

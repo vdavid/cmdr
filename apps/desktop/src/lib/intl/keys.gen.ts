@@ -90,6 +90,7 @@ export type MessageKey =
   | 'aboutThis.headline.receivedByAirDrop'
   | 'aboutThis.headline.receivedByMail'
   | 'aboutThis.identity.copyLinkTarget'
+  | 'aboutThis.identity.nameHidInvisible'
   | 'aboutThis.identity.nameHidReordering'
   | 'aboutThis.identity.onDisk'
   | 'aboutThis.identity.otherNames'

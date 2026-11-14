@@ -82,7 +82,7 @@ fn biggest_card() -> AboutCard {
         target: AboutTarget::Folder,
         identity: Some(Fact::Known(Identity {
             name: long("name"),
-            name_hid_reordering: false,
+            name_hid: None,
             logical_size: None,
             physical_size: None,
             created: Some(1_772_400_000),

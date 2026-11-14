@@ -314,7 +314,7 @@ fn symlink() -> EvalCard {
     .unsettled();
     card.apply(AboutFact::Identity(Fact::Known(Identity {
         name: ItemText::new("atlas"),
-        name_hid_reordering: false,
+        name_hid: None,
         logical_size: Some(34),
         physical_size: Some(0),
         created: Some(NOW - 60 * DAY),

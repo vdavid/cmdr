@@ -192,22 +192,15 @@ pub(crate) fn shape(row: FileRow) -> (VerdictContents, Option<Peek>) {
     }
 }
 
-/// `text` with control and direction-override characters dropped (newlines and tabs
-/// kept: they're what makes lines lines), cut at [`PEEK_CHARS`]. Answers whether it cut.
+/// `text` through `cmdr_about::text::shown_text` (control, direction-override, and
+/// invisible characters dropped, so tag characters can't spell a hidden instruction;
+/// newlines and tabs kept: they're what makes lines lines), cut at [`PEEK_CHARS`].
+/// Answers whether it cut.
 fn cap(text: &str) -> (String, bool) {
-    let mut kept = text.chars().filter(|c| matches!(c, '\n' | '\t') || !unsafe_char(*c));
+    let shown = cmdr_about::text::shown_text(text);
+    let mut kept = shown.chars();
     let out: String = kept.by_ref().take(PEEK_CHARS).collect();
     (out, kept.next().is_some())
-}
-
-/// A control character, or a mark that makes text read in another direction than it's
-/// stored: the same set `cmdr_about::text::model_text` drops.
-fn unsafe_char(c: char) -> bool {
-    c.is_control()
-        || matches!(
-            c,
-            '\u{061C}' | '\u{200E}' | '\u{200F}' | '\u{2028}' | '\u{2029}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}'
-        )
 }
 
 #[cfg(test)]

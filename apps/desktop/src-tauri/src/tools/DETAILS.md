@@ -295,8 +295,11 @@ gate and before the handler, only when `admit` answers Ask, so direct mode never
 - **A plan only reads, and runs twice**: once to word the question, and again after a yes. Different facts, or a plan
   that no longer asks, refuse with `data.refusal: "changedWhileAsking"`. So every `Sensitive` tool gets the re-check for
   free: `eject`'s volume, `set_setting`'s old value, `open_under_cursor`'s path.
-- **`AskFacts` is typed, and every string in it is `fact_text`**: no control or bidirectional-override characters, since
-  `cod\u{202E}fdp.command` would read as a PDF, and bounded by dropping the middle, since a name's end says what it does.
+- **`AskFacts` is typed, and every string in it is `fact_text`**, which is `cmdr_about::text::model_text` (the one
+  sanitizer, `crates/cmdr-about/DETAILS.md` § Text from the item): no control, bidirectional-override, or invisible
+  characters, since `cod\u{202E}fdp.command` would read as a PDF and a zero-width mark makes one name look like another,
+  and bounded by dropping the middle, since a name's end says what it does. The facts reach the person's dialog and the
+  re-check's comparison, never a model.
   `OpenFile.path` is the one exact string, kept for comparing; `shownPath` is what a person reads.
 - **Answers**: `declined`, `expired` (five minutes), `cancelled` (the turn's Stop, or the client going away), and
   `noWindow`, each in `data.refusal`; another dialog in the way is `data.blockingDialog`. One question at a time, in

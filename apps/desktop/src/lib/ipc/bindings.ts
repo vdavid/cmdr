@@ -11640,6 +11640,21 @@ export type HeadlineWhat =
   // An entry inside an archive.
   | { type: 'archiveEntry' }
 
+// What an item's name hid that Cmdr doesn't show, so the card says so once.
+export type HiddenInName =
+  /**
+   *  A character that changes the order text shows in. Elsewhere (Finder, a
+   *  browser, a mail) such a name can show a different ending than the one it
+   *  has: `cod\u{202E}fdp.command` reads as a PDF there and is a program.
+   */
+  | 'reordering'
+  /**
+   *  A character that shows as nothing (a tag, a zero-width mark, a soft hyphen),
+   *  so two names can look the same, or a name can carry text nobody sees. Glue
+   *  that makes an emoji or a script draw right doesn't count.
+   */
+  | 'invisible'
+
 // A single recent-search entry, persisted verbatim.
 export type HistoryEntry = {
   id: string
@@ -11800,12 +11815,12 @@ export type Identity = {
   // Its name.
   name: ItemText
   /**
-   *  The name as the item has it held a character that changes the order text
-   *  shows in (a bidirectional override, [`crate::text::hides_reordering`]),
-   *  which [`Self::name`] no longer has. Elsewhere the name may show a different
-   *  ending, so the card says so once.
+   *  What the name as the item has it hid that [`Self::name`] no longer has
+   *  ([`crate::text::hidden_in_name`]): a character that changes the order text
+   *  shows in (elsewhere the name may show a different ending), or one that shows
+   *  as nothing. The card says so once. `None`: it hid nothing.
    */
-  nameHidReordering: boolean
+  nameHid: HiddenInName | null
   /**
    *  What the files claim to be, in bytes. `None`: the volume reports no size
    *  for it (a folder's own size is [`RecursiveSize`]).

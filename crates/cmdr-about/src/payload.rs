@@ -9,7 +9,7 @@
 use serde::Serialize;
 
 use crate::fact::{Fact, UnknownWhy};
-use crate::text::ItemText;
+use crate::text::{HiddenInName, ItemText};
 
 /// The item itself, as its volume describes it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
@@ -17,11 +17,11 @@ use crate::text::ItemText;
 pub struct Identity {
     /// Its name.
     pub name: ItemText,
-    /// The name as the item has it held a character that changes the order text
-    /// shows in (a bidirectional override, [`crate::text::hides_reordering`]),
-    /// which [`Self::name`] no longer has. Elsewhere the name may show a different
-    /// ending, so the card says so once.
-    pub name_hid_reordering: bool,
+    /// What the name as the item has it hid that [`Self::name`] no longer has
+    /// ([`crate::text::hidden_in_name`]): a character that changes the order text
+    /// shows in (elsewhere the name may show a different ending), or one that shows
+    /// as nothing. The card says so once. `None`: it hid nothing.
+    pub name_hid: Option<HiddenInName>,
     /// What the files claim to be, in bytes. `None`: the volume reports no size
     /// for it (a folder's own size is [`RecursiveSize`]).
     pub logical_size: Option<u64>,

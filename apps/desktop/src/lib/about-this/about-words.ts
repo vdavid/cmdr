@@ -8,6 +8,7 @@ import type {
   ChildKind,
   FactKind,
   FolderClass,
+  HiddenInName,
   NotApplicableWhy,
   OwnerPlace,
   Section,
@@ -184,6 +185,12 @@ const IMPORTANCE_FLOOR: Record<string, MessageKey | undefined> = {
 /** The sentence for one floor token. A token the scorer adds later reads as the general one. */
 export function importanceFloorKey(token: string): MessageKey {
   return IMPORTANCE_FLOOR[token] ?? 'aboutThis.importance.floor.other'
+}
+
+/** The Name row's one note, by what the item's name hid that the card shows it without. */
+export const NAME_HID: Record<HiddenInName, MessageKey> = {
+  reordering: 'aboutThis.identity.nameHidReordering',
+  invisible: 'aboutThis.identity.nameHidInvisible',
 }
 
 /** The AI take's line saying what it was given beside the facts, shown from the moment the call goes out. */

@@ -27,7 +27,7 @@
     import { lastName } from '#lib/path/grammar.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { showsOnDisk, type RowView } from './about-card-view'
-    import { KIND_LABEL, ROW_LABEL, importanceFloorKey, importanceReasonKey, shortCommitId } from './about-words'
+    import { KIND_LABEL, NAME_HID, ROW_LABEL, importanceFloorKey, importanceReasonKey, shortCommitId } from './about-words'
 
     interface Props {
         row: RowView
@@ -93,14 +93,14 @@
     {@const fact = row.fact?.kind === 'identity' ? row.fact.fact : null}
     {@const identity = fact?.state === 'known' ? fact.value : null}
     {@const isFolderLike = target === 'folder' || target === 'appBundle' || target === 'package'}
-    {#if identity?.nameHidReordering}
-        <!-- Said once, first: the title and every row show the name without the hidden character. -->
+    {#if identity?.nameHid}
+        <!-- Said once, first: the title and every row show the name without the hidden characters. -->
         <div class="row" data-row-kind="name">
             <dt>{t('aboutThis.label.name')}</dt>
             <dd>
                 <span class="notable"
                     ><span class="mark" aria-hidden="true"><Icon name="circle-alert" size={12} /></span>{t(
-                        'aboutThis.identity.nameHidReordering',
+                        NAME_HID[identity.nameHid],
                     )}</span
                 >
             </dd>

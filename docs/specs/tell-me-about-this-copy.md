@@ -184,10 +184,17 @@ The list below covers every key the branch adds, grouped by the surface it shows
   - Where: Row label on the "Tell me about this" card, left of how many other names (hard links) point to the same file
     contents.
 - `aboutThis.label.name`: Name
-  - Where: Row label, first in "What it is", shown only when the name hides a direction-override character.
+  - Where: Row label, first in "What it is", shown only when the name hides a direction-override character or characters
+    that show as nothing.
 - `aboutThis.identity.nameHidReordering`: Its name hides a character that flips the text’s direction, so in other apps
   it can seem to end differently. Cmdr shows it without that character.
   - Where: That row, with a quiet warning mark. Said once; the title and every row show the real ending.
+- `aboutThis.identity.nameHidInvisible`: Its name holds characters you can’t see, so it can look like another name or
+  carry hidden text. Cmdr shows it without them.
+  - Where: That row instead, when the name hid no direction override but held characters that show as nothing (a
+    zero-width mark, invisible tag characters, a soft hyphen). An emoji's or a script's own joining characters don't
+    count. Said once; the title and every row show the name without them, and the AI never sees them. New, needs David's
+    review.
 - `aboutThis.label.pointsTo`: Points to
   - Where: Row label on the "Tell me about this" card for a symbolic link, left of the place the link points to.
 - `aboutThis.label.realType`: Kind

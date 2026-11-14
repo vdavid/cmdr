@@ -407,7 +407,7 @@ pub(super) fn identity_of(
     let name = name_of(path);
     AboutFact::Identity(Fact::Known(Identity {
         name: ItemText::new(name),
-        name_hid_reordering: cmdr_about::text::hides_reordering(name),
+        name_hid: cmdr_about::text::hidden_in_name(name),
         logical_size: bytes,
         physical_size: bytes,
         created: Some(NOW - created_days_ago * DAY),

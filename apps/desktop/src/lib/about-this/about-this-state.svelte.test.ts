@@ -60,7 +60,7 @@ const identity: AboutFact = {
     state: 'known',
     value: {
       name: 'a.txt',
-      nameHidReordering: false,
+      nameHid: null,
       logicalSize: 12,
       physicalSize: 4096,
       created: 1,
@@ -305,7 +305,12 @@ describe('the usage event', () => {
     expect(tracked).toHaveLength(1)
     expect(tracked[0]).toEqual({
       name: 'tell_me_about_used',
-      props: expect.objectContaining({ trigger: 'palette', target: 'file', action: 'moveToTrash', continued: false }),
+      props: expect.objectContaining({
+        trigger: 'palette',
+        target: 'file',
+        action: 'moveToTrash',
+        continued: false,
+      }) as Record<string, unknown>,
     })
   })
 

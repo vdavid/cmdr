@@ -243,6 +243,30 @@ fn verdict_text(updates: &[AboutUpdate]) -> String {
         .collect()
 }
 
+/// A steered model's own words can carry a direction override (a reversed phrase
+/// that reads as another) or invisible text: neither reaches the card.
+#[tokio::test]
+async fn the_takes_own_words_lose_what_would_disguise_them() {
+    let card = text_file("notes.txt", "Shopping list\n");
+    let (recorder, watched) = recorded();
+    let world = World::new();
+    let limits = Limits::default();
+    let token = CancellationToken::new();
+    let verdict = verdict_for(&card, &token, &limits, &world);
+
+    let chunks = [
+        "A plain \u{202E}eteled\u{202C} text file.",
+        "\u{200B}\u{E0041}\nThat's all.",
+    ];
+    let facts = async { play_facts(&watched, &card, true) };
+    tokio::join!(facts, run(verdict, Ok(world.ready(says(&chunks))), &watched));
+
+    assert_eq!(
+        verdict_text(&recorder.updates()),
+        "A plain eteled text file.\nThat's all."
+    );
+}
+
 /// The whole path: the verdict plans right after the card, says what it was given
 /// before the first word, streams, ends with its cost, and the prompt carries the
 /// projection and the first lines inside ONE fence.

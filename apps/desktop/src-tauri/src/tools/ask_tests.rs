@@ -359,11 +359,23 @@ fn fact_text_drops_what_would_make_a_name_read_as_something_else() {
     assert_eq!(fact_text("a\nb\u{2066}c"), "abc");
 }
 
+/// One name can show as another through a zero-width mark, and tag characters can
+/// carry text nobody sees; an emoji's own glue still draws it whole.
+#[test]
+fn fact_text_drops_invisible_characters_and_keeps_an_emojis_glue() {
+    assert_eq!(
+        fact_text("safe\u{200B}name\u{00AD}.app\u{E0041}\u{E0042}"),
+        "safename.app"
+    );
+    let family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}.jpg";
+    assert_eq!(fact_text(family), family);
+}
+
 #[test]
 fn a_long_fact_keeps_its_end_where_the_extension_lives() {
     let long = format!("{}.command", "a".repeat(10_000));
     let shown = fact_text(&long);
-    assert!(shown.chars().count() <= MAX_FACT_CHARS + 1);
+    assert!(shown.chars().count() <= cmdr_about::text::MAX_ITEM_TEXT_CHARS + 1);
     assert!(shown.ends_with(".command"));
     assert!(shown.contains('…'));
 }

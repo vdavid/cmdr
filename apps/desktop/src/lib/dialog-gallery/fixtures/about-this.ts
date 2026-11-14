@@ -285,7 +285,7 @@ const disguisedName: Stream = {
   ]),
   first: derived(disguisedHeadline, [{ type: 'cantTell' }]),
   facts: [
-    { fact: identity(DISGUISED, 412, '2026-11-12', { nameHidReordering: true }), derived: disguisedRemoval },
+    { fact: identity(DISGUISED, 412, '2026-11-12', { nameHid: 'reordering' }), derived: disguisedRemoval },
     { fact: { kind: 'download', fact: routine('noRecord') }, derived: disguisedRemoval },
     { fact: { kind: 'cmdrOperation', fact: routine('noRecord') }, derived: disguisedRemoval },
     {

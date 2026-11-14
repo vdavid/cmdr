@@ -48,9 +48,9 @@
   Crash-only: only third-party decoders run, with no Cmdr line for a property's mutant to change.
 - `about_provenance`: the download record's decoders (`com.apple.quarantine`, `kMDItemWhereFroms`,
   `user.xdg.origin.url`) over the raw bytes, then over a binary plist written from the input's lines. Asserts every
-  string that reaches a card row is free of control and bidirectional characters and within its cap, a kept address is
-  within its cap, a host is a DNS name and nothing else (which is all that leaves the machine), a record yields at most
-  16 sources, and a well-formed record reads back as the strings it holds.
+  string that reaches a card row is free of control, bidirectional, and invisible characters and within its cap, a kept
+  address is within its cap, a host is a DNS name and nothing else (which is all that leaves the machine), a record
+  yields at most 16 sources, and a well-formed record reads back as the strings it holds.
 
 ## Running and reproducing
 

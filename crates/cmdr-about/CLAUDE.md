@@ -7,7 +7,7 @@ inputs and hands them here. No fact depends on a model.
 ## Module map
 
 - **`fact.rs`**: `Fact<T>` (known, unknown, not applicable, pending), `UnknownWhy` and its `Prominence`, `FactKind`,
-  `AboutTarget`. **`text.rs`**: `ItemText`, `model_text`.
+  `AboutTarget`. **`text.rs`**: `ItemText`, `model_text`, `shown_text`.
 - **`payload.rs`, `digest.rs`**: what each fact carries. **`owner.rs`**: the owner claim, plus `OwnerQuestion` (what a
   path names, then how the host's lookups settle it).
 - **`provenance.rs`** (quarantine, WhereFroms, xdg, `redact_for_egress`), **`sniff.rs`** (magic bytes against the
@@ -45,6 +45,6 @@ inputs and hands them here. No fact depends on a model.
   in `gather` bounds how long the collector waits, never how long a job works.
 - ❗ **Every fuzz assertion has a mutant on record** (`fuzz/fuzz_targets/about_provenance.mutants.json`); the seam's
   checks never call the predicate they guard.
-- The public surface is capped by `index-crate-isolation`.
+- The public surface is capped (`index-crate-isolation`).
 
 Design, every rule, and evidence: `DETAILS.md`. Read it before any non-trivial work here.

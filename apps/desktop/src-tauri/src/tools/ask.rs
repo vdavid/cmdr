@@ -26,10 +26,6 @@ pub(crate) const TOOL_ASK_DIALOG: &str = "tool-ask";
 /// How long a question waits for a person who may have walked away.
 const ASK_EXPIRY: Duration = Duration::from_secs(5 * 60);
 
-/// The longest a model-chosen or on-disk text may be in a question. Past this the middle goes, since a
-/// name's end (its extension) is what says what it does.
-const MAX_FACT_CHARS: usize = 400;
-
 /// One side of a setting change, as the question shows it: the stored value, and what a person calls
 /// it when Cmdr knows a different name.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -363,22 +359,13 @@ fn refusal_for(answer: AskAnswer) -> ToolError {
 }
 
 /// Text from outside Cmdr's own words, made safe to show: plain, bounded, and reading as what it is.
-/// Control and bidirectional-override characters go, since `cod\u{202E}fdp.command` would otherwise
-/// show a person a PDF. The dialog renders text nodes only, so markup is inert either way.
+/// It's `cmdr_about::text::model_text`, the one rule for text someone else wrote: control,
+/// bidirectional-override, and invisible characters go (`cod\u{202E}fdp.command` would show a person a
+/// PDF, and a zero-width mark makes one name look like another), an emoji keeps its glue, and the
+/// middle goes past `cmdr_about::text::MAX_ITEM_TEXT_CHARS` (400), since a name's end (its extension)
+/// says what it does. The dialog renders text nodes only, so markup is inert either way.
 pub(crate) fn fact_text(text: &str) -> String {
-    let plain: Vec<char> = text
-        .chars()
-        .filter(|c| {
-            !c.is_control() && !matches!(c, '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}')
-        })
-        .collect();
-    if plain.len() <= MAX_FACT_CHARS {
-        return plain.into_iter().collect();
-    }
-    let keep = MAX_FACT_CHARS / 2;
-    let head: String = plain[..keep].iter().collect();
-    let tail: String = plain[plain.len() - keep..].iter().collect();
-    format!("{head}…{tail}")
+    cmdr_about::text::model_text(text)
 }
 
 #[cfg(test)]

@@ -303,7 +303,7 @@ fn link_target_claims_safe() -> EvalCard {
     .unsettled();
     card.apply(AboutFact::Identity(Fact::Known(Identity {
         name: ItemText::new("Projects"),
-        name_hid_reordering: false,
+        name_hid: None,
         logical_size: Some(40),
         physical_size: Some(0),
         created: Some(NOW - 500 * DAY),

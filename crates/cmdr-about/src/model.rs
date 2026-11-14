@@ -33,7 +33,7 @@ use crate::payload::{
 use crate::provenance::{CmdrOperation, Download, EgressSource, LandedBy, StartedBy, redact_for_egress};
 use crate::removal::{Installer, Rebuilder, Removal, RemovalConsequence, consequences};
 use crate::sniff::{ExtensionClaim, RealType, Sniffed, SniffedKind, TypeAgreement};
-use crate::text::ItemText;
+use crate::text::{HiddenInName, ItemText};
 
 /// Why an item's contents stay home: the app's sensitive-content gate, in this
 /// crate's words. For such a path the projection keeps name-level facts only.
@@ -347,7 +347,7 @@ impl ModelIdentity {
     fn of(identity: &Identity, speak: &dyn Speak) -> Self {
         let Identity {
             name,
-            name_hid_reordering,
+            name_hid,
             logical_size,
             physical_size,
             created,
@@ -357,7 +357,9 @@ impl ModelIdentity {
         } = identity;
         Self {
             name: name.clone(),
-            name_hid_reordering: *name_hid_reordering,
+            // An invisible character stays the card's to say: the model never sees
+            // it, and telling it one was there would widen the egress line.
+            name_hid_reordering: *name_hid == Some(HiddenInName::Reordering),
             logical_size: *logical_size,
             logical_size_human: spoken_bytes(*logical_size, speak),
             physical_size: *physical_size,

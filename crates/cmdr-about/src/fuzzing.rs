@@ -82,7 +82,7 @@ fn check_source(source: &WhereFrom) {
 fn check_text(text: &ItemText) {
     assert!(
         !text.as_str().chars().any(reads_as_something_else),
-        "an item's text carries a control or bidirectional character"
+        "an item's text carries a control, bidirectional, or invisible character"
     );
     assert!(
         text.as_str().chars().count() <= MAX_ITEM_TEXT_CHARS + 1,
@@ -92,11 +92,27 @@ fn check_text(text: &ItemText) {
 
 /// Stated here on its own, never through the sanitizer's predicate: a property
 /// that asks the code under test what's unsafe can't catch it being wrong.
+///
+/// The invisible half lists only what no context keeps: a tag that can't sit in a
+/// subdivision flag (an uppercase letter, a space), the zero-width space, word
+/// joiner, soft hyphen, byte order mark, and the selectors that aren't
+/// presentation selectors. Glue the sanitizer keeps in an emoji isn't listed.
 fn reads_as_something_else(c: char) -> bool {
     c.is_control()
         || matches!(
             c,
             '\u{061C}' | '\u{200E}' | '\u{200F}' | '\u{2028}' | '\u{2029}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}'
+        )
+        || matches!(
+            c,
+            '\u{00AD}'
+                | '\u{200B}'
+                | '\u{2060}'
+                | '\u{FEFF}'
+                | '\u{FE00}'..='\u{FE0D}'
+                | '\u{E0000}'..='\u{E002F}'
+                | '\u{E0041}'..='\u{E005A}'
+                | '\u{E0100}'..='\u{E01EF}'
         )
 }
 
@@ -124,9 +140,12 @@ mod tests {
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.".repeat(5)
         );
         let twenty_sources: Vec<String> = (0..20).map(|n| format!("https://example.com/{n}")).collect();
-        let inputs: [Vec<u8>; 9] = [
+        let inputs: [Vec<u8>; 10] = [
             b"0081;6af6442f;Chrome;0A1B2C3D-1111-4222-8333-444455556666".to_vec(),
             "0081;6af6442f;Chro\u{7}\u{202E}me;".as_bytes().to_vec(),
+            "0081;6af6442f;Chrome\u{200B}\u{E0049}\u{E0020}\u{E0067}\u{E006F};"
+                .as_bytes()
+                .to_vec(),
             format!("0081;6af6442f;{};", "A".repeat(1_000)).into_bytes(),
             long_host.into_bytes(),
             b"https://say+this.example/x".to_vec(),

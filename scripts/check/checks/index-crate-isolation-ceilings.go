@@ -769,11 +769,16 @@ var surfaceGuardedCrates = []struct {
 		// 146 → 147 (2026-11-13): `text::hides_reordering`, whether a name hid a
 		// direction override the sanitizer dropped, so the card can say so once,
 		// argued in that section.
+		//
+		// 147 → 149 (2026-11-14, invisible characters): `text::shown_text`, the one
+		// sanitizer the app's peek, Ask Cmdr's question facts, and the AI take's
+		// words share, and `text::HiddenInName`, the wire answer that replaced
+		// `hides_reordering`'s bool (now `hidden_in_name`), argued in that section.
 		Name: "cmdr-about",
 		Ceilings: surfaceCeilings{
 			RootPromises:   13,
 			PublicModules:  13,
-			SubsystemItems: 147,
+			SubsystemItems: 149,
 		},
 	},
 }

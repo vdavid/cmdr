@@ -1378,10 +1378,14 @@
   },
   "aboutThis.label.name": "Name",
   "@aboutThis.label.name": {
-    "description": "Row label on the \"Tell me about this\" card, in \"What it is\", shown only when the item's name hides a character that changes the order text shows in. Short label."
+    "description": "Row label on the \"Tell me about this\" card, in \"What it is\", shown only when the item's name hides a character that changes the order text shows in, or characters that display as nothing. Short label."
   },
   "aboutThis.identity.nameHidReordering": "Its name hides a character that flips the text’s direction, so in other apps it can seem to end differently. Cmdr shows it without that character.",
   "@aboutThis.identity.nameHidReordering": {
     "description": "The \"Name\" row on the \"Tell me about this\" card, shown only when the item's real name holds an invisible character that reverses the order the text shows in (a Unicode direction override), a trick that makes a program look like, say, a PDF in some apps. Cmdr dropped the character everywhere it shows the name, so the title and rows show its real ending. Plain words, no jargon like \"Unicode\" or \"bidi\"."
+  },
+  "aboutThis.identity.nameHidInvisible": "Its name holds characters you can’t see, so it can look like another name or carry hidden text. Cmdr shows it without them.",
+  "@aboutThis.identity.nameHidInvisible": {
+    "description": "The \"Name\" row on the \"Tell me about this\" card, shown only when the item's real name holds characters that display as nothing (zero-width marks, invisible tag characters, a soft hyphen). Such characters can make two names look identical, or hide text in a name that software reads but people don't see. Cmdr dropped them everywhere it shows the name, and never sends them to the AI. Plain words, no jargon like \"Unicode\" or \"zero-width\"."
   }
 }

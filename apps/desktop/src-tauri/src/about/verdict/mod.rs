@@ -191,6 +191,14 @@ pub(crate) async fn run(verdict: VerdictRun<'_>, decision: Decision, watched: &W
         };
         match next {
             Some(Ok(AgentDelta::Text(piece))) => {
+                // A steered model can write a direction override (a reversed phrase
+                // reads as another) or invisible text, so its words pass the same
+                // sanitizer as the item's. Per piece: glue split across two pieces
+                // drops, which only ever shows an emoji apart.
+                let piece = cmdr_about::text::shown_text(&piece);
+                if piece.is_empty() {
+                    continue;
+                }
                 text.push_str(&piece);
                 watched.send_verdict(&card, AboutUpdate::VerdictDelta { text: piece });
             }
