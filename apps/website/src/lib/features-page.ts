@@ -71,11 +71,11 @@ const chapterCards: Record<ChapterId, CardSpec[]> = {
     { id: 'ask-cmdr', icon: 'messages-square' },
     { id: 'ai-rename', icon: 'brain' },
     { id: 'ai-batch', icon: 'zap' },
+    { id: 'ai-tell-me', icon: 'message-circle-question-mark' },
   ],
   planned: [
     { id: 'disk-space-visualizer', icon: 'chart-pie' },
     { id: 'more-file-systems', icon: 'cloud' },
-    { id: 'ai-tell-me', icon: 'message-circle-question-mark' },
     { id: 'plugins', icon: 'puzzle' },
     { id: 'windows-linux', icon: 'monitor' },
   ],
