@@ -39,7 +39,7 @@ every rule; this module reads raw inputs.
 - ❌ **Git's status list holds CHANGED entries only**: absent is `NotInStatus`, ❌ never "clean".
 - ❌ **What's inside and an app's data read the index and an ALREADY loaded search arena only**. Not there is
   `NotIndexed`.
-- ❌ **The owner row never opens a container**, and no other volume's app counts as installed.
+- ❌ **Nothing looks inside an app's container** (`probe::sealed`), and no other volume's app counts as installed.
 - ❗ **A signer is named from code requirements, never a certificate name**; a missed check is `NotChecked`.
 - ❗ **The verdict's order is the consent guarantee**: gate (provider, setting, slot) → reuse and ceiling → facts →
   sensitive gate and peek → prompt → call. A refusal reads nothing for a model. ❌ Its text is never stored, logged, or

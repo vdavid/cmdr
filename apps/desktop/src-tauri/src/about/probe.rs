@@ -9,6 +9,7 @@ use std::io::ErrorKind;
 use std::path::Path;
 
 use cmdr_about::fact::{AboutTarget, Fact};
+use cmdr_about::owner::{OwnerPlace, OwnerQuestion};
 use cmdr_about::payload::Identity;
 use cmdr_about::text::ItemText;
 use cmdr_fs::file_extension::{is_listed_package, needs_package_lookup};
@@ -42,8 +43,9 @@ pub(crate) struct Probe {
     pub(crate) repo: RepoAround,
 }
 
-/// Looks at `path`, which the resolver placed on a local volume.
-pub(crate) fn probe(path: &str) -> Result<Probe, AboutUnavailable> {
+/// Looks at `path`, which the resolver placed on a local volume. `home`: the
+/// person's home folder, whose app containers the probe never looks inside.
+pub(crate) fn probe(path: &str, home: Option<&str>) -> Result<Probe, AboutUnavailable> {
     let fs_path = Path::new(path);
     let metadata = match std::fs::symlink_metadata(fs_path) {
         Ok(metadata) => metadata,
@@ -53,7 +55,8 @@ pub(crate) fn probe(path: &str) -> Result<Probe, AboutUnavailable> {
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_else(|| path.to_string());
-    let target = target_of(fs_path, &name, &metadata);
+    let sealed = home.is_some_and(|home| sealed(path, home));
+    let target = target_of(fs_path, &name, &metadata, sealed);
     let extras = platform::stat_extras(&metadata);
     // ❌ Never a `statfs` on the item: it follows the item's own link, so a link to a
     // dead share would hold the probe past its budget, and a live one wakes the NAS.
@@ -66,12 +69,37 @@ pub(crate) fn probe(path: &str) -> Result<Probe, AboutUnavailable> {
         on_local_disk,
         identity: Fact::Known(identity(fs_path, &name, &metadata, extras)),
         node: NodeIdentity::of(&metadata),
-        repo: if on_local_disk {
+        // Git's discovery stats `<folder>/.git` and walks up: inside a container, that's
+        // a look at another app's data.
+        repo: if on_local_disk && !sealed {
             repo_around(fs_path, metadata.is_dir())
         } else {
             RepoAround::None
         },
     })
+}
+
+/// Whether `path` is an app's container or sits inside one
+/// (`~/Library/Containers/<id>`, `~/Library/Group Containers/<id>`), by its name alone.
+///
+/// ❌ Nothing looks inside one: that access is what can raise macOS's "would like to
+/// access data from other apps" prompt, so git's discovery (a `stat` of `<it>/.git`)
+/// and the package lookup (every container is named like `com.vendor.App`) are
+/// skipped. The container's own `lstat` is a look at its entry in the Library, which
+/// the pane already listed.
+pub(crate) fn sealed(path: &str, home: &str) -> bool {
+    let is_a_container = |place: OwnerPlace| matches!(place, OwnerPlace::Containers | OwnerPlace::GroupContainers);
+    let itself = match OwnerQuestion::of(path, home) {
+        OwnerQuestion::BundleId { place, .. } | OwnerQuestion::Name { place, .. } => is_a_container(place),
+        OwnerQuestion::Receipt | OwnerQuestion::Answered(_) | OwnerQuestion::Nothing => false,
+    };
+    let library = format!("{}/Library", home.trim_end_matches('/'));
+    itself
+        || OwnerQuestion::app_folder_above(path, home).is_some_and(|above| {
+            ["Containers", "Group Containers"]
+                .iter()
+                .any(|folder| Path::new(&above).parent() == Some(Path::new(&format!("{library}/{folder}"))))
+        })
 }
 
 fn extension_of(name: &str) -> Option<String> {
@@ -88,7 +116,8 @@ fn unavailable(error: &std::io::Error) -> AboutUnavailable {
     }
 }
 
-fn target_of(path: &Path, name: &str, metadata: &std::fs::Metadata) -> AboutTarget {
+/// What the item is. `sealed`: an app's container ([`sealed`]), never asked about.
+fn target_of(path: &Path, name: &str, metadata: &std::fs::Metadata, sealed: bool) -> AboutTarget {
     if metadata.file_type().is_symlink() {
         return AboutTarget::Symlink;
     }
@@ -97,6 +126,7 @@ fn target_of(path: &Path, name: &str, metadata: &std::fs::Metadata) -> AboutTarg
     }
     let is_package = is_listed_package(name)
         || (needs_package_lookup(name)
+            && !sealed
             && path
                 .to_str()
                 .is_some_and(crate::file_system::packages::is_package_to_the_os));

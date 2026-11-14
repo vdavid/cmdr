@@ -121,7 +121,7 @@ pub(super) fn assert_well_formed(updates: &[AboutUpdate]) {
 
 fn local(path: &std::path::Path) -> Gathered {
     let path = path.to_string_lossy().into_owned();
-    let probed = probe(&path).expect("the fixture is there");
+    let probed = probe(&path, None).expect("the fixture is there");
     local_gathered(
         &path,
         probed,
@@ -268,7 +268,7 @@ async fn a_hard_linked_file_counts_its_other_name() {
     let file = dir.as_ref().join("a.txt");
     std::fs::write(&file, "shared").expect("write the fixture");
     std::fs::hard_link(&file, dir.as_ref().join("b.txt")).expect("link it");
-    let probed = probe(&file.to_string_lossy()).expect("the fixture is there");
+    let probed = probe(&file.to_string_lossy(), None).expect("the fixture is there");
     let Fact::Known(identity) = probed.identity else {
         panic!("identity is known");
     };
@@ -281,7 +281,7 @@ fn a_missing_path_is_unavailable_not_a_card_of_unknowns() {
     let dir = TestDir::new("about-missing");
     let missing = dir.as_ref().join("gone.txt");
     assert_eq!(
-        probe(&missing.to_string_lossy()).map(|_| ()),
+        probe(&missing.to_string_lossy(), None).map(|_| ()),
         Err(super::event::AboutUnavailable::NotFound)
     );
 }
@@ -294,7 +294,7 @@ fn a_symlink_is_about_the_link_and_reads_nothing_through_it() {
     std::os::unix::fs::symlink("/nowhere/at/all", &link).expect("make the link");
     #[cfg(unix)]
     {
-        let probed = probe(&link.to_string_lossy()).expect("a dangling link is still there");
+        let probed = probe(&link.to_string_lossy(), None).expect("a dangling link is still there");
         assert_eq!(probed.target, AboutTarget::Symlink);
         let Fact::Known(identity) = &probed.identity else {
             panic!("identity is known");
@@ -327,7 +327,7 @@ fn a_link_into_a_mount_that_isnt_a_local_disk_is_described_as_a_link() {
     let link = dir.as_ref().join("nas");
     std::os::unix::fs::symlink(elsewhere, &link).expect("make the link");
     let path = link.to_string_lossy();
-    let probed = probe(&path).expect("the link is there");
+    let probed = probe(&path, None).expect("the link is there");
     assert_eq!(probed.target, AboutTarget::Symlink);
     assert!(probed.on_local_disk, "a link lives where its parent lives");
     assert!(
@@ -371,7 +371,7 @@ fn a_local_looking_path_on_a_network_mount_runs_no_local_job() {
     let dir = TestDir::new("about-through-a-link");
     let file = dir.as_ref().join("on-the-share.txt");
     std::fs::write(&file, "x").expect("write the fixture");
-    let mut probed = probe(&file.to_string_lossy()).expect("the fixture is there");
+    let mut probed = probe(&file.to_string_lossy(), None).expect("the fixture is there");
     probed.on_local_disk = false;
     let gathered = local_gathered(
         &file.to_string_lossy(),
@@ -599,7 +599,7 @@ async fn copy_with_cmdr(
 #[cfg(target_os = "macos")]
 fn with_history(path: &std::path::Path, log: &cmdr_operations::testing::TestOperationLog) -> Gathered {
     let path = path.to_string_lossy().into_owned();
-    let probed = probe(&path).expect("the fixture is there");
+    let probed = probe(&path, None).expect("the fixture is there");
     local_gathered(
         &path,
         probed,
@@ -704,7 +704,7 @@ fn fake_installed_apps() -> Vec<cmdr_about::owner::KnownApp> {
 /// fake list of installed apps: ❌ never the real `~/Library`.
 fn in_a_fixture_home(path: &std::path::Path, home: &std::path::Path) -> Gathered {
     let path = path.to_string_lossy().into_owned();
-    let probed = probe(&path).expect("the fixture is there");
+    let probed = probe(&path, Some(&home.to_string_lossy())).expect("the fixture is there");
     local_gathered(
         &path,
         probed,
@@ -766,6 +766,37 @@ async fn library_folders_answer_their_owner_through_the_card() {
     );
     let vendor = gather(in_a_fixture_home(&support.join("Google"), &home), quick()).await;
     assert_eq!(owner_of(&vendor), Fact::unknown(UnknownWhy::Ambiguous));
+}
+
+/// ❗ A card on an app's container, or on anything inside one, never looks inside it:
+/// a container that holds a repo plans no git row (git's discovery would `stat`
+/// `<container>/.git`), and its `com.vendor.App` name isn't asked about as a package.
+/// That access is what can raise macOS's "would like to access data from other apps".
+#[test]
+fn a_container_is_never_looked_inside() {
+    let home = TestDir::new("about-container-home");
+    let containers = home.join("Library/Containers");
+    let groups = home.join("Library/Group Containers");
+    for container in [containers.join("com.vendor.App"), groups.join("ABCDE12345.com.vendor")] {
+        let data = container.join("Data");
+        std::fs::create_dir_all(&data).expect("make the fixture");
+        std::fs::write(data.join("notes.txt"), "x").expect("write the fixture");
+        let _repo = cmdr_git::test_fixtures::Fixture::init(container.clone());
+        assert!(
+            container.join(".git").exists(),
+            "the fixture holds a repo the probe would find"
+        );
+        for path in [container.clone(), data.clone(), data.join("notes.txt")] {
+            let gathered = in_a_fixture_home(&path, &home);
+            assert!(!gathered.plan.kinds().contains(&FactKind::Git), "{path:?}");
+            assert_ne!(gathered.plan.target, AboutTarget::Package, "{path:?}");
+        }
+    }
+    // The same repo outside a container is found, so the test isn't vacuous.
+    let outside = home.join("Projects/app");
+    std::fs::create_dir_all(&outside).expect("make the fixture");
+    let _repo = cmdr_git::test_fixtures::Fixture::init(outside.clone());
+    assert!(in_a_fixture_home(&outside, &home).plan.kinds().contains(&FactKind::Git));
 }
 
 /// A document no path rule claims and no repo holds has neither row: the card

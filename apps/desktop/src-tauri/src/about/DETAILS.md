@@ -121,6 +121,12 @@ once and the note says it stopped. That bounds a dead share to two stranded pool
     and got every local job. The walk answers the same on both. Tests: `place_tests.rs` (a fake mount table with a
     stand-in NFS share, asserting no `lstat` inside it), and `tests.rs` (a real link to `/dev` or `/proc`).
   - `SF_DATALESS` (an evicted cloud file) sets `contents_local: false`, so the plan has no real-type or signature row.
+  - An app's container, or anything inside one (`~/Library/Containers/<id>`, `~/Library/Group Containers/<id>`,
+    `probe::sealed`, by name), gets no git discovery (it `stat`s `<it>/.git` and walks up) and no package lookup (every
+    container is named like `com.vendor.App`): that access is what can raise macOS's "would like to access data from
+    other apps" prompt. Whether either call alone trips the prompt on macOS 14+ isn't verified; the rule is "by name
+    only" either way. Test: `tests.rs` `a_container_is_never_looked_inside` (a fixture home whose containers hold a
+    repo).
 
 ## Jobs and budgets
 

@@ -412,8 +412,8 @@ pub(crate) fn action_caps(way: Way, volume: &dyn Volume, path: &str, home: Optio
 }
 
 async fn local_card(resolved: &ResolvedLocation, path: String) -> Result<Gathered, AboutUnavailable> {
-    let probed = probe_on_pool(path.clone()).await?;
     let home = home_folder();
+    let probed = probe_on_pool(path.clone(), home.clone()).await?;
     let sources = Sources {
         history: History::of_the_app(&resolved.location.volume_id),
         index: Some(index_place(resolved, &path)),
@@ -495,11 +495,11 @@ async fn reaches_a_share_off_the_executor(path: &str) -> bool {
 }
 
 /// Runs the probe on the about pool and waits for it at most [`PROBE_BUDGET`].
-async fn probe_on_pool(path: String) -> Result<Probe, AboutUnavailable> {
+async fn probe_on_pool(path: String, home: Option<String>) -> Result<Probe, AboutUnavailable> {
     let (answer, waiting) = tokio::sync::oneshot::channel();
     super::pool::submit(Box::new(move || {
         crate::file_system::framework_pool::note_activity("lstat", "probe");
-        let _ = answer.send(probe(&path));
+        let _ = answer.send(probe(&path, home.as_deref()));
     }));
     match tokio::time::timeout(PROBE_BUDGET, waiting).await {
         Ok(Ok(probed)) => probed,
