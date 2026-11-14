@@ -46,7 +46,7 @@ The full tour, with clips and an honest status (stable, beta, alpha, planned) pe
 - **Multi-rename**: Patterns, counters, search and replace, case changes, and photo and music details, with a live preview and one-step Undo.
 - **File viewer**: Text, Markdown, images, PDFs, binary, and hex views, with search; opens 10+ GB files instantly.
 - **Full-disk index and search**: A live local index powers folder sizes in the listing and search that answers in well under a second, plus on-device image search.
-- **Optional AI** (off by default): A free on-device model or your own provider key. Natural-language search, Ask Cmdr chat about your files, AI rename, and AI file organization; anything that changes files waits for approval.
+- **Optional AI** (off by default): A free on-device model or your own provider key. Natural-language search, Ask Cmdr chat about your files, AI rename, AI file organization, and a short AI take on any file's "Tell me about this" card (the card's facts work with AI off); anything that changes files waits for approval.
 - **Polish**: Follows macOS theme and accessibility settings, works with VoiceOver, translated into ${shippedLanguageCount} languages.
 
 ## Pricing
