@@ -6622,6 +6622,8 @@ export type AboutFact =
   | { kind: 'appData'; fact: Fact<AppData> }
   // The git history a portal entry is a snapshot from.
   | { kind: 'gitSnapshot'; fact: Fact<GitSnapshot> }
+  // What the image index recognized in a picture.
+  | { kind: 'imageContents'; fact: Fact<ImageContents> }
 
 // Which rows the card has, decided before any job runs.
 export type AboutPlan = {
@@ -10531,6 +10533,11 @@ export type FactKind =
   | 'appData'
   // The git history a `.git` portal entry is a snapshot from.
   | 'gitSnapshot'
+  /**
+   *  What the image index recognized in a picture: its tags and the start of
+   *  the text in it.
+   */
+  | 'imageContents'
 
 // Whether a pick of a favorite gets there, and if not, why. One decision site: `favorites/reach.rs`.
 export type FavoriteReach =
@@ -11832,6 +11839,30 @@ export type Identity = {
   hardLinks: number | null
   // Where a symlink points, as written. `None`: it isn't a symlink.
   symlinkTarget: ItemText | null
+}
+
+/**
+ *  What Cmdr's image index stored about a picture: the labels its on-device
+ *  classifier gave it, and the start of the text it recognized in it. Read from
+ *  the index alone, ❌ never by looking at the image.
+ *
+ *  Labels, ❌ never a description: `dog` and `beach` don't say a dog is on a
+ *  beach. The recognized text is whatever the picture shows, so it's the item's
+ *  own claim, sanitized like a name.
+ */
+export type ImageContents = {
+  /**
+   *  The classifier's labels at or above [`SHOWN_TAG_SCORE`], most confident
+   *  first, at most [`SHOWN_TAGS`]. Empty: none was that sure.
+   */
+  tags: ItemText[]
+  /**
+   *  The first lines of recognized text, at most [`SHOWN_TEXT_LINES`], each cut
+   *  at [`SHOWN_LINE_CHARS`]. Empty: the index found no text in it.
+   */
+  textLines: ItemText[]
+  // More recognized text follows what `text_lines` holds.
+  moreText: boolean
 }
 
 // How much a folder matters, by Cmdr's own scoring.
@@ -22927,8 +22958,9 @@ export type UnknownWhy =
   // A Library folder named like an app, and no installed app has that name.
   | 'libraryNameMatchesNoApp'
   /**
-   *  The drive index doesn't cover the path: indexing is off, or it hasn't
-   *  reached the place yet. Routine: nothing went wrong, and on a folder it's
+   *  The index doesn't cover the path: indexing is off, or it hasn't reached
+   *  the place yet. For an image's row, the image index has no entry for it:
+   *  not reached yet, or in a folder the person left out. Routine: nothing went wrong, and on a folder it's
    *  the same cause behind the size, what's inside, and the importance, so a
    *  warning per row would be a wall of the same sentence.
    */
@@ -22960,6 +22992,11 @@ export type UnknownWhy =
   | 'unparseable'
   // A turn Cmdr started on its own doesn't touch a network or device volume.
   | 'refusedInBackground'
+  /**
+   *  The person turned off the index that would answer it (image indexing).
+   *  Routine: a setting they chose, said once in the row.
+   */
+  | 'indexingOff'
 
 /**
  *  Why an unlock or a forget didn't reach a container. A wrong password is

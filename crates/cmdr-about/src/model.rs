@@ -198,6 +198,8 @@ pub fn for_model(about: &AboutCard, path: &str, protected: Option<ProtectedReaso
         folder_digest,
         app_data,
         git_snapshot,
+        // ❌ Not sent: what the image index recognized has no disclosure line yet.
+        image_contents: _,
     } = &card;
     ModelCard {
         target: *target,
@@ -250,6 +252,7 @@ fn name_level_only(card: &AboutCard) -> AboutCard {
         folder_digest,
         app_data,
         git_snapshot,
+        image_contents,
     } = card;
     AboutCard {
         target: *target,
@@ -273,6 +276,7 @@ fn name_level_only(card: &AboutCard) -> AboutCard {
         folder_digest: protected(folder_digest),
         app_data: protected(app_data),
         git_snapshot: protected(git_snapshot),
+        image_contents: protected(image_contents),
     }
 }
 

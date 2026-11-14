@@ -774,11 +774,15 @@ var surfaceGuardedCrates = []struct {
 		// sanitizer the app's peek, Ask Cmdr's question facts, and the AI take's
 		// words share, and `text::HiddenInName`, the wire answer that replaced
 		// `hides_reordering`'s bool (now `hidden_in_name`), argued in that section.
+		//
+		// 149 → 151 (2026-11-14, a picture's "What it shows" row):
+		// `payload::ImageContents`, a wire type, and `ImageContents::of`, which
+		// tags and lines show, argued in that section.
 		Name: "cmdr-about",
 		Ceilings: surfaceCeilings{
 			RootPromises:   13,
 			PublicModules:  13,
-			SubsystemItems: 149,
+			SubsystemItems: 151,
 		},
 	},
 }

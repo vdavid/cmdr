@@ -20,6 +20,7 @@ use cmdr_about::owner::OwnerQuestion;
 use super::digest::{app_data_fact, folder_digest_fact};
 use super::git::git_fact;
 use super::history::{History, cmdr_operation};
+use super::image::{ImagePlace, image_contents_fact};
 use super::index::{IndexPlace, importance_fact, recursive_size_fact};
 use super::owner::{AppSource, owner_fact};
 use super::platform;
@@ -43,7 +44,7 @@ fn now_secs() -> u64 {
 }
 
 /// The rows this host gathers: every kind in the vocabulary.
-pub(crate) const GATHERED: [FactKind; 15] = [
+pub(crate) const GATHERED: [FactKind; 16] = [
     FactKind::Identity,
     FactKind::RealType,
     FactKind::Bundle,
@@ -59,6 +60,7 @@ pub(crate) const GATHERED: [FactKind; 15] = [
     FactKind::FolderDigest,
     FactKind::AppData,
     FactKind::GitSnapshot,
+    FactKind::ImageContents,
 ];
 
 /// Where a local card's stores and lookups come from, decided before the plan. A
@@ -71,6 +73,8 @@ pub(crate) struct Sources {
     /// Where the item sits in the drive index. `None`: no size, importance,
     /// digest, or app-data row.
     pub(crate) index: Option<IndexPlace>,
+    /// Where a picture's image index row may be. `None`: no "What it shows" row.
+    pub(crate) image: Option<ImagePlace>,
     /// The person's home folder, whose Library an app's data is looked for in.
     /// `None` (a sandboxed test runner): no app-data row.
     pub(crate) home: Option<String>,
@@ -130,6 +134,7 @@ impl Sources {
         Self {
             history: None,
             index: None,
+            image: None,
             home: None,
             owner: OwnerQuestion::Nothing,
             apps: AppSource::of_the_os(),
@@ -253,6 +258,13 @@ fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources, sub_jobs:
                     &home,
                     &index_id,
                 ))
+            })
+        }
+        FactKind::ImageContents => {
+            let place = sources.image.clone()?;
+            Box::new(move || {
+                note_activity("read the image index", "imageContents");
+                AboutFact::ImageContents(image_contents_fact(&place, cmdr_index::media_index::gate::is_enabled()))
             })
         }
         // The probe answered identity; a snapshot from git's history is never a

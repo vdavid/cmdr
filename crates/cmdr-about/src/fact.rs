@@ -112,8 +112,9 @@ pub enum UnknownWhy {
     VolumeCantTell,
     /// A Library folder named like an app, and no installed app has that name.
     LibraryNameMatchesNoApp,
-    /// The drive index doesn't cover the path: indexing is off, or it hasn't
-    /// reached the place yet. Routine: nothing went wrong, and on a folder it's
+    /// The index doesn't cover the path: indexing is off, or it hasn't reached
+    /// the place yet. For an image's row, the image index has no entry for it:
+    /// not reached yet, or in a folder the person left out. Routine: nothing went wrong, and on a folder it's
     /// the same cause behind the size, what's inside, and the importance, so a
     /// warning per row would be a wall of the same sentence.
     NotIndexed,
@@ -140,6 +141,9 @@ pub enum UnknownWhy {
     Unparseable,
     /// A turn Cmdr started on its own doesn't touch a network or device volume.
     RefusedInBackground,
+    /// The person turned off the index that would answer it (image indexing).
+    /// Routine: a setting they chose, said once in the row.
+    IndexingOff,
 }
 
 impl UnknownWhy {
@@ -151,7 +155,8 @@ impl UnknownWhy {
             | UnknownWhy::NoInstalledAppMatches
             | UnknownWhy::VolumeCantTell
             | UnknownWhy::VolumeStoppedAnswering
-            | UnknownWhy::NotIndexed => Prominence::Routine,
+            | UnknownWhy::NotIndexed
+            | UnknownWhy::IndexingOff => Prominence::Routine,
             UnknownWhy::LibraryNameMatchesNoApp
             | UnknownWhy::TimedOut
             | UnknownWhy::Unreachable
@@ -217,11 +222,14 @@ pub enum FactKind {
     AppData,
     /// The git history a `.git` portal entry is a snapshot from.
     GitSnapshot,
+    /// What the image index recognized in a picture: its tags and the start of
+    /// the text in it.
+    ImageContents,
 }
 
 impl FactKind {
     /// Every kind, in declaration order.
-    pub const ALL: [FactKind; 15] = [
+    pub const ALL: [FactKind; 16] = [
         FactKind::Identity,
         FactKind::RealType,
         FactKind::Bundle,
@@ -237,6 +245,7 @@ impl FactKind {
         FactKind::FolderDigest,
         FactKind::AppData,
         FactKind::GitSnapshot,
+        FactKind::ImageContents,
     ];
 }
 
@@ -262,7 +271,7 @@ pub enum AboutTarget {
 mod tests {
     use super::*;
 
-    const ALL_WHYS: [UnknownWhy; 16] = [
+    const ALL_WHYS: [UnknownWhy; 17] = [
         UnknownWhy::NoRecord,
         UnknownWhy::NotInStatus,
         UnknownWhy::NoInstalledAppMatches,
@@ -279,6 +288,7 @@ mod tests {
         UnknownWhy::Ambiguous,
         UnknownWhy::Unparseable,
         UnknownWhy::RefusedInBackground,
+        UnknownWhy::IndexingOff,
     ];
 
     /// The rule the card's calm rests on: an ordinary absence is one muted line, and
@@ -298,6 +308,7 @@ mod tests {
                 UnknownWhy::VolumeCantTell,
                 UnknownWhy::NotIndexed,
                 UnknownWhy::VolumeStoppedAnswering,
+                UnknownWhy::IndexingOff,
             ]
         );
     }

@@ -175,6 +175,7 @@ mod tests {
             folder_digest: None,
             app_data: None,
             git_snapshot: None,
+            image_contents: None,
         };
         crate::about::model_for_test(&card, &format!("/Users/jane/Downloads/{name}"))
     }

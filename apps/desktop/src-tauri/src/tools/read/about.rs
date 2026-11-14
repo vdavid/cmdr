@@ -82,6 +82,9 @@ fn how_cmdr_knows(kind: FactKind) -> &'static str {
             "The git repository around it. notInStatus means git listed no change, not that it's committed."
         }
         FactKind::GitSnapshot => "The repository's history, as Cmdr's .git folder shows it.",
+        FactKind::ImageContents => {
+            "Cmdr's image index, from an on-device classifier and text recognition: taggedAs are labels, never a description of the scene, and recognizedText is whatever the picture shows."
+        }
     }
 }
 

@@ -45,6 +45,7 @@ export const ROW_LABEL: Record<Exclude<FactKind, 'identity'>, MessageKey> = {
   folderDigest: 'aboutThis.label.contents',
   appData: 'aboutThis.label.appData',
   gitSnapshot: 'aboutThis.label.gitSnapshot',
+  imageContents: 'aboutThis.label.imageContents',
 }
 
 export const UNKNOWN_WHY: Record<UnknownWhy, MessageKey> = {
@@ -64,6 +65,7 @@ export const UNKNOWN_WHY: Record<UnknownWhy, MessageKey> = {
   ambiguous: 'aboutThis.unknown.ambiguous',
   unparseable: 'aboutThis.unknown.unparseable',
   refusedInBackground: 'aboutThis.unknown.refusedInBackground',
+  indexingOff: 'aboutThis.unknown.indexingOff',
 }
 
 /** Where a row says an absence in its own words; every other reason takes `UNKNOWN_WHY`. */
@@ -72,6 +74,10 @@ export const ROW_UNKNOWN: Partial<Record<FactKind, Partial<Record<UnknownWhy, Me
   cmdrOperation: { noRecord: 'aboutThis.cmdrOperation.noRecord' },
   lastOpened: { noRecord: 'aboutThis.lastOpened.noRecord' },
   owner: { noRecord: 'aboutThis.owner.noReceipt', ambiguous: 'aboutThis.owner.ambiguous' },
+  imageContents: {
+    notIndexed: 'aboutThis.imageContents.notIndexed',
+    indexingOff: 'aboutThis.imageContents.indexingOff',
+  },
 }
 
 /**

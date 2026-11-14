@@ -10,9 +10,11 @@ use serde::Serialize;
 use crate::digest::{AppData, FolderDigest};
 use crate::fact::{AboutTarget, Fact, FactKind, UnknownWhy};
 use crate::owner::{OwnerClaim, OwnerQuestion};
-use crate::payload::{AppRef, Bundle, GitContext, GitSnapshot, Identity, Importance, RecursiveSize, Signature, Usage};
+use crate::payload::{
+    AppRef, Bundle, GitContext, GitSnapshot, Identity, ImageContents, Importance, RecursiveSize, Signature, Usage,
+};
 use crate::provenance::{CmdrOperation, Download};
-use crate::sniff::RealType;
+use crate::sniff::{RealType, SniffedKind, claimed_kind};
 use crate::text::ItemText;
 
 /// One answered fact: what a gathering job returns and what the card receives.
@@ -49,6 +51,8 @@ pub enum AboutFact {
     AppData(Fact<AppData>),
     /// The git history a portal entry is a snapshot from.
     GitSnapshot(Fact<GitSnapshot>),
+    /// What the image index recognized in a picture.
+    ImageContents(Fact<ImageContents>),
 }
 
 impl AboutFact {
@@ -70,6 +74,7 @@ impl AboutFact {
             AboutFact::FolderDigest(_) => FactKind::FolderDigest,
             AboutFact::AppData(_) => FactKind::AppData,
             AboutFact::GitSnapshot(_) => FactKind::GitSnapshot,
+            AboutFact::ImageContents(_) => FactKind::ImageContents,
         }
     }
 
@@ -92,6 +97,7 @@ impl AboutFact {
             FactKind::FolderDigest => AboutFact::FolderDigest(Fact::unknown(why)),
             FactKind::AppData => AboutFact::AppData(Fact::unknown(why)),
             FactKind::GitSnapshot => AboutFact::GitSnapshot(Fact::unknown(why)),
+            FactKind::ImageContents => AboutFact::ImageContents(Fact::unknown(why)),
         }
     }
 }
@@ -115,6 +121,9 @@ pub struct VolumeCaps {
     pub operation_log: bool,
     /// A git repo can sit around the path.
     pub git: bool,
+    /// The image index may hold the path (its own database: a local disk, or an
+    /// SMB share the person opted in).
+    pub image_index: bool,
 }
 
 impl VolumeCaps {
@@ -128,6 +137,7 @@ impl VolumeCaps {
             index: true,
             operation_log: true,
             git: true,
+            image_index: true,
         }
     }
 
@@ -142,15 +152,28 @@ impl VolumeCaps {
             index: false,
             operation_log: false,
             git: false,
+            image_index: false,
         }
     }
 
     fn answers_everything(&self) -> bool {
-        self.content && self.download_record && self.system && self.index && self.operation_log && self.git
+        self.content
+            && self.download_record
+            && self.system
+            && self.index
+            && self.operation_log
+            && self.git
+            && self.image_index
     }
 
     fn answers_identity_only(&self) -> bool {
-        !(self.content || self.download_record || self.system || self.index || self.operation_log || self.git)
+        !(self.content
+            || self.download_record
+            || self.system
+            || self.index
+            || self.operation_log
+            || self.git
+            || self.image_index)
     }
 }
 
@@ -327,6 +350,9 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
     let is_bundle = matches!(target, AppBundle | Package);
     let is_folder_like = matches!(target, Folder | AppBundle | Package);
     let extension = extension.map(str::to_ascii_lowercase);
+    // A picture by its name: the index keys its rows by path, so the bytes aren't
+    // read to decide it.
+    let is_picture = extension.as_deref().and_then(claimed_kind) == Some(SniffedKind::Image);
     let signable = is_bundle
         || (target == File
             && (is_executable
@@ -354,6 +380,9 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
         // Its id comes from the app's `Info.plist`, as the bundle row's does.
         FactKind::AppData => target == AppBundle && caps.index && caps.system && contents_local,
         FactKind::GitSnapshot => git_snapshot,
+        // The index's own database answers, so an online-only file and a share's
+        // picture have it too.
+        FactKind::ImageContents => target == File && !git_snapshot && is_picture && caps.image_index,
     };
 
     // A folder leads with what's inside, an app with what it is, a file with where it
@@ -423,6 +452,7 @@ fn rows_of(section: Section) -> &'static [FactKind] {
         Section::Nature => &[
             FactKind::Identity,
             FactKind::RealType,
+            FactKind::ImageContents,
             FactKind::Bundle,
             FactKind::Signature,
             FactKind::RecursiveSize,
@@ -473,6 +503,8 @@ pub struct AboutCard {
     pub app_data: Option<Fact<AppData>>,
     /// The git history a portal entry is a snapshot from.
     pub git_snapshot: Option<Fact<GitSnapshot>>,
+    /// What the image index recognized in a picture.
+    pub image_contents: Option<Fact<ImageContents>>,
 }
 
 impl AboutCard {
@@ -498,6 +530,7 @@ impl AboutCard {
             folder_digest: slot(plan, FactKind::FolderDigest),
             app_data: slot(plan, FactKind::AppData),
             git_snapshot: slot(plan, FactKind::GitSnapshot),
+            image_contents: slot(plan, FactKind::ImageContents),
         }
     }
 
@@ -529,6 +562,7 @@ impl AboutCard {
             AboutFact::FolderDigest(fact) => put(&mut self.folder_digest, fact),
             AboutFact::AppData(fact) => put(&mut self.app_data, fact),
             AboutFact::GitSnapshot(fact) => put(&mut self.git_snapshot, fact),
+            AboutFact::ImageContents(fact) => put(&mut self.image_contents, fact),
         }
     }
 
@@ -553,6 +587,7 @@ impl AboutCard {
             (FactKind::FolderDigest, waits(&self.folder_digest)),
             (FactKind::AppData, waits(&self.app_data)),
             (FactKind::GitSnapshot, waits(&self.git_snapshot)),
+            (FactKind::ImageContents, waits(&self.image_contents)),
         ];
         waiting
             .into_iter()

@@ -104,6 +104,45 @@ fn a_symlink_has_no_download_record_or_content_of_its_own() {
     );
 }
 
+#[test]
+fn a_picture_says_what_the_image_index_recognized_right_after_what_it_is() {
+    assert_eq!(
+        sections(&plan_of(File, Some("JPG"), &local()))[1],
+        (Section::Nature, vec![K::Identity, K::RealType, K::ImageContents])
+    );
+    // A document, a folder named like a picture, and a link to one have no such row.
+    assert!(!plan_of(File, Some("pdf"), &local()).has(K::ImageContents));
+    assert!(!plan_of(File, None, &local()).has(K::ImageContents));
+    assert!(!plan_of(Folder, Some("png"), &local()).has(K::ImageContents));
+    assert!(!plan_of(Symlink, Some("png"), &local()).has(K::ImageContents));
+}
+
+/// The index's own database answers it: a picture on a share has the row, and an
+/// online-only one too, since nothing reads its bytes.
+#[test]
+fn the_image_row_reads_the_index_so_a_share_and_an_evicted_picture_have_it() {
+    assert!(plan_of(File, Some("heic"), &mounted_share()).has(K::ImageContents));
+    let evicted = plan(PlanInput {
+        target: File,
+        extension: Some("png"),
+        is_executable: false,
+        contents_local: false,
+        caps: &local(),
+        os: &macos(),
+        owner: &OwnerQuestion::Nothing,
+        in_a_repo: false,
+        git_snapshot: false,
+    });
+    assert!(evicted.has(K::ImageContents));
+    assert!(!evicted.has(K::RealType));
+    let no_images = VolumeCaps {
+        image_index: false,
+        ..mounted_share()
+    };
+    assert!(!plan_of(File, Some("heic"), &no_images).has(K::ImageContents));
+    assert!(!plan_of(File, Some("heic"), &phone()).has(K::ImageContents));
+}
+
 // ── The plan, per volume ────────────────────────────────────────────────────
 
 #[test]

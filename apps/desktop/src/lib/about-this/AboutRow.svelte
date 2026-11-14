@@ -54,6 +54,7 @@
         owner: 2,
         git: 2,
         importance: 2,
+        imageContents: 2,
         // An app's data is a list that lands inside the grace on a local disk; the rest of its height goes at the
         // settle with every other reservation. What's inside reserves its whole section (`AboutThisDialog`).
         appData: 3,
@@ -458,6 +459,22 @@
                 {#if size.hasSymlinks}<span class="line quiet">{t('aboutThis.folderSize.symlinks')}</span>{/if}
             {:else if row.fact?.kind === 'appData' && row.fact.fact.state === 'known'}
                 <AboutAppData data={row.fact.fact.value} {onGoTo} />
+            {:else if row.fact?.kind === 'imageContents' && row.fact.fact.state === 'known'}
+                <!-- Labels and the picture's own text, each a text node: the text is whatever the picture shows. -->
+                {@const shows = row.fact.fact.value}
+                {#if shows.tags.length > 0}
+                    <span class="line">{t('aboutThis.imageContents.tags', { tags: formatConjunctionList(shows.tags) })}</span>
+                {/if}
+                {#if shows.textLines.length > 0}
+                    <span class="line quiet">{t('aboutThis.imageContents.textHeading')}</span>
+                    {#each shows.textLines as text, index (index)}
+                        <span class="line">{t('aboutThis.imageContents.textLine', { text })}</span>
+                    {/each}
+                    {#if shows.moreText}<span class="line quiet">{t('aboutThis.imageContents.moreText')}</span>{/if}
+                {/if}
+                {#if shows.tags.length === 0 && shows.textLines.length === 0}
+                    <span class="quiet">{t('aboutThis.imageContents.nothing')}</span>
+                {/if}
             {/if}
         </dd>
     </div>

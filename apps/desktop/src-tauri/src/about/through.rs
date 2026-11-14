@@ -26,6 +26,7 @@ use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{Volume, VolumeError, XattrReadMode};
 
 use super::digest::folder_digest_fact;
+use super::image::{ImagePlace, image_contents_fact};
 use super::index::{IndexPlace, importance_fact, recursive_size_fact};
 use super::platform;
 use super::session::SubJobs;
@@ -125,6 +126,8 @@ pub(crate) struct Through {
     pub(crate) download: Option<DownloadFrom>,
     /// The item's place in the drive index, when the index covers its volume.
     pub(crate) index: Option<IndexPlace>,
+    /// Where a picture's image index row may be, when that index covers the volume.
+    pub(crate) image: Option<ImagePlace>,
     /// The snapshot a `.git` portal path names, as read off the path.
     pub(crate) snapshot: Option<SnapshotPath>,
 }
@@ -182,6 +185,7 @@ pub(crate) fn answers(through: &Through, kind: FactKind) -> bool {
         FactKind::RecursiveSize | FactKind::FolderDigest => through.index.is_some(),
         FactKind::Importance => through.index.as_ref().is_some_and(IndexPlace::scores),
         FactKind::GitSnapshot => through.snapshot.is_some(),
+        FactKind::ImageContents => through.image.is_some(),
         FactKind::RealType
         | FactKind::Bundle
         | FactKind::Signature
@@ -286,6 +290,13 @@ fn job(kind: FactKind, through: Through, sub_jobs: SubJobs) -> Option<Job<AboutF
             Box::new(move || {
                 note_activity("read the importance store", "importance");
                 AboutFact::Importance(importance_fact(&place, now_secs()))
+            })
+        }
+        FactKind::ImageContents => {
+            let place = through.image?;
+            Box::new(move || {
+                note_activity("read the image index", "imageContents");
+                AboutFact::ImageContents(image_contents_fact(&place, cmdr_index::media_index::gate::is_enabled()))
             })
         }
         FactKind::RealType

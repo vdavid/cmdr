@@ -166,6 +166,11 @@ behind a Copy button (`WhereFrom.url`), and opening it is a later action. Mail's
 the downloading app, a signer, a branch, and paths render the same way. Paths go through `AboutPath` (ellipsis plus a
 tooltip with the full text); the row puts its Copy button at the end of the line (`.with-copy`), never mid-sentence.
 
+A picture's "What it shows" row draws the image index's tags as one list ("Tagged as sign, text, and outdoor") and the
+first lines of the text in it as quoted text nodes: that text is whatever the picture shows, so a sign reading
+`<img onerror>` stays a string. The labels are the index's own English words, not worded here; how many show and which
+is `ImageContents::of`'s rule in `cmdr-about`.
+
 ## Tests
 
 - `about-this-state.svelte.test.ts`: the reducer (out-of-order facts, a fact outside the plan, before the plan, after
@@ -177,6 +182,8 @@ tooltip with the full text); the row puts its Copy button at the end of the line
 - `AboutActions.svelte.test.ts`: the footer over the gallery's cards (what shows, what waits behind "More", removal
   never first, no action focused on open, a press reaching the opener). `about-this-opener.test.ts` (beside the opener):
   what each action does once the card closed.
+- `AboutRow.svelte.test.ts`: a picture's What it shows over the gallery's cards (tags and quoted text, each quiet
+  reason, the picture's own text rendering literally).
 - `AboutDigest.svelte.test.ts`: What's inside on a big folder, `node_modules`, an empty and an unlisted folder, an app's
   Library data, and that each place row hands `onGoTo` the right target.
 - `AboutThisDialog.a11y.test.ts`: axe over the gallery's cards and each part, the `<dl>`, `aria-busy`, body focus, and

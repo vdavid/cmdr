@@ -54,9 +54,10 @@ The table (`route::caps_for`, pinned by `through_tests.rs::each_way_asks_only_wh
 - **`Local`** (a live local disk): every row, below.
 - **`OsMountedShare`** (Finder's SMB, an OS NFS or WebDAV mount): identity through `get_metadata`, the download record
   through `read_xattr_many` (capped as a local read is), and the index rows (size, What's inside, importance) when a
-  live index holds the share. No Spotlight, signature, byte read, owner, git, or operation log: each would be a slow
+  live index holds the share, plus "What it shows" for a picture on an SMB share (the image index's own database). No
+  Spotlight, signature, byte read, owner, git, or operation log: each would be a slow
   read over the network, or a walk.
-- **`Server`** (SMB, SFTP, WebDAV, S3, NFS that Cmdr dials): identity, and the index rows.
+- **`Server`** (SMB, SFTP, WebDAV, S3, NFS that Cmdr dials): identity, and the index rows (SMB: "What it shows" too).
 - **`Device`** (MTP, ADB): identity only.
 - **`Archive`**: identity from the archive's own listing, and the download row naming the archive with ITS record
   (read here when the archive sits on a local disk, through the share's xattrs on an OS-mounted share, else "Cmdr can't
@@ -264,6 +265,25 @@ test's fixed answers); the rules are in `crates/cmdr-about/DETAILS.md` § The ow
   `location::store_path::to_store_path`. A score's band is `ImportanceBand::of_score`, `stale` when it predates the
   volume's latest recompute, the top three positive signals as tokens, and the visit count from the stored signals; a
   floored folder is `Floored` with its floor reason; unscored is `Unknown(NotIndexed)`.
+
+## What a picture shows
+
+`image.rs`, the image index's database only (`MediaIndex::facts_for_paths`, one point lookup per volume asked), ❌ never
+the picture: no decode, no Vision call, no file read, so a picture on a sleeping NAS answers in milliseconds and wakes
+nothing. Its cost on a slow volume is the same as on a local disk: a SQLite read of `media.db` in the app's data dir.
+
+- **Which volumes**: the item's own, then the drive index's when that's another (`ImagePlace::new`; the boot disk's
+  index walks a cloud drive under its own id). First indexed row wins, as `image_facts` does. The image index covers a
+  local disk and an SMB share the person opted in (`media_index`), so `route` gives the row a place on `Local` and on
+  an SMB `OsMountedShare` or `Server` only, and `VolumeCaps::image_index` follows that place.
+- **Its answers, in order**: a path `sensitive::classify` protects is `Protected` before any lookup (the same rule
+  `image_facts` and `search_photos` apply); image indexing off (`media_index::gate::is_enabled`) is `IndexingOff`, even
+  when the store still holds rows; a row is `Known` through `ImageContents::of`, unless its WHOLE stored text holds a
+  private key (`refuse_private_key_text`, before any cut), which is `Protected`; no row on any volume is `NotIndexed`
+  (the read API answers a folder left out of image search the same way, so nothing leaks it); a store that won't read
+  is `Unparseable`.
+- **The card's own display, not an AI tool**: no security-log line. The model's side is the projection's
+  (§ What a model gets).
 
 ## A folder's digest and an app's data
 

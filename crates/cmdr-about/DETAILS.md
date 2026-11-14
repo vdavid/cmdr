@@ -21,7 +21,8 @@ Modules import downward only, which is what keeps `module-cycles` green:
   `{ "state": "unknown", "value": { "why": "noRecord", "prominence": "routine" } }`.
 - **`Unknown` is built only from an `UnknownWhy`** (`Fact::unknown`), so the prominence on the wire is always the one
   the rule gives. Routine: `NoRecord`, `NotInStatus`, `NoInstalledAppMatches`, `VolumeCantTell` (the card's volume note
-  says that one once), and `NotIndexed`. Everything else is Notable.
+  says that one once), `VolumeStoppedAnswering`, `NotIndexed`, and `IndexingOff` (the person turned image indexing off:
+  a setting they chose, so the image row says it in one quiet line). Everything else is Notable.
 - **Decision: `NotIndexed` is Routine.** Indexing off or not there yet is nothing going wrong, and on a folder it's one
   cause behind its size, what's inside, and its importance: Notable, it drew three warning sentences on every folder of
   an unindexed drive (screenshots, 2026-11-13). `only_ordinary_absences_are_routine` pins the list.
@@ -145,8 +146,8 @@ and `OsCaps`, all known before any job. It returns the sections in display order
   real type and the signature, and for an app or package the bundle and its app data (both open its `Info.plist`).
   Reading them would download it. Its xattrs are metadata and stay.
 - **Each kind sits in exactly one section** (`rows_of`): Origin (download, Cmdr operation), Nature (identity, real type,
-  bundle, signature, recursive size), Use (last opened, default app, importance), Context (owner, git, app data),
-  Contents (folder digest), Removal (derived, no rows, always last).
+  image contents, bundle, signature, recursive size), Use (last opened, default app, importance), Context (owner, git,
+  app data), Contents (folder digest), Removal (derived, no rows, always last).
 - **Order per target**: a folder leads with Contents, an app or package with Nature, everything else with Origin.
 - **Signature** is planned for bundles, packages, `dmg` / `dylib`, and files with the executable bit. A program behind
   another extension shows through the type row's mismatch. Not `pkg` / `mpkg`: an installer's signature sits in its xar
@@ -163,6 +164,15 @@ and `OsCaps`, all known before any job. It returns the sections in display order
   (`Download::of_archive`: always `Known`, naming the archive, with the archive's record or why there's none).
 - **A `.git` portal entry** (`PlanInput::git_snapshot`) is git's record, not a file on the disk: its `GitSnapshot` row
   leads Origin, and no row of the disk's (download, Cmdr operation, owner, git status) is planned, whatever the caps.
+- **"What it shows"** (`ImageContents`) is planned for a file whose extension claims a picture (`sniff::claimed_kind`,
+  the type row's own table) on a volume whose image index may hold it (`VolumeCaps::image_index`: a local disk, an SMB
+  share). By name, not bytes: the index keys its rows by path, so an online-only picture and one on a share have it too,
+  and no byte is read to decide. The index has a few extensions the table doesn't (`nef`, `arw`, … RAWs): those get no
+  row, which is a quiet card, never a wrong one. Its answers: `Known` (tags and the start of the text, both possibly
+  empty: indexed, nothing found), `NotIndexed` (not reached yet, or in a folder left out of image search), `IndexingOff`
+  (the person turned image indexing off), `Protected` (the sensitive gate's path rule, or text holding a private key).
+  `NotIndexed` and `IndexingOff` are Routine: one quiet line each. **Tags are labels, never a description**: `dog` and
+  `beach` don't say a dog is on a beach, so nothing here or downstream joins them into a scene.
 - **A view has no note**: an archive's entry and a portal entry are views into one file or repo, so their own row says
   where they come from and no "On <volume>, Cmdr can see…" line appears.
 - **The note**: none when the volume answers everything, `IdentityOnly` when it answers nothing more, `SomeFacts` in
@@ -497,3 +507,10 @@ Raised 147 → 149 by invisible characters (§ Text from the item):
   set before, and all three missed the invisible characters together.
 - **`text::HiddenInName`**: the wire answer on `Identity::name_hid`, so the card picks one note by kind. Two bools would
   let a name claim both notes.
+
+Raised 149 → 151 by a picture's "What it shows" row (§ The plan):
+
+- **`payload::ImageContents`**: a wire type, what the image index stored about a picture.
+- **`ImageContents::of`**: which tags are worth naming (at least 0.3 confident, six at most, underscores as spaces) and
+  how much of the recognized text shows (three lines of 120 characters, through `shown_text`), each a rule a person
+  could argue. The host passes the index's raw row.

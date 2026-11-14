@@ -6,7 +6,7 @@ string changes there, change it here too, or regenerate this list. Where a value
 placeholder or tag is filled in by the card (a date, a size, a path).
 
 The list below covers every key the branch adds, grouped by the surface it shows on (checked against the catalogs on
-2026-11-14: all 303 added or changed keys are here). The decisions behind the layout, with their evidence, are in
+2026-11-14: all 312 added or changed keys are here). The decisions behind the layout, with their evidence, are in
 `tell-me-about-this-review.md`.
 
 ## Open questions, all in one place
@@ -84,6 +84,15 @@ The list below covers every key the branch adds, grouped by the surface it shows
     keyboard, or menu; on macOS the shortcut and the context menu both arrive as menu), the kind of item and volume, how
     the AI take ended and the typed reason it had none, the action taken, and whether it went on to Ask Cmdr. No path,
     name, URL, or app. Enough, or too much?
+
+### What a picture shows
+
+28. **"What it shows"** is the row's label, its tags read "Tagged as sign, text, and outdoor", and up to three lines of
+    the text in it follow, quoted, with "And more text" when there's more. The tags are the image index's own English
+    labels (Apple's Vision taxonomy), so a Hungarian card reads "Tagged as …" in Hungarian with English labels. Fine, or
+    leave the tags out of other languages until there's a translation table?
+29. **"Not in Cmdr’s image index"** covers both a picture the index hasn't reached and one in a folder left out of image
+    search (the index answers both the same, on purpose: an excluded folder shouldn't show differently). Right words?
 
 ## Strings
 
@@ -424,6 +433,41 @@ The list below covers every key the branch adds, grouped by the surface it shows
     it.
 - `aboutThis.kind.unrecognized`: Contents Cmdr doesn’t know
   - Where: A kind of file on the "Tell me about this" card when the contents match no format Cmdr knows.
+
+### The card: what a picture shows
+
+On a picture's card (a file whose name says it's an image), on a local disk or an SMB share, right after "Kind". Read
+from Cmdr's image index, never from the picture.
+
+- `aboutThis.label.imageContents`: What it shows
+  - Where: Row label on the "Tell me about this" card for a picture: what Cmdr's on-device image index recognized in it
+    (labels and text). Short, sentence case.
+- `aboutThis.imageContents.tags`: Tagged as {tags}
+  - Where: Answer on the "What it shows" row: the labels Cmdr's on-device image index gave the picture, for example
+    "Tagged as beach, sand, and sky". The labels are single words from the index, not a description of the scene. No
+    closing period.
+- `aboutThis.imageContents.textHeading`: Text in it:
+  - Where: Muted lead-in on the "What it shows" row, right above the first lines of text Cmdr's image index recognized
+    in the picture (on a sign, a screenshot, a receipt).
+- `aboutThis.imageContents.textLine`: “{text}”
+  - Where: One line of text Cmdr's image index recognized in a picture, quoted, on the "What it shows" row. Use the
+    language's own quotation marks.
+- `aboutThis.imageContents.moreText`: And more text
+  - Where: Muted line under the quoted lines on the "What it shows" row, when the picture holds more recognized text
+    than the card shows. No closing period.
+- `aboutThis.imageContents.nothing`: No tags or text found
+  - Where: Muted answer on the "What it shows" row when Cmdr's image index looked at the picture and found no confident
+    label and no text. An ordinary state. No closing period.
+- `aboutThis.imageContents.notIndexed`: Not in Cmdr’s image index
+  - Where: Muted answer on the "What it shows" row when Cmdr's image index has nothing on this picture: it hasn't
+    reached it yet, or it's in a folder left out of image search. An ordinary state, not a problem. No closing period.
+- `aboutThis.imageContents.indexingOff`: Image indexing is off
+  - Where: Muted answer on the "What it shows" row when the person turned image indexing off in Settings, so Cmdr has
+    nothing stored about what pictures show. An ordinary state. No closing period.
+- `aboutThis.unknown.indexingOff`: Its index is turned off
+  - Where: Muted answer on a "Tell me about this" card row when the index that would answer it is turned off in
+    Settings. An ordinary state, not a problem. Short, no closing period. (No row shows it today: the picture row has
+    its own words. It's the fallback every reason has.)
 
 ### The card: the headline
 

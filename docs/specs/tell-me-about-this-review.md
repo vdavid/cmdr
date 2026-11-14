@@ -33,7 +33,14 @@ questions are at its top). The eval's full evidence: `docs/notes/about-verdict-e
      events, including cloud AI needing allowing again, no key, a model Cmdr hasn't tested, and AI off.
    - Both themes, and reduced motion on (nothing on the card animates anyway).
    - The footer: three actions plus More and Close, Move to trash never first, and the delete dialog asking first.
-4. **The re-consent hint**: on a dev profile that allowed cloud AI before this branch, Settings > AI shows the switch
+4. **What a picture shows**: in the gallery, the four `Picture:` states (tags and text, not indexed, indexing off,
+   nothing recognized). On the real dev app, turn on Settings > AI > Image search, let it index a folder with a
+   screenshot of a receipt and a photo of a sign, and open a card on each: "What it shows" sits right under "Kind",
+   names the tags and the first three lines of text, and says nothing about a scene the tags don't. With Cloud AI on,
+   the take may say what the picture is "tagged as", never describe it. A picture outside the indexed folders reads "Not
+   in Cmdr’s image index"; with image search off, "Image indexing is off". On Naspolya (with SMB image indexing on), the
+   row answers instantly even with the NAS asleep: it reads Cmdr's database, never the share.
+5. **The re-consent hint**: on a dev profile that allowed cloud AI before this branch, Settings > AI shows the switch
    off and the new "Tell me about this" items in the disclosure. Cards say "Cloud AI needs your OK…" until you allow it.
 
 ## Open decisions (each runs on its default today)

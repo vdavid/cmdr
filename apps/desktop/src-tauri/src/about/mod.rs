@@ -9,6 +9,7 @@ mod digest;
 mod event;
 mod git;
 mod history;
+mod image;
 mod index;
 mod jobs;
 pub(crate) mod lookup;

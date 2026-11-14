@@ -14,6 +14,7 @@ import { REQUEST, card, day, derived, identity, notable, plan, routine, type Str
 import { aboutThisFolderFixtures } from './about-this-folders'
 import { aboutThisDegradedFixtures } from './about-this-degraded'
 import { aboutThisVerdictFixtures } from './about-this-verdict'
+import { aboutThisImageFixtures } from './about-this-images'
 
 // ── A downloaded disk image: every origin fact known ───────────────────────────
 
@@ -465,6 +466,7 @@ export const aboutThisFixtures: Record<string, AboutCardData | undefined> = {
   'still-filling': card(DOC, `/Users/test_user_1/Documents/${DOC}`, stillFilling),
   ...aboutThisFolderFixtures,
   ...aboutThisDegradedFixtures,
+  ...aboutThisImageFixtures,
   mismatch: card(LIAR, `/Users/test_user_1/Desktop/${LIAR}`, mismatch),
   'disguised-name': card(DISGUISED, `/Users/test_user_1/Downloads/${DISGUISED}`, disguisedName),
   'notable-a': card('Google', '/Users/test_user_1/Library/Application Support/Google', notableA),

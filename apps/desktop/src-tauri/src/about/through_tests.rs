@@ -112,6 +112,7 @@ fn through(asked: Asked, path: &str, download: Option<DownloadFrom>) -> Through 
         path: PathBuf::from(path),
         download,
         index: None,
+        image: None,
         snapshot: None,
     }
 }
@@ -266,6 +267,54 @@ async fn a_share_that_stopped_answering_gets_its_card_at_once_and_says_so_once()
 
     silent.wake();
     wait_until(LONG, "the share's calls return", || !STUCK.is_full(stuck_id));
+}
+
+/// A picture on a share that stopped answering still says what it shows: the row
+/// reads the image index's database, ❌ never the share, so it lands known while
+/// the share's own rows say it stopped.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_silent_shares_picture_says_what_it_shows_from_the_index_alone() {
+    let data = TestDir::new("about-through-image");
+    let path = "/Volumes/naspi/Photos/sign.jpg";
+    cmdr_index::media_index::testing::seed_ocr_row(&data, "smb-test-image-share", path, "OPEN 9-17");
+    // nextest runs each test in its own process, so the switch is this test's alone.
+    cmdr_index::media_index::gate::set_enabled(true);
+
+    let silent = Silent::new();
+    let via = asked(Arc::clone(&silent) as Arc<dyn Volume>, "smb-test-image-share-calls");
+    let image = super::image::ImagePlace::new(
+        data.as_ref().to_path_buf(),
+        "smb-test-image-share",
+        "smb-test-image-share",
+        path,
+    );
+    let caps = cmdr_about::card::VolumeCaps {
+        image_index: true,
+        ..caps_for(Way::OsMountedShare, ItemText::new("Naspolya"), false, true)
+    };
+    let gathered = through_plan(
+        Way::OsMountedShare,
+        "sign.jpg",
+        false,
+        &caps,
+        Through {
+            image: Some(image),
+            ..through(via, path, None)
+        },
+    );
+    assert!(gathered.plan.has(FactKind::ImageContents));
+
+    let recorder = gather(gathered, on_milliseconds()).await;
+    assert_well_formed(&recorder.updates());
+    let shows = recorder.facts().into_iter().find_map(|fact| match fact {
+        AboutFact::ImageContents(fact) => Some(fact),
+        _ => None,
+    });
+    let Some(Fact::Known(contents)) = shows else {
+        panic!("the index answered while the share didn't: {shows:?}");
+    };
+    assert_eq!(contents.text_lines, [ItemText::new("OPEN 9-17")]);
+    silent.wake();
 }
 
 // ── A healthy share ─────────────────────────────────────────────────────────

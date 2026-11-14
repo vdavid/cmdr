@@ -122,6 +122,7 @@ fn biggest_card() -> AboutCard {
         ))),
         app_data: Some(AppData::of(folders, vec![OwnerPlace::Logs])),
         git_snapshot: None,
+        image_contents: None,
     }
 }
 

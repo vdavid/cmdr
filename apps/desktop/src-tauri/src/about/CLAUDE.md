@@ -12,8 +12,8 @@ every rule; this module reads raw inputs.
   health), `pool.rs` (`about_facts`).
 - `platform/`: per-OS seam for xattrs, Spotlight, default app, code signature, `stat` extras.
 - `history.rs` (the operation log), `git.rs`, `index.rs` (size, importance), `digest.rs` (What's inside, an app's
-  Library data), `owner.rs`, `model.rs` (what a model reads, behind the gate), `lookup.rs` (the agent's card).
-- `verdict/`: the AI take: `gate.rs`, `limits.rs`, `peek.rs`, `prompt.rs` (the fence), `watched.rs` (the channel tee).
+  Library data), `image.rs` (What it shows), `owner.rs`, `model.rs` (a model's view, gated), `lookup.rs`.
+- `verdict/`: the AI take: `gate.rs`, `limits.rs`, `peek.rs`, `prompt.rs` (the fence), `watched.rs` (tees the channel).
 
 ## Must-knows
 
@@ -37,8 +37,8 @@ every rule; this module reads raw inputs.
 - ❌ **`Started::ByCmdr` asks no volume but a local disk** (`RefusedInBackground`); a path linking into a share counts
   as the share (`place::reaches_a_share`).
 - ❌ **Git's status list holds CHANGED entries only**: absent is `NotInStatus`, ❌ never "clean".
-- ❌ **What's inside and an app's data read the index and an ALREADY loaded search arena only**. Not there is
-  `NotIndexed`.
+- ❌ **What's inside, an app's data, and What it shows read databases only** (the index, an ALREADY loaded search
+  arena, `media.db`). Not there is `NotIndexed`.
 - ❌ **Nothing looks inside an app's container** (`probe::sealed`), and no other volume's app counts as installed.
 - ❗ **A signer is named from code requirements, never a certificate name**; a missed check is `NotChecked`.
 - ❗ **The verdict's order is the consent guarantee**: gate (provider, setting, slot) → reuse and ceiling → facts →

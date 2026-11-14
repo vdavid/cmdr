@@ -23,6 +23,7 @@ use cmdr_fs::volume::{RoutedKind, Volume};
 
 use super::event::{AboutRequest, AboutUnavailable};
 use super::history::History;
+use super::image::ImagePlace;
 use super::index::IndexPlace;
 use super::jobs::{GATHERED, OsReads, Sources, local_jobs};
 use super::model::GateReach;
@@ -417,6 +418,7 @@ async fn local_card(resolved: &ResolvedLocation, path: String) -> Result<Gathere
     let sources = Sources {
         history: History::of_the_app(&resolved.location.volume_id),
         index: Some(index_place(resolved, &path)),
+        image: image_place(resolved, &path),
         // No home folder (a sandboxed test runner) names no Library places.
         owner: home
             .as_deref()
@@ -442,6 +444,17 @@ fn index_place(resolved: &ResolvedLocation, path: &str) -> IndexPlace {
             .map(|store_path| (resolved.location.volume_id.clone(), store_path)),
         data_dir: crate::config::standalone_app_data_dir(),
     }
+}
+
+/// Where a picture's image index row may be. `None` without a data dir (a
+/// sandboxed test runner).
+fn image_place(resolved: &ResolvedLocation, path: &str) -> Option<ImagePlace> {
+    Some(ImagePlace::new(
+        crate::config::standalone_app_data_dir()?,
+        &resolved.location.volume_id,
+        &resolved.index.volume_id,
+        path,
+    ))
 }
 
 /// What the route answered for a path its lexical gate let through.
@@ -549,6 +562,7 @@ pub(crate) fn local_gathered(
                 FactKind::RecursiveSize | FactKind::FolderDigest => sources.index.is_some(),
                 FactKind::AppData => sources.index.is_some() && sources.home.is_some(),
                 FactKind::Importance => sources.index.as_ref().is_some_and(IndexPlace::scores),
+                FactKind::ImageContents => sources.image.is_some(),
                 _ => true,
             }
     });
@@ -611,6 +625,9 @@ pub(crate) fn through_gathered(
         .file_name()
         .map_or_else(|| path.clone(), |name| name.to_string_lossy().into_owned());
     let index_covers = resolved.index.live && matches!(way, Way::OsMountedShare | Way::Server);
+    // The image index covers a local disk and an SMB share the person opted in
+    // (`media_index`); a share's picture reads its database, never the share.
+    let images = resolved.kind == VolumeKind::Smb && matches!(way, Way::OsMountedShare | Way::Server);
     let download = match way {
         Way::OsMountedShare if asked.volume.supports_xattrs() => Some(DownloadFrom::Volume),
         Way::Archive => archive_download(&path, drive),
@@ -621,16 +638,20 @@ pub(crate) fn through_gathered(
         path: path.clone().into(),
         download,
         index: index_covers.then(|| index_place(resolved, &path)),
+        image: images.then(|| image_place(resolved, &path)).flatten(),
         snapshot: (way == Way::GitHistory)
             .then(|| snapshot_of(Path::new(&path)))
             .flatten(),
     };
-    let caps = caps_for(
-        way,
-        ItemText::new(&resolved.name),
-        index_covers,
-        asked.volume.supports_xattrs(),
-    );
+    let caps = VolumeCaps {
+        image_index: through.image.is_some(),
+        ..caps_for(
+            way,
+            ItemText::new(&resolved.name),
+            index_covers,
+            asked.volume.supports_xattrs(),
+        )
+    };
     through_plan(way, &name, is_directory, &caps, through)
 }
 

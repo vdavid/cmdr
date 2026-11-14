@@ -285,6 +285,7 @@ fn outcome_of(fact: &AboutFact) -> String {
         AboutFact::FolderDigest(fact) => state(fact),
         AboutFact::AppData(fact) => state(fact),
         AboutFact::GitSnapshot(fact) => state(fact),
+        AboutFact::ImageContents(fact) => state(fact),
     }
 }
 
