@@ -30,7 +30,7 @@
 //!   trees, built from an `Arc<GitPortal>` by its own constructor. A host routes
 //!   to it and then knows nothing about git: listing, reading, and copying out
 //!   all go through the trait.
-//! - [`repo_info`] and [`list_status`] are the chip's two answers, and [`path_status`] the
+//! - [`repo_info`] and [`list_status`] are the chip's two answers, and [`path_status()`] the
 //!   "Tell me about this" card's answer about one item, all callable with
 //!   a [`RepoHandle`] alone.
 //!
