@@ -166,9 +166,14 @@ pub(super) fn message_text(card: &EvalCard, job: &Job) -> String {
     let projection = crate::about::model_for_test(&card.card, &card.path);
     let peek = if job.peek { card.peek.as_ref() } else { None };
     let message = user_message(&projection, &card.still_gathering, peek, &job.lang);
-    match &message.parts[0] {
+    let text = match &message.parts[0] {
         AgentPart::Text(text) => text.clone(),
         _ => panic!("the verdict's message is one text part"),
+    };
+    // The regression arm: what a model reads if the sanitizer ever lets the raw text by.
+    match &card.unsanitized {
+        Some((shown, raw)) if std::env::var_os("CMDR_VERDICT_EVAL_UNSANITIZED").is_some() => text.replace(shown, raw),
+        _ => text,
     }
 }
 

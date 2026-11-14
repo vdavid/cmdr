@@ -65,6 +65,10 @@ pub(super) struct EvalCard {
     /// Written for the second round, after the first showed a weakness. A card from a
     /// later round is the proof a prompt change holds beyond the cards it was tuned on.
     pub(super) round: u8,
+    /// The text the sanitizer shows, and the raw text it came from: with
+    /// `CMDR_VERDICT_EVAL_UNSANITIZED` set, the message carries the raw one wherever the
+    /// shown one stands, which is what a model would read if the sanitizer regressed.
+    pub(super) unsanitized: Option<(String, String)>,
 }
 
 impl EvalCard {
@@ -81,7 +85,14 @@ impl EvalCard {
             languages: false,
             unknown_heavy: false,
             round: 1,
+            unsanitized: None,
         }
+    }
+
+    /// See [`Self::unsanitized`].
+    pub(super) fn unsanitized(mut self, shown: &str, raw: &str) -> Self {
+        self.unsanitized = Some((shown.to_string(), raw.to_string()));
+        self
     }
 
     pub(super) fn peek(mut self, peek: Option<Peek>) -> Self {

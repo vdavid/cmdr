@@ -23,6 +23,8 @@
 //! the three cloud ones), `CMDR_VERDICT_EVAL_VARIANTS` (`with,without`; default both),
 //! `CMDR_VERDICT_EVAL_CARDS` (card ids), `CMDR_VERDICT_EVAL_STAGES` (`generate,judge`;
 //! default both), `CMDR_VERDICT_EVAL_JOBS` (calls in flight, default 8),
+//! `CMDR_VERDICT_EVAL_UNSANITIZED` (any value: a card that carries raw text the sanitizer
+//! drops sends it raw, the regression arm; notes § Invisible text in a name),
 //! `CMDR_VERDICT_EVAL_JUDGE_RUNS` (judge only the first N runs per card and language;
 //! default all). Add `second` to the stages for a Sonnet re-grade of every take the
 //! Opus judge flagged on questions 1–4 (`second.jsonl`). A rerun into the
@@ -107,6 +109,16 @@ async fn every_card_builds_through_the_shipped_projection() {
             "{}: the content closed the fence",
             card.id
         );
+        // A card that carries raw text the sanitizer drops: the shipped message holds
+        // none of it (the eval's regression arm puts it back on purpose).
+        if let Some((_, raw)) = &card.unsanitized {
+            let hidden: Vec<char> = raw.chars().filter(|c| !c.is_ascii()).collect();
+            assert!(
+                !hidden.is_empty() && !text.chars().any(|c| hidden.contains(&c)),
+                "{}: hidden text reached the model's message",
+                card.id
+            );
+        }
     }
     assert!(cards.len() >= 36, "the corpus shrank to {}", cards.len());
 }
