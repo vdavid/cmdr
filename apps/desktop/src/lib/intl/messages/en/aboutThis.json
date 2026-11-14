@@ -1375,7 +1375,7 @@
   "@aboutThis.verdict.label": {
     "description": "Heading of the AI take's block on the \"Tell me about this\" card. The \"AI take\" is two or three sentences an AI model writes about the item from the facts the card lists, shown in its own block, set apart from the facts, right above \"What removing it means\". It says plainly that the text below was written by an AI, not by Cmdr, so nobody mistakes it for one of Cmdr's own facts. Short label, sentence case."
   },
-  "aboutThis.verdict.trust.oftenWrong": "This model, or a similar one, often got its take wrong when Cmdr tested it. Check it against the facts above, or switch to a stronger model.",
+  "aboutThis.verdict.trust.oftenWrong": "This model, or a similar one, often got its take wrong when Cmdr tested it. Check it against the card’s facts, or switch to a stronger model.",
   "@aboutThis.verdict.trust.oftenWrong": {
     "description": "Red warning line inside the AI take's block on the \"Tell me about this\" card, shown when the AI model writing the take is one Cmdr tested for this feature (or one like it, for example a smaller or older model of the same family, or the small on-device model) and found that its write-ups often say things that aren't right. The \"take\" is the two or three sentences the AI writes about the file. A link after it opens Settings to change the model (aboutThis.verdict.trust.changeModel). Plain words, no blame on the person."
   },
@@ -1412,27 +1412,27 @@
     "description": "Read aloud once by screen readers when the AI take on the \"Tell me about this\" card is complete. Not shown on screen.",
     "placeholders": { "text": { "description": "The AI's two or three sentences, as written." } }
   },
-  "aboutThis.verdict.given.none": "From the facts above. Cmdr didn’t look inside.",
+  "aboutThis.verdict.given.none": "From the card’s facts. Cmdr didn’t look inside.",
   "@aboutThis.verdict.given.none": {
     "description": "Line under the AI take's heading on the \"Tell me about this\" card, shown from the moment the request goes out, saying what the AI was given: only the facts the card lists, nothing from inside the item (a folder, an item on a server, or a file whose contents gave nothing to read)."
   },
-  "aboutThis.verdict.given.firstLines": "From the facts above and its first lines.",
+  "aboutThis.verdict.given.firstLines": "From the card’s facts and its first lines.",
   "@aboutThis.verdict.given.firstLines": {
     "description": "Line under the AI take's heading on the \"Tell me about this\" card, shown from the moment the request goes out, saying what the AI was given: the facts the card lists plus the first few lines of the text file."
   },
-  "aboutThis.verdict.given.firstPage": "From the facts above and the first page.",
+  "aboutThis.verdict.given.firstPage": "From the card’s facts and the first page.",
   "@aboutThis.verdict.given.firstPage": {
     "description": "Line under the AI take's heading on the \"Tell me about this\" card, shown from the moment the request goes out, saying what the AI was given: the facts the card lists plus the PDF's title and first page."
   },
-  "aboutThis.verdict.given.entryNames": "From the facts above and the names of the first files inside.",
+  "aboutThis.verdict.given.entryNames": "From the card’s facts and the names of the first files inside.",
   "@aboutThis.verdict.given.entryNames": {
     "description": "Line under the AI take's heading on the \"Tell me about this\" card, shown from the moment the request goes out, saying what the AI was given: the facts the card lists plus the names of the first files inside the archive (a zip, for example). Not their contents."
   },
-  "aboutThis.verdict.given.cameraDetails": "From the facts above and the photo’s camera details, without its location.",
+  "aboutThis.verdict.given.cameraDetails": "From the card’s facts and the photo’s camera details, without its location.",
   "@aboutThis.verdict.given.cameraDetails": {
     "description": "Line under the AI take's heading on the \"Tell me about this\" card, shown from the moment the request goes out, saying what the AI was given: the facts the card lists plus the photo's camera make, model, lens, and date. The photo's location is never sent."
   },
-  "aboutThis.verdict.given.protected": "From the facts above. This is somewhere Cmdr keeps contents private, so it didn’t look inside.",
+  "aboutThis.verdict.given.protected": "From the card’s facts. This is somewhere Cmdr keeps contents private, so it didn’t look inside.",
   "@aboutThis.verdict.given.protected": {
     "description": "Line under the AI take's heading on the \"Tell me about this\" card, shown from the moment the request goes out, for an item in a place whose contents Cmdr never sends to an AI (passwords and keys, a browser profile, mail): only its name-level facts went."
   },
@@ -1464,13 +1464,13 @@
   "@aboutThis.verdict.problem.other": {
     "description": "Quiet line in the AI take's block on the \"Tell me about this\" card when the AI provider answered with a problem Cmdr has no specific words for. Never uses the words \"error\" or \"failed\"."
   },
-  "aboutThis.verdict.unavailable.noCloudConsent": "Cloud AI needs your OK before Cmdr can write a short AI take here.",
+  "aboutThis.verdict.unavailable.noCloudConsent": "Allow cloud AI for a deeper read of each item.",
   "@aboutThis.verdict.unavailable.noCloudConsent": {
-    "description": "One quiet line on the \"Tell me about this\" card, in place of the AI take, when cloud AI is picked but not allowed (or was allowed under older wording of what it sends, so it needs allowing again). A link beside it opens Settings at the full list of what cloud AI gets; the card never allows it in one click."
+    "description": "Small hint line under the buttons of the \"Tell me about this\" card when cloud AI is picked but not allowed yet (or was allowed under older wording of what it sends, so it needs allowing again). The \"deeper read\" is a short take an AI writes about the file or folder, beside the facts Cmdr found itself. A link after it opens Settings at the full list of what cloud AI gets; the card never allows it in one click. The person can close the line with its ×."
   },
-  "aboutThis.verdict.unavailable.notConfigured": "Add your AI provider’s key in Settings for a short AI take here.",
+  "aboutThis.verdict.unavailable.notConfigured": "Add your AI provider’s key for a deeper read of each item.",
   "@aboutThis.verdict.unavailable.notConfigured": {
-    "description": "One quiet line on the \"Tell me about this\" card, in place of the AI take, when a cloud AI provider is picked but has no key or address set up. A link beside it opens Settings > AI."
+    "description": "Small hint line under the buttons of the \"Tell me about this\" card when a cloud AI provider is picked but has no key or address set up. The \"deeper read\" is a short take an AI writes about the file or folder, beside the facts Cmdr found itself. A link after it opens Settings > AI. The person can close the line with its ×."
   },
   "aboutThis.verdict.unavailable.notReady": "The local AI model isn’t running, so there’s no AI take this time.",
   "@aboutThis.verdict.unavailable.notReady": {
@@ -1484,9 +1484,21 @@
   "@aboutThis.verdict.unavailable.openAiSettings": {
     "description": "Link beside a hint about the AI take on the \"Tell me about this\" card (cloud AI needs allowing, no key set up, or AI is off). Opens Settings > AI. Short link text."
   },
-  "aboutThis.verdict.aiOffHint": "AI is off, so there’s no AI take.",
+  "aboutThis.verdict.aiOffHint": "Turn on AI for a deeper read of each item.",
   "@aboutThis.verdict.aiOffHint": {
-    "description": "Quiet hint in the footer of the \"Tell me about this\" card when AI is turned off in Settings: the card shows only Cmdr's own facts. A link beside it opens Settings > AI. The \"AI take\" is two or three sentences an AI model writes about the item from the facts the card lists, shown in its own block, set apart from the facts, right above \"What removing it means\"."
+    "description": "Small hint line under the buttons of the \"Tell me about this\" card when AI is turned off in Settings: the card shows only Cmdr's own facts. The \"deeper read\" is a short take an AI writes about the file or folder, in its own column beside the facts. A link after it opens Settings > AI. The person can close the line with its ×."
+  },
+  "aboutThis.verdict.column": "AI take",
+  "@aboutThis.verdict.column": {
+    "description": "Screen-reader name of the right-hand column of the \"Tell me about this\" card, which holds the short take an AI wrote about the file or folder (or one line saying why there's none this time). Not shown on screen. A noun phrase."
+  },
+  "aboutThis.verdict.hint.dismiss": "Hide this hint",
+  "@aboutThis.verdict.hint.dismiss": {
+    "description": "Screen-reader label of the small × button at the end of the AI hint line on the \"Tell me about this\" card (aboutThis.verdict.aiOffHint and its siblings). Pressing it hides the line for good on every card."
+  },
+  "aboutThis.verdict.hint.dismissTooltip": "Hide this hint. You can bring it back in Settings > Advanced.",
+  "@aboutThis.verdict.hint.dismissTooltip": {
+    "description": "Tooltip of the small × button at the end of the AI hint line on the \"Tell me about this\" card. \"Settings > Advanced\" names the Settings page whose \"Hints and warnings\" group has the switch that brings the line back; use the page names the app uses in this language."
   },
   "aboutThis.action.continueInAskCmdr": "Continue in Ask Cmdr",
   "@aboutThis.action.continueInAskCmdr": {

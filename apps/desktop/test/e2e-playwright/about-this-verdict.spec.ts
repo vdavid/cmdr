@@ -59,6 +59,19 @@ function verdictText(page: TauriPage): Promise<string> {
   return page.evaluate<string>(`(document.querySelector('${VERDICT}')?.textContent ?? '').replace(/\\s+/g, ' ')`)
 }
 
+/** What removing it means is on screen: its whole heading and first line inside the card's panel and the window. */
+function removalInView(page: TauriPage): Promise<boolean> {
+  return page.evaluate<boolean>(`(() => {
+    const removal = document.querySelector('${CARD} [data-removal]')
+    const panel = document.querySelector('${CARD} .modal-content')
+    if (!removal || !panel) return false
+    const r = removal.getBoundingClientRect()
+    const p = panel.getBoundingClientRect()
+    const firstLine = Math.min(r.bottom, r.top + 40)
+    return r.height > 0 && r.top >= p.top && firstLine <= p.bottom && firstLine <= window.innerHeight
+  })()`)
+}
+
 function cardOpen(page: TauriPage): Promise<boolean> {
   return page.evaluate<boolean>(`!!document.querySelector('${CARD}')`)
 }
@@ -101,7 +114,7 @@ test.describe('Tell me about this: the AI take', () => {
     fs.rmSync(fixtureDir(), { recursive: true, force: true })
   })
 
-  test('streams a labeled take right above the removal row, says what it was given first, and Stop keeps its text and the card', async ({
+  test('streams a labeled take in its own column beside the facts, says what it was given first, and Stop keeps its text and the card', async ({
     tauriPage,
   }) => {
     const page = tauriPage as TauriPage
@@ -110,12 +123,18 @@ test.describe('Tell me about this: the AI take', () => {
     expect(await verdictPhase(page)).toBe('streaming')
     const text = await verdictText(page)
     expect(text).toContain('AI wrote this')
-    expect(text).toContain('From the facts above and its first lines.')
-    // Its place: right above What removing it means.
+    expect(text).toContain('From the card’s facts and its first lines.')
+    // Its place: the right-hand column, with the facts and What removing it means on the left.
+    expect(await page.count(`${CARD} [data-layout="twoColumns"] [data-take-column] [data-verdict-text]`)).toBe(1)
+    expect(await removalInView(page)).toBe(true)
+    // However short the card gets, the facts scroll and the removal row stays in view beside the take.
+    await page.evaluate(`document.querySelector('${CARD} .modal-dialog').style.maxHeight = '320px'`)
+    await expect.poll(() => removalInView(page), { timeout: waitBudget(2000) }).toBe(true)
     expect(
-      await page.evaluate<boolean>(
-        `!!document.querySelector('${CARD} [data-verdict-slot]')?.nextElementSibling?.querySelector('#about-section-removal')`,
-      ),
+      await page.evaluate<boolean>(`(() => {
+        const facts = document.querySelector('${CARD} .card')
+        return !!facts && facts.scrollHeight > facts.clientHeight
+      })()`),
     ).toBe(true)
 
     // Stop, while the fake holds its last delta (it holds until released, and nothing releases it here).
@@ -177,17 +196,38 @@ test.describe('Tell me about this: with AI off', () => {
     fs.rmSync(fixtureDir(), { recursive: true, force: true })
   })
 
-  test('draws no take, only a footer hint', async ({ tauriPage }) => {
+  test('draws one column and a hint line, whose × hides it on every card after', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
     await setProvider(page, 'off')
-    await openCardOnFixture(page)
-    await expect
-      .poll(() => page.evaluate<boolean>(`!!document.querySelector('${CARD} [data-settled="true"]')`), {
-        timeout: waitBudget(5000),
-      })
-      .toBe(true)
-    expect(await page.count(`${CARD} [data-verdict-slot]`)).toBe(0)
-    expect(await page.textContent(`${CARD} .ai-off`)).toContain('AI is off')
+    try {
+      await openCardOnFixture(page)
+      await expect
+        .poll(() => page.evaluate<boolean>(`!!document.querySelector('${CARD} [data-settled="true"]')`), {
+          timeout: waitBudget(5000),
+        })
+        .toBe(true)
+      expect(await page.count(`${CARD} [data-layout="oneColumn"]`)).toBe(1)
+      expect(await page.count(`${CARD} [data-take-column]`)).toBe(0)
+      expect(await page.textContent(`${CARD} [data-ai-hint="aiOff"]`)).toContain('Turn on AI')
+
+      await page.evaluate(
+        `document.querySelector('${CARD} [data-ai-hint] button[aria-label="Hide this hint"]').click()`,
+      )
+      await expect.poll(() => page.count(`${CARD} [data-ai-hint]`), { timeout: waitBudget(2000) }).toBe(0)
+      await dismissOverlay(page)
+      await expect.poll(() => cardOpen(page), { timeout: waitBudget(3000) }).toBe(false)
+      await openCardOnFixture(page)
+      await expect
+        .poll(() => page.evaluate<boolean>(`!!document.querySelector('${CARD} [data-settled="true"]')`), {
+          timeout: waitBudget(5000),
+        })
+        .toBe(true)
+      expect(await page.count(`${CARD} [data-ai-hint]`)).toBe(0)
+    } finally {
+      // Back on, as every other spec expects it.
+      await ensureMcpClient(page)
+      await mcpCall('set_setting', { id: 'aboutThis.aiHintDismissed', value: false })
+    }
   })
 
   test('"Continue in Ask Cmdr" opens a new chat with the item attached and the fixed question, unsent', async ({

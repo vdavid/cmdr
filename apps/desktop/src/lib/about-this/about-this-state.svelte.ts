@@ -18,6 +18,10 @@ import type { AboutAction } from '#lib/ipc/bindings.js'
 import { startAbout, type AboutRequestHandle } from '#lib/tauri-commands/index.js'
 import { applyAboutEvent, emptyCard, type AboutCardData, type AboutGoTarget, type AboutSubject } from './about-card'
 import { trackAboutUsed, type AboutExit, type AboutUsageContext } from './about-analytics'
+import { getSetting, setSetting } from '#lib/settings/index.js'
+import { getAppLogger } from '#lib/logging/logger.js'
+
+const log = getAppLogger('aboutThis')
 
 /** The context menu's grace (`menu/context_menu_facts.rs` `GRACE`): what answers inside it is there on frame one. */
 export const GRACE_MS = 100
@@ -130,6 +134,23 @@ export function actFromCard(action: AboutAction): void {
  */
 export function stopAboutVerdict(): void {
   if (running) void running.stopVerdict()
+}
+
+/** Whether the person closed the card's AI hint line (`aboutThis.aiHintDismissed`), read fresh for each card. */
+export function aiHintDismissed(): boolean {
+  return getSetting('aboutThis.aiHintDismissed')
+}
+
+/**
+ * The AI hint line's ×: it stays gone on every card from now on, until its Settings > Advanced row turns it back on.
+ * The line has already hidden itself, so a failed write costs only its return on the next card.
+ */
+export function dismissAiHint(): void {
+  try {
+    setSetting('aboutThis.aiHintDismissed', true)
+  } catch (e: unknown) {
+    log.warn('remembering the dismissed AI hint broke down: {error}', { error: e })
+  }
 }
 
 /** Closes the card and stops its gathering and its verdict. A no-op with no card up. */

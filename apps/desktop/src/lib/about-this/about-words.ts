@@ -20,6 +20,7 @@ import type {
   VolumeLimit,
 } from '#lib/ipc/bindings.js'
 import type { MessageKey } from '#lib/intl/keys.gen.js'
+import type { HintWhy } from './about-verdict'
 
 export const SECTION_TITLE: Record<Section, MessageKey> = {
   origin: 'aboutThis.section.origin',
@@ -266,4 +267,11 @@ export const VERDICT_PROBLEM: Record<VerdictProblem, MessageKey> = {
   managed: 'aboutThis.verdict.problem.managed',
   noAnswer: 'aboutThis.verdict.problem.noAnswer',
   other: 'aboutThis.verdict.problem.other',
+}
+
+/** The hint line under the footer, by the setting that stands between the card and an AI take. */
+export const HINT_LINE: Record<HintWhy['kind'], MessageKey> = {
+  aiOff: 'aboutThis.verdict.aiOffHint',
+  noCloudConsent: 'aboutThis.verdict.unavailable.noCloudConsent',
+  notConfigured: 'aboutThis.verdict.unavailable.notConfigured',
 }

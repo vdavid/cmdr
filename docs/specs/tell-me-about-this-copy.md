@@ -6,7 +6,7 @@ string changes there, change it here too, or regenerate this list. Where a value
 placeholder or tag is filled in by the card (a date, a size, a path).
 
 The list below covers every key the branch adds, grouped by the surface it shows on (checked against the catalogs on
-2026-11-14: all 341 added or changed keys are here). The decisions behind the layout, with their evidence, are in
+2026-11-14: all 347 added or changed keys are here). The decisions behind the layout, with their evidence, are in
 `tell-me-about-this-review.md`.
 
 ## Open questions, all in one place
@@ -55,8 +55,8 @@ The list below covers every key the branch adds, grouped by the surface it shows
 20. **A cloud model Cmdr hasn't tested** (Haiku, OpenAI, Gemini, any other host) now gets one quiet line, no link: "Cmdr
     writes AI takes only with models it’s tested for this, and your model isn’t one of them." Right words, and should it
     name the models that do (Sonnet 5.5, Opus 5.5)? That list would need updating with every new measured model.
-21. **The AI-off hint** sits in the footer under the actions, on every card while AI is off. Too much? It could show
-    only on the first few cards.
+21. **The AI hint line** ("Turn on AI for a deeper read of each item.") sits under the buttons while AI is off, cloud AI
+    isn't allowed yet, or there's no key, until its × hides it for good. "Deeper read" right?
 
 ### The AI take's setting
 
@@ -1039,9 +1039,10 @@ button, and on a typical download it's the one behind "More".
 
 ### The AI take on the card
 
-Its own block right above "What removing it means", set apart from the fact rows by a quiet surface, shown only when the
-card gets a take. When it gets none, one quiet line in the same place says why (or nothing, for the take turned off by
-the person or the local model's default). AI off entirely: no block, one quiet hint in the footer.
+Its own column right of the facts (below them on a narrow card), set apart from the fact rows by a quiet surface, shown
+only when the card gets a take. When AI is on but gives none this time, one quiet line in that column says why. When a
+setting stands in the way (AI off, cloud AI not allowed yet, no key), one column and a small hint line under the
+buttons, with a × that hides it for good; nothing at all when the person turned the take off.
 
 - `aboutThis.verdict.label`: AI wrote this
   - Where: The block's heading, so a model's sentence never passes for one of Cmdr's facts.
@@ -1057,14 +1058,14 @@ the person or the local model's default). AI off entirely: no block, one quiet h
   - Where: Quiet tag beside the heading when the take was written earlier this session for the same, unchanged item.
 - `aboutThis.verdict.announcement`: AI wrote this: {text}
   - Where: Read once by screen readers when the take is complete. Not on screen.
-- `aboutThis.verdict.given.none`: From the facts above. Cmdr didn’t look inside.
+- `aboutThis.verdict.given.none`: From the card’s facts. Cmdr didn’t look inside.
   - Where: The line under the heading, from the moment the request goes out: what the AI was given.
-- `aboutThis.verdict.given.firstLines`: From the facts above and its first lines.
-- `aboutThis.verdict.given.firstPage`: From the facts above and the first page.
-- `aboutThis.verdict.given.entryNames`: From the facts above and the names of the first files inside.
-- `aboutThis.verdict.given.cameraDetails`: From the facts above and the photo’s camera details, without its location.
-- `aboutThis.verdict.given.protected`: From the facts above. This is somewhere Cmdr keeps contents private, so it didn’t
-  look inside.
+- `aboutThis.verdict.given.firstLines`: From the card’s facts and its first lines.
+- `aboutThis.verdict.given.firstPage`: From the card’s facts and the first page.
+- `aboutThis.verdict.given.entryNames`: From the card’s facts and the names of the first files inside.
+- `aboutThis.verdict.given.cameraDetails`: From the card’s facts and the photo’s camera details, without its location.
+- `aboutThis.verdict.given.protected`: From the card’s facts. This is somewhere Cmdr keeps contents private, so it
+  didn’t look inside.
 - `aboutThis.verdict.problem.authFailed`: Your AI provider didn’t accept the key.
   - Where: Quiet line in the block when the take couldn't be written (this one and the six below).
 - `aboutThis.verdict.problem.rateLimited`: Your AI provider’s limit is reached for now.
@@ -1074,7 +1075,7 @@ the person or the local model's default). AI off entirely: no block, one quiet h
 - `aboutThis.verdict.problem.noAnswer`: The AI didn’t write anything this time.
 - `aboutThis.verdict.problem.other`: Your AI provider couldn’t answer this time.
 - `aboutThis.verdict.trust.oftenWrong`: This model, or a similar one, often got its take wrong when Cmdr tested it.
-  Check it against the facts above, or switch to a stronger model.
+  Check it against the card’s facts, or switch to a stronger model.
   - Where: Red line with an alert icon inside the AI take's block, under its heading, when the model is the Haiku family
     or the bundled local model. "Change the model" follows it.
 - `aboutThis.verdict.trust.changeModel`: Change the model
@@ -1084,16 +1085,23 @@ the person or the local model's default). AI off entirely: no block, one quiet h
   - Where: Yellow line with an alert icon inside the AI take's block, under its heading, for any model outside the
     trusted list (Anthropic's Opus, Fable, and Sonnet, OpenAI's GPT-6 Astra, Gemini 4 Carbon) and the often-wrong one.
     No link.
-- `aboutThis.verdict.unavailable.noCloudConsent`: Cloud AI needs your OK before Cmdr can write a short AI take here.
-  - Where: In place of the block, with "Open AI settings" beside it, which opens Settings at the full disclosure. ❌ No
-    one-click allow on the card.
-- `aboutThis.verdict.unavailable.notConfigured`: Add your AI provider’s key in Settings for a short AI take here.
+- `aboutThis.verdict.column`: AI take
+  - Where: Screen readers' name for the take's column. Not on screen.
+- `aboutThis.verdict.unavailable.noCloudConsent`: Allow cloud AI for a deeper read of each item.
+  - Where: The hint line under the buttons, with "Open AI settings" after it, which opens Settings at the full
+    disclosure. ❌ No one-click allow on the card.
+- `aboutThis.verdict.unavailable.notConfigured`: Add your AI provider’s key for a deeper read of each item.
+  - Where: The hint line under the buttons.
 - `aboutThis.verdict.unavailable.notReady`: The local AI model isn’t running, so there’s no AI take this time.
 - `aboutThis.verdict.unavailable.tooManyRequests`: That’s a lot of AI takes in a minute. Try again in a moment.
 - `aboutThis.verdict.unavailable.openAiSettings`: Open AI settings
   - Where: The link beside the consent, no-key, and AI-off hints.
-- `aboutThis.verdict.aiOffHint`: AI is off, so there’s no AI take.
-  - Where: Quiet line in the footer, under the actions, with "Open AI settings" beside it. Only when AI is off entirely.
+- `aboutThis.verdict.aiOffHint`: Turn on AI for a deeper read of each item.
+  - Where: The hint line under the buttons, with "Open AI settings" after it, when AI is off entirely.
+- `aboutThis.verdict.hint.dismiss`: Hide this hint
+  - Where: Screen readers' name for the hint line's ×.
+- `aboutThis.verdict.hint.dismissTooltip`: Hide this hint. You can bring it back in Settings > Advanced.
+  - Where: The ×'s tooltip.
 - The organization's refusal reuses `ai.managed.aiOff` / `ai.managed.cloudAiOff` / `ai.managed.hostNotAllowed`, as the
   other AI surfaces do.
 
@@ -1107,6 +1115,17 @@ A switch in Settings > AI > Provider, below the provider's own setup, shown only
   shows. With cloud AI, the card’s facts and a short look inside the file go to your provider each time.
   - Where: Under the label.
 - `settings.aboutThis.aiVerdict.keywords`: explain, verdict, summary, file info, what is this, describe
+  - Where: Never shown: extra words Settings search matches.
+
+### The AI hint's switch (`settings.json`)
+
+A switch in Settings > Advanced > Hints and warnings. On once the hint line's × was pressed; off brings the line back.
+
+- `settings.aboutThis.aiHintDismissed.label`: Suppress the AI hint on “Tell me about this”
+- `settings.aboutThis.aiHintDismissed.description`: With AI off, or not set up yet, the “Tell me about this” card shows
+  a line under its buttons saying AI adds a deeper read. Closing the line with its × turns this on. Turn this off to see
+  the line again.
+- `settings.aboutThis.aiHintDismissed.keywords`: tip, hint, file info, card, deeper read, explain
   - Where: Never shown: extra words Settings search matches.
 
 ### Ask Cmdr's tool line (`askCmdr.json`)

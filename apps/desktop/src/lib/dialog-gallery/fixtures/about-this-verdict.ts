@@ -48,7 +48,17 @@ export interface VerdictBases {
   filling: Stream
   /** A plain document, for the AI-off hint. */
   document: { name: string; path: string; stream: Stream }
+  /** A card long enough to scroll its facts, for the removal row pinned in view beside a take. */
+  long: { name: string; path: string; stream: Stream }
 }
+
+/** A made-up take on the gallery's big repo folder. */
+const FOLDER_VERDICT = [
+  'This is the working copy of a website project, ',
+  'a git repo on main with changes that aren’t committed yet. ',
+  'Most of its size is node_modules and build output, which the package manager can make again. ',
+  'Removing the folder would lose the uncommitted work.',
+]
 
 /**
  * `stream` as it lands with Ask Cmdr on: "Continue in Ask Cmdr" after the facts' own next steps, before removal, as
@@ -106,5 +116,15 @@ export function aboutThisVerdictFixtures(bases: VerdictBases): Record<string, Ab
     'verdict-managed': on(downloaded, [managed('cloudAiOff')]),
     'verdict-too-many': on(downloaded, [unavailable({ kind: 'tooManyRequests' })]),
     'verdict-ai-off': card(document.name, document.path, document.stream, [unavailable({ kind: 'aiOff' })]),
+    // The same card; the gallery opens it with the hint already closed (`ABOUT_THIS_HINT_DISMISSED`).
+    'verdict-ai-off-dismissed': card(document.name, document.path, document.stream, [unavailable({ kind: 'aiOff' })]),
+    // The same card as `verdict-done`: the stacked layout is the window's width, which no fixture sets.
+    'verdict-narrow': on(downloaded, [planned, givenNone, ...deltas(DMG_VERDICT), done]),
+    'verdict-long': card(bases.long.name, bases.long.path, withAskCmdr(bases.long.stream), [
+      planned,
+      { type: 'verdictGiven', contents: 'entryNames' },
+      ...deltas(FOLDER_VERDICT),
+      done,
+    ]),
   }
 }

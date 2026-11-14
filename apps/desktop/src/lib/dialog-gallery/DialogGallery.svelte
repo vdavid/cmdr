@@ -88,6 +88,7 @@
     } from './gallery-state.svelte'
     import type { TransferProgressRun } from './fixtures/transfer-progress'
     import { fixtureRecords } from './fixtures'
+    import { ABOUT_THIS_HINT_DISMISSED } from './fixtures/about-this'
     import { buildStoreSeed, type StoreSeededDialogId } from './fixtures/store-seeded'
     import type { StoreSeed } from './store-seeding'
     import type { AlertFixture } from './fixtures/alert'
@@ -115,7 +116,7 @@
     /** What to render for the current request. `null` means nothing is previewed. */
     type RenderPlan =
         | { kind: 'alert'; props: AlertFixture }
-        | { kind: 'tell-me-about-this'; card: AboutCardData }
+        | { kind: 'tell-me-about-this'; card: AboutCardData; aiHintDismissed: boolean }
         | { kind: 'about' }
         | { kind: 'rollback-confirmation'; props: RollbackConfirmFixture }
         | { kind: 'tool-ask'; props: ToolAskFixture }
@@ -203,7 +204,11 @@
     const planResolvers: Partial<Record<SoftDialogId, PlanResolver>> = {
         alert: (id) => withFixture(fixtureRecords.alert[id], (f) => ({ kind: 'alert', props: f })),
         'tell-me-about-this': (id) =>
-            withFixture(fixtureRecords['tell-me-about-this'][id], (card) => ({ kind: 'tell-me-about-this', card })),
+            withFixture(fixtureRecords['tell-me-about-this'][id], (card) => ({
+                kind: 'tell-me-about-this',
+                card,
+                aiHintDismissed: ABOUT_THIS_HINT_DISMISSED.has(id),
+            })),
         expiration: (id) => withFixture(fixtureRecords.expiration[id], (f) => ({ kind: 'expiration', props: f })),
         'extension-change': (id) =>
             withFixture(fixtureRecords['extension-change'][id], (f) => ({ kind: 'extension-change', props: f })),
@@ -370,6 +375,8 @@
             onGoTo={closeGalleryDialog}
             onAct={closeGalleryDialog}
             onStopVerdict={() => {}}
+            aiHintDismissed={plan.aiHintDismissed}
+            onDismissAiHint={() => {}}
         />
     {:else if plan?.kind === 'about'}
         <AboutWindow onClose={closeGalleryDialog} />

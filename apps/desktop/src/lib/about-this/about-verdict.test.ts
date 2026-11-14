@@ -7,8 +7,9 @@ import { describe, expect, it } from 'vitest'
 import type { VerdictUnavailable } from '#lib/ipc/bindings.js'
 import {
   applyVerdictUpdate,
-  unavailableShowsALine,
+  hintWhy,
   verdictPhase,
+  verdictPlace,
   verdictProblem,
   type AboutVerdict,
   type VerdictUpdate,
@@ -120,17 +121,30 @@ describe('applyVerdictUpdate', () => {
   })
 })
 
-describe('unavailableShowsALine', () => {
-  it('draws nothing for AI off, the person’s own off, and the local model’s default', () => {
-    const quiet: VerdictUnavailable[] = [{ kind: 'aiOff' }, { kind: 'turnedOff' }]
-    for (const why of quiet) expect(unavailableShowsALine(why)).toBe(false)
-    const said: VerdictUnavailable[] = [
-      { kind: 'noCloudConsent' },
-      { kind: 'notConfigured' },
+describe('verdictPlace', () => {
+  const unavailable = (why: VerdictUnavailable): AboutVerdict => ({ status: 'unavailable', why })
+
+  it('gives a planned take, and AI on but not answering this time, the take’s own column', () => {
+    expect(verdictPlace(fold([{ type: 'verdictPlanned', trust: 'trusted' }]))).toBe('column')
+    const notThisTime: VerdictUnavailable[] = [
       { kind: 'notReady' },
       { kind: 'managed', refusal: 'cloudAiOff' },
       { kind: 'tooManyRequests' },
     ]
-    for (const why of said) expect(unavailableShowsALine(why)).toBe(true)
+    for (const why of notThisTime) expect(verdictPlace(unavailable(why))).toBe('column')
+  })
+
+  it('gives the reasons a setting fixes the hint line, with their reason', () => {
+    const settings: VerdictUnavailable[] = [{ kind: 'aiOff' }, { kind: 'noCloudConsent' }, { kind: 'notConfigured' }]
+    for (const why of settings) {
+      expect(verdictPlace(unavailable(why))).toBe('hint')
+      expect(hintWhy(unavailable(why))).toEqual(why)
+    }
+  })
+
+  it('says nothing about AI when the person turned the take off, or before the answer', () => {
+    expect(verdictPlace(unavailable({ kind: 'turnedOff' }))).toBe('none')
+    expect(hintWhy(unavailable({ kind: 'turnedOff' }))).toBeNull()
+    expect(verdictPlace(null)).toBe('none')
   })
 })

@@ -30,7 +30,15 @@ async function render(id: string, onGoTo: (target: AboutGoTarget) => void = () =
   document.body.appendChild(target)
   mounted = mount(AboutThisDialog, {
     target,
-    props: { card, onClose: () => {}, onGoTo, onAct: () => {}, onStopVerdict: () => {} },
+    props: {
+      card,
+      onClose: () => {},
+      onGoTo,
+      onAct: () => {},
+      onStopVerdict: () => {},
+      aiHintDismissed: false,
+      onDismissAiHint: () => {},
+    },
   })
   flushSync()
   await tick()
@@ -93,7 +101,15 @@ describe("What's inside", () => {
     const filling = { ...folder, settled: false, facts: { ...folder.facts, folderDigest: undefined } }
     let mountedCard = mount(AboutThisDialog, {
       target: document.body.appendChild(document.createElement('div')),
-      props: { card: filling, onClose: () => {}, onGoTo: () => {}, onAct: () => {}, onStopVerdict: () => {} },
+      props: {
+        card: filling,
+        onClose: () => {},
+        onGoTo: () => {},
+        onAct: () => {},
+        onStopVerdict: () => {},
+        aiHintDismissed: false,
+        onDismissAiHint: () => {},
+      },
     })
     flushSync()
     await tick()
@@ -104,7 +120,15 @@ describe("What's inside", () => {
     const landed = { ...folder, settled: false }
     mountedCard = mount(AboutThisDialog, {
       target: document.body.appendChild(document.createElement('div')),
-      props: { card: landed, onClose: () => {}, onGoTo: () => {}, onAct: () => {}, onStopVerdict: () => {} },
+      props: {
+        card: landed,
+        onClose: () => {},
+        onGoTo: () => {},
+        onAct: () => {},
+        onStopVerdict: () => {},
+        aiHintDismissed: false,
+        onDismissAiHint: () => {},
+      },
     })
     flushSync()
     await tick()

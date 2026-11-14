@@ -34,7 +34,15 @@ async function render(card: AboutCardData): Promise<HTMLElement> {
   document.body.appendChild(target)
   mounted = mount(AboutThisDialog, {
     target,
-    props: { card, onClose: () => {}, onGoTo: () => {}, onAct: () => {}, onStopVerdict: () => {} },
+    props: {
+      card,
+      onClose: () => {},
+      onGoTo: () => {},
+      onAct: () => {},
+      onStopVerdict: () => {},
+      aiHintDismissed: false,
+      onDismissAiHint: () => {},
+    },
   })
   flushSync()
   await tick()

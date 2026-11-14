@@ -2877,6 +2877,18 @@
   "@settings.behavior.adbHintDismissed.keywords": {
     "description": "Search keywords for the “Suppress the USB debugging hint” setting (settings.behavior.adbHintDismissed.label) in Settings > Advanced. What it does: turned off, brings back the line suggesting USB debugging at the top of an Android phone’s pane. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
   },
+  "settings.aboutThis.aiHintDismissed.label": "Suppress the AI hint on “Tell me about this”",
+  "@settings.aboutThis.aiHintDismissed.label": {
+    "description": "Advanced-section label (in the Hints and warnings card) for the switch that silences the small line under the buttons of the “Tell me about this” card saying that turning on AI adds a deeper read of each item (aboutThis.verdict.aiOffHint). It stays until closed with its ×. On means the user closed the line and it won’t show again; turning it off makes the line show again. Use the same name for “Tell me about this” as the command does in this language."
+  },
+  "settings.aboutThis.aiHintDismissed.description": "With AI off, or not set up yet, the “Tell me about this” card shows a line under its buttons saying AI adds a deeper read. Closing the line with its × turns this on. Turn this off to see the line again.",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "description": "Help text for the “Suppress the AI hint on “Tell me about this”” switch (settings.aboutThis.aiHintDismissed.label). The “deeper read” is a short take an AI writes about the file or folder on that card."
+  },
+  "settings.aboutThis.aiHintDismissed.keywords": "tip, hint, file info, card, deeper read, explain",
+  "@settings.aboutThis.aiHintDismissed.keywords": {
+    "description": "Search keywords for the “Suppress the AI hint on “Tell me about this”” setting (settings.aboutThis.aiHintDismissed.label) in Settings > Advanced. What it does: turned off, brings back the line on the “Tell me about this” card saying AI adds a deeper read. Never shown. Search already matches its label and description, so add OTHER words people might type: synonyms, everyday words, any count, not a 1:1 translation. Comma-separated; no brand names, protocols, or file formats (those match in every language). Chinese, Japanese, Korean: short, common words, since a query must appear unbroken in one keyword, with no typo tolerance."
+  },
   "settings.section.notifications": "Notifications",
   "@settings.section.notifications": {
     "description": "Settings subsection title under Behavior: Notifications (downloads notifications and low-disk-space warnings). Sidebar and page heading.",

@@ -33,10 +33,17 @@ The host is `routes/(main)/+layout.svelte` (beside the feedback dialog, inside i
 
 ## Layout
 
-Top to bottom: the title (the item's icon and "About “name”", cut with a tooltip), the headline, the volume note, the
-evidence sections in the plan's order, the verdict slot, What removing it means, and the footer (the actions on the
-left, Close on the right). `ModalDialog` with `resizable` and `growDownward`, 40 rem wide, at most 85 vh, the body
-scrolling.
+The title (the item's icon and "About “name”", cut with a tooltip), then the facts column: the headline, the volume
+note, and the evidence sections in the plan's order, scrolling (`.card`), with What removing it means pinned under them
+(`[data-removal]`). With a take, the take's column sits to the right (§ The AI take). The footer: the actions on the
+left, Close on the right, and the AI hint line on a row of its own under them. `ModalDialog` with `resizable`,
+`growDownward`, and `fillBody` (the layout owns its scrollers), at most 85 vh; 40 rem wide with one column, 60 rem with
+two.
+
+- **The removal row is never scrolled away**: it's a sibling after the facts' scroller in the facts column,
+  `flex: none`, while the scroller is `flex: 0 1 auto` (content-sized on a short card, so the removal row sits right
+  under the facts; shrinking on a long one). A list expanded behind "N more" caps at half the column and scrolls on its
+  own. This is what keeps the model's text from ever showing without Cmdr's own removal row on screen.
 
 - **The title icon** is the pane's own: the subject carries the entry's `iconId`, and the title reads the icon cache the
   pane already filled (a folder's custom icon first, by path). ❌ Never a fetch from the card; a miss is the glyph by
@@ -82,21 +89,38 @@ scrolling.
   `prefers-reduced-motion` has nothing to stop).
 - **Prominence is the wire's**: `AboutAbsence` draws a Routine unknown (or a not-applicable) as one muted line and a
   Notable one as a sentence with a quiet mark. A row-specific absence word (`ROW_UNKNOWN`) wins over the generic one.
-- **The AI take's slot** (`[data-verdict-slot]`) sits right above the removal section and exists only when the take
-  draws something (§ The AI take), so a card without one is exactly the card without AI.
-- **Focus**: the card's body (`.card`, `tabindex=0`) takes focus on mount so the arrow keys and Page Up/Down scroll it;
-  Tab then reaches each copy button and the footer. `ModalDialog` restores focus to the pane on close.
+- **The take's column** (`[data-take-column]`) exists only when the take has a place there (§ The AI take), so a card
+  without one is exactly the card without AI, one column wide.
+- **Focus**: the facts' scroller (`.card`, `tabindex=0`) takes focus on mount so the arrow keys and Page Up/Down scroll
+  it; Tab then reaches each copy button, the removal row's "N more", the take (Stop, a link), and the footer. The take's
+  column is a Tab stop of its own only while its text overflows it, so the keys can scroll it. `ModalDialog` restores
+  focus to the pane on close.
 - **a11y**: pending rows carry `aria-busy`; one polite live region reads the headline's text once, at `factsSettled`; ❌
   no live region per fact.
 
 ## The AI take
 
 `AboutVerdict.svelte`, fed by `about-verdict.ts` from the backend's verdict events (host DETAILS § The verdict).
-**Decision: it sits near the bottom, right above What removing it means**, so the model's sentence always has Cmdr's own
-removal row and Move to trash beside it, its growth while streaming moves only the removal row, and the deterministic
-headline already answers "what is this" at the top. Above the facts, a late, model-written sentence would read first and
-push every row down as it streamed. The cost: a take pushes the removal row down, and on a long card the removal row can
-fall below the fold.
+**Decision: the take gets its own column, right of the facts**, which keep What removing it means pinned in view (§
+Layout). So the model's sentence always has Cmdr's own removal row beside it, its growth while streaming moves nothing
+of Cmdr's, and the deterministic headline already answers "what is this" at the top left. **Why**: in one column the
+take sat right above the removal row and pushed it below the fold on a long card; above the facts, a late, model-written
+sentence would read first and push every row down as it streamed.
+
+- **Which layout** (`verdictPlace`, `data-layout` on the layout element): `column` (a planned take, and AI on but not
+  answering this time: `notReady`, `managed`, `tooManyRequests`, whose one line sits in the column) draws two columns;
+  `hint` (`aiOff`, `noCloudConsent`, `notConfigured`: a setting fixes them) draws one column plus the hint line; `none`
+  (`turnedOff`, the person's own choice) one column and nothing about AI.
+- **Narrow**: below 46 rem of layout width (`useInlineSize`, since Cmdr's WebKit floor has no container queries), the
+  columns stack: the facts, the pinned removal row, then the take, capped at 40 vh with its own scroller, so the removal
+  row stays in view above it. A small window caps the dialog (`ModalDialog`'s `max-width`), so this is also the small
+  window's layout.
+- **The hint line** (`AboutAiHint`, in `ModalDialog`'s `footerNote`): "Turn on AI for a deeper read of each item." (or
+  allow cloud AI, or add a key) with a link to the setting, and a × that hides it on every card from then on:
+  `aboutThis.aiHintDismissed`, a once-ever hint flag in Settings > Advanced's Hints and warnings card, the only way
+  back. The host reads it fresh per card (`aiHintDismissed()` in `about-this-state.svelte.ts`) and writes it at the ×
+  (`dismissAiHint`); the line hides itself at the click either way. A row of its own under the buttons, since as a
+  second line of `footerLeading` it pushed Close off the buttons' line (QA screenshots, 2026-11-13).
 
 - **Its own block, never a row's look**: a quiet surface and border, the sparkles glyph, and the heading "AI wrote
   this", so a model's sentence can't pass for one of Cmdr's facts. It's a labeled `<section>` (a region), outside every
@@ -107,7 +131,7 @@ fall below the fold.
 - **Phases** (`verdictPhase`): waiting ("Writing a short take…", and a Stop button), streaming (the text, Stop), done,
   stopped (the text so far plus a quiet "Stopped"), from earlier (a tag beside the heading), failed (the provider's
   answer as a quiet line after any text: `noAnswer`, `unreachable`, …).
-- **The given-line** ("From the facts above and the first page") has its own reserved line under the heading and fills
+- **The given-line** ("From the card’s facts and the first page") has its own reserved line under the heading and fills
   at `verdictGiven`, before any text, so the person sees what's leaving while it leaves.
 - **No movement**: the heading row holds the Stop button's height after it goes, the given-line one line, and the text
   three lines, from the first frame; the text may grow past three while it streams, downward only, and that's the one
@@ -121,12 +145,8 @@ fall below the fold.
   Provider; for `untested` a yellow line (`--color-warning-text`, a circle alert icon) saying Cmdr can't vouch for it.
   Icon plus words, so color is never the only signal. The take still shows in full under either. Which model lands
   where: `apps/desktop/src-tauri/src/about/DETAILS.md` § The order.
-- **Unavailable**: `unavailableShowsALine` says which reasons draw one quiet line in the slot (cloud AI needs allowing,
-  no key, the local server not running, the organization's policy through `managedAiRefusalMessage`, too many in a
-  minute) and which draw nothing (`aiOff`, `turnedOff`). AI off gets one quiet hint in the footer, on a row of its own
-  under the buttons (`ModalDialog`'s `footerNote`: "AI is off…" plus a link to Settings > AI), never in the body.
-  **Decision: a row of its own**: as a second line of `footerLeading` it pushed Close off the buttons' line (QA
-  screenshots, 2026-11-13).
+- **Unavailable this time**: the local server not running, the organization's policy (`managedAiRefusalMessage`), and
+  too many in a minute draw one quiet line in the take's column (`AboutVerdict`).
 - ❌ **No one-click allow**: the consent hint's link opens Settings > AI at the Allow cloud AI switch, where the whole
   disclosure is read (`openCloudConsentSettings('about-this-card')`). A card that's open when consent arrives doesn't
   start a call by itself (nothing re-asks); the next open does.
@@ -198,13 +218,18 @@ is `ImageContents::of`'s rule in `cmdr-about`.
 - `AboutThisDialog.a11y.test.ts`: axe over the gallery's cards and each part, the `<dl>`, `aria-busy`, body focus, and
   the single announcement.
 - `about-verdict.test.ts`: the verdict's reducer (each phase, the given-line before any text, what's dropped out of
-  order) and which unavailable reasons draw a line. `AboutVerdict.svelte.test.ts`: a hostile take renders literally
-  (`<img onerror>`, a Markdown link), the label and the given-line, Stop, every unavailable reason, the consent hint
-  opening Settings with no allow, one announcement at the end, and the same rows, removal, actions, and focus with a
-  reassuring take, a refused one, and none.
+  order) and `verdictPlace` (which reasons get the column, the hint line, or nothing). `AboutVerdict.svelte.test.ts`: a
+  hostile take renders literally (`<img onerror>`, a Markdown link), the label and the given-line, the take's column
+  after the facts and the pinned removal row, the invariant over every `verdict-*` fixture (wherever the model's text
+  shows, the removal row is in the facts column, outside both scrollers), the stacked layout under 46 rem, Stop, every
+  unavailable reason, the hint line (its link, its × hiding it and calling the host, none once dismissed), the consent
+  hint opening Settings with no allow, one announcement at the end, and the same rows, removal, actions, and focus with
+  a reassuring take, a refused one, and none.
 - `apps/desktop/test/e2e-playwright/about-this.spec.ts`: shortcut, palette, and menu, a download record the spec writes
   (host shown, full address not), the type row, a folder's size row, Escape giving focus back to the pane.
 - `apps/desktop/test/e2e-playwright/about-this-verdict.spec.ts` (the E2E fake, held mid-stream by
-  `CMDR_E2E_ABOUT_VERDICT_PACE`, `docs/testing.md`): a streamed take above the removal row with its given-line, Stop
-  keeping the partial text and the card, a reopen reusing a finished take, Escape closing mid-stream, AI off drawing
-  only the footer hint, and "Continue in Ask Cmdr" opening a new chat with the item and the fixed draft, unsent.
+  `CMDR_E2E_ABOUT_VERDICT_PACE`, `docs/testing.md`): a streamed take in its own column with its given-line, the removal
+  row measured in view inside the panel (also with the panel squeezed to 320 px, where the facts scroll), Stop keeping
+  the partial text and the card, a reopen reusing a finished take, Escape closing mid-stream, AI off drawing one column
+  and the hint line whose × keeps it gone on the next card, and "Continue in Ask Cmdr" opening a new chat with the item
+  and the fixed draft, unsent.

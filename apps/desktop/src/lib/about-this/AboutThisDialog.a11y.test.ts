@@ -41,7 +41,15 @@ async function render(id: string): Promise<HTMLElement> {
   document.body.appendChild(target)
   mounted = mount(AboutThisDialog, {
     target,
-    props: { card, onClose: () => {}, onGoTo: () => {}, onAct: () => {}, onStopVerdict: () => {} },
+    props: {
+      card,
+      onClose: () => {},
+      onGoTo: () => {},
+      onAct: () => {},
+      onStopVerdict: () => {},
+      aiHintDismissed: false,
+      onDismissAiHint: () => {},
+    },
   })
   flushSync()
   await tick()
@@ -69,6 +77,8 @@ describe('AboutThisDialog a11y', () => {
     'verdict-no-consent',
     'verdict-managed',
     'verdict-ai-off',
+    'verdict-long',
+    'verdict-often-wrong',
     'git-snapshot',
     'share-file',
     'standard-folder',

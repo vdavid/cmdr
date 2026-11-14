@@ -477,6 +477,9 @@ const downloads: Stream = {
 }
 
 /** Keyed by the `tell-me-about-this` entry's state ids in `gallery-registry.ts`. */
+/** The big folder in a repo, for the AI take's long card: What's inside fills the facts column past its height. */
+export const longFolderBase = { name: 'website', path: SITE, stream: site }
+
 export const aboutThisFolderFixtures: Record<string, AboutCardData> = {
   folder: card('website', SITE, site),
   'node-modules': card('node_modules', MODULES, nodeModules),

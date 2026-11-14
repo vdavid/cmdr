@@ -33,6 +33,11 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
+function unmountCard(): void {
+  if (mounted) void unmount(mounted)
+  mounted = null
+}
+
 function fixture(id: string): AboutCardData {
   const card = aboutThisFixtures[id]
   if (!card) throw new Error(`no fixture ${id}`)
@@ -44,12 +49,27 @@ function withVerdict(card: AboutCardData, updates: AboutEvent['update'][]): Abou
   return updates.reduce((next, update) => applyAboutEvent(next, { requestId: card.requestId, update }), card)
 }
 
-async function render(card: AboutCardData, onStopVerdict: () => void = () => {}): Promise<HTMLElement> {
+interface RenderOptions {
+  onStopVerdict?: () => void
+  aiHintDismissed?: boolean
+  onDismissAiHint?: () => void
+}
+
+async function render(card: AboutCardData, options: RenderOptions = {}): Promise<HTMLElement> {
+  const { onStopVerdict = () => {}, aiHintDismissed = false, onDismissAiHint = () => {} } = options
   const target = document.createElement('div')
   document.body.appendChild(target)
   mounted = mount(AboutThisDialog, {
     target,
-    props: { card, onClose: () => {}, onGoTo: () => {}, onAct: () => {}, onStopVerdict },
+    props: {
+      card,
+      onClose: () => {},
+      onGoTo: () => {},
+      onAct: () => {},
+      onStopVerdict,
+      aiHintDismissed,
+      onDismissAiHint,
+    },
   })
   flushSync()
   await tick()
@@ -82,55 +102,108 @@ describe('the AI take', () => {
     const target = await render(fixture('verdict-going-out'))
     const verdict = block(target)
     expect(verdict?.querySelector('h3')?.textContent).toBe('AI wrote this')
-    expect(verdict?.textContent).toContain('From the facts above. Cmdr didn’t look inside.')
+    expect(verdict?.textContent).toContain('From the card’s facts. Cmdr didn’t look inside.')
     expect(verdict?.textContent).toContain('Writing a short take…')
     // The block isn't one of the fact rows.
     expect(verdict?.closest('dl')).toBeNull()
   })
 
-  it('sits right above What removing it means', async () => {
+  it('takes its own column after the facts, which keep What removing it means pinned under their scroller', async () => {
     const target = await render(fixture('verdict-done'))
-    const slot = target.querySelector('[data-verdict-slot]')
-    expect(slot?.nextElementSibling?.querySelector('#about-section-removal')).not.toBeNull()
+    expect(target.querySelector('[data-layout]')?.getAttribute('data-layout')).toBe('twoColumns')
+    const facts = target.querySelector('.card')
+    const removal = target.querySelector('[data-removal]')
+    const column = target.querySelector('[data-take-column]')
+    expect(column?.querySelector('[data-verdict-text]')).not.toBeNull()
+    // Reading and Tab order: the facts, then the removal row, then the take.
+    expect(removal?.previousElementSibling).toBe(facts)
+    expect(facts?.parentElement?.nextElementSibling).toBe(column)
+  })
+
+  it('never shows the model’s text without the removal row outside every scroller but the take’s own', async () => {
+    const ids = Object.keys(aboutThisFixtures).filter((id) => id.startsWith('verdict-'))
+    let withText = 0
+    for (const id of ids) {
+      const target = await render(fixture(id))
+      if (target.querySelector('[data-verdict-text]')) {
+        withText += 1
+        const removal = target.querySelector('[data-removal]')
+        expect(removal, id).not.toBeNull()
+        // Pinned: a child of the facts column, not inside the facts' scroller or the take's.
+        expect(removal?.closest('.card'), id).toBeNull()
+        expect(removal?.closest('[data-take-column]'), id).toBeNull()
+        expect(removal?.parentElement?.classList.contains('facts-column'), id).toBe(true)
+      }
+      unmountCard()
+    }
+    expect(withText).toBeGreaterThan(5)
+  })
+
+  it('stacks the take below the facts on a narrow card, and goes back to two columns when there’s room', async () => {
+    let width = 500
+    const clientWidth = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => width)
+    try {
+      const narrow = await render(fixture('verdict-done'))
+      expect(narrow.querySelector('[data-layout]')?.getAttribute('data-layout')).toBe('stacked')
+      unmountCard()
+      width = 1_000
+      const wide = await render(fixture('verdict-done'))
+      expect(wide.querySelector('[data-layout]')?.getAttribute('data-layout')).toBe('twoColumns')
+    } finally {
+      clientWidth.mockRestore()
+    }
   })
 
   it('offers Stop while it writes, which stops it alone; a stopped take keeps its text', async () => {
     const onStop = vi.fn()
-    const target = await render(fixture('verdict-streaming'), onStop)
+    const target = await render(fixture('verdict-streaming'), { onStopVerdict: onStop })
     const stop = [...(block(target)?.querySelectorAll('button') ?? [])].find((b) => b.textContent.trim() === 'Stop')
     expect(stop).toBeDefined()
     stop?.click()
     expect(onStop).toHaveBeenCalledOnce()
 
-    void unmount(mounted ?? {})
-    mounted = null
+    unmountCard()
     const stopped = await render(fixture('verdict-stopped'))
     expect(block(stopped)?.textContent).toContain('This is the installer disk image for Tessera 2.4.1,')
     expect(block(stopped)?.textContent).toContain('Stopped')
     expect(block(stopped)?.querySelector('button')).toBeNull()
   })
 
-  it('draws no block, and no line, for AI off or a person’s own off', async () => {
+  it('draws one column and nothing about AI when the person turned the take off', async () => {
     const target = await render(
       withVerdict(fixture('downloaded'), [{ type: 'verdictUnavailable', why: { kind: 'turnedOff' } }]),
     )
-    expect(target.querySelector('[data-verdict-slot]')).toBeNull()
-    expect(target.textContent).not.toContain('AI take')
-    void unmount(mounted ?? {})
-    mounted = null
-    const off = await render(fixture('verdict-ai-off'))
-    expect(off.querySelector('[data-verdict-slot]')).toBeNull()
-    // AI off says where to turn it on, once, quietly, outside the card's body.
-    const hint = document.body.querySelector('.ai-off')
-    expect(hint?.textContent).toContain('AI is off')
+    expect(target.querySelector('[data-layout]')?.getAttribute('data-layout')).toBe('oneColumn')
+    expect(target.querySelector('[data-take-column]')).toBeNull()
+    expect(document.body.querySelector('[data-ai-hint]')).toBeNull()
+  })
+
+  it('with AI off, draws one column and a hint line under the buttons, which its × hides for good', async () => {
+    const onDismissAiHint = vi.fn()
+    const off = await render(fixture('verdict-ai-off'), { onDismissAiHint })
+    expect(off.querySelector('[data-layout]')?.getAttribute('data-layout')).toBe('oneColumn')
+    expect(off.querySelector('[data-take-column]')).toBeNull()
+    const hint = document.body.querySelector('[data-ai-hint="aiOff"]')
+    expect(hint?.textContent).toContain('Turn on AI for a deeper read of each item.')
     expect(off.querySelector('.card')?.contains(hint ?? null)).toBe(false)
+    const open = [...(hint?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('Open AI settings'))
+    open?.click()
+    expect(openSettingsWindow).toHaveBeenCalledWith('about-this-card', ['AI', 'Provider'])
+    hint?.querySelector<HTMLButtonElement>('button[aria-label="Hide this hint"]')?.click()
+    flushSync()
+    expect(onDismissAiHint).toHaveBeenCalledOnce()
+    expect(document.body.querySelector('[data-ai-hint]')).toBeNull()
+    unmountCard()
+
+    // Closed before: no line at all.
+    await render(fixture('verdict-ai-off-dismissed'), { aiHintDismissed: true })
+    expect(document.body.querySelector('[data-ai-hint]')).toBeNull()
   })
 
   it('warns inside the block by the model’s trust: nothing when trusted, a link to change it when often wrong', async () => {
     const trusted = await render(fixture('verdict-done'))
     expect(block(trusted)?.querySelector('[data-verdict-trust]')).toBeNull()
-    void unmount(mounted ?? {})
-    mounted = null
+    unmountCard()
 
     const untested = await render(fixture('verdict-untested'))
     const caution = block(untested)?.querySelector('[data-verdict-trust="untested"]')
@@ -138,8 +211,7 @@ describe('the AI take', () => {
     expect(caution?.querySelector('button')).toBeNull()
     // The take still shows in full under it.
     expect(block(untested)?.textContent).toContain('This is the installer disk image for Tessera 2.4.1,')
-    void unmount(mounted ?? {})
-    mounted = null
+    unmountCard()
 
     const oftenWrong = await render(fixture('verdict-often-wrong'))
     const warning = block(oftenWrong)?.querySelector('[data-verdict-trust="oftenWrong"]')
@@ -153,18 +225,24 @@ describe('the AI take', () => {
 
   it('asks for cloud consent only by opening Settings at the disclosure, never with a one-click allow', async () => {
     const target = await render(fixture('verdict-no-consent'))
-    const line = target.querySelector('[data-verdict="noCloudConsent"]')
-    expect(line?.textContent).toContain('Cloud AI needs your OK')
-    const buttons = [...(line?.querySelectorAll('button') ?? [])]
-    expect(buttons).toHaveLength(1)
-    expect(buttons[0].textContent).not.toMatch(/allow/i)
-    buttons[0].click()
+    expect(target.querySelector('[data-take-column]')).toBeNull()
+    const line = document.body.querySelector('[data-ai-hint="noCloudConsent"]')
+    expect(line?.textContent).toContain('Allow cloud AI for a deeper read')
+    // The link and the ×; neither allows anything.
+    const link = [...(line?.querySelectorAll('button') ?? [])].find((b) => b.textContent.includes('Open AI settings'))
+    expect(line?.querySelectorAll('button')).toHaveLength(2)
+    expect(link?.textContent).not.toMatch(/allow/i)
+    link?.click()
     expect(openCloudConsentSettings).toHaveBeenCalledWith('about-this-card')
   })
 
-  it('says each other reason in one line', async () => {
+  it('says each other reason in one line: a setting’s under the buttons, the rest in the take’s column', async () => {
+    await render(fixture('verdict-not-configured'))
+    expect(document.body.querySelector('[data-ai-hint="notConfigured"]')?.textContent).toContain(
+      'Add your AI provider’s key',
+    )
+    unmountCard()
     const lines: [string, string][] = [
-      ['verdict-not-configured', 'Add your AI provider’s key'],
       ['verdict-not-ready', 'isn’t running'],
       ['verdict-managed', 'Your organization allows only on-device AI.'],
       ['verdict-too-many', 'Try again in a moment.'],
@@ -174,9 +252,8 @@ describe('the AI take', () => {
     ]
     for (const [id, words] of lines) {
       const target = await render(fixture(id))
-      expect(target.querySelector('[data-verdict-slot]')?.textContent).toContain(words)
-      void unmount(mounted ?? {})
-      mounted = null
+      expect(target.querySelector('[data-take-column]')?.textContent).toContain(words)
+      unmountCard()
     }
   })
 
@@ -186,8 +263,7 @@ describe('the AI take', () => {
       [...target.querySelectorAll('[aria-live]')].map((region) => region.textContent.trim())
     expect(regions(streaming).join(' ')).not.toContain('installer disk image')
     expect(block(streaming)?.closest('[aria-live]')).toBeNull()
-    void unmount(mounted ?? {})
-    mounted = null
+    unmountCard()
 
     const done = await render(fixture('verdict-done'))
     flushSync()
@@ -207,8 +283,7 @@ describe('the rest of the card, with and without a take', () => {
       (element) => element.getAttribute('data-action') ?? '',
     )
     const focus = document.activeElement?.className ?? ''
-    void unmount(mounted ?? {})
-    mounted = null
+    unmountCard()
     return { rows, removal, actions, focus }
   }
 

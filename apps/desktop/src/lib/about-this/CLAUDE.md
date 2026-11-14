@@ -10,6 +10,7 @@ directory only renders.
   `about-verdict.ts`: the AI take's data and its part of the reducer; `AboutVerdict.svelte` draws it.
 - `about-this-state.svelte.ts`: the open card (`openAboutThis` / `closeAboutThis`) and its first-frame grace.
   `about-analytics.ts`: the `tell_me_about_used` event, fired once at each card's close, tokens only.
+  `AboutAiHint.svelte`: the dismissable AI hint line under the footer.
 - `AboutThisDialog.svelte` (the frame), `AboutHeadline`, `AboutRow` (one planned row), `AboutAbsence` (an unknown's
   line), `AboutPath`, `AboutRemoval`. `AboutDigest` (What's inside), `AboutAppData` (an app's Library data), and
   `AboutPlaceList` (their rows, each taking the pane there). `AboutActions` + `about-actions.ts`: the footer's actions
@@ -32,6 +33,8 @@ directory only renders.
   else reads it: rows, removal, actions, and focus are the same with and without it (`AboutVerdict.svelte.test.ts`). Its
   block exists only after `verdictPlanned`, reserves its lines, and grows downward only. ❌ No live region over the
   stream; one announcement at its end.
+- ❗ **The take never shows without the removal row in view**: it has its own column (`verdictPlace`), and What removing
+  it means is pinned under the facts' scroller, ❌ never inside it. Narrow, the columns stack with the take last.
 - ❌ **The card never grants cloud consent**: the `noCloudConsent` hint opens Settings at the disclosure.
 - ❗ **A row or footer action goes through the opener's hooks** (`openAboutThis(subject, { goTo, act })`, built in
   `apps/desktop/src/routes/(main)/command-handlers/about-this-opener.ts`): the card closes FIRST, then the pane

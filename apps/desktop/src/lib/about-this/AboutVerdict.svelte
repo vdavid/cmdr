@@ -1,7 +1,8 @@
 <!--
-  The card's AI take, in the slot right above What removing it means: a labeled block, set apart from the fact rows by
-  its surface, holding two or three sentences a model wrote from the card's facts. Or, when the card gets none, one
-  quiet line saying why (cloud AI needs allowing again, no key, the organization's policy, too many in a minute).
+  The card's AI take, in its own column beside the facts (below them on a narrow card): a labeled block, set apart from
+  the fact rows by its surface, holding two or three sentences a model wrote from the card's facts. Or, when AI is on
+  but gives none this time, one quiet line saying why (the local model not running, the organization's policy, too
+  many in a minute). The reasons a setting fixes are `AboutAiHint`'s, under the footer.
 
   Every model writes; Rust sends how far it can be trusted with `verdictPlanned`, and below `trusted` the block carries
   a warning line from its first frame: red with an alert icon for a model known to be often wrong (with a link to
@@ -19,7 +20,6 @@
     import Button from '#lib/ui/Button.svelte'
     import Icon from '#lib/ui/Icon.svelte'
     import LinkButton from '#lib/ui/LinkButton.svelte'
-    import { openCloudConsentSettings } from '#lib/ai/cloud-consent.svelte.js'
     import { openSettingsWindow } from '#lib/settings/settings-window.js'
     import { managedAiRefusalMessage } from '#lib/managed-policy/ai-refusal.js'
     import { getAppLogger } from '#lib/logging/logger.js'
@@ -82,20 +82,6 @@
         <!-- One line on purpose: under `pre-wrap`, any whitespace between these tags would show. -->
         <p class="text">{#if phase === 'waiting'}<span class="quiet">{tString('aboutThis.verdict.writing')}</span>{:else if verdict.text !== ''}<span data-verdict-text>{verdict.text}</span>{/if}{#if phase === 'stopped'}<span class="mark">{tString('aboutThis.verdict.stopped')}</span>{:else if problem !== null}<span class="mark">{tString(VERDICT_PROBLEM[problem])}</span>{/if}</p>
     </section>
-{:else if verdict.why.kind === 'noCloudConsent'}
-    <p class="unavailable" data-verdict="noCloudConsent">
-        {tString('aboutThis.verdict.unavailable.noCloudConsent')}
-        <LinkButton
-            onclick={() => {
-                openCloudConsentSettings('about-this-card')
-            }}>{tString('aboutThis.verdict.unavailable.openAiSettings')}</LinkButton
-        >
-    </p>
-{:else if verdict.why.kind === 'notConfigured'}
-    <p class="unavailable" data-verdict="notConfigured">
-        {tString('aboutThis.verdict.unavailable.notConfigured')}
-        <LinkButton onclick={openProviderSettings}>{tString('aboutThis.verdict.unavailable.openAiSettings')}</LinkButton>
-    </p>
 {:else if verdict.why.kind === 'notReady'}
     <p class="unavailable" data-verdict="notReady">{tString('aboutThis.verdict.unavailable.notReady')}</p>
 {:else if verdict.why.kind === 'managed'}

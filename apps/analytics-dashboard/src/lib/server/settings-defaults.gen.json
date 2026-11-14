@@ -3041,6 +3041,7 @@
     }
   },
   "next": {
+    "aboutThis.aiHintDismissed": false,
     "aboutThis.aiVerdict": true,
     "advanced.diskSpaceChangeThreshold": 1,
     "advanced.dragThreshold": 5,

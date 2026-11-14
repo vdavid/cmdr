@@ -11,7 +11,7 @@
 import type { Actions, Headline } from '#lib/ipc/bindings.js'
 import { emptyCard, type AboutCardData } from '#lib/about-this/about-card.js'
 import { REQUEST, card, day, derived, identity, notable, plan, routine, type Stream } from './about-this-stream'
-import { aboutThisFolderFixtures } from './about-this-folders'
+import { aboutThisFolderFixtures, longFolderBase } from './about-this-folders'
 import { aboutThisDegradedFixtures } from './about-this-degraded'
 import { aboutThisVerdictFixtures } from './about-this-verdict'
 import { aboutThisImageFixtures } from './about-this-images'
@@ -459,6 +459,12 @@ const hardLinked: Stream = {
   settled: true,
 }
 
+/**
+ * The states the gallery opens as if the person had closed the AI hint line before: the card's real
+ * `aiHintDismissed` prop, which the app reads from `aboutThis.aiHintDismissed`.
+ */
+export const ABOUT_THIS_HINT_DISMISSED: ReadonlySet<string> = new Set(['verdict-ai-off-dismissed'])
+
 /** Keyed by the `tell-me-about-this` entry's state ids in `gallery-registry.ts`. */
 export const aboutThisFixtures: Record<string, AboutCardData | undefined> = {
   downloaded: card(DMG, `/Users/test_user_1/Downloads/${DMG}`, downloaded),
@@ -479,6 +485,7 @@ export const aboutThisFixtures: Record<string, AboutCardData | undefined> = {
     downloaded,
     filling: { ...downloaded, facts: downloaded.facts.slice(0, 3), settled: false },
     document: { name: DOC, path: `/Users/test_user_1/Documents/${DOC}`, stream: plainDocument },
+    long: longFolderBase,
   }),
   unavailable: {
     ...emptyCard(REQUEST, {

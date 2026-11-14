@@ -62,7 +62,9 @@
     import {
         aboutThisState,
         actFromCard,
+        aiHintDismissed,
         closeAboutThis,
+        dismissAiHint,
         goToFromCard,
         stopAboutVerdict,
     } from '#lib/about-this/about-this-state.svelte.js'
@@ -384,6 +386,8 @@
             onGoTo={goToFromCard}
             onAct={actFromCard}
             onStopVerdict={stopAboutVerdict}
+            aiHintDismissed={aiHintDismissed()}
+            onDismissAiHint={dismissAiHint}
         />
     {/if}
 </DialogBoundary>

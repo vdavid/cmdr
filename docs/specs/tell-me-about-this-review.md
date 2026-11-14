@@ -27,8 +27,15 @@ questions are at its top). The eval's full evidence: `docs/notes/about-verdict-e
 
 3. **Open each fixture item** with `⌘⇧I`, from the palette, and from the right-click menu (once each), and look at:
    - The first frame: the headline on top, no row moving or appearing later, a routine absence as one quiet line.
-   - The take: its block right above What removing it means, labeled "AI wrote this", its "From the facts above and …"
-     line, Stop (the text so far stays, marked "Stopped"), a reopen of the same item ("From earlier"), and Esc mid-take.
+   - The take: its own column right of the facts, labeled "AI wrote this", its "From the card’s facts and …" line, Stop
+     (the text so far stays, marked "Stopped"), a reopen of the same item ("From earlier"), and Esc mid-take.
+   - The removal row in view beside the take: open a big folder (the fixture repo) so the facts scroll, and check What
+     removing it means stays pinned under them, at the default size and after dragging the card short.
+   - Narrow: drag the card (or the window) narrower than about 50 rem; the take moves below the facts and the removal
+     row, and both stay in view. Wider again, two columns.
+   - AI off (Settings > AI > Off): one column, and the hint line "Turn on AI for a deeper read of each item." under the
+     buttons. Its × hides it on this and every later card; Settings > Advanced > Hints and warnings, "Suppress the AI
+     hint on “Tell me about this”", turned off, brings it back.
    - The unavailable lines: in the dialog gallery (Debug > Soft dialogs > Tell me about this), every state from recorded
      events, including cloud AI needing allowing again, no key, the three model trust tiers, and AI off.
    - Both themes, and reduced motion on (nothing on the card animates anyway).
@@ -54,8 +61,6 @@ questions are at its top). The eval's full evidence: `docs/notes/about-verdict-e
 - **The look inside on Cloud** (default: every automatic take looks inside, and the block says so). Facts only already
   adds something true in 94% (Sonnet) and 98% (Opus) against 100% with the look. The eval agent leans the other way:
   facts only by default, the look on a second press, since the first page of a tax return would leave on every open.
-- **The removal row can fall below the fold** when a take shows on a long card: the take sits right above it by design,
-  so the model's sentence always has Cmdr's own removal line next to it. A taller default, or accept it?
 - **Folder suggestions stay silent after the consent bump**: every cloud user allows cloud AI again once (version 2 →
   3), and until then folder suggestions, Ask Cmdr, and AI search are off with no word why. A one-line "what changed"
   above the switch, a release-notes line, or both? (#1191)
@@ -66,6 +71,10 @@ The other follow-ups filed from this effort: #1175–#1180, #1182–#1187, and #
 
 ## Decided since
 
+- **Two columns** (your design): with AI on, the facts and What removing it means on the left, the take on the right;
+  the removal row is pinned under the facts' scroller, so it's on screen whenever the take is. Narrow, the take stacks
+  below. With AI off (or not set up), one column plus a dismissable hint line; its × is remembered as a Settings >
+  Advanced row. In the gallery: "AI take: done, beside a long card", "… narrow", "AI off", "AI off, hint closed before".
 - **Which models write a take**: every model, in three trust tiers, so you can see how it feels (you may restrict it
   again). Trusted, with no warning: Anthropic's Opus, Fable, and Sonnet on Anthropic's API, OpenAI's GPT-6 Astra, and
   Gemini 4 Carbon. Often wrong, with a red warning and a link to change the model: the Haiku family and the bundled

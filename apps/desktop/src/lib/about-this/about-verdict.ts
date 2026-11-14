@@ -128,19 +128,44 @@ export function verdictProblem(verdict: Extract<AboutVerdict, { status: 'planned
 }
 
 /**
- * Whether the card shows anything for an unavailable verdict in its body. `aiOff` gets a quiet hint in the footer
- * instead, and `turnedOff` shows nothing: the person chose it.
+ * Where the card puts its AI take, which also picks its layout:
+ *
+ * - `column`: the take's own column beside the facts. A planned take, and the reasons that are AI being on but not
+ *   answering this time (the local server not running, the organization's policy, too many in a minute), which say so
+ *   in the take's place.
+ * - `hint`: one column of facts and a dismissable line under the footer saying AI adds a deeper read, with the way to
+ *   the setting. The reasons a setting fixes: AI off, cloud AI not allowed yet, no key.
+ * - `none`: one column and nothing about AI. The person turned the take off themselves.
  */
-export function unavailableShowsALine(why: VerdictUnavailable): boolean {
+export type VerdictPlace = 'column' | 'hint' | 'none'
+
+/** The reasons a setting fixes, which the card says in its hint line. */
+export type HintWhy = Extract<VerdictUnavailable, { kind: 'aiOff' | 'noCloudConsent' | 'notConfigured' }>
+
+export function verdictPlace(verdict: AboutVerdict | null): VerdictPlace {
+  if (verdict === null) return 'none'
+  if (verdict.status === 'planned') return 'column'
+  return placeOfUnavailable(verdict.why)
+}
+
+function placeOfUnavailable(why: VerdictUnavailable): VerdictPlace {
   switch (why.kind) {
     case 'aiOff':
-    case 'turnedOff':
-      return false
     case 'noCloudConsent':
     case 'notConfigured':
+      return 'hint'
+    case 'turnedOff':
+      return 'none'
     case 'notReady':
     case 'managed':
     case 'tooManyRequests':
-      return true
+      return 'column'
   }
+}
+
+/** The hint line's reason, when the card shows one. */
+export function hintWhy(verdict: AboutVerdict | null): HintWhy | null {
+  if (verdict?.status !== 'unavailable') return null
+  const { why } = verdict
+  return why.kind === 'aiOff' || why.kind === 'noCloudConsent' || why.kind === 'notConfigured' ? why : null
 }

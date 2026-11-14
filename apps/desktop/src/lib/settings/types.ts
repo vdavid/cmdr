@@ -526,6 +526,7 @@ export interface SettingsValues {
    * anywhere else.
    */
   'behavior.adbHintDismissed': boolean
+  'aboutThis.aiHintDismissed': boolean
 
   // F4's editor: `system`, a bundle id, or an absolute `.app` path for a "Choose
   // an app…" pick. Rust's `parse_choice` tells the three apart.
