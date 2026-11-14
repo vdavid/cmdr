@@ -49,6 +49,16 @@ impl MediaKind {
             _ => MediaKind::Image,
         }
     }
+
+    /// Whether a file with this extension (no dot, any case) is a format the index
+    /// enriches: a still image or a camera RAW. The About card's "What it shows" row
+    /// asks this same list, so the row and the index can't drift apart. Name-only: a
+    /// RAW beside a same-stem JPEG still answers `true`, though the index enriches
+    /// the JPEG instead (the row then says "not indexed").
+    pub fn enriches_extension(extension: &str) -> bool {
+        let extension = extension.to_ascii_lowercase();
+        IMAGE_EXTS.contains(&extension.as_str()) || RAW_EXTS.contains(&extension.as_str())
+    }
 }
 
 /// Why a file is NOT enriched. Typed so a caller (or a test) branches on the reason
@@ -193,6 +203,24 @@ mod tests {
                 Qualification::Enrich(MediaKind::Image),
                 "{name} should enrich (extension match is case-insensitive)"
             );
+        }
+    }
+
+    /// The name-only question agrees with `qualify_dir` for every lone file, RAWs
+    /// included: the About card's image row asks it, so it must not miss a format
+    /// the index enriches.
+    #[test]
+    fn enriches_extension_matches_what_a_lone_file_enriches() {
+        for ext in IMAGE_EXTS.iter().chain(RAW_EXTS) {
+            assert!(MediaKind::enriches_extension(ext), "{ext}");
+            assert!(MediaKind::enriches_extension(&ext.to_uppercase()), "{ext} uppercased");
+            assert!(matches!(
+                qualify_dir(&[&format!("a.{ext}")])[0],
+                Qualification::Enrich(_)
+            ));
+        }
+        for ext in ["mov", "aae", "pdf", "avif", "psd", ""] {
+            assert!(!MediaKind::enriches_extension(ext), "{ext}");
         }
     }
 

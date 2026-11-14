@@ -1,6 +1,6 @@
 use super::*;
 use crate::fact::Prominence;
-use crate::test_support::{card, identity, land, local, macos, mounted_share, phone, text};
+use crate::test_support::{card, identity, image_format, land, local, macos, mounted_share, phone, text};
 
 use AboutTarget::{AppBundle, ArchiveEntry, File, Folder, Package, Symlink};
 use FactKind as K;
@@ -16,6 +16,7 @@ fn plan_of(target: AboutTarget, extension: Option<&str>, caps: &VolumeCaps) -> A
         owner: &OwnerQuestion::Receipt,
         in_a_repo: true,
         git_snapshot: false,
+        image_format: image_format(extension),
     })
 }
 
@@ -110,6 +111,8 @@ fn a_picture_says_what_the_image_index_recognized_right_after_what_it_is() {
         sections(&plan_of(File, Some("JPG"), &local()))[1],
         (Section::Nature, vec![K::Identity, K::RealType, K::ImageContents])
     );
+    // A camera RAW too: the host's answer comes from the index's list, not the type row's.
+    assert!(plan_of(File, Some("nef"), &local()).has(K::ImageContents));
     // A document, a folder named like a picture, and a link to one have no such row.
     assert!(!plan_of(File, Some("pdf"), &local()).has(K::ImageContents));
     assert!(!plan_of(File, None, &local()).has(K::ImageContents));
@@ -132,6 +135,7 @@ fn the_image_row_reads_the_index_so_a_share_and_an_evicted_picture_have_it() {
         owner: &OwnerQuestion::Nothing,
         in_a_repo: false,
         git_snapshot: false,
+        image_format: true,
     });
     assert!(evicted.has(K::ImageContents));
     assert!(!evicted.has(K::RealType));
@@ -252,6 +256,7 @@ fn snapshot_plan(target: AboutTarget, caps: &VolumeCaps) -> AboutPlan {
         owner: &OwnerQuestion::Receipt,
         in_a_repo: true,
         git_snapshot: true,
+        image_format: false,
     })
 }
 
@@ -301,6 +306,7 @@ fn a_signature_is_planned_only_for_what_can_carry_one() {
             owner: &OwnerQuestion::Receipt,
             in_a_repo: true,
             git_snapshot: false,
+            image_format: image_format(extension),
         })
         .has(K::Signature)
     };
@@ -346,6 +352,7 @@ fn an_os_without_use_history_or_signing_plans_neither_row_and_adds_no_note() {
         owner: &OwnerQuestion::Receipt,
         in_a_repo: true,
         git_snapshot: false,
+        image_format: false,
     });
     assert!(!plan.has(K::LastOpened));
     assert!(!plan.has(K::Signature));
@@ -368,6 +375,7 @@ fn an_online_only_file_plans_no_row_that_reads_its_bytes() {
         owner: &OwnerQuestion::Receipt,
         in_a_repo: true,
         git_snapshot: false,
+        image_format: false,
     });
     assert!(!plan.has(K::RealType));
     assert!(!plan.has(K::Signature));
@@ -389,6 +397,7 @@ fn an_online_only_bundle_plans_no_row_that_opens_its_description() {
             owner: &OwnerQuestion::Nothing,
             in_a_repo: false,
             git_snapshot: false,
+            image_format: false,
         });
         assert!(!plan.has(K::Bundle), "{target:?}");
         assert!(!plan.has(K::AppData), "{target:?}");
@@ -414,6 +423,7 @@ fn an_os_without_download_records_plans_no_download_row() {
         owner: &OwnerQuestion::Nothing,
         in_a_repo: false,
         git_snapshot: false,
+        image_format: false,
     });
     assert!(!plan.has(K::Download));
     assert!(plan.has(K::RealType));
@@ -446,6 +456,7 @@ fn context_plan(owner: &OwnerQuestion, in_a_repo: bool, os: &OsCaps) -> AboutPla
         owner,
         in_a_repo,
         git_snapshot: false,
+        image_format: false,
     })
 }
 
@@ -496,6 +507,7 @@ fn every_plan() -> Vec<AboutPlan> {
                     owner: &OwnerQuestion::Receipt,
                     in_a_repo: true,
                     git_snapshot: false,
+                    image_format: false,
                 }));
             }
         }

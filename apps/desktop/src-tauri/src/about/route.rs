@@ -554,6 +554,7 @@ pub(crate) fn local_gathered(
         owner: &sources.owner,
         in_a_repo: probed.repo.is_some(),
         git_snapshot: false,
+        image_format: image_format(probed.extension.as_deref()),
     });
     plan.retain_kinds(|kind| {
         GATHERED.contains(&kind)
@@ -585,6 +586,13 @@ pub(crate) fn local_gathered(
         item,
         sub_jobs,
     }
+}
+
+/// Whether the image index enriches this format, from the index's own list, so
+/// the "What it shows" row covers exactly what the index can hold (camera RAWs
+/// included).
+fn image_format(extension: Option<&str>) -> bool {
+    extension.is_some_and(cmdr_index::media_index::predicate::MediaKind::enriches_extension)
 }
 
 /// What the item is, from what the pane listed: the plan of an item reached
@@ -677,6 +685,7 @@ pub(crate) fn through_plan(way: Way, name: &str, is_directory: bool, caps: &Volu
         owner: &OwnerQuestion::Nothing,
         in_a_repo: false,
         git_snapshot: through.snapshot.is_some(),
+        image_format: image_format(extension.as_deref()),
     });
     plan.retain_kinds(|kind| GATHERED.contains(&kind) && through::answers(&through, kind));
     let is_view = matches!(way, Way::Archive | Way::GitHistory | Way::Snapshot);

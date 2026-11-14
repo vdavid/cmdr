@@ -317,6 +317,43 @@ async fn a_silent_shares_picture_says_what_it_shows_from_the_index_alone() {
     silent.wake();
 }
 
+/// The row asks the image index's own format list: a camera RAW the index enriches
+/// gets it, and a picture format the index never holds doesn't (a row that could
+/// only say "not indexed").
+#[tokio::test]
+async fn the_image_row_follows_the_formats_the_image_index_covers() {
+    let data = TestDir::new("about-through-image-formats");
+    let caps = cmdr_about::card::VolumeCaps {
+        image_index: true,
+        ..caps_for(Way::OsMountedShare, ItemText::new("Naspolya"), false, true)
+    };
+    let has_row = |name: &str| {
+        let path = format!("/Volumes/naspi/Photos/{name}");
+        let image = super::image::ImagePlace::new(data.as_ref().to_path_buf(), "smb-test", "smb-test", &path);
+        let via = asked(
+            Arc::new(InMemoryVolume::new("Naspolya")) as Arc<dyn Volume>,
+            "smb-test-formats",
+        );
+        let gathered = through_plan(
+            Way::OsMountedShare,
+            name,
+            false,
+            &caps,
+            Through {
+                image: Some(image),
+                ..through(via, &path, None)
+            },
+        );
+        gathered.plan.has(FactKind::ImageContents)
+    };
+    for name in ["DSC_0001.NEF", "a.arw", "b.raf", "c.jpg", "d.heic"] {
+        assert!(has_row(name), "{name}");
+    }
+    for name in ["e.avif", "f.psd", "g.mov", "h.pdf"] {
+        assert!(!has_row(name), "{name}");
+    }
+}
+
 // ── A healthy share ─────────────────────────────────────────────────────────
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

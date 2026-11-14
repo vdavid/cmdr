@@ -118,6 +118,12 @@ var surfaceGuardedCrates = []struct {
 		// folding it into `resume_after_reconnect` would make one call mean two things by
 		// volume kind. Why, in the audit doc below under "A drive whose mount point moved".
 		//
+		// Raised on 2026-11-14, `SubsystemItems` 156 -> 157, for ONE item:
+		// `media_index::predicate::MediaKind::enriches_extension`, the index's own list of
+		// formats it enriches, so the About card's "What it shows" row plans from it
+		// rather than a second list that missed camera RAWs. Why, in the audit doc below
+		// under "The ceiling that keeps this honest".
+		//
 		// Raised on 2026-10-26, `HandleMethods` 41 -> 42, for ONE method and no root promise:
 		// `Index::scan_skips`, the scanner's own exclusion policy for a path, so Ask Cmdr's
 		// live `list_dir` never shows ground the index skipped on purpose (#749). Copying the
@@ -133,7 +139,7 @@ var surfaceGuardedCrates = []struct {
 			RootPromises:   53,
 			HandleMethods:  42,
 			PublicModules:  17,
-			SubsystemItems: 156,
+			SubsystemItems: 157,
 		},
 	},
 	{

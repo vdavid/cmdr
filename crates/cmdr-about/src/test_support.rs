@@ -44,6 +44,18 @@ pub(crate) fn phone() -> VolumeCaps {
     VolumeCaps::identity_only(text("Pixel 9"))
 }
 
+/// The host's `image_format` answer for the extensions these tests use. A stand-in:
+/// the real list is the image index's (`cmdr_index::media_index::predicate`), which
+/// this crate doesn't depend on.
+pub(crate) fn image_format(extension: Option<&str>) -> bool {
+    extension.is_some_and(|extension| {
+        matches!(
+            extension.to_ascii_lowercase().as_str(),
+            "jpg" | "jpeg" | "png" | "heic" | "nef"
+        )
+    })
+}
+
 /// A fresh card for `target` named with `extension`, on `caps`.
 pub(crate) fn card(target: AboutTarget, extension: Option<&str>, caps: &VolumeCaps) -> AboutCard {
     AboutCard::new(&plan(PlanInput {
@@ -56,6 +68,7 @@ pub(crate) fn card(target: AboutTarget, extension: Option<&str>, caps: &VolumeCa
         owner: &OwnerQuestion::Receipt,
         in_a_repo: true,
         git_snapshot: false,
+        image_format: image_format(extension),
     }))
 }
 

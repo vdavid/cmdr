@@ -272,6 +272,10 @@ test's fixed answers); the rules are in `crates/cmdr-about/DETAILS.md` § The ow
 the picture: no decode, no Vision call, no file read, so a picture on a sleeping NAS answers in milliseconds and wakes
 nothing. Its cost on a slow volume is the same as on a local disk: a SQLite read of `media.db` in the app's data dir.
 
+- **Which files**: `route::image_format` asks the image index's own format list
+  (`media_index::predicate::MediaKind::enriches_extension`) and hands the answer to the plan (`PlanInput::image_format`), so a
+  camera RAW the index enriches gets the row and the two lists can't drift
+  (`through_tests::the_image_row_follows_the_formats_the_image_index_covers`).
 - **Which volumes**: the item's own, then the drive index's when that's another (`ImagePlace::new`; the boot disk's
   index walks a cloud drive under its own id). First indexed row wins, as `image_facts` does. The image index covers a
   local disk and an SMB share the person opted in (`media_index`), so `route` gives the row a place on `Local` and on

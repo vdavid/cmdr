@@ -14,7 +14,7 @@ use crate::payload::{
     AppRef, Bundle, GitContext, GitSnapshot, Identity, ImageContents, Importance, RecursiveSize, Signature, Usage,
 };
 use crate::provenance::{CmdrOperation, Download};
-use crate::sniff::{RealType, SniffedKind, claimed_kind};
+use crate::sniff::RealType;
 use crate::text::ItemText;
 
 /// One answered fact: what a gathering job returns and what the card receives.
@@ -223,6 +223,11 @@ pub struct PlanInput<'a> {
     /// history, not a file on the disk. It has a snapshot row and nothing of the
     /// disk's (no download record, owner, or Cmdr operation of its own).
     pub git_snapshot: bool,
+    /// Whether the name's format is one Cmdr's image index enriches, asked of the
+    /// index's own list (`cmdr_index::media_index::predicate::MediaKind::enriches_extension`)
+    /// so the "What it shows" row can't drift from what the index holds. Decided
+    /// by the name: the index keys its rows by path, so no bytes are read.
+    pub image_format: bool,
 }
 
 /// A section of the card.
@@ -341,6 +346,7 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
         owner,
         in_a_repo,
         git_snapshot,
+        image_format,
     } = input;
     let owner_can_answer = match owner {
         OwnerQuestion::Nothing => false,
@@ -350,9 +356,6 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
     let is_bundle = matches!(target, AppBundle | Package);
     let is_folder_like = matches!(target, Folder | AppBundle | Package);
     let extension = extension.map(str::to_ascii_lowercase);
-    // A picture by its name: the index keys its rows by path, so the bytes aren't
-    // read to decide it.
-    let is_picture = extension.as_deref().and_then(claimed_kind) == Some(SniffedKind::Image);
     let signable = is_bundle
         || (target == File
             && (is_executable
@@ -382,7 +385,7 @@ pub fn plan(input: PlanInput<'_>) -> AboutPlan {
         FactKind::GitSnapshot => git_snapshot,
         // The index's own database answers, so an online-only file and a share's
         // picture have it too.
-        FactKind::ImageContents => target == File && !git_snapshot && is_picture && caps.image_index,
+        FactKind::ImageContents => target == File && !git_snapshot && image_format && caps.image_index,
     };
 
     // A folder leads with what's inside, an app with what it is, a file with where it

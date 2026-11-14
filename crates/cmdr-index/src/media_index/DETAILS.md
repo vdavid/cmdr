@@ -219,6 +219,10 @@ RAW beside a same-stem JPEG defers to the JPEG (cheaper decode), a lone RAW enri
 (`Qualification`/`MediaKind`/`SkipReason`), never a substring branch. The scheduler groups the index walk by parent
 directory and runs `qualify_dir` per group.
 
+`MediaKind::enriches_extension` is the same lists asked by name alone (any case), for a consumer outside the scheduler:
+the About card's "What it shows" row plans from it, so a format added here reaches that row with no second list to
+update.
+
 ## Settings + memory (`gate.rs`, wiring)
 
 The master toggle `mediaIndex.enabled` (off by default, sparse-persisted) seeds `gate` at startup and live-applies via

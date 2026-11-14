@@ -354,6 +354,7 @@ impl<'a> Item<'a> {
             owner: &owner,
             in_a_repo: self.in_repo,
             git_snapshot: false,
+            image_format: extension.is_some_and(cmdr_index::media_index::predicate::MediaKind::enriches_extension),
         });
         Draft {
             card: AboutCard::new(&plan),

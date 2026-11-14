@@ -150,6 +150,7 @@ fn a_snapshot_from_git_history_says_only_that() {
         owner: &crate::owner::OwnerQuestion::Nothing,
         in_a_repo: false,
         git_snapshot: true,
+        image_format: false,
     }));
     assert_eq!(all(&snapshot), [R::InGitHistory]);
     land(&mut snapshot, identity("main.rs", 1_000));

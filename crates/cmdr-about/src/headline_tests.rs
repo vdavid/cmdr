@@ -381,6 +381,7 @@ fn a_snapshot_reads_as_from_its_history() {
         owner: &crate::owner::OwnerQuestion::Nothing,
         in_a_repo: false,
         git_snapshot: true,
+        image_format: false,
     }));
     assert_eq!(headline(&snapshot).lead, HeadlineLead::Plain);
     land(

@@ -164,15 +164,17 @@ and `OsCaps`, all known before any job. It returns the sections in display order
   (`Download::of_archive`: always `Known`, naming the archive, with the archive's record or why there's none).
 - **A `.git` portal entry** (`PlanInput::git_snapshot`) is git's record, not a file on the disk: its `GitSnapshot` row
   leads Origin, and no row of the disk's (download, Cmdr operation, owner, git status) is planned, whatever the caps.
-- **"What it shows"** (`ImageContents`) is planned for a file whose extension claims a picture (`sniff::claimed_kind`,
-  the type row's own table) on a volume whose image index may hold it (`VolumeCaps::image_index`: a local disk, an SMB
-  share). By name, not bytes: the index keys its rows by path, so an online-only picture and one on a share have it too,
-  and no byte is read to decide. The index has a few extensions the table doesn't (`nef`, `arw`, … RAWs): those get no
-  row, which is a quiet card, never a wrong one. Its answers: `Known` (tags and the start of the text, both possibly
-  empty: indexed, nothing found), `NotIndexed` (not reached yet, or in a folder left out of image search), `IndexingOff`
-  (the person turned image indexing off), `Protected` (the sensitive gate's path rule, or text holding a private key).
-  `NotIndexed` and `IndexingOff` are Routine: one quiet line each. **Tags are labels, never a description**: `dog` and
-  `beach` don't say a dog is on a beach, so nothing here or downstream joins them into a scene.
+- **"What it shows"** (`ImageContents`) is planned for a file in a format the image index enriches
+  (`PlanInput::image_format`) on a volume whose image index may hold it (`VolumeCaps::image_index`: a local disk, an SMB
+  share). The host asks the index's own list (`cmdr_index::media_index::predicate::MediaKind::enriches_extension`, still
+  images and camera RAWs), so the row can't drift from what the index holds; the type row's `sniff::claimed_kind` table
+  is a different question and isn't asked. By name, not bytes: the index keys its rows by path, so an online-only
+  picture and one on a share have it too, and no byte is read to decide. A RAW beside a same-stem JPEG gets the row and
+  answers `NotIndexed`: the index enriches the JPEG instead. Its answers: `Known` (tags and the start of the text, both
+  possibly empty: indexed, nothing found), `NotIndexed` (not reached yet, or in a folder left out of image search),
+  `IndexingOff` (the person turned image indexing off), `Protected` (the sensitive gate's path rule, or text holding a
+  private key). `NotIndexed` and `IndexingOff` are Routine: one quiet line each. **Tags are labels, never a
+  description**: `dog` and `beach` don't say a dog is on a beach, so nothing here or downstream joins them into a scene.
 - **A view has no note**: an archive's entry and a portal entry are views into one file or repo, so their own row says
   where they come from and no "On <volume>, Cmdr can see…" line appears.
 - **The note**: none when the volume answers everything, `IdentityOnly` when it answers nothing more, `SomeFacts` in
