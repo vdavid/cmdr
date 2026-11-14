@@ -1156,34 +1156,56 @@ context-menu and menu-bar label, and the analytics event's props.
     moves once drawn, except the verdict's downward growth while streaming and the one collapse of an all-routine
     section at `FactsSettled`. Nothing in the card animates under `prefers-reduced-motion`.
 
-## Lead's log (state a new lead needs; update at each milestone)
+## Lead's log (state a new lead needs; update at each step)
 
-- **Status (2026-11-13)**: M1–M7 done and pushed (PR #1166, light CI only). M8 running. David's call: build the WHOLE
-  feature (M9–M14 too), Opus agents only from M3's finish on. ❌ No `pnpm land` until David's explicit go, after his QA
-  and copy pass and the translators.
-- **Cadence between milestones**: wait for the agent's last commit, `git fetch origin main`, rebase,
-  `./scripts/check.sh --fast`, `./scripts/land.sh -no-wait`, then read the light CI run of the previous push
-  (`gh run list --branch worktree-tell-me-about-this`): it runs `svelte-tests` coverage (70% per file) and
-  `a11y-coverage`, which the local cadence doesn't.
-- **Waiting on David** (defaults in force): D12 (a new `cmdr-git` per-path status `pub`; also unlocks a cancelable
-  status walk and the commit author on `.git` portal rows), the D11 surface raise on `cmdr-operation-log` (95 → 97,
-  veto-able), D18 (automatic peek on Cloud), D17, D19, and every review item. His copy list:
-  `docs/specs/tell-me-about-this-copy.md`.
-- **Deviations that stuck**: off-macOS shortcut is `Ctrl+Shift+Enter` (verified in the Linux container); `.pkg` gets no
-  signature row; Linux draws no signature or default-app row; `NotIndexed` is Routine; a git-ignored item says only that
-  git can't bring it back (`IgnoredByGit`); Library data matches by bundle id only; the largest-files search has its own
-  800 ms budget.
-- **Translations block the final land**: CI fails `i18n-coverage` on the new keys (235 after M7). Order: David's copy
-  pass, then translator agents (`docs/guides/i18n-translation.md`), then land.
-- **Follow-up issues, filed in M14**: #1178 menu engine, #1179 dot-folder table, #1180 subtree histogram, #1181
-  inspector, #1182 `resolve` on the executor, #1183 scoped search, #1184 dotfiles repo, #1185 AirDrop and Firefox
-  records, #1186 Linux default app, #1187 Czech labels, #1188 git per-path status (D12), #1189 eval cleanups, #1190 more
-  models measured, #1191 the silence after the consent bump (plus #1175–#1177 from earlier). The list as it stood
-  (beyond the plan's M14 list): `VolumeManager::resolve` blocks the async executor when an OS-mounted share's path names
-  a zip or a `.git` portal path (bug; the card avoids it, other callers don't); a folder-scoped search scans the whole
-  index (400–860 ms on 8M rows); a dotfiles repo at `~` makes the git status walk cover the whole home folder (the
-  status column shares it); AirDrop provenance (quarantine agent `sharingd`) unverified on a live transfer; the Linux
-  default-app row; two Czech strings quote "Read-only" where the label says "Jen ke čtení" (from `main`, translator's).
-- **Unseen in a real app so far**: the folder digest and app Library data with a real index (the E2E build runs none).
-  The lead checks both in the dev app before handing QA to David.
-- **Real-LLM budget**: about $10 on `ANTHROPIC_API_KEY_CMDR_DEV` (read with `secret`), most of it for M13.
+- **Status (2026-11-14, early morning)**: M1–M14 done. The adversarial conformance review ran
+  (`docs/specs/tell-me-about-this-conformance.md`) and both fix batches are in. Branch `worktree-tell-me-about-this`,
+  worktree `.claude/worktrees/tell-me-about-this`, PR #1166 (light CI only). ❌ No `pnpm land` until David's explicit
+  go, after his QA and copy pass and the translators.
+- **Rules from David**: Opus agents only (no Fable). Sequential agents in this one worktree. Real-LLM spend: $64.70 of
+  an $80 ceiling on `ANTHROPIC_API_KEY_CMDR_DEV` (read with `secret`).
+- **Running now**: `fix-loose-ends` (four `about::tests` that time out only in the full Rust run; consent wording for
+  three kinds the projection sends that the copy doesn't name; a slow verdict E2E test; FIX, don't file, "turning Ask
+  Cmdr off in Settings doesn't refresh the backend's readiness"; file the `cmdr-smb` duplicate invisible-character set).
+- **Queue after it, in order**:
+  1. **Image row** (David said go, 2026-11-14): a "What it shows" row for images from the image index (Vision tags +
+     first lines of recognized text; DB read only, so safe on a NAS and with AI off; one quiet line when not indexed or
+     indexing is off; protected paths excluded like `image_facts` / `search_photos`). The AI take's input gets tags +
+     recognized text, worded "tagged as", with a prompt rule against writing a scene the tags don't state. One new
+     disclosure line (consent stays 3, unreleased), following the peek's automatic-or-on-press rule (D18). A few image
+     cards in the eval on Sonnet 5.5 and Opus 5.5 (about $2–3). Scene sentences ("two kids playing with a dog") are OUT:
+     that's #225 (comment added there).
+  2. **Docs audit** (a fresh agent reads ALL commit bodies and verifies every touched `C.md`/`D.md`,
+     `docs/architecture.md`, the threat model, `docs/security.md`, the consent list; no milestone tags or plan-only
+     reasoning leaked).
+  3. **The lead checks the real dev app** with a real index (the E2E build runs none): folder digest, app Library data,
+     a symlink in home into `/Volumes/naspi`, Naspolya itself. Then hands David
+     `docs/specs/tell-me-about-this-review.md` (QA steps, decisions with evidence) and
+     `docs/specs/tell-me-about-this-copy.md` (every new string).
+  4. After David's copy pass: translator agents (`docs/guides/i18n-translation.md`; pilot ONE first, cap ~3 at a time),
+     since CI fails `i18n-coverage` on the ~300 new keys. Then rebase, `pnpm land` in the background on David's go, wipe
+     the plan and its sibling spec files per `docs/specs/DETAILS.md`, remove the worktree with
+     `~/.claude/scripts/remove-worktree.sh`.
+- **Cadence between agents**: wait until the agent is truly idle (an idle notice WITHOUT `idleReason: available` means
+  it woke on a queued message and is still working; a `SendMessage` to a busy agent arrives late, so give full scope up
+  front and never start a second agent on the same files), tree clean, `git fetch origin main`, rebase if it moved,
+  `./scripts/check.sh --fast`, `./scripts/land.sh -no-wait`, then read the previous push's light CI run.
+- **Decisions in force (David can change each)**: the model never words removal (the eval: every Claude class gave green
+  lights when asked); a take runs only on a model in `PASSED_THE_EVAL` (`about/verdict/gate.rs`: Sonnet 5.5 and Opus
+  5.5; Haiku and Local off; `UNMEASURED_MODELS_WRITE` flips the default); only the registrable domain of a download host
+  reaches a model (`psl` crate); off-macOS shortcut `Ctrl+Shift+Enter`; D12 default (b), no new `cmdr-git` `pub`
+  (#1188).
+- **Waiting on David**: D18 (the lead recommends facts-only by default with the peek on an explicit press: 94–98% useful
+  without it vs 100% with); the invented-detail bar (Sonnet 3 real of 831, Opus about 4; the lead would accept);
+  unmeasured models (measured-only is the default; GPT and Gemini could be measured); a one-time notice when the consent
+  bump turns cloud AI off (today folder suggestions stop silently); the removal row falling below the fold when a take
+  shows (D19); Stop has no shortcut; the `en-GB` / `en-AU` "Move to Bin…" overlay an agent wrote; the cloud-sync undo
+  tradeoff (accepted and documented unless he objects); the analytics `trigger` can't tell context menu from menu bar
+  from the macOS shortcut; the `cmdr-operation-log` surface raise (95 → 97).
+- **Known red, not from this branch**: `webdav-nextcloud` (the fixture's saved Docker volume predates a test-user
+  rename; an agent added the user to the volume, then Nextcloud rate-limited logins with 429). Recheck before landing.
+- **Issues filed from this effort**: #1175 (nested repo reads as the outer repo), #1176 (the AI take's look inside on a
+  share), #1177 (Cmdr's history on shares), #1178–#1191 (M14's follow-ups; #1181, #1184, #1188 wait on David), #225
+  comment (scene sentences).
+- **Unverified against the real thing**: a live SMB share, a Linux NFS mount, the macOS "data from other apps" prompt on
+  a real container, AirDrop provenance on a live transfer.
