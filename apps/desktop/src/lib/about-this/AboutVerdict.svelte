@@ -23,6 +23,7 @@
     import { openSettingsWindow } from '#lib/settings/settings-window.js'
     import { managedAiRefusalMessage } from '#lib/managed-policy/ai-refusal.js'
     import { getAppLogger } from '#lib/logging/logger.js'
+    import { shortcutAsText } from '#lib/shortcuts/reactive-shortcuts.svelte.js'
     import { verdictPhase, verdictProblem, type AboutVerdict } from './about-verdict'
     import { VERDICT_GIVEN, VERDICT_PROBLEM } from './about-words'
 
@@ -35,6 +36,9 @@
     const { verdict, onStop }: Props = $props()
 
     const log = getAppLogger('aboutThis')
+
+    /** Stop's key (⌥S, fixed), for its tooltip. The card's keydown answers it. */
+    const stopShortcut = $derived(shortcutAsText('aboutThis.stopVerdict', 'tooltip'))
 
     function openProviderSettings(): void {
         openSettingsWindow('about-this-card', ['AI', 'Provider']).catch((e: unknown) => {
@@ -58,7 +62,7 @@
                     <Button
                         variant="secondary"
                         size="mini"
-                        tooltipContent={tString('aboutThis.verdict.stopTooltip')}
+                        tooltipContent={{ text: tString('aboutThis.verdict.stopTooltip'), shortcut: stopShortcut }}
                         onclick={onStop}>{tString('aboutThis.verdict.stop')}</Button
                     >
                 </span>

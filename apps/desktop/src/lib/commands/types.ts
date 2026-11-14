@@ -27,6 +27,7 @@ export type CommandScope =
   | 'Main window/Error screen' // The full-pane error screen (ErrorPane)
   | 'Main window/Multi-rename' // The ⌃M Multi-rename sheet
   | 'Main window/Operation log' // The ⌥⌘L Operation log dialog
+  | 'Main window/Tell me about this' // The "Tell me about this" card
   | 'Main window/Ask Cmdr' // The Ask Cmdr rail, while it has focus
   | 'Main window/Search dialog' // The Search and Select files dialogs (one shared QueryDialog)
   | 'About window' // About window commands

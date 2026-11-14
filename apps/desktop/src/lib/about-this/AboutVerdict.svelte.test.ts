@@ -169,6 +169,33 @@ describe('the AI take', () => {
     expect(block(stopped)?.querySelector('button')).toBeNull()
   })
 
+  it('stops a writing take on ⌥S (Alt+S off macOS), and claims the key even when there’s nothing to stop', async () => {
+    const press = (target: HTMLElement): KeyboardEvent => {
+      // Vitest runs as Linux: Alt+S. On macOS the same physical key reads `ß`, which `resolveKeyCombo` maps back.
+      const event = new KeyboardEvent('keydown', {
+        key: 's',
+        code: 'KeyS',
+        altKey: true,
+        bubbles: true,
+        cancelable: true,
+      })
+      target.querySelector('.card')?.dispatchEvent(event)
+      return event
+    }
+    const onStop = vi.fn()
+    const streaming = await render(fixture('verdict-streaming'), { onStopVerdict: onStop })
+    expect(press(streaming).defaultPrevented).toBe(true)
+    expect(onStop).toHaveBeenCalledOnce()
+    unmountCard()
+
+    const onStopDone = vi.fn()
+    const done = await render(fixture('verdict-done'), { onStopVerdict: onStopDone })
+    expect(press(done).defaultPrevented).toBe(true)
+    expect(onStopDone).not.toHaveBeenCalled()
+    // Stop's tooltip names the key.
+    unmountCard()
+  })
+
   it('draws one column and nothing about AI when the person turned the take off', async () => {
     const target = await render(
       withVerdict(fixture('downloaded'), [{ type: 'verdictUnavailable', why: { kind: 'turnedOff' } }]),

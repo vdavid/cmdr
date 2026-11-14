@@ -137,8 +137,12 @@ sentence would read first and push every row down as it streamed.
   three lines, from the first frame; the text may grow past three while it streams, downward only, and that's the one
   growth the card allows. End marks sit inline after the text. Nothing animates (no caret, no fade).
 - **Stop** calls `stopAboutVerdict` (`about_stop_verdict`): the take alone stops, the card stays, and the backend's
-  `stopped` keeps the text. Esc closes the card, which stops both. **Decision: no Stop shortcut**: it's a Tab stop in
-  the card, and a chord would be a new command and scope.
+  `stopped` keeps the text. Esc closes the card, which stops both. Its key is `aboutThis.stopVerdict`, ⌥S (Alt+S off
+  macOS), a fixed registry command in its own scope (`Main window/Tell me about this`, under `Main window`, so a main
+  window ⌥S would show as a conflict): the card's keydown (`ModalDialog`'s `onkeydown`) matches it with
+  `eventMatchesCommand` and claims it whenever the card is up, so it never types `ß`, and stops only a take still
+  writing. Alt+S can't open a menu on Linux: a dialog masks the bar's mnemonics. Stop's tooltip names it
+  (`shortcutAsText`).
 - **The model's trust**: `verdictPlanned` carries Rust's `ModelTrust` tier, and the block draws it from its first frame,
   under the heading: nothing for `trusted`; for `oftenWrong` a red line (`--color-error-text`, a triangle alert icon)
   saying this model or a similar one was often wrong when tested, with "Change the model" opening Settings > AI >

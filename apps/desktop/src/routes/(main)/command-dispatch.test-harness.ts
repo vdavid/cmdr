@@ -69,6 +69,7 @@ export const EXEMPT_IDS = [
   'operationLog.selectAll',
   'operationLog.deselectAll',
   'operationLog.rollBack',
+  'aboutThis.stopVerdict',
   'network.selectHost',
   'share.back',
   'share.selectShare',

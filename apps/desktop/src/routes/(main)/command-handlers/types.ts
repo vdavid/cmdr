@@ -81,6 +81,8 @@ export type DispatchExemptId =
   | 'operationLog.selectAll'
   | 'operationLog.deselectAll'
   | 'operationLog.rollBack'
+  // The "Tell me about this" card's Stop (⌥S), answered by the card's keydown
+  | 'aboutThis.stopVerdict'
   | 'network.selectHost'
   | 'share.back'
   | 'share.selectShare'

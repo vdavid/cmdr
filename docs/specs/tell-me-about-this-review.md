@@ -29,6 +29,8 @@ questions are at its top). The eval's full evidence: `docs/notes/about-verdict-e
    - The first frame: the headline on top, no row moving or appearing later, a routine absence as one quiet line.
    - The take: its own column right of the facts, labeled "AI wrote this", its "From the card’s facts and …" line, Stop
      (the text so far stays, marked "Stopped"), a reopen of the same item ("From earlier"), and Esc mid-take.
+   - Stop's key: ⌥S while the take writes stops it the way the button does; its tooltip shows ⌥S; ⌥S after the end does
+     nothing and types no `ß`. Settings > Keyboard shortcuts lists it under "Tell me about this" as Fixed.
    - The removal row in view beside the take: open a big folder (the fixture repo) so the facts scroll, and check What
      removing it means stays pinned under them, at the default size and after dragging the card short.
    - Narrow: drag the card (or the window) narrower than about 50 rem; the take moves below the facts and the removal

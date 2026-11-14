@@ -237,8 +237,8 @@ beforeEach(() => {
 // Self-checks: the dispatchable / exempt sets partition COMMAND_IDS.
 // ===========================================================================
 describe('characterization — id partition self-check', () => {
-  it('exempt set is exactly 83 ids, all real CommandIds', () => {
-    expect(EXEMPT_IDS).toHaveLength(83)
+  it('exempt set is exactly 84 ids, all real CommandIds', () => {
+    expect(EXEMPT_IDS).toHaveLength(84)
     for (const id of EXEMPT_IDS) expect(COMMAND_IDS).toContain(id)
   })
 

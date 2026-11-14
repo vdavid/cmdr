@@ -185,6 +185,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'operationLog.selectAll': 'Select every item',
   'operationLog.deselectAll': 'Deselect every item',
   'operationLog.rollBack': 'Roll back the selected items',
+  'aboutThis.stopVerdict': 'Stop the AI take',
   'file.view': 'View',
   'file.edit': 'Edit in default editor',
   'file.copy': 'Copy',

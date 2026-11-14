@@ -1071,6 +1071,10 @@
   "@commands.fileTellMeAbout.description": {
     "description": "Longer help text for the \"Tell me about this\" command, shown as a secondary line in the command palette. \"Item\" is a file or a folder."
   },
+  "commands.aboutThisStopVerdict.label": "Stop the AI take",
+  "@commands.aboutThisStopVerdict.label": {
+    "description": "Name of the key that stops the AI take on the \"Tell me about this\" card while the AI is still writing it (the same as the card's Stop button). The \"AI take\" is the two or three sentences an AI writes about the file or folder beside Cmdr's own facts. Shown in the Keyboard shortcuts list. An imperative, like the other command names."
+  },
   "commands.fileQuickLook.label": "{platform, select, macos {Quick look} other {Preview}}",
   "@commands.fileQuickLook.label": {
     "description": "Command name (macOS) that previews the selected file with Quick Look. In the macOS branch, \"Quick Look\" is the macOS feature name; reuse the localized macOS wording. The other branch (Windows and Linux) is a generic preview. Appears in the command palette. The screenshot shows the macOS wording.",

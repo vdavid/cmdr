@@ -70,6 +70,7 @@ askCmdr.newChat	Ctrl+N
 askCmdr.find	Ctrl+F
 askCmdr.findNext	Ctrl+G, Enter
 askCmdr.findPrevious	Ctrl+Shift+G, Shift+Enter
+aboutThis.stopVerdict	Alt+S
 nav.up	↑
 nav.down	↓
 nav.open	Enter, Ctrl+PageDown

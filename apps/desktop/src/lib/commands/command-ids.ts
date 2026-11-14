@@ -247,6 +247,8 @@ export const COMMAND_IDS = [
   'operationLog.selectAll',
   'operationLog.deselectAll',
   'operationLog.rollBack',
+  // The "Tell me about this" card's key, answered by the card itself
+  'aboutThis.stopVerdict',
   'file.view',
   'file.edit',
   'file.copy',

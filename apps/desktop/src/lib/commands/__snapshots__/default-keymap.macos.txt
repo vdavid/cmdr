@@ -74,6 +74,7 @@ askCmdr.newChat	⌘N
 askCmdr.find	⌘F
 askCmdr.findNext	⌘G, Enter
 askCmdr.findPrevious	⌘⇧G, ⇧Enter
+aboutThis.stopVerdict	⌥S
 nav.up	↑
 nav.down	↓
 nav.open	Enter, ⌘↓

@@ -26,6 +26,8 @@
     import AboutAiHint from './AboutAiHint.svelte'
     import { hintWhy, verdictPlace } from './about-verdict'
     import { useInlineSize } from '#lib/utils/inline-size-action.js'
+    import { eventMatchesCommand } from '#lib/shortcuts/index.js'
+    import { claimKey } from '#lib/shortcuts/claim-key.js'
     import type { AboutCardData, AboutGoTarget } from './about-card'
     import { collapsedLine, sectionsOf } from './about-card-view'
     import { SECTION_TITLE, UNAVAILABLE, VOLUME_NOTE } from './about-words'
@@ -136,6 +138,17 @@
         }
     })
 
+    /**
+     * The card's one key of its own, Stop (`aboutThis.stopVerdict`: ⌥S, Alt+S off macOS, fixed). Claimed whenever the
+     * card is up, so it never types `ß` or reaches anything behind; it stops only a take that's still writing.
+     */
+    function handleKeydown(e: KeyboardEvent): void {
+        if (!eventMatchesCommand(e, 'aboutThis.stopVerdict')) return
+        claimKey(e)
+        const verdict = card.verdict
+        if (verdict?.status === 'planned' && verdict.ending === null) onStopVerdict()
+    }
+
     onMount(() => {
         // The body, so the arrow keys and Page Up/Down scroll the card from the first keystroke.
         body?.focus({ preventScroll: true })
@@ -155,6 +168,7 @@
     growDownward
     fillBody
     onclose={onClose}
+    onkeydown={handleKeydown}
     containerStyle={withTake ? 'width: 60rem; max-height: 85vh;' : 'width: 40rem; max-height: 85vh;'}
 >
     {#snippet title()}

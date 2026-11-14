@@ -6,7 +6,7 @@ string changes there, change it here too, or regenerate this list. Where a value
 placeholder or tag is filled in by the card (a date, a size, a path).
 
 The list below covers every key the branch adds, grouped by the surface it shows on (checked against the catalogs on
-2026-11-14: all 347 added or changed keys are here). The decisions behind the layout, with their evidence, are in
+2026-11-14: all 349 added or changed keys are here). The decisions behind the layout, with their evidence, are in
 `tell-me-about-this-review.md`.
 
 ## Open questions, all in one place
@@ -48,8 +48,7 @@ The list below covers every key the branch adds, grouped by the surface it shows
 16. **"AI wrote this"** as the label, or "AI take" (the setting's word)?
 17. **The cost isn't shown** (the backend sends it with each finished take: about $0.003 on Sonnet 5.5, $0.007 on Opus
     5.5, per the eval). A quiet "about $0.003" after the text, a tooltip on the label, or nothing?
-18. **The Stop button has no shortcut**: it's a Tab stop in the card, and Esc closes the card (which stops the take
-    too). A dedicated chord would be a new command. Wanted?
+18. **Stop's key is ⌥S** (Alt+S off macOS), fixed, active only while the card is up; its tooltip names it. Wanted?
 19. **The local model draws nothing** while it writes no take: no line on every Local card. A quiet "The on-device model
     doesn't write a take yet" instead?
 20. **A cloud model Cmdr hasn't tested** (Haiku, OpenAI, Gemini, any other host) now gets one quiet line, no link: "Cmdr
@@ -114,6 +113,10 @@ The list below covers every key the branch adds, grouped by the surface it shows
     info". Opens Cmdr's own card about the file or folder under the cursor: where it came from, what it is, what it
     belongs to, and what removing it would mean. It must say the same words as the command palette entry
     (commands.fileTellMeAbout.label). A dialog follows, but it asks nothing, hence no ellipsis.
+- `commands.aboutThisStopVerdict.label`: Stop the AI take
+  - Where: The card's ⌥S (Alt+S off macOS) in Settings > Keyboard shortcuts and the Help window, a fixed key.
+- `shortcuts.scope.tellMeAbout`: Tell me about this
+  - Where: The group heading for that key in the Keyboard shortcuts list.
 
 ### The card: frame and sections
 

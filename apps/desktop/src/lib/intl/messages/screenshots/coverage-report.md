@@ -16,17 +16,17 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 4068 / 6049 keys have a screenshot (67%):** 2204 direct (36%) and 1864 representative (31%). 1786 remain
+**Total: 4074 / 6138 keys have a screenshot (66%):** 2204 direct (36%) and 1870 representative (30%). 1869 remain
 uncoupled, and 195 are native surfaces a webview capture cannot reach.
 
 | Area            | Direct | Representative | Uncoupled | Native | Total | Any % |
 | --------------- | -----: | -------------: | --------: | -----: | ----: | ----: |
-| aboutThis       |      0 |              0 |       245 |      0 |   245 |    0% |
+| aboutThis       |      0 |              0 |       321 |      0 |   321 |    0% |
 | adb             |      3 |              0 |        19 |      0 |    22 |   14% |
-| ai              |      1 |            158 |         0 |      0 |   159 |  100% |
-| askCmdr         |    192 |            298 |        47 |      0 |   537 |   91% |
+| ai              |      1 |            159 |         0 |      0 |   160 |  100% |
+| askCmdr         |    192 |            302 |        47 |      0 |   541 |   91% |
 | commandPalette  |      3 |              2 |         2 |      0 |     7 |   71% |
-| commands        |    246 |              5 |        86 |      0 |   337 |   74% |
+| commands        |    246 |              5 |        87 |      0 |   338 |   74% |
 | common          |      8 |              1 |        10 |      0 |    19 |   47% |
 | crashReporter   |     12 |             11 |         0 |      0 |    23 |  100% |
 | downloads       |     10 |              5 |        21 |      0 |    36 |   42% |
@@ -52,8 +52,8 @@ uncoupled, and 195 are native surfaces a webview capture cannot reach.
 | securityNotices |      0 |              0 |        16 |      0 |    16 |    0% |
 | selection       |     14 |              0 |         1 |      0 |    15 |   93% |
 | servers         |     95 |             83 |        57 |      0 |   235 |   76% |
-| settings        |    487 |             47 |       391 |      0 |   925 |   58% |
-| shortcuts       |     38 |             44 |         0 |      0 |    82 |  100% |
+| settings        |    487 |             47 |       397 |      0 |   931 |   57% |
+| shortcuts       |     38 |             45 |         0 |      0 |    83 |  100% |
 | stateRecovery   |      0 |              0 |        33 |      0 |    33 |    0% |
 | suggestedOps    |     86 |              0 |        26 |      0 |   112 |   77% |
 | transfer        |      2 |             22 |         0 |      0 |    24 |  100% |

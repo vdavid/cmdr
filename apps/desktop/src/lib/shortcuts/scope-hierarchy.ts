@@ -29,7 +29,8 @@ export type { CommandScope }
  * - `Main window/Multi-rename` is a sibling too: the ⌃M sheet is a modal over the panes, so
  *   its F2 (the Presets menu) never meets the file list's F2 (Rename). So is
  *   `Main window/Operation log` (⌥⌘L), whose Space, Insert, and ⌘A check items in its tree,
- *   never files in a pane.
+ *   never files in a pane. So is `Main window/Tell me about this`, the card, whose ⌥S (Alt+S)
+ *   stops its AI take.
  *
  * `Main window/Ask Cmdr` skips `Main window` on purpose: while the rail has focus its find
  * keys (⌘F, ⌘G, ⇧⌘G) SHADOW Search files and Go to path, and everywhere else those keep
@@ -64,6 +65,7 @@ const scopeHierarchy: Record<CommandScope, CommandScope[]> = {
   'Main window/Error screen': ['Main window/Error screen', 'Main window', 'App'],
   'Main window/Multi-rename': ['Main window/Multi-rename', 'Main window', 'App'],
   'Main window/Operation log': ['Main window/Operation log', 'Main window', 'App'],
+  'Main window/Tell me about this': ['Main window/Tell me about this', 'Main window', 'App'],
   'Main window/Ask Cmdr': ['Main window/Ask Cmdr', 'App'],
   'Main window/Search dialog': ['Main window/Search dialog', 'App'],
   'About window': ['About window', 'App'],
