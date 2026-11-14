@@ -4,13 +4,13 @@ Live: https://cmdr.macupdate.com/ (accepted from the 2026-09-18 v0.46.0 submissi
 through). Submission form: https://member.macupdate.com/content/submit (needs a MacUpdate member account). The same form
 creates and modifies a listing: type `Cmdr` into "Modify an existing listing?" at the top to load this one.
 
-Status: **v0.61.0 submitted 2026-11-14** (the fields below are what went in), with the screenshots converted from the
-2026-10-26 masters; the 2026-11-14 reshoot goes in with the next update. Before it, v0.53.0 was submitted 2026-10-15
-with the reviewer pinged the same day; the live page showed v0.46.0 then. The v0.47.0, v0.49.0, and v0.55.0 updates were
-prepared but never submitted, and v0.54.0 and v0.56.0–v0.60.0 got none, so the v0.61.0 Version changes end with
-highlights from v0.54.0–v0.60.0. The Description changed in three places since v0.53.0, each for a feature v0.61.0
-graduated out of alpha: NFS joins "More servers", restic backups get a bullet, and the built-in chat reads "beta
-version".
+Status: **v0.61.0 submitted 2026-11-14, reviewer pinged the same day** (the fields below are what went in), with the
+screenshots converted from the 2026-10-26 masters; the 2026-11-14 reshoot goes in with the next update. Before it,
+v0.53.0 was submitted 2026-10-15 with the reviewer pinged the same day; the live page showed v0.46.0 then. The v0.47.0,
+v0.49.0, and v0.55.0 updates were prepared but never submitted, and v0.54.0 and v0.56.0–v0.60.0 got none, so the v0.61.0
+Version changes end with highlights from v0.54.0–v0.60.0. The Description changed in three places since v0.53.0, each
+for a feature v0.61.0 graduated out of alpha: NFS joins "More servers", restic backups get a bullet, and the built-in
+chat reads "beta version".
 
 ❗ **A submission sits unreviewed until David pings a MacUpdate reviewer directly.** The v0.46.0 one only went through
 after a ping, and the earlier ones never did. The contact is in the vault's directory blitz plan (MacUpdate entry), so
