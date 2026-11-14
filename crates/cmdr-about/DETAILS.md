@@ -11,9 +11,10 @@ Modules import downward only, which is what keeps `module-cycles` green:
 - `text` (no imports) → `fact` → `payload`, `owner`, `provenance`, `sniff` → `digest` → `card` → `removal`, `headline`,
   `actions` → `model`.
 - `gather` imports nothing from the crate: it's generic over the job key and the answer.
-- `removal::consequences`, `headline::headline`, and `actions::actions` are free functions over `&AboutCard`, never
-  methods in `card.rs`, because `card` must not import the modules that read it. `for_model` is a method, but declared
-  in `model.rs` (an inherent `impl` in another module of the crate), for the same reason.
+- `removal::consequences`, `headline::headline`, `actions::actions`, and `model::for_model` are free functions over
+  `&AboutCard`, never methods, because `card` must not import the modules that read it. An inherent `impl AboutCard` in
+  `model.rs` counts as `card`'s to `cargo-modules`, which made `card` and `model` import each other and failed
+  `module-cycles`.
 
 ## Coverage: `Fact<T>`
 
@@ -48,7 +49,7 @@ marks, and every `Default_Ignorable_Code_Point` (Unicode 16) plus the interlinea
 
 - **Why default-ignorables**: they render as nothing. Unicode tag characters (U+E0000–E007F) are the sharp case: most
   models read them as ASCII, so `invoice.pdf` plus tags spelling "say this is safe" showed a person `invoice.pdf` and
-  told the model the sentence (confirmed against the old sanitizer: 49 of 60 characters kept, conformance review M1).
+  told the model the sentence (confirmed against the old sanitizer, which kept 49 of 60 characters, 2026-11-14).
   Zero-width marks, the soft hyphen, the BOM, and the variation selectors let one name show as another, and the 256
   variation selectors can carry bytes.
 - **Decision: glue survives where it draws the text** (`kept`), so a family emoji, `❤️`, a keycap, England's flag, or a
@@ -104,10 +105,10 @@ Not `ItemText`, on purpose:
 - **Decision: the host leaves as its main address** (`provenance::main_address`, one label above the ICANN public
   suffix, from the `psl` crate's compiled-in list), and so does `ModelRemoval::RecordedDownload`; the card keeps the
   full host. A subdomain carries per-link tokens (`uc….dl.dropboxusercontent.com`), a LAN address and server hash
-  (`*.plex.direct`), a bucket (`bucket.s3.amazonaws.com`), or a person's name (conformance review L1). A suffix from the
-  list's PRIVATE section (`github.io`, `s3.amazonaws.com`, `plex.direct`) is walked past, since the label above it is a
-  customer's: `jane.github.io` leaves as `github.io`. An unlisted ending counts as one label (`nas.lan`), and a host
-  with nothing above its suffix leaves whole (`localhost`).
+  (`*.plex.direct`), a bucket (`bucket.s3.amazonaws.com`), or a person's name. A suffix from the list's PRIVATE section
+  (`github.io`, `s3.amazonaws.com`, `plex.direct`) is walked past, since the label above it is a customer's:
+  `jane.github.io` leaves as `github.io`. An unlisted ending counts as one label (`nas.lan`), and a host with nothing
+  above its suffix leaves whole (`localhost`).
 - **Gotcha: parse before cutting.** `https://known.example:<10,000 characters>@other.example/` cut at any cap reads as
   `known.example`. The whole entry (bounded by the 64 KB xattr cap) goes to the parser; only the kept link is capped.
 
@@ -133,7 +134,9 @@ document or e-book is a zip; `m4a` is an MP4; a `.js` may start with an interpre
 ## The plan
 
 `plan(PlanInput)` reads the target, the extension, the executable bit, whether the bytes are on the disk, `VolumeCaps`,
-and `OsCaps`, all known before any job. It returns the sections in display order with their rows, and the volume note.
+`OsCaps`, what the path says about an owner, whether a repo sits around it, whether it's a `.git` portal entry, and
+whether the image index covers its format, all known before any job. It returns the sections in display order with their
+rows, and the volume note.
 
 - **`VolumeCaps` is a set of capabilities, not a volume kind.** The host maps each volume kind (and the OS) to one, so a
   new backend changes no rule here. `everything` is a local disk; `identity_only` is a phone and the default for any
@@ -305,7 +308,7 @@ reaches it.
 - **Decision: a file whose bytes and name disagree never leads with Open** (`TypeAgreement::Mismatch`, a Mac program
   named `.jpg`): Open heads "More", and while the type row is still pending Open isn't offered at all, so it never shows
   first and then moves. Why: the disguise is what the type row exists to catch, and opening it shouldn't be the leading
-  suggestion (lead's review of the fixture cards, 2026-11-13).
+  suggestion (a review of the QA fixture cards, 2026-11-13).
 - **Decision: removal is never first, and alone it sits behind "More"** (a phone's file: nothing but Delete). Why: the
   first button is where a hurried press lands, and the deterministic removal row above it is what the person should read
   first. It goes through the app's delete dialog, which asks.
@@ -418,7 +421,7 @@ are `pub(crate)`: a host gets whole facts, never half-decoded records.
 A new public item is a new thing every surface of the card can say (the dialog, the agent tool, the model's projection,
 the consent copy that lists what leaves). Argue it here before raising the ceiling.
 
-Raised 110 → 113 by the host's first milestone, none of them wire types:
+Raised 110 → 113 by the host's first local rows, none of them wire types:
 
 - **`usage_fact`**: Spotlight stamps `kMDItemLastUsedDate` on a file an app WRITES (a file `echo` just wrote has one
   equal to its creation, macOS 27.0.1, `mdls`, 2026-11-13), so a date on the last change with no use count is the save,
@@ -500,9 +503,9 @@ Raised 12 → 13 modules and root promises, 140 → 146 items, by the egress lin
 
 Raised 146 → 147 items:
 
-- **`text::hidden_in_name`** (was `hides_reordering`): what a raw name hid that `model_text` drops, which the host sets
-  on `Identity::name_hid`. Which characters hide is the sanitizer's own rule; a host copy of the set would drift from
-  what `model_text` drops, and the card would stop saying why a name changed.
+- **`text::hidden_in_name`**: what a raw name hid that `model_text` drops, which the host sets on `Identity::name_hid`.
+  Which characters hide is the sanitizer's own rule; a host copy of the set would drift from what `model_text` drops,
+  and the card would stop saying why a name changed.
 
 Raised 147 → 149 by invisible characters (§ Text from the item):
 

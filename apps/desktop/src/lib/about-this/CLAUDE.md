@@ -40,4 +40,5 @@ directory only renders.
   takes focus on open, and Move to trash goes through the pane's delete dialog for the cursor row alone (`cursorPath`).
 - The gallery renders the shipping dialog from recorded event streams (`lib/dialog-gallery/fixtures/about-this.ts`).
 
-Design, layout decisions, and the copy list: `DETAILS.md`.
+The stream, layout and AI-take decisions, the footer, and the test map: `DETAILS.md`. Read it before any non-trivial
+work here: editing, planning, reorganizing, or advising.

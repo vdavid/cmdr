@@ -49,8 +49,8 @@ pub(crate) enum Inside {
     /// applies first).
     Sent,
     /// The take goes out on the facts alone, and the card's picture row stays home.
-    /// No card picks it today (every automatic take looks inside, pending David's
-    /// call on a second press); the tests pin what it does.
+    /// No card picks it today (every automatic take looks inside); the tests pin
+    /// what it does, for a look that waits on a second press.
     StaysHome,
 }
 

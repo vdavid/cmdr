@@ -1,8 +1,11 @@
 # Tell me about this (card) details
 
 The card for `file.tellMeAbout` (`⌘⇧I` on macOS, `Ctrl+Shift+Enter` elsewhere; the palette; File > Tell me about this;
-the right-click row below Get info). Every string is a draft for David: the list with keys is
-`docs/specs/tell-me-about-this-copy.md`.
+the right-click row below Get info). Its strings live under `aboutThis.*` in
+`apps/desktop/src/lib/intl/messages/en/aboutThis.json`.
+
+**Decision: `Ctrl+Shift+Enter` off macOS, not `Ctrl+Shift+I`.** `Ctrl+Shift+I` is the web inspector's chord in WebKitGTK
+and WebView2 (`routes/(main)/global-keydown.ts`), so a dev build would lose either the card or the inspector.
 
 ## The stream into the card
 
@@ -89,7 +92,7 @@ scrolling.
 removal row and Move to trash beside it, its growth while streaming moves only the removal row, and the deterministic
 headline already answers "what is this" at the top. Above the facts, a late, model-written sentence would read first and
 push every row down as it streamed. The cost: a take pushes the removal row down, and on a long card the removal row can
-fall below the fold (a review item for David).
+fall below the fold.
 
 - **Its own block, never a row's look**: a quiet surface and border, the sparkles glyph, and the heading "AI wrote
   this", so a model's sentence can't pass for one of Cmdr's facts. It's a labeled `<section>` (a region), outside every
@@ -107,7 +110,7 @@ fall below the fold (a review item for David).
   growth the card allows. End marks sit inline after the text. Nothing animates (no caret, no fade).
 - **Stop** calls `stopAboutVerdict` (`about_stop_verdict`): the take alone stops, the card stays, and the backend's
   `stopped` keeps the text. Esc closes the card, which stops both. **Decision: no Stop shortcut**: it's a Tab stop in
-  the card, and a chord would be a new command and scope (a review item).
+  the card, and a chord would be a new command and scope.
 - **Unavailable**: `unavailableShowsALine` says which reasons draw one quiet line in the slot (cloud AI needs allowing,
   no key, a model Cmdr hasn't tested for takes, the local server not running, the organization's policy through
   `managedAiRefusalMessage`, too many in a minute) and which draw nothing (`aiOff`, `turnedOff`, `localOff`).
@@ -123,7 +126,7 @@ fall below the fold (a review item for David).
   start a call by itself (nothing re-asks); the next open does.
 - **a11y**: no live region over the stream; a second polite region beside the headline's says "AI wrote this: …" once,
   when the take ends with text (or arrives whole from earlier).
-- **The cost** rides `verdictEnd` into the card's data and isn't shown (a review item).
+- **The cost** rides `verdictEnd` into the card's data and isn't shown.
 
 ## The footer's actions
 
@@ -147,7 +150,7 @@ buttons, the rest in a house `Menu` under "More". Which actions, their order, an
   the verdict's gate) into `ActionCaps::ask_cmdr`, and Rust places it after the facts' own next steps, before removal.
   It doesn't depend on the AI take: Local, AI off, and a refused take give the same footer.
 - **Keyboard**: Tab from the body reaches each action, then "More", then Close. ❌ No action takes focus on open, and
-  removal is never the first button (Rust). Single-key accelerators are a review item, not built.
+  removal is never the first button (Rust). No single-key accelerators.
 - **Decision: the 40 rem default width** fits three labels, "More", and Close on one line. **Decision: the labels are
   short and fixed** ("Open", "Download page"), with the app and the site in the tooltip (hover and keyboard focus) and
   in the rows above ("Opens with", "Downloaded"): "Open with DiskImageMounter" and "Open releases.example.com" cut to

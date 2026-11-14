@@ -374,7 +374,7 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   `package` / `symlink` / `archive_entry`, or `unknown` for a card closed before its plan), `volume_kind`,
   `unavailable` (the `AboutUnavailable` token, or `none`), `settled` bool, `verdict` (`none` / `shown` / `cached` /
   `stopped` / `failed` / `closed_early` / `unavailable`), `verdict_why` (the `VerdictUnavailable` kind or the
-  `VerdictProblem` token, or `none`), `action` (the `AboutAction` type, `goTo` for a row that took the pane somewhere,
+  `VerdictProblem` token, `other` for a failed ending with no problem token, or `none`), `action` (the `AboutAction` type, `goTo` for a row that took the pane somewhere,
   or `none`), and `continued` bool. ❌ Never a path, name, URL, app, or the AI take's text. One event at the close,
   because only then is it known whether the take finished and what the person did next; `verdict_why: modelOff`
   against `localOff` is what says how many cards a model the eval hasn't passed leaves without a take.

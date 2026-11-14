@@ -18,8 +18,8 @@ use crate::agent::llm::genai_impl::GenaiAgentLlm;
 use crate::agent::llm::types::{AgentDelta, AgentLlmError, AgentPart, AgentStopReason, CallSettings, ProviderTag};
 use crate::ai::client::AiBackend;
 
-/// The languages a card marked `languages` also runs in: two the plan named, Swedish, and
-/// one non-Latin script.
+/// The languages a card marked `languages` also runs in: Hungarian and German (two locales
+/// Cmdr ships), Swedish, and one non-Latin script.
 pub(super) const OTHER_LANGUAGES: [&str; 4] = ["hu", "de", "sv", "ja"];
 
 /// A model class under test.

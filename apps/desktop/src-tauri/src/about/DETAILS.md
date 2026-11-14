@@ -134,9 +134,10 @@ once and the note says it stopped. That bounds a dead share to two stranded pool
 ## Jobs and budgets
 
 `jobs::GATHERED` is every kind: identity (from the probe), real type, bundle, signature, download, Cmdr's own history,
-last opened, default app, importance, the owner, git, a folder's whole size, its digest, and an app's Library data. A
-row whose store isn't there is trimmed from the plan (`jobs::Sources`: no operation log, no index place, no home). Each row has `ROW_BUDGET` (1 s)
-from the start of the gathering; a row still out then lands `Unknown(TimedOut)` and its job's late answer is dropped.
+last opened, default app, importance, the owner, git, a folder's whole size, its digest, an app's Library data, a
+portal entry's snapshot, and what a picture shows. A row whose store isn't there is trimmed from the plan
+(`jobs::Sources`: no operation log, no index place, no home, no image place). Each row has `ROW_BUDGET` (1 s) from the
+start of the gathering; a row still out then lands `Unknown(TimedOut)` and its job's late answer is dropped.
 The `about_facts` pool (4 target, 12 max workers) bounds how many threads a dead mount can strand. Its
 `spare_after` (250 ms) stops a worker that's slow on one job from counting toward the four, so one card's slow rows (or
 the agent's burst of lookups) can't make the next card's quick rows queue past their budget; how the pool grows:
@@ -393,7 +394,7 @@ a wake making zero calls to a share Cmdr dials, a protected path and a link into
 ## The verdict
 
 `verdict/`. Two or three plain sentences a model writes from the card's projection and a small look inside the file,
-streamed on the card's own channel beside the facts. The decisions it rests on, each pending David's last word:
+streamed on the card's own channel beside the facts. The decisions it rests on:
 
 - **It starts by itself** when AI is on, with `aboutThis.aiVerdict` to turn it off (on by default). The eval measured
   it fast and cheap on Sonnet (2.0 s p50, about $0.003) and saying something the rows don't in 96% of takes; a button
@@ -435,8 +436,8 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
    the model the slot named, against the eval's table (`gate::writes_verdicts`): only a model in `PASSED_THE_EVAL`, on
    the provider it was measured through (a dated snapshot of its id counts), writes; a family in `FAILED_THE_EVAL`
    (Haiku, in any provider's spelling) never does; anything else is unmeasured and follows `UNMEASURED_MODELS_WRITE`
-   (off). Each refusal is `modelOff`, which the card words as one quiet line. **Decision: unmeasured means off** (the
-   lead's default, pending David): the bundled 3B model showed an unmeasured model can hand out green lights and follow
+   (off). Each refusal is `modelOff`, which the card words as one quiet line. **Decision: unmeasured means off**: the
+   bundled 3B model showed an unmeasured model can hand out green lights and follow
    injections, and nothing at runtime would catch it. Letting unmeasured cloud models write on the no-removal prompt is
    that one constant. Adding a model is one row, after the eval:
    `docs/notes/about-verdict-eval.md` § Measuring a new model. No `main.db` ledger row → `notReady`, ❌ never an
@@ -457,11 +458,12 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
    and the card's `image_contents` row is dropped before the projection. A folder (its digest is the look), an item reached through its volume, or an
    online-only file gets none. A protected path gets none and logs the refusal by tool and reason
    (`ContentTool::AboutVerdict`), ❌ never by path.
-5. **The prompt** (`prompt.rs`): the system prompt is one of two static files in `agent/prompts/` (`about_verdict.md`
-   with the removal sentence, `about_verdict_no_removal.md` without), picked per model class by
-   `PromptVariant::for_provider`. **Decision: no class words removal**: the removal sentence is Cmdr's own row. Asked to write it, every Claude class the eval
-   measured gave green lights ("removing it would lose only the download record"), and without it Sonnet and Opus held
-   the bar. A class that later passes with it flips back there. The user message
+5. **The prompt** (`prompt.rs`): the system prompt is `agent/prompts/about_verdict_no_removal.md` for every provider
+   (`PromptVariant::for_provider`); `about_verdict.md`, the same prompt plus the removal sentence, ships to no class and
+   stays for the eval to keep measuring. **Decision: no class words removal**: the removal sentence is Cmdr's own row.
+   Asked to write it, every Claude class the eval measured gave green lights ("removing it would lose only the download
+   record"), and without it Sonnet and Opus held the bar. A class that later passes with it flips back in
+   `for_provider`. The user message
    is the language line, a header saying everything below is data written by whoever made the item, and ONE fence
    holding the projection (`model::for_model`), the rows still out, and the peek; every marker inside is defanged, so
    the content can't close the fence.
@@ -509,7 +511,7 @@ command `hold_about_verdict`: a test ends the hold by order, never by outwaiting
 
 ### The eval on real models
 
-The verdict's only gate on its no-green-light rule is `apps/desktop/src-tauri/src/ai/about_verdict_eval_test.rs`: 74 synthesized cards (ordinary,
+The verdict's only gate on its no-green-light rule is `apps/desktop/src-tauri/src/ai/about_verdict_eval_test.rs`: 75 synthesized cards (ordinary,
 tempting, hostile) through the shipped projection, fence, prompt files, and call settings, on real models, in five
 languages, graded by an Opus judge against `apps/desktop/src-tauri/src/ai/about_verdict_eval/rubric.md` with a Sonnet second judge on every flag. ❗ Rerun the
 whole corpus after any change to a prompt file, `for_model`, the fence, the call settings, or a default model. What it

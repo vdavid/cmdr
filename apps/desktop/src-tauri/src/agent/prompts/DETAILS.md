@@ -39,7 +39,8 @@
 - **Decision: the card verdict has two whole prompt files, not one with a conditional.** Why: whether the model words
   what removing an item would cost is the one place it can hand out a green light, and the verdict eval decides it per
   model class. Two static files keep each byte-identical (cacheable) and reviewable as the text that ships;
-  `about::verdict::prompt::PromptVariant::for_provider` picks one. The fence around the item's facts is built in Rust
+  `about::verdict::prompt::PromptVariant::for_provider` picks one, and today every class gets `no_removal` (the eval's
+  numbers: `apps/desktop/src-tauri/src/about/DETAILS.md` § The verdict). The fence around the item's facts is built in Rust
   (`about/verdict/prompt.rs`), beside its defanging, for the same reason the memory fence lives in `chat/context`.
 
 ## Not here

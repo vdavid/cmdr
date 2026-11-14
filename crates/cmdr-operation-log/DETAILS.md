@@ -728,7 +728,7 @@ one an operation put there (§ "Where an item landed").
   sync client's twin from a stranger saved over the name), and a skipped undo leaves the file where the person sees it.
   Treating a size + mtime match inside a File Provider domain as the snapshot check alone was considered and not done:
   it needs a per-path "is this a File Provider domain" call at undo time, and a wrong yes deletes someone's file
-  (conformance review M7, 2026-11-14).
+  (decided 2026-11-14).
 - **Backdating also fails the node check for undo, and that's fine.** On APFS, setting a modified time before a file's
   birth moves the birth time back (verified on macOS 27, APFS, `stat` before and after `touch -t 202001010000`,
   2026-11-14), so the recorded pair no longer matches. The mtime moved too, so `verify_snapshot` would refuse that item
