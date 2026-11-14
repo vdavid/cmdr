@@ -15,6 +15,8 @@
     import ModalDialog from '#lib/ui/ModalDialog.svelte'
     import Button from '#lib/ui/Button.svelte'
     import Icon from '#lib/ui/Icon.svelte'
+    import StatusBadge from '#lib/ui/StatusBadge.svelte'
+    import { getBadgeStatus } from '#lib/feature-status.js'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import { getCachedCustomFolderIcon, getCachedIcon, iconCacheVersion } from '#lib/icon-cache.js'
     import type { IconName } from '#lib/ui/icons/icon-map.js'
@@ -58,6 +60,8 @@
         archiveEntry: 'file-archive',
     }
 
+    /** The feature's stability pill beside the title (ALPHA today, from `feature-status.json`), as Ask Cmdr's rail has. */
+    const badgeStatus = getBadgeStatus('ai-tell-me')
     const target = $derived(card.plan?.target ?? 'file')
     /**
      * The icon the pane shows for the item (an app's own, a folder's custom one), from the icon cache the pane
@@ -177,7 +181,7 @@
                 >{#if iconUrl}<img src={iconUrl} alt="" width="16" height="16" />{:else}<Icon name={TARGET_ICON[target]} size={16} />{/if}</span
             ><span class="title-text" use:tooltip={name}
                 >{t('aboutThis.dialog.title', { name })}</span
-            ></span
+            >{#if badgeStatus}<StatusBadge status={badgeStatus} />{/if}</span
         >
     {/snippet}
 

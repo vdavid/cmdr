@@ -192,7 +192,7 @@
       "id": "ai-tell-me",
       "name": "Tell me about this",
       "status": "alpha",
-      "note": "A card for any file or folder: where it came from, what it really is, what owns it, and what removing it means. A short AI take joins it on the cloud models Cmdr has tested it on.",
+      "note": "A card for any file or folder: where it came from, what it really is, what owns it, and what removing it means. With AI on, a short AI take sits beside the facts.",
       "issueUrl": "https://github.com/getcmdr/cmdr/issues/1104"
     },
     {

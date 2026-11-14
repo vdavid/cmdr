@@ -94,6 +94,12 @@ describe('AboutThisDialog a11y', () => {
     expect(document.activeElement?.classList.contains('card')).toBe(true)
   })
 
+  it('wears the feature’s ALPHA pill in its title, beside the name', async () => {
+    const target = await render('downloaded')
+    const title = target.querySelector('#about-this-title')
+    expect(title?.querySelector('.feature-status-badge')?.textContent).toBe('alpha')
+  })
+
   it('announces the headline once, when the facts settle, and never per fact', async () => {
     const target = await render('plain-document')
     // Two quiet regions: the headline's, and the AI take's (empty: this card has none). Nothing else is live.

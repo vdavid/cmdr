@@ -486,6 +486,7 @@ export const fileListCommands: CommandSource[] = [
     // what a volume can't tell.
     showInPalette: true,
     keywords: ['info', 'details', 'where from', 'downloaded', 'what is this', 'owner'],
+    status: getBadgeStatus('ai-tell-me'),
     // Beside Get info's `⌘I` / `Alt+Enter`. Off macOS `Ctrl+Shift+I` is the web inspector's chord
     // (WebKitGTK and WebView2, `global-keydown.ts`), so the card takes `Ctrl+Shift+Enter` there, next
     // to Get info's `Alt+Enter` and the context menu's `Ctrl+Enter`.

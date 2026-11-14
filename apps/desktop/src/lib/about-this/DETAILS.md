@@ -33,12 +33,13 @@ The host is `routes/(main)/+layout.svelte` (beside the feedback dialog, inside i
 
 ## Layout
 
-The title (the item's icon and "About “name”", cut with a tooltip), then the facts column: the headline, the volume
-note, and the evidence sections in the plan's order, scrolling (`.card`), with What removing it means pinned under them
-(`[data-removal]`). With a take, the take's column sits to the right (§ The AI take). The footer: the actions on the
-left, Close on the right, and the AI hint line on a row of its own under them. `ModalDialog` with `resizable`,
-`growDownward`, and `fillBody` (the layout owns its scrollers), at most 85 vh; 40 rem wide with one column, 60 rem with
-two.
+The title (the item's icon, "About “name”" cut with a tooltip, and the feature's `StatusBadge`: ALPHA while
+`feature-status.json` says `ai-tell-me` is alpha, the same pill as Ask Cmdr's rail and the palette row), then the facts
+column: the headline, the volume note, and the evidence sections in the plan's order, scrolling (`.card`), with What
+removing it means pinned under them (`[data-removal]`). With a take, the take's column sits to the right (§ The AI
+take). The footer: the actions on the left, Close on the right, and the AI hint line on a row of its own under them.
+`ModalDialog` with `resizable`, `growDownward`, and `fillBody` (the layout owns its scrollers), at most 85 vh; 40 rem
+wide with one column, 60 rem with two.
 
 - **The removal row is never scrolled away**: it's a sibling after the facts' scroller in the facts column,
   `flex: none`, while the scroller is `flex: 0 1 auto` (content-sized on a short card, so the removal row sits right

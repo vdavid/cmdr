@@ -73,6 +73,9 @@ The other follow-ups filed from this effort: #1175–#1180, #1182–#1187, and #
 
 ## Decided since
 
+- **Ships as alpha**: the card's title and its palette row wear the ALPHA pill (`feature-status.json`, `ai-tell-me`).
+  The website's roadmap still lists it as not done, and `llms.txt` describes it without a stage, as it does every
+  feature.
 - **Two columns** (your design): with AI on, the facts and What removing it means on the left, the take on the right;
   the removal row is pinned under the facts' scroller, so it's on screen whenever the take is. Narrow, the take stacks
   below. With AI off (or not set up), one column plus a dismissable hint line; its × is remembered as a Settings >
