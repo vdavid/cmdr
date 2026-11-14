@@ -2009,7 +2009,7 @@
     "sources": "macOS Finder (Lokal volym, Lokala volymer); catalog (Lokal LLM, lokala volymer)"
   },
   "load": {
-    "accept": ["läser in", "lästs in", "läsa in", "lästes in", "läste in"],
+    "accept": ["läser in", "lästs in", "läsa in", "lästes in", "läste in", "läst in"],
     "chosen": "läs in",
     "confidence": "high",
     "forms": "Läser in…; Läs in 50 till",
@@ -2055,7 +2055,7 @@
     "sources": "catalog (settings.logging.openLogFile)"
   },
   "look-inside": {
-    "accept": ["tittar in i", "tittade in i"],
+    "accept": ["tittar in i", "tittade in i", "tittade inte in i", "tittar inte in", "titt in i", "titten in i"],
     "chosen": "titta in i",
     "confidence": "tentative",
     "decision": "Ask Cmdr looks inside files",
@@ -2686,7 +2686,7 @@
     "sources": "catalog (reclaim.freed Frigjorde)"
   },
   "recent": {
-    "accept": ["senast", "nyligen"],
+    "accept": ["senast", "nyligen", "nylig", "nyliga"],
     "chosen": "senaste",
     "confidence": "high",
     "forms": "recent folders → Senaste mappar; recent searches → Senaste sökningar; the Recents group → Senaste",
@@ -2817,7 +2817,8 @@
       "massbyte av namn",
       "massbytet av namn",
       "namnmönster",
-      "namnbytt"
+      "namnbytt",
+      "döptes om"
     ],
     "avoid": [
       {

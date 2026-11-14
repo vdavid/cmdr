@@ -110,6 +110,13 @@ Process feedback (a translator's homemade scripts and workarounds) goes under it
   `.themeColorSwatchAria`, and `.appColorHintPrefix`; add "accent color" to its `notMatch` or give the Windows accent
   color its own concept. Likewise `prompt` (AI text) catches "system prompt" (a dialog asking the user), which sv words
   as `fråga`. (sv, uk)
+- `aboutThis.what.file` ("File", the item kind) shares its English with `menu.bar.file`, which Apple localizes as a menu
+  name (sv `Arkiv`, de `Ablage`), so `term-consistency` fails for every such locale. Needs a reasoned `reviewed` entry
+  (David's consent) or an `agreesWith`-style escape for menu-bar names. (sv)
+- `aboutThis.ownerPlace.*`: the Library subfolder names are kept as on disk; give them a shared same-as-source rule (and
+  `notMatch` for `group`/`log`/`save`, which sv added key-scoped) so 12 more locales don't each justify nine keys. (sv)
+- `aboutThis.signature.ticketPresent` / `.ticketAbsent`: "notarization ticket" has no hit in any pile; name Apple's
+  localized term in the description, or say a plain coinage is fine. (sv)
 
 ## Process feedback
 
@@ -153,4 +160,7 @@ the entries (`docs/guides/multi-agent-refactors.md` § Fan-out sweeps).
   its own `accept` copied in; the first nl check flagged 42 keys for that alone. Inherit the base accepts. (nl)
 - The worktree guard refused `apply-terms && apply && check-locale` chained with a shell variable ("names git in a form
   too complex"); split into three calls. (nl, uk: a heredoc plus two `apply-terms` calls, redone as Writes and separate
-  calls)
+  calls; sv: same)
+- A 353-key new-feature brief was 356 KB (3,751 lines, about 90k tokens): Keys took three paged reads, Terms one
+  `sed | grep` for the rulings, and the 1,500-line Translation memory only a `grep`. Ship a keys-only first read for
+  new-key batches. One inline `node -e` edit of my own `values.json` to fix eight values after the check. (sv)

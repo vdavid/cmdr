@@ -303,6 +303,10 @@
       {
         "key": "suggestedOps.facts.archive",
         "why": "labels the zip a compress suggestion creates, the archive noun"
+      },
+      {
+        "key": "aboutThis.kind.archive",
+        "why": "the file kind on the Tell me about this card, the archive noun"
       }
     ]
   },
@@ -1724,7 +1728,16 @@
     "distinct": ["unix-group"],
     "en": "group",
     "match": ["group", "groups"],
-    "notMatch": ["group id", "group ids", "other groups", "users & groups"],
+    "notMatch": [
+      "group id",
+      "group ids",
+      "other groups",
+      "users & groups",
+      {
+        "key": "aboutThis.ownerPlace.groupContainers",
+        "why": "the literal macOS Library folder name Group Containers, kept as the system names it"
+      }
+    ],
     "sense": "A labelled group of rows or items (the volume switcher's Network group, a tool group in an Ask Cmdr answer)."
   },
   "guest": {
@@ -2192,7 +2205,16 @@
     "distinct": ["operation-log"],
     "en": "log",
     "match": ["log", "logs", "log file", "logging"],
-    "notMatch": ["log in", "logging out", "llm-logs", "operation log"],
+    "notMatch": [
+      "log in",
+      "logging out",
+      "llm-logs",
+      "operation log",
+      {
+        "key": "aboutThis.ownerPlace.logs",
+        "why": "the literal macOS Library folder name Logs, kept as the system names it"
+      }
+    ],
     "sense": "Cmdr's on-disk diagnostic log file, and the Logging settings."
   },
   "look-inside": {
@@ -2388,7 +2410,16 @@
     "distinct": ["rename"],
     "en": "Name",
     "match": ["name", "names", "filename", "filenames"],
-    "notMatch": ["your name or email", "what name this", "host name", "names more than one item"],
+    "notMatch": [
+      "your name or email",
+      "what name this",
+      "host name",
+      "names more than one item",
+      {
+        "key": "aboutThis.download.linkedFrom",
+        "why": "the verb: the record names (mentions) a page"
+      }
+    ],
     "sense": "A file's name; also the Name column header and a saved server's name field."
   },
   "nas": {
@@ -3256,7 +3287,13 @@
     "distinct": ["keep"],
     "en": "save",
     "match": ["save", "saves", "saved", "saving"],
-    "sense": "Storing something (a file, a setting, a password) so it persists."
+    "sense": "Storing something (a file, a setting, a password) so it persists.",
+    "notMatch": [
+      {
+        "key": "aboutThis.ownerPlace.savedState",
+        "why": "the literal macOS Library folder name Saved Application State, kept as the system names it"
+      }
+    ]
   },
   "save-panel": {
     "en": "save panel",
@@ -3708,7 +3745,7 @@
     "distinct": ["save", "write"],
     "en": "store",
     "match": ["store", "stores", "stored", "storing"],
-    "notMatch": ["ds_store"],
+    "notMatch": ["ds_store", "app store"],
     "sense": "Where data or a name physically lives (a destination that can't store a name, a file stored on a drive, a password stored in the keychain)."
   },
   "streaming": {

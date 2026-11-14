@@ -348,6 +348,10 @@
         "reason": "`Kontrollerar` verifies something you already have (an API key, a license); `Söker` looks for something that may exist (`updates.status.checking`), matching the update family's `Sök efter uppdateringar`. See `docs/i18n/sv/terms.json` `check`."
       },
       {
+        "source": "File",
+        "reason": "Two senses: the menu-bar File menu (`menu.bar.file`) is Apple's name `Arkiv` (Finder's own Swedish menu bar), while the Tell me about this card's item kind (`aboutThis.what.file`) is the noun `Fil` (ruling `file`). A file kind can't read `Arkiv`, which is also the sv word for an archive."
+      },
+      {
         "source": "Copied",
         "reason": "Agreement, not drift: the copy-to-clipboard confirmations (`Kopierat`) are neuter, about text (det är kopierat); the Git column's `fileExplorer.git.status.copied` describes a file (en fil), so it takes the common-gender `Kopierad`, like its siblings `Ändrad`, `Tillagd`, `Raderad` and git's own sv `kopierad:`."
       },

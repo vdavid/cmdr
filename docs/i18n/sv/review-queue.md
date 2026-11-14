@@ -60,6 +60,9 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   screen and the TBX has nothing; Alt+Space's menu → `systemmenyn` comes from the TBX's developer term.
 - **`Sök och Markera filer`** (`shortcuts.scope.searchDialog`): joins the two dialog titles verbatim, so `Markera` keeps
   its capital mid-heading; confirm it reads as two names, or prefer `Sökning och filmarkering`.
+- **Tell me about this coinages** (`aboutThis.*`): `AI-kommentar` (AI take), `noterade` / `notering` (recorded /
+  record), `en närmare titt` (deeper read), `notariseringsintyg` (no pile hit for the ticket), and `Vikt` as the
+  Importance row label (ruling `vikt`, but a bare label may read as weight). Confirm all read naturally on the card.
 
 ## Phrasing and tone
 
