@@ -323,7 +323,8 @@ risk.
 - **Entry points**: the user's configured provider and base URL; every untrusted string that reaches the model (file
   names, `inspect_file` text, PDF pages, archive entry names, EXIF, OCR text, and a "Tell me about this" card's facts: a
   download host and the downloading app's name, an `Info.plist`'s name, id, and version, a signer's name and team id, a
-  branch name, a folder's child names); the model's replies, tool calls, and memory writes.
+  branch name, a folder's child names, a picture's image index tags and recognized text); the model's replies, tool
+  calls, and memory writes.
 - **Threats**: data sent to a third party (disclosure); a key harvested by a malicious base URL; injected instructions
   steering the agent to start or propose harmful operations, to read and send sensitive content, or to plant persistent
   instructions in its memory.

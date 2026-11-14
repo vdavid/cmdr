@@ -39,6 +39,25 @@ pub(crate) const FACTS_CAP: Duration = Duration::from_millis(1_500);
 /// How long the look inside may take.
 pub(crate) const PEEK_BUDGET: Duration = Duration::from_secs(2);
 
+/// What an automatic take may send of the item's contents: the look inside a file,
+/// and what the image index recognized in a picture (its tags and the start of its
+/// text), which is the picture's contents too. ONE switch for both, so a picture's
+/// text can't leave on a take that may not look inside.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Inside {
+    /// Sent with every take the person's card starts (the sensitive gate still
+    /// applies first).
+    Sent,
+    /// The take goes out on the facts alone, and the card's picture row stays home.
+    /// No card picks it today (every automatic take looks inside, pending David's
+    /// call on a second press); the tests pin what it does.
+    StaysHome,
+}
+
+/// What an automatic take sends of the item's contents. A look inside only on an
+/// explicit press is this one value plus the press.
+pub(crate) const AUTOMATIC_TAKE_INSIDE: Inside = Inside::Sent;
+
 /// What the gate answered for a card.
 pub(crate) type Decision = Result<Ready, VerdictUnavailable>;
 
@@ -62,6 +81,8 @@ pub(crate) struct VerdictRun<'a> {
     pub(crate) stops_seen: StopsSeen,
     pub(crate) read: ReadFn,
     pub(crate) facts_cap: Duration,
+    /// Whether the take may send the item's contents ([`AUTOMATIC_TAKE_INSIDE`]).
+    pub(crate) inside: Inside,
 }
 
 /// [`run`] with the gate's answer still resolving (`settings.json`, the slot,
@@ -152,14 +173,21 @@ pub(crate) async fn run(verdict: VerdictRun<'_>, decision: Decision, watched: &W
             }
             (VerdictContents::Protected, None)
         }
-        None if verdict.item.bytes_readable => peek::look(&verdict.path, verdict.read.clone(), PEEK_BUDGET).await,
+        None if verdict.inside == Inside::Sent && verdict.item.bytes_readable => {
+            peek::look(&verdict.path, verdict.read.clone(), PEEK_BUDGET).await
+        }
         None => (VerdictContents::None, None),
     };
     if stop.is_cancelled() {
         return stopped(watched, &card);
     }
 
-    let snapshot = watched.card();
+    let mut snapshot = watched.card();
+    if verdict.inside == Inside::StaysHome {
+        // What the image index recognized is the picture's contents: it stays with
+        // the look inside. The row is left out, as a row the plan never had.
+        snapshot.image_contents = None;
+    }
     let still_gathering = snapshot.pending();
     let projection = for_model(&snapshot, &verdict.path, gated);
     let message = prompt::user_message(&projection, &still_gathering, peek.as_ref(), &verdict.locale);

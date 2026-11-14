@@ -6578,6 +6578,11 @@ export type AboutDisclosure =
   | 'removal'
   // That its contents stay home, and so only name-level facts leave.
   | 'contentsStayHome'
+  /**
+   *  For a picture, the labels Cmdr's image index gave it and the first lines
+   *  of text it recognized in it, read from the index, never the picture.
+   */
+  | 'imageIndex'
 
 /**
  *  One message on a card's channel. Every one carries its request's id, so the

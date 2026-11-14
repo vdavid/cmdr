@@ -347,6 +347,7 @@ export type MessageKey =
   | 'ai.cloudConsent.aboutThis.item.download'
   | 'ai.cloudConsent.aboutThis.item.git'
   | 'ai.cloudConsent.aboutThis.item.identity'
+  | 'ai.cloudConsent.aboutThis.item.imageIndex'
   | 'ai.cloudConsent.aboutThis.item.importance'
   | 'ai.cloudConsent.aboutThis.item.inside'
   | 'ai.cloudConsent.aboutThis.item.owner'

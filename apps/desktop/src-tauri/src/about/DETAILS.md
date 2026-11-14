@@ -401,7 +401,10 @@ streamed on the card's own channel beside the facts. The decisions it rests on, 
 - **It looks inside the file on every automatic take, on Cloud too**, and says so in the disclosure ("each time you
   open it") and on the block (`verdictGiven`, before the call). The person asked about this very file, and the
   sensitive gate and the setting both apply. The stricter alternative (facts only, the look on a second press) is one
-  step in the order below; the eval measured it at 94% (Sonnet) against 100% adding something true.
+  step in the order below; the eval measured it at 94% (Sonnet) against 100% adding something true. **A picture's "What
+  it shows" row counts as contents**: it rides the same switch (`verdict::Inside`, set once in
+  `AUTOMATIC_TAKE_INSIDE`), so flipping to "look on a press" holds back both the look and the picture's tags and text,
+  and the row is left out of that take's projection (`holding_contents_back_keeps_the_look_and_the_pictures_text_home`).
 - **No model words removal, and Local writes no take**: below, with the eval's numbers.
 
 ### Its events
@@ -446,7 +449,8 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
    first page, 20 archive names, or a photo's make, model, lens, and date. Every string goes through
    `cmdr_about::text::shown_text` first, so a first line can't carry an instruction in invisible tag characters
    (`the_window_drops_text_hidden_in_invisible_characters`). ❌ `Peek::CameraDetails` has no field for
-   GPS, so the location can't leave (it adds nothing to "what is this file"). A folder (its digest is the look), an item reached through its volume, or an
+   GPS, so the location can't leave (it adds nothing to "what is this file"). With `Inside::StaysHome` there's no look
+   and the card's `image_contents` row is dropped before the projection. A folder (its digest is the look), an item reached through its volume, or an
    online-only file gets none. A protected path gets none and logs the refusal by tool and reason
    (`ContentTool::AboutVerdict`), ❌ never by path.
 5. **The prompt** (`prompt.rs`): the system prompt is one of two static files in `agent/prompts/` (`about_verdict.md`

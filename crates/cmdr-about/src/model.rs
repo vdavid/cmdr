@@ -27,8 +27,9 @@ use crate::digest::{
 use crate::fact::{AboutTarget, Fact, NotApplicableWhy, UnknownWhy};
 use crate::owner::{Certainty, HomebrewKind, InstalledApp, OwnerClaim, OwnerPlace};
 use crate::payload::{
-    AppRef, Bundle, ExecutableCheck, GitContext, GitSnapshot, GitStatus, Identity, Importance, ImportanceBand,
-    NotCheckedWhy, RecursiveSize, Signature, Signer, SizeCoverage, SnapshotKind, StapledTicket, TrackedState, Usage,
+    AppRef, Bundle, ExecutableCheck, GitContext, GitSnapshot, GitStatus, Identity, ImageContents, Importance,
+    ImportanceBand, NotCheckedWhy, RecursiveSize, Signature, Signer, SizeCoverage, SnapshotKind, StapledTicket,
+    TrackedState, Usage,
 };
 use crate::provenance::{CmdrOperation, Download, EgressSource, LandedBy, StartedBy, redact_for_egress};
 use crate::removal::{Installer, Rebuilder, Removal, RemovalConsequence, consequences};
@@ -115,6 +116,9 @@ pub enum AboutDisclosure {
     Removal,
     /// That its contents stay home, and so only name-level facts leave.
     ContentsStayHome,
+    /// For a picture, the labels Cmdr's image index gave it and the first lines
+    /// of text it recognized in it, read from the index, never the picture.
+    ImageIndex,
 }
 
 /// What a model gets about one item. Serialize it; nothing else reads it.
@@ -160,6 +164,8 @@ pub struct ModelCard {
     app_data: Option<ModelFact<ModelAppData>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     git_snapshot: Option<ModelFact<ModelSnapshot>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    image_contents: Option<ModelFact<ModelImageContents>>,
 }
 
 /// The card as a model may read it.
@@ -198,8 +204,7 @@ pub fn for_model(about: &AboutCard, path: &str, protected: Option<ProtectedReaso
         folder_digest,
         app_data,
         git_snapshot,
-        // ❌ Not sent: what the image index recognized has no disclosure line yet.
-        image_contents: _,
+        image_contents,
     } = &card;
     ModelCard {
         target: *target,
@@ -220,6 +225,7 @@ pub fn for_model(about: &AboutCard, path: &str, protected: Option<ProtectedReaso
         folder_digest: row(folder_digest, |digest| ModelDigest::of(digest, speak)),
         app_data: row(app_data, |data| ModelAppData::of(data, speak)),
         git_snapshot: row(git_snapshot, |snapshot| ModelSnapshot::of(snapshot, speak)),
+        image_contents: row(image_contents, ModelImageContents::of),
         removal: shown
             .iter()
             .chain(&more)
@@ -1022,6 +1028,33 @@ impl ModelSnapshot {
             name: name.clone(),
             last_changed: *last_changed,
             last_changed_human: spoken_date(*last_changed, speak),
+        }
+    }
+}
+
+/// What the image index recognized in a picture. ❗ Worded so a model can't take it
+/// for a description: `taggedAs` are a classifier's labels (`dog` and `beach` don't
+/// say a dog is on a beach), and `recognizedText` is whatever the picture shows,
+/// written by whoever made it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ModelImageContents {
+    tagged_as: Vec<ItemText>,
+    recognized_text: Vec<ItemText>,
+    more_text: bool,
+}
+
+impl ModelImageContents {
+    fn of(contents: &ImageContents) -> Self {
+        let ImageContents {
+            tags,
+            text_lines,
+            more_text,
+        } = contents;
+        Self {
+            tagged_as: tags.clone(),
+            recognized_text: text_lines.clone(),
+            more_text: *more_text,
         }
     }
 }

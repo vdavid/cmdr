@@ -344,7 +344,9 @@ the JSON is the cheapest nudge there is; the agent tool's description asks for i
   its source path and volume name; last opened and use count; the default app; importance band, staleness, the scorer's
   reasons, and visits; the owner claim and its how; git root, branch, status; a folder's size, class, children and
   largest files by name and size, kind mix, unchanged share; an app's Library folders by name, place, and size; a portal
-  entry's snapshot.
+  entry's snapshot; a picture's index tags as `taggedAs` and its recognized text's first lines as `recognizedText`
+  (renamed from the payload's `tags` and `textLines` on purpose, so the key itself says they're labels and found text,
+  never a description; the verdict's prompt says the same, § The plan says why).
 - **Redacted**: each download source to `redact_for_egress` (a host, or a kind with no text).
 - **Dropped**: every raw `path` kept for navigating (an owner's app bundle, a digest child, a largest file, a Library
   folder: the largest files' paths would map a folder's whole subtree), and the prominence.

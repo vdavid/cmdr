@@ -98,6 +98,7 @@ pub(super) fn start(
                         stops_seen,
                         read: verdict::peek::inspect_reader(),
                         facts_cap: verdict::FACTS_CAP,
+                        inside: verdict::AUTOMATIC_TAKE_INSIDE,
                     };
                     let submit: Submit = Arc::new(super::pool::submit);
                     let sink: Arc<dyn AboutSink> = Arc::clone(&watched) as Arc<dyn AboutSink>;

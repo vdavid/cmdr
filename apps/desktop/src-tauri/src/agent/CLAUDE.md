@@ -31,7 +31,7 @@ the surface, so every later slice grows here too.
   reach the provider on every turn; contents only through `search_photos` / `image_facts` (image-derived text) and
   `inspect_file` (text windows, `find` lines, PDF pages plus title and author, archive entry names, EXIF incl. GPS;
   never bytes), plus `multi_rename`'s media fields and `read_resource`'s masked settings and redacted logs. A card's
-  facts (download host, signer, owner, git, Cmdr's copy history) leave only through `about::model::for_model`. Widening
+  facts (download host, signer, owner, git, Cmdr's copy history, a picture's index tags and text) leave only through `about::model::for_model`. Widening
   the line is a copy change AND a `CLOUD_AI_CONSENT_VERSION` bump (invariant 8).
 - **Ask Cmdr has a plain on/off (`askCmdr.enabled`); cloud consent is `ai/`'s.** `ask_cmdr_send_message` refuses with
   a typed `AskCmdrOff` before a thread exists, and the slot's resolution refuses `NoCloudConsent` on Cloud without

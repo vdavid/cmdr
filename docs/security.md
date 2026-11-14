@@ -311,10 +311,12 @@ this" (its card's facts, below), and Ask Cmdr (detailed below). Local AI sends n
   `data:` or `file:` address only its kind; when it was last opened and how often, and the default app; the Cmdr copy or
   move that put it there with its source path and drive or server name; its git repo, branch, and status; the owning app
   or installer and how Cmdr knows; a folder's importance, visits, biggest children, largest files (names and sizes,
-  never their paths), and unchanged share; an app's Library folders by name and size; and the removal row derived from
-  all that. Every string the item wrote passed `model_text`. A path whose contents the gate protects leaves its name,
-  path, size, dates, and owner, with every other row `protected`. The card's AI take may also send a short look inside a
-  file through `inspect_file`'s core and its gate, minus a photo's location. Each kind has its own line in the
+  never their paths), and unchanged share; an app's Library folders by name and size; for a picture, the tags Cmdr's
+  image index gave it and the first three lines of text it recognized in it (from `media.db`, never the picture: the
+  same derived text `image_facts` already sends, and sent only when a take may look inside); and the removal row derived
+  from all that. Every string the item wrote passed `model_text`. A path whose contents the gate protects leaves its
+  name, path, size, dates, and owner, with every other row `protected`. The card's AI take may also send a short look
+  inside a file through `inspect_file`'s core and its gate, minus a photo's location. Each kind has its own line in the
   disclosure, and a test maps every field the projection can emit to one: canonical `crates/cmdr-about/DETAILS.md` § The
   model's projection. The take itself resolves its slot before anything is read for it (a refusal reads no file and
   sends nothing), fences the projection and the look as data, calls with no tools, and is never stored or logged (not in

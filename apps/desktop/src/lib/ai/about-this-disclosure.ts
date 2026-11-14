@@ -15,6 +15,7 @@ import type { MessageKey } from '#lib/intl/keys.gen.js'
 export const ABOUT_THIS_DISCLOSURE: Record<AboutDisclosure, MessageKey> = {
   identity: 'ai.cloudConsent.aboutThis.item.identity',
   realType: 'ai.cloudConsent.aboutThis.item.realType',
+  imageIndex: 'ai.cloudConsent.aboutThis.item.imageIndex',
   download: 'ai.cloudConsent.aboutThis.item.download',
   appAndSigner: 'ai.cloudConsent.aboutThis.item.appAndSigner',
   use: 'ai.cloudConsent.aboutThis.item.use',

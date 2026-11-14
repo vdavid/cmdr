@@ -6,7 +6,7 @@ string changes there, change it here too, or regenerate this list. Where a value
 placeholder or tag is filled in by the card (a date, a size, a path).
 
 The list below covers every key the branch adds, grouped by the surface it shows on (checked against the catalogs on
-2026-11-14: all 312 added or changed keys are here). The decisions behind the layout, with their evidence, are in
+2026-11-14: all 313 added or changed keys are here). The decisions behind the layout, with their evidence, are in
 `tell-me-about-this-review.md`.
 
 ## Open questions, all in one place
@@ -93,6 +93,9 @@ The list below covers every key the branch adds, grouped by the surface it shows
     leave the tags out of other languages until there's a translation table?
 29. **"Not in Cmdr’s image index"** covers both a picture the index hasn't reached and one in a folder left out of image
     search (the index answers both the same, on purpose: an excluded folder shouldn't show differently). Right words?
+30. **The consent line** for it ("For a picture, the labels Cmdr’s image index gave it and the first lines of text it
+    found in it, read from Cmdr’s index, never the picture itself") sits right after "What kind of file its first bytes
+    say it is". Right place and words?
 
 ## Strings
 
@@ -1087,6 +1090,11 @@ In the "What Cmdr sends" fold under Settings > AI > Provider and in onboarding's
     itself never leaves, and invisible ones aren't flagged). Too long for one line? Splitting the name flag into its own
     line is the alternative (a new disclosure token).
 - `ai.cloudConsent.aboutThis.item.realType`: What kind of file its first bytes say it is
+- `ai.cloudConsent.aboutThis.item.imageIndex`: For a picture, the labels Cmdr’s image index gave it and the first lines
+  of text it found in it, read from Cmdr’s index, never the picture itself
+  - **New** (consent stays at version 3: nothing has shipped under 3 yet). It rides with the look inside: if the take
+    ever looks inside only on a second press, this goes with it. Ask Cmdr's own part already names the same text for
+    `image_facts`.
 - `ai.cloudConsent.aboutThis.item.download`: The website it was recorded as downloaded from (the site’s main address
   only, like github.com, never a subdomain or the full link), when, and the app that downloaded it. For a Mail
   attachment or an AirDrop, only that it was one, never who sent it
