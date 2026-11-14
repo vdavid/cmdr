@@ -27,7 +27,9 @@ for a frame. They're a few hundred bytes.
 
 **Decision: the frontend mints the request id.** A card closed before `about_start` resolves can still cancel. The
 registry treats a cancel for an id it hasn't seen as a tombstone (60 s, at most 256), and the start that follows
-returns without gathering. A second start under a live id cancels the first. `REGISTRY.finish` removes only its own run.
+returns without gathering. A second start under a live id cancels the first. `REGISTRY.finish` marks only its own run
+done, so the close that follows a settled card finds it and leaves no tombstone; a done entry nobody closes ages out
+like a tombstone. The agent's lookup, which no close follows, uses `REGISTRY.forget`.
 
 **Decision: `about_start` returns nothing, and the request carries no target hint.** The id is the frontend's, so
 returning it would only echo it. Whether the item is a file, folder, app, or link comes from the probe's `lstat` (or

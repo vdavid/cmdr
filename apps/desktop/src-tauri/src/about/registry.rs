@@ -26,6 +26,9 @@ enum Entry {
     /// Gathering; cancelling trips the token. `run` tells this start from a later
     /// one under the same id.
     Live { token: CancellationToken, run: u64 },
+    /// Settled while its card is still open: the close's cancel is still coming, and
+    /// finds this instead of leaving a tombstone for a start that already ran.
+    Done(Instant),
     /// Cancelled before it started.
     Tombstone(Instant),
 }
@@ -53,6 +56,7 @@ impl Registry {
             entries.remove(id);
             return None;
         }
+        prune(&mut entries);
         let run = Run {
             token: CancellationToken::new(),
             run: self.next_run.fetch_add(1, Ordering::Relaxed),
@@ -69,8 +73,8 @@ impl Registry {
         Some(run)
     }
 
-    /// Cancels `id`: trips a live one, or leaves a tombstone for a start still on
-    /// its way. Idempotent.
+    /// Cancels `id`: trips a live one, forgets a settled one, or leaves a tombstone
+    /// for a start still on its way. Idempotent.
     pub(crate) fn cancel(&self, id: &str) {
         let mut entries = self.entries.lock_ignore_poison();
         match entries.get(id) {
@@ -78,17 +82,30 @@ impl Registry {
                 token.cancel();
                 entries.remove(id);
             }
+            // The card's own close, after it settled: nothing left to stop or wait for.
+            Some(Entry::Done(_)) => {
+                entries.remove(id);
+            }
             Some(Entry::Tombstone(_)) => {}
             None => {
-                prune_tombstones(&mut entries);
+                prune(&mut entries);
                 entries.insert(id.to_string(), Entry::Tombstone(Instant::now()));
             }
         }
     }
 
-    /// Forgets `run` once its gathering is done. A newer run under the same id,
-    /// or a tombstone, stays.
+    /// Marks `run` done once a card's gathering ends, so the cancel its close sends
+    /// finds it. A newer run under the same id, or a tombstone, stays.
     pub(crate) fn finish(&self, id: &str, run: &Run) {
+        let mut entries = self.entries.lock_ignore_poison();
+        if matches!(entries.get(id), Some(Entry::Live { run: live, .. }) if *live == run.run) {
+            entries.insert(id.to_string(), Entry::Done(Instant::now()));
+        }
+    }
+
+    /// Forgets `run` once its gathering ends, for a caller no close follows (the
+    /// agent's lookup).
+    pub(crate) fn forget(&self, id: &str, run: &Run) {
         let mut entries = self.entries.lock_ignore_poison();
         if matches!(entries.get(id), Some(Entry::Live { run: live, .. }) if *live == run.run) {
             entries.remove(id);
@@ -119,18 +136,18 @@ impl Registry {
     }
 }
 
-/// Drops tombstones past their wait, then the oldest until there's room for one
-/// more.
-fn prune_tombstones(entries: &mut HashMap<String, Entry>) {
+/// Drops tombstones and settled entries past their wait (a close that never came),
+/// then the oldest until there's room for one more.
+fn prune(entries: &mut HashMap<String, Entry>) {
     let now = Instant::now();
     entries.retain(|_, entry| match entry {
-        Entry::Tombstone(at) => now.duration_since(*at) < TOMBSTONE_TTL,
+        Entry::Tombstone(at) | Entry::Done(at) => now.duration_since(*at) < TOMBSTONE_TTL,
         Entry::Live { .. } => true,
     });
     let mut tombstones: Vec<(String, Instant)> = entries
         .iter()
         .filter_map(|(id, entry)| match entry {
-            Entry::Tombstone(at) => Some((id.clone(), *at)),
+            Entry::Tombstone(at) | Entry::Done(at) => Some((id.clone(), *at)),
             Entry::Live { .. } => None,
         })
         .collect();
@@ -174,10 +191,22 @@ mod tests {
         let older = registry.register("card").expect("first start");
         let newer = registry.register("card").expect("second start");
         assert!(older.token.is_cancelled(), "one card has one gathering");
-        registry.finish("card", &older);
+        registry.forget("card", &older);
         assert_eq!(registry.len(), 1);
-        registry.finish("card", &newer);
+        registry.forget("card", &newer);
         assert_eq!(registry.len(), 0);
+    }
+
+    /// ❗ A card that settled, then closed, leaves nothing behind: its close's cancel
+    /// finds the settled entry instead of leaving a tombstone for a start that ran.
+    #[test]
+    fn a_normal_close_after_settling_leaves_no_tombstone() {
+        let registry = Registry::default();
+        let run = registry.register("card").expect("starts");
+        registry.finish("card", &run);
+        registry.cancel("card");
+        assert_eq!(registry.len(), 0);
+        assert!(registry.register("card").is_some(), "a reopen under the id runs");
     }
 
     #[test]

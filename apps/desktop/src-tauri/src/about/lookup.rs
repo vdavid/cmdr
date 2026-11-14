@@ -131,7 +131,7 @@ async fn look_up_with(
             }
         },
     };
-    REGISTRY.finish(&id, &registered);
+    REGISTRY.forget(&id, &registered);
     answer
 }
 
