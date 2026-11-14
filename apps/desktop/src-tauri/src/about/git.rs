@@ -16,6 +16,7 @@ use cmdr_about::payload::{GitContext, GitStatus, TrackedState};
 use cmdr_about::text::ItemText;
 use cmdr_git::RepoHandle;
 
+use super::session::SubJobs;
 use crate::file_system::framework_pool::note_activity;
 use crate::file_system::git::{EntryStatus, EntryStatusCode, FriendlyGitError, FriendlyGitErrorKind};
 
@@ -70,8 +71,9 @@ pub(crate) fn repo_around(path: &Path, is_folder: bool) -> RepoAround {
     }
 }
 
-/// The row for the item at `path` in `repo`.
-pub(crate) fn git_fact(repo: &RepoAround, path: &Path, is_folder: bool) -> Fact<GitContext> {
+/// The row for the item at `path` in `repo`. Its status walk goes to `sub_jobs`, so a
+/// card gone before a worker picks it up never walks.
+pub(crate) fn git_fact(repo: &RepoAround, path: &Path, is_folder: bool, sub_jobs: &SubJobs) -> Fact<GitContext> {
     let (handle, root) = match repo {
         RepoAround::Found { handle, root } => (handle, root),
         RepoAround::Unreadable(why) => return Fact::unknown(*why),
@@ -84,7 +86,7 @@ pub(crate) fn git_fact(repo: &RepoAround, path: &Path, is_folder: bool) -> Fact<
         Err(error) => return Fact::unknown(why_of(&error)),
     };
     let status = match relative_path(root, path) {
-        Some(relative) => status_within(handle, root, &relative, is_folder, STATUS_BUDGET),
+        Some(relative) => status_within(handle, root, &relative, is_folder, STATUS_BUDGET, sub_jobs),
         // The item sits outside the worktree it was found from (a path through a
         // symlink): nothing in the repo's list is about it.
         None => Fact::unknown(UnknownWhy::NotInStatus),
@@ -104,11 +106,12 @@ fn status_within(
     relative: &str,
     is_folder: bool,
     budget: Duration,
+    sub_jobs: &SubJobs,
 ) -> Fact<GitStatus> {
     let (answer, waiting) = mpsc::sync_channel(1);
     let handle = handle.clone();
     let root = root.to_path_buf();
-    super::pool::submit(Box::new(move || {
+    sub_jobs.submit(Box::new(move || {
         note_activity("walk the repo's status", "git");
         let _ = answer.send(crate::file_system::git::list_status(&handle, &root));
     }));

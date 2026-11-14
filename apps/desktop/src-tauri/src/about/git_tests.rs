@@ -105,7 +105,7 @@ fn repo() -> TestDir {
 }
 
 fn fact_for(path: &Path, is_folder: bool) -> Fact<GitContext> {
-    git_fact(&repo_around(path, is_folder), path, is_folder)
+    git_fact(&repo_around(path, is_folder), path, is_folder, &SubJobs::default())
 }
 
 fn status(fact: &Fact<GitContext>) -> &Fact<GitStatus> {
@@ -165,6 +165,13 @@ fn a_walk_past_its_budget_leaves_the_root_and_branch_standing() {
         panic!("the fixture is a repo");
     };
     // No wait at all: the walk was only just handed to the pool.
-    let status = status_within(&handle, &root, "changed.txt", false, Duration::ZERO);
+    let status = status_within(
+        &handle,
+        &root,
+        "changed.txt",
+        false,
+        Duration::ZERO,
+        &SubJobs::default(),
+    );
     assert_eq!(status, Fact::unknown(UnknownWhy::TimedOut));
 }

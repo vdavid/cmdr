@@ -7,6 +7,7 @@
 //! is dropped. A cancel stops queued jobs and drops every late answer.
 
 use std::collections::BTreeSet;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -53,6 +54,52 @@ pub(crate) struct Gathered {
     pub(crate) actions: ActionCaps,
     /// What the verdict may read of the item, decided where the card was placed.
     pub(crate) item: ItemReach,
+    /// What the jobs submit on their own (git's status walk, the digest's arena
+    /// searches): stopped once the gathering ends, settled or cancelled.
+    pub(crate) sub_jobs: SubJobs,
+}
+
+/// A card's sub-jobs: the work a row's job hands to the pool of its own, under the
+/// card's cancel like the row's job itself. Once [`run`] ends (the card settled,
+/// closed, or the lookup stopped waiting), a sub-job still queued skips its work: a
+/// closed card leaves no status walk or 400–860 ms arena scan behind it.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct SubJobs(Arc<AtomicBool>);
+
+impl SubJobs {
+    /// Runs `task` on the about pool, unless the gathering has ended by the time a
+    /// worker picks it up.
+    pub(crate) fn submit(&self, task: Task) {
+        super::pool::submit(self.guarded(task));
+    }
+
+    /// `task`, skipped if the gathering has ended by the time it runs.
+    fn guarded(&self, task: Task) -> Task {
+        let stopped = Arc::clone(&self.0);
+        Box::new(move || {
+            if !stopped.load(Ordering::Acquire) {
+                task();
+            }
+        })
+    }
+
+    pub(crate) fn stop(&self) {
+        self.0.store(true, Ordering::Release);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn is_stopped(&self) -> bool {
+        self.0.load(Ordering::Acquire)
+    }
+}
+
+/// Stops the sub-jobs however [`run`] ends, its future dropped mid-way included.
+struct StopOnDrop(SubJobs);
+
+impl Drop for StopOnDrop {
+    fn drop(&mut self) {
+        self.0.stop();
+    }
 }
 
 /// What the verdict may do with the item beyond its facts.
@@ -257,7 +304,9 @@ pub(crate) async fn run(
         reach,
         actions,
         item: _,
+        sub_jobs,
     } = gathered;
+    let _sub_jobs = StopOnDrop(sub_jobs);
     let card = AboutCard::new(&plan);
     let session = Arc::new(Session {
         state: Mutex::new(State {
@@ -331,4 +380,32 @@ pub(crate) async fn run(
     }
     // Settled: a job still running past its budget answers into nothing.
     stop_jobs.cancel();
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::AtomicUsize;
+
+    use super::*;
+
+    /// ❗ A card's sub-jobs (git's status walk, the digest's arena searches) are under
+    /// its cancel: one a worker picks up after the gathering ended skips its work.
+    #[test]
+    fn a_sub_job_picked_up_after_the_card_ended_skips_its_work() {
+        let ran = Arc::new(AtomicUsize::new(0));
+        let counted = || {
+            let ran = Arc::clone(&ran);
+            Box::new(move || {
+                ran.fetch_add(1, Ordering::SeqCst);
+            }) as Task
+        };
+        let sub_jobs = SubJobs::default();
+        let queued_while_open = sub_jobs.guarded(counted());
+        sub_jobs.guarded(counted())();
+        assert_eq!(ran.load(Ordering::SeqCst), 1, "an open card's sub-job runs");
+        drop(StopOnDrop(sub_jobs.clone()));
+        assert!(sub_jobs.is_stopped(), "the gathering's end stops them");
+        queued_while_open();
+        assert_eq!(ran.load(Ordering::SeqCst), 1, "queued before, picked up after: skipped");
+    }
 }

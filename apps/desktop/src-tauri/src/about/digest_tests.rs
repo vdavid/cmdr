@@ -102,7 +102,7 @@ fn a_folder_names_its_biggest_children_with_the_indexs_coverage() {
     fx.size(media, 20_000_000, true);
     fx.size(half_walked, 1_000_000, false);
 
-    let Fact::Known(digest) = folder_digest_fact(&place(&format!("{ROOT}/project")), NOW) else {
+    let Fact::Known(digest) = folder_digest_fact(&place(&format!("{ROOT}/project")), NOW, &SubJobs::default()) else {
         panic!("the digest always answers");
     };
     let children = digest.children.known().expect("the index lists the folder");
@@ -144,7 +144,7 @@ fn an_empty_folder_is_known_and_empty_and_an_unlisted_one_is_not_indexed() {
     fx.file(unlisted, "seen-by-a-watcher.txt", 10);
     fx.listed(&[ROOT_ID, empty]);
 
-    let Fact::Known(digest) = folder_digest_fact(&place(&format!("{ROOT}/empty")), NOW) else {
+    let Fact::Known(digest) = folder_digest_fact(&place(&format!("{ROOT}/empty")), NOW, &SubJobs::default()) else {
         panic!("the digest always answers");
     };
     let children = digest
@@ -154,7 +154,8 @@ fn an_empty_folder_is_known_and_empty_and_an_unlisted_one_is_not_indexed() {
     assert_eq!(children.count, 0);
     assert!(children.biggest.is_empty());
 
-    let Fact::Known(unlisted) = folder_digest_fact(&place(&format!("{ROOT}/unlisted")), NOW) else {
+    let Fact::Known(unlisted) = folder_digest_fact(&place(&format!("{ROOT}/unlisted")), NOW, &SubJobs::default())
+    else {
         panic!("the digest always answers");
     };
     assert_eq!(
@@ -182,7 +183,7 @@ fn node_modules_and_a_rust_target_are_classed_from_the_index() {
     fx.listed(&[ROOT_ID, app, modules, target, docs, build]);
 
     let class = |path: &str| {
-        folder_digest_fact(&place(&format!("{ROOT}/{path}")), NOW)
+        folder_digest_fact(&place(&format!("{ROOT}/{path}")), NOW, &SubJobs::default())
             .known()
             .map(|d| d.class)
     };

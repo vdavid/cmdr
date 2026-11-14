@@ -630,6 +630,29 @@ async fn the_facts_dont_wait_for_the_verdicts_gate() {
     .await;
 }
 
+/// ❗ However a gathering ends (settled, or cancelled before its plan), the card's
+/// sub-jobs stop with it: a closed card leaves no queued status walk or arena scan.
+#[tokio::test]
+async fn a_cards_sub_jobs_stop_when_its_gathering_ends() {
+    let dir = TestDir::new("about-sub-jobs");
+    let file = dir.as_ref().join("notes.txt");
+    std::fs::write(&file, "x").expect("write the fixture");
+
+    let settling = local(&file);
+    let sub_jobs = settling.sub_jobs.clone();
+    assert!(!sub_jobs.is_stopped());
+    gather(settling, quick()).await;
+    assert!(sub_jobs.is_stopped(), "settled");
+
+    let cancelled = local(&file);
+    let sub_jobs = cancelled.sub_jobs.clone();
+    let cancel = CancellationToken::new();
+    cancel.cancel();
+    let sink: Arc<dyn AboutSink> = Arc::new(Recorder::default());
+    run(cancelled, sink, cancel, on_threads(), quick()).await;
+    assert!(sub_jobs.is_stopped(), "cancelled");
+}
+
 #[tokio::test]
 async fn a_cancel_before_the_plan_sends_nothing() {
     let dir = TestDir::new("about-cancelled-first");

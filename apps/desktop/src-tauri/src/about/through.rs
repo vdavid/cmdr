@@ -28,6 +28,7 @@ use cmdr_fs::volume::{Volume, VolumeError, XattrReadMode};
 use super::digest::folder_digest_fact;
 use super::index::{IndexPlace, importance_fact, recursive_size_fact};
 use super::platform;
+use super::session::SubJobs;
 use crate::file_system::framework_pool::note_activity;
 use crate::ignore_poison::IgnorePoison;
 
@@ -201,11 +202,17 @@ pub(crate) fn asks_the_volume(kind: FactKind) -> bool {
 
 /// One job per planned row. With `volume_answers` false (it's holding calls that
 /// never came back), the rows that ask it are left out: the route lands them.
-pub(crate) fn jobs(plan: &AboutPlan, through: &Through, volume_answers: bool) -> Vec<(FactKind, Job<AboutFact>)> {
+/// `sub_jobs`: where a row's own pool work goes, under the card's cancel.
+pub(crate) fn jobs(
+    plan: &AboutPlan,
+    through: &Through,
+    volume_answers: bool,
+    sub_jobs: &SubJobs,
+) -> Vec<(FactKind, Job<AboutFact>)> {
     plan.kinds()
         .into_iter()
         .filter(|kind| volume_answers || !asks_the_volume(*kind))
-        .filter_map(|kind| job(kind, through.clone()).map(|job| (kind, job)))
+        .filter_map(|kind| job(kind, through.clone(), sub_jobs.clone()).map(|job| (kind, job)))
         .collect()
 }
 
@@ -215,7 +222,7 @@ fn now_secs() -> u64 {
         .map_or(0, |since| since.as_secs())
 }
 
-fn job(kind: FactKind, through: Through) -> Option<Job<AboutFact>> {
+fn job(kind: FactKind, through: Through, sub_jobs: SubJobs) -> Option<Job<AboutFact>> {
     let job: Job<AboutFact> = match kind {
         FactKind::Identity => Box::new(move || {
             note_activity("the volume's metadata", "identity");
@@ -271,7 +278,7 @@ fn job(kind: FactKind, through: Through) -> Option<Job<AboutFact>> {
             let place = through.index?;
             Box::new(move || {
                 note_activity("read the index's folder listing", "folderDigest");
-                AboutFact::FolderDigest(folder_digest_fact(&place, now_secs()))
+                AboutFact::FolderDigest(folder_digest_fact(&place, now_secs(), &sub_jobs))
             })
         }
         FactKind::Importance => {

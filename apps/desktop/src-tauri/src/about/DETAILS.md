@@ -139,6 +139,11 @@ The `about_facts` pool (4 target, 12 max workers) bounds how many threads a dead
 the agent's burst of lookups) can't make the next card's quick rows queue past their budget; how the pool grows:
 `apps/desktop/src-tauri/src/file_system/DETAILS.md` § Threading.
 
+A row's job that hands work to the pool of its own (git's status walk, the digest's two arena searches) goes through
+`session::SubJobs`, never `pool::submit`: once `session::run` ends (settled, cancelled, or its future dropped by the
+lookup's deadline) a sub-job a worker picks up afterwards skips its work, so a closed card leaves no queued walk or
+400–860 ms scan behind. One already running runs on (a status walk warms the repo cache for the next card).
+
 - **A read that failed says why** (`jobs::why_of_io`, `unix::why_of_errno`): gone since the probe is `NotFound`,
   refused is `PermissionDenied`, an I/O failure is `Unreachable`, ❌ never `Unparseable` (a record Cmdr read and can't
   make sense of) or `NoRecord` (none there). An index batch that couldn't be read is `Unparseable` per folder, ❌

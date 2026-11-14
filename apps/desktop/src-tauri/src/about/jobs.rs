@@ -24,6 +24,7 @@ use super::index::{IndexPlace, importance_fact, recursive_size_fact};
 use super::owner::{AppSource, owner_fact};
 use super::platform;
 use super::probe::Probe;
+use super::session::SubJobs;
 use crate::file_system::framework_pool::note_activity;
 
 /// A folder, an app, or a package: what git and the index see as a folder.
@@ -105,21 +106,23 @@ const MAX_INFO_PLIST_BYTES: u64 = 1024 * 1024;
 pub(crate) const ROW_BUDGET: Duration = Duration::from_secs(1);
 
 /// The jobs for `plan`'s rows on a local item. Identity isn't one: the probe
-/// already answered it.
+/// already answered it. `sub_jobs`: where a row's own pool work goes (git's status
+/// walk, the digest's searches), under the card's cancel.
 pub(crate) fn local_jobs(
     plan: &AboutPlan,
     path: &str,
     probe: &Probe,
     sources: &Sources,
+    sub_jobs: &SubJobs,
 ) -> Vec<(FactKind, Job<AboutFact>)> {
     plan.kinds()
         .into_iter()
         .filter(|kind| *kind != FactKind::Identity)
-        .filter_map(|kind| job(kind, path.to_string(), probe, sources).map(|job| (kind, job)))
+        .filter_map(|kind| job(kind, path.to_string(), probe, sources, sub_jobs.clone()).map(|job| (kind, job)))
         .collect()
 }
 
-fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources) -> Option<Job<AboutFact>> {
+fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources, sub_jobs: SubJobs) -> Option<Job<AboutFact>> {
     let target = probe.target;
     let extension = probe.extension.clone();
     // Each job names its call first, so a worker that never comes back says which
@@ -165,7 +168,7 @@ fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources) -> Option
         FactKind::Git => {
             let repo = probe.repo.clone();
             let is_folder = is_folder_like(target);
-            Box::new(move || AboutFact::Git(git_fact(&repo, Path::new(&path), is_folder)))
+            Box::new(move || AboutFact::Git(git_fact(&repo, Path::new(&path), is_folder, &sub_jobs)))
         }
         FactKind::RecursiveSize => {
             let place = sources.index.clone()?;
@@ -185,7 +188,7 @@ fn job(kind: FactKind, path: String, probe: &Probe, sources: &Sources) -> Option
             let place = sources.index.clone()?;
             Box::new(move || {
                 note_activity("read the index's folder listing", "folderDigest");
-                AboutFact::FolderDigest(folder_digest_fact(&place, now_secs()))
+                AboutFact::FolderDigest(folder_digest_fact(&place, now_secs(), &sub_jobs))
             })
         }
         FactKind::AppData => {

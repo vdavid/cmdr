@@ -29,7 +29,7 @@ use super::model::GateReach;
 use super::owner::AppSource;
 use super::platform;
 use super::probe::{Probe, probe};
-use super::session::{Gathered, ItemReach, PROBE_BUDGET, Watch};
+use super::session::{Gathered, ItemReach, PROBE_BUDGET, SubJobs, Watch};
 use super::through::{self, ArchiveRecord, Asked, DownloadFrom, STUCK, SnapshotPath, Through};
 use crate::file_system::volume::manager::{get_volume_manager, path_routes_over_its_parent};
 use crate::location::Location;
@@ -551,8 +551,9 @@ pub(crate) fn local_gathered(
                 _ => true,
             }
     });
+    let sub_jobs = SubJobs::default();
     let jobs = if probed.on_local_disk {
-        local_jobs(&plan, path, &probed, &sources)
+        local_jobs(&plan, path, &probed, &sources, &sub_jobs)
     } else {
         Vec::new()
     };
@@ -567,6 +568,7 @@ pub(crate) fn local_gathered(
         reach: Watch::EachRow,
         actions: ActionCaps::none(),
         item,
+        sub_jobs,
     }
 }
 
@@ -657,8 +659,10 @@ pub(crate) fn through_plan(way: Way, name: &str, is_directory: bool, caps: &Volu
     plan.retain_kinds(|kind| GATHERED.contains(&kind) && through::answers(&through, kind));
     let is_view = matches!(way, Way::Archive | Way::GitHistory | Way::Snapshot);
     let volume_answers = !STUCK.is_full(&through.asked.stuck_id);
-    let jobs = through::jobs(&plan, &through, volume_answers);
+    let sub_jobs = SubJobs::default();
+    let jobs = through::jobs(&plan, &through, volume_answers, &sub_jobs);
     let mut gathered = Gathered {
+        sub_jobs,
         plan,
         ready: Vec::new(),
         jobs,

@@ -22,6 +22,7 @@ use cmdr_index::IndexStatusResponse;
 use cmdr_index::store::{DirStats, EntryRow};
 
 use super::index::{IndexPlace, recursive_size_fact, recursive_size_of};
+use super::session::SubJobs;
 use crate::file_system::framework_pool::note_activity;
 use crate::index_host::index;
 use crate::search::{PatternType, SearchQuery, SearchResult, SearchSort, run_if_loaded};
@@ -41,7 +42,9 @@ fn child_path(parent: &str, name: &str) -> String {
 /// Always `Known`: the folder's class comes from its name, so `node_modules` is
 /// installed packages even where the index hasn't listed it, and only the parts
 /// that need the index say they can't tell.
-pub(crate) fn folder_digest_fact(place: &IndexPlace, now_secs: u64) -> Fact<FolderDigest> {
+/// Its two searches go to `sub_jobs`, so a card gone before a worker picks one up
+/// never scans.
+pub(crate) fn folder_digest_fact(place: &IndexPlace, now_secs: u64, sub_jobs: &SubJobs) -> Fact<FolderDigest> {
     let name = Path::new(&place.path)
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
@@ -60,7 +63,7 @@ pub(crate) fn folder_digest_fact(place: &IndexPlace, now_secs: u64) -> Fact<Fold
             // The two searches scan the whole arena (hundreds of ms on a big one), so
             // they run beside the listing, on jobs of their own, under one budget.
             let ends = Instant::now() + SEARCH_BUDGET;
-            let largest = on_its_own_job(ends, "largest", {
+            let largest = on_its_own_job(ends, "largest", sub_jobs, {
                 let place = place.clone();
                 move || largest_files(&place)
             });
@@ -69,7 +72,7 @@ pub(crate) fn folder_digest_fact(place: &IndexPlace, now_secs: u64) -> Fact<Fold
                 None
             } else {
                 let place = place.clone();
-                Some(on_its_own_job(ends, "untouched", move || {
+                Some(on_its_own_job(ends, "untouched", sub_jobs, move || {
                     unchanged_share(&place, now_secs)
                 }))
             };
@@ -115,10 +118,11 @@ impl<T> Waiting<T> {
 fn on_its_own_job<T: Send + 'static>(
     ends: Instant,
     which: &'static str,
+    sub_jobs: &SubJobs,
     search: impl FnOnce() -> Fact<T> + Send + 'static,
 ) -> Waiting<T> {
     let (answer, waiting) = mpsc::sync_channel(1);
-    super::pool::submit(Box::new(move || {
+    sub_jobs.submit(Box::new(move || {
         note_activity("search the arena", which);
         let _ = answer.send(search());
     }));
