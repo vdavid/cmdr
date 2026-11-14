@@ -1,8 +1,8 @@
 //! The card as a model may read it: the host's half of `cmdr-about`'s one
-//! projection (`AboutCard::for_model`).
+//! projection (`model::for_model`).
 //!
 //! Both senders (the agent tool and the verdict) call [`for_model`] here, never
-//! the crate's method, and [`for_model`] takes only a [`Gate`] that [`gate`]
+//! the crate's own function, and [`for_model`] takes only a [`Gate`] that [`gate`]
 //! answered: this is where the sensitive-content gate and the app's own size and
 //! date words go in, so neither sender can skip the gate or word a number its own
 //! way.
@@ -93,7 +93,7 @@ fn gate_of(answer: Result<(), GateStop>) -> Gate {
 
 /// What may leave the machine about the item at `path`, as `gated` allows.
 pub(crate) fn for_model(card: &AboutCard, path: &str, gated: Gate) -> ModelCard {
-    card.for_model(path, gated.protected(), &AppWords)
+    cmdr_about::model::for_model(card, path, gated.protected(), &AppWords)
 }
 
 fn reason(protected: Protected) -> ProtectedReason {

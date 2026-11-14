@@ -288,16 +288,16 @@ reaches it.
 
 ## The model's projection
 
-`AboutCard::for_model(path, protected, speak)` (`model.rs`) is everything a model may read about an item: the verdict's
-prompt and the agent tool's result both go through it, and the app's one caller is `about::model::for_model`, which
-answers the sensitive gate and the words. Each row keeps its coverage (`{ "state": "unknown", "value": "timedOut" }`);
-the card's prominence stays home. Numbers carry `*Human` twins with any uncertainty inside the string (`≥ 2.3 GB` over a
-lower bound), as every tool result does (`apps/desktop/src-tauri/src/tools/DETAILS.md` § Numbers arrive already spoken).
-The removal row comes along, derived from the projected card, so a model restates Cmdr's consequences instead of
-inventing its own. **Decision: it's the first field after the target and path**, before the rows: on a real-model try
-(2026-11-13) "what is this folder?" came back without what removing it would cost, with `removal` last, behind a
-folder's long child lists. A field's place in the JSON is the cheapest nudge there is; the agent tool's description asks
-for it too.
+`model::for_model(card, path, protected, speak)` (`model.rs`) is everything a model may read about an item: the
+verdict's prompt and the agent tool's result both go through it, and the app's one caller is `about::model::for_model`,
+which answers the sensitive gate and the words. Each row keeps its coverage
+(`{ "state": "unknown", "value": "timedOut" }`); the card's prominence stays home. Numbers carry `*Human` twins with any
+uncertainty inside the string (`≥ 2.3 GB` over a lower bound), as every tool result does
+(`apps/desktop/src-tauri/src/tools/DETAILS.md` § Numbers arrive already spoken). The removal row comes along, derived
+from the projected card, so a model restates Cmdr's consequences instead of inventing its own. **Decision: it's the
+first field after the target and path**, before the rows: on a real-model try (2026-11-13) "what is this folder?" came
+back without what removing it would cost, with `removal` last, behind a folder's long child lists. A field's place in
+the JSON is the cheapest nudge there is; the agent tool's description asks for it too.
 
 - **Kept**: the target, the path (through `model_text`) and every `ItemText` as is: name, sizes, dates, hard links, a
   link's target; the real type (Cmdr's tokens plus the extension); bundle id, name, version; signer with team, ticket,
@@ -436,7 +436,7 @@ Raised 139 → 140:
 
 Raised 12 → 13 modules and root promises, 140 → 146 items, by the egress line (§ The model's projection):
 
-- **The `model` module: `ModelCard` and `AboutCard::for_model`**: what may leave the machine about an item is the rule a
+- **The `model` module: `ModelCard` and `model::for_model`**: what may leave the machine about an item is the rule a
   person would argue hardest, and both senders must share it, so it's one function here, beside the facts it reads.
   `ModelCard` has private fields: a host can serialize it and do nothing else with it.
 - **`ProtectedReason`**: the app's sensitive-gate answer in this crate's words (the gate itself is the app's), so the

@@ -762,7 +762,7 @@ var surfaceGuardedCrates = []struct {
 		// bound with nothing counted as not indexed, argued in that section.
 		//
 		// 12 → 13 modules and root promises, 140 → 146 items (2026-11-13, the
-		// egress line): the `model` module (`ModelCard`, `AboutCard::for_model`,
+		// egress line): the `model` module (`ModelCard`, `model::for_model`,
 		// `ProtectedReason`, `Speak`, `SpokenSize`, `AboutDisclosure`), the one
 		// projection of a card for a model, argued in that section.
 		//

@@ -279,7 +279,7 @@ What the card answers there, verified in the Linux E2E container (`about-this.sp
 `model.rs::for_model(card, path, gate)` is the app's only way to a card's model projection
 (`crates/cmdr-about/DETAILS.md` § The model's projection holds every rule): it passes the gate's answer and the app's
 own size and date words (`human_size`, `format_local_date`). The agent tool and the verdict call it; ❌ neither calls
-`AboutCard::for_model` itself, so neither can skip the gate.
+`model::for_model` itself, so neither can skip the gate.
 
 - **The gate is a type**: `Gate` is made only by `model::gate` / `gate_within`, so a projection can't be built on a
   path nobody checked.

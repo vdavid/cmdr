@@ -2,7 +2,7 @@
 //! leave the machine, and nothing else.
 //!
 //! Both doors a card's facts leave by (the verdict's prompt and the agent tool's
-//! result) go through [`AboutCard::for_model`]. ❌ No second serializer of facts
+//! result) go through [`for_model`]. ❌ No second serializer of facts
 //! for a model.
 //!
 //! How a silent widening is made impossible:
@@ -159,65 +159,67 @@ pub struct ModelCard {
     git_snapshot: Option<ModelFact<ModelSnapshot>>,
 }
 
-impl AboutCard {
-    /// The card as a model may read it.
-    ///
-    /// `path` is where the item is; `protected` is the host's sensitive-content
-    /// gate's answer for it. A protected path keeps identity, the owner claim,
-    /// and a folder's whole size (all derived from the path or the volume's own
-    /// metadata); every other row it had answers `Unknown(Protected)`, and the
-    /// removal row is worked out from what's left. Download sources leave as
-    /// their host or kind ([`redact_for_egress`]); a raw path used for
-    /// navigating (an app's bundle, a child, a Library folder) never leaves.
-    pub fn for_model(&self, path: &str, protected: Option<ProtectedReason>, speak: &dyn Speak) -> ModelCard {
-        let card = match protected {
-            Some(_) => name_level_only(self),
-            None => self.clone(),
-        };
-        let Removal { shown, more } = consequences(&card);
-        let AboutCard {
-            target,
-            identity,
-            real_type,
-            bundle,
-            signature,
-            download,
-            cmdr_operation,
-            last_opened,
-            default_app,
-            importance,
-            owner,
-            git,
-            recursive_size,
-            folder_digest,
-            app_data,
-            git_snapshot,
-        } = &card;
-        ModelCard {
-            target: *target,
-            path: ItemText::new(path),
-            contents_stay_home: protected,
-            identity: row(identity, |identity| ModelIdentity::of(identity, speak)),
-            real_type: row(real_type, ModelRealType::of),
-            bundle: row(bundle, ModelBundle::of),
-            signature: row(signature, ModelSignature::of),
-            download: row(download, |download| ModelDownload::of(download, speak)),
-            cmdr_operation: row(cmdr_operation, |operation| ModelOperation::of(operation, speak)),
-            last_opened: row(last_opened, |usage| ModelUsage::of(usage, speak)),
-            default_app: row(default_app, ModelApp::of),
-            importance: row(importance, ModelImportance::of),
-            owner: row(owner, ModelOwner::of),
-            git: row(git, ModelGit::of),
-            recursive_size: row(recursive_size, |size| ModelSize::of(size, speak)),
-            folder_digest: row(folder_digest, |digest| ModelDigest::of(digest, speak)),
-            app_data: row(app_data, |data| ModelAppData::of(data, speak)),
-            git_snapshot: row(git_snapshot, |snapshot| ModelSnapshot::of(snapshot, speak)),
-            removal: shown
-                .iter()
-                .chain(&more)
-                .map(|consequence| ModelRemoval::of(consequence, speak))
-                .collect(),
-        }
+/// The card as a model may read it.
+///
+/// `path` is where the item is; `protected` is the host's sensitive-content
+/// gate's answer for it. A protected path keeps identity, the owner claim,
+/// and a folder's whole size (all derived from the path or the volume's own
+/// metadata); every other row it had answers `Unknown(Protected)`, and the
+/// removal row is worked out from what's left. Download sources leave as
+/// their host or kind ([`redact_for_egress`]); a raw path used for
+/// navigating (an app's bundle, a child, a Library folder) never leaves.
+///
+/// ❗ A free function, not a method on [`AboutCard`]: an `impl AboutCard` here
+/// would make `card` depend on this module while this module reads `card`, a
+/// module cycle (`module-cycles`).
+pub fn for_model(about: &AboutCard, path: &str, protected: Option<ProtectedReason>, speak: &dyn Speak) -> ModelCard {
+    let card = match protected {
+        Some(_) => name_level_only(about),
+        None => about.clone(),
+    };
+    let Removal { shown, more } = consequences(&card);
+    let AboutCard {
+        target,
+        identity,
+        real_type,
+        bundle,
+        signature,
+        download,
+        cmdr_operation,
+        last_opened,
+        default_app,
+        importance,
+        owner,
+        git,
+        recursive_size,
+        folder_digest,
+        app_data,
+        git_snapshot,
+    } = &card;
+    ModelCard {
+        target: *target,
+        path: ItemText::new(path),
+        contents_stay_home: protected,
+        identity: row(identity, |identity| ModelIdentity::of(identity, speak)),
+        real_type: row(real_type, ModelRealType::of),
+        bundle: row(bundle, ModelBundle::of),
+        signature: row(signature, ModelSignature::of),
+        download: row(download, |download| ModelDownload::of(download, speak)),
+        cmdr_operation: row(cmdr_operation, |operation| ModelOperation::of(operation, speak)),
+        last_opened: row(last_opened, |usage| ModelUsage::of(usage, speak)),
+        default_app: row(default_app, ModelApp::of),
+        importance: row(importance, ModelImportance::of),
+        owner: row(owner, ModelOwner::of),
+        git: row(git, ModelGit::of),
+        recursive_size: row(recursive_size, |size| ModelSize::of(size, speak)),
+        folder_digest: row(folder_digest, |digest| ModelDigest::of(digest, speak)),
+        app_data: row(app_data, |data| ModelAppData::of(data, speak)),
+        git_snapshot: row(git_snapshot, |snapshot| ModelSnapshot::of(snapshot, speak)),
+        removal: shown
+            .iter()
+            .chain(&more)
+            .map(|consequence| ModelRemoval::of(consequence, speak))
+            .collect(),
     }
 }
 

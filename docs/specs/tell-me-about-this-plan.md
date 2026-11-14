@@ -52,10 +52,10 @@ the `DETAILS.md` where the plan points) of each directory it touches.
   verdict text), it's never copied into a user turn (M12's draft doesn't quote it), and it's never stored (not in
   `main.db`, not in a log line).
 - **One egress projection.** Whatever leaves the machine (the verdict prompt AND the agent tool's result) goes through
-  ONE function (`AboutCard::for_model`, M9). A download source leaves as its HOST only (D14: real `kMDItemWhereFroms`
-  values carry Gmail attachment tokens and signed CDN keys in the query, and document ids, private repo names, and share
-  tokens in the PATH); an entry that isn't an `http(s)` URL (Mail writes the sender's name and address and the subject
-  line there, AirDrop a device name) leaves as its typed kind, never its text. A path the sensitive gate protects leaves
+  ONE function (`model::for_model`, M9). A download source leaves as its HOST only (D14: real `kMDItemWhereFroms` values
+  carry Gmail attachment tokens and signed CDN keys in the query, and document ids, private repo names, and share tokens
+  in the PATH); an entry that isn't an `http(s)` URL (Mail writes the sender's name and address and the subject line
+  there, AirDrop a device name) leaves as its typed kind, never its text. A path the sensitive gate protects leaves
   name-level facts only. Contents ride ONLY through the `inspect_file` core and its sensitive gate
   (`tools/sensitive.rs`). ❌ No second serializer of facts for a model, and ❌ no fact value (URL, sender, source path,
   app name) in a log line at any level: logs ride error reports.

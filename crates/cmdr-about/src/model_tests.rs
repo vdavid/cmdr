@@ -190,7 +190,7 @@ fn project_folder() -> AboutCard {
 }
 
 fn json_of(card: &AboutCard, path: &str, protected: Option<ProtectedReason>) -> Value {
-    serde_json::to_value(card.for_model(path, protected, &Plain)).expect("a model card serializes")
+    serde_json::to_value(for_model(card, path, protected, &Plain)).expect("a model card serializes")
 }
 
 /// Every string in `value`, keys and values, for asserting what can't appear.
@@ -586,7 +586,7 @@ fn a_pending_or_unplanned_row_says_so() {
 #[test]
 fn every_field_that_leaves_names_its_disclosure_item() {
     use AboutDisclosure as D;
-    let card = app_with_data().for_model("/Applications/Tool.app", None, &Plain);
+    let card = for_model(&app_with_data(), "/Applications/Tool.app", None, &Plain);
     let ModelCard {
         target: _,
         path: _,

@@ -303,7 +303,7 @@ this" (its card's facts, below), and Ask Cmdr (detailed below). Local AI sends n
   only, or a cloud host list), the LLM client re-asks before every request and at every redirect hop, and no consent the
   user gives can override it. Canonical: `apps/desktop/src-tauri/src/managed_policy/DETAILS.md`.
 - **"Tell me about this" sends one projection of its card, and nothing else.** The card's AI take and Ask Cmdr's lookup
-  of the same facts both go through `AboutCard::for_model` (`crates/cmdr-about/src/model.rs`), reached from the app only
+  of the same facts both go through `model::for_model` (`crates/cmdr-about/src/model.rs`), reached from the app only
   through `about::model::for_model`, which answers the sensitive gate for the path. What it carries: the item's name,
   path, sizes, dates, other names, and a link's target; what its first bytes say it is; an app's id, name, and version
   and its signer and team id; where it was recorded as downloaded from as the site's HOST only (a link's path and query
