@@ -19,7 +19,7 @@ use super::jobs::Sources;
 use super::probe::{Probe, probe};
 use super::route::{Way, local_gathered, reach};
 use super::session::{AboutSink, Gathered, Submit, Timing, run};
-use crate::test_support::{TestDir, wait_until};
+use crate::test_support::{TestDir, wait_until, wait_until_async};
 use crate::tools::resources::volumes::VolumeKind;
 
 /// Far longer than any step here takes.
@@ -536,6 +536,63 @@ async fn a_cancel_that_beats_its_start_makes_the_start_send_nothing() {
     assert_eq!(sent.load(std::sync::atomic::Ordering::SeqCst), 0);
 }
 
+/// ❗ The plan and every fact go out while the verdict's gate is still resolving (its
+/// slot reads `main.db`, which a writer can hold): no fact row waits for the verdict.
+#[tokio::test]
+async fn the_facts_dont_wait_for_the_verdicts_gate() {
+    use crate::ignore_poison::IgnorePoison;
+    crate::file_system::volume::manager::get_volume_manager().register_if_absent(
+        "root",
+        Arc::new(cmdr_local::LocalPosixVolume::local_folder(
+            "Test root",
+            "/",
+            crate::volume_host::host(),
+        )),
+    );
+    let dir = TestDir::new("about-gate-held");
+    let file = dir.as_ref().join("notes.txt");
+    std::fs::write(&file, "x").expect("write the fixture");
+    let sent = Arc::new(Mutex::new(Vec::<String>::new()));
+    let kept = Arc::clone(&sent);
+    let channel = tauri::ipc::Channel::new(move |body| {
+        if let tauri::ipc::InvokeResponseBody::Json(json) = body {
+            kept.lock_ignore_poison().push(json);
+        }
+        Ok(())
+    });
+    let saw = |what: &str| {
+        let wanted = format!("\"type\":\"{what}\"");
+        sent.lock_ignore_poison().iter().any(|json| json.contains(&wanted))
+    };
+    let (release, held) = mpsc::channel::<()>();
+    super::commands::start(
+        super::event::AboutRequest {
+            request_id: "about-test-gate-held".to_string(),
+            path: file.to_string_lossy().into_owned(),
+            volume_id: None,
+            is_directory: Some(false),
+        },
+        channel,
+        move || {
+            let _ = held.recv_timeout(LONG);
+            Err(super::event::VerdictUnavailable::AiOff)
+        },
+        || false,
+    );
+    // A local card settles in milliseconds; the gate stays held far longer.
+    wait_until_async(Duration::from_secs(3), "the facts to settle with the gate held", || {
+        saw("factsSettled")
+    })
+    .await;
+    assert!(saw("planned"));
+    assert!(!saw("verdictUnavailable"), "the gate is still held");
+    release.send(()).expect("the gate waits");
+    wait_until_async(LONG, "the verdict's answer once the gate lets go", || {
+        saw("verdictUnavailable")
+    })
+    .await;
+}
+
 #[tokio::test]
 async fn a_cancel_before_the_plan_sends_nothing() {
     let dir = TestDir::new("about-cancelled-first");
@@ -588,7 +645,7 @@ async fn copy_with_cmdr(
     )
     .await
     .expect("the copy starts");
-    crate::test_support::wait_until_async(LONG, "the copy to settle", || {
+    wait_until_async(LONG, "the copy to settle", || {
         !events.settled.lock_ignore_poison().is_empty()
     })
     .await;

@@ -167,6 +167,7 @@ fn verdict_for<'a>(card: &Card, token: &CancellationToken, limits: &'a Limits, w
         card: token.clone(),
         locale: "en".to_string(),
         limits,
+        stops_seen: limits.stops_seen(),
         read: world.reader(),
         facts_cap: LONG,
     }
@@ -690,7 +691,7 @@ async fn a_call_that_says_nothing_ends_with_no_answer() {
 #[test]
 fn the_stop_command_stops_only_that_cards_verdict() {
     let mine = CancellationToken::new();
-    let _claim = limits::LIMITS.claim("about-stop-test", mine.clone());
+    let _claim = limits::LIMITS.claim("about-stop-test", mine.clone(), limits::LIMITS.stops_seen());
     crate::about::commands::about_stop_verdict("another-card".to_string());
     assert!(!mine.is_cancelled());
     crate::about::commands::about_stop_verdict("about-stop-test".to_string());

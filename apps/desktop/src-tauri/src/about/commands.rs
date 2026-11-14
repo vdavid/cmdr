@@ -66,9 +66,14 @@ pub(super) fn start(
     let watched = Arc::new(Watched::new(channel));
     tauri::async_runtime::spawn(async move {
         let token = registered.token.clone();
+        // Read before the gate starts: a consent revoke from here on stops this
+        // verdict even though it has no slot yet for the revoke to find.
+        let stops_seen = verdict::limits::LIMITS.stops_seen();
         // The verdict's gate (its setting, then the slot) resolves beside the card's
-        // placing, so its answer is ready on the card's first frame. It reads
-        // `settings.json` and `main.db`, so off the executor.
+        // placing, so its answer is usually ready on the card's first frame. It reads
+        // `settings.json` and `main.db`, so off the executor, and ❌ nothing of the
+        // card's own waits for it: a `main.db` held by a writer delays the verdict
+        // alone.
         let decision = tokio::task::spawn_blocking(gate);
         // Whether the footer offers "Continue in Ask Cmdr": read fresh per card, like the
         // send gate does, beside the verdict's gate.
@@ -77,7 +82,9 @@ pub(super) fn start(
             () = token.cancelled() => {}
             placed = gather_for(&request, Started::ByPerson) => match placed {
                 Ok(mut placed) => {
-                    let decision = decision.await.unwrap_or(Err(VerdictUnavailable::NotReady));
+                    let decision = async { decision.await.unwrap_or(Err(VerdictUnavailable::NotReady)) };
+                    // A plain read of `settings.json`, started beside the placing: the
+                    // footer's actions go out with the plan.
                     placed.gathered.actions.ask_cmdr = ask_cmdr.await.unwrap_or(false);
                     let verdict = VerdictRun {
                         request_id: request.request_id.clone(),
@@ -88,6 +95,7 @@ pub(super) fn start(
                         card: token.clone(),
                         locale: crate::intl::active_locale(),
                         limits: &verdict::limits::LIMITS,
+                        stops_seen,
                         read: verdict::peek::inspect_reader(),
                         facts_cap: verdict::FACTS_CAP,
                     };
@@ -97,7 +105,7 @@ pub(super) fn start(
                         run(placed.gathered, sink, token.clone(), submit, Timing::CARD).await;
                         watched.finish();
                     };
-                    tokio::join!(facts, verdict::run(verdict, decision, &watched));
+                    tokio::join!(facts, verdict::run_when_gated(verdict, decision, &watched));
                 }
                 Err(no_card) => {
                     let why = no_card.why;

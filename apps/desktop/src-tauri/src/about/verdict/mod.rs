@@ -28,7 +28,7 @@ use super::model::{GateReach, for_model, gate_within};
 use super::session::{ItemReach, PROBE_BUDGET};
 use crate::agent::llm::types::{AgentDelta, AgentLlmError};
 use gate::Ready;
-use limits::{CacheKey, Finished, Limits};
+use limits::{CacheKey, Finished, Limits, StopsSeen};
 use peek::ReadFn;
 pub(crate) use watched::{Phase, Watched};
 
@@ -57,8 +57,31 @@ pub(crate) struct VerdictRun<'a> {
     /// The app's language, which the model answers in.
     pub(crate) locale: String,
     pub(crate) limits: &'a Limits,
+    /// The limits' stops, read before the gate started resolving: a consent revoke
+    /// after this stops the verdict even before it claims its slot.
+    pub(crate) stops_seen: StopsSeen,
     pub(crate) read: ReadFn,
     pub(crate) facts_cap: Duration,
+}
+
+/// [`run`] with the gate's answer still resolving (`settings.json`, the slot,
+/// `main.db`): the card's plan and facts go out without waiting for it, ❌ never the
+/// other way round. Waits for it after `planned`, or not at all once the card closes.
+pub(crate) async fn run_when_gated(
+    verdict: VerdictRun<'_>,
+    decision: impl Future<Output = Decision>,
+    watched: &Watched,
+) {
+    let card = verdict.card.clone();
+    if !watched.wait_for(Phase::Planned, &card).await {
+        return;
+    }
+    let decision = tokio::select! {
+        biased;
+        () = card.cancelled() => return,
+        decision = decision => decision,
+    };
+    run(verdict, decision, watched).await;
 }
 
 /// Runs the verdict until it ends, the card closes, or something stops it. Every update
@@ -107,7 +130,9 @@ pub(crate) async fn run(verdict: VerdictRun<'_>, decision: Decision, watched: &W
     // Its own token under the card's: Stop, a consent revoke, a policy narrowing, or a
     // newer verdict trip only this one; closing the card trips both.
     let stop = card.child_token();
-    let _claim = verdict.limits.claim(&verdict.request_id, stop.clone());
+    let _claim = verdict
+        .limits
+        .claim(&verdict.request_id, stop.clone(), verdict.stops_seen);
 
     tokio::select! {
         biased;

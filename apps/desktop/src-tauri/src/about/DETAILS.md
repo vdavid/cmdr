@@ -381,7 +381,9 @@ A reopen on the same item gets `verdictPlanned` then `verdictFromEarlier { conte
 
 ### The order, which is the consent guarantee
 
-1. **The gate** (`gate::resolve_for_card`, on a blocking thread beside the card's placing): `ai.provider` off →
+1. **The gate** (`gate::resolve_for_card`, on a blocking thread beside the card's placing). ❌ Nothing of the card's own
+   waits for it: `verdict::run_when_gated` takes it as a future and joins it after `planned`, so a `main.db` held by a
+   writer delays the verdict alone (test: `tests.rs` `the_facts_dont_wait_for_the_verdicts_gate`). `ai.provider` off →
    `aiOff`; `aboutThis.aiVerdict` false → `turnedOff` (`settings::load_about_this_ai_verdict`, absent = on); Local →
    `localOff` while `VERDICT_ON_LOCAL` is false (the bundled 3B model failed the eval; flipping it is that one
    constant); then
@@ -430,7 +432,10 @@ the verdict's text, and why there's no runtime phrase filter (it would miss a pa
 - `about_cancel` (the card closed) trips the card's token, and the verdict's token is its child.
 - `about_stop_verdict(requestId)` stops the verdict alone; the card stays and the text so far stands (`stopped`).
 - `ai::cloud_consent::stop_in_flight_calls` (a revoke, a held "no", a narrowing managed policy) calls
-  `about::stop_verdicts`, which stops the one in flight. The LLM client's own per-request policy check is the backstop.
+  `about::stop_verdicts`, which stops the one in flight. A stop that lands while a gate resolves or before its verdict
+  claims the slot finds nothing to stop, so every `stop_all` is counted (`Limits::stops_seen`, read before the gate
+  starts) and a claim made after one is stopped at once, under the same lock. The LLM client's own per-request policy
+  check is the backstop.
 - Quitting: `about::cancel_all` trips every card's token.
 
 ### Its cost

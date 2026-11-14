@@ -62,7 +62,14 @@ struct State {
     in_flight: Option<InFlight>,
     cache: VecDeque<(CacheKey, Finished)>,
     next_run: u64,
+    /// How many times [`Limits::stop_all`] ran, whether or not a verdict was in flight.
+    stops: u64,
 }
+
+/// Which [`Limits::stop_all`] a verdict's gate resolved after: read before the gate
+/// starts, handed to [`Limits::claim`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct StopsSeen(u64);
 
 /// The verdict's limits. One for the app ([`LIMITS`]); a test builds its own.
 #[derive(Default)]
@@ -103,9 +110,22 @@ impl Limits {
         Ok(())
     }
 
+    /// The stops so far, read before a verdict's gate starts resolving.
+    pub(crate) fn stops_seen(&self) -> StopsSeen {
+        StopsSeen(self.0.lock_ignore_poison().stops)
+    }
+
     /// Makes `token` the one verdict in flight, stopping whichever held the slot.
-    pub(crate) fn claim(&self, request_id: &str, token: CancellationToken) -> Claim<'_> {
+    ///
+    /// ❗ A [`Self::stop_all`] since `seen` (a consent revoke, a policy narrowing,
+    /// quitting) landed while the gate resolved and the facts gathered, when there
+    /// was no claim yet for it to stop: `token` is stopped at once. Checked under the
+    /// same lock `stop_all` takes, so no stop falls between the two.
+    pub(crate) fn claim(&self, request_id: &str, token: CancellationToken, seen: StopsSeen) -> Claim<'_> {
         let mut state = self.0.lock_ignore_poison();
+        if state.stops != seen.0 {
+            token.cancel();
+        }
         let run = state.next_run;
         state.next_run += 1;
         let held = state.in_flight.replace(InFlight {
@@ -134,7 +154,8 @@ impl Limits {
     /// Stops the verdict in flight, whichever it is: cloud AI turned off, a policy
     /// narrowed, the app is quitting. Returns how many it stopped.
     pub(crate) fn stop_all(&self) -> usize {
-        let state = self.0.lock_ignore_poison();
+        let mut state = self.0.lock_ignore_poison();
+        state.stops += 1;
         match &state.in_flight {
             Some(held) if !held.token.is_cancelled() => {
                 held.token.cancel();
@@ -211,8 +232,8 @@ mod tests {
         let limits = Limits::default();
         let first = CancellationToken::new();
         let second = CancellationToken::new();
-        let first_claim = limits.claim("a", first.clone());
-        let second_claim = limits.claim("b", second.clone());
+        let first_claim = limits.claim("a", first.clone(), limits.stops_seen());
+        let second_claim = limits.claim("b", second.clone(), limits.stops_seen());
         assert!(first.is_cancelled(), "starting a verdict stops the other");
         drop(first_claim);
         assert!(!limits.stop("a"), "a is no longer the one in flight");
@@ -220,6 +241,22 @@ mod tests {
         assert!(second.is_cancelled());
         drop(second_claim);
         assert_eq!(limits.stop_all(), 0);
+    }
+
+    /// ❗ A consent revoke that lands while the gate resolves finds no claim to stop;
+    /// the claim made after it is stopped at once, so the call never goes out.
+    #[test]
+    fn a_stop_before_the_claim_stops_the_claim() {
+        let limits = Limits::default();
+        let seen = limits.stops_seen();
+        assert_eq!(limits.stop_all(), 0, "nothing in flight yet");
+        let late = CancellationToken::new();
+        let _claim = limits.claim("a", late.clone(), seen);
+        assert!(late.is_cancelled());
+
+        let fresh = CancellationToken::new();
+        let _claim = limits.claim("b", fresh.clone(), limits.stops_seen());
+        assert!(!fresh.is_cancelled(), "a gate that resolved after the stop is fine");
     }
 
     /// A reopen with the same key reuses; a changed node, time, or model asks again; the

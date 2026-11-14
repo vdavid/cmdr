@@ -313,7 +313,11 @@ mod tests {
     #[test]
     fn a_revoke_stops_the_cards_verdict() {
         let verdict = tokio_util::sync::CancellationToken::new();
-        let _claim = crate::about::verdict::limits::LIMITS.claim("cloud-consent-revoke-test", verdict.clone());
+        let _claim = crate::about::verdict::limits::LIMITS.claim(
+            "cloud-consent-revoke-test",
+            verdict.clone(),
+            crate::about::verdict::limits::LIMITS.stops_seen(),
+        );
         stop_in_flight_calls("a test revoke");
         assert!(verdict.is_cancelled());
     }
