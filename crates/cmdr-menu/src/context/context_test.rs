@@ -155,7 +155,7 @@ slot ICloudEviction
 slot FileProvider
 separator
 item get_info menu.file.getInfo [own]
-item tell_me_about menu.file.tellMeAbout [own]
+item tell_me_about_context menu.file.tellMeAbout [of tell_me_about]
 item quick_look menu.file.quickLook
 slot Services
 ";
@@ -205,7 +205,7 @@ separator
 item media_index_add_folder menu.mediaIndex.addFolder
 item media_index_exclude_folder menu.mediaIndex.excludeFolder
 separator
-item tell_me_about menu.file.tellMeAbout [own]
+item tell_me_about_context menu.file.tellMeAbout [of tell_me_about]
 ";
 
 /// Windows and Linux have none of the macOS rows and no slot (no OS hook to fill one); a folder
@@ -407,6 +407,19 @@ fn the_special_lanes_read_off_their_ids() {
             command_id: "file.copy",
             ..
         })
+    ));
+    // The file menu's own "Tell me about this" row says it came from a right-click; the bar's
+    // shared id stays a plain command.
+    assert_eq!(
+        context_click("tell_me_about_context"),
+        Some(ContextClick::RowCommand {
+            command_id: "file.tellMeAbout",
+            scope: crate::ids::CommandScope::FileScoped,
+        })
+    );
+    assert!(matches!(
+        context_click("tell_me_about"),
+        Some(ContextClick::Command { .. })
     ));
     // A slot's rows are the host's: they never classify here.
     assert_eq!(context_click("tag-color:1"), None);

@@ -8573,6 +8573,16 @@ export type CmdrOperation = {
   datesChanged: boolean
 }
 
+/**
+ *  Which road an `execute-command` came in by. The main window maps it onto its own
+ *  `DispatchSource` (`menu` or `contextMenu`).
+ */
+export type CommandRoad =
+  // The menu bar, the Dock menu, an MCP tool, or another window.
+  | 'relay'
+  // A right-click menu's own row.
+  | 'contextMenu'
+
 // What [`count_all`] decided for a listing.
 export type CommitCountPass =
   /**
@@ -10481,6 +10491,8 @@ export type ExecutableCheck =
  */
 export type ExecuteCommand = {
   commandId: string
+  // The road it came in by, which the main window dispatches it down.
+  road: CommandRoad
 }
 
 /**

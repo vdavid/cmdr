@@ -29,6 +29,30 @@ use tauri_specta::Event;
 #[serde(rename_all = "camelCase")]
 pub struct ExecuteCommand {
     pub command_id: String,
+    /// The road it came in by, which the main window dispatches it down.
+    pub road: CommandRoad,
+}
+
+impl ExecuteCommand {
+    /// A command from the menu bar (a click or its accelerator: the menu event can't say which),
+    /// the Dock menu, an MCP tool, or another window.
+    pub fn relay(command_id: impl Into<String>) -> Self {
+        Self {
+            command_id: command_id.into(),
+            road: CommandRoad::Relay,
+        }
+    }
+}
+
+/// Which road an `execute-command` came in by. The main window maps it onto its own
+/// `DispatchSource` (`menu` or `contextMenu`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum CommandRoad {
+    /// The menu bar, the Dock menu, an MCP tool, or another window.
+    Relay,
+    /// A right-click menu's own row.
+    ContextMenu,
 }
 
 /// `queue-select-all`: Edit > Select all (⌘A) while the operation queue window

@@ -368,9 +368,10 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   `surface` is a required first param and why `section` stays out: `apps/desktop/src/lib/settings/DETAILS.md` § "Every
   open funnels through `openSettingsWindow`".
 - `tell_me_about_used` (frontend, `#lib/about-this/about-analytics.ts`, once per card at its close, from
-  `about-this-state.svelte.ts`): `trigger` (the dispatch road, `DispatchSource`: `keyboard` / `menu` / `palette` /
-  `mcp` / …; on macOS the shortcut usually arrives as `menu`, since the menu bar's accelerator fires first, and the
-  context menu shares the menu bar's item id, so `menu` covers all three there), `target` (`file` / `folder` / `app` /
+  `about-this-state.svelte.ts`): `trigger` (the dispatch road, `DispatchSource`: `contextMenu` for the file context
+  menu's own row, `palette`, `mcp`, `keyboard`, `menu`, …; `menu` is a menu-bar click, and on macOS usually the shortcut
+  too, since its accelerator fires the bar's item before the webview's keydown and the menu event can't say whether a
+  key or a click sent it), `target` (`file` / `folder` / `app` /
   `package` / `symlink` / `archive_entry`, or `unknown` for a card closed before its plan), `volume_kind`,
   `unavailable` (the `AboutUnavailable` token, or `none`), `settled` bool, `verdict` (`none` / `shown` / `cached` /
   `stopped` / `failed` / `closed_early` / `unavailable`), `verdict_why` (the `VerdictUnavailable` kind or the

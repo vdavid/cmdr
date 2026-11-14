@@ -204,7 +204,11 @@ Menu clicks route through a single `"execute-command"` Tauri event. `handle_menu
 `menu_handlers.rs`, wired into the Tauri builder via `.on_menu_event(menu::handle_menu_event)`)
 looks up the clicked menu item ID via `menu_id_to_command()`, which returns the command registry ID
 and a `CommandScope` (App or FileScoped). File-scoped commands check `main_window.is_focused()`
-before emitting. The frontend has one listener that calls `handleCommandExecute(commandId)`.
+before emitting (`emit_command`). The frontend has one listener that calls `handleCommandExecute(commandId)`.
+`ExecuteCommand` carries a `road`: `relay` for the bar (a click or its accelerator, which the menu event can't tell
+apart), the Dock menu, MCP, and other windows; `contextMenu` for a context row with its own id
+(`ContextClick::RowCommand`, today only `TELL_ME_ABOUT_CONTEXT_ID`). A context row sharing the bar's id is
+`ContextClick::Command` and can't say it came from a right-click; giving a row its own id is how it learns to.
 
 Exceptions that do NOT use `"execute-command"`. Every context-menu lane among them is read off the id by
 `cmdr_menu::context::click::context_click` (the answer the browser demo's context menu gets too) and run by

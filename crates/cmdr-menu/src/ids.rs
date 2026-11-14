@@ -90,6 +90,9 @@ pub const UNDO_TRASH_ID: &str = "undo_trash";
 pub const GET_INFO_ID: &str = "get_info";
 /// File > Tell me about this: Cmdr's own card about the item under the cursor, on every OS.
 pub const TELL_ME_ABOUT_ID: &str = "tell_me_about";
+/// The file context menu's "Tell me about this": its own id, so a pick says it came from a
+/// right-click and never from the bar (`context_click` answers `ContextClick::RowCommand`).
+pub const TELL_ME_ABOUT_CONTEXT_ID: &str = "tell_me_about_context";
 pub const QUICK_LOOK_ID: &str = "quick_look";
 pub const RENAME_ID: &str = "rename";
 

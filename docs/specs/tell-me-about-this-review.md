@@ -78,6 +78,12 @@ The other follow-ups filed from this effort: #1175–#1180, #1182–#1187, and #
   all of it: one with ignored files beside its tracked ones (most repo roots and source folders, with a build folder or
   a `.env`) stays "No changes Cmdr can see", with no restore line.
 
+- **How the card was opened, in the analytics event**: the right-click menu's row now says `contextMenu` (it has its own
+  menu id, and the menu event carries the road), and the palette, MCP, and the keyboard say theirs. On macOS the
+  shortcut still mostly reads `menu`, the same as a menu-bar click: its accelerator fires the bar's item, and the menu
+  event can't say whether a key or a click sent it. The agent tool reads facts without opening a card, so it sends no
+  card event.
+
 ## Review items by surface
 
 - **The card**: the title ("About “name”"), default size, headline templates, section names and order, each row's

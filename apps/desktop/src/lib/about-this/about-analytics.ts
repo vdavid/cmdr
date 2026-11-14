@@ -15,12 +15,12 @@ import type { AboutCardData } from './about-card'
 import { verdictPhase, type AboutVerdict } from './about-verdict'
 
 /**
- * The road the card's command came in by: the dispatch core's `DispatchSource` token, passed by the opener. On macOS
- * the shortcut usually arrives as `menu` (the menu bar's accelerator fires before the webview's keydown), and the
- * context menu and the menu bar share one item id, so `menu` covers all three there; `palette` and `keyboard` are
- * exact.
+ * The road the card's command came in by: the dispatch core's `DispatchSource` token, passed by the opener.
+ * `contextMenu` (the file context menu's own row), `palette`, and `mcp` are exact. `menu` is a menu-bar click, or on
+ * macOS usually the shortcut too: its accelerator fires the bar's item before the webview's keydown, and the menu
+ * event can't say whether a key or a click sent it. `keyboard` is the shortcut when the keydown got there first.
  */
-export type AboutTrigger = 'keyboard' | 'menu' | 'mouse' | 'palette' | 'explorer' | 'mcp'
+export type AboutTrigger = 'keyboard' | 'menu' | 'contextMenu' | 'mouse' | 'palette' | 'explorer' | 'mcp'
 
 /** What the opener knows about the card that the card itself doesn't. */
 export interface AboutUsageContext {

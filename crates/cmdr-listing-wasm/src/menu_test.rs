@@ -197,7 +197,10 @@ fn another_window_in_front_greys_the_explorer_and_sends_edits_natively() {
     push(&menu, "activate_window_menu", json!({ "kind": "main" }));
     assert_eq!(
         emitted(menu.click("edit_copy")),
-        ("execute-command".to_string(), json!({ "commandId": "edit.copy" }))
+        (
+            "execute-command".to_string(),
+            json!({ "commandId": "edit.copy", "road": "relay" })
+        )
     );
 }
 
@@ -205,7 +208,10 @@ fn another_window_in_front_greys_the_explorer_and_sends_edits_natively() {
 fn a_command_row_sends_execute_command() {
     assert_eq!(
         emitted(DemoMenu::new().click("go_home")),
-        ("execute-command".to_string(), json!({ "commandId": "nav.goHome" }))
+        (
+            "execute-command".to_string(),
+            json!({ "commandId": "nav.goHome", "road": "relay" })
+        )
     );
 }
 
