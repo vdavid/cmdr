@@ -571,4 +571,7 @@ LaunchServices, and the code signature all answer `NoRecord`; the download recor
 framework call in a process connects to its daemon, 0.7–1.9 s alone, and with the whole Rust suite starting a process
 per test it ran past nextest's 8 s cap: four card tests timed out only in the full run (macOS 27.0, nextest, 2026-11-14).
 The real reads are tested once each in `platform/macos/`. `the_facts_dont_wait_for_the_verdicts_gate` runs the real
-`start`, so it gathers a folder (no framework row) and holds the gate on a channel the test releases.
+`start`, so it gathers a folder (no framework row) and holds the gate on a channel the test releases. The same goes for
+`apps.rs`'s receipts: the test reads the real `pkgutil --file-info` report to its end with no deadline and hands it to
+`receipts_from`, since `RECEIPT_BUDGET` (800 ms) is a production bound that `pkgutil` ran past under the full `about::`
+run; a timed-out run is scripted.

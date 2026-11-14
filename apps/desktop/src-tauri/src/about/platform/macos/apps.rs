@@ -141,14 +141,28 @@ pub(crate) fn counts_as_on_this_disk(path: &Path) -> bool {
 
 /// The package ids of the receipts that list `path`.
 pub(crate) fn receipts(path: &str) -> Result<Vec<String>, UnknownWhy> {
-    let mut command = crate::subprocess::command_in_c_locale("pkgutil");
-    // `pkgutil` has no `--`; the path is absolute, so it can't read as a flag.
-    command.arg("--file-info").arg(path);
     let output = tauri::async_runtime::block_on(crate::subprocess::output_within(
         "pkgutil --file-info",
         RECEIPT_BUDGET,
-        &mut command,
+        &mut receipts_command(path),
     ));
+    receipts_from(output)
+}
+
+/// `pkgutil --file-info <path>`, in the C locale.
+fn receipts_command(path: &str) -> tokio::process::Command {
+    let mut command = crate::subprocess::command_in_c_locale("pkgutil");
+    // `pkgutil` has no `--`; the path is absolute, so it can't read as a flag.
+    command.arg("--file-info").arg(path);
+    command
+}
+
+/// What `pkgutil`'s run means: the receipts' ids, or why there are none to read. Apart from
+/// the run so the tests can hand it a real report without the deadline (a loaded machine runs
+/// `pkgutil` past it) and a timed-out run without waiting for one.
+fn receipts_from(
+    output: Result<std::process::Output, crate::subprocess::SubprocessError>,
+) -> Result<Vec<String>, UnknownWhy> {
     match output {
         Ok(output) if output.status.success() => Ok(package_ids(&String::from_utf8_lossy(&output.stdout))),
         Ok(_) => Err(UnknownWhy::Unparseable),
@@ -182,14 +196,39 @@ mod tests {
         assert!(package_ids("volume: /\npath: /usr/local/bin/nothing\n").is_empty());
     }
 
+    /// The real `pkgutil` report, read to its end with no deadline: what's under test is what
+    /// it prints, and `RECEIPT_BUDGET` (800 ms) is a production bound a loaded machine passes
+    /// (the full `about::` run did).
+    fn real_receipts(path: &str) -> Result<Vec<String>, UnknownWhy> {
+        // Spawned inside the runtime, as `output_within` is: tokio's child needs its reactor.
+        let output = tauri::async_runtime::block_on(async { receipts_command(path).output().await });
+        receipts_from(output.map_err(crate::subprocess::SubprocessError::Spawn))
+    }
+
     #[test]
     fn a_path_no_receipt_lists_has_none_and_apples_own_folder_has_apples() {
-        assert_eq!(receipts("/usr/local/bin/no-receipt-lists-this-xyz"), Ok(Vec::new()));
-        let apples = receipts("/Library/Application Support/Apple").expect("pkgutil answers");
+        assert_eq!(
+            real_receipts("/usr/local/bin/no-receipt-lists-this-xyz"),
+            Ok(Vec::new())
+        );
+        let apples = real_receipts("/Library/Application Support/Apple").expect("pkgutil answers");
         assert!(
             apples.iter().all(|id| id.starts_with("com.apple.")),
             "every receipt for Apple's own folder is Apple's: {apples:?}"
         );
+    }
+
+    #[test]
+    fn a_run_past_the_deadline_is_timed_out_and_a_refusal_is_unparseable() {
+        use std::os::unix::process::ExitStatusExt;
+        let timed_out = crate::subprocess::SubprocessError::TimedOut { limit: RECEIPT_BUDGET };
+        assert_eq!(receipts_from(Err(timed_out)), Err(UnknownWhy::TimedOut));
+        let refused = std::process::Output {
+            status: std::process::ExitStatus::from_raw(1 << 8),
+            stdout: Vec::new(),
+            stderr: Vec::new(),
+        };
+        assert_eq!(receipts_from(Ok(refused)), Err(UnknownWhy::Unparseable));
     }
 
     #[test]
