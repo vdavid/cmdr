@@ -165,7 +165,7 @@ export const aiSettings: SettingDefinitionSource[] = [
     // Ask Cmdr's plain on/off. It grants no data flow: on Cloud, "Allow cloud AI" still
     // gates every call. The backend reads it fresh from `settings.json` per send
     // (`settings::load_ask_cmdr_switch`, absent = off), and the wake loop's cached
-    // readiness hears about a change through `askCmdrEnabledChanged()` (settings-applier).
+    // readiness follows a change once the store holds it, from any window (`settings::store_watch`).
     // Existing installs get it set once at startup from the legacy opt-in
     // (`lib/ask-cmdr/ask-cmdr-enabled-mapping.ts`); new ones from the onboarding pick.
     id: 'askCmdr.enabled',
@@ -254,12 +254,13 @@ export const aiSettings: SettingDefinitionSource[] = [
   // AI › Ask Cmdr › On its own
   //
   // The three rows behind the proactive loop (`agent::wake`). ⚠️ Unlike the two above,
-  // these are NOT read fresh at send time: they drive a sleeping timer on the wake
-  // loop's own thread, so each one needs a `settings-applier` case pushing
-  // `askCmdrWakeSettingsChanged()`. Flipping `proactive` has to wake a parked
-  // scheduler, and a change to `wakeDelay` has to re-arm the timer AND re-price the
-  // rows already queued (the inbox merge is min-only, so a LENGTHENED delay would
-  // otherwise never reach anything waiting).
+  // `proactive` and `wakeDelay` are NOT read fresh at send time: they drive a sleeping
+  // timer on the wake loop's own thread, which the backend tells itself once the store
+  // holds a change (`settings::store_watch`, `FreshKeyMove::WakeCadence`). Flipping
+  // `proactive` has to wake a parked scheduler, and a change to `wakeDelay` has to re-arm
+  // the timer AND re-price the rows already queued (the inbox merge is min-only, so a
+  // LENGTHENED delay would otherwise never reach anything waiting). `wakeToast` is the
+  // frontend's own gate; the loop never reads it.
   // ========================================================================
   {
     id: 'askCmdr.proactive',

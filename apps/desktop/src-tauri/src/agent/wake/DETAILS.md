@@ -104,9 +104,10 @@ anyway.
 (`AskCmdrSection.svelte`). Nothing enforces either pair mechanically, so a stop or a multiple changes on both sides at
 once or the settings row describes a cadence the loop does not run.
 
-**A change arrives as a control message, never as a poll.** `settings-applier.ts` calls `ask_cmdr_wake_settings_changed`
-for all three rows, which sends `WakeControl::SettingsChanged`; the writer thread re-reads and the loop recomputes its
-park, so a shortened cadence re-arms the timer immediately.
+**A change arrives as a control message, never as a poll.** Once the settings store holds a change to
+`askCmdr.proactive` or `askCmdr.wakeDelay` and has saved it, `settings::store_watch` calls `agent::follow_settings_move`,
+which sends `WakeControl::SettingsChanged`; the writer thread re-reads and the loop recomputes its park, so a shortened
+cadence re-arms the timer immediately. The save comes first because the loop re-reads the FILE.
 
 ⚠️ **Re-pricing is the half that is easy to miss.** `Inbox::admit` merges min-only on purpose (the starvation guard), so
 a LENGTHENED cadence would reach only bundles arriving AFTER the change: somebody asking for a calmer agent would keep
@@ -577,7 +578,7 @@ batch's own instant, ❌ never a window start**.
 ## Readiness is a cached atomic
 
 `snapshot.rs` keeps one `AtomicU8`, refreshed by `refresh_readiness` on the Ask Cmdr switch
-(`ask_cmdr_enabled_changed`), on every cloud consent write (`ai::cloud_consent`), on the Full Disk
+(`agent::follow_settings_move`, once `settings.json` holds it), on every cloud consent write (`ai::cloud_consent`), on the Full Disk
 Access decision, and on `configure_ai`. ⚠️ Reading `WakeReadiness` per batch would mean a
 `settings.json` read and a SQLite round trip on the live loop's path, since cloud consent lives in
 `main.db`. It fails CLOSED: before anything is read the answer is `AskCmdrOff`, so nothing is

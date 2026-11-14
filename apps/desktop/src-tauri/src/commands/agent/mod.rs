@@ -17,8 +17,8 @@
 //! - [`suggested_ops`]: what the Suggested ops dialog reads, and the rejection it records.
 //! - [`suggested_ops_live`]: the dialog's live per-file facts, a window at a time.
 //! - [`suggested_ops_server`]: a server card's approve.
-//! - [`wake`]: the live-apply pushes that tell the proactive loop its settings (or the Ask Cmdr
-//!   switch) moved.
+//! - [`wake`]: the status corner's seed read of the wake indicator (settings moves reach the loop
+//!   through `settings::store_watch`, not a push).
 //!
 //! The two connection helpers below are the only shared plumbing: every store-reading
 //! command opens a short-lived connection off the IPC thread through them, so a missing

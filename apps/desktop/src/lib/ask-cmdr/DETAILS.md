@@ -1043,9 +1043,10 @@ backend's slot status does that (`ask_cmdr_slot_status` reads `test_mode::ask_cm
   - The backend enforces both gates on every send, before a thread exists (`AskCmdrOff` / `NoCloudConsent` refusals). A
     send refused as either re-runs `refreshRailGate()`, which flips the rail to the matching gate; `ask-cmdr-labels.ts`
     keeps a line for each, for the rare race.
-  - **`askCmdr.enabled` saves `settings.json` at once** (the applier forceSaves, then `askCmdrEnabledChanged()`
-    refreshes the wake loop's cached readiness): the send path reads the file fresh, so "turn on, then send" can't beat
-    the debounced flush. MCP can't set it (`mcpSettable: false`): on Local it starts a proactive loop.
+  - **`askCmdr.enabled` saves `settings.json` at once**, from whichever window flipped it: the backend saves the store
+    the moment the key reaches it, then refreshes the wake loop's cached readiness and, when off, stops running turns
+    (`settings::store_watch`, `agent::follow_settings_move`). The send path reads the file fresh, so "turn on, then
+    send" can't beat the debounced flush. MCP can't set it (`mcpSettable: false`): on Local it starts a proactive loop.
   - **Existing installs get the switch once, at startup** (`ask-cmdr-enabled-mapping.ts`, the `askCmdrEnabledMapping`
     step): a recorded legacy opt-in (any copy version, no held "no") maps to on, anything else to off, an unreadable
     store to nothing (next launch asks again). It runs only after onboarding finished and only while the switch was

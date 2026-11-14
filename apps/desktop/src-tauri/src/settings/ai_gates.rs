@@ -3,8 +3,9 @@
 //! so an absent key, a hand-edited string, or an unreadable file all read as the closed answer.
 //!
 //! Read fresh (not from the startup `Settings`) because each one closes a gate the moment it's
-//! written: the send path reads it per send, and the wake readiness is refreshed by an explicit
-//! push (`ask_cmdr_enabled_changed`, `cloud_ai_consent_revoke_pending_changed`).
+//! written: the send path reads it per send, and the wake readiness is refreshed once the file
+//! holds the change (`store_watch` for the switch, the `cloud_ai_consent_revoke_pending_changed`
+//! push for the held "no").
 
 use std::fs;
 

@@ -733,9 +733,9 @@ entries all live at `section: ['AI', 'Ask Cmdr']`. Its parts:
   `askCmdr.wakeDelay` (how soon it looks at a folder that just changed), and `askCmdr.wakeToast` (whether a staged
   suggestion raises a corner message). The cadence and the notice are disabled while the gate is off, so the group reads
   as one decision with two refinements.
-  - ⚠️ **All three DO need a `settings-applier` case**, unlike the two rows above. Those are read fresh per send; these
-    drive a timer parked on the wake loop's own thread (`agent::wake`), which never re-reads on its own. Each pushes
-    `askCmdrWakeSettingsChanged()`, and the loop re-reads and re-prices what is already waiting.
+  - ⚠️ **The gate and the cadence drive a timer parked on the wake loop's own thread** (`agent::wake`), which never
+    re-reads on its own. The backend follows both itself once the store holds a change (`settings::store_watch`), and
+    the loop re-reads and re-prices what is already waiting. The notice is the frontend's gate alone.
   - **The cadence slider is index-mapped** (`constraints.stopsAreDiscrete`), because its stops run 5 seconds to 2 hours.
     Mechanics and the three a11y traps: `../components/DETAILS.md` § Index-mapped stops.
   - **Its description names both waits the setting produces**, which `descriptionKey` can't do (it resolves to a static

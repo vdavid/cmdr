@@ -221,6 +221,7 @@ const mismatch: Stream = {
             initiator: 'you',
             sourcePath: '/Volumes/Testnas/inbox/holiday-photo.jpg',
             sourceVolume: 'Testnas',
+            datesChanged: false,
           },
         },
       },

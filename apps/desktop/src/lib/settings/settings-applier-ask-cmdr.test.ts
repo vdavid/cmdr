@@ -1,10 +1,10 @@
 /**
- * The settings-applier's push for `askCmdr.enabled`.
+ * The settings-applier's Ask Cmdr rows.
  *
- * The backend reads the switch fresh from `settings.json` (the send gate, the wake loop's
- * readiness), and the store's usual save is debounced. So a flip must land on disk BEFORE the
- * backend is told to re-read, or "Turn on Ask Cmdr, then send" races the flush and the send
- * is refused as off.
+ * The backend reads Ask Cmdr's switch and the proactive cadence fresh from `settings.json`, and
+ * follows them itself once the shared store holds a change (`settings::store_watch`). The applier
+ * used to push them, which ran before the changing window's debounced save and re-read the old file
+ * (#1194), so a push coming back from here is a regression.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
@@ -22,14 +22,16 @@ let changeListener: ((change: { id: string; value: unknown }) => void) | undefin
 
 vi.mock('#lib/tauri-commands/index.js', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
-  const noop = () => Promise.resolve()
   const stubbed: Record<string, unknown> = {}
   for (const key of Object.keys(actual)) {
-    stubbed[key] = typeof actual[key] === 'function' ? noop : actual[key]
-  }
-  stubbed.askCmdrEnabledChanged = () => {
-    order.push('enabledChanged')
-    return Promise.resolve()
+    // Every backend call records its name, so a test can tell what a change reached.
+    stubbed[key] =
+      typeof actual[key] === 'function'
+        ? () => {
+            order.push(key)
+            return Promise.resolve()
+          }
+        : actual[key]
   }
   return stubbed
 })
@@ -75,15 +77,18 @@ afterEach(() => {
   cleanupSettingsApplier()
 })
 
-describe('settings-applier: askCmdr.enabled', () => {
-  it('saves settings.json first, then tells the backend to re-read the switch', async () => {
-    await initSettingsApplier()
-    order.length = 0
-    changeListener?.({ id: 'askCmdr.enabled', value: true })
-    await vi.waitFor(() => {
-      expect(order).toEqual(['save', 'enabledChanged'])
-    })
-  })
+describe('settings-applier: the keys the backend follows itself', () => {
+  it.each(['askCmdr.enabled', 'askCmdr.proactive', 'askCmdr.wakeDelay', 'askCmdr.wakeToast'])(
+    '%s neither saves nor pushes from here',
+    async (id) => {
+      await initSettingsApplier()
+      order.length = 0
+      changeListener?.({ id, value: true })
+      await Promise.resolve()
+      // Startup's own backend pushes may still be landing, so only what this change could send counts.
+      expect(order.filter((name) => name === 'save' || name.startsWith('askCmdr'))).toEqual([])
+    },
+  )
 })
 
 describe('settings-applier: fileOperations.adbBinaryPath', () => {

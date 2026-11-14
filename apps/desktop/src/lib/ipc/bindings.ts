@@ -4550,15 +4550,6 @@ export const commands = {
    */
   askCmdrLegacyOptIn: () => __TAURI_INVOKE<LegacyAskCmdrOptIn>('ask_cmdr_legacy_opt_in'),
   /**
-   *  Tell the gates that `askCmdr.enabled` moved. No value crosses: the send gate reads the
-   *  setting fresh per send, but the wake loop's readiness is a cached answer
-   *  (`agent::wake::snapshot`), so without this push a switched-off Ask Cmdr would keep storing
-   *  (and a switched-on one keep refusing) until something else refreshed it. Switched off, it also
-   *  stops every running turn: the rail's gate replaces the composer, Stop button and all. Called
-   *  from `settings-applier.ts`.
-   */
-  askCmdrEnabledChanged: () => __TAURI_INVOKE<void>('ask_cmdr_enabled_changed'),
-  /**
    *  One conversation's cumulative token + cost total (all days, all models), for the
    *  per-thread footer. Zeroed for a thread with no metered turn yet. Empty store ⇒ zeroed.
    */
@@ -4597,19 +4588,6 @@ export const commands = {
        */
       baseline: BaselineUsage | null
     } | null>('ask_cmdr_slot_status'),
-  /**
-   *  Tell the wake loop its settings moved, so it re-reads them and re-arms.
-   *
-   *  Called from `settings-applier.ts` for each of the three `askCmdr` cadence rows. ⚠️ **Not
-   *  optional, and not the same shape as the other two `askCmdr.*` settings**, which the backend
-   *  reads fresh at send time: these drive a SLEEPING timer. Without this push, turning the
-   *  proactive gate on would leave a parked scheduler that never notices, and a lengthened
-   *  cadence would never reach the rows already waiting (the inbox merge is min-only on purpose).
-   *
-   *  No value crosses: the loop re-reads `settings.json` itself, so whatever is on disk when the
-   *  message is serviced wins and two changes racing can't leave the loop on the older one.
-   */
-  askCmdrWakeSettingsChanged: () => __TAURI_INVOKE<void>('ask_cmdr_wake_settings_changed'),
   /**
    *  What the status corner's wake indicator should show right now: whether a wake is thinking,
    *  and which gate is in the way if it can't.
@@ -6552,7 +6530,11 @@ export type AboutAction =
  *  it. Each has its own line in the consent copy, keyed by this token.
  */
 export type AboutDisclosure =
-  // Its name, path, kind, sizes, and dates, other names, and a link's target.
+  /**
+   *  What it is, its name, path, sizes, and dates, a folder's file and folder
+   *  counts, other names, a link's target, and whether its name hid a
+   *  reordering character.
+   */
   | 'identity'
   // What its first bytes say it is.
   | 'realType'
@@ -6561,18 +6543,21 @@ export type AboutDisclosure =
    *  downloading app.
    */
   | 'download'
-  // An app's name, id, and version, and who signed it.
+  /**
+   *  An app's name, id, and version, and for it or a disk image who signed
+   *  it, whether its executable matches, and its notarization ticket.
+   */
   | 'appAndSigner'
   // When it was last opened, how often, and which app opens it.
   | 'use'
   /**
-   *  The Cmdr operation that put it here, with its source path and the drive
-   *  or server name.
+   *  The Cmdr operation that put it here: when, its source path and the drive
+   *  or server name, and who started it.
    */
   | 'cmdrHistory'
   /**
    *  The git repo, branch, and status, or the commit or branch a snapshot is
-   *  from.
+   *  from and when it last changed there.
    */
   | 'git'
   // The app or installer it belongs to, and how Cmdr knows.
@@ -6583,8 +6568,8 @@ export type AboutDisclosure =
    */
   | 'importance'
   /**
-   *  A folder's biggest children and largest files by name and size, its mix
-   *  of kinds, and how much sat unchanged for a year.
+   *  A folder's class and child count, its biggest children and largest files
+   *  by name and size, its mix of kinds, and how much sat unchanged for a year.
    */
   | 'inside'
   // An app's folders in the Library, by name and size.

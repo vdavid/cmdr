@@ -776,6 +776,18 @@ pub fn run() {
             // DB current.
             agent::start(app.handle());
 
+            // The backend's gates read `settings.json` fresh, and each window's disk save is
+            // debounced, so a fresh-read key saves the moment it reaches the shared store, then
+            // its owner re-reads. After `agent::start`: the wake loop and its readiness exist.
+            match config::resolved_app_data_dir(app.handle()) {
+                Ok(data_dir) => settings::store_watch::watch(
+                    app.handle(),
+                    data_dir.join("settings.json"),
+                    agent::follow_settings_move,
+                ),
+                Err(e) => log::warn!("the settings store watcher isn't wired: {e}"),
+            }
+
             // Restore the main window's saved position and size. Placement
             // only: the window is still hidden here. The frontend shows it once
             // it mounts, and `main_window_show` shows it anyway if that never

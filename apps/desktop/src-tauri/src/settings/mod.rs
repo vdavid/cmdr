@@ -4,6 +4,7 @@ mod ai_gates;
 mod ask_cmdr;
 pub mod loader;
 mod restricted_shortcuts;
+pub mod store_watch;
 
 #[cfg(test)]
 mod plugin_store_tests;

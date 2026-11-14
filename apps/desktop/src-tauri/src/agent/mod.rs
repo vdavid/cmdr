@@ -61,6 +61,27 @@ impl AgentDb {
     }
 }
 
+/// Follows a setting the agent reads fresh from `settings.json`, once the file holds the new value
+/// (`settings::store_watch` calls it, whichever window made the change).
+///
+/// - The Ask Cmdr switch: the send gate reads it per send, but the wake loop's readiness is a
+///   cached answer, so it's refreshed here. Switched off, every running turn stops too: the rail's
+///   gate replaces the composer, Stop button and all.
+/// - The proactive cadence: it drives a timer parked on the wake loop's own thread, so the loop
+///   has to hear it to re-read and re-arm (turning proactive on wakes a parked scheduler; a
+///   lengthened delay reaches the folders already queued, since the inbox merge is min-only).
+pub fn follow_settings_move(app: &AppHandle, moved: crate::settings::store_watch::FreshKeyMove) {
+    use crate::settings::store_watch::FreshKeyMove;
+    match moved {
+        FreshKeyMove::AskCmdrSwitch => {
+            chat::cancel::stop_all_unless_on(crate::settings::load_ask_cmdr_switch(app));
+            wake::refresh_readiness(app);
+        }
+        FreshKeyMove::WakeCadence => wake::send_control(wake::WakeControl::SettingsChanged),
+        FreshKeyMove::ReadAtUse => {}
+    }
+}
+
 /// Open `main.db` and register the [`AgentDb`] handle in managed state so the chat runtime
 /// can read and write. Modeled on `operation_log_host::start`: the store owns the schema
 /// lifecycle on open (migrate forward, recreate a genuinely unparseable file, or refuse a

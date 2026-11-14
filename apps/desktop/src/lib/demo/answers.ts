@@ -57,7 +57,6 @@ export const silentCommands: readonly VoidCommand[] = [
   'setSecurityLogEnabled',
   'setShowVirtualGitPortal',
   'setDiskSpaceSizeFormat',
-  'askCmdrEnabledChanged',
   'updateFocusedPane',
   'watchVolumeSpace',
   'unwatchVolumeSpace',
