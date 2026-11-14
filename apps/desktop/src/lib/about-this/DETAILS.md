@@ -113,9 +113,9 @@ sentence would read first and push every row down as it streamed.
   `hint` (`aiOff`, `noCloudConsent`, `notConfigured`: a setting fixes them) draws one column plus the hint line; `none`
   (`turnedOff`, the person's own choice) one column and nothing about AI.
 - **Narrow**: below 46 rem of layout width (`useInlineSize`, since Cmdr's WebKit floor has no container queries), the
-  columns stack: the facts, the pinned removal row, then the take, capped at 40 vh with its own scroller, so the removal
-  row stays in view above it. A small window caps the dialog (`ModalDialog`'s `max-width`), so this is also the small
-  window's layout.
+  columns stack: the facts, the pinned removal row, then the take, which keeps its height (capped at 40 vh, past that
+  its own scroller) while the facts' scroller gives way, so the removal row stays in view above it. A small window caps
+  the dialog (`ModalDialog`'s `max-width`), so this is also the small window's layout.
 - **The hint line** (`AboutAiHint`, in `ModalDialog`'s `footerNote`): "Turn on AI for a deeper read of each item." (or
   allow cloud AI, or add a key) with a link to the setting, and a × that hides it on every card from then on:
   `aboutThis.aiHintDismissed`, a once-ever hint flag in Settings > Advanced's Hints and warnings card, the only way

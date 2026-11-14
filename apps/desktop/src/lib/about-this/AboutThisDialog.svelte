@@ -351,10 +351,10 @@
         outline: none;
     }
 
-    /* Below the facts on a narrow card: its own height, up to a share of the window, so the facts and the removal row
-       above it keep their room. */
+    /* Below the facts on a narrow card: its own height, up to a share of the window, and it doesn't give way; the facts'
+       scroller above does, so the removal row and the take both stay whole. */
     .layout.stacked .take-column {
-        flex: 0 1 auto;
+        flex: 0 0 auto;
         max-height: 40vh;
     }
 
