@@ -1064,7 +1064,9 @@ impl ModelRemoval {
             },
             // A site's host alone: `removal` takes it from a source's parsed,
             // plain-name site, the same host `redact_for_egress` lets out.
-            R::RecordedDownload { host } => ModelRemoval::RecordedDownload { host: host.clone() },
+            R::RecordedDownload { host } => ModelRemoval::RecordedDownload {
+                host: crate::provenance::main_address(host).to_owned(),
+            },
             R::GitCanRestore => ModelRemoval::GitCanRestore,
             R::RebuildableOutput { by } => ModelRemoval::RebuildableOutput { by: *by },
             R::RegeneratedCache { app } => ModelRemoval::RegeneratedCache { app: app.clone() },

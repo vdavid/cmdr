@@ -162,9 +162,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.aboutThis.item.download": "The website it was recorded as downloaded from (the site’s name only, never the full link), when, and the app that downloaded it. For a Mail attachment or an AirDrop, only that it was one, never who sent it",
+  "ai.cloudConsent.aboutThis.item.download": "The website it was recorded as downloaded from (the site’s main address only, like github.com, never a subdomain or the full link), when, and the app that downloaded it. For a Mail attachment or an AirDrop, only that it was one, never who sent it",
   "@ai.cloudConsent.aboutThis.item.download": {
-    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. What the system recorded about a download. Keep both promises: only the site's name (for example github.com), never the whole address; and for Mail or AirDrop, no sender. Mail and AirDrop are Apple product names. No period.",
+    "description": "Nested list item in the Allow cloud AI fold (Settings > AI > Provider and the onboarding AI step), under the \"Tell me about this\" heading: one kind of fact that Cmdr's card about a file or folder sends to the user's AI service. What the system recorded about a download. Keep both promises: only the site's main address (for example github.com for codeload.github.com: one name above the country or top-level ending), never a subdomain or the whole address; and for Mail or AirDrop, no sender. Mail and AirDrop are Apple product names. No period.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },

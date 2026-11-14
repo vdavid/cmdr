@@ -241,7 +241,7 @@ fn a_downloaded_disk_image_leaves_in_this_shape() {
             }},
             "download": { "state": "known", "value": {
                 "sources": { "state": "known", "value": [
-                    { "type": "site", "host": "dl.example.com" },
+                    { "type": "site", "host": "example.com" },
                     { "type": "site", "host": "github.com" },
                 ]},
                 "downloadedAt": 0x6af6_442f, "downloadedAtHuman": "date:1794524207",
@@ -251,7 +251,7 @@ fn a_downloaded_disk_image_leaves_in_this_shape() {
             "lastOpened": { "state": "unknown", "value": "noRecord" },
             "defaultApp": { "state": "known", "value": { "name": "DiskImageMounter", "id": "com.apple.DiskImageMounter" } },
             "removal": [
-                { "type": "recordedDownload", "host": "dl.example.com" },
+                { "type": "recordedDownload", "host": "example.com" },
             ],
         })
     );

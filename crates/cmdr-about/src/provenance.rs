@@ -372,11 +372,43 @@ fn is_plain_host(host: &str) -> bool {
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'-' | b'_' | b'.'))
 }
 
+/// `host`'s main address, the part that may leave the machine: one label above its
+/// ICANN public suffix (`downloads.bbc.co.uk` → `bbc.co.uk`). A subdomain can carry
+/// a share token (`uc….dl.dropboxusercontent.com`), a LAN address and server hash
+/// (`*.plex.direct`), a bucket, or a person's name. A suffix from the list's private
+/// section (`s3.amazonaws.com`, `github.io`) is a company's own address with its
+/// customers' names under it, so the walk goes past it to the ICANN one. A host
+/// with nothing above its suffix (`localhost`) is its own main address. The card
+/// keeps the full host.
+pub(crate) fn main_address(host: &str) -> &str {
+    let mut rest = host;
+    let suffix_len = loop {
+        let Some(suffix) = psl::suffix(rest.as_bytes()) else {
+            return host;
+        };
+        let len = suffix.as_bytes().len();
+        if suffix.typ() != Some(psl::Type::Private) {
+            break len;
+        }
+        match rest[rest.len() - len..].split_once('.') {
+            Some((_, shorter)) => rest = shorter,
+            None => return host,
+        }
+    };
+    if host.len() <= suffix_len {
+        return host;
+    }
+    let above = &host[..host.len() - suffix_len - 1];
+    let label_start = above.rfind('.').map_or(0, |dot| dot + 1);
+    &host[label_start..]
+}
+
 /// What of `source` may leave the machine.
 ///
-/// A web address leaves as its host name alone: real ones carry Gmail attachment
-/// tokens and signed CDN keys in the query, and document ids, private repo names,
-/// and share tokens in the path, and no rule can tell a token from a folder name.
+/// A web address leaves as its main address alone ([`main_address`]): real ones
+/// carry Gmail attachment tokens and signed CDN keys in the query, document ids,
+/// private repo names, and share tokens in the path, and per-link tokens and
+/// private names in a subdomain, and no rule can tell a token from a folder name.
 /// Everything else leaves as its kind: a `data:` address is the content itself, a
 /// `file:` one is a local path, and Mail and AirDrop record people's names.
 pub fn redact_for_egress(source: &WhereFrom) -> EgressSource {
@@ -384,7 +416,9 @@ pub fn redact_for_egress(source: &WhereFrom) -> EgressSource {
         WhereFrom::Web {
             site: WebSite::Domain { host },
             ..
-        } if is_plain_host(host) => EgressSource::Site { host: host.clone() },
+        } if is_plain_host(host) => EgressSource::Site {
+            host: main_address(host).to_owned(),
+        },
         WhereFrom::Web {
             site: WebSite::Domain { .. },
             ..

@@ -97,9 +97,16 @@ Not `ItemText`, on purpose:
   Firefox not verified, #1185).
 - **Egress** (`redact_for_egress`): a web source leaves as `Site { host }`; a numeric address as `IpAddress` (the URL
   parser reads `http://2130706433/` as IPv4, so a bare number can't pose as a name); `data:` and `blob:` as
-  `InlineData`; `file:` as `LocalFile`; Mail and AirDrop as their kind. An IDN leaves as punycode. Why host only: real
-  download addresses carry attachment tokens and signed keys in the query, and document ids, private repo names, and
-  share tokens in the path, and no rule can tell a token from a folder name.
+  `InlineData`; `file:` as `LocalFile`; Mail and AirDrop as their kind. An IDN leaves as punycode. Why the main address
+  only: real download addresses carry attachment tokens and signed keys in the query, document ids, private repo names,
+  and share tokens in the path, and no rule can tell a token from a folder name.
+- **Decision: the host leaves as its main address** (`provenance::main_address`, one label above the ICANN public
+  suffix, from the `psl` crate's compiled-in list), and so does `ModelRemoval::RecordedDownload`; the card keeps the
+  full host. A subdomain carries per-link tokens (`uc….dl.dropboxusercontent.com`), a LAN address and server hash
+  (`*.plex.direct`), a bucket (`bucket.s3.amazonaws.com`), or a person's name (conformance review L1). A suffix from the
+  list's PRIVATE section (`github.io`, `s3.amazonaws.com`, `plex.direct`) is walked past, since the label above it is a
+  customer's: `jane.github.io` leaves as `github.io`. An unlisted ending counts as one label (`nas.lan`), and a host
+  with nothing above its suffix leaves whole (`localhost`).
 - **Gotcha: parse before cutting.** `https://known.example:<10,000 characters>@other.example/` cut at any cap reads as
   `known.example`. The whole entry (bounded by the 64 KB xattr cap) goes to the parser; only the kept link is capped.
 
@@ -378,6 +385,11 @@ and two workflow filters to stay honest.
   helpers and the `cfb` reader, neither needed for a buffer.
 - `plist` 1.10.3, `default-features = false` (no `serde` bridge needed): the app and `cmdr-fs` already resolve it.
 - `url` 2: the app already resolves it. Its host parsing is what makes the egress rule cheap to state.
+- `psl` 2.1.250 (checked 2026-11-14: released 2026-11-10, the newest at least three days old; `addr-rs/psl`, live,
+  MIT/Apache-2.0, `cargo deny` clean), `helpers` only. The public suffix list compiled in as a lookup, with one dep
+  (`psl-types`, already in the graph through `reqwest`'s cookie store). Chosen over `publicsuffix` (already in the graph
+  too) because that one parses a list the caller supplies, which would mean shipping and refreshing the list file
+  ourselves. It publishes daily from the list; Renovate's weekly "desktop non-major updates" group takes them.
 - `specta` pinned to the app's exact version.
 
 ## The public surface is capped

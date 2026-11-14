@@ -1033,9 +1033,11 @@ In the "What Cmdr sends" fold under Settings > AI > Provider and in onboarding's
 - `ai.cloudConsent.aboutThis.item.identity`: The item’s name, path, size, and dates, how many other names point to it,
   and where a link points
 - `ai.cloudConsent.aboutThis.item.realType`: What kind of file its first bytes say it is
-- `ai.cloudConsent.aboutThis.item.download`: The website it was recorded as downloaded from (the site’s name only, never
-  the full link), when, and the app that downloaded it. For a Mail attachment or an AirDrop, only that it was one, never
-  who sent it
+- `ai.cloudConsent.aboutThis.item.download`: The website it was recorded as downloaded from (the site’s main address
+  only, like github.com, never a subdomain or the full link), when, and the app that downloaded it. For a Mail
+  attachment or an AirDrop, only that it was one, never who sent it
+  - Changed from "the site’s name only" when the projection started sending the registrable domain (conformance L1): a
+    subdomain can carry a share token or a private name. Needs David's review.
 - `ai.cloudConsent.aboutThis.item.appAndSigner`: For an app or a program, its name, id, and version, and the name and
   team id of whoever signed it
 - `ai.cloudConsent.aboutThis.item.use`: When you last opened it, how many times, and which app opens it

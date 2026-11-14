@@ -195,11 +195,11 @@ fn an_airdrop_sender_is_told_from_other_text_by_the_quarantine_agent() {
 // ── What may leave the machine ──────────────────────────────────────────────
 
 #[test]
-fn a_web_source_leaves_as_its_host_alone() {
+fn a_web_source_leaves_as_its_main_address_alone() {
     // A token in the path, a signed key in the query, a fragment.
     assert_eq!(
         egress_of("https://files.example.com/scl/fi/tok3n-in-the-path/Report.pdf?rlkey=s3cret&dl=1#page=2"),
-        site("files.example.com")
+        site("example.com")
     );
     // User info and a port.
     assert_eq!(
@@ -245,7 +245,43 @@ fn a_ten_thousand_character_address_keeps_its_host_and_loses_the_link() {
     );
     let source = one_source(&entry);
     assert!(matches!(&source, WhereFrom::Web { url: None, .. }));
-    assert_eq!(redact_for_egress(&source), site("cdn.example.com"));
+    assert_eq!(redact_for_egress(&source), site("example.com"));
+}
+
+/// A subdomain can carry a token or a private name, so a site leaves as its main
+/// address: one label above the ICANN public suffix. A suffix a company registered
+/// for its customers (`s3.amazonaws.com`, `github.io`, `plex.direct`) counts as
+/// part of that company's address, since the label above it is the customer's.
+#[test]
+fn a_site_leaves_as_its_main_address_and_never_a_subdomain() {
+    for (entry, leaves) in [
+        (
+            "https://uc4f8a9c2e.dl.dropboxusercontent.com/cd/0/get/x",
+            "dropboxusercontent.com",
+        ),
+        ("https://my-private-bucket.s3.amazonaws.com/report.pdf", "amazonaws.com"),
+        ("https://jane-doe.github.io/tool/tool.zip", "github.io"),
+        (
+            "https://192-168-1-20.a1b2c3d4e5.plex.direct:32400/library",
+            "plex.direct",
+        ),
+        ("https://jane.doe.family-photos.example.org/album.zip", "example.org"),
+        ("https://downloads.bbc.co.uk/radio/show.mp3", "bbc.co.uk"),
+        ("https://example.com/tool.dmg", "example.com"),
+        ("https://nas.lan/share/file.zip", "nas.lan"),
+        ("http://localhost:8080/file.zip", "localhost"),
+    ] {
+        assert_eq!(egress_of(entry), site(leaves), "{entry}");
+    }
+    // The card keeps the whole host: it's the person's own record.
+    let WhereFrom::Web {
+        site: WebSite::Domain { host },
+        ..
+    } = one_source("https://uc4f8a9c2e.dl.dropboxusercontent.com/cd/0/get/x")
+    else {
+        panic!("a web source");
+    };
+    assert_eq!(host, "uc4f8a9c2e.dl.dropboxusercontent.com");
 }
 
 #[test]
@@ -405,7 +441,7 @@ fn a_linux_browser_download_reads_its_origin_and_referrer() {
     let sources = download.sources.known().expect("two sources");
     assert_eq!(
         sources.iter().map(redact_for_egress).collect::<Vec<_>>(),
-        [site("downloads.example.com"), site("example.com")]
+        [site("example.com"), site("example.com")]
     );
     assert_eq!(download.downloaded_at, None);
 

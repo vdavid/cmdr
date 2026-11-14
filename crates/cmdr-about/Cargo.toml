@@ -34,6 +34,11 @@ plist = { version = "1.10.3", default-features = false }
 # WHATWG parser lowercases it, answers an IDN as punycode, and tells an IP
 # literal from a name.
 url = "2"
+# The public suffix list, compiled in: a download's host leaves the machine as
+# its registrable domain only (`dl.dropboxusercontent.com` → `dropboxusercontent.com`),
+# since a subdomain can carry a token or a private name. Released daily from the
+# list; Renovate's weekly group takes the updates. `helpers` gives `domain_str`.
+psl = { version = "2.1.250", default-features = false, features = ["helpers"] }
 
 [dev-dependencies]
 cmdr-about = { path = ".", features = ["fuzzing"] }

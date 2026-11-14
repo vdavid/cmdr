@@ -25,8 +25,9 @@ inputs and hands them here. No fact depends on a model.
 - ❗ **What an item says about itself is a claim.** Every such string is an `ItemText` (the only constructor sanitizes),
   so a row or the projection can't receive one that skipped `model_text`. ❌ Never a plain `String` for a name, signer,
   agent, or branch. A `path` field is the exception: raw, for navigating, ❌ never shown.
-- ❌ **Nothing reaches a model but `model::for_model`**: a download as its host or kind (`redact_for_egress`, the only
-  redaction), no raw path. A new field needs its consent line and a version bump. `DETAILS.md` § The model's projection.
+- ❌ **Nothing reaches a model but `model::for_model`**: a download as its main address or kind (`redact_for_egress`,
+  the only redaction), no raw path. A new field needs its consent line and a version bump. `DETAILS.md` § The model's
+  projection.
 - ❗ **Decoders cap first** (64 KB xattr, 16 entries) and parse the WHOLE entry before any cut: a host read from a
   truncated address can be a piece of its user info.
 - ❗ **The footer is the facts'** (`actions`): removal never first; only `web_page` turns an address into an action.

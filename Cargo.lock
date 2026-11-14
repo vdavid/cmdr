@@ -1575,6 +1575,7 @@ dependencies = [
  "cmdr-about",
  "infer",
  "plist",
+ "psl",
  "serde",
  "serde_json",
  "specta",
@@ -8669,6 +8670,15 @@ dependencies = [
  "rusty-fork",
  "tempfile",
  "unarray",
+]
+
+[[package]]
+name = "psl"
+version = "2.1.250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c036f34929bf0b11edcba0799b63f360beb20aef1957b3432b1c3954bd3a631"
+dependencies = [
+ "psl-types",
 ]
 
 [[package]]
