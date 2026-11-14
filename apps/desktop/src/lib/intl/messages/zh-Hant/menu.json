@@ -159,6 +159,10 @@
   "@menu.file.getInfo": {
     "sourceHash": "91c64ca"
   },
+  "menu.file.tellMeAbout": "告訴我這是什麼",
+  "@menu.file.tellMeAbout": {
+    "sourceHash": "0d5deaf"
+  },
   "menu.file.quit": "{platform, select, windows {結束 Cmdr} other {結束 Cmdr}}",
   "@menu.file.quit": {
     "sourceHash": "af7cf85"

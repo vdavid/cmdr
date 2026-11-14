@@ -1290,6 +1290,18 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.aboutThis.aiVerdict.label": "AI-kommentar i ”Berätta om det här”",
+  "@settings.aboutThis.aiVerdict.label": {
+    "sourceHash": "4c84599"
+  },
+  "settings.aboutThis.aiVerdict.description": "När du öppnar kortet skriver AI:n två eller tre meningar utifrån fakta som kortet visar. Med moln-AI går kortets fakta och en kort titt in i filen till din leverantör varje gång.",
+  "@settings.aboutThis.aiVerdict.description": {
+    "sourceHash": "5dfb5f5"
+  },
+  "settings.aboutThis.aiVerdict.keywords": "förklara, förklaring, sammanfattning, omdöme, bedömning, filinfo, vad är det här, beskriv, beskrivning, kommentar",
+  "@settings.aboutThis.aiVerdict.keywords": {
+    "sourceHash": "56b9db5"
+  },
   "settings.ai.localContextSize.keywords": "kontext, kontextfönster, fönster, token, tokens, minne, storlek, lokal",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
@@ -2427,6 +2439,18 @@
   "settings.behavior.adbHintDismissed.keywords": "telefon, mobil, mobiltelefon, felsökning, utvecklare, utvecklaralternativ, rad",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
+  },
+  "settings.aboutThis.aiHintDismissed.label": "Dölj AI-tipset i ”Berätta om det här”",
+  "@settings.aboutThis.aiHintDismissed.label": {
+    "sourceHash": "fd81e08"
+  },
+  "settings.aboutThis.aiHintDismissed.description": "När AI är avstängt, eller inte inställt än, visar kortet ”Berätta om det här” en rad under knapparna om att AI lägger till en närmare titt. Om du stänger raden med dess × aktiveras det här. Stäng av det här för att se raden igen.",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "sourceHash": "7141d88"
+  },
+  "settings.aboutThis.aiHintDismissed.keywords": "tips, filinfo, kort, närmare titt, förklara, förklaring, rad, AI-kommentar",
+  "@settings.aboutThis.aiHintDismissed.keywords": {
+    "sourceHash": "2e77845"
   },
   "settings.section.notifications": "Aviseringar",
   "@settings.section.notifications": {

@@ -13,7 +13,7 @@ use crate::ids::{
     MEDIA_INDEX_ADD_FOLDER_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID, MEDIA_INDEX_INCLUDE_FOLDER_ID,
     MEDIA_INDEX_REMOVE_FOLDER_ID, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_EDIT_ID, NETWORK_HOST_FORGET_SECRET_ID,
     NETWORK_HOST_FORGET_SERVER_ID, SHOW_SEARCH_RESULT_IN_FOLDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID,
-    VIEWER_CONTEXT_COPY_ID, VIEWER_CONTEXT_SELECT_ALL_ID, menu_id_to_command,
+    TELL_ME_ABOUT_CONTEXT_ID, VIEWER_CONTEXT_COPY_ID, VIEWER_CONTEXT_SELECT_ALL_ID, menu_id_to_command,
 };
 
 /// Which item of the viewer menu bar's Edit submenu (or the viewer's text menu) was picked. A
@@ -76,6 +76,13 @@ pub enum ContextClick {
         command_id: &'static str,
         scope: CommandScope,
     },
+    /// The same as [`ContextClick::Command`], from a row only a context menu carries
+    /// (`TELL_ME_ABOUT_CONTEXT_ID`), so the host can tell the main window the command came
+    /// from a right-click. A row sharing the bar's id can't say that.
+    RowCommand {
+        command_id: &'static str,
+        scope: CommandScope,
+    },
     /// `show-search-result-in-folder` with the primary right-clicked path.
     ShowSearchResultInFolder,
     /// The `add_favorite` command on the right-clicked folder, so this surface meets the same add
@@ -123,6 +130,10 @@ pub fn context_click(menu_id: &str) -> Option<ContextClick> {
         NETWORK_HOST_EDIT_ID => ContextClick::NetworkHost(NetworkHostAction::Edit),
         VIEWER_CONTEXT_COPY_ID => ContextClick::ViewerText(ViewerEditActionKind::Copy),
         VIEWER_CONTEXT_SELECT_ALL_ID => ContextClick::ViewerText(ViewerEditActionKind::SelectAll),
+        TELL_ME_ABOUT_CONTEXT_ID => ContextClick::RowCommand {
+            command_id: "file.tellMeAbout",
+            scope: CommandScope::FileScoped,
+        },
         _ => {
             if let Some(action) = QueueRowMenuAction::from_menu_id(menu_id) {
                 ContextClick::QueueRow(action)

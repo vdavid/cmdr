@@ -694,3 +694,12 @@ Apple's `Dock.app` `DockMenus.strings` supplies almost every phrase (`KEEP_IN_DO
   `Warum:` like `Warum?`.
 - Pills pair `Du kannst das widerrufen:` / `Das lässt sich nicht widerrufen:`; the app's notice is a `Hinweis` (not
   `Notiz`); tick box → `einbeziehen` (macOS „Anhänge einbeziehen“).
+
+## Erzähl mir etwas darüber (`aboutThis.*`, `commands.fileTellMeAbout.*`, `ai.cloudConsent.aboutThis.*`)
+
+- `Erzähl mir etwas darüber` (the chat draft: `Erzähl mir mehr darüber.`), the card `die Karte`. AI take →
+  `KI-Kommentar` (❌ `Urteil`/`Einschätzung`: never a verdict). Record → `Vermerk`, recorded → `vermerkt` /
+  `laut Vermerk`: a claim, never `registriert`. Deeper read → `genauerer Blick`.
+- Standard folders by their Finder names after `Ordner` (`Dein Ordner „Library“`, `Der Ordner „Benutzer:innen“`, live
+  `SystemFolderLocalizations` de.lproj); `mechanics.json` exempts the quoted folder name. Ticket →
+  `Notarisierungsnachweis` (tentative, no Apple term in the pile).

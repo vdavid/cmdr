@@ -13,9 +13,6 @@
     "debug/debug-window.ts": {
       "reason": "Depends on Tauri WebviewWindow API; dev-only"
     },
-    "downloads/LatestDownloadFdaToastContent.svelte": {
-      "reason": "Thin UI wrapper; click delegates to openPrivacySettings (Tauri command) and dismissToast"
-    },
     "file-explorer/drag/DragOverlay.svelte": {
       "reason": "UI overlay component, state tested in drag-overlay tests"
     },

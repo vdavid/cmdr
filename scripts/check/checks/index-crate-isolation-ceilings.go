@@ -118,6 +118,12 @@ var surfaceGuardedCrates = []struct {
 		// folding it into `resume_after_reconnect` would make one call mean two things by
 		// volume kind. Why, in the audit doc below under "A drive whose mount point moved".
 		//
+		// Raised on 2026-11-14, `SubsystemItems` 156 -> 157, for ONE item:
+		// `media_index::predicate::MediaKind::enriches_extension`, the index's own list of
+		// formats it enriches, so the About card's "What it shows" row plans from it
+		// rather than a second list that missed camera RAWs. Why, in the audit doc below
+		// under "The ceiling that keeps this honest".
+		//
 		// Raised on 2026-10-26, `HandleMethods` 41 -> 42, for ONE method and no root promise:
 		// `Index::scan_skips`, the scanner's own exclusion policy for a path, so Ask Cmdr's
 		// live `list_dir` never shows ground the index skipped on purpose (#749). Copying the
@@ -133,7 +139,7 @@ var surfaceGuardedCrates = []struct {
 			RootPromises:   53,
 			HandleMethods:  42,
 			PublicModules:  17,
-			SubsystemItems: 156,
+			SubsystemItems: 157,
 		},
 	},
 	{
@@ -283,10 +289,11 @@ var surfaceGuardedCrates = []struct {
 		// post-change listing refresh started matching by CANONICAL worktree root
 		// instead of by string prefix, and this crate keeps no promise nothing reaches.
 		//
+		// Raised 11 -> 13 on 2026-11-14, David's go (#1188): `path_status`, `PathStatus`.
 		// Item-by-item: `crates/cmdr-git/DETAILS.md` § "The public surface is capped".
 		Name: "cmdr-git",
 		Ceilings: surfaceCeilings{
-			RootPromises:   11,
+			RootPromises:   13,
 			PublicModules:  0,
 			SubsystemItems: 0,
 		},
@@ -520,13 +527,20 @@ var surfaceGuardedCrates = []struct {
 		// which crosses into `bindings.ts`). `rollback_operation` and `execute_rollback`
 		// stay as their `None` wrappers on purpose: about 20 callers across both crates
 		// and the app's backend suites reverse a whole op and stay byte-identical.
+		//
+		// Raised 95 -> 97 on 2026-11-13 for "Tell me about this" (#1104): in `query`,
+		// `landed_at` (which operation put the node now at a path there) and its
+		// answer `LandedAt`. No existing read answers by where an item LANDED
+		// (search matches source names), and the rule that makes the answer honest,
+		// a row speaks only for the node it recorded, belongs beside the schema that
+		// stores the node rather than re-derived by a host from raw rows.
 		Name:       "cmdr-operation-log",
 		HandleType: "OperationLog",
 		Ceilings: surfaceCeilings{
 			RootPromises:   11,
 			HandleMethods:  7,
 			PublicModules:  7,
-			SubsystemItems: 95,
+			SubsystemItems: 97,
 		},
 	},
 	{
@@ -711,7 +725,75 @@ var surfaceGuardedCrates = []struct {
 			RootPromises:   13,
 			HandleMethods:  18,
 			PublicModules:  10,
-			SubsystemItems: 110,
+			SubsystemItems: 113,
+		},
+	},
+	{
+		// Measured 2026-11-13, when the crate was written, and set to exactly what
+		// it exposes, with no headroom. Argued in `crates/cmdr-about/DETAILS.md` §
+		// "The public surface is capped".
+		//
+		// Eleven root promises, one module per concern: the coverage vocabulary
+		// (`fact`), what each fact carries (`payload`, `owner`, `digest`), the pure
+		// rules (`provenance`, `sniff`, `removal`, `headline`, `card`), sanitized
+		// text (`text`), and the gathering engine (`gather`). The module items are
+		// the wire types the card's IPC events and the model's projection carry,
+		// plus the handful of functions a host calls with raw inputs. A new item is
+		// a new thing every surface of the card can say, so it's argued in that
+		// DETAILS first.
+		//
+		// 110 → 113 (2026-11-13, the app host): `OsCaps`, `usage_fact`, and
+		// `AboutPlan::retain_kinds`, argued in that section.
+		//
+		// 113 → 119 (2026-11-13, the owner and importance rows): `OwnerQuestion`,
+		// its `of` and `answer`, `KnownApp`, `OwnerLookups`, and
+		// `ImportanceBand::of_score`, argued in that section.
+		//
+		// 119 → 120 (2026-11-13): `Signature::read`, which settles when a
+		// notarization ticket is news, argued in that section.
+		//
+		// 120 → 129 (2026-11-13, a folder's digest and an app's Library data):
+		// `Children`, `FolderDigest::of`, `FolderClass::of`, `ByteShare::unchanged`,
+		// `AppData::of`, `app_data_place`, `APP_DATA_PLACES`, `SHOWN_CHILDREN`,
+		// and `UNCHANGED_FOR_SECS`, argued in that section.
+		//
+		// 129 → 132 (2026-11-13, items reached through their volume): `GitSnapshot`,
+		// `SnapshotKind`, and `Download::of_archive`, argued in that section.
+		//
+		// 11 → 12 modules and root promises, 132 → 139 items (2026-11-13, the
+		// card's next actions): the `actions` module (`AboutAction`, `Actions`,
+		// `ActionCaps` with `none`, `RemoveBy`, `actions`) and
+		// `OwnerQuestion::app_folder_above`, argued in that section.
+		//
+		// 139 → 140 (2026-11-13): `RecursiveSize::into_fact`, which reads a lower
+		// bound with nothing counted as not indexed, argued in that section.
+		//
+		// 12 → 13 modules and root promises, 140 → 146 items (2026-11-13, the
+		// egress line): the `model` module (`ModelCard`, `model::for_model`,
+		// `ProtectedReason`, `Speak`, `SpokenSize`, `AboutDisclosure`), the one
+		// projection of a card for a model, argued in that section.
+		//
+		// 146 → 147 (2026-11-13): `text::hides_reordering`, whether a name hid a
+		// direction override the sanitizer dropped, so the card can say so once,
+		// argued in that section.
+		//
+		// 147 → 149 (2026-11-14, invisible characters): `text::shown_text`, the one
+		// sanitizer the app's peek, Ask Cmdr's question facts, and the AI take's
+		// words share, and `text::HiddenInName`, the wire answer that replaced
+		// `hides_reordering`'s bool (now `hidden_in_name`), argued in that section.
+		//
+		// 149 → 151 (2026-11-14, a picture's "What it shows" row):
+		// `payload::ImageContents`, a wire type, and `ImageContents::of`, which
+		// tags and lines show, argued in that section.
+		//
+		// 151 → 153 (2026-11-14, the real app's card): `owner::StandardFolder`, a
+		// wire type naming the folders the OS sets up, and `RealType::by_name`, the
+		// Kind row where Cmdr reads no bytes, argued in that section.
+		Name: "cmdr-about",
+		Ceilings: surfaceCeilings{
+			RootPromises:   13,
+			PublicModules:  13,
+			SubsystemItems: 153,
 		},
 	},
 }

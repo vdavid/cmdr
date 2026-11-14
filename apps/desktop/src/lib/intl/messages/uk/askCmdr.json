@@ -92,6 +92,22 @@
   "@askCmdr.tool.folderImportance.done": {
     "sourceHash": "c7f397f"
   },
+  "askCmdr.tool.aboutItem.doing": "Зʼясування, що це за елемент",
+  "@askCmdr.tool.aboutItem.doing": {
+    "sourceHash": "dfc0d31"
+  },
+  "askCmdr.tool.aboutItem.done": "Зʼясовано, що це за елемент",
+  "@askCmdr.tool.aboutItem.done": {
+    "sourceHash": "5370586"
+  },
+  "askCmdr.tool.aboutItem.place.doing": "Зʼясування, що таке <place>{name}</place>",
+  "@askCmdr.tool.aboutItem.place.doing": {
+    "sourceHash": "06dadca"
+  },
+  "askCmdr.tool.aboutItem.place.done": "Зʼясовано, що таке <place>{name}</place>",
+  "@askCmdr.tool.aboutItem.place.done": {
+    "sourceHash": "5c635d1"
+  },
   "askCmdr.tool.listVolumes.doing": "Перевірка ваших дисків",
   "@askCmdr.tool.listVolumes.doing": {
     "sourceHash": "2ed1808"

@@ -16,6 +16,8 @@
 //! 3. Add a new entry to `AVAILABLE_MODELS`
 //! 4. Update `DEFAULT_MODEL_ID` if the new model should be the default
 
+#[cfg(test)]
+mod about_verdict_eval_test;
 pub mod api_keys;
 pub mod client;
 #[cfg(test)]

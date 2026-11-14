@@ -581,6 +581,38 @@ fn the_reserved_quiet_wakes_thread_never_shows_in_the_session_list() {
     );
 }
 
+/// The verdict's reserved ledger row is a cost total too: the session list never shows it,
+/// archived or not, while every thread the user started still does.
+#[test]
+fn the_reserved_about_this_thread_never_shows_in_the_session_list() {
+    let conn = migrated_conn();
+    let reserved = about_this_conversation(&conn).expect("the reserved row exists");
+    assert_ne!(reserved, quiet_wakes_conversation(&conn).expect("its sibling"));
+    let mine = create_conversation(&conn, "mine", 100, None).expect("create");
+    let wake = create_conversation(&conn, "wake", 200, Some(ConversationOrigin::Notification)).expect("create");
+
+    let visible = list_conversations(&conn, 50, 0, false).expect("list");
+    assert_eq!(visible.iter().map(|c| c.id).collect::<Vec<_>>(), vec![wake, mine]);
+    let all = list_conversations(&conn, 50, 0, true).expect("list all");
+    assert!(!all.iter().any(|c| c.id == reserved));
+}
+
+/// What a verdict spent counts toward the day's total and never toward the wake loop's ceiling,
+/// which is the proactive agent's own money.
+#[test]
+fn a_verdicts_cost_is_metered_but_never_counted_as_proactive() {
+    let conn = migrated_conn();
+    let reserved = about_this_conversation(&conn).expect("reserved");
+    record_cost(
+        &conn,
+        &cost("2026-11-13", reserved, ProviderTag::Anthropic, 900, 60, 120),
+    )
+    .expect("record");
+    assert_eq!(proactive_tokens_for_day(&conn, "2026-11-13").expect("read"), 0);
+    let summary = cost_summary(&conn).expect("summary");
+    assert_eq!(summary.days[0].prompt_tokens, 900);
+}
+
 /// ⚠️ **What a quiet wake spent survives the thread that spent it.** `cost_meter` cascades on
 /// the conversation, so a plain delete would erase the proactive agent's cost from the one
 /// place the user can see it. The rows fold onto the reserved thread first, summing tokens and

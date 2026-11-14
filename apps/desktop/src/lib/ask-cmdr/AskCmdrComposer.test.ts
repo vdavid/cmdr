@@ -9,7 +9,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 
 const { state, spies } = vi.hoisted(() => ({
-  state: { streaming: false, attachments: [] as unknown[], composerFocusRequest: 0 },
+  state: {
+    streaming: false,
+    attachments: [] as unknown[],
+    composerFocusRequest: 0,
+    composerDraft: null as string | null,
+  },
   spies: {
     sendMessage: vi.fn(),
     stopStreaming: vi.fn(),
@@ -93,6 +98,15 @@ describe('AskCmdrComposer', () => {
     await typeInto(ta, 'what is my biggest folder?')
     ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(spies.sendMessage).toHaveBeenCalledWith('what is my biggest folder?')
+  })
+
+  it('takes a handed-over draft once, unsent, and clears it', async () => {
+    state.composerDraft = 'Tell me more about this.'
+    const target = mountComposer()
+    await tick()
+    expect(textareaOf(target).value).toBe('Tell me more about this.')
+    expect(state.composerDraft).toBeNull()
+    expect(spies.sendMessage).not.toHaveBeenCalled()
   })
 
   it('Shift+Enter does not send', async () => {

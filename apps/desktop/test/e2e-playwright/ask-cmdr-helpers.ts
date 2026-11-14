@@ -1,11 +1,19 @@
 /**
  * Driving the Ask Cmdr rail from a spec: opening it past its gates, and telling when a turn is over.
- * `ask-cmdr.spec.ts` and `ask-cmdr-capability.spec.ts` share these.
+ * `ask-cmdr.spec.ts`, `ask-cmdr-capability.spec.ts`, and `about-this-verdict.spec.ts` share these.
  */
 
+import fs from 'node:fs'
+import path from 'node:path'
 import { waitBudget } from './wait-budget.js'
 import { expect } from './fixtures.js'
-import { dispatchMenuCommand, waitForAskCmdrOnInBackend } from './helpers.js'
+import {
+  closeScopedWindow,
+  dispatchMenuCommand,
+  openSettingsWindowViaProd,
+  waitForAskCmdrOffInBackend,
+  waitForAskCmdrOnInBackend,
+} from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 /** The rail is open once its root element is in the DOM. */
@@ -90,4 +98,72 @@ export async function typeAndSend(page: TauriPage, text: string): Promise<void> 
     ta.dispatchEvent(new Event('input', { bubbles: true }));
     ta.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   })()`)
+}
+
+/** The Ask Cmdr switch in Settings > AI > Ask Cmdr: its hidden input carries the label. */
+const ASK_CMDR_SWITCH = 'input[aria-label="Ask Cmdr"]'
+
+/** The switch's state as Ark draws it (`checked` / `unchecked`), or `missing`. */
+function askCmdrSwitchStateJs(): string {
+  return `(function() {
+    var input = document.querySelector('${ASK_CMDR_SWITCH}');
+    if (!input) return 'missing';
+    var root = input.closest('[data-scope="switch"][data-part="root"]');
+    var control = root ? root.querySelector('.switch-control') : null;
+    return (control || input).getAttribute('data-state') || 'unknown';
+  })()`
+}
+
+/** `askCmdr.enabled` as the instance's `settings.json` holds it: what a card and a send read fresh. */
+function askCmdrEnabledOnDisk(): unknown {
+  const dataDir = process.env.CMDR_DATA_DIR
+  if (!dataDir) throw new Error('CMDR_DATA_DIR is not set; switching Ask Cmdr needs the instance’s settings.json')
+  try {
+    const parsed: unknown = JSON.parse(fs.readFileSync(path.join(dataDir, 'settings.json'), 'utf-8'))
+    return typeof parsed === 'object' && parsed !== null
+      ? (parsed as Record<string, unknown>)['askCmdr.enabled']
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Sets Ask Cmdr's switch through the Settings window, the way a user does, and closes the window at once, inside its
+ * own 500 ms save debounce. Then waits for `settings.json` to hold the new value (a card's "Continue in Ask Cmdr" and a
+ * send read the file fresh) and for the backend's cached wake readiness to follow, in either direction.
+ *
+ * ⚠️ Closing early is the point: the backend saves the file the moment the change reaches the shared settings store
+ * (`settings::store_watch`), so no window has to outlive its debounce. A window closed inside it once left the off
+ * unwritten until quit and the readiness at `ready` (#1194), so the next spec's card still offered "Continue in Ask
+ * Cmdr".
+ */
+export async function setAskCmdrEnabledInSettings(main: TauriPage, on: boolean): Promise<void> {
+  await flipAskCmdrInSettings(main, on)
+  await expect.poll(() => askCmdrEnabledOnDisk() === on, { timeout: waitBudget(3000) }).toBe(true)
+  if (on) await waitForAskCmdrOnInBackend(main)
+  else await waitForAskCmdrOffInBackend(main)
+}
+
+async function flipAskCmdrInSettings(main: TauriPage, on: boolean): Promise<void> {
+  const settings = await openSettingsWindowViaProd(main)
+  try {
+    await settings.waitForSelector('.settings-sidebar', waitBudget(3000))
+    await settings.evaluate(`(function() {
+      var items = document.querySelectorAll('.section-item');
+      for (var i = 0; i < items.length; i++) {
+        if ((items[i].textContent || '').trim() === 'Ask Cmdr') { items[i].click(); return; }
+      }
+    })()`)
+    await settings.waitForSelector(ASK_CMDR_SWITCH, waitBudget(3000))
+    const wanted = on ? 'checked' : 'unchecked'
+    if ((await settings.evaluate<string>(askCmdrSwitchStateJs())) !== wanted) {
+      await settings.evaluate(`document.querySelector('${ASK_CMDR_SWITCH}')?.click()`)
+    }
+    await expect
+      .poll(() => settings.evaluate<string>(askCmdrSwitchStateJs()), { timeout: waitBudget(3000) })
+      .toBe(wanted)
+  } finally {
+    await closeScopedWindow(main, settings, 'settings')
+  }
 }

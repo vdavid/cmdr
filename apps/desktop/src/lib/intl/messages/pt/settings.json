@@ -1289,6 +1289,18 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.aboutThis.aiVerdict.label": "Comentário da IA em “Fale sobre isto”",
+  "@settings.aboutThis.aiVerdict.label": {
+    "sourceHash": "4c84599"
+  },
+  "settings.aboutThis.aiVerdict.description": "Quando você abre a ficha, a IA escreve duas ou três frases a partir das informações exibidas. Com a IA na nuvem, as informações da ficha e um rápido olhar dentro do arquivo vão para o seu provedor a cada vez.",
+  "@settings.aboutThis.aiVerdict.description": {
+    "sourceHash": "5dfb5f5"
+  },
+  "settings.aboutThis.aiVerdict.keywords": "explicar, resumo, opinião, análise, informações do arquivo, o que é isto, descrever",
+  "@settings.aboutThis.aiVerdict.keywords": {
+    "sourceHash": "56b9db5"
+  },
   "settings.ai.localContextSize.keywords": "contexto, janela de contexto, janela, tokens, memória, tamanho, local",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
@@ -2422,6 +2434,18 @@
   "settings.behavior.adbHintDismissed.keywords": "celular, telefone, dispositivo, depuração, desenvolvedor, opções do desenvolvedor, dica",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
+  },
+  "settings.aboutThis.aiHintDismissed.label": "Silenciar a dica de IA em “Fale sobre isto”",
+  "@settings.aboutThis.aiHintDismissed.label": {
+    "sourceHash": "fd81e08"
+  },
+  "settings.aboutThis.aiHintDismissed.description": "Com a IA desativada, ou ainda não configurada, a ficha de “Fale sobre isto” mostra uma linha abaixo dos botões dizendo que a IA adiciona uma leitura mais aprofundada. Fechar a linha com o × ativa esta opção. Desative esta opção para ver a linha de novo.",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "sourceHash": "7141d88"
+  },
+  "settings.aboutThis.aiHintDismissed.keywords": "dica, aviso, informações do arquivo, ficha, leitura aprofundada, explicar",
+  "@settings.aboutThis.aiHintDismissed.keywords": {
+    "sourceHash": "2e77845"
   },
   "settings.section.notifications": "Notificações",
   "@settings.section.notifications": {

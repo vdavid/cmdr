@@ -69,6 +69,13 @@ pub(crate) fn operation_log() -> &'static OperationLog {
     }
 }
 
+/// Where the open log's database is, for a read that opens its own connection
+/// ("Tell me about this" asks which operation landed an item). `None` until
+/// [`start`] opened it, and for good when it couldn't: there's no history to read.
+pub(crate) fn db_path() -> Option<PathBuf> {
+    operation_log().writer().map(|writer| writer.db_path().to_path_buf())
+}
+
 /// Open `operation-log.db` in the app's data dir on `log` and start retention.
 /// Failure is non-fatal: the app runs without the journal rather than refusing
 /// to start.

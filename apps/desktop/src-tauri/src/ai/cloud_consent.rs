@@ -27,7 +27,11 @@ const LOG_TARGET: &str = "ai::cloud_consent";
 /// whenever the `ai.cloudConsent.*` copy changes materially**, so a stale acceptance no longer
 /// counts and users re-consent to the new wording. The copy lives in the frontend catalog; this
 /// integer is its machine-checkable version, recorded in `main.db`.
-pub const CLOUD_AI_CONSENT_VERSION: u32 = 2;
+///
+/// 3: "Tell me about this" (the card's AI take, and Ask Cmdr's lookup of the same facts), whose
+/// projection (`cmdr_about::model`) carries download sites, signers, owning apps, git status, and
+/// Cmdr's own copy history, which version 2 never named.
+pub const CLOUD_AI_CONSENT_VERSION: u32 = 3;
 
 /// Whether a "no" to cloud AI is still waiting to reach `main.db`.
 ///
@@ -245,16 +249,18 @@ pub async fn cloud_ai_consent_revoke_pending_changed(app: AppHandle) {
     announce_change(&app);
 }
 
-/// Cancel every in-flight AI call: running Ask Cmdr turns and suggestion streams. `reason` labels
+/// Cancel every in-flight AI call: running Ask Cmdr turns, suggestion streams, and the "Tell me
+/// about this" verdict. `reason` labels
 /// the log line. Translate calls are one-shot requests of a few seconds and aren't tracked: they
 /// finish, and the next one refuses. Also what a narrowing managed policy runs (`super::managed`).
 pub(super) fn stop_in_flight_calls(reason: &str) {
     let turns = crate::agent::chat::cancel::cancel_all();
     let streams = super::stream_registry::cancel_all();
-    if turns + streams > 0 {
+    let verdicts = crate::about::stop_verdicts();
+    if turns + streams + verdicts > 0 {
         log::info!(
             target: LOG_TARGET,
-            "{reason}: stopped {turns} Ask Cmdr turn(s) and {streams} suggestion stream(s)"
+            "{reason}: stopped {turns} Ask Cmdr turn(s), {streams} suggestion stream(s), and {verdicts} card verdict(s)"
         );
     }
 }
@@ -300,6 +306,20 @@ mod tests {
 
     fn no_policy() -> ManagedPolicy {
         ManagedPolicy::default()
+    }
+
+    /// Turning cloud AI off (or a held "no") stops the card's verdict in flight beside the
+    /// turns and the suggestion streams.
+    #[test]
+    fn a_revoke_stops_the_cards_verdict() {
+        let verdict = tokio_util::sync::CancellationToken::new();
+        let _claim = crate::about::verdict::limits::LIMITS.claim(
+            "cloud-consent-revoke-test",
+            verdict.clone(),
+            crate::about::verdict::limits::LIMITS.stops_seen(),
+        );
+        stop_in_flight_calls("a test revoke");
+        assert!(verdict.is_cancelled());
     }
 
     /// A policy that rules out every cloud host closes the gate over a consent the store still
@@ -384,6 +404,20 @@ mod tests {
             !has_current_cloud_consent(&conn, RevokePending::No, &no_policy()),
             "a stale copy version ⇒ gate closed"
         );
+    }
+
+    /// Version 2 never named what "Tell me about this" sends (download sites,
+    /// signers, owning apps, git status, a look inside), so everyone who accepted
+    /// it asks again.
+    #[test]
+    fn a_consent_from_before_tell_me_about_this_is_stale() {
+        let conn = migrated_conn();
+        store::set_cloud_ai_consent(&conn, 2, 1_780_000_000).expect("set");
+        assert!(!has_current_cloud_consent(&conn, RevokePending::No, &no_policy()));
+        let status = status_from(&conn, RevokePending::No, &no_policy()).expect("status");
+        assert!(!status.accepted);
+        assert_eq!(status.accepted_version, Some(2), "the old record stays for the audit");
+        assert_eq!(status.current_version, 3);
     }
 
     #[test]

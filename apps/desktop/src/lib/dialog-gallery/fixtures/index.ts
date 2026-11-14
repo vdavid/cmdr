@@ -27,6 +27,7 @@
 
 import type { SoftDialogId } from '#lib/ui/dialog-registry.js'
 import { alertFixtures } from './alert'
+import { aboutThisFixtures } from './about-this'
 import { deleteAiModelFixtures, deleteAllDataFixtures, forgetMemoryFixtures, smbLinkConsentFixtures } from './ai-model'
 import { archivePasswordFixtures } from './archive-password'
 import { crashReportFixtures } from './crash-report'
@@ -59,6 +60,7 @@ import { viewerCopyConfirmFixtures, viewerCopyRefuseFixtures } from './viewer-co
 
 export const fixtureRecords = {
   alert: alertFixtures,
+  'tell-me-about-this': aboutThisFixtures,
   'archive-password': archivePasswordFixtures,
   'bulk-rename-review': bulkRenameFixtures,
   'crash-report': crashReportFixtures,

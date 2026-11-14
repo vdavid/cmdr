@@ -522,3 +522,12 @@ Server dialog (`NetAuthAgent.app`).
 
 - Field names copy macOS Photos/Music vi (`Ngày chụp`, `Kiểu máy ảnh`, `Số bản nhạc`); make → `Nhãn hiệu máy ảnh`
   (Photos `Nhãn hiệu thiết bị`); field → `trường` (MS); media → `đa phương tiện` over AppKit's bare `phương tiện`.
+
+## Cho tôi biết về mục này (`aboutThis.*`, `commands.fileTellMeAbout.*`, `menu.file.tellMeAbout`, `settings.aboutThis.*`, `ai.cloudConsent.aboutThis.*`)
+
+- The command is the user speaking (`tôi`): `Cho tôi biết về mục này`. card → `bảng thông tin` over `thẻ` (the Finder
+  tag, also the image labels here); AI take → `nhận xét của AI`; deeper read → `cái nhìn sâu hơn`; facts → `dữ kiện`.
+- record (noun) → `bản ghi`, recorded → `ghi nhận`, so no line claims Cmdr checked it. Folder names come from
+  `SystemFolderLocalizations` vi.lproj (plutil, macOS 27, 2026-11-14): Library `Thư viện`, Desktop `Màn hình nền`.
+- build → `dựng` (MS `bản dựng`) over the loanword; notarization ticket → `phiếu công chứng` (no Apple source); a git
+  tag stays `tag`, as the git portal ships it.

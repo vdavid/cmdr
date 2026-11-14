@@ -1292,6 +1292,18 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.aboutThis.aiVerdict.label": "Commentaire de l’IA dans « Parlez-moi de ceci »",
+  "@settings.aboutThis.aiVerdict.label": {
+    "sourceHash": "4c84599"
+  },
+  "settings.aboutThis.aiVerdict.description": "Quand vous ouvrez la fiche, l’IA écrit deux ou trois phrases à partir des faits qu’affiche la fiche. Avec l’IA dans le cloud, Cmdr envoie à chaque fois les faits de la fiche et un bref regard à l’intérieur du fichier à votre fournisseur.",
+  "@settings.aboutThis.aiVerdict.description": {
+    "sourceHash": "5dfb5f5"
+  },
+  "settings.aboutThis.aiVerdict.keywords": "expliquer, avis, résumé, infos fichier, qu’est-ce que c’est, décrire, verdict, commentaire",
+  "@settings.aboutThis.aiVerdict.keywords": {
+    "sourceHash": "56b9db5"
+  },
   "settings.ai.localContextSize.keywords": "contexte, fenêtre de contexte, jetons, mémoire, taille, local",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
@@ -2432,6 +2444,18 @@
   "settings.behavior.adbHintDismissed.keywords": "téléphone, smartphone, mobile, débogage, développeur, options pour les développeurs, astuce",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
+  },
+  "settings.aboutThis.aiHintDismissed.label": "Masquer l’astuce sur l’IA dans « Parlez-moi de ceci »",
+  "@settings.aboutThis.aiHintDismissed.label": {
+    "sourceHash": "fd81e08"
+  },
+  "settings.aboutThis.aiHintDismissed.description": "Quand l’IA est désactivée ou pas encore configurée, la fiche « Parlez-moi de ceci » affiche sous ses boutons une ligne indiquant que l’IA ajoute un regard plus approfondi. Fermer cette ligne avec son × active cette option. Désactivez cette option pour revoir la ligne.",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "sourceHash": "7141d88"
+  },
+  "settings.aboutThis.aiHintDismissed.keywords": "astuce, conseil, infos fichier, fiche, regard approfondi, expliquer, réafficher",
+  "@settings.aboutThis.aiHintDismissed.keywords": {
+    "sourceHash": "2e77845"
   },
   "settings.section.notifications": "Notifications",
   "@settings.section.notifications": {

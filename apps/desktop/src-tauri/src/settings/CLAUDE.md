@@ -15,6 +15,7 @@ satisfies the live-apply rule below.
 - `ask_cmdr.rs`: the AI and Ask Cmdr settings the agent reads fresh per send or wake (model, chat memory, efforts, the
   spend pause, proactive, wake delay), each with a pure `parse_*` half.
 - `ai_gates.rs`: switches the AI gates read fresh (`askCmdr.enabled` via the policy `overlay`, held-"no" markers).
+- `store_watch.rs`: saves `settings.json` the moment a fresh-read key reaches the shared store, then tells its owner.
 - `restricted_shortcuts.rs`: the viewer's read-only snapshot of `shortcuts.json` (its keys are remappable, and it has no
   store access); `lib/shortcuts/DETAILS.md` § "The viewer's keys".
 - `loader_tests.rs`: `loader`'s own tests, in a sibling file wired in with `#[path]` so they still reach its private
@@ -23,16 +24,12 @@ satisfies the live-apply rule below.
 
 ## Must-knows
 
-- **Live-apply rule (MUST, no exceptions).** Every setting applies immediately without restart. When adding a setting the
-  backend reads, also add (a) a Tauri command in `commands/settings.rs` that updates the relevant atomic/global
-  (delegating to the owning subsystem's setter), and (b) a call from `settings-applier.ts` on `onSettingChange`.
-  Startup-time seeding from `load_settings` stays (a sane initial value before any window opens), but every subsequent
-  change is pushed via IPC. Restart-required is a bug. If a setting touches a TCP connection, thread pool, watcher, or
-  server: reconnect / rebind / restart the thread / swap the pool, whatever it takes.
-- **One-way read only.** This module never writes; all writes go through the frontend's settings store. The restricted
-  window's write path (`persist_restricted_window_setting`) forwards to the main window's store rather than writing from
-  Rust, keeping this invariant intact. The one Rust writer is `state_recovery`, which replaces an unparseable file
-  with a fresh one before anything reads it (`../state_recovery/CLAUDE.md`).
+- **Live-apply rule (MUST, no exceptions).** Every setting applies immediately without restart. A value pushed to a
+  subsystem needs a `commands/settings.rs` command plus a `settings-applier.ts` call; a key the backend reads fresh from
+  the file goes in `store_watch::fresh_key_move` instead, ❌ never an applier push, which re-read the old file (#1194).
+  Restart-required is a bug: reconnect, rebind, restart the thread, whatever it takes. `DETAILS.md` § Fresh-read keys.
+- **Rust never authors a value**; writes go through the frontend's store. Two Rust writers choose none: `state_recovery`
+  (`../state_recovery/CLAUDE.md`) and `store_watch.rs`, which saves the plugin's own memory.
 - **Dot-notation keys are literal, parsed manually** (`"listing.showHiddenFiles"` is one flat key). Serde can't express
   them as struct fields, so `parse_settings` reads them by hand. Don't switch to serde auto-derivation.
 - **Direct file reading is intentional**: the MCP server, hidden-files filter, indexing, and crash reporter need their

@@ -93,3 +93,8 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 - **DFS link messages** (`*.linkTargetUnreachable*`): `O acesso a … passa por um link para outro servidor` replaces the
   English "sits behind a link". Confirm it reads naturally. Also: `settings.fileExplorer.typeToJump.resetDelay.*` still
   say `digitar-para-pular` while the mode is `Ir para`; decide whether to align them.
+- **Tell me about this** (`commands.fileTellMeAbout.label`, `menu.file.tellMeAbout`): `Fale sobre isto` drops the "me"
+  to avoid `Fale-me` (stiff) and `Me fale` (proclisis). Confirm it reads as a friendly request; the card is `ficha`, the
+  AI take `comentário`.
+- **Notarization ticket** (`aboutThis.signature.ticket*`, `ai.cloudConsent.aboutThis.item.appAndSigner`):
+  `comprovante de notarização`, no Apple pt-BR source. Confirm or give Apple's term.

@@ -175,9 +175,9 @@ reserved id, through the same `ON CONFLICT (day, conversation_id, provider, mode
 with `priced = priced AND excluded.priced` so one unpriced quiet wake makes the reserved total an honest lower bound.
 Fold and delete share one transaction, so a crash between them cannot drop the spend.
 
-**Why an origin token rather than a fixed id.** `list_conversations` hides the row by `origin IS NOT 'quiet_wakes'`
-(`IS NOT`, because `<>` answers NULL for the common NULL origin and would empty the list), and M2's thread icon reads
-the same token set, so one vocabulary covers both. A fixed id would also have to be negative to avoid colliding with
+**Why an origin token rather than a fixed id.** `list_conversations` and search hide the row by its token (with the
+other ledger rows, § v15), and the rail's thread icon reads origins too (`origin === 'notification'` only), so one
+vocabulary covers both. A fixed id would also have to be negative to avoid colliding with
 `INTEGER PRIMARY KEY` allocation, which then hands the next real thread id `0`.
 
 The title is empty on purpose: nothing renders this row, so an English string would be untranslated copy frozen in the
@@ -220,6 +220,16 @@ like the other counts. `cost_micros` already prices the two at their own rates (
 cached thread costs what it does. Rows metered before v14 read 0. `conversation_cost` and `cost_summary` carry the read
 share (`cache_read_tokens`) to the footer tooltip and the settings spend list; writes stay backend-only (they only
 explain a surcharge, which `cost_micros` already holds).
+
+## v15: the reserved about-this thread
+
+A second ledger row, origin `about_this`, empty title, for what the "Tell me about this" card's verdicts spend
+(`about/DETAILS.md` § The verdict). Same reason as v8: a verdict is never stored, so it has no thread to meter onto, and
+`cost_meter.conversation_id` can't be NULL. Every ledger row is named in `ConversationOrigin::LEDGERS`, and both hide
+filters (`list_conversations`, `search_conversations`) exclude the whole list, written `origin IS NULL OR origin NOT IN
+(…)` (a bare `NOT IN` answers NULL for the common NULL origin and would empty the list). A new ledger joins both filters
+by joining `LEDGERS`. The wake loop's daily ceiling counts the two proactive origins only, so a verdict's spend never
+holds a wake back; it still shows in the day's total (`cost_summary`).
 
 ## No auto-retention in v1
 

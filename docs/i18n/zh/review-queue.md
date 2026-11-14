@@ -101,3 +101,6 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
   `shortcuts.system.cyclingWindows`): Windows never titles the Ctrl+Alt+Delete screen, so `安全屏幕` is descriptive
   (alternative `安全选项屏幕`); confirm it and that `窗口菜单` / `依次切换窗口` read as the Alt+Space and Alt+Esc
   features.
+- **Tell me about this** (`commands.fileTellMeAbout.label`, `aboutThis.verdict.*`, `aboutThis.signature.ticket*`):
+  confirm `介绍一下这个` reads as a friendly command name in the palette and menu, that `解读` carries both "AI take"
+  and "deeper read", and that `公证票据` is the word a Mac developer knows for Apple's notarization ticket.

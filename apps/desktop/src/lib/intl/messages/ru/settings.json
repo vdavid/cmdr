@@ -1286,6 +1286,18 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.aboutThis.aiVerdict.label": "Комментарий ИИ в карточке «Расскажите об этом»",
+  "@settings.aboutThis.aiVerdict.label": {
+    "sourceHash": "4c84599"
+  },
+  "settings.aboutThis.aiVerdict.description": "Когда вы открываете карточку, ИИ пишет два-три предложения по фактам, которые она показывает. С облачным ИИ ваш поставщик каждый раз получает факты с карточки и то, что Cmdr увидел, заглянув в файл.",
+  "@settings.aboutThis.aiVerdict.description": {
+    "sourceHash": "5dfb5f5"
+  },
+  "settings.aboutThis.aiVerdict.keywords": "объяснить, описание, сводка, сведения о файле, что это, мнение, вердикт",
+  "@settings.aboutThis.aiVerdict.keywords": {
+    "sourceHash": "56b9db5"
+  },
   "settings.ai.localContextSize.keywords": "контекст, окно контекста, контекстное окно, токены, память, размер, локальный",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
@@ -2417,6 +2429,18 @@
   "settings.behavior.adbHintDismissed.keywords": "телефон, смартфон, мобильный, отладка, разработчик, параметры разработчика, совет",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
+  },
+  "settings.aboutThis.aiHintDismissed.label": "Скрывать подсказку об ИИ в карточке «Расскажите об этом»",
+  "@settings.aboutThis.aiHintDismissed.label": {
+    "sourceHash": "fd81e08"
+  },
+  "settings.aboutThis.aiHintDismissed.description": "Когда ИИ выключен или еще не настроен, карточка «Расскажите об этом» показывает под кнопками строку о том, что ИИ добавляет более подробный разбор. Если закрыть строку кнопкой ×, этот параметр включится. Выключите его, чтобы снова видеть строку.",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "sourceHash": "7141d88"
+  },
+  "settings.aboutThis.aiHintDismissed.keywords": "совет, подсказка, сведения о файле, карточка, подробный разбор, объяснение",
+  "@settings.aboutThis.aiHintDismissed.keywords": {
+    "sourceHash": "2e77845"
   },
   "settings.section.notifications": "Уведомления",
   "@settings.section.notifications": {

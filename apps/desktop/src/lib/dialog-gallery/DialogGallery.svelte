@@ -40,6 +40,8 @@
     import type { SoftDialogId } from '#lib/ui/dialog-registry.js'
     import type { CrashReport } from '#lib/tauri-commands/index.js'
     import AlertDialog from '#lib/ui/AlertDialog.svelte'
+    import AboutThisDialog from '#lib/about-this/AboutThisDialog.svelte'
+    import type { AboutCardData } from '#lib/about-this/about-card.js'
     import AboutWindow from '#lib/licensing/AboutWindow.svelte'
     import AcknowledgementsDialog from '#lib/licensing/AcknowledgementsDialog.svelte'
     import CommercialReminderModal from '#lib/licensing/CommercialReminderModal.svelte'
@@ -86,6 +88,7 @@
     } from './gallery-state.svelte'
     import type { TransferProgressRun } from './fixtures/transfer-progress'
     import { fixtureRecords } from './fixtures'
+    import { ABOUT_THIS_HINT_DISMISSED } from './fixtures/about-this'
     import { buildStoreSeed, type StoreSeededDialogId } from './fixtures/store-seeded'
     import type { StoreSeed } from './store-seeding'
     import type { AlertFixture } from './fixtures/alert'
@@ -113,6 +116,7 @@
     /** What to render for the current request. `null` means nothing is previewed. */
     type RenderPlan =
         | { kind: 'alert'; props: AlertFixture }
+        | { kind: 'tell-me-about-this'; card: AboutCardData; aiHintDismissed: boolean }
         | { kind: 'about' }
         | { kind: 'rollback-confirmation'; props: RollbackConfirmFixture }
         | { kind: 'tool-ask'; props: ToolAskFixture }
@@ -199,6 +203,12 @@
     type PlanResolver = (stateId: string, context: GalleryPreviewContext) => RenderPlan
     const planResolvers: Partial<Record<SoftDialogId, PlanResolver>> = {
         alert: (id) => withFixture(fixtureRecords.alert[id], (f) => ({ kind: 'alert', props: f })),
+        'tell-me-about-this': (id) =>
+            withFixture(fixtureRecords['tell-me-about-this'][id], (card) => ({
+                kind: 'tell-me-about-this',
+                card,
+                aiHintDismissed: ABOUT_THIS_HINT_DISMISSED.has(id),
+            })),
         expiration: (id) => withFixture(fixtureRecords.expiration[id], (f) => ({ kind: 'expiration', props: f })),
         'extension-change': (id) =>
             withFixture(fixtureRecords['extension-change'][id], (f) => ({ kind: 'extension-change', props: f })),
@@ -358,6 +368,16 @@
 {#key plan}
     {#if plan?.kind === 'alert'}
         <AlertDialog {...plan.props} onClose={closeGalleryDialog} />
+    {:else if plan?.kind === 'tell-me-about-this'}
+        <AboutThisDialog
+            card={plan.card}
+            onClose={closeGalleryDialog}
+            onGoTo={closeGalleryDialog}
+            onAct={closeGalleryDialog}
+            onStopVerdict={() => {}}
+            aiHintDismissed={plan.aiHintDismissed}
+            onDismissAiHint={() => {}}
+        />
     {:else if plan?.kind === 'about'}
         <AboutWindow onClose={closeGalleryDialog} />
     {:else if plan?.kind === 'acknowledgements'}

@@ -92,6 +92,22 @@
   "@askCmdr.tool.folderImportance.done": {
     "sourceHash": "c7f397f"
   },
+  "askCmdr.tool.aboutItem.doing": "正在查询一个项目是什么",
+  "@askCmdr.tool.aboutItem.doing": {
+    "sourceHash": "dfc0d31"
+  },
+  "askCmdr.tool.aboutItem.done": "已查询一个项目是什么",
+  "@askCmdr.tool.aboutItem.done": {
+    "sourceHash": "5370586"
+  },
+  "askCmdr.tool.aboutItem.place.doing": "正在查询 <place>{name}</place> 是什么",
+  "@askCmdr.tool.aboutItem.place.doing": {
+    "sourceHash": "06dadca"
+  },
+  "askCmdr.tool.aboutItem.place.done": "已查询 <place>{name}</place> 是什么",
+  "@askCmdr.tool.aboutItem.place.done": {
+    "sourceHash": "5c635d1"
+  },
   "askCmdr.tool.listVolumes.doing": "正在检查你的驱动器",
   "@askCmdr.tool.listVolumes.doing": {
     "sourceHash": "2ed1808"

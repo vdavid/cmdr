@@ -53,6 +53,17 @@
         textarea?.focus()
     })
 
+    // A draft handed over for this composer (`openNewChatWith`): take it once, then clear it, so a
+    // remount never brings it back.
+    $effect(() => {
+        const draft = askCmdrState.composerDraft
+        if (!draft) return
+        untrack(() => {
+            text = draft
+            askCmdrState.composerDraft = null
+        })
+    })
+
     // Subscribe the composer as a native drag-drop target (no-op outside a Tauri webview).
     onMount(() => {
         let unlisten: (() => void) | null = null

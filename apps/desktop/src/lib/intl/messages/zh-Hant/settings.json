@@ -1288,6 +1288,18 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.aboutThis.aiVerdict.label": "「告訴我這是什麼」中的 AI 看法",
+  "@settings.aboutThis.aiVerdict.label": {
+    "sourceHash": "4c84599"
+  },
+  "settings.aboutThis.aiVerdict.description": "你開啟卡片時，AI 會根據卡片顯示的事實寫兩三句話。使用雲端 AI 時，卡片上的事實，以及簡短查看檔案內容得到的片段，每次都會送到你的提供者。",
+  "@settings.aboutThis.aiVerdict.description": {
+    "sourceHash": "5dfb5f5"
+  },
+  "settings.aboutThis.aiVerdict.keywords": "解釋, 說明, 摘要, 檔案資訊, 這是什麼, 描述, 看法, 評語, 介紹",
+  "@settings.aboutThis.aiVerdict.keywords": {
+    "sourceHash": "56b9db5"
+  },
   "settings.ai.localContextSize.keywords": "上下文, 語境, 視窗, 詞元, 記憶體, 大小, 本機",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
@@ -2419,6 +2431,18 @@
   "settings.behavior.adbHintDismissed.keywords": "手機, 行動裝置, 偵錯, 除錯, 開發人員, 開發人員選項, 提示",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
+  },
+  "settings.aboutThis.aiHintDismissed.label": "不顯示「告訴我這是什麼」的 AI 提示",
+  "@settings.aboutThis.aiHintDismissed.label": {
+    "sourceHash": "fd81e08"
+  },
+  "settings.aboutThis.aiHintDismissed.description": "AI 關閉或還沒設定好時，「告訴我這是什麼」卡片會在按鈕下方顯示一行字，說 AI 能加上更深入的解讀。用 × 關掉那一行，就會開啟這一項。關閉這一項，就能再看到那一行。",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "sourceHash": "7141d88"
+  },
+  "settings.aboutThis.aiHintDismissed.keywords": "小提示, 提示, 檔案資訊, 卡片, 解讀, 說明",
+  "@settings.aboutThis.aiHintDismissed.keywords": {
+    "sourceHash": "2e77845"
   },
   "settings.section.notifications": "通知",
   "@settings.section.notifications": {

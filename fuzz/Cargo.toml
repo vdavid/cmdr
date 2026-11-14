@@ -26,6 +26,7 @@ zip = { path = "../vendor/zip" }
 libfuzzer-sys = "=0.4.13"
 tokio = { version = "1", features = ["rt"] }
 
+cmdr-about = { path = "../crates/cmdr-about", features = ["fuzzing"] }
 cmdr-adb = { path = "../crates/cmdr-adb", features = ["fuzzing"] }
 cmdr-archive = { path = "../crates/cmdr-archive" }
 cmdr-nfs = { path = "../crates/cmdr-nfs", features = ["fuzzing"] }
@@ -122,6 +123,13 @@ bench = false
 [[bin]]
 name = "image_headers"
 path = "fuzz_targets/image_headers.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "about_provenance"
+path = "fuzz_targets/about_provenance.rs"
 test = false
 doc = false
 bench = false

@@ -87,7 +87,13 @@ fn a_command_row_sends_execute_command() {
     popup(&menu, "show_file_context_menu", file_args());
     let (event, payload, to) = emitted(menu.context_click("file_copy"));
     assert_eq!((event.as_str(), to.as_str()), ("execute-command", "main"));
-    assert_eq!(payload, json!({ "commandId": "file.copy" }));
+    assert_eq!(payload, json!({ "commandId": "file.copy", "road": "relay" }));
+    // A row only the context menu carries says it came from a right-click.
+    let (_, payload, _) = emitted(menu.context_click("tell_me_about_context"));
+    assert_eq!(
+        payload,
+        json!({ "commandId": "file.tellMeAbout", "road": "contextMenu" })
+    );
 }
 
 /// A greyed row, or one the last popup didn't offer, does nothing.

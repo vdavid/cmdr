@@ -87,3 +87,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `“Usuarios y grupos”` comes from the shipped catalog, not the pile.
 - **`Entrar o salir de pantalla completa`** (`commands.viewToggleFullScreen.label`): built from macOS's own pair rather
   than the catalog's `Activar o desactivar …`; a reader should say whether it reads naturally in the palette.
+- **Tell me about this** (`aboutThis.*`): `Háblame de esto` as the command name, `comentario de la IA` for the AI take,
+  `ticket de notarización` (no Apple term in the pile), and `Firmado por` as a fixed label (agrees with an implied
+  `programa`) want a native read.

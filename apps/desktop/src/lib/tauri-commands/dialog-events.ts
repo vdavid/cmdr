@@ -51,7 +51,7 @@ export function onExecuteCommand(handler: (payload: ExecuteCommand) => void): Pr
  * listener narrows it; `rust-command-id-drift.test.ts` pins it).
  */
 export function emitExecuteCommand(commandId: string): Promise<void> {
-  return events.executeCommand.emit({ commandId })
+  return events.executeCommand.emit({ commandId, road: 'relay' })
 }
 
 /**

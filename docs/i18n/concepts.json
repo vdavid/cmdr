@@ -303,6 +303,10 @@
       {
         "key": "suggestedOps.facts.archive",
         "why": "labels the zip a compress suggestion creates, the archive noun"
+      },
+      {
+        "key": "aboutThis.kind.archive",
+        "why": "the file kind on the Tell me about this card, the archive noun"
       }
     ]
   },
@@ -594,7 +598,13 @@
   "cache": {
     "en": "cache",
     "match": ["cache", "caches", "cached"],
-    "sense": "Locally stored data kept to speed things up."
+    "sense": "Locally stored data kept to speed things up.",
+    "notMatch": [
+      {
+        "key": "aboutThis.ownerPlace.caches",
+        "why": "the literal macOS Library folder name Caches, kept as the system names it"
+      }
+    ]
   },
   "calculate": {
     "distinct": ["size"],
@@ -1390,7 +1400,16 @@
     "distinct": ["download"],
     "en": "fetch",
     "match": ["fetch", "fetches", "fetching", "pull", "pulling"],
-    "notMatch": ["git fetch", "fetch disk space", "ollama pull", "pull a model"],
+    "notMatch": [
+      "git fetch",
+      "fetch disk space",
+      "ollama pull",
+      "pull a model",
+      {
+        "key": "aboutThis.removal.rebuildablePackageManager",
+        "why": "a package manager downloading dependencies from the internet, the download sense"
+      }
+    ],
     "sense": "Getting a file from a phone, server, or archive into a temporary copy before viewing it."
   },
   "file": {
@@ -1724,7 +1743,16 @@
     "distinct": ["unix-group"],
     "en": "group",
     "match": ["group", "groups"],
-    "notMatch": ["group id", "group ids", "other groups", "users & groups"],
+    "notMatch": [
+      "group id",
+      "group ids",
+      "other groups",
+      "users & groups",
+      {
+        "key": "aboutThis.ownerPlace.groupContainers",
+        "why": "the literal macOS Library folder name Group Containers, kept as the system names it"
+      }
+    ],
     "sense": "A labelled group of rows or items (the volume switcher's Network group, a tool group in an Ask Cmdr answer)."
   },
   "guest": {
@@ -2054,7 +2082,13 @@
   "learn-more": {
     "en": "learn more",
     "match": ["more about", "learn more"],
-    "sense": "An info link or button that explains a setting further."
+    "sense": "An info link or button that explains a setting further.",
+    "notMatch": [
+      {
+        "key": "aboutThis.continueInAskCmdr.draft",
+        "why": "the user's own question to the assistant (Tell me more about this), not an info link"
+      }
+    ]
   },
   "leave-alone": {
     "distinct": ["skip", "keep"],
@@ -2192,7 +2226,16 @@
     "distinct": ["operation-log"],
     "en": "log",
     "match": ["log", "logs", "log file", "logging"],
-    "notMatch": ["log in", "logging out", "llm-logs", "operation log"],
+    "notMatch": [
+      "log in",
+      "logging out",
+      "llm-logs",
+      "operation log",
+      {
+        "key": "aboutThis.ownerPlace.logs",
+        "why": "the literal macOS Library folder name Logs, kept as the system names it"
+      }
+    ],
     "sense": "Cmdr's on-disk diagnostic log file, and the Logging settings."
   },
   "look-inside": {
@@ -2309,7 +2352,8 @@
     "distinct": ["folder", "model"],
     "en": "library",
     "match": ["library", "model library"],
-    "sense": "A provider's catalog of downloadable models (the Ollama library)."
+    "sense": "A provider's catalog of downloadable models (the Ollama library).",
+    "notMatch": ["your library", "library folder"]
   },
   "modified": {
     "distinct": ["create"],
@@ -2388,7 +2432,16 @@
     "distinct": ["rename"],
     "en": "Name",
     "match": ["name", "names", "filename", "filenames"],
-    "notMatch": ["your name or email", "what name this", "host name", "names more than one item"],
+    "notMatch": [
+      "your name or email",
+      "what name this",
+      "host name",
+      "names more than one item",
+      {
+        "key": "aboutThis.download.linkedFrom",
+        "why": "the verb: the record names (mentions) a page"
+      }
+    ],
     "sense": "A file's name; also the Name column header and a saved server's name field."
   },
   "nas": {
@@ -2755,7 +2808,13 @@
     "distinct": ["settings"],
     "en": "Preferences",
     "match": ["preferences"],
-    "sense": "An OS or device Preferences label the user must find (Android's USB Preferences)."
+    "sense": "An OS or device Preferences label the user must find (Android's USB Preferences).",
+    "notMatch": [
+      {
+        "key": "aboutThis.ownerPlace.preferences",
+        "why": "the literal macOS Library folder name Preferences, kept as the system names it"
+      }
+    ]
   },
   "preset": {
     "distinct": ["custom", "default"],
@@ -3063,7 +3122,43 @@
       "=remove key",
       "remove saved password",
       "remove the app",
-      "remove these yourself"
+      "remove these yourself",
+      {
+        "key": "aboutThis.section.removal",
+        "why": "deleting the item (what removing it means), the delete sense"
+      },
+      {
+        "key": "aboutThis.unavailable.notFound",
+        "why": "the item was moved or deleted, the delete sense"
+      },
+      {
+        "key": "aboutThis.removal.removesApp",
+        "why": "deleting the app, the delete sense"
+      },
+      {
+        "key": "aboutThis.removal.removesAppDataLeft",
+        "why": "deleting the app, the delete sense"
+      },
+      {
+        "key": "aboutThis.removal.linkOnly",
+        "why": "deleting the link, the delete sense"
+      },
+      {
+        "key": "aboutThis.removal.holdsRepoHistory",
+        "why": "deleting the .git folder, the delete sense"
+      },
+      {
+        "key": "aboutThis.removal.inGitHistory",
+        "why": "deleting a file, the delete sense"
+      },
+      {
+        "key": "ai.cloudConsent.aboutThis.item.removal",
+        "why": "deleting the item, the delete sense"
+      },
+      {
+        "key": "commands.fileTellMeAbout.description",
+        "why": "deleting the item, the delete sense"
+      }
     ],
     "sense": "Taking something out of a list or setting (a favorite, a host, a folder from indexing) without deleting files."
   },
@@ -3256,7 +3351,13 @@
     "distinct": ["keep"],
     "en": "save",
     "match": ["save", "saves", "saved", "saving"],
-    "sense": "Storing something (a file, a setting, a password) so it persists."
+    "sense": "Storing something (a file, a setting, a password) so it persists.",
+    "notMatch": [
+      {
+        "key": "aboutThis.ownerPlace.savedState",
+        "why": "the literal macOS Library folder name Saved Application State, kept as the system names it"
+      }
+    ]
   },
   "save-panel": {
     "en": "save panel",
@@ -3708,7 +3809,14 @@
     "distinct": ["save", "write"],
     "en": "store",
     "match": ["store", "stores", "stored", "storing"],
-    "notMatch": ["ds_store"],
+    "notMatch": [
+      "ds_store",
+      "app store",
+      {
+        "key": "aboutThis.unknown.onlineOnly",
+        "why": "stored online only names the online-only state, not where a name or data lives on a drive"
+      }
+    ],
     "sense": "Where data or a name physically lives (a destination that can't store a name, a file stored on a drive, a password stored in the keychain)."
   },
   "streaming": {
@@ -4066,7 +4174,13 @@
   "untouched": {
     "en": "untouched",
     "match": ["untouched"],
-    "sense": "Files Cmdr guarantees it didn't change (the originals after a failed transfer)."
+    "sense": "Files Cmdr guarantees it didn't change (the originals after a failed transfer).",
+    "notMatch": [
+      {
+        "key": "aboutThis.label.unchanged",
+        "why": "a row label for the share of a folder unchanged in a year, not files Cmdr guarantees it didn't change"
+      }
+    ]
   },
   "up-to-date": {
     "distinct": ["update", "outdated"],

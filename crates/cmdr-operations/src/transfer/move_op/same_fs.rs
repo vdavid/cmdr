@@ -141,6 +141,10 @@ pub(super) fn move_with_rename(
             // reversal at a file this operation never touched, and a duplicate
             // (same size, same mtime) passes the snapshot recheck.
             let mut landed_path = dest_path.clone();
+            // Whether the source's own node is what sits at `landed_path` once this
+            // item is done. A rename carries the node across, so the source's `lstat`
+            // above names it; a merge leaves the destination's folder there instead.
+            let mut source_node_landed = true;
 
             // Enumerate the subtree's `search_only` leaves from the drive index
             // BEFORE the rename — the reconciler prunes the moved subtree on its
@@ -189,6 +193,7 @@ pub(super) fn move_with_rename(
                     state.scope(),
                     cmdr_operation_log::types::NotRollbackableReason::DirectoryMerge,
                 );
+                source_node_landed = false;
             } else if path_exists_or_is_symlink(&dest_path) {
                 // File-to-file (or type mismatch) conflict
                 match resolve_conflict(
@@ -269,6 +274,9 @@ pub(super) fn move_with_rename(
                 source_mtime,
                 item_overwrote,
                 cmdr_operation_log::types::ItemOutcome::Done,
+                source_node_landed
+                    .then(|| crate::journal_landed::landed_node(state.scope(), &landed_path, source_meta.as_ref()))
+                    .flatten(),
             );
 
             // Persist the buffered `search_only` leaves now that the move

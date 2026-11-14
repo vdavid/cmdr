@@ -92,6 +92,22 @@
   "@askCmdr.tool.folderImportance.done": {
     "sourceHash": "c7f397f"
   },
+  "askCmdr.tool.aboutItem.doing": "Identification d’un élément",
+  "@askCmdr.tool.aboutItem.doing": {
+    "sourceHash": "dfc0d31"
+  },
+  "askCmdr.tool.aboutItem.done": "A identifié un élément",
+  "@askCmdr.tool.aboutItem.done": {
+    "sourceHash": "5370586"
+  },
+  "askCmdr.tool.aboutItem.place.doing": "Identification de l’élément <place>{name}</place>",
+  "@askCmdr.tool.aboutItem.place.doing": {
+    "sourceHash": "06dadca"
+  },
+  "askCmdr.tool.aboutItem.place.done": "A identifié l’élément <place>{name}</place>",
+  "@askCmdr.tool.aboutItem.place.done": {
+    "sourceHash": "5c635d1"
+  },
   "askCmdr.tool.listVolumes.doing": "Vérification de vos disques",
   "@askCmdr.tool.listVolumes.doing": {
     "sourceHash": "2ed1808"

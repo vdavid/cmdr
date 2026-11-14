@@ -1286,6 +1286,18 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.aboutThis.aiVerdict.label": "Коментар ШІ в «Розкажи про це»",
+  "@settings.aboutThis.aiVerdict.label": {
+    "sourceHash": "4c84599"
+  },
+  "settings.aboutThis.aiVerdict.description": "Коли ви відкриваєте картку, ШІ пише два-три речення на основі фактів, які вона показує. Із хмарним ШІ факти картки й короткий погляд усередину файлу щоразу надходять вашому постачальнику.",
+  "@settings.aboutThis.aiVerdict.description": {
+    "sourceHash": "5dfb5f5"
+  },
+  "settings.aboutThis.aiVerdict.keywords": "пояснити, пояснення, опис, підсумок, висновок, відомості про файл, що це таке, описати, штучний інтелект",
+  "@settings.aboutThis.aiVerdict.keywords": {
+    "sourceHash": "56b9db5"
+  },
   "settings.ai.localContextSize.keywords": "контекст, токени, оперативна, ОЗП, обсяг, довжина, розмір",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
@@ -2417,6 +2429,18 @@
   "settings.behavior.adbHintDismissed.keywords": "телефон, смартфон, мобільний, налагодження, розробник, для розробників, порада",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
+  },
+  "settings.aboutThis.aiHintDismissed.label": "Не показувати підказку ШІ в «Розкажи про це»",
+  "@settings.aboutThis.aiHintDismissed.label": {
+    "sourceHash": "fd81e08"
+  },
+  "settings.aboutThis.aiHintDismissed.description": "Коли ШІ вимкнено або ще не налаштовано, картка «Розкажи про це» показує під кнопками рядок про те, що ШІ додає глибший аналіз. Якщо закрити цей рядок кнопкою ×, цей параметр увімкнеться. Вимкніть його, щоб знову бачити рядок.",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "sourceHash": "7141d88"
+  },
+  "settings.aboutThis.aiHintDismissed.keywords": "порада, підказка, відомості про файл, картка, пояснення, аналіз, приховати",
+  "@settings.aboutThis.aiHintDismissed.keywords": {
+    "sourceHash": "2e77845"
   },
   "settings.section.notifications": "Сповіщення",
   "@settings.section.notifications": {

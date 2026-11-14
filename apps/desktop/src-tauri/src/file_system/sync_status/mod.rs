@@ -92,6 +92,7 @@ const POOL: PoolConfig = PoolConfig {
     target_workers: 4,
     max_workers: 12,
     wedged_after: Duration::from_secs(30),
+    spare_after: None,
 };
 
 /// Roughly a hundred directories' worth of files. Overflow evicts whole

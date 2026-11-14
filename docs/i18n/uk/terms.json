@@ -389,7 +389,10 @@
     "accept": ["вкладен", "вклас", "вкладі", "вкладе", "дода"],
     "confidence": "high",
     "sources": "macOS live Notes (Attachment → Вкладення, Attach → Вкласти), Feedback Assistant (Attachments → Вкладення); MS (attachment → вкладення)",
-    "note": "Added «дода» (b05): attaching an email address reads «додати е‑адресу» (common.attachEmailPrompt, errorReporter.amend.description); «вкласти» stays for attaching files and logs (crashReporter.sentToast.sendLog «Вкласти журнали»)."
+    "note": "Added «дода» (b05): attaching an email address reads «додати е‑адресу» (common.attachEmailPrompt, errorReporter.amend.description); «вкласти» stays for attaching files and logs (crashReporter.sentToast.sendLog «Вкласти журнали»).",
+    "exceptions": {
+      "ai.cloudConsent.aboutThis.item.appAndSigner": "A notarization ticket stapled to an app, not a file attached to a question: «прикріплено квитанцію нотаризації», as aboutThis.signature.ticketPresent says."
+    }
   },
   "attribute": {
     "chosen": "атрибут",
@@ -2546,10 +2549,11 @@
   },
   "look-inside": {
     "chosen": "глянути всередину",
-    "accept": ["всередин", "гляну", "зазира", "зазирн"],
+    "accept": ["всередин", "гляну", "зазира", "зазирн", "усередин"],
     "forms": "habitual: зазирає у файл лише тоді, коли…",
     "confidence": "tentative",
-    "sources": "macOS live Maps (Look Inside → Глянути всередину); no file-manager source names AI content reading"
+    "sources": "macOS live Maps (Look Inside → Глянути всередину); no file-manager source names AI content reading",
+    "note": "«усередину» is the same word after a consonant (короткий погляд усередину файлу); both spellings pass."
   },
   "mac-manager": {
     "chosen": "хто керує цим Mac",
@@ -4419,7 +4423,10 @@
         "form": "мітка",
         "why": "Dolphin's word; Finder says тег"
       }
-    ]
+    ],
+    "exceptions": {
+      "aboutThis.imageContents.nothing": "The image index's recognized labels, not Finder color tags: «позначки», as aboutThis.imageContents.tags and ai.cloudConsent.aboutThis.item.imageIndex say."
+    }
   },
   "tail": {
     "chosen": "стеження",
@@ -4983,7 +4990,12 @@
     "accept": ["запис"],
     "forms": "verb «записати»; half-written → «частково записаний»",
     "confidence": "high",
-    "sources": "macOS live CoreTypes writing → «запис»; Finder burn Write → «Записати»; DC Write → «Запис»; MS write → «записування»"
+    "sources": "macOS live CoreTypes writing → «запис»; Finder burn Write → «Записати»; DC Write → «Запис»; MS write → «записування»",
+    "exceptions": {
+      "aboutThis.verdict.writing": "An AI composing text, not data landing on a drive: «Написання короткого коментаря…».",
+      "aboutThis.verdict.problem.noAnswer": "An AI composing text, not data landing on a drive: «ШІ нічого не написав».",
+      "settings.aboutThis.aiVerdict.description": "An AI composing text, not data landing on a drive: «ШІ пише два-три речення»."
+    }
   },
   "zip": {
     "chosen": "zip-архів",

@@ -232,6 +232,11 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     // unified dispatch at the bottom, with the bar's.
     match context_click(id) {
         Some(ContextClick::Command { .. }) | None => {}
+        // A row only the context menu carries: the main window hears it came from a right-click.
+        Some(ContextClick::RowCommand { command_id, scope }) => {
+            emit_command(app, command_id, scope, crate::window_events::CommandRoad::ContextMenu);
+            return;
+        }
         Some(click) => {
             dispatch_context_click(app, click);
             return;
@@ -296,10 +301,7 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             && main_window.is_focused().unwrap_or(false)
         {
             use tauri_specta::Event as _;
-            let _ = crate::window_events::ExecuteCommand {
-                command_id: "tab.close".to_string(),
-            }
-            .emit_to(app, "main");
+            let _ = crate::window_events::ExecuteCommand::relay("tab.close").emit_to(app, "main");
         } else {
             for (_label, window) in app.webview_windows() {
                 if window.is_focused().unwrap_or(false) {
@@ -405,10 +407,7 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
                 _ => "selection.selectAll",
             };
             use tauri_specta::Event as _;
-            let _ = crate::window_events::ExecuteCommand {
-                command_id: command_id.to_string(),
-            }
-            .emit_to(app, "main");
+            let _ = crate::window_events::ExecuteCommand::relay(command_id).emit_to(app, "main");
         } else {
             // The focused window's focused field does the text edit.
             send_native_edit_action(app, id);
@@ -556,34 +555,46 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
 
     // === Unified dispatch: look up command ID from the mapping ===
     if let Some((command_id, scope)) = menu_id_to_command(id) {
-        if scope == CommandScope::FileScoped {
-            // Focus guard: a file command acts on the main window's pane, so it must not
-            // fire while the user is in Settings or the viewer — an accelerator reaches
-            // this handler whatever has focus, and a greyed-looking item is only a hint.
-            let focused = app
-                .get_webview_window("main")
-                .is_some_and(|w| w.is_focused().unwrap_or(false));
-            if !focused {
-                // ❗ Say so. This refuses a click the user just made and shows them
-                // nothing, so with no line here the symptom is "the menu did nothing"
-                // and the log holds no trace of it at all: the context menu had already
-                // drawn the item as enabled, and the drop happens after that. Cost one
-                // debug line rather than another blind bug report.
-                log::debug!(
-                    target: "menu",
-                    "dropped `{command_id}`: file-scoped, and the main window doesn't have focus"
-                );
-                return;
-            }
-        }
-        use tauri_specta::Event as _;
-        let _ = crate::window_events::ExecuteCommand {
-            command_id: command_id.to_string(),
-        }
-        .emit_to(app, "main");
+        emit_command(app, command_id, scope, crate::window_events::CommandRoad::Relay);
     }
 
     // Unknown menu ID: no-op (all known IDs are handled above)
+}
+
+/// Sends `command_id` to the main window down `road`. A file-scoped one runs only while the main
+/// window has focus.
+fn emit_command(
+    app: &AppHandle<tauri::Wry>,
+    command_id: &'static str,
+    scope: CommandScope,
+    road: crate::window_events::CommandRoad,
+) {
+    if scope == CommandScope::FileScoped {
+        // Focus guard: a file command acts on the main window's pane, so it must not
+        // fire while the user is in Settings or the viewer — an accelerator reaches
+        // this handler whatever has focus, and a greyed-looking item is only a hint.
+        let focused = app
+            .get_webview_window("main")
+            .is_some_and(|w| w.is_focused().unwrap_or(false));
+        if !focused {
+            // ❗ Say so. This refuses a click the user just made and shows them
+            // nothing, so with no line here the symptom is "the menu did nothing"
+            // and the log holds no trace of it at all: the context menu had already
+            // drawn the item as enabled, and the drop happens after that. Cost one
+            // debug line rather than another blind bug report.
+            log::debug!(
+                target: "menu",
+                "dropped `{command_id}`: file-scoped, and the main window doesn't have focus"
+            );
+            return;
+        }
+    }
+    use tauri_specta::Event as _;
+    let _ = crate::window_events::ExecuteCommand {
+        command_id: command_id.to_string(),
+        road,
+    }
+    .emit_to(app, "main");
 }
 
 /// Runs a context-menu row's own lane. Every one acts on what the popup was opened over, which the
@@ -595,7 +606,7 @@ fn dispatch_context_click(app: &AppHandle<tauri::Wry>, click: ContextClick) {
     let context_path = || menu_state.context.lock_ignore_poison().path.clone();
     match click {
         // Handled by the caller: it shares the bar's unified dispatch.
-        ContextClick::Command { .. } => {}
+        ContextClick::Command { .. } | ContextClick::RowCommand { .. } => {}
         ContextClick::ShowSearchResultInFolder => {
             let path = search_result_reveal_path(&menu_state.context.lock_ignore_poison());
             if let Some(path) = path {

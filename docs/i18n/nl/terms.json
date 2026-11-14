@@ -2115,7 +2115,7 @@
     "sources": "MS (log → logboek); catalog (settings.logging.openLogFile)"
   },
   "look-inside": {
-    "accept": ["gekeken", "kijken", "inspecteren", "kijkt"],
+    "accept": ["gekeken", "kijken", "inspecteren", "kijkt", "blik in", "blik erin"],
     "chosen": "kijkt in",
     "confidence": "tentative",
     "decision": "Ask Cmdr",
@@ -2238,7 +2238,8 @@
       "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Undoing the move is the rollback concept: terugdraaien.",
       "fileOperations.delete.trashSwitch": "Windows branch mirrors the switch label Naar prullenbak, the move-to-trash ruling.",
       "fileOperations.transferProgress.scanTitleTrash": "Windows branch mirrors the other branch: Onderdelen tellen voor de prullenbak…",
-      "stateRecovery.credentials.body": "A move to a new PC is a change of computer: overstap, not the file move."
+      "stateRecovery.credentials.body": "A move to a new PC is a change of computer: overstap, not the file move.",
+      "aboutThis.action.trash": "the Windows branch is the move-to-trash label Naar prullenbak… (fileOperations.delete.trashSwitch plus the ellipsis), with no verb"
     },
     "forms": "button Verplaats; the move as a noun → het verplaatsen (voordat Cmdr het verplaatsen kon voltooien)",
     "sources": "macOS Finder (move → verplaatsen; NE111 het kopiëren)"
@@ -3239,7 +3240,10 @@
     "chosen": "Toon",
     "confidence": "high",
     "forms": "button and menu Toon (Toon favorieten, Toon alles, Toon details); Settings label infinitive-last (Verborgen bestanden tonen)",
-    "sources": "macOS AppKit (Show Details → Toon details, Show Sidebar → Toon navigatiekolom), Finder (Toon alles)"
+    "sources": "macOS AppKit (Show Details → Toon details, Show Sidebar → Toon navigatiekolom), Finder (Toon alles)",
+    "exceptions": {
+      "aboutThis.label.imageContents": "what a picture shows (its contents), not making UI visible: Wat erop staat"
+    }
   },
   "show-in-finder": {
     "accept": ["Toon in Finder"],

@@ -2071,7 +2071,7 @@
     "sources": "MS terminology FRA"
   },
   "look-inside": {
-    "accept": ["regarde", "inspecter", "lit", "contenu"],
+    "accept": ["regarde", "inspecter", "lit", "contenu", "regard"],
     "chosen": "regarder à l’intérieur",
     "confidence": "high",
     "decision": "IA dans le cloud et lecture des fichiers",
@@ -4337,5 +4337,43 @@
     "accept": ["autorisations"],
     "confidence": "high",
     "sources": "macOS fr Confidentialité et sécurité (autorisations); catalog onboarding.stepOptional.networking.desc"
+  },
+  "font": {
+    "chosen": "police",
+    "confidence": "confirmed",
+    "forms": "the file kind → Police",
+    "sources": "macOS AppKit FontManager (Font → Police); GNOME Nautilus and Double Commander (Police); MS FRA (police)"
+  },
+  "importance": {
+    "chosen": "importance",
+    "confidence": "high",
+    "forms": "the row label → Importance; bands Élevée / Moyenne / Faible, left out → Hors classement; to rank → classer, the ranking → classement",
+    "sources": "the catalog (askCmdr.tool.folderImportance: l’importance d’un dossier)",
+    "decision": "Parlez-moi de ceci",
+    "accept": ["important", "compt"]
+  },
+  "macos-package": {
+    "chosen": "paquet",
+    "confidence": "confirmed",
+    "sources": "macOS Finder N158 (Show Package Contents → Afficher le contenu du paquet)"
+  },
+  "it-team": {
+    "chosen": "équipe informatique",
+    "confidence": "high",
+    "forms": "your IT team → votre équipe informatique",
+    "sources": "the catalog (Votre équipe informatique peut vous dire quels services d’IA vous pouvez utiliser); no hit in the pile"
+  },
+  "on-disk-size": {
+    "chosen": "sur le disque",
+    "confidence": "confirmed",
+    "forms": "the On disk label and option → Sur le disque; Finder’s compact <size> on disk → <size> sur disque",
+    "sources": "macOS Finder IN_G1 (^1 (^0 sur disque)); Thunar and Double Commander (Taille sur le disque)",
+    "accept": ["sur disque"]
+  },
+  "generate": {
+    "chosen": "générer",
+    "confidence": "high",
+    "accept": ["généré", "générés", "générée", "générées"],
+    "sources": "MS FRA (generated code → code généré); git.po (généré)"
   }
 }

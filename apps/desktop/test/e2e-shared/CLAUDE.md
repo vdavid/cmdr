@@ -20,6 +20,7 @@ binary launches (fixture creation, port-file reads, MCP client setup) lives here
   `guestMountPoint()`. `DETAILS.md` § "Finding the SMB fixture's mount".
 - **`server-fixtures.ts`**: where the app dials the SFTP / WebDAV fixtures, plus an `ssh` / `curl` side door to their
   exports. `../e2e-playwright/DETAILS.md` § "Real SFTP and WebDAV servers".
+- **`about-fixtures.ts`**: the "Tell me about this" QA tree (header).
 - **`pin-locale.ts`**: `pinUiLanguage(dataDir)` pins the language in `settings.json`; `EN_US_LOCALE_ARGS` and
   `OVERLAY_SCROLLBAR_ARGS` are macOS launch args. `../e2e-playwright/DETAILS.md` § "The locale pin", § "The scrollbar
   pin".

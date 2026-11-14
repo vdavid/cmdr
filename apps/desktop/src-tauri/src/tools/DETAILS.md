@@ -236,8 +236,8 @@ otherwise search literally and report a zero.
 `access` says what the tool does, whoever calls it (decision D49: **one registry, no parallel table**):
 
   - `Read`: reads state.
-  - `ReadContents`: reads inside files, or image-derived text (`inspect_file`, `image_facts`, `search_photos`).
-    Exactly `Read` for the agent.
+  - `ReadContents`: reads inside files, or image-derived text (`inspect_file`, `image_facts`, `search_photos`), or
+    what only Cmdr's Full Disk Access reads about an item (`about_item`). Exactly `Read` for the agent.
   - `Propose`: stages a proposal, described below.
   - `Memory`: writes only the agent's memory folder.
   - `Session`: opens a session to a place the user saved, with stored credentials (agent invariant 7, § The `Session`
@@ -295,8 +295,11 @@ gate and before the handler, only when `admit` answers Ask, so direct mode never
 - **A plan only reads, and runs twice**: once to word the question, and again after a yes. Different facts, or a plan
   that no longer asks, refuse with `data.refusal: "changedWhileAsking"`. So every `Sensitive` tool gets the re-check for
   free: `eject`'s volume, `set_setting`'s old value, `open_under_cursor`'s path.
-- **`AskFacts` is typed, and every string in it is `fact_text`**: no control or bidirectional-override characters, since
-  `cod\u{202E}fdp.command` would read as a PDF, and bounded by dropping the middle, since a name's end says what it does.
+- **`AskFacts` is typed, and every string in it is `fact_text`**, which is `cmdr_about::text::model_text` (the one
+  sanitizer, `crates/cmdr-about/DETAILS.md` § Text from the item): no control, bidirectional-override, or invisible
+  characters, since `cod\u{202E}fdp.command` would read as a PDF and a zero-width mark makes one name look like another,
+  and bounded by dropping the middle, since a name's end says what it does. The facts reach the person's dialog and the
+  re-check's comparison, never a model.
   `OpenFile.path` is the one exact string, kept for comparing; `shownPath` is what a person reads.
 - **Answers**: `declined`, `expired` (five minutes), `cancelled` (the turn's Stop, or the client going away), and
   `noWindow`, each in `data.refusal`; another dialog in the way is `data.blockingDialog`. One question at a time, in
@@ -337,7 +340,9 @@ driving a dev build can reach everything. The agent never gets it, and ❌ no pr
 - **Off**, a `DevOnly`, `ReadContents`, or `Memory` tool, and `multi_rename`'s media fields, refuse an outside client with
   `data: { reason: "directModeOff" }` (`admit`), saying the person can do it in Cmdr. `tools/list` still lists them.
 - **Decision: an outside client reads file contents only in direct mode.** `ReadContents` covers `inspect_file`,
-  `image_facts`, and `search_photos`, and `multi_rename`'s media fields refuse the same way, closing the side door.
+  `image_facts`, `search_photos`, and `about_item`, and `multi_rename`'s media fields refuse the same way, closing the
+  side door. `about_item` reads no contents, but as `Read` any process holding `mcp.token` could ask where every file in
+  `~/Downloads` came from and when it was last opened, which it can't learn without its own Full Disk Access.
   Otherwise any local process able to read `mcp.token` could read what Cmdr's Full Disk Access reaches, silently. Reading
   `cmdr://` resources stays allowed.
 - **On**, an outside client's successful content read lands in the security log, by tool and never by path
@@ -541,8 +546,10 @@ tool-result JSON the model reads.
   `unreadable { permission | io | encrypted | corrupt | unsupported | tooLargeToExtract }` / `unreachable` /
   `unsupportedVolume` / `protected { reason, note }` (§ The sensitive-content gate), and every row echoes the
   `volumeId` it's on (§ The location contract). The call reports
-  `total` / `returned` / `truncated` and names every path with no row in `unanswered`. One of two disk readers among the handlers (the other is `list_dir`'s live source); how it reads and how it times out: § Reading a
+  `total` / `returned` / `truncated` and names every path with no row in `unanswered`. One of three disk readers among the handlers (beside `list_dir`'s live source and `about_item`'s metadata reads); how it reads and how it times out: § Reading a
   file the way the viewer does.
+- **`about_item`** (`read/about.rs`, `Access::ReadContents`, `Load::Deferred`) — one file or folder's "Tell me about
+  this" facts: `{ location, about, howCmdrKnows, stillGathering?, notes? }`. § What an item is (`about_item`).
 - **`list_volumes`** (`read/volumes.rs`) — the map a model plans from: `{ volumes, favorites }`. Every volume with
   `root`, `indexStatus` (`fresh`/`scanning`/`stale`/`off`) and, for a remote one, `connectionState`
   (`direct`/`os_mount`/`disconnected`/`needs_sign_in`/`needs_host_key_approval`/`saved`), the tokens straight from
@@ -603,6 +610,34 @@ tool-result JSON the model reads.
 - **`memory_write` / `memory_edit`** (`memory.rs`) — the two `Access::Memory` tools. See § The two tools that write.
 - **`connect_volume`** (`connect.rs`, `Access::Session`) — brings a place the user saved to
   life by `volumeId`. See § Connecting a saved place.
+
+## What an item is (`about_item`)
+
+The agent's door to the card (`apps/desktop/src-tauri/src/about/DETAILS.md` § The agent's lookup holds the mechanism).
+The handler only shapes: `crate::about::lookup::look_up` gathers with the card's own plan, jobs, pool, and budgets, and
+hands back the one projection (`about::model::for_model`), so the card and the tool can't disagree, and nothing here
+serializes a fact.
+
+- **`about` is the projection**: each row `{ state, value }`, a pending one `{ state: "pending" }`, a protected path's
+  rows `unknown: protected` beside `contentsStayHome`. Sizes and dates arrive spoken; the removal row comes along.
+- **`howCmdrKnows`** maps each planned row to one sentence on where its answer comes from (`how_cmdr_knows`, exhaustive
+  over `FactKind`), so a model says "recorded as downloaded from apple.com" and "carries a signature from", never that
+  it checked an item's own claim.
+- **`stillGathering`** names the rows still out at `LOOKUP_DEADLINE` (5 s, past every card budget), ❌ never dropped.
+- **On a turn Cmdr started**, a network or device volume, or a backup view, is asked nothing: those rows read
+  `refusedInBackground` and a note says the user can ask. The index rows still answer, from their databases. A local disk
+  answers in full (a wake asking about the boot disk or an external one wakes no NAS).
+- **It never peeks**: contents stay `inspect_file`'s.
+- **Why `Load::Deferred`**: its `brief` (one line in the cached prefix) says when to call it; the schema is two
+  properties. A model finds it from the brief alone: asked "What is this folder: …/node_modules? What would removing it
+  cost?", `claude-haiku-5-5` called `tool_details` for it, then `use_tool`, and answered from the result (verified with
+  `agent/llm/live_smoke_test.rs::smoke_anthropic_what_is_this_folder`, real handler, 2026-11-13). It didn't speak to
+  the removal cost there, though the result carried it as `removal`, last, behind the folder's child lists. So, cheaply:
+  `removal` now leads the projection's rows (`crates/cmdr-about/DETAILS.md` § The model's projection), and the `desc`
+  (loaded on demand, outside the cached prefix) asks the agent to pass it on whenever it says what an item is; the
+  `brief` already names removal. Not re-run on a real model yet: the eval does that.
+- **Gotcha**: an item reached through its volume (a share, a phone) is planned before the volume answers, from the
+  drive index's word on whether it's a folder; one the index doesn't hold plans as a file.
 
 ## Connecting a saved place (`connect_volume`)
 
@@ -872,6 +907,10 @@ FOLDER is a Python venv. `com.veszelovszki.cmdr*` matches every instance's data 
   `~/link.zip/inner` and `~/link-to-ssh/gone` resolve at all. Blocking, so it runs only under a deadline.
 - `path_gate_within(path, budget)`: the same on a thread it abandons at `budget`, failing closed, for a caller with no
   deadline of its own. `multi_rename`'s loader joins its reads, so a hung resolve there would wedge the call.
+- `names_gate(path)`: `path_gate` minus the realpath (the rules plus Cmdr's data dir on the path as given), pure, for a
+  read that may not touch the volume.
+- `resolved_gate(path, real)`: `path_gate` with the caller's own resolve, for a caller that may follow links only so
+  far (the card's never enters a share: `apps/desktop/src-tauri/src/about/place.rs`).
 
 **Where each tool checks:**
 
@@ -883,6 +922,11 @@ FOLDER is a Python venv. `com.veszelovszki.cmdr*` matches every instance's data 
   same path. `image_facts` answers a `protected` row. `search_photos` drops the hit and reports `protectedHidden`, since a
   snippet in a hit would leak, and widens its read when hiding left a volume short: the read API's own limit would
   otherwise let a hidden hit eat the answer.
+- `about_item` (no contents, but name-level facts only for a protected path): `about::model::gate_within`, the one
+  gate both it and the card's AI take go through. On a local disk, `resolved_gate` over a walk that follows every local
+  link and never enters a share (a link into `.ssh` is caught, as for `inspect_file`), failing closed to `unresolved`;
+  for an item reached through its volume, or on a turn Cmdr started that asked the volume nothing, `names_gate`, since
+  nothing there reads contents and the rows describe the path as given (the `image_facts` precedent).
 - `multi_rename`: `gated` wraps the loader's reader, so media fields (`tag.comment`, `tag.title`, EXIF) are gated where
   the file is read, on wakes too since `Propose` runs there. A refusal is `ReadError::NotSupported`, not `Io`: a folder of
   refused files mustn't read as a dying volume. The row reads `unreadable`, and `protectedFiles` says why. A read whose

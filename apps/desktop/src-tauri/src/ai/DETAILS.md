@@ -120,8 +120,16 @@ Callers decide what to do per case. `suggestions.rs` returns empty on any non-Re
 ## Cloud AI consent
 
 The canonical home for how "Allow cloud AI" works. Nothing reaches a cloud AI service (folder suggestions, search and
-selection translation, MCP `ai_search`, Ask Cmdr's rail and wake turns, the connection check) until the user turns
-the switch on. Local AI needs none: nothing leaves the Mac.
+selection translation, MCP `ai_search`, Ask Cmdr's rail and wake turns, "Tell me about this", the connection check)
+until the user turns the switch on. Local AI needs none: nothing leaves the Mac.
+
+What the disclosure (`ai.cloudConsent.*`, rendered by `apps/desktop/src/lib/ai/AiCloudConsentToggle.svelte` in both
+Settings > AI and onboarding) names, one item per feature: folder suggestions, search, select by description, "Tell me
+about this" (its own list, one line per `cmdr_about::model::AboutDisclosure` token plus the look inside a file, in
+`about-this-disclosure.ts`, a `Record` over the token so a new kind fails the typecheck until it has words), and Ask
+Cmdr (its list, including `askCmdr.item.aboutThis` for the agent's lookup of the same facts, and the contents rule and
+protected contents under it). "Tell me about this" sits outside the Ask Cmdr heading because its verdict runs with Ask
+Cmdr off, so it carries its own "contents stay home" line.
 
 - **One chokepoint.** Every LLM backend comes from `manager::resolve_backend(app)`, which reads consent only when
   `ai.provider` is `cloud` and answers `NoCloudConsent` before looking at the key or endpoint. Taking the `AppHandle`
@@ -137,7 +145,11 @@ the switch on. Local AI needs none: nothing leaves the Mac.
 - **Fails closed.** An absent record, a stale version, a store that never opened or won't open, and a held "no" all
   read as not allowed.
 - **Versioned.** The record stores the accepted `CLOUD_AI_CONSENT_VERSION`. Bump it whenever the `ai.cloudConsent.*`
-  disclosure copy changes materially (widening what any feature sends is exactly that), so everyone re-consents.
+  disclosure copy changes materially (widening what any feature sends is exactly that), so everyone re-consents. A
+  stale record reads exactly like no record (`a_consent_from_before_tell_me_about_this_is_stale`): the switch shows
+  off, the Ask Cmdr rail shows its cloud-off gate, search and select by description answer the "Cloud AI is off"
+  toast, and folder suggestions and Cmdr's own conversations stop quietly. Nothing says the copy changed: the status
+  carries `accepted_version`, which no surface reads yet.
 - **Stored in `main.db`'s `meta` table** (`cloud_ai_consent_version`, `cloud_ai_consent_at`; `../agent/store/consent.rs`),
   because that store is durable, migrated, transactional, and inspectable, and the held-"no" machinery already lived
   around it. Ask Cmdr's old opt-in keys stay there, read-only by construction, read only by the one-time mapping onto
@@ -146,8 +158,8 @@ the switch on. Local AI needs none: nothing leaves the Mac.
   `settings.json` and calls `cloud_ai_consent_revoke_pending_changed`. `RevokePending::load` reads it fresh on every
   check, so the "no" holds at once and the retry only makes the store catch up.
 - **Turning it off stops cloud AI immediately.** `revoke_cloud_ai_consent` clears the record, then cancels every
-  in-flight Ask Cmdr turn (`agent::chat::cancel::cancel_all`, rail and wake) and every folder-suggestion stream
-  (`stream_registry::cancel_all`). A held "no" does the same. Translate calls are one-shot and short: they finish, and
+  in-flight Ask Cmdr turn (`agent::chat::cancel::cancel_all`, rail and wake), every folder-suggestion stream
+  (`stream_registry::cancel_all`), and the card verdict in flight (`about::stop_verdicts`). A held "no" does the same. Translate calls are one-shot and short: they finish, and
   the next one refuses. `ai.provider` is untouched.
 - **The connection check is gated too.** `check_ai_connection` carries no user data, but it reaches the service, so
   without consent it answers `cloud_consent_missing: true` and sends nothing. It's gated whatever `ai.provider` says:
@@ -196,8 +208,8 @@ How the organization's MDM profile (`managed_policy/DETAILS.md`, the canonical k
   frontend logs `Managed` and `Cancelled` at info (`#lib/ai/local-ai-error.ts`).
   `DisableCloudAI` leaves all of that alone.
 - **A change while running.** `managed_policy`'s `apply_change` calls `managed::apply_policy_change`: ANY narrowing of
-  the AI policy cancels every in-flight Ask Cmdr turn and suggestion stream (the same `stop_in_flight_calls` a consent
-  revoke runs), `DisableAI` arriving also stops `llama-server` and cancels a model download, and the wake readiness
+  the AI policy cancels every in-flight Ask Cmdr turn, suggestion stream, and "Tell me about this" verdict
+  (`about::stop_verdicts`; the same `stop_in_flight_calls` a consent revoke runs), `DisableAI` arriving also stops `llama-server` and cancels a model download, and the wake readiness
   is refreshed. It doesn't work out which call talks to which host: the event is rare, and the next request
   re-resolves and gets the typed reason.
 - **The picker.** `cloud_ai_host_verdicts(base_urls)` answers per URL with the same decision, as the refusal itself

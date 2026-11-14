@@ -829,7 +829,7 @@ distinguished from a crash). All return `TurnResult::Cancelled`, whose one termi
 impl also ends its stream on the token). Regression anchor:
 `stop_ends_a_model_call_that_never_answers`. A tool call meets Stop in `dispatch_until_stopped`
 (§ Stop reaches every tool call); a `Propose` or `Memory` call finishes first. Turning Ask Cmdr
-off trips every turn (`cancel::stop_all_unless_on`, from `ask_cmdr_enabled_changed`): the rail
+off trips every turn (`cancel::stop_all_unless_on`, from `agent::follow_settings_move`): the rail
 then shows its gate where the composer was, so a running turn would have no Stop left to press.
 Revoking cloud consent does the same (`ai::cloud_consent`).
 

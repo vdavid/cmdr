@@ -297,7 +297,13 @@ impl DemoMenu {
             to: "main".to_string(),
         };
         match click {
-            ContextClick::Command { command_id, .. } => to_main("execute-command", json!({ "commandId": command_id })),
+            ContextClick::Command { command_id, .. } => {
+                to_main("execute-command", json!({ "commandId": command_id, "road": "relay" }))
+            }
+            ContextClick::RowCommand { command_id, .. } => to_main(
+                "execute-command",
+                json!({ "commandId": command_id, "road": "contextMenu" }),
+            ),
             ContextClick::ShowSearchResultInFolder if c.path.is_empty() => Click::Nothing,
             ContextClick::ShowSearchResultInFolder => {
                 to_main("show-search-result-in-folder", json!({ "path": c.path }))

@@ -91,6 +91,70 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
+  "ai.cloudConsent.aboutThis.title": "<b>Расскажите об этом</b>, каждый раз, когда вы открываете карточку файла или папки, без дополнительного вопроса:",
+  "@ai.cloudConsent.aboutThis.title": {
+    "sourceHash": "b60933c"
+  },
+  "ai.cloudConsent.aboutThis.item.identity": "Что это (файл, папка, приложение или ссылка), имя, путь, размер и даты, сколько файлов и папок в папке, сколько других имен указывают на объект, куда указывает ссылка и скрывает ли имя символ, который меняет порядок отображения букв",
+  "@ai.cloudConsent.aboutThis.item.identity": {
+    "sourceHash": "f01c726"
+  },
+  "ai.cloudConsent.aboutThis.item.realType": "Тип файла по его первым байтам или по имени, если Cmdr их не читал",
+  "@ai.cloudConsent.aboutThis.item.realType": {
+    "sourceHash": "55e97b9"
+  },
+  "ai.cloudConsent.aboutThis.item.imageIndex": "Для изображения: метки, которые ему дал индекс изображений Cmdr, и первые строки найденного на нем текста, прочитанные из индекса Cmdr, а не из самого изображения",
+  "@ai.cloudConsent.aboutThis.item.imageIndex": {
+    "sourceHash": "020f807"
+  },
+  "ai.cloudConsent.aboutThis.item.download": "Сайт, с которого, по записи, загружен файл (только основной адрес сайта, например github.com, без поддоменов и полной ссылки), когда и в каком приложении. Для вложения из Почты или файла из AirDrop: только сам этот факт, без отправителя",
+  "@ai.cloudConsent.aboutThis.item.download": {
+    "sourceHash": "40d185c"
+  },
+  "ai.cloudConsent.aboutThis.item.appAndSigner": "Для приложения или программы: имя, идентификатор и версия. Для них и для образов диска: имя и идентификатор команды того, кто их подписал, совпадает ли код с подписью и прикреплена ли отметка Apple о нотаризации",
+  "@ai.cloudConsent.aboutThis.item.appAndSigner": {
+    "sourceHash": "471891d"
+  },
+  "ai.cloudConsent.aboutThis.item.use": "Когда вы последний раз открывали объект, сколько раз и в каком приложении он открывается",
+  "@ai.cloudConsent.aboutThis.item.use": {
+    "sourceHash": "9664a6e"
+  },
+  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Откуда и когда Cmdr скопировал, переместил или распаковал объект, включая этот путь и имя диска или сервера, а также кто это запустил: вы или ИИ-помощник",
+  "@ai.cloudConsent.aboutThis.item.cmdrHistory": {
+    "sourceHash": "1d38db2"
+  },
+  "ai.cloudConsent.aboutThis.item.git": "Папка, ветка и состояние репозитория git, а для файла из истории git: коммит, ветка или тег, откуда он взят, и когда он там последний раз менялся",
+  "@ai.cloudConsent.aboutThis.item.git": {
+    "sourceHash": "a06839e"
+  },
+  "ai.cloudConsent.aboutThis.item.owner": "Приложение или установщик, которому принадлежит объект, или какая это стандартная системная папка, и откуда Cmdr это знает",
+  "@ai.cloudConsent.aboutThis.item.owner": {
+    "sourceHash": "f5d95a6"
+  },
+  "ai.cloudConsent.aboutThis.item.importance": "Для папки: насколько она важна по оценке Cmdr и как часто вы открываете ее в Cmdr",
+  "@ai.cloudConsent.aboutThis.item.importance": {
+    "sourceHash": "b358d29"
+  },
+  "ai.cloudConsent.aboutThis.item.inside": "Для папки: что это за папка (например, кэш или результат сборки), сколько в ней объектов, имена и размеры самых больших из них и самых больших файлов, какие типы файлов в ней есть и какая ее часть не менялась за последний год",
+  "@ai.cloudConsent.aboutThis.item.inside": {
+    "sourceHash": "eb93c12"
+  },
+  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {Для приложения: имена и размеры папок, которые оно хранит в вашей папке «Библиотека»} other {Для приложения: имена и размеры папок с данными, которые оно хранит}}",
+  "@ai.cloudConsent.aboutThis.item.appData": {
+    "sourceHash": "d61ade2"
+  },
+  "ai.cloudConsent.aboutThis.item.removal": "Что будет, если удалить объект, как Cmdr выводит это из фактов выше",
+  "@ai.cloudConsent.aboutThis.item.removal": {
+    "sourceHash": "f7ad4bd"
+  },
+  "ai.cloudConsent.aboutThis.item.contentsStayHome": "Для объекта, содержимое которого не покидает компьютер (список ниже, в разделе Ask Cmdr): только имя, путь, размер, даты и приложение, которому он принадлежит",
+  "@ai.cloudConsent.aboutThis.item.contentsStayHome": {
+    "sourceHash": "400db48"
+  },
+  "ai.cloudConsent.aboutThis.lookInside": "Небольшая часть файла, когда Cmdr в него заглядывает: немного текста, первая страница и название PDF, список файлов в архиве или сведения о камере из фотографии без геопозиции",
+  "@ai.cloudConsent.aboutThis.lookInside": {
+    "sourceHash": "a78e673"
+  },
   "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, когда вы общаетесь в чате или Cmdr начинает разговор самостоятельно:",
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "bd006c2"
@@ -118,6 +182,10 @@
   "ai.cloudConsent.askCmdr.item.attachments": "Имя и путь каждого файла или папки, прикрепленных к вопросу",
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
+  },
+  "ai.cloudConsent.askCmdr.item.aboutThis": "Когда Cmdr выясняет, что такое файл или папка: те же факты, что отправляет «Расскажите об этом», но Cmdr не заглядывает внутрь файла",
+  "@ai.cloudConsent.askCmdr.item.aboutThis": {
+    "sourceHash": "1c8e78d"
   },
   "ai.cloudConsent.askCmdr.item.mediaFields": "Сведения о фотографиях и песнях, если они нужны для переименования: дата съемки, камера, название, исполнитель, альбом и тому подобное",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {

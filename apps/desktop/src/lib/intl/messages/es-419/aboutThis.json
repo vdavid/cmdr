@@ -1,0 +1,150 @@
+{
+  "aboutThis.action.showInFileManager": "{platform, select, macos {Mostrar en el Finder} windows {Mostrar en el Explorador de archivos} other {Mostrar en el administrador de archivos}}",
+  "@aboutThis.action.showInFileManager": {
+    "sourceHash": "a11bd4b"
+  },
+  "aboutThis.action.trash": "{platform, select, windows {Mover a la Papelera de reciclaje…} other {Mover al basurero…}}",
+  "@aboutThis.action.trash": {
+    "sourceHash": "e72f355"
+  },
+  "aboutThis.volumeNote.unreachable": "{volume} dejó de responder, así que Cmdr no puede decir más ahora mismo.",
+  "@aboutThis.volumeNote.unreachable": {
+    "sourceHash": "7f87b55"
+  },
+  "aboutThis.unavailable.pathOutsideVolume": "Cmdr no pudo situar este elemento en su unidad.",
+  "@aboutThis.unavailable.pathOutsideVolume": {
+    "sourceHash": "0779b4c"
+  },
+  "aboutThis.unavailable.permissionDenied": "{platform, select, macos {macOS no dejó que Cmdr viera este elemento.} windows {Windows no dejó que Cmdr viera este elemento.} other {El sistema no dejó que Cmdr viera este elemento.}}",
+  "@aboutThis.unavailable.permissionDenied": {
+    "sourceHash": "40e67c9"
+  },
+  "aboutThis.unavailable.unreadable": "Cmdr no pudo leer nada sobre este elemento.",
+  "@aboutThis.unavailable.unreadable": {
+    "sourceHash": "eadfbef"
+  },
+  "aboutThis.unknown.timedOut": "Cmdr no recibió respuesta a tiempo.",
+  "@aboutThis.unknown.timedOut": {
+    "sourceHash": "6e6533d"
+  },
+  "aboutThis.unknown.unreachable": "La unidad dejó de responder.",
+  "@aboutThis.unknown.unreachable": {
+    "sourceHash": "4afaa84"
+  },
+  "aboutThis.unknown.permissionDenied": "{platform, select, macos {macOS no dejó que Cmdr leyera esto.} windows {Windows no dejó que Cmdr leyera esto.} other {El sistema no dejó que Cmdr leyera esto.}}",
+  "@aboutThis.unknown.permissionDenied": {
+    "sourceHash": "8cd7dbd"
+  },
+  "aboutThis.download.localFile": "{platform, select, macos {Según macOS, esto viene de un archivo de esta computadora.} other {Según el navegador, esto viene de un archivo de esta computadora.}}",
+  "@aboutThis.download.localFile": {
+    "sourceHash": "c4691f0"
+  },
+  "aboutThis.kind.video": "Video",
+  "@aboutThis.kind.video": {
+    "sourceHash": "bc10c86"
+  },
+  "aboutThis.signature.checkTimedOut": "Cmdr no terminó de comparar su programa con la firma.",
+  "@aboutThis.signature.checkTimedOut": {
+    "sourceHash": "c1cdf2d"
+  },
+  "aboutThis.signature.checkUnavailable": "Cmdr no pudo comparar su programa con la firma.",
+  "@aboutThis.signature.checkUnavailable": {
+    "sourceHash": "0a5509b"
+  },
+  "aboutThis.standardFolder.movies": "Tu carpeta Videos",
+  "@aboutThis.standardFolder.movies": {
+    "sourceHash": "d498db6"
+  },
+  "aboutThis.standardFolder.public": "Tu carpeta Público",
+  "@aboutThis.standardFolder.public": {
+    "sourceHash": "7aab975"
+  },
+  "aboutThis.standardFolder.applications": "La carpeta Aplicaciones de la computadora",
+  "@aboutThis.standardFolder.applications": {
+    "sourceHash": "c6a27b5"
+  },
+  "aboutThis.standardFolder.library": "La carpeta Biblioteca de la computadora",
+  "@aboutThis.standardFolder.library": {
+    "sourceHash": "dfcb654"
+  },
+  "aboutThis.childKind.video": "{count, plural, one {{countText} video} many {{countText} videos} other {{countText} videos}}",
+  "@aboutThis.childKind.video": {
+    "sourceHash": "d0751c7"
+  },
+  "aboutThis.folderClass.dependencies": "Paquetes que instaló un administrador de paquetes",
+  "@aboutThis.folderClass.dependencies": {
+    "sourceHash": "48c0f24"
+  },
+  "aboutThis.removal.standardFolder.home": "Es tu carpeta de inicio: dentro está todo lo tuyo en esta computadora, y el sistema y todas las apps cuentan con ella.",
+  "@aboutThis.removal.standardFolder.home": {
+    "sourceHash": "10aef6c"
+  },
+  "aboutThis.removal.standardFolder.homeLibrary": "Guarda la configuración y los datos que tus apps conservan para ti, y sin ella pueden dejar de funcionar o empezar de cero.",
+  "@aboutThis.removal.standardFolder.homeLibrary": {
+    "sourceHash": "6048346"
+  },
+  "aboutThis.removal.standardFolder.applications": "Contiene las apps de esta computadora, y el sistema las busca aquí.",
+  "@aboutThis.removal.standardFolder.applications": {
+    "sourceHash": "b8bd4fb"
+  },
+  "aboutThis.removal.standardFolder.library": "Contiene configuración y datos que las apps y el sistema guardan para cualquiera que use esta computadora, y sin ella pueden dejar de funcionar.",
+  "@aboutThis.removal.standardFolder.library": {
+    "sourceHash": "1cd1208"
+  },
+  "aboutThis.removal.standardFolder.system": "Es el propio macOS: la computadora no puede arrancar sin ella.",
+  "@aboutThis.removal.standardFolder.system": {
+    "sourceHash": "a17dda2"
+  },
+  "aboutThis.removal.standardFolder.users": "Contiene la carpeta de inicio de cada cuenta de esta computadora.",
+  "@aboutThis.removal.standardFolder.users": {
+    "sourceHash": "c2a9139"
+  },
+  "aboutThis.removal.rebuildablePackageManager": "Un administrador de paquetes puede volver a obtenerlo, lo que lleva tiempo y requiere red.",
+  "@aboutThis.removal.rebuildablePackageManager": {
+    "sourceHash": "ab3428c"
+  },
+  "aboutThis.verdict.label": "Lo escribió la IA",
+  "@aboutThis.verdict.label": {
+    "sourceHash": "5106cd9"
+  },
+  "aboutThis.verdict.announcement": "Lo escribió la IA: {text}",
+  "@aboutThis.verdict.announcement": {
+    "sourceHash": "671cf26"
+  },
+  "aboutThis.verdict.problem.authFailed": "Tu proveedor de IA no aceptó la clave.",
+  "@aboutThis.verdict.problem.authFailed": {
+    "sourceHash": "ab50332"
+  },
+  "aboutThis.verdict.problem.rateLimited": "Llegaste al límite de tu proveedor de IA por ahora.",
+  "@aboutThis.verdict.problem.rateLimited": {
+    "sourceHash": "f07cd45"
+  },
+  "aboutThis.verdict.problem.unreachable": "Cmdr no pudo conectar con tu proveedor de IA.",
+  "@aboutThis.verdict.problem.unreachable": {
+    "sourceHash": "d832470"
+  },
+  "aboutThis.verdict.problem.managed": "La política de tu equipo de informática detuvo esto antes de que saliera.",
+  "@aboutThis.verdict.problem.managed": {
+    "sourceHash": "a3abf77"
+  },
+  "aboutThis.verdict.problem.noAnswer": "La IA no escribió nada esta vez.",
+  "@aboutThis.verdict.problem.noAnswer": {
+    "sourceHash": "092fd0f"
+  },
+  "aboutThis.verdict.problem.other": "Tu proveedor de IA no pudo responder esta vez.",
+  "@aboutThis.verdict.problem.other": {
+    "sourceHash": "f7bab11"
+  },
+  "aboutThis.verdict.unavailable.notConfigured": "Agrega la clave de tu proveedor de IA para una lectura más a fondo de cada elemento.",
+  "@aboutThis.verdict.unavailable.notConfigured": {
+    "sourceHash": "0da4854"
+  },
+  "aboutThis.verdict.unavailable.openAiSettings": "Abrir la configuración de IA",
+  "@aboutThis.verdict.unavailable.openAiSettings": {
+    "sourceHash": "1994c72"
+  },
+  "aboutThis.verdict.hint.dismissTooltip": "Oculta este aviso. Puedes recuperarlo en Configuración > Avanzado.",
+  "@aboutThis.verdict.hint.dismissTooltip": {
+    "sourceHash": "e0bb86a"
+  }
+}

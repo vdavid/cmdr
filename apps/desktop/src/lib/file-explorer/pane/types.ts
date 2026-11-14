@@ -153,6 +153,11 @@ export interface OpenDeleteDialogArgs {
   initiator: Initiator
   /** As in `OpenTransferDialogArgs`. */
   guard?: boolean
+  /**
+   * Act on the cursor row alone, whatever is selected, and only while it's this path: a press about one item (the
+   * "Tell me about this" card's Move to Trash). A cursor that moved off it opens nothing.
+   */
+  cursorPath?: string
 }
 
 /** Args for `ExplorerAPI.openNewFolderDialog` and `.openNewFileDialog`. */

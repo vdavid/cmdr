@@ -91,6 +91,70 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
+  "ai.cloudConsent.aboutThis.title": "<b>Vertel me hierover</b>, elke keer dat je de kaart van een bestand of map opent, zonder verdere vraag:",
+  "@ai.cloudConsent.aboutThis.title": {
+    "sourceHash": "b60933c"
+  },
+  "ai.cloudConsent.aboutThis.item.identity": "Wat het is (een bestand, map, app of link), de naam, het pad, de grootte en de datums, hoeveel bestanden en mappen een map bevat, hoeveel andere namen ernaar verwijzen, waar een link naar verwijst, en of de naam een teken verbergt dat de volgorde verandert waarin de letters worden getoond",
+  "@ai.cloudConsent.aboutThis.item.identity": {
+    "sourceHash": "f01c726"
+  },
+  "ai.cloudConsent.aboutThis.item.realType": "Wat voor soort bestand het volgens de eerste bytes is, of volgens de naam als Cmdr die bytes niet heeft gelezen",
+  "@ai.cloudConsent.aboutThis.item.realType": {
+    "sourceHash": "55e97b9"
+  },
+  "ai.cloudConsent.aboutThis.item.imageIndex": "Voor een afbeelding de labels die de afbeeldingsindex van Cmdr eraan gaf en de eerste regels tekst die erin zijn gevonden, gelezen uit de index van Cmdr, nooit uit de afbeelding zelf",
+  "@ai.cloudConsent.aboutThis.item.imageIndex": {
+    "sourceHash": "020f807"
+  },
+  "ai.cloudConsent.aboutThis.item.download": "De website waarvan het volgens de registratie is gedownload (alleen het hoofdadres van de site, zoals github.com, nooit een subdomein of de volledige link), wanneer, en de app die het heeft gedownload. Voor een Mail-bijlage of AirDrop alleen dat het er een was, nooit wie het verstuurde",
+  "@ai.cloudConsent.aboutThis.item.download": {
+    "sourceHash": "40d185c"
+  },
+  "ai.cloudConsent.aboutThis.item.appAndSigner": "Voor een app of programma de naam, ID en versie. Daarvoor of voor een schijfkopie de naam en team-ID van wie het heeft ondertekend, of de code nog bij die handtekening past, en of het notarisatiebewijs van Apple is bijgevoegd",
+  "@ai.cloudConsent.aboutThis.item.appAndSigner": {
+    "sourceHash": "471891d"
+  },
+  "ai.cloudConsent.aboutThis.item.use": "Wanneer je het laatst hebt geopend, hoe vaak, en welke app het opent",
+  "@ai.cloudConsent.aboutThis.item.use": {
+    "sourceHash": "9664a6e"
+  },
+  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Waarvandaan Cmdr het heeft gekopieerd, verplaatst of uitgepakt en wanneer, inclusief dat pad, de naam van de schijf of server, en of jij of een AI-assistent het heeft gestart",
+  "@ai.cloudConsent.aboutThis.item.cmdrHistory": {
+    "sourceHash": "1d38db2"
+  },
+  "ai.cloudConsent.aboutThis.item.git": "De map, branch en status van de git-repo, of voor een bestand uit de git-geschiedenis de commit, branch of tag waar het vandaan komt en wanneer het daar laatst is gewijzigd",
+  "@ai.cloudConsent.aboutThis.item.git": {
+    "sourceHash": "a06839e"
+  },
+  "ai.cloudConsent.aboutThis.item.owner": "De app of het installatieprogramma waar het bij hoort, of welke standaardmap van het systeem het is, en hoe Cmdr dat weet",
+  "@ai.cloudConsent.aboutThis.item.owner": {
+    "sourceHash": "f5d95a6"
+  },
+  "ai.cloudConsent.aboutThis.item.importance": "Voor een map hoe belangrijk die is volgens de rangschikking van Cmdr, en hoe vaak je die map in Cmdr opent",
+  "@ai.cloudConsent.aboutThis.item.importance": {
+    "sourceHash": "b358d29"
+  },
+  "ai.cloudConsent.aboutThis.item.inside": "Voor een map wat voor soort map het is (zoals een cache of builduitvoer), hoeveel onderdelen erin zitten, de namen en groottes van de grootste daarvan en van de grootste bestanden, welke soorten bestanden erin zitten, en hoeveel ervan al een jaar niet is gewijzigd",
+  "@ai.cloudConsent.aboutThis.item.inside": {
+    "sourceHash": "eb93c12"
+  },
+  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {Voor een app de namen en groottes van de mappen die de app in je map ‘Bibliotheek’ bewaart} other {Voor een app de namen en groottes van de gegevensmappen die de app bewaart}}",
+  "@ai.cloudConsent.aboutThis.item.appData": {
+    "sourceHash": "d61ade2"
+  },
+  "ai.cloudConsent.aboutThis.item.removal": "Wat verwijderen zou betekenen, zoals Cmdr dat afleidt uit de feiten hierboven",
+  "@ai.cloudConsent.aboutThis.item.removal": {
+    "sourceHash": "f7ad4bd"
+  },
+  "ai.cloudConsent.aboutThis.item.contentsStayHome": "Voor een onderdeel waarvan de inhoud thuis blijft (hieronder vermeld bij Ask Cmdr), alleen de naam, het pad, de grootte, de datums en de app waar het bij hoort",
+  "@ai.cloudConsent.aboutThis.item.contentsStayHome": {
+    "sourceHash": "400db48"
+  },
+  "ai.cloudConsent.aboutThis.lookInside": "Een korte blik in een bestand: wat tekst, de eerste pagina en titel van een PDF, de lijst met bestanden in een archief, of de cameragegevens van een foto zonder de locatie",
+  "@ai.cloudConsent.aboutThis.lookInside": {
+    "sourceHash": "a78e673"
+  },
   "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, als je chat of als Cmdr uit zichzelf een gesprek begint:",
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "bd006c2"
@@ -118,6 +182,10 @@
   "ai.cloudConsent.askCmdr.item.attachments": "Elk bestand of elke map die je aan een vraag bijvoegt, alleen via naam en pad",
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
+  },
+  "ai.cloudConsent.askCmdr.item.aboutThis": "Als Cmdr opzoekt wat een bestand of map is, dezelfde feiten die ‘Vertel me hierover’ verstuurt, zonder de blik erin",
+  "@ai.cloudConsent.askCmdr.item.aboutThis": {
+    "sourceHash": "1c8e78d"
   },
   "ai.cloudConsent.askCmdr.item.mediaFields": "Gegevens van foto''s en nummers als een naamwijziging ze gebruikt: opnamedatum, camera, titel, artiest, album en dergelijke",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {

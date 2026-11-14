@@ -136,6 +136,7 @@ fn content_tool(name: &str) -> Option<ContentTool> {
         "image_facts" => Some(ContentTool::ImageFacts),
         "search_photos" => Some(ContentTool::SearchPhotos),
         "multi_rename" => Some(ContentTool::MultiRename),
+        "about_item" => Some(ContentTool::AboutItem),
         _ => None,
     }
 }

@@ -336,6 +336,7 @@ export const menuCommands = [
   'file.showInFinder',
   'file.openTerminalHere',
   'file.getInfo',
+  'file.tellMeAbout',
   'file.quickLook',
   'file.copyPath',
   'file.copyFilename',

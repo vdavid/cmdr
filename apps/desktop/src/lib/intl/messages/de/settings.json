@@ -1290,6 +1290,18 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.aboutThis.aiVerdict.label": "KI-Kommentar in „Erzähl mir etwas darüber“",
+  "@settings.aboutThis.aiVerdict.label": {
+    "sourceHash": "4c84599"
+  },
+  "settings.aboutThis.aiVerdict.description": "Wenn du die Karte öffnest, schreibt die KI zwei oder drei Sätze aus den Fakten, die die Karte zeigt. Mit Cloud-KI gehen die Fakten der Karte und ein kurzer Blick in die Datei hinein jedes Mal an deinen Anbieter.",
+  "@settings.aboutThis.aiVerdict.description": {
+    "sourceHash": "5dfb5f5"
+  },
+  "settings.aboutThis.aiVerdict.keywords": "erklären, Einschätzung, Zusammenfassung, Dateiinfo, was ist das, beschreiben, Urteil, Kommentar",
+  "@settings.aboutThis.aiVerdict.keywords": {
+    "sourceHash": "56b9db5"
+  },
   "settings.ai.localContextSize.keywords": "Kontext, Kontextfenster, Fenster, Token, Speicher, Arbeitsspeicher, Größe, lokal",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
@@ -2428,6 +2440,18 @@
   "settings.behavior.adbHintDismissed.keywords": "Telefon, Handy, Smartphone, Debugging, Entwickler, Entwickleroptionen, Tipp, Zeile",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
+  },
+  "settings.aboutThis.aiHintDismissed.label": "KI-Hinweis zu „Erzähl mir etwas darüber“ unterdrücken",
+  "@settings.aboutThis.aiHintDismissed.label": {
+    "sourceHash": "fd81e08"
+  },
+  "settings.aboutThis.aiHintDismissed.description": "Ist KI ausgeschaltet oder noch nicht eingerichtet, zeigt die Karte „Erzähl mir etwas darüber“ unter ihren Tasten eine Hinweiszeile, dass KI einen genaueren Blick hinzufügt. Wenn du die Zeile mit ihrem × schließt, wird das hier eingeschaltet. Schalte das aus, um den Hinweis noch einmal zu sehen.",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "sourceHash": "7141d88"
+  },
+  "settings.aboutThis.aiHintDismissed.keywords": "Tipp, Hinweis, Dateiinfo, Karte, genauerer Blick, erklären, ausblenden",
+  "@settings.aboutThis.aiHintDismissed.keywords": {
+    "sourceHash": "2e77845"
   },
   "settings.section.notifications": "Benachrichtigungen",
   "@settings.section.notifications": {

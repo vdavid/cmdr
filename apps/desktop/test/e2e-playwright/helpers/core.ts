@@ -574,6 +574,40 @@ export async function flushFileWatcher(tauriPage: PageLike): Promise<void> {
 }
 
 /**
+ * Waits until the BACKEND reads Ask Cmdr as on, not just the rail. Turning it on from the rail's
+ * gate flips the frontend setting at once, but the backend learns it only once the change reaches
+ * the shared settings store, which saves `settings.json` and refreshes the wake loop's cached
+ * readiness (`settings::store_watch`). Until then a forced wake is refused silently (its rollup is
+ * not admitted). `agent_wake_status` is that cached readiness, so it's the boundary to wait on.
+ */
+export async function waitForAskCmdrOnInBackend(tauriPage: PageLike): Promise<void> {
+  await expect
+    .poll(
+      async () =>
+        (await tauriPage.evaluate<{ readiness: string }>(`window.__TAURI_INTERNALS__.invoke('agent_wake_status')`))
+          .readiness,
+      { timeout: waitBudget(5000) },
+    )
+    .not.toBe('askCmdrOff')
+}
+
+/**
+ * Waits until the BACKEND reads Ask Cmdr as off: the wake loop's cached readiness, which a running wake and the status
+ * corner act on. Switched off in the Settings window, it once stayed `ready`: the main window told the backend to
+ * re-read `settings.json` before the Settings window's debounced save had written it (#1194).
+ */
+export async function waitForAskCmdrOffInBackend(tauriPage: PageLike): Promise<void> {
+  await expect
+    .poll(
+      async () =>
+        (await tauriPage.evaluate<{ readiness: string }>(`window.__TAURI_INTERNALS__.invoke('agent_wake_status')`))
+          .readiness,
+      { timeout: waitBudget(5000) },
+    )
+    .toBe('askCmdrOff')
+}
+
+/**
  * Stages one folder's activity for the proactive agent and makes it act immediately.
  *
  * Waiting for a wake the honest way means sitting out the cadence (five seconds at the
@@ -593,25 +627,6 @@ export async function flushFileWatcher(tauriPage: PageLike): Promise<void> {
  *   thread again; `'propose'` stages a group, which is what raises the toast. Sticky in the
  *   app, so this always sends the value explicitly.
  */
-/**
- * Waits until the BACKEND reads Ask Cmdr as on, not just the rail. Turning it on from the rail's
- * gate flips the frontend setting at once, but the backend learns it only after the applier has
- * saved `settings.json` and pushed `ask_cmdr_enabled_changed`, which refreshes the wake loop's
- * cached readiness. Until then a forced wake is refused silently (its rollup is not admitted)
- * and a send reads the switch as off. `agent_wake_status` is that cached readiness, so it's the
- * boundary to wait on.
- */
-export async function waitForAskCmdrOnInBackend(tauriPage: PageLike): Promise<void> {
-  await expect
-    .poll(
-      async () =>
-        (await tauriPage.evaluate<{ readiness: string }>(`window.__TAURI_INTERNALS__.invoke('agent_wake_status')`))
-          .readiness,
-      { timeout: waitBudget(5000) },
-    )
-    .not.toBe('askCmdrOff')
-}
-
 export async function forceAgentWake(
   tauriPage: PageLike,
   folder: string,

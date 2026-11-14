@@ -310,6 +310,18 @@ export const advancedSettings: SettingDefinitionSource[] = [
     component: 'switch',
   },
   {
+    id: 'aboutThis.aiHintDismissed', // `about-this/AboutAiHint.svelte`'s line, spent by its own ×.
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.hintsAndWarnings',
+    labelKey: 'settings.aboutThis.aiHintDismissed.label',
+    descriptionKey: 'settings.aboutThis.aiHintDismissed.description',
+    keywordsKey: 'settings.aboutThis.aiHintDismissed.keywords',
+    terms: ['ai'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
     // The intro toast the first time a pane lands on a repo root
     // (`file-explorer/git/git-portal-intro.ts`).
     id: 'fileExplorer.git.portalIntroSeen',

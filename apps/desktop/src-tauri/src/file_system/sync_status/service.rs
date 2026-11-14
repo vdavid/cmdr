@@ -379,6 +379,7 @@ mod tests {
         target_workers: 4,
         max_workers: 8,
         wedged_after: Duration::from_secs(30),
+        spare_after: None,
     };
 
     const TTLS: Ttls = Ttls {

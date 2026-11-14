@@ -2,6 +2,7 @@
     import { onMount, onDestroy } from 'svelte'
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
+    import SettingSwitch from '../components/SettingSwitch.svelte'
     import { tooltip } from '#lib/tooltip/tooltip.js'
     import {
         getSetting,
@@ -237,6 +238,21 @@
         <!-- Local LLM section -->
         {#if offersLocalAi && provider === 'local'}
             <AiLocalSection {searchQuery} {shouldShow} {status} />
+        {/if}
+
+        <!-- What the AI does on the "Tell me about this" card. Only with a provider on: with AI off
+             the card writes no take whatever this says. -->
+        {#if provider !== 'off' && shouldShow('aboutThis.aiVerdict')}
+            <SectionCard>
+                <SettingRow
+                    id="aboutThis.aiVerdict"
+                    label={tString('settings.aboutThis.aiVerdict.label')}
+                    description={tString('settings.aboutThis.aiVerdict.description')}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="aboutThis.aiVerdict" />
+                </SettingRow>
+            </SectionCard>
         {/if}
     {/if}
 </SettingsSection>

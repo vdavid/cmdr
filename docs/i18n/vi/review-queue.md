@@ -123,3 +123,12 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   against a Vietnamese Windows.
 - **`môi trường desktop`** (`shortcuts.conflict.takenByLinuxDesktops`): the Linux desktop environment; no pile source
   settles it. Confirm it reads naturally.
+- **"Tell me about this" wording** (`commands.fileTellMeAbout.label` = `Cho tôi biết về mục này`, card =
+  `bảng thông tin`, AI take = `nhận xét của AI`, deeper read = `cái nhìn sâu hơn`): all coined, no source. Confirm.
+- **`phiếu công chứng`** (`aboutThis.signature.ticket*`, `ai.cloudConsent.aboutThis.item.appAndSigner`): no Apple vi
+  term for "notarization ticket" in the pile or the live loctables searched; check Apple's vi developer docs.
+- **`công cụ dựng` / `bản dựng` / `kết quả dựng`** (`aboutThis.folderClass.buildOutput`,
+  `.removal.rebuildableBuildTool`, `.signature.adHoc`): MS's `dựng` over the developer loanword `build`; confirm which a
+  Vietnamese developer expects.
+- **`Không đụng tới`** (`aboutThis.label.unchanged`): "Untouched" (unchanged for a year), coined; the `untouched`
+  ruling's `nguyên vẹn` is another sense.

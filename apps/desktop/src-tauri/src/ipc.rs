@@ -371,6 +371,8 @@ macro_rules! ipc_command_manifest {
                     crate::ai::cloud_consent::cloud_ai_consent_status,
                     crate::ai::cloud_consent::accept_cloud_ai_consent,
                     crate::ai::cloud_consent::revoke_cloud_ai_consent,
+                    crate::about::commands::about_cancel,
+                    crate::about::commands::about_stop_verdict,
                     crate::ai::cloud_consent::cloud_ai_consent_revoke_pending_changed,
                     crate::system_memory::get_system_memory_info,
                     crate::system_strings::get_localized_system_strings,
@@ -518,12 +520,10 @@ macro_rules! ipc_command_manifest {
                     crate::commands::agent::ask_cmdr_archive_conversation,
                     crate::commands::agent::ask_cmdr_resolve_attachments,
                     crate::commands::agent::ask_cmdr_legacy_opt_in,
-                    crate::commands::agent::ask_cmdr_enabled_changed,
                     crate::commands::agent::ask_cmdr_conversation_cost,
                     crate::commands::agent::ask_cmdr_cost_summary,
                     crate::commands::agent::ask_cmdr_model_window,
                     crate::commands::agent::ask_cmdr_slot_status,
-                    crate::commands::agent::ask_cmdr_wake_settings_changed,
                     crate::commands::agent::agent_wake_status,
                     crate::commands::agent::ask_cmdr_memory_folder,
                     crate::commands::agent::ask_cmdr_forget_memory,
@@ -585,6 +585,9 @@ macro_rules! ipc_command_manifest {
                     // calls these on raw invoke with the documented eslint opt-out.
                     crate::ai::suggestions::stream_folder_suggestions,
                     crate::ai::suggestions::cancel_folder_suggestions,
+                    // "Tell me about this" streams its card over a `Channel<AboutEvent>`, same
+                    // blocker; `AboutEvent` itself is exported below through `.typ`.
+                    crate::about::commands::about_start,
                     // Return BundleManifest, whose serde-elided optional fields specta can't export
                     // as one unified command return type.
                     crate::commands::error_reporter::prepare_error_report_preview,
@@ -926,6 +929,8 @@ macro_rules! ipc_command_manifest {
                     crate::commands::e2e::e2e_propose_suggestions,
                     // Stages a server card through the real `propose_server` handler.
                     crate::commands::e2e::e2e_propose_server,
+                    // Releases or re-arms the AI take's held fake (`about-this-verdict.spec.ts`).
+                    crate::commands::e2e::hold_about_verdict,
                 ]
             }
             // The dialog gallery's fixtures, which outlive `debug_assertions`: an E2E build is a
@@ -1017,6 +1022,13 @@ pub fn builder() -> Builder<tauri::Wry> {
         // Reaches the frontend through the platform init script, not a command
         // (`platform/frontend.rs`); exported so `#lib/platform` types what it reads.
         .typ::<crate::platform::PlatformCapabilities>()
+        // What `about_start` streams over its channel, which specta can't describe from the
+        // command: exported so the card's state slice types every event.
+        .typ::<crate::about::AboutEvent>()
+        // The kinds the card's model projection carries, one line of the cloud AI
+        // consent copy each: exported so the disclosure is a `Record` over them,
+        // and a new kind fails the typecheck until it has words.
+        .typ::<cmdr_about::model::AboutDisclosure>()
         // Typed events. Each registered struct derives `tauri_specta::Event`;
         // its kebab-cased name is the wire event name and its TS type + a typed
         // `events.<name>.listen(...)` helper are generated into `bindings.ts`.

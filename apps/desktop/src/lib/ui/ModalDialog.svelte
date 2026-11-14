@@ -46,6 +46,12 @@
          * only alongside `footer`; the buttons stay right-aligned.
          */
         footerLeading?: Snippet
+        /**
+         * One quiet line on a row of its own under the footer's buttons (a hint where to turn
+         * something on). Renders only alongside `footer`, so the buttons' row keeps its height
+         * and alignment.
+         */
+        footerNote?: Snippet
         /** MCP dialog tracking: sends notifyDialogOpened/Closed on mount/destroy */
         dialogId?: SoftDialogId
         role?: 'dialog' | 'alertdialog'
@@ -163,6 +169,7 @@
         children,
         footer,
         footerLeading,
+        footerNote,
         dialogId,
         role = 'dialog',
         draggable = true,
@@ -697,6 +704,7 @@
                 <div class="modal-footer">
                     {#if footerLeading}<div class="modal-footer-leading">{@render footerLeading()}</div>{/if}
                     <div class="modal-footer-actions" bind:this={footerActionsElement}>{@render footer()}</div>
+                    {#if footerNote}<div class="modal-footer-note">{@render footerNote()}</div>{/if}
                 </div>
             {/if}
         </div>
@@ -1067,6 +1075,13 @@
     .modal-footer-leading {
         margin-right: auto;
         min-width: 0;
+    }
+
+    /* A row of its own under the buttons (the footer wraps), so the buttons' row keeps its height. */
+    .modal-footer-note {
+        flex-basis: 100%;
+        min-width: 0;
+        margin-top: calc(-1 * var(--spacing-xs));
     }
 
     /* The buttons are one row that never shrinks, never wraps, and never wraps a

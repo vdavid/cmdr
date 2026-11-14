@@ -1292,6 +1292,18 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.aboutThis.aiVerdict.label": "AI-commentaar in ‘Vertel me hierover’",
+  "@settings.aboutThis.aiVerdict.label": {
+    "sourceHash": "4c84599"
+  },
+  "settings.aboutThis.aiVerdict.description": "Als je de kaart opent, schrijft de AI twee of drie zinnen op basis van de feiten die de kaart toont. Met cloud-AI gaan de feiten op de kaart en een korte blik in het bestand elke keer naar je aanbieder.",
+  "@settings.aboutThis.aiVerdict.description": {
+    "sourceHash": "5dfb5f5"
+  },
+  "settings.aboutThis.aiVerdict.keywords": "uitleggen, uitleg, oordeel, samenvatting, bestandsinfo, wat is dit, beschrijven, commentaar",
+  "@settings.aboutThis.aiVerdict.keywords": {
+    "sourceHash": "56b9db5"
+  },
   "settings.ai.localContextSize.keywords": "context, contextvenster, venster, tokens, geheugen, grootte, lokaal",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
@@ -2428,6 +2440,18 @@
   "settings.behavior.adbHintDismissed.keywords": "telefoon, mobiel, smartphone, foutopsporing, debuggen, ontwikkelaar, ontwikkelaarsopties, tip",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
+  },
+  "settings.aboutThis.aiHintDismissed.label": "De AI-hint bij ‘Vertel me hierover’ onderdrukken",
+  "@settings.aboutThis.aiHintDismissed.label": {
+    "sourceHash": "fd81e08"
+  },
+  "settings.aboutThis.aiHintDismissed.description": "Als AI uitstaat of nog niet is ingesteld, toont de kaart ‘Vertel me hierover’ onder de knoppen een regel die zegt dat AI een diepere blik toevoegt. Als je de regel met × sluit, gaat dit aan. Zet dit uit om de regel weer te zien.",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "sourceHash": "7141d88"
+  },
+  "settings.aboutThis.aiHintDismissed.keywords": "tip, hint, bestandsinfo, kaart, diepere blik, uitleg, verbergen",
+  "@settings.aboutThis.aiHintDismissed.keywords": {
+    "sourceHash": "2e77845"
   },
   "settings.section.notifications": "Meldingen",
   "@settings.section.notifications": {

@@ -1174,7 +1174,10 @@
   "desktop": {
     "chosen": "Asztal",
     "confidence": "high",
-    "sources": "macOS (Desktop = Asztal)"
+    "sources": "macOS (Desktop = Asztal)",
+    "exceptions": {
+      "aboutThis.standardFolder.desktop": "Names the folder as Finder shows it: macOS SystemFolderLocalizations hu.lproj maps Desktop → Íróasztal (macOS 26, plutil, 2026-11-14), while the Desktop & Dock pane and the rest of the catalog say Asztal."
+    }
   },
   "destination": {
     "chosen": "cél",
@@ -1295,7 +1298,15 @@
   },
   "download": {
     "chosen": "letöltés",
-    "accept": ["letölt", "le kell tölt", "töltsd le", "le van töltve", "le kellene tölt"],
+    "accept": [
+      "letölt",
+      "le kell tölt",
+      "töltsd le",
+      "le van töltve",
+      "le kellene tölt",
+      "töltötték le",
+      "töltötte le"
+    ],
     "forms": "the folder → Letöltések; Remove download → Letöltés eltávolítása; the Downloading / Uploading cloud badge → Letöltés / Feltöltés (Finder’s own badge nouns)",
     "confidence": "high",
     "sources": "macOS (Finder AXBADGE8 Letöltés, AXBADGE7 Feltöltés); ms"
@@ -1476,7 +1487,7 @@
   },
   "extract": {
     "chosen": "kicsomagolás",
-    "accept": ["kicsomagol"],
+    "accept": ["kicsomagol", "csomagolta ki"],
     "forms": "Extracted an archive → Archívum kicsomagolása",
     "confidence": "high",
     "sources": "Total Commander (Fájl kicsomagolása, Kicsomagolás:)"
@@ -1821,7 +1832,7 @@
   },
   "restore": {
     "chosen": "visszaállítás",
-    "accept": ["visszaállít", "állítsd vissza"],
+    "accept": ["visszaállít", "állítsd vissza", "vissza tudja állítani"],
     "forms": "restore it (a cold-storage file) → állítsd vissza; until it’s restored → a visszaállításáig; A restore → A visszaállítás",
     "confidence": "high",
     "sources": "macOS AppKit Revisions (Restore → Visszaállítás); ms (restore → visszaállítás); catalog (Visszaállítás 3×)",
@@ -2021,7 +2032,7 @@
   },
   "hide": {
     "chosen": "elrejtés",
-    "accept": ["elrejt", "rejtve", "rejtett"],
+    "accept": ["elrejt", "rejtve", "rejtett", "rejt"],
     "forms": "Hide Cmdr → Cmdr elrejtése (bare name, no article); Hide Others → Többi elrejtése",
     "confidence": "high",
     "sources": "macOS 26.6.2 Finder MenuBar.strings (300728.title Finder elrejtése, 300729.title Többi elrejtése)"
@@ -2406,7 +2417,7 @@
   },
   "look-inside": {
     "chosen": "belenéz",
-    "accept": ["átnéz", "beleolvas", "néz bele"],
+    "accept": ["átnéz", "beleolvas", "néz bele", "nézett bele"],
     "forms": "prose → belenéz (egy fájlba csak akkor néz bele, ha arról kérdezed); the tool pair → Fájlok átnézése / Fájlok átnézve",
     "confidence": "tentative",
     "sources": "catalog (search.coverage.denied)",
@@ -4512,5 +4523,41 @@
     "forms": "Cmdr closes afterwards → Utána a Cmdr bezárul; then closes → aztán bezárul; after Cmdr closes → miután a Cmdr bezárult; only in a platform select's windows branch (macOS and Linux say kilép)",
     "confidence": "tentative",
     "sources": "catalog (quit unexpectedly → váratlanul bezárult); ms (close → bezár); no TBX entry for an app closing by itself"
+  },
+  "font": {
+    "chosen": "betűtípus",
+    "forms": "the file kind → Betűtípus",
+    "confidence": "high",
+    "sources": "macOS AppKit FontManager (Font → Betűtípus); Double Commander (Font → Betűtípus); ms says betűkészlet, GNOME Betűkészlet, but macOS wins"
+  },
+  "it-team": {
+    "chosen": "IT-csapat",
+    "forms": "your IT team → az IT-csapatod; its policy → az IT-csapatod házirendje",
+    "confidence": "tentative",
+    "sources": "no pile hit for IT team; built from IT + csapat, hyphenated as an acronym compound (like AI-szolgáltató); policy → házirend (ms)"
+  },
+  "macos-package": {
+    "chosen": "csomag",
+    "forms": "the item kind → Csomag; Show Package Contents → Csomag tartalmának megjelenítése",
+    "confidence": "high",
+    "sources": "macOS Finder N158 (Show Package Contents → Csomag tartalmának megjelenítése)"
+  },
+  "generate": {
+    "chosen": "generál",
+    "accept": ["generált"],
+    "forms": "generated files → generált fájlok",
+    "confidence": "tentative",
+    "sources": "ms (generated allocation → generált felosztás); no macOS hit"
+  },
+  "on-disk-size": {
+    "chosen": "lemezen",
+    "forms": "the column and the label On disk → Lemezen; N on disk → lemezen: N",
+    "confidence": "high",
+    "sources": "catalog (fileExplorer.dirSize.onDiskLabel, settings.listing.sizeDisplay.opt.physical: Lemezen)"
+  },
+  "preferences": {
+    "chosen": "Beállítások",
+    "confidence": "high",
+    "sources": "macOS AppKit MenuCommands (Preferences → Beállítások); GNOME and Thunar (Beállítások)"
   }
 }

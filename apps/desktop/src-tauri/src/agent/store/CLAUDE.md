@@ -32,10 +32,10 @@ proposal spine. Depth: `DETAILS.md`.
   directly, never only through the search API.
 - **`cost_meter.conversation_id` is NOT NULL by necessity.** A nullable PK column breaks `ON CONFLICT DO UPDATE` (SQLite
   treats NULLs as distinct, so every write duplicates). The cross-thread rollup is computed at query time.
-- **One reserved conversation row nothing lists** (origin `quiet_wakes`, v8) keeps what quiet wakes spent once their
-  threads are deleted. ❌ Never count threads with a bare `COUNT(*) FROM conversations`. `delete_conversation` is the
-  store's one delete; a thread that spent anything goes through `discard_conversation_keeping_cost`, which folds its
-  cost onto that row first. `DETAILS.md` § v8.
+- **Reserved ledger rows nothing lists** (`ConversationOrigin::LEDGERS`, hidden by both filters): `quiet_wakes` (v8)
+  keeps quiet wakes' spend once their threads are deleted, `about_this` (v15) the card verdicts'. ❌ Never a bare
+  `COUNT(*) FROM conversations`. A thread that spent anything is deleted through `discard_conversation_keeping_cost`,
+  which folds its cost onto `quiet_wakes` first. `DETAILS.md` § v8, § v15.
 - **`content_blocks` is a backend-only column**: it carries the opaque provider reasoning blob, which must NEVER cross
   to the frontend. `StoredMessage` is not a wire type; `../chat/message_view.rs` derives a display `MessageView`.
 - **`role = 'event'` rows are UI timeline entries (typed `ConversationEvent`), NEVER transcript content.** The token

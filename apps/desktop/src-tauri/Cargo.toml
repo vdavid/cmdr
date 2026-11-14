@@ -67,6 +67,10 @@ tauri-build = { version = "2", features = [] }
 # `Volume` trait and its data types, `FileEntry`, the typed error classification,
 # thread QoS, process memory, poison-free locking. No Tauri, no index.
 cmdr-fs = { path = "../../../crates/cmdr-fs" }
+# "Tell me about this": the fact vocabulary, the plan, the removal and headline
+# rules, and the gathering engine. No `tauri` in its tree; `about/` gathers the
+# raw inputs (xattrs, a file's first bytes, Spotlight, the code signature).
+cmdr-about = { path = "../../../crates/cmdr-about" }
 # The archive backend: a `Volume` over a zip / tar / 7z file. Its own crate, with
 # no `tauri` in its tree, so the ~10 codec crates it needs stay out of this
 # manifest and `cargo check -p cmdr-archive` verifies it without building the app.

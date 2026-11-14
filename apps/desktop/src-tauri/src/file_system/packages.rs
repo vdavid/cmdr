@@ -19,6 +19,14 @@ use cmdr_listing::ListingId;
 
 use crate::listing_host::listings;
 
+/// Whether the OS presents the one folder at `path` as an item, beyond the list
+/// (`NSURLIsPackageKey` on macOS, `false` elsewhere). Blocking: call it from an
+/// 8 MB-stack pool thread, ❌ never the async executor or rayon. For a card asking
+/// about one folder; a listing's visible range goes through [`enrich`].
+pub(crate) fn is_package_to_the_os(path: &str) -> bool {
+    platform::is_package_to_the_os(path)
+}
+
 /// The paths among `paths` only macOS can answer: a dotted name the package
 /// list doesn't know. A row with no dot, or a listed suffix, is never asked.
 pub(crate) fn lookup_candidates(paths: Vec<String>) -> Vec<String> {

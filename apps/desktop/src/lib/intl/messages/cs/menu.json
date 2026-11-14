@@ -159,6 +159,10 @@
   "@menu.file.getInfo": {
     "sourceHash": "91c64ca"
   },
+  "menu.file.tellMeAbout": "Povězte mi o tom",
+  "@menu.file.tellMeAbout": {
+    "sourceHash": "0d5deaf"
+  },
   "menu.file.quit": "{platform, select, windows {Ukončit Cmdr} other {Ukončit Cmdr}}",
   "@menu.file.quit": {
     "sourceHash": "af7cf85"

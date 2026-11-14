@@ -1,0 +1,1298 @@
+{
+  "aboutThis.dialog.title": "Про «{name}»",
+  "@aboutThis.dialog.title": {
+    "sourceHash": "3c5c0b4"
+  },
+  "aboutThis.dialog.close": "Закрити",
+  "@aboutThis.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "aboutThis.action.open": "Відкрити",
+  "@aboutThis.action.open": {
+    "sourceHash": "ed077f3"
+  },
+  "aboutThis.action.openTooltip": "Відкриває програмою {app}, так само як клавіша Enter.",
+  "@aboutThis.action.openTooltip": {
+    "sourceHash": "4bbaa35"
+  },
+  "aboutThis.action.showInFileManager": "{platform, select, macos {Показати у Finder} windows {Показати у Провіднику} other {Показати у файловому менеджері}}",
+  "@aboutThis.action.showInFileManager": {
+    "sourceHash": "21f1ff1"
+  },
+  "aboutThis.action.downloadPage": "Сторінка викачування",
+  "@aboutThis.action.downloadPage": {
+    "sourceHash": "c2f0e5b"
+  },
+  "aboutThis.action.downloadPageTooltip": "Відкриває {host} у браузері: сторінку, з якої, за записом, це викачано.",
+  "@aboutThis.action.downloadPageTooltip": {
+    "sourceHash": "ee94d9d"
+  },
+  "aboutThis.action.revealOwner": "Показати програму {app}",
+  "@aboutThis.action.revealOwner": {
+    "sourceHash": "4d27c5e"
+  },
+  "aboutThis.action.appFolder": "Перейти до даних програми {app}",
+  "@aboutThis.action.appFolder": {
+    "sourceHash": "43ea077"
+  },
+  "aboutThis.action.appFolderUnnamed": "Перейти до даних програми",
+  "@aboutThis.action.appFolderUnnamed": {
+    "sourceHash": "8d0aa42"
+  },
+  "aboutThis.action.trash": "{platform, select, windows {Перемістити в Кошик…} other {Перемістити в Смітник…}}",
+  "@aboutThis.action.trash": {
+    "sourceHash": "13ef52a"
+  },
+  "aboutThis.action.delete": "Видалити…",
+  "@aboutThis.action.delete": {
+    "sourceHash": "9ce78fe"
+  },
+  "aboutThis.action.more": "Ще",
+  "@aboutThis.action.more": {
+    "sourceHash": "d47d7cb"
+  },
+  "aboutThis.action.moreMenu": "Інші дії",
+  "@aboutThis.action.moreMenu": {
+    "sourceHash": "f8d46c2"
+  },
+  "aboutThis.dialog.lookingUp": "Пошук відомостей",
+  "@aboutThis.dialog.lookingUp": {
+    "sourceHash": "0962a61"
+  },
+  "aboutThis.section.origin": "Звідки це",
+  "@aboutThis.section.origin": {
+    "sourceHash": "8246c8b"
+  },
+  "aboutThis.section.nature": "Що це",
+  "@aboutThis.section.nature": {
+    "sourceHash": "1f36bec"
+  },
+  "aboutThis.section.use": "Як це використовують",
+  "@aboutThis.section.use": {
+    "sourceHash": "b4ae9f3"
+  },
+  "aboutThis.section.context": "Де це лежить",
+  "@aboutThis.section.context": {
+    "sourceHash": "547244a"
+  },
+  "aboutThis.section.contents": "Що всередині",
+  "@aboutThis.section.contents": {
+    "sourceHash": "b9b9395"
+  },
+  "aboutThis.section.removal": "Що означає видалення",
+  "@aboutThis.section.removal": {
+    "sourceHash": "34b52a3"
+  },
+  "aboutThis.section.nothingOnRecord": "Немає записів",
+  "@aboutThis.section.nothingOnRecord": {
+    "sourceHash": "7679180"
+  },
+  "aboutThis.volumeNote.identityOnly": "{volume}: Cmdr бачить назву, розмір і дати.",
+  "@aboutThis.volumeNote.identityOnly": {
+    "sourceHash": "89b8563"
+  },
+  "aboutThis.volumeNote.someFacts": "{volume}: Cmdr бачить лише частину цього.",
+  "@aboutThis.volumeNote.someFacts": {
+    "sourceHash": "2e4ad33"
+  },
+  "aboutThis.volumeNote.unreachable": "{volume} не відповідає, тож Cmdr поки не може сказати більше.",
+  "@aboutThis.volumeNote.unreachable": {
+    "sourceHash": "cc9d168"
+  },
+  "aboutThis.unavailable.unknownVolume": "Cmdr більше не знає диска, на якому лежить цей елемент.",
+  "@aboutThis.unavailable.unknownVolume": {
+    "sourceHash": "e5f9fa3"
+  },
+  "aboutThis.unavailable.pathOutsideVolume": "Cmdr не вдалося визначити, де цей елемент лежить на диску.",
+  "@aboutThis.unavailable.pathOutsideVolume": {
+    "sourceHash": "0355842"
+  },
+  "aboutThis.unavailable.noVolumeAtPath": "Диск, на якому був цей елемент, не підʼєднано.",
+  "@aboutThis.unavailable.noVolumeAtPath": {
+    "sourceHash": "d63b8da"
+  },
+  "aboutThis.unavailable.notFound": "Цього елемента тут уже немає. Можливо, його перемістили або видалили.",
+  "@aboutThis.unavailable.notFound": {
+    "sourceHash": "60c881a"
+  },
+  "aboutThis.unavailable.permissionDenied": "{platform, select, macos {Cmdr не отримав від macOS дозволу переглянути цей елемент.} windows {Cmdr не отримав від Windows дозволу переглянути цей елемент.} other {Cmdr не отримав від системи дозволу переглянути цей елемент.}}",
+  "@aboutThis.unavailable.permissionDenied": {
+    "sourceHash": "81e217c"
+  },
+  "aboutThis.unavailable.unreachable": "Диск не відповів вчасно. Спробуйте ще раз за мить.",
+  "@aboutThis.unavailable.unreachable": {
+    "sourceHash": "8038ce3"
+  },
+  "aboutThis.unavailable.unreadable": "Cmdr не вдалося нічого прочитати про цей елемент.",
+  "@aboutThis.unavailable.unreadable": {
+    "sourceHash": "7d7ab1f"
+  },
+  "aboutThis.label.download": "Викачано",
+  "@aboutThis.label.download": {
+    "sourceHash": "f0b0738"
+  },
+  "aboutThis.label.cmdrOperation": "Історія Cmdr",
+  "@aboutThis.label.cmdrOperation": {
+    "sourceHash": "eecea03"
+  },
+  "aboutThis.label.size": "Розмір",
+  "@aboutThis.label.size": {
+    "sourceHash": "1af8519"
+  },
+  "aboutThis.label.created": "Створено",
+  "@aboutThis.label.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "aboutThis.label.modified": "Змінено",
+  "@aboutThis.label.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "aboutThis.label.otherNames": "Інші назви",
+  "@aboutThis.label.otherNames": {
+    "sourceHash": "df5ad6a"
+  },
+  "aboutThis.label.pointsTo": "Вказує на",
+  "@aboutThis.label.pointsTo": {
+    "sourceHash": "6dca1c1"
+  },
+  "aboutThis.label.realType": "Тип",
+  "@aboutThis.label.realType": {
+    "sourceHash": "f5387f9"
+  },
+  "aboutThis.label.bundle": "Пакет",
+  "@aboutThis.label.bundle": {
+    "sourceHash": "f2daa18"
+  },
+  "aboutThis.label.signature": "Підпис",
+  "@aboutThis.label.signature": {
+    "sourceHash": "f1a73e2"
+  },
+  "aboutThis.label.lastOpened": "Востаннє відкрито",
+  "@aboutThis.label.lastOpened": {
+    "sourceHash": "e300685"
+  },
+  "aboutThis.label.defaultApp": "Відкривається програмою",
+  "@aboutThis.label.defaultApp": {
+    "sourceHash": "cd1d8a1"
+  },
+  "aboutThis.label.importance": "Важливість",
+  "@aboutThis.label.importance": {
+    "sourceHash": "3fc78b5"
+  },
+  "aboutThis.label.owner": "Належить",
+  "@aboutThis.label.owner": {
+    "sourceHash": "5c9c76c"
+  },
+  "aboutThis.label.git": "Git",
+  "@aboutThis.label.git": {
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "Git is the version-control tool's name, kept verbatim as the key's note asks."
+  },
+  "aboutThis.label.contents": "Вміст",
+  "@aboutThis.label.contents": {
+    "sourceHash": "437aea6"
+  },
+  "aboutThis.label.appData": "Дані в папці «Бібліотека»",
+  "@aboutThis.label.appData": {
+    "sourceHash": "bf02531"
+  },
+  "aboutThis.label.biggest": "Найбільше всередині",
+  "@aboutThis.label.biggest": {
+    "sourceHash": "32c6992"
+  },
+  "aboutThis.label.largestFiles": "Найбільші файли",
+  "@aboutThis.label.largestFiles": {
+    "sourceHash": "0255d17"
+  },
+  "aboutThis.label.unchanged": "Не змінювалося",
+  "@aboutThis.label.unchanged": {
+    "sourceHash": "e9dc3b0"
+  },
+  "aboutThis.unknown.noRecord": "Немає записів",
+  "@aboutThis.unknown.noRecord": {
+    "sourceHash": "7679180"
+  },
+  "aboutThis.unknown.notInStatus": "Cmdr не бачить змін",
+  "@aboutThis.unknown.notInStatus": {
+    "sourceHash": "c1e5f27"
+  },
+  "aboutThis.unknown.noInstalledAppMatches": "Жодної відомої Cmdr програми",
+  "@aboutThis.unknown.noInstalledAppMatches": {
+    "sourceHash": "3adc02b"
+  },
+  "aboutThis.unknown.volumeCantTell": "Цей диск цього не повідомляє",
+  "@aboutThis.unknown.volumeCantTell": {
+    "sourceHash": "0e1edb4"
+  },
+  "aboutThis.unknown.libraryNameMatchesNoApp": "Жодна інстальована програма не має такої назви, як ця папка.",
+  "@aboutThis.unknown.libraryNameMatchesNoApp": {
+    "sourceHash": "d4b689c"
+  },
+  "aboutThis.unknown.notIndexed": "Ще не проіндексовано",
+  "@aboutThis.unknown.notIndexed": {
+    "sourceHash": "808e81b"
+  },
+  "aboutThis.unknown.timedOut": "Cmdr не отримав відповіді вчасно.",
+  "@aboutThis.unknown.timedOut": {
+    "sourceHash": "332423d"
+  },
+  "aboutThis.unknown.unreachable": "Диск перестав відповідати.",
+  "@aboutThis.unknown.unreachable": {
+    "sourceHash": "eb590cc"
+  },
+  "aboutThis.unknown.permissionDenied": "{platform, select, macos {Cmdr не отримав від macOS дозволу це прочитати.} windows {Cmdr не отримав від Windows дозволу це прочитати.} other {Cmdr не отримав від системи дозволу це прочитати.}}",
+  "@aboutThis.unknown.permissionDenied": {
+    "sourceHash": "0080525"
+  },
+  "aboutThis.unknown.protected": "Це приватне місце, тож Cmdr не зазирає всередину.",
+  "@aboutThis.unknown.protected": {
+    "sourceHash": "f7003db"
+  },
+  "aboutThis.unknown.nodeChangedSince": "Cmdr має запис для цієї назви, але відтоді файл замінено.",
+  "@aboutThis.unknown.nodeChangedSince": {
+    "sourceHash": "8988ec9"
+  },
+  "aboutThis.unknown.ambiguous": "Підходять кілька варіантів, тож Cmdr не вибирає жодного.",
+  "@aboutThis.unknown.ambiguous": {
+    "sourceHash": "efce259"
+  },
+  "aboutThis.unknown.unparseable": "Запис є, але Cmdr не може його прочитати.",
+  "@aboutThis.unknown.unparseable": {
+    "sourceHash": "2e59eac"
+  },
+  "aboutThis.unknown.refusedInBackground": "Cmdr не звертається до цього диска сам.",
+  "@aboutThis.unknown.refusedInBackground": {
+    "sourceHash": "ee95bef"
+  },
+  "aboutThis.notApplicable.noCodeSigningOnThisOs": "Ця система не підписує програми",
+  "@aboutThis.notApplicable.noCodeSigningOnThisOs": {
+    "sourceHash": "0315400"
+  },
+  "aboutThis.notApplicable.notInARepo": "Не в репозиторії git",
+  "@aboutThis.notApplicable.notInARepo": {
+    "sourceHash": "f68b8ba"
+  },
+  "aboutThis.notApplicable.notABundle": "Не програма й не пакет",
+  "@aboutThis.notApplicable.notABundle": {
+    "sourceHash": "46581aa"
+  },
+  "aboutThis.notApplicable.volumeHasNone": "Цей диск не зберігає таких записів",
+  "@aboutThis.notApplicable.volumeHasNone": {
+    "sourceHash": "2d47613"
+  },
+  "aboutThis.download.noRecord": "Немає запису про викачування",
+  "@aboutThis.download.noRecord": {
+    "sourceHash": "f8cba1c"
+  },
+  "aboutThis.download.fromSite": "{platform, select, macos {macOS записала, що це викачано з {host}{hasApp, select, yes { програмою {app}} other {}}{hasDate, select, yes { <date></date>} other {}}.} other {Ваш браузер записав, що це викачано з {host}{hasApp, select, yes { програмою {app}} other {}}{hasDate, select, yes { <date></date>} other {}}.}}",
+  "@aboutThis.download.fromSite": {
+    "sourceHash": "725c8d9"
+  },
+  "aboutThis.download.fromAddress": "{platform, select, macos {macOS записала, що це викачано з адреси {address}.} other {Ваш браузер записав, що це викачано з адреси {address}.}}",
+  "@aboutThis.download.fromAddress": {
+    "sourceHash": "1ac0da7"
+  },
+  "aboutThis.download.linkedFrom": "У записі також указано сторінку на сайті {host}.",
+  "@aboutThis.download.linkedFrom": {
+    "sourceHash": "87708b2"
+  },
+  "aboutThis.download.copyLink": "Скопіювати посилання для викачування",
+  "@aboutThis.download.copyLink": {
+    "sourceHash": "bd3e47a"
+  },
+  "aboutThis.download.copyPageLink": "Скопіювати посилання на сторінку",
+  "@aboutThis.download.copyPageLink": {
+    "sourceHash": "404f4fb"
+  },
+  "aboutThis.download.mail": "macOS записала, що це вкладення з Пошти{hasSender, select, yes {, відправник: {sender}} other {}}.",
+  "@aboutThis.download.mail": {
+    "sourceHash": "c6536ad"
+  },
+  "aboutThis.download.mailSubject": "Тема: {subject}",
+  "@aboutThis.download.mailSubject": {
+    "sourceHash": "71de376"
+  },
+  "aboutThis.download.airDrop": "macOS записала, що це отримано через AirDrop, відправник: {sender}.",
+  "@aboutThis.download.airDrop": {
+    "sourceHash": "631d574"
+  },
+  "aboutThis.download.inlineData": "{platform, select, macos {macOS записала джерело, яке містить самі дані, тож Cmdr його не показує.} other {Браузер записав джерело, яке містить самі дані, тож Cmdr його не показує.}}",
+  "@aboutThis.download.inlineData": {
+    "sourceHash": "ba0c417"
+  },
+  "aboutThis.download.localFile": "{platform, select, macos {macOS записала, що це походить із файлу на цьому компʼютері.} other {Браузер записав, що це походить із файлу на цьому компʼютері.}}",
+  "@aboutThis.download.localFile": {
+    "sourceHash": "857c940"
+  },
+  "aboutThis.download.unrecognized": "{platform, select, macos {macOS записала джерело, яке Cmdr не може прочитати як адресу: {text}} other {Браузер записав джерело, яке Cmdr не може прочитати як адресу: {text}}}",
+  "@aboutThis.download.unrecognized": {
+    "sourceHash": "5e9fa42"
+  },
+  "aboutThis.download.noSource": "macOS записала, що це викачано{hasApp, select, yes { програмою {app}} other {}}{hasDate, select, yes { <date></date>} other {}}, але не вказала звідки.",
+  "@aboutThis.download.noSource": {
+    "sourceHash": "7edb92b"
+  },
+  "aboutThis.cmdrOperation.noRecord": "Немає запису про копіювання чи переміщення в Cmdr",
+  "@aboutThis.cmdrOperation.noRecord": {
+    "sourceHash": "53a886d"
+  },
+  "aboutThis.cmdrOperation.done": "{who, select, you {Ви {kind, select, copy {скопіювали це сюди} move {перемістили це сюди} rename {дали цьому назву} create {створили це} extract {розпакували це сюди} compress {створили цей архів} other {перемістили це сюди під час видалення}}} askCmdr {Ask Cmdr {kind, select, copy {скопіював це сюди} move {перемістив це сюди} rename {дав цьому назву} create {створив це} extract {розпакував це сюди} compress {створив цей архів} other {перемістив це сюди під час видалення}}} other {Клієнт ШІ {kind, select, copy {скопіював це сюди} move {перемістив це сюди} rename {дав цьому назву} create {створив це} extract {розпакував це сюди} compress {створив цей архів} other {перемістив це сюди під час видалення}}}} у Cmdr <date></date>.",
+  "@aboutThis.cmdrOperation.done": {
+    "sourceHash": "10a4037"
+  },
+  "aboutThis.cmdrOperation.datesChanged": "Це той самий елемент, хоча його дати відтоді змінилися.",
+  "@aboutThis.cmdrOperation.datesChanged": {
+    "sourceHash": "df8f175"
+  },
+  "aboutThis.cmdrOperation.from": "Звідки: <source></source>{hasVolume, select, yes { на «{volume}»} other {}}",
+  "@aboutThis.cmdrOperation.from": {
+    "sourceHash": "2f4a492"
+  },
+  "aboutThis.cmdrOperation.copySource": "Скопіювати вихідний шлях",
+  "@aboutThis.cmdrOperation.copySource": {
+    "sourceHash": "d18275b"
+  },
+  "aboutThis.identity.onDisk": "<size></size> на диску",
+  "@aboutThis.identity.onDisk": {
+    "sourceHash": "770fb3d"
+  },
+  "aboutThis.identity.otherNames": "{count, plural, =1 {Ще одна назва вказує на той самий вміст} one {Ще {countText} назва вказує на той самий вміст} few {Ще {countText} назви вказують на той самий вміст} many {Ще {countText} назв вказують на той самий вміст} other {Ще {countText} назви вказують на той самий вміст}}",
+  "@aboutThis.identity.otherNames": {
+    "sourceHash": "c2277bc"
+  },
+  "aboutThis.identity.copyLinkTarget": "Скопіювати шлях, куди вказує посилання",
+  "@aboutThis.identity.copyLinkTarget": {
+    "sourceHash": "58c4667"
+  },
+  "aboutThis.realType.matches": "{kind}, звірено з вмістом",
+  "@aboutThis.realType.matches": {
+    "sourceHash": "c6166d0"
+  },
+  "aboutThis.realType.mismatch": "За вмістом це {kind}, а назва закінчується на .{extension}.",
+  "@aboutThis.realType.mismatch": {
+    "sourceHash": "f50dfc4"
+  },
+  "aboutThis.realType.unread": "{kind}, як каже назва",
+  "@aboutThis.realType.unread": {
+    "sourceHash": "e64a971"
+  },
+  "aboutThis.realType.byName": "{kind}, судячи з назви",
+  "@aboutThis.realType.byName": {
+    "sourceHash": "27a6e8a"
+  },
+  "aboutThis.realType.unrecognized": "Cmdr не знає такого вмісту",
+  "@aboutThis.realType.unrecognized": {
+    "sourceHash": "898feeb"
+  },
+  "aboutThis.kind.diskImage": "Образ диска",
+  "@aboutThis.kind.diskImage": {
+    "sourceHash": "0f12c3a"
+  },
+  "aboutThis.kind.installerPackage": "Пакет інсталятора",
+  "@aboutThis.kind.installerPackage": {
+    "sourceHash": "099eafc"
+  },
+  "aboutThis.kind.machO": "Програма для Mac",
+  "@aboutThis.kind.machO": {
+    "sourceHash": "3af0d6f"
+  },
+  "aboutThis.kind.elf": "Програма для Linux",
+  "@aboutThis.kind.elf": {
+    "sourceHash": "a382072"
+  },
+  "aboutThis.kind.windowsProgram": "Програма для Windows",
+  "@aboutThis.kind.windowsProgram": {
+    "sourceHash": "4f90175"
+  },
+  "aboutThis.kind.otherCode": "Скомпільований код",
+  "@aboutThis.kind.otherCode": {
+    "sourceHash": "dafe5d2"
+  },
+  "aboutThis.kind.script": "Скрипт",
+  "@aboutThis.kind.script": {
+    "sourceHash": "102acc1"
+  },
+  "aboutThis.kind.archive": "Архів",
+  "@aboutThis.kind.archive": {
+    "sourceHash": "66f4804"
+  },
+  "aboutThis.kind.pdf": "PDF",
+  "@aboutThis.kind.pdf": {
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "PDF is a file-format name; Ukrainian macOS and Cmdr's uk catalog keep it Latin."
+  },
+  "aboutThis.kind.image": "Зображення",
+  "@aboutThis.kind.image": {
+    "sourceHash": "1aa4cb0"
+  },
+  "aboutThis.kind.video": "Відео",
+  "@aboutThis.kind.video": {
+    "sourceHash": "d534be8"
+  },
+  "aboutThis.kind.audio": "Звуковий файл",
+  "@aboutThis.kind.audio": {
+    "sourceHash": "fa4a396"
+  },
+  "aboutThis.kind.font": "Шрифт",
+  "@aboutThis.kind.font": {
+    "sourceHash": "64d0b3a"
+  },
+  "aboutThis.kind.document": "Документ",
+  "@aboutThis.kind.document": {
+    "sourceHash": "d6bd8c0"
+  },
+  "aboutThis.kind.database": "База даних",
+  "@aboutThis.kind.database": {
+    "sourceHash": "fa7fe67"
+  },
+  "aboutThis.kind.text": "Текст",
+  "@aboutThis.kind.text": {
+    "sourceHash": "71988c4"
+  },
+  "aboutThis.kind.other": "Відомий формат",
+  "@aboutThis.kind.other": {
+    "sourceHash": "4caa7ba"
+  },
+  "aboutThis.kind.unrecognized": "Вміст, якого Cmdr не знає",
+  "@aboutThis.kind.unrecognized": {
+    "sourceHash": "5b7ba60"
+  },
+  "aboutThis.what.fileWithExtension": "Файл .{extension}",
+  "@aboutThis.what.fileWithExtension": {
+    "sourceHash": "160a778"
+  },
+  "aboutThis.what.file": "Файл",
+  "@aboutThis.what.file": {
+    "sourceHash": "50009ce"
+  },
+  "aboutThis.what.folder": "Папка",
+  "@aboutThis.what.folder": {
+    "sourceHash": "74ccd43"
+  },
+  "aboutThis.what.app": "{hasVersion, select, yes {Програма, версія {version}} other {Програма}}",
+  "@aboutThis.what.app": {
+    "sourceHash": "1772290"
+  },
+  "aboutThis.what.package": "Пакет",
+  "@aboutThis.what.package": {
+    "sourceHash": "59de121"
+  },
+  "aboutThis.what.symlink": "Посилання",
+  "@aboutThis.what.symlink": {
+    "sourceHash": "a6a32db"
+  },
+  "aboutThis.what.archiveEntry": "Елемент в архіві",
+  "@aboutThis.what.archiveEntry": {
+    "sourceHash": "6c819c0"
+  },
+  "aboutThis.headline.plain": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, щонайменше <size></size>} other {}}",
+  "@aboutThis.headline.plain": {
+    "sourceHash": "c316928"
+  },
+  "aboutThis.headline.downloadedFrom": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, щонайменше <size></size>} other {}}, за записом викачано{hasApp, select, yes { програмою {app}} other {}} з {host}{hasDate, select, yes { <date></date>} other {}}",
+  "@aboutThis.headline.downloadedFrom": {
+    "sourceHash": "a46a4ac"
+  },
+  "aboutThis.headline.putHereByCmdr": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, щонайменше <size></size>} other {}}, {kind, select, copy {скопійовано сюди} move {переміщено сюди} rename {перейменовано} create {створено} extract {розпаковано сюди} compress {заархівовано} other {переміщено сюди під час видалення}} у Cmdr{hasVolume, select, yes { з «{volume}»} other {}} <date></date>",
+  "@aboutThis.headline.putHereByCmdr": {
+    "sourceHash": "e73b25d"
+  },
+  "aboutThis.headline.receivedByMail": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, щонайменше <size></size>} other {}}, за записом вкладення з Пошти{hasDate, select, yes {, збережене <date></date>} other {}}",
+  "@aboutThis.headline.receivedByMail": {
+    "sourceHash": "224c768"
+  },
+  "aboutThis.headline.receivedByAirDrop": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, щонайменше <size></size>} other {}}, за записом отримано через AirDrop{hasDate, select, yes { <date></date>} other {}}",
+  "@aboutThis.headline.receivedByAirDrop": {
+    "sourceHash": "f516160"
+  },
+  "aboutThis.headline.dataOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, щонайменше <size></size>} other {}}, {certainty, select, probable {імовірно, дані програми {app}} other {дані програми {app}}}",
+  "@aboutThis.headline.dataOfApp": {
+    "sourceHash": "b4fbc49"
+  },
+  "aboutThis.headline.cacheOfApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, щонайменше <size></size>} other {}}, {certainty, select, probable {імовірно, кеш програми {app}} other {кеш програми {app}}}",
+  "@aboutThis.headline.cacheOfApp": {
+    "sourceHash": "1d671ae"
+  },
+  "aboutThis.headline.dataOfMissingApp": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, щонайменше <size></size>} other {}}, названо за програмою {bundleId}, яку не інстальовано",
+  "@aboutThis.headline.dataOfMissingApp": {
+    "sourceHash": "05f42d2"
+  },
+  "aboutThis.headline.downloadedBy": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, щонайменше <size></size>} other {}}, за записом викачано програмою {app}{hasDate, select, yes { <date></date>} other {}}",
+  "@aboutThis.headline.downloadedBy": {
+    "sourceHash": "9b4bf46"
+  },
+  "aboutThis.headline.lastOpened": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, щонайменше <size></size>} other {}}, востаннє відкрито <date></date>",
+  "@aboutThis.headline.lastOpened": {
+    "sourceHash": "7a37566"
+  },
+  "aboutThis.bundle.named": "{hasVersion, select, yes {{name}, версія {version}} other {{name}}}",
+  "@aboutThis.bundle.named": {
+    "sourceHash": "32cbc50"
+  },
+  "aboutThis.bundle.unnamed": "{hasVersion, select, yes {Назву не вказано, версія {version}} other {Назву й версію не вказано}}",
+  "@aboutThis.bundle.unnamed": {
+    "sourceHash": "abe0e87"
+  },
+  "aboutThis.signature.unsigned": "Не підписано",
+  "@aboutThis.signature.unsigned": {
+    "sourceHash": "c0f06f8"
+  },
+  "aboutThis.signature.adHoc": "Підписано без даних про розробника, як буває з локальною збіркою",
+  "@aboutThis.signature.adHoc": {
+    "sourceHash": "d6406a2"
+  },
+  "aboutThis.signature.developerId": "{matches, select, yes {Підписано: {org} (команда {team})} other {Має підпис: {org} (команда {team})}}",
+  "@aboutThis.signature.developerId": {
+    "sourceHash": "d6ff0dc"
+  },
+  "aboutThis.signature.appStore": "{matches, select, yes {Підписано Mac App Store} other {Має підпис Mac App Store}}",
+  "@aboutThis.signature.appStore": {
+    "sourceHash": "3348913"
+  },
+  "aboutThis.signature.apple": "{matches, select, yes {Підписано Apple} other {Має підпис Apple}}",
+  "@aboutThis.signature.apple": {
+    "sourceHash": "bb76e30"
+  },
+  "aboutThis.signature.unrecognized": "Має підпис видавця, якого Cmdr не знає",
+  "@aboutThis.signature.unrecognized": {
+    "sourceHash": "6fdda36"
+  },
+  "aboutThis.signature.executableDiffers": "Виконуваний файл не збігається з підписом.",
+  "@aboutThis.signature.executableDiffers": {
+    "sourceHash": "cecae80"
+  },
+  "aboutThis.signature.checkTimedOut": "Cmdr не завершив звіряння виконуваного файлу з підписом.",
+  "@aboutThis.signature.checkTimedOut": {
+    "sourceHash": "3e01b68"
+  },
+  "aboutThis.signature.checkUnavailable": "Cmdr не вдалося звірити виконуваний файл із підписом.",
+  "@aboutThis.signature.checkUnavailable": {
+    "sourceHash": "593adcf"
+  },
+  "aboutThis.signature.ticketPresent": "До програми прикріплено квитанцію нотаризації.",
+  "@aboutThis.signature.ticketPresent": {
+    "sourceHash": "45aef96"
+  },
+  "aboutThis.signature.ticketAbsent": "До програми не прикріплено квитанції нотаризації. macOS також може перевірити це в Apple онлайн.",
+  "@aboutThis.signature.ticketAbsent": {
+    "sourceHash": "fb6efd9"
+  },
+  "aboutThis.lastOpened.noRecord": "Немає запису про останнє відкривання",
+  "@aboutThis.lastOpened.noRecord": {
+    "sourceHash": "6e28632"
+  },
+  "aboutThis.lastOpened.known": "<date></date>{hasCount, select, yes {, {count, plural, =1 {відкрито один раз} one {відкрито {countText} раз} few {відкрито {countText} рази} many {відкрито {countText} разів} other {відкрито {countText} разу}}} other {}}",
+  "@aboutThis.lastOpened.known": {
+    "sourceHash": "d503f13"
+  },
+  "aboutThis.importance.notScored": "Cmdr ще не оцінив, наскільки важлива ця папка",
+  "@aboutThis.importance.notScored": {
+    "sourceHash": "b095a21"
+  },
+  "aboutThis.importance.band": "{band, select, high {Висока} medium {Середня} low {Низька} other {Поза рейтингом}}",
+  "@aboutThis.importance.band": {
+    "sourceHash": "e94498a"
+  },
+  "aboutThis.importance.because": "Причини: {reasons}",
+  "@aboutThis.importance.because": {
+    "sourceHash": "2d0b95d"
+  },
+  "aboutThis.importance.reason.projectMarker": "файл проєкту в ній",
+  "@aboutThis.importance.reason.projectMarker": {
+    "sourceHash": "1c3970a"
+  },
+  "aboutThis.importance.reason.mtimeRecency": "недавні зміни",
+  "@aboutThis.importance.reason.mtimeRecency": {
+    "sourceHash": "ceb5e1c"
+  },
+  "aboutThis.importance.reason.visitActivity": "ваші відвідини в Cmdr",
+  "@aboutThis.importance.reason.visitActivity": {
+    "sourceHash": "628eb6f"
+  },
+  "aboutThis.importance.reason.lastUsed": "недавнє використання",
+  "@aboutThis.importance.reason.lastUsed": {
+    "sourceHash": "f43c570"
+  },
+  "aboutThis.importance.reason.extensionDiversity": "багато різних типів файлів",
+  "@aboutThis.importance.reason.extensionDiversity": {
+    "sourceHash": "2302631"
+  },
+  "aboutThis.importance.reason.projectRoot": "це коренева папка проєкту",
+  "@aboutThis.importance.reason.projectRoot": {
+    "sourceHash": "a6e90d7"
+  },
+  "aboutThis.importance.reason.userContent": "тут ваші власні файли",
+  "@aboutThis.importance.reason.userContent": {
+    "sourceHash": "40bbc2a"
+  },
+  "aboutThis.importance.floor.nameDenylisted": "Рейтинг Cmdr не враховує папки, назва яких указує на згенеровані файли",
+  "@aboutThis.importance.floor.nameDenylisted": {
+    "sourceHash": "fa12ecd"
+  },
+  "aboutThis.importance.floor.hiddenOrSystem": "Рейтинг Cmdr не враховує приховані, системні й тимчасові папки",
+  "@aboutThis.importance.floor.hiddenOrSystem": {
+    "sourceHash": "1665ffd"
+  },
+  "aboutThis.importance.floor.underFlooredAncestor": "Рейтинг Cmdr не враховує папки всередині тієї, яку він пропускає",
+  "@aboutThis.importance.floor.underFlooredAncestor": {
+    "sourceHash": "61ab4a2"
+  },
+  "aboutThis.importance.floor.other": "Рейтинг Cmdr не враховує такі папки",
+  "@aboutThis.importance.floor.other": {
+    "sourceHash": "872bc2a"
+  },
+  "aboutThis.importance.reason.other": "інші ознаки",
+  "@aboutThis.importance.reason.other": {
+    "sourceHash": "7edd91c"
+  },
+  "aboutThis.importance.visits": "{count, plural, =1 {Відкрито в Cmdr один раз} one {Відкрито в Cmdr {countText} раз} few {Відкрито в Cmdr {countText} рази} many {Відкрито в Cmdr {countText} разів} other {Відкрито в Cmdr {countText} разу}}",
+  "@aboutThis.importance.visits": {
+    "sourceHash": "8753151"
+  },
+  "aboutThis.importance.stale": "Оцінено до останніх змін",
+  "@aboutThis.importance.stale": {
+    "sourceHash": "996a6b2"
+  },
+  "aboutThis.owner.byBundleId": "{app}",
+  "@aboutThis.owner.byBundleId": {
+    "sourceHash": "ab9f435",
+    "sameAsSourceJustification": "A placeholder-only value: the app's name alone reads right in Ukrainian with no words around it."
+  },
+  "aboutThis.owner.byBundleIdHow": "Папка має ідентифікатор програми: {bundleId}.",
+  "@aboutThis.owner.byBundleIdHow": {
+    "sourceHash": "30f6aa5"
+  },
+  "aboutThis.owner.notInstalled": "Залишилося від програми, яку не інстальовано ({bundleId})",
+  "@aboutThis.owner.notInstalled": {
+    "sourceHash": "0746a4a"
+  },
+  "aboutThis.owner.byName": "Імовірно, {app}",
+  "@aboutThis.owner.byName": {
+    "sourceHash": "e8a89fd"
+  },
+  "aboutThis.owner.byNameHow": "Лише ця програма має таку назву, як папка.",
+  "@aboutThis.owner.byNameHow": {
+    "sourceHash": "be4f13c"
+  },
+  "aboutThis.owner.partOfOs": "Частина macOS ({pkgId})",
+  "@aboutThis.owner.partOfOs": {
+    "sourceHash": "627aa11"
+  },
+  "aboutThis.owner.installedBy": "Інстальовано пакетом {pkgId}",
+  "@aboutThis.owner.installedBy": {
+    "sourceHash": "c3271fd"
+  },
+  "aboutThis.owner.homebrew": "{kind, select, cask {Cask} other {Formula}} {name} із Homebrew",
+  "@aboutThis.owner.homebrew": {
+    "sourceHash": "4a9fdea"
+  },
+  "aboutThis.owner.standardFolder": "{folder}, яку створила система",
+  "@aboutThis.owner.standardFolder": {
+    "sourceHash": "378b403"
+  },
+  "aboutThis.standardFolder.home": "Ваша домашня папка",
+  "@aboutThis.standardFolder.home": {
+    "sourceHash": "a0111e9"
+  },
+  "aboutThis.standardFolder.desktop": "Ваша папка «Робочий стіл»",
+  "@aboutThis.standardFolder.desktop": {
+    "sourceHash": "9b1dabb"
+  },
+  "aboutThis.standardFolder.documents": "Ваша папка «Документи»",
+  "@aboutThis.standardFolder.documents": {
+    "sourceHash": "9ef28aa"
+  },
+  "aboutThis.standardFolder.downloads": "Ваша папка «Викачане»",
+  "@aboutThis.standardFolder.downloads": {
+    "sourceHash": "4bd179b"
+  },
+  "aboutThis.standardFolder.movies": "Ваша папка «Відео»",
+  "@aboutThis.standardFolder.movies": {
+    "sourceHash": "d28ecb9"
+  },
+  "aboutThis.standardFolder.music": "Ваша папка «Музика»",
+  "@aboutThis.standardFolder.music": {
+    "sourceHash": "c03e44f"
+  },
+  "aboutThis.standardFolder.pictures": "Ваша папка «Зображення»",
+  "@aboutThis.standardFolder.pictures": {
+    "sourceHash": "c6b7545"
+  },
+  "aboutThis.standardFolder.public": "Ваша папка «Спільна»",
+  "@aboutThis.standardFolder.public": {
+    "sourceHash": "c4d7b03"
+  },
+  "aboutThis.standardFolder.homeLibrary": "Ваша папка «Бібліотека»",
+  "@aboutThis.standardFolder.homeLibrary": {
+    "sourceHash": "bbce73c"
+  },
+  "aboutThis.standardFolder.homeApplications": "Ваша власна папка «Програми»",
+  "@aboutThis.standardFolder.homeApplications": {
+    "sourceHash": "19a99a9"
+  },
+  "aboutThis.standardFolder.applications": "Папка «Програми» для всього компʼютера",
+  "@aboutThis.standardFolder.applications": {
+    "sourceHash": "4735f61"
+  },
+  "aboutThis.standardFolder.library": "Папка «Бібліотека» для всього компʼютера",
+  "@aboutThis.standardFolder.library": {
+    "sourceHash": "4b8adf2"
+  },
+  "aboutThis.standardFolder.system": "Папка macOS «Система»",
+  "@aboutThis.standardFolder.system": {
+    "sourceHash": "b4b5daa"
+  },
+  "aboutThis.standardFolder.users": "Папка «Користувачі»",
+  "@aboutThis.standardFolder.users": {
+    "sourceHash": "955c56c"
+  },
+  "aboutThis.standardFolder.startupDisk": "Коренева папка стартового диска",
+  "@aboutThis.standardFolder.startupDisk": {
+    "sourceHash": "6e69278"
+  },
+  "aboutThis.owner.insideApp": "Частина програми {app}",
+  "@aboutThis.owner.insideApp": {
+    "sourceHash": "5a318e6"
+  },
+  "aboutThis.owner.noReceipt": "Немає запису інсталятора",
+  "@aboutThis.owner.noReceipt": {
+    "sourceHash": "b2f04b8"
+  },
+  "aboutThis.owner.ambiguous": "Власником можуть бути кілька інстальованих програм, тож Cmdr не вибирає жодної.",
+  "@aboutThis.owner.ambiguous": {
+    "sourceHash": "e870bd3"
+  },
+  "aboutThis.git.repo": "У репозиторії <repo></repo>{hasBranch, select, yes {, гілка {branch}} other {, жодної гілки не вибрано}}",
+  "@aboutThis.git.repo": {
+    "sourceHash": "a54b5fc"
+  },
+  "aboutThis.git.copyRepo": "Скопіювати шлях до репозиторію",
+  "@aboutThis.git.copyRepo": {
+    "sourceHash": "79d4b93"
+  },
+  "aboutThis.git.clean": "Є в коміті, змін немає",
+  "@aboutThis.git.clean": {
+    "sourceHash": "0dc5b69"
+  },
+  "aboutThis.git.modified": "Є зміни, яких немає в жодному коміті",
+  "@aboutThis.git.modified": {
+    "sourceHash": "408d71e"
+  },
+  "aboutThis.git.untracked": "Git це не відстежує",
+  "@aboutThis.git.untracked": {
+    "sourceHash": "db130db"
+  },
+  "aboutThis.git.ignored": "Git це ігнорує",
+  "@aboutThis.git.ignored": {
+    "sourceHash": "c5b9eb8"
+  },
+  "aboutThis.folderSize.known": "{coverage, select, lowerBound {Щонайменше <size></size>} other {<size></size>}} у {files, plural, =1 {одному файлі} one {{filesText} файлі} few {{filesText} файлах} many {{filesText} файлах} other {{filesText} файла}} і {folders, plural, =1 {одній папці} one {{foldersText} папці} few {{foldersText} папках} many {{foldersText} папках} other {{foldersText} папки}}",
+  "@aboutThis.folderSize.known": {
+    "sourceHash": "be20154"
+  },
+  "aboutThis.folderSize.stale": "З останнього проходу індексу дисків, тож розмір міг змінитися",
+  "@aboutThis.folderSize.stale": {
+    "sourceHash": "338420a"
+  },
+  "aboutThis.folderSize.updating": "Індекс дисків саме оновлює цю папку",
+  "@aboutThis.folderSize.updating": {
+    "sourceHash": "ab2cbb7"
+  },
+  "aboutThis.folderSize.symlinks": "Посилання на інші місця не враховано",
+  "@aboutThis.folderSize.symlinks": {
+    "sourceHash": "b6f82e9"
+  },
+  "aboutThis.contents.summary": "{count, plural, =0 {Порожньо} =1 {Один елемент} one {{countText} елемент: {kinds}} few {{countText} елементи: {kinds}} many {{countText} елементів: {kinds}} other {{countText} елемента: {kinds}}}",
+  "@aboutThis.contents.summary": {
+    "sourceHash": "12e1387"
+  },
+  "aboutThis.childKind.folder": "{count, plural, one {{countText} папка} few {{countText} папки} many {{countText} папок} other {{countText} папки}}",
+  "@aboutThis.childKind.folder": {
+    "sourceHash": "3c46f04"
+  },
+  "aboutThis.childKind.image": "{count, plural, one {{countText} зображення} few {{countText} зображення} many {{countText} зображень} other {{countText} зображення}}",
+  "@aboutThis.childKind.image": {
+    "sourceHash": "ddc0659"
+  },
+  "aboutThis.childKind.video": "{count, plural, one {{countText} відео} few {{countText} відео} many {{countText} відео} other {{countText} відео}}",
+  "@aboutThis.childKind.video": {
+    "sourceHash": "1912484"
+  },
+  "aboutThis.childKind.audio": "{count, plural, one {{countText} звуковий файл} few {{countText} звукові файли} many {{countText} звукових файлів} other {{countText} звукового файлу}}",
+  "@aboutThis.childKind.audio": {
+    "sourceHash": "930b7cc"
+  },
+  "aboutThis.childKind.document": "{count, plural, one {{countText} документ} few {{countText} документи} many {{countText} документів} other {{countText} документа}}",
+  "@aboutThis.childKind.document": {
+    "sourceHash": "7e308f7"
+  },
+  "aboutThis.childKind.archive": "{count, plural, one {{countText} архів чи образ диска} few {{countText} архіви чи образи дисків} many {{countText} архівів чи образів дисків} other {{countText} архіву чи образу диска}}",
+  "@aboutThis.childKind.archive": {
+    "sourceHash": "7cb7114"
+  },
+  "aboutThis.childKind.code": "{count, plural, one {{countText} файл коду} few {{countText} файли коду} many {{countText} файлів коду} other {{countText} файлу коду}}",
+  "@aboutThis.childKind.code": {
+    "sourceHash": "d0b36f3"
+  },
+  "aboutThis.childKind.app": "{count, plural, one {{countText} програма} few {{countText} програми} many {{countText} програм} other {{countText} програми}}",
+  "@aboutThis.childKind.app": {
+    "sourceHash": "a5e82a0"
+  },
+  "aboutThis.childKind.other": "{count, plural, one {{countText} інший файл} few {{countText} інші файли} many {{countText} інших файлів} other {{countText} іншого файлу}}",
+  "@aboutThis.childKind.other": {
+    "sourceHash": "473df3e"
+  },
+  "aboutThis.folderClass.dependencies": "Інстальовані пакети, які сюди поклав менеджер пакетів",
+  "@aboutThis.folderClass.dependencies": {
+    "sourceHash": "b4a2d34"
+  },
+  "aboutThis.folderClass.buildOutput": "Те, що записав інструмент збирання",
+  "@aboutThis.folderClass.buildOutput": {
+    "sourceHash": "ff8c437"
+  },
+  "aboutThis.folderClass.cache": "Кеш",
+  "@aboutThis.folderClass.cache": {
+    "sourceHash": "843f82c"
+  },
+  "aboutThis.folderClass.versionControl": "Історія й параметри репозиторію",
+  "@aboutThis.folderClass.versionControl": {
+    "sourceHash": "9848335"
+  },
+  "aboutThis.contents.atLeastSize": "щонайменше <size></size>",
+  "@aboutThis.contents.atLeastSize": {
+    "sourceHash": "dfcd99e"
+  },
+  "aboutThis.contents.noSize": "Розмір ще невідомий",
+  "@aboutThis.contents.noSize": {
+    "sourceHash": "4bdd378"
+  },
+  "aboutThis.contents.inFolder": "у папці {path}",
+  "@aboutThis.contents.inFolder": {
+    "sourceHash": "7ac1b38"
+  },
+  "aboutThis.contents.goTo": "Перейти до «{name}»",
+  "@aboutThis.contents.goTo": {
+    "sourceHash": "5650d8d"
+  },
+  "aboutThis.contents.notLoaded": "Cmdr покаже їх, щойно Пошук завантажить цей диск",
+  "@aboutThis.contents.notLoaded": {
+    "sourceHash": "75b1252"
+  },
+  "aboutThis.contents.unchanged": "{atLeast, select, yes {Щонайменше {percent} вмісту не змінювалося за останній рік (<size></size>)} other {{percent} вмісту не змінювалося за останній рік (<size></size>)}}",
+  "@aboutThis.contents.unchanged": {
+    "sourceHash": "811264b"
+  },
+  "aboutThis.appData.summary": "{count, plural, =0 {Індекс Cmdr не знає жодної} =1 {{atLeast, select, yes {Щонайменше <size></size> в одній папці} other {<size></size> в одній папці}}} one {{atLeast, select, yes {Щонайменше <size></size> у {countText} папці} other {<size></size> у {countText} папці}}} few {{atLeast, select, yes {Щонайменше <size></size> у {countText} папках} other {<size></size> у {countText} папках}}} many {{atLeast, select, yes {Щонайменше <size></size> у {countText} папках} other {<size></size> у {countText} папках}}} other {{atLeast, select, yes {Щонайменше <size></size> у {countText} папки} other {<size></size> у {countText} папки}}}}",
+  "@aboutThis.appData.summary": {
+    "sourceHash": "4688194"
+  },
+  "aboutThis.appData.notLookedIn": "Індекс Cmdr ще не переглянув папки {places}, тож даних може бути більше",
+  "@aboutThis.appData.notLookedIn": {
+    "sourceHash": "40b9187"
+  },
+  "aboutThis.ownerPlace.caches": "Caches",
+  "@aboutThis.ownerPlace.caches": {
+    "sourceHash": "c4d5ec9",
+    "sameAsSourceJustification": "A folder name as it is on disk"
+  },
+  "aboutThis.ownerPlace.containers": "Containers",
+  "@aboutThis.ownerPlace.containers": {
+    "sourceHash": "a22daa7",
+    "sameAsSourceJustification": "A folder name as it is on disk"
+  },
+  "aboutThis.ownerPlace.groupContainers": "Group Containers",
+  "@aboutThis.ownerPlace.groupContainers": {
+    "sourceHash": "33f3ee0",
+    "sameAsSourceJustification": "A folder name as it is on disk"
+  },
+  "aboutThis.ownerPlace.applicationSupport": "Application Support",
+  "@aboutThis.ownerPlace.applicationSupport": {
+    "sourceHash": "7ef6ff2",
+    "sameAsSourceJustification": "A folder name as it is on disk"
+  },
+  "aboutThis.ownerPlace.applicationScripts": "Application Scripts",
+  "@aboutThis.ownerPlace.applicationScripts": {
+    "sourceHash": "4abecec",
+    "sameAsSourceJustification": "A folder name as it is on disk"
+  },
+  "aboutThis.ownerPlace.preferences": "Preferences",
+  "@aboutThis.ownerPlace.preferences": {
+    "sourceHash": "66962f7",
+    "sameAsSourceJustification": "A folder name as it is on disk"
+  },
+  "aboutThis.ownerPlace.savedState": "Saved Application State",
+  "@aboutThis.ownerPlace.savedState": {
+    "sourceHash": "d2c3ab9",
+    "sameAsSourceJustification": "A folder name as it is on disk"
+  },
+  "aboutThis.ownerPlace.logs": "Logs",
+  "@aboutThis.ownerPlace.logs": {
+    "sourceHash": "ea2100d",
+    "sameAsSourceJustification": "A folder name as it is on disk"
+  },
+  "aboutThis.ownerPlace.webData": "HTTPStorages",
+  "@aboutThis.ownerPlace.webData": {
+    "sourceHash": "0a2ea16",
+    "sameAsSourceJustification": "A folder name as it is on disk"
+  },
+  "aboutThis.ownerPlace.sandboxHome": "Домівка програми",
+  "@aboutThis.ownerPlace.sandboxHome": {
+    "sourceHash": "0548eba"
+  },
+  "aboutThis.removal.standardFolder.home": "Це ваша домашня папка: у ній усе ваше на цьому компʼютері, і на неї розраховують система й усі програми.",
+  "@aboutThis.removal.standardFolder.home": {
+    "sourceHash": "214ceb7"
+  },
+  "aboutThis.removal.standardFolder.personal": "Це одна з ваших стандартних папок: система й ваші програми очікують її знайти, і все, що в ній, зникне разом із нею.",
+  "@aboutThis.removal.standardFolder.personal": {
+    "sourceHash": "2702168"
+  },
+  "aboutThis.removal.standardFolder.homeLibrary": "У ній параметри й дані, які ваші програми зберігають для вас, і без неї вони можуть перестати працювати або почати все спочатку.",
+  "@aboutThis.removal.standardFolder.homeLibrary": {
+    "sourceHash": "1dfa0b3"
+  },
+  "aboutThis.removal.standardFolder.homeApplications": "У ній програми, інстальовані лише для вас, і система шукає їх саме тут.",
+  "@aboutThis.removal.standardFolder.homeApplications": {
+    "sourceHash": "9652169"
+  },
+  "aboutThis.removal.standardFolder.applications": "У ній програми цього компʼютера, і система шукає їх саме тут.",
+  "@aboutThis.removal.standardFolder.applications": {
+    "sourceHash": "2741b28"
+  },
+  "aboutThis.removal.standardFolder.library": "У ній параметри й дані, які програми та система зберігають для всіх на цьому компʼютері, і без неї вони можуть перестати працювати.",
+  "@aboutThis.removal.standardFolder.library": {
+    "sourceHash": "0fc06cf"
+  },
+  "aboutThis.removal.standardFolder.system": "Це сама macOS: без неї компʼютер не запуститься.",
+  "@aboutThis.removal.standardFolder.system": {
+    "sourceHash": "e06bc7e"
+  },
+  "aboutThis.removal.standardFolder.users": "У ній домашні папки всіх облікових записів на цьому компʼютері.",
+  "@aboutThis.removal.standardFolder.users": {
+    "sourceHash": "b72c1fe"
+  },
+  "aboutThis.removal.standardFolder.startupDisk": "У ній усе, що є на стартовому диску, зокрема macOS.",
+  "@aboutThis.removal.standardFolder.startupDisk": {
+    "sourceHash": "3f6c151"
+  },
+  "aboutThis.removal.uncommittedWork": "Тут є зміни, яких немає в жодному коміті, тож git не зможе їх повернути.",
+  "@aboutThis.removal.uncommittedWork": {
+    "sourceHash": "9fb3490"
+  },
+  "aboutThis.removal.untrackedNotInGit": "Git це не відстежує, тож git не зможе це повернути.",
+  "@aboutThis.removal.untrackedNotInGit": {
+    "sourceHash": "fd709a6"
+  },
+  "aboutThis.removal.ignoredByGit": "Git це ігнорує, тож git не зможе це повернути.",
+  "@aboutThis.removal.ignoredByGit": {
+    "sourceHash": "bc86083"
+  },
+  "aboutThis.removal.userDocument": "Ніщо з відомого Cmdr не створило це й не зможе створити знову.",
+  "@aboutThis.removal.userDocument": {
+    "sourceHash": "81982af"
+  },
+  "aboutThis.removal.removesApp": "Це видалить програму. Cmdr поки не може сказати, скільки її даних залишиться у вашій папці «Бібліотека».",
+  "@aboutThis.removal.removesApp": {
+    "sourceHash": "7f8bfbe"
+  },
+  "aboutThis.removal.removesAppDataLeft": "{count, plural, =0 {Це видалить програму. Індекс Cmdr не знає жодних її даних у вашій папці «Бібліотека».} =1 {{atLeast, select, yes {Це видалить програму. Її дані у вашій папці «Бібліотека» залишаться: щонайменше <size></size> в одній папці.} other {Це видалить програму. Її дані у вашій папці «Бібліотека» залишаться: <size></size> в одній папці.}}} one {{atLeast, select, yes {Це видалить програму. Її дані у вашій папці «Бібліотека» залишаться: щонайменше <size></size> у {countText} папці.} other {Це видалить програму. Її дані у вашій папці «Бібліотека» залишаться: <size></size> у {countText} папці.}}} few {{atLeast, select, yes {Це видалить програму. Її дані у вашій папці «Бібліотека» залишаться: щонайменше <size></size> у {countText} папках.} other {Це видалить програму. Її дані у вашій папці «Бібліотека» залишаться: <size></size> у {countText} папках.}}} many {{atLeast, select, yes {Це видалить програму. Її дані у вашій папці «Бібліотека» залишаться: щонайменше <size></size> у {countText} папках.} other {Це видалить програму. Її дані у вашій папці «Бібліотека» залишаться: <size></size> у {countText} папках.}}} other {{atLeast, select, yes {Це видалить програму. Її дані у вашій папці «Бібліотека» залишаться: щонайменше <size></size> у {countText} папки.} other {Це видалить програму. Її дані у вашій папці «Бібліотека» залишаться: <size></size> у {countText} папки.}}}}",
+  "@aboutThis.removal.removesAppDataLeft": {
+    "sourceHash": "9e527f8"
+  },
+  "aboutThis.removal.appData": "{certainty, select, probable {Імовірно, це дані програми {app}, і програма {app} може втратити те, що тут зберігає.} other {Це дані програми {app}, і програма {app} може втратити те, що тут зберігає.}}",
+  "@aboutThis.removal.appData": {
+    "sourceHash": "3571d95"
+  },
+  "aboutThis.removal.installedByReceipt": "{partOfOs, select, yes {Це інсталювала macOS, і частинам macOS це може знадобитися.} other {Це інсталював пакет {pkgId}, і тому, що він інсталював, це може знадобитися.}}",
+  "@aboutThis.removal.installedByReceipt": {
+    "sourceHash": "ec4b768"
+  },
+  "aboutThis.removal.installedByHomebrew": "Homebrew інсталював це як частину пакета {name}, який може перестати працювати.",
+  "@aboutThis.removal.installedByHomebrew": {
+    "sourceHash": "caea929"
+  },
+  "aboutThis.removal.leftoverOfUninstalledApp": "Це названо за програмою {bundleId}, яку не інстальовано. Cmdr не може сказати, чи щось інше це використовує.",
+  "@aboutThis.removal.leftoverOfUninstalledApp": {
+    "sourceHash": "0da2729"
+  },
+  "aboutThis.removal.recordedDownload": "{platform, select, macos {macOS записала, що це викачано з {host}. Cmdr не може сказати, чи цей файл досі є на сайті.} other {Ваш браузер записав, що це викачано з {host}. Cmdr не може сказати, чи цей файл досі є на сайті.}}",
+  "@aboutThis.removal.recordedDownload": {
+    "sourceHash": "389ab69"
+  },
+  "aboutThis.removal.gitCanRestore": "Git може відновити це з останнього коміту.",
+  "@aboutThis.removal.gitCanRestore": {
+    "sourceHash": "9d75b10"
+  },
+  "aboutThis.removal.rebuildablePackageManager": "Менеджер пакетів може отримати це знову, але на це потрібні час і мережа.",
+  "@aboutThis.removal.rebuildablePackageManager": {
+    "sourceHash": "2c0dd33"
+  },
+  "aboutThis.removal.rebuildableBuildTool": "Інструмент збирання може створити це знову, але на це потрібен час.",
+  "@aboutThis.removal.rebuildableBuildTool": {
+    "sourceHash": "b0b9b09"
+  },
+  "aboutThis.removal.regeneratedCache": "{hasApp, select, yes {Це кеш програми {app}: програма {app} запише його знову, а доти працюватиме повільніше.} other {Це кеш: те, що його записало, запише його знову, а доти працюватиме повільніше.}}",
+  "@aboutThis.removal.regeneratedCache": {
+    "sourceHash": "9e428d5"
+  },
+  "aboutThis.removal.otherNamesRemain": "{count, plural, =1 {Ще одна назва вказує на той самий вміст, і він залишиться.} one {Ще {countText} назва вказує на той самий вміст, і він залишиться.} few {Ще {countText} назви вказують на той самий вміст, і він залишиться.} many {Ще {countText} назв вказують на той самий вміст, і він залишиться.} other {Ще {countText} назви вказують на той самий вміст, і він залишиться.}}",
+  "@aboutThis.removal.otherNamesRemain": {
+    "sourceHash": "c06d0b6"
+  },
+  "aboutThis.removal.linkOnly": "Це посилання: якщо його видалити, те, на що воно вказує, залишиться.",
+  "@aboutThis.removal.linkOnly": {
+    "sourceHash": "95cb310"
+  },
+  "aboutThis.removal.cantTell": "Cmdr не може сказати, що від цього залежить.",
+  "@aboutThis.removal.cantTell": {
+    "sourceHash": "c9900f8"
+  },
+  "aboutThis.removal.more": "{count, plural, one {Ще {countText}} few {Ще {countText}} many {Ще {countText}} other {Ще {countText}}}",
+  "@aboutThis.removal.more": {
+    "sourceHash": "2daca20"
+  },
+  "aboutThis.removal.less": "Показати менше",
+  "@aboutThis.removal.less": {
+    "sourceHash": "255beb6"
+  },
+  "aboutThis.label.gitSnapshot": "Історія git",
+  "@aboutThis.label.gitSnapshot": {
+    "sourceHash": "452144b"
+  },
+  "aboutThis.unknown.volumeStoppedAnswering": "Диск не відповідає",
+  "@aboutThis.unknown.volumeStoppedAnswering": {
+    "sourceHash": "a99c484"
+  },
+  "aboutThis.unknown.notFound": "Цього тут уже немає.",
+  "@aboutThis.unknown.notFound": {
+    "sourceHash": "8b3a5a7"
+  },
+  "aboutThis.download.insideArchive": "В архіві «{archive}».",
+  "@aboutThis.download.insideArchive": {
+    "sourceHash": "5b790df"
+  },
+  "aboutThis.download.archiveRecord": "{platform, select, macos {Що macOS записала про архів:} other {Що ваш браузер записав про архів:}}",
+  "@aboutThis.download.archiveRecord": {
+    "sourceHash": "8fd1b3b"
+  },
+  "aboutThis.gitSnapshot.from": "{kind, select, branch {Як у гілці {name} репозиторію <repo></repo>} tag {Як у тегу {name} репозиторію <repo></repo>} commit {Як у коміті {name} репозиторію <repo></repo>} other {Як у записі схову {name} репозиторію <repo></repo>}}",
+  "@aboutThis.gitSnapshot.from": {
+    "sourceHash": "aafff28"
+  },
+  "aboutThis.gitSnapshot.lastChanged": "Востаннє змінено комітом <date></date>",
+  "@aboutThis.gitSnapshot.lastChanged": {
+    "sourceHash": "ed8a966"
+  },
+  "aboutThis.gitSnapshot.copyCommit": "Скопіювати ідентифікатор коміту",
+  "@aboutThis.gitSnapshot.copyCommit": {
+    "sourceHash": "22ce389"
+  },
+  "aboutThis.headline.insideArchive": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, щонайменше <size></size>} other {}}, в архіві «{archive}»",
+  "@aboutThis.headline.insideArchive": {
+    "sourceHash": "36a16da"
+  },
+  "aboutThis.headline.fromGitHistory": "{what}{sizeShown, select, exact {, <size></size>} atLeast {, щонайменше <size></size>} other {}}, {kind, select, branch {як у гілці {name}} tag {як у тегу {name}} commit {як у коміті {name}} other {як у записі схову {name}}}",
+  "@aboutThis.headline.fromGitHistory": {
+    "sourceHash": "fb6543a"
+  },
+  "aboutThis.removal.holdsRepoHistory": "Тут уся історія репозиторію. Якщо це видалити, файли залишаться, але зникнуть усі коміти, яких немає деінде, а Cmdr не може сказати, що вже надіслано.",
+  "@aboutThis.removal.holdsRepoHistory": {
+    "sourceHash": "011304a"
+  },
+  "aboutThis.removal.inGitHistory": "Це запис git про стан на той момент історії, а не файл на диску, тож тут нічого видаляти.",
+  "@aboutThis.removal.inGitHistory": {
+    "sourceHash": "5c3ab2e"
+  },
+  "aboutThis.verdict.label": "Це написав ШІ",
+  "@aboutThis.verdict.label": {
+    "sourceHash": "8fe1d9b"
+  },
+  "aboutThis.verdict.trust.oftenWrong": "Під час тестів Cmdr ця модель або подібна до неї часто писала неправильні коментарі. Звірте коментар із фактами картки або перейдіть на потужнішу модель.",
+  "@aboutThis.verdict.trust.oftenWrong": {
+    "sourceHash": "ab85bab"
+  },
+  "aboutThis.verdict.trust.changeModel": "Змінити модель",
+  "@aboutThis.verdict.trust.changeModel": {
+    "sourceHash": "c4f44ed"
+  },
+  "aboutThis.verdict.trust.untested": "Cmdr не тестував цю модель для таких коментарів, тож не може сказати, чи варто довіряти цьому.",
+  "@aboutThis.verdict.trust.untested": {
+    "sourceHash": "d1174d9"
+  },
+  "aboutThis.verdict.writing": "Написання короткого коментаря…",
+  "@aboutThis.verdict.writing": {
+    "sourceHash": "fa632d5"
+  },
+  "aboutThis.verdict.stop": "Зупинити",
+  "@aboutThis.verdict.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "aboutThis.verdict.stopTooltip": "Зупиняє коментар ШІ. Факти й уже написаний текст залишаться.",
+  "@aboutThis.verdict.stopTooltip": {
+    "sourceHash": "f6dc700"
+  },
+  "aboutThis.verdict.stopped": "Зупинено",
+  "@aboutThis.verdict.stopped": {
+    "sourceHash": "1a4f630"
+  },
+  "aboutThis.verdict.fromEarlier": "З попереднього разу",
+  "@aboutThis.verdict.fromEarlier": {
+    "sourceHash": "10d0e01"
+  },
+  "aboutThis.verdict.announcement": "Це написав ШІ: {text}",
+  "@aboutThis.verdict.announcement": {
+    "sourceHash": "a2d0297"
+  },
+  "aboutThis.verdict.given.none": "На основі фактів картки. Cmdr не зазирав усередину.",
+  "@aboutThis.verdict.given.none": {
+    "sourceHash": "387fa5a"
+  },
+  "aboutThis.verdict.given.firstLines": "На основі фактів картки й перших рядків.",
+  "@aboutThis.verdict.given.firstLines": {
+    "sourceHash": "daa8542"
+  },
+  "aboutThis.verdict.given.firstPage": "На основі фактів картки й першої сторінки.",
+  "@aboutThis.verdict.given.firstPage": {
+    "sourceHash": "15b0aab"
+  },
+  "aboutThis.verdict.given.entryNames": "На основі фактів картки й назв перших файлів усередині.",
+  "@aboutThis.verdict.given.entryNames": {
+    "sourceHash": "b32f391"
+  },
+  "aboutThis.verdict.given.cameraDetails": "На основі фактів картки й відомостей про камеру фото, без геопозиції.",
+  "@aboutThis.verdict.given.cameraDetails": {
+    "sourceHash": "a56e30c"
+  },
+  "aboutThis.verdict.given.protected": "На основі фактів картки. Тут Cmdr тримає вміст приватним, тож не зазирав усередину.",
+  "@aboutThis.verdict.given.protected": {
+    "sourceHash": "0b846ce"
+  },
+  "aboutThis.verdict.problem.authFailed": "Ваш постачальник ШІ не прийняв ключ.",
+  "@aboutThis.verdict.problem.authFailed": {
+    "sourceHash": "bac1177"
+  },
+  "aboutThis.verdict.problem.rateLimited": "Ліміт вашого постачальника ШІ поки вичерпано.",
+  "@aboutThis.verdict.problem.rateLimited": {
+    "sourceHash": "301b2b9"
+  },
+  "aboutThis.verdict.problem.unreachable": "Cmdr не вдалося звʼязатися з вашим постачальником ШІ.",
+  "@aboutThis.verdict.problem.unreachable": {
+    "sourceHash": "818effd"
+  },
+  "aboutThis.verdict.problem.overloaded": "Ваш постачальник ШІ зараз зайнятий.",
+  "@aboutThis.verdict.problem.overloaded": {
+    "sourceHash": "7427168"
+  },
+  "aboutThis.verdict.problem.managed": "Політика вашого ІТ-відділу зупинила цей запит на виході.",
+  "@aboutThis.verdict.problem.managed": {
+    "sourceHash": "ec46e5e"
+  },
+  "aboutThis.verdict.problem.noAnswer": "Цього разу ШІ нічого не написав.",
+  "@aboutThis.verdict.problem.noAnswer": {
+    "sourceHash": "7f4d4d3"
+  },
+  "aboutThis.verdict.problem.other": "Ваш постачальник ШІ цього разу не зміг відповісти.",
+  "@aboutThis.verdict.problem.other": {
+    "sourceHash": "dbc9df5"
+  },
+  "aboutThis.verdict.unavailable.noCloudConsent": "Дозвольте хмарний ШІ для глибшого аналізу кожного елемента.",
+  "@aboutThis.verdict.unavailable.noCloudConsent": {
+    "sourceHash": "5dddcad"
+  },
+  "aboutThis.verdict.unavailable.notConfigured": "Додайте ключ свого постачальника ШІ для глибшого аналізу кожного елемента.",
+  "@aboutThis.verdict.unavailable.notConfigured": {
+    "sourceHash": "39b54cd"
+  },
+  "aboutThis.verdict.unavailable.notReady": "Локальна модель ШІ не запущена, тож цього разу коментаря ШІ немає.",
+  "@aboutThis.verdict.unavailable.notReady": {
+    "sourceHash": "4cf13bf"
+  },
+  "aboutThis.verdict.unavailable.tooManyRequests": "Забагато коментарів ШІ за хвилину. Спробуйте ще раз за мить.",
+  "@aboutThis.verdict.unavailable.tooManyRequests": {
+    "sourceHash": "888f933"
+  },
+  "aboutThis.verdict.unavailable.openAiSettings": "Відкрити параметри ШІ",
+  "@aboutThis.verdict.unavailable.openAiSettings": {
+    "sourceHash": "edcc53b"
+  },
+  "aboutThis.verdict.aiOffHint": "Увімкніть ШІ для глибшого аналізу кожного елемента.",
+  "@aboutThis.verdict.aiOffHint": {
+    "sourceHash": "08266ac"
+  },
+  "aboutThis.verdict.column": "Коментар ШІ",
+  "@aboutThis.verdict.column": {
+    "sourceHash": "326481c"
+  },
+  "aboutThis.verdict.hint.dismiss": "Сховати цю підказку",
+  "@aboutThis.verdict.hint.dismiss": {
+    "sourceHash": "f18aa5e"
+  },
+  "aboutThis.verdict.hint.dismissTooltip": "Сховати цю підказку. Повернути її можна в Параметрах > Експертні.",
+  "@aboutThis.verdict.hint.dismissTooltip": {
+    "sourceHash": "6a3a4b3"
+  },
+  "aboutThis.action.continueInAskCmdr": "Продовжити в Ask Cmdr",
+  "@aboutThis.action.continueInAskCmdr": {
+    "sourceHash": "e9f482a"
+  },
+  "aboutThis.action.continueInAskCmdrTooltip": "Відкриває новий чат Ask Cmdr про цей елемент. Нічого не буде надіслано, доки ви самі не надішлете.",
+  "@aboutThis.action.continueInAskCmdrTooltip": {
+    "sourceHash": "223ad10"
+  },
+  "aboutThis.continueInAskCmdr.draft": "Розкажи про це докладніше.",
+  "@aboutThis.continueInAskCmdr.draft": {
+    "sourceHash": "93b9cd7"
+  },
+  "aboutThis.label.name": "Назва",
+  "@aboutThis.label.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "aboutThis.identity.nameHidReordering": "Назва містить прихований символ, що змінює напрямок тексту, тож в інших програмах її закінчення може виглядати інакше. Cmdr показує її без цього символу.",
+  "@aboutThis.identity.nameHidReordering": {
+    "sourceHash": "408f58a"
+  },
+  "aboutThis.identity.nameHidInvisible": "Назва містить невидимі символи, тож вона може виглядати як інша назва або містити прихований текст. Cmdr показує її без них.",
+  "@aboutThis.identity.nameHidInvisible": {
+    "sourceHash": "1ba3066"
+  },
+  "aboutThis.label.imageContents": "Що показує зображення",
+  "@aboutThis.label.imageContents": {
+    "sourceHash": "8e7ddf9"
+  },
+  "aboutThis.imageContents.tags": "Позначки: {tags}",
+  "@aboutThis.imageContents.tags": {
+    "sourceHash": "dc8ce45"
+  },
+  "aboutThis.imageContents.textHeading": "Текст на зображенні:",
+  "@aboutThis.imageContents.textHeading": {
+    "sourceHash": "1a751be"
+  },
+  "aboutThis.imageContents.textLine": "«{text}»",
+  "@aboutThis.imageContents.textLine": {
+    "sourceHash": "ce4c196"
+  },
+  "aboutThis.imageContents.moreText": "І ще текст",
+  "@aboutThis.imageContents.moreText": {
+    "sourceHash": "460d2ea"
+  },
+  "aboutThis.imageContents.nothing": "Позначок і тексту не знайдено",
+  "@aboutThis.imageContents.nothing": {
+    "sourceHash": "80c55c4"
+  },
+  "aboutThis.imageContents.notIndexed": "Немає в індексі зображень Cmdr",
+  "@aboutThis.imageContents.notIndexed": {
+    "sourceHash": "3b8e22b"
+  },
+  "aboutThis.imageContents.indexingOff": "Індексування зображень вимкнено",
+  "@aboutThis.imageContents.indexingOff": {
+    "sourceHash": "29b0990"
+  },
+  "aboutThis.unknown.indexingOff": "Відповідний індекс вимкнено",
+  "@aboutThis.unknown.indexingOff": {
+    "sourceHash": "f2c2c68"
+  },
+  "aboutThis.unknown.onlineOnly": "Зберігається лише онлайн, тож Cmdr не викачував це, щоб переглянути",
+  "@aboutThis.unknown.onlineOnly": {
+    "sourceHash": "347baa0"
+  }
+}

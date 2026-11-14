@@ -568,4 +568,19 @@ export const mainWindowCommands: CommandSource[] = [
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
+
+  // ============================================================================
+  // The "Tell me about this" card's Stop, fixed: the card's keydown asks `eventMatchesCommand`
+  // for it (`lib/about-this/AboutThisDialog.svelte`) and claims it whenever the card is up, so ⌥S
+  // never types `ß` (nor Alt+S reaches a menu mnemonic: the dialog masks them on Linux). It stops
+  // only a take that's still writing.
+  {
+    id: 'aboutThis.stopVerdict',
+    nameKey: 'commands.aboutThisStopVerdict.label',
+    scope: 'Main window/Tell me about this',
+    showInPalette: false,
+    shortcuts: { macos: ['⌥S'], windows: ['Alt+S'], linux: ['Alt+S'] },
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
 ]

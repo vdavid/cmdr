@@ -124,7 +124,8 @@ fn unparseable_file_recreates_fresh() {
         threads.is_empty(),
         "the recreated DB has the real schema and no threads"
     );
-    quiet_wakes_conversation(store.conn()).expect("only the reserved cost-ledger row, which nothing lists");
+    quiet_wakes_conversation(store.conn()).expect("only the reserved cost-ledger rows, which nothing lists");
+    about_this_conversation(store.conn()).expect("the verdict's ledger row too");
 }
 
 /// A fresh `AgentStore::open` on a new path builds the full production schema at the
@@ -253,7 +254,11 @@ where
 #[test]
 fn conversation_origin_tokens_round_trip() {
     assert_token_round_trip(
-        &[ConversationOrigin::Notification, ConversationOrigin::QuietWakes],
+        &[
+            ConversationOrigin::Notification,
+            ConversationOrigin::QuietWakes,
+            ConversationOrigin::AboutThis,
+        ],
         |o| o.as_token(),
         ConversationOrigin::from_token,
     );

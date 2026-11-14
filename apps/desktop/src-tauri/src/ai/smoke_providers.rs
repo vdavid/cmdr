@@ -99,6 +99,19 @@ pub(super) const ANTHROPIC: SmokeProvider = SmokeProvider {
     check_nickname: "anthropic-smoke",
 };
 
+/// Anthropic's mid-size class, for the card verdict's eval (`about_verdict_eval_test.rs`),
+/// which measures each model class a person may pick against the no-green-light bar.
+///
+/// (verified on 2026-11-13: `claude-sonnet-5-5` is listed `active` by `GET /v1/models`, with no
+/// `deprecated_at` or `retires_at`.)
+pub(super) const ANTHROPIC_SONNET_MODEL: &str = "claude-sonnet-5-5";
+
+/// Anthropic's largest class, for the same eval as a model under test and as its judge.
+///
+/// (verified on 2026-11-13: `claude-opus-5-5` is listed `active` by `GET /v1/models`, with no
+/// `deprecated_at` or `retires_at`.)
+pub(super) const ANTHROPIC_OPUS_MODEL: &str = "claude-opus-5-5";
+
 /// Google Gemini. The SECOND native (non-OpenAI) protocol we ship: `remote_model_iden` leaves
 /// `gemini-*` un-namespaced, so `genai` picks its Gemini adapter, which POSTs
 /// `{base_url}models/{model}:generateContent` (and `:streamGenerateContent?alt=sse`) instead of

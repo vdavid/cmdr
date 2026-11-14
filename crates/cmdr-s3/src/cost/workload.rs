@@ -267,7 +267,7 @@ impl Workload {
     }
 
     /// One landed selected file's modified time read back for the operation
-    /// log (`cmdr-operations`' `journal::LandedTimes`): its `get_metadata`, a HEAD.
+    /// log (`cmdr-operations`' `journal_landed::LandedReadBack`): its `get_metadata`, a HEAD.
     pub fn read_back_landed_file(&mut self) {
         self.add(RequestKind::HeadObject, 1);
     }

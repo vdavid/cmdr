@@ -80,7 +80,7 @@ here:
   `await` after `startWindowServices`. Pinned by `window-services.test.ts`.
 - **The window hands out one dispatcher per road (`dispatchers`), and which one a caller gets is a correctness
   question.** The road is the dispatch's source, which the dialog gate and the cross-source dedup both read (§ The
-  dialog gate). The five user roads absorb a rejection: a few handlers reject on purpose, a user gesture has nobody to
+  dialog gate). The six user roads absorb a rejection: a few handlers reject on purpose, a user gesture has nobody to
   hand that to, and the handler has already said its piece in a toast, so the alternative is an unhandled rejection. The
   `mcp` one propagates it, and the MCP adapter is the one caller that needs it — several tools refuse BY rejecting
   (`select` naming a file that isn't in the listing, `pane.refresh` when a re-read outlives its wait), and the adapter
@@ -208,7 +208,10 @@ the answer is the same whichever road a command came in by.
 - **Each road has its own dispatcher**, bound once in `+page.svelte` (`dispatchers`, typed
   `Record<DispatchSource, CommandDispatcher>`, so a new road doesn't compile until it's wired). That's how the core
   knows the source, which both the gate and the cross-source dedup read. The menu road also carries the Dock menu, other
-  windows' `execute-command` emits, `view-mode-changed`, and `menu-sort`.
+  windows' `execute-command` emits, `view-mode-changed`, and `menu-sort`. An `execute-command` whose `road` is
+  `contextMenu` (a right-click row with an id the bar doesn't share, today "Tell me about this") takes the `contextMenu`
+  road: a single gesture, so it skips the keyboard+menu dedup and the menu claims, and the text-field gate lets it
+  through like the palette.
 - **MCP is exempt**, so every MCP pane command (`select_volume`, `select`, `move_cursor`, `sort`, and the rest) runs
   behind an open dialog. Only the tools that start a file operation refuse, in Rust before they dispatch, with a typed
   `data.blockingDialog` (`#lib/file-explorer/pane/DETAILS.md` § "The operation-start gate"), and `dialog.confirm` acts

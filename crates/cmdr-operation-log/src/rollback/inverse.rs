@@ -9,7 +9,7 @@
 
 use std::path::Path;
 
-use cmdr_fs::volume::{NodeIdentity, Volume, VolumeError};
+use cmdr_fs::volume::{Volume, VolumeError};
 
 use super::super::store::RollbackUnit;
 use super::super::types::{EntryType, OpKind, SkipReason};
@@ -62,6 +62,11 @@ async fn remove_file_if_unchanged(
         Err(VolumeError::NotFound(_)) => return missing_item(&[(&*volume, path.as_path())]),
         Err(_) => return ItemResult::Skipped(SkipReason::Failed),
     };
+    // It must be the very node the op landed, when the op recorded which: a file
+    // saved over the copy since can share its size and date.
+    if let Err(skip) = landed_node_holds(&*volume, &path, unit).await {
+        return ItemResult::Skipped(skip);
+    }
     match verify_snapshot(unit.size, unit.mtime, live.size, live.modified_at) {
         SnapshotVerdict::Match => {
             if check_original && let Err(kept) = original_stays(volumes, unit).await {
@@ -142,6 +147,9 @@ async fn remove_dir_if_empty(
         // the path.
         return missing_item(&[(&*volume, path.as_path())]);
     }
+    if let Err(skip) = landed_node_holds(&*volume, &path, unit).await {
+        return ItemResult::Skipped(skip);
+    }
     // Only remove a directory the undo created if it's still empty — a file added
     // since must not be swept away. A `seq DESC` stream removes the dir's own
     // (unchanged) contents first, so a genuinely-restored tree is empty here.
@@ -160,11 +168,19 @@ async fn remove_dir_if_empty(
     }
 }
 
-/// Whether the entry at `path` is the node the operation recorded landing there. A
-/// different node is [`SkipReason::Drift`]: someone else's item under the recorded
+/// Whether the entry at `path` is still the node `unit`'s operation landed there,
+/// for a row that recorded which. A row with no identity (written before the journal
+/// kept one, or landed where no stable identity exists) holds: it keeps the snapshot
+/// check alone. Every inverse asks this before it acts on what landed, so an identity
+/// on a row is never ignored.
+///
+/// A different node is [`SkipReason::Drift`]: someone else's item under the recorded
 /// name. A volume that can't say, or a stat that fails, proves nothing, so it fails
 /// safe too. One `lstat`, never a walk.
-async fn same_node(volume: &dyn Volume, path: &Path, recorded: NodeIdentity) -> Result<(), SkipReason> {
+async fn landed_node_holds(volume: &dyn Volume, path: &Path, unit: &RollbackUnit) -> Result<(), SkipReason> {
+    let Some(recorded) = unit.dest_identity else {
+        return Ok(());
+    };
     match volume.node_identity(path).await {
         Ok(Some(live)) if live == recorded => Ok(()),
         Ok(Some(_)) => Err(SkipReason::Drift),
@@ -213,10 +229,9 @@ async fn restore_move(volumes: &dyn VolumeLookup, runner: &dyn RollbackRunner, u
         Err(_) => return ItemResult::Skipped(SkipReason::Failed),
     };
     // It must be the very node the op left there, when the op recorded which: the
-    // Trash gives a freed name to the next item trashed under it.
-    if let Some(recorded) = unit.dest_identity
-        && let Err(skip) = same_node(&*from_volume, from_path, recorded).await
-    {
+    // Trash gives a freed name to the next item trashed under it, and a folder's
+    // recheck below is existence alone.
+    if let Err(skip) = landed_node_holds(&*from_volume, from_path, unit).await {
         return ItemResult::Skipped(skip);
     }
     // For a file, verify it hasn't changed since the op (dirs: existence only —

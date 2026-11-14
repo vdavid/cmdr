@@ -872,6 +872,18 @@
   "@commands.fileGetInfo.label": {
     "sourceHash": "da65a65"
   },
+  "commands.fileTellMeAbout.label": "Cho tôi biết về mục này",
+  "@commands.fileTellMeAbout.label": {
+    "sourceHash": "0d5deaf"
+  },
+  "commands.fileTellMeAbout.description": "Hiển thị mục này đến từ đâu, là gì và gỡ bỏ mục này sẽ có nghĩa là gì",
+  "@commands.fileTellMeAbout.description": {
+    "sourceHash": "66f0488"
+  },
+  "commands.aboutThisStopVerdict.label": "Dừng nhận xét của AI",
+  "@commands.aboutThisStopVerdict.label": {
+    "sourceHash": "0ffd7ae"
+  },
   "commands.fileQuickLook.label": "{platform, select, macos {Xem nhanh} other {Xem trước}}",
   "@commands.fileQuickLook.label": {
     "sourceHash": "c3f57b4"

@@ -430,6 +430,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmdr-about"
+version = "0.0.0"
+dependencies = [
+ "infer",
+ "plist",
+ "psl",
+ "serde",
+ "specta",
+ "url",
+]
+
+[[package]]
 name = "cmdr-adb"
 version = "0.0.0"
 dependencies = [
@@ -473,6 +485,7 @@ name = "cmdr-fs"
 version = "0.0.0"
 dependencies = [
  "blake3",
+ "cmdr-platform-cfg",
  "dirs",
  "exacl",
  "futures-util",
@@ -499,6 +512,7 @@ dependencies = [
 name = "cmdr-fuzz"
 version = "0.0.0"
 dependencies = [
+ "cmdr-about",
  "cmdr-adb",
  "cmdr-archive",
  "cmdr-nfs",
@@ -536,6 +550,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmdr-platform-cfg"
+version = "0.0.0"
+
+[[package]]
 name = "cmdr-s3"
 version = "0.0.0"
 dependencies = [
@@ -552,6 +570,7 @@ dependencies = [
  "percent-encoding",
  "quick-xml",
  "reqwest",
+ "rustls",
  "serde",
  "serde_json",
  "sha2 0.11.1",
@@ -958,7 +977,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1567,6 +1586,12 @@ dependencies = [
  "equivalent",
  "hashbrown 0.17.1",
 ]
+
+[[package]]
+name = "infer"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4200d433cbd5178df7797c9c2e75b348b728e39631cf14520d1e2fc424201f4"
 
 [[package]]
 name = "inotify"
@@ -2286,6 +2311,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19f132c84eca552bf34cab8ec81f1c1dcc229b811638f9d283dceabe58c5569e"
 
 [[package]]
+name = "plist"
+version = "1.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "327a4cb2ad49dc48adfdc9da89e22c64d488b508c67a044d71ba729e4521a285"
+dependencies = [
+ "base64 0.23.1",
+ "indexmap",
+ "quick-xml",
+ "time",
+]
+
+[[package]]
 name = "png"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2377,6 +2414,15 @@ checksum = "4488a4a36b9a4ba6b9334a32a39971f77c1436ec82c38707bce707699cc3bbcb"
 dependencies = [
  "quote",
  "syn 2.0.118",
+]
+
+[[package]]
+name = "psl"
+version = "2.1.250"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c036f34929bf0b11edcba0799b63f360beb20aef1957b3432b1c3954bd3a631"
+dependencies = [
+ "psl-types",
 ]
 
 [[package]]
@@ -2479,7 +2525,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2775,7 +2821,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2832,7 +2878,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3727,7 +3773,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

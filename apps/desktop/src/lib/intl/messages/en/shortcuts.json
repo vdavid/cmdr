@@ -65,6 +65,12 @@
     "description": "Group heading in the Keyboard shortcuts list for keys that work inside the Operation log dialog (View > Operation log: recent file operations and the items they touched, which can be rolled back). A short section title; match operationLog.dialog.title.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "shortcuts.scope.tellMeAbout": "Tell me about this",
+  "@shortcuts.scope.tellMeAbout": {
+    "description": "Group heading in the Keyboard shortcuts list for keys that work inside the \"Tell me about this\" card (the dialog that lists what Cmdr knows about one file or folder, with a short AI take beside it). A short section title; match commands.fileTellMeAbout.label.",
+    "screenshot": "settings-keyboard-shortcuts.png",
+    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+  },
   "shortcuts.scope.askCmdr": "Ask Cmdr",
   "@shortcuts.scope.askCmdr": {
     "description": "Group heading in the Keyboard shortcuts list for keys that work while focus is in Ask Cmdr, the chat rail where the user chats with an AI about their files. \"Ask Cmdr\" is the product name; keep it as-is.",

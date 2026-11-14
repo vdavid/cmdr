@@ -320,15 +320,6 @@ export async function askCmdrLegacyOptIn(): Promise<LegacyAskCmdrOptIn> {
   return commands.askCmdrLegacyOptIn()
 }
 
-/**
- * Tell the proactive loop `askCmdr.enabled` moved, so its cached readiness re-reads the switch.
- * The send path reads the setting fresh; the wake loop doesn't, so without this a switch-off
- * would leave the loop admitting work until the next readiness refresh.
- */
-export async function askCmdrEnabledChanged(): Promise<void> {
-  await commands.askCmdrEnabledChanged()
-}
-
 /** One conversation's cumulative token + cost total (all days, all models). */
 export async function askCmdrConversationCost(id: number): Promise<ConversationCost> {
   const res = await commands.askCmdrConversationCost(id)
@@ -379,19 +370,6 @@ export async function askCmdrForgetMemory(): Promise<number> {
   const res = await commands.askCmdrForgetMemory()
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
-}
-
-/**
- * Tell the proactive loop its settings moved, so it re-reads them and re-arms its timer.
- *
- * ⚠️ The live-apply push behind `askCmdr.proactive`, `askCmdr.wakeDelay`, and
- * `askCmdr.wakeToast`. Unlike the other two `askCmdr.*` settings, which the backend reads
- * fresh on each send, these drive a SLEEPING timer: without this the loop keeps running on
- * whatever it read at launch until the app restarts. No value crosses; the loop re-reads
- * `settings.json` itself.
- */
-export async function askCmdrWakeSettingsChanged(): Promise<void> {
-  await commands.askCmdrWakeSettingsChanged()
 }
 
 /**

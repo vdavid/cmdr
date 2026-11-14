@@ -930,10 +930,21 @@ E2E test hooks split along two axes:
   (`search-walk-handoff.spec.ts`). Background scans are never throttled. Read in
   `crates/cmdr-index/src/indexing/scanner/mod.rs` (`cover_walk_throttle`) rather than `crate::test_mode`, because the
   index crate can't reach the app; it's cached in a `LazyLock`, so an unset var costs one deref per walk.
+- **`CMDR_E2E_ABOUT_VERDICT_PACE`** (`<ms>[,<hold ms>|held]`, read only by the "Tell me about this" AI take's fake,
+  which itself needs `CMDR_E2E_ASK_CMDR_FAKE`): a wait before each delta and a hold before the last, so a take holds
+  still mid-stream. `held` holds until the `playwright-e2e` command `hold_about_verdict({ held: false })` releases it.
+  Both E2E lanes set `0,held`, so `about-this-verdict.spec.ts` presses Stop on a take that's still writing and lets one
+  finish by releasing it (a fixed hold made that test outwait 4 s); every other spec keeps `ai.provider` off, so nothing
+  else asks the fake. Read per call. Mechanism: `apps/desktop/src-tauri/src/about/DETAILS.md` § The E2E fake.
 - **`CMDR_MANAGED_PREFS_FILE`** (debug and `playwright-e2e` builds only, never a plain release): a plist that replaces
   the organization's managed preferences (MDM policy). The macOS lane points every shard at `managed-prefs.plist` in its
   data dir, which doesn't exist (no policy) until `managed-policy.spec.ts` writes it; the app watches the file and
   re-reads it on change. `apps/desktop/src-tauri/src/managed_policy/DETAILS.md` § Testing.
+- **`CMDR_ABOUT_FIXTURE_HOME`** (debug and `playwright-e2e` builds only, never a plain release): the folder the "Tell me
+  about this" card reads as home, so the QA fixture folder's fake `Library/Application Support/…` reads like the
+  person's real one with no write into `~/Library` (the QA fixture script,
+  `apps/desktop/test/e2e-shared/about-fixtures.ts`). It moves only the card's owner row and its app-folder action;
+  `test_mode::about_fixture_home`.
 - **`CMDR_PLAYWRIGHT_SOCKET`**: Override the plugin's Unix socket path (one socket per shard).
 - **`CMDR_SHOTS_PID` / `CMDR_SHOTS_OUT_DIR` / `CMDR_SHOTS_BROWSE_ROOT`**: read by the marketing capture's spec, never by
   the app, so they stay out of `crate::test_mode`. The orchestrator passes its own app pid (nothing exposes it over the

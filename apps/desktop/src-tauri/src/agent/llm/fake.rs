@@ -57,6 +57,42 @@ enum Script {
 pub struct FakeAgentLlm {
     script: Mutex<Script>,
     calls_seen: Mutex<Vec<Vec<AgentMessage>>>,
+    pace: Option<Pace>,
+}
+
+/// How slowly a paced fake streams, so a streaming or stopped state can be held still for a
+/// screenshot or a person's QA ([`FakeAgentLlm::paced`]).
+#[derive(Debug, Clone)]
+pub struct Pace {
+    /// The wait before each text delta.
+    pub per_delta: std::time::Duration,
+    /// An extra wait before the LAST text delta, so the streaming state holds with text on
+    /// screen and the end still to come.
+    pub hold_before_last: Hold,
+}
+
+/// How long a paced fake holds before its last text delta.
+#[derive(Debug, Clone)]
+pub enum Hold {
+    /// This long.
+    For(std::time::Duration),
+    /// Until the channel reads `false` (released), so a test ends the hold by an order it
+    /// controls, ❌ never by outwaiting a clock. A cancel still ends the stream mid-hold.
+    UntilReleased(tokio::sync::watch::Receiver<bool>),
+}
+
+impl Hold {
+    async fn wait(self) {
+        match self {
+            Self::For(duration) => tokio::time::sleep(duration).await,
+            Self::UntilReleased(mut held) => {
+                // A closed sender can never release: hold until the cancel ends the stream.
+                if held.wait_for(|held| !*held).await.is_err() {
+                    std::future::pending::<()>().await;
+                }
+            }
+        }
+    }
 }
 
 impl FakeAgentLlm {
@@ -72,6 +108,7 @@ impl FakeAgentLlm {
         Self {
             script: Mutex::new(Script::Queue(turns.into())),
             calls_seen: Mutex::new(Vec::new()),
+            pace: None,
         }
     }
 
@@ -82,7 +119,14 @@ impl FakeAgentLlm {
         Self {
             script: Mutex::new(Script::ByPrompt(Box::new(pick))),
             calls_seen: Mutex::new(Vec::new()),
+            pace: None,
         }
+    }
+
+    /// The same fake, streaming at `pace`. Cancel still ends the stream at once, mid-wait.
+    pub fn paced(mut self, pace: Pace) -> Self {
+        self.pace = Some(pace);
+        self
     }
 
     /// Every `messages` slice handed to `respond`, in call order. Asserts the exact
@@ -122,13 +166,37 @@ impl AgentLlm for FakeAgentLlm {
             };
 
             let cancel_signal = cancel.clone();
-            let stream = stream::iter(deltas)
+            let stream = match self.pace.clone() {
+                None => stream::iter(deltas).boxed(),
+                Some(pace) => paced(deltas, pace),
+            };
+            Ok(stream
                 .take_until(async move { cancel_signal.cancelled().await })
-                .boxed();
-            Ok(stream)
+                .boxed())
         }
         .boxed()
     }
+}
+
+/// `deltas` with `pace`'s waits before each text delta, the longer one before the last.
+fn paced(deltas: Vec<Result<AgentDelta, AgentLlmError>>, pace: Pace) -> AgentDeltaStream {
+    let last_text = deltas
+        .iter()
+        .rposition(|delta| matches!(delta, Ok(AgentDelta::Text(_))));
+    stream::iter(deltas.into_iter().enumerate())
+        .then(move |(index, delta)| {
+            let pace = pace.clone();
+            async move {
+                if matches!(delta, Ok(AgentDelta::Text(_))) {
+                    tokio::time::sleep(pace.per_delta).await;
+                    if Some(index) == last_text {
+                        pace.hold_before_last.wait().await;
+                    }
+                }
+                delta
+            }
+        })
+        .boxed()
 }
 
 /// Streams the chunks as text deltas, then an `End` carrying the joined answer.
@@ -230,6 +298,90 @@ mod tests {
             .map(|item| item.expect("fake never streams errors"))
             .collect()
             .await
+    }
+
+    /// A paced fake holds before its last text delta and still ends at once on a cancel, so a
+    /// held streaming state can be stopped like a real one.
+    #[tokio::test(start_paused = true)]
+    async fn a_paced_fake_holds_before_its_last_delta_and_stops_on_cancel() {
+        let per_delta = std::time::Duration::from_millis(10);
+        let pace = Pace {
+            per_delta,
+            hold_before_last: Hold::For(std::time::Duration::from_secs(60)),
+        };
+        let fake = FakeAgentLlm::script(vec![ScriptedTurn::Say(vec!["One. ".into(), "Two.".into()])]).paced(pace);
+        let cancel = CancellationToken::new();
+        let mut stream = fake
+            .respond(
+                "sys",
+                &[],
+                &[],
+                crate::agent::llm::CallSettings::default(),
+                cancel.clone(),
+            )
+            .await
+            .expect("starts");
+        let started = tokio::time::Instant::now();
+        let first = stream.next().await.expect("a delta").expect("no error");
+        assert_eq!(first, AgentDelta::Text("One. ".into()));
+        assert!(started.elapsed() >= per_delta);
+        let next = tokio::time::timeout(std::time::Duration::from_secs(30), stream.next()).await;
+        assert!(next.is_err(), "the last delta is held");
+        cancel.cancel();
+        assert!(stream.next().await.is_none(), "a cancel ends the held stream");
+    }
+
+    /// A hold until released lets the last delta through the moment it's released, and a
+    /// release that came before the stream reached the hold still counts.
+    #[tokio::test(start_paused = true)]
+    async fn a_held_fake_lets_its_last_delta_through_once_released() {
+        let (release, held) = tokio::sync::watch::channel(true);
+        let pace = Pace {
+            per_delta: std::time::Duration::from_millis(10),
+            hold_before_last: Hold::UntilReleased(held),
+        };
+        let fake = FakeAgentLlm::script(vec![ScriptedTurn::Say(vec!["One. ".into(), "Two.".into()])]).paced(pace);
+        let mut stream = fake
+            .respond(
+                "sys",
+                &[],
+                &[],
+                crate::agent::llm::CallSettings::default(),
+                CancellationToken::new(),
+            )
+            .await
+            .expect("starts");
+        assert_eq!(
+            stream.next().await.expect("a delta").expect("no error"),
+            AgentDelta::Text("One. ".into())
+        );
+        let next = tokio::time::timeout(std::time::Duration::from_secs(600), stream.next()).await;
+        assert!(next.is_err(), "held, however long the clock runs");
+        release.send_replace(false);
+        assert_eq!(
+            stream.next().await.expect("a delta").expect("no error"),
+            AgentDelta::Text("Two.".into())
+        );
+
+        // Released before the stream got there: it doesn't hold at all.
+        let (_release, held) = tokio::sync::watch::channel(false);
+        let fake = FakeAgentLlm::script(vec![ScriptedTurn::Say(vec!["One. ".into(), "Two.".into()])]).paced(Pace {
+            per_delta: std::time::Duration::from_millis(10),
+            hold_before_last: Hold::UntilReleased(held),
+        });
+        let deltas = collect(
+            fake.respond(
+                "sys",
+                &[],
+                &[],
+                crate::agent::llm::CallSettings::default(),
+                CancellationToken::new(),
+            )
+            .await
+            .expect("starts"),
+        )
+        .await;
+        assert_eq!(deltas.len(), 3, "both texts and the end: {deltas:?}");
     }
 
     #[tokio::test]

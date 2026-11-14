@@ -39,6 +39,11 @@ macro_rules! prompt {
 const SYSTEM: PromptFile = prompt!("system");
 /// The opener of the one turn a rejected (or answered) sweep earns.
 const FOLLOWUP: PromptFile = prompt!("followup");
+/// The "Tell me about this" verdict's system prompt: what it is, who owns it, and what
+/// removing it would cost.
+const ABOUT_VERDICT: PromptFile = prompt!("about_verdict");
+/// The same, without the removal sentence: Cmdr's own row says that.
+const ABOUT_VERDICT_NO_REMOVAL: PromptFile = prompt!("about_verdict_no_removal");
 
 /// Ask Cmdr's system prompt. Call it once per turn and hold the result: in a dev build each
 /// call reads the file again.
@@ -51,6 +56,17 @@ pub fn system_prompt() -> Cow<'static, str> {
 /// ending in a newline).
 pub fn followup(decisions: &str) -> String {
     render(&FOLLOWUP, &[("decisions", decisions)]).into_owned()
+}
+
+/// The card verdict's system prompt, the variant that also words what removing the item
+/// would cost. Static: nothing per call, so a provider can cache it.
+pub fn about_verdict() -> Cow<'static, str> {
+    render(&ABOUT_VERDICT, &[])
+}
+
+/// The card verdict's system prompt without the removal sentence.
+pub fn about_verdict_no_removal() -> Cow<'static, str> {
+    render(&ABOUT_VERDICT_NO_REMOVAL, &[])
 }
 
 fn render(file: &PromptFile, vars: &[(&str, &str)]) -> Cow<'static, str> {

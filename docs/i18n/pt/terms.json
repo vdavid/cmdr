@@ -543,7 +543,8 @@
       "olhada",
       "marc",
       "marque",
-      "desmarc"
+      "desmarc",
+      "confirma"
     ],
     "forms": "Cmdr checking on its own → verificar / Verificando; the user checking → conferir (Confira, Já conferi); Checking for changes → Verificação de mudanças; the AI tool status line → Conferindo / Conferiu; ticking a checkbox → marcar / desmarcar (Marcar todos os itens, Desmarcar tudo; Finder Get Info: desmarque Bloqueado)",
     "confidence": "high",
@@ -1243,7 +1244,7 @@
   },
   "extract": {
     "chosen": "Extrair",
-    "accept": ["extrai", "extraí", "descompact"],
+    "accept": ["extrai", "extraí", "descompact", "extração"],
     "confidence": "high",
     "sources": "Total Commander pt-BR; macOS"
   },
@@ -3221,7 +3222,13 @@
       }
     ],
     "confidence": "confirmed",
-    "sources": "macOS Finder pt-BR (TG5, TG6)"
+    "sources": "macOS Finder pt-BR (TG5, TG6)",
+    "exceptions": {
+      "aboutThis.gitSnapshot.from": "a git tag, not a Finder color tag: pt-BR git says tag (git.po)",
+      "aboutThis.headline.fromGitHistory": "a git tag, not a Finder color tag: pt-BR git says tag (git.po)",
+      "ai.cloudConsent.aboutThis.item.git": "a git tag, not a Finder color tag: pt-BR git says tag (git.po)",
+      "aboutThis.imageContents.nothing": "the image index's labels, not Finder color tags → rótulo, matching aboutThis.imageContents.tags (Rótulos: {tags})"
+    }
   },
   "tail": {
     "chosen": "acompanhar",
@@ -3614,7 +3621,10 @@
     "confidence": "confirmed",
     "exceptions": {
       "ai.cloudConsent.askCmdr.proactive": "writing its notes is authoring text, not data landing on a disk, so the everyday escrever as próprias notas",
-      "multiRename.rangeEditor.writeAs": "how a placeholder is spelled in the mask ([N2-5] vs [N2,4]), not data landing on a disk, so the everyday Escrever como"
+      "multiRename.rangeEditor.writeAs": "how a placeholder is spelled in the mask ([N2-5] vs [N2,4]), not data landing on a disk, so the everyday Escrever como",
+      "aboutThis.verdict.writing": "an AI writing text, not data landing on a drive → escrever",
+      "aboutThis.verdict.problem.noAnswer": "an AI writing text, not data landing on a drive → escrever",
+      "settings.aboutThis.aiVerdict.description": "an AI writing text, not data landing on a drive → escrever"
     },
     "sources": "shipped pt catalog"
   },

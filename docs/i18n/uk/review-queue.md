@@ -209,3 +209,8 @@ record the outcome in `terms.json` or `decisions.md`).
   TBX or general Windows usage, not a live Ukrainian Windows; confirm against Ukrainian Windows 11.
 - **Binary-file banner** (`viewer.binaryWarning.body*`): «Це сирий вигляд файлу … переглянути <b>зображення</b> у
   звичайному вигляді» repeats «вигляд»; confirm it reads naturally, or suggest a better word for "the actual".
+- **"Tell me about this" register** (`commands.fileTellMeAbout.label`, `aboutThis.continueInAskCmdr.draft`): «Розкажи
+  про це» uses ти as the user's request to Cmdr; confirm it reads naturally next to the ви the app uses, or suggest
+  «Розкажіть».
+- **Notarization ticket** (`aboutThis.signature.ticket*`, `ai.cloudConsent.aboutThis.item.appAndSigner`): «квитанція
+  нотаризації» has no Apple source; confirm the term Ukrainian Mac developers use.

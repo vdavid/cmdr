@@ -9,7 +9,8 @@
 //!
 //! `smoke_*_deferred_tool` and `smoke_*_list_only_tool` run a whole turn on Ask Cmdr's real prefix, so a
 //! provider that rejects the tool-search pair's schemas or a stored `use_tool` fails there, and what
-//! each model did lands in the log (`RUST_LOG=info`, `--no-capture`).
+//! each model did lands in the log (`RUST_LOG=info`, `--no-capture`). `smoke_anthropic_what_is_this_folder`
+//! does the same for "what is this folder?", with the real `about_item` handler over a scratch folder.
 //!
 //! `#[ignore]`-gated on the matching env var, never in CI's critical path. Verify
 //! current model ids from each provider's models endpoint at run time — never from
@@ -605,6 +606,21 @@ async fn answer_deferred_call(effective: &super::types::AgentToolCall) -> serde_
             "uri": effective.arguments["uri"],
             "text": "09:20:01 WARN volume: Couldn't reach the share, retrying\n09:21:44 INFO fileExplorer: Loaded 12 files",
         }),
+        // The real lookup over a scratch folder: it reads only what it's pointed at.
+        ToolId::AboutItem => {
+            let app = tauri::test::mock_app();
+            let ctx = crate::tools::ToolCtx {
+                caller: crate::tools::Caller::Agent {
+                    origin: crate::agent::types::TurnOrigin::Text,
+                },
+                cancel: CancellationToken::new(),
+                conversation_id: None,
+                asked: None,
+            };
+            crate::tools::execute_tool(app.handle(), &ctx, name, &effective.arguments)
+                .await
+                .unwrap_or_else(refused)
+        }
         _ => serde_json::json!({ "ok": true }),
     }
 }
@@ -737,6 +753,36 @@ async fn assert_reaches(label: &str, backend: AiBackend, request: &str, wanted: 
         "{label}: reached {name} {}",
         if *sent == ToolId::UseTool { "through use_tool" } else { "directly" }
     );
+}
+
+/// "What is this folder?" over a real scratch folder: the model has to reach the deferred `about_item`,
+/// which runs for real, and answer from it. What it said lands in the log.
+#[tokio::test]
+#[ignore = "real API call: set ANTHROPIC_API_KEY to run"]
+async fn smoke_anthropic_what_is_this_folder() {
+    crate::file_system::volume::manager::get_volume_manager().register_if_absent(
+        "root",
+        std::sync::Arc::new(cmdr_local::LocalPosixVolume::local_folder(
+            "Test root",
+            "/",
+            crate::volume_host::host(),
+        )),
+    );
+    let dir = crate::test_support::TestDir::new("smoke-what-is-this-folder");
+    let folder = dir.join("node_modules");
+    std::fs::create_dir_all(folder.join("left-pad")).expect("make the folder");
+    std::fs::write(folder.join("left-pad/index.js"), "module.exports = 1").expect("write a file");
+    let request = format!(
+        "What is this folder: {}? What would removing it cost?",
+        folder.display()
+    );
+    assert_reaches(
+        "haiku",
+        anthropic_backend("claude-haiku-5-5"),
+        &request,
+        ToolId::AboutItem,
+    )
+    .await;
 }
 
 #[tokio::test]

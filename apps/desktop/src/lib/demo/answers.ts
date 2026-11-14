@@ -57,7 +57,6 @@ export const silentCommands: readonly VoidCommand[] = [
   'setSecurityLogEnabled',
   'setShowVirtualGitPortal',
   'setDiskSpaceSizeFormat',
-  'askCmdrEnabledChanged',
   'updateFocusedPane',
   'watchVolumeSpace',
   'unwatchVolumeSpace',
@@ -187,7 +186,7 @@ export const appAnswers: AnswerTable = {
   // the AI mode stays off as on a Mac with AI off.
   cloudAiConsentStatus: () => ({
     accepted: false,
-    currentVersion: 2,
+    currentVersion: 3,
     acceptedVersion: null,
     acceptedAt: null,
     managed: null,

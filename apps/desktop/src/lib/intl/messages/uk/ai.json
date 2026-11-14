@@ -91,6 +91,70 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
+  "ai.cloudConsent.aboutThis.title": "<b>Розкажи про це</b> щоразу, коли ви відкриваєте картку файлу чи папки, без додаткових запитань:",
+  "@ai.cloudConsent.aboutThis.title": {
+    "sourceHash": "b60933c"
+  },
+  "ai.cloudConsent.aboutThis.item.identity": "Що це (файл, папка, програма чи посилання), його назва, шлях, розмір і дати, скільки файлів і папок містить папка, скільки інших назв вказує на той самий вміст, куди вказує посилання і чи приховує назва символ, що змінює порядок показу літер",
+  "@ai.cloudConsent.aboutThis.item.identity": {
+    "sourceHash": "f01c726"
+  },
+  "ai.cloudConsent.aboutThis.item.realType": "Який тип файлу показують його перші байти, або його назва, якщо Cmdr їх не читав",
+  "@ai.cloudConsent.aboutThis.item.realType": {
+    "sourceHash": "55e97b9"
+  },
+  "ai.cloudConsent.aboutThis.item.imageIndex": "Для зображення: позначки, які дав йому індекс зображень Cmdr, і перші рядки знайденого на ньому тексту, прочитані з індексу Cmdr, а не із самого зображення",
+  "@ai.cloudConsent.aboutThis.item.imageIndex": {
+    "sourceHash": "020f807"
+  },
+  "ai.cloudConsent.aboutThis.item.download": "Сайт, з якого, за записом, це викачано (лише основна адреса сайту, як-от github.com, без субдомену чи повного посилання), коли і якою програмою. Для вкладення з Пошти чи AirDrop: лише сам цей факт, без того, хто його надіслав",
+  "@ai.cloudConsent.aboutThis.item.download": {
+    "sourceHash": "40d185c"
+  },
+  "ai.cloudConsent.aboutThis.item.appAndSigner": "Для програми чи виконуваного файлу: назва, ідентифікатор і версія. Для них і для образу диска: імʼя та ідентифікатор команди того, хто підписав, чи код досі збігається з цим підписом і чи прикріплено квитанцію нотаризації Apple",
+  "@ai.cloudConsent.aboutThis.item.appAndSigner": {
+    "sourceHash": "471891d"
+  },
+  "ai.cloudConsent.aboutThis.item.use": "Коли ви востаннє це відкривали, скільки разів і яка програма це відкриває",
+  "@ai.cloudConsent.aboutThis.item.use": {
+    "sourceHash": "9664a6e"
+  },
+  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Звідки й коли Cmdr скопіював, перемістив чи розпакував це, зокрема той шлях, назва диска чи сервера і хто це почав: ви чи помічник ШІ",
+  "@ai.cloudConsent.aboutThis.item.cmdrHistory": {
+    "sourceHash": "1d38db2"
+  },
+  "ai.cloudConsent.aboutThis.item.git": "Папка, гілка й стан репозиторію git, а для файлу з історії git: коміт, гілка чи тег, звідки він, і коли він там востаннє змінювався",
+  "@ai.cloudConsent.aboutThis.item.git": {
+    "sourceHash": "a06839e"
+  },
+  "ai.cloudConsent.aboutThis.item.owner": "Програма чи інсталятор, яким це належить, або яка це стандартна папка системи, і звідки Cmdr це знає",
+  "@ai.cloudConsent.aboutThis.item.owner": {
+    "sourceHash": "f5d95a6"
+  },
+  "ai.cloudConsent.aboutThis.item.importance": "Для папки: наскільки вона важлива за рейтингом Cmdr і як часто ви відкриваєте її в Cmdr",
+  "@ai.cloudConsent.aboutThis.item.importance": {
+    "sourceHash": "b358d29"
+  },
+  "ai.cloudConsent.aboutThis.item.inside": "Для папки: що це за папка (як-от кеш чи результат збирання), скільки в ній елементів, назви й розміри найбільших із них і найбільших файлів, які типи файлів вона містить і скільки її вмісту не змінювалося за останній рік",
+  "@ai.cloudConsent.aboutThis.item.inside": {
+    "sourceHash": "eb93c12"
+  },
+  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {Для програми: назви й розміри папок, які вона зберігає у вашій папці «Бібліотека»} other {Для програми: назви й розміри папок із даними, які вона зберігає}}",
+  "@ai.cloudConsent.aboutThis.item.appData": {
+    "sourceHash": "d61ade2"
+  },
+  "ai.cloudConsent.aboutThis.item.removal": "Що означало б видалення, як це визначає Cmdr із фактів вище",
+  "@ai.cloudConsent.aboutThis.item.removal": {
+    "sourceHash": "f7ad4bd"
+  },
+  "ai.cloudConsent.aboutThis.item.contentsStayHome": "Для елемента, вміст якого залишається вдома (перелік у розділі Ask Cmdr нижче): лише назва, шлях, розмір, дати й програма, якій він належить",
+  "@ai.cloudConsent.aboutThis.item.contentsStayHome": {
+    "sourceHash": "400db48"
+  },
+  "ai.cloudConsent.aboutThis.lookInside": "Короткий погляд усередину файлу: трохи тексту, перша сторінка й назва PDF, список файлів в архіві або відомості про камеру фото без геопозиції",
+  "@ai.cloudConsent.aboutThis.lookInside": {
+    "sourceHash": "a78e673"
+  },
   "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, коли ви пишете в чат або коли Cmdr сам починає розмову:",
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "bd006c2"
@@ -118,6 +182,10 @@
   "ai.cloudConsent.askCmdr.item.attachments": "Будь-який файл чи папка, вкладені в запитання: лише назва та шлях",
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
+  },
+  "ai.cloudConsent.askCmdr.item.aboutThis": "Коли Cmdr зʼясовує, що таке файл чи папка: ті самі факти, що надсилає «Розкажи про це», але без погляду всередину",
+  "@ai.cloudConsent.askCmdr.item.aboutThis": {
+    "sourceHash": "1c8e78d"
   },
   "ai.cloudConsent.askCmdr.item.mediaFields": "Деталі фото й пісень, коли їх використовує перейменування: дата зйомки, камера, назва, виконавець, альбом тощо",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {

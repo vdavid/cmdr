@@ -123,6 +123,16 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `Passer au mode de recherche portant ce numéro` and the heading `Rechercher et sélectionner des fichiers` (both dialog
   titles joined, verbs kept); natural enough?
 
+- **`Parlez-moi de ceci`** (`commands.fileTellMeAbout.label`, `menu.file.tellMeAbout`): a `vous` request to Cmdr; the
+  draft `Dites-m’en plus à ce sujet.` follows it. Confirm a French user doesn’t expect `tu` when talking to the app, and
+  that `ceci` reads well in the File menu beside `Lire les informations`.
+- **AI take → `commentaire de l’IA`** and deeper read → `un regard plus approfondi`: confirm both read natural.
+- **`Signé par {org}`** (`aboutThis.signature.*`): a label-like participle that doesn’t agree with an app (`une app`).
+  Kept because a noun form loses the "signed by" vs "carries a signature from" contrast; confirm it reads fine.
+- **`ticket de notarisation … y est joint`**: no Apple French term in the pile; confirm Apple’s wording.
+- **Headline nouns** (`aboutThis.headline.*`: `copie ici avec Cmdr`, `téléchargement noté depuis {host}`): nouns dodge
+  agreement with `{what}`; confirm they read as a summary line, not as broken grammar.
+
 ## Bascules
 
 - `commands.tagsToggle*.label` ship `Activer/désactiver le tag …`, the slash form style.md forbids (`toggle` ruling:

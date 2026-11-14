@@ -3163,6 +3163,17 @@ export const commands = {
    */
   revokeCloudAiConsent: () => typedError<null, CloudAiConsentWriteError>(__TAURI_INVOKE('revoke_cloud_ai_consent')),
   /**
+   *  Stops the card's gathering and its verdict: queued jobs skip their work, and
+   *  nothing more is sent. A cancel that arrives before its start makes that start a
+   *  no-op.
+   */
+  aboutCancel: (requestId: string) => __TAURI_INVOKE<void>('about_cancel', { requestId }),
+  /**
+   *  Stops the card's verdict alone and leaves the card open: its facts are done, and
+   *  the text so far stands with a `stopped` ending.
+   */
+  aboutStopVerdict: (requestId: string) => __TAURI_INVOKE<void>('about_stop_verdict', { requestId }),
+  /**
    *  Tell the cloud gates that a held "no" (`ai.cloudConsentRevokePending`) was just set or let go
    *  of. No value crosses: the gates read `settings.json` themselves, so the frontend calls this
    *  right after saving it. A newly held "no" stops in-flight calls exactly like a revoke.
@@ -4539,15 +4550,6 @@ export const commands = {
    */
   askCmdrLegacyOptIn: () => __TAURI_INVOKE<LegacyAskCmdrOptIn>('ask_cmdr_legacy_opt_in'),
   /**
-   *  Tell the gates that `askCmdr.enabled` moved. No value crosses: the send gate reads the
-   *  setting fresh per send, but the wake loop's readiness is a cached answer
-   *  (`agent::wake::snapshot`), so without this push a switched-off Ask Cmdr would keep storing
-   *  (and a switched-on one keep refusing) until something else refreshed it. Switched off, it also
-   *  stops every running turn: the rail's gate replaces the composer, Stop button and all. Called
-   *  from `settings-applier.ts`.
-   */
-  askCmdrEnabledChanged: () => __TAURI_INVOKE<void>('ask_cmdr_enabled_changed'),
-  /**
    *  One conversation's cumulative token + cost total (all days, all models), for the
    *  per-thread footer. Zeroed for a thread with no metered turn yet. Empty store ⇒ zeroed.
    */
@@ -4586,19 +4588,6 @@ export const commands = {
        */
       baseline: BaselineUsage | null
     } | null>('ask_cmdr_slot_status'),
-  /**
-   *  Tell the wake loop its settings moved, so it re-reads them and re-arms.
-   *
-   *  Called from `settings-applier.ts` for each of the three `askCmdr` cadence rows. ⚠️ **Not
-   *  optional, and not the same shape as the other two `askCmdr.*` settings**, which the backend
-   *  reads fresh at send time: these drive a SLEEPING timer. Without this push, turning the
-   *  proactive gate on would leave a parked scheduler that never notices, and a lengthened
-   *  cadence would never reach the rows already waiting (the inbox merge is min-only on purpose).
-   *
-   *  No value crosses: the loop re-reads `settings.json` itself, so whatever is on disk when the
-   *  message is serviced wins and two changes racing can't leave the loop on the older one.
-   */
-  askCmdrWakeSettingsChanged: () => __TAURI_INVOKE<void>('ask_cmdr_wake_settings_changed'),
   /**
    *  What the status corner's wake indicator should show right now: whether a wake is thinking,
    *  and which gate is in the way if it can't.
@@ -6470,6 +6459,326 @@ export const events = {
 }
 
 /* Types */
+// One thing the card's footer can do.
+export type AboutAction =
+  /**
+   *  Opens the item the way Enter in the pane does (its default app), so
+   *  whatever the pane would ask or refuse, the card does too.
+   */
+  | {
+      type: 'openWithDefaultApp'
+      // The app that opens it.
+      app: ItemText
+    }
+  // Shows the item in the OS's file manager.
+  | { type: 'showInFileManager' }
+  // Opens the page the item was recorded as downloaded from.
+  | {
+      type: 'openDownloadPage'
+      /**
+       *  The site's host, lowercased, punycode when not plain ASCII: what the
+       *  button's tooltip names before the press.
+       */
+      host: string
+      /**
+       *  The whole address, parsed and written back out, `http` or `https`
+       *  only.
+       */
+      url: string
+    }
+  // Shows the app the item belongs to, in the pane.
+  | {
+      type: 'revealOwner'
+      // The app's name.
+      app: ItemText
+      // The app bundle's path: raw, ❌ never shown.
+      path: string
+    }
+  /**
+   *  Opens the app-data folder the item sits inside, where the app keeps the
+   *  rest of its data.
+   */
+  | {
+      type: 'goToAppFolder'
+      /**
+       *  The app, when Cmdr knows which one is installed. `None`: the folder
+       *  is an app's, by its place, and Cmdr can't name an installed one.
+       */
+      app: ItemText | null
+      // The folder: raw, ❌ never shown.
+      path: string
+    }
+  /**
+   *  Opens Ask Cmdr with the item attached and a fixed, unsent question in
+   *  the composer, so the person can ask more. ❌ The draft never quotes the
+   *  card's facts or its AI take: a user turn is the most trusted text the
+   *  agent reads, and a take steered by a hostile name must not arrive there
+   *  as the person's own words. The agent reads the facts itself, as a tool
+   *  result (`about_item`).
+   */
+  | { type: 'continueInAskCmdr' }
+  // Moves the item to the Trash, through the delete dialog.
+  | { type: 'moveToTrash' }
+  /**
+   *  Deletes the item for good on a volume with no Trash, through the delete
+   *  dialog.
+   */
+  | { type: 'delete' }
+
+/**
+ *  One kind of thing the projection carries, as the cloud AI disclosure names
+ *  it. Each has its own line in the consent copy, keyed by this token.
+ */
+export type AboutDisclosure =
+  /**
+   *  What it is, its name, path, sizes, and dates, a folder's file and folder
+   *  counts, other names, a link's target, and whether its name hid a
+   *  reordering character.
+   */
+  | 'identity'
+  // What its first bytes say it is.
+  | 'realType'
+  /**
+   *  The site it was recorded as downloaded from (host only), when, and the
+   *  downloading app.
+   */
+  | 'download'
+  /**
+   *  An app's name, id, and version, and for it or a disk image who signed
+   *  it, whether its executable matches, and its notarization ticket.
+   */
+  | 'appAndSigner'
+  // When it was last opened, how often, and which app opens it.
+  | 'use'
+  /**
+   *  The Cmdr operation that put it here: when, its source path and the drive
+   *  or server name, and who started it.
+   */
+  | 'cmdrHistory'
+  /**
+   *  The git repo, branch, and status, or the commit or branch a snapshot is
+   *  from and when it last changed there.
+   */
+  | 'git'
+  // The app or installer it belongs to, and how Cmdr knows.
+  | 'owner'
+  /**
+   *  How much a folder matters by Cmdr's ranking, and how often Cmdr visited
+   *  it.
+   */
+  | 'importance'
+  /**
+   *  A folder's class and child count, its biggest children and largest files
+   *  by name and size, its mix of kinds, and how much sat unchanged for a year.
+   */
+  | 'inside'
+  // An app's folders in the Library, by name and size.
+  | 'appData'
+  // What removing it would mean, worked out from the facts above.
+  | 'removal'
+  // That its contents stay home, and so only name-level facts leave.
+  | 'contentsStayHome'
+  /**
+   *  For a picture, the labels Cmdr's image index gave it and the first lines
+   *  of text it recognized in it, read from the index, never the picture.
+   */
+  | 'imageIndex'
+
+/**
+ *  One message on a card's channel. Every one carries its request's id, so the
+ *  card drops whatever isn't for the item it shows now.
+ */
+export type AboutEvent = {
+  // The request this answers.
+  requestId: string
+  // What happened.
+  update: AboutUpdate
+}
+
+// One answered fact: what a gathering job returns and what the card receives.
+export type AboutFact =
+  // Name, sizes, dates.
+  | { kind: 'identity'; fact: Fact<Identity> }
+  // The bytes against the extension.
+  | { kind: 'realType'; fact: Fact<RealType> }
+  // The bundle's own description.
+  | { kind: 'bundle'; fact: Fact<Bundle> }
+  // The code signature it carries.
+  | { kind: 'signature'; fact: Fact<Signature> }
+  // The OS's download record.
+  | { kind: 'download'; fact: Fact<Download> }
+  // The Cmdr operation that put it here.
+  | { kind: 'cmdrOperation'; fact: Fact<CmdrOperation> }
+  // Spotlight's record of its use.
+  | { kind: 'lastOpened'; fact: Fact<Usage> }
+  // The app that opens it.
+  | { kind: 'defaultApp'; fact: Fact<AppRef> }
+  // How much the folder matters.
+  | { kind: 'importance'; fact: Fact<Importance> }
+  // Who it belongs to.
+  | { kind: 'owner'; fact: Fact<OwnerClaim> }
+  // The repo around it.
+  | { kind: 'git'; fact: Fact<GitContext> }
+  // A folder's whole size.
+  | { kind: 'recursiveSize'; fact: Fact<RecursiveSize> }
+  // What a folder holds.
+  | { kind: 'folderDigest'; fact: Fact<FolderDigest> }
+  // What an app leaves in the Library.
+  | { kind: 'appData'; fact: Fact<AppData> }
+  // The git history a portal entry is a snapshot from.
+  | { kind: 'gitSnapshot'; fact: Fact<GitSnapshot> }
+  // What the image index recognized in a picture.
+  | { kind: 'imageContents'; fact: Fact<ImageContents> }
+
+// Which rows the card has, decided before any job runs.
+export type AboutPlan = {
+  // What the card is about.
+  target: AboutTarget
+  /**
+   *  The sections in display order, each with its rows. A section with no row
+   *  that can answer is left out, [`Section::Removal`] excepted.
+   */
+  sections: PlannedSection[]
+  /**
+   *  What the volume can't answer, said once at the top. `None`: it answers
+   *  everything.
+   */
+  volumeNote: VolumeNote | null
+}
+
+// What the card is about.
+export type AboutTarget =
+  // A regular file.
+  | 'file'
+  // A plain folder.
+  | 'folder'
+  // An application bundle.
+  | 'appBundle'
+  // A folder the OS shows as one item (a document package, a framework).
+  | 'package'
+  // A symbolic link; the card is about the link, not what it points at.
+  | 'symlink'
+  // An entry inside an archive.
+  | 'archiveEntry'
+
+// Why a card can't be gathered.
+export type AboutUnavailable =
+  // The named volume isn't one the app knows.
+  | 'unknownVolume'
+  // The path isn't under the named volume's root.
+  | 'pathOutsideVolume'
+  // No connected volume holds the path (a dead mount point).
+  | 'noVolumeAtPath'
+  // Nothing is at the path.
+  | 'notFound'
+  // The OS refused to describe it.
+  | 'permissionDenied'
+  // The volume didn't answer in time.
+  | 'unreachable'
+  // The OS answered with something else that stops the read.
+  | 'unreadable'
+
+/**
+ *  What happened on a card's request.
+ *
+ *  `planned` always comes first (or `unavailable`, instead of everything), then
+ *  one `fact` per landing in any order, then `factsSettled` once. The verdict's
+ *  events interleave with the facts after `planned`: `verdictPlanned` or
+ *  `verdictUnavailable` first, right after `planned`; then `verdictGiven`,
+ *  `verdictDelta`s, and one `verdictEnd` (or one `verdictFromEarlier` instead of
+ *  those three).
+ */
+export type AboutUpdate =
+  /**
+   *  Which rows the card has, before any job runs, with the headline and removal
+   *  row as they stand with every row still pending.
+   */
+  | {
+      type: 'planned'
+      // The sections and rows, in display order.
+      plan: AboutPlan
+      // What the headline and the removal row say now.
+      derived: Derived
+    }
+  // One row's answer, with the headline and removal row it leaves.
+  | {
+      type: 'fact'
+      // The answer.
+      fact: AboutFact
+      // What the headline and the removal row say now that it landed.
+      derived: Derived
+    }
+  /**
+   *  The item's volume stopped answering: the card's volume note says so from
+   *  now on, and every row still waiting lands `volumeStoppedAnswering` right
+   *  after. At most once, before `factsSettled`.
+   */
+  | { type: 'volumeStoppedAnswering' }
+  // Every planned row has its answer. Nothing more about facts follows.
+  | { type: 'factsSettled' }
+  // The card can't be gathered at all.
+  | {
+      type: 'unavailable'
+      // Why.
+      why: AboutUnavailable
+    }
+  // The card gets a verdict: reserve its block. Right after `planned`.
+  | {
+      type: 'verdictPlanned'
+      /**
+       *  How far the model writing it can be trusted, which the block says from its
+       *  first frame.
+       */
+      trust: ModelTrust
+    }
+  // The card gets no verdict, and why. Right after `planned`.
+  | {
+      type: 'verdictUnavailable'
+      // Why.
+      why: VerdictUnavailable
+    }
+  /**
+   *  The verdict's call is about to go out with this look inside the item, so the
+   *  card can say what's leaving while it leaves. Before the first delta.
+   */
+  | {
+      type: 'verdictGiven'
+      // What of the item's contents rides with the facts.
+      contents: VerdictContents
+    }
+  /**
+   *  The next piece of the verdict's text. Plain text, ❌ never Markdown or markup:
+   *  render it as a text node.
+   */
+  | {
+      type: 'verdictDelta'
+      // The text to append.
+      text: string
+    }
+  // The verdict ended. Nothing more about it follows.
+  | {
+      type: 'verdictEnd'
+      // How it ended.
+      ending: VerdictEnding
+      /**
+       *  What the call cost, when the provider reported it. A stopped or failed
+       *  call reports nothing, so there is nothing to show.
+       */
+      cost: VerdictCost | null
+    }
+  /**
+   *  A verdict this item already got in this session, unchanged since (same path,
+   *  node, size, and modification time): no call was made. Instead of
+   *  `verdictGiven`, the deltas, and `verdictEnd`.
+   */
+  | {
+      type: 'verdictFromEarlier'
+      // What of the item's contents that verdict was given.
+      contents: VerdictContents
+      // The whole text. Plain text, like a delta.
+      text: string
+    }
+
 /**
  *  `accent-color-changed`: the OS accent color (or light/dark appearance)
  *  changed. `hex` is the new accent color as a `#rrggbb` string.
@@ -6501,6 +6810,17 @@ export type AccessNotice =
   | { kind: 'smbDirectSignatureRefused'; volumeId: string }
   // An offered update didn't carry Cmdr's signature, so nothing was installed.
   | { kind: 'updateNotGenuine'; version: string; check: SignatureCheck }
+
+/**
+ *  The footer's actions: the ones that show, and the rest behind "More", each
+ *  in the target's fixed order.
+ */
+export type Actions = {
+  // At most three, never starting with a removal.
+  shown: AboutAction[]
+  // The rest.
+  more: AboutAction[]
+}
 
 // Active settings snapshot cached at startup for inclusion in crash reports.
 export type ActiveSettings = {
@@ -6988,6 +7308,30 @@ export type AmendResult = {
 }
 
 /**
+ *  The Library folders named after an app's bundle id, which removing the app
+ *  leaves behind.
+ */
+export type AppData = {
+  /**
+   *  Each folder found, biggest first. Empty is a real answer for the places
+   *  the index answered: it holds none there.
+   */
+  folders: LibraryFolder[]
+  /**
+   *  The places the index couldn't answer for (it hasn't listed them), so a
+   *  folder there may be missing. Empty: every place was looked in.
+   */
+  notLookedIn: OwnerPlace[]
+  // The folders' bytes together.
+  totalBytes: number
+  /**
+   *  Whether the real total may be bigger: a place went unlooked, or a
+   *  folder's size is a lower bound or unknown.
+   */
+  totalIsLowerBound: boolean
+}
+
+/**
  *  What we know about the app's fate AFTER this report hit disk.
  *
  *  A crash file is written at panic *initiation*, before anyone can know whether the
@@ -7019,6 +7363,14 @@ export type AppFate =
    *  timer or by the app reaching its own quit path (`app_lifecycle.rs`).
    */
   | 'keptRunning'
+
+// An app, as the OS names it.
+export type AppRef = {
+  // Its display name.
+  name: ItemText
+  // Its bundle id, or desktop-file id on Linux. `None`: the OS gave none.
+  id: ItemText | null
+}
 
 // Current status of the application license.
 export type AppStatus =
@@ -7731,6 +8083,19 @@ export type BulkRenameStarted = {
 export type BulkRenameWarning = 'extensionChanged' | 'cycle'
 
 /**
+ *  What a bundle's `Info.plist` says about it. Every string is the bundle's own
+ *  claim.
+ */
+export type Bundle = {
+  // `CFBundleIdentifier`. `None`: the plist names none.
+  bundleId: ItemText | null
+  // The display name, falling back to the bundle name. `None`: neither is set.
+  displayName: ItemText | null
+  // The short version string. `None`: the plist names none.
+  version: ItemText | null
+}
+
+/**
  *  Why this install can't apply an update, when the reason is where the bundle SITS or who owns it,
  *  rather than anything about the update itself.
  *
@@ -7756,6 +8121,19 @@ export type BundleWriteBlocker =
    *  whoever manages this Mac can update it.
    */
   | 'notWritableStandardUser'
+
+// A share of a folder's bytes.
+export type ByteShare = {
+  // The bytes in the share.
+  bytes: number
+  // The bytes it's a share of.
+  of: number
+  /**
+   *  Whether the share may be bigger: Cmdr counted the largest of the files in
+   *  it, not all of them. Said in the same words as the share ("at least").
+   */
+  atLeast: boolean
+}
 
 /**
  *  What a Stop reached, so the rail waits for exactly the terminals still coming
@@ -7837,6 +8215,13 @@ export type CaseChange =
   // Every word's first letter upper, the rest lower.
   | 'words'
 
+// How sure an ownership match is.
+export type Certainty =
+  // The path names the app's id, or the item sits inside the app.
+  | 'certain'
+  // One installed app answers to the folder's name. Worded "probably".
+  | 'probable'
+
 /**
  *  A server certificate the OS refused and a person may trust anyway, and what
  *  to say about it.
@@ -7894,6 +8279,27 @@ export type CheckboxConfirmRequest = {
   checked: boolean
 }
 
+// A direct child's kind, read from its extension alone.
+export type ChildKind =
+  // A folder.
+  | 'folder'
+  // A photo or other image.
+  | 'image'
+  // A video.
+  | 'video'
+  // A sound file.
+  | 'audio'
+  // A text, office, or PDF document.
+  | 'document'
+  // An archive or a disk image.
+  | 'archive'
+  // Source code or a script.
+  | 'code'
+  // An app or an executable.
+  | 'app'
+  // Anything else.
+  | 'other'
+
 /**
  *  Logical-pixel rectangle. `f64` mirrors what Tauri's `LogicalPosition` /
  *  `LogicalSize` use on the wire.
@@ -7903,6 +8309,16 @@ export type ChildWindowRect = {
   y: number
   width: number
   height: number
+}
+
+// What sits directly in a folder.
+export type Children = {
+  // How many entries. Zero is a real answer: the folder is empty.
+  count: number
+  // The biggest, biggest first.
+  biggest: SizedChild[]
+  // Their kinds, most common first.
+  kindMix: KindCount[]
 }
 
 /**
@@ -8126,6 +8542,46 @@ export type CloudAiConsentWriteError =
   | { kind: 'storeUnavailable' }
   // `main.db` refused the write. `detail` is for logs only.
   | { kind: 'storeRefused'; detail: string }
+
+/**
+ *  The Cmdr operation that put the item where it is, from Cmdr's own log.
+ *
+ *  Claimed only for the very node the operation landed: a file replaced since
+ *  answers `NodeChangedSince`, never this.
+ */
+export type CmdrOperation = {
+  // What the operation did.
+  kind: LandedBy
+  // When it finished.
+  at: number
+  // Who started it.
+  initiator: StartedBy
+  // Where the item came from. `None`: the operation made it new.
+  sourcePath: ItemText | null
+  /**
+   *  The volume it came from, by name. `None`: the same volume, the operation
+   *  made it new, or a volume that isn't connected now (its path still names
+   *  it).
+   */
+  sourceVolume: ItemText | null
+  /**
+   *  The item is the node the operation landed, with its dates changed since:
+   *  on APFS, backdating a file moves its birth time earlier, which a match on
+   *  the node alone would read as "replaced since". The card says the dates
+   *  changed; it stays the card's (the model's projection leaves it out).
+   */
+  datesChanged: boolean
+}
+
+/**
+ *  Which road an `execute-command` came in by. The main window maps it onto its own
+ *  `DispatchSource` (`menu` or `contextMenu`).
+ */
+export type CommandRoad =
+  // The menu bar, the Dock menu, an MCP tool, or another window.
+  | 'relay'
+  // A right-click menu's own row.
+  | 'contextMenu'
 
 // What [`count_all`] decided for a listing.
 export type CommitCountPass =
@@ -8520,6 +8976,13 @@ export type ConversationOrigin =
    *  by exactly this token and the rail's thread icon reads the same set.
    */
   | 'quietWakes'
+  /**
+   *  The one reserved row, created by migration v15 and never shown: it holds what "Tell me
+   *  about this" verdicts spent. The verdict has no thread (it's never stored), so its cost
+   *  meters onto this row, and nothing but the cost meter ever reads it. Outside the wake
+   *  loop's daily ceiling, which counts the two proactive origins only.
+   */
+  | 'aboutThis'
 
 // A conversation header row. Wire type (the thread list).
 export type ConversationRow = {
@@ -8935,6 +9398,19 @@ export type DedupCluster = {
 }
 
 /**
+ *  The parts of the card derived from its facts, recomputed with every landing
+ *  so the card never words a stale one.
+ */
+export type Derived = {
+  // The one-line summary at the top.
+  headline: Headline
+  // What removing it would mean.
+  removal: Removal
+  // What the footer offers next.
+  actions: Actions
+}
+
+/**
  *  The transfer dialog's destination when it starts with the place's own root
  *  folder: both readings, for the warning under the path box. Paths are
  *  server-side (`resolved`, `rootFolder`) or volume-relative (`stripped`, what
@@ -9307,6 +9783,28 @@ export type DockPinState =
   | { kind: 'alreadyPinned' }
   // We're staying quiet, for `reason`.
   | { kind: 'unavailable'; reason: DockPinBlocker }
+
+// What the OS recorded about a download.
+export type Download = {
+  /**
+   *  Where it was downloaded from. Unknown with `NoRecord` when the OS recorded
+   *  no source, with `Unparseable` when the record is there and unreadable.
+   */
+  sources: Fact<WhereFrom[]>
+  // When, from the quarantine record. `None`: the record has no time.
+  downloadedAt: number | null
+  /**
+   *  The app that downloaded it, from the quarantine record. `None`: the record
+   *  names none.
+   */
+  downloadedBy: ItemText | null
+  /**
+   *  The archive the item sits in, by name, when this record is that archive's:
+   *  an entry inside one carries no record of its own. `None`: the record is the
+   *  item's own.
+   */
+  archive: ItemText | null
+}
 
 /**
  *  Payload of the `download-detected` Tauri event. Typed via `tauri_specta`;
@@ -9975,6 +10473,15 @@ export type EvidenceSource =
    */
   | 'userEdited'
 
+// Whether the main executable was compared against the signature it carries.
+export type ExecutableCheck =
+  // The executable matches its signature. Resources weren't hashed.
+  | { type: 'executableMatches' }
+  // The executable doesn't match the signature it carries.
+  | { type: 'executableDiffers' }
+  // Nothing was compared.
+  | { type: 'notChecked'; why: NotCheckedWhy }
+
 /**
  *  `execute-command`: the single unified menu/cross-window command relay. The
  *  native menu (`menu/menu_handlers.rs`), the MCP dialog/app tools
@@ -9984,6 +10491,8 @@ export type EvidenceSource =
  */
 export type ExecuteCommand = {
   commandId: string
+  // The road it came in by, which the main window dispatches it down.
+  road: CommandRoad
 }
 
 /**
@@ -9991,6 +10500,68 @@ export type ExecuteCommand = {
  *  `LifecycleStatus`. Independent of [`RollbackState`].
  */
 export type ExecutionStatus = 'queued' | 'running' | 'done' | 'failed' | 'canceled'
+
+// What a file's extension claims it is.
+export type ExtensionClaim = {
+  // The extension, without its dot. `None`: the name has none.
+  extension: ItemText | null
+  // The family that extension belongs to. `None`: Cmdr has no claim for it.
+  kind: SniffedKind | null
+}
+
+/**
+ *  One answer, with its coverage.
+ *
+ *  The wire is one-way (Cmdr to the card and to a model), so nothing here
+ *  deserializes.
+ */
+export type Fact<T> =
+  // Cmdr has the answer.
+  | { state: 'known'; value: T }
+  // There may be an answer, and Cmdr doesn't have it.
+  | { state: 'unknown'; value: Unknown }
+  // The question has no answer for this item.
+  | { state: 'notApplicable'; value: NotApplicableWhy }
+  // Asked, and not answered yet.
+  | { state: 'pending' }
+
+// Which fact an answer is: one per card row, and one per gathering job.
+export type FactKind =
+  // Name, sizes, dates, other names, a symlink's target.
+  | 'identity'
+  // What the bytes are, against what the extension claims.
+  | 'realType'
+  // Bundle id, display name, version.
+  | 'bundle'
+  // The code signature the item carries.
+  | 'signature'
+  // Where the OS recorded it as downloaded from, when, and by which app.
+  | 'download'
+  // The Cmdr copy, move, or extract that put it here.
+  | 'cmdrOperation'
+  // When it was last opened, and how often.
+  | 'lastOpened'
+  // The app that opens it.
+  | 'defaultApp'
+  // How much the folder matters, and Cmdr's visits to it.
+  | 'importance'
+  // The app or installer the item belongs to.
+  | 'owner'
+  // The git repo around it and its status there.
+  | 'git'
+  // A folder's whole size.
+  | 'recursiveSize'
+  // What a folder holds: its biggest children, largest files, kind mix.
+  | 'folderDigest'
+  // An app's folders in the Library, which removing the app leaves behind.
+  | 'appData'
+  // The git history a `.git` portal entry is a snapshot from.
+  | 'gitSnapshot'
+  /**
+   *  What the image index recognized in a picture: its tags and the start of
+   *  the text in it.
+   */
+  | 'imageContents'
 
 // Whether a pick of a favorite gets there, and if not, why. One decision site: `favorites/reach.rs`.
 export type FavoriteReach =
@@ -10403,6 +10974,22 @@ export type FocusFileViewer = {
   path: string | null
 }
 
+// What kind of folder its name and its neighbors make it.
+export type FolderClass =
+  // Nothing special.
+  | 'plain'
+  // A cache: whatever wrote it writes it again.
+  | 'cache'
+  /**
+   *  Installed dependencies (`node_modules`): a package manager fetches them
+   *  again.
+   */
+  | 'dependencies'
+  // Build output (`target`, `dist`): a build tool makes it again.
+  | 'buildOutput'
+  // Version-control data (`.git`).
+  | 'versionControl'
+
 /**
  *  One folder's index coverage: the eligible denominator and accounted numerator, each a
  *  subtree total (the folder plus all its descendants). Serialized camelCase; the
@@ -10415,6 +11002,25 @@ export type FolderCoverage = {
   eligible: number
   // Of those, how many have a stored `done`/`failed` row (both count as accounted).
   accounted: number
+}
+
+// A folder's contents at a glance.
+export type FolderDigest = {
+  /**
+   *  What kind of folder its name and neighbors make it. Known even when the
+   *  index has nothing on the folder: `node_modules` is installed packages
+   *  before anything lists it.
+   */
+  class: FolderClass
+  // What sits directly in it. Unknown when the index hasn't listed it.
+  children: Fact<Children>
+  /**
+   *  The largest files anywhere under the folder, largest first. Unknown when
+   *  the search arena isn't loaded.
+   */
+  largestFiles: Fact<SizedChild[]>
+  // The share of the folder's bytes that haven't changed in a year.
+  unchangedForAYear: Fact<ByteShare>
 }
 
 // How a count ended. A request that joined a running count gets that count's outcome.
@@ -10605,6 +11211,22 @@ export type GetInfoError =
   // The ask didn't finish inside the command's deadline.
   | { type: 'timedOut' }
 
+// The git repo around an item.
+export type GitContext = {
+  // The repo's root folder.
+  repoRoot: ItemText
+  /**
+   *  The checked-out branch. `None`: the head is detached, or the repo has no
+   *  commit yet.
+   */
+  branch: ItemText | null
+  /**
+   *  The item's status in the repo. Unknown on its own, since reading it can
+   *  mean walking the whole worktree while the root and branch are cheap.
+   */
+  status: Fact<GitStatus>
+}
+
 /**
  *  What a [`GitEntryMeta::Count`] is counting.
  *
@@ -10702,6 +11324,30 @@ export type GitEntryMeta =
     }
 
 /**
+ *  Where in git's history a `.git` portal entry is a snapshot from: what the path
+ *  names (a branch, tag, commit, or stash entry) and when a commit last changed
+ *  the entry there.
+ *
+ *  No author: naming one needs a per-entry read `cmdr-git` doesn't offer.
+ */
+export type GitSnapshot = {
+  // The repo whose history holds it.
+  repoRoot: ItemText
+  // Which part of the history the path names.
+  kind: SnapshotKind
+  /**
+   *  The branch, tag, or stash entry's name, or a commit's full id (the card
+   *  shortens it).
+   */
+  name: ItemText
+  /**
+   *  When a commit last changed it, by the portal's date. `None`: the portal
+   *  gave no date.
+   */
+  lastChanged: number | null
+}
+
+/**
  *  Typed `git-state-changed` Tauri event. Carries the repo root and a fresh
  *  `RepoInfo` snapshot. The `…Payload` suffix wouldn't kebab-case to the existing
  *  wire string, so the name is pinned via `event_name`.
@@ -10710,6 +11356,15 @@ export type GitStateChangedPayload = {
   repoRoot: string
   info: RepoInfo
 }
+
+// An item's status in its repo.
+export type GitStatus =
+  // Git tracks it.
+  | { type: 'tracked'; state: TrackedState }
+  // Git doesn't track it, and no ignore rule covers it.
+  | { type: 'untracked' }
+  // An ignore rule covers it.
+  | { type: 'ignored' }
 
 /**
  *  Why the git-state handshake didn't answer.
@@ -10863,6 +11518,166 @@ export type GuidProof =
    */
   | 'unauthenticated'
 
+// The card's headline, as parts.
+export type Headline = {
+  // What the item is.
+  what: HeadlineWhat
+  // Its size. `None`: not known yet, or not known at all.
+  size: HeadlineSize | null
+  // The strongest origin or use fact, whose variant is the template key.
+  lead: HeadlineLead
+}
+
+// The strongest origin or use fact. The variant is the template key.
+export type HeadlineLead =
+  // It sits inside an archive: for an entry, where it comes from.
+  | {
+      template: 'insideArchive'
+      // The archive's name.
+      archive: ItemText
+    }
+  // It's git's record of an item at a point in the repo's history.
+  | {
+      template: 'fromGitHistory'
+      // Which part of the history.
+      kind: SnapshotKind
+      // The branch, tag, or stash entry's name, or a commit's full id.
+      name: ItemText
+    }
+  // The OS recorded it as downloaded from a site.
+  | {
+      template: 'downloadedFrom'
+      // The site's host name.
+      host: string
+      // The app that downloaded it. `None`: the record names none.
+      by: ItemText | null
+      // When. `None`: the record has no time.
+      at: number | null
+    }
+  // A Cmdr operation put it here.
+  | {
+      template: 'putHereByCmdr'
+      // What the operation did.
+      kind: LandedBy
+      // When.
+      at: number
+      // The volume it came from. `None`: the same volume, or made new.
+      sourceVolume: ItemText | null
+    }
+  // The OS recorded it as a Mail attachment.
+  | {
+      template: 'receivedByMail'
+      // When. `None`: the record has no time.
+      at: number | null
+    }
+  // The OS recorded it as received over AirDrop.
+  | {
+      template: 'receivedByAirDrop'
+      // When. `None`: the record has no time.
+      at: number | null
+    }
+  // It's an installed app's data.
+  | {
+      template: 'dataOfApp'
+      // The app.
+      app: ItemText
+      // How sure the match is.
+      certainty: Certainty
+    }
+  /**
+   *  It's an installed app's cache (`Library/Caches`, `~/.cache`): said as a
+   *  cache, so the headline agrees with the removal row below it.
+   */
+  | {
+      template: 'cacheOfApp'
+      // The app.
+      app: ItemText
+      // How sure the match is.
+      certainty: Certainty
+    }
+  // It's named after an app that isn't installed.
+  | {
+      template: 'dataOfMissingApp'
+      // The bundle id it's named after.
+      bundleId: ItemText
+    }
+  // The OS recorded which app downloaded it, and not from where.
+  | {
+      template: 'downloadedBy'
+      // The app.
+      app: ItemText
+      // When. `None`: the record has no time.
+      at: number | null
+    }
+  // Spotlight recorded when it was last opened.
+  | {
+      template: 'lastOpened'
+      // When.
+      at: number
+    }
+  // Nothing beyond what it is and its size.
+  | { template: 'plain' }
+
+// A size for the headline.
+export type HeadlineSize = {
+  // The bytes.
+  bytes: number
+  /**
+   *  Whether the real size may be larger (a folder the index only partly
+   *  covers).
+   */
+  atLeast: boolean
+}
+
+// What the item is, for the headline's first words.
+export type HeadlineWhat =
+  // A file.
+  | {
+      type: 'file'
+      /**
+       *  Its family: what the bytes are when Cmdr recognizes them, else what
+       *  the extension claims. `None`: neither says.
+       */
+      kind: SniffedKind | null
+      /**
+       *  Its extension, without the dot. `None`: the name has none, or it
+       *  isn't known yet.
+       */
+      extension: ItemText | null
+    }
+  // A folder.
+  | { type: 'folder' }
+  // An app.
+  | {
+      type: 'app'
+      /**
+       *  Its version, as the bundle states it. `None`: not stated, or not
+       *  known yet.
+       */
+      version: ItemText | null
+    }
+  // A package.
+  | { type: 'package' }
+  // A symbolic link.
+  | { type: 'symlink' }
+  // An entry inside an archive.
+  | { type: 'archiveEntry' }
+
+// What an item's name hid that Cmdr doesn't show, so the card says so once.
+export type HiddenInName =
+  /**
+   *  A character that changes the order text shows in. Elsewhere (Finder, a
+   *  browser, a mail) such a name can show a different ending than the one it
+   *  has: `cod\u{202E}fdp.command` reads as a PDF there and is a program.
+   */
+  | 'reordering'
+  /**
+   *  A character that shows as nothing (a tag, a zero-width mark, a soft hyphen),
+   *  so two names can look the same, or a name can carry text nobody sees. Glue
+   *  that makes an emoji or a script draw right doesn't count.
+   */
+  | 'invisible'
+
 // A single recent-search entry, persisted verbatim.
 export type HistoryEntry = {
   id: string
@@ -10974,6 +11789,13 @@ export type HomeFolderRelation =
   // The source is a folder that holds the home folder: `/Users`, `/`.
   | 'holdsHome'
 
+// Which kind of Homebrew package a path belongs to.
+export type HomebrewKind =
+  // A formula, under `Cellar`.
+  | 'formula'
+  // A cask, under `Caskroom`.
+  | 'cask'
+
 /**
  *  A server whose key nobody has approved yet, and what to say about it.
  *
@@ -11010,6 +11832,94 @@ export type HostKeyPromptKind =
 
 // Whether a host was discovered via mDNS or added manually by the user.
 export type HostSource = 'discovered' | 'manual'
+
+// The item itself, as its volume describes it.
+export type Identity = {
+  // Its name.
+  name: ItemText
+  /**
+   *  What the name as the item has it hid that [`Self::name`] no longer has
+   *  ([`crate::text::hidden_in_name`]): a character that changes the order text
+   *  shows in (elsewhere the name may show a different ending), or one that shows
+   *  as nothing. The card says so once. `None`: it hid nothing.
+   */
+  nameHid: HiddenInName | null
+  /**
+   *  What the files claim to be, in bytes. `None`: the volume reports no size
+   *  for it (a folder's own size is [`RecursiveSize`]).
+   */
+  logicalSize: number | null
+  // What it occupies on disk, in bytes. `None`: the volume doesn't say.
+  physicalSize: number | null
+  // When it was created. `None`: the volume keeps no creation date.
+  created: number | null
+  // When it last changed. `None`: the volume keeps no such date.
+  modified: number | null
+  /**
+   *  How many names point at this node. Above one, removing this name leaves the
+   *  content reachable through the others. `None`: the volume has no hard links
+   *  to count.
+   */
+  hardLinks: number | null
+  // Where a symlink points, as written. `None`: it isn't a symlink.
+  symlinkTarget: ItemText | null
+}
+
+/**
+ *  What Cmdr's image index stored about a picture: the labels its on-device
+ *  classifier gave it, and the start of the text it recognized in it. Read from
+ *  the index alone, ❌ never by looking at the image.
+ *
+ *  Labels, ❌ never a description: `dog` and `beach` don't say a dog is on a
+ *  beach. The recognized text is whatever the picture shows, so it's the item's
+ *  own claim, sanitized like a name.
+ */
+export type ImageContents = {
+  /**
+   *  The classifier's labels at or above [`SHOWN_TAG_SCORE`], most confident
+   *  first, at most [`SHOWN_TAGS`]. Empty: none was that sure.
+   */
+  tags: ItemText[]
+  /**
+   *  The first lines of recognized text, at most [`SHOWN_TEXT_LINES`], each cut
+   *  at [`SHOWN_LINE_CHARS`]. Empty: the index found no text in it.
+   */
+  textLines: ItemText[]
+  // More recognized text follows what `text_lines` holds.
+  moreText: boolean
+}
+
+// How much a folder matters, by Cmdr's own scoring.
+export type Importance = {
+  // Where the folder's score falls.
+  band: ImportanceBand
+  // Whether the score predates the volume's latest recompute.
+  stale: boolean
+  /**
+   *  The strongest signals behind the score, strongest first, as the scorer's
+   *  own camelCase tokens for the frontend to word: a signal (`projectMarker`,
+   *  `mtimeRecency`, `visitActivity`, `lastUsed`, `extensionDiversity`), a path
+   *  class (`projectRoot`, `userContent`), or for a floored folder why it floors
+   *  (`nameDenylisted`, `hiddenOrSystem`, `underFlooredAncestor`).
+   */
+  reasons: string[]
+  /**
+   *  How many times a Cmdr pane visited the folder. `None`: the score keeps no
+   *  visit count.
+   */
+  visits: number | null
+}
+
+// Where a folder's importance score falls.
+export type ImportanceBand =
+  // Among the folders that matter most.
+  | 'high'
+  // In the middle.
+  | 'medium'
+  // Scored, and low.
+  | 'low'
+  // Scores zero by design (a cache, build output, a hidden system folder).
+  | 'floored'
 
 /**
  *  A full-scan aggregation pass finished and the UI can dismiss the progress
@@ -11515,6 +12425,41 @@ export type IndexingAction = 'enable' | 'disable' | 'rescan' | 'forget'
  */
 export type Initiator = 'user' | 'aiClient' | 'agent' | 'agentEdited'
 
+// Whether the app a bundle id names is installed.
+export type InstalledApp =
+  // It is.
+  | {
+      type: 'installed'
+      // The app's name.
+      name: ItemText
+      /**
+       *  Where the app is, for the card's reveal action: raw, ❌ never shown.
+       *  `None`: the lookup didn't say.
+       */
+      path: string | null
+    }
+  // No app with that id sits in the app folders: the data is left over.
+  | { type: 'notInstalled' }
+
+// What installed an item.
+export type Installer =
+  // An installer package, by its receipt.
+  | {
+      type: 'receipt'
+      // The receipt's package id.
+      pkgId: ItemText
+      // Whether the id is Apple's own: part of macOS.
+      partOfOs: boolean
+    }
+  // Homebrew.
+  | {
+      type: 'homebrew'
+      // The formula's or cask's name.
+      name: ItemText
+      // Which of the two it is.
+      kind: HomebrewKind
+    }
+
 export type InvalidNameReason =
   | { type: 'empty' }
   | { type: 'disallowedCharacter'; character: string }
@@ -11539,6 +12484,14 @@ export type ItemKinds = {
  *  reached — exactly what a rollback needs.
  */
 export type ItemOutcome = 'done' | 'skipped' | 'failed' | 'rolledBack'
+
+/**
+ *  A string the item reported about itself, already through [`model_text`].
+ *
+ *  It's a claim, never a checked fact: render it as a text node and word it as
+ *  recorded.
+ */
+export type ItemText = string
 
 // What a [`LeftoversKeptEvent`] kept.
 export type KeptLeftover =
@@ -11576,6 +12529,14 @@ export type KeychainError =
   | { type: 'access_denied'; message: string }
   // Other error
   | { type: 'other'; message: string }
+
+// How many direct children are of one kind.
+export type KindCount = {
+  // The kind, by extension class.
+  kind: ChildKind
+  // How many children are of it.
+  count: number
+}
 
 /**
  *  A file the dialog's conflict check found at the destination under a name
@@ -11858,6 +12819,23 @@ export type KnownWebdavServer = {
   lastConnectedAt: string
 }
 
+// How a Cmdr operation landed an item.
+export type LandedBy =
+  // Copied here.
+  | 'copy'
+  // Moved here.
+  | 'move'
+  // Renamed to this name.
+  | 'rename'
+  // Created here.
+  | 'create'
+  // Extracted from an archive.
+  | 'extract'
+  // Compressed into this archive.
+  | 'compress'
+  // Moved to the Trash, where it is now.
+  | 'trash'
+
 /**
  *  Successful resolution: the path to surface plus the pre-split parent dir +
  *  file name so the frontend doesn't have to parse the path itself.
@@ -11898,6 +12876,21 @@ export type LegacyAskCmdrOptIn =
   | 'notRecorded'
   // The store couldn't be read: write nothing, and ask again next launch.
   | 'storeUnavailable'
+
+// One of an app's folders in the Library.
+export type LibraryFolder = {
+  // Its name, for showing.
+  name: ItemText
+  /**
+   *  Its full path, exactly as the volume has it: for navigating there, ❌ never
+   *  for showing.
+   */
+  path: string
+  // Which app-data folder it sits in.
+  place: OwnerPlace
+  // Its whole size.
+  size: Fact<RecursiveSize>
+}
 
 /**
  *  Typed errors for the license activation flow.
@@ -13719,6 +14712,25 @@ export type MissToken =
   | 'cancelled'
 
 /**
+ *  How far the card can trust the model that writes its AI take, decided once from the
+ *  provider and model id (`verdict::gate::model_trust`). Every model writes; the card
+ *  warns on the two tiers below `Trusted`.
+ */
+export type ModelTrust =
+  /**
+   *  A model David picked as trusted for this (the eval measured Sonnet 5.5 and Opus
+   *  5.5; the rest of the list is his call). No warning.
+   */
+  | 'trusted'
+  /**
+   *  This model, or one like it, was tested for this and its takes were often wrong
+   *  (the Haiku family, the bundled local model). A red warning.
+   */
+  | 'oftenWrong'
+  // Nobody tested this model for this. A yellow warning.
+  | 'untested'
+
+/**
  *  What the chat-memory setting needs to warn honestly: the model the next turn would use,
  *  and the context window we believe it has.
  *
@@ -14738,6 +15750,36 @@ export type NfsIdentitySourceWire =
   | 'this_mac'
 
 /**
+ *  Why a question has no answer for this item.
+ *
+ *  Rare on the card: [`crate::card::plan`] leaves out a row that can't apply, so
+ *  this is for what only the job can find out.
+ */
+export type NotApplicableWhy =
+  // This OS has no code signing to read.
+  | 'noCodeSigningOnThisOs'
+  // The path sits in no git repo.
+  | 'notInARepo'
+  // The folder is no bundle, so it has no bundle id or version.
+  | 'notABundle'
+  // The volume keeps no such thing (a phone has no download record).
+  | 'volumeHasNone'
+
+// Why a signature went unchecked.
+export type NotCheckedWhy =
+  // The check didn't finish inside its budget. ❌ Never a pass.
+  | 'timedOut'
+  // There's no signature to check against.
+  | 'nothingToCheck'
+  /**
+   *  Cmdr doesn't check this kind of item (an installer package's signature
+   *  covers its archive, not an executable).
+   */
+  | 'notSupported'
+  // The check couldn't run.
+  | 'checkUnavailable'
+
+/**
  *  Why an operation is not rollbackable, set alongside
  *  `RollbackState::NotRollbackable`. A nullable column: `None` when the
  *  op is rollbackable. Cross-volume disconnection is NOT here — that's
@@ -15383,6 +16425,15 @@ export type OsLocalesChanged = {
   locales: OsLocales
 }
 
+// What a non-web source is.
+export type OtherSource =
+  // A `data:` or `blob:` address: the address IS content.
+  | 'inlineData'
+  // A `file:` address: a local path.
+  | 'localFile'
+  // Text or an address Cmdr doesn't recognize.
+  | 'unrecognized'
+
 /**
  *  A file that exceeds the destination filesystem's per-file size limit.
  *  Carried by [`super::WriteOperationError::FilesTooLargeForFilesystem`] so the dialog
@@ -15392,6 +16443,95 @@ export type OversizedFile = {
   name: string
   size: number
 }
+
+// The app or installer an item belongs to.
+export type OwnerClaim =
+  // Certain: the path names a bundle id (`~/Library/Containers/<id>`).
+  | {
+      type: 'byBundleId'
+      // The id in the path.
+      bundleId: ItemText
+      // Which app-data folder the path sits in.
+      place: OwnerPlace
+      // The app that id belongs to, when one is installed.
+      app: InstalledApp
+    }
+  /**
+   *  Probable: exactly one installed app answers to the folder's name
+   *  (`Application Support/Slack`). Worded "probably".
+   */
+  | {
+      type: 'byName'
+      // The app's name.
+      app: ItemText
+      // Which app-data folder the path sits in.
+      place: OwnerPlace
+      /**
+       *  Where the app is, for the card's reveal action: raw, ❌ never shown.
+       *  `None`: the lookup didn't say.
+       */
+      appPath: string | null
+    }
+  // Certain: an installer receipt lists the path.
+  | {
+      type: 'installedBy'
+      // The receipt's package id.
+      pkgId: ItemText
+      // Whether the id is Apple's own (`com.apple.*`: part of macOS).
+      partOfOs: boolean
+    }
+  // Certain: the path sits in a Homebrew cellar or caskroom.
+  | {
+      type: 'homebrew'
+      // The formula's or cask's name.
+      name: ItemText
+      // Which of the two it is.
+      kind: HomebrewKind
+    }
+  /**
+   *  Certain: the path IS one of the folders the OS sets up and expects (the
+   *  home folder, `~/Downloads`, `/Applications`), told by the path alone, so a
+   *  folder Finder shows under a translated name is still known.
+   */
+  | {
+      type: 'standardFolder'
+      // Which one.
+      folder: StandardFolder
+    }
+  // Certain: the path sits inside an app bundle.
+  | {
+      type: 'insideApp'
+      // The app's name.
+      app: ItemText
+      /**
+       *  The app bundle's path, for the card's reveal action: raw, ❌ never
+       *  shown.
+       */
+      appPath: string
+    }
+
+// Which app-data folder an owned path sits in.
+export type OwnerPlace =
+  // `Library/Caches`, `~/.cache`: the app recreates it.
+  | 'caches'
+  // `Library/Containers`: a sandboxed app's whole home.
+  | 'containers'
+  // `Library/Group Containers`: data several apps of one team share.
+  | 'groupContainers'
+  // `Library/Application Support`, `~/.local/share`: the app's own data.
+  | 'applicationSupport'
+  // `Library/Application Scripts`.
+  | 'applicationScripts'
+  // `Library/Preferences`, `~/.config`: settings.
+  | 'preferences'
+  // `Library/Saved Application State`.
+  | 'savedState'
+  // `Library/Logs`.
+  | 'logs'
+  // `Library/HTTPStorages` and `Library/WebKit`: web data.
+  | 'webData'
+  // `~/.var/app` or `~/snap`: a sandboxed Linux app's home.
+  | 'sandboxHome'
 
 /**
  *  Represents a file entry in a pane (simplified subset of the main FileEntry).
@@ -15764,6 +16904,14 @@ export type PhaseRecord = {
   stats: [string, string][]
 }
 
+// One section with its rows, in display order.
+export type PlannedSection = {
+  // Which section.
+  section: Section
+  // Its rows, top to bottom.
+  kinds: FactKind[]
+}
+
 /**
  *  One flag per OS-provided feature the UI shows or hides. `true` means the backend can do it on
  *  this OS, so the surface for it exists; `false` means it hides on purpose, never by accident.
@@ -15959,6 +17107,13 @@ export type ProgressStep = {
   number: number
   total: number
 }
+
+// How loudly the card says a fact is unknown.
+export type Prominence =
+  // An ordinary absence: one short muted line ("No download record").
+  | 'routine'
+  // Something got in the way: a full sentence saying what.
+  | 'notable'
 
 // `promise-drop-failed`: the drop produced no file.
 export type PromiseDropFailed = {
@@ -16397,6 +17552,27 @@ export type ReadOnlySide =
   // The DESTINATION takes no writes, so nothing can land there.
   | 'destination'
 
+// What a file really is, and whether its extension agrees.
+export type RealType = {
+  /**
+   *  What the bytes are, or why Cmdr didn't read them (a share's file, an
+   *  online-only one, a refused read): then the kind is the name's claim alone
+   *  ([`RealType::by_name`]).
+   */
+  sniffed: Fact<Sniffed>
+  // What the extension claims.
+  claimed: ExtensionClaim
+  // Whether the two agree.
+  agreement: TypeAgreement
+}
+
+// What can recreate rebuildable output.
+export type Rebuilder =
+  // A package manager (installed dependencies).
+  | 'packageManager'
+  // A build tool (build output).
+  | 'buildTool'
+
 // A single recent-path entry, persisted verbatim.
 export type RecentPathEntry = {
   id: string
@@ -16499,6 +17675,27 @@ export type RecoveredOriginal = {
   keptAt: string
 }
 
+/**
+ *  A folder's whole size from the drive index, with the index's own coverage
+ *  flags verbatim.
+ */
+export type RecursiveSize = {
+  // Logical bytes over the whole subtree.
+  logical: number
+  // Physical bytes over the whole subtree.
+  physical: number
+  // Files anywhere under the folder.
+  files: number
+  // Folders anywhere under it, itself excluded.
+  folders: number
+  // How much of the subtree the total covers.
+  coverage: SizeCoverage
+  // Whether the indexer is behind on this subtree right now.
+  updating: boolean
+  // Whether the subtree holds symlinks, whose targets the total leaves out.
+  hasSymlinks: boolean
+}
+
 // Why the call was turned down.
 export type RefusalReason =
   // `available: false`: a name outside the table, or a tool that's never the agent's.
@@ -16582,6 +17779,127 @@ export type RejectResultView =
   | { kind: 'alreadyAnswered'; found: ProposalStatus }
   // No group with that id, which usually means the list on screen is stale.
   | { kind: 'unknown' }
+
+// The removal row: the consequences the card shows, and the rest behind "More".
+export type Removal = {
+  // The most painful ones, at most [`SHOWN`]. Never empty.
+  shown: RemovalConsequence[]
+  // The rest, most painful first.
+  more: RemovalConsequence[]
+}
+
+/**
+ *  One thing removing the item would mean.
+ *
+ *  Declared from the one that hurts most to the one that hurts least, which is
+ *  the order [`consequences`] returns them in.
+ */
+export type RemovalConsequence =
+  /**
+   *  It's a folder the OS set up and expects to find (the home folder,
+   *  `~/Downloads`, `/Applications`): the system and apps look for it, and
+   *  everything inside goes with it. First: no other consequence outweighs it.
+   */
+  | {
+      type: 'standardFolder'
+      // Which one.
+      folder: StandardFolder
+    }
+  // It holds changes no commit has.
+  | { type: 'uncommittedWork' }
+  /**
+   *  It's a repository's own data (`.git`): its whole history. Removing it
+   *  leaves the files but drops every commit that isn't pushed somewhere else,
+   *  and Cmdr can't tell what's pushed.
+   */
+  | { type: 'holdsRepoHistory' }
+  // It's in a repo and git doesn't track it, so git can't bring it back.
+  | { type: 'untrackedNotInGit' }
+  /**
+   *  Git ignores it, so git can't bring it back. ❌ Never read as "a tool can
+   *  recreate this": a project ignores its `data/` and its secrets as readily as
+   *  its build output.
+   */
+  | { type: 'ignoredByGit' }
+  // Nothing Cmdr knows of made it or can recreate it.
+  | { type: 'userDocument' }
+  // It's an app; removing it leaves its data in the Library.
+  | {
+      type: 'removesApp'
+      // The app's Library folders, or why Cmdr can't tell.
+      dataLeft: Fact<AppData>
+    }
+  // It's an installed app's data.
+  | {
+      type: 'appData'
+      // The app.
+      app: ItemText
+      // How sure the match is.
+      certainty: Certainty
+    }
+  // An installer put it here, and something installed may need it.
+  | {
+      type: 'installedBy'
+      // What installed it.
+      installer: Installer
+    }
+  // It's data of an app that isn't installed.
+  | {
+      type: 'leftoverOfUninstalledApp'
+      // The bundle id the folder is named after.
+      bundleId: ItemText
+    }
+  /**
+   *  The OS recorded where it was downloaded from. ❌ Never "you can get it
+   *  again": Cmdr can't tell whether the site still has it.
+   */
+  | {
+      type: 'recordedDownload'
+      // The site's host name.
+      host: string
+    }
+  // Git tracks it and it matches the last commit, so git can restore it.
+  | { type: 'gitCanRestore' }
+  /**
+   *  A package manager or build tool can recreate it, which takes time and may
+   *  need a network.
+   */
+  | {
+      type: 'rebuildableOutput'
+      // What recreates it.
+      by: Rebuilder
+    }
+  /**
+   *  It's a cache: whatever wrote it writes it again, and is slower until it
+   *  has.
+   */
+  | {
+      type: 'regeneratedCache'
+      /**
+       *  The app whose cache it is. `None`: Cmdr knows it's a cache and not
+       *  whose.
+       */
+      app: ItemText | null
+    }
+  /**
+   *  Other names point at the same content, which stays reachable through
+   *  them.
+   */
+  | {
+      type: 'otherNamesRemain'
+      // How many other names.
+      others: number
+    }
+  // It's a link: removing it leaves what it points at.
+  | { type: 'linkOnly' }
+  /**
+   *  It's git's record of an item at a point in the repo's history (a `.git`
+   *  portal entry), not a file on the disk: there's nothing to remove from
+   *  here, and the working files are their own items.
+   */
+  | { type: 'inGitHistory' }
+  // Cmdr can't tell what depends on this.
+  | { type: 'cantTell' }
 
 /**
  *  What a rename that runs as a move would carry, counted with a bounded
@@ -18464,6 +19782,24 @@ export type SecretOffer = {
   remember: boolean
 }
 
+// A section of the card.
+export type Section =
+  // Where it came from.
+  | 'origin'
+  // What it is.
+  | 'nature'
+  // How it's used.
+  | 'use'
+  // Where it sits: its owner, its repo, an app's data in the Library.
+  | 'context'
+  // What's inside (folders).
+  | 'contents'
+  /**
+   *  What removing it means. Derived from the other facts, so it plans no rows
+   *  of its own, and it's always last, right above the actions.
+   */
+  | 'removal'
+
 // One advisory as the What's new popup shows it.
 export type SecurityAdvisory = {
   id: string
@@ -19483,6 +20819,23 @@ export type SignInShape =
     }
 
 /**
+ *  The code signature an item carries.
+ *
+ *  ❌ Never worded "verified" or "trusted": a signature blob can be copied onto a
+ *  tampered binary, and the bundle's resources are never hashed. Unless
+ *  [`Signature::checked`] is [`ExecutableCheck::ExecutableMatches`], the card says
+ *  "carries a signature from".
+ */
+export type Signature = {
+  // Who the signature names.
+  signer: Signer
+  // Whether a notarization ticket is stapled to the item.
+  ticket: StapledTicket
+  // Whether the main executable was compared against the signature.
+  checked: ExecutableCheck
+}
+
+/**
  *  Which signature didn't hold. Also crosses IPC in the update notice
  *  (`crate::security_notices::AccessNotice`), where it rides the same tokens.
  */
@@ -19501,6 +20854,27 @@ export type SignedInReply = {
   rememberRefused: boolean
 }
 
+// Who a signature names.
+export type Signer =
+  // No signature at all.
+  | { type: 'unsigned' }
+  // Signed with no identity (a local build).
+  | { type: 'adHoc' }
+  // A Developer ID certificate.
+  | {
+      type: 'developerId'
+      // The team id in the certificate.
+      team: ItemText
+      // The organization name in the certificate.
+      org: ItemText
+    }
+  // The Mac App Store's signature.
+  | { type: 'appStore' }
+  // Apple's own software signing.
+  | { type: 'apple' }
+  // A signature whose authority Cmdr doesn't recognize.
+  | { type: 'unrecognized' }
+
 export type SigningInfoDto = {
   active: boolean
   algorithm: string | null
@@ -19516,6 +20890,33 @@ export type SimilarImage = {
   path: string
   // Cosine similarity to the query vector.
   score: number
+}
+
+// How much of a subtree a size covers.
+export type SizeCoverage =
+  // Every folder in the subtree was listed, at the volume's current epoch.
+  | 'exact'
+  /**
+   *  Every folder was listed, some at an older epoch: accurate then, maybe not
+   *  now.
+   */
+  | 'exactButStale'
+  // Some folder was never listed, so the real size is at least this.
+  | 'lowerBound'
+
+// One child with its size.
+export type SizedChild = {
+  // Its name, for showing.
+  name: ItemText
+  /**
+   *  Its full path, exactly as the volume has it: for navigating there, ❌ never
+   *  for showing.
+   */
+  path: string
+  // Whether it's a folder.
+  isFolder: boolean
+  // Its size: its own for a file, the whole subtree for a folder.
+  size: Fact<RecursiveSize>
 }
 
 /**
@@ -19733,6 +21134,70 @@ export type SmbVolumeRef = {
   server: string
   disconnected: boolean
 }
+
+// Which part of git's history a portal path names.
+export type SnapshotKind =
+  // A branch's latest commit.
+  | 'branch'
+  // A tag's commit.
+  | 'tag'
+  // One commit.
+  | 'commit'
+  // A stash entry.
+  | 'stash'
+
+// What a file's bytes are.
+export type Sniffed = {
+  // The family of formats.
+  kind: SniffedKind
+  /**
+   *  The exact format, as its usual extension (`png`, `mach`, `dmg`). `None`:
+   *  plain text (it has no one format), or bytes that match no format Cmdr knows.
+   */
+  format: string | null
+}
+
+// A family of file formats.
+export type SniffedKind =
+  // A disk image (`dmg`).
+  | 'diskImage'
+  // An installer package (`pkg`).
+  | 'installerPackage'
+  // A program for macOS.
+  | 'machO'
+  // A program for Linux.
+  | 'elf'
+  // A program or installer for Windows.
+  | 'windowsProgram'
+  // Other compiled code (Java, WebAssembly, Android).
+  | 'otherCode'
+  // A script: bytes with an interpreter line, or a script's extension.
+  | 'script'
+  // An archive.
+  | 'archive'
+  // A PDF.
+  | 'pdf'
+  // An image.
+  | 'image'
+  // A video.
+  | 'video'
+  // A sound file.
+  | 'audio'
+  // A font.
+  | 'font'
+  // An office document or an e-book.
+  | 'document'
+  // A database.
+  | 'database'
+  /**
+   *  Text, HTML and source code included: a known text format, or bytes that read
+   *  as UTF-8 or UTF-16.
+   */
+  | 'text'
+  // A format Cmdr recognizes and has no family for.
+  | 'other'
+  // Bytes that match no format Cmdr knows.
+  | 'unrecognized'
 
 // One run of a search excerpt. Plain text; `matched` runs are what the query hit.
 export type SnippetPart = {
@@ -19998,6 +21463,72 @@ export type StalledOn =
   | 'drive'
   // Anything else: a phone, a FUSE or cloud mount, or a mount we couldn't read.
   | 'unknown'
+
+/**
+ *  A folder the OS sets up and expects to find. Each is the folder itself, never
+ *  something inside it: a file in `~/Downloads` is the person's own.
+ */
+export type StandardFolder =
+  // The person's home folder.
+  | 'home'
+  // `~/Desktop`.
+  | 'desktop'
+  // `~/Documents`.
+  | 'documents'
+  // `~/Downloads`.
+  | 'downloads'
+  // `~/Movies`.
+  | 'movies'
+  // `~/Music`.
+  | 'music'
+  // `~/Pictures`.
+  | 'pictures'
+  // `~/Public`.
+  | 'public'
+  // `~/Library`: the person's settings and app data.
+  | 'homeLibrary'
+  // `~/Applications`: apps installed for this person alone.
+  | 'homeApplications'
+  // `/Applications`.
+  | 'applications'
+  // `/Library`: settings and data for everyone on the computer.
+  | 'library'
+  // `/System`: macOS itself.
+  | 'system'
+  // `/Users`: every account's home folder.
+  | 'users'
+  // `/`: the top of the startup disk.
+  | 'startupDisk'
+
+/**
+ *  Whether a notarization ticket is stapled to the item. An absent ticket doesn't
+ *  say the item was never notarized: macOS can also ask Apple online.
+ */
+export type StapledTicket =
+  // A ticket is stapled.
+  | 'present'
+  // No ticket is stapled.
+  | 'absent'
+  /**
+   *  Cmdr didn't look: a disk image keeps its ticket inside its signature,
+   *  where Cmdr doesn't read. ❌ Never worded as either answer.
+   */
+  | 'notRead'
+  /**
+   *  No ticket belongs on this kind of signature: Apple's own software and the
+   *  Mac App Store's aren't notarized, and unsigned or ad hoc code can't be.
+   *  Nothing to say ([`Signature::read`] decides it).
+   */
+  | 'doesNotApply'
+
+// Who started a Cmdr operation.
+export type StartedBy =
+  // The person, in Cmdr's own UI.
+  | 'you'
+  // Ask Cmdr, on the person's behalf.
+  | 'askCmdr'
+  // Another AI client driving Cmdr.
+  | 'aiClient'
 
 /**
  *  One of Cmdr's own state files in the app data dir. Also crosses IPC in the recovery notice
@@ -20770,6 +22301,13 @@ export type TotalRows =
    */
   | { kind: 'estimated'; rows: number }
 
+// A tracked item's state against the last commit.
+export type TrackedState =
+  // Identical to the last commit.
+  | 'clean'
+  // Holds changes no commit has.
+  | 'modified'
+
 /**
  *  The live shape of a running transfer, on every progress event AND on
  *  [`OperationStatus`], so both windows and an agent polling `cmdr://state` can
@@ -21406,6 +22944,18 @@ export type TurnStats = {
   limit?: TurnLimit | null
 }
 
+// Whether a file's bytes agree with its extension.
+export type TypeAgreement =
+  // The bytes are what the extension says.
+  | 'matches'
+  // The bytes are something else (a `.jpg` that's a program).
+  | 'mismatch'
+  /**
+   *  One side isn't confident: unrecognized or unread bytes, or an extension
+   *  with no claim.
+   */
+  | 'cantTell'
+
 /**
  *  Snapshot of a pane's type-to-jump state for MCP exposure.
  *
@@ -21474,6 +23024,88 @@ export type UnexpandableReason =
    *  50,000 files. Op-level: the journal can't say WHICH folder it was.
    */
   | 'capped'
+
+/**
+ *  An unknown answer: why, and how loudly the card says so.
+ *
+ *  Built only from an [`UnknownWhy`], so the prominence on the wire is always the
+ *  one the rule gives and the card never decides what's worth worrying about.
+ */
+export type Unknown = {
+  why: UnknownWhy
+  prominence: Prominence
+}
+
+// Why Cmdr doesn't have an answer.
+export type UnknownWhy =
+  /**
+   *  Nothing recorded it: no download record on a file you made, no last-opened
+   *  date in Spotlight, no Cmdr operation that landed this node. ❌ Never "never".
+   */
+  | 'noRecord'
+  /**
+   *  The repo's status doesn't list the path, which a clean file, an ignored one,
+   *  and one outside the repo all look like.
+   */
+  | 'notInStatus'
+  /**
+   *  No installed app answers to the folder's name, somewhere nobody expects an
+   *  owner.
+   */
+  | 'noInstalledAppMatches'
+  /**
+   *  Cmdr answers what this volume answers, and it doesn't answer this. The card
+   *  says so once, in its volume note.
+   */
+  | 'volumeCantTell'
+  // A Library folder named like an app, and no installed app has that name.
+  | 'libraryNameMatchesNoApp'
+  /**
+   *  The index doesn't cover the path: indexing is off, or it hasn't reached
+   *  the place yet. For an image's row, the image index has no entry for it:
+   *  not reached yet, or in a folder the person left out. Routine: nothing went wrong, and on a folder it's
+   *  the same cause behind the size, what's inside, and the importance, so a
+   *  warning per row would be a wall of the same sentence.
+   */
+  | 'notIndexed'
+  // The answer didn't arrive inside its budget.
+  | 'timedOut'
+  // The volume stopped answering.
+  | 'unreachable'
+  /**
+   *  The item's volume stopped answering while the card was gathering. Routine:
+   *  the card's volume note says so once, at the top, so a sentence per row
+   *  would repeat it.
+   */
+  | 'volumeStoppedAnswering'
+  // Nothing is at the path any more: it moved or went since the pane listed it.
+  | 'notFound'
+  // The OS refused the read.
+  | 'permissionDenied'
+  // The path is one Cmdr doesn't read into.
+  | 'protected'
+  // A record exists, for a node that has been replaced since.
+  | 'nodeChangedSince'
+  /**
+   *  Several candidates fit and nothing picks between them (`Google`,
+   *  `Microsoft`).
+   */
+  | 'ambiguous'
+  // The record is there and Cmdr can't read it.
+  | 'unparseable'
+  // A turn Cmdr started on its own doesn't touch a network or device volume.
+  | 'refusedInBackground'
+  /**
+   *  The person turned off the index that would answer it (image indexing).
+   *  Routine: a setting they chose, said once in the row.
+   */
+  | 'indexingOff'
+  /**
+   *  The file's contents are online only (a cloud drive evicted them), and
+   *  reading them would download it. Routine: an ordinary state, and the card
+   *  never downloads a file to describe it.
+   */
+  | 'onlineOnly'
 
 /**
  *  Why an unlock or a forget didn't reach a container. A wrong password is
@@ -21791,6 +23423,14 @@ export type UpgradeResult =
    */
   | { status: 'mountNotResponding' }
 
+// What Spotlight recorded about the item's use.
+export type Usage = {
+  // When it was last opened.
+  lastOpened: number
+  // How many times it was opened. `None`: Spotlight recorded no count.
+  useCount: number | null
+}
+
 // Per-turn token usage, camelCase for the wire.
 export type UsageView = {
   promptTokens: number
@@ -21820,6 +23460,102 @@ export type ValidationError =
   | { kind: 'nameTooLong'; bytes: number; max: number }
   // Full path exceeds the maximum byte length.
   | { kind: 'pathTooLong'; bytes: number; max: number }
+
+// What of the item's contents rides with the facts to the model.
+export type VerdictContents =
+  /**
+   *  The facts only: a folder (its digest is the look inside), an item on a
+   *  volume Cmdr doesn't read bytes from, or a file whose contents gave nothing.
+   */
+  | 'none'
+  // The first lines of a text file.
+  | 'firstLines'
+  // A PDF's title and first page.
+  | 'firstPage'
+  // The names of an archive's first entries.
+  | 'entryNames'
+  // A photo's camera details, ❌ never its location.
+  | 'cameraDetails'
+  /**
+   *  The item is somewhere Cmdr keeps contents home (credentials, a browser
+   *  profile, mail): name-level facts only, and nothing from inside.
+   */
+  | 'protected'
+
+// What one verdict cost, as the cost meter recorded it.
+export type VerdictCost = {
+  // Input tokens, the cached share included.
+  promptTokens: number
+  // Output tokens.
+  completionTokens: number
+  // Micro-USD; 0 on the local model. Only meaningful when `priced`.
+  costMicros: number
+  // False when the model isn't in the price table: show "unknown", ❌ never $0.
+  priced: boolean
+}
+
+// How a verdict ended.
+export type VerdictEnding =
+  // The model finished.
+  | { kind: 'done' }
+  /**
+   *  Stopped before the end (Stop, cloud AI turned off, a policy change); the
+   *  text so far stands.
+   */
+  | { kind: 'stopped' }
+  // The provider couldn't answer.
+  | {
+      kind: 'failed'
+      // What went wrong, by kind.
+      problem: VerdictProblem
+    }
+
+/**
+ *  What kept the provider from answering, classified by its typed error, ❌ never
+ *  by its wording.
+ */
+export type VerdictProblem =
+  // The key was refused, or none is set.
+  | 'authFailed'
+  // Rate-limited, out of quota, or the plan lacks the model.
+  | 'rateLimited'
+  // Couldn't reach the provider, or it timed out.
+  | 'unreachable'
+  // The provider is overloaded right now.
+  | 'overloaded'
+  // The organization's policy refused the request on its way out.
+  | 'managed'
+  /**
+   *  The call ended with no text (a reasoning model that spent its whole reply
+   *  thinking). Its input was still billed: `verdictEnd` carries the cost.
+   */
+  | 'noAnswer'
+  // Anything else the provider answered.
+  | 'other'
+
+/**
+ *  Why a card gets no verdict. The card words each one; with `aiOff` and
+ *  `turnedOff` it draws no block at all.
+ */
+export type VerdictUnavailable =
+  // `ai.provider` is off.
+  | { kind: 'aiOff' }
+  // The person turned the verdict off (`aboutThis.aiVerdict`).
+  | { kind: 'turnedOff' }
+  // Cloud AI is picked and not allowed (or allowed under older copy).
+  | { kind: 'noCloudConsent' }
+  // A cloud provider is picked but has no key or endpoint.
+  | { kind: 'notConfigured' }
+  // The local model's server isn't running. A verdict never starts it.
+  | { kind: 'notReady' }
+  // The organization's policy refuses it.
+  | {
+      kind: 'managed'
+      // The policy's reason.
+      refusal: ManagedAiRefusal
+    }
+  // Too many verdicts started in the last minute: try again in a moment.
+  | { kind: 'tooManyRequests' }
 
 /**
  *  Result of verifying a license key without persisting it.
@@ -22797,6 +24533,18 @@ export type VolumeIndexStatus = {
   holdsIndexStorage: boolean
 }
 
+// How much of the card a volume answers.
+export type VolumeLimit =
+  // The name, size, and dates.
+  | 'identityOnly'
+  // More than identity, less than a local disk.
+  | 'someFacts'
+  /**
+   *  Nothing right now: the volume stopped answering. The host sets this when
+   *  its health check runs out, never [`plan`].
+   */
+  | 'unreachable'
+
 /**
  *  Typed `volume-mounted` Tauri event (per-volume, carries the mount path).
  *  Emitted by both the macOS (`NSWorkspace`) and Linux (`/proc/mounts` + GVFS)
@@ -22805,6 +24553,17 @@ export type VolumeIndexStatus = {
 export type VolumeMounted = {
   // The volume path (like "/Volumes/MyDrive").
   volumePath: string
+}
+
+/**
+ *  What a volume can't answer, as parts the frontend words once at the top of the
+ *  card ("On Naspolya, Cmdr can see the name, size, and dates").
+ */
+export type VolumeNote = {
+  // The volume's name.
+  volume: ItemText
+  // How much it answers.
+  limit: VolumeLimit
 }
 
 /**
@@ -23058,6 +24817,24 @@ export type WatcherGateError =
    */
   { kind: 'watcherStartFailed'; message: string }
 
+// The site of a web source.
+export type WebSite =
+  /**
+   *  A host name: lowercased, an international name in its punycode form
+   *  (`xn--…`), so a look-alike can't pass for another site.
+   */
+  | {
+      type: 'domain'
+      // The host name, with no port, user info, path, query, or fragment.
+      host: string
+    }
+  // A numeric address, which names no site.
+  | {
+      type: 'ipAddress'
+      // The address.
+      address: string
+    }
+
 /**
  *  Whether a WebDAV volume can actually come back on its own as it stands.
  *
@@ -23108,6 +24885,45 @@ export type WhatsNewSection = {
    */
   entriesHtml: string[]
 }
+
+/**
+ *  One recorded source. Raw and local-only: [`redact_for_egress`] is what a model
+ *  gets.
+ */
+export type WhereFrom =
+  // An `http` or `https` address.
+  | {
+      type: 'web'
+      // The site, which is what the card shows.
+      site: WebSite
+      /**
+       *  The whole address, parsed and written back out, for the card's copy
+       *  and open. `None`: it's longer than [`MAX_URL_CHARS`].
+       */
+      url: string | null
+    }
+  // A Mail attachment: Mail records who sent it and the subject line.
+  | {
+      type: 'mailAttachment'
+      // The sender, as Mail wrote it. `None`: the record has none.
+      sender: ItemText | null
+      // The subject line. `None`: the record has none.
+      subject: ItemText | null
+    }
+  // Received over AirDrop.
+  | {
+      type: 'airDrop'
+      // The sending person's or device's name.
+      sender: ItemText
+    }
+  // Anything else the record holds.
+  | {
+      type: 'other'
+      // What kind of thing it is.
+      kind: OtherSource
+      // The entry's text.
+      text: ItemText
+    }
 
 // What the wipe couldn't remove, in terms the dialog can point a person at.
 export type WipeLeftover =

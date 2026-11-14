@@ -14,11 +14,20 @@ backend behavior, you MUST add: (a) a Tauri command on the Rust side (see the mi
 setting looks "structural" (like re-opening a TCP connection, rebinding a port, swapping a thread pool), still
 live-apply. Reconnect, rebind, restart the worker, whatever it takes. **MUST.** No exceptions.
 
-⚠️ **"The backend reads it fresh" is not always an escape from this.** Two `askCmdr.*` settings genuinely need no case
-(`interactiveModel` and `chatMemorySize` are read on each send), but the three that drive the proactive loop
-(`proactive`, `wakeDelay`, `wakeToast`) do: there is no send to read them fresh at, only a timer parked on the wake
-loop's own thread. They push `askCmdrWakeSettingsChanged()`, and the loop re-reads. Before deciding a backend setting
-needs no case, ask what re-reads it and when — a sleeping consumer never does.
+⚠️ **A key the backend reads fresh from `settings.json` takes no applier case: the backend follows it itself.**
+`settings::store_watch` (Rust) listens to the store plugin's own `store://change` event and, for each key in its
+`fresh_key_move` table, saves the shared store to disk at once and then tells the key's owner (Ask Cmdr's switch:
+readiness refresh and stopping turns; `proactive` / `wakeDelay`: the wake loop re-arms). Before deciding a backend
+setting needs no case, ask what re-reads it and when: a sleeping consumer never does, so it needs a `FreshKeyMove`.
+
+Decision/Why the backend and not the window (#1194): the frontend can't make "the file holds it, then the backend
+re-reads" reliable. Only the main window runs the applier, so a change made in the Settings window reached it through
+`settings:changed` before that window's debounced save, and the applier's push re-read the old file (Ask Cmdr switched
+off stayed `ready`, a running turn kept going). A window that saves and THEN broadcasts drops the broadcast if it closes
+in between, and a push from the changing window can't cover MCP or a window closed inside its debounce. The store event
+fires in Rust on the one IPC that already went out (`setSetting` hands the key to the store at once), from any window.
+The Rust save writes the plugin's own memory, the same write it makes at quit, so it never fights a window's later
+debounced save: both write the same store.
 
 ## Purpose
 

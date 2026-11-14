@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -197,6 +198,12 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 		// assert send-and-render with no provider. It MUST live on the APP process env:
 		// resolve_agent_llm runs in the app, not the Playwright runner.
 		"CMDR_E2E_ASK_CMDR_FAKE=1",
+		// Hold the "Tell me about this" card's fake AI take mid-stream: no wait between
+		// deltas, and a hold before the last until the spec releases it (`hold_about_verdict`), so
+		// about-this-verdict.spec.ts presses Stop on a take that's still writing and sees one
+		// finish without outwaiting a clock. Only that fake reads it, and only a card with an
+		// AI provider on asks it (every other spec keeps `ai.provider` off).
+		"CMDR_E2E_ABOUT_VERDICT_PACE=0,held",
 		// Pause a search's cover walk before each directory read, so a spec can watch
 		// results arrive and a snapshot pane grow mid-walk instead of racing ground
 		// that finishes in milliseconds (search-live + search-walk-handoff). Cover
@@ -208,6 +215,11 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 		// CFPreferences (honored only by `playwright-e2e` and debug builds). It doesn't exist
 		// at launch, which reads as no policy; `managed-policy.spec.ts` writes and removes it.
 		"CMDR_MANAGED_PREFS_FILE="+shardManagedPrefsFile(s),
+		// The "Tell me about this" card reads this folder as home (honored only by
+		// `playwright-e2e` and debug builds), so `about-this.spec.ts`'s QA tree has a
+		// fake Library ❌ without a write into the developer's real one. The spec
+		// builds the tree there (`e2e-shared/about-fixtures.ts`).
+		"CMDR_ABOUT_FIXTURE_HOME="+filepath.Join(s.fixtureDir, "about-this-qa", "home"),
 	)
 	// Only the MTP shard registers the virtual MTP device, at THIS run's backing
 	// dir. Non-MTP shards skip the startup wipe-and-recreate, which would

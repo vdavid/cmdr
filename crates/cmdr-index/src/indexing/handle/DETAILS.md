@@ -325,9 +325,12 @@ parent). A grant of "one item" for such a type is `RootPromises` moving by one a
   the disk-footprint pair below. The cold-volume bootstrap took none of it: it went behind `cover` rather than becoming
   a method (above, "Why standing a cold volume's index up is NOT a method of its own"). No reserved slot is left, so the
   next method has to be argued the way these were.
-- **17 public modules** and **156 public items inside them** — the surface the root re-exports don't capture, which is
+- **17 public modules** and **157 public items inside them** — the surface the root re-exports don't capture, which is
   where `media_index` and `importance` live. Unchanged: the coverage module is `pub(crate)`, reaching a host only
-  through the handle and the root re-exports.
+  through the handle and the root re-exports. The 157th (2026-11-14) is `MediaKind::enriches_extension`, the predicate's
+  own format list asked by name: the About card's "What it shows" row plans from it, and the alternative was a second
+  list in `cmdr-about`, which had already drifted (it missed camera RAWs). No disposition fit: no existing call answers
+  it, and the counter counts an associated fn like a free one.
 - **10 gated items**, counted apart: the `testing` / `tooling` doors aren't the API.
 
 It counts source, not rustdoc JSON, because that output is nightly-only and a check needing a second toolchain is a

@@ -6251,7 +6251,12 @@
       }
     ],
     "confidence": "high",
-    "sources": "MS: write (transfer information to a storage device) → записывать / запись; Thunar: Writing data to device → Запись данных на устройство; DC: Write → Запись; Finder: Writing track ^0 → Запись дорожки ^0"
+    "sources": "MS: write (transfer information to a storage device) → записывать / запись; Thunar: Writing data to device → Запись данных на устройство; DC: Write → Запись; Finder: Writing track ^0 → Запись дорожки ^0",
+    "exceptions": {
+      "aboutThis.verdict.writing": "An AI writing text, not data landing on a drive → писать (ИИ пишет короткий комментарий…).",
+      "aboutThis.verdict.problem.noAnswer": "An AI writing text, not data landing on a drive → написать (ИИ ничего не написал).",
+      "settings.aboutThis.aiVerdict.description": "An AI writing sentences, not data landing on a drive → писать (ИИ пишет два-три предложения)."
+    }
   },
   "zip": {
     "chosen": "zip-архив",
@@ -6480,5 +6485,19 @@
     "accept": ["параметры безопасности", "согласован"],
     "confidence": "high",
     "sources": "the shipped macOS branch of fileExplorer.network.osMountFallback.negotiationInvalid"
+  },
+  "it-team": {
+    "chosen": "ИТ-отдел",
+    "accept": ["ИТ-"],
+    "forms": "your IT team → ваш ИТ-отдел; the IT team's policy → политика вашего ИТ-отдела",
+    "note": "No macOS or MS string names it; «ИТ-отдел» is the everyday Russian name and the catalog already says it (ai.managed.hostNotAllowed, ai.translateError.managed.body).",
+    "confidence": "tentative",
+    "sources": "Catalog: ai.managed.hostNotAllowed, ai.translateError.managed.body (В вашем ИТ-отделе подскажут…); no pile hit for IT team or IT administrator"
+  },
+  "macos-package": {
+    "chosen": "пакет",
+    "accept": ["пакет"],
+    "confidence": "high",
+    "sources": "macOS Finder LocalizableMerged N158 (Show Package Contents → Показать содержимое пакета)"
   }
 }

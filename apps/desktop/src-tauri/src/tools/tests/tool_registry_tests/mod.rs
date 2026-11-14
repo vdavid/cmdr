@@ -82,6 +82,7 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
     "list_pane_files",
     "important_folders",
     "folder_importance",
+    "about_item",
     "list_suggestions",
     "get_suggestion_group",
     "propose_suggestions",

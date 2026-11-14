@@ -243,6 +243,10 @@
   "@settings.behavior.revealActivationNoticeSeen.description": {
     "sourceHash": "803e737"
   },
+  "settings.aboutThis.aiHintDismissed.description": "Con la IA desactivada, o aún sin configurar, la tarjeta “Háblame de esto” muestra una línea bajo sus botones que dice que la IA agrega una lectura más a fondo. Al cerrar la línea con su ×, esto se activa. Desactívalo para volver a ver la línea.",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "sourceHash": "e0ebf6c"
+  },
   "settings.askCmdr.cloudOffHint": "Ask Cmdr usa tu servicio de IA en la nube. Activa “Permitir IA en la nube” en la configuración de IA para empezar a chatear.",
   "@settings.askCmdr.cloudOffHint": {
     "sourceHash": "0703b56"

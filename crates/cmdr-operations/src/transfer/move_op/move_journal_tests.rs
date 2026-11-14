@@ -430,6 +430,38 @@ async fn a_cross_fs_move_records_final_paths_and_really_puts_the_file_back() {
     assert!(!fixture.exists("dst/notes.txt"));
 }
 
+/// A staged move journals each file while it sits in the staging folder, and the
+/// node it records there is the node at the final path: the rename into place keeps
+/// it. So the row's identity matches an `lstat` of where the file ended up (which
+/// is what lets the reversal above pass its node check).
+#[tokio::test]
+async fn a_cross_fs_move_records_the_node_that_ends_up_at_the_final_path() {
+    use cmdr_fs::volume::NodeIdentity;
+    use cmdr_operation_log::store::read_rollback_units_page;
+
+    let fixture = MoveLoop::new("op-cross-fs-node");
+    let source = fixture.write("src/album/notes.txt", b"NOTES");
+    std::fs::create_dir_all(fixture.path("dst")).expect("mk dst");
+
+    fixture.move_cross_fs(
+        &[source.parent().expect("album").to_path_buf()],
+        &fixture.path("dst"),
+        &WriteOperationConfig::default(),
+    );
+
+    let landed = fixture.path("dst/album/notes.txt");
+    let conn = open_read_connection(fixture.log.db()).expect("read conn");
+    let units = read_rollback_units_page(&conn, &fixture.op_id, i64::MAX, 100).expect("units");
+    let unit = units
+        .iter()
+        .find(|unit| unit.dest_path.as_deref() == Some(landed.as_path()))
+        .expect("the file's row names its final path");
+    let expected = crate::local_disk::keeps_node_identity(&landed)
+        .then(|| NodeIdentity::of(&std::fs::symlink_metadata(&landed).expect("landed")))
+        .flatten();
+    assert_eq!(unit.dest_identity, expected);
+}
+
 /// Phase 2 journals against the staging area; phase 3 resolves conflicts at the
 /// real destination. When phase 3 lands a file at `name (N)` instead, every row
 /// this operation wrote names a path holding a STRANGER's file — and a move's

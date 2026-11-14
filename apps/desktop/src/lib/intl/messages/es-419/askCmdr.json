@@ -15,6 +15,14 @@
   "@askCmdr.tool.folderImportance.done": {
     "sourceHash": "1e61426"
   },
+  "askCmdr.tool.aboutItem.done": "Se consultó qué es un elemento",
+  "@askCmdr.tool.aboutItem.done": {
+    "sourceHash": "01adc0c"
+  },
+  "askCmdr.tool.aboutItem.place.done": "Se consultó qué es <place>{name}</place>",
+  "@askCmdr.tool.aboutItem.place.done": {
+    "sourceHash": "8f353f5"
+  },
   "askCmdr.tool.listVolumes.done": "Se comprobaron tus unidades",
   "@askCmdr.tool.listVolumes.done": {
     "sourceHash": "1bcd741"

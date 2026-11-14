@@ -52,7 +52,7 @@ impl EffortLevel {
         Self::ALL.into_iter().find(|level| level.as_str() == word)
     }
 
-    fn effort(self) -> ReasoningEffort {
+    pub(crate) fn effort(self) -> ReasoningEffort {
         match self {
             Self::Low => ReasoningEffort::Low,
             Self::Medium => ReasoningEffort::Medium,

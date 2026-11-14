@@ -171,3 +171,8 @@ German runs 20–35% longer than English. Look at these against the pseudolocale
   `other` branches take the OS word `Besitzer` (TBX, Nautilus, Thunar) beside the macOS branch's `Eigentümer`, so they
   read `besitzt … der Besitzer`; confirm the echo reads fine, and whether the generic masculine
   `der Besitzer`/`der Eigentümer` should become `das Konto, dem ein Objekt gehört`.
+- **„Erzähl mir etwas darüber“ and `KI-Kommentar`** (`commands.fileTellMeAbout.label`, `aboutThis.verdict.*`): confirm
+  the du-imperative command name reads well in the File menu beside `Informationen`, and that `Vermerk`/`laut Vermerk`
+  for "recorded" reads natural, not bureaucratic.
+- **`Notarisierungsnachweis`** (`aboutThis.signature.ticket*`, `ai.cloudConsent.aboutThis.item.appAndSigner`): coined;
+  Apple de may say „notariell beglaubigt“. Swap for Apple's word once verified.

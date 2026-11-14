@@ -874,6 +874,18 @@
   "@commands.fileGetInfo.label": {
     "sourceHash": "da65a65"
   },
+  "commands.fileTellMeAbout.label": "Vertel me hierover",
+  "@commands.fileTellMeAbout.label": {
+    "sourceHash": "0d5deaf"
+  },
+  "commands.fileTellMeAbout.description": "Toont waar het onderdeel vandaan komt, wat het is en wat verwijderen zou betekenen",
+  "@commands.fileTellMeAbout.description": {
+    "sourceHash": "66f0488"
+  },
+  "commands.aboutThisStopVerdict.label": "Stop het AI-commentaar",
+  "@commands.aboutThisStopVerdict.label": {
+    "sourceHash": "0ffd7ae"
+  },
   "commands.fileQuickLook.label": "{platform, select, macos {Geef snel weer} other {Voorvertoning}}",
   "@commands.fileQuickLook.label": {
     "sourceHash": "c3f57b4"

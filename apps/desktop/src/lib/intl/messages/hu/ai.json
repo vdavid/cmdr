@@ -91,6 +91,70 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
+  "ai.cloudConsent.aboutThis.title": "<b>Mesélj erről</b>, minden alkalommal, amikor megnyitod a kártyáját egy fájlon vagy mappán, további kérdés nélkül:",
+  "@ai.cloudConsent.aboutThis.title": {
+    "sourceHash": "b60933c"
+  },
+  "ai.cloudConsent.aboutThis.item.identity": "Mi ez (fájl, mappa, app vagy link), a neve, útvonala, mérete és dátumai, egy mappában hány fájl és mappa van, hány további név mutat rá, hová mutat egy link, és hogy rejt-e a neve olyan karaktert, amely megváltoztatja a betűi megjelenési sorrendjét",
+  "@ai.cloudConsent.aboutThis.item.identity": {
+    "sourceHash": "f01c726"
+  },
+  "ai.cloudConsent.aboutThis.item.realType": "Hogy az első bájtjai szerint milyen fajta fájl, vagy a neve, ahol a Cmdr nem olvasta ki őket",
+  "@ai.cloudConsent.aboutThis.item.realType": {
+    "sourceHash": "55e97b9"
+  },
+  "ai.cloudConsent.aboutThis.item.imageIndex": "Egy képnél a címkék, amelyeket a Cmdr képindexe adott neki, és az első szövegsorok, amelyeket talált rajta, a Cmdr indexéből kiolvasva, soha nem maga a kép",
+  "@ai.cloudConsent.aboutThis.item.imageIndex": {
+    "sourceHash": "020f807"
+  },
+  "ai.cloudConsent.aboutThis.item.download": "A webhely, ahonnan a feljegyzés szerint letöltötték (csak a webhely fő címe, például github.com, soha nem egy aldomain vagy a teljes link), hogy mikor, és az app, amely letöltötte. Mail-mellékletnél vagy AirDropnál csak annyi, hogy az volt, soha nem az, hogy ki küldte",
+  "@ai.cloudConsent.aboutThis.item.download": {
+    "sourceHash": "40d185c"
+  },
+  "ai.cloudConsent.aboutThis.item.appAndSigner": "Egy appnál vagy programnál a neve, azonosítója és verziója. Ennél vagy egy lemezképnél annak a neve és csapatazonosítója, aki aláírta, hogy a kódja egyezik-e még az aláírással, és hogy csatolva van-e az Apple hitelesítési jegye",
+  "@ai.cloudConsent.aboutThis.item.appAndSigner": {
+    "sourceHash": "471891d"
+  },
+  "ai.cloudConsent.aboutThis.item.use": "Mikor nyitottad meg utoljára, hányszor, és melyik app nyitja meg",
+  "@ai.cloudConsent.aboutThis.item.use": {
+    "sourceHash": "9664a6e"
+  },
+  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Honnan és mikor másolta, helyezte át vagy csomagolta ki a Cmdr, beleértve azt az útvonalat, a meghajtó vagy a szerver nevét, és hogy te vagy egy AI-asszisztens indította-e",
+  "@ai.cloudConsent.aboutThis.item.cmdrHistory": {
+    "sourceHash": "1d38db2"
+  },
+  "ai.cloudConsent.aboutThis.item.git": "A git-repójának mappája, ága és állapota, vagy a git előzményeiből származó fájlnál a commit, az ág vagy a címke, ahonnan származik, és hogy ott mikor módosult utoljára",
+  "@ai.cloudConsent.aboutThis.item.git": {
+    "sourceHash": "a06839e"
+  },
+  "ai.cloudConsent.aboutThis.item.owner": "Az app vagy a telepítő, amelyhez tartozik, vagy hogy a rendszer melyik szabványos mappája, és hogy honnan tudja ezt a Cmdr",
+  "@ai.cloudConsent.aboutThis.item.owner": {
+    "sourceHash": "f5d95a6"
+  },
+  "ai.cloudConsent.aboutThis.item.importance": "Egy mappánál az, hogy a Cmdr rangsora szerint mennyire fontos, és milyen gyakran nyitod meg a Cmdrben",
+  "@ai.cloudConsent.aboutThis.item.importance": {
+    "sourceHash": "b358d29"
+  },
+  "ai.cloudConsent.aboutThis.item.inside": "Egy mappánál az, hogy milyen fajta (például gyorsítótár vagy build-kimenet), hány dolog van benne, a legnagyobbak és a legnagyobb fájljai nevei és méretei, milyen fajta fájlokat tartalmaz, és mennyi nem változott belőle egy éve",
+  "@ai.cloudConsent.aboutThis.item.inside": {
+    "sourceHash": "eb93c12"
+  },
+  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {Egy appnál a Könyvtár mappádban tárolt mappái nevei és méretei} other {Egy appnál az általa tárolt adatmappák nevei és méretei}}",
+  "@ai.cloudConsent.aboutThis.item.appData": {
+    "sourceHash": "d61ade2"
+  },
+  "ai.cloudConsent.aboutThis.item.removal": "Hogy mit jelentene az eltávolítása, ahogy a Cmdr a fenti tényekből kikövetkezteti",
+  "@ai.cloudConsent.aboutThis.item.removal": {
+    "sourceHash": "f7ad4bd"
+  },
+  "ai.cloudConsent.aboutThis.item.contentsStayHome": "Egy olyan elemnél, amelynek a tartalma otthon marad (lent, az Ask Cmdr alatt felsorolva), csak a neve, útvonala, mérete, dátumai és az app, amelyhez tartozik",
+  "@ai.cloudConsent.aboutThis.item.contentsStayHome": {
+    "sourceHash": "400db48"
+  },
+  "ai.cloudConsent.aboutThis.lookInside": "Egy rövid belenézés egy fájlba: némi szöveg, egy PDF első oldala és címe, egy archívumban lévő fájlok listája, vagy egy fotó kameraadatai a készítési helye nélkül",
+  "@ai.cloudConsent.aboutThis.lookInside": {
+    "sourceHash": "a78e673"
+  },
   "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, amikor csevegsz vele, vagy amikor a Cmdr magától kezd beszélgetést:",
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "bd006c2"
@@ -118,6 +182,10 @@
   "ai.cloudConsent.askCmdr.item.attachments": "Bármely fájl vagy mappa, amit csatolsz egy kérdéshez, csak a neve és útvonala alapján",
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
+  },
+  "ai.cloudConsent.askCmdr.item.aboutThis": "Amikor a Cmdr utánanéz, mi egy fájl vagy mappa, ugyanazok a tények, amelyeket a Mesélj erről küld, a belenézés nélkül",
+  "@ai.cloudConsent.askCmdr.item.aboutThis": {
+    "sourceHash": "1c8e78d"
   },
   "ai.cloudConsent.askCmdr.item.mediaFields": "Fotók és zeneszámok adatai, ha egy átnevezés használja őket: felvétel dátuma, kamera, cím, előadó, album és hasonlók",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {

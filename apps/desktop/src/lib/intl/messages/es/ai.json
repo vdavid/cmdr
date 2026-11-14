@@ -91,6 +91,70 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
+  "ai.cloudConsent.aboutThis.title": "<b>Háblame de esto</b>, cada vez que abres su tarjeta sobre un archivo o una carpeta, sin preguntarte nada más:",
+  "@ai.cloudConsent.aboutThis.title": {
+    "sourceHash": "b60933c"
+  },
+  "ai.cloudConsent.aboutThis.item.identity": "Qué es (un archivo, una carpeta, una app o un enlace), su nombre, ruta, tamaño y fechas, cuántos archivos y carpetas contiene una carpeta, cuántos nombres más apuntan al mismo contenido, adónde apunta un enlace y si su nombre oculta un carácter que cambia el orden en que se muestran sus letras",
+  "@ai.cloudConsent.aboutThis.item.identity": {
+    "sourceHash": "f01c726"
+  },
+  "ai.cloudConsent.aboutThis.item.realType": "Qué clase de archivo es según sus primeros bytes, o según su nombre cuando Cmdr no los lee",
+  "@ai.cloudConsent.aboutThis.item.realType": {
+    "sourceHash": "55e97b9"
+  },
+  "ai.cloudConsent.aboutThis.item.imageIndex": "En una imagen, las etiquetas que le asigna el índice de imágenes de Cmdr y las primeras líneas de texto que encuentra en ella, leídas del índice de Cmdr, nunca de la propia imagen",
+  "@ai.cloudConsent.aboutThis.item.imageIndex": {
+    "sourceHash": "020f807"
+  },
+  "ai.cloudConsent.aboutThis.item.download": "El sitio web del que, según consta, se descargó (solo la dirección principal del sitio web, como github.com, nunca un subdominio ni el enlace completo), cuándo y la app que lo descargó. En un adjunto de Mail o un AirDrop, solo que lo era, nunca quién lo envió",
+  "@ai.cloudConsent.aboutThis.item.download": {
+    "sourceHash": "40d185c"
+  },
+  "ai.cloudConsent.aboutThis.item.appAndSigner": "En una app o un programa, su nombre, su ID y su versión. En ellos o en una imagen de disco, el nombre y el ID de equipo de quien los firmó, si su código aún coincide con esa firma y si lleva adjunto el ticket de notarización de Apple",
+  "@ai.cloudConsent.aboutThis.item.appAndSigner": {
+    "sourceHash": "471891d"
+  },
+  "ai.cloudConsent.aboutThis.item.use": "Cuándo lo abriste por última vez, cuántas veces y qué app lo abre",
+  "@ai.cloudConsent.aboutThis.item.use": {
+    "sourceHash": "9664a6e"
+  },
+  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Desde dónde lo copió, movió o extrajo Cmdr y cuándo, incluida esa ruta, el nombre de la unidad o del servidor, y si lo iniciaste tú o un asistente de IA",
+  "@ai.cloudConsent.aboutThis.item.cmdrHistory": {
+    "sourceHash": "1d38db2"
+  },
+  "ai.cloudConsent.aboutThis.item.git": "La carpeta, la rama y el estado de su repositorio git o, en un archivo del historial de git, el commit, la rama o la etiqueta de donde procede y cuándo cambió allí por última vez",
+  "@ai.cloudConsent.aboutThis.item.git": {
+    "sourceHash": "a06839e"
+  },
+  "ai.cloudConsent.aboutThis.item.owner": "La app o el instalador al que pertenece, o qué carpeta estándar del sistema es, y cómo lo sabe Cmdr",
+  "@ai.cloudConsent.aboutThis.item.owner": {
+    "sourceHash": "f5d95a6"
+  },
+  "ai.cloudConsent.aboutThis.item.importance": "En una carpeta, cuánto importa según la clasificación de Cmdr y con qué frecuencia la abres en Cmdr",
+  "@ai.cloudConsent.aboutThis.item.importance": {
+    "sourceHash": "b358d29"
+  },
+  "ai.cloudConsent.aboutThis.item.inside": "En una carpeta, de qué tipo es (como una caché o la salida de una compilación), cuántas cosas contiene, los nombres y tamaños de las más grandes y de sus archivos más grandes, qué clases de archivos contiene y cuánto de ella no ha cambiado en un año",
+  "@ai.cloudConsent.aboutThis.item.inside": {
+    "sourceHash": "eb93c12"
+  },
+  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {En una app, los nombres y tamaños de las carpetas que guarda en tu Biblioteca} other {En una app, los nombres y tamaños de las carpetas de datos que guarda}}",
+  "@ai.cloudConsent.aboutThis.item.appData": {
+    "sourceHash": "d61ade2"
+  },
+  "ai.cloudConsent.aboutThis.item.removal": "Qué supondría eliminarlo, según lo deduce Cmdr de los datos anteriores",
+  "@ai.cloudConsent.aboutThis.item.removal": {
+    "sourceHash": "f7ad4bd"
+  },
+  "ai.cloudConsent.aboutThis.item.contentsStayHome": "En un elemento cuyo contenido se queda en casa (lo indica la parte de Ask Cmdr, más abajo), solo su nombre, ruta, tamaño, fechas y la app a la que pertenece",
+  "@ai.cloudConsent.aboutThis.item.contentsStayHome": {
+    "sourceHash": "400db48"
+  },
+  "ai.cloudConsent.aboutThis.lookInside": "Un breve vistazo dentro de un archivo: algo de texto, la primera página y el título de un PDF, la lista de archivos de un archivo comprimido o los datos de la cámara de una foto sin su ubicación",
+  "@ai.cloudConsent.aboutThis.lookInside": {
+    "sourceHash": "a78e673"
+  },
   "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, cuando chateas o cuando Cmdr abre una conversación por su cuenta:",
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "bd006c2"
@@ -118,6 +182,10 @@
   "ai.cloudConsent.askCmdr.item.attachments": "Cualquier archivo o carpeta que adjuntes a una pregunta, solo por su nombre y ruta",
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
+  },
+  "ai.cloudConsent.askCmdr.item.aboutThis": "Cuando Cmdr consulta qué es un archivo o una carpeta, los mismos datos que envía Háblame de esto, sin mirar dentro del archivo",
+  "@ai.cloudConsent.askCmdr.item.aboutThis": {
+    "sourceHash": "1c8e78d"
   },
   "ai.cloudConsent.askCmdr.item.mediaFields": "Datos de fotos y canciones cuando un cambio de nombre los usa: fecha de captura, cámara, título, artista, álbum y similares",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {

@@ -206,6 +206,33 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
     })
 }
 
+/// Run a search on `volume_id`'s arena ONLY if it's already in memory, for a
+/// reader that must answer in milliseconds and may not pay for a load (the "Tell
+/// me about this" card's largest files). `None`: no arena is loaded, so the
+/// caller says the index can't tell yet, ❌ never "nothing found". A scope the
+/// arena doesn't hold comes back in `unresolved_scopes`, as from [`run_blocking`].
+///
+/// Unlike [`run_blocking`] it doesn't touch activity: a card's read shouldn't keep
+/// an arena nobody else uses in memory.
+pub(crate) fn run_if_loaded(query: &SearchQuery, volume_id: &str) -> Option<Result<SearchResult, String>> {
+    let loaded = volumes::get_loaded(volume_id)?;
+    let target = target_on(query, volume_id);
+    let weights = volumes::weights_for(volume_id);
+    let home_dir = super::host_home_dir();
+    let half = match search_covered_half(query, &target, &loaded, &host_context(&weights, home_dir.as_deref())) {
+        Ok(half) => half,
+        Err(error) => return Some(Err(error.to_string())),
+    };
+    Some(Ok(SearchResult {
+        entries: half.entries,
+        total_count: half.total,
+        uncovered_scopes: Vec::new(),
+        unresolved_scopes: half.unresolved_scopes,
+        target_volume_id: target.volume_id,
+        hidden_by_excludes: half.hidden_by_excludes,
+    }))
+}
+
 /// Run one volume's search through the seam: the loaded volume answers as an
 /// [`IndexSource`], and the scope paths go in beside their canonical forms. The
 /// covered half of a live run is this same pass, which is what keeps "indexed or

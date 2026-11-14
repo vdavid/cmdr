@@ -22,6 +22,7 @@ var messageKeyShapeRe = regexp.MustCompile(`^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9
 // A key's area is also its `messages/en/<area>.json` home. Adding an area means
 // adding both a catalog file and an entry here, so structure can't drift.
 var messageKeyKnownAreas = map[string]bool{
+	"aboutThis":       true,
 	"common":          true,
 	"transfer":        true,
 	"settings":        true,

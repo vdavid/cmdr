@@ -12,6 +12,7 @@ mod case_twin_tests;
 mod control_tests;
 mod copy_original_tests;
 mod dir_sweep_tests;
+mod landed_node_tests;
 mod lifecycle_tests;
 mod page_error_tests;
 mod redo_tests;

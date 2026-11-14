@@ -26,6 +26,7 @@ export interface PhaseKeys {
  */
 export const TOOL_LABEL_KEYS: Partial<Record<string, PhaseKeys>> = {
   app_state: { doing: 'askCmdr.tool.appState.doing', done: 'askCmdr.tool.appState.done' },
+  about_item: { doing: 'askCmdr.tool.aboutItem.doing', done: 'askCmdr.tool.aboutItem.done' },
   list_dir: { doing: 'askCmdr.tool.listDir.doing', done: 'askCmdr.tool.listDir.done' },
   list_pane_files: { doing: 'askCmdr.tool.listDir.doing', done: 'askCmdr.tool.listDir.done' },
   important_folders: { doing: 'askCmdr.tool.importantFolders.doing', done: 'askCmdr.tool.importantFolders.done' },
@@ -340,6 +341,7 @@ export const MEMORY_FILE_KEYS: Partial<Record<string, PhaseKeys>> = {
 
 /** Label keys that name one place, per tool whose subject is a `place`. */
 export const PLACE_KEYS: Partial<Record<string, PhaseKeys>> = {
+  about_item: { doing: 'askCmdr.tool.aboutItem.place.doing', done: 'askCmdr.tool.aboutItem.place.done' },
   nav_to_path: {
     doing: 'askCmdr.tool.navToPath.place.doing',
     done: 'askCmdr.tool.navToPath.place.done',

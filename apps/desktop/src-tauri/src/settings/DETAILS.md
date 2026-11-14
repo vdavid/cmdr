@@ -69,6 +69,34 @@ Two helpers in `loader.rs` read `settings.json` before the Tauri `AppHandle` is 
 unset). Both resolve the data dir via `config::standalone_app_data_dir()` (`CMDR_DATA_DIR`, else the OS default for
 `config::app_identifier()`, the build's own identifier, the same one Tauri's `app_data_dir()` uses).
 
+## Fresh-read keys
+
+Some keys the backend reads from `settings.json` at the moment it needs them, not from the startup `Settings`: Ask Cmdr's
+switch (`ai_gates.rs`, the send gate and the wake readiness), the proactive cadence (the wake loop), and the per-send
+slot settings and the card's AI take (`ask_cmdr.rs`, `ai_gates.rs`). A window's change reaches the shared in-memory
+store at once but its disk save waits out a 500 ms debounce, so a fresh read could see the old file.
+
+`store_watch.rs` closes that gap from the Rust side. It listens to the store plugin's own `store://change` event, which
+the plugin emits in Rust on every `set` and `delete`, whichever window (or the MCP bridge, which writes through the main
+window's store) made it. For a key in `fresh_key_move` and the settings file's path, the listener hands a
+`FreshKeyMove` to a worker thread, which saves the store, then calls `agent::follow_settings_move` once per distinct
+move in a burst: `AskCmdrSwitch` stops running turns when off and refreshes the readiness, `WakeCadence` re-arms the
+wake loop, and `ReadAtUse` needs only the save.
+
+- Decision/Why the backend and not the window that changed it (#1194): only the main window runs the applier, so a push
+  sent on the cross-window event ran before the Settings window's save and re-read the old file. A window that saves
+  and then broadcasts drops the broadcast if it closes in between, and a window closed inside its debounce left the file
+  stale until quit. The store event rides the one IPC that already went out.
+- Gotcha/Why the listener only forwards: the plugin emits while holding the store's lock, and Tauri runs a Rust listener
+  inline, so a save from inside it deadlocks.
+- The save writes the plugin's own memory, the same write it makes at quit, so it never fights a window's later
+  debounced save: both write the same store, atomically (`vendor/tauri-plugin-store/`). A store whose file didn't load
+  refuses the save, and the gates keep reading the old file.
+- `askCmdr.wakeToast` isn't watched: the frontend gates the toast, and the loop never reads it. A key read only at
+  startup (with an applier push carrying its value) doesn't belong here either.
+- Tests: `store_watch_tests.rs`, on the real plugin and a mock app; the end-to-end proof is `setAskCmdrEnabledInSettings`
+  closing the Settings window at once and waiting for the file and the readiness.
+
 ## File format
 
 `settings.json` is flat JSON with literal dot-notation string keys, written by `tauri-plugin-store`:

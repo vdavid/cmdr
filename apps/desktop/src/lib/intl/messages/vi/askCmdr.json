@@ -92,6 +92,22 @@
   "@askCmdr.tool.folderImportance.done": {
     "sourceHash": "c7f397f"
   },
+  "askCmdr.tool.aboutItem.doing": "Đang tra cứu xem một mục là gì",
+  "@askCmdr.tool.aboutItem.doing": {
+    "sourceHash": "dfc0d31"
+  },
+  "askCmdr.tool.aboutItem.done": "Đã tra cứu xem một mục là gì",
+  "@askCmdr.tool.aboutItem.done": {
+    "sourceHash": "5370586"
+  },
+  "askCmdr.tool.aboutItem.place.doing": "Đang tra cứu xem <place>{name}</place> là gì",
+  "@askCmdr.tool.aboutItem.place.doing": {
+    "sourceHash": "06dadca"
+  },
+  "askCmdr.tool.aboutItem.place.done": "Đã tra cứu xem <place>{name}</place> là gì",
+  "@askCmdr.tool.aboutItem.place.done": {
+    "sourceHash": "5c635d1"
+  },
   "askCmdr.tool.listVolumes.doing": "Đang kiểm tra ổ đĩa của bạn",
   "@askCmdr.tool.listVolumes.doing": {
     "sourceHash": "2ed1808"

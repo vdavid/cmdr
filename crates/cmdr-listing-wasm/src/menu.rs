@@ -365,7 +365,9 @@ impl DemoMenu {
             to: "main".to_string(),
         };
         match click {
-            BarClick::Command { command_id, .. } => emit("execute-command", json!({ "commandId": command_id })),
+            BarClick::Command { command_id, .. } => {
+                emit("execute-command", json!({ "commandId": command_id, "road": "relay" }))
+            }
             BarClick::ShowHiddenFiles => {
                 m.show_hidden_files = !m.show_hidden_files;
                 emit("settings-changed", json!({ "showHiddenFiles": m.show_hidden_files }))
@@ -383,13 +385,13 @@ impl DemoMenu {
                 emit("menu-sort", json!({ "action": action, "value": value }))
             }
             BarClick::Edit { command_id } if m.explorer_menu_active => {
-                emit("execute-command", json!({ "commandId": command_id }))
+                emit("execute-command", json!({ "commandId": command_id, "road": "relay" }))
             }
             BarClick::Edit { command_id } => Click::NativeEdit {
                 action: native_action(command_id).to_string(),
             },
             BarClick::CloseTab if m.explorer_menu_active => {
-                emit("execute-command", json!({ "commandId": "tab.close" }))
+                emit("execute-command", json!({ "commandId": "tab.close", "road": "relay" }))
             }
             BarClick::CloseTab => Click::CloseFocusedWindow,
         }

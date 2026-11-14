@@ -92,6 +92,22 @@
   "@askCmdr.tool.folderImportance.done": {
     "sourceHash": "c7f397f"
   },
+  "askCmdr.tool.aboutItem.doing": "Zjišťuje se, co je to za položku",
+  "@askCmdr.tool.aboutItem.doing": {
+    "sourceHash": "dfc0d31"
+  },
+  "askCmdr.tool.aboutItem.done": "Zjištěno, co je to za položku",
+  "@askCmdr.tool.aboutItem.done": {
+    "sourceHash": "5370586"
+  },
+  "askCmdr.tool.aboutItem.place.doing": "Zjišťuje se, co je <place>{name}</place>",
+  "@askCmdr.tool.aboutItem.place.doing": {
+    "sourceHash": "06dadca"
+  },
+  "askCmdr.tool.aboutItem.place.done": "Zjištěno, co je <place>{name}</place>",
+  "@askCmdr.tool.aboutItem.place.done": {
+    "sourceHash": "5c635d1"
+  },
   "askCmdr.tool.listVolumes.doing": "Kontrolují se vaše disky",
   "@askCmdr.tool.listVolumes.doing": {
     "sourceHash": "2ed1808"

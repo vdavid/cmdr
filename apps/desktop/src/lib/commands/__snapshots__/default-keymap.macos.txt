@@ -74,6 +74,7 @@ askCmdr.newChat	⌘N
 askCmdr.find	⌘F
 askCmdr.findNext	⌘G, Enter
 askCmdr.findPrevious	⌘⇧G, ⇧Enter
+aboutThis.stopVerdict	⌥S
 nav.up	↑
 nav.down	↓
 nav.open	Enter, ⌘↓
@@ -119,6 +120,7 @@ file.copyShareLink
 file.copyShareLinkOneDay	
 file.copyShareLinkOneHour	
 file.getInfo	⌘I
+file.tellMeAbout	⌘⇧I
 file.quickLook	⇧Space
 file.contextMenu	⌃Enter
 cloud.makeOffline	

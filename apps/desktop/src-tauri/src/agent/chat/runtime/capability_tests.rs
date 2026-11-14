@@ -434,6 +434,31 @@ async fn the_agent_reads_the_logs_through_use_tool() {
     }
 }
 
+/// "What is this folder?": the agent reaches the deferred `about_item` either way, through a real turn,
+/// and reads the card's facts with where each one comes from.
+#[tokio::test]
+async fn the_agent_looks_up_what_a_folder_is_either_way() {
+    crate::file_system::volume::manager::get_volume_manager().register_if_absent(
+        "root",
+        std::sync::Arc::new(cmdr_local::LocalPosixVolume::local_folder(
+            "Test root",
+            "/",
+            crate::volume_host::host(),
+        )),
+    );
+    let dir = crate::test_support::TestDir::new("agent-looks-up-a-folder");
+    let folder = dir.join("node_modules");
+    std::fs::create_dir(&folder).expect("make the folder");
+
+    let params = json!({ "path": folder.to_string_lossy() });
+    for call in both_ways(&ToolId::AboutItem, &params) {
+        let answer = FakeFrontend::new().call(call.clone(), TurnOrigin::Text).await;
+        assert_eq!(answer["about"]["target"], "folder", "{call:?}: {answer}");
+        assert_eq!(answer["about"]["identity"]["value"]["name"], "node_modules", "{answer}");
+        assert!(answer["howCmdrKnows"]["identity"].is_string(), "{answer}");
+    }
+}
+
 // ── Sensitive: asked, and only a yes runs it ──────────────────────────────────
 
 /// Each sensitive tool, and the event only its handler sends.

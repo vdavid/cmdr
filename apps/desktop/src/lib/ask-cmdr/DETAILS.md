@@ -607,6 +607,12 @@ registry lives below `commands/` rather than inside the chat command.
   the payload paths (genuine local absolute). Kinds are resolved backend-side (`ask_cmdr_resolve_attachments`) from
   known pane state, defaulting to file. The Tauri APIs load lazily and swallow failures, so the composer still mounts
   outside a Tauri webview (unit tests).
+- **A new chat handed an item from elsewhere** (`openNewChatWith(refs, draft)`, the "Tell me about this" card's
+  "Continue in Ask Cmdr"): `openNewChat`'s fresh chat, the refs staged, and `draft` in `askCmdrState.composerDraft`,
+  which the composer takes once into its text (unsent) and clears. ❌ Nothing is sent: the person's send is the egress
+  moment. ❌ The draft is a FIXED catalog string, never text from a file, a tool, or a model: a user turn is the most
+  trusted text the agent reads, so a card's facts or its AI take must never arrive there as the person's words. The
+  agent reads the item's facts itself, through `about_item`, as a tool result.
 - Chips render the escaped basename (`attachmentBasename`) as plain `{text}` — filesystem names are
   attacker-controllable on a network share, so never `{@html}` (see the shared XSS-boundary rule).
 
@@ -1037,9 +1043,10 @@ backend's slot status does that (`ask_cmdr_slot_status` reads `test_mode::ask_cm
   - The backend enforces both gates on every send, before a thread exists (`AskCmdrOff` / `NoCloudConsent` refusals). A
     send refused as either re-runs `refreshRailGate()`, which flips the rail to the matching gate; `ask-cmdr-labels.ts`
     keeps a line for each, for the rare race.
-  - **`askCmdr.enabled` saves `settings.json` at once** (the applier forceSaves, then `askCmdrEnabledChanged()`
-    refreshes the wake loop's cached readiness): the send path reads the file fresh, so "turn on, then send" can't beat
-    the debounced flush. MCP can't set it (`mcpSettable: false`): on Local it starts a proactive loop.
+  - **`askCmdr.enabled` saves `settings.json` at once**, from whichever window flipped it: the backend saves the store
+    the moment the key reaches it, then refreshes the wake loop's cached readiness and, when off, stops running turns
+    (`settings::store_watch`, `agent::follow_settings_move`). The send path reads the file fresh, so "turn on, then
+    send" can't beat the debounced flush. MCP can't set it (`mcpSettable: false`): on Local it starts a proactive loop.
   - **Existing installs get the switch once, at startup** (`ask-cmdr-enabled-mapping.ts`, the `askCmdrEnabledMapping`
     step): a recorded legacy opt-in (any copy version, no held "no") maps to on, anything else to off, an unreadable
     store to nothing (next launch asks again). It runs only after onboarding finished and only while the switch was

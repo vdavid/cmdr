@@ -710,6 +710,12 @@ else
             # same flag on its app launch; keep them in sync.
             export CMDR_E2E_ASK_CMDR_FAKE=1
 
+            # Hold the fake AI take of the "Tell me about this" card mid-stream until the
+            # spec releases it, so about-this-verdict.spec.ts can press Stop on a take
+            # still writing.
+            # The macOS harness sets the same value; keep them in sync.
+            export CMDR_E2E_ABOUT_VERDICT_PACE=0,held
+
             # Pause a search cover walk before each directory read, so the live-walk
             # specs (search-live, search-walk-handoff) have a window to watch results
             # arrive in. They walk a directory CHAIN, so this is a per-level floor no
@@ -737,6 +743,11 @@ else
             export CMDR_E2E_START_PATH
             CMDR_E2E_START_PATH=$(npx tsx -e "import { createFixtures } from \"./test/e2e-shared/fixtures.js\"; console.log(createFixtures())" | tail -1)
             echo "Fixtures at: $CMDR_E2E_START_PATH"
+            # The home folder of the "Tell me about this" card (no apostrophes in here: this
+            # whole block is one single-quoted bash -c string): about-this.spec.ts builds its QA
+            # tree there (e2e-shared/about-fixtures.ts), with a fake Library of its own. The
+            # macOS harness sets the same, in e2e-playwright-app.go.
+            export CMDR_ABOUT_FIXTURE_HOME="$CMDR_E2E_START_PATH/about-this-qa/home"
 
             # Remove stale socket from a previous run
             rm -f "$SOCKET_PATH"

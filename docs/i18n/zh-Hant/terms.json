@@ -4870,5 +4870,32 @@
     "chosen": "資料庫",
     "confidence": "high",
     "sources": "MS terminology (database → 資料庫, HKG, TWN); KDE Dolphin zh-TW 資料庫"
+  },
+  "continue": {
+    "chosen": "繼續",
+    "confidence": "high",
+    "forms": "button 繼續; Continue in X → 在 X 中繼續",
+    "sources": "macOS zh-TW Finder AL3 (Continue → 繼續), SystemSettings CONTINUE (繼續⋯); Double Commander, git zh-TW agree",
+    "accept": ["接下去"]
+  },
+  "importance": {
+    "chosen": "重要性",
+    "confidence": "high",
+    "forms": "row label 重要性; how much a folder matters → 有多重要",
+    "sources": "catalog (settings image-index order option 依資料夾的重要性, keywords 重要性); MS TBX high importance → 高重要性",
+    "accept": ["重要"]
+  },
+  "it-team": {
+    "chosen": "IT 團隊",
+    "confidence": "tentative",
+    "forms": "your IT team's policy → 你的 IT 團隊的政策",
+    "sources": "No pile hit (macOS, MS, Linux, orthodox); catalog's settled form (請你的 IT 團隊或管理這部 Mac 的人幫你更新, 找你的 IT 團隊確認)",
+    "accept": ["IT 人員"]
+  },
+  "macos-package": {
+    "chosen": "套件",
+    "confidence": "high",
+    "forms": "item kind → 套件; Show Package Contents → 顯示套件內容",
+    "sources": "macOS zh-TW Finder N158 (Show Package Contents → 顯示套件內容); catalog fileExplorer.list.rowKind.package 套件"
   }
 }

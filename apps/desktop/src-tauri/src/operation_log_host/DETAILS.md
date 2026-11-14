@@ -32,6 +32,13 @@ work here: editing, planning, reorganizing, or advising.
 into it (`Operations::operation_log`) and never reads `operation_log()`. The test binary's shared engine is built over
 the shared handle too, as the app's engine is over the installed one.
 
+## Reads from outside the engine
+
+`db_path()` hands out the open log's database path (`None` until `start` opened it, and for good when it couldn't), so
+a reader can open its own read connection: "Tell me about this" asks `query::landed_at` which operation landed the item
+(`../about/DETAILS.md` § Cmdr's own history). A read connection never blocks the writer (WAL), and the reader never
+writes.
+
 ## Answers passed in
 
 - **Volumes**: the planner's `VolumeLookup` is the write engine's `OperationVolumes` (its supertrait), so a rollback

@@ -91,6 +91,70 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
+  "ai.cloudConsent.aboutThis.title": "<b>告訴我這是什麼</b>，每次你對檔案或資料夾開啟它的卡片時，不會另外詢問：",
+  "@ai.cloudConsent.aboutThis.title": {
+    "sourceHash": "b60933c"
+  },
+  "ai.cloudConsent.aboutThis.item.identity": "它是什麼（檔案、資料夾、App 或連結），它的名稱、路徑、大小和日期，資料夾裡有多少檔案和資料夾，有多少其他名稱指向它，連結指向哪裡，以及它的名稱是否隱藏著一個會改變文字顯示順序的字元",
+  "@ai.cloudConsent.aboutThis.item.identity": {
+    "sourceHash": "f01c726"
+  },
+  "ai.cloudConsent.aboutThis.item.realType": "根據檔案開頭的位元組判斷它是哪種檔案，或在 Cmdr 沒有讀取這些位元組時，根據它的名稱判斷",
+  "@ai.cloudConsent.aboutThis.item.realType": {
+    "sourceHash": "55e97b9"
+  },
+  "ai.cloudConsent.aboutThis.item.imageIndex": "如果是影像，Cmdr 的影像索引替它加上的標籤，以及在裡面找到的前幾行文字，都是從 Cmdr 的索引讀取，絕不會送出影像本身",
+  "@ai.cloudConsent.aboutThis.item.imageIndex": {
+    "sourceHash": "020f807"
+  },
+  "ai.cloudConsent.aboutThis.item.download": "記錄上下載它的網站（只有網站的主要位址，例如 github.com，絕不包括子網域或完整連結）、下載時間，以及下載它的 App。如果是「郵件」附件或透過 AirDrop 收到的檔案，只會說明這一點，絕不包括是誰傳來的",
+  "@ai.cloudConsent.aboutThis.item.download": {
+    "sourceHash": "40d185c"
+  },
+  "ai.cloudConsent.aboutThis.item.appAndSigner": "如果是 App 或程式，它的名稱、ID 和版本。對它或磁碟映像檔來說，簽章者的名稱和團隊 ID、它的程式碼是否仍和那個簽章相符，以及是否附上了 Apple 的公證票證",
+  "@ai.cloudConsent.aboutThis.item.appAndSigner": {
+    "sourceHash": "471891d"
+  },
+  "ai.cloudConsent.aboutThis.item.use": "你上次開啟它的時間、開啟過幾次，以及用哪個 App 開啟它",
+  "@ai.cloudConsent.aboutThis.item.use": {
+    "sourceHash": "9664a6e"
+  },
+  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Cmdr 從哪裡複製、移動或解壓縮出它，以及時間，包括那個路徑、磁碟機或伺服器名稱，以及是你還是 AI 助理開始的",
+  "@ai.cloudConsent.aboutThis.item.cmdrHistory": {
+    "sourceHash": "1d38db2"
+  },
+  "ai.cloudConsent.aboutThis.item.git": "它所在 git 存放庫的資料夾、分支和狀態，或是對於 git 歷史記錄裡的檔案，它來自哪個提交、分支或標籤，以及它在那裡上次更改的時間",
+  "@ai.cloudConsent.aboutThis.item.git": {
+    "sourceHash": "a06839e"
+  },
+  "ai.cloudConsent.aboutThis.item.owner": "它屬於哪個 App 或安裝程式，或它是系統的哪個標準資料夾，以及 Cmdr 怎麼知道的",
+  "@ai.cloudConsent.aboutThis.item.owner": {
+    "sourceHash": "f5d95a6"
+  },
+  "ai.cloudConsent.aboutThis.item.importance": "如果是資料夾，依 Cmdr 的排名它有多重要，以及你多常在 Cmdr 裡開啟它",
+  "@ai.cloudConsent.aboutThis.item.importance": {
+    "sourceHash": "b358d29"
+  },
+  "ai.cloudConsent.aboutThis.item.inside": "如果是資料夾，它是哪一類（例如快取或建置輸出）、裡面有多少東西、最大的幾個項目和最大的檔案的名稱與大小、它放著哪些種類的檔案，以及其中有多少一年內沒有變動",
+  "@ai.cloudConsent.aboutThis.item.inside": {
+    "sourceHash": "eb93c12"
+  },
+  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {如果是 App，它在你「資源庫」裡保留的資料夾名稱和大小} other {如果是 App，它用來存資料的資料夾名稱和大小}}",
+  "@ai.cloudConsent.aboutThis.item.appData": {
+    "sourceHash": "d61ade2"
+  },
+  "ai.cloudConsent.aboutThis.item.removal": "刪除它代表什麼，由 Cmdr 根據上面的事實推斷",
+  "@ai.cloudConsent.aboutThis.item.removal": {
+    "sourceHash": "f7ad4bd"
+  },
+  "ai.cloudConsent.aboutThis.item.contentsStayHome": "對於內容只會留在你電腦上的項目（列在下方 Ask Cmdr 的部分），只有它的名稱、路徑、大小、日期，以及它所屬的 App",
+  "@ai.cloudConsent.aboutThis.item.contentsStayHome": {
+    "sourceHash": "400db48"
+  },
+  "ai.cloudConsent.aboutThis.lookInside": "簡短查看檔案裡的內容：一些文字、PDF 的第一頁和標題、封存檔裡的檔案列表，或照片的相機資訊（不含拍攝地點）",
+  "@ai.cloudConsent.aboutThis.lookInside": {
+    "sourceHash": "a78e673"
+  },
   "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>，在你聊天時，或 Cmdr 主動開啟對話時：",
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "bd006c2"
@@ -118,6 +182,10 @@
   "ai.cloudConsent.askCmdr.item.attachments": "你附加到問題裡的任何檔案或資料夾，只送名稱和路徑",
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
+  },
+  "ai.cloudConsent.askCmdr.item.aboutThis": "當 Cmdr 查詢某個檔案或資料夾是什麼時，送出和「告訴我這是什麼」相同的事實，但不查看裡面的內容",
+  "@ai.cloudConsent.askCmdr.item.aboutThis": {
+    "sourceHash": "1c8e78d"
   },
   "ai.cloudConsent.askCmdr.item.mediaFields": "重新命名用到照片和歌曲的資訊時，這些資訊本身：拍攝日期、相機、標題、演出者、專輯等等",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {

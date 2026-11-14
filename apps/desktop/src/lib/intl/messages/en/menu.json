@@ -159,6 +159,10 @@
   "@menu.file.getInfo": {
     "description": "VERB phrase (imperative). Opens the macOS Get Info panel for the selected file: size, kind, dates, permissions (⌘I). This is Finder's File > Get Info; use the exact wording your macOS Finder uses in this language. No dialog input follows, hence no ellipsis."
   },
+  "menu.file.tellMeAbout": "Tell me about this",
+  "@menu.file.tellMeAbout": {
+    "description": "VERB phrase (a friendly request, as if asking a person). File menu and file context menu, right below \"Get info\". Opens Cmdr's own card about the file or folder under the cursor: where it came from, what it is, what it belongs to, and what removing it would mean. It must say the same words as the command palette entry (commands.fileTellMeAbout.label). A dialog follows, but it asks nothing, hence no ellipsis."
+  },
   "menu.file.quit": "{platform, select, windows {Exit Cmdr} other {Quit Cmdr}}",
   "@menu.file.quit": {
     "description": "VERB. Last item of the File menu on Windows and Linux, which have no app menu; ends Cmdr, asking first if a copy or move is still running. The Windows branch says Exit, Windows' own name for it (File > Exit); the other branch is Linux's Quit. \"Cmdr\" is the app name and must stay verbatim, capital C included. macOS uses menu.app.quit in its app menu instead."

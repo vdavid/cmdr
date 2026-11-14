@@ -10,6 +10,8 @@ pub mod ai;
 #[cfg(test)]
 mod bench;
 #[cfg(test)]
+mod bench_card;
+#[cfg(test)]
 mod diagnostics_tests;
 pub(crate) mod execute;
 pub mod history;
@@ -43,7 +45,7 @@ pub(crate) use volumes::{
 
 // execute.rs (single-volume orchestration)
 pub(crate) use execute::{
-    AGENT_WAIT_DEFAULT, AGENT_WAIT_MAX, LiveSearchStart, run_blocking, run_live_collected, start_live,
+    AGENT_WAIT_DEFAULT, AGENT_WAIT_MAX, LiveSearchStart, run_blocking, run_if_loaded, run_live_collected, start_live,
 };
 
 // live.rs (a search that walks what the index can't answer for)

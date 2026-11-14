@@ -264,3 +264,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `een invoermethode aan- of uitzetten`. Confirm.
 - `shortcuts.scope.searchDialog` → `Zoeken en Selecteer bestanden` quotes both dialog titles verbatim, which mixes a
   noun and an imperative. Confirm or pick a natural heading.
+- Tell me about this, coined: the command `Vertel me hierover`, the AI take `AI-commentaar`, `notarisatiebewijs` for
+  Apple's notarization ticket (no Apple nl source), `Bundel` for the bundle row (MS `app-bundel`), and `geregistreerd`
+  for "recorded". Confirm.

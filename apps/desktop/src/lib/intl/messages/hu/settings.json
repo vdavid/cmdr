@@ -1288,6 +1288,18 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.aboutThis.aiVerdict.label": "AI-vélemény a „Mesélj erről” kártyán",
+  "@settings.aboutThis.aiVerdict.label": {
+    "sourceHash": "4c84599"
+  },
+  "settings.aboutThis.aiVerdict.description": "Amikor megnyitod a kártyát, az AI két-három mondatot ír a rajta látható tényekből. Felhő-AI esetén a kártya tényei és egy rövid belenézés a fájlba minden alkalommal a szolgáltatódhoz kerülnek.",
+  "@settings.aboutThis.aiVerdict.description": {
+    "sourceHash": "5dfb5f5"
+  },
+  "settings.aboutThis.aiVerdict.keywords": "magyarázat, vélemény, összefoglaló, összegzés, fájlinfó, mi ez, leírás, értékelés",
+  "@settings.aboutThis.aiVerdict.keywords": {
+    "sourceHash": "56b9db5"
+  },
   "settings.ai.localContextSize.keywords": "kontextus, kontextusablak, ablak, token, memória, méret, helyi",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
@@ -2420,6 +2432,18 @@
   "settings.behavior.adbHintDismissed.keywords": "telefon, mobil, hibakeresés, fejlesztői beállítások, fejlesztő, tipp, sor",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
+  },
+  "settings.aboutThis.aiHintDismissed.label": "A „Mesélj erről” AI-tippjének elnyomása",
+  "@settings.aboutThis.aiHintDismissed.label": {
+    "sourceHash": "fd81e08"
+  },
+  "settings.aboutThis.aiHintDismissed.description": "Ha az AI ki van kapcsolva, vagy még nincs beállítva, a „Mesélj erről” kártya a gombjai alatt egy sort mutat arról, hogy az AI alaposabb áttekintést ad hozzá. Ha a sort a × gombjával bezárod, ez bekapcsolódik. Kapcsold ezt ki, hogy újra lásd a sort.",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "sourceHash": "7141d88"
+  },
+  "settings.aboutThis.aiHintDismissed.keywords": "tipp, javaslat, fájlinfó, kártya, alaposabb áttekintés, magyarázat, sor, AI",
+  "@settings.aboutThis.aiHintDismissed.keywords": {
+    "sourceHash": "2e77845"
   },
   "settings.section.notifications": "Értesítések",
   "@settings.section.notifications": {

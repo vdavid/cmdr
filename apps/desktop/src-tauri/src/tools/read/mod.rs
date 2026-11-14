@@ -7,6 +7,7 @@
 //!   connectivity, plus the favorites.
 //! - [`inspect`]: `inspect_file` — up to 200 files' metadata, the kind their bytes really are, and a bounded
 //!   content window per kind, read through the viewer's own core.
+//! - [`about`]: `about_item` — one item's "Tell me about this" facts, through the card's own host.
 //!
 //! The `operations_list` / `operations_get` family lives in `actions/operation_log.rs`, so it has no
 //! file here.
@@ -17,6 +18,7 @@
 //! honesty is load-bearing). See `../DETAILS.md` for the catalog and the
 //! reuse/honesty rules.
 
+pub mod about;
 pub mod importance;
 pub mod inspect;
 pub mod listing;

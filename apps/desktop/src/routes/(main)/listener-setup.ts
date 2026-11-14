@@ -90,11 +90,11 @@ export interface ListenerSetupContext {
   /** Live read of the explorer handle (`undefined` until `DualPaneExplorer` mounts; HMR can swap it). */
   getExplorer: () => ExplorerAPI | undefined
   /**
-   * The dispatchers for the two roads these listeners carry: the native menu's events and the
-   * mouse's side buttons. Each is bound to its road in `+page.svelte`, so the dispatch core
-   * knows where a command came from.
+   * The dispatchers for the roads these listeners carry: the native menu's events (a right-click row
+   * with its own id takes `contextMenu`) and the mouse's side buttons. Each is bound to its road in
+   * `+page.svelte`, so the dispatch core knows where a command came from.
    */
-  dispatchers: Pick<CommandDispatchers, 'menu' | 'mouse'>
+  dispatchers: Pick<CommandDispatchers, 'menu' | 'contextMenu' | 'mouse'>
   /** The page's mount scope; every registered unlisten goes here. */
   scope: MountScope
   /** Write-only dialog setters (the component owns the `$state`). */
@@ -261,17 +261,18 @@ export async function setupMenuListeners(ctx: ListenerSetupContext): Promise<voi
   const { dispatchers, getExplorer, scope } = ctx
 
   // Single unified listener for all menu commands routed through "execute-command": the
-  // native menu bar, the Dock menu, and other windows' emits all take the menu's road.
+  // native menu bar, the Dock menu, and other windows' emits take the menu's road, and a
+  // right-click menu's own row (`road: contextMenu`) takes its own.
   try {
     scope.add(
       await onExecuteCommand((payload) => {
-        const { commandId } = payload
+        const { commandId, road } = payload
         // The Rust menu emit (`menu_id_to_command`) and cross-window emits send a bare
         // string across IPC; the `CommandId` union can't reach over that boundary. Narrow
         // at the edge so a stale Rust id is dropped here rather than no-oping in the switch
         // `default`. The Rust↔registry drift test pins the two id sets together.
         if (isCommandId(commandId)) {
-          void dispatchers.menu(commandId)
+          void (road === 'contextMenu' ? dispatchers.contextMenu : dispatchers.menu)(commandId)
         }
       }),
     )

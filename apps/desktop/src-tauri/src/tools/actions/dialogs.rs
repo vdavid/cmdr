@@ -116,10 +116,7 @@ async fn execute_dialog_open<R: Runtime>(
                     "OK: Opened settings. It shows {section} if that names a section in its sidebar, else the last one viewed."
                 )))
             } else {
-                ExecuteCommand {
-                    command_id: "app.settings".to_string(),
-                }
-                .emit_to(app, "main")?;
+                ExecuteCommand::relay("app.settings").emit_to(app, "main")?;
                 wait_for_ack(app, AckSignal::WindowAppeared("settings"), DEFAULT_ACK_TIMEOUT).await?;
                 Ok(json!("OK: Opened settings"))
             }
@@ -143,10 +140,7 @@ async fn execute_dialog_open<R: Runtime>(
             }
         }
         "about" => {
-            ExecuteCommand {
-                command_id: "app.about".to_string(),
-            }
-            .emit_to(app, "main")?;
+            ExecuteCommand::relay("app.about").emit_to(app, "main")?;
             // `about` is a soft dialog (ModalDialog overlay in the main window), not a
             // separate Tauri window. Track via SoftDialogTracker.
             wait_for_ack(app, AckSignal::SoftDialogAppeared("about"), DEFAULT_ACK_TIMEOUT).await?;
@@ -157,10 +151,7 @@ async fn execute_dialog_open<R: Runtime>(
             // handler covers all three surfaces. The wizard is a soft sheet (its own
             // `OnboardingWizard.svelte`, not a ModalDialog consumer), but it calls
             // `notifyDialogOpened('onboarding')` on mount, so SoftDialogTracker fires.
-            ExecuteCommand {
-                command_id: "cmdr.openOnboarding".to_string(),
-            }
-            .emit_to(app, "main")?;
+            ExecuteCommand::relay("cmdr.openOnboarding").emit_to(app, "main")?;
             wait_for_ack(app, AckSignal::SoftDialogAppeared("onboarding"), DEFAULT_ACK_TIMEOUT).await?;
             Ok(json!("OK: Opened onboarding wizard"))
         }

@@ -872,6 +872,18 @@
   "@commands.fileGetInfo.label": {
     "sourceHash": "da65a65"
   },
+  "commands.fileTellMeAbout.label": "Berätta om det här",
+  "@commands.fileTellMeAbout.label": {
+    "sourceHash": "0d5deaf"
+  },
+  "commands.fileTellMeAbout.description": "Visar var objektet kommer ifrån, vad det är och vad det skulle innebära att ta bort det",
+  "@commands.fileTellMeAbout.description": {
+    "sourceHash": "66f0488"
+  },
+  "commands.aboutThisStopVerdict.label": "Stoppa AI-kommentaren",
+  "@commands.aboutThisStopVerdict.label": {
+    "sourceHash": "0ffd7ae"
+  },
   "commands.fileQuickLook.label": "{platform, select, macos {Överblick} other {Förhandsvisning}}",
   "@commands.fileQuickLook.label": {
     "sourceHash": "c3f57b4"

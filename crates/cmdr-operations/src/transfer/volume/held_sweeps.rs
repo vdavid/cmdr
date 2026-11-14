@@ -258,8 +258,14 @@ impl HeldSweeps {
         let Some((src_vol, dst_vol)) = self.journal_volumes.as_ref() else {
             return;
         };
-        let landed =
-            journal::LandedTimes::read_back(&*self.dest_volume, &held.landed, held.is_dir, &held.created_files).await;
+        let landed = crate::journal_landed::LandedReadBack::read_back(
+            self.state.scope(),
+            &*self.dest_volume,
+            &held.landed,
+            held.is_dir,
+            &held.created_files,
+        )
+        .await;
         journal::record_volume_transfer_source(
             self.state.scope(),
             src_vol,

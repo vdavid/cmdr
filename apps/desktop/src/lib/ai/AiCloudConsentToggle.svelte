@@ -25,6 +25,7 @@
         refreshCloudConsent,
         CLOUD_CONSENT_ANCHOR,
     } from './cloud-consent.svelte'
+    import { ABOUT_THIS_LINES } from './about-this-disclosure'
 
     interface Props {
         /** Stamps the DOM id deep links scroll to. Off in onboarding, which has no deep links. */
@@ -117,6 +118,14 @@
                 <li><Trans key="ai.cloudConsent.folderSuggestions" snippets={{ b }} /></li>
                 <li><Trans key="ai.cloudConsent.search" snippets={{ b }} /></li>
                 <li><Trans key="ai.cloudConsent.selection" snippets={{ b }} /></li>
+                <li data-test="cloud-consent-about-this">
+                    <Trans key="ai.cloudConsent.aboutThis.title" snippets={{ b }} />
+                    <ul>
+                        {#each ABOUT_THIS_LINES as key (key)}
+                            <li>{tString(key)}</li>
+                        {/each}
+                    </ul>
+                </li>
                 <li>
                     <Trans key="ai.cloudConsent.askCmdr.title" snippets={{ b }} />
                     <ul>
@@ -126,6 +135,7 @@
                         <li>{tString('ai.cloudConsent.askCmdr.item.contents')}</li>
                         <li>{tString('ai.cloudConsent.askCmdr.item.envelope')}</li>
                         <li>{tString('ai.cloudConsent.askCmdr.item.attachments')}</li>
+                        <li>{tString('ai.cloudConsent.askCmdr.item.aboutThis')}</li>
                         <li>{tString('ai.cloudConsent.askCmdr.item.mediaFields')}</li>
                         <li>{tString('ai.cloudConsent.askCmdr.item.appState')}</li>
                         <li>{tString('ai.cloudConsent.askCmdr.item.settings')}</li>

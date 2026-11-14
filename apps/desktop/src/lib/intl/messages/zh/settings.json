@@ -1288,6 +1288,18 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.aboutThis.aiVerdict.label": "“介绍一下这个”中的 AI 解读",
+  "@settings.aboutThis.aiVerdict.label": {
+    "sourceHash": "4c84599"
+  },
+  "settings.aboutThis.aiVerdict.description": "打开卡片时，AI 会根据卡片显示的信息写两三句话。使用云端 AI 时，卡片上的信息和对文件的简短查看内容每次都会发送给你的提供方。",
+  "@settings.aboutThis.aiVerdict.description": {
+    "sourceHash": "5dfb5f5"
+  },
+  "settings.aboutThis.aiVerdict.keywords": "解释、解读、总结、摘要、文件信息、这是什么、描述、点评",
+  "@settings.aboutThis.aiVerdict.keywords": {
+    "sourceHash": "56b9db5"
+  },
   "settings.ai.localContextSize.keywords": "上下文、窗口、上下文窗口、令牌、词元、内存、大小、本地",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
@@ -2419,6 +2431,18 @@
   "settings.behavior.adbHintDismissed.keywords": "手机、移动设备、调试、开发者、开发者选项、提示",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
+  },
+  "settings.aboutThis.aiHintDismissed.label": "不显示“介绍一下这个”中的 AI 提示",
+  "@settings.aboutThis.aiHintDismissed.label": {
+    "sourceHash": "fd81e08"
+  },
+  "settings.aboutThis.aiHintDismissed.description": "AI 关闭或还没设置好时，“介绍一下这个”卡片的按钮下方会显示一行文字，说明开启 AI 可以加上更深入的解读。用 × 关闭这一行会开启这个选项。关闭这个选项就能再次看到这一行。",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "sourceHash": "7141d88"
+  },
+  "settings.aboutThis.aiHintDismissed.keywords": "提示、小贴士、文件信息、卡片、解读、说明",
+  "@settings.aboutThis.aiHintDismissed.keywords": {
+    "sourceHash": "2e77845"
   },
   "settings.section.notifications": "通知",
   "@settings.section.notifications": {

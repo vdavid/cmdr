@@ -427,3 +427,9 @@ bundle), Microsoft, file managers, the catalog.
 
 - Ordinals are `#:a` / `#:e` from the `selectordinal` category; from the end, `sista` (=1) and `näst sista` (=2), else
   `det 3:e sista tecknet`. Edges `Början` / `Slut`; grandparent `Överordnad mapp` beside the parent's `Mapp`.
+
+## Tell me about this (`aboutThis.*`, `commands.fileTellMeAbout.*`, `ai.cloudConsent.aboutThis.*`)
+
+- `Berätta om det här`, the card `kortet`. AI take → `AI-kommentar` (❌ `bedömning`: never a verdict). "Recorded" →
+  `noterade` / `enligt noteringen`, record → `notering`: a claim, never `registrerad`. `{app}` takes `för` / `från`,
+  never a genitive. User Library → `din Bibliotek-mapp`; Finder folders as `mappen X`; ticket → `notariseringsintyg`.

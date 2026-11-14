@@ -91,6 +91,70 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
+  "ai.cloudConsent.aboutThis.title": "<b>Cho tôi biết về mục này</b>, mỗi lần bạn mở bảng thông tin của một tệp hoặc thư mục, mà không hỏi thêm:",
+  "@ai.cloudConsent.aboutThis.title": {
+    "sourceHash": "b60933c"
+  },
+  "ai.cloudConsent.aboutThis.item.identity": "Mục đó là gì (tệp, thư mục, ứng dụng hay liên kết), tên, đường dẫn, kích cỡ và ngày tháng của mục, số tệp và thư mục trong một thư mục, số tên khác trỏ tới mục, nơi một liên kết trỏ tới và việc tên có ẩn một ký tự làm đổi thứ tự hiển thị các chữ cái hay không",
+  "@ai.cloudConsent.aboutThis.item.identity": {
+    "sourceHash": "f01c726"
+  },
+  "ai.cloudConsent.aboutThis.item.realType": "Loại tệp mà những byte đầu tiên cho thấy, hoặc tên tệp ở những chỗ Cmdr không đọc các byte đó",
+  "@ai.cloudConsent.aboutThis.item.realType": {
+    "sourceHash": "55e97b9"
+  },
+  "ai.cloudConsent.aboutThis.item.imageIndex": "Với một ảnh, các thẻ mà chỉ mục hình ảnh của Cmdr gắn cho ảnh và những dòng văn bản đầu tiên tìm thấy trong ảnh, đọc từ chỉ mục của Cmdr, không bao giờ là chính bức ảnh",
+  "@ai.cloudConsent.aboutThis.item.imageIndex": {
+    "sourceHash": "020f807"
+  },
+  "ai.cloudConsent.aboutThis.item.download": "Trang web mà mục đó được ghi nhận là đã tải về (chỉ địa chỉ chính của trang, như github.com, không bao giờ là tên miền phụ hay liên kết đầy đủ), thời điểm tải và ứng dụng đã tải về. Với tệp đính kèm Mail hoặc AirDrop, chỉ cho biết mục đó là như vậy, không bao giờ cho biết ai đã gửi",
+  "@ai.cloudConsent.aboutThis.item.download": {
+    "sourceHash": "40d185c"
+  },
+  "ai.cloudConsent.aboutThis.item.appAndSigner": "Với một ứng dụng hoặc chương trình: tên, ID và phiên bản. Với ứng dụng, chương trình hoặc ảnh đĩa: tên và ID nhóm của bên đã ký, mã có còn khớp với chữ ký đó không và có đính kèm phiếu công chứng của Apple không",
+  "@ai.cloudConsent.aboutThis.item.appAndSigner": {
+    "sourceHash": "471891d"
+  },
+  "ai.cloudConsent.aboutThis.item.use": "Lần cuối bạn mở mục đó, số lần mở và ứng dụng nào mở mục đó",
+  "@ai.cloudConsent.aboutThis.item.use": {
+    "sourceHash": "9664a6e"
+  },
+  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Mục đó được Cmdr sao chép, di chuyển hoặc giải nén từ đâu và khi nào, kể cả đường dẫn đó, tên ổ đĩa hoặc máy chủ, và việc bạn hay một trợ lý AI đã bắt đầu thao tác đó",
+  "@ai.cloudConsent.aboutThis.item.cmdrHistory": {
+    "sourceHash": "1d38db2"
+  },
+  "ai.cloudConsent.aboutThis.item.git": "Thư mục, nhánh và trạng thái của kho git chứa mục đó, hoặc với một tệp từ lịch sử git, commit, nhánh hoặc tag mà tệp đến từ đó và lần cuối tệp thay đổi ở đó",
+  "@ai.cloudConsent.aboutThis.item.git": {
+    "sourceHash": "a06839e"
+  },
+  "ai.cloudConsent.aboutThis.item.owner": "Ứng dụng hoặc trình cài đặt mà mục đó thuộc về, hoặc đó là thư mục chuẩn nào của hệ thống, và Cmdr biết điều đó bằng cách nào",
+  "@ai.cloudConsent.aboutThis.item.owner": {
+    "sourceHash": "f5d95a6"
+  },
+  "ai.cloudConsent.aboutThis.item.importance": "Với một thư mục, mức độ quan trọng theo bảng xếp hạng của Cmdr và tần suất bạn mở thư mục đó trong Cmdr",
+  "@ai.cloudConsent.aboutThis.item.importance": {
+    "sourceHash": "b358d29"
+  },
+  "ai.cloudConsent.aboutThis.item.inside": "Với một thư mục, đó là loại thư mục gì (như bộ đệm hay kết quả dựng), có bao nhiêu thứ bên trong, tên và kích cỡ của những mục lớn nhất và của các tệp lớn nhất, những loại tệp trong đó và bao nhiêu phần không thay đổi trong một năm qua",
+  "@ai.cloudConsent.aboutThis.item.inside": {
+    "sourceHash": "eb93c12"
+  },
+  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {Với một ứng dụng, tên và kích cỡ của các thư mục mà ứng dụng giữ trong Thư viện của bạn} other {Với một ứng dụng, tên và kích cỡ của các thư mục dữ liệu mà ứng dụng giữ}}",
+  "@ai.cloudConsent.aboutThis.item.appData": {
+    "sourceHash": "d61ade2"
+  },
+  "ai.cloudConsent.aboutThis.item.removal": "Gỡ bỏ mục đó sẽ có nghĩa là gì, theo cách Cmdr suy ra từ các dữ kiện ở trên",
+  "@ai.cloudConsent.aboutThis.item.removal": {
+    "sourceHash": "f7ad4bd"
+  },
+  "ai.cloudConsent.aboutThis.item.contentsStayHome": "Với một mục có nội dung luôn ở lại trên máy (liệt kê trong phần Ask Cmdr bên dưới), chỉ tên, đường dẫn, kích cỡ, ngày tháng và ứng dụng mà mục đó thuộc về",
+  "@ai.cloudConsent.aboutThis.item.contentsStayHome": {
+    "sourceHash": "400db48"
+  },
+  "ai.cloudConsent.aboutThis.lookInside": "Xem bên trong một tệp, chỉ một phần nhỏ: một ít văn bản, trang đầu và tiêu đề của một tệp PDF, danh sách tệp trong một tệp nén, hoặc thông tin máy ảnh của một bức ảnh, không kèm vị trí chụp",
+  "@ai.cloudConsent.aboutThis.lookInside": {
+    "sourceHash": "a78e673"
+  },
   "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, khi bạn trò chuyện hoặc khi Cmdr tự bắt đầu một cuộc trò chuyện:",
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "bd006c2"
@@ -118,6 +182,10 @@
   "ai.cloudConsent.askCmdr.item.attachments": "Bất kỳ tệp hoặc thư mục nào bạn đính kèm vào câu hỏi, chỉ theo tên và đường dẫn của nó",
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
+  },
+  "ai.cloudConsent.askCmdr.item.aboutThis": "Khi Cmdr tra cứu xem một tệp hoặc thư mục là gì, những dữ kiện giống như “Cho tôi biết về mục này” gửi đi, nhưng không xem bên trong",
+  "@ai.cloudConsent.askCmdr.item.aboutThis": {
+    "sourceHash": "1c8e78d"
   },
   "ai.cloudConsent.askCmdr.item.mediaFields": "Chi tiết của ảnh và bài hát khi một lần đổi tên dùng đến chúng: ngày chụp, máy ảnh, tiêu đề, nghệ sĩ, album và những thứ tương tự",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {

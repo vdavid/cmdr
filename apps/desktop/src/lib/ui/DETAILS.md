@@ -112,6 +112,7 @@ Props:
 | `children`            | Snippet                       | Dialog body                                                           |
 | `footer`              | Snippet?                      | Action buttons, rendered in a right-aligned `.modal-footer`           |
 | `footerLeading`       | Snippet?                      | Content pinned left on the footer row; buttons stay right-aligned     |
+| `footerNote`          | Snippet?                      | One quiet line on its own row under the buttons (a hint)              |
 | `dialogId`            | `SoftDialogId?`               | Auto-calls `notifyDialogOpened`/`notifyDialogClosed` on mount/destroy |
 | `onclose`             | `() => void`?                 | Renders × button; also called on Escape                               |
 | `onescape`            | `() => void`?                 | Escape runs this instead of `onclose` (needs `onclose`; × unchanged)  |
@@ -288,6 +289,10 @@ filter popover. Those three props exist so it gets the standard chrome without f
 **`footerLeading`** puts a control on the SAME line as the action buttons, pinned left (`margin-right: auto` on the
 wrapper, so the buttons stay hard right at any leading width). Use it for a modifier on the primary action, the way
 `DeleteDialog` rides its "Move to trash" switch beside the confirm button; it renders only when `footer` does.
+**`footerNote`** is one quiet line on a row of its own under that line (`flex-basis: 100%` in the wrapping footer), for
+a hint ("AI is off, so…" on the Tell me about this card): as a second line inside `footerLeading` it centered the
+buttons against two lines and pushed Close off the actions' row. Pass it only when there's something to say; an empty
+note still takes its row.
 
 **Edge and corner.** The dialog's corner is `--radius-dialog` (22px, a notch rounder than a stock window's
 `--radius-window`), and its edge is TWO hairlines the way macOS draws a panel: a darker `border` outside plus a lighter

@@ -872,6 +872,18 @@
   "@commands.fileGetInfo.label": {
     "sourceHash": "da65a65"
   },
+  "commands.fileTellMeAbout.label": "Fale sobre isto",
+  "@commands.fileTellMeAbout.label": {
+    "sourceHash": "0d5deaf"
+  },
+  "commands.fileTellMeAbout.description": "Mostra de onde o item veio, o que ele é e o que significaria apagá-lo",
+  "@commands.fileTellMeAbout.description": {
+    "sourceHash": "66f0488"
+  },
+  "commands.aboutThisStopVerdict.label": "Parar o comentário da IA",
+  "@commands.aboutThisStopVerdict.label": {
+    "sourceHash": "0ffd7ae"
+  },
   "commands.fileQuickLook.label": "{platform, select, macos {Visualização rápida} other {Pré-visualizar}}",
   "@commands.fileQuickLook.label": {
     "sourceHash": "c3f57b4"

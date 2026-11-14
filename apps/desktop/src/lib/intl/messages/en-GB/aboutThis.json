@@ -1,0 +1,6 @@
+{
+  "aboutThis.action.trash": "{platform, select, windows {Move to the Recycle Bin…} other {Move to Bin…}}",
+  "@aboutThis.action.trash": {
+    "sourceHash": "13ef52a"
+  }
+}

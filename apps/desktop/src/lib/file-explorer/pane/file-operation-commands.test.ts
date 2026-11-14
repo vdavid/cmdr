@@ -917,6 +917,32 @@ describe('openDeleteDialog', () => {
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })
 
+  it('a press about one item reads the cursor row alone, whatever is selected', async () => {
+    getSelectionEntriesSpy.mockResolvedValue([fileEntry({ name: 'cur.txt', path: '/left/cur.txt' })])
+    const paneRef = buildPaneRef({ listingId: 'lst-1', selectedIndices: [1, 2], cursorIndex: 4 })
+    const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume()] })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user', cursorPath: '/left/cur.txt' })
+
+    expect(getSelectionEntriesSpy.mock.calls[0][2]).toEqual([4])
+    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
+      sourcePaths: ['/left/cur.txt'],
+      isFromCursor: true,
+    })
+  })
+
+  it('opens nothing when the cursor row is no longer the item the press named', async () => {
+    getSelectionEntriesSpy.mockResolvedValue([fileEntry({ name: 'other.txt', path: '/left/other.txt' })])
+    const paneRef = buildPaneRef({ listingId: 'lst-1', cursorIndex: 4 })
+    const access = buildAccess({ paneRefs: { left: paneRef }, volumes: [volume()] })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog({ permanent: false, initiator: 'user', cursorPath: '/left/cur.txt' })
+
+    expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
+  })
+
   it('bails when all fetched entries are the parent ".." entry', async () => {
     getSelectionEntriesSpy.mockResolvedValue([fileEntry({ name: '..' })])
     const paneRef = buildPaneRef({ listingId: 'lst-1', selectedIndices: [0] })

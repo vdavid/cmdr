@@ -1,3 +1,4 @@
+mod about_item_tests;
 mod ack_system_tests;
 mod agent_view_tests;
 mod resource_indexing_tests;

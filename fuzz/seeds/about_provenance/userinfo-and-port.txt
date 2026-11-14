@@ -1,0 +1,1 @@
+https://user:hunter2@Example.COM:8443/private?key=abc#frag

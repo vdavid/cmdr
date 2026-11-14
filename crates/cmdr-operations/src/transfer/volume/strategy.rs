@@ -172,7 +172,7 @@ pub(super) async fn copy_single_path(
         let leaf = progress.begin_leaf(progress.node());
         let on_chunk = |file_bytes_done: u64, _file_bytes_total: u64| leaf.on_chunk(file_bytes_done);
         // A top-level file's landed time is read back with `get_metadata`, the
-        // undo's own recheck (`journal::LandedTimes`), so only its bytes go up.
+        // undo's own recheck (`journal_landed::LandedReadBack`), so only its bytes go up.
         let bytes = stream_pipe_file(
             source_volume,
             source_path,

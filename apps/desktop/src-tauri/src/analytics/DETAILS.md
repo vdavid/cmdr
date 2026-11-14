@@ -367,6 +367,19 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   window helper every entry point funnels through, so it counts all dozen of them and covers a new one for free. Why
   `surface` is a required first param and why `section` stays out: `apps/desktop/src/lib/settings/DETAILS.md` § "Every
   open funnels through `openSettingsWindow`".
+- `tell_me_about_used` (frontend, `#lib/about-this/about-analytics.ts`, once per card at its close, from
+  `about-this-state.svelte.ts`): `trigger` (the dispatch road, `DispatchSource`: `contextMenu` for the file context
+  menu's own row, `palette`, `mcp`, `keyboard`, `menu`, …; `menu` is a menu-bar click, and on macOS usually the shortcut
+  too, since its accelerator fires the bar's item before the webview's keydown and the menu event can't say whether a
+  key or a click sent it), `target` (`file` / `folder` / `app` /
+  `package` / `symlink` / `archive_entry`, or `unknown` for a card closed before its plan), `volume_kind`,
+  `unavailable` (the `AboutUnavailable` token, or `none`), `settled` bool, `verdict` (`none` / `shown` / `cached` /
+  `stopped` / `failed` / `closed_early` / `unavailable`), `verdict_why` (the `VerdictUnavailable` kind or the
+  `VerdictProblem` token, `other` for a failed ending with no problem token, or `none`), `verdict_trust` (the
+  `ModelTrust` token of the model that wrote a planned take: `trusted` / `oftenWrong` / `untested`, or `none`), `action` (the `AboutAction` type, `goTo` for a row that took the pane somewhere,
+  or `none`), and `continued` bool. ❌ Never a path, name, URL, app, or the AI take's text. One event at the close,
+  because only then is it known whether the take finished and what the person did next; `verdict_trust` is what says
+  how many takes come from a model Cmdr can't vouch for.
 - `error_encountered` (backend, `apps/desktop/src-tauri/src/listing_host/events.rs`, the `AppHandle` wire's `emit_error`): `category` enum (from the
   ListingError); never the path/message/provider.
 - `first_index_started` / `first_index_home_covered` / `first_index_completed` (backend, `first_index.rs`): no props on

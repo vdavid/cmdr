@@ -25,6 +25,13 @@ const _: fn() = || {
 /// concept beyond the list answers `Some` of nothing.
 pub(super) use imp::look_up;
 
+/// Whether this OS presents the folder at a path as one item beyond the list, asked of one
+/// folder. Blocking (macOS: an NSURL read that can reach File Provider), so only from an
+/// 8 MB-stack pool thread. An OS with no package concept beyond the list answers `false`.
+pub(super) use imp::is_package_to_the_os;
+
+const _: fn(&str) -> bool = is_package_to_the_os;
+
 /// Whether macOS presents the folder at a path as one item (`NSURLIsPackageKey`). macOS-only by
 /// nature, so only macOS code (its tests) reaches it.
 #[cfg(all(target_os = "macos", test))]

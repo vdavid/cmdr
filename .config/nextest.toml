@@ -634,6 +634,15 @@ filter = 'test(agent::llm::live_smoke_test::)'
 slow-timeout = { period = "60s", terminate-after = 1 }
 
 [[profile.default.overrides]]
+# The card verdict's eval (`ai::about_verdict_eval_test::verdict_eval`, `#[ignore]`-gated,
+# hand-run with a provider key): hundreds of real LLM calls and a judge call per card,
+# eight at a time. Measured 2026-11-13: writing one cloud class's takes for both prompt
+# variants took 2–5 minutes, judging them 1–3, and the local class's takes about 10. The
+# cap only has to stop a run that hangs.
+filter = 'test(about_verdict_eval_test::verdict_eval)'
+slow-timeout = { period = "600s", terminate-after = 9 }
+
+[[profile.default.overrides]]
 # The SFTP window measurements, read and write (`crates/cmdr-sftp/src/volume/streams_bench.rs`).
 # ❗ Deliberately NOT `#[ignore]`d — the integration lane runs `--run-ignored only`
 # over that whole package, so an ignored measurement would gate CI on a throughput

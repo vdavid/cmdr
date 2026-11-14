@@ -289,11 +289,7 @@ fn perform(row: &DockRow) {
             let Some(command_id) = command.command_id() else {
                 return;
             };
-            if let Err(e) = (ExecuteCommand {
-                command_id: command_id.to_string(),
-            })
-            .emit_to(app, "main")
-            {
+            if let Err(e) = ExecuteCommand::relay(command_id).emit_to(app, "main") {
                 log::warn!(target: LOG_TARGET, "couldn't send `{command_id}` to the main window: {e}");
             }
         }

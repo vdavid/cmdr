@@ -516,14 +516,12 @@ export {
   archiveAskCmdrConversation,
   resolveAskCmdrAttachments,
   askCmdrLegacyOptIn,
-  askCmdrEnabledChanged,
   askCmdrConversationCost,
   askCmdrCostSummary,
   askCmdrModelWindow,
   askCmdrSlotStatus,
   askCmdrMemoryFolder,
   askCmdrForgetMemory,
-  askCmdrWakeSettingsChanged,
   agentWakeStatus,
   onAgentWakeStatus,
   onAgentWakeStaged,
@@ -902,6 +900,10 @@ export type {
   FolderSuggestionsStream,
   McpServerOutcome,
 } from './settings'
+
+// "Tell me about this": the card's stream and cancel
+export { startAbout } from './about'
+export type { AboutRequestHandle } from './about'
 
 // Tab context menu
 export { showTabContextMenu, onTabContextAction } from './tab'

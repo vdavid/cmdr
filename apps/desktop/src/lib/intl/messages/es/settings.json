@@ -1289,6 +1289,18 @@
   "@settings.ai.localContextSize.description": {
     "sourceHash": "14256da"
   },
+  "settings.aboutThis.aiVerdict.label": "Comentario de la IA en “Háblame de esto”",
+  "@settings.aboutThis.aiVerdict.label": {
+    "sourceHash": "4c84599"
+  },
+  "settings.aboutThis.aiVerdict.description": "Cuando abres la tarjeta, la IA escribe dos o tres frases a partir de los datos que muestra. Con la IA en la nube, los datos de la tarjeta y un breve vistazo dentro del archivo van a tu proveedor cada vez.",
+  "@settings.aboutThis.aiVerdict.description": {
+    "sourceHash": "5dfb5f5"
+  },
+  "settings.aboutThis.aiVerdict.keywords": "explicar, resumen, opinión, valoración, información del archivo, qué es esto, describir",
+  "@settings.aboutThis.aiVerdict.keywords": {
+    "sourceHash": "56b9db5"
+  },
   "settings.ai.localContextSize.keywords": "contexto, ventana de contexto, ventana, tokens, memoria, tamaño, local",
   "@settings.ai.localContextSize.keywords": {
     "sourceHash": "cf1e449"
@@ -2422,6 +2434,18 @@
   "settings.behavior.adbHintDismissed.keywords": "teléfono, móvil, depuración, desarrollador, opciones para desarrolladores, aviso, consejo",
   "@settings.behavior.adbHintDismissed.keywords": {
     "sourceHash": "c520d8c"
+  },
+  "settings.aboutThis.aiHintDismissed.label": "Silenciar el aviso de IA en “Háblame de esto”",
+  "@settings.aboutThis.aiHintDismissed.label": {
+    "sourceHash": "fd81e08"
+  },
+  "settings.aboutThis.aiHintDismissed.description": "Con la IA desactivada, o aún sin configurar, la tarjeta “Háblame de esto” muestra una línea bajo sus botones que dice que la IA añade una lectura más a fondo. Al cerrar la línea con su ×, esto se activa. Desactívalo para volver a ver la línea.",
+  "@settings.aboutThis.aiHintDismissed.description": {
+    "sourceHash": "7141d88"
+  },
+  "settings.aboutThis.aiHintDismissed.keywords": "consejo, sugerencia, pista, información del archivo, tarjeta, lectura más a fondo, explicar",
+  "@settings.aboutThis.aiHintDismissed.keywords": {
+    "sourceHash": "2e77845"
   },
   "settings.section.notifications": "Notificaciones",
   "@settings.section.notifications": {

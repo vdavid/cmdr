@@ -91,6 +91,70 @@
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
+  "ai.cloudConsent.aboutThis.title": "<b>Povězte mi o tom</b> při každém otevření karty souboru nebo složky, bez dalšího dotazu:",
+  "@ai.cloudConsent.aboutThis.title": {
+    "sourceHash": "b60933c"
+  },
+  "ai.cloudConsent.aboutThis.item.identity": "Co to je (soubor, složka, aplikace nebo odkaz), název, cesta, velikost a časové údaje, kolik souborů a složek složka obsahuje, kolik dalších názvů na položku odkazuje, kam vede odkaz a jestli název skrývá znak, který mění pořadí zobrazení písmen",
+  "@ai.cloudConsent.aboutThis.item.identity": {
+    "sourceHash": "f01c726"
+  },
+  "ai.cloudConsent.aboutThis.item.realType": "Jaký druh souboru udávají jeho první bajty, nebo jeho název tam, kde je Cmdr nečetl",
+  "@ai.cloudConsent.aboutThis.item.realType": {
+    "sourceHash": "55e97b9"
+  },
+  "ai.cloudConsent.aboutThis.item.imageIndex": "U obrázku značky, které mu dal index obrázků Cmdru, a první řádky textu, které v něm našel, načtené z indexu Cmdru, nikdy ne samotný obrázek",
+  "@ai.cloudConsent.aboutThis.item.imageIndex": {
+    "sourceHash": "020f807"
+  },
+  "ai.cloudConsent.aboutThis.item.download": "Web, ze kterého byl soubor podle záznamu stažen (jen hlavní adresa webu, třeba github.com, nikdy subdoména ani celý odkaz), kdy a aplikace, která ho stáhla. U přílohy z Mailu nebo souboru z AirDropu jen to, že o ně jde, nikdy ne to, kdo ho poslal",
+  "@ai.cloudConsent.aboutThis.item.download": {
+    "sourceHash": "40d185c"
+  },
+  "ai.cloudConsent.aboutThis.item.appAndSigner": "U aplikace nebo programu název, ID a verze. U nich i u obrazu disku název a ID týmu toho, kdo je podepsal, jestli kód pořád odpovídá podpisu a jestli je přiložený doklad Applu o notarizaci",
+  "@ai.cloudConsent.aboutThis.item.appAndSigner": {
+    "sourceHash": "471891d"
+  },
+  "ai.cloudConsent.aboutThis.item.use": "Kdy jste položku naposledy otevřeli, kolikrát a která aplikace ji otevírá",
+  "@ai.cloudConsent.aboutThis.item.use": {
+    "sourceHash": "9664a6e"
+  },
+  "ai.cloudConsent.aboutThis.item.cmdrHistory": "Odkud a kdy ji Cmdr zkopíroval, přesunul nebo rozbalil, včetně této cesty a názvu disku nebo serveru, a jestli to spustili vy, nebo asistent AI",
+  "@ai.cloudConsent.aboutThis.item.cmdrHistory": {
+    "sourceHash": "1d38db2"
+  },
+  "ai.cloudConsent.aboutThis.item.git": "Složka, větev a stav jejího repozitáře gitu, nebo u souboru z historie gitu commit, větev nebo značka, ze které pochází, a kdy se tam naposledy změnil",
+  "@ai.cloudConsent.aboutThis.item.git": {
+    "sourceHash": "a06839e"
+  },
+  "ai.cloudConsent.aboutThis.item.owner": "Aplikace nebo instalační program, ke kterým patří, nebo která standardní složka systému to je, a jak to Cmdr ví",
+  "@ai.cloudConsent.aboutThis.item.owner": {
+    "sourceHash": "f5d95a6"
+  },
+  "ai.cloudConsent.aboutThis.item.importance": "U složky to, jak moc na ní podle hodnocení Cmdru záleží, a jak často ji v Cmdru otevíráte",
+  "@ai.cloudConsent.aboutThis.item.importance": {
+    "sourceHash": "b358d29"
+  },
+  "ai.cloudConsent.aboutThis.item.inside": "U složky to, o jaký druh jde (třeba mezipaměť nebo výstup sestavení), kolik je v ní položek, názvy a velikosti těch největších a jejích největších souborů, jaké druhy souborů obsahuje a kolik se z ní za rok nezměnilo",
+  "@ai.cloudConsent.aboutThis.item.inside": {
+    "sourceHash": "eb93c12"
+  },
+  "ai.cloudConsent.aboutThis.item.appData": "{platform, select, macos {U aplikace názvy a velikosti složek s daty, které si uchovává ve vaší složce Knihovna} other {U aplikace názvy a velikosti složek s daty, které si uchovává}}",
+  "@ai.cloudConsent.aboutThis.item.appData": {
+    "sourceHash": "d61ade2"
+  },
+  "ai.cloudConsent.aboutThis.item.removal": "Co by znamenalo její odstranění, jak to Cmdr odvodí z údajů výše",
+  "@ai.cloudConsent.aboutThis.item.removal": {
+    "sourceHash": "f7ad4bd"
+  },
+  "ai.cloudConsent.aboutThis.item.contentsStayHome": "U položky, jejíž obsah zůstává doma (seznam je níže u Ask Cmdr), jen její název, cesta, velikost, časové údaje a aplikace, ke které patří",
+  "@ai.cloudConsent.aboutThis.item.contentsStayHome": {
+    "sourceHash": "400db48"
+  },
+  "ai.cloudConsent.aboutThis.lookInside": "Krátké nahlédnutí do souboru: kousek textu, první stránka a název PDF, seznam souborů v archivu nebo u fotky údaje z fotoaparátu bez místa pořízení",
+  "@ai.cloudConsent.aboutThis.lookInside": {
+    "sourceHash": "a78e673"
+  },
   "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, když chatujete nebo když Cmdr sám zahájí konverzaci:",
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "bd006c2"
@@ -118,6 +182,10 @@
   "ai.cloudConsent.askCmdr.item.attachments": "Soubory a složky, které přiložíte k otázce, ale jen jejich název a cesta",
   "@ai.cloudConsent.askCmdr.item.attachments": {
     "sourceHash": "b9ad2af"
+  },
+  "ai.cloudConsent.askCmdr.item.aboutThis": "Když Cmdr zjišťuje, co je soubor nebo složka, stejné údaje, jaké odesílá „Povězte mi o tom“, ale bez nahlédnutí dovnitř",
+  "@ai.cloudConsent.askCmdr.item.aboutThis": {
+    "sourceHash": "1c8e78d"
   },
   "ai.cloudConsent.askCmdr.item.mediaFields": "Podrobnosti o fotkách a skladbách, když je přejmenování použije: datum pořízení, fotoaparát, název, interpret, album a podobně",
   "@ai.cloudConsent.askCmdr.item.mediaFields": {

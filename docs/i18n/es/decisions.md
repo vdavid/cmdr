@@ -494,3 +494,13 @@ does. Multi-rename help: `On`/`Off` → `Activado`/`Desactivado`; caret → `cur
   `el 3.º carácter` would need the `3.er` apocope. A bare option label keeps `#.º`. From the end: `último`, `penúltimo`,
   `el carácter # desde el final`. Range edges are `Inicio` / `Fin` (`Inicio` as in the counter).
 - Presets reorder with `Subir` / `Bajar`: a place in a list, not run order, so not the queue's `Adelantar`.
+
+## Háblame de esto (`aboutThis.*`, `commands.fileTellMeAbout.*`, `ai.cloudConsent.aboutThis.*`)
+
+- `Háblame de esto` (draft `Háblame más de esto.`), the card `la tarjeta`. AI take → `comentario de la IA` (❌
+  `veredicto`/`valoración`); deeper read → `lectura más a fondo`. A record is a claim: `Según macOS, esto se descargó…`,
+  `según consta`, `No consta nada`, noun `anotación` (❌ `registro`, the log).
+- `{what}` / `{kind}` / `{folder}` get no participle: `se copió aquí`, `datos de {app}`, `{kind}, según su nombre`,
+  `{folder}, que crea el sistema`. `{who}` nests `{kind}` so the verb conjugates (`Copiaste` / `copió`). Finder folder
+  names from live `SystemFolderLocalizations` es.lproj (`Biblioteca`, `Pública`; es-419 `Público`, `Videos`). Ticket →
+  `ticket de notarización` (tentative).
