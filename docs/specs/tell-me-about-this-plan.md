@@ -1166,7 +1166,14 @@ context-menu and menu-bar label, and the analytics event's props.
   `pnpm land` until David's explicit go, after his QA and copy pass and the translators.
 - **Rules from David**: Opus agents only (no Fable). Sequential agents in this one worktree. Real-LLM spend: $65.38 of
   an $80 ceiling on `ANTHROPIC_API_KEY_CMDR_DEV` (read with `secret`).
-- **Running now**: no agent. The lead is on step 1 below.
+- **Running now**: no agent. Step 1 below is DONE (2026-11-14): the card works on Naspolya, a symlink into it, a folder
+  with the real index, app Library data, a download, and a picture; `fix-real-app` (`cd09832cbf`, retired) fixed what
+  the check found (a name-only Kind row where bytes aren't read, standard macOS folders in the owner and removal rows, a
+  confirmed kind's wording, the bare "Not indexed yet"). "Opens with: Prvw" was correct: Prvw is David's own viewer app.
+  The work now waits on David's QA and copy pass (step 1's handoff), then step 2.
+- **Owed before landing**: a whole-corpus eval rerun on Sonnet 5.5 and Opus 5.5 (about $14, to about $79.40 of $80),
+  since the image row edited both prompt files and `fix-real-app` changed `for_model` (`realType.value.bytesNotRead`,
+  `owner.value.folder`, `removal[].folder`). David hasn't answered whether to spend it.
 - **Queue, in order**:
   1. **The lead checks the real dev app** (`pnpm dev --worktree tell-me-about-this`; its data dir is an APFS clone of
      the plain dev data dir, made 2026-11-14, so David's own dev state is untouched) with a real index (the E2E build
@@ -1192,11 +1199,11 @@ context-menu and menu-bar label, and the analytics event's props.
   bump turns cloud AI off (today folder suggestions stop silently); the removal row falling below the fold when a take
   shows (D19); Stop has no shortcut; the `en-GB` / `en-AU` "Move to Bin…" overlay an agent wrote; the cloud-sync undo
   tradeoff (accepted and documented unless he objects); the analytics `trigger` can't tell context menu from menu bar
-  from the macOS shortcut; the `cmdr-operation-log` surface raise (95 → 97), plus `cmdr-about` (149 → 151, the image
-  contents type) and `cmdr-index` (156 → 157, the shared "can the image index hold this format" question); a
-  whole-corpus eval rerun (about $14, to about $79.40) that the eval notes call for after the image row's prompt edit;
-  copy questions 28–30; the features page now lists the feature under "Optional AI" (`roadmap.ts` still says "Very
-  soon", left for David).
+  from the macOS shortcut; the `cmdr-operation-log` surface raise (95 → 97), plus `cmdr-about` (149 → 153: the image
+  contents type, `StandardFolder`, `RealType::by_name`) and `cmdr-index` (156 → 157, the shared "can the image index
+  hold this format" question); a whole-corpus eval rerun (about $14, to about $79.40) that the eval notes call for after
+  the image row's prompt edit; copy questions 28–30; the features page now lists the feature under "Optional AI"
+  (`roadmap.ts` still says "Very soon", left for David).
 - **Known red, not from this branch**: `webdav-nextcloud` (the fixture's saved Docker volume predates a test-user
   rename; an agent added the user to the volume, then Nextcloud rate-limited logins with 429). Recheck before landing.
 - **Issues filed from this effort**: #1175 (nested repo reads as the outer repo), #1176 (the AI take's look inside on a
