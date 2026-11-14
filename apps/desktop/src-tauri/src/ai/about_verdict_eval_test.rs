@@ -210,9 +210,8 @@ async fn verdict_eval() {
         let plan: String = per
             .iter()
             .map(|(class, (takes, groups))| {
-                // allowed-pluralize-noun: a dev-only budget count, never 1 in practice
                 format!(
-                    "- {class}: {} cards, {takes} takes, {} judge calls\n",
+                    "- {class}: {} cards, {takes} takes, {} judge calls\n", // allowed-pluralize-noun: a dev-only budget count, never 1 in practice
                     cards.len(),
                     groups.len()
                 )
