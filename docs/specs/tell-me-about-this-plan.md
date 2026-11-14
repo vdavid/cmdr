@@ -1158,31 +1158,22 @@ context-menu and menu-bar label, and the analytics event's props.
 
 ## Lead's log (state a new lead needs; update at each step)
 
-- **Status (2026-11-14, early morning)**: M1–M14 done. The adversarial conformance review ran
-  (`docs/specs/tell-me-about-this-conformance.md`) and both fix batches are in. Branch `worktree-tell-me-about-this`,
-  worktree `.claude/worktrees/tell-me-about-this`, PR #1166 (light CI only). ❌ No `pnpm land` until David's explicit
-  go, after his QA and copy pass and the translators.
-- **Rules from David**: Opus agents only (no Fable). Sequential agents in this one worktree. Real-LLM spend: $64.70 of
+- **Status (2026-11-14, morning)**: M1–M14 done. The adversarial conformance review ran
+  (`docs/specs/tell-me-about-this-conformance.md`) and both fix batches are in. Since then: the loose ends
+  (`fix-loose-ends`), the settings store watcher that fixed #1194 (`fix-switch`, `9f21840ded`), the image row
+  (`image-row`), and the docs audit plus RAW pictures (`docs-audit`) are all in and pushed. All four agents are retired.
+  Branch `worktree-tell-me-about-this`, worktree `.claude/worktrees/tell-me-about-this`, PR #1166 (light CI only). ❌ No
+  `pnpm land` until David's explicit go, after his QA and copy pass and the translators.
+- **Rules from David**: Opus agents only (no Fable). Sequential agents in this one worktree. Real-LLM spend: $65.38 of
   an $80 ceiling on `ANTHROPIC_API_KEY_CMDR_DEV` (read with `secret`).
-- **Running now**: `fix-loose-ends` (four `about::tests` that time out only in the full Rust run; consent wording for
-  three kinds the projection sends that the copy doesn't name; a slow verdict E2E test; FIX, don't file, "turning Ask
-  Cmdr off in Settings doesn't refresh the backend's readiness"; file the `cmdr-smb` duplicate invisible-character set).
-- **Queue after it, in order**:
-  1. **Image row** (David said go, 2026-11-14): a "What it shows" row for images from the image index (Vision tags +
-     first lines of recognized text; DB read only, so safe on a NAS and with AI off; one quiet line when not indexed or
-     indexing is off; protected paths excluded like `image_facts` / `search_photos`). The AI take's input gets tags +
-     recognized text, worded "tagged as", with a prompt rule against writing a scene the tags don't state. One new
-     disclosure line (consent stays 3, unreleased), following the peek's automatic-or-on-press rule (D18). A few image
-     cards in the eval on Sonnet 5.5 and Opus 5.5 (about $2–3). Scene sentences ("two kids playing with a dog") are OUT:
-     that's #225 (comment added there).
-  2. **Docs audit** (a fresh agent reads ALL commit bodies and verifies every touched `C.md`/`D.md`,
-     `docs/architecture.md`, the threat model, `docs/security.md`, the consent list; no milestone tags or plan-only
-     reasoning leaked).
-  3. **The lead checks the real dev app** with a real index (the E2E build runs none): folder digest, app Library data,
-     a symlink in home into `/Volumes/naspi`, Naspolya itself. Then hands David
-     `docs/specs/tell-me-about-this-review.md` (QA steps, decisions with evidence) and
+- **Running now**: no agent. The lead is on step 1 below.
+- **Queue, in order**:
+  1. **The lead checks the real dev app** (`pnpm dev --worktree tell-me-about-this`; its data dir is an APFS clone of
+     the plain dev data dir, made 2026-11-14, so David's own dev state is untouched) with a real index (the E2E build
+     runs none): folder digest, app Library data, a symlink in home into `/Volumes/naspi`, Naspolya itself. Then hands
+     David `docs/specs/tell-me-about-this-review.md` (QA steps, decisions with evidence) and
      `docs/specs/tell-me-about-this-copy.md` (every new string).
-  4. After David's copy pass: translator agents (`docs/guides/i18n-translation.md`; pilot ONE first, cap ~3 at a time),
+  2. After David's copy pass: translator agents (`docs/guides/i18n-translation.md`; pilot ONE first, cap ~3 at a time),
      since CI fails `i18n-coverage` on the ~300 new keys. Then rebase, `pnpm land` in the background on David's go, wipe
      the plan and its sibling spec files per `docs/specs/DETAILS.md`, remove the worktree with
      `~/.claude/scripts/remove-worktree.sh`.
@@ -1201,11 +1192,16 @@ context-menu and menu-bar label, and the analytics event's props.
   bump turns cloud AI off (today folder suggestions stop silently); the removal row falling below the fold when a take
   shows (D19); Stop has no shortcut; the `en-GB` / `en-AU` "Move to Bin…" overlay an agent wrote; the cloud-sync undo
   tradeoff (accepted and documented unless he objects); the analytics `trigger` can't tell context menu from menu bar
-  from the macOS shortcut; the `cmdr-operation-log` surface raise (95 → 97).
+  from the macOS shortcut; the `cmdr-operation-log` surface raise (95 → 97), plus `cmdr-about` (149 → 151, the image
+  contents type) and `cmdr-index` (156 → 157, the shared "can the image index hold this format" question); a
+  whole-corpus eval rerun (about $14, to about $79.40) that the eval notes call for after the image row's prompt edit;
+  copy questions 28–30; the features page now lists the feature under "Optional AI" (`roadmap.ts` still says "Very
+  soon", left for David).
 - **Known red, not from this branch**: `webdav-nextcloud` (the fixture's saved Docker volume predates a test-user
   rename; an agent added the user to the volume, then Nextcloud rate-limited logins with 429). Recheck before landing.
 - **Issues filed from this effort**: #1175 (nested repo reads as the outer repo), #1176 (the AI take's look inside on a
   share), #1177 (Cmdr's history on shares), #1178–#1191 (M14's follow-ups; #1181, #1184, #1188 wait on David), #225
-  comment (scene sentences).
+  comment (scene sentences), #1194 (closed, fixed), #1195 (`cmdr-smb` checks a smaller invisible-character set), #1196
+  and #1197 (a flaky and a slow test outside this branch).
 - **Unverified against the real thing**: a live SMB share, a Linux NFS mount, the macOS "data from other apps" prompt on
   a real container, AirDrop provenance on a live transfer.
