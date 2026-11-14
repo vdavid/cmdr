@@ -42,6 +42,8 @@
 mod cards_fresh_test;
 #[path = "about_verdict_eval/cards_hostile_test.rs"]
 mod cards_hostile_test;
+#[path = "about_verdict_eval/cards_images_test.rs"]
+mod cards_images_test;
 #[path = "about_verdict_eval/cards_ordinary_test.rs"]
 mod cards_ordinary_test;
 #[path = "about_verdict_eval/cards_round3_test.rs"]
@@ -75,6 +77,7 @@ async fn corpus(files: &PeekFiles) -> Vec<EvalCard> {
     cards.extend(cards_hostile_test::cards(files).await);
     cards.extend(cards_fresh_test::cards(files).await);
     cards.extend(cards_round3_test::cards(files).await);
+    cards.extend(cards_images_test::cards(files).await);
     cards
 }
 

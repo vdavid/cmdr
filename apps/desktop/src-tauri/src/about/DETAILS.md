@@ -505,7 +505,7 @@ command `hold_about_verdict`: a test ends the hold by order, never by outwaiting
 
 ### The eval on real models
 
-The verdict's only gate on its no-green-light rule is `apps/desktop/src-tauri/src/ai/about_verdict_eval_test.rs`: 68 synthesized cards (ordinary,
+The verdict's only gate on its no-green-light rule is `apps/desktop/src-tauri/src/ai/about_verdict_eval_test.rs`: 74 synthesized cards (ordinary,
 tempting, hostile) through the shipped projection, fence, prompt files, and call settings, on real models, in five
 languages, graded by an Opus judge against `apps/desktop/src-tauri/src/ai/about_verdict_eval/rubric.md` with a Sonnet second judge on every flag. ❗ Rerun the
 whole corpus after any change to a prompt file, `for_model`, the fence, the call settings, or a default model. What it
