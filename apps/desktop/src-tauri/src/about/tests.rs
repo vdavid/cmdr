@@ -843,7 +843,10 @@ async fn a_slow_card_cant_starve_the_next_cards_rows() {
             (kind, job)
         })
         .collect();
-    assert!(gathered.jobs.len() >= 3, "a card's burst of rows");
+    // Linux plans no Spotlight, signature, or default-app row, so its burst is smaller;
+    // one row waiting on a thread is already what this guards.
+    let burst = if cfg!(target_os = "macos") { 3 } else { 1 };
+    assert!(gathered.jobs.len() >= burst, "a card's burst of rows");
     let next = Arc::clone(&pool);
     let submit: Submit = Arc::new(move |task: Task| next.submit(task));
     let recorder = Arc::new(Recorder::default());

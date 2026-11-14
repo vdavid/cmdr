@@ -121,6 +121,15 @@ fn save_over(path: &Path, bytes: &[u8]) {
     std::fs::rename(&temp, path).expect("rename into place");
 }
 
+/// Whether the temp dir's filesystem keeps a lasting node identity, which a row's
+/// node check needs. A filesystem without birth times (the Linux container's
+/// overlayfs) records none, so its rows undo by size and date as before
+/// (`undoing_a_copy_whose_row_names_no_node_removes_what_matches_its_snapshot_as_before`),
+/// and the cells that need a node have nothing to check there.
+fn keeps_nodes(dir: &Path) -> bool {
+    crate::local_disk::keeps_node_identity(dir)
+}
+
 fn skipped_for_drift(report: &RollbackReport) -> bool {
     report.reversed == 0
         && report.skipped == 1
@@ -152,6 +161,9 @@ async fn undoing_a_copy_removes_the_file_it_landed() {
 async fn undoing_a_copy_keeps_a_same_looking_file_saved_over_it_once_rows_name_the_node() {
     let rig = UndoRig::new();
     let work = tempfile::tempdir().expect("work");
+    if !keeps_nodes(work.path()) {
+        return;
+    }
     let source = work.path().join("src/report.pdf");
     write_old(&source, b"the report");
     let dest = work.path().join("dst");
@@ -195,6 +207,9 @@ async fn undoing_a_copy_whose_row_names_no_node_removes_what_matches_its_snapsho
 async fn undoing_a_move_leaves_a_same_looking_file_saved_over_the_moved_one() {
     let rig = UndoRig::new();
     let work = tempfile::tempdir().expect("work");
+    if !keeps_nodes(work.path()) {
+        return;
+    }
     let source = work.path().join("src/report.pdf");
     write_old(&source, b"the report");
     let dest = work.path().join("dst");

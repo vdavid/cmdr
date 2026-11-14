@@ -714,7 +714,7 @@ mcp_tools! {
     "about_item" => {
         id: AboutItem,
         brief: "What a file or folder is, where it came from, what owns it, what removing it costs.",
-        desc: "Call when the user asks what an item is, where it came from, what app or installer owns it, or what removing it would cost. Cmdr's own facts about ONE file or folder (its Tell me about this card): the real type, the download site as recorded, the signer, Cmdr's copy history, last opened, the owner, git status, a folder's biggest contents, and what removing it means. Each row says if Cmdr knows it, and howCmdrKnows says where it comes from: repeat an item's own claims as claims. about.removal is Cmdr's own read of what removing it means: pass it on whenever you say what an item is. Never reads inside a file (inspect_file does).",
+        desc: "Call when the user asks what an item is, where it came from, what owns it, or what removing it would cost. Cmdr's own facts about ONE file or folder: real type, recorded download site, signer, Cmdr's copy history, last opened, owner, git status, a folder's biggest contents. Each row says if Cmdr knows it, and howCmdrKnows says from where: repeat an item's own claims as claims. Pass on about.removal, Cmdr's read of removing it, whenever you say what an item is. Never reads inside a file (inspect_file does).",
         schema: crate::tools::read::about::about_item_schema(),
         subject: SubjectSpec::Path("path"),
         access: Access::ReadContents,
