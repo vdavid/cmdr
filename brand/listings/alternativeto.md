@@ -4,11 +4,9 @@ Live: https://alternativeto.net/software/cmdr/about/. Edit it while signed in; c
 queue, and the "Note about your changes" field at the bottom speeds that up.
 
 Status: the 2026-09-18 v0.46.0 edit is live (checked 2026-09-24: description, tags, and the single $59 price all match
-this file). The fields below are what went in with the v0.53.0 edit, **submitted 2026-10-15, awaiting admin approval**.
-The form first said "Cmdr has pending changes" (likely an earlier edit still in their queue), then reported success, so
-check the live page in a week or two; the last change before it went live 27 days earlier. Edit the fields here first
-when refreshing, then paste. Refresh cadence and what to update per release: `docs/guides/releasing.md` § "Refreshing
-the app-directory listings".
+this file). The v0.53.0 edit (submitted 2026-10-15) went live by 2026-11-14. The fields below are the v0.61.0 edit (see
+below); check the live page in a week or two. Edit the fields here first when refreshing, then paste. Refresh cadence
+and what to update per release: `docs/guides/releasing.md` § "Refreshing the app-directory listings".
 
 v0.47.0 changed nothing here (checked 2026-09-24): AlternativeTo shows no version or changelog, and nothing in the
 description, tags, or features became false. Its new features (the viewer's long lines, favorite letter shortcuts, the
@@ -29,7 +27,10 @@ certificate, and the data-safety sweep add to what's there without contradicting
 the cap, adding any of them means cutting something else. The Features box "Command line interface" stays unchecked: the
 new `cmdr <path>` command only opens a folder in the app, which isn't what that box promises.
 
-**Not yet submitted** (edited 2026-11-11 and 2026-11-13, one edit to send):
+**v0.61.0 edit submitted 2026-11-14, awaiting admin approval.** On top of the description and languages below, it
+switched the license to "Source available" + BUSL-1.1, moved the Source URL to `getcmdr/cmdr`, and replaced all seven
+screenshots with the eight 2026-11-14 masters. The form showed the v0.53.0 edit's text, so that one had gone live by
+then. What the v0.61.0 edit carried (edited 2026-11-11 and 2026-11-13):
 
 - Ukrainian and Czech raised the language count (2026-11-11), so the Localization line and the Supported languages field
   below changed. The live page keeps the old count until this edit goes in. The `copy-language-count` check keeps the
@@ -106,7 +107,10 @@ AI features (optional, off by default, can stay 100% local with a built-in LLM):
   renders a single price rather than a range: v0.46.0 retired the $59/year subscription and the $199 perpetual, leaving
   Commercial at $59 paid once (a year of updates included, $39/year after that to keep getting them). Enterprise
   publishes no number, so it contributes none here.
-- **Is Opensource?**: checked. License `Other`. Source URL `https://github.com/getcmdr/cmdr`
+- **Source code**: `Source available`, License `Business Source License 1.1 (BUSL-1.1)`, Source URL
+  `https://github.com/getcmdr/cmdr`. (The form had only an "Is Opensource?" checkbox until late 2026; the three-way
+  Proprietary / Open source / Source available choice appeared by 2026-11-14, and the Source URL stays visible with
+  "Source available".)
 
 ## Tags
 
@@ -154,16 +158,17 @@ Leave unchecked, deliberately:
 ## Icon and screenshots
 
 - **Icon**: the current app icon.
-- **Screenshots**: replace all three live ones ("Cmdr v0.24 (light)", "Cmdr v0.24 (dark)", "Settings (light)"), which
-  predate the 0.36 facelift, with these, captioned without a version number so they don't advertise their own age:
-  1. `brand/screenshots/app-main-light.webp` — "Two-pane main view (light)"
-  2. `brand/screenshots/app-main-dark.webp` — "Two-pane main view (dark)"
-  3. `brand/screenshots/search-light.webp` — "Search your files (light)"
-  4. `brand/screenshots/search-dark.webp` — "Search your files (dark)"
-  5. `brand/screenshots/chat-light.webp` — "Ask Cmdr about your files (light)"
-  6. `brand/screenshots/chat-dark.webp` — "Ask Cmdr about your files (dark)"
-  7. `brand/screenshots/settings-light.webp` — "Settings (light)"
-  8. `brand/screenshots/settings-dark.webp` — "Settings (dark)"
+- **Screenshots**: all eight masters, in this order, each captioned with the version they show. David wants the version
+  in the caption, so bump it with every reshoot. Upload the new set first (they land on top), then mark every old one
+  for removal with its trash icon. That toggles it greyed out with an undo, and no confirm dialog appears.
+  1. `brand/screenshots/app-main-light.webp` — "Cmdr 0.61.0 (light)"
+  2. `brand/screenshots/app-main-dark.webp` — "Cmdr 0.61.0 (dark)"
+  3. `brand/screenshots/search-light.webp` — "Search, Cmdr 0.61.0 (light)"
+  4. `brand/screenshots/search-dark.webp` — "Search, Cmdr 0.61.0 (dark)"
+  5. `brand/screenshots/chat-light.webp` — "AI chat, Cmdr 0.61.0 (light)"
+  6. `brand/screenshots/chat-dark.webp` — "AI chat, Cmdr 0.61.0 (dark)"
+  7. `brand/screenshots/settings-light.webp` — "Settings, Cmdr 0.61.0 (light)"
+  8. `brand/screenshots/settings-dark.webp` — "Settings, Cmdr 0.61.0 (dark)"
 
   Limit is 3 MB each; JPEG, PNG, or WebP, so the lossless WebP masters upload as they are. If their uploader ever balks:
   `magick app-main-light.webp app-main-light.png`. Reshoot per `docs/guides/screenshots.md`. YouTube videos can be added
@@ -171,10 +176,10 @@ Leave unchecked, deliberately:
 
 ## Note about your changes
 
-Their optional box for the reviewing admin. For the v0.61.0 edit (prepared 2026-11-13, not submitted yet):
+Their optional box for the reviewing admin. The note that went with the v0.61.0 edit (2026-11-14):
 
 ```
-Hi! A small refresh for v0.61.0: Cmdr now speaks 17 languages (Ukrainian and Czech added to the list), and NFS joined the supported servers. Thanks!
+Hi! A small refresh for v0.61.0: Cmdr now speaks 17 languages (Ukrainian and Czech added to the list), NFS joined the supported servers, and the screenshots are fresh. I also switched the license to the new "Source available" option with BUSL-1.1, which is what Cmdr really is, and updated the source URL to the repo's new home. Thanks!
 ```
 
 The note that went with the v0.53.0 edit:
@@ -197,10 +202,9 @@ Also, my ask from last time (if it's not done already): Cmdr is source-available
 
 ## Still pending after this pass
 
-- **The page still labels Cmdr "Open Source"** under Licensing (checked 2026-09-24), after the BSL wording request went
-  in with both the v0.45.0 and v0.46.0 edits. Admins approved everything else in those edits and ignored this, so a
-  third ask through the same note field is unlikely to land. If it's worth pursuing, their contact form is the next
-  step.
+- **Check that the "Open Source" label is gone** once the v0.61.0 edit is approved. The edit set the new "Source
+  available" + BUSL-1.1 option, so the page summary's "open-source" wording should follow. If the admins' generated
+  summary still says "open-source", their contact form is the next step.
 
 ## Settled calls
 
@@ -211,9 +215,8 @@ So they don't get re-litigated at the next edit pass:
   the description false (no feature graduated out of alpha, no claim broke, and the description names no prices), so
   that release changed nothing here, per `docs/guides/releasing.md` § "Refreshing the app-directory listings".
 
-- **Keep "Is Opensource?" checked.** Unchecking it hides the Source URL field, and a public link to the source is worth
-  more than a precise badge. The description carries the BSL correction instead, in its third paragraph rather than as
-  fine print, and the note above asks the admins to fix the page summary they generate.
+- **Source code is "Source available" + BUSL-1.1**, which keeps the Source URL field. The description's third paragraph
+  still states the BSL license too.
 - **Keep the `portable` tag and the Portable feature.** True in the only sense the tag can mean on macOS: a `.app` runs
   from wherever you put it, a USB stick included. Settings and the index stay in `~/Library` and Full Disk Access is per
   machine, but that's every Mac app, and nobody reads the tag as a promise about state.

@@ -195,7 +195,19 @@ test.describe('marketing masters', () => {
     const metrics = await windowMetrics(page, 'settings')
 
     for (const mode of ['dark', 'light'] as const) {
-      await setTheme(page, mode)
+      // ❗ Through the Settings window's own control, not `setTheme`. A theme set from the
+      // main window flips the appearance app-wide but left this control on "Light", so the
+      // dark master showed "Light" picked inside a dark window (2026-11-14). Clicking it is
+      // what a user does, and the shot then can't disagree with itself.
+      await pickThemeInSettings(settings, mode)
+      await expect
+        .poll(() => themeToggleShows(settings), { timeout: waitBudget(10000) })
+        .toBe(THEME_MODE_ORDER.indexOf(mode))
+      await expect
+        .poll(async () => page.evaluate<boolean>(`window.matchMedia('(prefers-color-scheme: dark)').matches`), {
+          timeout: waitBudget(10000),
+        })
+        .toBe(mode === 'dark')
       await shootWindow(settings, 'settings', `settings-${mode}.webp`, metrics, mode)
     }
 
@@ -285,6 +297,30 @@ async function waitForAgentStore(page: TauriPage): Promise<void> {
       timeout: waitBudget(15000),
     })
     .not.toBe('storeUnavailable')
+}
+
+/** `theme.mode`'s options in the order its control draws them (`settings/definitions/appearance.ts`). */
+const THEME_MODE_ORDER = ['light', 'dark', 'system'] as const
+
+/**
+ * Which Theme mode option the settings window shows as picked, by position, or -1. By
+ * position so the check holds in any UI language.
+ */
+async function themeToggleShows(settings: TauriPage): Promise<number> {
+  return settings.evaluate<number>(
+    `[...(document.getElementById('setting-theme.mode')?.querySelectorAll('.tg-item') ?? [])].findIndex((item) => item.getAttribute('data-state') === 'on')`,
+  )
+}
+
+/** Clicks the Theme mode option for `mode` in the settings window, by position. */
+async function pickThemeInSettings(settings: TauriPage, mode: 'dark' | 'light'): Promise<void> {
+  const index = THEME_MODE_ORDER.indexOf(mode)
+  // `.settings-window` mounts before its section does, so the control can be a beat behind.
+  await settings.waitForSelector('[id="setting-theme.mode"] .tg-item', waitBudget(15000))
+  const clicked = await settings.evaluate<boolean>(
+    `(() => { const item = document.getElementById('setting-theme.mode')?.querySelectorAll('.tg-item')[${String(index)}]; item?.click(); document.activeElement?.blur(); return !!item })()`,
+  )
+  expect(clicked, 'the Theme mode control is missing from the settings window').toBe(true)
 }
 
 async function railOpen(page: TauriPage): Promise<boolean> {
